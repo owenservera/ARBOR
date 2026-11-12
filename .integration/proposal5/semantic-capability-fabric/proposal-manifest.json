@@ -70,5 +70,18 @@
     "immutable_sha_pins"
   ],
   "requiredMergeGate": "AFTER_ACCEPTED_HVI_INTEGRATION_AND_INDEPENDENT_TESTS",
-  "sourceTestsExecuted": false
+  "sourceTestsExecuted": false,
+  "verifierProposal": {
+    "identity": "VIVIM Semantic Verifier",
+    "version": "SV-R012-001",
+    "status": "DESIGN_AND_CONTRACT_PREPARED_TESTS_UNRUN",
+    "path": ".integration/proposal5/semantic-capability-fabric/verifier/",
+    "proposedTags": [
+      "@hq:verify",
+      "@hq:observe",
+      "@hq:explain"
+    ],
+    "sourceBehaviorProved": false,
+    "runtimeVerified": false
+  }
 }
