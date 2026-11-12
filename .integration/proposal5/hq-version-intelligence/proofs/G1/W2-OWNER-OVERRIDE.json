@@ -1,0 +1,37 @@
+{
+  "schema": "arbor.proposal5.hvi.owner-override/1",
+  "issued": "2026-11-12",
+  "decision": "GO_FOR_W2_TOOLING",
+  "decisionType": "EXPLICIT_OWNER_WAIVER_FOR_PARALLEL_SOURCE_DEVELOPMENT_ONLY",
+  "issuer": "repository owner directive in ChatGPT conversation",
+  "g1CandidateSha": "ec5b446400d410e4b9adf3d9b9fe35fe6c562317",
+  "g1Branch": "integrate/p5-hq-version-intelligence-r001",
+  "acceptedMainSha": null,
+  "sourceIntegration": "STAGED_ON_INTEGRATION_BRANCH",
+  "g1Node24Tests": "UNRUN",
+  "g1TestExits": null,
+  "reason": "execution infrastructure unavailable from this environment; user explicitly instructs not to block W2 source development",
+  "allowedNext": [
+    "H_HOST_CAPABILITY_REGISTRATION_SOURCE_WORK",
+    "U_TIERFLOW_INSPECTOR_SOURCE_WORK",
+    "SYNTHETIC_FIXTURE_TEST_PREPARATION",
+    "G1_REVIEW_AND_RUNNER_REPAIR"
+  ],
+  "prohibited": [
+    "CLAIM_TEST_PASS",
+    "CLAIM_RUNTIME_SECURITY_ACCEPTANCE",
+    "AUTO_ENABLE_REMOTE_HOST",
+    "DEPLOY",
+    "CLAIM_BETA_GO",
+    "REAL_REPO_AUDIT",
+    "PROMOTE_MAIN_WITHOUT_SEPARATE_REVIEW"
+  ],
+  "hBranch": "work/p5-hvi-w2-h-host-r001",
+  "uBranch": "work/p5-hvi-w2-u-inspector-r001",
+  "w2ForkPolicy": "OWNER_EXCEPTION_FROM_EXACT_G1_CANDIDATE_SHA_NOT_MERGED_MAIN",
+  "status": "GO_FOR_W2_TOOLING",
+  "verificationStatus": "G1_SOURCE_STAGED_TESTS_UNRUN",
+  "securityStatus": "HOST_LIVE_GRANTS_UNVERIFIED",
+  "betaStatus": "BLOCKED_NOT_BETA",
+  "nextIntegration": "G2 can later integrate reviewed H/U source only after G1 runtime checks, independent security review and normal merge"
+}
