@@ -25,6 +25,48 @@ export function commitSha() {
   }
 }
 
+// The version of a REAL runtime binary.
+//
+// The gate itself runs under Bun, and Bun reports `process.version` as the Node
+// version it emulates (currently v26.x). That is NOT the version that executed
+// the tests: the gate dispatches `node` or `bun` as a child process. Recording
+// the gate's own `process.version` would state a runtime that never ran a
+// single test, so every receipt resolves the dispatched binaries instead.
+const versionCache = new Map();
+export function binaryVersion(binary) {
+  if (versionCache.has(binary)) return versionCache.get(binary);
+  let version = null;
+  try {
+    version = execFileSync(binary, ['--version'], { cwd: REPO_ROOT, encoding: 'utf8' }).trim();
+  } catch {
+    version = null;
+  }
+  versionCache.set(binary, version);
+  return version;
+}
+
+// The runtime that actually executed a test, by the manifest runtime name.
+const RUNTIME_BINARY = {
+  'node24-ajv': 'node',
+  'node-strip-types': 'node',
+  bun: 'bun',
+};
+
+export function runtimeEvidence(runtimes = []) {
+  const names = [...new Set(runtimes)].sort();
+  return {
+    // The runtime the GATE itself ran under.
+    gateRuntime: `bun ${binaryVersion('bun') ?? 'unknown'}`,
+    // The runtimes that actually executed the tests, with their real versions.
+    testRuntimes: names.map((name) => {
+      const binary = RUNTIME_BINARY[name] ?? name;
+      return `${binary} ${binaryVersion(binary) ?? 'unknown'}`;
+    }),
+    nodeVersion: binaryVersion('node'),
+    bunVersion: binaryVersion('bun'),
+  };
+}
+
 // ajv version from the hq-version-intelligence test root's local install
 // (that root declares ajv 8.17.1 and installs it into node_modules).
 export function ajvVersion() {
@@ -46,7 +88,7 @@ function writeJson(path, value) {
   writeFileSync(path, JSON.stringify(value, null, 2) + '\n');
 }
 
-export function writeGateReceipt({ gate, command, totals, exitCode, durationMs, startedAt, finishedAt }) {
+export function writeGateReceipt({ gate, command, totals, exitCode, durationMs, startedAt, finishedAt, runtimes = [] }) {
   const sha = commitSha();
   const receipt = {
     schema: 'arbor.hvi.gate-receipt/1',
@@ -54,8 +96,7 @@ export function writeGateReceipt({ gate, command, totals, exitCode, durationMs, 
     os: platform(),
     osRelease: release(),
     osArch: arch(),
-    nodeVersion: process.version,
-    bunVersion: typeof process.versions.bun === 'string' ? process.versions.bun : null,
+    ...runtimeEvidence(runtimes),
     ajvVersion: ajvVersion(),
     commitSha: sha,
     gate,
@@ -78,8 +119,7 @@ export function writeRunReceipt({ runId, commitSha: sha, totals, exitCode, durat
     os: platform(),
     osRelease: release(),
     osArch: arch(),
-    nodeVersion: process.version,
-    bunVersion: typeof process.versions.bun === 'string' ? process.versions.bun : null,
+    ...runtimeEvidence(tests.map((t) => t.runtime)),
     ajvVersion: ajvVersion(),
     commitSha: sha,
     totals: { tests: Number(totals.tests ?? 0), pass: Number(totals.pass ?? 0), fail: Number(totals.fail ?? 0) },

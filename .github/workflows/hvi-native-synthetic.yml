@@ -21,6 +21,8 @@ on:
       - 'apps/vivim-host/test/hvi-capability.test.mjs'
       - 'apps/vivim-host/test/hvi-source-grant.test.mjs'
       - 'packages/tierflow/**/hvi-inspector*'
+      - 'scripts/**'
+      - 'package.json'
       - '.github/workflows/hvi-native-synthetic.yml'
   pull_request:
     branches:
@@ -40,6 +42,8 @@ on:
       - 'apps/vivim-host/test/hvi-capability.test.mjs'
       - 'apps/vivim-host/test/hvi-source-grant.test.mjs'
       - 'packages/tierflow/**/hvi-inspector*'
+      - 'scripts/**'
+      - 'package.json'
       - '.github/workflows/hvi-native-synthetic.yml'
   workflow_dispatch:
 
@@ -117,6 +121,83 @@ jobs:
         run: |
           set -euo pipefail
           node --experimental-strip-types --test packages/tierflow/tests/hvi-inspector.test.mjs
+
+  # Canonical fail-closed test gate: scripts/test-gate.mjs over the committed
+  # manifest scripts/test-manifest.json.
+  #
+  # Contract:
+  #   - the HVI gates are named explicitly and each one forces a full run of
+  #     that gate, so CI never skips a test because a change looked unrelated.
+  #   - --no-cache disables both cache reads and cache writes, so CI never
+  #     reuses a proof instead of running the test.
+  #   - --plan publishes the exact selection that was run.
+  #   - receipts are written to the canonical HVI proof folder and uploaded.
+  #
+  # The gate runs the HVI surface only. The wider manifest suite still carries
+  # pre-existing failures that also reproduce on origin/main, so it is an
+  # operator-level gate, not a CI gate, until those are repaired.
+  #
+  # Safety: the gate runs synthetic / in-tree fixtures only. It never resolves
+  # a real user or donor repository, never calls a provider API, never drives a
+  # browser and never reads a personal corpus. CI=true and HVI_NO_REAL_CORPUS=1
+  # stay pinned in the job env so that contract is explicit.
+  test-gate:
+    name: Canonical test gate (HVI gates + receipts)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      CI: 'true'
+      HVI_NO_REAL_CORPUS: '1'
+    steps:
+      - name: Checkout approved candidate source only
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install Bun 1.4.4 (test gate runtime)
+        uses: actions/setup-bun@v1
+        with:
+          bun-version: '1.4.4'
+      - name: Record toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --version
+          bun --version
+          git rev-parse HEAD
+      - name: Install pinned schema validator for HVI test package
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --prefix tests/hq-version-intelligence --ignore-scripts --no-audit --no-fund --no-save --package-lock=false ajv@8.17.1
+      - name: Publish test gate selection plan
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .integration/proposal5/hq-version-intelligence/proofs/G2
+          bun scripts/test-gate.mjs --plan \
+            --gate hvi-g1-g2 --gate hvi-host-read-port --gate hvi-discovery \
+            --gate hvi-hq-boundary --gate hvi-tierflow-inspector --gate hvi-modules \
+            | tee .integration/proposal5/hq-version-intelligence/proofs/G2/test-gate-plan.txt
+      - name: Run canonical test gate (HVI gates, no cache, fail closed)
+        shell: bash
+        run: |
+          set -euo pipefail
+          bun scripts/test-gate.mjs --no-cache \
+            --gate hvi-g1-g2 --gate hvi-host-read-port --gate hvi-discovery \
+            --gate hvi-hq-boundary --gate hvi-tierflow-inspector --gate hvi-modules
+      - name: Upload test gate receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hvi-test-gate-receipts
+          path: |
+            .integration/proposal5/hq-version-intelligence/proofs/G2/
+          if-no-files-found: warn
+          retention-days: 30
 
 # Passing this CI workflow proves ONLY synthetic-source checks. G1/G2 still
 # require independent review and live canonical Host grant/publisher gates.

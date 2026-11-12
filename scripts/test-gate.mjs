@@ -289,7 +289,7 @@ function runSelected(selected, opts) {
     });
 
     const bucket = gateMap.get(test.gate) ?? {
-      tests: 0, pass: 0, fail: 0, exitCode: 0, durationMs: 0, command: null,
+      tests: 0, pass: 0, fail: 0, exitCode: 0, durationMs: 0, command: null, runtimes: new Set(),
     };
     bucket.tests += totals.tests;
     bucket.pass += totals.pass;
@@ -297,6 +297,7 @@ function runSelected(selected, opts) {
     bucket.exitCode = Math.max(bucket.exitCode, exitCode);
     bucket.durationMs += durationMs;
     if (!bucket.command) bucket.command = command;
+    bucket.runtimes.add(test.runtime);
     gateMap.set(test.gate, bucket);
 
     const status = exitCode === 0 && totals.fail === 0 ? 'ok  ' : 'FAIL';
@@ -319,6 +320,7 @@ function runSelected(selected, opts) {
       durationMs: bucket.durationMs,
       startedAt,
       finishedAt,
+      runtimes: [...bucket.runtimes],
     }));
   }
 
