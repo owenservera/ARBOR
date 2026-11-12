@@ -10,9 +10,9 @@
 | B02 | First provider connection | User signs into supported provider website using dedicated Chrome profile; Host detects valid session, preserves user credentials locally | Provider API test or fake UI |
 | B03 | Conversation send/receive | At least one supported signed-in web provider receives an exact user-confirmed message; response is displayed with source/target thread evidence, no blind resend | Synthetic DOM selector test |
 | B04 | Paired PWA | Phone pairs/revokes with current Host, can read permitted source state and submit a confirmed request with device binding | Offline mock screen |
-| B05 | Native Node 0 composer | Editor/IME remains responsive; typed events produce source-backed read-only candidate and versioned trace; Tab never grants effect; stale hints cannot overwrite | R001 fixture \`full\` alone |
+| B05 | Native Node 0 composer | Editor/IME remains responsive; typed events produce source-backed read-only candidate and versioned trace; Tab never grants effect; stale hints cannot overwrite | R001 fixture `full` alone |
 | B06 | Host command and safety | Safe current catalog read works, risky action stays approval-gated; Host journal claim/receipt survives forced process stop; uncertain action not resent | Red/green status in UI without receipt |
-| B07 | Internal HQ developer intelligence | User selects a local project; imported HQ code indexes/searches, emits source refs and context/wiki read projection **inside ARBOR**, native HQKG processes authorized Development graph evidence | Calling \`../repos-hq/hq/bin/hq.mjs\` |
+| B07 | Internal HQ developer intelligence | User selects a local project; imported HQ code indexes/searches, emits source refs and context/wiki read projection **inside ARBOR**, native HQKG processes authorized Development graph evidence | Calling `../repos-hq/hq/bin/hq.mjs` |
 | B08 | Personal World + DCB source | The current verified personal read source can be inspected and context previewed with correct consent/limitations; private source revocation invalidates derived view | Using developer HQ index as personal-memory store |
 | B09 | Visual/status consistency | Desktop and phone show same Host command IDs, grounding, mission/effect status and source revision; in-repo TierFlow view uses inert projection | Duplicate UI-specific action catalog |
 | B10 | Recovery and data integrity | Export/backup/restore of supported state, live Windows restart, resumed owner view, no second effect writer, no erased user data | Clean install only |
@@ -23,7 +23,7 @@
 
 Media streaming, voice-to-structured-tasks, mission experience, owner personalization, AutoWiki and visual app-builder are part of the migration inventory. For each:
 - **Already operational in donor:** it must work with equivalent behavior in ARBOR or receive an explicit owner-approved beta exclusion backed by a blocker.
-- **Only research/scaffold:** import the accepted contract/test/view into its capability space, but display \`preview\`, \`unavailable\` or \`later\`. Do not label it working.
+- **Only research/scaffold:** import the accepted contract/test/view into its capability space, but display `preview`, `unavailable` or `later`. Do not label it working.
 - **Partially wired:** beta may ship a verified narrower path with a precise public limitation.
 - **Sensitive write/effect:** always same Host admission/grant/receipt owner.
 
@@ -33,9 +33,9 @@ Media streaming, voice-to-structured-tasks, mission experience, owner personaliz
 
 A release candidate must survive all of these:
 1. Donor repo checkouts renamed or unavailable and all donor processes terminated.
-2. No \`git submodule\`, symlink, path dependency, import, git-URL dependency, dynamic require, shell command or local HTTP endpoint targeting donor repo infrastructure.
+2. No `git submodule`, symlink, path dependency, import, git-URL dependency, dynamic require, shell command or local HTTP endpoint targeting donor repo infrastructure.
 3. The imported HQ intelligence, HQKG Rust crate, TierFlow package, Host, Studio, PWA and accepted Labs adapters compile/test from **only ARBOR**.
-4. Product installer contains required runtime modules and assets; no hardcoded \`C:\0-BlackBoxProject-0\` developer path or developer-only configuration.
+4. Product installer contains required runtime modules and assets; no hardcoded `C:\0-BlackBoxProject-0` developer path or developer-only configuration.
 5. Normal internal semantic, index, graph and UI functions remain available if internet is unavailable; external AI websites transparently become unavailable when disconnected.
 6. A user-selected local source repository is treated as **input data**, not as a product source dependency.
 
@@ -44,7 +44,7 @@ This is a **hard stop**: any runtime request to a donor development service mean
 ## C. Authority/truth gates
 
 - One action catalog owner (Host), one durable effect writer, one World owner and one native graph implementation.
-- Source claims include owner/version/evidence and may be \`unknown\`, \`stale\` or \`not-verified\`.
+- Source claims include owner/version/evidence and may be `unknown`, `stale` or `not-verified`.
 - Heterogeneous Development and Personal graph namespaces do not leak through shared algorithms.
 - No auto-effect from predictive typing, visual view, AI hypothesis, graph relation or extension.
 - Cross-device input preserves principal and revision, never silently executes offline speculation.
