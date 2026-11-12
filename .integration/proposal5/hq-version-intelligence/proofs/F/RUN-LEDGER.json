@@ -64,6 +64,14 @@
       "positiveExamples": 4,
       "negativeCases": 4,
       "notes": "conditional guards for equivalence, source-as-runtime, Host success without digest, and symlink"
+    },
+    {
+      "operation": "Final committed version: static syntax parse of all five ESM QA/support modules and selective source-only oracle negatives",
+      "environment": "ephemeral V8 after stripping ESM declarations for parse; not Node module execution",
+      "exitCode": 0,
+      "modulesParsed": 5,
+      "oracleNegativeCases": 4,
+      "notes": "Git malicious ref, symlink, LFS pointer and ENOSPC preservation oracles; real Git/storage IO UNRUN"
     }
   ],
   "testsWithObservedExit": [],
