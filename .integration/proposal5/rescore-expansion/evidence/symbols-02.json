@@ -1,0 +1,192 @@
+{
+  "schema": "arbor.rescore.symbol-declarations.part.v1",
+  "part": 2,
+  "source_commit": "98f15e327957956ec94189772d5e5813e7b6b07b",
+  "files": [
+    {
+      "path": "studio/src/decode/decoders.mjs",
+      "blob": "630d7b148f8db97148f3b81bb7dcb6a95216ed7a",
+      "symbols": [
+        "parseJsonSafe",
+        "inflateFrame",
+        "protoView",
+        "parseHttpHeaderBlock",
+        "extractStrings",
+        "classifyMime",
+        "decoderForKind",
+        "pickDecoder",
+        "pickAutoDecoder",
+        "sniff",
+        "looksLikeTextBytes",
+        "sniffEnvelope",
+        "unwrapNestedJson",
+        "decodeTextFrame",
+        "textFrameProtocol",
+        "decodeWsPayload",
+        "frameSize"
+      ]
+    },
+    {
+      "path": "studio/src/decode/delta.mjs",
+      "blob": "91b36a8ba765f2ab2947a3dc82c931638c5ce3d3",
+      "symbols": [
+        "parsePointer",
+        "parseDotted",
+        "getParent",
+        "getPointer",
+        "applyMergePatch",
+        "detectDialect",
+        "reconstruct"
+      ]
+    },
+    {
+      "path": "studio/src/decode/protobuf.mjs",
+      "blob": "f9ce0e1aaf92fdd74cbd4e25d7c601654cd7026d",
+      "symbols": [
+        "asBuffer",
+        "clampInt",
+        "splitEnvelopes",
+        "readVarint",
+        "printableStats",
+        "classifyLen",
+        "parseFields",
+        "treeStats",
+        "decodeProtobuf",
+        "flattenProtobuf",
+        "protoStrings",
+        "describeProtobuf"
+      ]
+    },
+    {
+      "path": "studio/src/replay/derive-all.mjs",
+      "blob": "3bf06f6103155d7adb852169a244b9dcbfaa1f19",
+      "symbols": [
+        "readKv",
+        "readDataset",
+        "writeDataset",
+        "rawCount",
+        "entityText",
+        "eventText",
+        "stageBase",
+        "stageSearch",
+        "stageGraph",
+        "stageSchemas",
+        "stageTimelines",
+        "stageRevisions",
+        "deriveAll",
+        "loadArtifacts",
+        "searchSession"
+      ]
+    },
+    {
+      "path": "studio/src/replay/derive.mjs",
+      "blob": "d0e207ec7758ff6e469ebff84d4c4904775a5682",
+      "symbols": [
+        "derive",
+        "streamDomJoin",
+        "replayWide",
+        "streamRoles",
+        "streamRolesCurrent",
+        "streamComponents",
+        "withStreamText",
+        "acceptanceLabel",
+        "buildReceipt",
+        "listFamilyDatasets",
+        "streamBytes",
+        "stateAt",
+        "reconstructStream",
+        "streamText",
+        "search",
+        "fidelityBreakdown"
+      ]
+    },
+    {
+      "path": "studio/src/replay/stream-components.mjs",
+      "blob": "30d3ce55eb682a76284af6c78a626491c5e741d0",
+      "symbols": [
+        "signalSummary",
+        "buildStreamComponents"
+      ]
+    },
+    {
+      "path": "studio/src/replay/stream-messages.mjs",
+      "blob": "ab234288d5e9ee6479b8e5b3a90607cda889d58b",
+      "symbols": [
+        "buildStreamMessages"
+      ]
+    },
+    {
+      "path": "studio/src/replay/stream-role.mjs",
+      "blob": "5fcd0a97d941ef047762261a3db3cad684c9702c",
+      "symbols": [
+        "resolveClassifierOptions",
+        "normalize",
+        "collectDocs",
+        "createGrowth",
+        "expandPatch",
+        "boundedEntries",
+        "walkDelta",
+        "snapshotLeaves",
+        "feedGrowth",
+        "growthSummary",
+        "mappedTextComponents",
+        "mappedMessageComponents",
+        "assembledTextBlocks",
+        "growthFacts",
+        "textual",
+        "messageRole",
+        "isAssistantFrame",
+        "createStats",
+        "scalarStats",
+        "noteContainer",
+        "descriptorArray",
+        "tokenExchangeIn"
+      ]
+    },
+    {
+      "path": "studio/src/intel/corpus.mjs",
+      "blob": "9285156306906f39d38392cbc6df44a469bcd338",
+      "symbols": [
+        "discriminatorOf",
+        "buildCorpus"
+      ]
+    },
+    {
+      "path": "studio/src/intel/correlate.mjs",
+      "blob": "95a95fc381bae461260176db40dbe21844a32b0b",
+      "symbols": [
+        "correlateActions",
+        "salient",
+        "correlateRendered",
+        "reconcileFinal"
+      ]
+    },
+    {
+      "path": "studio/src/intel/graph-analytics.mjs",
+      "blob": "482c3e653194dcd86957f38bb25fb4c87719b992",
+      "symbols": [
+        "weightOf",
+        "toArray",
+        "normalizeNodes",
+        "mergeEdges",
+        "outAdjacency",
+        "cmpId",
+        "pagerank",
+        "betweenness",
+        "components",
+        "communities",
+        "graphAnalytics"
+      ]
+    },
+    {
+      "path": "studio/src/intel/graph.mjs",
+      "blob": "60168f848ccfd6917a5ae6f36305de9bed92d177",
+      "symbols": [
+        "buildGraph",
+        "graphView",
+        "graphNeighborhood",
+        "rankGraphNodes"
+      ]
+    }
+  ]
+}

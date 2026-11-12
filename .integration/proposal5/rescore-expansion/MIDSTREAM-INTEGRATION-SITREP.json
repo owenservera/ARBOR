@@ -1,0 +1,169 @@
+{
+  "schema": "arbor.proposal5.rescore-rust-migration-sitrep.v1",
+  "state": "DOCUMENTATION_BRANCH_NOT_RUNTIME_ACCEPTED",
+  "observed_date": "2026-11-12",
+  "repository": "owenservera/ARBOR",
+  "main_observed": "3d45fbf1c3963e4834a5e51ee7f6e63f3a0da298",
+  "assessment_source_pin": "98f15e327957956ec94189772d5e5813e7b6b07b",
+  "branch": "work/p5-rescore-1000-r001",
+  "records": {
+    "total": 1000,
+    "original_curated": 100,
+    "additional_tracked_modules": 626,
+    "declared_functions": 274
+  },
+  "validation": {
+    "json_records": 1000,
+    "markdown_rows": 1000,
+    "ids_unique": true,
+    "declarations_crosschecked": true,
+    "tracked_blobs_present": true,
+    "actual_runtime_tests": "UNRUN",
+    "performance_benchmarks": "UNRUN",
+    "real_donor_comparisons": "NOT_RUN",
+    "native_parity": "UNRUN"
+  },
+  "related_programs": [
+    {
+      "name": "Optimization Observatory",
+      "pr": 20,
+      "status": "MERGED_MAIN",
+      "commit": "3d45fbf1c3963e4834a5e51ee7f6e63f3a0da298",
+      "purpose": "59 complementary broad optimization hypotheses"
+    },
+    {
+      "name": "HVI native tooling",
+      "pr": 21,
+      "status": "OPEN_DRAFT",
+      "note": "G1 A-F and H/U/G2 work require separate gates; owner waiver is not runtime acceptance"
+    },
+    {
+      "name": "Semantic Capability Fabric + Verifier",
+      "pr": 13,
+      "status": "OPEN_DRAFT",
+      "note": "future source/schema verification interface; do not presume accepted"
+    },
+    {
+      "name": "Semantic Engineering Program",
+      "pr": 19,
+      "status": "OPEN_DRAFT",
+      "note": "scaffold; not a runtime implementation"
+    },
+    {
+      "name": "VLang SITREP",
+      "pr": 22,
+      "status": "OPEN_DRAFT",
+      "note": "documentation, not compiled VLang runtime"
+    }
+  ],
+  "core_assets": [
+    {
+      "path": "native/hqkg/src/lib.rs",
+      "observed": "EXISTING_RUST_SOURCE",
+      "capabilities": "graph/journal/engine/typed DAG/reconciliation/invalidation and optional adapters",
+      "runtime_status": "PRODUCT_WIRING_NOT_PROVEN"
+    },
+    {
+      "path": "core/programmability/src/lib.rs",
+      "observed": "EXISTING_RUST_SOURCE",
+      "capabilities": "inert typed program verification, source/policy metadata, no effects",
+      "runtime_status": "PRODUCT_WIRING_NOT_PROVEN"
+    }
+  ],
+  "native_candidate_families": [
+    {
+      "priority": 1,
+      "engine": "Streaming evidence decode/replay",
+      "js_paths": [
+        "studio/src/decode/decoders.mjs",
+        "studio/src/decode/protobuf.mjs",
+        "studio/src/replay/reducer.mjs"
+      ],
+      "why": "high volume, repeated frame parsing and event folds",
+      "native_action": "measure bounded pure primitives and existing HQKG overlap",
+      "scope": "PURE_COMPUTE"
+    },
+    {
+      "priority": 2,
+      "engine": "Knowledge matching + temporal reconciliation",
+      "js_paths": [
+        "studio/src/intel/join.mjs",
+        "studio/src/intel/similarity.mjs",
+        "studio/src/intel/temporal-truth.mjs"
+      ],
+      "why": "potential high CPU/RSS under large corpora and join candidate sets",
+      "native_action": "source-to-native crosswalk; benchmark join/match and conflict semantics",
+      "scope": "PURE_COMPUTE"
+    },
+    {
+      "priority": 3,
+      "engine": "Incremental HQ/source indexing and graph deltas",
+      "js_paths": [
+        "hq/lib/indexer.mjs",
+        "hq/lib/graph.mjs",
+        "hq/lib/kg-export.mjs"
+      ],
+      "why": "developer/high-frequency refresh cost and shared graph reuse",
+      "native_action": "fix HQ crate path and prove deterministic HQ→native delta, then profile",
+      "scope": "SHARED_NATIVE_HQKG"
+    },
+    {
+      "priority": 4,
+      "engine": "Bounded context retrieval and DCB",
+      "js_paths": [
+        "hq/lib/context.mjs",
+        "harness/src/context/dcb-composer.mjs",
+        "harness/src/context/dcb-source-selection.mjs"
+      ],
+      "why": "recurring per-turn retrieval, selection and data packing",
+      "native_action": "unify pure rank/budget core; no disclosure grant in Rust",
+      "scope": "PURE_COMPUTE"
+    },
+    {
+      "priority": 5,
+      "engine": "Typed command / visual IR semantics",
+      "js_paths": [
+        "apps/mobile-relay/nlcl/interpret.mjs",
+        "packages/tierflow/src/visual-runtime/command/compile.ts"
+      ],
+      "why": "cross-surface deterministic interpretation and revision parity",
+      "native_action": "reuse core/programmability; preserve TierFlow publisher and browser interaction",
+      "scope": "PURE_COMPUTE"
+    }
+  ],
+  "boundaries": [
+    {
+      "owner": "Host",
+      "keep": "authorization, consent, World writer, ledger and effects"
+    },
+    {
+      "owner": "Studio",
+      "keep": "signed-in browser/CDP and provider send"
+    },
+    {
+      "owner": "TierFlow",
+      "keep": "visual publisher/DOM renderer"
+    },
+    {
+      "owner": "HQ",
+      "keep": "development index transactions, source selection, Wiki publication"
+    },
+    {
+      "owner": "PWA",
+      "keep": "browser transport/UI; evaluate WASM build footprint first"
+    }
+  ],
+  "next_gates": [
+    "Review highest-ranked pure computation for overlap with existing native core",
+    "Benchmark synthetic workloads by cadence; p50/p95, CPU, peak RSS, memory-duration and idle load",
+    "Perform source caller/authority trace for first 3-5 target engines",
+    "Repair build/source closure and run actual Rust/Node tests with preserved statuses",
+    "Create independent, scoped Rust native proof with differential parity, ABI and rollback; do not conflate with HVI tooling acceptance"
+  ],
+  "release": {
+    "status": "BLOCKED_NOT_BUILT",
+    "securityAccepted": false,
+    "deviceAccepted": false
+  },
+  "scope_exclusion": "No real ARBOR/VIVIM/Labs repository migration comparison, user data comparison, runtime edits, approval bypass or beta claim."
+}

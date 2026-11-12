@@ -1,0 +1,131 @@
+{
+  "schema": "arbor.rescore.symbol-declarations.part.v1",
+  "part": 6,
+  "source_commit": "98f15e327957956ec94189772d5e5813e7b6b07b",
+  "files": [
+    {
+      "path": "apps/mobile-relay/nlcl/frames.mjs",
+      "blob": "bf8346d87ca82171171d1e78ac9b7a77472e20e4",
+      "symbols": [
+        "framesForWorld",
+        "genericFrame",
+        "verbHits",
+        "closestVerbs"
+      ]
+    },
+    {
+      "path": "apps/mobile-relay/nlcl/grammar.mjs",
+      "blob": "cd3bdd5b7ec1083b087de839fc8d5a43215c02b3",
+      "symbols": [
+        "isPrepToken",
+        "isBoundary",
+        "bodyTokens",
+        "mentionAfter",
+        "opShortName",
+        "makeEntitySlot",
+        "entityFromMatch",
+        "fillFrame",
+        "fillSlotValue",
+        "allPreps",
+        "buildPayload",
+        "buildCanonical",
+        "buildReading",
+        "matchFrames",
+        "unquoteText"
+      ]
+    },
+    {
+      "path": "apps/mobile-relay/nlcl/ground.mjs",
+      "blob": "88960d2598a8bc14416cd7b028b6c35660f86af6",
+      "symbols": [
+        "bestScoreForAlias",
+        "ground",
+        "resolveContext",
+        "entitySymbol",
+        "entityPayloadValue",
+        "suggestEntities",
+        "groundPhrase",
+        "applyPriors",
+        "groundWithPriors",
+        "groundPhraseWithPriors"
+      ]
+    },
+    {
+      "path": "apps/mobile-relay/nlcl/index.mjs",
+      "blob": "99208c12a32b0467196a937f828894ef9591a370",
+      "symbols": [
+        "emptyWorld",
+        "contactFromAddress"
+      ]
+    },
+    {
+      "path": "apps/mobile-relay/nlcl/interpret.mjs",
+      "blob": "376cd8fa349cd1132e956e784a20340588b1b91a",
+      "symbols": [
+        "interpret",
+        "slotHint",
+        "scoreCandidate",
+        "escapeRe",
+        "assemble",
+        "defaultSuggestions"
+      ]
+    },
+    {
+      "path": "apps/mobile-relay/nlcl/lexer.mjs",
+      "blob": "48fe4930f1cc6686c2e4a34e6f17cfe5819fa92d",
+      "symbols": [
+        "scanWord",
+        "isWordStart",
+        "scanNumber",
+        "isQuoteOpenerHere"
+      ]
+    },
+    {
+      "path": "apps/mobile-relay/nlcl/project.mjs",
+      "blob": "18c2ec06417ede9ed1f83ab5034fd401881e4f38",
+      "symbols": [
+        "projectTokens",
+        "projectEffects"
+      ]
+    },
+    {
+      "path": "apps/mobile-relay/nlcl/recognize.mjs",
+      "blob": "aa1f56936a30224b6457beae766c52601fac669a",
+      "symbols": [
+        "irBase",
+        "groundContact",
+        "recognizeHelp",
+        "recognizeEntityQuery",
+        "recognizeTeach",
+        "recognizeRule",
+        "scoreCandidate",
+        "lowerFirst",
+        "recognizeReceive",
+        "recognizeInbox",
+        "emptyInterp"
+      ]
+    },
+    {
+      "path": "apps/mobile-relay/nlcl/symbols.mjs",
+      "blob": "fecb5cba4bbee79701107aba67c6f620e833738a",
+      "symbols": [
+        "normalizeFamilyGlyph"
+      ]
+    },
+    {
+      "path": "apps/mobile-relay/nlcl/text.mjs",
+      "blob": "e34a112564e068c206c48c6a70ed449d49904891",
+      "symbols": [
+        "unquote",
+        "classifyVerb",
+        "words",
+        "prettifyLocalPart"
+      ]
+    },
+    {
+      "path": "apps/mobile-relay/nlcl/types.mjs",
+      "blob": "f49dff8b42f99f78bc8786905c31e4c9c9c59406",
+      "symbols": []
+    }
+  ]
+}
