@@ -1,0 +1,1103 @@
+{
+  "schema": "arbor.proposal5.foundations.waves/1",
+  "date": "2026-11-12",
+  "disposition": "SOURCE_GROUNDED_PROPOSED_NOT_EXECUTED",
+  "base": "8b23c73bf450738a76b256bf0fa17ecbf86db591",
+  "repo": "owenservera/ARBOR",
+  "workerBranch": "work/p5-foundational-architecture-prep-r001",
+  "phaseModel": "Pre-G = source/isolated pure preparation only; G = original sole serial integrator; post-G = only after exact accepted G HEAD and owner scope; beta ≠ all proposed research",
+  "mobilePolicy": "PWA_FIRST_APK_DEFERRED",
+  "waves": [
+    {
+      "id": "PG-00",
+      "title": "Frozen source truth, scoped inventory, duplicate-systems map",
+      "stage": "PRE_G",
+      "kind": "EVIDENCE_ONLY",
+      "dependency": [
+        "A-F frozen"
+      ],
+      "promotion": "NOT_ALLOWED",
+      "tasks": [
+        {
+          "id": "FA-PG00-01",
+          "owner": "F",
+          "work": "Verify exact A-F frozen SHAs, ancestry, blob inventories, exclusions, source licenses and actual test receipts",
+          "proof": "One reproducible source-lock/collision report; no claimed runtime pass",
+          "priority": "P0",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-PG00-02",
+          "owner": "D",
+          "work": "Census all HQ annotators, semantic IDs, Rust comment compiler, wiki-program and source action registries",
+          "proof": "Type/ref/version owner collision matrix; zero implied executor",
+          "priority": "P0",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-PG00-03",
+          "owner": "B",
+          "work": "Census Host catalog v6, NLCL/personal rules, dispatcher, World and receipt writer",
+          "proof": "Exact ID/type/risk/availability table, handler evidence vs source-only",
+          "priority": "P0",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-PG00-04",
+          "owner": "A",
+          "work": "Enumerate Rust graph, scoped DAG, engine generations, pure programmability, scheduler, wire, Tauri IPC",
+          "proof": "Entry/API/actor/storage matrix and negative preconditions",
+          "priority": "P0",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-PG00-05",
+          "owner": "C",
+          "work": "Enumerate Studio Chrome/browser send owners, plugin registry, recipe tools, DCB and personal-agent source",
+          "proof": "Real entrypoints and unknown-effect ownership; no provider API changes",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-PG00-06",
+          "owner": "E",
+          "work": "Census PWA, pairing, cached shell, TierFlow publisher, visual command and live UI",
+          "proof": "Single PWA entrypoint and real Host static allowlist blocker",
+          "priority": "P0",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-PG00-07",
+          "owner": "F",
+          "work": "Classify Labs sources into SOURCE_READY, PURE_PROTOTYPE, RESEARCH_ONLY, DESIGN_ONLY, UNSAFE, RETIRE_CANDIDATE",
+          "proof": "Complete selected intake with source SHA/test status and planned ARBOR owner",
+          "priority": "P0",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-PG00-08",
+          "owner": "G",
+          "work": "Read only: reconcile frozen roots versus P5 G landing protocol; ensure no foundational branch write conflicts",
+          "proof": "Only preflight notes; G root manifests remain sole G writes",
+          "priority": "P0",
+          "status": "NOT_STARTED"
+        }
+      ],
+      "taskCount": 8,
+      "requiredEvidence": [
+        "exact_merged_or_isolated_source_sha",
+        "actual_command_exit_codes_or_UNRUN",
+        "source_and_owner_impact",
+        "negative_tests_and_risk",
+        "NO_GO_and_deferred_matrix"
+      ]
+    },
+    {
+      "id": "PG-01",
+      "title": "Pure native and platform capability ABI preparation",
+      "stage": "PRE_G",
+      "kind": "ISOLATED_PREP",
+      "dependency": [
+        "PG-00"
+      ],
+      "promotion": "NOT_ALLOWED",
+      "tasks": [
+        {
+          "id": "FA-PG01-01",
+          "owner": "A",
+          "work": "Compare A EngineRegistry/typed_dag/program validator vs Labs Node0-IO and research pure engine proposals",
+          "proof": "Exact minimum Rust port and threat model; no new graph/daemon",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-PG01-02",
+          "owner": "F",
+          "work": "Draft language-neutral CapabilityManifest/Activation/Lease/PureResult schemas under isolated work scope",
+          "proof": "Closed schemas and Rust/TS/JS type mirror plus disagreement ledger",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-PG01-03",
+          "owner": "A",
+          "work": "Prove generation swap, pinned lease, cancellation and typed DAG budget on synthetic isolated source",
+          "proof": "Real Rust test required before any go; if not executable mark UNRUN",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-PG01-04",
+          "owner": "B",
+          "work": "Specify Host-owned runtime admission adapter for capabilities, pure vs effect split and proof headers",
+          "proof": "Owner, scope, risk, revision, grant and refusal cases",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-PG01-05",
+          "owner": "F",
+          "work": "Create negative tests against forged actor, catalog drift, revoked source and mismatched owner",
+          "proof": "Synthetic proof with exit codes; no grants or effects",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-PG01-06",
+          "owner": "D",
+          "work": "Map semantic source IDs and comment compiler to proposed capability manifest without automatic installation",
+          "proof": "Exactly versioned source refs, no unknown aliases",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-PG01-07",
+          "owner": "E",
+          "work": "Map TierFlow visual command IR to capability manifest IDs in an inert read adapter",
+          "proof": "No UI publish or Host dispatch",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-PG01-08",
+          "owner": "G",
+          "work": "Record post-G owners of native ABI schemas; reject parallel artifact duplication",
+          "proof": "G has exclusive integration/adoption decision",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        }
+      ],
+      "taskCount": 8,
+      "requiredEvidence": [
+        "exact_merged_or_isolated_source_sha",
+        "actual_command_exit_codes_or_UNRUN",
+        "source_and_owner_impact",
+        "negative_tests_and_risk",
+        "NO_GO_and_deferred_matrix"
+      ]
+    },
+    {
+      "id": "PG-02",
+      "title": "Wiki-language, multi-producer trace and screen mirror preparation",
+      "stage": "PRE_G",
+      "kind": "ISOLATED_PREP",
+      "dependency": [
+        "PG-00"
+      ],
+      "promotion": "NOT_ALLOWED",
+      "tasks": [
+        {
+          "id": "FA-PG02-01",
+          "owner": "D",
+          "work": "Diff S-semantic exact HQ portable files against frozen HQ annotation/wiki owner",
+          "proof": "Reproducible source/ABI conflict report with true v1/v2/comment-program distinction",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-PG02-02",
+          "owner": "D",
+          "work": "Prove source-verified IR → existing wiki human/machine read mapping without writing new wiki",
+          "proof": "No second index/DB/publisher; inert output only",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-PG02-03",
+          "owner": "A",
+          "work": "Compare N0-IO and V-visual event revision envelopes to A typed DAG/source graph",
+          "proof": "One explicit event/version vector mapping or incompatible-fields ledger",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-PG02-04",
+          "owner": "E",
+          "work": "Evaluate V-visual render projection against TierFlow render/revision/types and PWA composer",
+          "proof": "Single projection renderer; exact span/IME/quote/negation tests",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-PG02-05",
+          "owner": "B",
+          "work": "Map source semantic command IDs to exact current Host action IDs and original-text replan",
+          "proof": "No inferred effect from comments",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-PG02-06",
+          "owner": "D",
+          "work": "Compare W-autowiki mirror to HQ arbor-service source read and Host source grants",
+          "proof": "Trusted ScreenContext read scope and no unbounded generated pages",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-PG02-07",
+          "owner": "F",
+          "work": "Prepare original ESM SWC and V/W negative suites with real Node/Bun runner instructions",
+          "proof": "Actual local exit result or UNRUN, never transpose V8 evidence",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-PG02-08",
+          "owner": "F",
+          "work": "Build held-out 90% hypothesis task benchmark design with eligible and all-turn denominators",
+          "proof": "Golden plus adversarial negation and missing slots, no invented performance",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        }
+      ],
+      "taskCount": 8,
+      "requiredEvidence": [
+        "exact_merged_or_isolated_source_sha",
+        "actual_command_exit_codes_or_UNRUN",
+        "source_and_owner_impact",
+        "negative_tests_and_risk",
+        "NO_GO_and_deferred_matrix"
+      ]
+    },
+    {
+      "id": "PG-03",
+      "title": "PWA-first, personal data, storage and product safety preflight",
+      "stage": "PRE_G",
+      "kind": "ISOLATED_PREP",
+      "dependency": [
+        "PG-00"
+      ],
+      "promotion": "NOT_ALLOWED",
+      "tasks": [
+        {
+          "id": "FA-PG03-01",
+          "owner": "E",
+          "work": "Source-diff Direct PWA route/auth, browser device key/WebCrypto, service worker and TierFlow shell",
+          "proof": "Keep PWA; no APK signing/build work or Android bridge assumptions",
+          "priority": "P0",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-PG03-02",
+          "owner": "B",
+          "work": "Source-review PWA Host allowlist, active bearer replay and A/B native attestation and effect writer",
+          "proof": "Security P0 patch ownership and exact negative cases; no pre-G Host edits",
+          "priority": "P0",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-PG03-03",
+          "owner": "D",
+          "work": "Map wiki/index byte writers, -wal/-shm/temp and source-identity protection against Rock policy",
+          "proof": "Physical size accounting plan and source recovery proof",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-PG03-04",
+          "owner": "B",
+          "work": "Map Host World, personal corpus/consent/import, memory and DCB persistent records",
+          "proof": "Protected store classes and erasure model; no actual user data",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-PG03-05",
+          "owner": "C",
+          "work": "Classify Studio user work, plugins, recipes and personal-agent state as active/proposal",
+          "proof": "No second browser worker, registry or personal data source",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-PG03-06",
+          "owner": "F",
+          "work": "Create offline/ENOSPC/crash/receipt-replay/pairing/revocation synthetic failure fixtures",
+          "proof": "G-safe acceptance contracts, no file deletion",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-PG03-07",
+          "owner": "E",
+          "work": "Map voice proposal, media playback, app-builder UI preview and multi-modal PWA gaps",
+          "proof": "Source status and UX acceptance before release claims",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-PG03-08",
+          "owner": "G",
+          "work": "Reserve root only: exclude APK asset packaging for PWA-first unless signed future decision",
+          "proof": "Record missing APK resource as packaging issue; never fabricate asset",
+          "priority": "P0",
+          "status": "NOT_STARTED"
+        }
+      ],
+      "taskCount": 8,
+      "requiredEvidence": [
+        "exact_merged_or_isolated_source_sha",
+        "actual_command_exit_codes_or_UNRUN",
+        "source_and_owner_impact",
+        "negative_tests_and_risk",
+        "NO_GO_and_deferred_matrix"
+      ]
+    },
+    {
+      "id": "G-01",
+      "title": "Original Proposal 5 serial G source convergence",
+      "stage": "G_OWNER_ONLY",
+      "kind": "ORIGINAL_G_NOT_THIS_PROGRAM",
+      "dependency": [
+        "Six frozen A-F reports",
+        "G preflight"
+      ],
+      "promotion": "G_GO_ONLY",
+      "tasks": [
+        {
+          "id": "FA-G01-01",
+          "owner": "G",
+          "work": "Integrate frozen A-F source by original Proposal5 G contract and exact SHA; handle root manifests",
+          "proof": "Combined source lock, Cargo/Bun/Node/HQ import closure evidence",
+          "priority": "P0",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-G01-02",
+          "owner": "G",
+          "work": "Verify Host single writer, internal HQ boundaries, Tauri/phone security blockers as owned defects",
+          "proof": "Source-integration gate with honest BUILD_UNRUN vs PASS",
+          "priority": "P0",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-G01-03",
+          "owner": "G",
+          "work": "Publish exact integrated HEAD, collision map, W2 owner matrix and pending P0 issue ledger",
+          "proof": "Post-G foundation waves can rebase only after actual G GO",
+          "priority": "P0",
+          "status": "NOT_STARTED"
+        }
+      ],
+      "taskCount": 3,
+      "requiredEvidence": [
+        "exact_merged_or_isolated_source_sha",
+        "actual_command_exit_codes_or_UNRUN",
+        "source_and_owner_impact",
+        "negative_tests_and_risk",
+        "NO_GO_and_deferred_matrix"
+      ]
+    },
+    {
+      "id": "W2-F0",
+      "title": "Secure internal foundation and source-runtime truth",
+      "stage": "POST_G",
+      "kind": "BETA_CRITICAL",
+      "dependency": [
+        "G-01 GO"
+      ],
+      "promotion": "G_REVIEW_REQUIRED",
+      "tasks": [
+        {
+          "id": "FA-W2F0-01",
+          "owner": "A+B",
+          "work": "Secure native launched Host process identity and one-time owner UI code; fix dangerous IPC scope",
+          "proof": "Foreign localhost, spoof, replay and crash negatives truly executed",
+          "priority": "P0",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-W2F0-02",
+          "owner": "B+E",
+          "work": "Bind browser PWA nonextractable device signer to Host allowlisted static route and privileged request protections",
+          "proof": "Actual HTTPS/replay/revoke negative test (real phone later)",
+          "priority": "P0",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-W2F0-03",
+          "owner": "D+B",
+          "work": "Bind internal HQ `arbor-service` to Host-approved dev roots and indexed source scopes",
+          "proof": "Node24 SQLite FTS5 source isolation/deny test; never World effect",
+          "priority": "P0",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-W2F0-04",
+          "owner": "G+F",
+          "work": "Run no-donor combined Cargo/Bun/Node dependency and source closure tests",
+          "proof": "Exact commands/exits; no outside repo/cross-sibling runtime",
+          "priority": "P0",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-W2F0-05",
+          "owner": "B+F",
+          "work": "Verify Host 19 action catalog and claim/unknown effect tests on merged runtime",
+          "proof": "No duplicate dispatcher, R3 refuse and uncertain-send replay",
+          "priority": "P0",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-W2F0-06",
+          "owner": "E+G",
+          "work": "Make PWA-first release packaging and Host serving consistent, remove mandatory missing APK resource by accepted patch",
+          "proof": "Physical packaging acceptance remains device gate",
+          "priority": "P0",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-W2F0-07",
+          "owner": "F",
+          "work": "Stand up one capability/source truth report from merged code and actual test receipts",
+          "proof": "SOURCE_PRESENT != RUNTIME_VERIFIED",
+          "priority": "P0",
+          "status": "NOT_STARTED"
+        }
+      ],
+      "taskCount": 7,
+      "requiredEvidence": [
+        "exact_merged_or_isolated_source_sha",
+        "actual_command_exit_codes_or_UNRUN",
+        "source_and_owner_impact",
+        "negative_tests_and_risk",
+        "NO_GO_and_deferred_matrix"
+      ]
+    },
+    {
+      "id": "W2-F1",
+      "title": "Native reprogrammability and machine semantic ABI",
+      "stage": "POST_G",
+      "kind": "OPTIONAL_PARALLEL_AFTER_SECURE_ROOT",
+      "dependency": [
+        "W2-F0 secure source/runtime gates"
+      ],
+      "promotion": "G_FEATURE_GATE",
+      "tasks": [
+        {
+          "id": "FA-W2F1-01",
+          "owner": "A",
+          "work": "Implement versioned manifest decoder/validator within core/programmability and HQKG EngineRegistry adapter",
+          "proof": "Real cargo test and closed-schema fixture parity",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-W2F1-02",
+          "owner": "A",
+          "work": "Compile and activate pure language/graph transform as a new engine generation on existing graph",
+          "proof": "Pinned lease remains, generation CAS, stale input cancel and rollback tested",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-W2F1-03",
+          "owner": "F",
+          "work": "Build authoritative source-ref event/manifest/type contract parity in Rust/TS/JS with byte fixtures",
+          "proof": "No type-only mirror marked runtime pass",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-W2F1-04",
+          "owner": "B",
+          "work": "Inject authenticated actor only via verified Host/Tauri ingress, never trust caller-supplied actor fields",
+          "proof": "Forgery and cross-World denial tests",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-W2F1-05",
+          "owner": "A",
+          "work": "Implement bounded immutable first-hop input revisions with independent pure fan-out",
+          "proof": "No per-edit unbounded threads or editor lock stalls",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-W2F1-06",
+          "owner": "E",
+          "work": "Subscribe PWA/desktop visual layer to source-revisioned inert trace deltas",
+          "proof": "No direct effect, stale/out-of-order result refusal",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-W2F1-07",
+          "owner": "F",
+          "work": "Versioned activation/rollback metrics and package policy conformance",
+          "proof": "Installed/denied/deprecated observed states, latency and memory captured",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        }
+      ],
+      "taskCount": 7,
+      "requiredEvidence": [
+        "exact_merged_or_isolated_source_sha",
+        "actual_command_exit_codes_or_UNRUN",
+        "source_and_owner_impact",
+        "negative_tests_and_risk",
+        "NO_GO_and_deferred_matrix"
+      ]
+    },
+    {
+      "id": "W3-F2",
+      "title": "Semantic Wiki Compiler and deterministic intent spine",
+      "stage": "POST_G",
+      "kind": "CANDIDATE_PRODUCT_FEATURE",
+      "dependency": [
+        "W2-F0",
+        "W2-F1 source ABI"
+      ],
+      "promotion": "G_FEATURE_GATE",
+      "tasks": [
+        {
+          "id": "FA-W3F2-01",
+          "owner": "D",
+          "work": "Admit source-attested S-semantic compiler as read-only HQ feature, preserve original v2 and wiki-program grammars",
+          "proof": "Exact source IDs and diff, no new writer or code-comment authority",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-W3F2-02",
+          "owner": "D",
+          "work": "Publish source-linked SemanticWikiIR into existing machine/human wiki/context service",
+          "proof": "Generated wiki and IR share source rev/owner context",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-W3F2-03",
+          "owner": "A",
+          "work": "Use existing pure Rust graph/typed DAG to run admitted bounded language pack and slot/negation constraints",
+          "proof": "Golden + adversarial parity against Host current text semantics",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-W3F2-04",
+          "owner": "B",
+          "work": "Review and admit named language phrase packs into existing Host NLCL where exact catalog action exists",
+          "proof": "Original text replan, exact risk/args and owner status; unbound action inert",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-W3F2-05",
+          "owner": "E",
+          "work": "Show semantic spans, source-underlined meaning and typed missing slots in Quiet/Assisted modes",
+          "proof": "Unicode/IME, stale pack and no-effect assertions",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-W3F2-06",
+          "owner": "F",
+          "work": "Track coverage per producer and source, refused and unknown actions",
+          "proof": "Count eligible vs all-turn denominators; no unsupported 90% claim",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-W3F2-07",
+          "owner": "D+F",
+          "work": "Static code-comment language compatibility and versioned opt-in v3 review",
+          "proof": "No v3 parsing until real registered IDs and negative tests",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-W3F2-08",
+          "owner": "B+F",
+          "work": "End-to-end live *read* capability proof, not synthetic project action",
+          "proof": "Real Host read/status receipt and source-grounded explanation",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        }
+      ],
+      "taskCount": 8,
+      "requiredEvidence": [
+        "exact_merged_or_isolated_source_sha",
+        "actual_command_exit_codes_or_UNRUN",
+        "source_and_owner_impact",
+        "negative_tests_and_risk",
+        "NO_GO_and_deferred_matrix"
+      ]
+    },
+    {
+      "id": "W3-F3",
+      "title": "VIEW ALL, AutoWiki, personal context and capability UX",
+      "stage": "POST_G",
+      "kind": "CANDIDATE_PRODUCT_FEATURE",
+      "dependency": [
+        "W2-F0",
+        "W3-F2 trace read"
+      ],
+      "promotion": "G_FEATURE_GATE",
+      "tasks": [
+        {
+          "id": "FA-W3F3-01",
+          "owner": "A+F",
+          "work": "Integrate native per-input producer vector (source/policy/graph/world) without a second action router",
+          "proof": "Out-of-order, revocation and cancellation tests",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-W3F3-02",
+          "owner": "E",
+          "work": "Render one semantic trace across Quiet/Assisted/VIEW ALL with accessible text parity",
+          "proof": "Rings/wires/quotes/negation with no fabricated effect state",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-W3F3-03",
+          "owner": "D+B",
+          "work": "Use W-autowiki mirror through bounded HQ read and actual Host source permission scope",
+          "proof": "One screen flip/return, no archive page flood, revocation strips source IDs",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-W3F3-04",
+          "owner": "C+B",
+          "work": "Integrate DCB definition IDs and flavor hints through owner read-only source ports",
+          "proof": "Actual definition distinguished from family hint, no memory write",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-W3F3-05",
+          "owner": "B",
+          "work": "Bind personal correction/alias proposal only through owner approval and versioned personal rules",
+          "proof": "Undo/revoke/old-pack invalidation, no model self-teach",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-W3F3-06",
+          "owner": "E",
+          "work": "Implement two-Tab project/focus selection only for real grounded read capability",
+          "proof": "UTF-16 caret/edit/undo and no automatic Submit",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-W3F3-07",
+          "owner": "F",
+          "work": "Privacy negatives, low-context/no-source and scope-leak tests for AutoWiki/VIEW ALL",
+          "proof": "Denied private evidence not leaked even as count",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        }
+      ],
+      "taskCount": 7,
+      "requiredEvidence": [
+        "exact_merged_or_isolated_source_sha",
+        "actual_command_exit_codes_or_UNRUN",
+        "source_and_owner_impact",
+        "negative_tests_and_risk",
+        "NO_GO_and_deferred_matrix"
+      ]
+    },
+    {
+      "id": "W3-F4",
+      "title": "PWA-first app builder, voice, context and mission foundation",
+      "stage": "POST_G",
+      "kind": "SELECTIVE_NONCRITICAL",
+      "dependency": [
+        "W2-F0"
+      ],
+      "promotion": "EXPLICIT_G_SCOPE_ADMISSION",
+      "tasks": [
+        {
+          "id": "FA-W3F4-01",
+          "owner": "E+B",
+          "work": "Prove unified desktop/PWA chat composer, Host catalog and source-routed gesture path",
+          "proof": "No phone-side action writer; real paired browser tested",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-W3F4-02",
+          "owner": "E",
+          "work": "Reuse existing UI proposal compiler and TierFlow draft/revision as minimal visual app builder",
+          "proof": "Preview→user review→one owner-approved UI draft, no full-stack runtime claim",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-W3F4-03",
+          "owner": "C+B",
+          "work": "Specify provider conversation selection, source visibility and send-once receipt into permitted context",
+          "proof": "Actual Chrome read/send acceptance; no provider APIs",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-W3F4-04",
+          "owner": "B+E",
+          "work": "Integrate voice transcript final→typed task proposal→Host review, no task from partials",
+          "proof": "Recorder/ASR provider evidence separate; real phone when available",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-W3F4-05",
+          "owner": "B+C",
+          "work": "Share personal-agent mission/status via existing Host journal and Studio work, not separate scheduler",
+          "proof": "Unknown send and limited-owner task states visible",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-W3F4-06",
+          "owner": "F",
+          "work": "Multi-surface accessibility, offline status, screen reader and IME journey",
+          "proof": "Actual device and keyboard proof or UNRUN",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-W3F4-07",
+          "owner": "G",
+          "work": "Classify advanced app builder, all-provider browser automation and workflow editor as post-beta until live proof",
+          "proof": "No release scope expansion by inference",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        }
+      ],
+      "taskCount": 7,
+      "requiredEvidence": [
+        "exact_merged_or_isolated_source_sha",
+        "actual_command_exit_codes_or_UNRUN",
+        "source_and_owner_impact",
+        "negative_tests_and_risk",
+        "NO_GO_and_deferred_matrix"
+      ]
+    },
+    {
+      "id": "W4-F5",
+      "title": "Protected Rock Core, deterministic automation, extension pilot and durability",
+      "stage": "POST_G",
+      "kind": "BETA_SAFETY_PLUS_PILOTS",
+      "dependency": [
+        "W2-F0",
+        "W2-F1"
+      ],
+      "promotion": "G_REVIEW_REQUIRED",
+      "tasks": [
+        {
+          "id": "FA-W4F5-01",
+          "owner": "D+B+F",
+          "work": "Measure actual per-volume HQ/Host/TierFlow/graph/cache bytes, WAL/SHM and reserve",
+          "proof": "No automatic delete and include protected originals in accounting",
+          "priority": "P0",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-W4F5-02",
+          "owner": "D",
+          "work": "Enforce conservative quota for rebuildable HQ index/wiki and safe source provenance restore",
+          "proof": "ENOSPC/stale/rehydrate known source test; source-only read fallback",
+          "priority": "P0",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-W4F5-03",
+          "owner": "B",
+          "work": "Protect World, effect receipts, personal exports and accepted DCB records from derived eviction",
+          "proof": "Deletion/rollback crash/owner denial proof",
+          "priority": "P0",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-W4F5-04",
+          "owner": "A",
+          "work": "Use existing verified Rust graph journal compaction with scratch/reserve guard",
+          "proof": "Post-crash journal epoch and recovered graph check",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-W4F5-05",
+          "owner": "B+A",
+          "work": "Design and pilot one dry-run user automation backed by native pure time computation + Host due/admission",
+          "proof": "No second scheduler; trigger alone never grants effect",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-W4F5-06",
+          "owner": "C+A+F",
+          "work": "Pilot one pure signed/versioned extension manifest using existing Studio registry+native engine slot",
+          "proof": "Install/deny/activate/rollback/revoke tests, no third-party arbitrary code execution",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-W4F5-07",
+          "owner": "E",
+          "work": "Validate PWA offline-only shell/reads and no effect/API replay invariant under reconnect",
+          "proof": "No service-worker storage of bearer or cached POST",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-W4F5-08",
+          "owner": "F",
+          "work": "Capability observatory read-only snapshot of verified vs not-runnable per domain",
+          "proof": "Never duplicates Host catalog or changes grants",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        }
+      ],
+      "taskCount": 8,
+      "requiredEvidence": [
+        "exact_merged_or_isolated_source_sha",
+        "actual_command_exit_codes_or_UNRUN",
+        "source_and_owner_impact",
+        "negative_tests_and_risk",
+        "NO_GO_and_deferred_matrix"
+      ]
+    },
+    {
+      "id": "W5-F6",
+      "title": "Independent security, performance, failure recovery and repair",
+      "stage": "POST_G",
+      "kind": "RELEASE_BLOCKER_VERIFICATION",
+      "dependency": [
+        "W2-F0",
+        "selected W3/W4 feature gates"
+      ],
+      "promotion": "G_REPAIR_ONLY",
+      "tasks": [
+        {
+          "id": "FA-W5F6-01",
+          "owner": "F",
+          "work": "Execute Node/Bun/Cargo/TS/JSON schema conformance with real exit codes on combined tree",
+          "proof": "Report PASS/FAIL/UNRUN per source snapshot",
+          "priority": "P0",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-W5F6-02",
+          "owner": "F+A+B",
+          "work": "Red-team native Host child, spoofed localhost, browser device grant replay, remote IPC origin and revocation",
+          "proof": "Zero unauthorized effects under attacker negative fixtures",
+          "priority": "P0",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-W5F6-03",
+          "owner": "F+B+C",
+          "work": "Prove exact-thread read/send and unknown-receipt recovery under actual signed-in Chrome",
+          "proof": "No duplicate send and no hidden provider API",
+          "priority": "P0",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-W5F6-04",
+          "owner": "F+D+E",
+          "work": "Test semantic/AutoWiki private source denial, stale graph, Unicode/IME and multiple producer coverage",
+          "proof": "No private leak, false authority or invented verified status",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-W5F6-05",
+          "owner": "F+D+B",
+          "work": "Low-disk, ENOSPC, quota, compaction rollback and offline Rock proof",
+          "proof": "Protected unique records recover and bytes accounted",
+          "priority": "P0",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-W5F6-06",
+          "owner": "E+F",
+          "work": "Actual HTTPS PWA pairing/revoke/offline/keyboard/screen-reader on Android browser",
+          "proof": "PWA accepted; APK not required",
+          "priority": "P0",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-W5F6-07",
+          "owner": "F",
+          "work": "Benchmark native hot input p95, CPU, memory, corpus source reads, UI trace density",
+          "proof": "Measured actual hardware, not speculative 90%",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-W5F6-08",
+          "owner": "G",
+          "work": "Finite repair ledger; no broad feature sprint during security closure",
+          "proof": "Only identified P0 defects promoted",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        }
+      ],
+      "taskCount": 8,
+      "requiredEvidence": [
+        "exact_merged_or_isolated_source_sha",
+        "actual_command_exit_codes_or_UNRUN",
+        "source_and_owner_impact",
+        "negative_tests_and_risk",
+        "NO_GO_and_deferred_matrix"
+      ]
+    },
+    {
+      "id": "W6-F7",
+      "title": "Single ARBOR beta candidate and owner acceptance",
+      "stage": "POST_G",
+      "kind": "RELEASE_GATE",
+      "dependency": [
+        "W5-F6 required security GO"
+      ],
+      "promotion": "EXPLICIT_OWNER_CUTOVER",
+      "tasks": [
+        {
+          "id": "FA-W6F7-01",
+          "owner": "G+F",
+          "work": "Build installer and self-contained PWA-first bundle with donor checkouts removed",
+          "proof": "No fake APK asset, no external repo runtime, installed Node/SQLite/Chrome check",
+          "priority": "P0",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-W6F7-02",
+          "owner": "B+C+E",
+          "work": "Prove real owner-controlled Host/Studio/browser/phone cross-device journey",
+          "proof": "Source/permissions/effects/receipts consistency on installed Windows and PWA",
+          "priority": "P0",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-W6F7-03",
+          "owner": "A+D+F",
+          "work": "Run live native graph + in-repo HQ source/wiki and source freshness from packaged environment",
+          "proof": "Runtimes and source hashes accepted, no orphan service",
+          "priority": "P0",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-W6F7-04",
+          "owner": "F",
+          "work": "Publish one capability truth catalog and deferred research list with exact runtime proof",
+          "proof": "No design-only feature marketed as installed",
+          "priority": "P0",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-W6F7-05",
+          "owner": "G",
+          "work": "Stage backups, restore and Host single writer cutover rehearsal; do not touch real user data yet",
+          "proof": "Explicit owner approval before real cutover",
+          "priority": "P0",
+          "status": "NOT_STARTED"
+        }
+      ],
+      "taskCount": 5,
+      "requiredEvidence": [
+        "exact_merged_or_isolated_source_sha",
+        "actual_command_exit_codes_or_UNRUN",
+        "source_and_owner_impact",
+        "negative_tests_and_risk",
+        "NO_GO_and_deferred_matrix"
+      ]
+    },
+    {
+      "id": "FB-01",
+      "title": "Post-beta extensibility, automation, personalization and advanced PWA intelligence",
+      "stage": "AFTER_BETA",
+      "kind": "OPTIONAL_EXTENSIONS",
+      "dependency": [
+        "W6-F7 owner GO"
+      ],
+      "promotion": "SEPARATE_PRODUCT_DECISION",
+      "tasks": [
+        {
+          "id": "FA-FB01-01",
+          "owner": "A+C+F",
+          "work": "Versioned pure plugin package installation and sandbox/resource quotas beyond fixed source registry",
+          "proof": "Signed policy, fuzzing, hot-swap rollback and permission revocation",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-FB01-02",
+          "owner": "D+A+B",
+          "work": "Expand source-reviewed meta-language v3, semantic synonyms and high-frequency determinism benchmark",
+          "proof": "Held-out eligible vs all-turn coverage; no 90% claim without data",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-FB01-03",
+          "owner": "B+D",
+          "work": "Complete user-approved history import, personal graph/ DCB lifecycle and erasure/reindex",
+          "proof": "Host personal authority, scoped data, idempotent checkpoint recovery",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-FB01-04",
+          "owner": "B+A",
+          "work": "Extend owner missions/Chronos with durable scheduling receipts, pause/resume and recovery",
+          "proof": "No dual scheduler/unsanctioned sends",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-FB01-05",
+          "owner": "E+D",
+          "work": "Expand universal AutoWiki, predictive autocomplete and VIEW ALL hypergraph after user trials",
+          "proof": "Fresh source and source coverage, accessible density defaults",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-FB01-06",
+          "owner": "E+B",
+          "work": "Advanced PWA offline drafts/media buffering and safe resumable streaming with read-only cache fences",
+          "proof": "No offline effect replay; media byte-range/device acceptance",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-FB01-07",
+          "owner": "B+E",
+          "work": "Develop optional full APK bridge/signing/install strategy in a separate future program",
+          "proof": "Not beta release dependency; no APK shipped by this foundation wave",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        },
+        {
+          "id": "FA-FB01-08",
+          "owner": "G+F",
+          "work": "Retire donor adapters and measured duplicates only after working replacement and rollback",
+          "proof": "No premature module removal",
+          "priority": "P1",
+          "status": "NOT_STARTED"
+        }
+      ],
+      "taskCount": 8,
+      "requiredEvidence": [
+        "exact_merged_or_isolated_source_sha",
+        "actual_command_exit_codes_or_UNRUN",
+        "source_and_owner_impact",
+        "negative_tests_and_risk",
+        "NO_GO_and_deferred_matrix"
+      ]
+    }
+  ],
+  "totalTasks": 100,
+  "caveats": [
+    "All post-G waves are candidate owner work; do not presume G GO or advance W2 beta critical path.",
+    "Do not launch dedicated worker prompts until a subsequent decision round authors them from fresh G baseline.",
+    "No live source/personal data changed; wave manifest is a future run-plan not an execution receipt."
+  ]
+}
