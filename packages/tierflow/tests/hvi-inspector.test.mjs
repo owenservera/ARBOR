@@ -8,7 +8,7 @@ sourcePins:ids.map((x,i)=>({pinId:x,repoIdentity:'synthetic/repo'+i,resolvedComm
 sourceDeltas:ids.slice(0,-1).map((x,i)=>({id:'finding-'+i,originPinId:x,targetPinId:target,originPath:'src/a.mjs',targetPaths:['src/b.mjs'],state:'EXACT_RELOCATION',certainty:'source_verified',evidenceRefs:['fixture']})),
 coverage:ids.slice(0,-1).map(x=>({sourcePinId:x,targetPinId:target,sourceCompleteness:'complete',targetCompleteness:'complete',totalCompared:1})),
 limits:{truncated:false},errors:[]};
-return {schema:'arbor.hvi.adapter.comparison-report/1',runtimeAccepted:false,status:'SOURCE_ONLY_UNVERIFIED',sourceComparisonDigest:'f'.repeat(64),originalComparison:comparison,report:{schema:'arbor.hvi.report/1',targetPinId:target}};
+return {schema:'arbor.hvi.adapter.comparison-report/1',runtimeAccepted:false,syntheticPreviewAllowed:true,status:'SOURCE_ONLY_UNVERIFIED',sourceComparisonDigest:'f'.repeat(64),originalComparison:comparison,report:{schema:'arbor.hvi.report/1',targetPinId:target}};
 };
 test('empty does not scan or show phantom results',()=>{let v=projectHviInspector();assert.equal(v.mode,'empty');assert.equal(v.actions.length,0);assert.equal(v.featureEnabled,false)});
 test('denied and revoked suppress source metadata',()=>{for(const permission of ['denied','revoked']){let v=projectHviInspector({envelope:sample(),permission});assert.equal(v.mode,'denied');assert.equal(v.pins.length,0)}});
