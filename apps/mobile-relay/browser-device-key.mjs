@@ -1,7 +1,8 @@
 // Browser-only device proof for the existing Host P-256 ECDSA grant protocol.
 // A nonextractable private CryptoKey is persisted in IndexedDB, never localStorage.
 // Key possession alone never approves a grant: Host approval, revocation and
-// one-shot session nonces remain authoritative. No service worker can read this key.
+// one-shot session nonces remain authoritative. The shipped service worker does not
+// access this store; compromised same-origin scripts still could invoke signing.
 const DB_NAME = 'vivim.browser-device-key.v1';
 const STORE = 'keys';
 const DEVICE_KEY = 'host-p256';
