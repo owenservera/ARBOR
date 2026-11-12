@@ -1,0 +1,104 @@
+{
+  "schema": "arbor.p5.p2-t-synthetic/1",
+  "synthetic": true,
+  "records": [
+    {
+      "id": "source-missing",
+      "kind": "source",
+      "sourcePresent": false,
+      "receipt": false,
+      "expected": "UNVERIFIED"
+    },
+    {
+      "id": "receipt-missing",
+      "kind": "source",
+      "sourcePresent": true,
+      "receipt": false,
+      "expected": "UNVERIFIED"
+    },
+    {
+      "id": "source-with-receipt",
+      "kind": "source",
+      "sourcePresent": true,
+      "receipt": true,
+      "expected": "EVIDENCE_ONLY"
+    },
+    {
+      "id": "negation",
+      "kind": "command",
+      "negated": true,
+      "actionId": "host:send",
+      "grant": true,
+      "expected": "DENY"
+    },
+    {
+      "id": "quoted",
+      "kind": "command",
+      "quoted": true,
+      "actionId": "host:send",
+      "grant": true,
+      "expected": "DENY"
+    },
+    {
+      "id": "missing-action-id",
+      "kind": "command",
+      "displayRisk": "read",
+      "grant": true,
+      "expected": "DENY"
+    },
+    {
+      "id": "missing-grant",
+      "kind": "command",
+      "actionId": "host:send",
+      "grant": false,
+      "expected": "DENY"
+    },
+    {
+      "id": "stale-wiki",
+      "kind": "wiki",
+      "revision": 4,
+      "sourceRevision": 5,
+      "grant": true,
+      "expected": "STALE"
+    },
+    {
+      "id": "missing-wiki-permission",
+      "kind": "wiki",
+      "revision": 5,
+      "sourceRevision": 5,
+      "grant": false,
+      "expected": "DENY"
+    },
+    {
+      "id": "chronos-inert",
+      "kind": "chronos",
+      "timestamp": null,
+      "requestEffect": true,
+      "expected": "NO_EFFECT"
+    },
+    {
+      "id": "voice-draft",
+      "kind": "voice",
+      "text": "Call mom tomorrow",
+      "span": [
+        0,
+        17
+      ],
+      "evidence": "Call mom tomorrow",
+      "reviewed": false,
+      "expected": "DRAFT_ONLY"
+    },
+    {
+      "id": "voice-tampered",
+      "kind": "voice",
+      "text": "Call mom tomorrow",
+      "span": [
+        0,
+        17
+      ],
+      "evidence": "Pay bill tomorrow",
+      "reviewed": true,
+      "expected": "REJECT"
+    }
+  ]
+}
