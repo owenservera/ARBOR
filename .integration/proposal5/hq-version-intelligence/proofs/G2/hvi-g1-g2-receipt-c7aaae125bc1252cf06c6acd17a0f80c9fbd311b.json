@@ -20,7 +20,7 @@
   "nodeVersion": "v24.22.1",
   "bunVersion": "1.4.2",
   "ajvVersion": "8.17.1",
-  "commitSha": "997eff0844b2106b2c91efb10c651f2c2567e6a5",
+  "commitSha": "c7aaae125bc1252cf06c6acd17a0f80c9fbd311b",
   "gate": "hvi-g1-g2",
   "totals": {
     "tests": 73,
@@ -28,7 +28,7 @@
     "fail": 0
   },
   "exitCode": 0,
-  "durationMs": 5538,
-  "startedAt": "2026-11-12T23:49:55.436Z",
-  "finishedAt": "2026-11-12T23:50:15.046Z"
+  "durationMs": 4159,
+  "startedAt": "2026-11-12T23:53:11.338Z",
+  "finishedAt": "2026-11-12T23:53:28.641Z"
 }

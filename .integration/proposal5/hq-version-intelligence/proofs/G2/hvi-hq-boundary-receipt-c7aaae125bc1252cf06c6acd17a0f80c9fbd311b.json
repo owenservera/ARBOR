@@ -1,6 +1,6 @@
 {
   "schema": "arbor.hvi.gate-receipt/1",
-  "command": "node --test hq/test/hvi-mcp-tool.test.mjs",
+  "command": "node --test hq/test/arbor-boundary.test.mjs",
   "os": "win32",
   "osRelease": "10.0.29704",
   "osArch": "x64",
@@ -15,15 +15,15 @@
   "nodeVersion": "v24.22.1",
   "bunVersion": "1.4.2",
   "ajvVersion": "8.17.1",
-  "commitSha": "997eff0844b2106b2c91efb10c651f2c2567e6a5",
-  "gate": "hvi-discovery",
+  "commitSha": "c7aaae125bc1252cf06c6acd17a0f80c9fbd311b",
+  "gate": "hvi-hq-boundary",
   "totals": {
-    "tests": 4,
-    "pass": 4,
+    "tests": 9,
+    "pass": 9,
     "fail": 0
   },
   "exitCode": 0,
-  "durationMs": 713,
-  "startedAt": "2026-11-12T23:49:55.436Z",
-  "finishedAt": "2026-11-12T23:50:15.046Z"
+  "durationMs": 6413,
+  "startedAt": "2026-11-12T23:53:11.338Z",
+  "finishedAt": "2026-11-12T23:53:28.641Z"
 }

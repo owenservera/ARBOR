@@ -1,6 +1,6 @@
 {
   "schema": "arbor.hvi.gate-run-receipt/1",
-  "runId": "20261112T234955Z-997eff0844b2",
+  "runId": "20261112T235311Z-c7aaae125bc1",
   "command": "bun scripts/test-gate.mjs",
   "os": "win32",
   "osRelease": "10.0.29704",
@@ -21,16 +21,16 @@
   "nodeVersion": "v24.22.1",
   "bunVersion": "1.4.2",
   "ajvVersion": "8.17.1",
-  "commitSha": "997eff0844b2106b2c91efb10c651f2c2567e6a5",
+  "commitSha": "c7aaae125bc1252cf06c6acd17a0f80c9fbd311b",
   "totals": {
     "tests": 201,
     "pass": 201,
     "fail": 0
   },
   "exitCode": 0,
-  "durationMs": 19339,
-  "startedAt": "2026-11-12T23:49:55.436Z",
-  "finishedAt": "2026-11-12T23:50:15.046Z",
+  "durationMs": 17045,
+  "startedAt": "2026-11-12T23:53:11.338Z",
+  "finishedAt": "2026-11-12T23:53:28.641Z",
   "tests": [
     {
       "path": "apps/vivim-host/test/hvi-capability.test.mjs",
@@ -44,7 +44,7 @@
         "pass": 8,
         "fail": 0
       },
-      "durationMs": 716,
+      "durationMs": 753,
       "command": "node --test apps/vivim-host/test/hvi-capability.test.mjs"
     },
     {
@@ -59,7 +59,7 @@
         "pass": 9,
         "fail": 0
       },
-      "durationMs": 914,
+      "durationMs": 768,
       "command": "node --test apps/vivim-host/test/hvi-source-grant.test.mjs"
     },
     {
@@ -74,7 +74,7 @@
         "pass": 20,
         "fail": 0
       },
-      "durationMs": 919,
+      "durationMs": 906,
       "command": "node --test hq/catalogue-identity/test/crosswalk.test.mjs"
     },
     {
@@ -89,7 +89,7 @@
         "pass": 6,
         "fail": 0
       },
-      "durationMs": 4101,
+      "durationMs": 4356,
       "command": "node --test hq/test/arbor-boundary.test.mjs"
     },
     {
@@ -104,7 +104,7 @@
         "pass": 2,
         "fail": 0
       },
-      "durationMs": 1905,
+      "durationMs": 1578,
       "command": "node --test hq/test/arbor-service.test.mjs"
     },
     {
@@ -119,7 +119,7 @@
         "pass": 4,
         "fail": 0
       },
-      "durationMs": 713,
+      "durationMs": 594,
       "command": "node --test hq/test/hvi-mcp-tool.test.mjs"
     },
     {
@@ -134,7 +134,7 @@
         "pass": 1,
         "fail": 0
       },
-      "durationMs": 591,
+      "durationMs": 479,
       "command": "node --test hq/test/in-repo-closure.test.mjs"
     },
     {
@@ -149,7 +149,7 @@
         "pass": 9,
         "fail": 0
       },
-      "durationMs": 558,
+      "durationMs": 525,
       "command": "node --test hq/version-intelligence/compare/index.test.mjs"
     },
     {
@@ -164,7 +164,7 @@
         "pass": 13,
         "fail": 0
       },
-      "durationMs": 605,
+      "durationMs": 545,
       "command": "node --test hq/version-intelligence/identity/test/identity.test.mjs"
     },
     {
@@ -179,7 +179,7 @@
         "pass": 12,
         "fail": 0
       },
-      "durationMs": 664,
+      "durationMs": 547,
       "command": "node --test hq/version-intelligence/parity/atlas.test.mjs"
     },
     {
@@ -194,7 +194,7 @@
         "pass": 13,
         "fail": 0
       },
-      "durationMs": 621,
+      "durationMs": 582,
       "command": "node --test hq/version-intelligence/report/test/report.test.mjs"
     },
     {
@@ -209,7 +209,7 @@
         "pass": 14,
         "fail": 0
       },
-      "durationMs": 621,
+      "durationMs": 515,
       "command": "node --test hq/version-intelligence/sources/snapshots.test.mjs"
     },
     {
@@ -224,7 +224,7 @@
         "pass": 17,
         "fail": 0
       },
-      "durationMs": 873,
+      "durationMs": 738,
       "command": "node --experimental-strip-types --test packages/tierflow/tests/hvi-inspector.test.mjs"
     },
     {
@@ -239,7 +239,7 @@
         "pass": 3,
         "fail": 0
       },
-      "durationMs": 1624,
+      "durationMs": 1115,
       "command": "node --test tests/hq-version-intelligence/g1-v2-schema.test.mjs"
     },
     {
@@ -254,7 +254,7 @@
         "pass": 10,
         "fail": 0
       },
-      "durationMs": 1116,
+      "durationMs": 889,
       "command": "node --experimental-strip-types --test tests/hq-version-intelligence/g2-host-ui.test.mjs"
     },
     {
@@ -269,7 +269,7 @@
         "pass": 3,
         "fail": 0
       },
-      "durationMs": 559,
+      "durationMs": 450,
       "command": "node --test tests/hq-version-intelligence/git-edge-negative-gates.test.mjs"
     },
     {
@@ -284,7 +284,7 @@
         "pass": 25,
         "fail": 0
       },
-      "durationMs": 841,
+      "durationMs": 555,
       "command": "node --test tests/hq-version-intelligence/hvi-contract-qa.test.mjs"
     },
     {
@@ -299,7 +299,7 @@
         "pass": 27,
         "fail": 0
       },
-      "durationMs": 835,
+      "durationMs": 687,
       "command": "node --test tests/hq-version-intelligence/integrated-nway.test.mjs"
     },
     {
@@ -314,7 +314,7 @@
         "pass": 5,
         "fail": 0
       },
-      "durationMs": 563,
+      "durationMs": 463,
       "command": "node --test tests/hq-version-intelligence/schema-negative-gates.test.mjs"
     }
   ],
@@ -336,7 +336,7 @@
       "nodeVersion": "v24.22.1",
       "bunVersion": "1.4.2",
       "ajvVersion": "8.17.1",
-      "commitSha": "997eff0844b2106b2c91efb10c651f2c2567e6a5",
+      "commitSha": "c7aaae125bc1252cf06c6acd17a0f80c9fbd311b",
       "gate": "hvi-host-read-port",
       "totals": {
         "tests": 17,
@@ -344,9 +344,9 @@
         "fail": 0
       },
       "exitCode": 0,
-      "durationMs": 1630,
-      "startedAt": "2026-11-12T23:49:55.436Z",
-      "finishedAt": "2026-11-12T23:50:15.046Z"
+      "durationMs": 1521,
+      "startedAt": "2026-11-12T23:53:11.338Z",
+      "finishedAt": "2026-11-12T23:53:28.641Z"
     },
     {
       "schema": "arbor.hvi.gate-receipt/1",
@@ -365,7 +365,7 @@
       "nodeVersion": "v24.22.1",
       "bunVersion": "1.4.2",
       "ajvVersion": "8.17.1",
-      "commitSha": "997eff0844b2106b2c91efb10c651f2c2567e6a5",
+      "commitSha": "c7aaae125bc1252cf06c6acd17a0f80c9fbd311b",
       "gate": "hvi-modules",
       "totals": {
         "tests": 81,
@@ -373,9 +373,9 @@
         "fail": 0
       },
       "exitCode": 0,
-      "durationMs": 3988,
-      "startedAt": "2026-11-12T23:49:55.436Z",
-      "finishedAt": "2026-11-12T23:50:15.046Z"
+      "durationMs": 3620,
+      "startedAt": "2026-11-12T23:53:11.338Z",
+      "finishedAt": "2026-11-12T23:53:28.641Z"
     },
     {
       "schema": "arbor.hvi.gate-receipt/1",
@@ -394,7 +394,7 @@
       "nodeVersion": "v24.22.1",
       "bunVersion": "1.4.2",
       "ajvVersion": "8.17.1",
-      "commitSha": "997eff0844b2106b2c91efb10c651f2c2567e6a5",
+      "commitSha": "c7aaae125bc1252cf06c6acd17a0f80c9fbd311b",
       "gate": "hvi-hq-boundary",
       "totals": {
         "tests": 9,
@@ -402,9 +402,9 @@
         "fail": 0
       },
       "exitCode": 0,
-      "durationMs": 6597,
-      "startedAt": "2026-11-12T23:49:55.436Z",
-      "finishedAt": "2026-11-12T23:50:15.046Z"
+      "durationMs": 6413,
+      "startedAt": "2026-11-12T23:53:11.338Z",
+      "finishedAt": "2026-11-12T23:53:28.641Z"
     },
     {
       "schema": "arbor.hvi.gate-receipt/1",
@@ -423,7 +423,7 @@
       "nodeVersion": "v24.22.1",
       "bunVersion": "1.4.2",
       "ajvVersion": "8.17.1",
-      "commitSha": "997eff0844b2106b2c91efb10c651f2c2567e6a5",
+      "commitSha": "c7aaae125bc1252cf06c6acd17a0f80c9fbd311b",
       "gate": "hvi-discovery",
       "totals": {
         "tests": 4,
@@ -431,9 +431,9 @@
         "fail": 0
       },
       "exitCode": 0,
-      "durationMs": 713,
-      "startedAt": "2026-11-12T23:49:55.436Z",
-      "finishedAt": "2026-11-12T23:50:15.046Z"
+      "durationMs": 594,
+      "startedAt": "2026-11-12T23:53:11.338Z",
+      "finishedAt": "2026-11-12T23:53:28.641Z"
     },
     {
       "schema": "arbor.hvi.gate-receipt/1",
@@ -452,7 +452,7 @@
       "nodeVersion": "v24.22.1",
       "bunVersion": "1.4.2",
       "ajvVersion": "8.17.1",
-      "commitSha": "997eff0844b2106b2c91efb10c651f2c2567e6a5",
+      "commitSha": "c7aaae125bc1252cf06c6acd17a0f80c9fbd311b",
       "gate": "hvi-tierflow-inspector",
       "totals": {
         "tests": 17,
@@ -460,9 +460,9 @@
         "fail": 0
       },
       "exitCode": 0,
-      "durationMs": 873,
-      "startedAt": "2026-11-12T23:49:55.436Z",
-      "finishedAt": "2026-11-12T23:50:15.046Z"
+      "durationMs": 738,
+      "startedAt": "2026-11-12T23:53:11.338Z",
+      "finishedAt": "2026-11-12T23:53:28.641Z"
     },
     {
       "schema": "arbor.hvi.gate-receipt/1",
@@ -486,7 +486,7 @@
       "nodeVersion": "v24.22.1",
       "bunVersion": "1.4.2",
       "ajvVersion": "8.17.1",
-      "commitSha": "997eff0844b2106b2c91efb10c651f2c2567e6a5",
+      "commitSha": "c7aaae125bc1252cf06c6acd17a0f80c9fbd311b",
       "gate": "hvi-g1-g2",
       "totals": {
         "tests": 73,
@@ -494,9 +494,9 @@
         "fail": 0
       },
       "exitCode": 0,
-      "durationMs": 5538,
-      "startedAt": "2026-11-12T23:49:55.436Z",
-      "finishedAt": "2026-11-12T23:50:15.046Z"
+      "durationMs": 4159,
+      "startedAt": "2026-11-12T23:53:11.338Z",
+      "finishedAt": "2026-11-12T23:53:28.641Z"
     }
   ]
 }
