@@ -57,7 +57,7 @@ export function validateFoundationProgram({atlas,gaps,waves}={}) {
     perPhase[w.stage]=(perPhase[w.stage]??0)+1;
     if(w.stage==='PRE_G'&&w.promotion!=='NOT_ALLOWED')fail(errors,'PRE_G_PROMOTION',w.id);
     if(w.stage==='G_OWNER_ONLY'&&w.id!=='G-01')fail(errors,'G_OWNER_CONFLICT',w.id);
-    if(w.stage==='POST_G'&&!w.dependency.some(d=>waveSet.has(d)))
+    if(w.stage==='POST_G'&&!w.dependency.some(d=>[...waveSet].some(id=>d===id||d.startsWith(id+' '))))
       fail(errors,'POST_G_MISSING_WAVE_DEP',w.id);
     if(w.dependency.some(d=>d===w.id))fail(errors,'SELF_DEPENDENCY',w.id);
     for(const t of w.tasks){
