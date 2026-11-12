@@ -1,0 +1,224 @@
+{
+  "schema": "arbor.rescore.symbol-declarations.part.v1",
+  "part": 1,
+  "source_commit": "98f15e327957956ec94189772d5e5813e7b6b07b",
+  "files": [
+    {
+      "path": "hq/lib/action-router.mjs",
+      "blob": "f7911158a18d73029850013a76fc91207b69ab51",
+      "symbols": [
+        "tokenize",
+        "scoreAction",
+        "explainAction",
+        "route",
+        "describe",
+        "compareMatches",
+        "normalizeLimit",
+        "wordSet"
+      ]
+    },
+    {
+      "path": "hq/lib/aii/plan.mjs",
+      "blob": "71cb71331181c5fab432950265f5c267c86f0dd4",
+      "symbols": [
+        "sha256Text",
+        "emptyManifest",
+        "discoverFixtureFiles",
+        "extractProbes",
+        "commandCostMs",
+        "tierFor",
+        "estimateMs",
+        "classifyDuplicates",
+        "buildPlan",
+        "selectFixtures",
+        "estimateRun",
+        "planDigest"
+      ]
+    },
+    {
+      "path": "hq/lib/capability-schema.mjs",
+      "blob": "fa7e25c1328b69300c285ff86dd973620fde62bd",
+      "symbols": []
+    },
+    {
+      "path": "hq/lib/catalogue-delta.mjs",
+      "blob": "6849e6df26bd136ee50ae08a260d8ab9e9445ac7",
+      "symbols": [
+        "string",
+        "canonical",
+        "ordered",
+        "unique",
+        "revision",
+        "source",
+        "evidence",
+        "record",
+        "validateExisting",
+        "buildCatalogueSnapshot",
+        "diffCatalogueSnapshots",
+        "replayCatalogueDelta",
+        "queryCatalogueSnapshot",
+        "snapshotHqSemanticIds"
+      ]
+    },
+    {
+      "path": "hq/lib/comment-wiki-bridge.mjs",
+      "blob": "996b0f75362a66b823d95b321754f2ff17275325",
+      "symbols": [
+        "canonical",
+        "digest",
+        "safePath",
+        "safeData",
+        "lookupAction",
+        "validateCommentProgram",
+        "previewCommentProgram",
+        "activateCommentProgram",
+        "rollbackCommentProgram",
+        "activeBindings",
+        "intent",
+        "resolveWikiGesture",
+        "resolveWikiNaturalLanguage"
+      ]
+    },
+    {
+      "path": "hq/lib/context-budget.mjs",
+      "blob": "d8aec182dce906cfd84c8ac47fa2ebac10e3a06b",
+      "symbols": [
+        "resolveCeiling",
+        "inWindow",
+        "rowTotal",
+        "dayOf",
+        "census",
+        "sessionContexts",
+        "planCompactions",
+        "formatTokens",
+        "duration",
+        "renderContextBudget"
+      ]
+    },
+    {
+      "path": "hq/lib/context.mjs",
+      "blob": "2da8285d5b6977df54467cd1cc795a63dd329f64",
+      "symbols": [
+        "toIso",
+        "isSecretPath",
+        "splitLines",
+        "selectWindow",
+        "mergeRanges",
+        "selectSymbolWindow",
+        "docAuthority",
+        "reasonLabel",
+        "sourceDigest",
+        "bundleDigest",
+        "emptyBundle",
+        "resolveProject",
+        "collectSymbolHits",
+        "collectPathHits",
+        "collectDocHits",
+        "collectRecent",
+        "collectCandidates",
+        "newestCommitDates",
+        "importProximity",
+        "symbolMatchBonus",
+        "pathMatchBonus",
+        "prepareCandidates"
+      ]
+    },
+    {
+      "path": "hq/lib/evidence-join.mjs",
+      "blob": "3cec75cc9c0132ca79885195b8df832eef80ff9a",
+      "symbols": [
+        "isPlaceholderThread",
+        "joinEvidence",
+        "storedThreadOf",
+        "resolveThread",
+        "lookupName",
+        "joinCompletionClaims",
+        "deviceVerificationAbsence"
+      ]
+    },
+    {
+      "path": "hq/lib/extract.mjs",
+      "blob": "2b0696542b0027f474b57c5692f939f326d24ae4",
+      "symbols": [
+        "normLang",
+        "commentCfg",
+        "toLines",
+        "indentOf",
+        "okName",
+        "scanComments",
+        "skipString",
+        "cleanComment",
+        "maskCode",
+        "scriptOnly",
+        "braceDepths",
+        "braceRange",
+        "makeSignature",
+        "countChar",
+        "firstNonBlankLine",
+        "jsSymbols",
+        "jsIsFunctionBinding",
+        "pythonSymbols",
+        "pythonDecorator",
+        "pythonEnd",
+        "goSymbols",
+        "rustSymbols"
+      ]
+    },
+    {
+      "path": "hq/lib/freshness.mjs",
+      "blob": "4589513407d640ab07734c155d3eca0885c3cb4f",
+      "symbols": [
+        "collectStaleFiles"
+      ]
+    },
+    {
+      "path": "hq/lib/git-context.mjs",
+      "blob": "5296114e0fa5d3b0e30da4f8f4c7d8aa2ef3d8be",
+      "symbols": [
+        "isPlainObject",
+        "mergeLayer",
+        "resolveGitConfig",
+        "gitConfigFromWorkspace",
+        "clampInt",
+        "defaultRun",
+        "gitState",
+        "githubState",
+        "sha256",
+        "estimateTokens",
+        "source",
+        "composeGitContext",
+        "normalizeRemoteUrl",
+        "resolveRepoRoot",
+        "detectRepositoryDuplicates"
+      ]
+    },
+    {
+      "path": "hq/lib/graph.mjs",
+      "blob": "f824b0b9d940bbde9b80ee5d51db2e0eb21cf6a3",
+      "symbols": [
+        "escapeLike",
+        "normalizeTarget",
+        "resolveRoot",
+        "impact",
+        "projectGraph",
+        "staticOrphans",
+        "dynamicLoads",
+        "orphanStatus",
+        "reachableRoutes",
+        "forwardClosure",
+        "agentToolCoupling",
+        "classifyRole",
+        "unresolvedImports",
+        "orphans",
+        "reachable",
+        "minimalConnection",
+        "dependencyAffectedSystems",
+        "migrationRisks",
+        "dependents",
+        "changeIndependence",
+        "integrationRanking",
+        "sharedAssumptions"
+      ]
+    }
+  ]
+}
