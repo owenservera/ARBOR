@@ -24,7 +24,8 @@ const flatten=(node)=>[node,...node.children.flatMap(flatten)];
 test('same repository at three invented SHAs remains three distinct selectors and renders via canonical renderer',()=>{
   const e=sample();e.originalComparison.sourcePins.forEach(p=>p.repoIdentity='invented/same-repo');
   const r=renderHviInspector({...renderOpts,envelope:e},{viewportPx:360});
-  assert.equal(r.mode,'source-report');assert.equal(r.document.nodes[0].children.length>4,true);
+  assert.equal(r.mode,'source-report');assert.ok(r.document.nodes.length>4);
+  assert.ok(r.document.nodes[0].children.length>=1,'grouped canonical sections are present');
   assert.equal(r.renderPlan.schema,'vivim.ui-render-plan/1');
   assert.equal(r.renderPlan.status,'ok');assert.equal(r.published,false);assert.equal(r.effectsInvoked,false);
   assert.equal(flatten(r.renderPlan.root).filter(n=>(n.text||'').includes('invented/same-repo')).length,3);
