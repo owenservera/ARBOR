@@ -2,7 +2,7 @@
 
 **Date:** 2026-11-12 · **Program owner:** ARBOR foundational architecture/design workstream.
 **Branch:** `work/p5-foundational-architecture-prep-r001` from `work/p5-pre-g-convergence-r001@8b23c73bf450738a76b256bf0fa17ecbf86db591`.
-**Status:** **PREPARED_NOT_PROMOTED — SOURCE-BASED DESIGN AND FUTURE WORK ORDER SCAFFOLD**.
+**Status:** **PREPARED_NOT_PROMOTED — SOURCE-BASED DESIGN + FOUR READY PRE-G WORKER PROMPTS (NOT EXECUTED)**.
 **Write scope:** this directory only. No changes to A–F frozen workers, G, main, runtime, root locks, Host World, source vault or device releases.
 
 ## North star
@@ -26,6 +26,8 @@ The current working code already has much of the foundation: native generational
 | [DECISIONS-AND-DEFERRED.md](./DECISIONS-AND-DEFERRED.md) | 22 architecture decisions, open questions and explicit deferrals | Govern against architectural drift |
 | [VERIFICATION-AND-ACCEPTANCE.md](./VERIFICATION-AND-ACCEPTANCE.md) | Native/Host/HQ/Studio/TierFlow/PWA hard tests and negative corpus; real-vs-source evidence ladder | F/G acceptance |
 | [PROMPT-FACTORY-SCAFFOLD.md](./PROMPT-FACTORY-SCAFFOLD.md) | How to generate future isolated focused A–F prompts from current G HEAD and actual source; copy template **not executed** | Next round prompt creation |
+| **[Pre-G Launch Desk](./prompts/README.md)** | Four source-pinned, executable but **not started** worker prompts (PG00–PG03) and independent PGZ referee; unique branch/prefix for each | First focused cohort |
+| [Prompt cohort registry](./prompts/LANE-REGISTRY.v1.json) | Machine-readable branch, owner, source-head and task coverage with 16 V8 structural checks | Prevent duplicate/later unsafe launches |
 | [VALIDATION-REPORT.v1.json](./VALIDATION-REPORT.v1.json) | GitHub scope audit, 11/11 V8 program checks, 14 declared but UNRUN Node tests, real build/device status | Current evidence receipt |
 | [contracts/capability-manifest.v0.schema.json](./contracts/capability-manifest.v0.schema.json) | Strict **proposed** machine-readable source-pinned pure capability manifest with no authority | Schema DESIGN_ONLY |
 | [validate-program.mjs](./validate-program.mjs) / [validate-program.test.mjs](./validate-program.test.mjs) | Read-only source/wave/gap structural validator and 14 Node tests (declared; Node **UNRUN** here); 11 V8 structural checks observed | Program QA |
@@ -78,4 +80,4 @@ No G integration, Cargo/Bun/Node/Windows/PWA live build or device acceptance was
 
 **Machine validation:** 43 source entries, 43 gaps, 14 waves, 100 tasks; 11/11 V8 checks of actual committed manifests/validator succeeded after one bug fix. Actual Node test file, Cargo and device commands **UNRUN** in this round.
 
-**Next architectural action:** a subsequent round generates dedicated owner-focused runnable prompts from the 100-task manifest, after refreshing the active ARBOR refs and first G status. This branch is a stable reference and prep candidate only.
+**Next execution choice:** four dedicated **pre-G** worker prompts now exist at [prompts/README.md](./prompts/README.md). To actually begin the separate workers, run the four starter messages in isolated GitHub-connected conversations. PGZ is an independent referee after their committed handoffs. **No workers were launched or merged merely by authoring these prompts.** Post-G owner prompts still require the actual accepted original G HEAD; this branch remains a preparation candidate.
