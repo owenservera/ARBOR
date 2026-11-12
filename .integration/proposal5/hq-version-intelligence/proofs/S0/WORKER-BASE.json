@@ -1,0 +1,17 @@
+{
+  "schema": "arbor.hvi.s0.worker-base/1",
+  "gate": "GO_TO_PARALLEL",
+  "workerBaseSha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+  "sourceBaselineSha": "370d18d92dfa463f58bd145b307b488a64746ee5",
+  "mainTreeSha": "13eda0d9c7f717a46d00eee46a22b1a19edb65be",
+  "mainFiles": 1500,
+  "mainTruncated": false,
+  "mainDelta": {
+    "ahead": 4,
+    "behind": 0,
+    "changedScope": "hvi_planning_only",
+    "sourceCollisions": []
+  },
+  "branch": "work/p5-hvi-s0-source-lock-r001",
+  "releaseGate": "BLOCKED_NOT_BETA"
+}
