@@ -1463,7 +1463,11 @@
     "tabular": "tabular",
     "temporal": "temporal",
     "text": "text",
-    "workflow": "workflow"
+    "workflow": "workflow",
+    "continuous": "Continuous bounded value control",
+    "range": "Uses one or more bounded value intervals",
+    "two-handles": "Two value boundaries need separate focus/labels",
+    "semantic-heading": "Semantic heading level and document outline"
   },
   "overrides": {
     "input.numeric.slider": {

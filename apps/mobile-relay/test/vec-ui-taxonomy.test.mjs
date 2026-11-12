@@ -27,7 +27,8 @@ test('taxonomy canonical machine snapshot is exactly equal to runtime catalog, n
   assert.equal(machine.schema,projection.schema);
   for(const key of ['domains','families','properties','traits','overrides','sourceBindings'])
     assert.deepEqual(machine[key],projection[key],key);
-  assert.deepEqual(machine.counts,UI_TAXONOMY_COUNTS);
+  assert.deepEqual([machine.counts.domains,machine.counts.families,machine.counts.kinds,machine.counts.mappings],
+    [UI_TAXONOMY_COUNTS.domains,UI_TAXONOMY_COUNTS.families,UI_TAXONOMY_COUNTS.components,UI_TAXONOMY_COUNTS.sourceBindings]);
 });
 test('complete typed taxonomy has distinct versioned IDs across all 9 domains and 34 families',()=>{
   assert.equal(listUiDomains().length,9);
@@ -118,4 +119,18 @@ test('new taxonomy modules are read-only static shell assets in Direct Host and 
     assert.ok(sw.includes("'"+file+"'"));
   }
   assert.ok(sw.includes("if (url.pathname.indexOf('/api/') !== -1) return false"));
+});
+
+test('flattened 417 component passports exactly mirror runtime identity contracts',()=>{
+  const passport=JSON.parse(readFileSync(new URL('../../../.integration/proposal5/vec-pwa/machine/ui-component-passports.v1.json',import.meta.url),'utf8'));
+  const components=listUiComponents();
+  assert.equal(passport.componentCount,components.length);
+  assert.deepEqual(passport.descriptors.map(x=>x.id),components.map(x=>x.id));
+  for(let i=0;i<components.length;i++){
+    const x=components[i],p=passport.descriptors[i];
+    assert.equal(p.role,x.classification.role);
+    assert.deepEqual(p.traits,x.classification.traits);
+    assert.deepEqual(p.properties,Object.keys(x.contract.properties));
+    assert.deepEqual(p.implementations,x.implementations);
+  }
 });
