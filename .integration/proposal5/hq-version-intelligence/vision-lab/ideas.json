@@ -1,0 +1,621 @@
+{
+  "schema": "arbor.proposal5.hvi.vision-lab.ideas/1",
+  "authored": "2026-11-12",
+  "status": "IDEAS_ONLY_NOT_WORK_ORDERS",
+  "notAuthorized": [
+    "real_repository_comparison",
+    "real_migration_audit",
+    "unsolicited_source_access",
+    "background_monitoring",
+    "code_changes",
+    "automatic_merge"
+  ],
+  "horizonMeaning": {
+    "NEAR": "plausible extension; no commitment",
+    "FAR": "research-level ambition",
+    "WILD": "creative provocation"
+  },
+  "total": 60,
+  "ideas": [
+    {
+      "id": "VL-TIME-01",
+      "theme": "TIME",
+      "title": "Temporal palimpsest",
+      "vision": "Overlay multiple pinned eras of a system as translucent architectural layers.",
+      "horizon": "NEAR",
+      "status": "IDEA_ONLY",
+      "requiresLiveComparison": false,
+      "source": "2026-11-12 brainstorming, not implemented"
+    },
+    {
+      "id": "VL-TIME-02",
+      "theme": "TIME",
+      "title": "Commit constellations",
+      "vision": "See commits cluster by the capabilities they moved, not just by calendar or file.",
+      "horizon": "NEAR",
+      "status": "IDEA_ONLY",
+      "requiresLiveComparison": false,
+      "source": "2026-11-12 brainstorming, not implemented"
+    },
+    {
+      "id": "VL-TIME-03",
+      "theme": "TIME",
+      "title": "Source memory capsule",
+      "vision": "Open the exact evidence and assumptions that existed when an old decision was made.",
+      "horizon": "NEAR",
+      "status": "IDEA_ONLY",
+      "requiresLiveComparison": false,
+      "source": "2026-11-12 brainstorming, not implemented"
+    },
+    {
+      "id": "VL-TIME-04",
+      "theme": "TIME",
+      "title": "First appearance detector",
+      "vision": "Trace a concept's earliest *evidenced* appearance across approved sources.",
+      "horizon": "FAR",
+      "status": "IDEA_ONLY",
+      "requiresLiveComparison": false,
+      "source": "2026-11-12 brainstorming, not implemented"
+    },
+    {
+      "id": "VL-TIME-05",
+      "theme": "TIME",
+      "title": "Capability half-life",
+      "vision": "Explore how long a capability's contracts stay stable after successive rewrites.",
+      "horizon": "FAR",
+      "status": "IDEA_ONLY",
+      "requiresLiveComparison": false,
+      "source": "2026-11-12 brainstorming, not implemented"
+    },
+    {
+      "id": "VL-TIME-06",
+      "theme": "TIME",
+      "title": "History compression",
+      "vision": "Summarize years of evolution into a handful of verifiable turning points.",
+      "horizon": "FAR",
+      "status": "IDEA_ONLY",
+      "requiresLiveComparison": false,
+      "source": "2026-11-12 brainstorming, not implemented"
+    },
+    {
+      "id": "VL-TIME-07",
+      "theme": "TIME",
+      "title": "Evolution filmstrip",
+      "vision": "Scrub a reversible, source-pinned visual story of architectural change.",
+      "horizon": "NEAR",
+      "status": "IDEA_ONLY",
+      "requiresLiveComparison": false,
+      "source": "2026-11-12 brainstorming, not implemented"
+    },
+    {
+      "id": "VL-TIME-08",
+      "theme": "TIME",
+      "title": "The missing era",
+      "vision": "Show honest blank intervals where no authorized source snapshot is available.",
+      "horizon": "NEAR",
+      "status": "IDEA_ONLY",
+      "requiresLiveComparison": false,
+      "source": "2026-11-12 brainstorming, not implemented"
+    },
+    {
+      "id": "VL-TIME-09",
+      "theme": "TIME",
+      "title": "Semantic fossils",
+      "vision": "Recognize retired names and comments that still explain present-day structure.",
+      "horizon": "FAR",
+      "status": "IDEA_ONLY",
+      "requiresLiveComparison": false,
+      "source": "2026-11-12 brainstorming, not implemented"
+    },
+    {
+      "id": "VL-TIME-10",
+      "theme": "TIME",
+      "title": "Memory breadcrumbs",
+      "vision": "Let a viewer leave a private, provenance-linked note for a future exploration.",
+      "horizon": "NEAR",
+      "status": "IDEA_ONLY",
+      "requiresLiveComparison": false,
+      "source": "2026-11-12 brainstorming, not implemented"
+    },
+    {
+      "id": "VL-DNA-01",
+      "theme": "DNA",
+      "title": "Capability genome",
+      "vision": "Describe each capability by inputs, outputs, effects, owner, invariants and evidence.",
+      "horizon": "NEAR",
+      "status": "IDEA_ONLY",
+      "requiresLiveComparison": false,
+      "source": "2026-11-12 brainstorming, not implemented"
+    },
+    {
+      "id": "VL-DNA-02",
+      "theme": "DNA",
+      "title": "Language-crossing lineage",
+      "vision": "Trace a behavior's plausible migration from JS into Rust without equating bytes.",
+      "horizon": "FAR",
+      "status": "IDEA_ONLY",
+      "requiresLiveComparison": false,
+      "source": "2026-11-12 brainstorming, not implemented"
+    },
+    {
+      "id": "VL-DNA-03",
+      "theme": "DNA",
+      "title": "Split-and-fuse ancestry",
+      "vision": "Draw many-to-many successor lines when one module becomes several, or vice versa.",
+      "horizon": "NEAR",
+      "status": "IDEA_ONLY",
+      "requiresLiveComparison": false,
+      "source": "2026-11-12 brainstorming, not implemented"
+    },
+    {
+      "id": "VL-DNA-04",
+      "theme": "DNA",
+      "title": "Name-change immunity",
+      "vision": "Preserve identity when a symbol or package gets renamed.",
+      "horizon": "NEAR",
+      "status": "IDEA_ONLY",
+      "requiresLiveComparison": false,
+      "source": "2026-11-12 brainstorming, not implemented"
+    },
+    {
+      "id": "VL-DNA-05",
+      "theme": "DNA",
+      "title": "Executable promise cards",
+      "vision": "Turn contracts into understandable promises, each linked to tests and receipts.",
+      "horizon": "FAR",
+      "status": "IDEA_ONLY",
+      "requiresLiveComparison": false,
+      "source": "2026-11-12 brainstorming, not implemented"
+    },
+    {
+      "id": "VL-DNA-06",
+      "theme": "DNA",
+      "title": "Compatibility fingerprint",
+      "vision": "Compare public behavior shapes independently of implementation language.",
+      "horizon": "FAR",
+      "status": "IDEA_ONLY",
+      "requiresLiveComparison": false,
+      "source": "2026-11-12 brainstorming, not implemented"
+    },
+    {
+      "id": "VL-DNA-07",
+      "theme": "DNA",
+      "title": "Intent genealogy",
+      "vision": "Trace an idea through design, proof, implementation, production and retirement.",
+      "horizon": "FAR",
+      "status": "IDEA_ONLY",
+      "requiresLiveComparison": false,
+      "source": "2026-11-12 brainstorming, not implemented"
+    },
+    {
+      "id": "VL-DNA-08",
+      "theme": "DNA",
+      "title": "Authority DNA",
+      "vision": "Attach the effect owner and permission model to every capability's identity.",
+      "horizon": "NEAR",
+      "status": "IDEA_ONLY",
+      "requiresLiveComparison": false,
+      "source": "2026-11-12 brainstorming, not implemented"
+    },
+    {
+      "id": "VL-DNA-09",
+      "theme": "DNA",
+      "title": "Ghost capability detector",
+      "vision": "Identify code that appears present but has no proven reachable entrypoint.",
+      "horizon": "NEAR",
+      "status": "IDEA_ONLY",
+      "requiresLiveComparison": false,
+      "source": "2026-11-12 brainstorming, not implemented"
+    },
+    {
+      "id": "VL-DNA-10",
+      "theme": "DNA",
+      "title": "The uncertainty gene",
+      "vision": "Treat ambiguity itself as a tracked, explainable feature of identity lineage.",
+      "horizon": "NEAR",
+      "status": "IDEA_ONLY",
+      "requiresLiveComparison": false,
+      "source": "2026-11-12 brainstorming, not implemented"
+    },
+    {
+      "id": "VL-VIS-01",
+      "theme": "VIS",
+      "title": "Architecture terrarium",
+      "vision": "A quiet, living view in which dependencies grow, branch and fade across versions.",
+      "horizon": "WILD",
+      "status": "IDEA_ONLY",
+      "requiresLiveComparison": false,
+      "source": "2026-11-12 brainstorming, not implemented"
+    },
+    {
+      "id": "VL-VIS-02",
+      "theme": "VIS",
+      "title": "Evidence x-ray",
+      "vision": "Switch layers between copied source, typed contracts, tests, effects and runtime receipts.",
+      "horizon": "NEAR",
+      "status": "IDEA_ONLY",
+      "requiresLiveComparison": false,
+      "source": "2026-11-12 brainstorming, not implemented"
+    },
+    {
+      "id": "VL-VIS-03",
+      "theme": "VIS",
+      "title": "Confidence halos",
+      "vision": "Use clearly labeled visual halos for certainty, with accessible text equivalents.",
+      "horizon": "NEAR",
+      "status": "IDEA_ONLY",
+      "requiresLiveComparison": false,
+      "source": "2026-11-12 brainstorming, not implemented"
+    },
+    {
+      "id": "VL-VIS-04",
+      "theme": "VIS",
+      "title": "Pathfinder ribbons",
+      "vision": "Follow one capability across repositories, languages and dates like a metro route.",
+      "horizon": "NEAR",
+      "status": "IDEA_ONLY",
+      "requiresLiveComparison": false,
+      "source": "2026-11-12 brainstorming, not implemented"
+    },
+    {
+      "id": "VL-VIS-05",
+      "theme": "VIS",
+      "title": "Change choreography",
+      "vision": "Animate architectural deltas as a controlled sequence, not overwhelming particle noise.",
+      "horizon": "FAR",
+      "status": "IDEA_ONLY",
+      "requiresLiveComparison": false,
+      "source": "2026-11-12 brainstorming, not implemented"
+    },
+    {
+      "id": "VL-VIS-06",
+      "theme": "VIS",
+      "title": "The provenance microscope",
+      "vision": "Zoom smoothly from an executive explanation down to exact blob and line.",
+      "horizon": "NEAR",
+      "status": "IDEA_ONLY",
+      "requiresLiveComparison": false,
+      "source": "2026-11-12 brainstorming, not implemented"
+    },
+    {
+      "id": "VL-VIS-07",
+      "theme": "VIS",
+      "title": "The blank canvas",
+      "vision": "Make an unrun comparison look intentionally beautiful, not suspiciously broken.",
+      "horizon": "NEAR",
+      "status": "IDEA_ONLY",
+      "requiresLiveComparison": false,
+      "source": "2026-11-12 brainstorming, not implemented"
+    },
+    {
+      "id": "VL-VIS-08",
+      "theme": "VIS",
+      "title": "Pocket-to-desktop continuity",
+      "vision": "Same pinned query and evidence story on phone and Windows through TierFlow.",
+      "horizon": "NEAR",
+      "status": "IDEA_ONLY",
+      "requiresLiveComparison": false,
+      "source": "2026-11-12 brainstorming, not implemented"
+    },
+    {
+      "id": "VL-VIS-09",
+      "theme": "VIS",
+      "title": "Architecture weather map",
+      "vision": "Display where evidence is thin or contracts drift, without fake forecasts.",
+      "horizon": "FAR",
+      "status": "IDEA_ONLY",
+      "requiresLiveComparison": false,
+      "source": "2026-11-12 brainstorming, not implemented"
+    },
+    {
+      "id": "VL-VIS-10",
+      "theme": "VIS",
+      "title": "A thousand repos, one map",
+      "vision": "Progressive multi-resolution visualization of approved source universes.",
+      "horizon": "WILD",
+      "status": "IDEA_ONLY",
+      "requiresLiveComparison": false,
+      "source": "2026-11-12 brainstorming, not implemented"
+    },
+    {
+      "id": "VL-FUT-01",
+      "theme": "FUT",
+      "title": "Worldline explorer",
+      "vision": "Examine alternative architecture hypotheses beside observed history.",
+      "horizon": "FAR",
+      "status": "IDEA_ONLY",
+      "requiresLiveComparison": false,
+      "source": "2026-11-12 brainstorming, not implemented"
+    },
+    {
+      "id": "VL-FUT-02",
+      "theme": "FUT",
+      "title": "What-if a port never happened?",
+      "vision": "Reason about possible dependency differences without executing changes.",
+      "horizon": "FAR",
+      "status": "IDEA_ONLY",
+      "requiresLiveComparison": false,
+      "source": "2026-11-12 brainstorming, not implemented"
+    },
+    {
+      "id": "VL-FUT-03",
+      "theme": "FUT",
+      "title": "Future compatibility sketch",
+      "vision": "Project likely contract collisions from proposed signatures, visibly hypothetical.",
+      "horizon": "FAR",
+      "status": "IDEA_ONLY",
+      "requiresLiveComparison": false,
+      "source": "2026-11-12 brainstorming, not implemented"
+    },
+    {
+      "id": "VL-FUT-04",
+      "theme": "FUT",
+      "title": "Evolution pressure map",
+      "vision": "Show which interfaces carry the greatest future coordination burden.",
+      "horizon": "FAR",
+      "status": "IDEA_ONLY",
+      "requiresLiveComparison": false,
+      "source": "2026-11-12 brainstorming, not implemented"
+    },
+    {
+      "id": "VL-FUT-05",
+      "theme": "FUT",
+      "title": "Migration gravity",
+      "vision": "Reveal features that repeatedly accumulate duplicate implementations.",
+      "horizon": "FAR",
+      "status": "IDEA_ONLY",
+      "requiresLiveComparison": false,
+      "source": "2026-11-12 brainstorming, not implemented"
+    },
+    {
+      "id": "VL-FUT-06",
+      "theme": "FUT",
+      "title": "Architecture trade-off gallery",
+      "vision": "Compare imagined configurations by explicit assumptions, never invented results.",
+      "horizon": "NEAR",
+      "status": "IDEA_ONLY",
+      "requiresLiveComparison": false,
+      "source": "2026-11-12 brainstorming, not implemented"
+    },
+    {
+      "id": "VL-FUT-07",
+      "theme": "FUT",
+      "title": "Proof debt forecast",
+      "vision": "Explore where changes would require new validation to remain trustworthy.",
+      "horizon": "FAR",
+      "status": "IDEA_ONLY",
+      "requiresLiveComparison": false,
+      "source": "2026-11-12 brainstorming, not implemented"
+    },
+    {
+      "id": "VL-FUT-08",
+      "theme": "FUT",
+      "title": "Reversible proposal sculpture",
+      "vision": "Compose a visual change hypothesis before deciding whether to write a spec.",
+      "horizon": "WILD",
+      "status": "IDEA_ONLY",
+      "requiresLiveComparison": false,
+      "source": "2026-11-12 brainstorming, not implemented"
+    },
+    {
+      "id": "VL-FUT-09",
+      "theme": "FUT",
+      "title": "Constraint-aware ideation",
+      "vision": "A future assistant can brainstorm within Host/TierFlow/Rust authority invariants.",
+      "horizon": "NEAR",
+      "status": "IDEA_ONLY",
+      "requiresLiveComparison": false,
+      "source": "2026-11-12 brainstorming, not implemented"
+    },
+    {
+      "id": "VL-FUT-10",
+      "theme": "FUT",
+      "title": "The alternative's cost",
+      "vision": "Show unknown cost surfaces before anyone pretends to estimate performance.",
+      "horizon": "NEAR",
+      "status": "IDEA_ONLY",
+      "requiresLiveComparison": false,
+      "source": "2026-11-12 brainstorming, not implemented"
+    },
+    {
+      "id": "VL-AGENT-01",
+      "theme": "AGENT",
+      "title": "Ask without teaching",
+      "vision": "Agent discovers installed comparison tools and asks only for missing authorization.",
+      "horizon": "NEAR",
+      "status": "IDEA_ONLY",
+      "requiresLiveComparison": false,
+      "source": "2026-11-12 brainstorming, not implemented"
+    },
+    {
+      "id": "VL-AGENT-02",
+      "theme": "AGENT",
+      "title": "Question-to-evidence compiler",
+      "vision": "Translate a human question into pinned source scope and explainable checks.",
+      "horizon": "NEAR",
+      "status": "IDEA_ONLY",
+      "requiresLiveComparison": false,
+      "source": "2026-11-12 brainstorming, not implemented"
+    },
+    {
+      "id": "VL-AGENT-03",
+      "theme": "AGENT",
+      "title": "Evidence appetite control",
+      "vision": "Offer low/medium/deep bounded exploration levels at user invocation.",
+      "horizon": "NEAR",
+      "status": "IDEA_ONLY",
+      "requiresLiveComparison": false,
+      "source": "2026-11-12 brainstorming, not implemented"
+    },
+    {
+      "id": "VL-AGENT-04",
+      "theme": "AGENT",
+      "title": "Why-not answers",
+      "vision": "Explain why HQ refused access or couldn't prove equivalence, without blaming user.",
+      "horizon": "NEAR",
+      "status": "IDEA_ONLY",
+      "requiresLiveComparison": false,
+      "source": "2026-11-12 brainstorming, not implemented"
+    },
+    {
+      "id": "VL-AGENT-05",
+      "theme": "AGENT",
+      "title": "Human verdict handshake",
+      "vision": "Let owners approve equivalence decisions with durable, auditable provenance.",
+      "horizon": "NEAR",
+      "status": "IDEA_ONLY",
+      "requiresLiveComparison": false,
+      "source": "2026-11-12 brainstorming, not implemented"
+    },
+    {
+      "id": "VL-AGENT-06",
+      "theme": "AGENT",
+      "title": "Socratic code archaeologist",
+      "vision": "Ask one good clarifying question only when ambiguity changes the result.",
+      "horizon": "FAR",
+      "status": "IDEA_ONLY",
+      "requiresLiveComparison": false,
+      "source": "2026-11-12 brainstorming, not implemented"
+    },
+    {
+      "id": "VL-AGENT-07",
+      "theme": "AGENT",
+      "title": "Personal research lens",
+      "vision": "Remember a user's preferred explanation depth without retaining secret source data.",
+      "horizon": "FAR",
+      "status": "IDEA_ONLY",
+      "requiresLiveComparison": false,
+      "source": "2026-11-12 brainstorming, not implemented"
+    },
+    {
+      "id": "VL-AGENT-08",
+      "theme": "AGENT",
+      "title": "Portable explanation bundle",
+      "vision": "Export a self-contained redacted evidence narrative and its source pins.",
+      "horizon": "NEAR",
+      "status": "IDEA_ONLY",
+      "requiresLiveComparison": false,
+      "source": "2026-11-12 brainstorming, not implemented"
+    },
+    {
+      "id": "VL-AGENT-09",
+      "theme": "AGENT",
+      "title": "The one-minute museum tour",
+      "vision": "An agent can introduce a subsystem's evolution in sixty seconds.",
+      "horizon": "FAR",
+      "status": "IDEA_ONLY",
+      "requiresLiveComparison": false,
+      "source": "2026-11-12 brainstorming, not implemented"
+    },
+    {
+      "id": "VL-AGENT-10",
+      "theme": "AGENT",
+      "title": "Quiet readiness",
+      "vision": "The system advertises it *could* compare; it does not prefetch or monitor by default.",
+      "horizon": "NEAR",
+      "status": "IDEA_ONLY",
+      "requiresLiveComparison": false,
+      "source": "2026-11-12 brainstorming, not implemented"
+    },
+    {
+      "id": "VL-SYS-01",
+      "theme": "SYS",
+      "title": "Differential provenance engine",
+      "vision": "Track evidence lineage through each transformation, adapter and report.",
+      "horizon": "NEAR",
+      "status": "IDEA_ONLY",
+      "requiresLiveComparison": false,
+      "source": "2026-11-12 brainstorming, not implemented"
+    },
+    {
+      "id": "VL-SYS-02",
+      "theme": "SYS",
+      "title": "Reproducibility crystal",
+      "vision": "A report can be regenerated from immutable manifests without donor checkout.",
+      "horizon": "NEAR",
+      "status": "IDEA_ONLY",
+      "requiresLiveComparison": false,
+      "source": "2026-11-12 brainstorming, not implemented"
+    },
+    {
+      "id": "VL-SYS-03",
+      "theme": "SYS",
+      "title": "Typed semantic ABI atlas",
+      "vision": "View interface compatibility across native and browser boundaries.",
+      "horizon": "FAR",
+      "status": "IDEA_ONLY",
+      "requiresLiveComparison": false,
+      "source": "2026-11-12 brainstorming, not implemented"
+    },
+    {
+      "id": "VL-SYS-04",
+      "theme": "SYS",
+      "title": "Incremental lineage cache",
+      "vision": "Reuse valid immutable comparison sub-results while respecting authorization.",
+      "horizon": "FAR",
+      "status": "IDEA_ONLY",
+      "requiresLiveComparison": false,
+      "source": "2026-11-12 brainstorming, not implemented"
+    },
+    {
+      "id": "VL-SYS-05",
+      "theme": "SYS",
+      "title": "Constrained proof synthesizer",
+      "vision": "Suggest tests that would close an evidence gap; never label them executed.",
+      "horizon": "FAR",
+      "status": "IDEA_ONLY",
+      "requiresLiveComparison": false,
+      "source": "2026-11-12 brainstorming, not implemented"
+    },
+    {
+      "id": "VL-SYS-06",
+      "theme": "SYS",
+      "title": "Negative-space inventory",
+      "vision": "Represent what is inaccessible, excluded or unobserved as carefully as what's found.",
+      "horizon": "NEAR",
+      "status": "IDEA_ONLY",
+      "requiresLiveComparison": false,
+      "source": "2026-11-12 brainstorming, not implemented"
+    },
+    {
+      "id": "VL-SYS-07",
+      "theme": "SYS",
+      "title": "Evidence conflict detector",
+      "vision": "Surface contradictory schema, test and author claims instead of choosing silently.",
+      "horizon": "NEAR",
+      "status": "IDEA_ONLY",
+      "requiresLiveComparison": false,
+      "source": "2026-11-12 brainstorming, not implemented"
+    },
+    {
+      "id": "VL-SYS-08",
+      "theme": "SYS",
+      "title": "Computational carbon lens",
+      "vision": "Show actual measured cost of an analysis when measurements exist.",
+      "horizon": "FAR",
+      "status": "IDEA_ONLY",
+      "requiresLiveComparison": false,
+      "source": "2026-11-12 brainstorming, not implemented"
+    },
+    {
+      "id": "VL-SYS-09",
+      "theme": "SYS",
+      "title": "Epistemic debugger",
+      "vision": "Expose which source claim or adapter made an explanation too confident.",
+      "horizon": "FAR",
+      "status": "IDEA_ONLY",
+      "requiresLiveComparison": false,
+      "source": "2026-11-12 brainstorming, not implemented"
+    },
+    {
+      "id": "VL-SYS-10",
+      "theme": "SYS",
+      "title": "Universal software passport",
+      "vision": "An exportable, privacy-scoped capability identity portable across organizations.",
+      "horizon": "WILD",
+      "status": "IDEA_ONLY",
+      "requiresLiveComparison": false,
+      "source": "2026-11-12 brainstorming, not implemented"
+    }
+  ]
+}
