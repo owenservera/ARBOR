@@ -1,0 +1,124 @@
+{
+  "schema": "arbor.hvi.z1.run-ledger/1",
+  "lane": "Z1X",
+  "workOrder": ".integration/proposal5/hq-version-intelligence/prompts/20-Z1-HIGH-INTENSITY-CONVERGENCE.md",
+  "branch": "work/p5-hvi-w1-z-referee-r001",
+  "branchCreatedFrom": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+  "verifiedS0Gate": "GO_TO_PARALLEL",
+  "decision": "REPAIR_REQUIRED",
+  "observedGithubActions": [
+    {
+      "operation": "read complete HVI shared contracts, root release locks, original Z1/G1 and worker prompts",
+      "tool": "connected GitHub fetch_file",
+      "status": "SUCCESS",
+      "processExit": null
+    },
+    {
+      "operation": "read exact S0/A-F branch refs and compare each to S0 worker base",
+      "tool": "GitHub matching refs + compare commits",
+      "status": "SUCCESS 7 verified, 0 out-of-scope paths",
+      "processExit": null
+    },
+    {
+      "operation": "read actual A/B/C/D/E/F source and source blob hashes and F schema definitions",
+      "tool": "GitHub fetch_file",
+      "status": "SUCCESS",
+      "processExit": null
+    },
+    {
+      "operation": "read S0/D pinned per-item census and join every row by origin path/blob, donor and target SHA",
+      "tool": "GitHub fetch_file + JS isolate equality check",
+      "status": "SUCCESS 361 matched, 0 missing or duplicates",
+      "processExit": null
+    },
+    {
+      "operation": "read B C4 14-donor map and D Labs 22-source candidates",
+      "tool": "GitHub fetch_file",
+      "status": "SUCCESS 7 exact,2 adapted,5 excluded;22 selected",
+      "processExit": null
+    },
+    {
+      "operation": "author compatibility matrix, three-pin synthetic digest receipts and 361-row evidence coverage",
+      "tool": "GitHub branch-only create_tree/create_commit",
+      "status": "SOURCE_PROOF_COMMITTED",
+      "processExit": null
+    }
+  ],
+  "actualZ1ProductTests": [],
+  "testClaims": "NO_Node24_OR_INTEGRATED_TEST_EXECUTION",
+  "environment": {
+    "runtime": "Connected GitHub API + in-tool JavaScript content inspection; Python arithmetic used only for synthetic fixture digest calculation, not donor code or product tests",
+    "node24": "UNRUN",
+    "fullCheckout": "UNRUN",
+    "cargo": "UNRUN",
+    "bun": "UNRUN",
+    "windows": "UNRUN",
+    "android": "UNRUN",
+    "host": "UNRUN",
+    "device": "UNRUN",
+    "signedInBrowser": "UNRUN",
+    "CI": "startup_failure_0_jobs_prior_not_pass"
+  },
+  "workerTestTruth": "See TEST-TRUTH.json, separately distinguish C 9/9 Node22, E 13/13 Node22, A/D V8 shim, B/F Node24 UNRUN",
+  "changedPathsRule": ".integration/proposal5/hq-version-intelligence/proofs/Z1/** only",
+  "currentReleaseGate": "BLOCKED_NOT_BETA",
+  "promotedRuntime": false,
+  "hostGrantAccepted": false,
+  "blockers": [
+    {
+      "priority": "P0",
+      "owner": "G1/A/C",
+      "name": "A/C dual digest projection and completeness"
+    },
+    {
+      "priority": "P0",
+      "owner": "G1/F",
+      "name": "F v1 incompatible strict schemas"
+    },
+    {
+      "priority": "P0",
+      "owner": "G1/C/E",
+      "name": "lost C originPath/blob and per-pin evidence"
+    },
+    {
+      "priority": "P0",
+      "owner": "G1/D",
+      "name": "parity evidence shape and partiality"
+    },
+    {
+      "priority": "P0",
+      "owner": "G1/F",
+      "name": "combined Node24, schemas and no-donor replay UNRUN"
+    },
+    {
+      "priority": "P1",
+      "owner": "B/C/G1",
+      "name": "source-scoped identity/equivalence receipt"
+    },
+    {
+      "priority": "P1",
+      "owner": "X/HQ",
+      "name": "338 unreviewed missing original HQ paths"
+    },
+    {
+      "priority": "P1",
+      "owner": "H/G2",
+      "name": "real live source grant/revoke and personal World exclusion"
+    }
+  ],
+  "commitReceipt": "See verified branch HEAD; this value is not a runtime test result",
+  "postCommitScopeCorrection": {
+    "initialMain": "cbe768031e0797040a09c084b7b8bc12f07fbe0a",
+    "advancedMain": "539146ac741516e7d9711c63f4570585b3c3367e",
+    "commits": 2,
+    "changedPaths": 15,
+    "scope": "governing HVI planning/prompt/manifest",
+    "policy": "10-NATIVE-TOOLING-ONLY-SCOPE.md",
+    "policyBlob": "0fd38aed3c7f85c7c73183d80ea4fee121372462",
+    "currentWave": "NATIVE_TOOLING_ONLY",
+    "X": "DEFERRED_USER_TRIGGER_ONLY",
+    "syntheticTestsOnly": true,
+    "workerBaseUnchanged": true,
+    "mainWrittenByZ1": false
+  }
+}

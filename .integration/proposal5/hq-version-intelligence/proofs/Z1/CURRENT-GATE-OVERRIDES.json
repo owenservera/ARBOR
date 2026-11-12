@@ -1,0 +1,27 @@
+{
+  "schema": "arbor.hvi.z1.governing-scope-overrides/1",
+  "mainSha": "539146ac741516e7d9711c63f4570585b3c3367e",
+  "contract": "10-NATIVE-TOOLING-ONLY-SCOPE.md",
+  "contractBlob": "0fd38aed3c7f85c7c73183d80ea4fee121372462",
+  "currentWave": "NATIVE_TOOLING_ONLY",
+  "testFixtures": "SYNTHETIC_INVENTED_2_3_5_REPOS",
+  "realMigrationComparison": "DEFERRED_USER_TRIGGER_ONLY",
+  "historicHQ361": "RETAIN_ONLY_NO_NEW_CLASSIFICATION",
+  "X": "DO_NOT_LAUNCH",
+  "sequence": [
+    "G1",
+    "H||U",
+    "Z2",
+    "G2",
+    "R"
+  ],
+  "gates": [
+    "REPAIR_REQUIRED",
+    "GO_FOR_W2_TOOLING",
+    "GO_FOR_G2_TOOLING_REVIEW",
+    "GO_FOR_READINESS_REVIEW",
+    "HVI_TOOLING_READY"
+  ],
+  "beta": "BLOCKED_NOT_BETA",
+  "z1Verdict": "REPAIR_REQUIRED"
+}

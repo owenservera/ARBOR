@@ -1,0 +1,470 @@
+{
+  "schema": "arbor.hvi.z1.synthetic-three-pin-example/1",
+  "classification": "SYNTHETIC_NOT_PRODUCT",
+  "purpose": "Three immutable revisions of one repository, independent A and C digest domains, typed C comparison; no product scan or executed Node assertion",
+  "repository": "owenservera/synthetic-hq",
+  "syntheticData": true,
+  "hashAlgorithm": {
+    "pinId": "SHA256 canonical JSON of {provider,repoIdentity,commitSha,subPath}",
+    "aDigest": "SHA256 canonical A manifestPayload excluding manifestDigest and pin",
+    "cDigest": "SHA256 canonical C digestManifest body with schema and path-sorted entries",
+    "comparisonDigest": "SHA256 canonical C report excluding reproducibilityDigest",
+    "gitBlobSha": "SHA1('blob '+length+'\\0'+utf8Content)"
+  },
+  "pinsAndManifests": [
+    {
+      "pin": {
+        "schema": "arbor.hvi.source/1",
+        "pinId": "aef293761769b2aeb5af9375965386f97aba6098421f42e8c174aaa16cd7ba1b",
+        "provider": "github",
+        "repoIdentity": "owenservera/synthetic-hq",
+        "requestedRef": null,
+        "resolvedCommitSha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "rootTreeSha": "1111111111111111111111111111111111111111",
+        "subPath": "",
+        "manifestDigest": "ebdd1bcd738eecfcd1d0a65a0370a46d8c7bce8a29c852ee793c35837605a912",
+        "acquiredAt": "2026-11-12T00:00:00.000Z",
+        "completeness": "complete",
+        "scope": "development",
+        "sourceGrantRef": null,
+        "evidenceRef": "synthetic-fixture"
+      },
+      "manifestA": {
+        "schema": "arbor.hvi.manifest/1",
+        "pinId": "aef293761769b2aeb5af9375965386f97aba6098421f42e8c174aaa16cd7ba1b",
+        "repoIdentity": "owenservera/synthetic-hq",
+        "resolvedCommitSha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "rootTreeSha": "1111111111111111111111111111111111111111",
+        "subPath": "",
+        "entries": [
+          {
+            "path": "hq/version.mjs",
+            "mode": "100644",
+            "blobSha": "132757d30ab71910a2407269a530d9d373482f71",
+            "bytes": 26,
+            "kind": "file",
+            "parseStatus": "text",
+            "excludedReason": null,
+            "symlinkTarget": null
+          }
+        ],
+        "completeness": "complete",
+        "truncated": false,
+        "observedEntries": 1,
+        "omittedMinimum": 0,
+        "errors": [],
+        "manifestDigest": "ebdd1bcd738eecfcd1d0a65a0370a46d8c7bce8a29c852ee793c35837605a912"
+      },
+      "projectionC": {
+        "schema": "arbor.hvi.source-manifest/1",
+        "pinId": "aef293761769b2aeb5af9375965386f97aba6098421f42e8c174aaa16cd7ba1b",
+        "completeness": "complete",
+        "entries": [
+          {
+            "path": "hq/version.mjs",
+            "mode": "100644",
+            "blobSha": "132757d30ab71910a2407269a530d9d373482f71",
+            "bytes": 26,
+            "kind": "file",
+            "parseStatus": "text",
+            "excludedReason": null,
+            "symlinkTarget": null
+          }
+        ],
+        "truncated": false,
+        "digest": "cef2c0fbd5acdee037c2065f9869e5385d63d50ea01d848bad4bc00d343525e4"
+      },
+      "comparisonPin": {
+        "pinId": "aef293761769b2aeb5af9375965386f97aba6098421f42e8c174aaa16cd7ba1b",
+        "provider": "github",
+        "repoIdentity": "owenservera/synthetic-hq",
+        "resolvedCommitSha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "rootTreeSha": "1111111111111111111111111111111111111111",
+        "manifestDigest": "cef2c0fbd5acdee037c2065f9869e5385d63d50ea01d848bad4bc00d343525e4",
+        "completeness": "complete",
+        "scope": "development"
+      },
+      "syntheticFileText": "export const VERSION = 1;\n",
+      "hashReceipt": {
+        "nativeADigest": "ebdd1bcd738eecfcd1d0a65a0370a46d8c7bce8a29c852ee793c35837605a912",
+        "projectionCDigest": "cef2c0fbd5acdee037c2065f9869e5385d63d50ea01d848bad4bc00d343525e4",
+        "independentDomains": true
+      }
+    },
+    {
+      "pin": {
+        "schema": "arbor.hvi.source/1",
+        "pinId": "6fa36c14ef60d4babd9727707bf57a828be7375e1a0a4724baa0b530044b8851",
+        "provider": "github",
+        "repoIdentity": "owenservera/synthetic-hq",
+        "requestedRef": null,
+        "resolvedCommitSha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "rootTreeSha": "2222222222222222222222222222222222222222",
+        "subPath": "",
+        "manifestDigest": "24c97f7746d77763e0e15e7612a712231d6a7444a8190b83197e0e380f263ba0",
+        "acquiredAt": "2026-11-12T00:00:00.000Z",
+        "completeness": "complete",
+        "scope": "development",
+        "sourceGrantRef": null,
+        "evidenceRef": "synthetic-fixture"
+      },
+      "manifestA": {
+        "schema": "arbor.hvi.manifest/1",
+        "pinId": "6fa36c14ef60d4babd9727707bf57a828be7375e1a0a4724baa0b530044b8851",
+        "repoIdentity": "owenservera/synthetic-hq",
+        "resolvedCommitSha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "rootTreeSha": "2222222222222222222222222222222222222222",
+        "subPath": "",
+        "entries": [
+          {
+            "path": "hq/version.mjs",
+            "mode": "100644",
+            "blobSha": "70473ed79548c537842f94a79788e4bb092dce91",
+            "bytes": 26,
+            "kind": "file",
+            "parseStatus": "text",
+            "excludedReason": null,
+            "symlinkTarget": null
+          }
+        ],
+        "completeness": "complete",
+        "truncated": false,
+        "observedEntries": 1,
+        "omittedMinimum": 0,
+        "errors": [],
+        "manifestDigest": "24c97f7746d77763e0e15e7612a712231d6a7444a8190b83197e0e380f263ba0"
+      },
+      "projectionC": {
+        "schema": "arbor.hvi.source-manifest/1",
+        "pinId": "6fa36c14ef60d4babd9727707bf57a828be7375e1a0a4724baa0b530044b8851",
+        "completeness": "complete",
+        "entries": [
+          {
+            "path": "hq/version.mjs",
+            "mode": "100644",
+            "blobSha": "70473ed79548c537842f94a79788e4bb092dce91",
+            "bytes": 26,
+            "kind": "file",
+            "parseStatus": "text",
+            "excludedReason": null,
+            "symlinkTarget": null
+          }
+        ],
+        "truncated": false,
+        "digest": "1ab832b53a908b34b51265bf4f95d9effa64ea01e4bae713e20b9e85365ae50d"
+      },
+      "comparisonPin": {
+        "pinId": "6fa36c14ef60d4babd9727707bf57a828be7375e1a0a4724baa0b530044b8851",
+        "provider": "github",
+        "repoIdentity": "owenservera/synthetic-hq",
+        "resolvedCommitSha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "rootTreeSha": "2222222222222222222222222222222222222222",
+        "manifestDigest": "1ab832b53a908b34b51265bf4f95d9effa64ea01e4bae713e20b9e85365ae50d",
+        "completeness": "complete",
+        "scope": "development"
+      },
+      "syntheticFileText": "export const VERSION = 2;\n",
+      "hashReceipt": {
+        "nativeADigest": "24c97f7746d77763e0e15e7612a712231d6a7444a8190b83197e0e380f263ba0",
+        "projectionCDigest": "1ab832b53a908b34b51265bf4f95d9effa64ea01e4bae713e20b9e85365ae50d",
+        "independentDomains": true
+      }
+    },
+    {
+      "pin": {
+        "schema": "arbor.hvi.source/1",
+        "pinId": "4dd9eaf64f854b15ea0bca9ee3a1fcc55917a3f582848ad48be5c76e09c799c5",
+        "provider": "github",
+        "repoIdentity": "owenservera/synthetic-hq",
+        "requestedRef": null,
+        "resolvedCommitSha": "cccccccccccccccccccccccccccccccccccccccc",
+        "rootTreeSha": "3333333333333333333333333333333333333333",
+        "subPath": "",
+        "manifestDigest": "a4344fbd7ae16cbdf34f860c8d7a09f4865c44988023f21756f708fe9b9faa11",
+        "acquiredAt": "2026-11-12T00:00:00.000Z",
+        "completeness": "complete",
+        "scope": "development",
+        "sourceGrantRef": null,
+        "evidenceRef": "synthetic-fixture"
+      },
+      "manifestA": {
+        "schema": "arbor.hvi.manifest/1",
+        "pinId": "4dd9eaf64f854b15ea0bca9ee3a1fcc55917a3f582848ad48be5c76e09c799c5",
+        "repoIdentity": "owenservera/synthetic-hq",
+        "resolvedCommitSha": "cccccccccccccccccccccccccccccccccccccccc",
+        "rootTreeSha": "3333333333333333333333333333333333333333",
+        "subPath": "",
+        "entries": [
+          {
+            "path": "hq/version.mjs",
+            "mode": "100644",
+            "blobSha": "be004aa35deadaeeebce1b32fd95c010733035de",
+            "bytes": 26,
+            "kind": "file",
+            "parseStatus": "text",
+            "excludedReason": null,
+            "symlinkTarget": null
+          }
+        ],
+        "completeness": "complete",
+        "truncated": false,
+        "observedEntries": 1,
+        "omittedMinimum": 0,
+        "errors": [],
+        "manifestDigest": "a4344fbd7ae16cbdf34f860c8d7a09f4865c44988023f21756f708fe9b9faa11"
+      },
+      "projectionC": {
+        "schema": "arbor.hvi.source-manifest/1",
+        "pinId": "4dd9eaf64f854b15ea0bca9ee3a1fcc55917a3f582848ad48be5c76e09c799c5",
+        "completeness": "complete",
+        "entries": [
+          {
+            "path": "hq/version.mjs",
+            "mode": "100644",
+            "blobSha": "be004aa35deadaeeebce1b32fd95c010733035de",
+            "bytes": 26,
+            "kind": "file",
+            "parseStatus": "text",
+            "excludedReason": null,
+            "symlinkTarget": null
+          }
+        ],
+        "truncated": false,
+        "digest": "84ef95b9af0b9891b894d5e9d2ebbfc80455b954ec54b9356769b544e98dbe2b"
+      },
+      "comparisonPin": {
+        "pinId": "4dd9eaf64f854b15ea0bca9ee3a1fcc55917a3f582848ad48be5c76e09c799c5",
+        "provider": "github",
+        "repoIdentity": "owenservera/synthetic-hq",
+        "resolvedCommitSha": "cccccccccccccccccccccccccccccccccccccccc",
+        "rootTreeSha": "3333333333333333333333333333333333333333",
+        "manifestDigest": "84ef95b9af0b9891b894d5e9d2ebbfc80455b954ec54b9356769b544e98dbe2b",
+        "completeness": "complete",
+        "scope": "development"
+      },
+      "syntheticFileText": "export const VERSION = 3;\n",
+      "hashReceipt": {
+        "nativeADigest": "a4344fbd7ae16cbdf34f860c8d7a09f4865c44988023f21756f708fe9b9faa11",
+        "projectionCDigest": "84ef95b9af0b9891b894d5e9d2ebbfc80455b954ec54b9356769b544e98dbe2b",
+        "independentDomains": true
+      }
+    }
+  ],
+  "wireComparison": {
+    "schema": "arbor.hvi.version-comparison/1",
+    "targetPinId": "4dd9eaf64f854b15ea0bca9ee3a1fcc55917a3f582848ad48be5c76e09c799c5",
+    "sourcePins": [
+      {
+        "pinId": "4dd9eaf64f854b15ea0bca9ee3a1fcc55917a3f582848ad48be5c76e09c799c5",
+        "provider": "github",
+        "repoIdentity": "owenservera/synthetic-hq",
+        "resolvedCommitSha": "cccccccccccccccccccccccccccccccccccccccc",
+        "rootTreeSha": "3333333333333333333333333333333333333333",
+        "manifestDigest": "84ef95b9af0b9891b894d5e9d2ebbfc80455b954ec54b9356769b544e98dbe2b",
+        "completeness": "complete",
+        "scope": "development"
+      },
+      {
+        "pinId": "6fa36c14ef60d4babd9727707bf57a828be7375e1a0a4724baa0b530044b8851",
+        "provider": "github",
+        "repoIdentity": "owenservera/synthetic-hq",
+        "resolvedCommitSha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "rootTreeSha": "2222222222222222222222222222222222222222",
+        "manifestDigest": "1ab832b53a908b34b51265bf4f95d9effa64ea01e4bae713e20b9e85365ae50d",
+        "completeness": "complete",
+        "scope": "development"
+      },
+      {
+        "pinId": "aef293761769b2aeb5af9375965386f97aba6098421f42e8c174aaa16cd7ba1b",
+        "provider": "github",
+        "repoIdentity": "owenservera/synthetic-hq",
+        "resolvedCommitSha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "rootTreeSha": "1111111111111111111111111111111111111111",
+        "manifestDigest": "cef2c0fbd5acdee037c2065f9869e5385d63d50ea01d848bad4bc00d343525e4",
+        "completeness": "complete",
+        "scope": "development"
+      }
+    ],
+    "pairwise": null,
+    "coverage": [
+      {
+        "sourcePinId": "6fa36c14ef60d4babd9727707bf57a828be7375e1a0a4724baa0b530044b8851",
+        "targetPinId": "4dd9eaf64f854b15ea0bca9ee3a1fcc55917a3f582848ad48be5c76e09c799c5",
+        "sourceCompleteness": "complete",
+        "targetCompleteness": "complete",
+        "totalCompared": 1,
+        "counts": {
+          "EXACT_BLOB": 0,
+          "SAME_PATH_CHANGED": 1,
+          "EXACT_RELOCATION": 0,
+          "SPLIT_CANDIDATE": 0,
+          "COMBINE_CANDIDATE": 0,
+          "SIMILARITY_CANDIDATE": 0,
+          "MISSING_AT_TARGET": 0,
+          "NEW_AT_TARGET": 0,
+          "UNOBSERVABLE": 0
+        }
+      },
+      {
+        "sourcePinId": "aef293761769b2aeb5af9375965386f97aba6098421f42e8c174aaa16cd7ba1b",
+        "targetPinId": "4dd9eaf64f854b15ea0bca9ee3a1fcc55917a3f582848ad48be5c76e09c799c5",
+        "sourceCompleteness": "complete",
+        "targetCompleteness": "complete",
+        "totalCompared": 1,
+        "counts": {
+          "EXACT_BLOB": 0,
+          "SAME_PATH_CHANGED": 1,
+          "EXACT_RELOCATION": 0,
+          "SPLIT_CANDIDATE": 0,
+          "COMBINE_CANDIDATE": 0,
+          "SIMILARITY_CANDIDATE": 0,
+          "MISSING_AT_TARGET": 0,
+          "NEW_AT_TARGET": 0,
+          "UNOBSERVABLE": 0
+        }
+      }
+    ],
+    "summary": {
+      "counts": {
+        "EXACT_BLOB": 0,
+        "SAME_PATH_CHANGED": 2,
+        "EXACT_RELOCATION": 0,
+        "SPLIT_CANDIDATE": 0,
+        "COMBINE_CANDIDATE": 0,
+        "SIMILARITY_CANDIDATE": 0,
+        "MISSING_AT_TARGET": 0,
+        "NEW_AT_TARGET": 0,
+        "UNOBSERVABLE": 0
+      },
+      "observedFindings": 2,
+      "emittedFindings": 2,
+      "candidatesObserved": 0,
+      "semanticParity": "UNVERIFIED",
+      "runtimeParity": "UNVERIFIED"
+    },
+    "sourceDeltas": [
+      {
+        "id": "src-473ab676450d826bdece3738",
+        "originPinId": "6fa36c14ef60d4babd9727707bf57a828be7375e1a0a4724baa0b530044b8851",
+        "targetPinId": "4dd9eaf64f854b15ea0bca9ee3a1fcc55917a3f582848ad48be5c76e09c799c5",
+        "originRepo": "owenservera/synthetic-hq",
+        "originSha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "originPath": "hq/version.mjs",
+        "originBlob": "70473ed79548c537842f94a79788e4bb092dce91",
+        "targetPaths": [
+          "hq/version.mjs"
+        ],
+        "targetBlobs": [
+          "be004aa35deadaeeebce1b32fd95c010733035de"
+        ],
+        "state": "SAME_PATH_CHANGED",
+        "sourceLineage": "UNVERIFIED",
+        "certainty": "source_verified",
+        "decision": "REVIEW_REQUIRED",
+        "owner": "HQ_REVIEW",
+        "evidenceRefs": [
+          "git:owenservera/synthetic-hq@bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:hq/version.mjs#70473ed79548c537842f94a79788e4bb092dce91",
+          "git:owenservera/synthetic-hq@cccccccccccccccccccccccccccccccccccccccc:hq/version.mjs#be004aa35deadaeeebce1b32fd95c010733035de"
+        ]
+      },
+      {
+        "id": "src-e50d305b841404f71b1f3f26",
+        "originPinId": "aef293761769b2aeb5af9375965386f97aba6098421f42e8c174aaa16cd7ba1b",
+        "targetPinId": "4dd9eaf64f854b15ea0bca9ee3a1fcc55917a3f582848ad48be5c76e09c799c5",
+        "originRepo": "owenservera/synthetic-hq",
+        "originSha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "originPath": "hq/version.mjs",
+        "originBlob": "132757d30ab71910a2407269a530d9d373482f71",
+        "targetPaths": [
+          "hq/version.mjs"
+        ],
+        "targetBlobs": [
+          "be004aa35deadaeeebce1b32fd95c010733035de"
+        ],
+        "state": "SAME_PATH_CHANGED",
+        "sourceLineage": "UNVERIFIED",
+        "certainty": "source_verified",
+        "decision": "REVIEW_REQUIRED",
+        "owner": "HQ_REVIEW",
+        "evidenceRefs": [
+          "git:owenservera/synthetic-hq@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:hq/version.mjs#132757d30ab71910a2407269a530d9d373482f71",
+          "git:owenservera/synthetic-hq@cccccccccccccccccccccccccccccccccccccccc:hq/version.mjs#be004aa35deadaeeebce1b32fd95c010733035de"
+        ]
+      }
+    ],
+    "capabilityDeltas": [],
+    "identityCandidates": [],
+    "authorityConflicts": [],
+    "unported": [],
+    "intentionallyExcluded": [],
+    "unobserved": [],
+    "runtimeProof": [],
+    "mergePlan": [],
+    "evidenceIndex": [
+      {
+        "id": "git:owenservera/synthetic-hq@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:hq/version.mjs#132757d30ab71910a2407269a530d9d373482f71",
+        "type": "source_blob",
+        "repo": "owenservera/synthetic-hq",
+        "commitSha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "path": "hq/version.mjs",
+        "blobSha": "132757d30ab71910a2407269a530d9d373482f71"
+      },
+      {
+        "id": "git:owenservera/synthetic-hq@bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:hq/version.mjs#70473ed79548c537842f94a79788e4bb092dce91",
+        "type": "source_blob",
+        "repo": "owenservera/synthetic-hq",
+        "commitSha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "path": "hq/version.mjs",
+        "blobSha": "70473ed79548c537842f94a79788e4bb092dce91"
+      },
+      {
+        "id": "git:owenservera/synthetic-hq@cccccccccccccccccccccccccccccccccccccccc:hq/version.mjs#be004aa35deadaeeebce1b32fd95c010733035de",
+        "type": "source_blob",
+        "repo": "owenservera/synthetic-hq",
+        "commitSha": "cccccccccccccccccccccccccccccccccccccccc",
+        "path": "hq/version.mjs",
+        "blobSha": "be004aa35deadaeeebce1b32fd95c010733035de"
+      }
+    ],
+    "limits": {
+      "maxPins": 16,
+      "maxEntries": 100000,
+      "maxFindings": 20000,
+      "maxPairs": 120,
+      "totalEntries": 3,
+      "truncated": false,
+      "omittedFindings": 0,
+      "omittedCandidates": 0,
+      "scopedPrefixes": [
+        ""
+      ]
+    },
+    "errors": [],
+    "reproducibilityDigest": "98b0b1b2aed064c53dfc92b9523f6b66620b409cc827b054fa658227c98b13d8"
+  },
+  "reportContract": {
+    "consumerSchema": "arbor.hvi.version-comparison/1",
+    "requiresAdapterForFv1": true,
+    "exportSchema": "arbor.hvi.report/1",
+    "provenanceFieldsToPreserve": [
+      "originPath",
+      "originBlob",
+      "targetPaths",
+      "targetBlobs",
+      "evidenceRefs",
+      "coverage",
+      "limits",
+      "errors",
+      "identityCandidates"
+    ],
+    "testTruth": "FIXTURE_NOT_EXECUTED",
+    "runtimeAccepted": false
+  },
+  "requiredAssertions": [
+    "all 3 pin IDs unique, same repo, distinct 40hex resolvedCommitSha",
+    "aManifestDigest and cProjectionDigest each recomputed separately and not equal",
+    "comparisonPin.manifestDigest equals cProjection.digest, original pin.manifestDigest equals A native digest",
+    "2 SAME_PATH_CHANGED sourceDeltas, 2 coverage records with target c and source a/b",
+    "C report digest computed from canonical report excluding digest; no runtime parity claims"
+  ]
+}
