@@ -1,0 +1,127 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.arbor.local/hvi/v1/evidence-receipt.schema.json",
+  "title": "ARBOR HVI evidence-receipt v1",
+  "description": "Source-only normative wire contract; no runtime authority inferred.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "id",
+    "kind",
+    "claim",
+    "owner",
+    "source",
+    "evidenceDigest",
+    "observation",
+    "status"
+  ],
+  "properties": {
+    "schema": {
+      "const": "arbor.hvi.evidence-receipt/1"
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024
+    },
+    "kind": {
+      "enum": [
+        "source_blob",
+        "source_symbol",
+        "contract",
+        "fixture",
+        "executed_test",
+        "host_receipt",
+        "device_receipt",
+        "owner_decision"
+      ]
+    },
+    "claim": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024
+    },
+    "owner": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024
+    },
+    "source": {
+      "type": "object",
+      "required": [
+        "repo",
+        "commitSha",
+        "path",
+        "blobSha"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "repo": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024
+        },
+        "commitSha": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024
+        },
+        "blobSha": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        "lines": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "minItems": 2,
+          "maxItems": 2
+        }
+      }
+    },
+    "evidenceDigest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "observation": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "status": {
+      "enum": [
+        "SOURCE_PRESENT",
+        "SOURCE_IMPORTED",
+        "SOURCE_PATCHED",
+        "PREPARED_NOT_PROMOTED",
+        "TEST_EXECUTED",
+        "INTEGRATED_UNVERIFIED",
+        "RUNTIME_VERIFIED",
+        "BLOCKED",
+        "UNRUN"
+      ]
+    },
+    "command": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024
+    },
+    "exitCode": {
+      "type": "integer"
+    },
+    "environment": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024
+    },
+    "ownerConfirmed": {
+      "type": "boolean"
+    }
+  }
+}
