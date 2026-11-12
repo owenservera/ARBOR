@@ -32,5 +32,7 @@ export function validate(schema,value,path='$'){
    if(schema.properties?.[key])errors.push(...validate(schema.properties[key],v,path+'.'+key));
   }
  }
+ if(schema.allOf)for(const branch of schema.allOf)errors.push(...validate(branch,value,path));
+ if(schema.if&&schema.then&&validate(schema.if,value,path).length===0)errors.push(...validate(schema.then,value,path));
  return errors;
 }
