@@ -55,7 +55,7 @@ function makeDocument(view, revision, expandedRowIds, ownerRef, workspaceRef) {
     const safe=label(value,kind==='card'?80:220);
     const node=kind==='card'
       ? {id,type:'card',props:{title:safe},a11y:{role:'region',name:safe},children:[]}
-      : {id,type:'text',props:{value:safe},a11y:{role:'text',name:safe},children:[]};
+      : {id,type:'text',props:{value:safe},a11y:{role:'text',name:safe.slice(0,120)},children:[]};
     nodes.push(node);group.children.push(id);return true;
   };
   add('card','HQ version inspector - read only');
