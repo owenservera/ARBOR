@@ -36,6 +36,8 @@ const SHELL_FILES = [
   'bootstrap-phone.mjs',
   'visual-theme.mjs',
   'build-composer.mjs',
+  'vec/compiler.mjs',
+  'vec/ui-adapter.mjs',
   'generative-ui/bootstrap-adapters.mjs',
   'generative-ui/catalog.mjs',
   'generative-ui/compiler.mjs',

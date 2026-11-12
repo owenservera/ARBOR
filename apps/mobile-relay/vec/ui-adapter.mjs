@@ -55,7 +55,7 @@ function makeProposal(surface, op, explanation) {
 }
 export function compileVecUiRequest({ text, surface } = {}) {
   if (typeof text !== 'string' || !text.trim() || text.length > MAX_UI_REQUEST ||
-      /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(text))
+      /[\u0000-\u001f\u007f]/.test(text))
     return outcome('refused', 'INVALID_UI_REQUEST');
   const request = text.trim().replace(/\s+/g, ' ');
   if (COMPLEX.test(request)) return outcome('unsupported', 'COMPLEX_REQUEST');

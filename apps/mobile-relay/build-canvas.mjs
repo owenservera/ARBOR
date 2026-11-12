@@ -1,7 +1,7 @@
 // The Build canvas request screen. It asks the owner's main AI for a draft, shows it as a dashed
 // proposal, and applies it only when the owner taps Activate. Sending and applying are injected, so
 // this file never talks to a provider itself and never resends: a draft that is still pending is polled, not re-asked.
-import { SUGGESTIONS, buildDesignPrompt, previewReply, failureText, blankSurface } from './build-composer.mjs';
+import { SUGGESTIONS, buildDesignPrompt, resolveBuildRequest, previewReply, failureText, blankSurface } from './build-composer.mjs';
 import { renderSurface } from './generative-ui/renderer.mjs';
 
 const PENDING_KEY = 'vivim.build.pending.v1';
@@ -40,7 +40,7 @@ export function mountBuildCanvas({ host, request, getSurface, getProvider, send,
       if (record?.status === 'done') {
         keep(null);
         const surface = current(), out = previewReply({ reply: record.result, surface });
-        return out.ok ? set({ name: 'ready', ...out, surface }) : set({ name: 'error', message: out.reason });
+        return out.ok ? set({ name: 'ready', ...out, surface, origin: 'ai' }) : set({ name: 'error', message: out.reason });
       }
       if (Date.now() - started > 600000) return set({ name: 'error', message: 'No answer yet. Check your PC. VIVIM has not sent this twice.' });
       if (Date.now() - started > 180000 && state.name === 'waiting') set({ name: 'waiting', note: 'Still waiting. It can take a few minutes. VIVIM will not send it again.' });
@@ -48,9 +48,28 @@ export function mountBuildCanvas({ host, request, getSurface, getProvider, send,
   }
 
   async function ask() {
+    // A known UI grammar is compiled locally to the same unprivileged proposal IR.
+    // No model send; actual activation still goes through the paired Host.
+    const surface = current();
+    const local = resolveBuildRequest({ request: text, surface });
+    if (local.outcome === 'candidate') {
+      ++run;
+      return set({ name: 'ready', ...local, surface, origin: 'vec' });
+    }
+    if (local.outcome === 'clarification_required') {
+      return set({ name: 'idle', error: local.code === 'UI_TARGET_AMBIGUOUS'
+        ? 'More than one component has that name. Rename or select one first.'
+        : 'I could not find that component on your current screen.' });
+    }
+    if (local.outcome === 'refused') {
+      return set({ name: 'idle', error: 'That edit could not be safely previewed. Nothing changed.' });
+    }
+    // Unknown/complex request: preserve the existing explicitly bounded model
+    // proposal path. It still cannot apply a change until the owner taps Activate.
     const provider = getProvider();
     let prompt;
-    try { prompt = buildDesignPrompt({ request: text, surface: current() }); } catch (error) { return set({ name: 'idle', error: error.message }); }
+    try { prompt = buildDesignPrompt({ request: text, surface }); }
+    catch (error) { return set({ name: 'idle', error: error.message }); }
     const token = ++run;
     set({ name: 'waiting', note: `Asking ${LABELS[provider] ?? 'your AI'}…` });
     try {
@@ -77,11 +96,11 @@ export function mountBuildCanvas({ host, request, getSurface, getProvider, send,
     const label = el('label', null, empty() ? 'What would you like to create?' : 'What would you like to change?'); label.htmlFor = 'build-text'; label.className = empty() ? 'compose-title' : 'compose-label';
     const area = el('textarea'); area.id = 'build-text'; area.rows = 3; area.maxLength = 400; area.value = text; area.placeholder = empty() ? 'Describe it in your own words' : 'For example: show my projects as a timeline';
     area.oninput = () => { text = area.value; go.disabled = !text.trim(); };
-    const go = el('button', 'btn pri', 'Ask my AI'); go.type = 'button'; go.disabled = !text.trim(); go.onclick = ask;
+    const go = el('button', 'btn pri', 'Preview change'); go.type = 'button'; go.disabled = !text.trim(); go.onclick = ask;
     const chips = el('div', 'chips compose-chips');
     for (const s of SUGGESTIONS) { const chip = el('button', 'chip', s); chip.type = 'button'; chip.onclick = () => { text = s; render(); document.getElementById('build-text')?.focus(); }; chips.append(chip); }
     box.append(label, area, el('div', 'compose-row'), chips);
-    box.querySelector('.compose-row').append(el('small', 'muted', 'Nothing changes until you activate it.'), go);
+    box.querySelector('.compose-row').append(el('small', 'muted', 'Known edits stay local. Other requests use your AI. Activate to save.'), go);
     if (state.error) { const e = el('p', 'compose-error', state.error); e.setAttribute('role', 'alert'); box.append(e); }
     if (state.note) box.append(el('p', 'muted', state.note));
     return box;
@@ -89,7 +108,7 @@ export function mountBuildCanvas({ host, request, getSurface, getProvider, send,
 
   function proposalCard() {
     const card = el('article', 'proposal');
-    card.append(el('span', 'tour-eyebrow', 'PROPOSED BY YOUR AI'), el('h3', null, state.summary.explanation));
+    card.append(el('span', 'tour-eyebrow', state.origin === 'vec' ? 'COMPILED LOCALLY · NO AI' : 'PROPOSED BY YOUR AI'), el('h3', null, state.summary.explanation));
     card.append(el('p', 'muted', `${state.summary.changes} ${state.summary.changes === 1 ? 'change' : 'changes'} to your app. Preview below.`));
     if (state.summary.unknowns.length) card.append(el('p', 'muted', "VIVIM doesn't know: " + state.summary.unknowns.join('; ')));
     const view = el('div', 'proposal-preview');

@@ -32,7 +32,7 @@ export function createVecCompiler({ adapters = {} } = {}) {
         return { ...fail(domain, 'unsupported', 'LEGACY_OWNER_NOT_MIGRATED'), legacyOwner:
           domain === 'wiki' ? 'hq.wiki-program/1' : 'vivim.command-intent/0.1' };
       try {
-        const result = installed[domain]({ text, ...context });
+        const result = installed[domain]({ ...context, text });
         if (!plain(result) || !STATES.has(result.outcome)) return fail(domain, 'refused', 'ADAPTER_INVALID_RESULT');
         // Explicitly overwrite any caller-supplied "authorized", "persisted" or "executed" claim.
         const { outcome, code, proposal, preview, summary, detail } = result;
