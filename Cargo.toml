@@ -1,0 +1,15 @@
+[workspace]
+resolver = "2"
+members = [
+  "native/hqkg",
+  "core/programmability",
+  "src-tauri",
+]
+default-members = [
+  "native/hqkg",
+  "core/programmability",
+]
+
+[profile.dev]
+debug = 0
+incremental = false
