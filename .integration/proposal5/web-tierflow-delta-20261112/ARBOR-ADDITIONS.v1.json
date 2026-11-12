@@ -1,0 +1,85 @@
+{
+  "schema": "arbor.proposal5.ui-additions/1",
+  "auditDate": "2026-11-12",
+  "arborSha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+  "note": "Reverse direction. Products/source files present at mapped ARBOR paths but without a file at the analogous frozen donor path. Excludes wholly ARBOR-owned root/contracts/docs/proposals; does not assess correctness, license or original donor history.",
+  "summary": [
+    {
+      "group": "mobile-pwa",
+      "arborOnly": 4
+    },
+    {
+      "group": "host",
+      "arborOnly": 0
+    },
+    {
+      "group": "studio",
+      "arborOnly": 0
+    },
+    {
+      "group": "harness",
+      "arborOnly": 0
+    },
+    {
+      "group": "native-shell",
+      "arborOnly": 1
+    },
+    {
+      "group": "rust-programmability",
+      "arborOnly": 0
+    },
+    {
+      "group": "tierflow-src",
+      "arborOnly": 0
+    },
+    {
+      "group": "tierflow-tests",
+      "arborOnly": 0
+    },
+    {
+      "group": "tierflow-web",
+      "arborOnly": 0
+    },
+    {
+      "group": "tierflow-runtime",
+      "arborOnly": 0
+    }
+  ],
+  "files": [
+    {
+      "group": "mobile-pwa",
+      "path": "apps/mobile-relay/browser-device-key.mjs",
+      "blobSha": "2c7d16ee93a18ad41e0681295d9e94522273df84",
+      "sourceEquivalent": "apps/mobile-relay/browser-device-key.mjs",
+      "class": "ARBOR_ONLY_IN_MAPPED_SUBTREE"
+    },
+    {
+      "group": "mobile-pwa",
+      "path": "apps/mobile-relay/test/browser-device-key.test.mjs",
+      "blobSha": "d7e5dd0c338eeaa1861ca8bd2e8c909d70337797",
+      "sourceEquivalent": "apps/mobile-relay/test/browser-device-key.test.mjs",
+      "class": "ARBOR_ONLY_IN_MAPPED_SUBTREE"
+    },
+    {
+      "group": "mobile-pwa",
+      "path": "apps/mobile-relay/test/browser-enrollment-flow.test.mjs",
+      "blobSha": "fd79ee0bd3cd3b4af590b5cf270b73c3d00af899",
+      "sourceEquivalent": "apps/mobile-relay/test/browser-enrollment-flow.test.mjs",
+      "class": "ARBOR_ONLY_IN_MAPPED_SUBTREE"
+    },
+    {
+      "group": "mobile-pwa",
+      "path": "apps/mobile-relay/test/host-static-allowlist-contract.test.mjs",
+      "blobSha": "3560e282eabaed3628255b327603de7b4dca3702",
+      "sourceEquivalent": "apps/mobile-relay/test/host-static-allowlist-contract.test.mjs",
+      "class": "ARBOR_ONLY_IN_MAPPED_SUBTREE"
+    },
+    {
+      "group": "native-shell",
+      "path": "src-tauri/NATIVE-SECURITY-W02-PREP.md",
+      "blobSha": "2d28a11591c89cce76f22e0339c15a2affc9900f",
+      "sourceEquivalent": "src-tauri/NATIVE-SECURITY-W02-PREP.md",
+      "class": "ARBOR_ONLY_IN_MAPPED_SUBTREE"
+    }
+  ]
+}
