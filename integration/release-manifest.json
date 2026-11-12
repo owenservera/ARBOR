@@ -30,5 +30,20 @@
     "nextWaveApproved": false,
     "bPwaSignerStaticRoute": "MERGED_UNTESTED",
     "canonicalMainPr": 10
+  },
+  "mainConsolidation": {
+    "pr": 10,
+    "sourceOnly": true,
+    "ciRunId": 43233248631,
+    "ciConclusion": "startup_failure",
+    "ciJobs": 0,
+    "merged": false,
+    "cargoLock": "ABSENT",
+    "bunLock": "ABSENT",
+    "betaGo": false,
+    "nextWaveAcceptedSha": null,
+    "securityAndDeviceUnrun": true,
+    "toolchainTests": "UNRUN",
+    "deploymentAuthorized": false
   }
 }
