@@ -72,8 +72,9 @@ function makeDocument(view, revision, expandedRowIds, ownerRef, workspaceRef) {
     for(const row of view.rows.slice(0,8)) {
       if(!add('text',label(row.originPath??'unknown',95)+' -> '+label(row.sourceState,40)+'; certainty '+label(row.certainty,35))) break;
       if(expandedRowIds.includes(row.id)) {
-        const refs=row.evidenceRefs.slice(0,2).map(x=>label(x,90)).join(' | ') || 'No verified evidence';
-        add('text','Provenance (source only): '+refs);
+        const refs=row.evidenceRefs.slice(0,2);
+        if(!refs.length) add('text','No provenance receipt provided.');
+        for(const ref of refs) add('text','Source evidence: '+label(ref,200));
       }
     }
     add('text','Rows '+String(view.page?.offset??0)+'-'+String((view.page?.offset??0)+Math.min(view.rows.length,8))+
@@ -99,8 +100,9 @@ export function renderHviInspector({
   ownerRef='hvi_fixture_owner',workspaceRef='hvi_fixture_workspace',
   expectedDigest=null,
 }={}, {viewportPx=360}={}) {
-  const stale = !Number.isSafeInteger(expectedRevision)||expectedRevision<0||
-    expectedRevision>1e9||currentRevision!==expectedRevision;
+  const needsRevision = envelope!==null||expectedRevision!==null||currentRevision!==null;
+  const stale = needsRevision&&(!Number.isSafeInteger(expectedRevision)||expectedRevision<0||
+    expectedRevision>1e9||currentRevision!==expectedRevision);
   const invalidScope=!ID.test(ownerRef)||!ID.test(workspaceRef);
   if(invalidScope) throw new TypeError('HVI_INSPECTOR_INVALID_SCOPE');
   if(!Array.isArray(expandedRowIds)||expandedRowIds.length>8 ||
