@@ -5,8 +5,8 @@
   "status": "PREPARED_NOT_PROMOTED",
   "syntheticOnly": true,
   "latestVerifiedGitBlobs": {
-    "module": "bc77b89299db5029bcf877477dc76ef6474d628a",
-    "tests": "1c3e96c7b79bcde5da0d11a78288eeb2b7f879c7"
+    "module": "122770a4732325dc6617484bd4166a292547241c",
+    "tests": "d69fc0f8f855a30d5d3803e2be05819870a51c5f"
   },
   "executed": [
     {
@@ -14,10 +14,11 @@
       "environment": "connected tool isolated V8 module evaluation of exact GitHub committed bytes; structuredClone JSON-equivalent shim",
       "command": "Fetch exact W/mirror.mjs and W/negative-tests.mjs; remove ESM import/export syntax for V8 evaluation; invoke runNegativeTests()",
       "exitCode": 0,
-      "passed": 14,
+      "passed": 15,
       "failed": 0,
       "cases": [
         "source-linked canonical HQ IDs",
+        "canonical HQ path-bearing document IDs preserved",
         "stale screen result invalidated",
         "permission revocation between source read and response",
         "partial chat history never claims completeness",
@@ -31,7 +32,8 @@
         "source response revision mismatch is stale",
         "revocation delta clears source IDs",
         "invalid screen rejected before source read"
-      ]
+      ],
+      "note": "Final run against updated committed blobs; 15/15 isolated V8; source-native IDs with slash/# retained"
     },
     {
       "id": "V8-SUBSET",

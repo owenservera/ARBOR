@@ -50,6 +50,20 @@ All blobs below are SHA-1 Git blob object IDs observed by fetch_file, not source
 | IMPORTED_CONTRACT | ARBOR F `contracts/interop/v1/types.ts` | `e329eb1b8506938c8fc981b426c51a3582ae03c7` | SourceRef+inert view mirrors; no action authorization |
 | IMPORTED_CONTRACT | ARBOR F `contracts/interop/v1/validate.mjs` | `25c0b36b11f2e6f3b003920e14e166a8f74354b7` | read guard vocabulary, not live verification |
 
+
+### Additional audited donor blob pins (source-only)
+| Classification | Source path | Blob SHA | Why inspected |
+| --- | --- | --- | --- |
+| SOURCE_AUDIT | repos-hq `research/autowiki-screen-mirror/AUTOWIKI-SOURCE-AUDIT.v0.json` | `045034fa0347240e7bf8ecafd7fb89afa87dd595` | comparative source audit, not runtime receipt |
+| SOURCE_AUDIT | repos-hq `research/rock-core-storage/ROCK-SOURCE-AUDIT.v0.json` | `0838bebbecaf5bf805e453b222965a320d3e43e2` | real byte inventory gaps |
+| CONTRACT | repos-hq `research/rock-core-storage/contracts/rock-storage-policy.v0.schema.json` | `06e1c0bcd1b42442adb4832632ea9ebb1d56dc8f` | policy schema, never grant |
+| DESIGN_ONLY | repos-hq `research/rock-core-storage/PRD-RC-001.md` | `dc1cfdee61eb45885adc8b1ea621a6a577d562ac` | protected Rock and physical pressure |
+| DESIGN_ONLY | repos-hq `research/rock-core-storage/ARCHITECTURE-RC-001.md` | `dd2fdae7bc4035a18dbaaf62eae7a06414a93d72` | no second storage authority |
+| DESIGN_ONLY | vivim-labs `nlp-command-ui-lab/docs/R005-PROGRESSIVE-SPRINT.md` | `e8d8aeb663a8d3828b228ca1114f203a7bb4a6ce` | source-vs-intent/effect boundary |
+| IMPLEMENTED_LAB | vivim-labs `nlp-command-ui-lab/src/semantic-lens.mjs` | `d5de11edf693eb67ffed23e1fd26e68240d4420c` | pure lexical UI, not source authority |
+| IMPLEMENTED_LAB | vivim-labs `nlp-command-ui-lab/src/compiler.mjs` | `5df077d5f0d5873fbd3eb0a99afbcc5ed7f9031a` | Host result wins, no effects |
+| SOURCE_IDENTITY | ARBOR D `hq/lib/kb.mjs` | `cde5f2f57e9b6fff7651fc6af013ad76fcae32ac` | `docNodeId` composes `doc:${project}:${path}`; path markers preserved without rewriting IDs |
+
 ## ERA 3 — W-owned slice and missing gates
 - W implemented: `mirror.mjs` ephemeral read projection, `negative-tests.mjs` synthetic denial/staleness tests, `run-tests.mjs` Node runnable entrypoint; all within isolated W directory. No donor source copied into live product paths.
 - MISSING P0: trusted runtime screen-context producer and session/world grant lease from B, exact tab binding/partial history adapter from C, D per-owner source-authorized KB query and actual four-repo scope mapping, E display/flip-back parity across desktop/PWA, F independent native contract, security and device checks.
