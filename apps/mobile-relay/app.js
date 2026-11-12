@@ -4,7 +4,7 @@ import { mountBuildSurface, sendProposal } from './generative-ui/phone-surface.m
 import { mountBuildCanvas } from './build-canvas.mjs';
 import { mountWelcome } from './welcome.mjs';
 import { parsePairFragment, redeemDevicePairToken } from './pairing-link.mjs';
-import { enrollWithChallenge, resumeDeviceSession } from './device-enrollment.mjs';
+import { prepareDeviceSigner, enrollWithChallenge, resumeDeviceSession } from './device-enrollment.mjs';
 import { worldModel, meModel, todayModel, LIVE_STATE_LABELS, TABS } from './ux/model.mjs';
 import { renderToday, renderWorld, renderMe } from './ux/render.mjs';
 import { createControlChat } from './control-chat.mjs';
@@ -630,8 +630,7 @@ function showAppHandoff(token) {
   const open = el('a', 'btn pri', 'Open VIVIM app');
   open.href = appUrl;
   open.style.display = 'inline-flex'; open.style.alignItems = 'center'; open.style.justifyContent = 'center';
-  // Never redeem a one-time key challenge in a regular browser: only the
-  // installed Android shell can sign it with the private Keystore key.
+  // Fallback only when secure WebCrypto/IndexedDB is unavailable; QR is not consumed.
   panel.append(title, detail, open);
   document.body.append(panel);
   // The normal Talk session must not claim pairing was complete before enrollment.
@@ -661,14 +660,24 @@ async function start() {
 async function runStart() {
   const fragment = parsePairFragment(location.hash);
   if (fragment.type === 'device') {
-    // The external camera opens a browser. Offer a clear route into the installed APK
-    // instead of consuming the only device token in the wrong browser cookie jar.
-    const native = String(navigator.userAgent || '').includes('VIVIM/');
-    if (!native) { showAppHandoff(fragment.token); return; }
+    // Secure browser PWA and native Android use the same Host challenge/grant contract.
+    // Preflight before consuming a one-use QR token; never downgrade broken native signing.
+    if (!transport.direct) { setConn('Pair from your private Direct Host URL only', true); return; }
+    let signer;
+    try {
+      if (String(navigator.userAgent || '').includes('VIVIM/') &&
+          globalThis.VivimDeviceKey === undefined)
+        throw new Error('Installed Android signing bridge unavailable');
+      signer = await prepareDeviceSigner();
+    } catch (error) {
+      setConn('Secure device pairing unavailable: ' + error.message, true);
+      if (!String(navigator.userAgent || '').includes('VIVIM/')) showAppHandoff(fragment.token);
+      return;
+    }
     history.replaceState(null, '', location.pathname + location.search);
     try {
       const challenge = await redeemDevicePairToken(fragment.token, { direct: transport.direct, fetchImpl: fetch });
-      await enrollWithChallenge(challenge);
+      await enrollWithChallenge(challenge, { signer });
       setConn('Approval requested on PC; return here once approved', true);
       document.getElementById('app').hidden = true;
       document.getElementById('pairbox').hidden = false;
