@@ -6,7 +6,8 @@ import { validateSurface, PROPOSAL_SCHEMA } from '../generative-ui/catalog.mjs';
 import { compileUiProposal } from '../generative-ui/compiler.mjs';
 
 const PREFIX = /^(?:add|create|rename|remove|delete|move)\b/i;
-const COMPLEX = /\b(?:and then|after that|unless|whenever|automatically|every (?:day|morning|night|week))\b/i;
+// Refuse possible second actions/conditionals instead of treating them as card titles.
+const COMPLEX = /(?:[;]|\b(?:and then|and also|and (?:add|create|remove|delete|move|rename)|after that|unless|whenever|when|if|then|automatically|every (?:day|morning|night|week))\b)/i;
 const ADD = /^(?:add|create) (?:a |an )?(card|heading|text) (?:called|named|saying) (.+)$/i;
 const RENAME = /^rename (?:the )?(card|heading|text) (?:called |named )?(.+?) to (.+)$/i;
 const REMOVE = /^(?:remove|delete) (?:the )?(card|heading|text) (?:called |named )?(.+)$/i;

@@ -30,7 +30,7 @@ export function createVecCompiler({ adapters = {} } = {}) {
       if (!plain(context)) return fail(domain, 'refused', 'INVALID_CONTEXT');
       if (!Object.hasOwn(installed, domain))
         return { ...fail(domain, 'unsupported', 'LEGACY_OWNER_NOT_MIGRATED'), legacyOwner:
-          domain === 'wiki' ? 'hq.wiki-program/1' : 'vivim.command-intent/0.1' };
+          ({ wiki: 'hq.wiki-program/1', command: 'vivim.command-intent/0.1', ui: 'vivim.ui-proposal/1' })[domain] };
       try {
         const result = installed[domain]({ ...context, text });
         if (!plain(result) || !STATES.has(result.outcome)) return fail(domain, 'refused', 'ADAPTER_INVALID_RESULT');

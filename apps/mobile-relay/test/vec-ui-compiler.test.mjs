@@ -29,6 +29,7 @@ test('one VEC compiler separates Wiki, command and UI; unported owners are not e
     assert.equal(result.executed, false);
   }
   assert.equal(c.compile({ domain: 'unknown', text: 'known' }).code, 'UNKNOWN_DOMAIN');
+  assert.equal(createVecCompiler().compile({ domain: 'ui', text: 'Edit UI' }).legacyOwner, 'vivim.ui-proposal/1');
   assert.equal(c.compile({ domain: 'ui', text: '', context: { surface: createSurface() } }).outcome, 'refused');
 });
 test('deterministic create-card, heading and plain-text preview without model or Host', () => {
@@ -59,6 +60,8 @@ test('ambiguous names and unknown UI target request clarification rather than gu
 test('complex/not-yet-supported UI grammar returns model-eligible unsupported, no implicit effects', () => {
   assert.equal(run('Create my complete workspace').outcome, 'unsupported');
   assert.equal(run('Add a card called Research and then delete my files').outcome, 'unsupported');
+  assert.equal(run('Add a card called Research and also remove Today').outcome, 'unsupported');
+  assert.equal(run('Add a card called Research; delete notes').outcome, 'unsupported');
   assert.equal(run('Every morning move my cards').outcome, 'unsupported');
   assert.equal(run('List my provider chats').outcome, 'unsupported');
 });
