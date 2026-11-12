@@ -97,7 +97,7 @@ export function buildParityAtlas(input={}) {
   const donor=manifest(input.donor), target=manifest(input.target);
   if (!Array.isArray(input.owners??[]) || !Array.isArray(input.ownerDecisions??[])
     || !Array.isArray(input.testReceipts??[])) fail('INVALID_INPUT');
-  if (input.testReceipts.length>MAX_EVIDENCE || input.ownerDecisions.length>MAX_EVIDENCE) fail('RESOURCE_LIMIT');
+  if ((input.testReceipts??[]).length>MAX_EVIDENCE || (input.ownerDecisions??[]).length>MAX_EVIDENCE) fail('RESOURCE_LIMIT');
   const evidence=indexEvidence(input.sourceEvidence??[]);
   const targetByPath=new Map(target.entries.map(e=>[e.path,e]));
   const targetByBlob=new Map();
