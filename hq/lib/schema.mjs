@@ -485,12 +485,20 @@ ${CAPABILITY_DDL}
 export function openDb(dbPath) {
   mkdirSync(dirname(dbPath), { recursive: true });
   const db = new DatabaseSync(dbPath);
-  db.exec('PRAGMA journal_mode = WAL');
-  db.exec('PRAGMA synchronous = NORMAL');
-  db.exec('PRAGMA foreign_keys = ON');
-  db.exec('PRAGMA busy_timeout = 5000');
-  migrate(db);
-  return db;
+  try {
+    db.exec('PRAGMA journal_mode = WAL');
+    db.exec('PRAGMA synchronous = NORMAL');
+    db.exec('PRAGMA foreign_keys = ON');
+    db.exec('PRAGMA busy_timeout = 5000');
+    migrate(db);
+    return db;
+  } catch (error) {
+    // A failed open must not leak the handle: the caller never receives the db
+    // object, so nothing else can close it, and the file stays locked (EBUSY on
+    // Windows) which breaks disposable-index cleanup.
+    try { db.close(); } catch { /* handle is already unusable */ }
+    throw error;
+  }
 }
 
 export function openMemoryDb() {

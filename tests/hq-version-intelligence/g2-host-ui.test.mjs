@@ -58,7 +58,12 @@ test('reused same-repository pins never imply runtime or semantic equivalence',a
   const c=out.inspector.originalComparison;
   assert.equal(new Set(c.sourcePins.map(p=>p.pinId)).size,3);
   assert.equal(new Set(c.sourcePins.map(p=>p.repoIdentity)).size,1);
-  assert.equal(c.sourcePins[0].resolvedCommitSha,SYNTHETIC_SHAS.v1);
+  // The C comparison envelope is canonically ordered by pinId (compare/index.mjs
+  // `cleanPins = ordered(...)`), so request order is NOT preserved here. Assert the
+  // three distinct revisions by value, and pin the canonical ordering itself.
+  assert.deepEqual(c.sourcePins.map(p=>p.pinId),[...c.sourcePins.map(p=>p.pinId)].sort());
+  assert.deepEqual([...new Set(c.sourcePins.map(p=>p.resolvedCommitSha))].sort(),
+    [SYNTHETIC_SHAS.v1,SYNTHETIC_SHAS.v2,SYNTHETIC_SHAS.v3].sort());
   assert.ok(c.sourceDeltas.every(r=>r.state!=='RUNTIME_VERIFIED'));
   assert.equal(out.remoteAccepted,false);
   assert.equal(out.runtimeAccepted,false);

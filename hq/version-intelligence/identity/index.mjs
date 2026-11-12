@@ -213,7 +213,7 @@ export function buildPinnedIdentityCrosswalk({pins:rawPins,records:rawRecords=[]
     if(old&&digest(old)!==digest(d))fail('ID_CONFLICT');
     seen.set(d.id,d);
   }
-  decisions.push(...seen.values().sort((a,b)=>cmp(a.id,b.id)));
+  decisions.push(...[...seen.values()].sort((a,b)=>cmp(a.id,b.id)));
   const {candidates,conflicts,truncated}=overlaps(records,decisions,pairBound);
   const sourceUnobserved=pins.filter(p=>p.completeness!=='complete').map(p=>({pinId:p.pinId,
     status:p.completeness,meaning:'UNKNOWN_NOT_MISSING'}));

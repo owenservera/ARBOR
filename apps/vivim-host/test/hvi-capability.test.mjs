@@ -62,13 +62,16 @@ test('revocation at final projection denies',async()=>{
 });
 test('incomplete pin list, secret subpath, moved SHA, unknown repository fail',async()=>{
   const adapter=syntheticSource().adapter;
-  await assert.rejects(port().invoke(req({sources:[sources()[0]]}),{adapter}),
+  // Each case replaces `sources` with fewer than 3 entries, so `targetIndex` must be
+  // given explicitly; otherwise the targetIndex range check fires first and masks
+  // the failure reason under test.
+  await assert.rejects(port().invoke(req({sources:[sources()[0]],targetIndex:0}),{adapter}),
     {code:'INVALID_REQUEST'});
-  await assert.rejects(port().invoke(req({sources:[{repo:'synthetic/w2-host',ref:'v1',subPath:'.env.production'},sources()[1]]}),{adapter}),
+  await assert.rejects(port().invoke(req({sources:[{repo:'synthetic/w2-host',ref:'v1',subPath:'.env.production'},sources()[1]],targetIndex:1}),{adapter}),
     {code:'SCOPE_ESCAPE'});
-  await assert.rejects(port().invoke(req({sources:[{repo:'other/unapproved',ref:'v1'},sources()[1]]}),{adapter}),
+  await assert.rejects(port().invoke(req({sources:[{repo:'other/unapproved',ref:'v1'},sources()[1]],targetIndex:1}),{adapter}),
     {code:'SOURCE_UNAUTHORIZED'});
-  await assert.rejects(port().invoke(req({sources:[{repo:'synthetic/w2-host',ref:'v1',sha:SYNTHETIC_SHAS.v2},sources()[1]]}),{adapter}),
+  await assert.rejects(port().invoke(req({sources:[{repo:'synthetic/w2-host',ref:'v1',sha:SYNTHETIC_SHAS.v2},sources()[1]],targetIndex:1}),{adapter}),
     {code:'PIN_MOVED'});
 });
 

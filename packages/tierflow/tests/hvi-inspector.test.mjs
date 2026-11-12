@@ -28,7 +28,14 @@ test('same repository at three invented SHAs remains three distinct selectors an
   assert.ok(r.document.nodes[0].children.length>=1,'grouped canonical sections are present');
   assert.equal(r.renderPlan.schema,'vivim.ui-render-plan/1');
   assert.equal(r.renderPlan.status,'ok');assert.equal(r.published,false);assert.equal(r.effectsInvoked,false);
-  assert.equal(flatten(r.renderPlan.root).filter(n=>(n.text||'').includes('invented/same-repo')).length,3);
+  // Count the pin SELECTORS, not every node naming the repo: the target-relative
+  // coverage rows legitimately repeat the repo label and are not extra selectors.
+  const all=flatten(r.renderPlan.root);
+  const selectors=all.filter(n=>/^(?:SOURCE|TARGET) /.test(n.text||''));
+  assert.equal(selectors.length,3);
+  assert.equal(new Set(selectors.map(n=>n.text)).size,3);
+  assert.ok(selectors.every(n=>(n.text||'').includes('invented/same-repo')));
+  assert.equal(all.filter(n=>/: complete \/ target complete; observed/.test(n.text||'')).length,2);
 });
 test('five synthetic repositories render in phone and desktop viewports without actions',()=>{
   for(const viewportPx of [320,390,1280]){

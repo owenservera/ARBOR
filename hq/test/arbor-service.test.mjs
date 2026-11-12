@@ -36,7 +36,9 @@ test('unapproved and nonexistent roots fail closed; no implicit source discovery
   try {
     const source = join(tmp, 'project'), data = join(tmp, 'data');
     mkdirSync(source);
-    const hq = createDevIntelligence({ dataDir: data });
+    // `mode` is mandatory (see the HQ_MODE_REQUIRED contract); the denial being
+    // exercised here is the source-root allowlist, not the mode requirement.
+    const hq = createDevIntelligence({ mode: 'diagnostic', dataDir: data });
     assert.throws(() => hq.registerSource({ name: 'secret', path: source }), /HQ_SOURCE_NOT_APPROVED/);
     assert.deepEqual(hq.status().sources, []);
     assert.throws(() => hq.scanCapabilities({ path: source }), /HQ_SOURCE_NOT_APPROVED/);

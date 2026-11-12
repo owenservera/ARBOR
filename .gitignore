@@ -1,0 +1,6 @@
+# Installed dependencies are never committed.
+node_modules/
+
+# Local build/verification scratch
+*.log
+.DS_Store
