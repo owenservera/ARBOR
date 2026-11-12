@@ -9,3 +9,5 @@ The JSON here is a **manually compiled, source-linked planning snapshot**, not g
 - `schema/program-status.schema.json`: JSON Schema of the main status manifest.
 
 Allowed era categories: `implemented`, `predev_prepped`, `discussed_not_implemented`, `vision`. `implemented` includes existing source and explicitly marked research-only source; it never implies production acceptance. Numeric row counts are not weighted completion scores. `tests_executed_this_sitrep: false` means no executable test was performed here. Before runtime automation, create an actual evidence adapter with observed test command/exits and an independent source lock; never silently treat this snapshot as runtime telemetry.
+
+- `vec-product-vision.json`: proposed low-LLM natural-language programming engine and separation of user programs from future development source mutation. Vision only; no runtime/acceptance claims.

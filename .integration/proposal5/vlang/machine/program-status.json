@@ -40,5 +40,15 @@
   },
   "sourcePinsFile": "source-pins.json",
   "componentsFile": "component-register.json",
-  "gatesFile": "gate-register.json"
+  "gatesFile": "gate-register.json",
+  "proposedProductDirection": {
+    "name": "VEC",
+    "identity": "Natural-language user programming engine",
+    "status": "VISION_ARCHITECTURE_PROPOSED_NOT_IMPLEMENTED",
+    "canonical": "vec/README.md",
+    "machine": "vec-product-vision.json",
+    "primaryOutput": "typed_user_program_IR_not_arbitrary_source_edits",
+    "interpretation": "deterministic_existing_SDK_first_optional_LLM_fallback",
+    "note": "This is additive future scope and does not alter SCF predevelopment gate status"
+  }
 }
