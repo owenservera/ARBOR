@@ -1,0 +1,136 @@
+{
+  "schema": "arbor.rescore.symbol-declarations.part.v1",
+  "part": 4,
+  "source_commit": "98f15e327957956ec94189772d5e5813e7b6b07b",
+  "files": [
+    {
+      "path": "harness/src/context/dcb-claims.mjs",
+      "blob": "891bf5007b917ba039777b8e91524735aa7cbaab",
+      "symbols": [
+        "normalize",
+        "score",
+        "reconcileDcbClaims",
+        "visit"
+      ]
+    },
+    {
+      "path": "harness/src/context/dcb-composer.mjs",
+      "blob": "b25067c29cee2e153f75f35b2c216a0e4d795551",
+      "symbols": [
+        "pathRef",
+        "verifiedScope",
+        "scoreCandidate",
+        "chooseKnapsack",
+        "stripSource",
+        "normaliseRequest",
+        "createDCBComposer",
+        "compose",
+        "verify"
+      ]
+    },
+    {
+      "path": "harness/src/context/dcb-dispatch-gate.mjs",
+      "blob": "d4684956d274adcbb2f05a7160632eab3eeedc3e",
+      "symbols": [
+        "validScope",
+        "render",
+        "createDcbDispatchGate",
+        "compute",
+        "prepare",
+        "revalidate"
+      ]
+    },
+    {
+      "path": "harness/src/context/dcb-flavors.mjs",
+      "blob": "c87c8bd626fccccacb654e01303ce45c11ce0546",
+      "symbols": [
+        "normalize",
+        "prepare",
+        "detectDcbFlavors",
+        "composeDcbFlavors"
+      ]
+    },
+    {
+      "path": "harness/src/context/dcb-graph-lineage.mjs",
+      "blob": "603d201c2d104b18e3020c5f9d541b6c7ae09dce",
+      "symbols": [
+        "projectDcbGraphLineage"
+      ]
+    },
+    {
+      "path": "harness/src/context/dcb-invalidation.mjs",
+      "blob": "7f167fdabb25edf6d9be005353fbe27ad05758ad",
+      "symbols": [
+        "planDcbInvalidations"
+      ]
+    },
+    {
+      "path": "harness/src/context/dcb-lifecycle.mjs",
+      "blob": "5cbf1da12a84b8de9f8077de20f054af5b43c684",
+      "symbols": [
+        "checkRef",
+        "checkIso",
+        "ensureDefinition",
+        "definitionFields",
+        "createDcbDefinition",
+        "reviseDcbDefinition",
+        "assessDcbDefinition",
+        "createCompositeDcbDefinition",
+        "dcbMaterializationInput"
+      ]
+    },
+    {
+      "path": "harness/src/context/dcb-maintenance.mjs",
+      "blob": "bb342b34c6e2cd8162e417b58528cfd003ea04d6",
+      "symbols": [
+        "checkState",
+        "createDcbMaintenanceState",
+        "validEvent",
+        "jobIndex",
+        "touch",
+        "reduceDcbMaintenance",
+        "recoverDcbMaintenance",
+        "pendingDcbMaintenance"
+      ]
+    },
+    {
+      "path": "harness/src/context/dcb-observation-intake.mjs",
+      "blob": "d3e23fccd626797fa16c5ca837232d8e2ab5df9d",
+      "symbols": [
+        "validateDcbObservation",
+        "planDcbObservationIntegration"
+      ]
+    },
+    {
+      "path": "harness/src/context/dcb-policy-eval.mjs",
+      "blob": "fd49ae00cd1268303bade570b4aaf7309ffa80ae",
+      "symbols": [
+        "fixture",
+        "evaluateDcbFlavors",
+        "proposeDcbFlavorCorrections"
+      ]
+    },
+    {
+      "path": "harness/src/context/dcb-source-selection.mjs",
+      "blob": "aa15f02c9d98e091d72d92c011f206e4243bc3a0",
+      "symbols": [
+        "candidateMetadata",
+        "selectDcbSources"
+      ]
+    },
+    {
+      "path": "harness/src/context/dcb-sources.mjs",
+      "blob": "c1156c628c4c0276e6b00060a2be102e0a0c9a38",
+      "symbols": [
+        "defaultRepoRoot",
+        "gitHead",
+        "safeRepoRef",
+        "candidate",
+        "prdFiles",
+        "createDcbSourceAdapters",
+        "resolveSources",
+        "readSource"
+      ]
+    }
+  ]
+}
