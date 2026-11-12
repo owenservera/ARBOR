@@ -1,76 +1,85 @@
-# ARBOR Proposal 5 — Beta-First Centralization and Clean Rust-Core Landing
+# ARBOR Proposal 5 — Internally Complete Beta Landing
 
-**Status:** Independent architectural proposal, not accepted or implemented.
-**Date:** 2026-11-12
-**Branch:** architecture/proposal5-beta-first-centralization
+**Version:** P5-R2, 2026-11-12  
+**Status:** Independent proposal; no source migration or product acceptance performed  
+**Branch:** \`architecture/proposal5-beta-first-centralization\`  
+**Objective:** **one-time source centralization and integration** into one internally self-contained product repository, using working implementations rather than a wholesale rewrite. The result must be a functioning Windows + paired PWA beta with Node 0 Prime and a future-proof capability contract, while deeper optimizations remain clearly deferred.
 
-## Mission
+## The owner's correction (non-negotiable)
 
-**Centralize the running product before replacing its implementations.** Bring the existing Windows Host, signed-in-browser Studio, one paired PWA, TierFlow projection, HQ Rust graph kernel and relevant source-backed intelligence into an independently buildable ARBOR product. Add only the typed bridges and critical Node 0/security fixes required for reliable integration. Prove real beta journeys before undertaking deeper rewrites.
+**NO OUTSIDE WIRING. ARBOR MUST BE FULLY INTERNALLY CONSISTENT.**
 
-**Goal:** one first-stage master integration, one canonical product/release identity, one coherent capability model, one controlled cutover, minimal duplicate infrastructure and a usable beta despite deferred optimizations.
+In Proposal 5, HQ, TierFlow, Harness and Labs are **migration donors only**. ARBOR cannot require any of their checkouts, servers, CLI processes, SQLite files, Git branches, unbuilt packages, environment variables or network bridges at build time, launch time or while operating. Everything needed for the selected beta must be physically present in ARBOR, versioned, bundled and tested under one release manifest.
 
-## How this differs from other proposals
+That explicitly includes:
+- The existing HQKG Rust graph/typed DAG/scheduler code as one in-repo canonical product crate.
+- **The HQ development-intelligence functionality required by VIVIM**: selected HQ indexing, source search, semantic registry, context-bundle, incremental wiki and evidence/capability code, adapted into an **in-repo** package with its own internal development data domain. No "HQ-A/B/C external read adapter".
+- The working Harness Tauri/Host, action catalog, planner, journal, pairing, World and Studio/Chrome integration under retained internal paths.
+- The TierFlow rendering/interaction/typed visual code selected for the beta, imported as an in-repo package with one compatible UI publisher. No runtime TierFlow service or source checkout.
+- Ratified Labs contracts, source code, test fixtures and views moved into their actual owners; no Labs runtime or source path dependency.
+- One paired PWA, one Windows release identity, one internal protocol, one source-owned effect writer and one canonical graph computation implementation.
 
-| Proposal | Optimizes for | Key risk |
-| --- | --- | --- |
-| 1: Native Product Monorepo | Clean long-term Rust-centered organization | Too much structural migration before a useful beta |
-| 4: One Programmable System | Capabilities/programs/views as one semantic model | Universal abstraction may outrun real integrations |
-| **5: Beta-First Landing** | **Shortest verified path from existing working code to a coherent product** | Compatibility adapters become permanent unless later measured and retired |
+**External systems do exist:** the user's Chrome/browser, signed-in ChatGPT/Claude/Gemini web applications, Windows OS, local user files and optional user-selected remote devices are legitimate external *sources/targets*. They are **not external VIVIM repository or orchestration wiring**. No provider APIs; signed-in user browser applications only. Package toolchains/third-party dependencies may be resolved during CI/build using pinned lockfiles; released artifacts bundle everything necessary that licensing permits.
 
-Proposal 5 adopts a **thin** slice of Proposal 4's capability model but does not require a complete universal programming runtime for beta.
+## Core beta-first decision
 
-## Ten decisions
+**Centralize by physically importing, linking and proving existing code—not by running one project as a facade over three other projects.**
 
-1. **One ARBOR product repository and one locked release manifest.** Donor repositories remain source references; the shipped product does not depend on their development servers.
-2. **Clean graph-core migration, not algorithm rewrite.** Import HQ's versioned hq-knowledge-graph crate as a source-preserving Rust component with exact SHA, tests and compatibility mapping. Set one future canonical source and make HQ consume that version when proven. Do not invent a second graph engine.
-3. **Rust only where it gives foundational leverage now:** shared graph, typed contracts, Node 0 bounded read-only event flow, secure native session/transport and versioned projections. No blanket JS-to-Rust migration.
-4. **Keep current Host JS World and effect journal as the sole beta writer.** Plans, grants, claim fences, receipts and uncertain-send recovery stay intact. Replace implementation later only with crash/parity evidence, never dual-write.
-5. **Capability spaces are compatibility modules**, not independent servers or privilege managers. One stable identity, typed ports, source owner, version/status, optional view/configuration/program binding. Existing implementations plug in through thin adapters.
-6. **HQ wiring is direct, scoped and read-only.** It contributes development source facts, semantic IDs and deterministic context/wiki outputs with source revisions. HQ does not receive product-private personal data automatically and is not required to run on customers' machines.
-7. **Reuse working desktop/PWA/Studio and TierFlow UI.** Unify semantic identity and projection incrementally without rebuilding the visual client from scratch.
-8. **Repair P0 security and liveness defects before beta.** Patch old Tauri pins, restrict origin IPC, verify Host process identity before credential transfer, actor-scope native data and eliminate per-keystroke blocking native reactor threads.
-9. **One cutover, multiple atomic tested commits.** Bring source, tests, contracts and packaging to ARBOR with provenance; old product remains sole effect authority until verified switch.
-10. **Truthful capability coverage.** Working beta features run; Labs concepts show explicit preview/unavailable status unless integrated. No silent loss of proven incumbent behavior.
+Keep enough source paths/behavior intact to minimize import churn. Build one Cargo + Bun workspace; import the needed source and tested dependency closures from donor repos, scrub secrets and generated artifacts, and make the internal dependency graph explicit. Introduce a small typed protocol and native I/O layer. Do *not* demand a rewrite of Host effect admission, HQ indexing, signed-in browser automation, TierFlow rendering, mobile UI or all native graph algorithms before beta.
 
-## Functional full beta means
+The one-time job is to create a consistent product **without a second integration wave being needed just to make the components aware of each other**. Future optimizations replace an internal implementation behind versioned capability/operation interfaces.
 
-An installable Windows application and authenticated paired PWA where an actual owner can:
-- start Host and onboard with a supported signed-in browser session;
-- conduct a real supported AI conversation through the existing Chrome webapp channel;
-- view native/Host source-backed interaction candidates and use safe existing command/control actions;
-- see real permission, receipt, blocked and uncertain effect states;
-- use available personal/context and project/HQ source-grounded read flows with explicit status;
-- continue from phone through the same Host owner and device policy;
-- recover safely from restart and failed browser/phone connections;
-- inspect which capabilities are working, bridged, preview-only or unavailable.
+## The conceptual product
 
-Media, voice-to-tasks, missions, personalization, AutoWiki and app-builder must be inventoried and connected where already working, or separately tracked as limited beta previews with honest scope; no research-only feature can be labeled production-ready.
+\`\`\`text
+      Windows / Paired PWA / CLI / View / AutoWiki
+                         │
+      local editor + TierFlow presentation package
+                         │
+                   Node 0 Prime
+        typed input, evidence, revisions, candidates
+                         │
+       in-repo capability contracts and programs
+             /                   \
+      HQKG native graph       Internal JS adapters
+      DAG, source scopes      HQ intelligence, Host planner,
+      scheduling, context     Studio provider, TierFlow bridge
+             \                   /
+                     Host
+        ONE personal World/effect authority
+        grants, plans, claims, receipts, recovery
+                         │
+         user-owned browser and files/OS/devices
+\`\`\`
 
-**A full beta is not the complete future feature roadmap.** Every existing previously functional beta-required journey needs real verification or an explicit owner-approved scope exception.
+Physical processes remain allowed for safety and technical necessity (Tauri, internal Node Host/Studio worker, Chrome). **Process separation does not imply separate system truth or a source repository dependency.**
 
-## Documents
+## Seven Proposal 5 artifacts
 
-- [01 Fast landing scaffold](01-FAST-LANDING-SCAFFOLD.md)
-- [02 Rust core + HQ wiring](02-RUST-CORE-AND-HQ-WIRING.md)
-- [03 Capability spaces + migration](03-CAPABILITY-SPACES-AND-MIGRATION.md)
-- [04 Node 0 + security minimum](04-NODE0-SECURITY-AND-INTERACTION.md)
-- [05 Beta journeys and gates](05-FULL-BETA-RELEASE-CONTRACT.md)
-- [06 Execution + cutover](06-EXECUTION-AND-CUTOVER.md)
-- [07 Deferred optimizations + decisions](07-DEFERRED-OPTIMIZATIONS-AND-DECISIONS.md)
-- [08 Machine-readable gates](08-BETA-GATES.json)
+1. [01 — Complete in-repo scaffold](01-FAST-LANDING-SCAFFOLD.md)
+2. [02 — HQ Rust + HQ operational intelligence internal migration](02-RUST-CORE-AND-HQ-WIRING.md)
+3. [03 — Source and capability-space placement](03-CAPABILITY-SPACES-AND-MIGRATION.md)
+4. [04 — Node 0 and security-critical minimum](04-NODE0-SECURITY-AND-INTERACTION.md)
+5. [05 — Complete beta release contract](05-FULL-BETA-RELEASE-CONTRACT.md)
+6. [06 — One-time integration and cutover](06-EXECUTION-AND-CUTOVER.md)
+7. [07 — Deferred optimizations and decision tradeoffs](07-DEFERRED-OPTIMIZATIONS-AND-DECISIONS.md)
 
-## Current evidence and caveats
+Machine-checkable gates: [08-BETA-GATES.json](08-BETA-GATES.json).
 
-- HQ main Rust research crate: research/rust-knowledge-graph/Cargo.toml, package hq-knowledge-graph, library hqkg; graph engine/typed DAG exist in source, production product wiring not established by source alone.
-- Harness main: Tauri/Node Host, command catalog v6, Host exclusive dispatcher/journal, direct-phone and Studio Chrome-based webapp flows.
-- TierFlow main: typed inert visual compiler and renderer.
-- Labs Node 0 architecture + R001 Rust draft and UI R005/R006/R007. The UI R007 full interpretation scope is a **design proposal**, not a live product.
-- Native R001 initially held a mutex during a scoped per-input thread join; beta path must not copy that hot-loop design unchanged.
-- The installed PC, actual Cargo build, browser provider login, signed Windows package and physical PWA acceptance have not been checked in this proposal round.
+## What "full functional beta" means
 
-## Non-goals
+A clean Windows installation and connected PWA must run **independently of the donor repositories** with the currently functioning capabilities: owner onboarding, authenticated pairing, signed-in-browser AI conversation, existing command/control plan/grant/receipt behavior, internal HQ development intelligence and graph reasoning for selected local projects, context evidence and truthful source status, visual interaction, and safe restart/recovery.
 
-No wholesale replacement of Host effects or browser automation, no new global database/event bus/scheduler, no generic untrusted plugin marketplace, no provider APIs, no Playwright/Puppeteer product automation, no duplicate Android app, no claims of production readiness without runtime proof. Future-proofing here means **stable substitution boundaries**, not eliminating future migrations.
+Media streaming, voice-to-tasks, mission state, personal knowledge intake, AutoWiki and user app-building are included **when current source and native acceptance prove they work**; incomplete Labs proposals are integrated as disabled/preview capabilities with exact blockers and are not represented as finished beta features. The release is a complete coherent beta of its declared capability set—not a claim that all aspirational features already ship.
 
-**Proposal only:** ARBOR main untouched. No native source migration, executable code, release package or beta acceptance is claimed.
+## Source integrity and cutover
+
+Donor SHAs and file-level ancestry are recorded inside ARBOR. During construction, the current Harness may continue running. At cutover the new ARBOR product is the **single** live application/effect writer; external donor checkouts are neither imported dynamically nor called. HQ development data and Host personal World data remain separately permissioned **inside ARBOR**, sharing graph algorithms and typed IDs, not one indiscriminate data store.
+
+## Hard no-go
+
+Any require/import/git path to ../repos-hq, ../tierflow, ../vivim-web-harness, ../vivim-labs; runtime HTTP/IPC calls to donor development processes; unbundled source programs; dual Host journals; second graph store/scheduler; fake "ready" sources; Tauri unpatched IPC/origin boundary; unverified owner bootstrap; PWA with its own effect authority; source-leaking debug telemetry; unconditional provider APIs.
+
+## Truthful status
+
+**Proposal only.** The ARBOR branch contains proposal documents, not a completed Cargo/Bun product. No graph import, HQ UI integration, Windows package, native test, source migration or device acceptance is claimed. That is the work this proposal defines.
