@@ -213,313 +213,313 @@
     "path": "apps/vivim-host/test/apk-enrollment.test.mjs",
     "root": "apps/vivim-host/test",
     "runtime": "node24-ajv",
-    "gate": "host-read-port"
+    "gate": "host-suite"
   },
   {
     "path": "apps/vivim-host/test/apk-registry.test.mjs",
     "root": "apps/vivim-host/test",
     "runtime": "node24-ajv",
-    "gate": "host-read-port"
+    "gate": "host-suite"
   },
   {
     "path": "apps/vivim-host/test/bootstrap-actions-allowlist.test.mjs",
     "root": "apps/vivim-host/test",
     "runtime": "node24-ajv",
-    "gate": "host-read-port"
+    "gate": "host-suite"
   },
   {
     "path": "apps/vivim-host/test/bootstrap-command-apply.test.mjs",
     "root": "apps/vivim-host/test",
     "runtime": "node24-ajv",
-    "gate": "host-read-port"
+    "gate": "host-suite"
   },
   {
     "path": "apps/vivim-host/test/bootstrap-command.test.mjs",
     "root": "apps/vivim-host/test",
     "runtime": "node24-ajv",
-    "gate": "host-read-port"
+    "gate": "host-suite"
   },
   {
     "path": "apps/vivim-host/test/bootstrap-grant.test.mjs",
     "root": "apps/vivim-host/test",
     "runtime": "node24-ajv",
-    "gate": "host-read-port"
+    "gate": "host-suite"
   },
   {
     "path": "apps/vivim-host/test/bootstrap.test.mjs",
     "root": "apps/vivim-host/test",
     "runtime": "node24-ajv",
-    "gate": "host-read-port"
+    "gate": "host-suite"
   },
   {
     "path": "apps/vivim-host/test/bridge-evidence.test.mjs",
     "root": "apps/vivim-host/test",
     "runtime": "node24-ajv",
-    "gate": "host-read-port"
+    "gate": "host-suite"
   },
   {
     "path": "apps/vivim-host/test/command-context-grounding.test.mjs",
     "root": "apps/vivim-host/test",
     "runtime": "node24-ajv",
-    "gate": "host-read-port"
+    "gate": "host-suite"
   },
   {
     "path": "apps/vivim-host/test/command-intent-v01.test.mjs",
     "root": "apps/vivim-host/test",
     "runtime": "node24-ajv",
-    "gate": "host-read-port"
+    "gate": "host-suite"
   },
   {
     "path": "apps/vivim-host/test/command-program.test.mjs",
     "root": "apps/vivim-host/test",
     "runtime": "node24-ajv",
-    "gate": "host-read-port"
+    "gate": "host-suite"
   },
   {
     "path": "apps/vivim-host/test/control-browser-session.test.mjs",
     "root": "apps/vivim-host/test",
     "runtime": "node24-ajv",
-    "gate": "host-read-port"
+    "gate": "host-suite"
   },
   {
     "path": "apps/vivim-host/test/control-desktop-surface.test.mjs",
     "root": "apps/vivim-host/test",
     "runtime": "node24-ajv",
-    "gate": "host-read-port"
+    "gate": "host-suite"
   },
   {
     "path": "apps/vivim-host/test/control-devices.test.mjs",
     "root": "apps/vivim-host/test",
     "runtime": "node24-ajv",
-    "gate": "host-read-port"
+    "gate": "host-suite"
   },
   {
     "path": "apps/vivim-host/test/control-dispatcher.test.mjs",
     "root": "apps/vivim-host/test",
     "runtime": "node24-ajv",
-    "gate": "host-read-port"
+    "gate": "host-suite"
   },
   {
     "path": "apps/vivim-host/test/control-http.test.mjs",
     "root": "apps/vivim-host/test",
     "runtime": "node24-ajv",
-    "gate": "host-read-port"
+    "gate": "host-suite"
   },
   {
     "path": "apps/vivim-host/test/control-intent-planner.test.mjs",
     "root": "apps/vivim-host/test",
     "runtime": "node24-ajv",
-    "gate": "host-read-port"
+    "gate": "host-suite"
   },
   {
     "path": "apps/vivim-host/test/control-language.test.mjs",
     "root": "apps/vivim-host/test",
     "runtime": "node24-ajv",
-    "gate": "host-read-port"
+    "gate": "host-suite"
   },
   {
     "path": "apps/vivim-host/test/control-panel-browser.test.mjs",
     "root": "apps/vivim-host/test",
     "runtime": "node24-ajv",
-    "gate": "host-read-port"
+    "gate": "host-suite"
   },
   {
     "path": "apps/vivim-host/test/data-intelligence-journal.test.mjs",
     "root": "apps/vivim-host/test",
     "runtime": "node24-ajv",
-    "gate": "host-read-port"
+    "gate": "host-suite"
   },
   {
     "path": "apps/vivim-host/test/data-intelligence.test.mjs",
     "root": "apps/vivim-host/test",
     "runtime": "node24-ajv",
-    "gate": "host-read-port"
+    "gate": "host-suite"
   },
   {
     "path": "apps/vivim-host/test/device-ui-wiring.test.mjs",
     "root": "apps/vivim-host/test",
     "runtime": "node24-ajv",
-    "gate": "host-read-port"
+    "gate": "host-suite"
   },
   {
     "path": "apps/vivim-host/test/diagnostics.test.mjs",
     "root": "apps/vivim-host/test",
     "runtime": "node24-ajv",
-    "gate": "host-read-port"
+    "gate": "host-suite"
   },
   {
     "path": "apps/vivim-host/test/direct-phone.test.mjs",
     "root": "apps/vivim-host/test",
     "runtime": "node24-ajv",
-    "gate": "host-read-port"
+    "gate": "host-suite"
   },
   {
     "path": "apps/vivim-host/test/enrollment-security.test.mjs",
     "root": "apps/vivim-host/test",
     "runtime": "node24-ajv",
-    "gate": "host-read-port"
+    "gate": "host-suite"
   },
   {
     "path": "apps/vivim-host/test/first-run-phone-contract.test.mjs",
     "root": "apps/vivim-host/test",
     "runtime": "node24-ajv",
-    "gate": "host-read-port"
+    "gate": "host-suite"
   },
   {
     "path": "apps/vivim-host/test/grokbot-worker.test.mjs",
     "root": "apps/vivim-host/test",
     "runtime": "node24-ajv",
-    "gate": "host-read-port"
+    "gate": "host-suite"
   },
   {
     "path": "apps/vivim-host/test/host.test.mjs",
     "root": "apps/vivim-host/test",
     "runtime": "node24-ajv",
-    "gate": "host-read-port"
+    "gate": "host-suite"
   },
   {
     "path": "apps/vivim-host/test/hvi-capability.test.mjs",
     "root": "apps/vivim-host/test",
     "runtime": "node24-ajv",
-    "gate": "host-read-port"
+    "gate": "hvi-host-read-port"
   },
   {
     "path": "apps/vivim-host/test/hvi-source-grant.test.mjs",
     "root": "apps/vivim-host/test",
     "runtime": "node24-ajv",
-    "gate": "host-read-port"
+    "gate": "hvi-host-read-port"
   },
   {
     "path": "apps/vivim-host/test/insights.test.mjs",
     "root": "apps/vivim-host/test",
     "runtime": "node24-ajv",
-    "gate": "host-read-port"
+    "gate": "host-suite"
   },
   {
     "path": "apps/vivim-host/test/kpi-utc.test.mjs",
     "root": "apps/vivim-host/test",
     "runtime": "node24-ajv",
-    "gate": "host-read-port"
+    "gate": "host-suite"
   },
   {
     "path": "apps/vivim-host/test/legacy-device-authority.test.mjs",
     "root": "apps/vivim-host/test",
     "runtime": "node24-ajv",
-    "gate": "host-read-port"
+    "gate": "host-suite"
   },
   {
     "path": "apps/vivim-host/test/media-library-summary.test.mjs",
     "root": "apps/vivim-host/test",
     "runtime": "node24-ajv",
-    "gate": "host-read-port"
+    "gate": "host-suite"
   },
   {
     "path": "apps/vivim-host/test/onboarding.test.mjs",
     "root": "apps/vivim-host/test",
     "runtime": "node24-ajv",
-    "gate": "host-read-port"
+    "gate": "host-suite"
   },
   {
     "path": "apps/vivim-host/test/owner-auth.test.mjs",
     "root": "apps/vivim-host/test",
     "runtime": "node24-ajv",
-    "gate": "host-read-port"
+    "gate": "host-suite"
   },
   {
     "path": "apps/vivim-host/test/personal-correction.test.mjs",
     "root": "apps/vivim-host/test",
     "runtime": "node24-ajv",
-    "gate": "host-read-port"
+    "gate": "host-suite"
   },
   {
     "path": "apps/vivim-host/test/personal-rule-store.test.mjs",
     "root": "apps/vivim-host/test",
     "runtime": "node24-ajv",
-    "gate": "host-read-port"
+    "gate": "host-suite"
   },
   {
     "path": "apps/vivim-host/test/personal-semantic-corpus.test.mjs",
     "root": "apps/vivim-host/test",
     "runtime": "node24-ajv",
-    "gate": "host-read-port"
+    "gate": "host-suite"
   },
   {
     "path": "apps/vivim-host/test/personal-semantic-host.test.mjs",
     "root": "apps/vivim-host/test",
     "runtime": "node24-ajv",
-    "gate": "host-read-port"
+    "gate": "host-suite"
   },
   {
     "path": "apps/vivim-host/test/personal-semantic-observer.test.mjs",
     "root": "apps/vivim-host/test",
     "runtime": "node24-ajv",
-    "gate": "host-read-port"
+    "gate": "host-suite"
   },
   {
     "path": "apps/vivim-host/test/personal-semantics-integration.test.mjs",
     "root": "apps/vivim-host/test",
     "runtime": "node24-ajv",
-    "gate": "host-read-port"
+    "gate": "host-suite"
   },
   {
     "path": "apps/vivim-host/test/personal-semantics.test.mjs",
     "root": "apps/vivim-host/test",
     "runtime": "node24-ajv",
-    "gate": "host-read-port"
+    "gate": "host-suite"
   },
   {
     "path": "apps/vivim-host/test/phone-delivery-acks.test.mjs",
     "root": "apps/vivim-host/test",
     "runtime": "node24-ajv",
-    "gate": "host-read-port"
+    "gate": "host-suite"
   },
   {
     "path": "apps/vivim-host/test/phone-sessions.test.mjs",
     "root": "apps/vivim-host/test",
     "runtime": "node24-ajv",
-    "gate": "host-read-port"
+    "gate": "host-suite"
   },
   {
     "path": "apps/vivim-host/test/receipt-runner.test.mjs",
     "root": "apps/vivim-host/test",
     "runtime": "node24-ajv",
-    "gate": "host-read-port"
+    "gate": "host-suite"
   },
   {
     "path": "apps/vivim-host/test/recovery-host-adapter.test.mjs",
     "root": "apps/vivim-host/test",
     "runtime": "node24-ajv",
-    "gate": "host-read-port"
+    "gate": "host-suite"
   },
   {
     "path": "apps/vivim-host/test/recovery-intelligence.test.mjs",
     "root": "apps/vivim-host/test",
     "runtime": "node24-ajv",
-    "gate": "host-read-port"
+    "gate": "host-suite"
   },
   {
     "path": "apps/vivim-host/test/studio-journal-evidence.test.mjs",
     "root": "apps/vivim-host/test",
     "runtime": "node24-ajv",
-    "gate": "host-read-port"
+    "gate": "host-suite"
   },
   {
     "path": "apps/vivim-host/test/ui-revision.test.mjs",
     "root": "apps/vivim-host/test",
     "runtime": "node24-ajv",
-    "gate": "host-read-port"
+    "gate": "host-suite"
   },
   {
     "path": "apps/vivim-host/test/worker-route-security.test.mjs",
     "root": "apps/vivim-host/test",
     "runtime": "node24-ajv",
-    "gate": "host-read-port"
+    "gate": "host-suite"
   },
   {
     "path": "apps/vivim-host/test/worker-supervisor.test.mjs",
     "root": "apps/vivim-host/test",
     "runtime": "node24-ajv",
-    "gate": "host-read-port"
+    "gate": "host-suite"
   },
   {
     "path": "harness/test/agents/cli.test.mjs",
@@ -819,157 +819,157 @@
     "path": "hq/catalogue-identity/test/crosswalk.test.mjs",
     "root": "hq",
     "runtime": "node24-ajv",
-    "gate": "uncategorized"
+    "gate": "hvi-modules"
   },
   {
     "path": "hq/test/action-map.test.mjs",
     "root": "hq/test",
     "runtime": "bun",
-    "gate": "hq-boundary"
+    "gate": "hq-suite"
   },
   {
     "path": "hq/test/action-registry-builder.test.mjs",
     "root": "hq/test",
     "runtime": "bun",
-    "gate": "hq-boundary"
+    "gate": "hq-suite"
   },
   {
     "path": "hq/test/annotation-v2.test.mjs",
     "root": "hq/test",
     "runtime": "node24-ajv",
-    "gate": "hq-boundary"
+    "gate": "hq-suite"
   },
   {
     "path": "hq/test/arbor-boundary.test.mjs",
     "root": "hq/test",
     "runtime": "node24-ajv",
-    "gate": "hq-boundary"
+    "gate": "hvi-hq-boundary"
   },
   {
     "path": "hq/test/arbor-service.test.mjs",
     "root": "hq/test",
     "runtime": "node24-ajv",
-    "gate": "hq-boundary"
+    "gate": "hvi-hq-boundary"
   },
   {
     "path": "hq/test/capabilities.test.mjs",
     "root": "hq/test",
     "runtime": "bun",
-    "gate": "hq-boundary"
+    "gate": "hq-suite"
   },
   {
     "path": "hq/test/capability-surfaces.test.mjs",
     "root": "hq/test",
     "runtime": "node24-ajv",
-    "gate": "hq-boundary"
+    "gate": "hq-suite"
   },
   {
     "path": "hq/test/catalogue-delta.test.mjs",
     "root": "hq/test",
     "runtime": "node24-ajv",
-    "gate": "hq-boundary"
+    "gate": "hq-suite"
   },
   {
     "path": "hq/test/check-freshness-parity.test.mjs",
     "root": "hq/test",
     "runtime": "node24-ajv",
-    "gate": "hq-boundary"
+    "gate": "hq-suite"
   },
   {
     "path": "hq/test/cli.test.mjs",
     "root": "hq/test",
     "runtime": "node24-ajv",
-    "gate": "hq-boundary"
+    "gate": "hq-suite"
   },
   {
     "path": "hq/test/comment-program-integration.test.mjs",
     "root": "hq/test",
     "runtime": "node24-ajv",
-    "gate": "hq-boundary"
+    "gate": "hq-suite"
   },
   {
     "path": "hq/test/comment-wiki-bridge.test.mjs",
     "root": "hq/test",
     "runtime": "node24-ajv",
-    "gate": "hq-boundary"
+    "gate": "hq-suite"
   },
   {
     "path": "hq/test/components.test.mjs",
     "root": "hq/test",
     "runtime": "node24-ajv",
-    "gate": "hq-boundary"
+    "gate": "hq-suite"
   },
   {
     "path": "hq/test/context-budget.test.mjs",
     "root": "hq/test",
     "runtime": "bun",
-    "gate": "hq-boundary"
+    "gate": "hq-suite"
   },
   {
     "path": "hq/test/context-ranking.test.mjs",
     "root": "hq/test",
     "runtime": "node24-ajv",
-    "gate": "hq-boundary"
+    "gate": "hq-suite"
   },
   {
     "path": "hq/test/context.test.mjs",
     "root": "hq/test",
     "runtime": "node24-ajv",
-    "gate": "hq-boundary"
+    "gate": "hq-suite"
   },
   {
     "path": "hq/test/day-one-context.test.mjs",
     "root": "hq/test",
     "runtime": "bun",
-    "gate": "hq-boundary"
+    "gate": "hq-suite"
   },
   {
     "path": "hq/test/evidence-join.test.mjs",
     "root": "hq/test",
     "runtime": "bun",
-    "gate": "hq-boundary"
+    "gate": "hq-suite"
   },
   {
     "path": "hq/test/extract.test.mjs",
     "root": "hq/test",
     "runtime": "node24-ajv",
-    "gate": "hq-boundary"
+    "gate": "hq-suite"
   },
   {
     "path": "hq/test/filetypes.test.mjs",
     "root": "hq/test",
     "runtime": "node24-ajv",
-    "gate": "hq-boundary"
+    "gate": "hq-suite"
   },
   {
     "path": "hq/test/foundation.test.mjs",
     "root": "hq/test",
     "runtime": "node24-ajv",
-    "gate": "hq-boundary"
+    "gate": "hq-suite"
   },
   {
     "path": "hq/test/git-context.test.mjs",
     "root": "hq/test",
     "runtime": "node24-ajv",
-    "gate": "hq-boundary"
+    "gate": "hq-suite"
   },
   {
     "path": "hq/test/git-main-sync.test.mjs",
     "root": "hq/test",
     "runtime": "node24-ajv",
-    "gate": "hq-boundary"
+    "gate": "hq-suite"
   },
   {
     "path": "hq/test/git.test.mjs",
     "root": "hq/test",
     "runtime": "node24-ajv",
-    "gate": "hq-boundary"
+    "gate": "hq-suite"
   },
   {
     "path": "hq/test/graph.test.mjs",
     "root": "hq/test",
     "runtime": "node24-ajv",
-    "gate": "hq-boundary"
+    "gate": "hq-suite"
   },
   {
     "path": "hq/test/hvi-mcp-tool.test.mjs",
@@ -981,181 +981,181 @@
     "path": "hq/test/in-repo-closure.test.mjs",
     "root": "hq/test",
     "runtime": "node24-ajv",
-    "gate": "hq-boundary"
+    "gate": "hvi-hq-boundary"
   },
   {
     "path": "hq/test/indexer.test.mjs",
     "root": "hq/test",
     "runtime": "node24-ajv",
-    "gate": "hq-boundary"
+    "gate": "hq-suite"
   },
   {
     "path": "hq/test/intelligence-contracts.test.mjs",
     "root": "hq/test",
     "runtime": "bun",
-    "gate": "hq-boundary"
+    "gate": "hq-suite"
   },
   {
     "path": "hq/test/kb-bind.test.mjs",
     "root": "hq/test",
     "runtime": "node24-ajv",
-    "gate": "hq-boundary"
+    "gate": "hq-suite"
   },
   {
     "path": "hq/test/kb-query-capability.test.mjs",
     "root": "hq/test",
     "runtime": "bun",
-    "gate": "hq-boundary"
+    "gate": "hq-suite"
   },
   {
     "path": "hq/test/kg-export.test.mjs",
     "root": "hq/test",
     "runtime": "node24-ajv",
-    "gate": "hq-boundary"
+    "gate": "hq-suite"
   },
   {
     "path": "hq/test/lake.test.mjs",
     "root": "hq/test",
     "runtime": "node24-ajv",
-    "gate": "hq-boundary"
+    "gate": "hq-suite"
   },
   {
     "path": "hq/test/live-graph-wave1-a-r2-audit.test.mjs",
     "root": "hq/test",
     "runtime": "node24-ajv",
-    "gate": "hq-boundary"
+    "gate": "hq-suite"
   },
   {
     "path": "hq/test/live-graph-wave1-a-r2-discovery.test.mjs",
     "root": "hq/test",
     "runtime": "node24-ajv",
-    "gate": "hq-boundary"
+    "gate": "hq-suite"
   },
   {
     "path": "hq/test/live-graph-wave1-a-r2-preflight.test.mjs",
     "root": "hq/test",
     "runtime": "node24-ajv",
-    "gate": "hq-boundary"
+    "gate": "hq-suite"
   },
   {
     "path": "hq/test/live-graph-wave1-a.test.mjs",
     "root": "hq/test",
     "runtime": "node24-ajv",
-    "gate": "hq-boundary"
+    "gate": "hq-suite"
   },
   {
     "path": "hq/test/live-graph-wave1-master.test.mjs",
     "root": "hq/test",
     "runtime": "node24-ajv",
-    "gate": "hq-boundary"
+    "gate": "hq-suite"
   },
   {
     "path": "hq/test/native-graph-wiki-admission.test.mjs",
     "root": "hq/test",
     "runtime": "node24-ajv",
-    "gate": "hq-boundary"
+    "gate": "hq-suite"
   },
   {
     "path": "hq/test/nomenclature.test.mjs",
     "root": "hq/test",
     "runtime": "node24-ajv",
-    "gate": "hq-boundary"
+    "gate": "hq-suite"
   },
   {
     "path": "hq/test/registry.test.mjs",
     "root": "hq/test",
     "runtime": "node24-ajv",
-    "gate": "hq-boundary"
+    "gate": "hq-suite"
   },
   {
     "path": "hq/test/search.test.mjs",
     "root": "hq/test",
     "runtime": "node24-ajv",
-    "gate": "hq-boundary"
+    "gate": "hq-suite"
   },
   {
     "path": "hq/test/semantic-convergence.test.mjs",
     "root": "hq/test",
     "runtime": "bun",
-    "gate": "hq-boundary"
+    "gate": "hq-suite"
   },
   {
     "path": "hq/test/semantic-optimizers.test.mjs",
     "root": "hq/test",
     "runtime": "node24-ajv",
-    "gate": "hq-boundary"
+    "gate": "hq-suite"
   },
   {
     "path": "hq/test/semantic-registry.test.mjs",
     "root": "hq/test",
     "runtime": "node24-ajv",
-    "gate": "hq-boundary"
+    "gate": "hq-suite"
   },
   {
     "path": "hq/test/taxonomy.test.mjs",
     "root": "hq/test",
     "runtime": "node24-ajv",
-    "gate": "hq-boundary"
+    "gate": "hq-suite"
   },
   {
     "path": "hq/test/util.test.mjs",
     "root": "hq/test",
     "runtime": "node24-ajv",
-    "gate": "hq-boundary"
+    "gate": "hq-suite"
   },
   {
     "path": "hq/test/walk-bin-source.test.mjs",
     "root": "hq/test",
     "runtime": "node24-ajv",
-    "gate": "hq-boundary"
+    "gate": "hq-suite"
   },
   {
     "path": "hq/test/walk.test.mjs",
     "root": "hq/test",
     "runtime": "node24-ajv",
-    "gate": "hq-boundary"
+    "gate": "hq-suite"
   },
   {
     "path": "hq/test/wiki-program.test.mjs",
     "root": "hq/test",
     "runtime": "node24-ajv",
-    "gate": "hq-boundary"
+    "gate": "hq-suite"
   },
   {
     "path": "hq/test/wiki.test.mjs",
     "root": "hq/test",
     "runtime": "node24-ajv",
-    "gate": "hq-boundary"
+    "gate": "hq-suite"
   },
   {
     "path": "hq/version-intelligence/compare/index.test.mjs",
     "root": "hq",
     "runtime": "node24-ajv",
-    "gate": "uncategorized"
+    "gate": "hvi-modules"
   },
   {
     "path": "hq/version-intelligence/identity/test/identity.test.mjs",
     "root": "hq",
     "runtime": "node24-ajv",
-    "gate": "uncategorized"
+    "gate": "hvi-modules"
   },
   {
     "path": "hq/version-intelligence/parity/atlas.test.mjs",
     "root": "hq",
     "runtime": "node24-ajv",
-    "gate": "uncategorized"
+    "gate": "hvi-modules"
   },
   {
     "path": "hq/version-intelligence/report/test/report.test.mjs",
     "root": "hq",
     "runtime": "node24-ajv",
-    "gate": "uncategorized"
+    "gate": "hvi-modules"
   },
   {
     "path": "hq/version-intelligence/sources/snapshots.test.mjs",
     "root": "hq",
     "runtime": "node24-ajv",
-    "gate": "uncategorized"
+    "gate": "hvi-modules"
   },
   {
     "path": "packages/tierflow/tests/architecture-boundary.test.ts",
@@ -1185,7 +1185,7 @@
     "path": "packages/tierflow/tests/hvi-inspector.test.mjs",
     "root": "packages/tierflow/tests",
     "runtime": "node-strip-types",
-    "gate": "tierflow-inspector"
+    "gate": "hvi-tierflow-inspector"
   },
   {
     "path": "packages/tierflow/tests/lab.test.ts",

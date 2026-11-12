@@ -27,11 +27,9 @@ import { cacheGet, cachePut, fingerprintFor } from './lib/test-cache.mjs';
 import { commitSha, writeGateReceipt, writeRunReceipt } from './lib/test-receipt.mjs';
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-// Receipts live in the canonical HVI proof folder, next to the G2 decision and the
-// machine-readable G2 ledger. Nothing is written to the repo root.
-const PROOFS_DIR = join(
-  REPO_ROOT, '.integration', 'proposal5', 'hq-version-intelligence', 'proofs', 'G2',
-);
+// Receipts are written by scripts/lib/test-receipt.mjs into the canonical HVI proof
+// folder, beside the G2 decision and the machine-readable G2 ledger. Nothing is
+// written to the repository root.
 
 const BIN_FOR_RUNTIME = {
   'node24-ajv': 'node',
@@ -52,6 +50,7 @@ function parseArgs(argv) {
     coverage: false,
     explain: false,
     base: 'HEAD',
+    gates: [],
     _: [],
   };
   for (let i = 0; i < argv.length; i++) {
@@ -61,14 +60,26 @@ function parseArgs(argv) {
     else if (a === '--no-cache') opts.noCache = true;
     else if (a === '--coverage') opts.coverage = true;
     else if (a === '--explain') opts.explain = true;
-    else if (a === '--base') {
+    else if (a === '--gate') {
+      const gate = argv[++i];
+      if (gate === undefined) fail('--gate requires a gate name');
+      opts.gates.push(gate);
+    } else if (a.startsWith('--gate=')) {
+      opts.gates.push(a.slice(7));
+    } else if (a === '--base') {
       opts.base = argv[++i];
       if (opts.base === undefined) fail('--base requires a REF argument');
     } else if (a.startsWith('--base=')) {
       opts.base = a.slice(7);
     } else if (a === '--help' || a === '-h') {
       process.stdout.write(
-        'usage: bun scripts/test-gate.mjs [--plan] [--all] [--no-cache] [--coverage] [--explain] [--base REF]\n',
+        'usage: bun scripts/test-gate.mjs [--plan] [--all] [--no-cache] [--coverage] [--explain]\n' +
+        '                                 [--base REF] [--gate NAME]...\n' +
+        '  --gate NAME  run only the named gate (repeatable). The hvi-* gates mirror\n' +
+        '               the canonical CI contract file-for-file: hvi-g1-g2,\n' +
+        '               hvi-host-read-port, hvi-discovery, hvi-hq-boundary,\n' +
+        '               hvi-tierflow-inspector. Other gates: host-suite, hq-suite,\n' +
+        '               interop, compatibility, uncategorized.\n',
       );
       process.exit(0);
     } else {
@@ -334,10 +345,17 @@ function runSelected(selected, opts) {
 function main(argv) {
   const opts = parseArgs(argv);
   if (!verifyBase(opts.base)) fail(`base ref ${opts.base} does not exist`);
-  const tests = discoverTests();
+  let tests = discoverTests();
   if (tests.length === 0) fail('no tests discovered in manifest roots', 2);
+  if (opts.gates.length > 0) {
+    const wanted = new Set(opts.gates);
+    const unknown = opts.gates.filter((g) => !tests.some((t) => t.gate === g));
+    if (unknown.length > 0) fail(`unknown gate(s): ${unknown.join(', ')}`);
+    tests = tests.filter((t) => wanted.has(t.gate));
+    if (tests.length === 0) fail('no tests in the requested gate(s)', 2);
+  }
   const changes = changedFilesSince(opts.base);
-  const selected = selectTests(tests, changes, opts.all);
+  const selected = selectTests(tests, changes, opts.all || opts.gates.length > 0);
 
   if (opts.plan) {
     printPlan(selected, opts.explain);

@@ -1,0 +1,18 @@
+{
+  "command": "node --test hq/test/arbor-boundary.test.mjs",
+  "os": "win32",
+  "nodeVersion": "v26.3.0",
+  "bunVersion": "1.4.2",
+  "ajvVersion": "8.17.1",
+  "commitSha": "d12aa2c06ccf0dcc6aca086623b12047134a3951",
+  "gate": "hvi-hq-boundary",
+  "totals": {
+    "tests": 9,
+    "pass": 9,
+    "fail": 0
+  },
+  "exitCode": 0,
+  "durationMs": 12388,
+  "startedAt": "2026-11-12T23:44:54.552Z",
+  "finishedAt": "2026-11-12T23:45:21.076Z"
+}

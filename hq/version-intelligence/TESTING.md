@@ -66,13 +66,13 @@ Node version in use: `v24.22.1` (per `engines.node: >=24`).
 
 ## Receipts
 
-- **Where they live:** `proofs/G2/` (git-committed evidence directory).
+- **Where they live:** `.integration/proposal5/hq-version-intelligence/proofs/G2/` (git-committed evidence directory).
 - **What they contain:** command, OS, tool versions (Node/Bun), commit SHA,
   totals (`tests`, `pass`, `fail`), exit code, `startedAt`/`finishedAt` (ISO),
   `durationMs`, `provenance`, `capabilityId`, `sourcePins`, `coverage`.
 
 Receipt schema example: `arbor.proposal5.hvi.g2.receipt/1` (see
-`proofs/G2/cli-offline-replay-receipt.json`).
+`.integration/proposal5/hq-version-intelligence/proofs/G2/cli-offline-replay-receipt.json`).
 
 ---
 
@@ -96,7 +96,7 @@ GitHub/API network (matrix T08); synthetic-only capability routing
 (`arbor.hvi.compare.pinned/1`); and deterministic pin resolution across the
 invented repo `synthetic/offline-replay` at pins v1/v2/v3 (3 source pins).
 
-Receipt: `proofs/G2/cli-offline-replay-receipt.json` (single successful replay:
+Receipt: `.integration/proposal5/hq-version-intelligence/proofs/G2/cli-offline-replay-receipt.json` (single successful replay:
 tests 1, pass 1, fail 0, exit code 0).
 
 ---

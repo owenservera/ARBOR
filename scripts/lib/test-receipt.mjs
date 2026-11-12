@@ -1,16 +1,20 @@
 // scripts/lib/test-receipt.mjs — machine-readable receipts for the HVI test gate.
 //
-// Per-gate receipts: proofs/G2/<gate>-receipt-<sha>.json
-// Per-run receipt:      proofs/G2/run-receipt-<runId>.json
-// Local-only, no network.
+// Per-gate receipts: <canonical HVI proofs>/G2/<gate>-receipt-<sha>.json
+// Per-run receipt:  <canonical HVI proofs>/G2/run-receipt-<runId>.json
+// Local-only, no network. Receipts land beside the G2 decision and the
+// machine-readable G2 ledger, never at the repository root.
 
 import { execFileSync } from 'node:child_process';
 import { readFileSync, mkdirSync, writeFileSync } from 'node:fs';
+import { arch, release, platform } from 'node:os';
 import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
-const PROOFS_DIR = join(REPO_ROOT, 'proofs', 'G2');
+const PROOFS_DIR = join(
+  REPO_ROOT, '.integration', 'proposal5', 'hq-version-intelligence', 'proofs', 'G2',
+);
 
 // Commit the gate was run against.
 export function commitSha() {
@@ -45,8 +49,11 @@ function writeJson(path, value) {
 export function writeGateReceipt({ gate, command, totals, exitCode, durationMs, startedAt, finishedAt }) {
   const sha = commitSha();
   const receipt = {
+    schema: 'arbor.hvi.gate-receipt/1',
     command,
-    os: process.platform,
+    os: platform(),
+    osRelease: release(),
+    osArch: arch(),
     nodeVersion: process.version,
     bunVersion: typeof process.versions.bun === 'string' ? process.versions.bun : null,
     ajvVersion: ajvVersion(),
@@ -65,9 +72,12 @@ export function writeGateReceipt({ gate, command, totals, exitCode, durationMs, 
 
 export function writeRunReceipt({ runId, commitSha: sha, totals, exitCode, durationMs, startedAt, finishedAt, tests, gates }) {
   const receipt = {
+    schema: 'arbor.hvi.gate-run-receipt/1',
     runId,
     command: 'bun scripts/test-gate.mjs',
-    os: process.platform,
+    os: platform(),
+    osRelease: release(),
+    osArch: arch(),
     nodeVersion: process.version,
     bunVersion: typeof process.versions.bun === 'string' ? process.versions.bun : null,
     ajvVersion: ajvVersion(),

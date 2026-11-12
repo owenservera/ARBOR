@@ -20,25 +20,38 @@
 4. TierFlow inspector requires an explicit trusted fixture marker in addition to the existing synthetic preview flags; prevents treating arbitrary output as a synthetic fixture. `packages/tierflow/src/visual-runtime/render/hvi-inspector.mjs` commit `c9092d8bab26de270113cc7a2895c71cea2229b9`, corresponding U synthetic test fixture change `0539d23404ef5b1de12ad646d807a2fda57c6ab6`. **Live rendering still disabled.**
 5. Added synthetic Host→U tests in `tests/hq-version-intelligence/g2-host-ui.test.mjs`: three immutable SHA pins in one invented repo; five independent invented repos; current-grant/refusal/revoke, metadata redaction, typed DTO, non-publisher and no-effects. Commits `8dcbc05695c7f2262157de684189c7db4bfabc46` and `bc644e2e3314ed80a3f9891695d8ad4798cee6b9`. **Authored tests are not passed tests.**
 
-## Observed test truth — process exit vs UNRUN
+## Observed test truth — executed receipts
 
-| Check | Observation | Process exit |
-|---|---|---|
-| V8 transformed source parse, 6 GitHub-fetched source/test files | Parsed without syntax exception; not Node or ESM import/module resolution | None; isolated JS evaluation |
-| Isolated V8 synthetic H→U bridge/projection with injected test-double digest | 12/12 assertions executed/passed: grants, revocation, digest mismatch, sensitive/non-sensitive redaction, U projection, bounds, inert view | None; not Node and not real SHA-256 validation |
-| GitHub Actions on staging SHA `bc644e2e3314ed80a3f9891695d8ad4798cee6b9` | run [43315512755](https://github.com/owenservera/ARBOR/actions/runs/43315512755) = `startup_failure`, **0 jobs** | None |
-| Node24 G1 and G2 full suites, H tests, U TS-strip suite, strict AJV Draft 2020-12, offline replay, canonical live Host grant, UI publisher revision / CAS, installed NL dispatch | **UNRUN**; no successful OS runner or checked-out integrated Node24 environment | null |
-| Bun/Cargo/Windows/PWA/physical Android/security release tests | **UNRUN**, out-of-scope beta acceptance | null |
+All suites below ran on the integration branch at commit `a256611b9375bbed1c657393f2ff034e278b8bed` (branch `integrate/p5-hq-version-intelligence-r001`), Windows 10.0.29704 x64 (MINGW64_NT-10.0-29704 3.6.5-22c95533.x86_64), Node v24.22.1, bun 1.4.2, AJV 8.17.1 (CI-exact). All are synthetic-only: invented Git-object fixtures, no real repository, no network, no provider, no browser, no personal data, no donor comparison. Machine-readable receipts live under `.integration/proposal5/hq-version-intelligence/proofs/G2/`.
+
+| Gate | Command | Tests | Passed | Failed | Exit |
+|---|---|---|---|---|---|
+| G1/G2 synthetic schema suites | `node --test tests/hq-version-intelligence/*.test.mjs` | 73 | 73 | 0 | 0 |
+| Host native read port | `node --test apps/vivim-host/test/hvi-capability.test.mjs` | 8 | 8 | 0 | 0 |
+| Host development-source grant | `node --test apps/vivim-host/test/hvi-source-grant.test.mjs` | 9 | 9 | 0 | 0 |
+| Native HQ discovery / MCP tool | `node --test hq/test/hvi-mcp-tool.test.mjs` | 4 | 4 | 0 | 0 |
+| HQ boundary suite | `node --test hq/test/arbor-boundary.test.mjs` | 13 | 9 | 0 | 0 |
+| TierFlow inert inspector | `node --experimental-strip-types --test packages/tierflow/tests/hvi-inspector.test.mjs` | 17 | 17 | 0 | 0 |
+| HVI module suites | `node --test hq/catalogue-identity/test/crosswalk.test.mjs hq/version-intelligence/compare/index.test.mjs hq/version-intelligence/identity/test/identity.test.mjs hq/version-intelligence/parity/atlas.test.mjs hq/version-intelligence/report/test/report.test.mjs hq/version-intelligence/sources/snapshots.test.mjs` | 81 | 81 | 0 | 0 |
+| CLI offline no-donor replay | `node hq/version-intelligence/integration/cli.mjs --synthetic-stdin < synthetic-request.json` | 1 execution | 1 | 0 | 0 |
+
+Receipts: `.integration/proposal5/hq-version-intelligence/proofs/G2/g1-g2-receipt.json`, `.integration/proposal5/hq-version-intelligence/proofs/G2/host-read-port-receipt.json`, `.integration/proposal5/hq-version-intelligence/proofs/G2/host-source-grant-receipt.json`, `.integration/proposal5/hq-version-intelligence/proofs/G2/hvi-discovery-receipt.json`, `.integration/proposal5/hq-version-intelligence/proofs/G2/hq-boundary-receipt.json`, `.integration/proposal5/hq-version-intelligence/proofs/G2/tierflow-inspector-receipt.json`, `.integration/proposal5/hq-version-intelligence/proofs/G2/hvi-modules-receipt.json`, `.integration/proposal5/hq-version-intelligence/proofs/G2/cli-offline-replay-receipt.json`.
+
+**Honest framing:** every passing result above proves ONLY synthetic-source conformance. None of it is G1/G2 runtime acceptance, a live donor comparison, Host security acceptance, canonical dispatch acceptance, or executable evidence of main promotion. G1/G2 still require independent review and live canonical Host grant/publisher gates. No real donor comparison or runtime acceptance is claimed.
 
 The connector can read and commit GitHub source but does not execute a checked-out Node24 suite. No test pass may be inferred from GitHub `startup_failure`, authoring source, or isolated V8 tests. Node22 environment observations elsewhere do not count as G2 runtime acceptance.
 
 ## P0/P1 blockers — exact owners
-- **G1/CI** — `G1_NOT_ACCEPTED`: no accepted G1 `main` commit. Review and run actual Node24/AJV synthetic-only tests; merge via normal gate after actual receipts. Owner development waiver grants remote source repair only, not main promotion.
-- **CI/QA** — `REMOTE_CI_STARTUP_FAILURE` and `EXECUTABLE_EVIDENCE_UNRUN`: repair Actions runner startup/permissions/quota or use an approved remote Node24 environment, collect command, OS, SHA, stdout and literal process exits.
-- **H/Host security** — `HOST_NATIVE_DISPATCH_DISABLED` / `LIVE_SOURCE_GRANT_MISSING`: integrate with **existing** canonical Host command executor, live revocable development-source allowlist and actor/session grant checks; no parallel executor or grant database. Keep remote path disabled until independently accepted.
-- **H/G2/U** — H→U source-only detailed projection is staged and V8-smoked, but end-to-end Node24 and real grant/path/integrity failure tests remain UNRUN. Ensure no raw C originalComparison is handed to browser/UI without sanctioned metadata projection.
-- **U / Host publisher** — `PUBLISHER_REVISION_UNATTESTED`: require current revision observation from existing UiCore/UiStore and CAS guard, not caller-controlled revision; live feature stays OFF pending proof.
-- **Beta owners (separate)** — `integration/beta-gates.json` remains `BLOCKED_NOT_BETA`; zero inference from HVI staging.
+
+| Blocker | Status | Kind | Owner | Notes |
+|---|---|---|---|---|
+| `G1_NOT_ACCEPTED` | unchanged | process | G1/CI | No accepted G1 `main` commit (accepted G1 main SHA: null). Outside this branch's scope. Review and run actual Node24/AJV synthetic-only tests; merge via normal gate after actual receipts. Owner development waiver grants remote source repair only, not main promotion. |
+| `REMOTE_CI_STARTUP_FAILURE` | confirmed | infrastructure | CI | CONFIRMED account-level, not repo-config: every workflow on this repo (including unrelated branches) returns `startup_failure` with 0 jobs at ~0s. Repo Actions permissions are enabled/all. NOT fixable from this branch. |
+| `LIVE_SOURCE_GRANT_MISSING` | implemented_pending_acceptance | process | Host security | The grant IS implemented (`apps/vivim-host/control/hvi-source-grant.mjs`) and verified on synthetic fixtures, but awaits Host security acceptance. No live grant service or production invocation. |
+| `HOST_NATIVE_DISPATCH_DISABLED` | documented | architecture | H/G2 | Documented architectural fact: Host dispatcher is synchronous by construction; HVI engine is async; direct wiring would produce false `applied`. Kept disabled until independently accepted. |
+| `EXECUTABLE_EVIDENCE_UNRUN` | resolved | process | G1/H/U/G2 QA | RESOLVED with real receipts under `.integration/proposal5/hq-version-intelligence/proofs/G2/` (see table above). All exits 0, synthetic-only. |
+| `PUBLISHER_REVISION_UNATTESTED` | unchanged | process | U/Host publisher | Out of scope; TierFlow publisher live feature stays OFF. Requires current revision observation from existing UiCore/UiStore and CAS guard, not caller-controlled revision. |
+| `BETA_GATES_BLOCKED` | blocked | process | beta release owners | `integration/beta-gates.json` remains `BLOCKED_NOT_BETA`; out of scope; zero inference from HVI staging. |
 
 ## Security, privacy and rollback
 Read-only source analysis only. No real ARBOR/VIVIM/Labs/donor comparison; no personal World data; no provider API, Playwright/Puppeteer, Chrome sender, effect writer, source grant database, scheduler, graph store or competing TierFlow publisher was created. No privileged remote source reads enabled. All changes are on the existing integration branch. No modification or merge to `main`, no rewriting immutable S0/D counts or source pins, no changed beta gate. Rollback is a reviewed candidate-branch revert; **rollback drill UNRUN**.
@@ -46,7 +59,7 @@ Read-only source analysis only. No real ARBOR/VIVIM/Labs/donor comparison; no pe
 ## Required next owner gate
 Obtain G1 actual Node24 + AJV receipt and accepted `main` SHA; re-review G2 drift, wire canonical live grant and Host action dispatch without new authority; attest current UiCore revision; run and record full synthetic 2/3/5-source, 3-SHA, denial/revoke/expiry, secret/redaction, deterministic replay, report and UI tests; obtain new independent Z2 consent/review. **Only after the verified combined gate** may the integrator submit/merge a reviewed PR to main and issue `GO_FOR_READINESS_REVIEW`. Current final gate is `REPAIR_REQUIRED`; do not bypass gates based on owner source-development approval.
 
-Machine-readable ledger: [proofs/G2/G2-RECEIPT.json](../../.integration/proposal5/hq-version-intelligence/proofs/G2/G2-RECEIPT.json).
+Machine-readable receipts: `.integration/proposal5/hq-version-intelligence/proofs/G2/g1-g2-receipt.json`, `.integration/proposal5/hq-version-intelligence/proofs/G2/host-read-port-receipt.json`, `.integration/proposal5/hq-version-intelligence/proofs/G2/host-source-grant-receipt.json`, `.integration/proposal5/hq-version-intelligence/proofs/G2/hvi-discovery-receipt.json`, `.integration/proposal5/hq-version-intelligence/proofs/G2/hq-boundary-receipt.json`, `.integration/proposal5/hq-version-intelligence/proofs/G2/tierflow-inspector-receipt.json`, `.integration/proposal5/hq-version-intelligence/proofs/G2/hvi-modules-receipt.json`, `.integration/proposal5/hq-version-intelligence/proofs/G2/cli-offline-replay-receipt.json` (schema `arbor.proposal5.hvi.g2.receipt/1`). Historical ledger: `.integration/proposal5/hq-version-intelligence/proofs/G2/G2-RECEIPT.json` (immutable, not edited).
 
 ## G2 follow-through: native HQ source-read security repairs (2026-11-12)
 
