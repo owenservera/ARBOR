@@ -1,0 +1,28 @@
+{
+  "schema": "vivim.host.hvi-native-guide/1",
+  "hostActionId": "versions.compare.pinned",
+  "capabilityId": "arbor.hvi.compare.pinned/1",
+  "catalogVersion": 7,
+  "ready": false,
+  "installed": true,
+  "enabledByDefault": false,
+  "remoteAccessible": false,
+  "owner": "Host control catalog/dispatcher",
+  "requestSchema": "vivim.host.hvi-source-request/1",
+  "resultSchema": "vivim.host.hvi-safe-report/1",
+  "typedCall": "createHviHostReadPort().invoke",
+  "triggers": [
+    "compare three commits",
+    "compare repository versions",
+    "explain source changes"
+  ],
+  "userIntentDoesNotGrantAccess": true,
+  "usage": [
+    "Inspect native Host catalog",
+    "Ask for explicit 2..16 repo/ref/SHA selections and target index",
+    "Obtain independently verified actor/session and live source grant",
+    "Trusted Host injects exact allowlist, read-only Git adapter and live callbacks",
+    "Native tool resolves pins and source manifests, runs G1 typed HQ engine, projects bounded summary"
+  ],
+  "pending": "Real source-grant service and remote security acceptance not yet wired"
+}
