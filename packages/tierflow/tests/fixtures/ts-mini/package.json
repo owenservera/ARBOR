@@ -1,0 +1,11 @@
+{
+  "name": "ts-mini",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Minimal TypeScript/Bun project used to prove TierFlow's executor drives an unrelated codebase. No git, no HQ, no dependencies, no node_modules.",
+  "scripts": {
+    "test": "bun test ./tests/sum.check.ts",
+    "test:fail": "bun test ./tests/fail.check.ts"
+  }
+}

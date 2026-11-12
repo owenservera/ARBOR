@@ -1,0 +1,16 @@
+import test from 'node:test'; import assert from 'node:assert/strict';
+test('redisStore round-trips commands and status via REST', async () => {
+  process.env.KV_REST_API_URL = 'https://fake'; process.env.KV_REST_API_TOKEN = 't';
+  const db = new Map(); const calls = [];
+  globalThis.fetch = async (_, o) => { const [c, k, ...a] = JSON.parse(o.body); calls.push(c); let result = null;
+    if (c === 'HSET') { const h = db.get(k) || new Map(); h.set(a[0], a[1]); db.set(k, h); result = 1; }
+    if (c === 'HVALS') result = [...(db.get(k) || new Map()).values()];
+    if (c === 'SET') { db.set(k, a[0]); assert.deepEqual(a.slice(1), ['EX', 3600]); result = 'OK'; }
+    if (c === 'GET') result = db.get(k) ?? null;
+    return { ok: true, json: async () => ({ result }) }; };
+  const { redisStore } = await import('../lib/redis-store.mjs'); const s = redisStore();
+  assert.equal(await s.latestStatus(), null);
+  await s.putCommand({ id: 'a', rev: 1 }); await s.putCommand({ id: 'a', rev: 2 });
+  assert.deepEqual(await s.listCommands(), [{ id: 'a', rev: 2 }]);
+  await s.putStatus({ at: 1 }); assert.deepEqual(await s.latestStatus(), { at: 1 });
+});

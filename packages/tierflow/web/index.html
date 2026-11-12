@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="color-scheme" content="dark" />
+<meta name="description" content="TIERFLOW mission control: live view of the three tier agentic workflow." />
+<title>TIERFLOW // mission control</title>
+<link rel="stylesheet" href="./styles.css" />
+<link rel="stylesheet" href="./world.css" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28'%3E%3Cpath d='M3.5 7.5 14 2.6 24.5 7.5 14 12.4Z' fill='none' stroke='%23ff9d3d' stroke-width='1.8'/%3E%3Cpath d='M3.5 14.4 14 19.3 24.5 14.4' fill='none' stroke='%234cc2e0' stroke-width='1.8'/%3E%3Cpath d='M3.5 21.3 14 26.2 24.5 21.3' fill='none' stroke='%237f8fa3' stroke-width='1.8'/%3E%3C/svg%3E" />
+<link rel="modulepreload" href="./world.js" />
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ============================ HEADER ============================ -->
+  <header class="hdr">
+    <div class="hdr__brand">
+      <svg class="mark" viewBox="0 0 28 28" aria-hidden="true" focusable="false">
+        <path d="M3.5 7.5 14 2.6 24.5 7.5 14 12.4Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" opacity=".95"/>
+        <path d="M3.5 14.4 14 19.3 24.5 14.4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" opacity=".5"/>
+        <path d="M3.5 21.3 14 26.2 24.5 21.3" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" opacity=".25"/>
+      </svg>
+      <span class="mark__word">TIERFLOW</span>
+      <span class="mark__proto" id="proto-id">tierflow/1</span>
+      <span class="mark__pid" id="pid-id">PID --</span>
+    </div>
+
+    <div class="hdr__status">
+      <button class="world-toggle" id="btn-world" type="button" aria-pressed="false" aria-controls="world">World</button>
+      <span class="badge" id="hot-badge" data-hot="unknown">HOTPATH --</span>
+      <span class="conn" id="conn" data-state="connecting">
+        <span class="conn__dot" aria-hidden="true"></span>
+        <span class="conn__text" id="conn-text">CONNECTING</span>
+      </span>
+    </div>
+
+    <div class="hdr__counters" id="counters" aria-label="Session counters">
+      <div class="ctr"><span class="ctr__k">INTENTS</span><span class="ctr__v" id="c-intents">0</span></div>
+      <div class="ctr"><span class="ctr__k">PLANS</span><span class="ctr__v" id="c-plans">0</span></div>
+      <div class="ctr"><span class="ctr__k">RUNS</span><span class="ctr__v" id="c-runs">0</span></div>
+      <div class="ctr"><span class="ctr__k">EVENTS</span><span class="ctr__v" id="c-events">0</span></div>
+    </div>
+  </header>
+
+  <!-- ============================ TIER STACK ============================ -->
+  <section class="panel panel--tiers" aria-label="Tier topology">
+    <div class="panel__bar">
+      <span class="panel__title">Tier stack</span>
+      <span class="panel__spacer"></span>
+      <span class="panel__meta" id="tier-flow">FLOW IDLE</span>
+    </div>
+    <div class="tiers__host" id="tiers-host">
+      <svg id="tier-svg" role="img" aria-label="Topology: Tier 1 interactive agent sends intents down to Tier 2 orchestrator, Tier 2 dispatches down to Tier 3 executor, Tier 3 returns results up to Tier 2 and Tier 2 returns narration up to Tier 1."></svg>
+    </div>
+    <ul class="tiers__legend">
+      <li><i class="sw sw--t1" aria-hidden="true"></i>T1 interactive</li>
+      <li><i class="sw sw--t2" aria-hidden="true"></i>T2 orchestrator</li>
+      <li><i class="sw sw--t3" aria-hidden="true"></i>T3 executor</li>
+    </ul>
+  </section>
+
+  <!-- ============================ CENTER ============================ -->
+  <section class="center">
+
+    <div class="panel panel--timeline">
+      <div class="panel__bar">
+        <span class="panel__title">Live timeline</span>
+        <span class="panel__spacer"></span>
+        <span class="tl-legend" aria-hidden="true">
+          <i class="sw sw--t1"></i><i class="sw sw--t2"></i><i class="sw sw--t3"></i>
+        </span>
+        <span class="readout"><span class="readout__k">rate</span><span class="readout__v" id="tl-rate">0/s</span></span>
+        <span class="readout"><span class="readout__k">p95</span><span class="readout__v" id="tl-p95">--</span></span>
+        <span class="readout"><span class="readout__k">win</span><span class="readout__v">30s</span></span>
+      </div>
+      <div class="tl-host">
+        <canvas id="timeline"></canvas>
+        <p class="tl-hint" id="tl-hint">Awaiting frames</p>
+      </div>
+    </div>
+
+    <div class="panel panel--tlog">
+      <div class="panel__bar">
+        <span class="panel__title">Transcript</span>
+        <span class="panel__spacer"></span>
+        <button class="btn btn--ghost btn--sm" id="btn-clear" type="button" aria-label="Clear the transcript log">Clear</button>
+      </div>
+      <div class="tlog-wrap">
+        <ol class="tlog" id="tlog" aria-label="Chronological transcript of tier activity"></ol>
+        <button class="jump" id="btn-jump" type="button" hidden>Jump to live</button>
+      </div>
+      <form class="composer" id="composer" autocomplete="off">
+        <div class="composer__head">
+          <label class="composer__label" for="chat">Tier 1 input</label>
+          <span class="composer__hint">Enter send &middot; Shift+Enter newline &middot; Ctrl+L clear</span>
+        </div>
+        <div class="composer__row">
+          <textarea id="chat" name="chat" rows="1" spellcheck="false" placeholder="Ask Tier 1. Prefixes: !run !design !maintain !inspect !sim"></textarea>
+          <div class="composer__side">
+            <button class="btn" id="btn-maintain" type="button" aria-label="Ask Tier 3 for a health sweep">Maintain</button>
+            <button class="btn btn--primary" id="btn-send" type="submit">Send</button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+  </section>
+
+  <!-- ============================ RUN BOARD ============================ -->
+  <section class="panel panel--board" aria-label="Run board">
+    <div class="panel__bar">
+      <span class="panel__title">Run board</span>
+      <span class="panel__spacer"></span>
+      <span class="panel__meta" id="board-count">0 runs</span>
+      <button class="btn btn--primary btn--sm" id="btn-sim" type="button" aria-label="Start a synthetic run at 2000 events per second for 5 seconds">Synthetic run</button>
+    </div>
+    <div class="board__list" id="board-list"></div>
+  </section>
+
+  <!-- ============================ FOOTER ============================ -->
+  <footer class="foot">
+    <span class="foot__grp"><span class="foot__k">ws</span><span class="foot__v" id="f-ws">closed</span></span>
+    <span class="foot__grp"><span class="foot__k">backoff</span><span class="foot__v" id="f-backoff">-</span></span>
+    <span class="foot__grp"><span class="foot__k">seq</span><span class="foot__v" id="f-seq">0</span></span>
+    <span class="foot__grp"><span class="foot__k">rate</span><span class="foot__v" id="f-rate">0/s</span></span>
+    <span class="foot__grp"><span class="foot__k">p95</span><span class="foot__v" id="f-p95">--</span></span>
+    <span class="foot__grp"><span class="foot__k">drops</span><span class="foot__v" id="f-drops">0</span></span>
+    <span class="foot__grp"><span class="foot__k">uptime</span><span class="foot__v" id="f-uptime">--</span></span>
+    <span class="foot__spacer"></span>
+    <span class="legend" aria-hidden="true">
+      <span class="legend__i"><i class="sw sw--live"></i>live</span>
+      <span class="legend__i"><i class="sw sw--ok"></i>ok</span>
+      <span class="legend__i"><i class="sw sw--fail"></i>fail</span>
+      <span class="legend__i"><i class="sw sw--warn"></i>warn</span>
+      <span class="legend__i"><i class="sw sw--cool"></i>structure</span>
+    </span>
+  </footer>
+
+</div>
+
+<!-- ============================ WORLD SURFACE ============================ -->
+<section class="world" id="world" aria-label="World canvas and studio" hidden>
+  <div class="world__stage" id="world-mount">
+    <canvas
+      id="world-canvas"
+      tabindex="0"
+      role="img"
+      aria-label="Infinite 3D world canvas. Use the arrow keys to orbit, plus and minus to zoom, Enter to select the object nearest the centre, and Escape to clear the selection. The full object list is available in the world contents list."
+      aria-describedby="world-hint world-a11y-summary"
+    ></canvas>
+
+    <div class="world__chrome">
+      <p class="world__chip" id="world-status">
+        <span class="world__dot" id="world-pending-dot" aria-hidden="true"></span>
+        <span class="world__chip-world" id="world-title">No world loaded</span>
+        <span class="world__chip-rev" id="world-rev">REV --</span>
+        <span class="world__chip-state" id="world-state">PUBLISHED</span>
+      </p>
+      <p class="world__hint" id="world-hint">
+        Drag empty space to look &middot; drag an object to move it on the floor &middot; right-drag or two fingers to pan &middot;
+        wheel or pinch to zoom &middot; arrows orbit &middot; plus and minus zoom &middot; Alt with arrows moves the selection
+      </p>
+      <p class="world__notice" id="world-notice" role="status" hidden></p>
+
+      <button class="world__close" id="world-close" type="button">Close world</button>
+    </div>
+
+    <div class="world__a11y" id="world-a11y" role="region" aria-label="World contents">
+      <p class="world__a11y-summary" id="world-a11y-summary">This world is an infinite 3D canvas. It is currently empty.</p>
+      <div class="world__a11y-list" id="world-a11y-list"></div>
+    </div>
+  </div>
+
+  <aside class="studio" id="studio" aria-label="World studio">
+    <header class="studio__bar">
+      <span class="studio__eyebrow">Studio</span>
+      <span class="studio__pending" id="studio-pending" data-state="published">Published</span>
+      <span class="studio__rev" id="studio-revision">REV --</span>
+      <button class="studio__collapse" id="studio-collapse" type="button" aria-expanded="true" aria-controls="studio-body" aria-label="Hide studio">
+        <span class="studio__collapse-label">Hide studio</span>
+        <span class="studio__collapse-mark" aria-hidden="true"></span>
+      </button>
+    </header>
+
+    <div class="studio__body" id="studio-body">
+      <div class="studio__scroll">
+
+        <section class="studio__group" aria-labelledby="studio-world-label">
+          <div class="studio__group-head">
+            <h3 class="studio__h" id="studio-world-label">World</h3>
+          </div>
+          <div class="studio__field">
+            <label class="studio__label" for="studio-world">Switch world</label>
+            <select class="studio__input" id="studio-world"></select>
+          </div>
+          <p class="studio__note" id="studio-world-note">Loading the world list.</p>
+        </section>
+
+        <section class="studio__group" aria-labelledby="studio-objects-label">
+          <div class="studio__group-head">
+            <h3 class="studio__h" id="studio-objects-label">Objects</h3>
+            <span class="studio__count" id="studio-object-count">0</span>
+          </div>
+          <div class="studio__objects" id="studio-objects"></div>
+        </section>
+
+        <section class="studio__group" aria-labelledby="studio-inspect-label">
+          <div class="studio__group-head">
+            <h3 class="studio__h" id="studio-inspect-label">Selection</h3>
+            <span class="studio__count" id="studio-selected-count"></span>
+          </div>
+
+          <p class="studio__empty" id="studio-inspect-empty">Nothing selected. Pick an object on the canvas or in the list above.</p>
+
+          <div class="studio__form" id="studio-inspect" hidden>
+            <div class="studio__field">
+              <label class="studio__label" for="studio-title">Title</label>
+              <input class="studio__input" id="studio-title" type="text" maxlength="80" autocomplete="off" />
+            </div>
+
+            <div class="studio__grid2">
+              <div class="studio__field">
+                <label class="studio__label" for="studio-layer">Layer</label>
+                <select class="studio__input" id="studio-layer"></select>
+              </div>
+              <div class="studio__field">
+                <label class="studio__label" for="studio-kind">Kind</label>
+                <select class="studio__input" id="studio-kind"></select>
+              </div>
+            </div>
+
+            <fieldset class="studio__coords">
+              <legend class="studio__label">Position, world units</legend>
+              <div class="studio__grid3">
+                <div class="studio__field">
+                  <label class="studio__label" for="studio-x">X</label>
+                  <input class="studio__input studio__input--num" id="studio-x" type="number" step="0.1" inputmode="decimal" />
+                </div>
+                <div class="studio__field">
+                  <label class="studio__label" for="studio-y">Y</label>
+                  <input class="studio__input studio__input--num" id="studio-y" type="number" step="0.1" inputmode="decimal" />
+                </div>
+                <div class="studio__field">
+                  <label class="studio__label" for="studio-z">Z</label>
+                  <input class="studio__input studio__input--num" id="studio-z" type="number" step="0.1" inputmode="decimal" />
+                </div>
+              </div>
+            </fieldset>
+
+            <p class="studio__note" id="studio-transform-note"></p>
+
+            <div class="studio__field">
+              <span class="studio__label" id="studio-values-label">Bound values</span>
+              <ul class="studio__values" id="studio-values" aria-labelledby="studio-values-label"></ul>
+            </div>
+
+            <div class="studio__field">
+              <span class="studio__label" id="studio-flows-label">Data flows</span>
+              <ul class="studio__values" id="studio-flows" aria-labelledby="studio-flows-label"></ul>
+            </div>
+
+            <p class="studio__warn" id="studio-inspect-warn" hidden></p>
+
+            <button class="studio__danger" id="studio-delete" type="button">Delete object</button>
+          </div>
+        </section>
+
+        <section class="studio__group" aria-labelledby="studio-add-label">
+          <div class="studio__group-head">
+            <h3 class="studio__h" id="studio-add-label">Add object</h3>
+          </div>
+          <form class="studio__form" id="studio-add-form">
+            <div class="studio__field">
+              <label class="studio__label" for="studio-add-title">Title</label>
+              <input class="studio__input" id="studio-add-title" type="text" maxlength="80" autocomplete="off" placeholder="Untitled object" />
+            </div>
+            <div class="studio__grid3">
+              <div class="studio__field">
+                <label class="studio__label" for="studio-add-layer">Layer</label>
+                <select class="studio__input" id="studio-add-layer"></select>
+              </div>
+              <div class="studio__field">
+                <label class="studio__label" for="studio-add-kind">Kind</label>
+                <select class="studio__input" id="studio-add-kind"></select>
+              </div>
+              <div class="studio__field">
+                <label class="studio__label" for="studio-add-shape">Shape</label>
+                <select class="studio__input" id="studio-add-shape"></select>
+              </div>
+            </div>
+            <button class="studio__btn" id="studio-add" type="submit">Add to world</button>
+            <p class="studio__note" id="studio-add-note">Placed at the view centre. Dynamic objects need an inbound data flow before the server will accept them.</p>
+          </form>
+        </section>
+
+        <section class="studio__group" aria-labelledby="studio-ops-label">
+          <div class="studio__group-head">
+            <h3 class="studio__h" id="studio-ops-label">Pending operations</h3>
+            <span class="studio__count" id="studio-ops-count">0</span>
+          </div>
+          <ol class="studio__ops" id="studio-ops"></ol>
+          <p class="studio__note" id="studio-ops-empty">No pending edits. What you see is the published world.</p>
+          <button class="studio__btn studio__btn--ghost" id="studio-discard" type="button">Discard pending</button>
+        </section>
+
+      </div>
+
+      <footer class="studio__foot">
+        <button class="studio__publish" id="studio-publish" type="button">Publish</button>
+        <p class="studio__status" id="studio-status" role="status" aria-live="polite">Nothing to publish.</p>
+      </footer>
+    </div>
+  </aside>
+</section>
+
+<p class="sr-only" id="live-status" role="status" aria-live="polite"></p>
+
+<script type="module" src="./app.js"></script>
+</body>
+</html>

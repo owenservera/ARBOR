@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#111214">
+<meta name="color-scheme" content="dark">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="preload" href="fonts/space-grotesk-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/geist-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<title>VIVIM Direct</title>
+<style>
+/* VIVIM phone — Neckar Sandstone Lab (graphite). Runtime personal themes may override --bg --s1 --s2 --bd --tx --mu --ac --ac2. */
+@font-face{font-family:"Space Grotesk";src:url("fonts/space-grotesk-latin-wght-normal.woff2") format("woff2");font-weight:300 700;font-display:swap}
+@font-face{font-family:"Geist";src:url("fonts/geist-latin-wght-normal.woff2") format("woff2");font-weight:100 900;font-display:swap}
+@font-face{font-family:"JetBrains Mono";src:url("fonts/jetbrains-mono-latin-wght-normal.woff2") format("woff2");font-weight:100 800;font-display:swap}
+:root{--bg:#111214;--s1:#18191c;--s2:#202226;--bd:#2e3035;--tx:#eeece7;--mu:#aeaba4;--ac:#ec7b67;--ac2:#3a1f1a;--bad:#ff8fa3;--ok:#5cc8cf;
+ --line-strong:#73767d;--pencil:#9c9a94;--warn:#f0b45a;--info:#9ab8ee;--grid:#1d1f22;--on-ac:#1a0a06;
+ --font-display:"Space Grotesk","Segoe UI Variable Display",system-ui,sans-serif;--font-sans:"Geist","Segoe UI Variable Text",system-ui,-apple-system,sans-serif;--font-mono:"JetBrains Mono","Cascadia Code",Consolas,ui-monospace,monospace;
+ --r-sm:4px;--r-md:6px;--r-lg:8px;--safe-b:env(safe-area-inset-bottom,0px);color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--tx);font:15px/1.5 var(--font-sans);display:flex;flex-direction:column;height:100vh;height:100dvh;overflow:hidden;-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent;-webkit-font-smoothing:antialiased}
+button,select,textarea,input{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:0;padding:0}
+button:disabled{opacity:.45;cursor:default}
+:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+.muted{color:var(--mu)}.pad{padding:12px}
+
+/* top bar: compact system strip; mobile brand sits above thumb-reachable navigation */
+#mobile-wordmark{display:none;font:700 18px/1 var(--font-display);letter-spacing:-.045em;color:var(--tx)}
+#top{display:flex;align-items:center;gap:4px;padding:env(safe-area-inset-top,0) 6px 0;min-height:calc(56px + env(safe-area-inset-top,0px));background:var(--s1);border-bottom:1px solid var(--bd);flex:none}
+.icon{width:48px;height:48px;flex:none;display:grid;place-items:center;border-radius:var(--r-sm);font-size:20px;color:var(--mu)}
+.icon:active{background:var(--s2)}
+#tabs{flex:1;display:flex;gap:0;min-width:0;overflow-x:auto;scrollbar-width:none}
+.tab{flex:1;min-height:48px;padding:0 10px;border-radius:var(--r-sm);color:var(--mu);font:500 14px/1 var(--font-sans);white-space:nowrap;position:relative}
+.tab.on{color:var(--tx);font-weight:600}
+.tab.on::after{content:"";position:absolute;left:10px;right:10px;bottom:-1px;height:2px;background:var(--ac)}
+#conn{font:500 10px/14px var(--font-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--mu);max-width:30vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dot{width:8px;height:8px;border-radius:1px;background:var(--ok);flex:none}
+.dot.bad{background:var(--bad)}
+body:not(.paired) .needpair{display:none!important}
+body:not(.tab-talk) #menu{display:none}
+body:not(.paired) #tabs{flex:1}
+@media(max-width:560px){body.paired #conn{display:none}}
+
+main{flex:1;min-height:0;display:flex;flex-direction:column;position:relative}
+#app{flex:1;min-height:0;display:flex;flex-direction:column}
+#v-talk{flex:1;min-height:0;display:flex;position:relative;overflow:hidden}
+#v-soon{flex:1;display:grid;place-items:center;text-align:center;color:var(--mu);background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:24px 24px}
+#v-soon h2{margin:0 0 6px;color:var(--tx);font:600 26px/32px var(--font-display);letter-spacing:-.02em}
+
+/* Installed APK handoff before spending a one-time pairing code in a mobile browser. */
+.pair-handoff{position:fixed;inset:0;z-index:100;background:var(--bg);display:flex;flex-direction:column;justify-content:center;align-items:stretch;gap:16px;padding:max(24px,env(safe-area-inset-top,0px)) max(24px,env(safe-area-inset-right,0px));overflow-y:auto}
+.pair-handoff h2{font:600 30px/1.15 var(--font-display);letter-spacing:-.035em;margin:0}
+.pair-handoff p{max-width:460px}
+.pair-handoff .btn{display:flex;align-items:center;justify-content:center;min-height:48px;text-decoration:none}
+
+/* pairing */
+#pairbox{margin:auto;width:min(92vw,380px);padding:24px;background:var(--s1);border:1px solid var(--bd);border-radius:var(--r-lg);display:flex;flex-direction:column;gap:14px;position:relative}
+#pairbox::before{content:"";position:absolute;left:24px;top:-1px;width:40px;height:3px;background:var(--ac)}
+#pairbox h1{margin:0;font:600 28px/32px var(--font-display);letter-spacing:-.03em}
+#pairbox p{margin:0;color:var(--mu)}
+input[type=password],input[type=text]{min-height:48px;border-radius:var(--r-sm);background:var(--s2);border:1px solid var(--line-strong);padding:0 14px;font-size:16px;outline:none;width:100%}
+input:focus,select:focus,textarea:focus{border-color:var(--ac)}
+
+.btn{min-height:48px;padding:0 18px;border-radius:var(--r-sm);background:var(--s2);border:1px solid var(--line-strong);font-weight:550}
+.btn.pri{background:var(--ac);color:var(--on-ac);border-color:var(--ac);font-weight:600}
+.btn.sm{min-height:40px;padding:0 12px;font-size:14px}
+
+/* drawer */
+#drawer{position:absolute;top:0;bottom:0;left:0;width:min(84vw,300px);transform:translateX(-103%);transition:transform .18s ease-out;background:var(--s1);border-right:1px solid var(--bd);z-index:20;display:flex;flex-direction:column}
+#drawer.open{transform:none}
+#drawer h3{margin:0;padding:16px 16px 8px;font:500 11px/16px var(--font-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--mu)}
+#convlist{flex:1;overflow-y:auto;padding:4px 8px 12px}
+#scrim{position:absolute;inset:0;background:rgba(0,0,0,.55);z-index:15}
+.conv{display:flex;align-items:stretch;border-radius:var(--r-md);margin-bottom:2px;position:relative}
+.conv.on{background:var(--ac2)}
+.conv.on::before{content:"";position:absolute;left:0;top:10px;bottom:10px;width:2px;background:var(--ac)}
+.conv .pick{flex:1;min-width:0;text-align:left;padding:9px 12px;border-radius:var(--r-md);min-height:52px}
+.conv .ct{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500}
+.conv .cs{display:block;font:400 11px/16px var(--font-mono);color:var(--mu);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.conv .del{width:44px;color:var(--mu);font-size:18px;border-radius:var(--r-md)}
+@media(min-width:820px){#drawer{position:static;transform:none;width:290px;flex:none}#scrim,#menu{display:none!important}}
+
+/* chat: your words solid, the AI's words framed and attributed */
+.chat{flex:1;min-width:0;display:flex;flex-direction:column}
+.chathead{display:flex;align-items:center;gap:8px;padding:8px 14px;border-bottom:1px solid var(--bd)}
+.chathead h2{flex:1;min-width:0;margin:0;font:600 16px/22px var(--font-sans);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#msgs{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:16px 14px;display:flex;flex-direction:column;gap:16px}
+.empty{margin:auto;color:var(--mu);text-align:center;padding:24px;font-size:14px}
+.m{display:flex;flex-direction:column;max-width:min(88%,720px);min-width:0}
+.m.u{align-self:flex-end;align-items:flex-end}
+.m.a{align-self:flex-start;align-items:flex-start}
+.bub{padding:10px 14px;border-radius:var(--r-lg);overflow-wrap:anywhere;min-width:0;max-width:100%}
+.u .bub{background:var(--tx);color:var(--bg);border-bottom-right-radius:2px;white-space:pre-wrap}
+.a .bub{background:var(--s1);border:1px solid var(--bd);border-bottom-left-radius:2px}
+.a.err .bub{border:1.5px dashed var(--bad);color:var(--bad);background:transparent}
+.badge{font:500 10px/14px var(--font-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--mu);margin:0 2px 5px}
+.bub p{margin:0 0 .6em}
+.bub>:last-child{margin-bottom:0}
+.bub pre{background:var(--bg);border:1px solid var(--bd);border-radius:var(--r-md);padding:10px;overflow-x:auto;margin:.5em 0}
+.bub code{font:13px var(--font-mono)}
+.bub :not(pre)>code{background:var(--bg);padding:1px 5px;border-radius:var(--r-sm)}
+.bub a{color:var(--ac);text-underline-offset:3px}
+.bub ul,.bub ol{margin:.4em 0;padding-left:1.4em}
+.bub h3,.bub h4,.bub h5,.bub h6{margin:.7em 0 .3em;line-height:1.25;font-family:var(--font-display)}
+.bub h3{font-size:1.15em}.bub h4{font-size:1.07em}.bub h5,.bub h6{font-size:1em}
+.dots{display:inline-flex;gap:4px;padding:4px 2px;vertical-align:middle}
+.bub>.dots:not(:first-child){display:flex;margin-top:4px}
+.dots i{width:6px;height:6px;border-radius:1px;background:var(--mu);animation:bounce 1.2s infinite ease-in-out}
+.dots i:nth-child(2){animation-delay:.15s}.dots i:nth-child(3){animation-delay:.3s}
+@keyframes bounce{0%,80%,100%{opacity:.25}40%{opacity:1}}
+@media(prefers-reduced-motion:reduce){.dots i{animation:none;opacity:.6}#drawer{transition:none}}
+
+/* composer */
+.composer{border-top:1px solid var(--bd);background:var(--s1);padding:10px 12px calc(10px + var(--safe-b));display:flex;flex-direction:column;gap:8px}
+.chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;align-items:center}
+.chip{flex:none;min-height:36px;padding:0 12px;border-radius:var(--r-sm);border:1px solid var(--bd);background:var(--s2);color:var(--mu);font:500 12px/1 var(--font-mono);letter-spacing:.02em}
+.chip[aria-pressed=true]{background:var(--ac2);border-color:var(--ac);color:var(--tx)}
+.sels{display:flex;gap:8px}
+.sels label{flex:1;min-width:0}
+select{width:100%;min-height:44px;background:var(--s2);border:1px solid var(--line-strong);border-radius:var(--r-sm);padding:0 8px;font-size:16px;color-scheme:dark;outline:none}
+.files{display:flex;gap:6px;flex-wrap:wrap}
+.file{display:inline-flex;align-items:center;gap:6px;max-width:100%;background:var(--s2);border:1px solid var(--bd);border-radius:var(--r-sm);padding:2px 4px 2px 10px;font:12px var(--font-mono)}
+.file span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.file button{width:32px;height:32px;color:var(--mu);font-size:16px}
+.row{display:flex;gap:8px;align-items:flex-end}
+textarea{flex:1;min-width:0;resize:none;max-height:160px;min-height:48px;border-radius:var(--r-md);padding:12px 14px;background:var(--s2);border:1px solid var(--line-strong);outline:none;line-height:1.4;font-size:16px;display:block}
+.round{width:48px;height:48px;border-radius:var(--r-md);flex:none;display:grid;place-items:center;background:var(--s2);border:1px solid var(--line-strong)}
+#send{background:var(--ac);border-color:var(--ac);color:var(--on-ac)}
+
+/* debug sheet + toast */
+#dbg{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center}
+.sheet{width:100%;max-width:680px;max-height:88dvh;overflow-y:auto;background:var(--s1);border:1px solid var(--bd);border-radius:var(--r-lg) var(--r-lg) 0 0;padding:16px 16px calc(16px + var(--safe-b));display:flex;flex-direction:column;gap:10px}
+@media(min-width:820px){#dbg{align-items:center}.sheet{border-radius:var(--r-lg)}}
+.sheet header{display:flex;align-items:center;justify-content:space-between}
+.sheet h2{margin:0;font:600 20px/26px var(--font-display);letter-spacing:-.02em}
+.sheet h4{margin:8px 0 0;font:500 11px/16px var(--font-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--mu)}
+.grid2{display:flex;gap:8px}
+.grid2 label{flex:1;font:500 11px/16px var(--font-mono);color:var(--mu)}
+#dbgtext{border-radius:var(--r-md);min-height:70px}
+pre.json{margin:0;background:var(--bg);border:1px solid var(--bd);border-radius:var(--r-md);padding:10px;font:12px var(--font-mono);white-space:pre-wrap;overflow-wrap:anywhere;max-height:240px;overflow:auto}
+.dcard{border:1px solid var(--bd);border-radius:var(--r-md);padding:8px 10px;font-size:13px}
+.dcard pre{margin:4px 0 0;white-space:pre-wrap;overflow-wrap:anywhere;font:12px var(--font-mono)}
+#toast{position:fixed;left:50%;bottom:calc(100px + var(--safe-b));transform:translateX(-50%);max-width:90vw;background:var(--s2);border:1px solid var(--bad);color:var(--tx);padding:12px 16px;border-radius:var(--r-md);z-index:60;box-shadow:0 12px 32px #0008}
+
+/* generated-surface parts */
+.vivim-ui-detail{display:block;color:var(--mu);font-size:.9em}
+.vivim-ui-value{margin-left:8px;font-family:var(--font-mono);color:var(--mu)}
+.vivim-ui-items{margin:6px 0 0;padding-left:18px;display:grid;gap:6px}
+.vivim-ui-collection-title{margin:0;font:600 16px/22px var(--font-sans)}
+/* build canvas, welcome tour, start page */
+#v-build{overflow-y:auto;padding:16px 14px calc(24px + var(--safe-b));display:flex;flex-direction:column;gap:16px}
+#build-compose{display:grid;gap:12px}
+.compose-box{display:grid;gap:12px}
+.compose-title{font:600 32px/36px var(--font-display);letter-spacing:-.035em}
+.compose-label{font:600 16px/22px var(--font-sans)}
+.compose-row{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.compose-row small{flex:1;min-width:140px}
+.compose-chips{flex-wrap:wrap}
+.compose-error{margin:0;padding:10px 12px;border:1.5px dashed var(--bad);border-radius:var(--r-md);color:var(--bad)}
+.proposal{display:grid;gap:10px;padding:16px;border:1.5px dashed var(--pencil);border-radius:var(--r-lg)}
+.proposal h3{margin:0;font:600 18px/24px var(--font-sans)}
+.proposal p{margin:0}
+.proposal.is-done{border:1px solid var(--ok)}.proposal.is-error{border-color:var(--bad)}
+.proposal-preview{border:1px solid var(--bd);border-radius:var(--r-md);padding:12px;background:var(--s1);max-height:340px;overflow:auto}
+.tour-eyebrow{font:500 11px/16px var(--font-mono);letter-spacing:.08em;color:var(--mu)}
+#welcome{position:fixed;inset:0;z-index:70;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center}
+.tour-sheet{position:relative;width:100%;max-width:520px;background:var(--s1);border:1px solid var(--bd);border-radius:var(--r-lg) var(--r-lg) 0 0;padding:24px 20px calc(20px + var(--safe-b));display:grid;gap:12px}
+.tour-sheet h2{margin:0;font:600 28px/32px var(--font-display);letter-spacing:-.03em}
+.tour-sheet p{margin:0;color:var(--mu);font-size:16px}
+.tour-dots{display:flex;gap:6px}.tour-dots i{width:20px;height:3px;background:var(--bd)}.tour-dots i.on{background:var(--ac)}
+.tour-actions{display:flex;gap:8px;justify-content:flex-end}
+.tour-skip{position:absolute;right:12px;top:10px;min-height:44px;padding:0 10px;color:var(--mu);font:500 13px var(--font-mono)}
+@media(min-width:820px){#welcome{align-items:center}.tour-sheet{border-radius:var(--r-lg)}}
+#v-today,#v-world,#v-me{flex:1;min-height:0;display:flex;flex-direction:column}
+/* Today · World · Me: one thumb-reachable action per screen, content scrolls above it. */
+.ux{flex:1;min-height:0;display:flex;flex-direction:column}
+.ux-scroll{flex:1;min-height:0;overflow-y:auto;padding:18px 14px 8px;display:flex;flex-direction:column;gap:14px}
+.ux-card{border:1px solid var(--bd);border-radius:var(--r-lg);background:var(--s1);padding:14px;display:flex;flex-direction:column;gap:10px}
+.ux-card-title{margin:0;font:600 12px/16px var(--font-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--mu)}
+.ux-rows{margin:0;display:grid;gap:8px}
+.ux-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:10px;align-items:baseline}
+.ux-k{margin:0;color:var(--mu);font-size:14px}
+.ux-v{margin:0;overflow-wrap:anywhere;text-align:right;font:500 14px/20px var(--font-sans)}
+.ux-list{margin:0;padding:0;list-style:none;display:grid;gap:10px}
+.ux-item{display:grid;gap:2px;padding:10px 12px;border:1px solid var(--bd);border-radius:var(--r-md);background:var(--bg)}
+.ux-item-title{font:600 15px/20px var(--font-sans)}
+.ux-item-detail{color:var(--mu);font-size:13px}
+.ux-empty{margin:0;color:var(--mu);font-size:14px}
+.ux-note{margin:0;font-size:13px}
+.ux-gap{margin:0;font-size:13px;color:var(--mu);border-left:2px solid var(--bd);padding-left:10px}
+.ux-conn{margin:0;font:600 18px/24px var(--font-display)}
+.ux-conn-bad{color:var(--bad)}.ux-conn-warn{color:var(--warn)}
+.ux-meta{margin:0;color:var(--mu);font:12px/16px var(--font-mono)}
+.ux-foot{flex:none;padding:12px 14px calc(14px + var(--safe-b));border-top:1px solid var(--bd);background:var(--s1);display:flex;flex-direction:column;gap:6px}
+.ux-foot .ux-primary{width:100%;min-height:52px}
+.ux-foot-note{margin:0;color:var(--mu);font-size:12px;text-align:center}
+.ux-secondary{align-self:flex-start}
+.start-wrap{display:grid;gap:14px;max-width:560px}
+.start-wrap h2{margin:0;font:600 32px/36px var(--font-display);letter-spacing:-.035em}
+.start-status{display:grid;gap:2px;padding:12px 14px;border:1.5px dashed var(--pencil);border-radius:var(--r-md);background:var(--bg)}
+.start-status.done{border:1px solid var(--ok)}.start-status.running{border:1px solid var(--info)}
+.start-status small{font:11px var(--font-mono);color:var(--mu)}
+.start-list{margin:0;padding:0;list-style:none;display:grid;gap:10px}
+.start-list li{display:grid;gap:2px;padding:12px 14px;border:1px solid var(--bd);border-radius:var(--r-md);background:var(--bg)}
+.start-list span{color:var(--mu);font-size:14px}
+/* Bootstrap visual preview: fixed, allowlisted color/font tokens; no model CSS injection. */
+body{background-image:var(--vivim-background-image,none);background-attachment:fixed;background-size:cover;
+  font-family:var(--vivim-font-family,var(--font-sans));
+  font-size:var(--vivim-base-font-size,15px)}
+.btn.pri,#send{color:var(--vivim-accent-ink,var(--on-ac))}
+#theme-panel{position:fixed;right:12px;top:calc(58px + env(safe-area-inset-top,0px));
+ width:min(360px,calc(100vw - 24px));padding:16px;background:var(--s1);border:1px solid var(--bd);
+ border-radius:var(--r-lg);z-index:38;box-shadow:0 20px 55px #0009}
+#theme-panel h2{font:600 20px/26px var(--font-display);letter-spacing:-.02em;margin:0 0 7px}
+#theme-panel p{font-size:12px;line-height:1.5;color:var(--mu);margin:5px 0 12px}
+.theme-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}
+#theme-close{font-size:22px;width:38px;height:38px;flex:none;border-radius:10px}
+#theme-choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.theme-choice{border:1px solid var(--bd);background:var(--s2);border-radius:var(--r-md);
+ display:flex;flex-direction:column;align-items:center;gap:5px;padding:8px 5px;min-height:73px;font:500 11px/1 var(--font-mono)}
+.theme-choice[aria-pressed=true]{outline:2px solid var(--ac);outline-offset:1px}
+.theme-choice:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+.theme-swatch{display:block;width:100%;height:35px;border-radius:var(--r-sm);border:1px solid #ffffff25}
+#theme-state{font-size:11px;color:var(--mu);margin-top:12px}
+.theme-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.theme-actions .btn{flex:1;white-space:nowrap}.theme-notice{font-size:11px!important;margin:8px 0 0!important}
+/* Chat is the primary interface: safe, text-only proposed plans with explicit owner action. */
+.vivim-intro{margin:auto;max-width:480px;width:100%;display:flex;flex-direction:column;gap:13px;align-items:flex-start;padding:22px 12px}
+.vivim-intro h3{font:600 30px/1.12 var(--font-display);letter-spacing:-.035em;margin:0}
+.vivim-intro p{margin:0}
+.vivim-examples{display:flex;flex-wrap:wrap;gap:8px}
+.vivim-plan{padding:12px;background:var(--s1);border:1px dashed var(--ac);border-radius:var(--r-md);width:min(100%,400px);display:grid;gap:10px}
+.vivim-plan p{margin:0;overflow-wrap:anywhere}
+.vivim-plan-actions{display:flex;gap:8px;flex-wrap:wrap}
+.vivim-plan-actions>.btn{flex:1;min-width:128px}
+.vivim-plan-actions>.btn:focus-visible{outline-offset:3px}
+#composer-note{font-size:11px;line-height:1.25}
+@media(max-width:640px){
+  /* Same six existing sections, placed at thumb height. No alternative navigation tree. */
+  #top{min-height:calc(54px + env(safe-area-inset-top,0px));padding:env(safe-area-inset-top,0px) 10px 0;gap:8px}
+  #mobile-wordmark{display:block;flex:1}
+  #tabs{position:fixed;left:0;right:0;bottom:0;z-index:35;width:100%;height:calc(62px + env(safe-area-inset-bottom,0px));
+    padding:3px 3px env(safe-area-inset-bottom,0px);background:var(--s1);border-top:1px solid var(--bd);
+    border-bottom:0;box-shadow:0 -5px 16px #0004;overflow:visible}
+  .tab{flex:1 1 0;min-width:0;min-height:52px;padding:6px 0 2px;display:flex;align-items:center;
+    justify-content:center;flex-direction:column;gap:2px;font-size:11px;line-height:14px;font-weight:600}
+  .tab::before{display:block;font:600 19px/22px var(--font-sans);opacity:.85;content:'●';color:var(--mu)}
+  .tab[data-tab="today"]::before{content:'◷'}
+  .tab[data-tab="talk"]::before{content:'✦'}
+  .tab[data-tab="build"]::before{content:'▦'}
+  .tab[data-tab="world"]::before{content:'◎'}
+  .tab[data-tab="me"]::before{content:'◉'}
+  .tab[data-tab="control"]::before{content:'☷'}
+  .tab.on{color:var(--tx)}
+  .tab.on::before{color:var(--ac);opacity:1}
+  .tab.on::after{top:0;bottom:auto;left:23%;right:23%;height:2px}
+  main{padding-bottom:calc(62px + env(safe-area-inset-bottom,0px))}
+  .composer{padding-bottom:10px}
+  .chathead{padding:8px 12px}
+  #msgs{padding:12px 12px}
+  .vivim-intro{padding:16px 8px}
+  #grokbot-direct-link{display:none}
+}
+@media(prefers-reduced-motion:reduce){.vivim-plan,.vivim-intro{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<a href="/mobile/grokbot.html" id="grokbot-direct-link" class="needpair" style="position:fixed;right:10px;bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:50;padding:10px 14px;border-radius:4px;background:var(--s2);border:1px solid var(--line-strong);color:var(--tx);font:500 12px/1 var(--font-mono);text-decoration:none">Grokbot · Linux ↗</a>
+<header id="top">
+  <span id="mobile-wordmark" class="needpair">VIVIM</span>
+  <button id="menu" class="icon needpair" type="button" aria-label="Conversations">
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+  </button>
+  <nav id="tabs" class="needpair" aria-label="Sections">
+    <button class="tab" type="button" data-tab="today">Today</button>
+    <button class="tab on" type="button" data-tab="talk">Talk</button>
+    <button class="tab" type="button" data-tab="build">Build</button>
+    <button class="tab" type="button" data-tab="world">World</button>
+    <button class="tab" type="button" data-tab="me">Me</button>
+    <button class="tab" type="button" data-tab="control">Control</button>
+  </nav>
+  <span id="dot" class="dot bad"></span><span id="conn">Connecting…</span>
+  <button id="theme-toggle" class="icon needpair" type="button" aria-label="Choose background" aria-expanded="false" aria-controls="theme-panel" title="Background">◐</button>
+  <button id="pocket-native" class="icon" type="button" hidden aria-label="Open offline Pocket captures" title="Offline Pocket">▣</button>
+  <button id="gear" class="icon" type="button" aria-label="Settings">⚙</button>
+</header>
+
+<main>
+  <section id="theme-panel" role="group" aria-label="Visual background preview" hidden>
+    <div class="theme-heading"><h2>Make it yours</h2><button id="theme-close" type="button" aria-label="Close background choices">×</button></div>
+    <p id="theme-status">Choose a starting background. Your AI can suggest a personal one as setup progresses.</p>
+    <div id="theme-choices" role="group" aria-label="Background presets"></div>
+    <div id="theme-state" role="status">Local preview · not yet synced to your PC</div>
+    <div class="theme-actions">
+      <button id="theme-save" type="button" class="btn pri">Use on my devices</button>
+      <button id="theme-undo" type="button" class="btn" hidden>Undo</button>
+    </div>
+    <p class="theme-notice">Using a background enables local visual personalization. Changes are reversible and are sent through your paired PC.</p>
+  </section>
+  <section id="pairbox" hidden>
+    <h1>Pair this device</h1>
+    <p>Open the pairing link from your box, or paste the pairing secret.</p>
+    <input id="secret" type="password" autocomplete="off" placeholder="Pairing secret" aria-label="Pairing secret">
+    <button id="pairbtn" class="btn pri" type="button">Pair</button>
+  </section>
+
+  <div id="app" hidden>
+    <section id="v-talk">
+      <div id="scrim" hidden></div>
+      <aside id="drawer" aria-label="Conversations">
+        <h3>Conversations</h3>
+        <div id="convlist"></div>
+      </aside>
+      <div class="chat">
+        <div class="chathead">
+          <h2 id="title">New chat</h2>
+          <button id="newchat" class="btn sm" type="button">New chat</button>
+        </div>
+        <div class="pad" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;border-bottom:1px solid var(--bd)">
+          <label for="talk-target" class="muted">Talk to</label>
+          <select id="talk-target" aria-label="Talk target" style="width:auto;flex:1">
+            <option value="vivim">VIVIM · my PC</option>
+            <option value="harness">My AIs</option>
+            <option value="phone">PC sessions</option>
+          </select>
+          <select id="native-session" aria-label="Existing PC session" style="flex:2;min-width:160px" hidden><option value="">Choose an existing session</option></select>
+          <span id="native-status" class="muted" role="status" style="width:100%;font-size:12px" hidden></span>
+        </div>
+        <div id="msgs" role="log" aria-live="polite"></div>
+        <div class="composer">
+          <div id="chips" class="chips" role="group" aria-label="Provider"></div>
+          <div class="sels">
+            <label id="modelwrap" hidden><select id="model" aria-label="Model"></select></label>
+            <label id="effortwrap" hidden><select id="effort" aria-label="Thinking level"></select></label>
+          </div>
+          <div id="files" class="files" hidden></div>
+          <p id="composer-note" class="ux-meta" role="status" style="margin:0">Choose how VIVIM can help.</p>
+          <div class="row">
+            <button id="clip" class="round" type="button" aria-label="Attach files" hidden>
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5l-8.5 8.5a5 5 0 01-7-7L14 4.5a3.3 3.3 0 014.7 4.7L10 18a1.7 1.7 0 01-2.4-2.4l7.8-7.8"/></svg>
+            </button>
+            <input id="file" type="file" multiple hidden>
+            <textarea id="text" rows="1" placeholder="Message…" aria-label="Message"></textarea>
+            <button id="send" class="round" type="button" aria-label="Send" disabled>
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section id="v-control" hidden style="height:100%;overflow:auto;padding:20px;max-width:900px;margin:0 auto">
+      <h2>Control your VIVIM</h2>
+      <p class="muted">Configure your home computer by describing the change. Direct connection only. Review each proposed action and explicitly approve it before VIVIM applies any available change.</p>
+      <label for="control-text">What would you like to change?</label>
+      <textarea id="control-text" rows="3" maxlength="1000" placeholder="Set my theme to dusk, or stop all traffic" aria-label="Configure VIVIM by text" style="width:100%;margin:12px 0"></textarea>
+      <button id="control-preview" class="btn pri" type="button">Preview action</button>
+      <pre id="control-result" role="status" aria-live="polite" style="white-space:pre-wrap;overflow-wrap:anywhere;margin-top:18px"></pre>
+      <p class="muted">Preview never changes settings. Available actions require separate approval and return Host receipts; unsupported requests are refused.</p>
+    </section>
+    <!-- Retired stub panel. Kept only so the shell's tab wiring stays explicit; it is hidden
+         for every tab in the strip and nothing routes to it. -->
+    <section id="v-soon" hidden aria-hidden="true"></section>
+    <section id="v-build" hidden>
+      <div id="build-compose"></div>
+      <div id="build-surface"></div>
+    </section>
+    <section id="v-today" hidden aria-label="Today"></section>
+    <section id="v-world" hidden aria-label="World"></section>
+    <section id="v-me" hidden aria-label="Me"></section>
+  </div>
+</main>
+
+<div id="welcome" hidden></div>
+
+<div id="dbg" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-label="Debug">
+    <header><h2>Debug</h2><button id="dbgclose" class="icon" type="button" aria-label="Close">✕</button></header>
+    <h4>Connection</h4>
+    <label for="connection-mode">Connection mode</label>
+    <select id="connection-mode"><option value="auto">Auto</option><option value="direct">Direct</option><option value="cloud">Cloud</option></select>
+    <label for="connection-address">Tailscale PC origin</label>
+    <input id="connection-address" type="text" autocomplete="url" placeholder="https://your-pc.tailnet.ts.net">
+    <button id="connection-apply" class="btn" type="button">Apply connection</button>
+    <p id="connection-status" class="muted" role="status"></p>
+    <button id="connection-resolved" class="btn" type="button" hidden>I've checked the pending send</button>
+    <h4>Raw send</h4>
+    <div class="grid2">
+      <label>kind<select id="kind"><option value="command">command</option></select></label>
+      <label>consumer<select id="consumer"><option value="harness">harness</option><option value="grokbot">grokbot</option><option value="zcode">zcode</option></select></label>
+    </div>
+    <textarea id="dbgtext" maxlength="4000" placeholder="Raw text…" aria-label="Raw text"></textarea>
+    <button id="dbgsend" class="btn pri" type="button">Send raw</button>
+    <h4>Box status</h4>
+    <pre id="status" class="json">Loading…</pre>
+    <h4>Recent raw commands</h4>
+    <div id="dbglist"></div>
+  </div>
+</div>
+<div id="toast" role="status" hidden></div>
+<script type="module" src="visual-bootstrap.mjs"></script>
+<script type="module" src="generative-ui/phone-surface.mjs"></script>
+<script type="module" src="app.js"></script>
+<script type="module" src="control-phone.mjs"></script>
+</body>
+</html>
