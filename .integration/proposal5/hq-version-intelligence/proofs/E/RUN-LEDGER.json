@@ -1,0 +1,89 @@
+{
+  "schema": "arbor.hvi.e.run-ledger/1",
+  "gate": "PREPARED_NOT_PROMOTED",
+  "workerBaseSha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+  "branch": "work/p5-hvi-w1-e-reports-r001",
+  "s0Gate": "GO_TO_PARALLEL",
+  "s0ProofHead": "2ef7a9f66419d681e040b459ba4762a63aa9564f",
+  "commitSha": "RESOLVE_GITHUB_BRANCH_TIP_AFTER_COMMIT",
+  "environment": {
+    "platform": "linux",
+    "node": "v22.16.0",
+    "integratedCheckout": false,
+    "connectedGitHubUsedForReadAndCommit": true
+  },
+  "executed": [
+    {
+      "command": "node --check hq/version-intelligence/report/index.mjs",
+      "exit": 0,
+      "result": "syntax PASS"
+    },
+    {
+      "command": "node --test hq/version-intelligence/report/test/report.test.mjs",
+      "exit": 0,
+      "result": "13 tests PASS / 0 fail"
+    },
+    {
+      "command": "node hq/version-intelligence/report/test/benchmark.mjs",
+      "exit": 0,
+      "result": "10,000 synthetic records, 5 pins; observed BENCHMARK-10K.json"
+    },
+    {
+      "command": "node hq/version-intelligence/report/test/generate-samples.mjs <proofs/E/samples directory>",
+      "exit": 0,
+      "result": "synthetic 2/3/5 pin report samples written"
+    }
+  ],
+  "unrun": [
+    {
+      "command": "Node 24 integrated ARBOR test",
+      "reason": "G1 owns combined checkout and acceptance"
+    },
+    {
+      "command": "Cargo/Bun workspace compile and install",
+      "reason": "outside E scope; root locks not accepted"
+    },
+    {
+      "command": "Host grant/revoke and effect denial tests",
+      "reason": "H/F/G1/G2 owners"
+    },
+    {
+      "command": "Windows/MSVC, physical Android/PWA, signed-in Chrome",
+      "reason": "no device/runner in this lane"
+    },
+    {
+      "command": "full donor credential-content scan",
+      "reason": "A/F/G owner; not run"
+    },
+    {
+      "command": "rollback drill",
+      "reason": "integration owner only"
+    }
+  ],
+  "changedScope": [
+    "hq/version-intelligence/report/**",
+    ".integration/proposal5/hq-version-intelligence/proofs/E/**"
+  ],
+  "sourcePins": {
+    "ARBOR": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+    "repos-hq": "9b922ea049dbadc94e504b5b9432743995c020ca",
+    "vivim-web-harness": "cae97afe848d79957c9d6c698a90996a758bfd56",
+    "tierflow": "50822f11ee63c3d80f631f8fea7dcb9b19bffc38",
+    "vivim-labs": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be"
+  },
+  "donorBlobRefs": {
+    "arborCatalogueDelta": "6849e6df26bd136ee50ae08a260d8ab9e9445ac7",
+    "w01Gate": "95365a19cb634f77264b8050f9e823d2470f7fa7",
+    "mainConsolidation": "3400b213e030388c1fd901e46791151626b10d85",
+    "labsSeedSnapshot": "0a28e90bb2bf2c05f5ba0584af2d4e152c0ce98c",
+    "pg00Crosswalk": "4876db7ca0d1f29f629a797350623967047bc2dc"
+  },
+  "securityPrivacy": "pure projection; no raw source payload or secrets, fail-closed on unknown schema, all acceptance separate",
+  "blockers": [
+    "C/F integration envelope compatibility not established in independent parallel lane",
+    "product source closure/CI/device/Host security remains blocked; beta not accepted"
+  ],
+  "nextOwner": "Z1 referee then G1 serial integrator",
+  "runtimeAccepted": false,
+  "mainModified": false
+}
