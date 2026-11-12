@@ -1,0 +1,86 @@
+name: ARBOR W01-G reproducibility gate
+on:
+  push:
+    branches:
+      - integrate/proposal5-beta-r001
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: w01g-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  generate-locks:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/integrate/proposal5-beta-r001' && github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: '1.99.0'
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '1.4.4'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Identify actual toolchains
+        run: |
+          set -eu
+          rustc -vV
+          cargo -V
+          bun -v
+          node -v
+      - name: Resolve real lockfiles
+        run: |
+          set -eu
+          cargo generate-lockfile
+          bun install --ignore-scripts
+          cargo metadata --locked --format-version 1 > /dev/null
+          bun install --frozen-lockfile --ignore-scripts
+          test -s Cargo.lock
+          test -s bun.lock
+      - name: Commit actual generated locks only
+        run: |
+          set -eu
+          git add -- Cargo.lock bun.lock
+          if git diff --cached --quiet; then
+            echo "Lockfiles already exact."
+            exit 0
+          fi
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'build(w01g): actual Cargo and Bun lockfiles from GitHub runner'
+          git push origin HEAD:integrate/proposal5-beta-r001
+
+  verify:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: '1.99.0'
+          targets: x86_64-pc-windows-msvc
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '1.4.4'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Run real Windows gate
+        shell: pwsh
+        run: |
+          pwsh -File integration/scripts/w01g-r001-windows.ps1 -Mode Verify
+      - name: Preserve raw evidence for reviewer only
+        if: always()
+        shell: pwsh
+        run: |
+          Write-Host "W01-G evidence generated under runner temporary directory. Examine logs for exact failure before any promotion."
