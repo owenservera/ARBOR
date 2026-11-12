@@ -1,0 +1,29 @@
+{
+  "schema": "arbor.hvi.gate-receipt/1",
+  "command": "node --test hq/catalogue-identity/test/crosswalk.test.mjs",
+  "os": "win32",
+  "osRelease": "10.0.29704",
+  "osArch": "x64",
+  "gateRuntime": "bun 1.4.2",
+  "testRuntimes": [
+    {
+      "runtime": "node24-ajv",
+      "binary": "node",
+      "version": "v24.22.1"
+    }
+  ],
+  "nodeVersion": "v24.22.1",
+  "bunVersion": "1.4.2",
+  "ajvVersion": "8.17.1",
+  "commitSha": "997eff0844b2106b2c91efb10c651f2c2567e6a5",
+  "gate": "hvi-modules",
+  "totals": {
+    "tests": 81,
+    "pass": 81,
+    "fail": 0
+  },
+  "exitCode": 0,
+  "durationMs": 3988,
+  "startedAt": "2026-11-12T23:49:55.436Z",
+  "finishedAt": "2026-11-12T23:50:15.046Z"
+}
