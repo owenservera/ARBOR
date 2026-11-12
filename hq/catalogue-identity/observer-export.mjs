@@ -7,6 +7,12 @@
 import { createHash } from 'node:crypto';
 import { SCHEMA } from './crosswalk.mjs';
 const sha = x => createHash('sha256').update(x).digest('hex');
+const cmp = (a,b) => a<b?-1:a>b?1:0;
+function stable(x){
+  if(Array.isArray(x))return x.map(stable);
+  if(x&&typeof x==='object')return Object.fromEntries(Object.keys(x).sort(cmp).map(k=>[k,stable(x[k])]));
+  return x;
+}
 const sorted = arr => [...arr].sort((a,b)=>a.id < b.id?-1:a.id > b.id?1:0);
 /**
  * Projection for Labs dashboards. Caller must explicitly allow each source ID.
@@ -16,6 +22,8 @@ const sorted = arr => [...arr].sort((a,b)=>a.id < b.id?-1:a.id > b.id?1:0);
  */
 export function observerExport(snapshot, {allowSourceIds=[]}={}) {
   if (snapshot?.schema!==SCHEMA) throw new Error('invalid_snapshot');
+  const {snapshot_sha256, ...body}=snapshot;
+  if (sha(JSON.stringify(stable(body)))!==snapshot_sha256) throw new Error('invalid_snapshot_digest');
   const allow=new Set(allowSourceIds);
   const sources=sorted(snapshot.sources.filter(s=>allow.has(s.id)).map(s=>({
     id:s.id,repository:s.repository,revision:s.revision,completeness:s.completeness,
