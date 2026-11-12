@@ -1,7 +1,7 @@
 # ARBOR Proposal 5 — FA-PG00 / Source Truth and Duplicate-Authority Census
 
 **EXECUTE NOW IN AN ISOLATED WORKER CONVERSATION using connected GitHub.**
-**First read:** [shared execution contract](../00-SHARED-PRE-G-CONTRACT.md) (same `prompts/` directory: `00-SHARED-PRE-G-CONTRACT.md`), `../SOURCE-ATLAS.v1.json`, `../GAP-REGISTER.v1.json`, `../WAVE-MANIFEST.v1.json` from the foundation branch. In case of any broken relative link, read by the exact paths below.
+**First read:** [shared execution contract](00-SHARED-PRE-G-CONTRACT.md) (same `prompts/` directory: `00-SHARED-PRE-G-CONTRACT.md`), `../SOURCE-ATLAS.v1.json`, `../GAP-REGISTER.v1.json`, `../WAVE-MANIFEST.v1.json` from the foundation branch. In case of any broken relative link, read by the exact paths below.
 
 - **Repository:** `owenservera/ARBOR`
 - **Create branch:** `work/p5-fa-pg00-source-truth-r001` from current **pinned** `work/p5-foundational-architecture-prep-r001` HEAD (write exact full commit into ledger).
