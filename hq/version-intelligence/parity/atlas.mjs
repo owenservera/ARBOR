@@ -131,7 +131,7 @@ export function buildParityAtlas(input={}) {
       certainty:d?'owner_receipt':inspected.length?'source_inspected':'path_only',
       owner:d?.owner??ownerFor(entry.path,input.owners??[])[0]?.owner??null,
       inspected:inspected.length>0,evidence_refs:evidenceIds,
-      tests:input.testReceipts.some(r=>r.kind==='executed_test'&&sourceMatches(r.source,entry,donor)&&r.exitCode===0)
+      tests:(input.testReceipts??[]).some(r=>r.kind==='executed_test'&&sourceMatches(r.source,entry,donor)&&r.exitCode===0)
         ?'TEST_EXECUTED':'UNRUN',
       runtime_evidence:capabilityState==='RUNTIME_VERIFIED'?'VERIFIED_RECEIPT':'UNRUN'});
   }
