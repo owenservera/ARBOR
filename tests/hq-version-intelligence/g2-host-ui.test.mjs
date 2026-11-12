@@ -133,3 +133,30 @@ test('native source secret-path classifier blocks a consistent set of credential
   for(const path of ['src/main.mjs','docs/overview.md','src/public/report.json'])
     assert.equal(sensitivePath(path),false,path);
 });
+
+test('direct comparator refuses sensitive Git metadata even when caller supplies a matching digest',async()=>{
+  const { resolvePin, snapshotAt } =
+    await import('../../hq/version-intelligence/sources/snapshots.mjs');
+  const { bridgeSourceManifest } =
+    await import('../../hq/version-intelligence/integration/source-manifest-adapter.mjs');
+  const { comparePinned, digestManifest } =
+    await import('../../hq/version-intelligence/compare/index.mjs');
+  const fixture=syntheticSource(), authorize=()=>true;
+  const bridges=[];
+  for(const ref of ['v1','v2']){
+    const pin=await resolvePin({provider:'github',repo:'synthetic/g2-fixture',
+      ref,approvedScope:'development'}, {adapter:fixture.adapter,authorize});
+    bridges.push(bridgeSourceManifest(await snapshotAt(pin,{
+      adapter:fixture.adapter,authorize,inspectContent:false})));
+  }
+  const hostile={...bridges[0].manifest,entries:[...bridges[0].manifest.entries,
+    {path:'private/invented.key',mode:'100644',kind:'file',
+      blobSha:'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+      capabilityIds:[],excludedReason:null}]};
+  hostile.digest=digestManifest(hostile);
+  const hostilePin={...bridges[0].pin,manifestDigest:hostile.digest};
+  assert.throws(()=>comparePinned({pins:[hostilePin,bridges[1].pin],
+    manifests:[hostile,bridges[1].manifest],targetPinId:bridges[1].pin.pinId}),
+    {code:'SOURCE_UNAUTHORIZED'});
+  assert.equal(fixture.calls.blobs.length,0);
+});
