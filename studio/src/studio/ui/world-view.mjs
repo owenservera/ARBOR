@@ -1,0 +1,4385 @@
+/** Saved local world inside the existing /chat shell.
+ * Conversations, projects and notes are peer views of shared ids.
+ * No home object and no second renderer. Reading and local edits only.
+ * Importing this file does nothing until mountWorldView runs.
+ */
+
+// Desktop-shell-only native validation bridge. Outside Tauri it reports
+// { available: false } and nothing below changes behavior.
+import { nativeProbeRequest, validateNativeProgram } from './native-bridge.mjs';
+
+export const WORLD_API = '/api/v1/world';
+export const AGENT_API = '/api/v1/personal-agent';
+export const PERSONAL_APPS_API = '/api/v1/personal-apps';
+const CONVERSATIONS_API = '/api/v1/conversations'; // read-only stored list (list_conversations); never a send
+export const PAGE_LIMIT = 50;
+export const VIEWS = Object.freeze(['conversations', 'projects', 'notes']);
+export const FIND_KINDS = Object.freeze(['message', 'project', 'note', 'task', 'app-note', 'source-reference', 'selection']);
+const FIND_LABELS = { message: 'Messages', project: 'Projects', note: 'Notes', task: 'Tasks', 'app-note': 'App notes', 'source-reference': 'Local objects', selection: 'Selections' };
+const SHELL_VIEWS = new Set(['capture', 'home', 'agent', 'builder', 'settings', 'find', 'transfer', 'relations', 'workspace', 'compose', ...VIEWS]);
+export const AGENT_TRANSITIONS = Object.freeze({ queued: ['active','blocked','cancelled'], active: ['blocked','completed','cancelled'], blocked: ['active','cancelled'], completed: [], cancelled: [] });
+const STANDARD_RELATION_BASIS = 'local association; not native equality';
+const EXPORT_MODE_LABEL = { references: 'References only — no message text', transcript: 'Transcript — saved message text and simple formatting', 'full-saved': 'Full saved — every recorded block' };
+const EXPORT_OMIT_LABEL = { 'reasoning-blocks-excluded': 'Saved reasoning blocks left out', 'tool-activity-blocks-excluded': 'Tool and status activity blocks left out', 'non-transcript-blocks-excluded': 'Blocks Studio does not recognize left out' };
+const ID_RE = { conversations: /^c-[a-z0-9-]{1,60}$/, projects: /^p-[a-z0-9-]{1,60}$/, notes: /^n-[a-z0-9-]{1,60}$/ };
+
+const clip = (s, n) => (s.length > n ? s.slice(0, n) + '…' : s);
+
+export function labelize(key) {
+  const spaced = String(key ?? '').replace(/[_-]+/g, ' ').replace(/([a-z0-9])([A-Z])/g, '$1 $2').trim();
+  if (!spaced) return 'Detail';
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+}
+
+export function formatMeta(value) {
+  if (value == null) return 'not recorded';
+  if (typeof value === 'string') return clip(value, 180);
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  try {
+    const text = JSON.stringify(value);
+    return text ? clip(text, 180) : 'recorded';
+  } catch { return 'recorded'; }
+}
+
+function integerOrNull(value) { return Number.isInteger(value) ? value : null; }
+
+export function problemText(data) {
+  const msg = typeof data?.message === 'string' && data.message ? data.message
+    : typeof data?.error === 'string' && data.error ? data.error : '';
+  return msg || (typeof data?.code === 'string' && data.code ? data.code : 'Studio rejected this.');
+}
+
+export function safeHttp(value) {
+  try {
+    const url = new URL(String(value ?? '').trim());
+    return url.protocol === 'http:' || url.protocol === 'https:' ? url.href : null;
+  } catch { return null; }
+}
+
+export function roleLabel(role) {
+  if (role === 'user' || role === 'human') return 'You';
+  if (role === 'assistant' || role === 'ai' || role === 'model' || role === 'bot') return 'Assistant';
+  if (role === 'system') return 'System';
+  if (role === 'tool') return 'Tool';
+  if (typeof role === 'string' && role.trim()) return role.trim();
+  return 'Unknown role';
+}
+
+export function redactionNote(redactions) {
+  if (redactions == null || redactions === false || redactions === 0) return '';
+  if (typeof redactions === 'number') return `Redactions were applied before this was saved (${redactions}). Removed text is not shown.`;
+  if (Array.isArray(redactions)) return `Redactions were applied before this was saved (${redactions.length}). Removed text is not shown.`;
+  return 'Redactions were applied before this was saved. Removed text is not shown.';
+}
+
+export function coverageView(coverage) {
+  const c = coverage && typeof coverage === 'object' ? coverage : {};
+  const state = typeof c.state === 'string' && c.state ? c.state : 'unknown';
+  const labels = {
+    missing: ['Saved messages: missing', 't-bad'],
+    partial: ['Saved messages: partial', 't-warn'],
+    unavailable: ['Saved messages: unavailable', 't-warn'],
+    'saved-observation': ['Saved local observation', 't-info'],
+    'imported-snapshot': ['Imported snapshot', 't-warn'],
+  };
+  const chips = [labels[state] ?? [`Coverage: ${state}`, 't-warn']];
+  const full = c.fullNativeThread;
+  chips.push(full == null || full === 'unknown'
+    ? ['Full remote thread: unknown', 't-warn']
+    : [`Full remote thread: ${full}`, 't-info']);
+  const rich = c.richContent;
+  chips.push(rich === 'as-recorded'
+    ? ['Rich parts: as recorded', 't-info']
+    : rich === 'imported-as-supplied'
+      ? ['Rich parts: as supplied in the import', 't-warn']
+      : rich === 'missing'
+        ? ['Rich parts: missing', 't-warn']
+        : [`Rich parts: ${rich ?? 'unknown'}`, 't-warn']);
+  const known = new Set(['state', 'fullNativeThread', 'richContent', 'reason']);
+  const extra = [];
+  for (const [key, value] of Object.entries(c)) {
+    if (known.has(key)) continue;
+    extra.push({
+      label: key === 'acceptance' ? 'Acceptance' : labelize(key),
+      value: key === 'acceptance' && value === 'not-assessed' ? 'not assessed' : formatMeta(value),
+    });
+  }
+  const sentence = state === 'saved-observation'
+    ? 'This is a saved local observation. It is not a claim that the remote thread is complete.'
+    : state === 'partial'
+      ? 'Only part of the saved session was usable. The remote thread is still unknown.'
+      : state === 'missing'
+        ? 'No saved messages were found for this session.'
+        : state === 'unavailable'
+          ? `Saved messages could not be read${typeof c.reason === 'string' && c.reason ? ` (${c.reason})` : ''}. This is not an empty conversation.`
+          : state === 'imported-snapshot'
+            ? 'This is an imported snapshot from a JSON bundle, not a recording Studio observed.'
+            : 'Coverage is not one of the known states. Nothing here was marked complete.';
+  return { chips, extra, sentence };
+}
+
+function namedFact(label, node) {
+  if (!node || typeof node !== 'object') return { label, value: 'unknown' };
+  const value = node.value == null || node.value === '' ? 'not recorded' : formatMeta(node.value);
+  const state = typeof node.state === 'string' && node.state ? node.state : 'unknown';
+  const basis = typeof node.basis === 'string' && node.basis ? ` Basis: ${node.basis}.` : '';
+  return { label, value: `${value} (${state}).${basis}` };
+}
+
+export function identityRows(identity) {
+  const item = identity && typeof identity === 'object' ? identity : {};
+  const state = typeof item.state === 'string' && item.state ? item.state : 'unknown';
+  const rows = [
+    { label: 'Remote thread', value: state },
+    { label: 'Native thread id', value: item.nativeThreadId == null || item.nativeThreadId === '' ? 'not recorded' : formatMeta(item.nativeThreadId) },
+    { label: 'Account', value: item.accountId == null || item.accountId === '' ? 'not recorded' : formatMeta(item.accountId) },
+  ];
+  if (item.provider && typeof item.provider === 'object') rows.push(namedFact('Provider', item.provider));
+  if (item.origin && typeof item.origin === 'object') rows.push(namedFact('Origin', item.origin));
+  if (item.thread && typeof item.thread === 'object') {
+    const threadState = typeof item.thread.state === 'string' && item.thread.state ? item.thread.state : 'unknown';
+    rows.push({
+      label: 'Thread basis',
+      value: threadState === 'qualified-inference'
+        ? 'Qualified inference from the saved address. Not account proof, and not a merge with another saved conversation.'
+        : threadState,
+    });
+  }
+  if (item.account && typeof item.account === 'object') {
+    rows.push({ label: 'Account state', value: typeof item.account.state === 'string' && item.account.state ? item.account.state : 'unknown' });
+  }
+  if (typeof item.qualification === 'string' && item.qualification) rows.push({ label: 'Qualification', value: item.qualification });
+  if (typeof item.observedAt === 'string' && item.observedAt) rows.push({ label: 'Observed at', value: item.observedAt });
+  const known = new Set(['state', 'nativeThreadId', 'accountId', 'provider', 'origin', 'thread', 'account', 'qualification', 'observedAt']);
+  for (const [key, value] of Object.entries(item)) if (!known.has(key)) rows.push({ label: labelize(key), value: formatMeta(value) });
+  if (state === 'unknown') rows.push({ label: 'Meaning', value: 'Unknown is not proof this conversation is only local, and the same title elsewhere is not the same conversation.' });
+  else if (state === 'partial') rows.push({ label: 'Meaning', value: 'Partial means a saved address was parsed. It does not prove the account or the full remote thread.' });
+  return rows;
+}
+
+export function sourceRows(source) {
+  const item = source && typeof source === 'object' ? source : {};
+  const kind = item.kind === 'saved-session' ? 'Saved session on this computer'
+    : typeof item.kind === 'string' && item.kind ? item.kind : 'unknown';
+  const rows = [
+    { label: 'Where it was saved', value: kind },
+    { label: 'Session', value: typeof item.sessionId === 'string' && item.sessionId ? item.sessionId : 'unknown' },
+    { label: 'Provider address', value: typeof item.providerUrl === 'string' && item.providerUrl ? item.providerUrl : 'not recorded' },
+  ];
+  const known = new Set(['kind', 'sessionId', 'providerUrl']);
+  for (const [key, value] of Object.entries(item)) if (!known.has(key)) rows.push({ label: labelize(key), value: formatMeta(value) });
+  return rows;
+}
+
+export function messageSourceRows(source) {
+  const item = source && typeof source === 'object' ? source : {};
+  const rows = [
+    { label: 'Session', value: typeof item.sessionId === 'string' && item.sessionId ? item.sessionId : 'unknown' },
+    { label: 'Record', value: item.key === 'DOM_TURNS' ? 'Recorded page turns (DOM_TURNS)' : typeof item.key === 'string' && item.key ? item.key : 'unknown' },
+    { label: 'Index', value: Number.isInteger(item.index) ? String(item.index) : 'unknown' },
+    { label: 'Observed id', value: item.observedTurnId == null || item.observedTurnId === '' ? 'not recorded' : formatMeta(item.observedTurnId) },
+  ];
+  const known = new Set(['sessionId', 'key', 'index', 'observedTurnId']);
+  for (const [key, value] of Object.entries(item)) if (!known.has(key)) rows.push({ label: labelize(key), value: formatMeta(value) });
+  return rows;
+}
+
+function fence(lang, text) {
+  const body = String(text);
+  const runs = body.match(/`+/g) ?? [];
+  const width = Math.max(3, ...runs.map((run) => run.length + 1));
+  const bar = '`'.repeat(Number.isFinite(width) ? width : 3);
+  const safeLang = typeof lang === 'string' && /^[\w+#.-]{1,32}$/.test(lang) ? lang : '';
+  return `${bar}${safeLang}\n${body}\n${bar}`;
+}
+
+function tableMarkdown(block) {
+  const head = Array.isArray(block.headers) ? block.headers : Array.isArray(block.head) ? block.head : null;
+  const rows = Array.isArray(block.rows) ? block.rows : null;
+  if (!head || !rows || !head.length) return '';
+  const cell = (value) => String(value ?? '').replace(/\|/g, '\\|').replace(/\r?\n/g, ' ').trim();
+  const heads = head.map(cell);
+  const lines = [
+    `| ${heads.join(' | ')} |`,
+    `| ${heads.map(() => '---').join(' | ')} |`,
+    ...rows.map((row) => {
+      const cells = Array.isArray(row) ? row : [];
+      return `| ${heads.map((_, index) => cell(cells[index])).join(' | ')} |`;
+    }),
+  ];
+  return lines.join('\n');
+}
+
+function unknownPart(type) {
+  const label = typeof type === 'string' && /^[a-z0-9][a-z0-9 +_.:-]{0,60}$/i.test(type) ? type : 'unknown';
+  return { type: label, note: `Recorded part (${label}). Studio does not know how to format it, so it is not shown as content.` };
+}
+
+/** Only links recorded inside this saved paragraph/heading; never inferred citations. */
+export function savedInlineLinks(block) {
+  if (!['paragraph', 'heading'].includes(block?.type)) return [];
+  const seen = new Set(), links = [];
+  for (const part of Array.isArray(block.inline) ? block.inline : []) {
+    if (part?.t !== 'link' && part?.t !== 'citation') continue;
+    const href = safeHttp(part.href);
+    const label = typeof part.text === 'string' && part.text.trim() ? clip(part.text.trim(), 120) : 'Recorded link';
+    const key = JSON.stringify([part.t, label, href]);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    links.push({ kind: part.t, label, href, basis: 'link observed in saved page, not source verification' });
+  }
+  return links;
+}
+
+function blockToMarkdown(block, lines, unknowns, depth) {
+  if (!block || typeof block !== 'object' || depth > 8) { unknowns.push(unknownPart('unknown')); return; }
+  const type = (typeof block.type === 'string' && block.type) || (typeof block.kind === 'string' && block.kind) || 'unknown';
+  const text = typeof block.text === 'string' ? block.text : null;
+  if (type === 'paragraph') {
+    if (text == null) unknowns.push(unknownPart(type)); else lines.push(text, '');
+    return;
+  }
+  if (type === 'heading') {
+    if (text == null) { unknowns.push(unknownPart(type)); return; }
+    const level = Number.isInteger(block.level) ? Math.min(6, Math.max(1, block.level)) : 2;
+    lines.push(`${'#'.repeat(level)} ${text.replace(/\r?\n/g, ' ')}`, '');
+    return;
+  }
+  if (type === 'code') {
+    if (text == null) unknowns.push(unknownPart(type)); else lines.push(fence(block.language || block.lang, text), '');
+    return;
+  }
+  if (type === 'table') {
+    const markdown = tableMarkdown(block);
+    if (!markdown) unknowns.push(unknownPart(type)); else lines.push(markdown, '');
+    return;
+  }
+  if (type === 'list') {
+    const items = Array.isArray(block.items) ? block.items : null;
+    if (!items) { unknowns.push(unknownPart(type)); return; }
+    const start = Number.isInteger(block.start) && block.start > 0 ? block.start : 1;
+    items.forEach((item, index) => {
+      const nested = [];
+      if (item && typeof item.text === 'string') nested.push(item.text);
+      else if (item && Array.isArray(item.blocks)) item.blocks.forEach((child) => blockToMarkdown(child, nested, unknowns, depth + 1));
+      else unknowns.push(unknownPart('list item'));
+      const body = nested.join('\n').trim();
+      if (!body) return;
+      const marker = block.ordered ? `${start + index}. ` : '- ';
+      const parts = body.split('\n');
+      lines.push(marker + parts[0]);
+      for (const extra of parts.slice(1)) lines.push(`${block.ordered ? '   ' : '  '}${extra}`);
+    });
+    lines.push('');
+    return;
+  }
+  if (type === 'quote' || type === 'figure' || type === 'details') {
+    const nested = [];
+    if (typeof block.summary === 'string' && block.summary) nested.push(block.summary, '');
+    if (typeof block.caption === 'string' && block.caption) nested.push(block.caption, '');
+    const children = Array.isArray(block.blocks) ? block.blocks : [];
+    if (!children.length && text != null) nested.push(text, '');
+    children.forEach((child) => blockToMarkdown(child, nested, unknowns, depth + 1));
+    const body = nested.join('\n').trim();
+    if (!body) { unknowns.push(unknownPart(type)); return; }
+    lines.push(type === 'quote' ? body.split('\n').map((line) => `> ${line}`).join('\n') : body, '');
+    return;
+  }
+  if (type === 'rule') { lines.push('---', ''); return; }
+  if (type === 'equation') {
+    if (typeof block.tex === 'string') lines.push(fence('tex', block.tex), ''); else unknowns.push(unknownPart(type));
+    return;
+  }
+  if (type === 'image') {
+    const alt = typeof block.alt === 'string' && block.alt ? block.alt : 'Image';
+    const href = safeHttp(block.src);
+    if (href) lines.push(`![${alt.replace(/[\[\]]/g, '')}](${href})`, '');
+    unknowns.push({ type, note: `Image recorded${typeof block.alt === 'string' && block.alt ? ` (${clip(block.alt, 80)})` : ''}. Studio does not load it.` });
+    return;
+  }
+  if (type === 'file') {
+    const href = safeHttp(block.href);
+    const name = typeof block.name === 'string' && block.name ? clip(block.name, 80) : 'File';
+    if (href) lines.push(`[${name.replace(/[\[\]]/g, '')}](${href})`, '');
+    unknowns.push({ type, note: `File recorded (${name}). Studio does not download it.` });
+    return;
+  }
+  if (type === 'media') {
+    const kind = block.kind === 'audio' || block.kind === 'video' ? block.kind : 'media';
+    unknowns.push({ type, note: `Recorded ${kind}. Studio does not play it.` });
+    return;
+  }
+  if (type === 'graphic') { unknowns.push({ type, note: 'Graphic recorded. Studio does not redraw it.' }); return; }
+  const label = labelledPart(type);
+  if (label) {
+    lines.push(`## ${label}`, '');
+    const recorded = typeof text === 'string' ? text : (typeof block.summary === 'string' ? block.summary : null);
+    if (recorded) lines.push(recorded, '');
+    const nested = Array.isArray(block.blocks) ? block.blocks : Array.isArray(block.parts) ? block.parts : [];
+    if (nested.length) {
+      for (const kid of nested.slice(0, 64)) blockToMarkdown(kid, lines, unknowns, depth + 1);
+    } else if (!recorded) {
+      unknowns.push({ type, note: `${label}. The details of this part were not formatted and are not shown.` });
+    }
+    return;
+  }
+  unknowns.push(unknownPart(type));
+}
+
+function labelledPart(type) {
+  const key = String(type).toLowerCase().replace(/[_\s]+/g, '-');
+  if (['reasoning', 'thinking', 'visible-thinking', 'visible-thinking-summary'].includes(key)) return 'Reasoning (saved)';
+  if (['status', 'progress'].includes(key)) return 'Status';
+  if (['tool', 'tool-call', 'tool-activity', 'tool-activity-observed'].includes(key)) return 'Tool call: stage as recorded';
+  return '';
+}
+
+/** Thin adaptation of saved DOM blocks. Unknown parts stay labels; their payloads are not copied into text. */
+export function turnPlan(message) {
+  const blocks = Array.isArray(message?.blocks) ? message.blocks : [];
+  const lines = [];
+  const unknowns = [];
+  if (blocks.length) blocks.forEach((block) => blockToMarkdown(block, lines, unknowns, 0));
+  let markdown = lines.join('\n').trim();
+  let note = '';
+  if (!markdown && typeof message?.text === 'string' && message.text) {
+    markdown = message.text;
+    note = blocks.length
+      ? 'Saved text. The recorded parts could not be formatted, so this is the saved text only.'
+      : 'Saved text. No separate rich parts were recorded with this turn.';
+  } else if (!markdown && !unknowns.length) note = 'No text saved for this turn.';
+  return { markdown, note, unknowns, truncated: message?.truncated === true,
+    truncatedOriginalLength: Number.isSafeInteger(message?.truncatedOriginalLength) && message.truncatedOriginalLength > 0
+      ? message.truncatedOriginalLength : null,
+    redactionNote: redactionNote(message?.redactions) };
+}
+
+/** One entry per top-level saved block, so a rendered part can carry its own data-part-path marker.
+ * The marker value is the same part path the selection API records ([blockIndex]); the path is
+ * stringified for the attribute. Blocks that produce no renderable text produce no frame. */
+export function planFrames(message) {
+  const blocks = Array.isArray(message?.blocks) ? message.blocks : [];
+  return blocks.map((block, index) => {
+    const lines = [];
+    const unknowns = [];
+    blockToMarkdown(block, lines, unknowns, 0);
+    return { path: [index], markdown: lines.join('\n').trim(), links: savedInlineLinks(block) };
+  });
+}
+
+export function searchStatusText({ shown = 0, total = null, coverage = null } = {}) {
+  const count = Number.isInteger(total) ? `${shown} of ${total} matches in this scan` : `${shown} matches in this scan`;
+  const incomplete = !coverage || coverage.complete === false || coverage.truncated === true;
+  return incomplete ? `${count}. This scan is incomplete.` : `${count}.`;
+}
+
+export function searchCoverageLines(coverage) {
+  if (!coverage || typeof coverage !== 'object') {
+    return ['This scan did not report coverage. The match count is not everything that exists.'];
+  }
+  const lines = [];
+  if (coverage.complete !== true) lines.push('This scan is incomplete. The match count is not everything saved here, and it says nothing about remote content.');
+  if (coverage.truncated === true) lines.push('The scan stopped before it had read every local record in its bounds.');
+  for (const reason of Array.isArray(coverage.reasons) ? coverage.reasons : []) {
+    if (typeof reason === 'string' && reason) lines.push(`Stopped because: ${reason}.`);
+  }
+  const absent = Number.isInteger(coverage.absent?.conversations) ? coverage.absent.conversations : 0;
+  if (absent > 0) lines.push(`${absent} saved conversations had no recorded messages in this scan.`);
+  const failures = Array.isArray(coverage.failures) ? coverage.failures : [];
+  if (failures.length) {
+    lines.push(`${failures.length} reads failed.`);
+    for (const failure of failures.slice(0, 3)) {
+      const message = typeof failure?.message === 'string' && failure.message ? failure.message : failure?.code;
+      if (typeof message === 'string' && message) lines.push(message);
+    }
+  }
+  if (typeof coverage.qualification === 'string' && coverage.qualification) lines.push(coverage.qualification);
+  return lines;
+}
+
+export const IMPORT_BYTE_CAP = 8 * 1024 * 1024;
+
+export function isExportBundle(data) {
+  return !!data && typeof data === 'object' && !Array.isArray(data) && data.schema === 'vivim.world-export/1' && Array.isArray(data.records) && typeof data.integrity?.sha256 === 'string';
+}
+
+export function validWorldId(id) {
+  return typeof id === 'string' && (/^c-(?:[a-f0-9]{40}|i[a-f0-9]{38})$/.test(id)
+    || /^[npos]-[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(id)
+    || /^[npos]-[a-f0-9]{36}f$/.test(id));
+}
+
+export function custodyChip(item) {
+  const custody = item?.custody;
+  const coverage = item?.coverage?.state ?? item?.coverageState?.state ?? item?.coverageState;
+  if (custody === 'imported' || custody === 'imported-snapshot' || coverage === 'imported-snapshot') return ['Imported snapshot', 't-warn'];
+  return null;
+}
+
+// Chip for a reading pane or focus header: the map node the user clicked decides first, so the
+// pane never contradicts the list; a stored record's custody/coverage can still correct an
+// unknown onto Imported snapshot instead of a bare unknown.
+export function readerProvenanceChip(node, record) {
+  for (const candidate of [node, record]) {
+    if (!candidate || typeof candidate !== 'object') continue;
+    if (candidate.provenance || candidate.custody) {
+      const chip = provenanceChip(candidate);
+      if (chip[0] !== 'Provenance unknown') return chip;
+    }
+    if (custodyChip(candidate) || candidate.coverage?.state === 'imported-snapshot'
+      || candidate.coverageState?.state === 'imported-snapshot' || candidate.coverageState === 'imported-snapshot') {
+      return ['Imported snapshot', 't-warn'];
+    }
+  }
+  return provenanceChip(node ?? record ?? {});
+}
+
+// What a saved object/selection actually addresses, as labelled rows. No payloads, no dumps.
+export function referenceReaderRows(item) {
+  const source = item?.source && typeof item.source === 'object' ? item.source : null;
+  const rows = [];
+  if (item?.objectType) rows.push({ label: 'Object type', value: item.objectType });
+  if (item?.conversationId) rows.push({ label: 'Source conversation', value: item.conversationId });
+  if (item?.selectionType) rows.push({ label: 'Selection type', value: item.selectionType });
+  if (item?.objectId) rows.push({ label: 'Parent object', value: item.objectId });
+  if (Number.isInteger(source?.messageIndex)) rows.push({ label: 'Message index', value: String(source.messageIndex) });
+  if (Array.isArray(source?.partPath) && source.partPath.length) rows.push({ label: 'Part path', value: source.partPath.map((key) => String(key)).join(' > ') });
+  if (typeof source?.revision === 'string' && source.revision) rows.push({ label: 'Pinned revision', value: source.revision });
+  return rows;
+}
+
+export function importedFromLines(importedFrom) {
+  if (!importedFrom || typeof importedFrom !== 'object') return [];
+  const digest = typeof importedFrom.digest === 'string' ? importedFrom.digest : '';
+  const lines = [];
+  if (digest) lines.push({ label: 'Import digest', value: digest.slice(0, 12) });
+  if (typeof importedFrom.originalId === 'string' && importedFrom.originalId) lines.push({ label: 'Original id', value: importedFrom.originalId });
+  return lines;
+}
+
+export function custodyCounts(records) {
+  const counts = {};
+  for (const record of Array.isArray(records) ? records : []) {
+    const key = typeof record?.custody === 'string' && record.custody ? record.custody : 'unknown';
+    counts[key] = (counts[key] ?? 0) + 1;
+  }
+  return counts;
+}
+
+export function checkReady(report) {
+  return !!(report && report.valid === true && typeof report.digest === 'string' && report.digest);
+}
+
+export function restoreSummary(report) {
+  if (!report || typeof report !== 'object') return { success: false, text: 'Restore did not return a report. Nothing was marked successful.' };
+  const failed = Array.isArray(report.failed) ? report.failed.length : 0;
+  const applied = Array.isArray(report.applied) ? report.applied.length : 0;
+  const skipped = Array.isArray(report.skipped) ? report.skipped.length : 0;
+  const pending = Array.isArray(report.pending) ? report.pending.length : 0;
+  if (report.dryRun === true) return { success: false, text: `Dry run only. Nothing was written. ${pending} still pending, ${applied} applied, ${skipped} skipped.` };
+  if (report.valid === false) return { success: false, text: 'Not restored. The bundle did not check out.' };
+  if (failed > 0) return { success: false, text: `Restore failed for ${failed} records${report.partial === true ? ' and is partial' : ''}. This is not a success.` };
+  if (report.partial === true) return { success: false, text: `Restore is partial. ${applied} applied, ${skipped} skipped, ${pending} pending. This is not a complete success.` };
+  if (!report.receipt) return { success: false, text: 'Restore did not return a receipt. Nothing was marked successful.' };
+  if (applied === 0) return { success: false, text: `Nothing new was written. ${skipped} skipped. This is not a success.` };
+  return { success: true, text: `Restore finished. ${applied} applied, ${skipped} skipped. Receipt ${typeof report.receipt === 'string' ? report.receipt : formatMeta(report.receipt)}.` };
+}
+
+export function provenanceChip(node) {
+  if (node?.availability === 'unresolved' || node?.availabilityReason === 'NOT_SCANNED') return ['Not scanned / unresolved', 't-warn'];
+  const provenance = node?.provenance;
+  const custody = node?.custody;
+  if (provenance === 'imported-snapshot' || custody === 'imported' || custody === 'imported-snapshot') return ['Imported snapshot', 't-warn'];
+  if (provenance === 'user-authored' || provenance === 'user-selected' || provenance === 'user-linked-source') return ['Yours', 't-info'];
+  if (provenance === 'source-observation') return ['Observed', 't-mute'];
+  return ['Provenance unknown', 't-warn'];
+}
+
+function relationGroupRank(kind) {
+  return kind === 'associates' ? 0 : kind === 'comments_on' ? 1 : kind === 'references' ? 2 : 3;
+}
+function relationLabel(kind, outgoing) {
+  if (kind === 'associates') return 'Associates';
+  if (kind === 'comments_on') return outgoing ? 'Comments on' : 'Commented on by';
+  if (kind === 'references') return outgoing ? 'References' : 'Referenced by';
+  const safe = /^[a-z0-9][a-z0-9_-]{0,39}$/i.test(kind) ? kind : 'unknown';
+  return outgoing ? `Unrecognised relation: ${safe}` : `Unrecognised relation: ${safe} (incoming)`;
+}
+
+export function relationGroups(focusId, map) {
+  const nodes = new Map((Array.isArray(map?.nodes) ? map.nodes : []).filter((node) => node && typeof node.id === 'string').map((node) => [node.id, node]));
+  const order = [], byKey = new Map();
+  for (const edge of Array.isArray(map?.edges) ? map.edges : []) {
+    if (!edge || (edge.from !== focusId && edge.to !== focusId)) continue;
+    const outgoing = edge.from === focusId;
+    const otherId = outgoing ? edge.to : edge.from;
+    if (typeof otherId !== 'string' || !otherId) continue;
+    const kind = typeof edge.kind === 'string' && edge.kind ? edge.kind : 'unknown';
+    const key = `${kind}:${outgoing ? 'out' : 'in'}`;
+    let group = byKey.get(key);
+    if (!group) { group = { kind, outgoing, label: relationLabel(kind, outgoing), rows: [] }; byKey.set(key, group); order.push(group); }
+    group.rows.push({ id: otherId, node: nodes.get(otherId) ?? { id: otherId },
+      basis: typeof edge.evidence?.basis === 'string' ? edge.evidence.basis : '' });
+  }
+  return order.sort((a, b) => relationGroupRank(a.kind) - relationGroupRank(b.kind));
+}
+
+export function relationShown(groups) {
+  return (Array.isArray(groups) ? groups : []).reduce((total, group) => total + group.rows.length, 0);
+}
+
+export function relationStatus(map, shown) {
+  const count = Number.isInteger(shown) ? shown : 0;
+  if (map?.truncated === true || map?.complete === false) return `Showing ${count}, more exist.`;
+  if (map?.complete === true) return `Showing ${count}.`;
+  return `Showing ${count}. Whether more exist was not reported.`;
+}
+
+export function availabilityLabel(hit) {
+  const value = typeof hit?.availability === 'string' && hit.availability ? hit.availability : '';
+  if (!value || value === 'locally-available') return '';
+  const reason = typeof hit.availabilityReason === 'string' && hit.availabilityReason ? ` (${hit.availabilityReason})` : '';
+  if (value === 'unresolved') return `Not scanned / unresolved${reason}. Studio has not read this record, so there is nothing to open.`;
+  if (value === 'missing') return `Missing${reason}. This is not the same as deleted.`;
+  if (value === 'stale') return `Stale${reason}. The saved address may no longer match. This is not deleted.`;
+  return `Unavailable${reason}. This is not evidence that it was deleted.`;
+}
+
+export function readSearch(data) {
+  const page = readList(data);
+  if (!page.ok) return page;
+  return { ...page, coverage: data.coverage && typeof data.coverage === 'object' ? data.coverage : null };
+}
+
+export function readList(data) {
+  if (!data || typeof data !== 'object' || Array.isArray(data) || !Array.isArray(data.items) || !Number.isInteger(data.total)) {
+    return { ok: false, message: 'Studio’s list could not be read.' };
+  }
+  if (data.nextOffset != null && !Number.isInteger(data.nextOffset)) return { ok: false, message: 'Studio’s list could not be read.' };
+  return {
+    ok: true, items: data.items, total: data.total,
+    offset: Number.isInteger(data.offset) ? data.offset : 0,
+    limit: Number.isInteger(data.limit) ? data.limit : data.items.length,
+    nextOffset: data.nextOffset ?? null,
+  };
+}
+
+export function appendPage(previous, page) {
+  const items = Array.isArray(previous) ? previous.slice() : [];
+  const seen = new Set(items.map((item) => item?.id));
+  for (const item of page?.items ?? []) {
+    if (!item || typeof item.id !== 'string' || seen.has(item.id)) continue;
+    seen.add(item.id);
+    items.push(item);
+  }
+  return items;
+}
+
+const idList = (value) => (Array.isArray(value) ? value.filter((id) => typeof id === 'string') : []);
+
+export function draftFromSaved(item) {
+  const saved = item && typeof item === 'object' ? item : {};
+  if (saved.kind === 'note' || typeof saved.body === 'string') {
+    return { title: typeof saved.title === 'string' ? saved.title : '', body: typeof saved.body === 'string' ? saved.body : '', commentsOn: idList(saved.commentsOn) };
+  }
+  return {
+    title: typeof saved.title === 'string' ? saved.title : '',
+    conversationIds: idList(saved.conversationIds),
+    noteIds: idList(saved.noteIds),
+    memberIds: idList(saved.memberIds),
+  };
+}
+
+export function sameDraft(left, right) {
+  if (!left || !right) return false;
+  if ((left.title ?? '') !== (right.title ?? '')) return false;
+  if ((left.body ?? '') !== (right.body ?? '')) return false;
+  const sameList = (a = [], b = []) => a.length === b.length && a.every((id, index) => id === b[index]);
+  return sameList(left.conversationIds, right.conversationIds) && sameList(left.noteIds, right.noteIds)
+    && sameList(left.memberIds, right.memberIds) && sameList(left.commentsOn, right.commentsOn);
+}
+
+export function withId(ids, id) {
+  const current = Array.isArray(ids) ? ids.filter((item) => typeof item === 'string') : [];
+  if (typeof id !== 'string' || !id || current.includes(id)) return current;
+  return [...current, id];
+}
+
+export function withoutId(ids, id) {
+  return (Array.isArray(ids) ? ids : []).filter((item) => item !== id);
+}
+
+export function projectCreateBody(title) { return { title, expectedVersion: null }; }
+export function noteCreateBody(title, body) { return { title, body, expectedVersion: null }; }
+export function projectPutBody(draft) {
+  return {
+    expectedVersion: draft.expectedVersion, title: draft.title,
+    conversationIds: [...(draft.conversationIds ?? [])], noteIds: [...(draft.noteIds ?? [])],
+    memberIds: [...(draft.memberIds ?? [])],
+  };
+}
+export function notePutBody(draft) {
+  return { expectedVersion: draft.expectedVersion, title: draft.title, body: draft.body ?? '', commentsOn: [...(draft.commentsOn ?? [])] };
+}
+
+function conflictText(data) {
+  const expected = integerOrNull(data?.expected);
+  const actual = integerOrNull(data?.actual);
+  const versions = expected != null && actual != null ? ` This screen had version ${expected}; the saved copy is version ${actual}.` : '';
+  return `Not saved. The saved version changed.${versions} Your draft is still here.`;
+}
+
+/** A write is saved only on HTTP 200 with an id and integer version. Conflicts keep the same draft object. */
+export function interpretWrite(result, draft) {
+  const status = Number(result?.status) || 0;
+  const data = result?.data;
+  if (status === 200 && data && typeof data === 'object' && typeof data.id === 'string' && Number.isInteger(data.version)) {
+    return { ok: true, saved: data, draft: draftFromSaved(data), conflict: null, message: 'Saved.' };
+  }
+  if (data?.committed === true) {
+    return { ok: false, saved: null, draft, conflict: null, message: 'Studio may have saved this but did not confirm the lock. Your draft is still here. Load the saved version before saving again.' };
+  }
+  const conflict = status === 409 || data?.code === 'CAS_VERSION_CONFLICT';
+  const message = conflict ? conflictText(data)
+    : status === 404 ? 'Not saved. This item is not on this computer anymore. Your draft is still here.'
+      : status === 400 ? `Not saved. ${problemText(data)} Your draft is still here.`
+        : 'Not saved. Studio did not confirm a save. Your draft is still here.';
+  return { ok: false, saved: null, draft, conflict: conflict ? { expected: integerOrNull(data?.expected), actual: integerOrNull(data?.actual) } : null, message };
+}
+
+export function interpretCreate(result, form) {
+  const written = interpretWrite(result, form);
+  if (!written.ok) return { ...written, form, message: written.message.replace('Your draft is still here.', 'What you typed is still here.') };
+  return { ok: true, saved: written.saved, form: { title: '', body: '' }, conflict: null, message: 'Saved.' };
+}
+
+export function absorbServer(local, item) {
+  const remoteDraft = draftFromSaved(item);
+  const clean = !local || (local.saved && sameDraft(local.draft, draftFromSaved(local.saved)));
+  if (clean) {
+    return { saved: item, draft: remoteDraft, expectedVersion: item.version, conflict: null, remote: null, remoteNote: '', notice: local?.notice ?? '', saving: false };
+  }
+  if (local.expectedVersion === item.version) return { ...local, saved: item, remote: item, remoteNote: '', saving: false };
+  return {
+    ...local, remote: item, saving: false,
+    remoteNote: `A newer saved version (${item.version}) is on this computer. Your unsaved edits were kept and were not written.`,
+  };
+}
+
+function blankList() { return { items: [], total: 0, nextOffset: null, loaded: false, loading: false, error: '' }; }
+
+function editorFrom(item, notice = '') {
+  return {
+    saved: item, draft: draftFromSaved(item), expectedVersion: item.version,
+    remote: null, remoteNote: '', notice, saving: false,
+  };
+}
+
+
+/**
+ * A bounded, deterministic VISUAL PROJECTION of locally reported relationships.
+ * This never invents nodes/edges or treats a local association as provider identity.
+ * The canonical text list and map metadata remain visible below the graphic.
+ */
+export function graphProjection(map, focusId, maxNodes = 12) {
+  if (!Array.isArray(map?.nodes) || !Array.isArray(map?.edges)) return { nodes: [], edges: [], truncated: false };
+  const limit = Number.isInteger(maxNodes) ? Math.min(24, Math.max(1, maxNodes)) : 12;
+  const unique = new Map();
+  for (const node of map.nodes) {
+    if (typeof node?.id !== 'string' || !node.id || unique.has(node.id)) continue;
+    unique.set(node.id, node);
+  }
+  const order = [...unique.values()];
+  const focus = order.find((node) => node.id === focusId) ?? null;
+  const ordered = focus ? [focus, ...order.filter((node) => node.id !== focusId)] : order;
+  const picked = ordered.slice(0, limit);
+  const centerId = picked[0]?.id ?? null;
+  const visible = picked.map((node, index) => {
+    const count = Math.max(1, picked.length - 1);
+    const angle = -Math.PI / 2 + (2 * Math.PI * (index - 1)) / count;
+    return {
+      ...node,
+      x: index === 0 ? 50 : Math.round((50 + 37 * Math.cos(angle)) * 100) / 100,
+      y: index === 0 ? 50 : Math.round((50 + 34 * Math.sin(angle)) * 100) / 100,
+      isFocus: node.id === centerId,
+    };
+  });
+  const byId = new Set(visible.map((node) => node.id));
+  const edges = map.edges.filter((edge) => edge && typeof edge.from === 'string' && typeof edge.to === 'string'
+    && byId.has(edge.from) && byId.has(edge.to) && edge.from !== edge.to);
+  return { nodes: visible, edges, truncated: unique.size > visible.length || map.truncated === true || map.complete === false };
+}
+
+/**
+ * Mount peer views into the existing shell. `rich` is the chat renderer's static builder.
+ * Drafts live in this tab until a confirmed save. A conflict never copies over the draft.
+ */
+export function mountWorldView({ document: doc, root, modes, chat, rich = null, announce = () => {}, fetchImpl = globalThis.fetch, storage = null } = {}) {
+  if (!doc || !root || !modes || !chat) return null;
+  const attr = (node, name) => {
+    if (!node) return '';
+    if (typeof node.getAttribute === 'function') {
+      const value = node.getAttribute(name);
+      if (value != null && value !== '') return value;
+    }
+    return node.attrs?.[name] ?? node.dataset?.[name.replace(/^data-/, '')] ?? '';
+  };
+  const buttons = typeof modes.querySelectorAll === 'function'
+    ? [...modes.querySelectorAll('[data-view]')]
+    : [...(modes.children ?? [])].filter((node) => attr(node, 'data-view'));
+  const viewOf = (node) => attr(node, 'data-view');
+
+  const state = {
+    view: 'capture',
+    lists: { conversations: blankList(), projects: blankList(), notes: blankList(), objects: blankList(), selections: blankList() },
+    records: new Map(),
+    namespace: null,
+    namespaceLoaded: false,
+    conversations: new Map(),
+    editors: new Map(),
+    selected: { conversations: null, projects: null, notes: null },
+    forms: { project: { title: '' }, note: { title: '', body: '' } },
+    formNote: { project: '', note: '' },
+    errors: { conversations: '', projects: '', notes: '' },
+    creating: false,
+    messageNodes: new Map(),
+    selectionSave: { projectId: '', newTitle: '', busy: false, notice: '', pending: null, savedKeys: new Set(), lastLinked: null, noteTitle: '', noteBody: '', noteStatus: '' },
+    find: { query: '', kind: '', items: [], total: null, nextOffset: null, coverage: null, error: '', status: '', loading: false, recordId: null },
+    custody: 'observed',
+    settings: { tab: 'providers', sites: [], loaded: false, loading: false, error: '' },
+    agentHome: { status: null, loading: false, error: '' },
+    builder: { apps: [], selected: null, title: '', intent: '', pendingKey: null, kind: 'notes', label: '',
+      proposalText: '', proposalPreview: null, previewSource: null,
+      replyChoices: { loading: false, items: [], error: '', loaded: false },
+      ai: { site: 'claude', request: '', job: null, appId: null, busy: false, error: '', timer: null },
+      busy: false, loading: false, error: '', notice: '' },
+    agent: { status: null, work: null, loading: false, busy: false, error: '', notice: '', title: '', objective: '', pendingKey: null,
+      tier: 'Immediate', memoryKey: '', memoryText: '', memoryEntries: [], workFilter: 'open', workLimit: 50, actionDrafts: new Map(),
+      insightKind: null, insight: null, insightBusy: false, insightError: '',
+      memorySearch: { query: '', tier: 'all', busy: false, error: '', result: null } },
+    relations: { id: '', typed: '', map: null, error: '', status: '', loading: false, recordId: null },
+    workspace: { id: '', typed: '', map: null, error: '', status: '', loading: false, item: null, readingId: '', readingNode: null, readingError: '', readingLoading: false },
+    // Composed workspace (VD-0057): one saved conversation with the project, notes and
+    // related saved objects that the local /map and the loaded World lists actually report.
+    compose: {
+      id: '', typed: '', loading: false, error: '', status: '', map: null, conversation: null, conversationError: '',
+      projects: [], projectsHidden: 0, notes: [], notesHidden: 0, objects: [], objectsHidden: 0, relatedConversations: [],
+      readingId: '', readingNode: null, readingItem: null, readingError: '', readingLoading: false,
+    },
+    transfer: {
+      exportMode: 'references', exportParts: { reasoning: false, toolActivity: false }, selected: {}, bundle: null, blobUrl: '', exportError: '', exportStatus: '',
+      importText: '', importError: '', importStatus: '', check: null, checkText: '', dryRun: null, confirm: false, restore: null, loading: '', nativeCheck: null,
+    },
+  };
+  let exportTicket = 0;
+  let exportAbort = null;
+  let importTicket = 0;
+  let importAbort = null;
+  let relationsTicket = 0;
+  let relationsAbort = null;
+  let workspaceReadTicket = 0;
+  let workspaceReadAbort = null;
+  let composeTicket = 0;
+  let composeAbort = null;
+  let composeReadTicket = 0;
+  let composeReadAbort = null;
+  let composeReadHeadNode = null;
+  let readerHeadNode = null, readerStatusNode = null, readerBodyNode = null;
+
+  let agentHomeTicket = 0;
+  let agentTicket = 0;
+  let agentInsightTicket = 0;
+  let agentMemorySearchTicket = 0;
+  let searchTicket = 0;
+  let searchAbort = null;
+  const tickets = {
+    conversations: 0, projects: 0, notes: 0,
+    list: { conversations: 0, projects: 0, notes: 0, objects: 0, selections: 0 },
+  };
+  const REF_RE = /^[cnpos]-[a-z0-9-]{1,60}$/;
+  const SELECTION_RE = /^s-[a-z0-9-]{1,60}$/;
+  let itemsNode = null, moreNode = null, listErrorNode = null, listStatusNode = null, formNoteNode = null, createNode = null, namespaceNode = null;
+  let linkConvSelect = null, linkNoteSelect = null, linkMemberSelect = null, linkCommentSelect = null, dirtyNode = null, saveNode = null;
+  let framed = false, listPane = null, detailPane = null;
+
+  function draftFingerprint(draft) {
+    return JSON.stringify({
+      title: typeof draft?.title === 'string' ? draft.title.trim() : '',
+      body: draft?.body ?? '',
+      conversationIds: draft?.conversationIds ?? [],
+      noteIds: draft?.noteIds ?? [],
+      memberIds: draft?.memberIds ?? [],
+      commentsOn: draft?.commentsOn ?? [],
+    });
+  }
+  function setFail(kind, id, text) { state.errors[kind] = text ? { id, text } : null; }
+  function failText(kind, id) {
+    const entry = state.errors[kind];
+    return entry && entry.id === id ? entry.text : '';
+  }
+  function el(tag, props = {}, kids = []) {
+    const node = doc.createElement(tag);
+    for (const [key, value] of Object.entries(props)) {
+      if (value == null || value === false) continue;
+      if (key === 'class') node.className = value;
+      else if (key === 'text') node.textContent = value;
+      else if (key === 'id') { node.id = value; if (typeof node.setAttribute === 'function') node.setAttribute('id', value); }
+      else if (typeof node.setAttribute === 'function') node.setAttribute(key, value === true ? '' : String(value));
+    }
+    for (const kid of [].concat(kids)) if (kid != null) node.append(kid);
+    return node;
+  }
+  const on = (node, type, fn) => node.addEventListener(type, fn);
+  function storeGet(key) { try { return (storage ?? globalThis.sessionStorage).getItem(key); } catch { return null; } }
+  function storeSet(key, value) { try { (storage ?? globalThis.sessionStorage).setItem(key, value); } catch { /* this tab will simply not remember the view */ } }
+  function remember() {
+    storeSet('studio.world.view', state.view);
+    storeSet('studio.world.selected', JSON.stringify(state.selected));
+  }
+  async function call(path, { method = 'GET', body, signal } = {}) {
+    try {
+      const response = await fetchImpl(WORLD_API + path, {
+        method, signal, headers: body ? { 'content-type': 'application/json' } : undefined, body: body ? JSON.stringify(body) : undefined,
+      });
+      let data = null;
+      try { data = await response.json(); } catch { data = null; }
+      return { status: response.status, data };
+    } catch (error) {
+      if (error?.name === 'AbortError') return { status: 0, data: null, aborted: true };
+      return { status: 0, data: null };
+    }
+  }
+
+  // One owner, one local store. Never request a provider or browser effect from this view.
+  async function agentCall(route, method = 'GET', body = null) {
+    try {
+      const response = await fetchImpl(AGENT_API + route, {
+        method, credentials: 'same-origin', cache: 'no-store',
+        headers: body ? { 'content-type': 'application/json' } : undefined,
+        body: body ? JSON.stringify(body) : undefined,
+      });
+      let data = null;
+      try { data = await response.json(); } catch { /* non-JSON error stays an error */ }
+      return { status: response.status, data };
+    } catch { return { status: 0, data: null }; }
+  }
+  function agentError(result) {
+    return result.data?.code
+      ? String(result.data.code) + ': ' + problemText(result.data)
+      : (result.status ? 'Agent request failed (HTTP ' + result.status + ')' : 'Local Studio is unreachable');
+  }
+  // Home reads ONLY status counts; memory, Work titles, SITREP and skills stay private
+  // until the user explicitly enters the Agent view or chooses an inspection action.
+  async function loadAgentHomeStatus() {
+    const ticket = ++agentHomeTicket, home = state.agentHome;
+    home.loading = true;
+    home.error = '';
+    if (state.view === 'home') renderHome();
+    const result = await agentCall('/status');
+    if (ticket !== agentHomeTicket) return;
+    if (result.status === 200 && typeof result.data?.initialized === 'boolean') {
+      home.status = result.data;
+    } else {
+      home.status = null;
+      home.error = agentError(result);
+    }
+    home.loading = false;
+    if (state.view === 'home') renderHome();
+  }
+  async function agentRefresh() {
+    const ticket = ++agentTicket, a = state.agent;
+    a.loading = true; a.error = '';
+    if (state.view === 'agent') renderAgent();
+    const status = await agentCall('/status');
+    if (ticket !== agentTicket) return;
+    if (status.status !== 200 || typeof status.data?.initialized !== 'boolean') {
+      a.status = null; a.work = null; a.memoryEntries = []; a.error = agentError(status);
+    } else {
+      a.status = status.data; a.work = null; a.memoryEntries = [];
+      if (status.data.initialized) {
+        const work = await agentCall('/work');
+        if (ticket !== agentTicket) return;
+        if (work.status === 200 && Array.isArray(work.data?.items)) a.work = work.data;
+        else a.error = agentError(work);
+        const memory = await agentCall('/memory/' + encodeURIComponent(a.tier));
+        if (ticket !== agentTicket) return;
+        if (memory.status === 200 && Array.isArray(memory.data?.entries)) a.memoryEntries = memory.data.entries;
+        else a.error = agentError(memory);
+      }
+    }
+    a.loading = false;
+    if (state.view === 'agent') renderAgent();
+  }
+  async function agentWrite(route, method, body, success, onSuccess = () => {}) {
+    const a = state.agent;
+    if (a.busy || a.loading) return;
+    a.busy = true; a.error = ''; a.notice = '';
+    if (state.view === 'agent') renderAgent();
+    const response = await agentCall(route, method, body);
+    if (response.status === 200) {
+      onSuccess(response.data);
+      if (route.startsWith('/memory/')) {
+        agentMemorySearchTicket++;
+        a.memorySearch.busy = false;
+        a.memorySearch.result = null;
+        a.memorySearch.error = '';
+      }
+      a.notice = success;
+      await agentRefresh();
+    } else {
+      a.error = agentError(response);
+    }
+    a.busy = false;
+    if (state.view === 'agent') renderAgent();
+  }
+  // Explicit, read-only inspection of existing local Personal Agent projections.
+  // SITREP includes private user-authored memory: never auto-load it on navigation.
+  async function agentInspect(kind) {
+    const a = state.agent;
+    const paths = {
+      capabilities: '/capabilities',
+      knowledge: '/self-knowledge?topic=all',
+      continuity: '/sitrep',
+    };
+    if (a.insightBusy || !Object.hasOwn(paths, kind)) return;
+    const ticket = ++agentInsightTicket;
+    a.insightBusy = true; a.insightError = ''; a.insightKind = kind; a.insight = null;
+    if (state.view === 'agent') renderAgent();
+    const result = await agentCall(paths[kind]);
+    if (ticket !== agentInsightTicket || state.view !== 'agent') return;
+    if (result.status === 200 && result.data && typeof result.data === 'object') a.insight = result.data;
+    else a.insightError = agentError(result);
+    a.insightBusy = false;
+    if (state.view === 'agent') renderAgent();
+  }
+  async function searchAgentMemory() {
+    const a = state.agent, form = a.memorySearch;
+    if (form.busy || a.loading || !a.status?.initialized) return;
+    if (form.query.trim().length < 2) {
+      form.error = 'Enter at least two characters for local memory search.';
+      if (state.view === 'agent') renderAgent();
+      return;
+    }
+    const ticket = ++agentMemorySearchTicket;
+    form.busy = true; form.error = ''; form.result = null;
+    if (state.view === 'agent') renderAgent();
+    // POST keeps sensitive search terms out of URL query strings and access logs.
+    const response = await agentCall('/search-memory', 'POST',
+      { query: form.query.trim(), tier: form.tier, limit: 20 });
+    if (ticket !== agentMemorySearchTicket || state.view !== 'agent') return;
+    if (response.status === 200 && Array.isArray(response.data?.items)) form.result = response.data;
+    else form.error = agentError(response);
+    form.busy = false;
+    renderAgent();
+  }
+  function applyVisibility() {
+    const world = state.view !== 'capture';
+    chat.hidden = world;
+    root.hidden = !world;
+    if (typeof root.setAttribute === 'function') root.setAttribute('data-active-view', state.view);
+    for (const button of buttons) {
+      if (typeof button.setAttribute === 'function') button.setAttribute('aria-pressed', viewOf(button) === state.view ? 'true' : 'false');
+    }
+    // The header describes the actual World view instead of remaining on Chat.
+    // It is a label only; no second navigation owner or application state is introduced.
+    // #announce is the single polite live region and already speaks each view change once,
+    // so the breadcrumb itself must never become a second live region.
+    const breadcrumb = doc.getElementById?.('vivimViewBreadcrumb');
+    if (breadcrumb) {
+      const titles = {
+        capture: 'Chat', home: 'Home', agent: 'Personal Agent', builder: 'Build my VIVIM', settings: 'Settings', conversations: 'Saved conversations', projects: 'Projects',
+        notes: 'Notes', find: 'Find', transfer: 'Transfer',
+        relations: 'Relations', workspace: 'Workspace', compose: 'Composed workspace',
+      };
+      breadcrumb.textContent = 'Your AI World / ' + (titles[state.view] ?? 'Chat');
+    }
+  }
+  function ensureFrame() {
+    if (framed) return;
+    framed = true;
+    const grid = el('div', { class: 'world-grid', id: 'worldGrid' });
+    listPane = el('div', { id: 'worldList' });
+    detailPane = el('div', { id: 'worldDetail' });
+    grid.append(listPane, detailPane);
+    root.replaceChildren(grid);
+  }
+
+  // Home is a read-only projection of the SAME local World lists and local Agent
+  // status counts. No new store, login inference, provider effect or network actor.
+  function renderHome() {
+    ensureFrame();
+    const heading = el('div', { class: 'vivim-section-head' }, [
+      el('span', { class: 'vivim-eyebrow', text: 'YOUR PERSONAL WORLD' }),
+      el('h2', { text: 'Good to see you. Pick up where you left off.' }),
+      el('p', { class: 'note', text: 'Saved locally in this Harness. Counts only describe loaded local records, not remote provider history.' }),
+    ]);
+    const cards = el('div', { class: 'vivim-overview-grid', id: 'vivimOverview' });
+    for (const [kind, title, detail] of [
+      ['conversations', 'Saved conversations', 'Read recorded and imported snapshots'],
+      ['projects', 'Projects', 'Organize saved material'],
+      ['notes', 'Notes', 'Your authored knowledge'],
+    ]) {
+      const list = state.lists[kind];
+      const count = list.loaded ? String(list.total) : list.loading ? '…' : '—';
+      const card = el('button', { type: 'button', class: 'vivim-overview-card' }, [
+        el('span', { class: 'vivim-overview-icon', 'aria-hidden': 'true', text: kind === 'conversations' ? '▤' : kind === 'projects' ? '▦' : '▧' }),
+        el('span', { class: 'vivim-overview-number', text: count }),
+        el('strong', { text: title }),
+        el('span', { class: 'note', text: detail }),
+      ]);
+      on(card, 'click', () => choose(kind));
+      cards.append(card);
+    }
+    const agentHome = state.agentHome, agentStatus = agentHome.status;
+    const localOpen = agentStatus?.initialized ? ['queued', 'active', 'blocked']
+      .reduce((sum, key) => {
+        const value = agentStatus.work?.byStatus?.[key];
+        return sum + (Number.isSafeInteger(value) && value >= 0 ? value : 0);
+      }, 0) : null;
+    const agentCard = el('button', { type: 'button', class: 'vivim-overview-card',
+      id: 'vivimAgentHomeCard' }, [
+      el('span', { class: 'vivim-overview-icon', 'aria-hidden': 'true', text: '✦' }),
+      el('span', { class: 'vivim-overview-number',
+        text: agentHome.loading || agentHome.error || !agentStatus ? '—'
+          : agentStatus.initialized ? String(localOpen) : '0' }),
+      el('strong', { text: 'Personal Agent' }),
+      el('span', { class: 'note', text: agentHome.loading ? 'Checking local agent status…'
+        : agentHome.error ? 'Local agent status unavailable'
+          : !agentStatus ? 'Local agent not inspected yet'
+            : !agentStatus.initialized ? 'Initialize your local agent'
+              : agentStatus.nextStage ? 'Bootstrap needs attention: ' + agentStatus.nextStage
+                : 'Open local Work; not provider execution' }),
+    ]);
+    on(agentCard, 'click', () => choose('agent'));
+    cards.append(agentCard);
+    const actions = el('div', { class: 'vivim-home-actions' }, [
+      el('h3', { text: 'Quick actions' }),
+    ]);
+    for (const [view, title] of [
+      ['capture', 'Start a conversation'], ['builder', 'Build my VIVIM'], ['agent', 'Your Personal Agent'], ['find', 'Find saved content'],
+      ['workspace', 'Explore workspace'], ['compose', 'Composed workspace'], ['relations', 'Explore relationships'],
+    ]) {
+      const action = el('button', { type: 'button', text: title });
+      on(action, 'click', () => choose(view));
+      actions.append(action);
+    }
+    const recent = el('section', { class: 'vivim-home-recent' }, [el('h3', { text: 'Recent saved conversations' })]);
+    const recents = state.lists.conversations;
+    if (!recents.loaded) recent.append(el('p', { class: 'note', text: 'Checking your saved local conversations…' }));
+    else if (!recents.items.length) recent.append(el('p', { class: 'empty', text: 'No saved conversations here yet. Connect in Chat and choose what to record.' }));
+    else {
+      const list = el('ul', { class: 'plain' });
+      for (const item of recents.items.slice(0, 5)) {
+        if (!ID_RE.conversations.test(item?.id || '')) continue;
+        const button = el('button', { type: 'button', class: 'rowbtn', text: item.title || item.id });
+        on(button, 'click', () => openItem('conversations', item.id));
+        list.append(el('li', {}, [button]));
+      }
+      recent.append(list);
+    }
+    listPane.replaceChildren(heading, cards, recent);
+    detailPane.replaceChildren(actions,
+      el('div', { class: 'vivim-info-card' }, [
+        el('h3', { text: 'Your AI, your data' }),
+        el('p', { class: 'note', text: 'Conversations belong to the providers where they were created. VIVIM keeps observed and imported local records separate and never assumes a verified provider account.' }),
+      ]));
+  }
+
+
+  function renderAgent() {
+    ensureFrame();
+    const a = state.agent, status = a.status, busy = a.loading || a.busy;
+    const head = el('div', { class: 'vivim-section-head' }, [
+      el('span', { class: 'vivim-eyebrow', text: 'OWN YOUR AI' }),
+      el('h2', { text: 'Your Personal Agent' }),
+      el('p', { class: 'note', text: 'Your local agent inside VIVIM World. No provider send, model call or background execution is started here.' }),
+    ]);
+    const bootstrap = el('section', { class: 'vivim-info-card', id: 'worldAgentBootstrap' }, [
+      el('h3', { text: 'Local bootstrap' }),
+    ]);
+    if (status) {
+      bootstrap.append(el('p', { text: status.initialized
+        ? (status.nextStage ? 'Next stage: ' + status.nextStage : 'Local bootstrap completed')
+        : 'Personal Agent not initialized' }));
+      if (status.initialized) {
+        bootstrap.append(el('p', { class: 'note', text: 'Local revision ' + status.version + '; remote account not verified.' }));
+        for (const [stage, value] of Object.entries(status.stages ?? {})) {
+          bootstrap.append(el('p', { class: 'note', text: stage + ': ' + value.status + (value.blocker ? ' — ' + value.blocker : '') }));
+        }
+      }
+      const start = el('button', { type: 'button', id: 'worldAgentStart', text: status.initialized ? 'Resume bootstrap' : 'Initialize and bootstrap' });
+      start.disabled = busy;
+      on(start, 'click', () => agentWrite('/bootstrap', 'POST', {
+        expectedVersion: status.initialized ? status.version : null,
+      }, 'Local bootstrap checked without provider activity.'));
+      bootstrap.append(start);
+    } else bootstrap.append(el('p', { class: 'note', text: a.loading ? 'Reading local agent status…' : 'Agent status unavailable.' }));
+    const refresh = el('button', { type: 'button', id: 'worldAgentRefresh', text: 'Refresh agent' });
+    refresh.disabled = busy;
+    on(refresh, 'click', () => agentRefresh());
+    const notice = el('div', { id: 'worldAgentNotice', role: a.error ? 'alert' : 'status' });
+    if (a.error) notice.append(el('p', { class: 'err', text: a.error }));
+    if (a.notice) notice.append(el('p', { class: 'note', text: a.notice }));
+    const memory = el('section', { class: 'vivim-info-card', id: 'worldAgentMemory' }, [
+      el('h3', { text: 'Memory' }),
+      el('p', { class: 'note', text: 'Local and user-authored. Current removal does not erase version history.' }),
+    ]);
+    if (status?.initialized) {
+      for (const [tier, count] of Object.entries(status.memoryCounts ?? {})) {
+        memory.append(el('p', { class: 'note', text: tier + ': ' + count + ' entries' }));
+      }
+      const form = el('form', { id: 'worldAgentMemoryForm' });
+      const tier = el('select', { 'aria-label': 'Memory tier' });
+      for (const value of ['CANON','Immediate','Curated']) tier.append(el('option', { value, text: value }));
+      tier.value = a.tier; on(tier, 'change', () => { a.tier = tier.value; agentRefresh(); });
+      const key = el('input', { type: 'text', required: true, maxlength: '64', placeholder: 'Memory key', 'aria-label': 'Memory key' });
+      key.value = a.memoryKey; on(key, 'input', () => { a.memoryKey = key.value; });
+      const value = el('textarea', { required: true, maxlength: '8000', rows: '3', placeholder: 'What should your agent remember?', 'aria-label': 'Memory text' });
+      value.value = a.memoryText; on(value, 'input', () => { a.memoryText = value.value; });
+      const save = el('button', { type: 'submit', text: 'Save memory locally' }); save.disabled = busy;
+      form.append(tier, key, value, save);
+      on(form, 'submit', event => {
+        event.preventDefault();
+        if (!a.memoryKey.trim() || !a.memoryText.trim()) return;
+        agentWrite('/memory/' + encodeURIComponent(a.tier) + '/' + encodeURIComponent(a.memoryKey.trim()), 'PUT',
+          { text: a.memoryText, expectedVersion: a.status.version },
+          'Memory saved in local version history.', () => { a.memoryKey = ''; a.memoryText = ''; });
+      });
+      memory.append(form);
+      const existing = el('section', { id: 'worldAgentMemoryEntries' }, [
+        el('h3', { text: 'Saved ' + a.tier + ' memory' }),
+      ]);
+      if (a.loading) existing.append(el('p', { class: 'note', text: 'Reading local memory…' }));
+      else if (!a.memoryEntries.length) existing.append(el('p', { class: 'note', text: 'No entries in this tier.' }));
+      for (const entry of a.memoryEntries.slice().reverse().slice(0, 50)) {
+        const note = el('article', { class: 'vivim-agent-work-row' }, [
+          el('strong', { text: entry.key }),
+          el('p', { class: 'note', text: entry.text }),
+        ]);
+        const remove = el('button', { type: 'button', text: 'Remove from current memory' });
+        remove.disabled = busy;
+        on(remove, 'click', () => agentWrite(
+          '/memory/' + encodeURIComponent(a.tier) + '/' + encodeURIComponent(entry.key) + '/remove',
+          'POST', { expectedVersion: a.status.version },
+          'Removed from current local memory; prior versions remain in history.',
+        ));
+        note.append(remove);
+        existing.append(note);
+      }
+      memory.append(existing);
+      const search = a.memorySearch;
+      const searchBox = el('section', { id: 'worldAgentMemorySearch' }, [
+        el('h3', { text: 'Find personal memory' }),
+        el('p', { class: 'note', text: 'Explicit private local search of user-authored memory. No provider conversations are queried.' }),
+      ]);
+      const searchForm = el('form', { id: 'worldAgentMemorySearchForm' });
+      const term = el('input', { type: 'search', minlength: '2', maxlength: '120', required: true,
+        'aria-label': 'Search local agent memory', placeholder: 'Search your memory notes' });
+      term.value = search.query; on(term, 'input', () => { search.query = term.value; });
+      const searchTier = el('select', { 'aria-label': 'Memory search tier' });
+      for (const choice of ['all', 'CANON', 'Immediate', 'Curated']) searchTier.append(el('option', { value: choice, text: choice }));
+      searchTier.value = search.tier; on(searchTier, 'change', () => { search.tier = searchTier.value; });
+      const searchButton = el('button', { type: 'submit', text: 'Search local memory' });
+      searchButton.disabled = busy || search.busy;
+      on(searchForm, 'submit', event => { event.preventDefault(); searchAgentMemory(); });
+      searchForm.append(term, searchTier, searchButton);
+      searchBox.append(searchForm);
+      const resultArea = el('div', { id: 'worldAgentMemorySearchResults', role: 'status' });
+      if (search.busy) resultArea.append(el('p', { class: 'note', text: 'Searching local memory…' }));
+      else if (search.error) resultArea.append(el('p', { class: 'err', text: search.error }));
+      else if (search.result) {
+        resultArea.append(el('p', { class: 'note', text: 'Showing ' + search.result.shown +
+          ' of ' + search.result.total + ' local matches' + (search.result.truncated ? ' (more exist)' : '') + '.' }));
+        if (!search.result.items.length) resultArea.append(el('p', { class: 'empty', text: 'No matching user-authored memory.' }));
+        for (const hit of search.result.items) resultArea.append(el('article', { class: 'vivim-agent-work-row' }, [
+          el('strong', { text: hit.tier + ' / ' + hit.key }),
+          el('p', { class: 'note', text: hit.preview }),
+          el('p', { class: 'note', text: 'Local source: ' + hit.source + ' · matched ' + hit.match }),
+        ]));
+      }
+      searchBox.append(resultArea);
+      memory.append(searchBox);
+    } else memory.append(el('p', { class: 'note', text: 'Initialize your agent to save memory.' }));
+    const insights = el('section', { class: 'vivim-info-card', id: 'worldAgentInsights' }, [
+      el('h3', { text: 'Agent knowledge and continuity' }),
+      el('p', { class: 'note', text: 'Read local evidence on demand. Capability registration is not execution proof. SITREP can contain private memory.' }),
+    ]);
+    for (const [kind, title] of [
+      ['capabilities', 'Inspect skills and tools'],
+      ['knowledge', 'Inspect grounded self-knowledge'],
+      ['continuity', 'Read private SITREP'],
+    ]) {
+      const button = el('button', { type: 'button', id: 'worldAgentInspect_' + kind, text: title });
+      button.disabled = a.insightBusy || busy || !status?.initialized;
+      on(button, 'click', () => agentInspect(kind));
+      insights.append(button);
+    }
+    if (a.insightBusy) insights.append(el('p', { class: 'note', text: 'Reading local agent evidence…' }));
+    if (a.insightError) insights.append(el('p', { class: 'err', text: a.insightError }));
+    if (a.insight) {
+      insights.append(el('p', { class: 'note', text: 'Local inspection: ' + a.insightKind + ' · not a live provider result' }));
+      insights.append(el('pre', { id: 'worldAgentInsightOutput', text: JSON.stringify(a.insight, null, 2) }));
+    }
+    listPane.replaceChildren(head, bootstrap, notice, refresh, memory, insights,
+      el('a', { href: '/personal-agent', class: 'hit', text: 'Advanced agent inspector' }));
+
+    const tasks = el('section', { class: 'vivim-info-card', id: 'worldAgentWork' }, [
+      el('h3', { text: 'Your Work' }),
+      el('p', { class: 'note', text: 'User-directed local records, not automated model execution.' }),
+    ]);
+    if (status?.initialized) {
+      const form = el('form', { id: 'worldAgentWorkForm' });
+      const title = el('input', { type: 'text', required: true, maxlength: '160', placeholder: 'Task title', 'aria-label': 'Work title' });
+      title.value = a.title; on(title, 'input', () => { a.title = title.value; });
+      const objective = el('textarea', { required: true, maxlength: '4000', rows: '3', placeholder: 'Task objective', 'aria-label': 'Work objective' });
+      objective.value = a.objective; on(objective, 'input', () => { a.objective = objective.value; });
+      const queue = el('button', { type: 'submit', text: 'Queue local Work' }); queue.disabled = busy;
+      form.append(title, objective, queue);
+      on(form, 'submit', event => {
+        event.preventDefault();
+        if (!a.title.trim() || !a.objective.trim()) return;
+        if (!a.pendingKey) {
+          if (typeof globalThis.crypto?.randomUUID !== 'function') {
+            a.error = 'Secure idempotency key unavailable; no Work queued.'; renderAgent(); return;
+          }
+          a.pendingKey = 'vivim:' + globalThis.crypto.randomUUID();
+        }
+        agentWrite('/work', 'POST', { expectedVersion: a.status.version,
+          title: a.title, objective: a.objective, idempotencyKey: a.pendingKey },
+          'Work queued locally; not dispatched to a provider.',
+          () => { a.pendingKey = null; a.title = ''; a.objective = ''; });
+      });
+      tasks.append(form);
+      const items = a.work?.items ?? [];
+      const filters = [
+        ['open', 'Open Work'], ['all', 'All Work'],
+        ['queued', 'Queued'], ['active', 'Active'], ['blocked', 'Blocked'],
+        ['completed', 'Completed'], ['cancelled', 'Cancelled'],
+      ];
+      const filter = el('select', { id: 'worldAgentWorkFilter', 'aria-label': 'Filter local Work by status' });
+      for (const [value, label] of filters) filter.append(el('option', { value, text: label }));
+      filter.value = a.workFilter;
+      on(filter, 'change', () => {
+        a.workFilter = filter.value; a.workLimit = 50; renderAgent();
+      });
+      tasks.append(filter);
+      const selected = items.filter(item => a.workFilter === 'all' ||
+        (a.workFilter === 'open'
+          ? ['queued', 'active', 'blocked'].includes(item.status)
+          : item.status === a.workFilter));
+      tasks.append(el('p', { class: 'note', id: 'worldAgentWorkCoverage',
+        text: 'Showing ' + Math.min(selected.length, a.workLimit) + ' of ' + selected.length +
+          ' matching local Work items (' + items.length + ' total). Records are not provider executions.' }));
+      if (!a.loading && !selected.length) tasks.append(el('p', { class: 'empty',
+        text: items.length ? 'No Work matches this filter.' : 'No local Work yet.' }));
+      for (const item of [...selected].reverse().slice(0, a.workLimit)) {
+        const row = el('article', { class: 'vivim-agent-work-row' }, [
+          el('strong', { text: item.title }),
+          el('p', { class: 'note', text: item.objective }),
+          el('p', { class: 'note', text: 'State: ' + item.status + ' · updated ' + item.updatedAt }),
+        ]);
+        if (item.nextAction) row.append(el('p', { class: 'note', text: 'Next: ' + item.nextAction }));
+        const canPlan = ['queued', 'active', 'blocked'].includes(item.status);
+        if (canPlan) {
+          const action = el('textarea', {
+            rows: '2', maxlength: '1000', 'aria-label': 'Next action for ' + item.title,
+            placeholder: 'What is the next local step? No automatic execution.',
+          });
+          action.value = a.actionDrafts.has(item.id) ? a.actionDrafts.get(item.id) : (item.nextAction ?? '');
+          on(action, 'input', () => { a.actionDrafts.set(item.id, action.value); });
+          const saveAction = el('button', { type: 'button', text: 'Save next action' });
+          saveAction.disabled = busy;
+          on(saveAction, 'click', () => {
+            const trimmed = action.value.trim();
+            if (!trimmed && item.status === 'blocked') {
+              a.error = 'Blocked Work requires a next action or reason.'; renderAgent(); return;
+            }
+            agentWrite('/work/' + encodeURIComponent(item.id) + '/next-action', 'POST', {
+              expectedVersion: a.status.version, nextAction: trimmed || null,
+            }, 'Next action saved locally; no execution or provider send occurred.',
+              () => { a.actionDrafts.delete(item.id); });
+          });
+          row.append(action, saveAction);
+        }
+        const allowed = AGENT_TRANSITIONS[item.status] ?? [];
+        if (allowed.length) {
+          const next = el('select', { 'aria-label': 'Next work state' });
+          for (const to of allowed) next.append(el('option', { value: to, text: to }));
+          next.value = allowed[0];
+          const note = el('input', { type: 'text', maxlength: '2000', placeholder: 'Reason if blocked', 'aria-label': 'Work reason' });
+          const refs = el('input', { type: 'text', maxlength: '1200', placeholder: 'Evidence references if completed', 'aria-label': 'Work evidence' });
+          const update = el('button', { type: 'button', text: 'Update Work' }); update.disabled = busy;
+          on(update, 'click', () => agentWrite('/work/' + encodeURIComponent(item.id) + '/transition', 'POST', {
+            expectedVersion: a.status.version, to: next.value, note: note.value,
+            evidence: refs.value.split(',').map(v => v.trim()).filter(Boolean),
+          }, 'Work state updated locally, not executed externally.'));
+          row.append(next, note, refs, update);
+        }
+        tasks.append(row);
+      }
+      if (selected.length > a.workLimit) {
+        const more = el('button', { type: 'button', id: 'worldAgentWorkMore',
+          text: 'Show older Work (' + (selected.length - a.workLimit) + ' remaining)' });
+        on(more, 'click', () => { a.workLimit += 50; renderAgent(); });
+        tasks.append(more);
+      }
+    } else tasks.append(el('p', { class: 'empty', text: 'Initialize your agent to manage Work.' }));
+    detailPane.replaceChildren(tasks);
+  }
+
+  // A small real product loop: explicit intent -> durable local blueprint ->
+  // declarative mobile preview -> user-directed revision. No model result is fabricated.
+  async function builderCall(route, { method = 'GET', body } = {}) {
+    try {
+      const response = await fetchImpl(PERSONAL_APPS_API + route, {
+        method, credentials: 'same-origin', cache: 'no-store',
+        headers: body ? { 'content-type': 'application/json' } : undefined,
+        body: body ? JSON.stringify(body) : undefined,
+      });
+      let data = null;
+      try { data = await response.json(); } catch { /* keep actual HTTP failure */ }
+      return { status: response.status, data };
+    } catch { return { status: 0, data: null }; }
+  }
+  async function refreshBuilder() {
+    const b = state.builder;
+    if (b.loading || b.busy) return;
+    b.loading = true; b.error = '';
+    if (state.view === 'builder') renderBuilder();
+    const result = await builderCall('');
+    b.loading = false;
+    if (result.status === 200 && Array.isArray(result.data?.items)) {
+      b.apps = result.data.items;
+      if (!b.apps.some(item => item.id === b.selected?.id)) b.selected = null;
+    } else b.error = result.data?.code || 'Local app blueprint service is unavailable.';
+    if (state.view === 'builder') renderBuilder();
+  }
+  async function createBuilderApp() {
+    const b = state.builder;
+    if (b.busy || !b.title.trim() || !b.intent.trim()) return;
+    if (!b.pendingKey) {
+      if (typeof globalThis.crypto?.randomUUID !== 'function') {
+        b.error = 'Secure idempotency key unavailable. No app was created.';
+        renderBuilder(); return;
+      }
+      b.pendingKey = 'vivim-build:' + globalThis.crypto.randomUUID();
+    }
+    b.busy = true; b.error = ''; b.notice = '';
+    renderBuilder();
+    const result = await builderCall('', {
+      method: 'POST', body: { title: b.title, intent: b.intent, idempotencyKey: b.pendingKey },
+    });
+    if (result.status === 200 && result.data?.app) {
+      b.selected = result.data.app;
+      b.proposalText = ''; b.proposalPreview = null; b.previewSource = null;
+      b.title = ''; b.intent = ''; b.pendingKey = null;
+      aiStopPolling(); b.ai.job = null; b.ai.appId = result.data.app.id; b.ai.error = '';
+      b.notice = result.data.replayed
+        ? 'Reconnected to the same locally saved blueprint.'
+        : 'Your personal app blueprint is saved locally. No provider was called.';
+    } else b.error = result.data?.code || 'App creation was not confirmed; retry uses the same request key.';
+    b.busy = false;
+    if (state.view === 'builder') renderBuilder();
+    if (result.status === 200) await refreshBuilder();
+  }
+  async function selectBuilderApp(id) {
+    const b = state.builder;
+    if (b.busy || b.loading) return;
+    b.loading = true; b.error = '';
+    renderBuilder();
+    const result = await builderCall('/' + encodeURIComponent(id));
+    b.loading = false;
+    if (result.status === 200 && result.data?.id === id) {
+      if (b.selected?.id !== id) b.proposalText = '';
+      b.selected = result.data;
+      b.proposalPreview = null; b.previewSource = null;
+    } else b.error = result.data?.code || 'Saved app could not be read.';
+    if (state.view === 'builder') renderBuilder();
+    if (b.selected?.id === id) loadAiJob();
+  }
+  async function addBuilderScreen() {
+    const b = state.builder;
+    if (!b.selected || b.busy || !b.label.trim()) return;
+    b.busy = true; b.error = ''; b.notice = '';
+    renderBuilder();
+    const result = await builderCall('/' + encodeURIComponent(b.selected.id) + '/screens', {
+      method: 'POST', body: { expectedVersion: b.selected.version, kind: b.kind, label: b.label },
+    });
+    if (result.status === 200 && result.data?.app) {
+      b.selected = result.data.app;
+      b.proposalPreview = null; b.previewSource = null;
+      b.label = '';
+      b.notice = 'Declarative screen added to your local blueprint. No code or provider effects executed.';
+    } else b.error = result.data?.code || 'Screen edit was not confirmed. Refresh before retrying.';
+    b.busy = false;
+    if (state.view === 'builder') renderBuilder();
+    if (result.status === 200) await refreshBuilder();
+  }
+  // Proposal results are untrusted until Studio's strict data-only compiler accepts them.
+  // Preview cannot mutate saved state; a second explicit user click is required to apply.
+  async function previewBuilderProposal() {
+    const b = state.builder;
+    if (!b.selected || b.busy || !b.proposalText.trim()) return;
+    const input = b.proposalText, id = b.selected.id, version = b.selected.version;
+    b.proposalPreview = null; b.previewSource = null;
+    b.busy = true; b.error = ''; b.notice = '';
+    renderBuilder();
+    const result = await builderCall('/' + encodeURIComponent(id) + '/preview-change', {
+      method: 'POST', body: { proposal: input },
+    });
+    b.busy = false;
+    if (b.selected?.id !== id || b.selected?.version !== version || b.proposalText !== input) {
+      b.error = 'App or proposal changed while checking. Preview the current draft again.';
+    } else if (result.status === 200 && result.data?.canApply === true &&
+      result.data?.effects === 'none' && result.data?.appId === id &&
+      result.data?.baseVersion === version && Array.isArray(result.data?.diff) &&
+      result.data?.approvalRequired === true) {
+      b.proposalPreview = result.data;
+      b.previewSource = input;
+      b.notice = 'Validated locally; saved app unchanged. Review the difference before applying.';
+    } else {
+      b.error = result.data?.code || 'No verified preview. Nothing was changed.';
+    }
+    if (state.view === 'builder') renderBuilder();
+  }
+  // Opt-in: list settled replies ALREADY stored by the Harness (read-only list route; no browser,
+  // no send). The user picks one; it is previewed through the same strict compiler.
+  async function loadStoredReplyChoices() {
+    const b = state.builder;
+    if (b.busy || b.replyChoices.loading) return;
+    b.replyChoices = { loading: true, items: [], error: '', loaded: false };
+    renderBuilder();
+    let items = [], error = '';
+    try {
+      const response = await fetchImpl(CONVERSATIONS_API, { method: 'GET', credentials: 'same-origin', cache: 'no-store' });
+      const data = await response.json();
+      if (response.status !== 200 || !Array.isArray(data?.conversations)) error = data?.code || 'Stored conversations are unavailable.';
+      else {
+        for (const conversation of data.conversations) {
+          for (const turn of Array.isArray(conversation?.turns) ? conversation.turns : []) {
+            if (turn?.reply?.state === 'ready' && typeof conversation.id === 'string' && typeof turn.id === 'string') {
+              items.push({ conversation: conversation.id, turnId: turn.id,
+                site: typeof conversation.site === 'string' ? conversation.site : 'provider',
+                chars: Number.isSafeInteger(turn.reply.chars) ? turn.reply.chars : null });
+            }
+          }
+        }
+        items = items.slice(0, 12);
+      }
+    } catch { error = 'Stored conversations are unavailable.'; }
+    b.replyChoices = { loading: false, items, error, loaded: true };
+    if (state.view === 'builder') renderBuilder();
+  }
+  async function previewProviderReply(choice) {
+    const b = state.builder;
+    if (!b.selected || b.busy || !choice?.conversation || !choice?.turnId) return;
+    const id = b.selected.id, version = b.selected.version, input = b.proposalText;
+    b.proposalPreview = null; b.previewSource = null;
+    b.busy = true; b.error = ''; b.notice = '';
+    renderBuilder();
+    const result = await builderCall('/' + encodeURIComponent(id) + '/preview-provider-reply', {
+      method: 'POST', body: { conversation: choice.conversation, turnId: choice.turnId },
+    });
+    b.busy = false;
+    const data = result.data;
+    if (b.selected?.id !== id || b.selected?.version !== version || b.proposalText !== input) {
+      b.error = 'App or proposal changed while checking. Preview the stored reply again.';
+    } else if (result.status === 200 && data?.source === 'provider-reply' &&
+      data?.provenance?.source === 'provider-reply' && data.provenance.humanAuthored === false &&
+      data.provenance.conversationId === choice.conversation && data.provenance.turnId === choice.turnId &&
+      data?.canApply === true && data?.effects === 'none' && data?.appId === id &&
+      data?.baseVersion === version && Array.isArray(data?.diff) && data?.approvalRequired === true) {
+      b.proposalPreview = data; b.previewSource = input;
+      b.notice = 'Validated locally from a stored AI reply; saved app unchanged. Review the difference before applying.';
+    } else b.error = data?.code || 'No verified preview from that reply. Nothing was changed.';
+    if (state.view === 'builder') renderBuilder();
+  }
+  // "Design with my AI": one tap, queued on the server. The page only starts the job, polls it and
+  // shows plain words. It never sends to a provider itself and never applies without the user's click.
+  const AI_ACTIVE = ['queued', 'asking', 'waiting-reply'];
+  // Every AI website the owner may be signed in to (mirrors the server's CREATE_SITES/AI_DESIGN_SITES).
+  const AI_SITES = [['chatgpt', 'ChatGPT'], ['claude', 'Claude'], ['zai', 'Z.ai'], ['qwen', 'Qwen'], ['deepseek', 'DeepSeek'], ['gemini', 'Gemini']];
+  const AI_POLL_MS = 2500;
+  function aiStopPolling() {
+    const ai = state.builder.ai;
+    if (ai.timer) { globalThis.clearTimeout(ai.timer); ai.timer = null; }
+  }
+  function aiSchedulePoll() {
+    const ai = state.builder.ai;
+    aiStopPolling();
+    if (!AI_ACTIVE.includes(ai.job?.state) || state.view !== 'builder') return;
+    const jobId = ai.job.id;
+    ai.timer = globalThis.setTimeout(async () => {
+      ai.timer = null;
+      const result = await builderCall('/ai-design/' + encodeURIComponent(jobId));
+      if (ai.job?.id !== jobId || state.view !== 'builder') return;
+      const next = result.data?.job;
+      if (result.status === 200 && next?.id === jobId) {
+        const changed = next.state !== ai.job.state || next.waitingOn !== ai.job.waitingOn;
+        ai.job = next;
+        if (changed) renderBuilder();
+      }
+      aiSchedulePoll();
+    }, AI_POLL_MS);
+  }
+  async function loadAiJob() {
+    const b = state.builder, ai = b.ai, id = b.selected?.id;
+    if (!id) return;
+    if (ai.appId !== id) { aiStopPolling(); ai.job = null; ai.appId = id; ai.error = ''; }
+    const result = await builderCall('/' + encodeURIComponent(id) + '/ai-design');
+    if (b.selected?.id !== id) return;
+    const job = result.status === 200 ? result.data?.job : null;
+    ai.job = job && ['queued', 'asking', 'waiting-reply', 'ready-to-review', 'failed'].includes(job.state) ? job : null;
+    if (state.view === 'builder') renderBuilder();
+    aiSchedulePoll();
+  }
+  async function startAiDesign() {
+    const b = state.builder, ai = b.ai;
+    if (!b.selected || ai.busy || AI_ACTIVE.includes(ai.job?.state)) return;
+    ai.busy = true; ai.error = '';
+    renderBuilder();
+    const body = { site: ai.site };
+    if (ai.request.trim()) body.request = ai.request.trim().slice(0, 500);
+    const result = await builderCall('/' + encodeURIComponent(b.selected.id) + '/ai-design', { method: 'POST', body });
+    ai.busy = false;
+    if (result.status === 200 && result.data?.job?.appId === b.selected.id) {
+      ai.job = result.data.job; ai.appId = b.selected.id;
+    } else ai.error = result.data?.error || 'Could not start. Nothing was sent to your AI.';
+    if (state.view === 'builder') renderBuilder();
+    aiSchedulePoll();
+  }
+  async function approveAiDesign() {
+    const b = state.builder, ai = b.ai, job = ai.job;
+    if (!job || job.state !== 'ready-to-review' || ai.busy) return;
+    ai.busy = true; ai.error = '';
+    renderBuilder();
+    const result = await builderCall('/ai-design/' + encodeURIComponent(job.id) + '/approve', { method: 'POST', body: {} });
+    ai.busy = false;
+    if (result.status === 200 && result.data?.app?.id === job.appId) {
+      b.selected = result.data.app; b.proposalPreview = null; b.previewSource = null;
+      const count = result.data.job?.applied?.screens?.length ?? 0;
+      b.notice = 'Added ' + count + (count === 1 ? ' screen' : ' screens') + ' designed by your AI.';
+      ai.job = null;
+    } else {
+      ai.error = result.data?.error || 'Could not add these screens. Nothing was changed.';
+      const again = await builderCall('/ai-design/' + encodeURIComponent(job.id));
+      if (again.status === 200 && again.data?.job?.id === job.id) ai.job = again.data.job;
+    }
+    if (state.view === 'builder') renderBuilder();
+    if (result.status === 200) await refreshBuilder();
+  }
+  async function dismissAiDesign() {
+    const b = state.builder, ai = b.ai, job = ai.job;
+    if (!job || ai.busy) return;
+    aiStopPolling();
+    ai.job = null; ai.error = '';
+    renderBuilder();
+    if (job.state !== 'failed') await builderCall('/ai-design/' + encodeURIComponent(job.id) + '/discard', { method: 'POST', body: {} });
+  }
+  function renderAiDesign(locked) {
+    const b = state.builder, ai = b.ai, job = ai.job;
+    const section = el('section', { id: 'worldBuilderAiDesign', class: 'vivim-info-card' }, [
+      el('h3', { text: 'Design with my AI' }),
+    ]);
+    const status = el('div', { id: 'worldBuilderAiStatus', role: 'status', 'aria-live': 'polite' });
+    if (ai.error) status.append(el('p', { class: 'err', role: 'alert', text: ai.error }));
+    const siteLabel = job ? (job.siteLabel || job.site) : '';
+    if (job && AI_ACTIVE.includes(job.state)) {
+      status.append(el('p', { class: 'note', id: 'worldBuilderAiWaiting', text: 'Waiting for your AI…' }));
+      status.append(el('p', { class: 'note', text: job.waitingOn === 'browser'
+        ? 'Your browser is busy for a moment. This continues on its own; you can leave this page.'
+        : job.state === 'waiting-reply' ? siteLabel + ' is working on it. You can leave this page; it keeps going.'
+          : 'Opening ' + siteLabel + ' with your own account…' }));
+      const cancel = el('button', { type: 'button', id: 'worldBuilderAiCancel', text: 'Cancel' });
+      cancel.disabled = ai.busy;
+      on(cancel, 'click', () => dismissAiDesign());
+      status.append(cancel);
+    } else if (job && job.state === 'ready-to-review') {
+      status.append(el('p', { class: 'note', text: siteLabel + ' suggests these screens. Nothing is added until you say so.' }));
+      const grid = el('div', { class: 'vivim-builder-screen-grid', id: 'worldBuilderAiScreens' });
+      for (const item of job.preview?.diff ?? []) {
+        grid.append(el('div', { class: 'vivim-builder-screen' }, [
+          el('strong', { text: item.label }),
+          el('p', { class: 'note', text: item.kind }),
+        ]));
+      }
+      const add = el('button', { type: 'button', id: 'worldBuilderAiApprove', text: 'Add these screens' });
+      add.disabled = locked || ai.busy || job.preview?.baseVersion !== b.selected.version;
+      on(add, 'click', () => approveAiDesign());
+      const later = el('button', { type: 'button', id: 'worldBuilderAiDismiss', text: 'Not now' });
+      later.disabled = ai.busy;
+      on(later, 'click', () => dismissAiDesign());
+      status.append(grid, add, later);
+      if (job.preview?.baseVersion !== b.selected.version) {
+        status.append(el('p', { class: 'note', text: 'Your app changed since your AI looked at it. Ask again for fresh ideas.' }));
+      }
+    } else {
+      const failed = job?.state === 'failed';
+      if (failed) {
+        status.append(el('p', { class: 'err', id: 'worldBuilderAiFailed', text: job.error?.message || 'Your AI could not finish this request.' }));
+        if (job.error?.code) status.append(el('p', { class: 'note', text: 'Reference: ' + job.error.code }));
+        status.append(el('p', { class: 'note', text: 'Pick a different AI below, or try the same one again.' }));
+        // A nudge toward a different site, never a resend: still needs the user's own click below, and
+        // starting again always gets a brand-new job id and key — the failed job's key is never reused.
+        if (ai.site === job.site) { const alt = AI_SITES.find(([value]) => value !== job.site); if (alt) ai.site = alt[0]; }
+      } else status.append(el('p', { class: 'note', text: 'Let one of your own signed-in AI accounts suggest screens for this app. It asks once, and never changes anything without your OK.' }));
+      const form = el('form', { id: 'worldBuilderAiForm' });
+      const site = el('select', { 'aria-label': 'Which AI?' });
+      for (const [value, label] of AI_SITES) site.append(el('option', { value, text: label }));
+      site.value = ai.site; on(site, 'change', () => { ai.site = site.value; });
+      const wish = el('textarea', { rows: '3', maxlength: '500', 'aria-label': 'What do you want?',
+        placeholder: 'What do you want? (optional) For example: help me plan study sessions' });
+      wish.value = ai.request; on(wish, 'input', () => { ai.request = wish.value; });
+      const go = el('button', { type: 'submit', id: 'worldBuilderAiStart', text: failed ? 'Try with another AI' : 'Design with my AI' });
+      go.disabled = locked || ai.busy;
+      on(form, 'submit', event => { event.preventDefault(); startAiDesign(); });
+      form.append(site, wish, go);
+      section.append(status, form);
+      return section;
+    }
+    section.append(status);
+    return section;
+  }
+  async function applyBuilderProposal() {
+    const b = state.builder, preview = b.proposalPreview, current = b.selected;
+    if (b.busy || !current || !preview || b.previewSource !== b.proposalText ||
+      preview.appId !== current.id || preview.baseVersion !== current.version ||
+      preview.canApply !== true || preview.effects !== 'none') return;
+    const id = current.id, version = current.version;
+    // A provider-sourced preview is applied only via its own route, which re-reads the stored reply.
+    const from = preview.source === 'provider-reply' ? preview.provenance : null;
+    if (preview.source === 'provider-reply' && !(from?.source === 'provider-reply' &&
+      typeof from.conversationId === 'string' && typeof from.turnId === 'string' &&
+      /^[a-f0-9]{64}$/.test(from.replyDigest || ''))) return;
+    // Only the user's click here confers approval. Nothing received from a model can do so.
+    b.busy = true; b.error = ''; b.notice = '';
+    renderBuilder();
+    const result = from
+      ? await builderCall('/' + encodeURIComponent(id) + '/apply-provider-reply', {
+        method: 'POST', body: { conversation: from.conversationId, turnId: from.turnId,
+          replyDigest: from.replyDigest, expectedVersion: version, approval: 'user-confirmed' },
+      })
+      : await builderCall('/' + encodeURIComponent(id) + '/apply-change', {
+        method: 'POST', body: {
+          expectedVersion: version, proposal: preview.change, approval: 'user-confirmed',
+        },
+      });
+    b.busy = false;
+    b.proposalPreview = null; b.previewSource = null;
+    if (result.status === 200 && result.data?.app?.id === id &&
+        Number.isSafeInteger(result.data.app.version) &&
+        result.data.app.version > version) {
+      b.selected = result.data.app;
+      b.proposalText = '';
+      b.notice = from
+        ? 'Approved AI-proposed changes (from a stored reply) saved locally. No AI provider was contacted and no app was deployed.'
+        : 'Approved changes saved locally. No AI provider was contacted and no app was deployed.';
+    } else {
+      // On an uncertain response, NEVER re-send an approved edit. Preserve the draft,
+      // and let the owner re-read the saved blueprint before deciding what happened.
+      b.error = (result.data?.code || 'APP_APPLY_NOT_CONFIRMED') +
+        ' — not confirmed. Reload the blueprint before deciding whether to try again.';
+    }
+    if (state.view === 'builder') renderBuilder();
+    if (result.status === 200) await refreshBuilder();
+  }
+  function renderBuilder() {
+    ensureFrame();
+    const b = state.builder, locked = b.busy || b.loading;
+    const head = el('div', { class: 'vivim-section-head' }, [
+      el('span', { class: 'vivim-eyebrow', text: 'YOUR PERSONAL APP FACTORY' }),
+      el('h2', { text: 'Build my VIVIM' }),
+      el('p', { class: 'note', text: 'Describe your personal mobile app. Start with a tiny blueprint; evolve it safely, or let your own AI suggest screens. APK installation is not yet connected.' }),
+    ]);
+    const notice = el('div', { id: 'worldBuilderNotice', role: b.error ? 'alert' : 'status' });
+    if (b.error) notice.append(el('p', { class: 'err', text: b.error }));
+    if (b.notice) notice.append(el('p', { class: 'note', text: b.notice }));
+    const form = el('form', { id: 'worldBuilderCreateForm' });
+    const name = el('input', { type: 'text', required: true, maxlength: '80',
+      'aria-label': 'Your app name', placeholder: 'My personal AI world' });
+    name.value = b.title;
+    on(name, 'input', () => { b.title = name.value; });
+    const intent = el('textarea', { required: true, rows: '5', maxlength: '2000',
+      'aria-label': 'What should your app become?', placeholder: 'I want an assistant that...' });
+    intent.value = b.intent;
+    on(intent, 'input', () => { b.intent = intent.value; });
+    const create = el('button', { type: 'submit', text: 'Create local starter app' });
+    create.disabled = locked;
+    on(form, 'submit', event => { event.preventDefault(); createBuilderApp(); });
+    form.append(name, intent, create);
+    const library = el('section', { id: 'worldBuilderLibrary', class: 'vivim-info-card' }, [
+      el('h3', { text: 'My app blueprints' }),
+      el('p', { class: 'note', text: 'Saved in the local VIVIM data directory, not in provider accounts.' }),
+    ]);
+    if (b.loading) library.append(el('p', { class: 'note', text: 'Reading saved blueprints…' }));
+    for (const item of b.apps) {
+      const select = el('button', { type: 'button', text: item.title + ' · ' + item.screenCount + ' screens' });
+      select.disabled = locked;
+      on(select, 'click', () => selectBuilderApp(item.id));
+      library.append(select);
+    }
+    if (!b.loading && !b.apps.length) library.append(el('p', { class: 'empty', text: 'No personal app blueprints saved yet.' }));
+    listPane.replaceChildren(head, notice, form, library);
+    const preview = el('section', { id: 'worldBuilderPreview', class: 'vivim-info-card' }, [
+      el('h3', { text: b.selected ? b.selected.title + ' — mobile starter' : 'Your mobile starter' }),
+    ]);
+    if (!b.selected) {
+      preview.append(el('p', { class: 'note', text: 'Start with Home, My Agent and Build. Your own screens will appear here after you create an app.' }));
+    } else {
+      preview.append(el('p', { class: 'note', text: 'Blueprint revision ' + b.selected.version +
+        ' · source: user-authored · AI execution: not attempted · APK: not built · phone pairing: not configured.' }));
+      const phone = el('div', { class: 'vivim-builder-phone', id: 'worldBuilderPhone' });
+      phone.append(el('strong', { text: b.selected.title }));
+      const nav = el('div', { class: 'vivim-builder-screen-grid' });
+      for (const screen of b.selected.screens) nav.append(el('div', { class: 'vivim-builder-screen' }, [
+        el('strong', { text: screen.label }),
+        el('p', { class: 'note', text: screen.kind + ' · ' +
+          (screen.origin === 'base-scaffold' ? 'starter screen' : 'user-added screen') }),
+      ]));
+      phone.append(nav);
+      preview.append(phone, el('p', { class: 'note', text: 'Blueprint-only representation. No model or generated code ran.' }));
+      preview.append(el('a', { id: 'worldBuilderOpenMobile', class: 'hit',
+        href: '/mobile?app=' + encodeURIComponent(b.selected.id),
+        target: '_blank', rel: 'noopener noreferrer',
+        text: 'Open working mobile view on this PC' }));
+      preview.append(el('p', { class: 'note',
+        text: 'This local view supports saved notes and tasks. It is not yet reachable from a separate phone.' }));
+      preview.append(renderAiDesign(locked));
+      const add = el('form', { id: 'worldBuilderAddScreenForm' });
+      const kind = el('select', { 'aria-label': 'New screen kind' });
+      for (const type of ['notes', 'tasks', 'dashboard', 'blank']) kind.append(el('option', { value: type, text: type }));
+      kind.value = b.kind;
+      on(kind, 'change', () => { b.kind = kind.value; });
+      const label = el('input', { type: 'text', required: true, maxlength: '64',
+        'aria-label': 'New screen label', placeholder: 'My Tasks' });
+      label.value = b.label; on(label, 'input', () => { b.label = label.value; });
+      const button = el('button', { type: 'submit', text: 'Add screen to blueprint' });
+      button.disabled = locked;
+      on(add, 'submit', event => { event.preventDefault(); addBuilderScreen(); });
+      add.append(el('h3', { text: 'Evolve your app' }), kind, label, button);
+      preview.append(add);
+      const propose = el('form', { id: 'worldBuilderProposalForm' });
+      propose.append(el('h3', { text: 'Review a proposed app change' }),
+        el('p', { class: 'note', text: 'Paste a JSON screen proposal from an AI response or edit the example. Preview is read-only; nothing executes or saves until you approve.' }));
+      const draft = el('textarea', { id: 'worldBuilderProposalText', rows: '8', maxlength: '12000',
+        'aria-label': 'JSON change proposal', placeholder: 'vivim.personal-app-change/1 JSON' });
+      draft.value = b.proposalText;
+      const diffArea = el('div', { id: 'worldBuilderProposalDiff', role: 'status' });
+      const apply = el('button', { type: 'button', id: 'worldBuilderApplyProposal',
+        text: 'Approve and apply these changes' });
+      apply.disabled = locked || !b.proposalPreview || b.previewSource !== b.proposalText ||
+        b.proposalPreview.appId !== b.selected.id ||
+        b.proposalPreview.baseVersion !== b.selected.version;
+      on(draft, 'input', () => {
+        b.proposalText = draft.value;
+        b.proposalPreview = null; b.previewSource = null;
+        apply.disabled = true;
+        diffArea.replaceChildren(el('p', { class: 'note', text: 'Draft changed. Preview again to review the updated proposal.' }));
+      });
+      const example = el('button', { type: 'button', text: 'Insert editable example' });
+      example.disabled = locked;
+      on(example, 'click', () => {
+        b.proposalText = JSON.stringify({ schema: 'vivim.personal-app-change/1',
+          appId: b.selected.id, baseVersion: b.selected.version,
+          operations: [{ type: 'add-screen', kind: 'tasks', label: 'My next screen' }] }, null, 2);
+        b.proposalPreview = null; b.previewSource = null;
+        renderBuilder();
+      });
+      const check = el('button', { type: 'submit', id: 'worldBuilderPreviewProposal',
+        text: 'Preview without saving' });
+      check.disabled = locked || !b.proposalText.trim();
+      on(propose, 'submit', event => { event.preventDefault(); previewBuilderProposal(); });
+      on(apply, 'click', () => applyBuilderProposal());
+      propose.append(draft, example, check);
+      // Opt-in AI-proposal source: already-stored replies only; picking one never sends anything.
+      const replies = el('section', { id: 'worldBuilderStoredReplies' }, [
+        el('p', { class: 'note', text: 'Or use an AI reply already saved by VIVIM. This only reads saved text; it never sends a message to any provider.' }),
+      ]);
+      const load = el('button', { type: 'button', id: 'worldBuilderLoadReplies', text: 'Choose a saved AI reply' });
+      load.disabled = locked || b.replyChoices.loading;
+      on(load, 'click', () => loadStoredReplyChoices());
+      replies.append(load);
+      if (b.replyChoices.loading) replies.append(el('p', { class: 'note', text: 'Reading saved replies…' }));
+      if (b.replyChoices.error) replies.append(el('p', { class: 'err', text: b.replyChoices.error }));
+      if (b.replyChoices.loaded && !b.replyChoices.error && !b.replyChoices.items.length) {
+        replies.append(el('p', { class: 'empty', text: 'No settled saved AI replies found.' }));
+      }
+      for (const choice of b.replyChoices.items) {
+        const pick = el('button', { type: 'button', class: 'worldBuilderPickReply',
+          text: 'Preview ' + choice.site + ' reply · conversation ' + choice.conversation +
+            ' · turn ' + choice.turnId + (choice.chars === null ? '' : ' · ' + choice.chars + ' characters') });
+        pick.disabled = locked;
+        on(pick, 'click', () => previewProviderReply(choice));
+        replies.append(pick);
+      }
+      propose.append(replies);
+      if (b.proposalPreview) {
+        const fromReply = b.proposalPreview.source === 'provider-reply' ? b.proposalPreview.provenance : null;
+        diffArea.append(el('p', { class: 'note', text: fromReply
+          ? 'AI-proposed, NOT written by you · stored reply from conversation ' + fromReply.conversationId +
+            ', turn ' + fromReply.turnId + ' · authenticity not verified · nothing is applied until you approve.'
+          : 'Read-only preview · from revision ' + b.proposalPreview.baseVersion +
+            ' · no code execution or provider effects.' }));
+        const changes = el('ul');
+        for (const change of b.proposalPreview.diff) {
+          changes.append(el('li', { text: 'Add ' + change.kind + ' screen: ' + change.label }));
+        }
+        diffArea.append(changes);
+        const screenPreview = el('div', { class: 'vivim-builder-screen-grid',
+          id: 'worldBuilderProposedScreens' });
+        for (const screen of b.proposalPreview.scaffold?.screens ?? []) {
+          screenPreview.append(el('div', { class: 'vivim-builder-screen', text: screen.label }));
+        }
+        diffArea.append(screenPreview, apply);
+      } else if (b.proposalText.trim()) {
+        diffArea.append(el('p', { class: 'note', text:
+          'No current validated preview. The local blueprint has not been changed.' }));
+      }
+      preview.append(propose, diffArea);
+    }
+    detailPane.replaceChildren(preview);
+  }
+
+  function renderSettings() {
+    ensureFrame();
+    const config = state.settings;
+    const head = el('div', { class: 'vivim-section-head' }, [
+      el('span', { class: 'vivim-eyebrow', text: 'YOUR SPACE, YOUR RULES' }),
+      el('h2', { text: 'Settings' }),
+      el('p', { class: 'note', text: 'Provider availability and local World information. No account connection or workspace folder is inferred.' }),
+    ]);
+    const tabs = el('div', { class: 'vivim-settings-tabs', id: 'vivimSettingsTabs', role: 'tablist', 'aria-label': 'Settings sections' });
+    for (const [key, label] of [
+      ['providers', 'Providers'], ['workspace', 'Workspace'], ['appearance', 'Appearance'],
+      ['data', 'Data'], ['transfer', 'Transfer'],
+    ]) {
+      const button = el('button', { type: 'button', role: 'tab',
+        'aria-selected': config.tab === key ? 'true' : 'false', text: label });
+      on(button, 'click', () => { config.tab = key; renderSettings(); });
+      tabs.append(button);
+    }
+    const body = el('div', { class: 'vivim-settings-body' });
+    if (config.tab === 'providers') {
+      body.append(el('h3', { text: 'AI providers' }));
+      body.append(el('p', { class: 'note', text: 'Supported websites are not verified logins or connected accounts. Manage the real browser connection in Chat.' }));
+      if (config.loading && !config.loaded) body.append(el('p', { class: 'note', text: 'Loading supported sites…' }));
+      if (config.error) body.append(el('p', { class: 'err', text: 'Could not read the local provider catalog: ' + config.error }));
+      if (config.loaded && !config.sites.length) body.append(el('p', { class: 'empty', text: 'This Harness reported no supported sites.' }));
+      for (const site of config.sites) {
+        const row = el('div', { class: 'vivim-settings-provider' }, [
+          el('span', { class: 'vivim-provider-emblem', 'aria-hidden': 'true', text: site.id.slice(0, 1).toUpperCase() }),
+          el('span', { class: 'vivim-settings-provider-name' }, [
+            el('strong', { text: site.id }),
+            el('span', { class: 'note', text: 'Supported site · account status not verified' }),
+          ]),
+        ]);
+        const button = el('button', { type: 'button', text: 'Choose in Chat' });
+        on(button, 'click', () => {
+          choose('capture');
+          const box = doc.getElementById?.('connectBox');
+          if (box) box.open = true;
+        });
+        row.append(button);
+        body.append(row);
+      }
+    } else if (config.tab === 'workspace') {
+      body.append(el('h3', { text: 'Personal workspace' }));
+      body.append(el('p', { class: 'note', text: 'Your saved World is a local collection. A user-selected storage folder picker is not available in this build.' }));
+      body.append(el('p', { class: 'vivim-settings-data', text: state.namespace?.id
+        ? 'Local namespace: ' + state.namespace.id
+        : 'Local namespace not yet available.' }));
+      const button = el('button', { type: 'button', text: 'Open Workspace' });
+      on(button, 'click', () => choose('workspace'));
+      body.append(button);
+    } else if (config.tab === 'appearance') {
+      body.append(el('h3', { text: 'Appearance' }));
+      body.append(el('p', { class: 'note', text: 'VIVIM currently uses the dark interface shown here. A persistent theme selector has not been implemented.' }));
+    } else if (config.tab === 'data') {
+      body.append(el('h3', { text: 'Data and privacy' }));
+      body.append(el('p', { class: 'note', text: 'Saved observations, user-authored notes and imported snapshots are distinct. This view never synchronizes or uploads your data.' }));
+    } else if (config.tab === 'transfer') {
+      body.append(el('h3', { text: 'Import and export' }));
+      body.append(el('p', { class: 'note', text: 'Transfers require deliberate user actions. Review source coverage, sensitive material and chosen export parts before using them.' }));
+      const button = el('button', { type: 'button', text: 'Open Transfer' });
+      on(button, 'click', () => choose('transfer'));
+      body.append(button);
+    }
+    listPane.replaceChildren(head, tabs, body);
+    detailPane.replaceChildren(el('section', { class: 'vivim-info-card' }, [
+      el('h3', { text: 'Browser world' }),
+      el('p', { class: 'note', text: 'Use the local Harness to manage its dedicated browser profile. Account identity is not inferred from the list of supported sites.' }),
+      el('p', { class: 'note', text: 'Browser profile separation is not an operating-system security boundary.' }),
+    ]));
+  }
+
+  async function loadSettingsSites() {
+    const config = state.settings;
+    if (config.loaded || config.loading) return;
+    config.loading = true;
+    config.error = '';
+    try {
+      const response = await fetchImpl('/api/v1/conversation-targets', { method: 'GET' });
+      if (response.status !== 200) throw new Error('Studio returned ' + response.status);
+      const data = await response.json();
+      config.sites = Array.isArray(data?.sites) ? data.sites
+        .filter((site) => typeof site?.id === 'string' && /^[a-z0-9-]{1,60}$/.test(site.id))
+        .map((site) => ({ id: site.id })) : [];
+      config.loaded = true;
+    } catch {
+      config.error = 'Provider discovery unavailable. No account status was inferred.';
+    } finally {
+      config.loading = false;
+      if (state.view === 'settings') renderSettings();
+    }
+  }
+
+  function titleFor(kind, id) {
+    if (kind === 'conversations') return state.lists.conversations.items.find((item) => item.id === id)?.title || state.conversations.get(id)?.title || '';
+    const saved = state.editors.get(id)?.saved;
+    return saved?.title || state.lists[kind].items.find((item) => item.id === id)?.title || '';
+  }
+  function syncDirty(editor) {
+    const dirty = !!(editor && editor.saved && !sameDraft(editor.draft, draftFromSaved(editor.saved)));
+    if (dirtyNode) dirtyNode.textContent = dirty ? 'Unsaved changes' : '';
+    if (saveNode) {
+      saveNode.disabled = !dirty || !!editor?.saving;
+      saveNode.textContent = editor?.saving ? 'Saving…' : 'Save';
+    }
+  }
+  function syncFormNote() {
+    const kind = state.view === 'notes' ? 'note' : 'project';
+    if (formNoteNode) formNoteNode.textContent = state.formNote[kind] || '';
+    if (createNode) createNode.disabled = state.creating;
+  }
+  function fillSelect(select, items, used, label) {
+    if (!select) return;
+    const current = select.value;
+    const options = items.filter((item) => item && typeof item.id === 'string' && !(used ?? []).includes(item.id));
+    select.replaceChildren(...options.map((item) => el('option', { value: item.id, text: item.title || item.selectionType || item.objectType || item.id })));
+    select.value = options.some((item) => item.id === current) ? current : (options[0]?.id ?? '');
+    select.disabled = !options.length;
+    select.setAttribute?.('aria-label', label);
+  }
+  function refreshLinkSelects() {
+    const project = state.view === 'projects' ? state.editors.get(state.selected.projects) : null;
+    if (project && linkConvSelect) {
+      fillSelect(linkConvSelect, state.lists.conversations.items, project.draft.conversationIds, 'Saved conversation to add');
+      fillSelect(linkNoteSelect, state.lists.notes.items, project.draft.noteIds, 'Note to add');
+      fillSelect(linkMemberSelect, [...state.lists.objects.items, ...state.lists.selections.items], project.draft.memberIds, 'Other saved record to add');
+    }
+    const note = state.view === 'notes' ? state.editors.get(state.selected.notes) : null;
+    if (note && linkCommentSelect) fillSelect(linkCommentSelect, state.lists.selections.items, note.draft.commentsOn, 'Selection to comment on');
+  }
+  function fillItems() {
+    if (!itemsNode || !VIEWS.includes(state.view)) return;
+    const list = state.lists[state.view];
+    if (listStatusNode) {
+      listStatusNode.textContent = !list.loaded && list.loading ? 'Loading…'
+        : list.loaded ? (list.total ? `Showing ${list.items.length} of ${list.total}.` : '') : '';
+    }
+    if (listErrorNode) listErrorNode.textContent = list.error || '';
+    if (moreNode) { moreNode.hidden = list.nextOffset == null; moreNode.disabled = list.loading; moreNode.textContent = list.loading ? 'Loading…' : 'Load more'; }
+    if (list.loading && !list.items.length) { itemsNode.replaceChildren(el('p', { class: 'empty', text: 'Loading…' })); return; }
+    if (list.error && !list.items.length) { itemsNode.replaceChildren(); return; }
+    if (list.loaded && !list.items.length) {
+      const empty = {
+        conversations: state.custody === 'imported'
+          ? 'No imported snapshots in this list. An import is not an observed recording.'
+          : state.custody === 'all'
+            ? 'No observed recordings or imported snapshots in this list.'
+            : 'No saved conversations on this computer. A session still being recorded is not listed. Nothing here is a sample.',
+        projects: 'No projects yet. A project is your own grouping on this computer. It does not create a project on a provider.',
+        notes: 'No notes yet. A note is something you write. It does not change a saved message.',
+      };
+      itemsNode.replaceChildren(el('p', { class: 'empty', text: empty[state.view] }));
+      return;
+    }
+    const ul = el('ul', { class: 'plain vivim-record-list vivim-record-list-' + state.view });
+    for (const [index, item] of list.items.entries()) {
+      if (!item || typeof item.id !== 'string') continue;
+      const current = state.selected[state.view] === item.id;
+      const meta = state.view === 'conversations'
+        ? `Session status: ${item.status || 'unknown'} · Remote thread ${item.identity?.state || 'unknown'}${custodyChip(item) ? ' · Imported snapshot' : ''}`
+        : state.view === 'projects'
+          ? `Links ${item.conversationIds?.length ?? 0} saved conversations, ${item.noteIds?.length ?? 0} notes, and ${item.memberIds?.length ?? 0} other records.`
+          : `You wrote this${Array.isArray(item.commentsOn) && item.commentsOn.length ? ` · comments on ${item.commentsOn.length}` : ''}${Number.isInteger(item.version) ? ` · version ${item.version}` : ''}.`;
+      const isProject = state.view === 'projects';
+      const button = el('button', {
+        type: 'button', class: 'rowbtn vivim-record-card' + (isProject ? ' vivim-project-card' : ''),
+        'aria-current': current ? 'true' : null,
+      }, [
+        ...(isProject ? [el('span', {
+          class: 'vivim-card-art vivim-card-art-' + (index % 6), 'aria-hidden': 'true',
+        }, [el('span', { class: 'vivim-card-art-mark', text: '✦' })])] : []),
+        el('span', { class: 'vivim-card-content' }, [
+          el('span', { class: 'conv-title', text: item.title || item.id }),
+          el('span', { class: 'note', text: meta }),
+          ...(isProject ? [el('span', { class: 'vivim-card-footer', text: 'Local project · saved grouping' })] : []),
+        ]),
+      ]);
+      on(button, 'click', () => openItem(state.view, item.id));
+      ul.append(el('li', {}, [button]));
+    }
+    itemsNode.replaceChildren(ul);
+  }
+  function renderListPane() {
+    ensureFrame();
+    itemsNode = el('div', { id: 'worldItems' });
+    listStatusNode = el('div', { class: 'note', id: 'worldListStatus', role: 'status' });
+    listErrorNode = el('div', { class: 'err', id: 'worldListError', role: 'alert' });
+    moreNode = el('button', { type: 'button', id: 'worldMore', text: 'Load more' });
+    on(moreNode, 'click', () => fetchList(state.view, { more: true }));
+    const head = el('h2', { text: state.view === 'conversations' ? 'Saved conversations' : state.view === 'projects' ? 'Projects' : 'Notes' });
+    namespaceNode = el('p', { class: 'note', id: 'worldNamespace' });
+    const bits = [head, namespaceNode, listStatusNode, listErrorNode];
+    if (state.view === 'conversations') {
+      const custody = el('select', { id: 'worldCustody', 'aria-label': 'Which saved conversations to list' });
+      for (const [value, label] of [['observed', 'Observed'], ['imported', 'Imported'], ['all', 'All']]) custody.append(el('option', { value, text: label }));
+      custody.value = state.custody;
+      on(custody, 'change', () => {
+        if (!['observed', 'imported', 'all'].includes(custody.value) || custody.value === state.custody) return;
+        state.custody = custody.value;
+        // Replace the list before the reload. An in-flight observed page must not land in this filter,
+        // and the change event has to settle only after the imported or all page is actually shown.
+        state.lists.conversations = blankList();
+        return fetchList('conversations');
+      });
+      bits.push(el('p', { class: 'note', text: 'Observed recordings are separate from imported snapshots. Opening one does not connect to a provider or sign you in.' }));
+      bits.push(el('label', { class: 'lab', for: 'worldCustody', text: 'Show' }), custody);
+    } else {
+      const kind = state.view === 'projects' ? 'project' : 'note';
+      const title = el('input', { id: 'worldCreateTitle', type: 'text', maxlength: '300', 'aria-label': kind === 'project' ? 'New project title' : 'New note title' });
+      title.value = state.forms[kind].title;
+      on(title, 'input', () => { state.forms[kind].title = title.value; });
+      createNode = el('button', { type: 'button', id: 'worldCreate', text: kind === 'project' ? 'Create project' : 'Create note' });
+      on(createNode, 'click', () => create(kind));
+      formNoteNode = el('div', { class: 'note', id: 'worldCreateNote', role: 'status' });
+      const fields = [el('label', { class: 'lab', for: 'worldCreateTitle', text: 'Title' }), title];
+      if (kind === 'note') {
+        const body = el('textarea', { id: 'worldCreateBody', rows: '4', 'aria-label': 'New note' });
+        body.value = state.forms.note.body;
+        on(body, 'input', () => { state.forms.note.body = body.value; });
+        fields.push(el('label', { class: 'lab', for: 'worldCreateBody', text: 'Note' }), body);
+      }
+      bits.push(el('div', { class: 'panel pad' }, [
+        ...fields,
+        el('div', { class: 'row' }, [createNode]),
+        formNoteNode,
+        el('p', { class: 'note', text: kind === 'project'
+          ? 'Creating a project only saves your grouping here.'
+          : 'Creating a note only saves what you wrote. It does not change a saved conversation.' }),
+      ]));
+    }
+    bits.push(itemsNode, moreNode);
+    listPane.replaceChildren(...bits);
+    fillItems();
+    syncFormNote();
+    syncNamespace();
+  }
+  function syncNamespace() {
+    if (!namespaceNode) return;
+    namespaceNode.textContent = state.namespace?.id
+      ? `Shared local namespace ${state.namespace.id}. It addresses these records. It is not a home.`
+      : '';
+  }
+  function findRecord(id) {
+    if (state.records.has(id)) return state.records.get(id);
+    for (const list of Object.values(state.lists)) {
+      const found = list.items.find((item) => item?.id === id);
+      if (found) return found;
+    }
+    return null;
+  }
+  function recordLabel(id) {
+    const record = findRecord(id);
+    if (record?.selectionType || record?.kind === 'selection') {
+      return `Selection (${record.selectionType || 'unknown'})${record.availability ? ` · ${record.availability}` : ''}`;
+    }
+    if (record?.kind === 'source-reference' || record?.objectType) return `Local object${record.availability ? ` · ${record.availability}` : ''}`;
+    if (record?.title) return record.title;
+    if (id.startsWith('o-')) return 'Local object';
+    if (id.startsWith('s-')) return 'Selection';
+    if (id.startsWith('c-')) return 'Saved conversation';
+    if (id.startsWith('n-')) return 'Note';
+    if (id.startsWith('p-')) return 'Project';
+    return 'Record';
+  }
+  function sourceJumpProblem(message) {
+    if (state.view === 'find') { state.find.error = message; renderFind(); }
+    else if (state.view === 'workspace') { state.workspace.readingError = message; renderWorkspaceReading(); }
+    else if (state.view === 'projects' || state.view === 'notes') {
+      const editor = state.editors.get(state.selected[state.view]);
+      if (editor) { editor.notice = message; renderDetailPane(); }
+      else announce(message);
+    } else announce(message);
+  }
+  async function followSource(record) {
+    if (!record || !/^[os]-[a-z0-9-]{1,60}$/.test(record.id || '')) return;
+    if (['missing', 'unavailable', 'stale', 'unresolved'].includes(record.availability)) {
+      sourceJumpProblem('The original source is ' + record.availability + '. No other content was substituted.');
+      return;
+    }
+    // A selection's revision can change after the list was loaded. Recheck its
+    // current source-bound availability before following, never trust cached labels.
+    if (record.id.startsWith('s-')) {
+      const fresh = await call('/selections/' + encodeURIComponent(record.id));
+      if (fresh.status !== 200 || fresh.data?.id !== record.id
+          || fresh.data.availability !== 'locally-available') {
+        sourceJumpProblem('The saved selection is stale, missing or unavailable on a fresh read. No source was substituted.');
+        return;
+      }
+      record = fresh.data;
+    }
+    let conversationId = record.conversationId;
+    if (record.id.startsWith('s-')) {
+      const parentId = record.objectId;
+      if (!/^o-[a-z0-9-]{1,60}$/.test(parentId || '')) {
+        sourceJumpProblem('The saved selection has no valid parent source reference.');
+        return;
+      }
+      const object = await call('/objects/' + encodeURIComponent(parentId));
+      if (object.status !== 200 || object.data?.id !== parentId
+          || ['missing', 'unavailable', 'stale'].includes(object.data?.availability)) {
+        sourceJumpProblem('The parent source reference is missing, stale or unavailable. Nothing else was opened.');
+        return;
+      }
+      conversationId = object.data.conversationId;
+    }
+    if (!ID_RE.conversations.test(conversationId || '')) {
+      sourceJumpProblem('This record has no saved local conversation id to follow.');
+      return;
+    }
+    if (record.id.startsWith('s-')) {
+      const idx = record.source?.messageIndex;
+      if (!Number.isSafeInteger(idx) || idx < 0) {
+        sourceJumpProblem('This selection has no usable recorded message index.');
+        return;
+      }
+      return openHit({ kind: 'message', id: conversationId + ':turn:' + idx,
+        conversation: { id: conversationId },
+        source: { index: idx, partPath: record.source?.partPath ?? [] } });
+    }
+    return openItem('conversations', conversationId);
+  }
+  function sourceJumpButton(record) {
+    if (!record || !/^[os]-[a-z0-9-]{1,60}$/.test(record.id || '')) return null;
+    const button = el('button', { type: 'button', class: 'mini', id: 'worldSourceJump-' + record.id,
+      text: 'Open original saved source', 'aria-label': 'Open source for ' + record.id });
+    button.disabled = ['missing', 'unavailable', 'stale', 'unresolved'].includes(record.availability);
+    on(button, 'click', () => followSource(record));
+    return button;
+  }
+
+  function memberRow(kind, id) {
+    const title = kind === 'members' || kind === 'comments' ? recordLabel(id) : (titleFor(kind, id) || (kind === 'conversations' ? 'Saved conversation' : 'Note'));
+    const record = findRecord(id);
+    const known = record || (kind === 'conversations'
+      ? state.lists.conversations.items.some((item) => item.id === id) || state.conversations.has(id)
+      : kind === 'notes'
+        ? state.lists.notes.items.some((item) => item.id === id) || state.editors.has(id)
+        : false);
+    const open = el('button', { type: 'button', text: kind === 'conversations' ? 'Open conversation' : kind === 'notes' ? 'Open note' : 'Read record' });
+    on(open, 'click', () => {
+      if (kind === 'conversations' || kind === 'notes') return openItem(kind, id);
+      return readRecord(id);
+    });
+    const remove = el('button', { type: 'button', text: 'Remove', 'aria-label': `Remove ${title}` });
+    on(remove, 'click', () => {
+      const editor = state.editors.get(state.selected[state.view]);
+      if (!editor) return;
+      if (kind === 'conversations') editor.draft.conversationIds = withoutId(editor.draft.conversationIds, id);
+      else if (kind === 'notes') editor.draft.noteIds = withoutId(editor.draft.noteIds, id);
+      else if (kind === 'comments') editor.draft.commentsOn = withoutId(editor.draft.commentsOn, id);
+      else editor.draft.memberIds = withoutId(editor.draft.memberIds, id);
+      renderDetailPane();
+    });
+    const facts = record ? kv([
+      record.availability ? { label: 'Availability', value: String(record.availability) } : null,
+      record.availabilityReason ? { label: 'Why', value: String(record.availabilityReason) } : null,
+      record.conversationId ? { label: 'Saved conversation', value: record.conversationId } : null,
+      record.objectId ? { label: 'Local object', value: record.objectId } : null,
+      record.coverage?.assetBytes ? { label: 'File bytes', value: String(record.coverage.assetBytes) } : null,
+      typeof record.qualification === 'string' ? { label: 'Qualification', value: record.qualification } : null,
+    ]) : null;
+    return el('div', { class: 'member' }, [
+      el('div', { class: 'grow' }, [
+        el('b', { text: title }),
+        el('div', { class: 'mono', text: id }),
+        known ? null : el('div', { class: 'note', text: 'Not in the loaded list. Removing it is still possible when you save.' }),
+        facts,
+      ]),
+      open, sourceJumpButton(record), remove,
+    ]);
+  }
+  function selectionToolbar(item) {
+    if (state.view !== 'conversations' || state.selected.conversations !== item?.id) return null;
+    const box = el('section', { class: 'panel pad', id: 'worldSelectionToolbar' });
+    box.append(el('h3', { text: 'Keep something from this conversation' }));
+    const picker = el('select', { id: 'worldSelectionProject', 'aria-label': 'Project for saved message or part' });
+    picker.append(el('option', { value: '', text: 'Choose an existing project' }));
+    for (const project of state.lists.projects.items) {
+      if (!ID_RE.projects.test(project?.id || '')) continue;
+      picker.append(el('option', { value: project.id, text: project.title || project.id }));
+    }
+    picker.value = state.selectionSave.projectId;
+    on(picker, 'change', () => {
+      state.selectionSave.projectId = picker.value;
+      state.selectionSave.notice = '';
+      const line = typeof box.querySelector === 'function' ? box.querySelector('#worldSelectionStatus') : null;
+      if (line) line.textContent = '';
+    });
+    const title = el('input', { type: 'text', id: 'worldSelectionNewTitle', maxlength: '300',
+      'aria-label': 'Name for a new project', placeholder: 'New project name' });
+    title.value = state.selectionSave.newTitle;
+    on(title, 'input', () => { state.selectionSave.newTitle = title.value; });
+    const create = el('button', { type: 'button', id: 'worldSelectionNewProject', text: 'Create project here' });
+    create.disabled = state.selectionSave.busy;
+    on(create, 'click', () => createProjectFromConversation());
+    box.append(el('div', { class: 'row' }, [picker]));
+    if (state.lists.projects.nextOffset != null) {
+      const more = el('button', { type: 'button', id: 'worldSelectionMoreProjects',
+        text: 'Load more projects' });
+      more.disabled = state.lists.projects.loading || state.selectionSave.busy;
+      on(more, 'click', async () => {
+        await fetchList('projects', { more: true });
+        if (state.view === 'conversations') renderDetailPane();
+      });
+      box.append(more);
+    }
+    box.append(el('div', { class: 'row' }, [title, create]));
+    if (!state.lists.projects.items.length) box.append(el('p', { class: 'note', text: 'Create a project here; your saved conversation stays open.' }));
+    box.append(el('p', { class: 'note', text: 'Selections point to recorded content; they do not copy an attachment, edit the recording, or verify a provider account.' }));
+    const pending = state.selectionSave.pending;
+    if (pending?.conversationId === item.id) {
+      const detail = pending.selectionId
+        ? 'Selection ' + pending.selectionId + ' was saved, but its project association is unfinished.'
+        : 'Source reference ' + pending.objectId + ' was saved; no selection was confirmed.';
+      box.append(el('p', { class: 'note', text: detail }));
+      if (pending.selectionId) {
+        const finish = el('button', { type: 'button', id: 'worldFinishSelectionLink',
+          text: 'Finish linking saved selection' });
+        finish.disabled = state.selectionSave.busy;
+        on(finish, 'click', () => finishPendingSelection());
+        box.append(finish);
+      }
+      const dismiss = el('button', { type: 'button', id: 'worldDismissSelectionPending',
+        text: 'Leave unfinished records and continue' });
+      dismiss.disabled = state.selectionSave.busy;
+      on(dismiss, 'click', () => {
+        state.selectionSave.pending = null;
+        state.selectionSave.notice = 'Unfinished local references remain saved; no record was deleted. Review them in Projects.';
+        renderDetailPane();
+      });
+      box.append(dismiss);
+    }
+    const linked = state.selectionSave.lastLinked;
+    if (linked?.conversationId === item.id) {
+      box.append(el('h3', { text: 'Write a note on your saved selection' }));
+      box.append(el('p', { class: 'note', text: 'This is a personal note on selection '
+        + linked.selectionId + '. It does not change the source or send anything to a provider.' }));
+      const noteTitle = el('input', { type: 'text', id: 'worldSelectionNoteTitle', maxlength: '300',
+        'aria-label': 'Title for a note on this selection', placeholder: 'Note title' });
+      noteTitle.value = state.selectionSave.noteTitle;
+      on(noteTitle, 'input', () => { state.selectionSave.noteTitle = noteTitle.value; });
+      const noteBody = el('textarea', { id: 'worldSelectionNoteBody', rows: '3',
+        'aria-label': 'Your note on the saved selection', placeholder: 'Your note' });
+      noteBody.value = state.selectionSave.noteBody;
+      on(noteBody, 'input', () => { state.selectionSave.noteBody = noteBody.value; });
+      const addNote = el('button', { type: 'button', id: 'worldSelectionCreateNote',
+        text: 'Save note on selection' });
+      addNote.disabled = state.selectionSave.busy;
+      on(addNote, 'click', () => createNoteForSavedSelection());
+      box.append(noteTitle, noteBody, addNote,
+        el('p', { id: 'worldSelectionNoteStatus', role: 'status', text: state.selectionSave.noteStatus }));
+    }
+    box.append(el('p', { id: 'worldSelectionStatus', role: 'status', text: state.selectionSave.notice }));
+    return box;
+  }
+
+  /** Create via the same canonical API as Projects, without losing the source reader. */
+  async function createProjectFromConversation() {
+    const work = state.selectionSave;
+    if (work.busy) return;
+    const title = validTitle(work.newTitle ?? '');
+    if (!title) {
+      work.notice = 'Not saved. Enter a project name with 1 to 300 characters.';
+      renderDetailPane();
+      return;
+    }
+    work.busy = true;
+    work.notice = 'Creating local project…';
+    renderDetailPane();
+    try {
+      const result = await call('/projects', { method: 'POST', body: projectCreateBody(title) });
+      const outcome = interpretCreate(result, { title, body: '' });
+      if (!outcome.ok || !ID_RE.projects.test(outcome.saved?.id || '')) {
+        work.notice = outcome.message || 'No project save was confirmed. Check Projects before trying again.';
+        return;
+      }
+      const saved = outcome.saved;
+      const list = state.lists.projects;
+      list.items = appendPage([saved], { items: list.items });
+      list.total = Math.max(list.total, list.items.length);
+      list.loaded = true;
+      state.editors.set(saved.id, editorFrom(saved, 'Saved.'));
+      work.projectId = saved.id;
+      work.newTitle = '';
+      work.notice = 'Project ' + (saved.title || title)
+        + ' created. Choose Save message or Save this part below to link recorded content.';
+      announce('Project created. Saved conversation stays open.');
+    } catch (error) {
+      work.notice = 'Project save was not confirmed. Check Projects before retrying.';
+    } finally {
+      work.busy = false;
+      if (state.view === 'conversations') renderDetailPane();
+    }
+  }
+  /** Every confirmed source record is discoverable even if the next write fails. */
+  function cacheSourceRecord(kind, record) {
+    if (!['objects', 'selections'].includes(kind) || !record?.id) return;
+    const list = state.lists[kind];
+    list.items = appendPage([record], { items: list.items });
+    list.total = Math.max(list.total, list.items.length);
+    list.loaded = true;
+    state.records.set(record.id, record);
+  }
+
+  /** Three existing versioned writes; partial failures leave honest local records, never fake an atomic save. */
+  async function saveObservedPart(conversationId, messageIndex, partPath = []) {
+    const work = state.selectionSave;
+    if (work.busy) return;
+    if (work.pending) {
+      work.notice = 'An unfinished write already exists. Finish linking or explicitly leave it unfinished first; Studio will not create duplicate source records.';
+      renderDetailPane();
+      return;
+    }
+    const projectId = work.projectId;
+    const source = state.conversations.get(conversationId);
+    const message = source?.messages?.[messageIndex];
+    const validPart = !partPath.length || (partPath.length === 1 && Number.isSafeInteger(partPath[0])
+      && partPath[0] >= 0 && Array.isArray(message?.blocks) && partPath[0] < message.blocks.length);
+    const key = JSON.stringify([conversationId, messageIndex, partPath, projectId]);
+    if (!ID_RE.projects.test(projectId || '') || !message || !validPart) {
+      work.notice = 'Nothing saved. Choose a project and a recorded message or part first.';
+      renderDetailPane();
+      return;
+    }
+    if (work.savedKeys.has(key)) {
+      work.notice = 'This item was already linked to that project in this session.';
+      renderDetailPane();
+      return;
+    }
+    const localEditor = state.editors.get(projectId);
+    if (localEditor?.saved && !sameDraft(localEditor.draft, draftFromSaved(localEditor.saved))) {
+      work.notice = 'Not saved. This project has unsaved edits. Save or discard that draft in Projects first.';
+      renderDetailPane();
+      return;
+    }
+    work.busy = true;
+    work.notice = 'Saving local source reference, selection and project link…';
+    renderDetailPane();
+    let object = null, selection = null;
+    try {
+      const current = await call('/projects/' + encodeURIComponent(projectId));
+      if (current.status !== 200 || current.data?.id !== projectId || !Number.isInteger(current.data.version)) {
+        work.notice = 'Nothing saved. The selected project could not be read. Choose it again.';
+        return;
+      }
+      const project = current.data;
+      const createdObject = await call('/objects', { method: 'POST', body: { conversationId, expectedVersion: null } });
+      if (createdObject.status !== 200 || !/^o-[a-z0-9-]+$/.test(createdObject.data?.id || '') || !Number.isInteger(createdObject.data?.version)) {
+        work.notice = 'Project unchanged. Studio did not confirm a saved source reference; inspect the saved records before retrying.';
+        return;
+      }
+      object = createdObject.data;
+      cacheSourceRecord('objects', object);
+      work.pending = { projectId, conversationId, messageIndex, partPath: [...partPath],
+        objectId: object.id, selectionId: null, key };
+      const createdSelection = await call('/selections', { method: 'POST', body: {
+        objectId: object.id, selectionType: partPath.length ? 'part' : 'message',
+        messageIndex, partPath, expectedVersion: null,
+      } });
+      if (createdSelection.status !== 200 || !/^s-[a-z0-9-]+$/.test(createdSelection.data?.id || '') || !Number.isInteger(createdSelection.data?.version)) {
+        work.notice = 'Source reference ' + object.id + ' was saved, but selection/project link was NOT confirmed. Inspect local references before retrying.';
+        return;
+      }
+      selection = createdSelection.data;
+      cacheSourceRecord('selections', selection);
+      work.pending.selectionId = selection.id;
+      const changed = await call('/projects/' + encodeURIComponent(projectId), { method: 'PUT', body: {
+        title: project.title,
+        conversationIds: withId(project.conversationIds ?? [], conversationId),
+        noteIds: [...(project.noteIds ?? [])],
+        memberIds: withId(withId(project.memberIds ?? [], object.id), selection.id),
+        expectedVersion: project.version,
+      } });
+      const written = interpretWrite(changed, project);
+      if (!written.ok) {
+        work.notice = 'Selection ' + selection.id + ' was saved, but the project link was NOT confirmed. '
+          + written.message + ' Open Projects to link the selection manually.';
+        return;
+      }
+      work.savedKeys.add(key);
+      work.lastLinked = { conversationId, projectId, objectId: object.id, selectionId: selection.id };
+      work.noteStatus = '';
+      work.pending = null;
+      work.notice = 'Saved this recorded ' + (partPath.length ? 'part' : 'message') + ' in project ' + (project.title || projectId)
+        + '. The original conversation was not modified.';
+      const list = state.lists.projects.items;
+      const at = list.findIndex((p) => p.id === projectId);
+      if (at >= 0) list[at] = { ...list[at], ...written.saved };
+      if (localEditor) state.editors.set(projectId, editorFrom(written.saved, 'Saved.'));
+      announce('Saved part to your project.');
+    } catch (error) {
+      work.notice = 'The write sequence did not complete. '
+        + (selection ? 'Selection ' + selection.id : object ? 'Source reference ' + object.id : 'No source reference')
+        + ' may exist locally; check saved records before retrying. '
+        + (error?.message ? String(error.message).slice(0, 120) : 'Studio reported an unexpected error.');
+    } finally {
+      work.busy = false;
+      if (state.view === 'conversations' && state.selected.conversations === conversationId) renderDetailPane();
+    }
+  }
+
+  /** User-initiated completion uses confirmed records only: no second POST object/selection. */
+  async function finishPendingSelection() {
+    const work = state.selectionSave, pending = work.pending;
+    if (work.busy || !pending?.selectionId) return;
+    work.busy = true;
+    work.notice = 'Checking saved selection and latest project version…';
+    if (state.view === 'conversations') renderDetailPane();
+    try {
+      const [selectionRead, projectRead] = await Promise.all([
+        call('/selections/' + encodeURIComponent(pending.selectionId)),
+        call('/projects/' + encodeURIComponent(pending.projectId)),
+      ]);
+      if (selectionRead.status !== 200 || selectionRead.data?.id !== pending.selectionId
+          || selectionRead.data.availability !== 'locally-available'
+          || projectRead.status !== 200 || projectRead.data?.id !== pending.projectId
+          || !Number.isInteger(projectRead.data.version)) {
+        work.notice = 'Nothing relinked. Saved selection is stale/unavailable or the current project version could not be checked.';
+        return;
+      }
+      const project = projectRead.data;
+      const nextConversations = withId(project.conversationIds ?? [], pending.conversationId);
+      const nextMembers = withId(withId(project.memberIds ?? [], pending.objectId), pending.selectionId);
+      // A prior response may have been lost after a successful PUT. Reread instead
+      // of writing again when the newest project already contains every link.
+      if (nextConversations.length === (project.conversationIds ?? []).length
+          && nextMembers.length === (project.memberIds ?? []).length) {
+        work.savedKeys.add(pending.key);
+        work.lastLinked = { conversationId: pending.conversationId, projectId: pending.projectId,
+          objectId: pending.objectId, selectionId: pending.selectionId };
+        work.noteStatus = '';
+        work.pending = null;
+        work.notice = 'This saved selection was already linked. No duplicate project write was made.';
+        return;
+      }
+      const result = await call('/projects/' + encodeURIComponent(pending.projectId), {
+        method: 'PUT',
+        body: { title: project.title, conversationIds: nextConversations, noteIds: project.noteIds ?? [],
+          memberIds: nextMembers, expectedVersion: project.version },
+      });
+      const written = interpretWrite(result, project);
+      if (!written.ok) {
+        work.notice = 'Project link still not confirmed. ' + written.message
+          + ' The existing saved selection was preserved; no new source reference was created.';
+        return;
+      }
+      const index = state.lists.projects.items.findIndex((p) => p.id === pending.projectId);
+      if (index >= 0) state.lists.projects.items[index] = { ...state.lists.projects.items[index], ...written.saved };
+      if (state.editors.has(pending.projectId)) state.editors.set(pending.projectId, editorFrom(written.saved, 'Saved.'));
+      work.savedKeys.add(pending.key);
+      work.lastLinked = { conversationId: pending.conversationId, projectId: pending.projectId,
+        objectId: pending.objectId, selectionId: pending.selectionId };
+      work.noteStatus = '';
+      work.pending = null;
+      work.notice = 'Existing saved selection linked to project. No new source reference was created.';
+      announce('Existing selection linked to project.');
+    } catch {
+      work.notice = 'Could not verify the existing selection/project link. Local records remain; no new source was created.';
+    } finally {
+      work.busy = false;
+      if (state.view === 'conversations') renderDetailPane();
+    }
+  }
+
+  /** Personal note, using the existing note.commentsOn relation and project CAS. */
+  async function createNoteForSavedSelection() {
+    const work = state.selectionSave, linked = work.lastLinked;
+    if (work.busy || !linked?.selectionId) return;
+    const title = validTitle(work.noteTitle ?? '');
+    const body = work.noteBody ?? '';
+    if (!title || typeof body !== 'string' || body.length > 200000) {
+      work.noteStatus = 'Not saved. Enter a title of 1–300 characters and a note up to 200,000 characters.';
+      renderDetailPane();
+      return;
+    }
+    work.busy = true;
+    work.noteStatus = 'Checking saved source and saving a personal note…';
+    if (state.view === 'conversations') renderDetailPane();
+    let savedNote = null;
+    try {
+      const selection = await call('/selections/' + encodeURIComponent(linked.selectionId));
+      if (selection.status !== 200 || selection.data?.id !== linked.selectionId
+          || selection.data.availability !== 'locally-available') {
+        work.noteStatus = 'No note was created. The original selection is stale or unavailable.';
+        return;
+      }
+      const result = await call('/notes', { method: 'POST',
+        body: { ...noteCreateBody(title, body), commentsOn: [linked.selectionId] } });
+      const outcome = interpretCreate(result, { title, body });
+      if (!outcome.ok || !ID_RE.notes.test(outcome.saved?.id || '')) {
+        work.noteStatus = 'Note save was not confirmed. Check Notes before retrying.';
+        return;
+      }
+      savedNote = outcome.saved;
+      const notes = state.lists.notes;
+      notes.items = appendPage([savedNote], { items: notes.items });
+      notes.total = Math.max(notes.total, notes.items.length);
+      notes.loaded = true;
+      state.editors.set(savedNote.id, editorFrom(savedNote, 'Saved.'));
+      work.noteTitle = '';
+      work.noteBody = '';
+      work.noteStatus = 'Personal note saved. Linking it to the project…';
+      const current = await call('/projects/' + encodeURIComponent(linked.projectId));
+      if (current.status !== 200 || current.data?.id !== linked.projectId
+          || !Number.isInteger(current.data.version)) {
+        work.noteStatus = 'Note ' + savedNote.id + ' saved on the selection, but its project link was NOT confirmed. Open Projects to add it manually.';
+        return;
+      }
+      const project = current.data;
+      const resultLink = await call('/projects/' + encodeURIComponent(linked.projectId), { method: 'PUT',
+        body: { title: project.title, conversationIds: project.conversationIds ?? [],
+          noteIds: withId(project.noteIds ?? [], savedNote.id), memberIds: project.memberIds ?? [],
+          expectedVersion: project.version } });
+      const written = interpretWrite(resultLink, project);
+      if (!written.ok) {
+        work.noteStatus = 'Note ' + savedNote.id + ' saved on the selection, but its project link was NOT confirmed. '
+          + written.message + ' Add the note in Projects if needed.';
+        return;
+      }
+      const index = state.lists.projects.items.findIndex((p) => p.id === linked.projectId);
+      if (index >= 0) state.lists.projects.items[index] = { ...state.lists.projects.items[index], ...written.saved };
+      if (state.editors.has(linked.projectId)) state.editors.set(linked.projectId, editorFrom(written.saved, 'Saved.'));
+      work.noteStatus = 'Personal note saved on the original selection and linked to your project.';
+      announce('Note saved and linked to project.');
+    } catch {
+      work.noteStatus = savedNote
+        ? 'Note ' + savedNote.id + ' saved locally; project link could not be verified. Review Projects.'
+        : 'Note write could not be verified. Review Notes before retrying.';
+    } finally {
+      work.busy = false;
+      if (state.view === 'conversations') renderDetailPane();
+    }
+  }
+
+  function renderMessages(item) {
+    const list = el('ol', { class: 'reads', id: 'worldMessages' });
+    state.messageNodes = new Map();
+    const messages = Array.isArray(item.messages) ? item.messages : [];
+    if (!messages.length) {
+      const coverage = item?.coverage?.state;
+      const empty = coverage === 'unavailable' ? 'Saved messages were not shown because this read was unavailable.'
+        : coverage === 'missing' ? 'No saved messages were found in this record.'
+          : 'No saved messages in this record.';
+      list.append(el('li', { class: 'empty', text: empty }));
+    }
+    messages.forEach((message, index) => {
+      const plan = turnPlan(message);
+      const body = el('div', { class: 'rich' });
+      const canSelect = state.view === 'conversations' && state.selected.conversations === item.id;
+      const frames = planFrames(message).filter((frame) => frame.markdown || frame.links.length);
+      if (frames.length) {
+        for (const frame of frames) {
+          const frameBody = el('div', { class: 'rich', 'data-part-path': String(frame.path[0]), tabindex: '-1' });
+          if (frame.markdown) {
+            if (typeof rich?.renderStatic === 'function') rich.renderStatic(frameBody, frame.markdown);
+            else frameBody.textContent = frame.markdown;
+          }
+          if (frame.links.length) {
+            const sources = el('div', { class: 'note', 'aria-label': 'Links observed in saved page' });
+            for (const link of frame.links) {
+              const title = (link.kind === 'citation' ? 'Recorded citation link: ' : 'Recorded link: ') + link.label;
+              sources.append(link.href
+                ? el('a', { href: link.href, target: '_blank', rel: 'noopener noreferrer nofollow', text: title })
+                : el('span', { text: title + ' (address unavailable)' }));
+              sources.append(el('span', { text: ' · ' }));
+            }
+            frameBody.append(sources);
+          }
+          if (canSelect) {
+            const savePart = el('button', { type: 'button', class: 'mini', id: 'worldSavePart-' + index + '-' + frame.path[0], text: 'Save this part to project' });
+            savePart.disabled = state.selectionSave.busy;
+            on(savePart, 'click', () => saveObservedPart(item.id, index, frame.path));
+            frameBody.append(savePart);
+          }
+          body.append(frameBody);
+        }
+      } else if (plan.markdown) {
+        if (typeof rich?.renderStatic === 'function') rich.renderStatic(body, plan.markdown);
+        else body.textContent = plan.markdown;
+      }
+      const unknownList = el('div');
+      for (const unknown of plan.unknowns) unknownList.append(el('p', { class: 'unknown-part', text: unknown.note }));
+      const row = el('li', { class: 'rd', id: 'worldMsg' + index, tabindex: '0' }, [
+        el('div', { class: 'rd-head' }, [
+          el('b', { text: roleLabel(message?.role) }),
+          ...(canSelect ? [(() => {
+            const saveMessage = el('button', { type: 'button', class: 'mini', id: 'worldSaveMessage-' + index, text: 'Save message to project' });
+            saveMessage.disabled = state.selectionSave.busy;
+            on(saveMessage, 'click', () => saveObservedPart(item.id, index, []));
+            return saveMessage;
+          })()] : []),
+          plan.truncated ? el('span', { class: 'pill t-warn', text: 'Marked truncated' }) : null,
+        ]),
+        plan.note ? el('p', { class: 'note', text: plan.note }) : null,
+        body.children?.length || body.textContent ? body : null,
+        unknownList.children?.length ? unknownList : null,
+        plan.redactionNote ? el('p', { class: 'note', text: plan.redactionNote }) : null,
+        plan.truncated ? el('p', { class: 'note', text: plan.truncatedOriginalLength == null
+            ? 'This saved turn is not complete.'
+            : 'This saved turn is not complete. Original text length observed before truncation: ' + plan.truncatedOriginalLength + ' characters.' }) : null,
+        kv(messageSourceRows(message?.source)),
+      ]);
+      state.messageNodes.set(index, row);
+      list.append(row);
+    });
+    return list;
+  }
+  function kv(rows) {
+    const dl = el('dl', { class: 'kv' });
+    for (const row of rows) if (row) dl.append(el('dt', { text: row.label }), el('dd', { text: row.value }));
+    return dl;
+  }
+  function conversationReading(item, error = null, tail = null, chipOverride = null) {
+    const coverage = coverageView(item.coverage);
+    return el('article', { class: 'panel pad local-mark' }, [
+      el('h2', { text: item.title || 'Saved conversation' }),
+      el('p', { class: 'note', text: custodyChip(item) || item.coverage?.state === 'imported-snapshot'
+        ? 'This is an imported snapshot, not a recording Studio observed. It does not prove a provider still has these messages.'
+        : 'Saved on this computer. A remote thread or account is shown only when this record actually has one.' }),
+      chips(chipOverride ?? (coverage.chips.some((chip) => chip[0] === custodyChip(item)?.[0]) ? coverage.chips : [...(custodyChip(item) ? [custodyChip(item)] : []), ...coverage.chips])),
+      el('p', { text: coverage.sentence }),
+      kv([
+        { label: 'Session status', value: item.status || 'unknown' },
+        ...identityRows(item.identity), ...sourceRows(item.source), ...coverage.extra,
+        ...importedFromLines(item.importedFrom),
+        typeof item.createdAt === 'string' && item.createdAt ? { label: 'Recorded at', value: item.createdAt } : null,
+      ]),
+      error, selectionToolbar(item), renderMessages(item), tail,
+    ]);
+  }
+  function renderDetailPane() {
+    ensureFrame();
+    linkConvSelect = null; linkNoteSelect = null; linkMemberSelect = null; linkCommentSelect = null; dirtyNode = null; saveNode = null;
+    const kind = state.view;
+    if (!VIEWS.includes(kind)) { detailPane.replaceChildren(); return; }
+    const id = state.selected[kind];
+    if (!id) {
+      detailPane.replaceChildren(el('p', { class: 'empty', text: 'Nothing is open in this view. Pick one from the list, or create a project or a note. Opening one does not make it more important than the others.' }));
+      return;
+    }
+    const error = el('div', { class: 'err', id: 'worldError', role: 'alert' });
+    error.textContent = failText(kind, id);
+    if (kind === 'conversations') {
+      const item = state.conversations.get(id);
+      if (!item) {
+        detailPane.replaceChildren(el('h2', { text: 'Saved conversation' }), error.textContent ? error : el('p', { class: 'empty', text: 'Loading this saved conversation…' }));
+        return;
+      }
+      detailPane.replaceChildren(
+        conversationReading(item, error.textContent ? error : null, linkedProjects(id, 'conversation')),
+      );
+      return;
+    }
+    const editor = state.editors.get(id);
+    if (!editor) {
+      detailPane.replaceChildren(el('h2', { text: kind === 'projects' ? 'Project' : 'Note' }), error.textContent ? error : el('p', { class: 'empty', text: 'Loading…' }));
+      return;
+    }
+    dirtyNode = el('span', { class: 'pill t-warn', id: 'worldDirty' });
+    const notice = el('div', { class: 'note', id: 'worldNotice', role: 'status' });
+    notice.textContent = [editor.remoteNote, editor.notice].filter(Boolean).join(' ');
+    saveNode = el('button', { type: 'button', class: 'primary', id: 'worldSave', text: 'Save' });
+    on(saveNode, 'click', () => save(kind, id));
+    const useSaved = el('button', { type: 'button', id: 'worldUseSaved', text: 'Load saved version' });
+    on(useSaved, 'click', () => loadSaved(kind, id));
+    const title = el('input', { id: 'worldTitle', type: 'text', maxlength: '300', 'aria-label': 'Title' });
+    title.value = editor.draft.title;
+    on(title, 'input', () => { editor.draft.title = title.value; editor.notice = ''; syncDirty(editor); });
+    const version = el('p', { class: 'note', id: 'worldVersion', text: Number.isInteger(editor.expectedVersion) ? `Version ${editor.expectedVersion}. Saving sends this version and will not overwrite a newer one.` : 'Version unknown. Load the saved version before saving.' });
+    const bodyBits = [
+      el('h2', { text: kind === 'projects' ? 'Project' : 'Note' }),
+      el('p', { class: 'note', text: kind === 'projects'
+        ? 'This project is yours. Linking a saved conversation or a note does not change that conversation, that note, or anything on a provider.'
+        : 'You wrote this. Saving it does not change a saved conversation, and it is not a correction of one.' }),
+      version, dirtyNode, error, notice,
+      el('label', { class: 'lab', for: 'worldTitle', text: 'Title' }), title,
+    ];
+    if (kind === 'notes') {
+      const body = el('textarea', { id: 'worldBody', rows: '8', 'aria-label': 'Note' });
+      body.value = editor.draft.body ?? '';
+      on(body, 'input', () => { editor.draft.body = body.value; editor.notice = ''; syncDirty(editor); });
+      bodyBits.push(el('label', { class: 'lab', for: 'worldBody', text: 'Note' }), body, el('p', { class: 'note', text: editor.saved?.provenance === 'user-authored' ? 'Marked as written by you.' : 'Provenance was not recorded as written by you.' }));
+      linkCommentSelect = el('select', { id: 'worldCommentSelect' });
+      const addComment = el('button', { type: 'button', id: 'worldAddComment', text: 'Comment on selection' });
+      on(addComment, 'click', () => addMember('comments', linkCommentSelect.value));
+      bodyBits.push(
+        el('h3', { text: 'Comments on' }),
+        el('p', { class: 'note', text: 'A comment points at a saved selection. It does not change that conversation, and it is not written back into the recording.' }),
+        ...((editor.draft.commentsOn ?? []).length ? editor.draft.commentsOn.map((member) => memberRow('comments', member)) : [el('p', { class: 'note', text: 'This note does not comment on a selection.' })]),
+        el('div', { class: 'row' }, [linkCommentSelect, addComment]),
+      );
+    } else {
+      linkConvSelect = el('select', { id: 'worldConvSelect' });
+      linkNoteSelect = el('select', { id: 'worldNoteSelect' });
+      linkMemberSelect = el('select', { id: 'worldMemberSelect' });
+      const addConv = el('button', { type: 'button', id: 'worldAddConversation', text: 'Add to this project' });
+      const addNote = el('button', { type: 'button', id: 'worldAddNote', text: 'Add to this project' });
+      const addOther = el('button', { type: 'button', id: 'worldAddMember', text: 'Add to this project' });
+      on(addConv, 'click', () => addMember('conversations', linkConvSelect.value));
+      on(addNote, 'click', () => addMember('notes', linkNoteSelect.value));
+      on(addOther, 'click', () => addMember('members', linkMemberSelect.value));
+      bodyBits.push(
+        el('h3', { text: 'Saved conversations' }),
+        ...(editor.draft.conversationIds.length ? editor.draft.conversationIds.map((member) => memberRow('conversations', member)) : [el('p', { class: 'note', text: 'No saved conversation is linked.' })]),
+        el('div', { class: 'row' }, [linkConvSelect, addConv]),
+        el('h3', { text: 'Notes' }),
+        ...(editor.draft.noteIds.length ? editor.draft.noteIds.map((member) => memberRow('notes', member)) : [el('p', { class: 'note', text: 'No note is linked.' })]),
+        el('div', { class: 'row' }, [linkNoteSelect, addNote]),
+        el('h3', { text: 'Other linked records' }),
+        el('p', { class: 'note', text: 'These links stay on this project. They are not a map, and they do not copy a note or a selection into the saved conversation.' }),
+        ...((editor.draft.memberIds ?? []).length ? editor.draft.memberIds.map((member) => memberRow('members', member)) : [el('p', { class: 'note', text: 'No other record is linked.' })]),
+        el('div', { class: 'row' }, [linkMemberSelect, addOther]),
+        el('p', { class: 'note', text: 'Adding and removing wait until you save. Save sends the whole list. New source objects and selections can be created from the Saved conversation reader.' }),
+      );
+    }
+    bodyBits.push(el('div', { class: 'row' }, [saveNode, useSaved]));
+    if (kind === 'notes') bodyBits.push(linkedProjects(id, 'note'));
+    detailPane.replaceChildren(el('article', { class: 'panel pad local-mark' }, bodyBits));
+    refreshLinkSelects();
+    syncDirty(editor);
+  }
+  function chips(list) {
+    return el('div', { class: 'chips' }, list.map(([label, tone]) => el('span', { class: `pill ${tone}`, text: label })));
+  }
+  function linkedProjects(id, noun) {
+    const list = state.lists.projects;
+    const hits = list.items.filter((item) => {
+      const direct = noun === 'conversation' ? item?.conversationIds : item?.noteIds;
+      const ids = [...(Array.isArray(direct) ? direct : []), ...(Array.isArray(item?.memberIds) ? item.memberIds : [])];
+      return ids.includes(id);
+    });
+    const box = el('div');
+    box.append(el('h3', { text: 'Projects that link here' }));
+    if (!list.loaded) box.append(el('p', { class: 'note', text: 'Projects are not loaded yet, so this list may be empty even when a link exists.' }));
+    else if (!hits.length) box.append(el('p', { class: 'note', text: list.nextOffset == null ? 'No loaded project links here.' : 'No loaded project links here. More projects are not loaded, so this can be incomplete.' }));
+    for (const hit of hits) {
+      const button = el('button', { type: 'button', text: hit.title || hit.id });
+      on(button, 'click', () => openItem('projects', hit.id));
+      box.append(button);
+    }
+    if (list.nextOffset != null) box.append(el('p', { class: 'note', text: 'More projects are not loaded. This is not the full set of links.' }));
+    return box;
+  }
+  function addMember(kind, id) {
+    const editorKind = kind === 'comments' ? 'notes' : 'projects';
+    const editor = state.editors.get(state.selected[editorKind]);
+    if (!editor) return;
+    if (kind === 'comments') {
+      if (!SELECTION_RE.test(id || '')) return;
+      editor.draft.commentsOn = withId(editor.draft.commentsOn, id);
+    } else if (kind === 'members') {
+      if (!REF_RE.test(id || '')) return;
+      editor.draft.memberIds = withId(editor.draft.memberIds, id);
+    } else if (!ID_RE[kind].test(id || '')) return;
+    else if (kind === 'conversations') editor.draft.conversationIds = withId(editor.draft.conversationIds, id);
+    else editor.draft.noteIds = withId(editor.draft.noteIds, id);
+    editor.notice = '';
+    renderDetailPane();
+  }
+  async function fetchList(kind, { more = false } = {}) {
+    if (!state.lists[kind]) return;
+    const list = state.lists[kind];
+    if (list.loading) return;
+    if (!more && list.loaded) return;
+    if (more && list.nextOffset == null) return;
+    const offset = more ? list.nextOffset : 0;
+    list.loading = true;
+    list.error = '';
+    if (kind === state.view) fillItems();
+    const mine = ++tickets.list[kind];
+    const path = { conversations: '/conversations', projects: '/projects', notes: '/notes', objects: '/objects', selections: '/selections' }[kind];
+    const params = new URLSearchParams({ limit: String(PAGE_LIMIT), offset: String(offset) });
+    if (kind === 'conversations') params.set('custody', ['observed', 'imported', 'all'].includes(state.custody) ? state.custody : 'observed');
+    const result = await call(`${path}?${params.toString()}`);
+    if (mine !== tickets.list[kind]) return;
+    list.loading = false;
+    const page = result.status === 200 ? readList(result.data) : { ok: false, message: result.status === 0 ? 'Studio didn’t answer.' : 'The list could not be read.' };
+    if (!page.ok) list.error = page.message;
+    else {
+      const incoming = page.items.filter((item) => item && typeof item.id === 'string');
+      // Keep a just-created item if this reply started before the create landed.
+      list.items = more ? appendPage(list.items, page) : appendPage(incoming, { items: list.items });
+      list.total = Math.max(page.total, list.items.length);
+      list.nextOffset = page.nextOffset;
+      list.loaded = true;
+      list.error = '';
+    }
+    if (kind === state.view) fillItems();
+    if (state.view === 'projects' || state.view === 'notes') refreshLinkSelects();
+    const openEditor = state.editors.get(state.selected[state.view]);
+    const dirty = openEditor?.saved && !sameDraft(openEditor.draft, draftFromSaved(openEditor.saved));
+    if (!dirty && state.view !== 'projects' && kind === 'projects' && state.selected[state.view]) renderDetailPane();
+  }
+  async function loadNamespace() {
+    if (state.namespaceLoaded) return;
+    state.namespaceLoaded = true;
+    const result = await call('/namespace');
+    if (result.status === 200 && result.data && typeof result.data.id === 'string') {
+      state.namespace = { id: result.data.id, kind: result.data.kind ?? 'namespace' };
+      syncNamespace();
+    }
+  }
+  async function readRecord(id) {
+    const path = id.startsWith('o-') ? '/objects/' : id.startsWith('s-') ? '/selections/' : '';
+    if (!path || !REF_RE.test(id)) return;
+    const result = await call(path + encodeURIComponent(id));
+    state.records.set(id, result.status === 200 && result.data?.id === id
+      ? result.data
+      : { id, availability: 'missing', availabilityReason: result.status === 404 ? 'NOT_FOUND' : 'UNREADABLE' });
+    if (state.view === 'projects' || state.view === 'notes') renderDetailPane();
+    if (state.view === 'find') renderFind();
+    if (state.view === 'relations') renderRelations();
+  }
+  async function fetchItem(kind, id) {
+    const mine = ++tickets[kind];
+    const result = await call(`/${kind}/${encodeURIComponent(id)}`);
+    if (mine !== tickets[kind]) return;
+    const ok = result.status === 200 && result.data && result.data.id === id;
+    if (!ok) {
+      const cached = kind === 'conversations' && state.conversations.has(id);
+      const active = result.status === 409 && result.data?.code === 'WORLD_SOURCE_ACTIVE';
+      let text = result.status === 404 ? 'Not on this computer anymore.'
+        : active ? 'This recording is still active, so its saved messages are not available yet. Nothing was changed.'
+          : result.status === 0 ? 'Studio didn’t answer. Nothing new was shown.'
+            : `This could not be read. ${problemText(result.data)}`;
+      if (cached) text += ' What was already loaded is still shown and was not replaced.';
+      setFail(kind, id, text);
+      if (state.view === kind && state.selected[kind] === id) renderDetailPane();
+      return;
+    }
+    setFail(kind, id, '');
+    if (kind === 'conversations') state.conversations.set(id, result.data);
+    else {
+      const existing = state.editors.get(id);
+      // A slower read must not roll a confirmed newer save back to an older copy.
+      if (existing && Number.isInteger(existing.expectedVersion) && result.data.version < existing.expectedVersion) return;
+      state.editors.set(id, absorbServer(existing, result.data));
+    }
+    if (state.view === kind && state.selected[kind] === id) renderDetailPane();
+  }
+  async function openItem(kind, id) {
+    if (!VIEWS.includes(kind) || !ID_RE[kind].test(id || '')) return;
+    state.view = kind;
+    state.selected[kind] = id;
+    remember();
+    applyVisibility();
+    renderListPane();
+    renderDetailPane();
+    const loads = [fetchList(kind), fetchItem(kind, id)];
+    if (kind !== 'projects') loads.push(fetchList('projects'));
+    if (kind === 'projects') loads.push(fetchList('conversations'), fetchList('notes'), fetchList('objects'), fetchList('selections'));
+    if (kind === 'notes') loads.push(fetchList('selections'));
+    await Promise.all(loads);
+  }
+  function validTitle(title) {
+    const trimmed = title.trim();
+    return trimmed.length > 0 && trimmed.length <= 300 ? trimmed : null;
+  }
+  async function create(kind) {
+    if (state.creating || (kind !== 'project' && kind !== 'note')) return;
+    const form = state.forms[kind];
+    const title = validTitle(form.title ?? '');
+    if (!title) { state.formNote[kind] = 'Not saved. The title needs 1 to 300 characters. What you typed is still here.'; syncFormNote(); return; }
+    if (kind === 'note' && (form.body ?? '').length > 200000) { state.formNote[kind] = 'Not saved. The note is too long. What you typed is still here.'; syncFormNote(); return; }
+    state.creating = true; syncFormNote();
+    const result = await call(kind === 'project' ? '/projects' : '/notes', {
+      method: 'POST', body: kind === 'project' ? projectCreateBody(title) : noteCreateBody(title, form.body ?? ''),
+    });
+    state.creating = false;
+    const out = interpretCreate(result, { title: form.title, body: form.body ?? '' });
+    if (!out.ok) { state.formNote[kind] = out.message; syncFormNote(); return; }
+    state.forms[kind] = { title: '', body: '' };
+    state.formNote[kind] = '';
+    const listKind = kind === 'project' ? 'projects' : 'notes';
+    state.lists[listKind].items = appendPage([out.saved], { items: state.lists[listKind].items });
+    state.lists[listKind].total += 1;
+    state.lists[listKind].loaded = true;
+    state.editors.set(out.saved.id, editorFrom(out.saved, 'Saved.'));
+    state.selected[listKind] = out.saved.id;
+    setFail(listKind, out.saved.id, '');
+    state.view = listKind;
+    remember();
+    announce('Saved.');
+    applyVisibility();
+    renderListPane();
+    renderDetailPane();
+  }
+  async function save(kind, id) {
+    const editor = state.editors.get(id);
+    if (!editor || editor.saving || (kind !== 'projects' && kind !== 'notes')) return;
+    if (!editor.saved || sameDraft(editor.draft, draftFromSaved(editor.saved))) { editor.notice = 'Nothing new to save.'; renderDetailPane(); return; }
+    const title = validTitle(editor.draft.title ?? '');
+    if (!title) { setFail(kind, id, 'Not saved. The title needs 1 to 300 characters. Your draft is still here.'); renderDetailPane(); return; }
+    if (kind === 'notes' && (editor.draft.body ?? '').length > 200000) { setFail(kind, id, 'Not saved. The note is too long. Your draft is still here.'); renderDetailPane(); return; }
+    if (!Number.isInteger(editor.expectedVersion)) { setFail(kind, id, 'Not saved. This screen has no saved version to check against. Your draft is still here.'); renderDetailPane(); return; }
+    const sentPrint = draftFingerprint({ ...editor.draft, title });
+    editor.saving = true; syncDirty(editor);
+    const body = kind === 'projects'
+      ? projectPutBody({ ...editor.draft, title, expectedVersion: editor.expectedVersion })
+      : notePutBody({ ...editor.draft, title, expectedVersion: editor.expectedVersion });
+    const result = await call(`/${kind}/${encodeURIComponent(id)}`, { method: 'PUT', body });
+    editor.saving = false;
+    const current = state.editors.get(id) ?? editor;
+    const written = interpretWrite(result, current.draft);
+    if (!written.ok) {
+      current.draft = written.draft;
+      current.conflict = written.conflict;
+      current.notice = '';
+      current.saving = false;
+      setFail(kind, id, written.message);
+      state.editors.set(id, current);
+      if (state.view === kind && state.selected[kind] === id) renderDetailPane();
+      return;
+    }
+    setFail(kind, id, '');
+    const later = draftFingerprint(current.draft) !== sentPrint;
+    const next = editorFrom(written.saved, later ? 'Saved what was sent. Edits made after that are still here and were not written.' : 'Saved.');
+    if (later) next.draft = current.draft;
+    state.editors.set(id, next);
+    const index = state.lists[kind].items.findIndex((item) => item.id === id);
+    if (index >= 0) state.lists[kind].items[index] = { ...state.lists[kind].items[index], ...written.saved };
+    announce(next.notice);
+    if (state.view === kind && state.selected[kind] === id) { fillItems(); renderDetailPane(); }
+  }
+  async function loadSaved(kind, id) {
+    const result = await call(`/${kind}/${encodeURIComponent(id)}`);
+    if (!(result.status === 200 && result.data?.id === id && Number.isInteger(result.data.version))) {
+      setFail(kind, id, 'The saved version could not be loaded. Your draft is still here.');
+      if (state.view === kind && state.selected[kind] === id) renderDetailPane();
+      return;
+    }
+    setFail(kind, id, '');
+    state.editors.set(id, editorFrom(result.data, 'Showing the saved version.'));
+    if (state.view === kind && state.selected[kind] === id) renderDetailPane();
+  }
+  function renderFind() {
+    ensureFrame();
+    const query = el('input', { id: 'worldFindQuery', type: 'search', role: 'searchbox', 'aria-label': 'Text to find in saved records' });
+    query.value = state.find.query;
+    on(query, 'input', () => { state.find.query = query.value; });
+    on(query, 'keydown', (event) => { if (event.key === 'Enter') { event.preventDefault?.(); return runSearch(); } });
+    const kind = el('select', { id: 'worldFindKind', 'aria-label': 'Limit find to one kind of record' });
+    kind.append(el('option', { value: '', text: 'Everything saved here' }));
+    for (const name of FIND_KINDS) kind.append(el('option', { value: name, text: FIND_LABELS[name] }));
+    kind.value = FIND_KINDS.includes(state.find.kind) ? state.find.kind : '';
+    on(kind, 'change', () => { state.find.kind = kind.value; });
+    const submit = el('button', { type: 'button', id: 'worldFindSubmit', text: state.find.loading ? 'Finding…' : 'Find' });
+    submit.disabled = state.find.loading;
+    on(submit, 'click', () => runSearch());
+    const status = el('div', { id: 'worldFindStatus', role: 'status', 'aria-live': 'polite' });
+    status.textContent = state.find.status;
+    const error = el('div', { class: 'err', id: 'worldFindError', role: 'alert' });
+    error.textContent = state.find.error;
+    const coverage = el('div', { id: 'worldFindCoverage' });
+    if (state.find.coverage || state.find.items.length) {
+      for (const line of searchCoverageLines(state.find.coverage)) coverage.append(el('p', { class: 'note', text: line }));
+    }
+    const results = el('div', { id: 'worldFindResults' });
+    if (!state.find.items.length) results.append(el('p', { class: 'empty', text: state.find.loading ? 'Finding…' : 'No matches shown yet.' }));
+    else {
+      const list = el('ul', { class: 'plain' });
+      for (const hit of state.find.items) {
+        const availability = availabilityLabel(hit);
+        const button = el('button', { type: 'button', class: 'rowbtn', 'aria-label': `Open ${hit.kind || 'record'} ${hit.id}` }, [
+          el('span', { class: 'conv-title', text: hit.title || hit.id }),
+          el('span', { class: 'note', text: `${FIND_LABELS[hit.kind] || hit.kind || 'Record'} · ${hit.id}` }),
+        ]);
+        on(button, 'click', () => openHit(hit));
+        const item = el('li', {}, [
+          button,
+          hit.snippet ? el('p', { class: 'note', text: hit.snippet }) : null,
+          custodyChip(hit) ? el('p', { text: custodyChip(hit)[0] }) : null,
+          availability ? el('p', { text: availability }) : null,
+        ]);
+        list.append(item);
+      }
+      results.append(list);
+    }
+    const more = el('button', { type: 'button', id: 'worldFindMore', text: 'Load more matches' });
+    more.hidden = state.find.nextOffset == null;
+    more.disabled = state.find.loading;
+    on(more, 'click', () => runSearch({ more: true }));
+    listPane.replaceChildren(
+      el('h2', { text: 'Find' }),
+      el('p', { class: 'note', text: 'Search your saved conversations, notes and app tasks here, including notes saved from a phone connected to this Studio. This searches this computer only, not your AI accounts.' }),
+      el('div', { role: 'search', 'aria-label': 'Find saved records' }, [
+        el('label', { class: 'lab', for: 'worldFindQuery', text: 'Text' }), query,
+        el('label', { class: 'lab', for: 'worldFindKind', text: 'Kind' }), kind,
+        el('div', { class: 'row' }, [submit]),
+      ]),
+      status, error, coverage, results, more,
+    );
+    const record = state.find.recordId ? findRecord(state.find.recordId) : null;
+    detailPane.replaceChildren(record ? el('article', { class: 'panel pad local-mark' }, [
+      el('h2', { text: recordLabel(record.id) }),
+      el('p', { class: 'mono', text: record.id }),
+      availabilityLabel(record) ? el('p', { text: availabilityLabel(record) }) : null,
+      kv([
+        record.availability ? { label: 'Availability', value: String(record.availability) } : null,
+        record.availabilityReason ? { label: 'Why', value: String(record.availabilityReason) } : null,
+        record.conversationId ? { label: 'Saved conversation', value: record.conversationId } : null,
+        record.objectId ? { label: 'Local object', value: record.objectId } : null,
+        typeof record.qualification === 'string' ? { label: 'Qualification', value: record.qualification } : null,
+      ]),
+      el('p', { class: 'note', text: 'This is the saved record. Opening it does not change the conversation it points at.' }),
+      sourceJumpButton(record),
+    ]) : el('p', { class: 'empty', text: 'Open a match to see that same saved record. Find is not a home for it.' }));
+  }
+  async function runSearch({ more = false } = {}) {
+    const query = state.find.query.trim();
+    if (!query) {
+      state.find.error = 'Enter text to find. Nothing was searched.';
+      state.find.status = '';
+      renderFind();
+      return;
+    }
+    if (more && state.find.nextOffset == null) return;
+    const offset = more ? state.find.nextOffset : 0;
+    const ticket = ++searchTicket;
+    searchAbort?.abort();
+    const controller = typeof AbortController === 'function' ? new AbortController() : null;
+    searchAbort = controller;
+    state.find.loading = true;
+    state.find.error = '';
+    if (state.view === 'find') renderFind();
+    const params = new URLSearchParams();
+    params.set('q', query);
+    params.set('offset', String(offset));
+    params.set('limit', String(PAGE_LIMIT));
+    if (FIND_KINDS.includes(state.find.kind)) params.set('kind', state.find.kind);
+    const result = await call('/search?' + params.toString(), { signal: controller?.signal });
+    if (ticket !== searchTicket || state.view !== 'find') return;
+    state.find.loading = false;
+    if (result.aborted) return;
+    if (result.status !== 200) {
+      state.find.items = more ? state.find.items : [];
+      state.find.coverage = null;
+      state.find.status = '';
+      state.find.error = result.status === 400 ? problemText(result.data)
+        : result.status === 0 ? 'Studio didn’t answer. Nothing new was shown.'
+          : `This could not be read. ${problemText(result.data)}`;
+      renderFind();
+      return;
+    }
+    const page = readSearch(result.data);
+    if (!page.ok) {
+      state.find.error = page.message;
+      renderFind();
+      return;
+    }
+    const incoming = page.items.filter((hit) => hit && typeof hit.id === 'string');
+    state.find.items = more ? appendPage(state.find.items, page) : incoming;
+    state.find.total = page.total;
+    state.find.nextOffset = page.nextOffset;
+    state.find.coverage = page.coverage;
+    state.find.status = searchStatusText({ shown: state.find.items.length, total: page.total, coverage: page.coverage });
+    state.find.error = '';
+    renderFind();
+  }
+  /** Same part path rule the selection API enforces: non-negative safe integers or safe object
+   * keys, never prototype names, at most 16 steps. Used only to decide whether a hit's partPath is
+   * worth looking for in the rendered message. */
+  function validPartPath(partPath) {
+    return Array.isArray(partPath) && partPath.length >= 1 && partPath.length <= 16
+      && partPath.every((key) => Number.isSafeInteger(key) && key >= 0
+        || typeof key === 'string' && /^[a-zA-Z][a-zA-Z0-9_-]{0,63}$/.test(key)
+          && !['constructor', 'prototype', '__proto__'].includes(key));
+  }
+  /** Finds a rendered part frame by its data-part-path marker inside one message row. Works with a
+   * real querySelector and falls back to a children walk where that is not available. */
+  function partFrameOf(row, key) {
+    if (!row) return null;
+    if (typeof row.querySelector === 'function') {
+      try { return row.querySelector(`[data-part-path="${key}"]`) ?? null; } catch { /* fall through to the walk */ }
+    }
+    let found = null;
+    const visit = (node) => {
+      if (found || !node || typeof node !== 'object') return;
+      const attr = typeof node.getAttribute === 'function' ? node.getAttribute('data-part-path') : node.attrs?.['data-part-path'];
+      if (attr === key) { found = node; return; }
+      const children = node.children;
+      if (Array.isArray(children)) for (const child of children) visit(child);
+    };
+    visit(row);
+    return found;
+  }
+  async function openHit(hit) {
+    if (!hit || typeof hit.id !== 'string') return;
+    if (hit.kind === 'task' || hit.kind === 'app-note') {
+      const appId = hit.source?.appId, itemId = hit.source?.itemId;
+      if (!/^app-[a-f0-9]{32}$/.test(appId ?? '') || !/^item-[a-f0-9]{32}$/.test(itemId ?? '')) return;
+      const response = await builderCall('/' + encodeURIComponent(appId) + '/content');
+      if (state.view !== 'find') return;
+      if (response.status !== 200) { state.find.error = 'This saved app item could not be opened. Open its app and try again.'; renderFind(); return; }
+      const data = response.data ?? {};
+      const item = (data.content?.items ?? data.items ?? []).find(value => value.id === itemId);
+      if (!item) { state.find.error = 'This item is no longer available. Search again to refresh the results.'; renderFind(); return; }
+      detailPane.replaceChildren(el('article', {}, [el('h2', { text: item.title }), el('p', { text: item.body }),
+        el('p', { text: item.kind === 'task' ? item.completed ? 'Task completed' : 'Task not completed yet' : 'Saved note' }),
+        el('p', { text: 'Saved in your app on this Studio. Phone and Windows use this same saved item.' })]));
+      return;
+    }
+    if (hit.kind === 'message') {
+      const id = hit.conversation?.id;
+      if (!ID_RE.conversations.test(id || '')) {
+        state.find.error = 'This match has no saved conversation id, so it was not opened.';
+        if (state.view === 'find') renderFind();
+        return;
+      }
+      const index = Number.isInteger(hit.source?.index) ? hit.source.index : null;
+      const partPath = hit.source?.partPath;
+      // An empty path is a message-level selection; anything else asks for a specific part.
+      const askedPart = partPath !== undefined && partPath !== null && !(Array.isArray(partPath) && partPath.length === 0);
+      const partKey = validPartPath(partPath) ? partPath.map((key) => String(key)).join('.') : null;
+      await openItem('conversations', id);
+      const foundBefore = partKey && index != null ? partFrameOf(state.messageNodes?.get(index) ?? null, partKey) : null;
+      if (askedPart && !foundBefore) {
+        setFail('conversations', id, 'Opened the message; the matching part could not be located.');
+        renderDetailPane();
+      }
+      const row = index == null ? null : state.messageNodes?.get(index) ?? null;
+      const frame = partKey && row ? partFrameOf(row, partKey) : null;
+      if (frame) {
+        frame.setAttribute('aria-current', 'true');
+        frame.append(el('span', { class: 'pill t-info', text: 'Matched part' }));
+        frame.focus?.();
+        frame.scrollIntoView?.({ block: 'nearest' });
+      } else {
+        row?.focus?.();
+        row?.scrollIntoView?.({ block: 'nearest' });
+      }
+      return;
+    }
+    if (hit.kind === 'project' && ID_RE.projects.test(hit.id)) return openItem('projects', hit.id);
+    if (hit.kind === 'note' && ID_RE.notes.test(hit.id)) return openItem('notes', hit.id);
+    if ((hit.kind === 'source-reference' || hit.kind === 'selection') && REF_RE.test(hit.id)) {
+      state.find.recordId = hit.id;
+      state.records.set(hit.id, { ...hit, kind: hit.kind === 'selection' ? 'selection' : 'source-reference' });
+      await readRecord(hit.id);
+      if (state.view === 'find') renderFind();
+      return;
+    }
+    state.find.error = 'This match cannot be opened from here.';
+    if (state.view === 'find') renderFind();
+  }
+  function clearExportBundle() {
+    if (state.transfer.blobUrl) {
+      try { URL.revokeObjectURL?.(state.transfer.blobUrl); } catch { /* already revoked */ }
+      state.transfer.blobUrl = '';
+    }
+    state.transfer.bundle = null;
+  }
+  function selectedExportIds() {
+    return Object.entries(state.transfer.selected).filter(([, on]) => on).map(([id]) => id).filter(validWorldId);
+  }
+  function resetImportCheck() {
+    state.transfer.check = null;
+    state.transfer.checkText = '';
+    state.transfer.dryRun = null;
+    state.transfer.confirm = false;
+    state.transfer.restore = null;
+  }
+  function textBytes(text) {
+    try { return new TextEncoder().encode(text).length; } catch { return text.length; }
+  }
+  function factList(title, rows) {
+    const box = el('div', {}, [el('h3', { text: title })]);
+    if (!rows.length) box.append(el('p', { class: 'note', text: 'None.' }));
+    else box.append(kv(rows));
+    return box;
+  }
+  function renderTransfer() {
+    ensureFrame();
+    const t = state.transfer;
+    const status = el('div', { id: 'worldTransferStatus', role: 'status', 'aria-live': 'polite', text: t.exportStatus || t.importStatus || '' });
+    // Native desktop shell note. Rendered only when a Tauri runtime answered;
+    // the native answer is a read-only validation result, never an authorization.
+    if (t.nativeCheck?.available) {
+      const n = t.nativeCheck;
+      const verdict = n.error ? 'native validator unreachable (' + n.error + ')'
+        : n.result?.outcome === 'compiled' ? 'native validator reachable — compiled inert (executionAuthorized: false)'
+        : n.result?.outcome === 'refused' ? 'native validator refused: ' + (n.result?.reasonCode ?? 'unknown reason')
+        : 'native validator gave an unrecognized answer';
+      status.append(el('div', { class: 'note', id: 'worldNativeCheck', text: 'Desktop shell: ' + verdict }));
+    }
+    const exportError = el('div', { class: 'err', id: 'worldExportError', role: 'alert', text: t.exportError });
+    const choices = el('div', { id: 'worldExportChoices' });
+    const groups = [['Saved conversations', state.lists.conversations], ['Projects', state.lists.projects], ['Notes', state.lists.notes]];
+    for (const [label, list] of groups) {
+      choices.append(el('h3', { text: label }));
+      const items = (list.items ?? []).filter((item) => validWorldId(item?.id));
+      if (!items.length) choices.append(el('p', { class: 'note', text: list.loaded ? 'Nothing loaded with an id that can be exported.' : 'Not loaded yet.' }));
+      for (const item of items) {
+        const box = el('input', { type: 'checkbox', id: 'export-' + item.id });
+        box.checked = t.selected[item.id] === true;
+        on(box, 'change', () => {
+          if (box.checked) t.selected[item.id] = true; else delete t.selected[item.id];
+          clearExportBundle(); t.exportStatus = '';
+          renderTransfer();
+        });
+        choices.append(el('label', { class: 'pick', for: 'export-' + item.id }, [box, el('span', {}, [el('b', { text: item.title || item.id }), el('span', { class: 'mono', text: ' ' + item.id })])]));
+      }
+    }
+    const exportMode = t.exportMode === 'transcript' || t.exportMode === 'full-saved' ? t.exportMode : 'references';
+    const modePicker = el('div', { id: 'worldExportModes', role: 'radiogroup', 'aria-label': 'What the export includes' });
+    for (const [value, label, sentence] of [
+      ['references', EXPORT_MODE_LABEL.references, 'Leaves out everything you read: no message text, no reasoning, no tool or status activity.'],
+      ['transcript', EXPORT_MODE_LABEL.transcript, 'Leaves out reasoning, tool and status activity, and any block type Studio does not recognize.'],
+      ['full-saved', EXPORT_MODE_LABEL['full-saved'], 'Keeps every recorded block Studio has, even ones it does not recognize. Only the two boxes below can leave anything out.'],
+    ]) {
+      const radio = el('input', { type: 'radio', id: 'worldExportMode-' + value, name: 'worldExportMode', value });
+      radio.checked = exportMode === value;
+      on(radio, 'change', () => {
+        if (!radio.checked || exportMode === value) return;
+        t.exportMode = value;
+        clearExportBundle();
+        t.exportStatus = '';
+        renderTransfer();
+      });
+      modePicker.append(el('label', { class: 'pick', for: 'worldExportMode-' + value }, [radio, el('span', { text: label }), el('span', { class: 'note', text: ' ' + sentence })]));
+    }
+    const partBox = (key, label) => {
+      const box = el('input', { type: 'checkbox', id: 'worldExportPart-' + key });
+      box.checked = t.exportParts[key] === true;
+      box.disabled = exportMode === 'references';
+      on(box, 'change', () => {
+        if (box.disabled) return;
+        t.exportParts[key] = box.checked;
+        clearExportBundle();
+        t.exportStatus = '';
+        renderTransfer();
+      });
+      return el('label', { class: 'pick', for: 'worldExportPart-' + key }, [box, el('span', { text: label })]);
+    };
+    const partsHint = exportMode === 'references'
+      ? el('p', { class: 'note', text: 'References only has no message text, so there is nothing to turn on here. Choose Transcript or Full saved first.' })
+      : el('p', { class: 'note', text: 'These stay off until you turn them on. Common sensitive patterns are masked, but included content may still be private.' });
+    const preview = el('button', { type: 'button', id: 'worldExportPreview', text: t.loading === 'export' ? 'Previewing…' : 'Preview' });
+    preview.disabled = t.loading === 'export' || !selectedExportIds().length;
+    on(preview, 'click', () => runExport());
+    const previewBox = el('div', { id: 'worldExportPreviewOut' });
+    if (t.bundle) {
+      const scope = t.bundle.scope && typeof t.bundle.scope === 'object' ? t.bundle.scope : null;
+      const coverage = t.bundle.coverage && typeof t.bundle.coverage === 'object' ? t.bundle.coverage : null;
+      const appliedMode = typeof scope?.mode === 'string' ? scope.mode : null;
+      const counts = custodyCounts(t.bundle.records);
+      previewBox.append(factList('Records by custody', Object.entries(counts).map(([label, count]) => ({ label, value: String(count) }))));
+      previewBox.append(el('p', { text: appliedMode ? `Export used this mode: ${EXPORT_MODE_LABEL[appliedMode] ?? appliedMode}.` : 'The bundle did not say which mode was applied. Check it before you share it.' }));
+      if (appliedMode && appliedMode !== exportMode) previewBox.append(el('p', { class: 'err', text: `You asked for ${EXPORT_MODE_LABEL[exportMode] ?? exportMode}, but the bundle says ${EXPORT_MODE_LABEL[appliedMode] ?? appliedMode}. It may not be what you asked for.` }));
+      if (scope?.parts && typeof scope.parts === 'object') {
+        previewBox.append(el('p', { class: 'note', text: `Saved reasoning included: ${scope.parts.reasoning === true ? 'yes' : 'no'}. Tool and status activity included: ${scope.parts.toolActivity === true ? 'yes' : 'no'}.` }));
+      }
+      const omitted = Array.isArray(t.bundle.omitted) ? t.bundle.omitted : [];
+      previewBox.append(el('h3', { text: 'Left out' }));
+      if (!omitted.length) previewBox.append(el('p', { class: 'note', text: 'Nothing was listed as left out.' }));
+      else {
+        const totals = {};
+        for (const item of omitted) {
+          const reason = typeof item?.reason === 'string' && item.reason ? item.reason : 'reason not given';
+          totals[reason] = (totals[reason] ?? 0) + (Number.isInteger(item?.count) ? item.count : 1);
+        }
+        for (const [reason, count] of Object.entries(totals)) previewBox.append(el('p', { text: `${EXPORT_OMIT_LABEL[reason] ?? reason}: ${count}` }));
+        for (const item of omitted.slice(0, 30)) previewBox.append(el('p', { class: 'note', text: `${item?.id ?? 'record'}: ${EXPORT_OMIT_LABEL[item?.reason] ?? item?.reason ?? 'reason not given'}${Number.isInteger(item?.count) ? ` (${item.count})` : ''}` }));
+      }
+      previewBox.append(el('p', { class: 'note', text: typeof coverage?.modeSemantics === 'string' ? coverage.modeSemantics : 'The bundle did not say what its mode means.' }));
+      previewBox.append(el('p', { text: coverage?.complete === true
+        ? 'The bundle calls its declared scope complete. That is about the declared scope and its mode, not about everything, and not a claim about a provider.'
+        : 'The bundle does not call its declared scope complete.' }));
+      if (appliedMode === 'references') previewBox.append(el('p', { text: 'References only: calling that scope complete does not mean message text is in the file.' }));
+      if (typeof coverage?.qualification === 'string' && coverage.qualification) previewBox.append(el('p', { class: 'note', text: coverage.qualification }));
+      const strongWarning = scope?.parts && typeof scope.parts === 'object'
+        ? scope.parts.reasoning === true || scope.parts.toolActivity === true
+        : exportMode !== 'references' && (t.exportParts.reasoning === true || t.exportParts.toolActivity === true);
+      previewBox.append(el('p', { class: 'note', text: 'The hash is integrity only. It checks the file, not who wrote it and not that a provider still has it.' }));
+      previewBox.append(el('p', { class: 'note', text: strongWarning
+        ? 'Common sensitive patterns are masked. Included reasoning or activity may still be private. Read every line before sharing.'
+        : 'Common sensitive patterns are masked automatically. This is not a guarantee: review all included text before sharing.' }));
+      previewBox.append(el('h3', { text: 'Review the complete file before downloading' }),
+        el('pre', { text: JSON.stringify(t.bundle, null, 2) }),
+        el('p', { text: 'Downloading saves a local file only. VIVIM does not upload or send it to anyone.' }));
+      if (t.bundle.integrity?.sha256) previewBox.append(el('p', { class: 'mono', text: String(t.bundle.integrity.sha256).slice(0, 12) }));
+      let href = '';
+      try {
+        if (t.blobUrl) URL.revokeObjectURL?.(t.blobUrl);
+        href = URL.createObjectURL(new Blob([JSON.stringify(t.bundle, null, 2)], { type: 'application/json' }));
+        t.blobUrl = href;
+      } catch { href = ''; t.blobUrl = ''; }
+      if (href) previewBox.append(el('a', { class: 'hit', id: 'worldExportDownload', href, download: 'vivim-world.json' }, ['Download JSON']));
+      else previewBox.append(el('p', { class: 'note', text: 'A download link could not be built in this browser. Nothing was saved automatically.' }));
+    }
+    const importBox = el('textarea', { id: 'worldImportText', rows: '6', 'aria-label': 'Paste a world JSON bundle' });
+    importBox.value = t.importText;
+    on(importBox, 'input', () => {
+      t.importText = importBox.value;
+      if (t.importText !== t.checkText) {
+        resetImportCheck();
+        t.importStatus = '';
+        renderTransfer();
+      }
+    });
+    const file = el('input', { type: 'file', id: 'worldImportFile', accept: 'application/json,.json', 'aria-label': 'Choose a world JSON file' });
+    on(file, 'change', () => readImportFile(file.files?.[0]));
+    const check = el('button', { type: 'button', id: 'worldImportCheck', text: t.loading === 'check' ? 'Checking…' : 'Check' });
+    check.disabled = t.loading === 'check';
+    on(check, 'click', () => runCheck());
+    const ready = checkReady(t.check) && t.checkText === t.importText && t.check.digest;
+    const dry = el('button', { type: 'button', id: 'worldImportDry', text: t.loading === 'dry' ? 'Checking dry run…' : 'Dry run' });
+    dry.disabled = !ready || t.loading === 'dry';
+    on(dry, 'click', () => runRestore({ dryRun: true }));
+    const confirm = el('input', { type: 'checkbox', id: 'worldImportConfirm' });
+    confirm.checked = t.confirm === true;
+    confirm.disabled = !(ready && t.dryRun && t.dryRun.digest === t.check?.digest);
+    on(confirm, 'change', () => { t.confirm = confirm.checked; renderTransfer(); });
+    const write = el('button', { type: 'button', id: 'worldImportRestore', text: t.loading === 'restore' ? 'Restoring…' : 'Write imported copies' });
+    write.disabled = confirm.disabled || !t.confirm || t.loading === 'restore';
+    on(write, 'click', () => runRestore({ dryRun: false }));
+    const importOut = el('div', { id: 'worldImportOut' });
+    const importError = el('div', { class: 'err', id: 'worldImportError', role: 'alert', text: t.importError });
+    if (t.check) importOut.append(renderCheck(t.check));
+    if (t.dryRun) importOut.append(el('h3', { text: 'Dry run' }), el('p', { text: restoreSummary(t.dryRun).text }), renderOutcome(t.dryRun));
+    if (t.restore) {
+      const summary = restoreSummary(t.restore);
+      importOut.append(el('h3', { text: 'Restore' }), el('p', { text: summary.text }), renderOutcome(t.restore));
+      const applied = Array.isArray(t.restore.applied) ? t.restore.applied : [];
+      const map = t.restore.idMap && typeof t.restore.idMap === 'object' ? t.restore.idMap : {};
+      for (const kind of ['conversations', 'projects', 'notes']) {
+        const original = applied.find((id) => typeof id === 'string'
+          && (kind === 'conversations' ? id.startsWith('c-') : kind === 'projects' ? id.startsWith('p-') : id.startsWith('n-'))
+          && ID_RE[kind].test(map[id] || ''));
+        if (!original) continue;
+        const target = map[original];
+        const open = el('button', { type: 'button', id: 'worldImportOpen-' + kind,
+          text: 'Open imported ' + (kind === 'conversations' ? 'conversation' : kind === 'projects' ? 'project' : 'note') });
+        on(open, 'click', () => openItem(kind, target));
+        importOut.append(open);
+      }
+    }
+    listPane.replaceChildren(
+      el('h2', { text: 'Transfer' }),
+      el('p', { class: 'note', text: 'Transfer moves a JSON bundle on this computer. It does not send anything to a provider. Export and import are not a home for the records.' }),
+      status,
+      el('h3', { text: 'Export' }),
+      choices,
+      modePicker,
+      partBox('reasoning', 'Include saved reasoning'),
+      partBox('toolActivity', 'Include saved tool and status activity'),
+      partsHint,
+      el('div', { class: 'row' }, [preview]),
+      exportError,
+      previewBox,
+    );
+    detailPane.replaceChildren(
+      el('h3', { text: 'Import' }),
+      el('label', { class: 'lab', for: 'worldImportText', text: 'Bundle JSON' }),
+      importBox,
+      el('label', { class: 'lab', for: 'worldImportFile', text: 'Or choose a .json file' }),
+      file,
+      el('p', { class: 'note', text: 'Files larger than 8 MB are refused here and are not checked.' }),
+      el('div', { class: 'row' }, [check, dry]),
+      el('label', { class: 'pick', for: 'worldImportConfirm' }, [confirm, el('span', { text: 'I have read the dry run. Write these imported copies on this computer.' })]),
+      write,
+      importError,
+      importOut,
+    );
+  }
+  function renderCheck(report) {
+    const box = el('div', { id: 'worldCheckOut' });
+    box.append(el('p', { text: report.valid === true ? 'Check passed. This does not write anything.' : 'Check did not pass. Nothing was written.' }));
+    if (report.digest) box.append(el('p', { class: 'mono', text: String(report.digest).slice(0, 12) }));
+    const counts = report.counts && typeof report.counts === 'object' ? report.counts : {};
+    box.append(factList('Counts', Object.entries(counts).map(([label, value]) => ({ label: labelize(label), value: formatMeta(value) }))));
+    const unresolved = Array.isArray(report.unresolved) ? report.unresolved : [];
+    box.append(el('h3', { text: `Unresolved (${unresolved.length})` }));
+    for (const item of unresolved.slice(0, 20)) box.append(el('p', { text: typeof item === 'string' ? item : `${item?.id ?? 'unknown id'}: ${item?.reason ?? formatMeta(item)}` }));
+    const omitted = Array.isArray(report.omitted) ? report.omitted : [];
+    box.append(el('h3', { text: `Left out (${omitted.length})` }));
+    for (const item of omitted.slice(0, 20)) box.append(el('p', { text: `${item?.id ?? 'record'}: ${item?.reason ?? 'reason not given'}` }));
+    const errors = Array.isArray(report.errors) ? report.errors : [];
+    box.append(el('h3', { text: `Errors (${errors.length})` }));
+    for (const item of errors.slice(0, 20)) box.append(el('p', { text: `${item?.code ?? 'error'}: ${item?.message ?? formatMeta(item)}` }));
+    const mapped = report.idMap && typeof report.idMap === 'object' ? Object.keys(report.idMap).length : 0;
+    box.append(el('p', { text: `${mapped} ids would be rewritten on import.` }));
+    const known = new Set(['valid', 'digest', 'counts', 'idMap', 'unresolved', 'omitted', 'errors', 'coverage']);
+    const extra = Object.entries(report).filter(([key]) => !known.has(key));
+    if (extra.length) box.append(factList('Other reported details', extra.map(([key, value]) => ({ label: labelize(key), value: formatMeta(value) }))));
+    return box;
+  }
+  function renderOutcome(report) {
+    const box = el('div');
+    const lists = [['Applied', report.applied], ['Skipped', report.skipped], ['Pending', report.pending]];
+    for (const [label, values] of lists) {
+      const ids = Array.isArray(values) ? values : [];
+      box.append(el('p', { text: `${label}: ${ids.length ? ids.slice(0, 20).map((id) => typeof id === 'string' ? id : formatMeta(id)).join(', ') : 'none'}` }));
+    }
+    const failed = Array.isArray(report.failed) ? report.failed : [];
+    box.append(el('p', { text: failed.length ? `Failed: ${failed.slice(0, 10).map((item) => `${item?.id ?? 'record'} ${item?.message ?? item?.code ?? ''}`).join('; ')}` : 'Failed: none' }));
+    if (report.receipt) box.append(el('p', { text: `Receipt: ${typeof report.receipt === 'string' ? report.receipt : formatMeta(report.receipt)}` }));
+    const known = new Set(['valid', 'digest', 'counts', 'idMap', 'unresolved', 'omitted', 'errors', 'coverage', 'dryRun', 'applied', 'skipped', 'failed', 'pending', 'partial', 'receipt']);
+    const extra = Object.entries(report).filter(([key]) => !known.has(key));
+    if (extra.length) box.append(factList('Other reported details', extra.map(([key, value]) => ({ label: labelize(key), value: formatMeta(value) }))));
+    return box;
+  }
+  async function runExport() {
+    const ids = selectedExportIds();
+    if (!ids.length) { state.transfer.exportError = 'Choose at least one loaded record. Nothing was exported.'; renderTransfer(); return; }
+    const ticket = ++exportTicket;
+    exportAbort?.abort();
+    const controller = typeof AbortController === 'function' ? new AbortController() : null;
+    exportAbort = controller;
+    state.transfer.loading = 'export';
+    state.transfer.exportError = '';
+    if (state.view === 'transfer') renderTransfer();
+    const template = state.transfer.exportMode === 'references' || state.transfer.exportMode === 'transcript' || state.transfer.exportMode === 'full-saved'
+      ? state.transfer.exportMode : 'references';
+    state.transfer.exportMode = template;
+    const body = { ids, mode: template };
+    if (template !== 'references') body.parts = { reasoning: state.transfer.exportParts.reasoning === true, toolActivity: state.transfer.exportParts.toolActivity === true };
+    const result = await call('/transfer/export', { method: 'POST', signal: controller?.signal, body });
+    if (ticket !== exportTicket || state.view !== 'transfer') return;
+    state.transfer.loading = '';
+    if (result.aborted) return;
+    if (result.status !== 200 || !isExportBundle(result.data)) {
+      clearExportBundle();
+      state.transfer.exportError = result.status === 0 ? 'Studio didn’t answer. Nothing was exported.' : (result.status === 200 ? 'Studio did not return an export bundle. Nothing was saved.' : problemText(result.data));
+      state.transfer.exportStatus = '';
+      renderTransfer();
+      return;
+    }
+    state.transfer.bundle = result.data;
+    state.transfer.exportStatus = 'Preview ready. Nothing was saved until you use Download JSON.';
+    state.transfer.exportError = '';
+    renderTransfer();
+  }
+  function readImportFile(file) {
+    if (!file) return;
+    if (file.size > IMPORT_BYTE_CAP) {
+      state.transfer.importText = '';
+      resetImportCheck();
+      state.transfer.importStatus = '';
+      state.transfer.importError = 'That file is larger than 8 MB, so it was not read.';
+      renderTransfer();
+      return;
+    }
+    if (typeof FileReader !== 'function') {
+      state.transfer.importError = 'This browser cannot read the file here. Paste the JSON instead.';
+      renderTransfer();
+      return;
+    }
+    const reader = new FileReader();
+    reader.addEventListener('load', () => {
+      const text = typeof reader.result === 'string' ? reader.result : '';
+      if (textBytes(text) > IMPORT_BYTE_CAP) {
+        state.transfer.importText = '';
+        resetImportCheck();
+        state.transfer.importStatus = '';
+        state.transfer.importError = 'That file is larger than 8 MB, so it was not checked.';
+      } else {
+        state.transfer.importText = text;
+        state.transfer.importError = '';
+        resetImportCheck();
+      }
+      if (state.view === 'transfer') renderTransfer();
+    });
+    reader.addEventListener('error', () => { state.transfer.importError = 'The file could not be read. Nothing was checked.'; if (state.view === 'transfer') renderTransfer(); });
+    reader.readAsText(file);
+  }
+  function parsedBundle() {
+    const text = state.transfer.importText;
+    if (textBytes(text) > IMPORT_BYTE_CAP) return { error: 'That bundle is larger than 8 MB, so it was not checked.' };
+    try { return { bundle: JSON.parse(text) }; }
+    catch { return { error: 'That text is not JSON. Nothing was checked.' }; }
+  }
+  async function runCheck() {
+    const parsed = parsedBundle();
+    if (parsed.error) { state.transfer.importError = parsed.error; resetImportCheck(); renderTransfer(); return; }
+    const ticket = ++importTicket;
+    importAbort?.abort();
+    const controller = typeof AbortController === 'function' ? new AbortController() : null;
+    importAbort = controller;
+    state.transfer.loading = 'check';
+    state.transfer.importError = '';
+    const source = state.transfer.importText;
+    if (state.view === 'transfer') renderTransfer();
+    const result = await call('/transfer/validate', { method: 'POST', signal: controller?.signal, body: { bundle: parsed.bundle } });
+    if (ticket !== importTicket || state.view !== 'transfer') return;
+    state.transfer.loading = '';
+    if (result.aborted) return;
+    if (result.status !== 200 || !result.data || typeof result.data !== 'object') {
+      resetImportCheck();
+      state.transfer.importError = result.status === 0 ? 'Studio didn’t answer. Nothing was checked.' : problemText(result.data);
+      renderTransfer();
+      return;
+    }
+    state.transfer.check = result.data;
+    state.transfer.checkText = source;
+    state.transfer.dryRun = null;
+    state.transfer.confirm = false;
+    state.transfer.restore = null;
+    state.transfer.importStatus = checkReady(result.data) ? 'Check passed. Nothing was written.' : 'Check did not pass. Nothing was written.';
+    state.transfer.importError = '';
+    // Desktop shell only: a second, inert native-layer validation round trip.
+    // Outside Tauri this resolves { available: false } and nothing is displayed;
+    // the server-side check above remains the only authority for the bundle.
+    state.transfer.nativeCheck = await validateNativeProgram(nativeProbeRequest()).catch((error) => ({ available: true, result: null, error: String(error?.message ?? error) }));
+    renderTransfer();
+  }
+  async function runRestore({ dryRun }) {
+    if (!checkReady(state.transfer.check) || state.transfer.checkText !== state.transfer.importText) {
+      state.transfer.importError = 'Check this bundle again before restoring. Nothing was written.';
+      resetImportCheck();
+      renderTransfer();
+      return;
+    }
+    if (!dryRun && state.transfer.confirm !== true) {
+      state.transfer.importError = 'Confirm the dry run before writing. Nothing was written.';
+      renderTransfer();
+      return;
+    }
+    const parsed = parsedBundle();
+    if (parsed.error) { state.transfer.importError = parsed.error; resetImportCheck(); renderTransfer(); return; }
+    const ticket = ++importTicket;
+    importAbort?.abort();
+    const controller = typeof AbortController === 'function' ? new AbortController() : null;
+    importAbort = controller;
+    state.transfer.loading = dryRun ? 'dry' : 'restore';
+    const digest = state.transfer.check.digest;
+    if (state.view === 'transfer') renderTransfer();
+    const result = await call('/transfer/restore', { method: 'POST', signal: controller?.signal, body: { bundle: parsed.bundle, digest, dryRun: dryRun === true, ...(dryRun ? {} : { confirm: true }) } });
+    if (ticket !== importTicket || state.view !== 'transfer') return;
+    state.transfer.loading = '';
+    if (result.aborted) return;
+    if (result.status !== 200 || !result.data || typeof result.data !== 'object') {
+      state.transfer.importError = result.status === 0 ? 'Studio didn’t answer. Nothing was marked written.' : problemText(result.data);
+      state.transfer.importStatus = '';
+      renderTransfer();
+      return;
+    }
+    if (dryRun) {
+      state.transfer.dryRun = result.data;
+      state.transfer.restore = null;
+      state.transfer.confirm = false;
+      state.transfer.importStatus = restoreSummary(result.data).text;
+    } else {
+      const summary = restoreSummary(result.data);
+      state.transfer.restore = result.data;
+      state.transfer.importStatus = summary.text;
+      state.custody = 'all';
+      // Every affected collection may have changed. Invalidate all pages and any pending
+      // older read, so navigation sees imported projects/notes/references without a reload.
+      for (const kind of ['conversations', 'projects', 'notes', 'objects', 'selections']) {
+        tickets.list[kind] += 1;
+        state.lists[kind] = blankList();
+      }
+      state.records.clear();
+      state.find.items = [];
+      state.find.coverage = null;
+      state.find.nextOffset = null;
+      if (summary.success) {
+        state.transfer.check = null;
+        state.transfer.checkText = '';
+        state.transfer.dryRun = null;
+        state.transfer.confirm = false;
+      }
+    }
+    state.transfer.importError = '';
+    renderTransfer();
+  }
+  function relationChoices() {
+    const rows = [];
+    for (const [kind, list] of [['conversation', state.lists.conversations], ['project', state.lists.projects], ['note', state.lists.notes],
+      ['source-reference', state.lists.objects], ['selection', state.lists.selections]]) {
+      for (const item of list.items ?? []) if (item && validWorldId(item.id)) rows.push({ id: item.id, title: item.title, kind });
+    }
+    return rows;
+  }
+  function relationRowElements(group, row, open = openRelation) {
+    const node = row.node;
+    if (node?.availability === 'unresolved' || node?.availabilityReason === 'NOT_SCANNED') {
+      return el('div', { class: 'member' }, [
+        el('span', { class: 'conv-title', text: node.title || row.id }),
+        el('span', { class: 'pill t-warn', text: 'Not scanned / unresolved' }),
+        el('p', { class: 'note', text: `Linked but never read (${node.availabilityReason ?? 'NOT_SCANNED'}). There is nothing to open.` }),
+      ]);
+    }
+    if (!validWorldId(row.id)) {
+      return el('div', { class: 'member' }, [
+        el('span', { class: 'conv-title', text: node?.title || row.id }),
+        el('span', { class: 'note', text: row.id }),
+        el('span', { class: 'pill t-warn', text: 'Cannot be opened here: unrecognised id' }),
+        el('p', { class: 'note', text: 'This link points at an id this Studio does not recognise, so there is nothing to open.' }),
+      ]);
+    }
+    const chip = provenanceChip(node);
+    const availability = availabilityLabel(node);
+    const basisLine = row.basis && row.basis !== STANDARD_RELATION_BASIS ? row.basis : null;
+    const button = el('button', { type: 'button', class: 'rowbtn', 'aria-label': `Open ${row.id}` }, [
+      el('span', { class: 'conv-title', text: node.title || row.id }),
+      el('span', { class: 'note', text: row.id }),
+      el('span', { class: `pill ${chip[1]}`, text: chip[0] }),
+    ]);
+    on(button, 'click', () => open(row));
+    return el('div', { class: 'member' }, [
+      button,
+      availability ? el('p', { text: availability }) : null,
+      basisLine ? el('p', { class: 'note', text: `Recorded basis: ${basisLine}` }) : null,
+    ]);
+  }
+
+  // SVG lines are decorative. The same relation rows remain below for keyboard,
+  // screen reader, provenance and partial-coverage inspection.
+  function renderRelationGraph(rel) {
+    const projected = graphProjection(rel.map, rel.id, 12);
+    const section = el('section', { class: 'vivim-graph-panel', id: 'vivimRelationGraph',
+      'aria-label': 'Visual map of locally saved associations' });
+    section.append(el('div', { class: 'vivim-graph-heading' }, [
+      el('h3', { text: 'Knowledge graph' }),
+      el('span', { class: 'note', text: projected.truncated ? 'Partial projection · inspect the list below'
+        : 'Local associations · not provider identity' }),
+    ]));
+    if (!projected.nodes.length) {
+      section.append(el('p', { class: 'empty', text: 'No graph nodes were reported for this saved item.' }));
+      return section;
+    }
+    const stage = el('div', { class: 'vivim-graph-stage', role: 'group',
+      'aria-label': 'Saved relation nodes; use the list below for full evidence' });
+    if (typeof doc.createElementNS === 'function') {
+      const ns = 'http://www.w3.org/2000/svg';
+      const svg = doc.createElementNS(ns, 'svg');
+      svg.setAttribute('class', 'vivim-graph-lines');
+      svg.setAttribute('viewBox', '0 0 900 460');
+      svg.setAttribute('preserveAspectRatio', 'none');
+      svg.setAttribute('aria-hidden', 'true');
+      const lookup = new Map(projected.nodes.map((node) => [node.id, node]));
+      for (const edge of projected.edges) {
+        const from = lookup.get(edge.from), to = lookup.get(edge.to);
+        if (!from || !to) continue;
+        const line = doc.createElementNS(ns, 'line');
+        for (const [attribute, value] of [
+          ['x1', from.x * 9], ['y1', from.y * 4.6],
+          ['x2', to.x * 9], ['y2', to.y * 4.6],
+        ]) line.setAttribute(attribute, String(value));
+        line.setAttribute('class', 'vivim-graph-edge');
+        svg.append(line);
+      }
+      stage.append(svg);
+    }
+    for (const node of projected.nodes) {
+      const unresolved = ['unresolved', 'missing', 'unavailable', 'stale'].includes(node.availability)
+        || node.availabilityReason === 'NOT_SCANNED';
+      const label = typeof node.title === 'string' && node.title.trim() ? node.title : node.kind || node.id;
+      const button = el('button', {
+        type: 'button', class: 'vivim-graph-node' + (node.isFocus ? ' is-focus' : ''),
+        'data-kind': node.kind || 'unknown',
+        'aria-label': label + (unresolved ? ' — unresolved, cannot open' : ' — open saved record'),
+        'aria-disabled': unresolved ? 'true' : 'false',
+      }, [
+        el('span', { class: 'vivim-graph-node-label', text: label }),
+        el('span', { class: 'vivim-graph-node-kind', text: unresolved ? 'Unresolved' : node.kind || 'Saved record' }),
+      ]);
+      if (button.style) {
+        button.style.left = String(node.x) + '%';
+        button.style.top = String(node.y) + '%';
+      }
+      if (unresolved) button.disabled = true;
+      else on(button, 'click', () => openRelation({ id: node.id, node }));
+      stage.append(button);
+    }
+    section.append(stage, el('p', { class: 'note', text: 'Only links returned by the local map are drawn. A visual edge does not establish native-thread equality or provider confirmation.' }));
+    return section;
+  }
+
+  function gatherRelations(rel = state.relations) {
+    const groups = relationGroups(rel.id, rel.map);
+    return { groups, shown: relationShown(groups) };
+  }
+  function renderRelations(view = 'relations') {
+    ensureFrame();
+    const workspace = view === 'workspace';
+    const rel = state[view];
+    const prefix = workspace ? 'worldWorkspace' : 'worldRelation';
+    const render = () => renderRelations(view);
+    const select = el('select', { id: prefix + 'Start', 'aria-label': 'Record to show relations for' });
+    const choices = relationChoices();
+    select.append(el('option', { value: '', text: choices.length ? 'Choose a saved record' : 'No saved records loaded' }));
+    for (const choice of choices) select.append(el('option', { value: choice.id, text: choice.title && choice.title !== choice.id ? `${choice.title} · ${choice.id}` : choice.id }));
+    select.value = choices.some((choice) => choice.id === rel.id) ? rel.id : '';
+    on(select, 'change', () => {
+      const next = select.value;
+      if (next !== rel.id) {
+        relationsTicket += 1;
+        relationsAbort?.abort();
+        relationsAbort = null;
+        rel.map = null;
+        rel.status = '';
+        rel.error = '';
+        rel.loading = false;
+      }
+      rel.id = next;
+      if (workspace) clearWorkspaceReading();
+      render();
+    });
+    const typed = el('input', { id: prefix + 'Id', type: 'text', 'aria-label': 'Paste an exact record id',
+      placeholder: 'Or paste an exact record id (c-, p-, n-, o-, s-)' });
+    typed.value = rel.typed ?? '';
+    const show = el('button', { type: 'button', id: prefix + 'Show', text: rel.loading ? 'Loading relations…' : workspace ? 'Explore related items' : 'Show relations' });
+    show.disabled = rel.loading || !(select.value || typed.value.trim());
+    const status = el('div', { id: prefix + 'Status', role: 'status', 'aria-live': 'polite', text: rel.status });
+    const error = el('div', { class: 'err', id: prefix + 'Error', role: 'alert', text: rel.error });
+    const results = el('div', { id: prefix + 'Results' });
+    const resultsNote = el('p', { class: 'note', text: 'These are local associations kept on this computer. They are not proof that two records are the same thing on a provider.' });
+    results.append(resultsNote);
+    const focusIdEl = workspace ? el('p', { class: 'mono', id: 'worldWorkspaceFocus', text: rel.id || 'No starting item selected' }) : null;
+    const focusChipBox = workspace ? el('div', { id: 'worldWorkspaceFocusChip' }) : null;
+    const focusChip = workspace ? workspaceFocusChip(rel) : null;
+    if (focusChip && focusChipBox) focusChipBox.append(chips([focusChip]));
+    // The typed id updates the shell in place on change. A full re-render would replace the
+    // Explore button between mousedown and mouseup and cost a second click in a real browser.
+    on(typed, 'change', () => {
+      rel.typed = typed.value;
+      if (workspace) {
+        relationsTicket += 1; relationsAbort?.abort(); relationsAbort = null;
+        rel.id = ''; rel.map = null; rel.status = ''; rel.error = ''; rel.loading = false;
+        clearWorkspaceReading();
+        renderWorkspaceReading();
+        results.replaceChildren(resultsNote);
+        if (focusIdEl) focusIdEl.textContent = 'No starting item selected';
+        if (focusChipBox) focusChipBox.replaceChildren();
+      }
+      // Mirrors what a full re-render would show for the picker: in Workspace a typed id
+      // discards the picked record, in Relations the starting record stays if it still matches.
+      select.value = workspace || !choices.some((choice) => choice.id === rel.id) ? '' : rel.id;
+      show.disabled = rel.loading || !(select.value || typed.value.trim());
+      show.textContent = rel.loading ? 'Loading relations…' : workspace ? 'Explore related items' : 'Show relations';
+      status.textContent = rel.status;
+      error.textContent = rel.error;
+    });
+    on(show, 'click', () => runRelations((select.value || typed.value).trim(), view));
+    if (rel.map) {
+      if (!workspace) results.append(renderRelationGraph(rel));
+      const { groups, shown } = gatherRelations(rel);
+      for (const group of groups) {
+        results.append(el('h3', { text: group.label }));
+        for (const row of group.rows) results.append(relationRowElements(group, row, workspace ? openWorkspaceItem : openRelation));
+      }
+      if (!shown) results.append(el('p', { class: 'empty', text: relationEmptyText(rel.map) }));
+      const bounds = [];
+      if (Number.isInteger(rel.map.inputLimitPerKind)) bounds.push(`records read per kind: up to ${rel.map.inputLimitPerKind}`);
+      if (Number.isInteger(rel.map.edgeScanLimit)) bounds.push(`edges scanned: up to ${rel.map.edgeScanLimit}`);
+      if (Number.isInteger(rel.map.placeholderLimit)) bounds.push(`unresolved placeholders kept: up to ${rel.map.placeholderLimit}`);
+      if (bounds.length) results.append(el('p', { class: 'note', text: `Scan bounds — ${bounds.join(', ')}.` }));
+      if (typeof rel.map.enumerationNote === 'string' && rel.map.enumerationNote) results.append(el('p', { class: 'note', text: rel.map.enumerationNote }));
+    }
+    listPane.replaceChildren(
+      el('h2', { text: workspace ? 'Workspace' : 'Relations' }),
+      el('p', { class: 'note', text: workspace ? 'Start with any saved item. Read its local associations here, then start from another item. No item is a home or a parent.' : 'Pick one saved record. Visualize the local links reported by this computer, then inspect the complete labelled evidence list below. It is not a home.' }),
+      el('label', { class: 'lab', for: prefix + 'Start', text: 'Starting record' }),
+      select,
+      typed,
+      el('div', { class: 'row' }, [show]),
+      status,
+      error,
+      ...(workspace ? [el('h3', { text: 'Starting from' }), focusIdEl, focusChipBox] : []),
+      results,
+    );
+    if (workspace) { renderWorkspaceReading(); return; }
+    const record = rel.recordId ? findRecord(rel.recordId) : null;
+    detailPane.replaceChildren(record ? el('article', { class: 'panel pad local-mark' }, [
+      el('h2', { text: record.title || recordLabel(record.id) }),
+      el('p', { class: 'mono', text: record.id }),
+      availabilityLabel(record) ? el('p', { text: availabilityLabel(record) }) : null,
+      el('p', { class: 'note', text: 'Opened from a local association. This does not make the records the same.' }),
+    ]) : el('p', { class: 'empty', text: 'Open a related record to see it. Relations does not rank one kind above another.' }));
+  }
+  function relationEmptyText(map) {
+    if (map?.truncated === true || map?.complete === false) {
+      return 'No local associations were shown for this record, but the scan stopped early, so more may exist.';
+    }
+    if (map?.complete === true) return 'No local associations for this record.';
+    return 'No local associations were shown for this record. Whether more exist was not reported.';
+  }
+  async function runRelations(id, view = 'relations') {
+    const rel = state[view];
+    const render = () => renderRelations(view);
+    const raw = typeof id === 'string' ? id.trim() : '';
+    if (!raw) { rel.error = 'Choose a saved record or paste an exact id first. Nothing was loaded.'; rel.status = ''; render(); return; }
+    if (!validWorldId(raw)) {
+      rel.error = 'That is not an id this Studio recognizes. Enter the full id exactly as it was saved (c-, p-, n-, o-, or s-). Nothing was loaded.';
+      rel.status = '';
+      render();
+      return;
+    }
+    const ticket = ++relationsTicket;
+    relationsAbort?.abort();
+    const controller = typeof AbortController === 'function' ? new AbortController() : null;
+    relationsAbort = controller;
+    if (view === 'workspace') { clearWorkspaceReading(); rel.map = null; rel.status = 'Loading local associations…'; }
+    rel.id = raw;
+    rel.loading = true;
+    rel.error = '';
+    if (state.view === view) render();
+    const params = new URLSearchParams({ id: raw, limit: '100' });
+    const result = await call('/map?' + params.toString(), { signal: controller?.signal });
+    if (state.view !== view) { rel.loading = false; rel.status = ''; return; }
+    if (ticket !== relationsTicket) return;
+    rel.loading = false;
+    if (result.aborted) { rel.status = ''; return; }
+    if (result.status !== 200 || !result.data || !Array.isArray(result.data.nodes) || !Array.isArray(result.data.edges)) {
+      rel.map = null;
+      rel.status = '';
+      rel.error = result.status === 0 ? 'Studio didn’t answer. Nothing new was shown.' : problemText(result.data);
+      render();
+      return;
+    }
+    rel.map = result.data;
+    const { shown } = gatherRelations(rel);
+    rel.status = relationStatus(result.data, shown);
+    rel.error = '';
+    render();
+  }
+  function clearWorkspaceReading() {
+    workspaceReadTicket += 1;
+    workspaceReadAbort?.abort();
+    Object.assign(state.workspace, { item: null, readingId: '', readingNode: null, readingError: '', readingLoading: false });
+  }
+  function findListedRecord(id) {
+    for (const kind of ['conversations', 'projects', 'notes', 'objects', 'selections']) {
+      const hit = state.lists[kind].items.find((item) => item?.id === id);
+      if (hit) return hit;
+    }
+    return null;
+  }
+  // Chip for the 'Starting from' header: the map's focus node first, then what the loaded list
+  // recorded (custody/coverage). Nothing is claimed when nothing is known.
+  function workspaceFocusChip(rel) {
+    if (!rel.id) return null;
+    const node = (rel.map && Array.isArray(rel.map.nodes) ? rel.map.nodes : []).find((n) => n && n.id === rel.id) ?? null;
+    const chip = readerProvenanceChip(node, findListedRecord(rel.id));
+    return chip[0] === 'Provenance unknown' ? null : chip;
+  }
+  function focusReaderHead() {
+    if (state.view !== 'workspace' || !readerHeadNode) return;
+    try {
+      if (typeof globalThis.matchMedia === 'function' && globalThis.matchMedia('(max-width: 800px)').matches) {
+        readerHeadNode.scrollIntoView?.({ block: 'start' });
+      }
+    } catch { /* narrow-screen positioning only; focus itself is what matters */ }
+    readerHeadNode.focus?.();
+  }
+  function renderWorkspaceReading() {
+    const ws = state.workspace;
+    // role=status nodes persist and mutate in place; only the body around them is rebuilt.
+    const deployed = readerHeadNode && readerStatusNode
+      && [...(detailPane.children ?? [])].includes(readerHeadNode);
+    if (!deployed) {
+      readerHeadNode = el('h2', { text: 'Reading pane', id: 'worldWorkspaceReadHead', tabindex: '-1' });
+      readerStatusNode = el('p', { id: 'worldWorkspaceReadStatus', role: 'status', 'aria-live': 'polite' });
+      readerBodyNode = el('div', { id: 'worldWorkspaceReadBody' });
+      detailPane.replaceChildren(readerHeadNode, readerStatusNode, readerBodyNode);
+    }
+    readerStatusNode.textContent = ws.readingLoading ? 'Loading saved item…' : ws.readingError || (ws.item ? 'Saved item opened.' : 'Choose a related item to read here.');
+    const children = [];
+    if (ws.readingId) children.push(el('p', { class: 'mono', text: ws.readingId }));
+    // One chip, derived from the map node that was clicked, corrected by custody/coverage.
+    children.push(chips([readerProvenanceChip(ws.readingNode, ws.item ?? null)]));
+    if (availabilityLabel(ws.readingNode)) children.push(el('p', { text: availabilityLabel(ws.readingNode) }));
+    const item = ws.item;
+    if (item) {
+      const refocus = el('button', { type: 'button', id: 'worldWorkspaceRefocus', text: 'Start from this item' });
+      on(refocus, 'click', () => { ws.typed = ''; return runRelations(item.id, 'workspace').then(() => focusReaderHead()); });
+      children.push(refocus);
+      if (ID_RE.conversations.test(item.id)) children.push(conversationReading(item, null, null, []));
+      else children.push(el('article', { class: 'panel pad local-mark' }, [
+        el('h2', { text: item.title || recordLabel(item.id) }),
+        availabilityLabel(item) ? el('p', { text: availabilityLabel(item) }) : null,
+        ...importedFromLines(item.importedFrom).map((row) => el('p', { class: 'note', text: `${row.label}: ${row.value}` })),
+        ...(ID_RE.notes.test(item.id)
+          ? [el('div', { class: 'workspace-note', text: typeof item.body === 'string' ? item.body : 'No saved note body was reported.' })]
+          : ID_RE.projects.test(item.id)
+            ? [kv([
+                { label: 'Saved conversations linked', value: String(item.conversationIds?.length ?? 0) },
+                { label: 'Notes linked', value: String(item.noteIds?.length ?? 0) },
+                { label: 'Other items linked', value: String(item.memberIds?.length ?? 0) },
+              ])]
+            : [kv(referenceReaderRows(item)),
+              el('p', { class: 'note', text: 'Saved reference only. This does not include the source content.' }),
+              sourceJumpButton(item)]),
+      ]));
+    }
+    readerBodyNode.replaceChildren(...children);
+  }
+  async function openWorkspaceItem(row) {
+    const id = row?.id, node = row?.node;
+    if (!validWorldId(id) || node?.availability === 'unresolved' || node?.availabilityReason === 'NOT_SCANNED') return;
+    clearWorkspaceReading();
+    const ticket = workspaceReadTicket;
+    const controller = typeof AbortController === 'function' ? new AbortController() : null;
+    workspaceReadAbort = controller;
+    const ws = state.workspace;
+    Object.assign(ws, { readingId: id, readingNode: node, readingLoading: true });
+    renderWorkspaceReading();
+    const kind = ID_RE.conversations.test(id) ? 'conversations' : ID_RE.projects.test(id) ? 'projects' : ID_RE.notes.test(id) ? 'notes' : id.startsWith('o-') ? 'objects' : 'selections';
+    const result = await call(`/${kind}/${encodeURIComponent(id)}`, { signal: controller?.signal });
+    if (ticket !== workspaceReadTicket || state.view !== 'workspace') return;
+    ws.readingLoading = false;
+    if (result.aborted) return;
+    if (result.status === 200 && result.data?.id === id) ws.item = result.data;
+    else ws.readingError = result.status === 404 ? 'This saved item is missing or stale. That is not proof it was deleted on a provider.'
+      : result.status === 409 ? 'This saved item is currently unavailable. It was not marked deleted.'
+        : result.status === 0 ? 'Studio didn’t answer. No saved content was opened.' : `This item could not be read. ${problemText(result.data)}`;
+    renderWorkspaceReading();
+    focusReaderHead();
+  }
+  async function openRelation(row) {
+    const id = row?.id, node = row?.node;
+    if (!validWorldId(id)) return;
+    if (node && (node.availability === 'unresolved' || node.availabilityReason === 'NOT_SCANNED')) return;
+    if (node?.kind === 'project' && ID_RE.projects.test(id)) return openItem('projects', id);
+    if (node?.kind === 'note' && ID_RE.notes.test(id)) return openItem('notes', id);
+    if ((node?.kind === 'conversation' || id.startsWith('c-')) && ID_RE.conversations.test(id)) return openItem('conversations', id);
+    if (REF_RE.test(id) && (id.startsWith('o-') || id.startsWith('s-'))) {
+      state.relations.recordId = id;
+      await readRecord(id);
+      if (state.view === 'relations') renderRelations();
+    }
+  }
+  // ---- Composed workspace (VD-0057) --------------------------------------------
+  // One saved conversation, the project that links it, the notes linked to that project
+  // and the saved objects that reference it, on ONE surface. Every row comes from the same
+  // local sources the Relations view reads: GET /map for associations, the already-loaded
+  // World lists for titles/counts, and a bounded read per row. Nothing is inferred, written
+  // or sent, and a local association is never presented as provider identity.
+  const COMPOSE_ENDPOINT = { conversation: 'conversations', project: 'projects', note: 'notes', 'source-reference': 'objects', selection: 'selections' };
+
+  function kindOfRecordId(id) {
+    if (ID_RE.conversations.test(id || '')) return 'conversation';
+    if (ID_RE.projects.test(id || '')) return 'project';
+    if (ID_RE.notes.test(id || '')) return 'note';
+    if (String(id).startsWith('o-')) return 'source-reference';
+    if (String(id).startsWith('s-')) return 'selection';
+    return 'unknown';
+  }
+  function composeBucket(buckets, id, node, why, seen) {
+    if (typeof id !== 'string' || !id || seen.has(id)) return;
+    seen.add(id);
+    const kind = typeof node?.kind === 'string' && node.kind ? node.kind : kindOfRecordId(id);
+    const bucket = kind === 'project' ? buckets.projects
+      : kind === 'note' ? buckets.notes
+        : kind === 'conversation' ? buckets.relatedConversations
+          : buckets.objects;
+    bucket.push({ id, node: node ?? { id }, why, kind });
+  }
+  // Same /map payload, split into what a reader actually asks for. A project node carries the
+  // note ids the project editor saves, so notes reachable only through the project are included.
+  function composeBuckets(conversationId, map) {
+    const nodes = new Map((Array.isArray(map?.nodes) ? map.nodes : [])
+      .filter((node) => node && typeof node.id === 'string').map((node) => [node.id, node]));
+    const buckets = { projects: [], notes: [], objects: [], relatedConversations: [] };
+    const seen = new Set([conversationId]);
+    for (const group of relationGroups(conversationId, map)) {
+      for (const row of group.rows) {
+        const node = nodes.get(row.id) ?? row.node ?? { id: row.id };
+        composeBucket(buckets, row.id, node, `${group.label} this saved conversation`, seen);
+      }
+    }
+    for (const project of buckets.projects.slice()) {
+      const noteIds = Array.isArray(project.node?.noteIds) ? project.node.noteIds : [];
+      for (const noteId of noteIds) {
+        composeBucket(buckets, noteId, nodes.get(noteId), `Linked by project ${project.node?.title || project.id}`, seen);
+      }
+    }
+    // The map is bounded. If it reported no project at all, fall back to the loaded project list
+    // so a real local link is never hidden by the map's own bounds.
+    if (!buckets.projects.length) {
+      for (const item of state.lists.projects.items) {
+        const ids = [...(Array.isArray(item?.conversationIds) ? item.conversationIds : []), ...(Array.isArray(item?.memberIds) ? item.memberIds : [])];
+        if (ids.includes(conversationId)) composeBucket(buckets, item.id, item, 'Links this conversation in the loaded project list', seen);
+      }
+    }
+    return buckets;
+  }
+  function composeStatus(map, buckets) {
+    const total = buckets.projects.length + buckets.notes.length + buckets.objects.length + buckets.relatedConversations.length;
+    const noun = total === 1 ? 'linked saved item' : 'linked saved items';
+    const more = map?.truncated === true || map?.complete === false;
+    return more ? `Composed ${total} ${noun}. The local map stopped early, so more may exist.`
+      : map?.complete === true ? `Composed ${total} ${noun}.`
+        : `Composed ${total} ${noun}. Whether more exist was not reported.`;
+  }
+  // Bounded reads: at most 8 rows per section, so a heavily linked conversation cannot turn one
+  // surface into hundreds of local reads. The remainder is stated, never silently dropped.
+  async function composeHydrate(rows, limit = 8) {
+    const picked = rows.slice(0, limit);
+    const read = await Promise.all(picked.map(async (row) => {
+      const endpoint = COMPOSE_ENDPOINT[row.kind];
+      if (!endpoint || !validWorldId(row.id)) return { ...row, error: 'Cannot be read here: unrecognised id' };
+      const result = await call(`/${endpoint}/${encodeURIComponent(row.id)}`);
+      if (result.status === 200 && result.data?.id === row.id) return { ...row, record: result.data };
+      return { ...row, record: findListedRecord(row.id) ?? null,
+        error: result.status === 404 ? 'Not on this computer anymore.'
+          : result.status === 409 ? 'Currently unavailable; it was not marked deleted.'
+            : result.status === 0 ? 'Studio didn’t answer.' : problemText(result.data) };
+    }));
+    return { rows: read, hidden: Math.max(0, rows.length - picked.length) };
+  }
+  async function loadCompose(id) {
+    const c = state.compose;
+    const raw = typeof id === 'string' ? id.trim() : '';
+    if (!raw) { c.error = 'Choose a saved conversation or paste its id first. Nothing was loaded.'; c.status = ''; if (state.view === 'compose') renderCompose(); return; }
+    if (!ID_RE.conversations.test(raw)) {
+      c.error = 'This surface starts from a saved conversation. Enter a conversation id exactly as it was saved (c-…). Nothing was loaded.';
+      c.status = '';
+      if (state.view === 'compose') renderCompose();
+      return;
+    }
+    const ticket = ++composeTicket;
+    composeAbort?.abort();
+    composeReadAbort?.abort();
+    composeReadTicket += 1;
+    const controller = typeof AbortController === 'function' ? new AbortController() : null;
+    composeAbort = controller;
+    Object.assign(c, { id: raw, loading: true, error: '', status: 'Loading this conversation and its local links…',
+      map: null, conversation: null, conversationError: '', projects: [], projectsHidden: 0, notes: [], notesHidden: 0,
+      objects: [], objectsHidden: 0, relatedConversations: [],
+      readingId: '', readingNode: null, readingItem: null, readingError: '', readingLoading: false });
+    if (state.view === 'compose') renderCompose();
+    const params = new URLSearchParams({ id: raw, limit: '100' });
+    const [mapResult, conversationResult] = await Promise.all([
+      call('/map?' + params.toString(), { signal: controller?.signal }),
+      call('/conversations/' + encodeURIComponent(raw), { signal: controller?.signal }),
+    ]);
+    if (ticket !== composeTicket) return;
+    if (mapResult.aborted) { c.loading = false; c.status = ''; if (state.view === 'compose') renderCompose(); return; }
+    if (mapResult.status !== 200 || !Array.isArray(mapResult.data?.nodes) || !Array.isArray(mapResult.data?.edges)) {
+      c.loading = false;
+      c.status = '';
+      c.error = mapResult.status === 0 ? 'Studio didn’t answer. Nothing new was shown.' : problemText(mapResult.data);
+      if (state.view === 'compose') renderCompose();
+      return;
+    }
+    const buckets = composeBuckets(raw, mapResult.data);
+    const [notes, projects, objects] = await Promise.all([
+      composeHydrate(buckets.notes), composeHydrate(buckets.projects), composeHydrate(buckets.objects),
+    ]);
+    if (ticket !== composeTicket) return;
+    c.loading = false;
+    c.map = mapResult.data;
+    c.conversation = conversationResult.status === 200 && conversationResult.data?.id === raw
+      ? conversationResult.data : (findListedRecord(raw) ?? { id: raw, title: '' });
+    c.conversationError = conversationResult.status === 200 ? ''
+      : conversationResult.status === 404 ? 'These saved messages are not on this computer anymore. The links below are still local.'
+        : conversationResult.status === 409 ? 'This recording is still active, so its saved messages are not available yet. Nothing was changed.'
+          : conversationResult.status === 0 ? 'Studio didn’t answer for the saved messages. The links below are still local.'
+            : `The saved messages could not be read. ${problemText(conversationResult.data)}`;
+    c.projects = projects.rows; c.projectsHidden = projects.hidden;
+    c.notes = notes.rows; c.notesHidden = notes.hidden;
+    c.objects = objects.rows; c.objectsHidden = objects.hidden;
+    c.relatedConversations = buckets.relatedConversations;
+    c.status = composeStatus(mapResult.data, buckets);
+    c.error = '';
+    if (state.view === 'compose') renderCompose();
+  }
+  function composeRowElement(row) {
+    const chip = readerProvenanceChip(row.node, row.record ?? null);
+    const listed = findListedRecord(row.id);
+    const title = row.record?.title || row.node?.title || listed?.title || row.id;
+    const button = el('button', { type: 'button', class: 'rowbtn', 'aria-label': `Read ${row.id} on this surface` }, [
+      el('span', { class: 'conv-title', text: title }),
+      el('span', { class: 'note', text: `${row.kind === 'source-reference' ? 'local object' : row.kind} · ${row.id}` }),
+      el('span', { class: `pill ${chip[1]}`, text: chip[0] }),
+    ]);
+    if (COMPOSE_ENDPOINT[row.kind] && validWorldId(row.id)
+      && row.node?.availability !== 'unresolved' && row.node?.availabilityReason !== 'NOT_SCANNED') on(button, 'click', () => composeOpen(row));
+    else button.disabled = true;
+    const body = typeof row.record?.body === 'string' ? row.record.body.replace(/\s+/g, ' ').trim() : '';
+    return el('div', { class: 'member' }, [
+      button,
+      body ? el('p', { class: 'note', text: clip(body, 160) }) : null,
+      row.why ? el('p', { class: 'note', text: row.why }) : null,
+      availabilityLabel(row.node) ? el('p', { text: availabilityLabel(row.node) }) : null,
+      row.error ? el('p', { class: 'note', text: row.error }) : null,
+    ]);
+  }
+  function composeSection(title, note, rows, emptyText, hidden = 0) {
+    const box = el('section', { class: 'compose-section' }, [
+      el('h3', { text: title }),
+      el('p', { class: 'note', text: note }),
+    ]);
+    if (!rows.length) box.append(el('p', { class: 'empty', text: emptyText }));
+    for (const row of rows) box.append(composeRowElement(row));
+    if (hidden > 0) box.append(el('p', { class: 'note', text: `${hidden} more ${title.toLowerCase()} are linked but were not read here. Relations lists the complete set.` }));
+    return box;
+  }
+  function composeReading() {
+    const c = state.compose;
+    const head = el('h3', { id: 'worldComposeReadHead', tabindex: '-1', text: 'Read here' });
+    composeReadHeadNode = head;
+    const box = el('section', { class: 'compose-reading' }, [
+      head,
+      el('p', { class: 'note', id: 'worldComposeReadStatus', role: 'status', 'aria-live': 'polite',
+        text: c.readingLoading ? 'Loading saved item…'
+          : c.readingError || (c.readingItem ? 'Saved item opened here.' : 'Choose a linked item to read it without leaving this surface.') }),
+    ]);
+    const item = c.readingItem;
+    if (c.readingId) box.append(el('p', { class: 'mono', text: c.readingId }));
+    if (item) {
+      if (ID_RE.conversations.test(item.id)) box.append(conversationReading(item, null, null, null));
+      else if (ID_RE.notes.test(item.id)) box.append(el('article', { class: 'panel pad local-mark' }, [
+        el('h2', { text: item.title || 'Saved note' }),
+        chips([readerProvenanceChip(c.readingNode, item)]),
+        el('div', { class: 'workspace-note', text: typeof item.body === 'string' ? item.body : 'No saved note body was recorded.' }),
+      ]));
+      else if (ID_RE.projects.test(item.id)) box.append(el('article', { class: 'panel pad local-mark' }, [
+        el('h2', { text: item.title || 'Project' }),
+        chips([readerProvenanceChip(c.readingNode, item)]),
+        kv([
+          { label: 'Saved conversations linked', value: String(item.conversationIds?.length ?? 0) },
+          { label: 'Notes linked', value: String(item.noteIds?.length ?? 0) },
+          { label: 'Other items linked', value: String(item.memberIds?.length ?? 0) },
+        ]),
+      ]));
+      else box.append(el('article', { class: 'panel pad local-mark' }, [
+        el('h2', { text: item.title || recordLabel(item.id) }),
+        chips([readerProvenanceChip(c.readingNode, item)]),
+        availabilityLabel(item) ? el('p', { text: availabilityLabel(item) }) : null,
+        kv(referenceReaderRows(item)),
+        el('p', { class: 'note', text: 'Saved reference only. This does not include the source content.' }),
+      ]));
+    }
+    return box;
+  }
+  function composeSurface() {
+    const c = state.compose;
+    if (!c.id) {
+      return el('p', { class: 'empty', text: 'Nothing is composed yet. Choose a saved conversation to see its project, its notes and the saved objects related to it on one surface.' });
+    }
+    const conversation = c.conversation ?? { id: c.id };
+    const node = (Array.isArray(c.map?.nodes) ? c.map.nodes : []).find((entry) => entry && entry.id === c.id) ?? null;
+    const surface = el('article', { class: 'panel pad local-mark', id: 'worldComposeSurface' }, [
+      el('h2', { text: conversation.title || 'Saved conversation' }),
+      el('p', { class: 'mono', text: c.id }),
+      chips([readerProvenanceChip(node, conversation)]),
+      c.conversationError ? el('p', { class: 'note', text: c.conversationError }) : null,
+      el('p', { class: 'note', text: 'One surface: the saved conversation, the project that links it, the notes linked through that project, and the saved objects that reference it.' }),
+    ]);
+    if (c.projects.length) {
+      surface.append(el('p', { class: 'note', text: 'Start with the project below: it is the one record that already names this conversation.' }));
+    }
+    surface.append(
+      composeSection('Linked projects', 'Every loaded project that names this saved conversation.',
+        c.projects, 'No loaded project links this saved conversation.', c.projectsHidden),
+      composeSection('Linked notes', 'Notes the linked project keeps, plus any note the local map reports.',
+        c.notes, 'No loaded note is linked to this conversation or its project.', c.notesHidden),
+      composeSection('Related saved objects', 'Local objects and selections the map reports as related to this conversation.',
+        c.objects, 'No saved object references this conversation.', c.objectsHidden),
+    );
+    if (c.relatedConversations.length) {
+      surface.append(composeSection('Other saved conversations', 'Saved conversations the map places beside this one.',
+        c.relatedConversations, 'No other saved conversation is adjacent here.'));
+    }
+    surface.append(
+      el('p', { class: 'note', text: 'These are local associations kept on this computer. They are not proof that two records are the same thing on a provider.' }),
+      composeReading(),
+    );
+    return surface;
+  }
+  function renderCompose() {
+    ensureFrame();
+    const c = state.compose;
+    const choices = relationChoices().filter((choice) => choice.kind === 'conversation');
+    const select = el('select', { id: 'worldComposeStart', 'aria-label': 'Saved conversation for the composed workspace' });
+    select.append(el('option', { value: '', text: choices.length ? 'Choose a saved conversation' : 'No saved conversations loaded' }));
+    for (const choice of choices) {
+      select.append(el('option', { value: choice.id, text: choice.title && choice.title !== choice.id ? `${choice.title} · ${choice.id}` : choice.id }));
+    }
+    select.value = choices.some((choice) => choice.id === c.id) ? c.id : '';
+    const typed = el('input', { id: 'worldComposeId', type: 'text', 'aria-label': 'Paste an exact conversation id',
+      placeholder: 'Or paste an exact conversation id (c-)' });
+    typed.value = c.typed ?? '';
+    const open = el('button', { type: 'button', id: 'worldComposeLoad', text: c.loading ? 'Loading workspace…' : 'Open this conversation' });
+    open.disabled = c.loading || !(select.value || typed.value.trim());
+    on(select, 'change', () => {
+      typed.value = '';
+      c.typed = '';
+      open.disabled = c.loading || !select.value;
+    });
+    on(typed, 'change', () => {
+      c.typed = typed.value;
+      open.disabled = c.loading || !(select.value || typed.value.trim());
+    });
+    on(open, 'click', () => loadCompose(select.value || typed.value));
+    listPane.replaceChildren(
+      el('h2', { text: 'Composed workspace' }),
+      el('p', { class: 'note', text: 'Pick one saved conversation. Its linked project, its linked notes and the saved objects related to it stay on one surface; nothing here changes a record.' }),
+      el('label', { class: 'lab', for: 'worldComposeStart', text: 'Saved conversation' }),
+      select,
+      typed,
+      el('div', { class: 'row' }, [open]),
+      el('div', { id: 'worldComposeStatus', role: 'status', 'aria-live': 'polite', text: c.status }),
+      el('div', { class: 'err', id: 'worldComposeError', role: 'alert', text: c.error }),
+      el('p', { class: 'note', text: 'Links come from the same local map the Relations view reads. A local association is not provider identity.' }),
+    );
+    detailPane.replaceChildren(composeSurface());
+  }
+  async function composeOpen(row) {
+    const c = state.compose;
+    if (!validWorldId(row?.id)) return;
+    const endpoint = COMPOSE_ENDPOINT[row.kind];
+    if (!endpoint) return;
+    const ticket = ++composeReadTicket;
+    composeReadAbort?.abort();
+    const controller = typeof AbortController === 'function' ? new AbortController() : null;
+    composeReadAbort = controller;
+    Object.assign(c, { readingId: row.id, readingNode: row.node ?? null, readingItem: row.record ?? null,
+      readingLoading: !row.record, readingError: '' });
+    if (state.view === 'compose') renderCompose();
+    if (row.record) { focusComposeReading(); return; }
+    const result = await call(`/${endpoint}/${encodeURIComponent(row.id)}`, { signal: controller?.signal });
+    if (ticket !== composeReadTicket || state.view !== 'compose') return;
+    c.readingLoading = false;
+    if (result.aborted) return;
+    if (result.status === 200 && result.data?.id === row.id) c.readingItem = result.data;
+    else c.readingError = result.status === 404 ? 'This saved item is missing or stale. That is not proof it was deleted on a provider.'
+      : result.status === 409 ? 'This saved item is currently unavailable. It was not marked deleted.'
+        : result.status === 0 ? 'Studio didn’t answer. No saved content was opened.'
+          : `This item could not be read. ${problemText(result.data)}`;
+    if (state.view !== 'compose') return;
+    renderCompose();
+    focusComposeReading();
+  }
+  function focusComposeReading() {
+    if (state.view !== 'compose' || !composeReadHeadNode) return;
+    composeReadHeadNode.focus?.();
+  }
+  async function choose(view, { quiet = false } = {}) {
+    if (!SHELL_VIEWS.has(view)) return;
+    if (state.view !== view) {
+      if (state.view === 'agent' && view !== 'agent') {
+        agentInsightTicket++;
+        agentMemorySearchTicket++;
+        state.agent.memorySearch = { query: '', tier: 'all', busy: false, error: '', result: null };
+        state.agent.insightBusy = false;
+        // Explicitly loaded private continuity must not survive navigation in UI state.
+        state.agent.insight = null; state.agent.insightKind = null; state.agent.insightError = '';
+      }
+      relationsAbort?.abort(); relationsTicket += 1;
+      state.relations.loading = false;
+      state.workspace.loading = false;
+      state.relations.status = '';
+      state.workspace.status = '';
+      composeAbort?.abort(); composeTicket += 1;
+      composeReadAbort?.abort(); composeReadTicket += 1;
+      state.compose.loading = false;
+      state.compose.readingLoading = false;
+      clearWorkspaceReading();
+    }
+    state.view = view;
+    remember();
+    applyVisibility();
+    if (view !== 'find') { searchAbort?.abort(); searchTicket += 1; state.find.loading = false; }
+    if (view !== 'transfer') { exportAbort?.abort(); importAbort?.abort(); exportTicket += 1; importTicket += 1; state.transfer.loading = ''; }
+    if (view !== 'relations' && view !== 'workspace') { relationsAbort?.abort(); relationsTicket += 1; state.relations.loading = false; }
+    if (view === 'capture') { if (!quiet) announce('Capture.'); return; }
+    if (view === 'home') {
+      renderHome();
+      await Promise.all([loadNamespace(), fetchList('conversations'), fetchList('projects'), fetchList('notes'), loadAgentHomeStatus()]);
+      if (state.view === 'home') renderHome();
+      if (!quiet) announce('Home.');
+      return;
+    }
+    if (view === 'builder') {
+      renderBuilder();
+      await refreshBuilder();
+      if (state.view === 'builder' && state.builder.selected) await loadAiJob();
+      if (!quiet) announce('Build my VIVIM.');
+      return;
+    }
+    if (view === 'agent') {
+      renderAgent();
+      await agentRefresh();
+      if (!quiet) announce('Personal Agent.');
+      return;
+    }
+    if (view === 'settings') {
+      renderSettings();
+      await Promise.all([loadNamespace(), loadSettingsSites()]);
+      if (state.view === 'settings') renderSettings();
+      if (!quiet) announce('Settings.');
+      return;
+    }
+    if (view === 'transfer') {
+      loadNamespace();
+      renderTransfer();
+      await Promise.all([fetchList('conversations'), fetchList('projects'), fetchList('notes')]);
+      if (state.view === 'transfer') renderTransfer();
+      if (!quiet) announce('Transfer.');
+      return;
+    }
+    if (view === 'compose') {
+      loadNamespace();
+      renderCompose();
+      await Promise.all([fetchList('conversations'), fetchList('projects'), fetchList('notes')]);
+      if (state.view === 'compose') renderCompose();
+      if (!quiet) announce('Composed workspace.');
+      return;
+    }
+    if (view === 'relations' || view === 'workspace') {
+      loadNamespace();
+      renderRelations(view);
+      await Promise.all([fetchList('conversations'), fetchList('projects'), fetchList('notes'), fetchList('objects'), fetchList('selections')]);
+      if (state.view === view) renderRelations(view);
+      if (!quiet) announce(view === 'workspace' ? 'Workspace.' : 'Relations.');
+      return;
+    }
+    if (view === 'find') {
+      loadNamespace();
+      renderFind();
+      if (!quiet) announce('Find.');
+      return;
+    }
+    loadNamespace();
+    renderListPane();
+    renderDetailPane();
+    const loads = [fetchList(view)];
+    if (view !== 'projects') loads.push(fetchList('projects'));
+    const selected = state.selected[view];
+    if (selected) loads.push(fetchItem(view, selected));
+    if (!quiet) announce(view === 'conversations' ? 'Saved conversations.' : view === 'projects' ? 'Projects.' : 'Notes.');
+    await Promise.all(loads);
+  }
+  for (const button of buttons) on(button, 'click', () => choose(viewOf(button)));
+  let initial = 'capture';
+  try {
+    const savedView = storeGet('studio.world.view');
+    if (SHELL_VIEWS.has(savedView)) initial = savedView;
+    const savedSelected = JSON.parse(storeGet('studio.world.selected') || 'null');
+    if (savedSelected && typeof savedSelected === 'object') {
+      for (const view of VIEWS) if (ID_RE[view].test(savedSelected[view] || '')) state.selected[view] = savedSelected[view];
+    }
+  } catch { initial = 'capture'; }
+  applyVisibility();
+  choose(initial, { quiet: true });
+  return { choose, view: () => state.view };
+}
