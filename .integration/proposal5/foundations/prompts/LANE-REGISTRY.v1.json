@@ -67,13 +67,13 @@
       "ref": "work/p5-p2-preg-knowledge-r001",
       "sha": "4db9e0c2068be36ab42663a76186422c8f9813a1"
     },
-    "C": {
-      "ref": "work/p5-p2-preg-interop-r001",
-      "sha": "73b1ea769de6023dfff857d7e9c4003731f3b112"
-    },
     "H1": {
       "ref": "work/p5-p2-highvalue-labs",
       "sha": "3e6954d21bd70eeccc6e00a310bcb337c3164f50"
+    },
+    "P2C": {
+      "ref": "work/p5-p2-preg-interop-r001",
+      "sha": "73b1ea769de6023dfff857d7e9c4003731f3b112"
     }
   },
   "lanes": [
@@ -144,7 +144,7 @@
         "B",
         "F",
         "N0",
-        "C"
+        "P2C"
       ],
       "minimumArtifacts": [
         "README.md",
