@@ -120,4 +120,6 @@ test('original crosswalk Labs observer withholds all unless allowlisted (donor r
     records:[{source_id:'s',source_item_id:'x',type:'research',name:'Public but unapproved'}]});
   assert.equal(observerExport(snapshot).records.length,0);
   assert.equal(observerExport(snapshot,{allowSourceIds:['s']}).records.length,1);
+  assert.throws(()=>observerExport(snapshot,{allowSourceIds:'s'}),/invalid_source_allowlist/);
+  assert.throws(()=>observerExport({...snapshot,records:[]},{allowSourceIds:['s']}),/invalid_snapshot_digest/);
 });
