@@ -114,7 +114,8 @@ export function renderHviInspector({
   else if(phase==='cancelled') view={...projectHviInspector(),mode:'cancelled'};
   else if(phase==='progress'||phase==='cancelling') view={...projectHviInspector(),mode:'progress'};
   else if(phase==='request'||phase==='permission-pending') view={...projectHviInspector(),mode:'request-access'};
-  else if(envelope!==null && synthetic===true && previewSynthetic===true) {
+  else if(envelope!==null && synthetic===true && previewSynthetic===true &&
+    envelope.syntheticPreviewAllowed===true) {
     view=projectHviInspector({envelope,selectedPins,targetPinId,offset,limit,synthetic:true,permission});
     if(expectedDigest!==null && expectedDigest!==view.provenance?.digest)
       view={...projectHviInspector(),mode:'stale'};
