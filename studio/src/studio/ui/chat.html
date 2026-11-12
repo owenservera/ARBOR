@@ -1,0 +1,1073 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VIVIM — Your AI World</title>
+<script type="module" src="/ui/chat.mjs"></script>
+<style>
+:root {
+  --paper: #EEF1F4; --panel: #FFFFFF; --ink: #1D2733; --muted: #5D6B7A; --line: #D3DAE2; --hover: #E4E9EF;
+  --l1: #2F6FB3; --l2: #7A4FB5; --l3: #2E8C6E; --act: #C2721B; --gap: #C23B3B; --ok: #2E8C6E;
+  --sans: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --mono: "Cascadia Mono", "Cascadia Code", Consolas, "SF Mono", Menlo, monospace;
+  /* Text-safe tones, used only by the Chat state chips (4.5:1 or better on paper, panel and tinted panels). */
+  --chip-ok: #1C6B50; --chip-info: #235A96; --chip-warn: #8A4A00; --chip-bad: #A32A2A; --chip-mute: #556373;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --paper: #141A21; --panel: #1B232C; --ink: #DCE3EA; --muted: #8C9AA8; --line: #2C3742; --hover: #233039;
+    --l1: #6EA6E6; --l2: #B08CE8; --l3: #5CC4A2; --act: #E9A55A; --gap: #EF6B6B; --ok: #5CC4A2;
+    --chip-ok: #5CC4A2; --chip-info: #7DB2EC; --chip-warn: #E9A55A; --chip-bad: #F28080; --chip-mute: #9AA7B4; color-scheme: dark; }
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; }
+body { background: var(--paper); color: var(--ink); font: 14px/1.45 var(--sans); }
+button, select, input, textarea { font: inherit; color: inherit; }
+button { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 5px 14px; cursor: pointer; }
+button:hover:not(:disabled) { background: var(--hover); }
+button.primary { background: var(--l1); border-color: var(--l1); color: #fff; font-weight: 600; }
+button.primary:hover:not(:disabled) { background: var(--l1); filter: brightness(1.08); }
+button.live { background: transparent; border-color: var(--act); color: var(--act); font-weight: 600; }
+button.live:hover:not(:disabled) { background: var(--act); color: var(--panel); }
+button:disabled { opacity: .45; cursor: not-allowed; }
+:focus-visible { outline: 2px solid var(--l1); outline-offset: 2px; }
+input, select, textarea { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px; }
+textarea { width: 100%; resize: vertical; }
+a { color: var(--l1); }
+code, .mono { font-family: var(--mono); font-size: 12.5px; }
+.muted { color: var(--muted); }
+.note { color: var(--muted); font-size: 12.5px; }
+.note:empty, .err:empty { display: none; }
+.err { color: var(--gap); overflow-wrap: anywhere; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* every Chat control has at least a 44px hit area */
+button, select, input[type=text], input[type=search], input[type=file], textarea, summary, a.hit { min-height: 44px; }
+a.hit { display: inline-flex; align-items: center; }
+.pick { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 4px 10px; cursor: pointer; border-radius: 8px; }
+.pick input { width: 22px; height: 22px; min-height: 0; margin: 0; padding: 0; flex: none; accent-color: var(--l1); }
+.pick:hover { background: var(--hover); }
+.pick:focus-within { outline: 2px solid var(--l1); outline-offset: 2px; }
+
+header { display: flex; align-items: center; gap: 4px 18px; padding: 4px 18px; border-bottom: 1px solid var(--line); background: var(--panel); flex-wrap: wrap; }
+header h1 { font-size: 15px; font-weight: 650; margin: 0; letter-spacing: -.01em; }
+header .crumb b { font-weight: 600; }
+header a { display: inline-flex; align-items: center; min-height: 44px; }
+
+h2 { font-size: 17px; margin: 0 0 4px; font-weight: 650; letter-spacing: -.01em; }
+h3 { font-size: 14px; margin: 14px 0 6px; font-weight: 650; }
+p.lede { color: var(--muted); margin: 0 0 14px; max-width: 70ch; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; }
+.pad { padding: 12px 14px; }
+.row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.empty { color: var(--muted); padding: 22px; text-align: center; }
+
+.wrap { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; padding: 18px 22px 24px; max-width: 1320px; margin: 0 auto; align-items: start; }
+.wrap > * { min-width: 0; }
+@media (min-width: 1100px) {
+  .wrap { grid-template-columns: minmax(0, 1fr) 340px; }
+  aside { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow: auto; }
+  #detailsBox > summary { display: none; }
+}
+@media (max-width: 700px) { .wrap { padding: 12px; } header { padding: 4px 12px; } }
+
+details.panel > summary { cursor: pointer; font-weight: 650; padding: 0 14px; display: flex; align-items: center; }
+details.panel[open] > summary { border-bottom: 1px solid var(--line); }
+fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+legend { font-weight: 650; padding: 0; margin-bottom: 4px; }
+.field { display: block; margin-top: 10px; }
+.field > .lab { display: block; font-weight: 600; margin-bottom: 4px; }
+select { width: 100%; max-width: 420px; }
+
+.targets { border: 1px solid var(--line); border-radius: 8px; padding: 4px; margin-top: 6px; }
+.target .t-title { font-weight: 600; overflow-wrap: anywhere; }
+.target .t-sub { color: var(--muted); font-size: 12.5px; overflow-wrap: anywhere; }
+.target.off { opacity: .55; cursor: not-allowed; }
+
+/* Compare: a responsive grid of per-provider answer cards, 1 to 6 columns depending on space. */
+.compare-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; margin-top: 14px; }
+.compare-card { border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px 12px; min-width: 0; }
+.compare-card h3 { margin: 0 0 4px; }
+.compare-card .state { margin: 0 0 8px; font-weight: 600; }
+
+/* My AIs: a responsive grid of per-account health cards, plain words only, no sends. */
+.myais-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; margin-top: 14px; }
+.myais-card { border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px 12px; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.myais-card h3 { margin: 0 0 4px; }
+.myais-card button { align-self: flex-start; margin-top: 8px; }
+
+/* chips */
+.chips { display: flex; gap: 6px 8px; flex-wrap: wrap; align-items: center; }
+.pill { display: inline-flex; align-items: center; gap: 6px; border: 1px solid currentColor; border-radius: 99px; padding: 0 10px; font-size: 12px; font-weight: 600; white-space: nowrap; line-height: 1.7; }
+.t-ok { color: var(--chip-ok); } .t-info { color: var(--chip-info); } .t-warn { color: var(--chip-warn); } .t-bad { color: var(--chip-bad); } .t-mute { color: var(--chip-mute); }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.t-rec .dot, .t-live .dot { animation: pulse 1.2s ease-in-out infinite; }
+.t-rec { color: var(--chip-bad); } .t-live { color: var(--chip-info); }
+.stage { margin: 14px 0 0; font-weight: 650; }
+@keyframes pulse { 50% { opacity: .35; } }
+@media (prefers-reduced-motion: reduce) { .t-rec .dot, .t-live .dot { animation: none; } }
+
+/* transcript */
+#transcript { margin-top: 14px; padding: 12px 14px; min-height: 120px; }
+.msg { margin: 0 0 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; }
+.msg h3 { margin: 0 0 4px; font-size: 12.5px; color: var(--muted); font-weight: 650; }
+.msg.you { background: color-mix(in srgb, var(--l1) 8%, var(--panel)); margin-left: min(12%, 80px); }
+.body { white-space: pre-wrap; overflow-wrap: anywhere; margin: 0; }
+.blk { border-top: 1px solid var(--line); margin-top: 8px; }
+.blk > summary { cursor: pointer; font-weight: 600; display: flex; align-items: center; }
+.srcline { margin: 8px 0 0; }
+
+.banner { border: 1px solid var(--act); border-left-width: 4px; background: color-mix(in srgb, var(--act) 7%, var(--panel)); border-radius: 8px; padding: 10px 14px; margin-top: 14px; }
+.banner b { font-weight: 650; }
+.banner p { margin: 4px 0 8px; }
+.banner.bad { border-color: var(--gap); background: color-mix(in srgb, var(--gap) 6%, var(--panel)); }
+
+/* composer */
+.composer { position: sticky; bottom: 0; margin-top: 14px; padding: 10px 14px 12px; box-shadow: 0 -6px 14px -10px rgba(0, 0, 0, .35); z-index: 2; }
+/* Keep the connection action visible while choosing a tab; pin the composer only after setup is collapsed. */
+main:has(#connectBox[open]) .composer { position: static; box-shadow: none; }
+/* Keep this after the base composer rule so short-screen scrolling actually wins the cascade. */
+@media (max-height: 640px) { .composer { position: static; box-shadow: none; } }
+.composer label.lab { font-weight: 650; display: block; margin-bottom: 4px; }
+.finish { margin-top: 14px; padding: 10px 14px 12px; }
+
+dl.kv { display: grid; grid-template-columns: max-content 1fr; gap: 4px 12px; margin: 0; font-size: 13px; }
+dl.kv dt { color: var(--muted); }
+dl.kv dd { margin: 0; overflow-wrap: anywhere; }
+ul.plain { list-style: none; margin: 0; padding: 0; }
+ul.plain li { padding: 5px 0; border-bottom: 1px solid var(--line); font-size: 13px; overflow-wrap: anywhere; }
+ul.plain li:last-child { border-bottom: 0; }
+ul.convs button { width: 100%; text-align: left; border: 0; border-radius: 0; background: none; display: flex; gap: 4px 10px; flex-wrap: wrap; align-items: center; }
+ul.convs button[aria-current="true"] { background: var(--hover); font-weight: 600; }
+
+/* chat thread identity and the page read */
+.thread { margin-top: 12px; padding: 8px 14px 10px; border-left: 4px solid var(--chip-info); }
+.thread.unbound, .thread.other { border-left-color: var(--chip-mute); }
+.thread.unverified { border-left-color: var(--act); background: color-mix(in srgb, var(--act) 7%, var(--panel)); }
+.thread-head { display: flex; align-items: center; gap: 4px 12px; flex-wrap: wrap; }
+.thread-head h3 { margin: 0; }
+.thread .ref, .ref { display: inline-block; margin-top: 6px; font-family: var(--mono); font-size: 12.5px; overflow-wrap: anywhere; user-select: all; background: var(--paper); border: 1px solid var(--line); border-radius: 6px; padding: 2px 8px; }
+.thread ul.plain { margin-top: 4px; }
+.thread ul.plain li { border-bottom: 0; padding: 2px 0; }
+.target .t-sub.t-warn { color: var(--chip-warn); }
+.readbox { margin-top: 14px; padding: 10px 14px 12px; }
+.reads { list-style: none; margin: 12px 0 0; padding: 0; }
+.rd { margin: 0 0 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; }
+.rd.user { background: color-mix(in srgb, var(--l1) 8%, var(--panel)); margin-left: min(12%, 80px); }
+.rd-head { display: flex; align-items: center; gap: 4px 10px; flex-wrap: wrap; margin-bottom: 4px; font-size: 12.5px; color: var(--muted); }
+.rd-head b { color: var(--ink); font-weight: 650; }
+.rd-n { font-family: var(--mono); }
+.cov { margin-top: 10px; }
+.cov > summary { min-height: 44px; }
+@media (max-width: 700px) {
+  .msg.you, .rd.user { margin-left: 0; }
+  .composer button, .finish button, .read-actions button { width: 100%; }
+}
+
+/* formatted reply: built from DOM nodes only; code, tables, quotes, links, sources and artifacts */
+button.mini { padding: 2px 10px; font-size: 12.5px; }
+.reply-tools { gap: 6px 8px; margin: 0 0 8px; }
+.rich > * { margin: 0 0 10px; }
+.rich > *:last-child { margin-bottom: 0; }
+.rich p { white-space: pre-wrap; overflow-wrap: anywhere; margin: 0 0 10px; }
+.rich > p { margin-bottom: 10px; }
+.rich ul, .rich ol { margin: 0 0 10px; padding-left: 24px; }
+.rich li { margin: 2px 0; overflow-wrap: anywhere; white-space: pre-wrap; }
+.rich li > ul, .rich li > ol { margin: 2px 0 0; }
+.rich li.task { list-style: none; margin-left: -18px; }
+.rich hr { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
+.rich blockquote { margin: 0 0 10px; padding: 2px 0 2px 12px; border-left: 3px solid var(--l1); color: var(--muted); }
+.rich blockquote > *:last-child { margin-bottom: 0; }
+.rh { font-weight: 650; letter-spacing: -.01em; margin: 14px 0 6px; line-height: 1.3; }
+.rich > .rh:first-child { margin-top: 0; }
+.rh1 { font-size: 17px; } .rh2 { font-size: 15.5px; } .rh3 { font-size: 14.5px; } .rh4, .rh5, .rh6 { font-size: 14px; }
+.rh5, .rh6 { color: var(--muted); }
+code.ic { background: var(--paper); border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; overflow-wrap: anywhere; }
+.rich a, .sources a { overflow-wrap: anywhere; }
+.deadlink { text-decoration: underline dotted; }
+sup.cite { font-size: .72em; line-height: 0; margin-left: 1px; font-variant-numeric: tabular-nums; }
+sup.cite a { text-decoration: none; padding: 0 1px; }
+sup.cite a:hover { text-decoration: underline; }
+
+.codeblk { margin: 0 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); overflow: hidden; min-width: 0; }
+.codeblk-head { display: flex; align-items: center; flex-wrap: wrap; gap: 2px 10px; padding: 0 6px 0 12px; border-bottom: 1px solid var(--line); background: var(--panel); font-size: 12px; }
+.codeblk-lang { font-weight: 650; color: var(--ink); font-family: var(--mono); }
+.codeblk-meta { color: var(--muted); }
+.codeblk-actions { margin-left: auto; display: inline-flex; gap: 4px; align-items: center; }
+.codeblk pre { margin: 0; padding: 10px 12px; overflow: auto; max-height: 30rem; tab-size: 2; }
+.codeblk pre code { font-family: var(--mono); font-size: 12.5px; line-height: 1.5; white-space: pre; background: none; border: 0; padding: 0; }
+.codeblk.artifact { border-color: var(--l2); border-left-width: 4px; }
+.codeblk.artifact .codeblk-head { background: color-mix(in srgb, var(--l2) 10%, var(--panel)); }
+.codeblk-note { margin: 0; padding: 4px 12px 6px; border-top: 1px solid var(--line); }
+.artifacts { margin-top: 12px; }
+
+.tablebox { margin: 0 0 10px; }
+.tablewrap { overflow: auto; max-width: 100%; border: 1px solid var(--line); border-radius: 8px; }
+.tablewrap table { border-collapse: collapse; min-width: 100%; font-size: 13px; }
+.tablewrap th, .tablewrap td { padding: 6px 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; overflow-wrap: anywhere; }
+.tablewrap th { background: var(--paper); font-weight: 650; white-space: nowrap; }
+.tablewrap tr:last-child td { border-bottom: 0; }
+.tablewrap .al-r { text-align: right; } .tablewrap .al-c { text-align: center; }
+.tablebar { display: flex; justify-content: flex-end; margin-top: 2px; }
+
+.sources { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 8px; }
+.sources .rh { margin: 0 0 2px; }
+.sourcelist li { display: block; }
+.source-n { font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
+.source-host { color: var(--muted); font-size: 12.5px; }
+.sourcelist p.note { margin: 2px 0 0 26px; }
+
+ul.convs button { align-items: baseline; }
+.conv-title { font-weight: 600; overflow-wrap: anywhere; flex: 1 1 10rem; }
+.conv-meta { flex-basis: 100%; }
+@media (prefers-reduced-motion: no-preference) { .codeblk, .tablewrap { transition: border-color .15s; } .codeblk:focus-within { border-color: var(--l1); } }
+
+/* Saved-world views share the chat shell. The pressed view is only what is open, not a home. */
+.modes { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 8px 22px 0; }
+.modes button[aria-pressed="true"] { border-color: var(--l1); font-weight: 650; box-shadow: inset 0 -2px 0 var(--l1); }
+.modes-note { margin: 4px 22px 0; }
+.world-grid { display: grid; grid-template-columns: minmax(16rem, 22rem) minmax(0, 1fr); gap: 16px; align-items: start; }
+.world #worldList, .world #worldDetail { min-width: 0; overflow-wrap: anywhere; }
+.world #worldWorkspaceStart, .world #worldWorkspaceId, .world #worldWorkspaceShow, .world #worldWorkspaceRefocus { min-height: 44px; }
+.world #worldWorkspaceResults .rowbtn { min-height: 44px; }
+#viewWorkspace { min-height: 44px; }
+.world #worldComposeStart, .world #worldComposeId, .world #worldComposeLoad { min-height: 44px; }
+.world #worldComposeSurface .rowbtn { min-height: 44px; }
+#viewCompose { min-height: 44px; }
+.world .compose-section, .world .compose-reading { margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--line); }
+/* Programmatic focus on the composed reading heading positions the reader; no flash. */
+.world #worldComposeReadHead:focus { outline: none; }
+.world .workspace-note { white-space: pre-wrap; }
+/* Programmatic focus on the reading-pane heading only positions the reader; no flash. */
+.world #worldWorkspaceReadHead:focus { outline: none; }
+.local-mark { border-left: 4px solid var(--l3); }
+.unknown-part { border: 1px dashed var(--line); border-radius: 8px; padding: 8px 10px; margin: 8px 0 0; }
+.world .rowbtn { width: 100%; text-align: left; background: none; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+.world .rowbtn[aria-current="true"] { background: var(--hover); }
+.member { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--line); }
+.member .grow { flex: 1 1 12rem; overflow-wrap: anywhere; }
+@media (max-width: 800px) {
+  .modes { padding-left: 12px; padding-right: 12px; }
+  .modes-note { margin-left: 12px; margin-right: 12px; }
+  .world-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* VIVIM World V1 visual layer: additive to the existing authenticated Chat/World shell.
+   The technical Studio pages and all capture, send and provenance controls remain intact. */
+body.vivim-app {
+  --paper: #081120; --panel: #101d31; --ink: #eaf3ff; --muted: #a3b4cf;
+  --line: #2b3b55; --hover: #203450;
+  --l1: #5d9cff; --l2: #b6a2f5; --l3: #7ee0c3; --act: #efb26c;
+  --gap: #ff8999; --ok: #76dcb5;
+  --chip-ok: #86e5bd; --chip-info: #a4ccff; --chip-warn: #ffd39f;
+  --chip-bad: #ffa1ae; --chip-mute: #bac8de;
+  color-scheme: dark;
+  min-height: 100vh;
+  background: radial-gradient(ellipse at 85% -15%, #193b72 0, transparent 45%),
+    radial-gradient(ellipse at 3% 85%, #132447 0, transparent 38%), var(--paper);
+}
+.vivim-app > header {
+  padding: 12px 24px; border-bottom: 1px solid #314464;
+  background: color-mix(in srgb, var(--paper) 88%, #224779);
+  gap: 12px 20px; min-height: 74px;
+}
+.vivim-brand { display: flex; gap: 12px; align-items: center; margin-right: auto; }
+.vivim-brand-mark { display: grid; place-items: center; width: 38px; height: 38px;
+  border-radius: 12px; background: linear-gradient(145deg, #4383e8, #235bc3);
+  color: white; box-shadow: 0 4px 24px #2461cf55; font-size: 23px; }
+.vivim-brand h1 { font-size: 19px; font-weight: 750; letter-spacing: .1em; line-height: 1.1; }
+.vivim-brand p { color: var(--muted); margin: 4px 0 0; font-size: 11px; letter-spacing: .01em; }
+.vivim-app header .crumb { font-size: 12px; color: #c0d6f5; }
+.vivim-header-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.vivim-header-actions a { color: var(--ink); border: 1px solid var(--line); border-radius: 9px;
+  padding: 0 12px; font-size: 12px; text-decoration: none; background: #182841; }
+.vivim-header-actions a:hover { background: var(--hover); border-color: var(--l1); }
+.vivim-local-label { color: #97e4c5; font-size: 12px; font-weight: 650; }
+.vivim-local-label::before { content: "●"; margin-right: 7px; font-size: 9px; }
+.vivim-app .modes { gap: 8px; }
+.vivim-app .modes button { border: 1px solid transparent; color: #b1c3de;
+  background: transparent; border-radius: 10px; font-weight: 570; text-align: left;
+  padding: 10px 14px; }
+.vivim-app .modes button:hover { background: #1b3152; color: #fff; }
+.vivim-app .modes button[aria-pressed="true"] {
+  background: #1c4a91; color: #fff; border-color: #3979d7;
+  box-shadow: inset 3px 0 0 #8bbdff; }
+.vivim-app #viewCapture::before { content: "◈"; } .vivim-app #viewConversations::before { content: "▤"; }
+.vivim-app #viewProjects::before { content: "▦"; } .vivim-app #viewNotes::before { content: "▧"; }
+.vivim-app #viewFind::before { content: "⌕"; } .vivim-app #viewTransfer::before { content: "⇄"; }
+.vivim-app #viewRelations::before { content: "◎"; } .vivim-app #viewWorkspace::before { content: "◇"; }
+.vivim-app .modes button::before { display: inline-block; width: 23px; color: #8bbdff; font-size: 18px; vertical-align: middle; }
+.vivim-app .modes-note { color: #95a9c5; font-size: 12px; line-height: 1.55; }
+.vivim-app .panel { border: 1px solid var(--line); border-radius: 13px;
+  box-shadow: 0 8px 28px #030a1566; }
+.vivim-app button { border-radius: 9px; transition: background-color .15s, border-color .15s; }
+.vivim-app button.primary { background: #337de9; border-color: #4d95ff; color: white; }
+.vivim-app button.primary:hover:not(:disabled) { background: #458dfa; filter: none; }
+.vivim-app .composer { border-color: #365a91; box-shadow: 0 -8px 26px #02081485; }
+.vivim-app .composer textarea { border-radius: 10px; padding: 12px;
+  background: #0b182b; border-color: #385172; }
+.vivim-app #transcript { background: #0b1729; min-height: 180px; }
+.vivim-app .msg { background: #12233d; border-radius: 12px; }
+.vivim-app .msg.you { background: #193968; }
+.vivim-app .world .rowbtn[aria-current="true"] { background: #1c3b61; }
+.vivim-app a { color: #a5caff; }
+.vivim-app :focus-visible { outline-color: #94c3ff; outline-offset: 3px; }
+.vivim-welcome { position: relative; overflow: hidden; display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 26px;
+  border: 1px solid #36537b; border-radius: 18px; padding: 30px;
+  margin: 0 0 24px;
+  background: radial-gradient(ellipse at 10% 0%, #22487f 0, transparent 65%),
+    linear-gradient(135deg, #10213a, #0c182b 75%);
+  box-shadow: 0 18px 50px #02081194;
+}
+.vivim-welcome::before { content: ""; position: absolute; pointer-events: none;
+  width: 240px; height: 240px; right: -140px; top: -160px;
+  border-radius: 50%; box-shadow: 0 0 105px 32px #2f70c155; }
+.vivim-welcome > * { position: relative; }
+.vivim-eyebrow { display: block; color: #8bbdff; font-size: 11px;
+  font-weight: 750; letter-spacing: .16em; margin-bottom: 10px; }
+.vivim-welcome h2 { font-size: clamp(24px, 3vw, 34px); line-height: 1.13;
+  margin: 0 0 12px; letter-spacing: -.025em; }
+.vivim-welcome-copy > p { color: #c3d5ee; line-height: 1.65; margin: 0 0 18px; max-width: 48ch; }
+.vivim-welcome-actions { display: flex; gap: 10px; flex-wrap: wrap; margin: 18px 0; }
+.vivim-welcome-actions button { padding: 9px 15px; font-weight: 650; }
+.vivim-welcome .vivim-trust { font-size: 12px; color: #97accc; margin: 12px 0 0; }
+.vivim-welcome-steps { list-style: none; padding: 2px 0; margin: 0; display: grid; align-content: center; gap: 15px; }
+.vivim-welcome-steps li { display: grid; grid-template-columns: 34px minmax(0, 1fr);
+  gap: 12px; align-items: start; color: #c4d5ed; }
+.vivim-step-number { display: grid; place-items: center; width: 34px; height: 34px;
+  border: 1px solid #49709e; border-radius: 50%; font-weight: 700; color: #9fcbff; }
+.vivim-welcome-steps li:first-child .vivim-step-number { background: #2765b8; color: white; border-color: #529bff; }
+.vivim-welcome-steps strong { display: block; color: #eef5ff; font-size: 13px; margin: 0 0 3px; }
+.vivim-welcome-steps span.vivim-step-desc { display: block; color: #9aafcc; font-size: 12px; }
+.vivim-welcome-status { margin-top: 10px; color: #a9c1df; font-size: 12px; }
+@media (min-width: 960px) {
+  body.vivim-app { display: grid; grid-template-columns: 224px minmax(0, 1fr);
+    grid-template-rows: auto auto minmax(0, 1fr); }
+  .vivim-app > header { grid-column: 1 / -1; grid-row: 1; position: sticky; top: 0; z-index: 8; }
+  .vivim-app > .modes { grid-column: 1; grid-row: 2 / span 2; flex-direction: column;
+    flex-wrap: nowrap; align-items: stretch; align-self: start; padding: 20px 12px;
+    position: sticky; top: 74px; max-height: calc(100vh - 74px); overflow: auto;
+    border-right: 1px solid #263b59; background: #0c192d; }
+  .vivim-app > .modes-note { grid-column: 2; grid-row: 2; margin: 15px 26px 0; }
+  .vivim-app > #chatApp, .vivim-app > #worldShell { grid-column: 2; grid-row: 3;
+    width: 100%; max-width: none; margin: 0; padding: 22px 26px 30px; }
+}
+@media (max-width: 959px) {
+  .vivim-app > .modes { display: flex; flex-wrap: nowrap; overflow-x: auto;
+    padding: 10px 14px; }
+  .vivim-app .modes button { white-space: nowrap; flex: 0 0 auto; }
+  .vivim-app .modes-note { margin: 8px 14px 0; }
+  .vivim-welcome { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .vivim-welcome-steps { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+  .vivim-welcome-steps li { grid-template-columns: 1fr; }
+}
+@media (max-width: 600px) {
+  .vivim-app > header { padding: 12px 14px; }
+  .vivim-brand { flex-basis: 100%; }
+  .vivim-brand p { font-size: 10px; }
+  .vivim-header-actions { gap: 6px; }
+  .vivim-header-actions a { padding: 0 8px; }
+  .vivim-app > #chatApp, .vivim-app > #worldShell { padding: 12px; }
+  .vivim-welcome { padding: 22px 18px; }
+  .vivim-welcome-steps { grid-template-columns: 1fr; }
+  .vivim-welcome-steps li { grid-template-columns: 34px minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .vivim-app button { transition: none; }
+}
+
+
+/* VIVIM provider selection — read-only discovery, no login or browser effect */
+.vivim-provider-choices { display: flex; align-items: stretch; flex-wrap: wrap; gap: 9px; margin: 12px 0 7px; }
+.vivim-provider-choices button { padding: 9px 13px; border-radius: 11px; background: #162b49;
+  border: 1px solid #355b89; color: #d7e9ff; font-weight: 650; }
+.vivim-provider-choices button[aria-pressed="true"] { border-color: #89bafb;
+  background: #235494; box-shadow: inset 0 -2px 0 #9ec7ff; }
+.vivim-provider-choices button:hover:not(:disabled) { border-color: #89bafb; background: #22466f; }
+.vivim-provider-disclaimer { color: #9fb2ce; font-size: 12px; margin: 0 0 6px; }
+@media (prefers-reduced-motion: reduce) { .vivim-provider-choices button { transition: none; } }
+
+/* VIVIM World library and detail surface — styles only; existing read/edit logic owns all effects. */
+.vivim-app #worldGrid { gap: 20px; }
+.vivim-app #worldList, .vivim-app #worldDetail {
+  border: 1px solid #2f4564; border-radius: 16px;
+  background: linear-gradient(145deg, #14253c, #0e1a2c 70%);
+  padding: 20px; box-shadow: 0 14px 38px #02091578;
+}
+.vivim-app #worldList h2, .vivim-app #worldDetail h2 {
+  letter-spacing: -.02em; margin: 2px 0 12px; font-weight: 720;
+}
+.vivim-app #worldItems { margin: 14px 0 0; }
+.vivim-app #worldItems ul { display: grid; gap: 9px; }
+.vivim-app #worldItems li { border-bottom: 0; padding: 0; }
+.vivim-app #worldItems .rowbtn {
+  border: 1px solid #2f4564; border-radius: 11px;
+  background: #12223a; padding: 13px 15px;
+  gap: 5px; transition: border-color .15s, background-color .15s;
+}
+.vivim-app #worldItems .rowbtn:hover { border-color: #5085c9; background: #193555; }
+.vivim-app #worldItems .rowbtn[aria-current="true"] {
+  border-color: #73a6f3; box-shadow: inset 3px 0 0 #76afff; background: #1a3d68;
+}
+.vivim-app #worldItems .conv-title { font-weight: 680; color: #edf5ff; line-height: 1.35; }
+.vivim-app #worldItems .rowbtn .note { font-size: 12px; line-height: 1.45; }
+.vivim-app #worldList .panel, .vivim-app #worldDetail .panel {
+  box-shadow: none; background: #0b1b30; border-color: #2b4261;
+}
+.vivim-app #worldList input, .vivim-app #worldList select,
+.vivim-app #worldDetail input, .vivim-app #worldDetail select {
+  border-radius: 9px; background: #0b1b30; border-color: #3b5578;
+}
+.vivim-app #worldDetail .banner { border-radius: 12px; }
+.vivim-app #worldList .empty, .vivim-app #worldDetail .empty {
+  border: 1px dashed #395370; border-radius: 12px; color: #adc0da;
+}
+@media (max-width: 700px) {
+  .vivim-app #worldGrid { gap: 12px; }
+  .vivim-app #worldList, .vivim-app #worldDetail { padding: 14px; border-radius: 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .vivim-app #worldItems .rowbtn { transition: none; }
+}
+
+
+/* VIVIM visual direction v2 — derived from the owner's 5-screen reference board.
+   Presentation only: native browser, provider, saved-data and provenance ownership stays with Harness. */
+body.vivim-app {
+  --paper: #080e1b; --panel: #111c2d; --ink: #edf4ff; --muted: #a4b4ce; --line: #2b3954;
+  --hover: #1b3150; --l1: #448dff; --l2: #a58efe; --l3: #6bdac2;
+  background: radial-gradient(ellipse at 55% 0%, #152c52 0%, transparent 38%),
+    linear-gradient(160deg, #070d18, #0b1423 50%, #080d18);
+  letter-spacing: .005em;
+}
+.vivim-app > header {
+  background: #0b1425ee; border-bottom-color: #233655;
+  backdrop-filter: blur(20px); min-height: 64px; padding: 12px 22px;
+}
+.vivim-app .vivim-brand-mark {
+  width: 33px; height: 33px; border-radius: 10px;
+  background: linear-gradient(150deg, #539bff, #1354e1 73%); font-size: 21px;
+}
+.vivim-app .vivim-brand h1 { font-size: 18px; font-weight: 700; letter-spacing: .07em; }
+.vivim-app .vivim-brand p { color: #8299bd; font-size: 10px; }
+.vivim-app .vivim-header-actions a { background: #121e32; border-color: #294265; }
+.vivim-app .vivim-local-label { color: #70dcac; }
+.vivim-app .modes button { padding: 10px 12px; border-radius: 10px; font-size: 13px; }
+.vivim-app .modes button[aria-pressed="true"] {
+  background: linear-gradient(110deg, #1c58b5, #163a79);
+  box-shadow: inset 2px 0 0 #85b7ff, 0 4px 15px #07162f99;
+}
+.vivim-app .modes button::before { font-size: 16px; }
+.vivim-app .modes-note { font-size: 11px; color: #869cb9; }
+.vivim-app .panel { background: #101d30; border-color: #2c3e5b; border-radius: 14px; }
+.vivim-app .panel summary { font-weight: 640; }
+.vivim-app main > h2 { font-size: 24px; font-weight: 720; letter-spacing: -.03em; }
+.vivim-app main > .lede { max-width: 78ch; color: #a7b6cb; }
+.vivim-app #connectBox { border-color: #37547a; }
+.vivim-app #connectBox[open] { background: #11213a; }
+.vivim-app #chatApp > aside > details { background: #0f1b2d; }
+.vivim-app #transcript { background: #0a1527; border-color: #2d4367; border-radius: 15px; padding: 19px; }
+.vivim-app .msg { border: 1px solid #304666; background: #14243b; }
+.vivim-app .msg.you { background: #193f7c; border-color: #356abc; }
+.vivim-app .composer { border-color: #40659b; background: #0e1d33; border-radius: 14px; }
+.vivim-app .composer textarea { background: #091629; border-color: #385d91; min-height: 74px; }
+.vivim-app .composer button.primary { min-width: 94px; box-shadow: 0 4px 13px #1162f44d; }
+.vivim-app .pill { border-radius: 100px; }
+.vivim-app .conv-title { font-weight: 670; }
+@media (min-width: 960px) {
+  body.vivim-app { grid-template-columns: 205px minmax(0, 1fr); }
+  .vivim-app > .modes { padding: 17px 10px; top: 64px;
+    max-height: calc(100vh - 64px); background: #080f1d; border-right-color: #243451; }
+  .vivim-app > #chatApp, .vivim-app > #worldShell { padding: 22px clamp(16px, 2.4vw, 34px) 32px; }
+}
+.vivim-app .vivim-welcome {
+  min-height: min(610px, calc(100vh - 160px)); grid-template-columns: minmax(0, 1fr) minmax(345px, .95fr);
+  gap: 0; border-radius: 18px; border-color: #4d6d9f;
+  padding: 0; isolation: isolate;
+  background: radial-gradient(ellipse at 20% 30%, #4b69a4 0%, transparent 50%),
+    linear-gradient(165deg, #0d244d, #070f22 68%);
+}
+.vivim-app .vivim-welcome::before {
+  width: 70%; height: 80%; top: 17%; left: -5%; right: auto; border-radius: 0;
+  box-shadow: none; opacity: .86;
+  background: linear-gradient(8deg, #101c32 9%, #4a6495 44%, #b7c4d7 52%, #253a67 56%, #09172e 79%);
+  clip-path: polygon(0 90%, 0 49%, 12% 66%, 31% 20%, 43% 47%, 55% 7%, 76% 50%, 88% 28%, 100% 67%, 100% 100%);
+  filter: drop-shadow(0 -8px 16px #b5c0e955);
+}
+.vivim-app .vivim-welcome::after {
+  content: ""; pointer-events: none; position: absolute; inset: 0 40% 0 0;
+  z-index: -1; opacity: .9;
+  background: radial-gradient(ellipse at 25% 21%, #f7b18a91 0%, transparent 28%),
+    linear-gradient(180deg, #1f467a00 45%, #07162cb3 76%, #081425 100%);
+}
+.vivim-app .vivim-welcome-hero {
+  padding: clamp(25px, 4vw, 54px) clamp(22px, 4vw, 54px);
+  display: flex; flex-direction: column; justify-content: center; align-items: flex-start;
+  min-width: 0; text-shadow: 0 2px 10px #071226;
+}
+.vivim-app .vivim-hero-symbol { display: grid; place-items: center; width: 44px; height: 44px;
+  background: linear-gradient(150deg, #50a5ff, #145de4); border-radius: 12px; font-size: 27px;
+  box-shadow: 0 0 34px #287be75c; }
+.vivim-app .vivim-hero-wordmark { font-size: 42px; font-weight: 720;
+  letter-spacing: .065em; margin: 16px 0 0; line-height: 1.15; }
+.vivim-app .vivim-welcome-hero h2 { font-size: clamp(17px, 1.8vw, 24px); font-weight: 560;
+  line-height: 1.3; margin: 7px 0 26px; }
+.vivim-app .vivim-hero-benefits { list-style: none; padding: 0; margin: 0; display: grid;
+  gap: 14px; font-size: 13px; line-height: 1.55; color: #f0f6ff; }
+.vivim-app .vivim-hero-benefits li { display: flex; align-items: baseline; gap: 10px; }
+.vivim-app .vivim-hero-benefits li::before { content: "✧"; color: #86c1ff; font-size: 19px; flex: 0 0 18px; }
+.vivim-app .vivim-hero-privacy { margin: 36px 0 0; border: 1px solid #5171a47a;
+  border-radius: 12px; padding: 12px 16px; background: #071426b8; font-size: 12px; font-weight: 690; }
+.vivim-app .vivim-hero-privacy span { display: block; font-size: 10px; font-weight: 440; color: #b6c9e7; margin-top: 5px; }
+.vivim-app .vivim-welcome-card {
+  margin: 25px; padding: clamp(20px, 2.4vw, 31px);
+  border: 1px solid #3b537b; border-radius: 17px; align-self: stretch;
+  background: linear-gradient(160deg, #12213adf, #090f20ed);
+  box-shadow: 0 22px 65px #0105128e;
+}
+.vivim-app .vivim-welcome-card > h2 { font-size: 26px; letter-spacing: -.025em; margin: 0 0 5px; }
+.vivim-app .vivim-card-intro { color: #aabbd3; font-size: 12px; margin: 0 0 18px; }
+.vivim-app .vivim-welcome-steps { grid-template-columns: 1fr; gap: 0; margin: 0 0 14px; }
+.vivim-app .vivim-welcome-steps li { position: relative; display: grid; grid-template-columns: 36px 1fr;
+  padding: 0 0 16px; align-items: start; gap: 12px; }
+.vivim-app .vivim-welcome-steps li:not(:last-child)::after {
+  content: ""; position: absolute; top: 37px; bottom: 2px; left: 17px; width: 1px; background: #365177; }
+.vivim-app .vivim-step-number { background: #172c4e; border: 1px solid #5782bf; color: #c0dbff; }
+.vivim-app .vivim-welcome-steps strong { font-size: 12px; }
+.vivim-app .vivim-welcome-steps .vivim-step-desc { font-size: 11px; }
+.vivim-app .vivim-provider-choices { gap: 6px; }
+.vivim-app .vivim-provider-choices button { padding: 6px 10px; font-size: 11px; border-radius: 8px; }
+.vivim-app .vivim-provider-disclaimer { font-size: 10px; }
+.vivim-app .vivim-welcome-actions { margin: 12px 0 8px; }
+.vivim-app .vivim-welcome-actions .primary { flex: 1 1 150px; background: #2473f2; border-color: #5099ff; }
+.vivim-app .vivim-welcome-actions button:not(.primary) { flex: 1 1 150px; }
+.vivim-app .vivim-trust { color: #a3b6d0; font-size: 11px; margin: 5px 0; }
+.vivim-app .vivim-welcome-status { color: #a7bfdc; margin: 5px 0 0; }
+@media (max-width: 1240px) {
+  .vivim-app .vivim-welcome { grid-template-columns: .9fr 1.1fr; }
+  .vivim-app .vivim-welcome-card { margin: 14px; }
+  .vivim-app .vivim-welcome-hero { padding: 23px; }
+}
+@media (max-width: 850px) {
+  .vivim-app .vivim-welcome { grid-template-columns: 1fr; }
+  .vivim-app .vivim-welcome-hero { min-height: 260px; }
+  .vivim-app .vivim-welcome::before { width: 100%; height: 420px; top: 0; }
+  .vivim-app .vivim-welcome::after { inset: 0 0 50% 0; }
+  .vivim-app .vivim-hero-privacy { margin-top: 20px; }
+  .vivim-app .vivim-welcome-card { margin: 0 14px 14px; }
+}
+@media (max-width: 480px) {
+  .vivim-app .vivim-welcome-hero { padding: 20px; min-height: 250px; }
+  .vivim-app .vivim-hero-wordmark { font-size: 32px; }
+  .vivim-app .vivim-hero-benefits { gap: 8px; font-size: 11px; }
+  .vivim-app .vivim-welcome-card { padding: 19px; }
+}
+
+
+/* Project gallery inspired by the VIVIM project-board reference. Thumbnails are
+   decorative gradients, not inferred covers or provider-derived media. */
+.vivim-app #worldList:has(.vivim-record-list-projects) { min-width: 0; }
+.vivim-app .vivim-record-list { list-style: none; padding: 0; }
+.vivim-app #worldItems .vivim-record-list-projects {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 13px;
+}
+.vivim-app #worldItems .vivim-record-list-projects li { min-width: 0; }
+.vivim-app #worldItems .vivim-record-list-projects .vivim-project-card {
+  display: flex; flex-direction: column; text-align: left; align-items: stretch; overflow: hidden;
+  height: 100%; min-height: 210px; border-radius: 14px; padding: 0; gap: 0;
+  background: #101c2f; border: 1px solid #34506f;
+  box-shadow: 0 12px 26px #050b19aa;
+}
+.vivim-app #worldItems .vivim-record-list-projects .vivim-project-card:hover {
+  border-color: #70a6fa; transform: translateY(-2px); background: #172944;
+}
+.vivim-app #worldItems .vivim-record-list-projects .vivim-project-card[aria-current="true"] {
+  border-color: #96c4ff; box-shadow: 0 0 0 2px #387cdb55; background: #162b48;
+}
+.vivim-app .vivim-card-art { display: flex; align-items: center; justify-content: center; position: relative;
+  min-height: 108px; width: 100%; overflow: hidden; isolation: isolate; }
+.vivim-app .vivim-card-art::before { content: ""; position: absolute; inset: -10%; z-index: -1;
+  opacity: .85; background: radial-gradient(ellipse at 70% 20%, #ffffff44, transparent 40%); }
+.vivim-app .vivim-card-art::after { content: ""; position: absolute; inset: 40% -10% -45%; z-index: -1;
+  opacity: .75; border-radius: 50%; background: #07132688; transform: rotate(-13deg); }
+.vivim-app .vivim-card-art-mark { font-size: 38px; color: #eff7ff99; text-shadow: 0 0 23px #e9f4ffb9; }
+.vivim-app .vivim-card-art-0 { background: linear-gradient(140deg, #7b99db, #35438c 48%, #202244); }
+.vivim-app .vivim-card-art-1 { background: linear-gradient(145deg, #b99c6c, #574d49 52%, #192a45); }
+.vivim-app .vivim-card-art-2 { background: linear-gradient(135deg, #789ea0, #254a62 52%, #14243d); }
+.vivim-app .vivim-card-art-3 { background: linear-gradient(155deg, #7b53aa, #29377b 55%, #111931); }
+.vivim-app .vivim-card-art-4 { background: linear-gradient(135deg, #598a72, #1e554e 53%, #123c4b); }
+.vivim-app .vivim-card-art-5 { background: linear-gradient(145deg, #c79b76, #5e5b76 50%, #212c4a); }
+.vivim-app .vivim-card-content { display: flex; flex-direction: column; flex: 1; gap: 8px; padding: 14px; }
+.vivim-app .vivim-card-content .conv-title { font-size: 14px; font-weight: 730; }
+.vivim-app .vivim-card-content .note { font-size: 11px; line-height: 1.45; color: #9fb1cd; }
+.vivim-app .vivim-card-footer { margin-top: auto; color: #84ddbe; font-size: 11px; }
+.vivim-app .vivim-record-list-notes .rowbtn { padding: 15px; }
+.vivim-app .vivim-record-list-conversations .rowbtn { padding: 13px 15px; }
+@media (prefers-reduced-motion: reduce) {
+  .vivim-app #worldItems .vivim-record-list-projects .vivim-project-card:hover { transform: none; }
+}
+
+
+/* Home and Settings are native views of the existing local World, not a second frontend. */
+.vivim-app #viewHome::before { content: "⌂"; }
+.vivim-app #viewSettings::before { content: "⚙"; }
+.vivim-app .vivim-section-head h2 { font-size: 25px; letter-spacing: -.03em; margin: 2px 0 7px; }
+.vivim-app .vivim-section-head .note { font-size: 12px; line-height: 1.5; }
+.vivim-app .vivim-overview-grid { display: grid; gap: 14px;
+  grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 22px 0; }
+.vivim-app .vivim-overview-card {
+  display: flex; flex-direction: column; align-items: flex-start; text-align: left; gap: 7px;
+  min-height: 164px; padding: 19px; border-radius: 14px;
+  border: 1px solid #365780; background: linear-gradient(145deg, #19385e, #122039 64%);
+}
+.vivim-app .vivim-overview-card:hover { border-color: #79adff; background: #1d3b62; }
+.vivim-app .vivim-overview-icon { color: #8ec1ff; font-size: 22px; }
+.vivim-app .vivim-overview-number { color: white; font-size: 26px; font-weight: 760; }
+.vivim-app .vivim-overview-card strong { font-size: 13px; }
+.vivim-app .vivim-overview-card .note { font-size: 11px; }
+.vivim-app .vivim-home-recent { margin-top: 25px; }
+.vivim-app .vivim-home-recent h3, .vivim-app .vivim-home-actions h3 { font-size: 15px; margin: 0 0 11px; }
+.vivim-app .vivim-home-recent ul { display: grid; gap: 8px; }
+.vivim-app .vivim-home-recent .rowbtn { background: #162944; border: 1px solid #304c71; border-radius: 10px; }
+.vivim-app .vivim-home-actions { display: grid; gap: 10px; margin-bottom: 20px; }
+.vivim-app .vivim-home-actions button { padding: 11px; background: #192d4b; text-align: left; border: 1px solid #304e72; }
+.vivim-app .vivim-info-card { border: 1px solid #304966; background: #0e1d33;
+  border-radius: 12px; padding: 17px; }
+.vivim-app .vivim-info-card h3 { font-size: 15px; margin: 0 0 7px; }
+.vivim-app .vivim-info-card p { line-height: 1.55; }
+.vivim-app .vivim-settings-tabs { display: flex; gap: 7px; flex-wrap: wrap; margin: 20px 0; }
+.vivim-app .vivim-settings-tabs button { padding: 9px 15px; border-radius: 9px;
+  background: #13253e; border: 1px solid #304a6c; }
+.vivim-app .vivim-settings-tabs button[aria-selected="true"] {
+  color: #e8f2ff; background: #1a4b8f; border-color: #5c9cf2;
+}
+.vivim-app .vivim-settings-body { min-height: 230px; }
+.vivim-app .vivim-settings-body h3 { font-size: 16px; }
+.vivim-app .vivim-settings-provider { display: flex; gap: 13px; align-items: center;
+  padding: 12px 0; border-bottom: 1px solid #2b3e59; }
+.vivim-app .vivim-provider-emblem { display: grid; place-items: center;
+  width: 38px; height: 38px; border-radius: 11px; flex-shrink: 0;
+  color: #def0ff; background: linear-gradient(155deg, #3764a6, #163e70); font-size: 17px; font-weight: 750; }
+.vivim-app .vivim-settings-provider-name { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 0; }
+.vivim-app .vivim-settings-provider-name strong { text-transform: capitalize; }
+.vivim-app .vivim-settings-provider-name .note { font-size: 11px; }
+.vivim-app .vivim-settings-provider button { font-size: 12px; white-space: nowrap; background: #153a6b; border-color: #2d65a8; }
+.vivim-app .vivim-settings-data { font-family: var(--mono); overflow-wrap: anywhere; font-size: 12px; padding: 10px;
+  border: 1px solid #304966; background: #0b192b; border-radius: 9px; }
+@media (max-width: 1130px) { .vivim-app .vivim-overview-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 670px) {
+  .vivim-app .vivim-overview-grid { grid-template-columns: 1fr; }
+  .vivim-app .vivim-overview-card { min-height: 130px; }
+  .vivim-app .vivim-settings-provider { flex-wrap: wrap; }
+}
+
+
+/* Evidence-grounded local relations graph. The underlying labelled list remains authoritative. */
+.vivim-app .vivim-graph-panel {
+  border: 1px solid #34587c; border-radius: 15px; overflow: hidden; margin: 14px 0 22px;
+  background: radial-gradient(ellipse at 49% 51%, #153c6a 0, #101f35 37%, #0b1628 80%);
+  box-shadow: inset 0 0 34px #081428bb;
+}
+.vivim-app .vivim-graph-heading { display: flex; align-items: center; gap: 12px; justify-content: space-between;
+  padding: 16px 18px 4px; flex-wrap: wrap; }
+.vivim-app .vivim-graph-heading h3 { margin: 0; font-size: 15px; }
+.vivim-app .vivim-graph-panel > .note { margin: 0 17px 14px; line-height: 1.55; font-size: 11px; }
+.vivim-app .vivim-graph-stage { height: 350px; position: relative; overflow: hidden;
+  background-image: radial-gradient(#86b8f722 1px, transparent 1px);
+  background-size: 22px 22px; }
+.vivim-app .vivim-graph-lines { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.vivim-app .vivim-graph-edge { stroke: #598ed7; stroke-width: 1.8; opacity: .7; }
+.vivim-app .vivim-graph-node { position: absolute; z-index: 1; transform: translate(-50%, -50%);
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+  border: 1px solid #678dc1; border-radius: 50%; width: 105px; height: 76px; padding: 7px;
+  background: radial-gradient(circle at 42% 10%, #2a639d, #102846 75%);
+  color: #eaf3ff; box-shadow: 0 0 18px #3471b463; font-size: 10px;
+  text-align: center; overflow-wrap: anywhere;
+}
+.vivim-app .vivim-graph-node:hover:not(:disabled) { border-color: #b7d7ff; box-shadow: 0 0 24px #4d91e5b0; }
+.vivim-app .vivim-graph-node.is-focus { width: 120px; height: 96px; border-color: #7ec2ff;
+  background: radial-gradient(circle at 40% 20%, #1c7dba, #12345e 76%);
+  box-shadow: 0 0 35px #2a95f377; font-weight: 700; }
+.vivim-app .vivim-graph-node[data-kind="project"] { background: radial-gradient(circle at 40% 20%, #793eae, #352157 77%); border-color: #9b71d1; }
+.vivim-app .vivim-graph-node[data-kind="note"] { background: radial-gradient(circle at 40% 20%, #2e997d, #17473b 77%); border-color: #68cbb5; }
+.vivim-app .vivim-graph-node[data-kind="unresolved-reference"],
+.vivim-app .vivim-graph-node:disabled { background: #1b2939; border-style: dashed; border-color: #61748f; opacity: .8; cursor: not-allowed; }
+.vivim-app .vivim-graph-node-label { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden; line-height: 1.18; max-width: 100%; }
+.vivim-app .vivim-graph-node-kind { color: #b7cee9; font-size: 9px; margin-top: 5px; text-transform: capitalize; }
+@media (max-width: 700px) {
+  .vivim-app .vivim-graph-stage { height: 315px; }
+  .vivim-app .vivim-graph-node { width: 82px; height: 65px; font-size: 9px; padding: 5px; }
+  .vivim-app .vivim-graph-node.is-focus { width: 95px; height: 76px; }
+  .vivim-app .vivim-graph-node-kind { font-size: 8px; }
+}
+
+
+/* Give visual gallery, graph and settings the width they need; keep the detail
+   pane connected to the same selected saved object and existing fetch/effect owner. */
+@media (min-width: 1000px) {
+  .vivim-app #worldShell[data-active-view="projects"] #worldGrid {
+    grid-template-columns: minmax(0, 1.85fr) minmax(245px, .82fr);
+  }
+  .vivim-app #worldShell[data-active-view="home"] #worldGrid,
+  .vivim-app #worldShell[data-active-view="settings"] #worldGrid,
+  .vivim-app #worldShell[data-active-view="relations"] #worldGrid {
+    grid-template-columns: minmax(0, 1.5fr) minmax(250px, .8fr);
+  }
+}
+@media (min-width: 740px) and (max-width: 999px) {
+  .vivim-app #worldShell[data-active-view="projects"] #worldGrid,
+  .vivim-app #worldShell[data-active-view="relations"] #worldGrid {
+    grid-template-columns: minmax(0, 1.5fr) minmax(225px, 1fr);
+  }
+}
+
+
+/* Provider rail follows the screenshot's multi-model chat concept, using only
+   the real supported-site registry. Active conversations cannot be switched. */
+.vivim-app .vivim-chat-provider-strip { display: flex; flex-wrap: wrap; gap: 7px; margin: 0 0 15px; }
+.vivim-app .vivim-chat-provider-strip button {
+  display: inline-flex; align-items: center; gap: 7px; padding: 9px 13px; border-radius: 10px;
+  background: #121f34; color: #c6d5eb; border: 1px solid #2f476a; font-size: 12px; font-weight: 670;
+}
+.vivim-app .vivim-chat-provider-strip button::before {
+  content: "✦"; font-size: 14px; color: #82aff5; }
+.vivim-app .vivim-chat-provider-strip button[aria-pressed="true"] {
+  border-color: #66a6ff; color: #fff; background: #1c457b;
+  box-shadow: inset 0 -2px 0 #68a6ff;
+}
+.vivim-app .vivim-chat-provider-strip button:disabled {
+  cursor: default; opacity: .8; }
+.vivim-app .vivim-chat-provider-strip .note { margin: 0; padding: 7px 0; }
+
+
+/* Native Personal Agent shares the existing World split panes and browser ownership. */
+#worldShell[data-active-view="agent"] #worldGrid { grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); }
+#worldShell[data-active-view="agent"] .vivim-info-card { margin-bottom: 12px; }
+#worldShell[data-active-view="agent"] form { display: grid; gap: 8px; margin: 10px 0; }
+#worldShell[data-active-view="agent"] form input,
+#worldShell[data-active-view="agent"] form textarea,
+#worldShell[data-active-view="agent"] form select { width: 100%; max-width: 100%; }
+#worldShell[data-active-view="agent"] .vivim-agent-work-row { border-top: 1px solid var(--line); padding: 12px 0; }
+#worldShell[data-active-view="agent"] .vivim-agent-work-row > * { margin-top: 6px; }
+#worldAgentInsights { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 8px; }
+#worldAgentInsights > h3, #worldAgentInsights > p, #worldAgentInsights > pre { flex-basis: 100%; }
+#worldAgentInsightOutput { max-height: 24rem; max-width: 100%; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
+@media (max-width: 850px) {
+  #worldShell[data-active-view="agent"] #worldGrid { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* Personal app factory is the existing World split-view; not a second app runtime. */
+#worldShell[data-active-view="builder"] #worldGrid { grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr); }
+#worldShell[data-active-view="builder"] form { display: grid; gap: 10px; margin: 12px 0 20px; }
+#worldShell[data-active-view="builder"] form input,
+#worldShell[data-active-view="builder"] form textarea,
+#worldShell[data-active-view="builder"] form select { width: 100%; max-width: 100%; }
+#worldBuilderLibrary { display: grid; gap: 8px; }
+.vivim-builder-phone { margin: 16px auto; width: min(100%, 355px); min-height: 370px; border: 2px solid var(--line);
+  border-radius: 28px; padding: 22px 15px; background: var(--panel); box-shadow: 0 8px 24px rgba(0,0,0,.09); }
+.vivim-builder-phone > strong { display: block; text-align: center; padding-bottom: 14px; }
+.vivim-builder-screen-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; }
+.vivim-builder-screen { min-height: 88px; border: 1px solid var(--line); border-radius: 12px;
+  padding: 12px; background: var(--paper); overflow-wrap: anywhere; }
+.vivim-builder-screen strong { display: block; }
+@media (max-width: 850px) {
+  #worldShell[data-active-view="builder"] #worldGrid { grid-template-columns: minmax(0,1fr); }
+}
+</style>
+</head>
+<body class="vivim-app">
+<header class="vivim-topbar">
+  <div class="vivim-brand"><span class="vivim-brand-mark" aria-hidden="true">✦</span><div><h1>VIVIM</h1><p>My machine. My data. My AI.</p></div></div>
+  <span class="crumb"><b id="vivimViewBreadcrumb">Your AI World / Chat</b></span>
+  <div class="vivim-header-actions">
+    <span class="vivim-local-label">Local-first</span>
+    <a href="/">Advanced Studio</a>
+    <a href="/drive">Calibrate sites</a>
+    <a href="/personal-agent">Agent details</a>
+  </div>
+  <span id="connectionNote" class="note" role="status"></span>
+</header>
+
+<nav class="modes" id="shellModes" aria-label="Views">
+  <button type="button" id="viewHome" data-view="home" aria-pressed="false" aria-controls="worldShell">Home</button>
+  <button type="button" id="viewBuilder" data-view="builder" aria-pressed="false" aria-controls="worldShell">Build my VIVIM</button>
+  <button type="button" id="viewAgent" data-view="agent" aria-pressed="false" aria-controls="worldShell">Personal Agent</button>
+  <button type="button" id="viewCapture" data-view="capture" aria-pressed="true" aria-controls="chatApp">Capture</button>
+  <button type="button" id="viewCompare" aria-pressed="false" aria-controls="comparePanel">Compare</button>
+  <button type="button" id="viewMyAis" aria-pressed="false" aria-controls="myAisPanel">My AIs</button>
+  <button type="button" id="viewConversations" data-view="conversations" aria-pressed="false" aria-controls="worldShell">Saved conversations</button>
+  <button type="button" id="viewProjects" data-view="projects" aria-pressed="false" aria-controls="worldShell">Projects</button>
+  <button type="button" id="viewNotes" data-view="notes" aria-pressed="false" aria-controls="worldShell">Notes</button>
+  <button type="button" id="viewFind" data-view="find" aria-pressed="false" aria-controls="worldShell">Find</button>
+  <button type="button" id="viewTransfer" data-view="transfer" aria-pressed="false" aria-controls="worldShell">Transfer</button>
+  <button type="button" id="viewRelations" data-view="relations" aria-pressed="false" aria-controls="worldShell">Relations</button>
+  <button type="button" id="viewWorkspace" data-view="workspace" aria-pressed="false" aria-controls="worldShell">Workspace</button>
+  <button type="button" id="viewCompose" data-view="compose" aria-pressed="false" aria-controls="worldShell">Composed workspace</button>
+  <button type="button" id="viewSettings" data-view="settings" aria-pressed="false" aria-controls="worldShell">Settings</button>
+</nav>
+<p class="note modes-note" id="viewNote">Build your personal mobile app blueprint, browse saved conversations, and keep your locally owned world together. Local edits do not change provider content. Your open view is remembered for this tab.</p>
+
+<div class="wrap" id="chatApp">
+  <main>
+    <section class="panel pad" id="comparePanel" hidden aria-labelledby="compareHeading">
+      <h2 id="compareHeading" tabindex="-1">Compare your AI answers</h2>
+      <p class="note">Ask through your own accounts on this PC. Each provider gets a separate new conversation, one at a time.</p>
+      <form id="compareForm">
+        <label class="field"><span class="lab">Your question</span><textarea id="compareQuestion" rows="3" maxlength="10000" required></textarea></label>
+        <fieldset id="compareProviders"><legend>Ask</legend><div class="row">
+          <label class="pick"><input type="checkbox" name="compareSite" value="chatgpt" checked>ChatGPT</label>
+          <label class="pick"><input type="checkbox" name="compareSite" value="claude" checked>Claude</label>
+          <label class="pick"><input type="checkbox" name="compareSite" value="zai">Z.ai</label>
+          <label class="pick"><input type="checkbox" name="compareSite" value="qwen">Qwen</label>
+          <label class="pick"><input type="checkbox" name="compareSite" value="deepseek">DeepSeek</label>
+          <label class="pick"><input type="checkbox" name="compareSite" value="gemini">Gemini</label>
+        </div></fieldset>
+        <div class="row"><button class="primary" id="compareStart" type="submit">Ask selected providers</button><button type="button" id="compareCancel" disabled>Stop waiting</button><button type="button" id="compareRefresh" hidden>Check saved comparison</button></div>
+      </form>
+      <p class="note" id="compareStatus" role="status" aria-live="polite"></p>
+      <p class="note" id="compareFastest" aria-live="polite"></p>
+      <div class="compare-grid" id="compareGrid" role="list" aria-label="Provider answers"></div>
+    </section>
+    <section class="panel pad" id="myAisPanel" hidden aria-labelledby="myAisHeading">
+      <h2 id="myAisHeading" tabindex="-1">My AIs</h2>
+      <p class="note">One card for each AI website you use here: whether its tab is open right now, and its track record from what Studio has already recorded. Nothing on this page sends a message.</p>
+      <p class="note" id="myAisStatus" role="status" aria-live="polite"></p>
+      <div class="myais-grid" id="myAisGrid" role="list" aria-label="Your AI accounts"></div>
+    </section>
+    <section class="vivim-welcome" id="vivimWelcome" aria-labelledby="vivimWelcomeTitle" aria-busy="false">
+      <div class="vivim-welcome-hero">
+        <div class="vivim-hero-symbol" aria-hidden="true">✦</div>
+        <p class="vivim-hero-wordmark">VIVIM</p>
+        <h2>Your AI, your world,<br>in one place.</h2>
+        <ul class="vivim-hero-benefits">
+          <li>Bring your AI conversations together</li>
+          <li>Capture, organize and build on your knowledge</li>
+          <li>Work across AI providers, with source evidence</li>
+          <li>Keep your personal World on your machine</li>
+        </ul>
+        <p class="vivim-hero-privacy">◈ Private by design <span>Local-first records and explicit provider actions.</span></p>
+      </div>
+      <div class="vivim-welcome-card">
+        <span class="vivim-eyebrow">YOUR PERSONAL AI WORLD</span>
+        <h2 id="vivimWelcomeTitle">Welcome to VIVIM</h2>
+        <p class="vivim-card-intro">Set up your workspace and connect your AI.</p>
+        <ol class="vivim-welcome-steps" aria-label="Getting started with VIVIM">
+          <li><span class="vivim-step-number" aria-hidden="true">1</span><div><strong>Your local workspace</strong><span class="vivim-step-desc">Local data roots are managed by Harness. Choosing a folder during onboarding is not available yet.</span></div></li>
+          <li><span class="vivim-step-number" aria-hidden="true">2</span><div><strong>Choose an AI provider</strong><span class="vivim-step-desc">Choose a supported website; no account is assumed connected.</span></div></li>
+          <li><span class="vivim-step-number" aria-hidden="true">3</span><div><strong>Connect your browser world</strong><span class="vivim-step-desc">You authenticate with the provider yourself.</span></div></li>
+          <li><span class="vivim-step-number" aria-hidden="true">4</span><div><strong>Capture and explore</strong><span class="vivim-step-desc">Start observation, then organize what you save locally.</span></div></li>
+        </ol>
+        <div class="vivim-welcome-copy">
+          <div id="vivimProviders" class="vivim-provider-choices" role="group" aria-label="Supported AI websites"></div>
+          <p class="vivim-provider-disclaimer">Supported sites are not verified accounts. Sign in directly with each provider.</p>
+          <div class="vivim-welcome-actions">
+            <button type="button" class="primary" id="vivimBegin">Get started <span aria-hidden="true">→</span></button>
+            <button type="button" id="vivimLibrary" disabled title="Available when your saved World is ready">Explore saved conversations</button>
+          </div>
+          <p class="vivim-trust">No message is sent without your explicit action.</p>
+          <p class="vivim-welcome-status" id="vivimWelcomeStatus" role="status">Choose a provider and connection mode below.</p>
+        </div>
+      </div>
+    </section>
+    <h2>Chat</h2>
+    <div class="vivim-chat-provider-strip" id="vivimChatProviders" role="group" aria-label="Available AI website choices" hidden></div>
+    <p class="lede">Connect to a website you’re logged in to, send a message, and read the reply while Studio records it. You can follow up in the same chat, one turn at a time. Connecting only watches. Nothing is sent until you press Send.</p>
+
+    <details class="panel" id="connectBox" open>
+      <summary id="connectSummary">Connection</summary>
+      <div class="pad">
+        <fieldset aria-describedby="connectHelp">
+          <legend>Where to chat</legend>
+          <label class="pick" for="modeNew"><input type="radio" name="mode" id="modeNew" value="new" checked><span><b>Open a new tab</b><br><span class="note">Studio opens its own tab with your logged-in session.</span></span></label>
+          <label class="pick" for="modeExisting"><input type="radio" name="mode" id="modeExisting" value="existing"><span><b>Use a tab I already have open</b><br><span class="note">Studio never reloads, navigates or closes it.</span></span></label>
+        </fieldset>
+        <div class="field" id="siteField">
+          <label for="site" class="lab">Site</label>
+          <select id="site" aria-describedby="siteNote"><option value="">Loading sites…</option></select>
+          <div class="note" id="siteNote"></div>
+        </div>
+        <div class="field" id="existingField" hidden>
+          <div class="row" style="justify-content:space-between">
+            <span class="lab" id="tabsLabel" style="margin:0">Open browser tabs</span>
+            <button type="button" id="btnTabs">Refresh tabs</button>
+          </div>
+          <p class="note" id="tabsHelp" style="margin:4px 0 0">These are tabs open in the capture browser right now. It isn’t a list of the chats in your account.</p>
+          <div class="targets" id="targetList" role="radiogroup" aria-labelledby="tabsLabel" aria-describedby="tabsHelp targetNote"></div>
+          <div class="note" id="targetNote" role="status" style="margin-top:6px"></div>
+        </div>
+        <p class="note" id="connectHelp">Connect starts recording that tab. It doesn’t type, send, clear or reload anything. Traffic from before you connected isn’t captured.</p>
+        <div class="row">
+          <button type="button" class="primary" id="btnConnect" aria-describedby="connectHint connectHelp" disabled>Connect and start recording</button>
+        </div>
+        <div class="note" id="connectHint" role="status" style="margin-top:6px"></div>
+        <div class="err" id="connectError" role="alert" style="margin-top:6px"></div>
+      </div>
+    </details>
+
+    <section aria-labelledby="convHeading">
+      <h3 id="convHeading" class="sr">Conversation</h3>
+      <p class="stage" id="stageLine"></p>
+      <div class="chips" id="chips" style="margin-top:6px"></div>
+
+      <div class="panel thread" id="threadStrip" aria-labelledby="threadHeading" hidden>
+        <div class="thread-head">
+          <h3 id="threadHeading">Chat thread</h3>
+          <div class="chips" id="identityChips"></div>
+        </div>
+        <code class="ref" id="threadRef" hidden></code>
+        <ul class="plain" id="identityLines"></ul>
+      </div>
+
+      <div class="banner" id="uncertain" tabindex="-1" aria-labelledby="uncertainHead" hidden>
+        <p><b id="uncertainHead">We can’t confirm your message was sent. Studio will not send it again.</b></p>
+        <ul class="plain" id="uncertainLines"></ul>
+        <p id="chromeGuide">Open the tab in Chrome to see whether it was sent.</p>
+        <p class="note" id="autoCheckNote" role="status" style="margin-top:6px"></p>
+        <div class="row">
+          <button type="button" class="primary" id="btnReconcile">Check again (read-only)</button>
+          <a class="hit" id="openChatTab" hidden></a>
+          <button type="button" id="btnSendAgain" hidden>Send again</button>
+        </div>
+        <p class="note" style="margin:6px 0 0">Checking again only reads the page. It never types or presses Send.</p>
+        <div class="err" id="reconcileError" role="alert"></div>
+      </div>
+
+      <p class="note" id="checkedNote"></p>
+
+      <div class="banner bad" id="blockedNotice" hidden>
+        <p><b id="blockedHead">Your message wasn’t sent. You can send it again.</b></p>
+        <p class="note" id="blockedNote"></p>
+      </div>
+
+      <div class="banner" id="readyPanel" hidden>
+        <p><b id="readyHead">Resolve draft in Chrome</b></p>
+        <p class="note" id="readyNote"></p>
+        <ul class="plain" id="readyReasons"></ul>
+        <div class="row" style="margin-top:8px"><button type="button" class="primary" id="btnCheck">Check again (read-only)</button></div>
+        <p class="note" style="margin:6px 0 0">Checking only reads the page. It never types, clears or sends.</p>
+        <div class="note" id="readyChecked" role="status"></div>
+        <div class="err" id="readyError" role="alert"></div>
+      </div>
+
+      <div class="banner bad" id="problem" role="status" hidden></div>
+      <div class="row" style="margin-top:8px"><button type="button" id="btnRetry" hidden>Retry now</button></div>
+
+      <div class="panel" id="transcript" role="log" aria-live="off" aria-label="Conversation" tabindex="0">
+        <p class="empty" id="emptyState">No conversation yet. Connect to a site above.</p>
+        <ol class="plain" id="turnList" aria-label="Turns in this chat, oldest first" hidden></ol>
+        <article class="msg you" id="youMsg" hidden>
+          <h3 id="youHead">You</h3>
+          <p class="body" id="youText"></p>
+          <p class="note" id="youNote"></p>
+          <button type="button" id="btnCopy" hidden>Copy my message</button>
+        </article>
+        <div class="chips" id="phaseLine" style="margin:0 0 12px" hidden></div>
+        <article class="msg" id="replyMsg" hidden>
+          <h3 id="replyHead">Reply</h3>
+          <div class="row reply-tools">
+            <button type="button" id="btnCopyReply" class="mini" disabled>Copy reply</button>
+            <button type="button" id="btnRawToggle" class="mini" aria-describedby="rawHelp">Show plain text</button>
+            <span class="note" id="rawHelp">Code, tables and links are shown formatted. Plain text is exactly what was received.</span>
+          </div>
+          <div id="replyBlocks"></div>
+          <div class="artifacts" id="replyArtifacts" hidden></div>
+          <section class="sources" id="replySources" aria-labelledby="sourcesHead" hidden>
+            <h4 class="rh" id="sourcesHead">Sources</h4>
+            <p class="note" id="sourcesNote"></p>
+            <ol class="plain sourcelist" id="sourcesList"></ol>
+          </section>
+          <div class="chips srcline" id="replyChips"></div>
+          <p class="note" id="replyCount"></p>
+          <p id="replyPartial" hidden></p>
+          <p id="replyStream" class="note"></p>
+          <p class="note" id="replyTrunc"></p>
+        </article>
+      </div>
+    </section>
+
+    <section class="panel readbox" id="readBox" aria-labelledby="readHeading" aria-busy="false" hidden>
+      <h3 id="readHeading" style="margin-top:0">Read the chat page</h3>
+      <p class="note" id="readHelp" style="margin:0 0 8px">Reads the messages the tab is showing right now. It never types, sends, clears, scrolls or reloads, and it leaves anything in the chat box as it is. Studio only reads when you press the button.</p>
+      <div class="row read-actions">
+        <button type="button" id="btnRead" aria-describedby="readHint readHelp" disabled>Read what’s on the page</button>
+        <button type="button" id="btnReadMore" hidden>Read more (up to 200 messages)</button>
+      </div>
+      <div class="note" id="readHint" role="status" style="margin-top:6px"></div>
+      <div class="err" id="readError" role="alert" style="margin-top:6px"></div>
+      <p class="empty" id="readEmpty">Nothing read yet.</p>
+      <div id="readResult" hidden>
+        <p class="stage" id="readHeadline" style="margin-top:12px"></p>
+        <div class="chips" id="readChips" style="margin-top:6px"></div>
+        <p class="note" id="readMeta"></p>
+        <p class="note" id="readDraft"></p>
+        <details class="blk cov" open>
+          <summary>What this read covers</summary>
+          <ul class="plain" id="readCoverage"></ul>
+        </details>
+        <ol class="reads" id="readMessages" aria-label="Messages read from the page, oldest first"></ol>
+      </div>
+    </section>
+
+    <section class="panel finish" id="finishBar" aria-labelledby="finishHeading" hidden>
+      <h3 id="finishHeading" tabindex="-1" style="margin-top:0">Capture</h3>
+      <div class="chips" id="finishOutcome" hidden></div>
+      <ul class="plain" id="finishReasons"></ul>
+      <div class="note" id="finishNote"></div>
+      <p class="note" id="turnNote" hidden>Each Send adds one turn to this same chat. Studio sends the next message only after the previous reply is complete and its recording has stopped. Finish when you are done.</p>
+      <label class="pick" for="closeTab" id="closeTabField" hidden><input type="checkbox" id="closeTab"><span>Also close the tab Studio opened</span></label>
+      <div class="row" style="margin-top:6px">
+        <button type="button" id="btnFinish">Finish capture</button>
+        <button type="button" id="btnNew" hidden>Start a new conversation</button>
+      </div>
+      <div class="row" id="finishLinks"></div>
+      <div class="err" id="finishError" role="alert" style="margin-top:6px"></div>
+    </section>
+
+    <form class="panel composer" id="composer" novalidate aria-label="Message composer">
+      <label for="prompt" class="lab">Message</label>
+      <textarea id="prompt" rows="3" maxlength="250000" placeholder="Write a message to this website" aria-describedby="sendHint sendNote"></textarea>
+      <div class="note" id="sendHint" role="status" style="margin-top:4px"></div>
+      <div class="row" style="margin-top:8px">
+        <button type="button" class="primary" id="btnSend" disabled>Send</button>
+      </div>
+      <p class="note" id="sendNote" style="margin:6px 0 0">Sends 1 message with your logged-in account. It uses quota and adds to this chat’s history. One turn at a time. Up to 250,000 characters. Enter adds a new line.</p>
+      <div class="err" id="sendError" role="alert" style="margin-top:6px"></div>
+    </form>
+  </main>
+
+  <aside aria-label="Conversation details">
+    <details class="panel" id="detailsBox">
+      <summary>Details</summary>
+      <div class="pad" id="detailsBody">
+        <dl class="kv" id="detailsKv"></dl>
+        <h3>Evidence checks</h3>
+        <ul class="plain" id="gates"></ul>
+        <p class="note" id="unknowns"></p>
+        <h3>Recording limits</h3>
+        <div class="note" id="limits"></div>
+        <h3>What Studio could not see</h3>
+        <ul class="plain" id="limitations"></ul>
+        <div class="row" id="sessionLinks" style="margin-top:8px"></div>
+      </div>
+    </details>
+    <details class="panel" id="listBox" style="margin-top:14px">
+      <summary>Earlier conversations</summary>
+      <div class="pad">
+        <div class="row" style="justify-content:space-between">
+          <div class="note" id="listState" role="status">Loading…</div>
+          <button type="button" id="btnListRefresh" class="mini">Refresh list</button>
+        </div>
+        <ul class="plain convs" id="convList"></ul>
+        <button type="button" id="btnListMore" class="mini" hidden>Show all</button>
+      </div>
+    </details>
+  </aside>
+</div>
+<section id="worldShell" class="wrap world" hidden aria-label="Saved local world"></section>
+<div class="sr" id="announce" role="status" aria-live="polite" aria-atomic="true"></div>
+</body>
+</html>

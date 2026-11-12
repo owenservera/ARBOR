@@ -1,0 +1,139 @@
+// Same-owner Studio v1 routes for the local Personal Agent. No new server or effect owner.
+import { createPersonalAgentService } from '../agents/personal-agent-service.mjs';
+import { createProviderReplyWork } from '../agents/personal-agent-provider-reply.mjs';
+import { problem } from './http.mjs';
+import { projectWorkMission } from '../../../apps/mobile-relay/ux/mission-experience.mjs';
+
+const versionSchema = { type: ['integer', 'null'], description: 'CAS version: null only for first initialization' };
+const stringSchema = { type: 'string' };
+export function registerPersonalAgentRoutes({ add, paths, getTools, readStoredConversation } = {}) {
+  if (typeof add !== 'function') throw new TypeError('Studio add() required');
+  const agent = createPersonalAgentService({ paths, getTools });
+  const providerReply = createProviderReplyWork({ agent, readStoredConversation });
+  const ensureBody = (body, allowed) => {
+    if (!body || typeof body !== 'object' || Array.isArray(body) ||
+        Object.keys(body).some(k => !allowed.includes(k))) {
+      throw problem(400, 'Unexpected Personal Agent request fields', 'PERSONAL_AGENT_INVALID');
+    }
+    return body;
+  };
+  add('GET', '/personal-agent/status', 'Read local Personal Agent bootstrap progress without initialization',
+    () => agent.status(), { tool: 'personal_agent_status',
+      annotations: { readOnlyHint: true, openWorldHint: false, idempotentHint: true } });
+  // Protected global Personal AI status: read-only, no body, never initializes; GET only (no write sibling).
+  add('GET', '/personal-agent/global', 'Protected read-only global Personal AI status; no initialization, no private content',
+    () => agent.globalStatus(), { tool: 'personal_agent_global',
+      annotations: { readOnlyHint: true, openWorldHint: false, idempotentHint: true } });
+  add('GET', '/personal-agent/self-knowledge', 'Grounded self-knowledge: local claim, basis, freshness and qualification',
+    ({ q }) => agent.selfKnowledge(q?.topic ?? 'all'),
+    { tool: 'personal_agent_self_knowledge', query: { topic: { type: 'string',
+      enum: ['all', 'identity', 'bootstrap', 'memory', 'work', 'world', 'capabilities', 'privacy'] } },
+      annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false } });
+  add('GET', '/personal-agent/sitrep', 'Read private local Agent continuity and pending Work; not an agent tool',
+    () => agent.continuity());
+  add('GET', '/personal-agent/export', 'Explicit JSON export; sensitive contents included only by opt-in',
+    ({ q }) => {
+      const flag = (value, name) => {
+        if (value === undefined || value === 'false') return false;
+        if (value === 'true') return true;
+        throw problem(400, `${name} must be true or false`, 'PERSONAL_AGENT_INVALID');
+      };
+      return agent.exportSnapshot({
+        includeMemory: flag(q?.includeMemory, 'includeMemory'),
+        includeWorkDetails: flag(q?.includeWorkDetails, 'includeWorkDetails'),
+      });
+    }, { query: { includeMemory: { type: 'boolean', default: false }, includeWorkDetails: { type: 'boolean', default: false } } });
+  // Lane M is a read-only projection of the existing durable Work store, never an executor.
+  add('GET', '/personal-agent/outcomes', 'Read understandable saved Work cards without dispatch',
+    () => ({ schema: 'vivim.mission-experience/1', items: agent.workList().items.map(projectWorkMission).filter(Boolean) }),
+    { annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false } });
+  add('GET', '/personal-agent/work', 'Read private local Personal Agent Work records (not in tool manifest)',
+    () => agent.workList());
+  add('POST', '/personal-agent/work', 'Create user-directed local Work; no provider dispatch',
+    ({ body }) => agent.createWorkItem(ensureBody(body, ['expectedVersion', 'title', 'objective', 'idempotencyKey'])),
+    { body: { type: 'object', properties: {
+      expectedVersion: { type: 'integer', minimum: 1 }, title: { type: 'string', maxLength: 160 },
+      objective: { type: 'string', maxLength: 4000 }, idempotencyKey: { type: 'string', minLength: 8, maxLength: 128 },
+    }, required: ['expectedVersion', 'title', 'objective', 'idempotencyKey'], additionalProperties: false } });
+  // Opt-in: propose Work from an already-stored settled provider reply (stored snapshot only; never sends/reads live).
+  const replyBody = (extra = {}, required = []) => ({ type: 'object', properties: {
+    conversation: { type: 'string', minLength: 1, maxLength: 128, pattern: '^[a-zA-Z0-9][a-zA-Z0-9_-]{0,127}$' },
+    turnId: { type: 'string', minLength: 1, maxLength: 200 }, ...extra,
+  }, required: ['conversation', 'turnId', ...required], additionalProperties: false });
+  add('POST', '/personal-agent/work/preview-provider-reply',
+    'Preview a Work item proposed from an already-stored provider reply; read-only, nothing saved, no provider call',
+    ({ body }) => providerReply.preview(ensureBody(body, ['conversation', 'turnId'])),
+    { body: replyBody() });
+  add('POST', '/personal-agent/work/apply-provider-reply',
+    'Save a previewed provider-reply Work item after explicit user approval with CAS; no provider call',
+    ({ body }) => providerReply.apply(ensureBody(body, ['conversation', 'turnId', 'replyDigest', 'expectedVersion', 'approval'])),
+    { body: replyBody({
+      replyDigest: { type: 'string', pattern: '^[a-f0-9]{64}$' },
+      expectedVersion: { type: 'integer', minimum: 1 },
+      approval: { type: 'string', enum: ['user-confirmed'] },
+    }, ['replyDigest', 'expectedVersion', 'approval']) });
+  add('POST', '/personal-agent/work/{id}/transition', 'Explicit local Work status update; completion references are user-attested',
+    ({ p, body }) => agent.transitionWorkItem({ ...ensureBody(body, ['expectedVersion', 'to', 'note', 'evidence', 'idempotencyKey']), id: p.id }),
+    { body: { type: 'object', properties: {
+      expectedVersion: { type: 'integer', minimum: 1 },
+      to: { type: 'string', enum: ['queued', 'active', 'blocked', 'completed', 'cancelled'] },
+      idempotencyKey: { type: 'string', minLength: 8, maxLength: 128 },
+      note: { type: 'string', maxLength: 2000 },
+      evidence: { type: 'array', maxItems: 20, items: { type: 'string', maxLength: 256 } },
+    }, required: ['expectedVersion', 'to'], additionalProperties: false } });
+  add('POST', '/personal-agent/work/{id}/next-action',
+    'Set a next action on open local Work, without dispatching it or claiming execution',
+    ({ p, body }) => agent.updateWorkNextAction({
+      ...ensureBody(body, ['expectedVersion', 'nextAction']), id: p.id,
+    }), { body: { type: 'object', properties: {
+      expectedVersion: { type: 'integer', minimum: 1 },
+      nextAction: { type: ['string', 'null'], maxLength: 1000 },
+    }, required: ['expectedVersion', 'nextAction'], additionalProperties: false } });
+  add('GET', '/personal-agent/work/{id}/relevant-memory',
+    'Find local saved memory relevant to one Work item by title/objective keywords; read-only, no provider call, not in tool manifest',
+    ({ p, q }) => agent.relevantMemoryForWork({ id: p.id, tier: q?.tier ?? 'all' }),
+    { query: { tier: { type: 'string', enum: ['all', 'CANON', 'Immediate', 'Curated'] } } });
+  add('GET', '/personal-agent/capabilities', 'Inspect bounded skill sources and registered Studio tools (no runtime proof)',
+    () => agent.capabilities(), { tool: 'personal_agent_capabilities',
+      annotations: { readOnlyHint: true, openWorldHint: false, idempotentHint: true } });
+  add('POST', '/personal-agent/initialize', 'Initialize one local Personal Agent identity with CAS',
+    ({ body }) => agent.initialize(ensureBody(body, ['expectedVersion'])),
+    { body: { type: 'object', properties: { expectedVersion: { type: 'null' } }, required: ['expectedVersion'], additionalProperties: false } });
+  add('POST', '/personal-agent/bootstrap', 'Run remaining local evidence-backed bootstrap stages; no external effects',
+    ({ body }) => agent.bootstrap(ensureBody(body, ['expectedVersion'])),
+    { body: { type: 'object', properties: { expectedVersion: versionSchema }, required: ['expectedVersion'], additionalProperties: false } });
+  // Search body stays out of URLs/access logs. Private previews are never tool-exposed.
+  add('POST', '/personal-agent/search-memory', 'Explicit private read-only local memory search',
+    ({ body }) => agent.searchMemory(ensureBody(body, ['query', 'tier', 'limit'])),
+    { body: { type: 'object', properties: {
+      query: { type: 'string', minLength: 2, maxLength: 120 },
+      tier: { type: 'string', enum: ['all', 'CANON', 'Immediate', 'Curated'] },
+      limit: { type: 'integer', minimum: 1, maximum: 50 },
+    }, required: ['query'], additionalProperties: false } });
+  add('GET', '/personal-agent/memory/{tier}', 'Read one local Personal Agent memory tier; private values not exposed as a tool',
+    ({ p }) => agent.memories(p.tier));
+  add('POST', '/personal-agent/context-bundle', 'Compose a bounded Dynamic Context Bundle from local memory and repo authorities; read-only, no provider send',
+    ({ body }) => agent.contextBundle(ensureBody(body, ['taskRef', 'taskText', 'purpose', 'profile', 'audience', 'scope', 'disclosure', 'maxInputTokens', 'reservedForUserPrompt', 'reservedForOutput', 'sourceHead', 'policyVersion', 'now'])),
+    { body: { type: 'object', properties: {
+      taskRef: { type: 'string', minLength: 1, maxLength: 128 },
+      taskText: { type: 'string', maxLength: 10000 },
+      purpose: { type: 'string', enum: ['dev_task', 'personal_continuum'] },
+      profile: { type: 'string' },
+      audience: { type: 'object' },
+      scope: { type: 'object' },
+      disclosure: { type: 'object' },
+      maxInputTokens: { type: 'integer', minimum: 256, maximum: 24000 },
+      reservedForUserPrompt: { type: 'integer', minimum: 0 },
+      reservedForOutput: { type: 'integer', minimum: 0 },
+      sourceHead: { type: ['string', 'null'] },
+      policyVersion: { type: 'string', maxLength: 50 },
+      now: { type: 'string' },
+    }, required: ['taskRef'], additionalProperties: false } });
+  add('PUT', '/personal-agent/memory/{tier}/{key}', 'Save explicit user-authored Personal Agent memory with CAS',
+    ({ p, body }) => agent.remember({ ...ensureBody(body, ['text', 'expectedVersion']), tier: p.tier, key: p.key }),
+    { body: { type: 'object', properties: { text: stringSchema, expectedVersion: { type: 'integer', minimum: 1 } }, required: ['text', 'expectedVersion'], additionalProperties: false } });
+  add('POST', '/personal-agent/memory/{tier}/{key}/remove', 'Remove explicit local memory with CAS (version history preserved)',
+    ({ p, body }) => agent.forget({ ...ensureBody(body, ['expectedVersion']), tier: p.tier, key: p.key }),
+    { body: { type: 'object', properties: { expectedVersion: { type: 'integer', minimum: 1 } },
+      required: ['expectedVersion'], additionalProperties: false } });
+}
