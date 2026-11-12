@@ -37,13 +37,18 @@
     "ciRunId": 43233248631,
     "ciConclusion": "startup_failure",
     "ciJobs": 0,
-    "merged": false,
+    "merged": true,
     "cargoLock": "ABSENT",
     "bunLock": "ABSENT",
     "betaGo": false,
     "nextWaveAcceptedSha": null,
     "securityAndDeviceUnrun": true,
     "toolchainTests": "UNRUN",
-    "deploymentAuthorized": false
-  }
+    "deploymentAuthorized": false,
+    "mergeCommit": "dc2ae81103925b18d962ff6c53d14c6a470b9f79",
+    "canonicalDevelopmentBranch": "main",
+    "releaseAllowed": false,
+    "checks": "UNRUN/STARTUP_FAILURE"
+  },
+  "sourceBranch": "main"
 }
