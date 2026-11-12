@@ -1,4 +1,13 @@
 # HVI executable and negative acceptance matrix
+
+> **2026-11-12 SCOPE CORRECTION — NATIVE TOOLING ONLY.** Read [10-NATIVE-TOOLING-ONLY-SCOPE.md](../10-NATIVE-TOOLING-ONLY-SCOPE.md) when this is a prompts/ file; for root docs see [10-NATIVE-TOOLING-ONLY-SCOPE.md](10-NATIVE-TOOLING-ONLY-SCOPE.md). This correction governs any conflicting original instructions below.
+
+## Revised present-wave acceptance scope
+T01–T08, T12–T24 shall be tested with synthetic/injected Git object trees, including 3 SHA pins of one invented repo and 5 invented repos. T09–T11 **fixed S0/D source counts are historical fixture preservation checks only**, not an instruction to acquire or run a current corpus comparison. H/G2 must demonstrate live authorized agent tool discovery, refusal/revoke, typed NL routing and UI empty state, without real source acquisition. No exact real 361-path semantic classifications in this wave. X real audit tests are deferred until explicit user request.
+
+
+---
+
 **Truth rule:** a named test without an executed command+exit code is UNRUN. GitHub source inspection is never test execution. Windows/MSVC and physical Android acceptance remain separate Proposal 5 beta gates.
 
 ## Source and pin

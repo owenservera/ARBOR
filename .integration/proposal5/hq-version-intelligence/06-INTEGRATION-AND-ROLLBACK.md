@@ -1,4 +1,15 @@
 # Integration, dependency closure, acceptance and rollback
+
+> **2026-11-12 SCOPE CORRECTION — NATIVE TOOLING ONLY.** Read [10-NATIVE-TOOLING-ONLY-SCOPE.md](../10-NATIVE-TOOLING-ONLY-SCOPE.md) when this is a prompts/ file; for root docs see [10-NATIVE-TOOLING-ONLY-SCOPE.md](10-NATIVE-TOOLING-ONLY-SCOPE.md). This correction governs any conflicting original instructions below.
+
+## Corrected integration boundary
+- G1 uses synthetic 2/3/5-repo test manifests and portable CLI/runtime adapters, not actual donor comparisons; H wires existing native agent registry and per-invocation Host authorization; U wires the reusable inspector.
+- X real audit remains **deferred**, no branch/worker execution required or allowed. Z2 inspects H/U only. G2 integrates H/U only. R checks native readiness using synthetic inputs only.
+- Operational source access is opt-in at future **user invocation**; provider tokens/credentials are not scanned or pre-loaded. No scheduled scans, periodic indexing, pending migration plans or automatic source comparison.
+
+
+---
+
 1. Planning files only merge to ARBOR `main` in a reviewable preparation PR. No source functionality changes during preparation.
 2. S0 uses GitHub **read-only** to resolve all current refs, obtains full commit/tree SHAs, repeats mechanical path parity against fixed baseline and records variance. Missing repo/source => explicit incomplete; no guess.
 3. Workers A–F isolate source and proof commits. Their interfaces are prescribed in `03-NWAY-CONTRACT.md`; no cross-owner imports which require code not present in the worker's base to pass local tests. Instead author pure seam adapters or mark combined tests UNRUN until G1.

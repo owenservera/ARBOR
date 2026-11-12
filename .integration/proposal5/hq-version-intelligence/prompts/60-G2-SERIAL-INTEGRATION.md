@@ -1,4 +1,16 @@
 # ARBOR Proposal 5 — HVI G2: Serial Host/UI integration
+
+> **2026-11-12 SCOPE CORRECTION — NATIVE TOOLING ONLY.** Read [10-NATIVE-TOOLING-ONLY-SCOPE.md](../10-NATIVE-TOOLING-ONLY-SCOPE.md) when this is a prompts/ file; for root docs see [10-NATIVE-TOOLING-ONLY-SCOPE.md](10-NATIVE-TOOLING-ONLY-SCOPE.md). This correction governs any conflicting original instructions below.
+
+## Updated G2 readiness gate
+- Integrate **H and U only** plus Z2 evidence; do **not** wait for X, create an X branch, or import a real migration atlas. Reject any assumed X source dependency.
+- Validate a native agent route from arbitrary hypothetical repo names to **authorized** pin/compare/export, including explicit user consent and safe refusals. Test solely with synthetic Git trees, fixtures and mocked/injected remote adapters. A five-repo generated report is acceptable only for five *synthetic* repositories; no actual ARBOR/donor data comparison.
+- Verify TierFlow not-yet-run state plus future result projections; distinguish installed/discoverable, enabled/disabled, authorized/unavailable and runtime-tested. Demonstrate agent discoverability without composing a new prompt or manually teaching it the implementation.
+- Issue `GO_FOR_READINESS_REVIEW` on main only after the integrated real Node/Host route suite and security gates pass. Not `HVI_COMPARE_ACCEPTED`, not beta, and not a real repository audit.
+
+
+---
+
 **Status:** NEW EXECUTION WORK ORDER, not proof that it ran. **Destination:** `owenservera/ARBOR`. **Branch:** `integrate/p5-hq-version-intelligence-r001`.
 **First read every normative file:** `.integration/proposal5/hq-version-intelligence/README.md`, `01-SOURCE-PINS.json`, `02-SOURCE-CROSSWALK.md`, `03-NWAY-CONTRACT.md`, `04-OWNERSHIP-AND-WAVE-GATES.md`, `05-ACCEPTANCE-TEST-MATRIX.md`, `06-INTEGRATION-AND-ROLLBACK.md`, `08-RISK-AND-DECISIONS.md`, `wave-manifest.json`; read the original ARBOR `integration/source-lock.json`, `integration/beta-gates.json`.
 **Connected GitHub:** source and commit work here; do not pretend local Node, Bun, Cargo, Windows, Android or Chrome tests ran just because code can be inspected. **Allowed writes:** `integrator-owned cross-lane reconciliation`, `proofs/G2/**`, `integration/reports/HVI-G2.md`. All root-workspace, integration, lockfile and main writes are restricted to this G integrator and must occur only through reviewed serial integration and verified PR merge as specified below; never write directly to main by force-push. No provider-browser effects or personal data. **Finish:** commit all work, report exact HEAD/source pins/tests vs UNRUN/blockers and `PREPARED_NOT_PROMOTED` unless this order is an integrator gate.

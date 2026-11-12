@@ -1,4 +1,16 @@
 # ARBOR Proposal 5 — HVI G1: Serial Wave 1 integrator to main
+
+> **2026-11-12 SCOPE CORRECTION — NATIVE TOOLING ONLY.** Read [10-NATIVE-TOOLING-ONLY-SCOPE.md](../10-NATIVE-TOOLING-ONLY-SCOPE.md) when this is a prompts/ file; for root docs see [10-NATIVE-TOOLING-ONLY-SCOPE.md](10-NATIVE-TOOLING-ONLY-SCOPE.md). This correction governs any conflicting original instructions below.
+
+## Updated G1 admission and implementation intent
+- Integrate A–F into one callable `HQ Version Intelligence` capability; settle A/C manifest and C/E/F wire contracts with explicit versioned adapters, complete tests and a stable public service API for Host H. Preserve CLI/library and offline pinned-manifest support.
+- **Never compare actual ARBOR/repos-hq/Harness/TierFlow/Labs donor corpora in G1**. Replace original five-repo manifest smoke with **five fully synthetic repository manifests**; test 2/3/N pins of the same invented repo and independent synthetic donor repos, including offline replay and error/authorization seams. Baseline 361 is reference data only; don't run new corpus analysis or produce current migration findings.
+- Define stable agent-facing inputs/outputs, capability ID and invocation semantics, source acquisition permission model, durable tool definition/usage guide and optional versioned report examples (all synthetic). H owns attaching them to real Host agent discovery; no new agent runtime.
+- Gate is `GO_FOR_W2_TOOLING` after legitimate Node24 and integrated seam tests + merged main SHA, **not migration audit or beta**; treat legacy `GO_FOR_W2` as equivalent *only for tooling readiness*, not real comparison. No later X requirement.
+
+
+---
+
 **Status:** NEW EXECUTION WORK ORDER, not proof that it ran. **Destination:** `owenservera/ARBOR`. **Branch:** `integrate/p5-hq-version-intelligence-r001`.
 **First read every normative file:** `.integration/proposal5/hq-version-intelligence/README.md`, `01-SOURCE-PINS.json`, `02-SOURCE-CROSSWALK.md`, `03-NWAY-CONTRACT.md`, `04-OWNERSHIP-AND-WAVE-GATES.md`, `05-ACCEPTANCE-TEST-MATRIX.md`, `06-INTEGRATION-AND-ROLLBACK.md`, `08-RISK-AND-DECISIONS.md`, `wave-manifest.json`; read the original ARBOR `integration/source-lock.json`, `integration/beta-gates.json`.
 **Connected GitHub:** source and commit work here; do not pretend local Node, Bun, Cargo, Windows, Android or Chrome tests ran just because code can be inspected. **Allowed writes:** `integrator-owned cross-lane reconciliation`, `proofs/G1/**`, `integration/reports/HVI-G1.md`. All root-workspace, integration, lockfile and main writes are restricted to this G integrator and must occur only through reviewed serial integration and verified PR merge as specified below; never write directly to main by force-push. No provider-browser effects or personal data. **Finish:** commit all work, report exact HEAD/source pins/tests vs UNRUN/blockers and `PREPARED_NOT_PROMOTED` unless this order is an integrator gate.

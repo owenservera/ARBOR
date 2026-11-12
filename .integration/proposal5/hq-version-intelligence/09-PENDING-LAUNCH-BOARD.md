@@ -1,4 +1,13 @@
 # HVI pending launch board — updated 2026-11-12
+
+> **2026-11-12 SCOPE CORRECTION — NATIVE TOOLING ONLY.** Read [10-NATIVE-TOOLING-ONLY-SCOPE.md](../10-NATIVE-TOOLING-ONLY-SCOPE.md) when this is a prompts/ file; for root docs see [10-NATIVE-TOOLING-ONLY-SCOPE.md](10-NATIVE-TOOLING-ONLY-SCOPE.md). This correction governs any conflicting original instructions below.
+
+## Final user-scope correction
+**Current launch board:** [11-PENDING-TOOLING-ONLY-LAUNCHES.md](11-PENDING-TOOLING-ONLY-LAUNCHES.md). Z1X is in progress; do not relaunch or change its running work order. G1 then H/U parallel then Z2/G2/R. **X and real migrations/audits deferred**. If any older instructions conflict, the [tooling-only scope](10-NATIVE-TOOLING-ONLY-SCOPE.md) and updated direct worker prompts govern.
+
+
+---
+
 Authoritative observed ARBOR main on check-in: `f9823a5131e73e7562db5a4ec14e1ec481557d69`. This is **not a mutable progress automation**; reconfirm refs on every launch.
 
 ## Already delivered on isolated branches — DO NOT relaunch absent an owner repair request

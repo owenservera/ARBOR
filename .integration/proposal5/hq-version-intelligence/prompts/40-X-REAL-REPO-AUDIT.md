@@ -1,4 +1,14 @@
 # ARBOR Proposal 5 — HVI X: Real five-repository migration audit
+
+> **2026-11-12 SCOPE CORRECTION — NATIVE TOOLING ONLY.** Read [10-NATIVE-TOOLING-ONLY-SCOPE.md](../10-NATIVE-TOOLING-ONLY-SCOPE.md) when this is a prompts/ file; for root docs see [10-NATIVE-TOOLING-ONLY-SCOPE.md](10-NATIVE-TOOLING-ONLY-SCOPE.md). This correction governs any conflicting original instructions below.
+
+## UPDATED DECISION: DEFER — DO NOT LAUNCH IN CURRENT WAVE
+This is an intentionally retained **future user-triggered investigation** prompt. The user explicitly does NOT want a real comparison of any VIVIM repositories now. Do not inspect the five donor repos for new semantic findings, run the comparator on real corpus, classify all 361, generate a fresh migration atlas, or produce an unported capability shortlist. No agent should execute this order as a dependency of Z2/G2/R.
+The existing S0/D reference counts remain historical fixtures only. Once the user expressly requests an actual comparison or audit, this prompt can be re-scoped to their chosen repo pins then. **Current wave required parallel lanes: H and U only.** No X branch, X proof or X GO required.
+
+
+---
+
 **Status:** NEW EXECUTION WORK ORDER, not proof that it ran. **Destination:** `owenservera/ARBOR`. **Branch:** `work/p5-hvi-w2-x-source-audit-r001`.
 **First read every normative file:** `.integration/proposal5/hq-version-intelligence/README.md`, `01-SOURCE-PINS.json`, `02-SOURCE-CROSSWALK.md`, `03-NWAY-CONTRACT.md`, `04-OWNERSHIP-AND-WAVE-GATES.md`, `05-ACCEPTANCE-TEST-MATRIX.md`, `06-INTEGRATION-AND-ROLLBACK.md`, `08-RISK-AND-DECISIONS.md`, `wave-manifest.json`; read the original ARBOR `integration/source-lock.json`, `integration/beta-gates.json`.
 **Connected GitHub:** source and commit work here; do not pretend local Node, Bun, Cargo, Windows, Android or Chrome tests ran just because code can be inspected. **Allowed writes:** `.integration/proposal5/hq-version-intelligence/proofs/X/**`. No other worker paths, no root locks, no main, no provider-browser effects or personal data. **Finish:** commit all work, report exact HEAD/source pins/tests vs UNRUN/blockers and `PREPARED_NOT_PROMOTED` unless this order is an integrator gate.

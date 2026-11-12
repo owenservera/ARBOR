@@ -1,4 +1,13 @@
 # HVI launch index — paste one prompt per ChatGPT conversation
+
+> **2026-11-12 SCOPE CORRECTION — NATIVE TOOLING ONLY.** Read [10-NATIVE-TOOLING-ONLY-SCOPE.md](../10-NATIVE-TOOLING-ONLY-SCOPE.md) when this is a prompts/ file; for root docs see [10-NATIVE-TOOLING-ONLY-SCOPE.md](10-NATIVE-TOOLING-ONLY-SCOPE.md). This correction governs any conflicting original instructions below.
+
+## Updated execution scope — supersedes original sequence
+Read [10-NATIVE-TOOLING-ONLY-SCOPE.md](10-NATIVE-TOOLING-ONLY-SCOPE.md) and [11-PENDING-TOOLING-ONLY-LAUNCHES.md](11-PENDING-TOOLING-ONLY-LAUNCHES.md). The **current** sequence is already-running Z1X → G1 → (H || U) → Z2 → G2 → R. **X must NOT launch**. Old historical sequence shown below is retained only for traceability.
+
+
+---
+
 **All prompts are committed work-order files;** each asks the worker to read this folder and its own exact prompt from GitHub, create an isolated branch, perform work and report an exact commit. Do not copy a partial summary instead of the full order.
 
 ## Launch order
