@@ -27,17 +27,17 @@
 
 ## A real capability space entry
 
-Example \`capability-spaces/host-control/\`: contains a **generated projection** of currently registered Host actions, canonical refs to \`apps/vivim-host/control/action-catalog.v1.json\`, parsed schema, safe UI projection bindings and test status. It does **not** have another independently maintained action registry.
+Example `capability-spaces/host-control/`: contains a **generated projection** of currently registered Host actions, canonical refs to `apps/vivim-host/control/action-catalog.v1.json`, parsed schema, safe UI projection bindings and test status. It does **not** have another independently maintained action registry.
 
 Required fields:
-\`capabilityId, canonicalOwner, internalImplementationPath, inputSchemaRef, outputSchemaRef, effectClass, authorizationDomain, sourceScopes, currentVersion, dependencies, configPorts, viewPorts, releaseStatus, proofRef\`.
+`capabilityId, canonicalOwner, internalImplementationPath, inputSchemaRef, outputSchemaRef, effectClass, authorizationDomain, sourceScopes, currentVersion, dependencies, configPorts, viewPorts, releaseStatus, proofRef`.
 
 Status taxonomy:
-\`DESIGNED\`, \`SOURCE_PRESENT\`, \`BUILD_VERIFIED\`, \`RUNTIME_WIRED\`, \`DEVICE_ACCEPTED\`, \`AVAILABLE_NOW\`, \`BLOCKED\`, \`DEFERRED\`, \`RETIRED\`. A source's self-declared \`source_wired\` is not a live availability proof.
+`DESIGNED`, `SOURCE_PRESENT`, `BUILD_VERIFIED`, `RUNTIME_WIRED`, `DEVICE_ACCEPTED`, `AVAILABLE_NOW`, `BLOCKED`, `DEFERRED`, `RETIRED`. A source's self-declared `source_wired` is not a live availability proof.
 
 ## Keep current capability identities
 
-- Existing Host catalog v6 includes \`vivim.status.show\` and its other registered actions; migrate all observed actions with identical risk/approval semantics. Do not invent \`full.project.update\` because UI research uses it as a demonstration.
+- Existing Host catalog v6 includes `vivim.status.show` and its other registered actions; migrate all observed actions with identical risk/approval semantics. Do not invent `full.project.update` because UI research uses it as a demonstration.
 - The HQ semantic registry has namespaced IDs and versioned statuses; import its *logic* and adapt descriptions for development-intelligence capability spaces; do not promote HQ registry entries into Host effect permissions.
 - TierFlow visual commands are inert candidate/view operations. They reference the corresponding typed capability and Host authority.
 - Personal DCBs are source-linked read/assembly transformations. Outbound provider disclosure remains an explicit Host-authorized action.
@@ -45,12 +45,12 @@ Status taxonomy:
 
 ## Labs promotion gates
 
-Every Labs input must have a \`sourceSha, sourcePath, ownerDecision, implementationStatus, targetPath, requiredTransform, testEvidence, privacyClass, retirementCondition\`. Promoting a PRD or UI concept means **the contract is implemented when it reaches its own gate**, not that documentation magically becomes runnable.
+Every Labs input must have a `sourceSha, sourcePath, ownerDecision, implementationStatus, targetPath, requiredTransform, testEvidence, privacyClass, retirementCondition`. Promoting a PRD or UI concept means **the contract is implemented when it reaches its own gate**, not that documentation magically becomes runnable.
 
-Source tree selection happens once and moves **into** these in-repo owners. No \`labs/...\` runtime import, no external Labs test fixture loading, and no Labs server.
+Source tree selection happens once and moves **into** these in-repo owners. No `labs/...` runtime import, no external Labs test fixture loading, and no Labs server.
 
 ## Internal self-consistency requirement
 
-One release artifact knows every capability owner and internal implementation path. The same canonical IDs and source state appear in desktop UI, phone, CLI/diagnostics, HQ internal code index, TierFlow view and Host effect receipts. Unsupported features show accurately \`preview/blocked\`; no UI label claims \`verified\` merely because a file is present.
+One release artifact knows every capability owner and internal implementation path. The same canonical IDs and source state appear in desktop UI, phone, CLI/diagnostics, HQ internal code index, TierFlow view and Host effect receipts. Unsupported features show accurately `preview/blocked`; no UI label claims `verified` merely because a file is present.
 
 **No external HQ/TierFlow/Harness runtime bridge is permitted.** "Adapter" here means a code boundary between two modules *inside the same ARBOR product and release*, not a link to another repository.
