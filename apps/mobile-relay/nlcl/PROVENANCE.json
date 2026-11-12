@@ -1,0 +1,43 @@
+{
+  "schema": "vivim.vendored-source/1",
+  "upstream": {
+    "repo": "owenservera/vivim-omega",
+    "path": "plugins/vivim-nlcl-pure/src",
+    "commit": "79ee558d6c7ea77c20f220db2341adaa57b11d44",
+    "files": {
+      "frames.ts": "d71dcd5b16fd6a96473a3a86f33a58e7fca8026601de826f5a0c70195956fb8b",
+      "grammar.ts": "e19b82788e8531642e6482c0432bde4c7ef6878d887e5d2f65a7a93676fb24fc",
+      "ground.ts": "18f86ecf486e9b5defbf35c675ba7b4ff9d09e199794c305130fef2f140aa73c",
+      "index.ts": "1ffcd9c7d75ebc0609602c83eca07ea6b7ddb1e8e67b7388c9385e3f6440a399",
+      "interpret.ts": "141d5cc169058caea3f47793ecf9e8d3f6f53d695588610b48b37de1b70b882f",
+      "lexer.ts": "ac2d93d0abf764401cb8c9dfd1da89ea361f42823674cbaac771759ec4ddfe6a",
+      "project.ts": "87a85d0e8011b4f9753d971d864e0b48c635f68ea1f5f8ae709b983f3827725d",
+      "recognize.ts": "1fd790075e8a8fcb54e42f9529a2da4988f913025376231c094ba7cb93dd2f16",
+      "symbols.ts": "8f044e6546113a9efc65d0b8560eee85668e0fe4ce9a52969869410f2e63500e",
+      "text.ts": "4045ef51cf5bce20418818311dba6ac8d0a16407a5c6e0fa7dfbad3439608cbf",
+      "types.ts": "f44cfb653efd67582827a493ae39173a06c98b0494d2511a37b02fa140e42d59"
+    }
+  },
+  "transform": "node:module.stripTypeScriptTypes(mode=strip) + .ts→.mjs import specifiers",
+  "patches": [
+    {
+      "id": "P1-world-frames",
+      "file": "frames.mjs",
+      "purpose": "WorldModel.frames: catalog-contributed frames for routable ops"
+    }
+  ],
+  "determinism": "N1 — interpret(text, world) is pure; same bytes on Host and phone",
+  "output": {
+    "frames.mjs": "44acba7b5d1d3ba1f6a64b9f03b20dd761a26f378a39082bd3f4c828c6230cae",
+    "grammar.mjs": "c9e4571cfd3c0a7356a4b411aee8c3ecd1810d03b22f16f32c54bb21ad9a4986",
+    "ground.mjs": "b6061a4b4f9bc3a42450928a1b7ab21ea880125c9c0fcf48f1b9ea11909d8e3e",
+    "index.mjs": "9b9fb19d4f67e4db3f38fc6b84e2dcfd327e9f5b697859a0718089521979eca4",
+    "interpret.mjs": "df8dae0c5cd63c769f1f2bb8a1fdf41b3c7d94aa820c153dc4ca350e6fc86227",
+    "lexer.mjs": "c003de1d9318a6bc167baea5aeedc6b5daf47f8ef4e4ea959aac1606f0d4b1db",
+    "project.mjs": "af38dde37a355244e5a50a266810bb297e1e150940c8ef5e24bde1b70ff58688",
+    "recognize.mjs": "ec77ed2d8855459f9dca1bd6d27607dccf3c47e34e75c4dd0607299cacbd9f8d",
+    "symbols.mjs": "d7c7fb9543d6694d1063a6c7f30a30d07ec04e1c00fd90ade04f28a604583318",
+    "text.mjs": "e8581fb65c0080d2d417d0f4fb4ab134f3f1af52a9fbe2c9199f2902fc07f015",
+    "types.mjs": "f950d85e31464115faa25e45618205437b3fa136e3a7e735f42e4044fdd5ff49"
+  }
+}
