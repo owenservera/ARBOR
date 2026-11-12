@@ -1,7 +1,7 @@
 # ARBOR Proposal 5 — Foundational PG Cohort / Launch Desk
 
 **Prepared:** 2026-11-12 · **Status:** **READY_TO_LAUNCH_PROMPTS_ONLY** · **G:** original W1 integration has not run as of latest verified branch check.
-**Source of truth:** [Foundation overview](../README.md) · [Machine lane registry](LANE-REGISTRY.v1.json) · [Shared worker contract](00-SHARED-PRE-G-CONTRACT.md) · [Implementation waves](../IMPLEMENTATION-WAVES.md) · [Native machinery](../NATIVE-MACHINERY-AND-CONTRACTS.md).
+**Source of truth:** [Foundation overview](../README.md) · [Machine lane registry](LANE-REGISTRY.v1.json) · [Shared worker contract](00-SHARED-PRE-G-CONTRACT.md) · [Implementation waves](../IMPLEMENTATION-WAVES.md) · [Native machinery](../NATIVE-MACHINERY-AND-CONTRACTS.md). · [Validation receipt](COHORT-VALIDATION.v1.json).
 
 **Decision:** Run four independent **pre-G** evidence and pure-prototype lanes from the *current pinned foundation branch HEAD*. They must not merge anything into main, frozen A–F, original G, root locks, other pre-G lanes or product code. When the available workers have handed off or been blocked, run a fifth independent convergence referee. **None should wait for or block G.**
 
