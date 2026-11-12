@@ -25,7 +25,8 @@ function checkPin(pin){
 export function adaptCatalogueDeltaToHvi({envelope,pin}){
   checkPin(pin);
   ensure(envelope?.schema===CATALOGUE_SCHEMA,'ID_CONFLICT');
-  queryCatalogueSnapshot(envelope,{limit:0}); // performs existing digest check
+  try { queryCatalogueSnapshot(envelope,{limit:0}); } // existing digest check
+  catch { throw new HviIdentityError('DIGEST_CONFLICT'); }
   const sources=new Map(envelope.sources.map(s=>[s.id,s]));
   const records=envelope.records.map(r=>{
     const s=sources.get(r.sourceId);
