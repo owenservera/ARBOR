@@ -1,0 +1,160 @@
+{
+  "schema": "arbor.proposal5.hvi.g2.receipt/1",
+  "authoredAt": "2026-11-12",
+  "scope": "NATIVE_TOOLING_ONLY_SYNTHETIC",
+  "status": "SOURCE_STAGED_REPAIR_REQUIRED",
+  "promotion": "PREPARED_NOT_PROMOTED",
+  "gate": "REPAIR_REQUIRED",
+  "readiness": "HVI_TOOLING_INSTALLED_NOT_VERIFIED",
+  "userApproval": "REMOTE_REPAIR_AND_SOURCE_STAGING_AUTHORIZED_NOT_RUNTIME_OR_MAIN_MERGE",
+  "branch": "integrate/p5-hq-version-intelligence-r001",
+  "baseSha": "69447c09f420310aa84c24a1908dede91c963ec8",
+  "sourceStageSha": "bc644e2e3314ed80a3f9891695d8ad4798cee6b9",
+  "mainObserved": "3d45fbf1c3963e4834a5e51ee7f6e63f3a0da298",
+  "acceptedG1Main": null,
+  "sources": {
+    "H": {
+      "workerHead": "d24daa9966abb222cd25210f41dcbb4758aa1209",
+      "stagingCommit": "546132d92639af78f70d398c8a5a86d5d6a64738",
+      "files": 7
+    },
+    "U": {
+      "workerHead": "5836e9c9f5ba3bee36dbe6896ebfd22364b4c450",
+      "stagingCommit": "4bb70bfbadc9b35f13b36232b44044c16900976c",
+      "files": 8
+    },
+    "Z2": {
+      "workerHead": "725132c640a1f21d3af5c4b9123b314e4df3133d",
+      "stagingCommit": "9aac22f151e89ea7554ef7ee5cc65b30e5b34e21",
+      "files": 5,
+      "decision": "REPAIR_REQUIRED"
+    },
+    "X": {
+      "status": "DEFERRED_USER_TRIGGER_ONLY",
+      "imported": false
+    }
+  },
+  "reconciliations": [
+    {
+      "path": "packages/tierflow/tests/hvi-inspector.test.mjs",
+      "commit": "535293ae94626a8b78617803a51ff7b8a2a8f950",
+      "result": "grouped-section assertion fixed"
+    },
+    {
+      "path": "hq/version-intelligence/integration/host-inspector-projection.mjs",
+      "commits": [
+        "9713499f86bfb4ce8f7069ccd876deb06ed22d4d",
+        "2acc4fb69dcdc21e4403ffc4b909d83aaecaf88f"
+      ],
+      "result": "derived metadata-only report, original evidence digest, bounded rows, before-and-after live grant rechecks"
+    },
+    {
+      "path": "apps/vivim-host/control/hvi-capability.mjs",
+      "commit": "cd6764ab291157dbeca5ac0923b662341ac932a4",
+      "result": "inspector typed DTO added to existing local Host read port"
+    },
+    {
+      "path": "packages/tierflow/src/visual-runtime/render/hvi-inspector.mjs",
+      "commit": "c9092d8bab26de270113cc7a2895c71cea2229b9",
+      "result": "synthetic preview requires explicit fixture marker"
+    },
+    {
+      "path": "packages/tierflow/tests/hvi-inspector.test.mjs",
+      "commit": "0539d23404ef5b1de12ad646d807a2fda57c6ab6",
+      "result": "synthetic fixture marker set in test fixture"
+    },
+    {
+      "path": "tests/hq-version-intelligence/g2-host-ui.test.mjs",
+      "commits": [
+        "8dcbc05695c7f2262157de684189c7db4bfabc46",
+        "bc644e2e3314ed80a3f9891695d8ad4798cee6b9"
+      ],
+      "result": "synthetic 3-SHA same-repo/5-repo, live grant, revoke, redaction and read-only UI cases"
+    }
+  ],
+  "verification": {
+    "syntax": {
+      "status": "V8_SOURCE_TRANSFORM_PARSE_OK",
+      "files": 6,
+      "exit": null,
+      "notNode": true
+    },
+    "syntheticV8": {
+      "status": "ASSERTIONS_EXECUTED",
+      "count": 12,
+      "passed": 12,
+      "exit": null,
+      "node": false,
+      "crypto": "test-double-only",
+      "sourceBlobs": [
+        "2a2eaf7e9fd23de6f2dc721b24a0ac585464ef00",
+        "122105e966ffc4574402b09da62ea669d38d4ca8"
+      ]
+    },
+    "githubActions": {
+      "runId": 43315512755,
+      "sha": "bc644e2e3314ed80a3f9891695d8ad4798cee6b9",
+      "conclusion": "startup_failure",
+      "jobCount": 0,
+      "testProcessExit": null
+    },
+    "requiredNode24": "UNRUN",
+    "ajvDraft202012": "UNRUN",
+    "hostLiveGrant": "UNRUN",
+    "canonicalDispatcher": "UNRUN_AND_DISABLED",
+    "tierflowPublisherRevision": "UNRUN",
+    "offlineReplay": "UNRUN",
+    "physicalPwaAndroidWindows": "UNRUN"
+  },
+  "security": {
+    "realRepositoryComparisonsExecuted": false,
+    "browserOrProviderEffects": false,
+    "newSourceGrantStore": false,
+    "secondHostDispatcher": false,
+    "secondTierflowPublisher": false,
+    "featureEnabled": false,
+    "remotePrivilegedAccessEnabled": false,
+    "betaAccepted": false,
+    "mainModified": false
+  },
+  "blockers": [
+    {
+      "code": "G1_NOT_ACCEPTED",
+      "owner": "G1/CI",
+      "priority": "P0"
+    },
+    {
+      "code": "REMOTE_CI_STARTUP_FAILURE",
+      "owner": "CI",
+      "priority": "P0"
+    },
+    {
+      "code": "LIVE_SOURCE_GRANT_MISSING",
+      "owner": "Host security",
+      "priority": "P0"
+    },
+    {
+      "code": "HOST_NATIVE_DISPATCH_DISABLED",
+      "owner": "H/G2",
+      "priority": "P0"
+    },
+    {
+      "code": "EXECUTABLE_EVIDENCE_UNRUN",
+      "owner": "G1/H/U/G2 QA",
+      "priority": "P0"
+    },
+    {
+      "code": "PUBLISHER_REVISION_UNATTESTED",
+      "owner": "U/Host publisher",
+      "priority": "P1"
+    },
+    {
+      "code": "BETA_GATES_BLOCKED",
+      "owner": "beta release owners",
+      "priority": "P0",
+      "outOfScope": true
+    }
+  ],
+  "rollback": "Candidate integration branch only; no main merge or deployment. Revert G2 candidate commits via reviewed integration change if necessary; drill UNRUN.",
+  "nextGate": "G1 accepted main after real Node24+AJV, Host live source grants and canonical dispatch, full G2 synthetic Node/Host/TierFlow tests, independent Z2 re-review, reviewed PR; only then GO_FOR_READINESS_REVIEW."
+}
