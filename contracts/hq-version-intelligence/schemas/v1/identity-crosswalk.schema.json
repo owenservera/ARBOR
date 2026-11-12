@@ -106,7 +106,32 @@
             "maxLength": 1024
           }
         },
-        "additionalProperties": false
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "disposition": {
+                  "const": "CONFIRMED_EQUIVALENT"
+                }
+              },
+              "required": [
+                "disposition"
+              ]
+            },
+            "then": {
+              "required": [
+                "ownerConfirmed",
+                "ownerReceiptRef"
+              ],
+              "properties": {
+                "ownerConfirmed": {
+                  "const": true
+                }
+              }
+            }
+          }
+        ]
       }
     },
     "authorityConflicts": {
