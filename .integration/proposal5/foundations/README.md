@@ -26,6 +26,7 @@ The current working code already has much of the foundation: native generational
 | [DECISIONS-AND-DEFERRED.md](./DECISIONS-AND-DEFERRED.md) | 22 architecture decisions, open questions and explicit deferrals | Govern against architectural drift |
 | [VERIFICATION-AND-ACCEPTANCE.md](./VERIFICATION-AND-ACCEPTANCE.md) | Native/Host/HQ/Studio/TierFlow/PWA hard tests and negative corpus; real-vs-source evidence ladder | F/G acceptance |
 | [PROMPT-FACTORY-SCAFFOLD.md](./PROMPT-FACTORY-SCAFFOLD.md) | How to generate future isolated focused A–F prompts from current G HEAD and actual source; copy template **not executed** | Next round prompt creation |
+| [VALIDATION-REPORT.v1.json](./VALIDATION-REPORT.v1.json) | GitHub scope audit, 11/11 V8 program checks, 14 declared but UNRUN Node tests, real build/device status | Current evidence receipt |
 | [contracts/capability-manifest.v0.schema.json](./contracts/capability-manifest.v0.schema.json) | Strict **proposed** machine-readable source-pinned pure capability manifest with no authority | Schema DESIGN_ONLY |
 | [validate-program.mjs](./validate-program.mjs) / [validate-program.test.mjs](./validate-program.test.mjs) | Read-only source/wave/gap structural validator and 14 Node tests (declared; Node **UNRUN** here); 11 V8 structural checks observed | Program QA |
 
