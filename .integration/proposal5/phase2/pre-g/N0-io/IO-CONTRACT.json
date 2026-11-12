@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "arbor.n0-io/1",
   "title": "PRE-G immutable native I/O staging contract",
-  "description": "Data-only contract; actor identity is injected exclusively by a verified Host/Tauri ingress, never accepted from event fields. Pure graph computation and read models cannot claim effects.",
+  "description": "Data-only contract; actor identity is injected exclusively by a verified Host/Tauri ingress, never accepted from event fields. Pure graph computation and read models cannot claim effects. Formal root now validates one of the three versioned message families; UTF-8 byte/grapheme boundaries, sequence CAS, digest independence and actor binding require semantic validation at the trusted ingress.",
   "limits": {
     "maxUtf8DraftBytes": 4096,
     "maxSourceRefs": 16,
@@ -69,312 +69,323 @@
           "minimum": 0
         }
       }
-    }
-  },
-  "input": {
-    "type": "object",
-    "additionalProperties": false,
-    "required": [
-      "schema",
-      "kind",
-      "eventId",
-      "sessionId",
-      "surfaceId",
-      "sequence",
-      "inputRevision",
-      "interactionRevision",
-      "expectedRevision",
-      "sourceRefs",
-      "dataClass",
-      "audience",
-      "policyVersion",
-      "engineVersion"
-    ],
-    "properties": {
-      "schema": {
-        "const": "arbor.n0-io/1"
-      },
-      "kind": {
-        "enum": [
-          "DraftChanged",
-          "Submit",
-          "VoicePartial",
-          "VoiceFinal",
-          "Select",
-          "EditStructured",
-          "Attach",
-          "Approve",
-          "Reject",
-          "Cancel",
-          "Correct",
-          "FocusChanged",
-          "OfflineDraftReconcile"
-        ]
-      },
-      "eventId": {
-        "type": "string",
-        "maxLength": 96
-      },
-      "sessionId": {
-        "type": "string",
-        "maxLength": 96
-      },
-      "surfaceId": {
-        "type": "string",
-        "maxLength": 96
-      },
-      "sequence": {
-        "type": "integer",
-        "minimum": 1
-      },
-      "inputRevision": {
-        "type": "integer",
-        "minimum": 1
-      },
-      "interactionRevision": {
-        "type": "integer",
-        "minimum": 0
-      },
-      "expectedRevision": {
-        "type": "integer",
-        "minimum": 0
-      },
-      "text": {
-        "type": "string",
-        "description": "UTF-8 <=4096 bytes, no NUL or isolated surrogate; local IME/caret never blocked"
-      },
-      "composing": {
-        "type": "boolean"
-      },
-      "span": {
-        "$ref": "#/$defs/textSpan"
-      },
-      "idempotencyKey": {
-        "type": "string",
-        "maxLength": 96
-      },
-      "contentDigest": {
-        "type": "string",
-        "pattern": "^[a-f0-9]{64}$"
-      },
-      "sourceRefs": {
-        "type": "array",
-        "maxItems": 16,
-        "items": {
-          "$ref": "#/$defs/sourceRef"
-        }
-      },
-      "dataClass": {
-        "enum": [
-          "public",
-          "internal",
-          "private",
-          "sensitive",
-          "secret"
-        ]
-      },
-      "audience": {
-        "type": "string",
-        "maxLength": 96
-      },
-      "policyVersion": {
-        "type": "string",
-        "maxLength": 96
-      },
-      "engineVersion": {
-        "type": "string",
-        "maxLength": 96
-      },
-      "correlationId": {
-        "type": "string",
-        "maxLength": 96
-      },
-      "causationRefs": {
-        "type": "array",
-        "maxItems": 8,
-        "items": {
+    },
+    "input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "kind",
+        "eventId",
+        "sessionId",
+        "surfaceId",
+        "sequence",
+        "inputRevision",
+        "interactionRevision",
+        "expectedRevision",
+        "sourceRefs",
+        "dataClass",
+        "audience",
+        "policyVersion",
+        "engineVersion"
+      ],
+      "properties": {
+        "schema": {
+          "const": "arbor.n0-io/1"
+        },
+        "kind": {
+          "enum": [
+            "DraftChanged",
+            "Submit",
+            "VoicePartial",
+            "VoiceFinal",
+            "Select",
+            "EditStructured",
+            "Attach",
+            "Approve",
+            "Reject",
+            "Cancel",
+            "Correct",
+            "FocusChanged",
+            "OfflineDraftReconcile"
+          ]
+        },
+        "eventId": {
           "type": "string",
           "maxLength": 96
+        },
+        "sessionId": {
+          "type": "string",
+          "maxLength": 96
+        },
+        "surfaceId": {
+          "type": "string",
+          "maxLength": 96
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "inputRevision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "interactionRevision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "text": {
+          "type": "string",
+          "description": "UTF-8 <=4096 bytes, no NUL or isolated surrogate; local IME/caret never blocked"
+        },
+        "composing": {
+          "type": "boolean"
+        },
+        "span": {
+          "$ref": "#/$defs/textSpan"
+        },
+        "idempotencyKey": {
+          "type": "string",
+          "maxLength": 96
+        },
+        "contentDigest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "sourceRefs": {
+          "type": "array",
+          "maxItems": 16,
+          "items": {
+            "$ref": "#/$defs/sourceRef"
+          }
+        },
+        "dataClass": {
+          "enum": [
+            "public",
+            "internal",
+            "private",
+            "sensitive",
+            "secret"
+          ]
+        },
+        "audience": {
+          "type": "string",
+          "maxLength": 96
+        },
+        "policyVersion": {
+          "type": "string",
+          "maxLength": 96
+        },
+        "engineVersion": {
+          "type": "string",
+          "maxLength": 96
+        },
+        "correlationId": {
+          "type": "string",
+          "maxLength": 96
+        },
+        "causationRefs": {
+          "type": "array",
+          "maxItems": 8,
+          "items": {
+            "type": "string",
+            "maxLength": 96
+          }
         }
       }
-    }
-  },
-  "derived": {
-    "type": "object",
-    "additionalProperties": false,
-    "required": [
-      "derivationId",
-      "reactorId",
-      "eventId",
-      "sessionId",
-      "inputRevision",
-      "graphEpoch",
-      "policyVersion",
-      "engineVersion",
-      "sourceRef",
-      "sourceOwner",
-      "audience",
-      "kind",
-      "confidence",
-      "candidateId",
-      "inputRefs",
-      "ttlRevisions",
-      "status",
-      "cancelled"
-    ],
-    "properties": {
-      "derivationId": {
-        "type": "string"
-      },
-      "reactorId": {
-        "type": "string"
-      },
-      "eventId": {
-        "type": "string"
-      },
-      "sessionId": {
-        "type": "string"
-      },
-      "inputRevision": {
-        "type": "integer",
-        "minimum": 1
-      },
-      "graphEpoch": {
-        "type": "integer",
-        "minimum": 0
-      },
-      "policyVersion": {
-        "type": "string"
-      },
-      "engineVersion": {
-        "type": "string"
-      },
-      "sourceRef": {
-        "$ref": "#/$defs/sourceRef"
-      },
-      "sourceOwner": {
-        "type": "string"
-      },
-      "audience": {
-        "type": "string"
-      },
-      "kind": {
-        "enum": [
-          "candidate",
-          "observation",
-          "context_hint",
-          "ambiguity",
-          "missing_slot"
-        ]
-      },
-      "confidence": {
-        "enum": [
-          "grounded",
-          "tentative",
-          "unknown"
-        ]
-      },
-      "candidateId": {
-        "type": "string"
-      },
-      "inputRefs": {
-        "type": "array",
-        "maxItems": 32,
-        "items": {
+    },
+    "derived": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "derivationId",
+        "reactorId",
+        "eventId",
+        "sessionId",
+        "inputRevision",
+        "graphEpoch",
+        "policyVersion",
+        "engineVersion",
+        "sourceRef",
+        "sourceOwner",
+        "audience",
+        "kind",
+        "confidence",
+        "candidateId",
+        "inputRefs",
+        "ttlRevisions",
+        "status",
+        "cancelled"
+      ],
+      "properties": {
+        "derivationId": {
           "type": "string"
+        },
+        "reactorId": {
+          "type": "string"
+        },
+        "eventId": {
+          "type": "string"
+        },
+        "sessionId": {
+          "type": "string"
+        },
+        "inputRevision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "graphEpoch": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "policyVersion": {
+          "type": "string"
+        },
+        "engineVersion": {
+          "type": "string"
+        },
+        "sourceRef": {
+          "$ref": "#/$defs/sourceRef"
+        },
+        "sourceOwner": {
+          "type": "string"
+        },
+        "audience": {
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "candidate",
+            "observation",
+            "context_hint",
+            "ambiguity",
+            "missing_slot"
+          ]
+        },
+        "confidence": {
+          "enum": [
+            "grounded",
+            "tentative",
+            "unknown"
+          ]
+        },
+        "candidateId": {
+          "type": "string"
+        },
+        "inputRefs": {
+          "type": "array",
+          "maxItems": 32,
+          "items": {
+            "type": "string"
+          }
+        },
+        "ttlRevisions": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 16
+        },
+        "status": {
+          "enum": [
+            "partial",
+            "complete",
+            "inconclusive"
+          ]
+        },
+        "cancelled": {
+          "type": "boolean"
         }
-      },
-      "ttlRevisions": {
-        "type": "integer",
-        "minimum": 0,
-        "maximum": 16
-      },
-      "status": {
-        "enum": [
-          "partial",
-          "complete",
-          "inconclusive"
-        ]
-      },
-      "cancelled": {
-        "type": "boolean"
+      }
+    },
+    "output": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "sessionId",
+        "inputRevision",
+        "graphEpoch",
+        "projectionVersion",
+        "audience",
+        "phase",
+        "evidence",
+        "ambiguities",
+        "unknown",
+        "effectPerformed",
+        "authorization",
+        "hostReceiptRef"
+      ],
+      "properties": {
+        "schema": {
+          "const": "arbor.n0-io-output/1"
+        },
+        "sessionId": {
+          "type": "string"
+        },
+        "inputRevision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "graphEpoch": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "projectionVersion": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "audience": {
+          "type": "string"
+        },
+        "phase": {
+          "enum": [
+            "partial",
+            "inconclusive",
+            "complete",
+            "stale",
+            "cancelled"
+          ]
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/derived"
+          }
+        },
+        "ambiguities": {
+          "type": "array"
+        },
+        "unknown": {
+          "type": "boolean"
+        },
+        "effectPerformed": {
+          "const": false
+        },
+        "authorization": {
+          "const": "not_assessed"
+        },
+        "hostReceiptRef": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Only references actual Host journal receipts when Host-verified; never mint or infer receipts"
+        }
       }
     }
   },
-  "output": {
-    "type": "object",
-    "additionalProperties": false,
-    "required": [
-      "schema",
-      "sessionId",
-      "inputRevision",
-      "graphEpoch",
-      "projectionVersion",
-      "audience",
-      "phase",
-      "evidence",
-      "ambiguities",
-      "unknown",
-      "effectPerformed",
-      "authorization",
-      "hostReceiptRef"
-    ],
-    "properties": {
-      "schema": {
-        "const": "arbor.n0-io-output/1"
-      },
-      "sessionId": {
-        "type": "string"
-      },
-      "inputRevision": {
-        "type": "integer",
-        "minimum": 1
-      },
-      "graphEpoch": {
-        "type": "integer",
-        "minimum": 0
-      },
-      "projectionVersion": {
-        "type": "integer",
-        "minimum": 1
-      },
-      "audience": {
-        "type": "string"
-      },
-      "phase": {
-        "enum": [
-          "partial",
-          "inconclusive",
-          "complete",
-          "stale",
-          "cancelled"
-        ]
-      },
-      "evidence": {
-        "type": "array",
-        "items": {
-          "$ref": "#/$defs/derived"
-        }
-      },
-      "ambiguities": {
-        "type": "array"
-      },
-      "unknown": {
-        "type": "boolean"
-      },
-      "effectPerformed": {
-        "const": false
-      },
-      "authorization": {
-        "const": "not_assessed"
-      },
-      "hostReceiptRef": {
-        "type": [
-          "string",
-          "null"
-        ],
-        "description": "Only references actual Host journal receipts when Host-verified; never mint or infer receipts"
-      }
+  "oneOf": [
+    {
+      "$ref": "#/$defs/input"
+    },
+    {
+      "$ref": "#/$defs/derived"
+    },
+    {
+      "$ref": "#/$defs/output"
     }
-  }
+  ]
 }

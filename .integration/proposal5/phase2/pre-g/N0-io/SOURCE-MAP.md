@@ -14,9 +14,9 @@
 | ARBOR UI/phone owner E | owenservera/ARBOR:work/p5-w01-e-ui | 1a5cf26ce14ebce4e31d9a4373060ace61852645 |
 | ARBOR verification owner F | owenservera/ARBOR:work/p5-w01-f-verify | be458f3c4cdb7eb38d47b1de2a00d441b7cdc704 |
 
-## Actual inspected file Git blob SHA-1s
+## Source file Git blob SHA-1 pins (direct reads or directory census)
 
-These are Git blob identifiers returned by the connected GitHub file/contents APIs, not guessed content digests. Every path belongs to the repository/ref column above.
+These are Git blob identifiers returned by direct connected GitHub file reads **or** source directory listings; a directory SHA pin is not proof that every file body was inspected. The architectural and implementation claims below are grounded in targeted direct source reads, while supporting manifests/catalog paths are cross-checked through the directory census. Every path belongs to the repository/ref column above.
 
 | Ref | Actual file path | Blob SHA |
 |---|---|---|
