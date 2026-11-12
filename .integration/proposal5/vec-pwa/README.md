@@ -17,6 +17,7 @@ Do not blur #2 and #3. Sending a prompt to run a capability is not the same as r
 - [Paired PWA test and release gates](03-PAIRED-PWA-ACCEPTANCE.md)
 - [Ready-to-execute next work orders](04-IMPLEMENTATION-WORK-ORDERS.md)
 - [Machine workstreams](machine/workstreams.json) and [source pins](machine/source-pins.json)
+- [D0 source proof and CI truth](D0-STATIC-PROOF-AND-CI-STATUS.md)
 
 ## Initial source slice already present on branch
 - `apps/mobile-relay/vec/compiler.mjs`: **one pure front-end/domain contract**, with `wiki`, `command`, `ui` product kinds. Only UI is installed as an adapter today; HQ and Host command compilers are NOT displaced.
