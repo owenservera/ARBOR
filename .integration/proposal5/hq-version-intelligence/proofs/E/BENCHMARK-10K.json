@@ -1,0 +1,17 @@
+{
+  "rows": 10000,
+  "pins": 5,
+  "elapsedMs": 71.377,
+  "rssBytes": 51388416,
+  "heapUsedBytes": 12301080,
+  "pageReturned": 50,
+  "pageTruncated": true,
+  "planReturned": 100,
+  "planTruncated": true,
+  "evidenceCompleteness": "incomplete_source_evidence",
+  "runtimeAcceptance": "NOT_DETERMINED_BY_SOURCE_REPORT",
+  "reproducibilityDigest": "95089175b76edab8cd0a2038319522c0f6eb7f83ef580e4c11afb676ccac3a6b",
+  "platform": "linux",
+  "node": "v22.16.0",
+  "measurementSource": "isolated local Node process; no integrated ARBOR checkout; no performance threshold certified"
+}
