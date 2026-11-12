@@ -21,11 +21,9 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { BASE_TOKENS, FONT_FACES, THEMES, TOKENS_SCHEMA, TYPE_SCALE } from '../src/theme.ts';
 
-/** Resolve the Harness checkout, including non-sibling linked worktrees. */
-const DEFAULT_HARNESS_ROOT = fileURLToPath(new URL('../../vivim-web-harness/', import.meta.url));
-export const HARNESS_ROOT = process.env.VIVIM_HARNESS_ROOT
-  ? resolve(process.env.VIVIM_HARNESS_ROOT)
-  : DEFAULT_HARNESS_ROOT;
+/** ARBOR contains the Host and TierFlow sources; never require a donor checkout. */
+const DEFAULT_HARNESS_ROOT = fileURLToPath(new URL('../../../', import.meta.url));
+export const HARNESS_ROOT = DEFAULT_HARNESS_ROOT;
 
 /** Default destination: the harness host public tokens file. */
 export const DEFAULT_OUT = join(HARNESS_ROOT, 'apps/vivim-host/public/vivim-tokens.css');
