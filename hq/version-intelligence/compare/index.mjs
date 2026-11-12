@@ -5,6 +5,7 @@
  * runtime/Host claims belong to later reviewed owners.
  */
 import { createHash } from 'node:crypto';
+import { sensitivePath } from '../sources/common.mjs';
 
 export const COMPARISON_SCHEMA = 'arbor.hvi.version-comparison/1';
 export const MANIFEST_SCHEMA = 'arbor.hvi.source-manifest/1';
@@ -52,7 +53,7 @@ function hex(v, label, size = 40) {
 }
 function path(v) {
   if (typeof v !== 'string' || !v || v.length > 1024 || v.startsWith('/') || v.includes('\\') || /[\x00-\x1f]/.test(v) || v.split('/').some(x => !x || x === '.' || x === '..')) fail('SCOPE_ESCAPE', 'invalid path');
-  if (v.split('/').some(x => UNSAFE.test(x))) fail('SOURCE_UNAUTHORIZED', 'restricted path');
+  if (sensitivePath(v) || v.split('/').some(x => UNSAFE.test(x))) fail('SOURCE_UNAUTHORIZED', 'restricted path');
   return v;
 }
 function bounded(v, fallback, maximum) {
