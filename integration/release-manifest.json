@@ -1,0 +1,22 @@
+{
+  "schema": "arbor.proposal5.beta-release/1",
+  "version": "0.1.0",
+  "status": "BLOCKED_NOT_BUILT",
+  "platforms": {
+    "windowsTauri": "UNRUN",
+    "androidPwa": "UNRUN",
+    "androidApk": "DEFERRED"
+  },
+  "authoritativeEffectOwner": "apps/vivim-host",
+  "runtimeNodeMin": "24",
+  "sourceLock": "integration/source-lock.json",
+  "sourceMerge": "0b3474a5cb2053d607453b18d319d225f1d3ca57",
+  "securityAccepted": false,
+  "deviceAccepted": false,
+  "noDonorBuildAccepted": false,
+  "artifacts": [],
+  "rollback": {
+    "strategy": "revert G merge commits in reverse order on integration branch only; preserve frozen A-F refs",
+    "tested": false
+  }
+}
