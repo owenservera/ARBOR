@@ -21,7 +21,7 @@
 `candidateId, evidencePin, observedCallerFrequency, measuredBase, measuredVariant, effectSizeAndUncertainty, correctnessReceipt, authorityReview, privacyReview, diskReserve, rollbackMethod, maintainabilityDelta, sourceOwner, approvalRef, finalDecision, decisionDate`.
 
 ## Relationship to nearby Proposal 5 research
-- [Rescore expansion](../../rescore-expansion/README.md) asks **which existing JS computation might move to Rust?**
+- [Rescore expansion](../../../rescore-expansion/README.md) asks **which existing JS computation might move to Rust?**
 - This optimization observatory asks **how should ARBOR spend fewer CPU cycles, memory bytes, disk writes, wall time, energy and engineering hours while remaining correct?**
 - HVI Vision Lab asks **what could a future living software universe feel like?**
 All three are distinct; any overlap references the original canonical source rather than creating a duplicate implementation.
