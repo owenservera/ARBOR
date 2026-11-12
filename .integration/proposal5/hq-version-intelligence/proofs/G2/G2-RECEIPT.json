@@ -227,7 +227,22 @@
     "url": "https://github.com/owenservera/ARBOR/pull/21",
     "draft": true,
     "merged": false,
-    "reviewCount": 0
+    "independentReviewObserved": false
   },
-  "acceptanceNote": "G1 main not accepted; independent Z2 REPAIR_REQUIRED; no Node24/AJV/Host security acceptance. All new test source UNRUN. Do not merge or create R proofs before required gate."
+  "acceptanceNote": "G1 main not accepted; independent Z2 REPAIR_REQUIRED; no Node24/AJV/Host security acceptance. All new test source UNRUN. Do not merge or create R proofs before required gate.",
+  "ciSyntheticWorkflow": {
+    "path": ".github/workflows/hvi-native-synthetic.yml",
+    "commit": "d2411bae45964f533b5c48f0faac727c31140932",
+    "purpose": "Node24 synthetic HVI/Host/TierFlow conformance; no real donor/repo comparison",
+    "jobExecuted": false,
+    "latestRunId": 43320303173,
+    "latestConclusion": "startup_failure",
+    "latestJobCount": 0,
+    "actualTestProcessExit": null
+  },
+  "latestCiInvestigation": {
+    "issue": "https://github.com/owenservera/ARBOR/issues/24",
+    "outcome": "GITHUB_RUNNER_STARTUP_BLOCKED_UNRETRYABLE",
+    "gating": true
+  }
 }
