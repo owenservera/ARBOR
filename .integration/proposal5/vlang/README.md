@@ -20,6 +20,7 @@ This folder in `.integration/proposal5/vlang/` is the canonical **cross-program 
 6. [05 — Decisions, risk and boundaries](05-DECISIONS-AND-RISKS.md)
 7. [06 — Sources and source-lock](06-SOURCES-AND-PINS.md)
 8. [VEC — natural-language user programming](vec/README.md): deterministic SDK-first programs, Rust capsules, low-LLM fallback and protected source-editing trajectory.
-9. [machine/README](machine/README.md): status manifest, component register, gates, pins, schema.
+9. [HQ × Rust × TierFlow convergence research](vec/system-convergence/README.md): deep system research and machine atlas.
+10. [machine/README](machine/README.md): status manifest, component register, gates, pins, schema.
 
 Do not merge draft PR #13 or #19, modify HVI owners, infer runtime acceptance, or run real ARBOR/VIVIM/Labs comparison from this folder. This is a **planning/status-only branch**. Any future implementation starts with separate source and trust gate S0.

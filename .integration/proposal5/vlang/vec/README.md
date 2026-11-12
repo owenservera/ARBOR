@@ -17,6 +17,7 @@ VEC is primarily the **user-programming substrate** of VIVIM, not merely source-
 3. [SDK and IR contracts](02-SDK-AND-PROGRAM-CONTRACTS.md)
 4. [LLM escalation and amortization](03-LLM-ESCALATION.md)
 5. [Permissions, lifecycle and source-editing distinction](04-PROGRAM-LIFECYCLE-AND-AUTHORITY.md)
-6. [Machine program specification](../machine/vec-product-vision.json)
+6. [HQ × Rust × TierFlow convergence research](system-convergence/README.md): inspected sources, architecture, opportunities, test and security gates.
+7. [Machine program specification](../machine/vec-product-vision.json)
 
 No implementation, test or beta-device acceptance is claimed. No release workflows or active user code paths are changed by these proposals.
