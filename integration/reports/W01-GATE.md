@@ -84,3 +84,12 @@ PGZ `f0b0ce2522eef0929af498a6d0cc31c3294f61b3` and PG00–PG03 remain **PREPARED
 **Decision: NO_GO / REPAIR_REQUIRED.** Source-only serial integration is committed; the acceptance condition of *minimal reproducible Cargo/Bun workspace and no-donor source closure* is not met. **W2 must not be labeled GO** or launched as if G were approved. Original G source merges are preserved; W2 owner repair is conditional on gate approval. There is no verified beta.
 
 **Rollback:** frozen six worker refs remain unchanged; GitHub merge history #2–#7 is traceable. Revert gate configuration commits and six merges in reverse order through separate reviewed commits if necessary, never force-push main or overwrite frozen refs. Actual rollback drill UNRUN. No owner data or live Host effects migrated. **Next-wave accepted base SHA: NONE** until reproducible build/source-closure proof and gate re-evaluation. Use current integration branch HEAD for *repair work only*, not as a GO baseline.
+
+
+---
+
+## W01-G R001 focused continuation (2026-11-12)
+
+**Starting G HEAD verified:** 6a9debe6cb7b43b2c77a18b6fd9c0f0125911c0a. The original A–F serial merges and source ownership remain intact. G created a complete-local-checkout source-closure scanner, fail-closed Windows Node24 staging helper and evidence-capturing PowerShell test runner. **All combined Cargo/Bun/Node24/Windows/no-donor commands remain UNRUN**; actual root Cargo.lock and bun.lock do not exist, and no reproducible-build PASS is claimed. Draft **A-owned** [PR #8](https://github.com/owenservera/ARBOR/pull/8) removes the mandatory APK packaging resources, but is unmerged pending A review. **PWA FIRST; APK DEFERRED**. Security P0 native impersonation/IPC and PWA signer/replay, HQ authorization, browser/effect recovery remain unchanged.
+
+Canonical scoped evidence and exact command/exit handoff: [W01-G-R001-SOURCE-CLOSURE.md](W01-G-R001-SOURCE-CLOSURE.md). This amendment **does not override original NO_GO**. Decision remains **REPAIR_REQUIRED**; W2 accepted base **NONE**, beta **BLOCKED**, rollback UNRUN. The G R001 authoring commits and A draft PR are listed in the linked report.
