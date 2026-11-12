@@ -1,0 +1,117 @@
+{
+  "schema": "arbor.p5.n0-io.run-ledger/1",
+  "status": "PREPARED_NOT_PROMOTED",
+  "date": "2026-11-12",
+  "branch": "work/p5-preg-n0-io-r001",
+  "base": {
+    "ref": "work/p5-pre-g-convergence-r001",
+    "sha": "8b23c73bf450738a76b256bf0fa17ecbf86db591"
+  },
+  "sources": {
+    "labs": {
+      "ref": "lab/user-io-rust-core-20261112",
+      "sha": "61d9fc15c55144c4f0b79afa248981c2b0ca9bd6"
+    },
+    "harness": {
+      "ref": "work/native-user-io-r001-20261112",
+      "sha": "fa6dea9576c83496d95562b98b7a815fda4aec88"
+    },
+    "A": "dda546a11294920d6521a0f64ab7ee62ec993c70",
+    "B": "78a5105a9c1f1880d658f350e130b1e2632d3532",
+    "E": "1a5cf26ce14ebce4e31d9a4373060ace61852645",
+    "F": "be458f3c4cdb7eb38d47b1de2a00d441b7cdc704"
+  },
+  "executed": [
+    {
+      "test": "synthetic-proof.mjs with JavaScript V8 via new Function exact authored source",
+      "status": "PASS",
+      "count": 36,
+      "failed": 0,
+      "exitCode": null,
+      "reason": "in-process V8 assertions; shell exit code not available; NOT Node CLI or Rust"
+    },
+    {
+      "test": "connected GitHub source/tree/blob and branch ref inspection",
+      "status": "SOURCE_INSPECTED",
+      "exitCode": null,
+      "reason": "GitHub API operations, not a compiled or runtime test"
+    },
+    {
+      "test": "IO-CONTRACT.json authored via JSON.stringify",
+      "status": "STATIC_JSON_CREATED",
+      "exitCode": null,
+      "reason": "JSON syntax generated, schema semantics not independently compiled"
+    }
+  ],
+  "unrun": [
+    {
+      "command": "node .integration/proposal5/phase2/pre-g/N0-io/synthetic-proof.mjs",
+      "gate": "Node CLI actual execution",
+      "status": "UNRUN"
+    },
+    {
+      "command": "cargo test --manifest-path core/programmability/Cargo.toml --locked",
+      "gate": "Rust programmability",
+      "status": "UNRUN"
+    },
+    {
+      "command": "cargo test --manifest-path native/hqkg/Cargo.toml --locked",
+      "gate": "Rust graph/typed DAG",
+      "status": "UNRUN"
+    },
+    {
+      "command": "cargo check --manifest-path src-tauri/Cargo.toml --locked",
+      "gate": "Tauri integration",
+      "status": "UNRUN"
+    },
+    {
+      "command": "cargo metadata --locked --format-version 1",
+      "gate": "Integrated Cargo resolution",
+      "status": "UNRUN"
+    },
+    {
+      "command": "node --test apps/vivim-host/test/*.test.mjs",
+      "gate": "Host effect/receipt compatibility",
+      "status": "UNRUN"
+    },
+    {
+      "command": "node --test apps/mobile-relay/test/*.test.mjs",
+      "gate": "PWA transport/visual",
+      "status": "UNRUN"
+    },
+    {
+      "command": "Windows MSVC Tauri packaging, loopback spoof, remote IPC, port collision",
+      "gate": "Windows native security/device",
+      "status": "UNRUN"
+    },
+    {
+      "command": "Authenticated paired PWA HTTPS, revocation and replay, IME and accessibility",
+      "gate": "Phone device",
+      "status": "UNRUN"
+    },
+    {
+      "command": "Cross-source policy actual owner/actor enforcement and durable Host receipt",
+      "gate": "Live secure source/effect",
+      "status": "UNRUN"
+    },
+    {
+      "command": "voice partial/final native adapter, CLI/scheduled actor, streaming output",
+      "gate": "Live surface parity",
+      "status": "UNRUN"
+    }
+  ],
+  "sourceOnlyClaims": [
+    "R001 Rust four reactors and per-edit scoped threads observed, no Cargo results",
+    "R001 Tauri holds Mutex<UserIoCore> through apply_json; default TrustedSources empty",
+    "B Host planner/dispatcher/journal is sole effect owner on B branch, not integrated on base",
+    "A HQKG typed DAG and synchronous engine Scheduler source exists only on A worker",
+    "E phone JS Host client and TierFlow inert visual compiler source exists only on E worker"
+  ],
+  "forbidden": [
+    "No live runtime modified",
+    "No graph engine, scheduler, registry, service, journal or store created",
+    "No personal input ingested",
+    "No actor authentication claimed from declared test principal"
+  ],
+  "note": "In-process V8 test result is synthetic contract proof only. Exit code N/A. All executable Node/Cargo/device/Windows tests UNRUN."
+}
