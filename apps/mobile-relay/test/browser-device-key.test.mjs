@@ -75,6 +75,10 @@ test('secure origin, WebCrypto and persistent storage mandatory; no ephemeral fa
     {...env(), indexedDB:null}, {...env(), base64:null},
   ];
   for (const e of bad) await assert.rejects(createBrowserDeviceSigner(e).ready(), /SECURE_BROWSER_DEVICE_CRYPTO_REQUIRED/);
+  const empty = fakeIndexedDB();
+  const missing = createBrowserDeviceSigner(env(empty));
+  await assert.rejects(missing.requireExisting(), /BROWSER_DEVICE_KEY_MISSING/);
+  assert.equal(empty.records.size, 0, 'resume never generates a replacement key');
   const invalid = fakeIndexedDB();
   invalid.records.set('host-p256', {version:1,privateKey:{type:'private',extractable:true},publicKey:{}});
   await assert.rejects(createBrowserDeviceSigner(env(invalid)).ready(), /BROWSER_DEVICE_KEY_LOST_OR_INVALID/);

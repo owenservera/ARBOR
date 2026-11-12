@@ -35,7 +35,7 @@ export async function prepareDeviceSigner() {
 async function signerForGrant(kind) {
   if (kind === 'browser') {
     const browser = createBrowserDeviceSigner();
-    await browser.ready();
+    await browser.requireExisting(); // Existing grant cannot silently rotate device identity.
     return browser;
   }
   if (kind === 'native') return native();

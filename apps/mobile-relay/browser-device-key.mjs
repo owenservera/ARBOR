@@ -96,6 +96,17 @@ export function createBrowserDeviceSigner({
     if (!inFlight) inFlight = load().catch(error => { inFlight = null; throw error; });
     return inFlight;
   }
+  async function requireExisting() {
+    preflight();
+    const db = await openDatabase(indexedDB);
+    let pair;
+    try { pair = await transact(db, 'readonly'); }
+    finally { db.close(); }
+    if (!pair) throw unavailable('BROWSER_DEVICE_KEY_MISSING');
+    if (!validKeys(pair)) throw unavailable('BROWSER_DEVICE_KEY_LOST_OR_INVALID');
+    inFlight = Promise.resolve(pair);
+    return true;
+  }
   const encode64 = bytes => base64(Array.from(bytes, x => String.fromCharCode(x)).join(''));
   async function signTranscript(fields) {
     const pair = await keys();
@@ -106,6 +117,7 @@ export function createBrowserDeviceSigner({
   return Object.freeze({
     kind: 'browser',
     ready: async () => { await keys(); return true; },
+    requireExisting,
     async publicKeyPem() {
       const pair = await keys();
       const spki = await crypto.subtle.exportKey('spki', pair.publicKey);
