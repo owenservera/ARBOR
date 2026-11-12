@@ -1,0 +1,1338 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://arbor.local/hvi/v2/comparison.schema.json",
+  "title": "Normative C Version Comparison; F v1 is not interchangeable",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "arbor.hvi.version-comparison/1"
+    },
+    "targetPinId": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "sourcePins": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 128,
+      "items": {
+        "type": "object",
+        "properties": {
+          "pinId": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "provider": {
+            "const": "github"
+          },
+          "repoIdentity": {
+            "type": "string",
+            "pattern": "^[a-z0-9_.-]+/[a-z0-9_.-]+$"
+          },
+          "resolvedCommitSha": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{40}$"
+          },
+          "rootTreeSha": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{40}$"
+          },
+          "manifestDigest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "completeness": {
+            "enum": [
+              "complete",
+              "partial",
+              "blocked",
+              "missing"
+            ]
+          },
+          "scope": {
+            "const": "development"
+          }
+        },
+        "required": [
+          "pinId",
+          "provider",
+          "repoIdentity",
+          "resolvedCommitSha",
+          "rootTreeSha",
+          "manifestDigest",
+          "completeness",
+          "scope"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "pairwise": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "sourcePinId": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "targetPinId": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "sourceCompleteness": {
+                "enum": [
+                  "complete",
+                  "partial",
+                  "blocked",
+                  "missing"
+                ]
+              },
+              "targetCompleteness": {
+                "enum": [
+                  "complete",
+                  "partial",
+                  "blocked",
+                  "missing"
+                ]
+              },
+              "totalCompared": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "counts": {
+                "type": "object",
+                "properties": {
+                  "EXACT_BLOB": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "SAME_PATH_CHANGED": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "EXACT_RELOCATION": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "SPLIT_CANDIDATE": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "COMBINE_CANDIDATE": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "SIMILARITY_CANDIDATE": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "MISSING_AT_TARGET": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "NEW_AT_TARGET": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "UNOBSERVABLE": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "EXACT_BLOB",
+                  "SAME_PATH_CHANGED",
+                  "EXACT_RELOCATION",
+                  "SPLIT_CANDIDATE",
+                  "COMBINE_CANDIDATE",
+                  "SIMILARITY_CANDIDATE",
+                  "MISSING_AT_TARGET",
+                  "NEW_AT_TARGET",
+                  "UNOBSERVABLE"
+                ],
+                "additionalProperties": false
+              },
+              "sourceDeltas": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:@/#-]{0,255}$"
+                    },
+                    "originPinId": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "targetPinId": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "originRepo": {
+                      "type": "string",
+                      "pattern": "^[a-z0-9_.-]+/[a-z0-9_.-]+$"
+                    },
+                    "originSha": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{40}$"
+                    },
+                    "originPath": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 4096,
+                          "pattern": "^(?!/)[^\\\\\\x00-\\x1f]+$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "originBlob": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{40}$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "targetPaths": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 4096,
+                        "pattern": "^(?!/)[^\\\\\\x00-\\x1f]+$"
+                      }
+                    },
+                    "targetBlobs": {
+                      "type": "array",
+                      "items": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{40}$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "state": {
+                      "enum": [
+                        "EXACT_BLOB",
+                        "SAME_PATH_CHANGED",
+                        "EXACT_RELOCATION",
+                        "SPLIT_CANDIDATE",
+                        "COMBINE_CANDIDATE",
+                        "SIMILARITY_CANDIDATE",
+                        "MISSING_AT_TARGET",
+                        "NEW_AT_TARGET",
+                        "UNOBSERVABLE"
+                      ]
+                    },
+                    "sourceLineage": {
+                      "type": "string"
+                    },
+                    "certainty": {
+                      "enum": [
+                        "unknown",
+                        "candidate",
+                        "source_verified",
+                        "uncertain"
+                      ]
+                    },
+                    "decision": {
+                      "type": "string",
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:@/#-]{0,255}$"
+                    },
+                    "owner": {
+                      "type": "string",
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:@/#-]{0,255}$"
+                    },
+                    "evidenceRefs": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9][A-Za-z0-9._:@/#-]{0,255}$"
+                      }
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "originPinId",
+                    "targetPinId",
+                    "originRepo",
+                    "originSha",
+                    "originPath",
+                    "originBlob",
+                    "targetPaths",
+                    "targetBlobs",
+                    "state",
+                    "sourceLineage",
+                    "certainty",
+                    "decision",
+                    "owner",
+                    "evidenceRefs"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "sourcePinId",
+              "targetPinId",
+              "sourceCompleteness",
+              "targetCompleteness",
+              "totalCompared",
+              "counts",
+              "sourceDeltas"
+            ],
+            "additionalProperties": false
+          }
+        }
+      ]
+    },
+    "coverage": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "sourcePinId": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "targetPinId": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "sourceCompleteness": {
+            "enum": [
+              "complete",
+              "partial",
+              "blocked",
+              "missing"
+            ]
+          },
+          "targetCompleteness": {
+            "enum": [
+              "complete",
+              "partial",
+              "blocked",
+              "missing"
+            ]
+          },
+          "totalCompared": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "counts": {
+            "type": "object",
+            "properties": {
+              "EXACT_BLOB": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "SAME_PATH_CHANGED": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "EXACT_RELOCATION": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "SPLIT_CANDIDATE": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "COMBINE_CANDIDATE": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "SIMILARITY_CANDIDATE": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "MISSING_AT_TARGET": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "NEW_AT_TARGET": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "UNOBSERVABLE": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "EXACT_BLOB",
+              "SAME_PATH_CHANGED",
+              "EXACT_RELOCATION",
+              "SPLIT_CANDIDATE",
+              "COMBINE_CANDIDATE",
+              "SIMILARITY_CANDIDATE",
+              "MISSING_AT_TARGET",
+              "NEW_AT_TARGET",
+              "UNOBSERVABLE"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "sourcePinId",
+          "targetPinId",
+          "sourceCompleteness",
+          "targetCompleteness",
+          "totalCompared",
+          "counts"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "summary": {
+      "type": "object",
+      "properties": {
+        "counts": {
+          "type": "object",
+          "properties": {
+            "EXACT_BLOB": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "SAME_PATH_CHANGED": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "EXACT_RELOCATION": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "SPLIT_CANDIDATE": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "COMBINE_CANDIDATE": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "SIMILARITY_CANDIDATE": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "MISSING_AT_TARGET": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "NEW_AT_TARGET": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "UNOBSERVABLE": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "EXACT_BLOB",
+            "SAME_PATH_CHANGED",
+            "EXACT_RELOCATION",
+            "SPLIT_CANDIDATE",
+            "COMBINE_CANDIDATE",
+            "SIMILARITY_CANDIDATE",
+            "MISSING_AT_TARGET",
+            "NEW_AT_TARGET",
+            "UNOBSERVABLE"
+          ],
+          "additionalProperties": false
+        },
+        "observedFindings": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "emittedFindings": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "candidatesObserved": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "semanticParity": {
+          "const": "UNVERIFIED"
+        },
+        "runtimeParity": {
+          "const": "UNVERIFIED"
+        }
+      },
+      "required": [
+        "counts",
+        "observedFindings",
+        "emittedFindings",
+        "candidatesObserved",
+        "semanticParity",
+        "runtimeParity"
+      ],
+      "additionalProperties": false
+    },
+    "sourceDeltas": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:@/#-]{0,255}$"
+          },
+          "originPinId": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "targetPinId": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "originRepo": {
+            "type": "string",
+            "pattern": "^[a-z0-9_.-]+/[a-z0-9_.-]+$"
+          },
+          "originSha": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{40}$"
+          },
+          "originPath": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096,
+                "pattern": "^(?!/)[^\\\\\\x00-\\x1f]+$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "originBlob": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-f0-9]{40}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "targetPaths": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096,
+              "pattern": "^(?!/)[^\\\\\\x00-\\x1f]+$"
+            }
+          },
+          "targetBlobs": {
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{40}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "state": {
+            "enum": [
+              "EXACT_BLOB",
+              "SAME_PATH_CHANGED",
+              "EXACT_RELOCATION",
+              "SPLIT_CANDIDATE",
+              "COMBINE_CANDIDATE",
+              "SIMILARITY_CANDIDATE",
+              "MISSING_AT_TARGET",
+              "NEW_AT_TARGET",
+              "UNOBSERVABLE"
+            ]
+          },
+          "sourceLineage": {
+            "type": "string"
+          },
+          "certainty": {
+            "enum": [
+              "unknown",
+              "candidate",
+              "source_verified",
+              "uncertain"
+            ]
+          },
+          "decision": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:@/#-]{0,255}$"
+          },
+          "owner": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:@/#-]{0,255}$"
+          },
+          "evidenceRefs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:@/#-]{0,255}$"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "originPinId",
+          "targetPinId",
+          "originRepo",
+          "originSha",
+          "originPath",
+          "originBlob",
+          "targetPaths",
+          "targetBlobs",
+          "state",
+          "sourceLineage",
+          "certainty",
+          "decision",
+          "owner",
+          "evidenceRefs"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "capabilityDeltas": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:@/#-]{0,255}$"
+          },
+          "capabilityIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:@/#-]{0,255}$"
+            }
+          },
+          "originPinId": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "targetPinId": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "state": {
+            "enum": [
+              "PRESENT_EQUIVALENT_CONFIRMED",
+              "PRESENT_CHANGED",
+              "IMPORTED_NOT_WIRED",
+              "SOURCE_WIRED_UNVERIFIED",
+              "RUNTIME_VERIFIED",
+              "DESIGN_ONLY",
+              "RESEARCH_IMPLEMENTED",
+              "INTENTIONALLY_EXCLUDED",
+              "BLOCKED",
+              "UNKNOWN"
+            ]
+          },
+          "certainty": {
+            "enum": [
+              "candidate",
+              "unknown",
+              "uncertain",
+              "confirmed"
+            ]
+          },
+          "decision": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:@/#-]{0,255}$"
+          },
+          "owner": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:@/#-]{0,255}$"
+          },
+          "evidenceRefs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:@/#-]{0,255}$"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "capabilityIds",
+          "originPinId",
+          "targetPinId",
+          "state",
+          "certainty",
+          "decision",
+          "owner",
+          "evidenceRefs"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "identityCandidates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "originPinId": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "targetPinId": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "originPath": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096,
+            "pattern": "^(?!/)[^\\\\\\x00-\\x1f]+$"
+          },
+          "targetPaths": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096,
+              "pattern": "^(?!/)[^\\\\\\x00-\\x1f]+$"
+            }
+          },
+          "capabilityIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:@/#-]{0,255}$"
+            }
+          },
+          "verdict": {
+            "const": "REVIEW_REQUIRED"
+          },
+          "certainty": {
+            "const": "candidate"
+          },
+          "evidenceRefs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:@/#-]{0,255}$"
+            }
+          },
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:@/#-]{0,255}$"
+          }
+        },
+        "required": [
+          "originPinId",
+          "targetPinId",
+          "originPath",
+          "targetPaths",
+          "capabilityIds",
+          "verdict",
+          "certainty",
+          "evidenceRefs",
+          "id"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "authorityConflicts": {
+      "type": "array",
+      "maxItems": 0
+    },
+    "unported": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:@/#-]{0,255}$"
+          },
+          "originPinId": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "targetPinId": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "originRepo": {
+            "type": "string",
+            "pattern": "^[a-z0-9_.-]+/[a-z0-9_.-]+$"
+          },
+          "originSha": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{40}$"
+          },
+          "originPath": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096,
+                "pattern": "^(?!/)[^\\\\\\x00-\\x1f]+$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "originBlob": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-f0-9]{40}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "targetPaths": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096,
+              "pattern": "^(?!/)[^\\\\\\x00-\\x1f]+$"
+            }
+          },
+          "targetBlobs": {
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{40}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "state": {
+            "enum": [
+              "EXACT_BLOB",
+              "SAME_PATH_CHANGED",
+              "EXACT_RELOCATION",
+              "SPLIT_CANDIDATE",
+              "COMBINE_CANDIDATE",
+              "SIMILARITY_CANDIDATE",
+              "MISSING_AT_TARGET",
+              "NEW_AT_TARGET",
+              "UNOBSERVABLE"
+            ]
+          },
+          "sourceLineage": {
+            "type": "string"
+          },
+          "certainty": {
+            "enum": [
+              "unknown",
+              "candidate",
+              "source_verified",
+              "uncertain"
+            ]
+          },
+          "decision": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:@/#-]{0,255}$"
+          },
+          "owner": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:@/#-]{0,255}$"
+          },
+          "evidenceRefs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:@/#-]{0,255}$"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "originPinId",
+          "targetPinId",
+          "originRepo",
+          "originSha",
+          "originPath",
+          "originBlob",
+          "targetPaths",
+          "targetBlobs",
+          "state",
+          "sourceLineage",
+          "certainty",
+          "decision",
+          "owner",
+          "evidenceRefs"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "intentionallyExcluded": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:@/#-]{0,255}$"
+          },
+          "originPinId": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "targetPinId": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "originRepo": {
+            "type": "string",
+            "pattern": "^[a-z0-9_.-]+/[a-z0-9_.-]+$"
+          },
+          "originSha": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{40}$"
+          },
+          "originPath": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096,
+                "pattern": "^(?!/)[^\\\\\\x00-\\x1f]+$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "originBlob": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-f0-9]{40}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "targetPaths": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096,
+              "pattern": "^(?!/)[^\\\\\\x00-\\x1f]+$"
+            }
+          },
+          "targetBlobs": {
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{40}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "state": {
+            "enum": [
+              "EXACT_BLOB",
+              "SAME_PATH_CHANGED",
+              "EXACT_RELOCATION",
+              "SPLIT_CANDIDATE",
+              "COMBINE_CANDIDATE",
+              "SIMILARITY_CANDIDATE",
+              "MISSING_AT_TARGET",
+              "NEW_AT_TARGET",
+              "UNOBSERVABLE"
+            ]
+          },
+          "sourceLineage": {
+            "type": "string"
+          },
+          "certainty": {
+            "enum": [
+              "unknown",
+              "candidate",
+              "source_verified",
+              "uncertain"
+            ]
+          },
+          "decision": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:@/#-]{0,255}$"
+          },
+          "owner": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:@/#-]{0,255}$"
+          },
+          "evidenceRefs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:@/#-]{0,255}$"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "originPinId",
+          "targetPinId",
+          "originRepo",
+          "originSha",
+          "originPath",
+          "originBlob",
+          "targetPaths",
+          "targetBlobs",
+          "state",
+          "sourceLineage",
+          "certainty",
+          "decision",
+          "owner",
+          "evidenceRefs"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "unobserved": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:@/#-]{0,255}$"
+          },
+          "originPinId": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "targetPinId": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "originRepo": {
+            "type": "string",
+            "pattern": "^[a-z0-9_.-]+/[a-z0-9_.-]+$"
+          },
+          "originSha": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{40}$"
+          },
+          "originPath": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096,
+                "pattern": "^(?!/)[^\\\\\\x00-\\x1f]+$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "originBlob": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-f0-9]{40}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "targetPaths": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096,
+              "pattern": "^(?!/)[^\\\\\\x00-\\x1f]+$"
+            }
+          },
+          "targetBlobs": {
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{40}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "state": {
+            "enum": [
+              "EXACT_BLOB",
+              "SAME_PATH_CHANGED",
+              "EXACT_RELOCATION",
+              "SPLIT_CANDIDATE",
+              "COMBINE_CANDIDATE",
+              "SIMILARITY_CANDIDATE",
+              "MISSING_AT_TARGET",
+              "NEW_AT_TARGET",
+              "UNOBSERVABLE"
+            ]
+          },
+          "sourceLineage": {
+            "type": "string"
+          },
+          "certainty": {
+            "enum": [
+              "unknown",
+              "candidate",
+              "source_verified",
+              "uncertain"
+            ]
+          },
+          "decision": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:@/#-]{0,255}$"
+          },
+          "owner": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:@/#-]{0,255}$"
+          },
+          "evidenceRefs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:@/#-]{0,255}$"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "originPinId",
+          "targetPinId",
+          "originRepo",
+          "originSha",
+          "originPath",
+          "originBlob",
+          "targetPaths",
+          "targetBlobs",
+          "state",
+          "sourceLineage",
+          "certainty",
+          "decision",
+          "owner",
+          "evidenceRefs"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "runtimeProof": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "mergePlan": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "evidenceIndex": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:@/#-]{0,255}$"
+          },
+          "type": {
+            "enum": [
+              "source_blob",
+              "source_symbol",
+              "contract",
+              "fixture",
+              "executed_test",
+              "host_receipt",
+              "device_receipt",
+              "owner_decision"
+            ]
+          },
+          "repo": {
+            "type": "string",
+            "pattern": "^[a-z0-9_.-]+/[a-z0-9_.-]+$"
+          },
+          "commitSha": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{40}$"
+          },
+          "path": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096,
+            "pattern": "^(?!/)[^\\\\\\x00-\\x1f]+$"
+          },
+          "blobSha": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-f0-9]{40}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "repo",
+          "commitSha",
+          "path",
+          "blobSha"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "limits": {
+      "type": "object",
+      "properties": {
+        "maxPins": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "maxEntries": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "maxFindings": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "maxPairs": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "totalEntries": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "truncated": {
+          "type": "boolean"
+        },
+        "omittedFindings": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "omittedCandidates": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "scopedPrefixes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "maxPins",
+        "maxEntries",
+        "maxFindings",
+        "maxPairs",
+        "totalEntries",
+        "truncated",
+        "omittedFindings",
+        "omittedCandidates",
+        "scopedPrefixes"
+      ],
+      "additionalProperties": false
+    },
+    "errors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:@/#-]{0,255}$"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "reproducibilityDigest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  },
+  "required": [
+    "schema",
+    "targetPinId",
+    "sourcePins",
+    "pairwise",
+    "coverage",
+    "summary",
+    "sourceDeltas",
+    "capabilityDeltas",
+    "identityCandidates",
+    "authorityConflicts",
+    "unported",
+    "intentionallyExcluded",
+    "unobserved",
+    "runtimeProof",
+    "mergePlan",
+    "evidenceIndex",
+    "limits",
+    "errors",
+    "reproducibilityDigest"
+  ],
+  "additionalProperties": false
+}

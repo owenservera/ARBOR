@@ -1,0 +1,426 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://arbor.local/hvi/v2/source-manifest.schema.json",
+  "title": "Native A or explicitly projected C Source Manifest",
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": "arbor.hvi.manifest/1"
+        },
+        "pinId": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "repoIdentity": {
+          "type": "string",
+          "pattern": "^[a-z0-9_.-]+/[a-z0-9_.-]+$"
+        },
+        "resolvedCommitSha": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        "rootTreeSha": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        "subPath": {
+          "type": "string"
+        },
+        "entries": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096,
+                "pattern": "^(?!/)[^\\\\\\x00-\\x1f]+$"
+              },
+              "mode": {
+                "type": "string",
+                "pattern": "^[0-7]{6}$"
+              },
+              "blobSha": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{40}$"
+              },
+              "bytes": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "kind": {
+                "enum": [
+                  "file",
+                  "symlink",
+                  "submodule"
+                ]
+              },
+              "parseStatus": {
+                "type": "string"
+              },
+              "excludedReason": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 255
+              },
+              "symlinkTarget": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 255
+              }
+            },
+            "required": [
+              "path",
+              "mode",
+              "blobSha",
+              "kind"
+            ],
+            "additionalProperties": false
+          },
+          "maxItems": 100000
+        },
+        "completeness": {
+          "enum": [
+            "complete",
+            "partial",
+            "blocked",
+            "missing"
+          ]
+        },
+        "truncated": {
+          "type": "boolean"
+        },
+        "observedEntries": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "omittedMinimum": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "errors": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:@/#-]{0,255}$"
+              },
+              "detail": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "manifestDigest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "pin": {
+          "type": "object",
+          "properties": {
+            "schema": {
+              "const": "arbor.hvi.source/1"
+            },
+            "pinId": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "provider": {
+              "const": "github"
+            },
+            "repoIdentity": {
+              "type": "string",
+              "pattern": "^[a-z0-9_.-]+/[a-z0-9_.-]+$"
+            },
+            "requestedRef": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 255
+            },
+            "resolvedCommitSha": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{40}$"
+            },
+            "rootTreeSha": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{40}$"
+            },
+            "subPath": {
+              "type": "string",
+              "maxLength": 4096
+            },
+            "manifestDigest": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "acquiredAt": {
+              "type": "string"
+            },
+            "completeness": {
+              "enum": [
+                "complete",
+                "partial",
+                "blocked",
+                "missing"
+              ]
+            },
+            "scope": {
+              "const": "development"
+            },
+            "sourceGrantRef": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 255
+            },
+            "evidenceRef": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 255
+            }
+          },
+          "required": [
+            "pinId",
+            "provider",
+            "repoIdentity",
+            "resolvedCommitSha",
+            "rootTreeSha",
+            "manifestDigest",
+            "completeness",
+            "scope"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "schema",
+        "pinId",
+        "repoIdentity",
+        "resolvedCommitSha",
+        "rootTreeSha",
+        "entries",
+        "completeness",
+        "truncated",
+        "observedEntries",
+        "omittedMinimum",
+        "errors",
+        "manifestDigest",
+        "pin"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": "arbor.hvi.source-manifest/1"
+        },
+        "pinId": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "completeness": {
+          "enum": [
+            "complete",
+            "partial",
+            "blocked",
+            "missing"
+          ]
+        },
+        "truncated": {
+          "type": "boolean"
+        },
+        "entries": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096,
+                "pattern": "^(?!/)[^\\\\\\x00-\\x1f]+$"
+              },
+              "mode": {
+                "type": "string",
+                "pattern": "^[0-7]{6}$"
+              },
+              "blobSha": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{40}$"
+              },
+              "kind": {
+                "enum": [
+                  "file",
+                  "symlink",
+                  "submodule",
+                  "binary",
+                  "lfs-pointer",
+                  "unknown"
+                ]
+              },
+              "capabilityIds": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:@/#-]{0,255}$"
+                }
+              },
+              "excludedReason": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 255
+              },
+              "nativeMetadata": {
+                "type": "object",
+                "properties": {
+                  "bytes": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 0
+                  },
+                  "parseStatus": {
+                    "type": "string"
+                  },
+                  "symlinkTarget": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 255
+                  },
+                  "exclusion": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 255
+                  }
+                },
+                "required": [
+                  "parseStatus"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "path",
+              "mode",
+              "blobSha",
+              "kind",
+              "capabilityIds",
+              "excludedReason",
+              "nativeMetadata"
+            ],
+            "additionalProperties": false
+          },
+          "maxItems": 100000
+        },
+        "digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "sourceManifest": {
+          "type": "object",
+          "properties": {
+            "schema": {
+              "const": "arbor.hvi.manifest/1"
+            },
+            "digest": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "observedEntries": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "omittedMinimum": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "policyOmissions": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "sourceErrors": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._:@/#-]{0,255}$"
+                  },
+                  "detail": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "code"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "schema",
+            "digest",
+            "observedEntries",
+            "omittedMinimum",
+            "policyOmissions",
+            "sourceErrors"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "schema",
+        "pinId",
+        "completeness",
+        "truncated",
+        "entries",
+        "digest",
+        "sourceManifest"
+      ],
+      "additionalProperties": false
+    }
+  ]
+}
