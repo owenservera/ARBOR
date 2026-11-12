@@ -4,7 +4,7 @@
 
 ## Exact proposed repository
 
-\`\`\`text
+```text
 ARBOR/
 ├── .integration/
 │   ├── proposal1/                    # alternative, preserved
@@ -139,21 +139,21 @@ ARBOR/
     ├── integration-proof.yml
     ├── windows-beta.yml
     └── security.yml
-\`\`\`
+```
 
 ### Intentional source-path preservation
 
-Retain \`src-tauri/\`, \`apps/vivim-host/\`, \`apps/mobile-relay/\`, \`studio/\`, \`harness/\`, and \`core/programmability/\` initially. This preserves existing relative imports, fixture paths, HTML routes and Tauri Node Host spawn expectations, minimizing time spent on mechanical restructuring. **But these paths are all inside ARBOR and packaged from ARBOR.**
+Retain `src-tauri/`, `apps/vivim-host/`, `apps/mobile-relay/`, `studio/`, `harness/`, and `core/programmability/` initially. This preserves existing relative imports, fixture paths, HTML routes and Tauri Node Host spawn expectations, minimizing time spent on mechanical restructuring. **But these paths are all inside ARBOR and packaged from ARBOR.**
 
-Retain the operational \`hq/\` path **inside ARBOR** to preserve the HQ JS module dependency graph and CLI invocation. Do not install an HQ service pointing at the old \`repos-hq\` checkout. Import only audited source dependencies, not the old HQ runtime database/corpus.
+Retain the operational `hq/` path **inside ARBOR** to preserve the HQ JS module dependency graph and CLI invocation. Do not install an HQ service pointing at the old `repos-hq` checkout. Import only audited source dependencies, not the old HQ runtime database/corpus.
 
-Import required TierFlow source into \`packages/tierflow/\`, not a Git submodule that requires the external repo to be present. A vendored source snapshot with manifest+checksum and periodic deliberate upstream updates is acceptable. One UI view publisher.
+Import required TierFlow source into `packages/tierflow/`, not a Git submodule that requires the external repo to be present. A vendored source snapshot with manifest+checksum and periodic deliberate upstream updates is acceptable. One UI view publisher.
 
 ## Small Cargo/Bun workspace
 
 Illustrative Cargo root:
 
-\`\`\`toml
+```toml
 [workspace]
 resolver = "2"
 members = [
@@ -166,27 +166,27 @@ members = [
 [profile.dev]
 debug = 0
 incremental = false
-\`\`\`
+```
 
 HQKG's source dev profile explicitly disabled debug symbols and incremental rebuild caches after a multi-GB local target observation; preserve effective low-storage behavior when importing it.
 
-Bun root workspaces include the existing Host/mobile/Studio/HQ modules that actually define package manifests, plus \`packages/tierflow\`, \`packages/protocol-ts\`, \`packages/view-adapters\`. **Do not invent manifests for every folder until their runtime import graph has been inventoried.** One supported package/lockfile owner, no competing global npm/pnpm installs.
+Bun root workspaces include the existing Host/mobile/Studio/HQ modules that actually define package manifests, plus `packages/tierflow`, `packages/protocol-ts`, `packages/view-adapters`. **Do not invent manifests for every folder until their runtime import graph has been inventoried.** One supported package/lockfile owner, no competing global npm/pnpm installs.
 
 ## Logical capability spaces, not capability implementations
 
 Every capability space is generated from **in-repo source owners**, e.g. Host action catalog, HQ semantic registry, installed HQKG engine slots, TierFlow renderer contracts and validated Labs contributions. Do not write another executable registry or new graph store.
 
 A capability entry contains:
-\`id, sourceOwner, implementationPath, inputSchema, outputSchema, effectClass, requiredSourceScope, version, runtimeHealth, sourceEvidence, UIProjection, tests, betaStatus, configRef, deprecation\`.
+`id, sourceOwner, implementationPath, inputSchema, outputSchema, effectClass, requiredSourceScope, version, runtimeHealth, sourceEvidence, UIProjection, tests, betaStatus, configRef, deprecation`.
 
-Statuses remain distinct: \`documented\`, \`source_present\`, \`build_verified\`, \`runtime_wired\`, \`device_accepted\`, \`available_now\`, \`unavailable\`, \`deferred\`.
+Statuses remain distinct: `documented`, `source_present`, `build_verified`, `runtime_wired`, `device_accepted`, `available_now`, `unavailable`, `deferred`.
 
 **Module organization is the future-proof seam.** Current code can remain at old internal paths while a module manifest points to its in-repo implementation. Future Rust replacements need only satisfy the unchanged contract and pass parity. This avoids a second mass refactor.
 
 ## Internal and external boundary policy
 
 **Forbidden product wiring:**
-- cross-repo \`../repos-hq\`, \`../tierflow\`, \`../vivim-labs\`, \`../vivim-web-harness\`, Git submodule dependency or \`git+ssh\` direct runtime source import;
+- cross-repo `../repos-hq`, `../tierflow`, `../vivim-labs`, `../vivim-web-harness`, Git submodule dependency or `git+ssh` direct runtime source import;
 - shelling out to a donor HQ CLI binary or talking to a donor development server;
 - dependency on donor source data folders or Windows-specific development paths;
 - separate TierFlow runtime service or HQ indexer external to ARBOR;
