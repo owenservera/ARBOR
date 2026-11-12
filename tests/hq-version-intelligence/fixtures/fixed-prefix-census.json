@@ -1,0 +1,123 @@
+{
+  "schema": "arbor.hvi.f-qa.prefix-census/1",
+  "source": "02-SOURCE-CROSSWALK.md",
+  "rows": [
+    {
+      "repo": "repos-hq",
+      "donorPrefix": "hq/",
+      "targetPrefix": "hq/",
+      "donor": 676,
+      "present": 315,
+      "identical": 314,
+      "absent": 361
+    },
+    {
+      "repo": "vivim-web-harness",
+      "donorPrefix": "apps/",
+      "targetPrefix": "apps/",
+      "donor": 241,
+      "present": 222,
+      "identical": 217,
+      "absent": 19
+    },
+    {
+      "repo": "vivim-web-harness",
+      "donorPrefix": "studio/",
+      "targetPrefix": "studio/",
+      "donor": 958,
+      "present": 379,
+      "identical": 379,
+      "absent": 579
+    },
+    {
+      "repo": "vivim-web-harness",
+      "donorPrefix": "harness/",
+      "targetPrefix": "harness/",
+      "donor": 132,
+      "present": 122,
+      "identical": 122,
+      "absent": 10
+    },
+    {
+      "repo": "vivim-web-harness",
+      "donorPrefix": "core/",
+      "targetPrefix": "core/",
+      "donor": 7,
+      "present": 7,
+      "identical": 7,
+      "absent": 0
+    },
+    {
+      "repo": "vivim-web-harness",
+      "donorPrefix": "src-tauri/",
+      "targetPrefix": "src-tauri/",
+      "donor": 14,
+      "present": 13,
+      "identical": 12,
+      "absent": 1
+    },
+    {
+      "repo": "vivim-web-harness",
+      "donorPrefix": "tools/",
+      "targetPrefix": "tools/",
+      "donor": 47,
+      "present": 1,
+      "identical": 0,
+      "absent": 46
+    },
+    {
+      "repo": "vivim-web-harness",
+      "donorPrefix": "schemas/",
+      "targetPrefix": "schemas/",
+      "donor": 6,
+      "present": 0,
+      "identical": 0,
+      "absent": 6
+    },
+    {
+      "repo": "tierflow",
+      "donorPrefix": "src/",
+      "targetPrefix": "packages/tierflow/src/",
+      "donor": 86,
+      "present": 85,
+      "identical": 85,
+      "absent": 1
+    },
+    {
+      "repo": "tierflow",
+      "donorPrefix": "tests/",
+      "targetPrefix": "packages/tierflow/tests/",
+      "donor": 80,
+      "present": 80,
+      "identical": 80,
+      "absent": 0
+    },
+    {
+      "repo": "tierflow",
+      "donorPrefix": "web/",
+      "targetPrefix": "packages/tierflow/web/",
+      "donor": 12,
+      "present": 12,
+      "identical": 12,
+      "absent": 0
+    },
+    {
+      "repo": "tierflow",
+      "donorPrefix": "runtime/",
+      "targetPrefix": "packages/tierflow/runtime/",
+      "donor": 4,
+      "present": 2,
+      "identical": 2,
+      "absent": 2
+    },
+    {
+      "repo": "tierflow",
+      "donorPrefix": "VIVIM-VISUAL-RUNTIME/",
+      "targetPrefix": "packages/tierflow/VIVIM-VISUAL-RUNTIME/",
+      "donor": 273,
+      "present": 0,
+      "identical": 0,
+      "absent": 273
+    }
+  ]
+}
