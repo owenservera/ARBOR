@@ -88,3 +88,17 @@ test('native signer remains selected when Android bridge is complete',async t=>{
   const signer=await prepareDeviceSigner();
   assert.equal(signer.kind,'native');assert.equal(await signer.signSession(),'NATIVE2');
 });
+
+test('existing approved browser grant with lost private key fails closed without minting another session',async t=>{
+  const {values,set}=globals(t);
+  const grantId='c'.repeat(32);
+  values.set('vivim.device.grant.v1',JSON.stringify({grantId,kind:'browser',origin:location.origin,user:'owner'}));
+  let sessions=0;
+  set('fetch',async (url)=>{
+    if(url.includes('grant-status')) return {ok:true,status:200,json:async()=>({grantId,status:'active'})};
+    sessions++;throw Error('SESSION MUST NOT BE MINTED');
+  });
+  const transport={direct:true,setDeviceSession(){throw Error('Must not set session');}};
+  await assert.rejects(resumeDeviceSession(transport),/BROWSER_DEVICE_KEY_MISSING/);
+  assert.equal(sessions,0);
+});
