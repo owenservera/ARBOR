@@ -1,129 +1,159 @@
-# Proposal 5 / 01 — Fast Landing Scaffold: Preserve Working Paths, Add Only Shared Backbone
+# Proposal 5 / 01 — The Exact Self-Contained Beta Scaffold
 
-## Decision
+**Decision:** The first ARBOR release physically contains all selected product and intelligence runtime code. This is not a set of adapters that call separate donor repositories. Source-preserving imports and a limited set of internal compatibility boundaries minimize implementation time.
 
-**Do not reorganize every legacy path during first import.** Source-relative imports, Windows process spawn paths, phone asset routing, tests, Studio browser leases and packaging conventions are already interdependent. Preserve that topology as an intentionally **transitional product compatibility island**, then add a small native + capability-space scaffold next to it.
+## Exact proposed repository
 
-This is a deliberate correction to both a greenfield eight-crate tree and a fully capability-first physical reorganization. The *logical product model* is capability-first; the *beta physical layout* prioritizes successful source-preserving integration.
-
-## Exact proposed ARBOR tree (beta landing)
-
-~~~text
+\`\`\`text
 ARBOR/
 ├── .integration/
-│   ├── proposal1/                    # existing alternative
-│   ├── proposal4/                    # existing alternative
-│   └── proposal5/                    # this beta-first alternative
-│
-├── Cargo.toml                       # single Cargo workspace
+│   ├── proposal1/                    # alternative, preserved
+│   ├── proposal4/                    # alternative, preserved
+│   └── proposal5/                    # THIS proposal; review-only
+├── Cargo.toml                       # single Rust workspace
 ├── Cargo.lock
-├── rust-toolchain.toml
-├── package.json                     # Bun workspace + selected existing scripts
+├── rust-toolchain.toml              # pinned Windows-compatible stable
+├── package.json                     # one Bun workspace
 ├── bun.lock
-├── .gitignore                       # exclude profiles, secrets, caches, build outputs
-├── AGENTS.md                        # single-writer & no-new-system constraints
-├── README.md                        # Windows+PWA bootstrap, beta truth
+├── .gitignore                       # target, node_modules, user data, profiles, secrets, logs
+├── AGENTS.md                        # no-external-wiring and one-effect-writer rules
+├── README.md                        # one bootstrap, one release, current beta limitations
 │
-├── src-tauri/                       # PRESERVE existing Harness path initially
-│   ├── Cargo.toml                   # coordinated patched Tauri v2 upgrade
-│   ├── capabilities/                # least-privilege origin/command scopes
-│   └── src/main.rs                  # process identity fix + native read-only events
+├── src-tauri/                       # EXISTING desktop app subtree, imported with paths preserved
+│   ├── Cargo.toml                   # upgraded/pinned patched Tauri 2.x family
+│   ├── capabilities/               # strict origin/webview command scopes
+│   ├── tauri.conf.json
+│   └── src/main.rs                 # secure native bootstrap; minimal Node0/HQKG commands
 │
 ├── apps/
-│   ├── vivim-host/                  # PRESERVE CURRENT JS Host path & imports
-│   │   ├── server.mjs
-│   │   ├── control/                 # one active effect authority/journal
-│   │   ├── bootstrap/
-│   │   ├── onboarding/
-│   │   ├── media/
-│   │   └── public/                  # desktop/Host UI; no premature rewrite
-│   └── mobile-relay/               # PRESERVE CURRENT paired PWA/phone path
+│   ├── vivim-host/                 # EXISTING Host retained internally
+│   │   ├── server.mjs              # one Host process, not an external repo
+│   │   ├── control/                # existing catalog, NLCL, dispatcher, journal, receipts
+│   │   ├── bootstrap/              # Host lifecycle and status
+│   │   ├── onboarding/             # provider/session connection
+│   │   ├── conversations/          # captures/streams
+│   │   ├── media/                  # secure range-streaming when verified
+│   │   └── public/                 # existing working desktop UI
+│   └── mobile-relay/               # EXISTING single PWA, unchanged paths at import
 │       ├── app.js
 │       ├── control-client.mjs
 │       ├── ux/
 │       └── ...
 │
-├── studio/                          # PRESERVE signed-in Chrome/Studio worker paths
-├── harness/                         # PRESERVE actually-required Host/Studio helpers
+├── studio/                         # EXISTING signed-in Chrome/Studio engine
+├── harness/                        # only needed dependency closure for Host+Studio
 ├── core/
-│   └── programmability/             # retain current pure Rust validator, 1 workspace
+│   └── programmability/            # EXISTING pure Rust validator, no competing authority
 │
-├── native/                           # ONLY NEW FOUNDATIONAL RUST
-│   ├── hqkg/                         # source-preserving import of HQ Rust graph crate
-│   ├── node0/                        # small bounded native read-only event/trace layer
-│   └── protocol/                     # canonical typed IDs, revisions, source/effect statuses
+├── native/
+│   ├── hqkg/                       # one imported canonical HQ Rust graph crate
+│   │   ├── Cargo.toml              # original hq-knowledge-graph package identity
+│   │   ├── src/                    # typed DAG, engine, change sets, retrieval, import
+│   │   └── tests/                  # source-preserving regression suite
+│   ├── protocol/                   # SMALL new typed Rust IDs/events/source/effect states
+│   └── node0/                      # SMALL new bounded Rust semantic read/projection layer
 │
-├── capability-spaces/                # ORG UNIT ONLY: no new runtime process/store
-│   ├── interaction/
-│   ├── providers-conversation/
-│   ├── host-control/
-│   ├── world-personal/
-│   ├── graph-knowledge/
-│   ├── context-dcb/
-│   ├── missions/
-│   ├── visual-tierflow/
-│   ├── device-pairing/
+├── hq/                             # IN-REPO operational HQ intelligence (not an outside bridge)
+│   ├── bin/hq.mjs                   # same CLI entrypoint; internal
+│   ├── lib/
+│   │   ├── indexer.mjs             # internal development source index
+│   │   ├── schema.mjs
+│   │   ├── graph.mjs
+│   │   ├── search.mjs
+│   │   ├── semantic-registry.mjs
+│   │   ├── context.mjs              # deterministic source-bounded context
+│   │   ├── wiki.mjs                 # deterministic generated dev wiki
+│   │   ├── capabilities.mjs
+│   │   └── ...                     # audited transitive dependency closure
+│   ├── tests/                       # retained/ported native and Node behavior tests
+│   ├── config/                      # generated defaults only, never donor private config
+│   └── README.md                    # operation under ARBOR, local source roots
+│
+├── packages/
+│   ├── tierflow/                   # SELECTED upstream TierFlow source inside ARBOR
+│   │   ├── package.json
+│   │   ├── src/                    # renderer, visual compiler/projections, UI adapter
+│   │   ├── tests/
+│   │   └── ...                     # only its verified required dependency closure
+│   ├── protocol-ts/                # generated type-safe Host/Rust/HQ/TierFlow bridge
+│   └── view-adapters/              # thin compatibility view mounts, no second UI publisher
+│
+├── capability-spaces/              # LOGICAL organization, no new service or database
+│   ├── interaction/                # Node0 + NLCL + UI R007 contract status
+│   ├── conversations/              # signed-in provider browser capabilities
+│   ├── host-control/               # source-owned catalog/action/approval+receipt
+│   ├── dev-intelligence/           # imported HQ indexing/context/wiki
+│   ├── graph-knowledge/            # shared native hqkg and source projections
+│   ├── personal-world/             # Host-owned private World and consent
+│   ├── context-dcb/                # source-linked context, memory-off assumptions
+│   ├── mission-control/            # mission status, recovery, source truth
+│   ├── visualization/              # TierFlow, UX, AutoWiki read projections
+│   ├── pairing-pwa/
 │   ├── onboarding/
 │   ├── media/
 │   ├── voice-to-tasks/
-│   ├── automation-chronos/
+│   ├── chronos-automation/
 │   ├── app-builder/
+│   ├── personalization/
 │   └── observability/
 │
-├── adapters/
-│   ├── hq-read/                     # read-only source-pinned HQ export consumer
-│   ├── host-capabilities/           # maps CURRENT Host action catalog, never rewrites it
-│   ├── native-interop/              # existing Host↔Rust IPC, actor + version fencing
-│   ├── tierflow/                    # exact pinned TierFlow build + current view adapter
-│   └── studio-evidence/             # browser observation schema, no independent sender
-│
 ├── contracts/
-│   ├── schema/                      # one explicitly versioned source for interop
-│   ├── generated/                   # generated Rust/TS bindings, reproducible checks
-│   ├── fixtures/                    # source-truth and behavioral parity
-│   └── compatibility/              # old actions/receipts/device version crosswalk
+│   ├── schema/                     # versioned canonical identity/event/effect/view types
+│   ├── generated/                  # build-generated Rust↔TS interop; not a new catalog
+│   ├── compatibility/              # legacy ID and risk status crosswalk
+│   └── golden/                     # semantic and effect differential corpus
 │
 ├── integration/
-│   ├── source-lock.json             # exact donor commit hashes, imports, checksums
-│   ├── capabilities.json            # GENERATED read-only inventory; not effect registry
-│   ├── import-manifest.json         # what was moved and why
-│   ├── migration-ledger.json        # move/adapt/block/retire; evidence+owners
-│   ├── beta-gates.json              # runnable criteria + observed proof
-│   └── scripts/
-│       ├── audit-source.mjs
-│       ├── generate-capabilities.mjs
-│       ├── verify-interop.mjs
-│       └── preflight.mjs
+│   ├── source-lock.json            # exact imported SHA, path and content digest
+│   ├── import-manifest.json        # physical source/asset import inventory
+│   ├── retirement-ledger.json      # one destination and one owner per legacy path
+│   ├── capability-index.json       # DERIVED view, never executable action owner
+│   ├── release-manifest.json       # Rust, Host, PWA, HQ, TierFlow, Studio versions
+│   ├── no-external-wiring.rules    # automated forbidden paths/endpoints check
+│   └── scripts/                    # import, verify, package, local-only smoke
+│
+├── config/
+│   ├── defaults/                   # owner-configurable UI, resource and storage defaults
+│   ├── profiles/                   # safe local-first presets
+│   ├── storage/                    # bounded Rock Core/cache retention policies
+│   └── schema/                     # versioned config, no grants inferred
 │
 ├── tests/
-│   ├── native-graph/
-│   ├── node0/
-│   ├── contracts/
-│   ├── source-bridge/
-│   ├── host-effects/
-│   ├── windows-packaged/
+│   ├── no-external-repos/          # product works with donor checkouts absent
+│   ├── rust-graph/
+│   ├── hq-intelligence/
+│   ├── host-action-parity/
+│   ├── node0-concurrency/
+│   ├── tierflow-projection/
 │   ├── paired-pwa/
-│   └── recovery/
-│
-├── docs/
-│   ├── accepted-architecture/       # only ratified ADRs
-│   ├── beta/                        # known limitations and acceptance
+│   ├── browser-provider/
+│   ├── storage-and-recovery/
 │   └── security/
 │
+├── docs/
+│   ├── accepted-architecture/
+│   ├── beta/
+│   └── operations/
 └── .github/workflows/
-    ├── native.yml
-    ├── js-compat.yml
+    ├── cargo-and-bun.yml
+    ├── integration-proof.yml
     ├── windows-beta.yml
-    └── source-truth.yml
-~~~
+    └── security.yml
+\`\`\`
 
-**The tree is a proposal**, not created implementation. Only .integration/proposal5/ documents exist in ARBOR from this round.
+### Intentional source-path preservation
 
-## Actual native workspace composition — beta, not greenfield
+Retain \`src-tauri/\`, \`apps/vivim-host/\`, \`apps/mobile-relay/\`, \`studio/\`, \`harness/\`, and \`core/programmability/\` initially. This preserves existing relative imports, fixture paths, HTML routes and Tauri Node Host spawn expectations, minimizing time spent on mechanical restructuring. **But these paths are all inside ARBOR and packaged from ARBOR.**
 
-Proposed Cargo workspace members:
+Retain the operational \`hq/\` path **inside ARBOR** to preserve the HQ JS module dependency graph and CLI invocation. Do not install an HQ service pointing at the old \`repos-hq\` checkout. Import only audited source dependencies, not the old HQ runtime database/corpus.
 
-~~~toml
+Import required TierFlow source into \`packages/tierflow/\`, not a Git submodule that requires the external repo to be present. A vendored source snapshot with manifest+checksum and periodic deliberate upstream updates is acceptable. One UI view publisher.
+
+## Small Cargo/Bun workspace
+
+Illustrative Cargo root:
+
+\`\`\`toml
 [workspace]
 resolver = "2"
 members = [
@@ -133,76 +163,42 @@ members = [
   "native/protocol",
   "native/node0"
 ]
-~~~
+[profile.dev]
+debug = 0
+incremental = false
+\`\`\`
 
-This example is contingent on verifying crate names, imported manifests and any incompatible profile declarations. HQKG currently has its own development profile intended to reduce GB-scale debug artifacts; move profile control to the new workspace root and preserve that low-storage behavior.
+HQKG's source dev profile explicitly disabled debug symbols and incremental rebuild caches after a multi-GB local target observation; preserve effective low-storage behavior when importing it.
 
-**Three new native directories, not eight rewritten domain crates.** Native HQKG stays the same package and public API initially; protocol is small; Node 0 performs read-only event/trace conversion and bounded execution. Native authority/effect implementation remains Host JS, not duplicated in Rust.
+Bun root workspaces include the existing Host/mobile/Studio/HQ modules that actually define package manifests, plus \`packages/tierflow\`, \`packages/protocol-ts\`, \`packages/view-adapters\`. **Do not invent manifests for every folder until their runtime import graph has been inventoried.** One supported package/lockfile owner, no competing global npm/pnpm installs.
 
-## Preserve source paths for a reason
+## Logical capability spaces, not capability implementations
 
-If current Tauri code expects apps/vivim-host/server.mjs and current phone code expects apps/mobile-relay assets, copying those path trees into new apps/desktop or modules/phone folders forces rewrites of imports, process spawn logic, packaging and tests before we have any user value.
+Every capability space is generated from **in-repo source owners**, e.g. Host action catalog, HQ semantic registry, installed HQKG engine slots, TierFlow renderer contracts and validated Labs contributions. Do not write another executable registry or new graph store.
 
-Proposal 5 therefore **relocates the whole verified application as a connected source subtree**, quarantines generated/personal data, and changes only required trust and interop seams. Source-level reorganization becomes a measured, later optimization behind stable capabilities.
+A capability entry contains:
+\`id, sourceOwner, implementationPath, inputSchema, outputSchema, effectClass, requiredSourceScope, version, runtimeHealth, sourceEvidence, UIProjection, tests, betaStatus, configRef, deprecation\`.
 
-**Import only currently live subtrees and their dependency closures.** Do not drag all old developer tools/docs/secrets into ARBOR. Use source graph/callsite audits and existing tests to choose dependency closure.
+Statuses remain distinct: \`documented\`, \`source_present\`, \`build_verified\`, \`runtime_wired\`, \`device_accepted\`, \`available_now\`, \`unavailable\`, \`deferred\`.
 
-## Capability spaces: organization without moving all code
+**Module organization is the future-proof seam.** Current code can remain at old internal paths while a module manifest points to its in-repo implementation. Future Rust replacements need only satisfy the unchanged contract and pass parity. This avoids a second mass refactor.
 
-Each capability space initially contains a small descriptor pointing to existing source code, not a duplicate implementation:
+## Internal and external boundary policy
 
-~~~yaml
-schema: arbor.capability-space/0
-id: host.status
-source_owner: host-control
-source_repo: vivim-web-harness
-source_path: apps/vivim-host/control/action-catalog.v1.json
-original_action_id: vivim.status.show
-runtime_binding: apps/vivim-host/control/dispatcher.mjs
-state: source_wired
-platforms: [desktop, paired-pwa]
-effect: none
-semantic_schema_ref: contracts/schema/host-status
-projection_ref: adapters/tierflow/host-status
-beta_eligibility: verify_runtime
-~~~
+**Forbidden product wiring:**
+- cross-repo \`../repos-hq\`, \`../tierflow\`, \`../vivim-labs\`, \`../vivim-web-harness\`, Git submodule dependency or \`git+ssh\` direct runtime source import;
+- shelling out to a donor HQ CLI binary or talking to a donor development server;
+- dependency on donor source data folders or Windows-specific development paths;
+- separate TierFlow runtime service or HQ indexer external to ARBOR;
+- duplicate Host effect journal or duplicated authoritative graph storage.
 
-This is illustrative; the real descriptor should be **generated from source-owned catalog** and augmented only with non-authoritative presentation/deployment metadata. Avoid hand-editing a second action catalog.
+**Allowed external resources:**
+- external signed-in web application websites, the user's browser and actual local file/project repos as user-requested data sources;
+- Windows OS functionality/installed WebView2/Chrome according to a tested installation contract;
+- normal locked package dependencies resolved during CI/build. The installed beta must not need source checkouts or unbundled developer package managers.
 
-A capability space can have an adapter, a view, a test, and a source-verified configuration—but it does **not** own a new DB, service, graph, agent, command router or privilege tier.
+## Critical acceptance test
 
-## Deployment topology for beta
+Build and install ARBOR **after renaming/removing access to every donor checkout** (and with old donor background processes stopped), then test local status, HQ source indexing of a test project, native graph query, TierFlow view, signed-in Chrome conversation, device pairing and Host read/effect receipt. The user must not need to know which donor repo each implementation came from.
 
-~~~text
-Desktop (Tauri/WebView2)
-  ├── local browser edit/render (immediate)
-  ├── Rust HQKG + Node 0 read-only core (in one resident Tauri app)
-  ├── current JS Host child (one World/effects/approval/receipt writer)
-  └── current Studio/Chrome signed-in browser adapter
-
-Paired PWA
-  └── existing authenticated direct-phone channel → same JS Host + native bridge
-
-Development only
-  └── repos-hq indexing/CLI/wiki, exporting approved source snapshots
-~~~
-
-At beta, there may be **two processes in the installed runtime** (native Tauri/Host and current JS Host), plus Chrome. They are one logical product because commands, source refs and actual effects have one agreed source owner, not because language/process boundaries have been erased.
-
-## Why this minimizes integration effort
-
-- Preserve tested relative imports and bootstrap paths.
-- Keep one real existing effect writer and signed-in browser system.
-- Import native graph once instead of rewriting Rust algorithms or creating a new graph service.
-- Add **generated protocol/adapter bridges** rather than reimplementing command semantics and UI first.
-- Ship one PWA and desktop app using existing working views.
-- Defer physical file relocation until the app is stable.
-- Run current donor test suites unchanged first, then add few high-value cross-domain integration tests.
-- Read HQ through explicit exports; no developer indexing database installed in end-user build.
-- Make every limitation observable, so missing Labs features cannot silently block basic beta.
-
-## Future transformation path without another master migration
-
-After beta, a capability can move from JS to Rust, from old Host UI to TierFlow, or from bridge to native read port **without changing its ID, contract, source ownership, verification semantics, or user configurations**.
-
-That is the future-proofing guarantee this scaffold seeks. It is a substitution contract, not a guarantee that any implementation never changes again.
+**Status:** exact design only. No claimed source imports or passing tests.
