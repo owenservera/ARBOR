@@ -1,0 +1,91 @@
+name: ARBOR HVI native synthetic tooling checks
+
+# This job NEVER resolves real user/donor repositories. Source fixtures used
+# by the test suite are invented in-tree Git objects and injected adapters.
+on:
+  push:
+    branches:
+      - integrate/p5-hq-version-intelligence-r001
+    paths:
+      - 'hq/version-intelligence/**'
+      - 'hq/catalogue-identity/**'
+      - 'contracts/hq-version-intelligence/**'
+      - 'tests/hq-version-intelligence/**'
+      - 'apps/vivim-host/control/hvi-capability.mjs'
+      - 'apps/vivim-host/test/hvi-capability.test.mjs'
+      - 'packages/tierflow/**/hvi-inspector*'
+      - '.github/workflows/hvi-native-synthetic.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'hq/version-intelligence/**'
+      - 'hq/catalogue-identity/**'
+      - 'contracts/hq-version-intelligence/**'
+      - 'tests/hq-version-intelligence/**'
+      - 'apps/vivim-host/control/hvi-capability.mjs'
+      - 'apps/vivim-host/test/hvi-capability.test.mjs'
+      - 'packages/tierflow/**/hvi-inspector*'
+      - '.github/workflows/hvi-native-synthetic.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hvi-synthetic-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  source-only-synthetic:
+    name: Node24 HVI synthetic fixtures (no actual donor scans)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CI: 'true'
+      HVI_NO_REAL_CORPUS: '1'
+    steps:
+      - name: Checkout approved candidate source only
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Record toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --version
+          npm --version
+          git rev-parse HEAD
+      - name: Install pinned schema validator for HVI test package
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --prefix tests/hq-version-intelligence --ignore-scripts --no-audit --no-fund --no-save --package-lock=false ajv@8.17.1
+      - name: HVI G1/G2 and negative schema suites - invented fixtures only
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test \
+            tests/hq-version-intelligence/g1-v2-schema.test.mjs \
+            tests/hq-version-intelligence/git-edge-negative-gates.test.mjs \
+            tests/hq-version-intelligence/hvi-contract-qa.test.mjs \
+            tests/hq-version-intelligence/integrated-nway.test.mjs \
+            tests/hq-version-intelligence/schema-negative-gates.test.mjs \
+            tests/hq-version-intelligence/g2-host-ui.test.mjs
+      - name: Host native read port (synthetic denied/revoked)
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test apps/vivim-host/test/hvi-capability.test.mjs
+      - name: TierFlow inert inspector (no publisher effects)
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --experimental-strip-types --test packages/tierflow/tests/hvi-inspector.test.mjs
+
+# Passing this CI workflow proves ONLY synthetic-source checks. G1/G2 still
+# require independent review and live canonical Host grant/publisher gates.
