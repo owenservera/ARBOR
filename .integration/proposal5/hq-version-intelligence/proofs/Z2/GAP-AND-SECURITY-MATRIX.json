@@ -1,0 +1,107 @@
+{
+  "schema": "arbor.hvi.z2.gap-and-security-matrix/1",
+  "decision": "REPAIR_REQUIRED",
+  "workMode": "REMOTE_DEV_CONTINUATION_ALLOWED_BY_W2_WAIVER_NOT_RELEASE",
+  "sourceHeads": {
+    "G1": "69447c09f420310aa84c24a1908dede91c963ec8",
+    "H": "d24daa9966abb222cd25210f41dcbb4758aa1209",
+    "U": "5836e9c9f5ba3bee36dbe6896ebfd22364b4c450",
+    "mainObserved": "3d45fbf1c3963e4834a5e51ee7f6e63f3a0da298",
+    "acceptedG1Main": null,
+    "ownerWaiver": "bbe7e4896eea02bcdec6f8fedb66eab885250161"
+  },
+  "findings": [
+    {
+      "priority": "P0",
+      "code": "G1_NOT_ACCEPTED",
+      "owner": "G1/CI",
+      "evidence": "G1 main accepted SHA null. Waiver bbe7e489 only authorizes W2 development.",
+      "repair": "Run actual Node24/AJV synthetic tests, review G1 and accept via normal PR; no direct main write.",
+      "verifiedRuntime": false
+    },
+    {
+      "priority": "P0",
+      "code": "HOST_NATIVE_DISPATCH_DISABLED",
+      "owner": "H/G2",
+      "evidence": "H catalog v7 action versions.compare.pinned is enforcement_missing and has null executor. H read port is not installed into canonical live Host dispatch.",
+      "repair": "Implement admitted typed Host NL path and real grant checks without a second dispatcher; keep remote path off until tested.",
+      "verifiedRuntime": false
+    },
+    {
+      "priority": "P0",
+      "code": "LIVE_SOURCE_GRANT_MISSING",
+      "owner": "Host security",
+      "evidence": "H createHviLocalOwnerGate verifies existing owner token/UI session but verifyDevelopmentSourceGrant remains an injected callback, no attested production owner.",
+      "repair": "Use canonical revocable actor/session/repository development grant, exact allowlist; recheck every pin/page/comparison/report. Prove revoke and expiry.",
+      "verifiedRuntime": false
+    },
+    {
+      "priority": "P0",
+      "code": "H_U_REPORT_CONTRACT_MISMATCH",
+      "owner": "H/G2",
+      "evidence": "H returns vivim.host.hvi-safe-report/1 summary+digest; U accepts arbor.hvi.adapter.comparison-report/1 containing originalComparison, coverage, sourceDeltas, targetPinId.",
+      "repair": "Add one explicitly authorized sanitized detailed inspector DTO derived from G1, preserve uncertainty/digest and bound to current session/grants and publisher revision. Synthetic end-to-end H→U tests.",
+      "verifiedRuntime": false
+    },
+    {
+      "priority": "P1",
+      "code": "PUBLISHER_REVISION_UNATTESTED",
+      "owner": "U/G2",
+      "evidence": "U renderer calls canonical validateUiDocument/renderUiDocument, but expectedRevision and currentRevision are caller-supplied; no actual UiCore/UiStore mount.",
+      "repair": "Read current revision from canonical publisher, enforce CAS and revoke before render, retain feature-off and use existing UiCore only.",
+      "verifiedRuntime": false
+    },
+    {
+      "priority": "P1",
+      "code": "U_TEST_ASSERTION_SUSPECT",
+      "owner": "U",
+      "evidence": "U test requires root document.nodes[0].children.length>4; normal 3-pin makeDocument grouping creates a section node with fewer direct root children.",
+      "repair": "Correct assertion to inspect grouped descendants; run full Node TS-strip suite, record real exits.",
+      "verifiedRuntime": false
+    },
+    {
+      "priority": "P0",
+      "code": "REMOTE_CI_STARTUP_FAILURE",
+      "owner": "CI owner",
+      "evidence": "G1 runs 43307067218/43307026813, H run 43310564183, U run 43311616409 all startup_failure; H run has zero jobs.",
+      "repair": "Resolve GitHub Actions startup/runner/permissions/quota with GitHub UI or alternate owner-approved remote runner; execute synthetic-only jobs with real exits.",
+      "verifiedRuntime": false
+    },
+    {
+      "priority": "P0",
+      "code": "EXECUTABLE_EVIDENCE_UNRUN",
+      "owner": "G1/H/U/G2 QA",
+      "evidence": "H/U/G1 Node suites, AJV Draft 2020-12, offline replay, live grant and end-to-end UI have no command exit receipts.",
+      "repair": "Run on remote checked-out Node24/Bun environment, record command, OS, version, exact SHA, log and exit; no real donor comparisons.",
+      "verifiedRuntime": false
+    },
+    {
+      "priority": "P2",
+      "code": "HISTORICAL_361_PRESERVED",
+      "owner": "S0/D/F",
+      "evidence": "Fixed 361 original-path absent rows preserved as historical test fixture; no fresh semantic migration comparison performed.",
+      "repair": "Verify fixture mechanically after CI restored; X real audit intentionally deferred and not a prerequisite.",
+      "verifiedRuntime": false
+    },
+    {
+      "priority": "P1",
+      "code": "NO_DUPLICATE_PUBLISHER_SOURCE_REVIEW",
+      "owner": "Z2/G2",
+      "evidence": "H/U changed source showed no new grant DB, browser sender, scheduler, scan daemon or UiCore. Static inspection only.",
+      "repair": "Review combined G2 diff and execute negative tests; do not treat missing duplicate as runtime proof.",
+      "verifiedRuntime": false
+    },
+    {
+      "priority": "P0",
+      "code": "BETA_GATES_BLOCKED",
+      "owner": "Beta owners",
+      "evidence": "integration/beta-gates.json remains BLOCKED_NOT_BETA; no locks/runtime/device acceptance; no HVI exception.",
+      "repair": "Leave beta/device gates unchanged; separate physical tests only when available.",
+      "verifiedRuntime": false
+    }
+  ],
+  "noSecondPublisherObservedInSource": true,
+  "productionGrantsVerified": false,
+  "toolingInstalledNotVerified": true,
+  "betaAccepted": false
+}
