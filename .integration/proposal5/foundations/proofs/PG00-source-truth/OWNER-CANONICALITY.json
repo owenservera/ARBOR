@@ -1,0 +1,336 @@
+{
+  "schema": "arbor.proposal5.fa-pg00-ownership/1",
+  "disposition": "PREPARED_NOT_PROMOTED",
+  "claims": "Domain-specific canonical owners on frozen isolated source; not proof of integrated runtime or exactly one running process",
+  "frozenPins": {
+    "A": "dda546a11294920d6521a0f64ab7ee62ec993c70",
+    "B": "78a5105a9c1f1880d658f350e130b1e2632d3532",
+    "C": "f950b91685927f37b48d020433aa8d2d3c271419",
+    "D": "ad55fe28c2c331841675f308f9199ee4c2add86a",
+    "E": "1a5cf26ce14ebce4e31d9a4373060ace61852645",
+    "F": "be458f3c4cdb7eb38d47b1de2a00d441b7cdc704"
+  },
+  "graph": [
+    {
+      "key": "effect-authority",
+      "owner": "B",
+      "canonical": [
+        "apps/vivim-host/control/action-catalog.v1.json",
+        "apps/vivim-host/control/dispatcher.mjs",
+        "apps/vivim-host/control/journal.mjs"
+      ],
+      "role": "Only approved Host action + typed plan + effect claim/receipt writer",
+      "competitors": [
+        {
+          "lane": "D",
+          "path": "hq/lib/action-registry.mjs",
+          "class": "PROJECTION",
+          "reason": "HQ development actions, not Host catalog"
+        },
+        {
+          "lane": "E",
+          "path": "apps/mobile-relay/control-phone.mjs",
+          "class": "ADAPTER",
+          "reason": "Phone submits to Host"
+        },
+        {
+          "lane": "A",
+          "path": "core/programmability/src/lib.rs",
+          "class": "ADAPTER",
+          "reason": "Pure program never grants or effects"
+        },
+        {
+          "lane": "C",
+          "path": "studio/src/recipes/catalog.mjs",
+          "class": "PROJECTION",
+          "reason": "Declarations; provider-send is a distinct Studio-owned effect domain"
+        }
+      ],
+      "acceptance": "SOURCE_PRESENT; NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "key": "native-graph-and-engine",
+      "owner": "A",
+      "canonical": [
+        "native/hqkg/src/engine.rs",
+        "native/hqkg/src/typed_dag.rs",
+        "native/hqkg/src/scoped_graph.rs",
+        "native/hqkg/src/durable_dag.rs"
+      ],
+      "role": "One existing HQKG graph/engine, pure bounded transforms and graph journal",
+      "competitors": [
+        {
+          "lane": "N0",
+          "path": ".integration/proposal5/phase2/pre-g/N0-io/IO-CONTRACT.json",
+          "class": "ADAPTER",
+          "reason": "proposed event ABI not second graph"
+        },
+        {
+          "lane": "D",
+          "path": "hq/lib/graph.mjs",
+          "class": "PROJECTION",
+          "reason": "development index dependency view distinct from native graph store"
+        },
+        {
+          "lane": "Labs",
+          "path": "personal-knowledge-lifecycle/runtime/src/t0-core.mjs",
+          "class": "CONSOLIDATE_PENDING",
+          "reason": "injected Host store only, no new graph"
+        }
+      ],
+      "acceptance": "SOURCE_PRESENT; owner-authenticated input and native tests UNRUN"
+    },
+    {
+      "key": "dev-wiki-semantic-writer",
+      "owner": "D",
+      "canonical": [
+        "hq/lib/indexer.mjs",
+        "hq/lib/wiki.mjs",
+        "hq/lib/wiki-program.mjs",
+        "hq/lib/semantic-registry.mjs",
+        "hq/lib/annotation-v2.mjs"
+      ],
+      "role": "One dev index, one generated wiki writer, one owner-controlled wiki config, one semantic ID registry",
+      "competitors": [
+        {
+          "lane": "S",
+          "path": ".integration/proposal5/phase2/pre-g/S-semantic/inert-adapter.mjs",
+          "class": "ADAPTER",
+          "reason": "inert read-time source compiler input gate"
+        },
+        {
+          "lane": "W",
+          "path": ".integration/proposal5/phase2/pre-g/W-autowiki/mirror.mjs",
+          "class": "PROJECTION",
+          "reason": "screen read projection, no writer"
+        },
+        {
+          "lane": "ROCK",
+          "path": "research/rock-core-storage/storage-policy.mjs",
+          "class": "CONSOLIDATE_PENDING",
+          "reason": "bounds research, not DB/writer"
+        },
+        {
+          "lane": "B",
+          "path": "apps/vivim-host/bootstrap/runtime.mjs",
+          "class": "CANONICAL",
+          "reason": "distinct private Host World bootstrap store; must not flow into dev wiki"
+        }
+      ],
+      "acceptance": "SOURCE_PRESENT; real source-read/symlink/revoke tests UNRUN"
+    },
+    {
+      "key": "studio-provider-sender",
+      "owner": "C",
+      "canonical": [
+        "studio/src/capture/conversation-runtime.mjs",
+        "studio/src/capture/conversation-browser-adapter.mjs",
+        "studio/src/capture/thread-turn-journal.mjs",
+        "studio/src/chrome/launch.mjs"
+      ],
+      "role": "One signed-in Chrome owner, exact target typing/send with unknown-delivery journal",
+      "competitors": [
+        {
+          "lane": "C",
+          "path": "studio/src/recipes/service.mjs",
+          "class": "ADAPTER",
+          "reason": "routes through existing conversation tools"
+        },
+        {
+          "lane": "C",
+          "path": "studio/src/studio/conversation-tools.mjs",
+          "class": "ADAPTER",
+          "reason": "tool registry delegates runtime.submit"
+        },
+        {
+          "lane": "E",
+          "path": "apps/mobile-relay/transport.mjs",
+          "class": "ADAPTER",
+          "reason": "PWA transport not direct provider actor"
+        },
+        {
+          "lane": "Labs",
+          "path": "personal-knowledge-lifecycle/runtime/src/t0-core.mjs",
+          "class": "CONSOLIDATE_PENDING",
+          "reason": "no Chrome driver"
+        }
+      ],
+      "acceptance": "SOURCE_PRESENT; real signed-in send and uncertain journal test UNRUN"
+    },
+    {
+      "key": "tierflow-ui-publisher",
+      "owner": "E",
+      "canonical": [
+        "packages/tierflow/src/visual-runtime/revisions/wave3-atomic-replay.ts",
+        "packages/tierflow/src/visual-runtime/revisions/port.ts",
+        "packages/tierflow/src/ui/store.ts"
+      ],
+      "role": "Existing single world-scoped UiStore draft/revision/publish/rollback; rendering is inert",
+      "competitors": [
+        {
+          "lane": "E",
+          "path": "packages/tierflow/src/visual-runtime/revisions/fixture-store.ts",
+          "class": "PROJECTION",
+          "reason": "fixture store not durable production owner"
+        },
+        {
+          "lane": "E",
+          "path": "apps/mobile-relay/generative-ui/compiler.mjs",
+          "class": "ADAPTER",
+          "reason": "preview only"
+        },
+        {
+          "lane": "V",
+          "path": ".integration/proposal5/phase2/pre-g/V-visual/PROTOTYPE/projection.mjs",
+          "class": "PROJECTION",
+          "reason": "synthetic candidate snapshot only"
+        }
+      ],
+      "acceptance": "SOURCE_PRESENT at adapter; real publisher wiring/physical UI validation UNRUN"
+    },
+    {
+      "key": "pwa-phone-and-enrollment",
+      "owner": "B+E",
+      "canonical": [
+        "apps/vivim-host/direct-phone.mjs",
+        "apps/vivim-host/apk/enrollment.mjs",
+        "apps/mobile-relay/app.js",
+        "apps/mobile-relay/browser-device-key.mjs"
+      ],
+      "role": "B serves HTTPS phone and owns grants/session; E UI and browser signer, PWA only",
+      "competitors": [
+        {
+          "lane": "E",
+          "path": "apps/mobile-relay/sw.js",
+          "class": "ADAPTER",
+          "reason": "offline read-only shell, never effect replay"
+        },
+        {
+          "lane": "B",
+          "path": "apps/vivim-host/apk/registry.mjs",
+          "class": "HISTORICAL",
+          "reason": "APK-named existing Host grant support retained; APK release deferred"
+        }
+      ],
+      "acceptance": "BLOCKED: browser-device-key.mjs missing B allowlist + active session replay challenge"
+    },
+    {
+      "key": "end-user-scheduled-effects",
+      "owner": "B",
+      "canonical": [
+        "apps/vivim-host/control/dispatcher.mjs",
+        "apps/vivim-host/control/journal.mjs"
+      ],
+      "role": "Any future due event may propose action but ONLY Host can approve/claim effect; actual end-user scheduler implementation not established",
+      "competitors": [
+        {
+          "lane": "A",
+          "path": "native/hqkg/src/engine.rs",
+          "class": "ADAPTER",
+          "reason": "bounded in-process task scheduler not owner scheduled action"
+        },
+        {
+          "lane": "D",
+          "path": "hq/lib/automation.mjs",
+          "class": "PROJECTION",
+          "reason": "source watch/Git hooks"
+        },
+        {
+          "lane": "D",
+          "path": "hq/lib/team-automation.mjs",
+          "class": "PROJECTION",
+          "reason": "ZCode job contract not user action"
+        },
+        {
+          "lane": "D",
+          "path": "hq/lib/mission-intelligence.mjs",
+          "class": "PROJECTION",
+          "reason": "read-only mission progress"
+        }
+      ],
+      "acceptance": "BLOCKED: real user scheduler path and crash-once proof not established"
+    },
+    {
+      "key": "interop-source-truth",
+      "owner": "F",
+      "canonical": [
+        "contracts/interop/v1/types.rs",
+        "contracts/interop/v1/types.ts",
+        "contracts/interop/v1/protocol.schema.json",
+        "contracts/interop/v1/validate.mjs"
+      ],
+      "role": "Read-only type mirrors and negative conformance, never mint actor or permission",
+      "competitors": [
+        {
+          "lane": "N0",
+          "path": ".integration/proposal5/phase2/pre-g/N0-io/IO-CONTRACT.json",
+          "class": "ADAPTER",
+          "reason": "proposed alternative encoding to be diffed before adoption"
+        }
+      ],
+      "acceptance": "SOURCE_PRESENT; integrated ABI/schema runtime tests UNRUN"
+    }
+  ],
+  "edges": [
+    [
+      "E:typed-command",
+      "B:original-text-Host-plan",
+      "CANDIDATE_ONLY"
+    ],
+    [
+      "D:source-comments",
+      "D:semantic-registry",
+      "READ_ONLY"
+    ],
+    [
+      "D:semantic-registry",
+      "B:Host-catalog",
+      "NO_AUTHORITY_TRANSFER"
+    ],
+    [
+      "C:recipes",
+      "C:conversation-runtime",
+      "DELEGATED_PROVIDER_SEND"
+    ],
+    [
+      "E:UiRevisionPort",
+      "E:existing-UiStore",
+      "DELEGATED_UI_PUBLISH"
+    ],
+    [
+      "A:pure-engine",
+      "B:effect-journal",
+      "NO_DIRECT_EFFECT"
+    ],
+    [
+      "A:graph-namespace",
+      "D:dev-HQ-index",
+      "DIFFERENT_DURABILITY_DOMAINS"
+    ],
+    [
+      "D:wiki-program",
+      "D:wiki-generator",
+      "CONFIG_NOT_EFFECT"
+    ],
+    [
+      "B:enrollment",
+      "E:pwa",
+      "B_OWNS_GRANTS"
+    ],
+    [
+      "D:HQ-automation",
+      "B:Host-effect",
+      "NO_USER_SCHEDULER_AUTHORITY"
+    ]
+  ],
+  "unresolved": [
+    "No G merged tree",
+    "P0 fixed-loopback/native Bearer impersonation",
+    "P0 PWA static signer absent from B map",
+    "P0 active grant/session replay risk",
+    "No verified native ingress actor identity",
+    "No real end-user scheduler and crash-once receipt path",
+    "No fully verified TierFlow production UiStore publish entry/call graph",
+    "No full source/secret/license/no-donor proof"
+  ]
+}

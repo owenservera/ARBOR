@@ -1,0 +1,149 @@
+{
+  "schema": "arbor.proposal5.fa-worker-run/1",
+  "lane": "FA-PG00",
+  "date": "2026-11-12",
+  "branch": "work/p5-fa-pg00-source-truth-r001",
+  "base": {
+    "ref": "work/p5-foundational-architecture-prep-r001",
+    "commit": "80c29fbc0d45afbce0fadde5388a8f912cdd2762",
+    "tree": "f6d4d621fab456f99eaa2dbe14bcba750e284b72"
+  },
+  "head": "RESOLVE_IMMUTABLE_GIT_REF_AFTER_COMMIT__SELF_REFERENCE_NOT_POSSIBLE",
+  "writePrefix": ".integration/proposal5/foundations/proofs/PG00-source-truth/",
+  "changedPaths": [
+    ".integration/proposal5/foundations/proofs/PG00-source-truth/README.md",
+    ".integration/proposal5/foundations/proofs/PG00-source-truth/SOURCE-DELTA.json",
+    ".integration/proposal5/foundations/proofs/PG00-source-truth/OWNER-CANONICALITY.json",
+    ".integration/proposal5/foundations/proofs/PG00-source-truth/CAPABILITY-CROSSWALK.json",
+    ".integration/proposal5/foundations/proofs/PG00-source-truth/PROOF-PLAN.md",
+    ".integration/proposal5/foundations/proofs/PG00-source-truth/NEGATIVE-ACCEPTANCE.md",
+    ".integration/proposal5/foundations/proofs/PG00-source-truth/OWNER-HANDOFF.md",
+    ".integration/proposal5/foundations/proofs/PG00-source-truth/RUN-LEDGER.json",
+    ".integration/proposal5/foundations/proofs/PG00-source-truth/negative-contracts.test.mjs"
+  ],
+  "scopeRule": "ALL changes must start with writePrefix; verify with GitHub compare base..head",
+  "sourceEvidence": {
+    "frozenPins": {
+      "A": "dda546a11294920d6521a0f64ab7ee62ec993c70",
+      "B": "78a5105a9c1f1880d658f350e130b1e2632d3532",
+      "C": "f950b91685927f37b48d020433aa8d2d3c271419",
+      "D": "ad55fe28c2c331841675f308f9199ee4c2add86a",
+      "E": "1a5cf26ce14ebce4e31d9a4373060ace61852645",
+      "F": "be458f3c4cdb7eb38d47b1de2a00d441b7cdc704",
+      "Labs": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be",
+      "T": "c807010e52b4a9f82ea9578a979befd38f74cb31",
+      "H": "3e6954d21bd70eeccc6e00a310bcb337c3164f50",
+      "S": "d7e59a389a6ec5278595e317dfa904a801783c5b",
+      "V": "7ad5b3c49aefdf1fdd8b212e5b7eea0e7b92338e",
+      "W": "827d21d1c33aa8597c600b45179452abc35c7af9",
+      "N0": "cde3b6e5521d5b17215ab10088cb8090f8b87e6f"
+    },
+    "atlasSha": "38fcb7043623e5ad751934441f790ee209ca6097",
+    "hostCatalogSha": "c423d5933c28ca9f534028aeaffd7929f767c269",
+    "uniqueSourceRecords": 83,
+    "directInspectedRecordCount": 76,
+    "gBranch": "NOT_FOUND_404",
+    "gAcceptance": "UNRUN_NOT_CONFIRMED",
+    "scopeComplete": false
+  },
+  "tests": [
+    {
+      "check": "GitHub branch HEAD equality A-F, report/file inspections",
+      "kind": "API_SOURCE_INSPECTION",
+      "status": "INSPECTED_NOT_EXECUTED",
+      "exitCode": null
+    },
+    {
+      "check": "GitHub source blob/path and catalog JSON reads",
+      "kind": "API_SOURCE_INSPECTION",
+      "status": "INSPECTED_NOT_EXECUTED",
+      "exitCode": null
+    },
+    {
+      "check": "PG00 negative-contracts.test.mjs",
+      "command": "node --test .integration/proposal5/foundations/proofs/PG00-source-truth/negative-contracts.test.mjs",
+      "status": "UNRUN",
+      "exitCode": null
+    },
+    {
+      "check": "Node Host and HQ regression",
+      "status": "UNRUN",
+      "exitCode": null
+    },
+    {
+      "check": "Bun UI/workspace tests",
+      "status": "UNRUN",
+      "exitCode": null
+    },
+    {
+      "check": "Cargo Rust/Tauri tests",
+      "status": "UNRUN",
+      "exitCode": null
+    },
+    {
+      "check": "PWA Android physical HTTPS, enrollment/replay",
+      "status": "UNRUN",
+      "exitCode": null
+    },
+    {
+      "check": "Studio signed-in Chrome send/unknown replay",
+      "status": "UNRUN",
+      "exitCode": null
+    },
+    {
+      "check": "Windows installer and OS process boundary",
+      "status": "UNRUN",
+      "exitCode": null
+    },
+    {
+      "check": "No-donor-root dependency closure/secret/license audit",
+      "status": "UNRUN",
+      "exitCode": null
+    },
+    {
+      "check": "Real user data ingestion, Host effects",
+      "status": "NOT_PERFORMED",
+      "exitCode": null
+    }
+  ],
+  "risks": [
+    {
+      "id": "P0-NATIVE-HOST",
+      "classification": "BLOCKED",
+      "detail": "Tauri trusts unverified fixed loopback before protected owner bearer POST"
+    },
+    {
+      "id": "P0-PWA-STATIC",
+      "classification": "BLOCKED",
+      "detail": "B direct-phone allowlist lacks E browser-device-key.mjs"
+    },
+    {
+      "id": "P0-PWA-REPLAY",
+      "classification": "BLOCKED",
+      "detail": "active paired grant/session bearer per-request proof not verified"
+    },
+    {
+      "id": "G-NOT-LANDED",
+      "classification": "BLOCKED",
+      "detail": "G branch and G report not found, root workspaces absent on foundation snapshot"
+    },
+    {
+      "id": "W-STAGING-DRIFT",
+      "classification": "RECHECK",
+      "detail": "W-autowiki advanced from atlas SHA, source repinned read-only"
+    },
+    {
+      "id": "PARTIAL-COVERAGE",
+      "classification": "OPEN",
+      "detail": "non-exhaustive source/import/handler/scheduler and production publisher closure"
+    }
+  ],
+  "result": "PREPARED_NOT_PROMOTED",
+  "permissions": {
+    "merged": false,
+    "mainChanged": false,
+    "otherLanesChanged": false,
+    "actionsExecuted": false,
+    "liveDataUsed": false
+  }
+}
