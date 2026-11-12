@@ -4,7 +4,7 @@
  * No Git, filesystem, network, Host or effect access here.
  */
 import { manifestDigestOf } from '../sources/snapshots.mjs';
-import { MANIFEST_SCHEMA as A_SCHEMA, SOURCE_SCHEMA as A_PIN_SCHEMA, safePath, sensitivePath } from '../sources/common.mjs';
+import { MANIFEST_SCHEMA as A_SCHEMA, SOURCE_SCHEMA as A_PIN_SCHEMA, safePath, sensitivePath, canonicalRepo, digest } from '../sources/common.mjs';
 import { MANIFEST_SCHEMA as C_SCHEMA, digestManifest } from '../compare/index.mjs';
 
 export const SOURCE_BRIDGE_SCHEMA = 'arbor.hvi.adapter.source-manifest/1';
@@ -23,6 +23,11 @@ export function bridgeSourceManifest(native) {
       !native.pin || native.pin.schema !== A_PIN_SCHEMA) reject('INCOMPLETE_SCAN', 'native_manifest_required');
   const p = native.pin;
   if (p.scope !== 'development' || p.provider !== 'github') reject('SOURCE_UNAUTHORIZED', 'development_only');
+  if (canonicalRepo(p.repoIdentity, p.provider) !== p.repoIdentity) reject('ID_CONFLICT', 'noncanonical_repo');
+  safePath(p.subPath || '', { allowEmpty: true });
+  const expectedPinId = digest({ provider: p.provider, repoIdentity: p.repoIdentity,
+    commitSha: p.resolvedCommitSha, subPath: p.subPath || '' });
+  if (p.pinId !== expectedPinId) reject('ID_CONFLICT', 'pin_identity_not_derived_from_revision');
   if (!sha40(p.resolvedCommitSha) || !sha40(p.rootTreeSha) || !sha64(p.pinId) ||
       !sha64(native.manifestDigest)) reject('PIN_NOT_FOUND', 'native_sha');
   if (native.pinId !== p.pinId || native.repoIdentity !== p.repoIdentity ||
