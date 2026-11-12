@@ -515,10 +515,11 @@
       "id": "UI-021",
       "requirement": "Studio provider UI and same-thread conversation",
       "observedArborPaths": [
-        "studio/src/studio/ui/{index,chat,platform}.html",
-        "studio/src/studio/chat-channel.mjs"
+        "studio/src/ (269/269 exact donor blobs)",
+        "studio/test/ (0/305 donor blobs)",
+        "studio/src/studio/ui/"
       ],
-      "observedStatus": "SOURCE_PARTIAL_SELECTIVE",
+      "observedStatus": "SOURCE_PRESENT_TESTS_NOT_IMPORTED",
       "evidenceClass": "SOURCE_AND_PROPOSAL",
       "priority": "P0",
       "ownerLanes": [
@@ -530,7 +531,7 @@
         "B02",
         "B03"
       ],
-      "nextProof": "Signed-in Chrome real-provider send-once and exact-thread receipts",
+      "nextProof": "Restore and review studio/test unit tests with independent owner; run them under Node24 and then perform signed-in Chrome same-thread proof",
       "deviceAccepted": false,
       "runtimeAccepted": false,
       "releaseReady": false
@@ -810,6 +811,32 @@
       "deviceAccepted": false,
       "runtimeAccepted": false,
       "releaseReady": false
+    },
+    {
+      "id": "UI-033",
+      "requirement": "Studio original test dependency closure",
+      "observedArborPaths": [
+        "studio/test/ (0/305 donor files present)",
+        "studio/package.json test script expects test/unit/**/*.test.mjs",
+        "root package.json test:studio references same omitted suite"
+      ],
+      "observedStatus": "NOT_IMPORTED_TEST_SUITE",
+      "evidenceClass": "GIT_TREE_AND_MANIFEST",
+      "priority": "P0",
+      "ownerLanes": [
+        "C",
+        "G",
+        "F"
+      ],
+      "betaJourneyIds": [
+        "B02",
+        "B03",
+        "B09"
+      ],
+      "nextProof": "Selectively restore source-safe Studio tests, verify fixtures, execute under Node24 and reconcile root scripts; no unverified test pass.",
+      "deviceAccepted": false,
+      "runtimeAccepted": false,
+      "releaseReady": false
     }
   ],
   "requiredGateStatus": "NO_GO_UNTIL_RUNTIME_SECURITY_DEVICE_AND_BUILD_PROOFS",
@@ -823,5 +850,8 @@
     "RealSignedInProvider": "UNRUN",
     "NoDonorBuild": "UNRUN",
     "VisualRegression": "UNRUN"
-  }
+  },
+  "caveats": [
+    "Studio main runtime source under studio/src/ is 269/269 blob-identical; the 579 omitted donor files are predominantly studio/test (305), docs (166), android (87), and .opencode (11), not 579 missing runtime modules."
+  ]
 }
