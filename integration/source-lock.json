@@ -70,7 +70,7 @@
     "aOwnedDraftPr": 8,
     "aOwnedDraftBranch": "work/p5-w01g-r001-a-pwa-packaging-review",
     "aOwnedDraftSha": "fb5591c4f19544c6afd7dd3a2d899062f6e8bd5b",
-    "aOwnedDraftMerged": false,
+    "aOwnedDraftMerged": true,
     "originalSourceMergeUnchanged": true,
     "toolsExecutedAgainstIntegratedCheckout": false,
     "cargoLockGenerated": false,
@@ -78,6 +78,11 @@
     "noDonorAccepted": false,
     "decision": "REPAIR_REQUIRED",
     "nextWaveAcceptedSha": null,
-    "report": "integration/reports/W01-G-R001-SOURCE-CLOSURE.md"
+    "report": "integration/reports/W01-G-R001-SOURCE-CLOSURE.md",
+    "aPackagingMergeSha": "23e17145201828bfde2508ae09fbdc0fc1c70f1b",
+    "bPwaRouteMergeSha": "bed77e7e8141f71412067d20d08477600d8ea3f0",
+    "bPwaRouteChange": "STATIC_MODULE_ROUTE_ONLY",
+    "canonicalDestination": "main",
+    "mainSourceConsolidation": "PR_10_PENDING"
   }
 }
