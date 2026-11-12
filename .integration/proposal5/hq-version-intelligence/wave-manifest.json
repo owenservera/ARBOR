@@ -1,0 +1,326 @@
+{
+  "schema": "arbor.proposal5.hvi.wave-manifest/1",
+  "status": "PREPARED_NOT_EXECUTED",
+  "date": "2026-11-12",
+  "sourceBaselineSha": "370d18d92dfa463f58bd145b307b488a64746ee5",
+  "workerBaseRule": "S0 pins the post-preparation-main commit SHA; A-F each fork it; H/U/X each fork accepted G1 main",
+  "canonicalTarget": "owenservera/ARBOR:main",
+  "waveJobs": [
+    {
+      "id": "S0",
+      "title": "pin-census",
+      "phase": 0,
+      "role": "sequential",
+      "dependsOn": [],
+      "branch": "work/p5-hvi-s0-source-lock-r001",
+      "prompt": ".integration/proposal5/hq-version-intelligence/prompts/00-S0-PIN-AUDIT.md",
+      "writeScopes": [
+        ".integration/proposal5/hq-version-intelligence/proofs/S0/**"
+      ],
+      "output": [
+        "proofs/S0/"
+      ],
+      "status": "NOT_STARTED"
+    },
+    {
+      "id": "A",
+      "title": "immutable-sources",
+      "phase": 1,
+      "role": "parallel",
+      "dependsOn": [
+        "S0"
+      ],
+      "branch": "work/p5-hvi-w1-a-snapshots-r001",
+      "prompt": ".integration/proposal5/hq-version-intelligence/prompts/10-A-SNAPSHOT-SOURCES.md",
+      "writeScopes": [
+        "hq/version-intelligence/sources/**",
+        ".integration/proposal5/hq-version-intelligence/proofs/A/**"
+      ],
+      "output": [
+        "hq/version-intelligence/sources/",
+        "proofs/A/"
+      ],
+      "status": "NOT_STARTED"
+    },
+    {
+      "id": "B",
+      "title": "identity-crosswalk",
+      "phase": 1,
+      "role": "parallel",
+      "dependsOn": [
+        "S0"
+      ],
+      "branch": "work/p5-hvi-w1-b-identity-r001",
+      "prompt": ".integration/proposal5/hq-version-intelligence/prompts/10-B-IDENTITY-CROSSWALK.md",
+      "writeScopes": [
+        "hq/catalogue-identity/**",
+        "hq/version-intelligence/identity/**",
+        ".integration/proposal5/hq-version-intelligence/proofs/B/**"
+      ],
+      "output": [
+        "hq/catalogue-identity/",
+        "hq/version-intelligence/identity/",
+        "proofs/B/"
+      ],
+      "status": "NOT_STARTED"
+    },
+    {
+      "id": "C",
+      "title": "nway-comparator",
+      "phase": 1,
+      "role": "parallel",
+      "dependsOn": [
+        "S0"
+      ],
+      "branch": "work/p5-hvi-w1-c-compare-r001",
+      "prompt": ".integration/proposal5/hq-version-intelligence/prompts/10-C-NWAY-COMPARATOR.md",
+      "writeScopes": [
+        "hq/version-intelligence/compare/**",
+        ".integration/proposal5/hq-version-intelligence/proofs/C/**"
+      ],
+      "output": [
+        "hq/version-intelligence/compare/",
+        "proofs/C/"
+      ],
+      "status": "NOT_STARTED"
+    },
+    {
+      "id": "D",
+      "title": "capability-atlas",
+      "phase": 1,
+      "role": "parallel",
+      "dependsOn": [
+        "S0"
+      ],
+      "branch": "work/p5-hvi-w1-d-parity-r001",
+      "prompt": ".integration/proposal5/hq-version-intelligence/prompts/10-D-PARITY-ATLAS.md",
+      "writeScopes": [
+        "hq/version-intelligence/parity/**",
+        ".integration/proposal5/hq-version-intelligence/proofs/D/**"
+      ],
+      "output": [
+        "hq/version-intelligence/parity/",
+        "proofs/D/"
+      ],
+      "status": "NOT_STARTED"
+    },
+    {
+      "id": "E",
+      "title": "report-export",
+      "phase": 1,
+      "role": "parallel",
+      "dependsOn": [
+        "S0"
+      ],
+      "branch": "work/p5-hvi-w1-e-reports-r001",
+      "prompt": ".integration/proposal5/hq-version-intelligence/prompts/10-E-REPORT-EXPORT.md",
+      "writeScopes": [
+        "hq/version-intelligence/report/**",
+        ".integration/proposal5/hq-version-intelligence/proofs/E/**"
+      ],
+      "output": [
+        "hq/version-intelligence/report/",
+        "proofs/E/"
+      ],
+      "status": "NOT_STARTED"
+    },
+    {
+      "id": "F",
+      "title": "independent-contracts-tests",
+      "phase": 1,
+      "role": "parallel",
+      "dependsOn": [
+        "S0"
+      ],
+      "branch": "work/p5-hvi-w1-f-verify-r001",
+      "prompt": ".integration/proposal5/hq-version-intelligence/prompts/10-F-CONTRACT-QA.md",
+      "writeScopes": [
+        "contracts/hq-version-intelligence/**",
+        "tests/hq-version-intelligence/**",
+        ".integration/proposal5/hq-version-intelligence/proofs/F/**"
+      ],
+      "output": [
+        "contracts/hq-version-intelligence/",
+        "tests/hq-version-intelligence/",
+        "proofs/F/"
+      ],
+      "status": "NOT_STARTED"
+    },
+    {
+      "id": "Z1",
+      "title": "independent-convergence",
+      "phase": 2,
+      "role": "sequential",
+      "dependsOn": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F"
+      ],
+      "branch": "work/p5-hvi-w1-z-referee-r001",
+      "prompt": ".integration/proposal5/hq-version-intelligence/prompts/20-Z1-INDEPENDENT-REFEREE.md",
+      "writeScopes": [
+        ".integration/proposal5/hq-version-intelligence/proofs/Z1/**"
+      ],
+      "output": [
+        "proofs/Z1/"
+      ],
+      "status": "NOT_STARTED"
+    },
+    {
+      "id": "G1",
+      "title": "serial-source-integration",
+      "phase": 3,
+      "role": "sequential",
+      "dependsOn": [
+        "S0",
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F",
+        "Z1"
+      ],
+      "branch": "integrate/p5-hq-version-intelligence-r001",
+      "prompt": ".integration/proposal5/hq-version-intelligence/prompts/30-G1-SERIAL-INTEGRATION.md",
+      "writeScopes": [
+        "integrator-owned cross-lane reconciliation",
+        "proofs/G1/**",
+        "integration/reports/HVI-G1.md"
+      ],
+      "output": [
+        "proofs/G1/",
+        "integration/reports/HVI-G1.md"
+      ],
+      "status": "NOT_STARTED"
+    },
+    {
+      "id": "H",
+      "title": "host-authorized-read-port",
+      "phase": 4,
+      "role": "parallel",
+      "dependsOn": [
+        "G1"
+      ],
+      "branch": "work/p5-hvi-w2-h-host-r001",
+      "prompt": ".integration/proposal5/hq-version-intelligence/prompts/40-H-HOST-BINDING.md",
+      "writeScopes": [
+        "apps/vivim-host/**",
+        "hq/lib/arbor-service.mjs",
+        ".integration/proposal5/hq-version-intelligence/proofs/H/**"
+      ],
+      "output": [
+        "apps/vivim-host/",
+        "hq/lib/arbor-service.mjs",
+        "proofs/H/"
+      ],
+      "status": "NOT_STARTED"
+    },
+    {
+      "id": "U",
+      "title": "tierflow-read-only-inspector",
+      "phase": 4,
+      "role": "parallel",
+      "dependsOn": [
+        "G1"
+      ],
+      "branch": "work/p5-hvi-w2-u-inspector-r001",
+      "prompt": ".integration/proposal5/hq-version-intelligence/prompts/40-U-TIERFLOW-INSPECTOR.md",
+      "writeScopes": [
+        "packages/tierflow/**",
+        ".integration/proposal5/hq-version-intelligence/proofs/U/**"
+      ],
+      "output": [
+        "packages/tierflow/",
+        "proofs/U/"
+      ],
+      "status": "NOT_STARTED"
+    },
+    {
+      "id": "X",
+      "title": "full-pinned-repository-audit",
+      "phase": 4,
+      "role": "parallel",
+      "dependsOn": [
+        "G1"
+      ],
+      "branch": "work/p5-hvi-w2-x-source-audit-r001",
+      "prompt": ".integration/proposal5/hq-version-intelligence/prompts/40-X-REAL-REPO-AUDIT.md",
+      "writeScopes": [
+        ".integration/proposal5/hq-version-intelligence/proofs/X/**"
+      ],
+      "output": [
+        "proofs/X/"
+      ],
+      "status": "NOT_STARTED"
+    },
+    {
+      "id": "Z2",
+      "title": "post-wiring-referee",
+      "phase": 5,
+      "role": "sequential",
+      "dependsOn": [
+        "H",
+        "U",
+        "X"
+      ],
+      "branch": "work/p5-hvi-w2-z-referee-r001",
+      "prompt": ".integration/proposal5/hq-version-intelligence/prompts/50-Z2-CONVERGENCE.md",
+      "writeScopes": [
+        ".integration/proposal5/hq-version-intelligence/proofs/Z2/**"
+      ],
+      "output": [
+        "proofs/Z2/"
+      ],
+      "status": "NOT_STARTED"
+    },
+    {
+      "id": "G2",
+      "title": "serial-host-integration",
+      "phase": 6,
+      "role": "sequential",
+      "dependsOn": [
+        "H",
+        "U",
+        "X",
+        "Z2"
+      ],
+      "branch": "integrate/p5-hq-version-intelligence-r001",
+      "prompt": ".integration/proposal5/hq-version-intelligence/prompts/60-G2-SERIAL-INTEGRATION.md",
+      "writeScopes": [
+        "integrator-owned cross-lane reconciliation",
+        "proofs/G2/**",
+        "integration/reports/HVI-G2.md"
+      ],
+      "output": [
+        "proofs/G2/",
+        "integration/reports/HVI-G2.md"
+      ],
+      "status": "NOT_STARTED"
+    },
+    {
+      "id": "R",
+      "title": "self-audit-acceptance",
+      "phase": 7,
+      "role": "sequential",
+      "dependsOn": [
+        "G2"
+      ],
+      "branch": "work/p5-hvi-w3-r-self-audit-r001",
+      "prompt": ".integration/proposal5/hq-version-intelligence/prompts/70-R-FINAL-SELF-AUDIT.md",
+      "writeScopes": [
+        ".integration/proposal5/hq-version-intelligence/proofs/R/**"
+      ],
+      "output": [
+        "proofs/R/",
+        "full migration report"
+      ],
+      "status": "NOT_STARTED"
+    }
+  ],
+  "releaseGate": "NOT_BETA_GO",
+  "testExecuted": false
+}
