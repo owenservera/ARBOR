@@ -77,3 +77,59 @@ test('five invented repositories resolve distinct exact pins without implicit HE
   assert.equal(out.inspector.runtimeAccepted,false);
   assert.equal(fixture.calls.blobs.length,0);
 });
+
+test('native readPinnedBlob denies credential-family paths even with caller-supplied allow callback',async()=>{
+  const { resolvePin, snapshotAt, readPinnedBlob } =
+    await import('../../hq/version-intelligence/sources/snapshots.mjs');
+  const fixture=syntheticSource({malicious:{
+    path:'private/invented.key',mode:'100644',type:'blob',
+    sha:'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',size:12,
+  }});
+  const authorize=()=>true;
+  const pin=await resolvePin({provider:'github',repo:'synthetic/g2-fixture',
+    ref:'v1',approvedScope:'development'}, {adapter:fixture.adapter,authorize});
+  const manifest=await snapshotAt(pin,{adapter:fixture.adapter,authorize,
+    inspectContent:false});
+  const blocked=manifest.entries.find(e=>e.path==='private/invented.key');
+  assert.equal(blocked.excludedReason,'sensitive_path');
+  await assert.rejects(readPinnedBlob(manifest.pin,'private/invented.key',{
+    adapter:fixture.adapter,authorize,manifest}),{code:'SOURCE_UNAUTHORIZED'});
+  assert.equal(fixture.calls.blobs.length,0,'no credential bytes read');
+});
+
+test('A-to-C bridge removes private source paths from downstream Host and inspector reports',async()=>{
+  const fixture=syntheticSource({malicious:{
+    path:'private/invented.key',mode:'100644',type:'blob',
+    sha:'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',size:12,
+  }});
+  const out=await port().invoke(request(),{adapter:fixture.adapter});
+  const serialized=JSON.stringify(out);
+  assert.ok(!serialized.includes('invented.key'));
+  assert.ok(!serialized.includes('private/invented'));
+  assert.equal(out.report.sourcePins.length,3);
+  assert.equal(out.inspector.status,'INCOMPLETE_SOURCE_EVIDENCE');
+  assert.equal(fixture.calls.blobs.length,0);
+});
+
+test('repository allowlist and cancellation refuse before any Git ref resolution',async()=>{
+  const forbidden=syntheticSource();
+  await assert.rejects(port({approvedRepositories:[]})
+    .invoke(request(),{adapter:forbidden.adapter}),{code:'SOURCE_UNAUTHORIZED'});
+  assert.equal(forbidden.calls.refs.length,0);
+  const cancelled=syntheticSource();
+  await assert.rejects(port().invoke(request(),{
+    adapter:cancelled.adapter,signal:{aborted:true}}),{code:'CANCELLED'});
+  assert.equal(cancelled.calls.refs.length,0);
+});
+
+test('native source secret-path classifier blocks a consistent set of credential families',async()=>{
+  const { sensitivePath }=await import('../../hq/version-intelligence/sources/common.mjs');
+  for(const path of ['.ssh/config','.aws/credentials','private/notes.txt',
+    'metadata/id_ecdsa','auth/config.pfx','secrets/values.json',
+    'user/login data','work/storage-state.json','data/profile.key',
+    'tokens/live.json','data/.env.production']){
+    assert.equal(sensitivePath(path),true,path);
+  }
+  for(const path of ['src/main.mjs','docs/overview.md','src/public/report.json'])
+    assert.equal(sensitivePath(path),false,path);
+});
