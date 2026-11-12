@@ -118,5 +118,20 @@
     "bPwaStaticModuleRoute": "MERGED_SOURCE_ONLY",
     "canonicalMainPr": 10,
     "securityStillBlocked": true
+  },
+  "mainConsolidation": {
+    "pr": 10,
+    "sourceOnly": true,
+    "ciRunId": 43233248631,
+    "ciConclusion": "startup_failure",
+    "ciJobs": 0,
+    "merged": false,
+    "cargoLock": "ABSENT",
+    "bunLock": "ABSENT",
+    "betaGo": false,
+    "nextWaveAcceptedSha": null,
+    "securityAndDeviceUnrun": true,
+    "toolchainTests": "UNRUN",
+    "deploymentAuthorized": false
   }
 }
