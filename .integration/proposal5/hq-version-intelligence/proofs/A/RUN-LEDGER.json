@@ -10,9 +10,10 @@
   "branch": "work/p5-hvi-w1-a-snapshots-r001",
   "environment": {
     "github": "connected GitHub API via isolated JavaScript orchestration",
-    "node24": "not invoked",
+    "node24": "UNRUN",
     "windows": "not invoked",
-    "android": "not invoked"
+    "android": "not invoked",
+    "v8Isolate": "isolated JavaScript orchestration with emulated Buffer and hash functions, NOT Node"
   },
   "sourcePins": [
     {
@@ -66,13 +67,42 @@
       "operation": "GitHub Git Tree API object creation",
       "result": "source/fixture/proof blobs staged",
       "exit": 0
+    },
+    {
+      "operation": "syntax-parse seven .mjs source/test modules via isolated V8 Function compilation",
+      "result": "PASS, no syntax failures",
+      "exit": "N/A (isolate, no process)"
+    },
+    {
+      "operation": "execute authored 14 synthetic Node test functions under isolated V8 shims",
+      "result": "14/14 function assertions PASS; hash/Buffer emulated, not a Node crypto integration test",
+      "exit": "N/A (isolate, no process)"
     }
   ],
-  "tests": [],
+  "tests": [
+    {
+      "command": "isolated V8 synthetic harness using GitHub blob sources with injected Buffer/crypto shims",
+      "runner": "Code Mode V8 (not Node)",
+      "count": 14,
+      "passed": 14,
+      "failed": 0,
+      "processExit": null,
+      "gateClaim": "SOURCE_ONLY_SYNTHETIC_EXECUTED"
+    },
+    {
+      "command": "V8 Function syntax parse of staged ESM files with imports/exports stripped",
+      "runner": "Code Mode V8 (not Node)",
+      "count": 6,
+      "passed": 6,
+      "failed": 0,
+      "processExit": null,
+      "gateClaim": "SYNTAX_CHECK_NOT_NODE"
+    }
+  ],
   "unrun": [
     {
       "command": "node --test hq/version-intelligence/sources/snapshots.test.mjs",
-      "reason": "no checked-out runnable branch in connected GitHub execution environment; authored synthetic fixture and tests"
+      "reason": "Node runner was observed in separate container (v22.16.0) but GitHub branch source could not be materialized there through connected GitHub; must run exact source under Node24 in G1"
     },
     {
       "command": "node --test tests/hq-version-intelligence",
@@ -104,9 +134,19 @@
   "blockers": [
     "No production authorized network Git-object adapter; explicit dev grant callback required",
     "No trusted Host actor/session grant checker; reserved for H",
-    "Node24/G1 integrated and release checks not executed"
+    "Node24/G1 integrated and release checks not executed",
+    "Node 24 test command with real node:crypto, Buffer and Git checkout is UNRUN; V8 shim result is not a substitute"
   ],
   "gateStatus": "PREPARED_NOT_PROMOTED",
   "betaGate": "BLOCKED_NOT_BETA",
-  "runtimeAccepted": false
+  "runtimeAccepted": false,
+  "sourceCommitSha": "18a5bae8afa915bb8fd5f6817774c17918a5a582",
+  "sourceBlobRefs": {
+    "hq/version-intelligence/sources/adapters.mjs": "2aef97a4379b2d50343239f58c7c6421407082c2",
+    "hq/version-intelligence/sources/common.mjs": "cea0916b0a2596ea6e9a918bc87cec564bb144b7",
+    "hq/version-intelligence/sources/fixtures.mjs": "bcac478f72cb7abe7209e9a0256e38e846739db5",
+    "hq/version-intelligence/sources/index.mjs": "6048248f4b77d021143dc24f43a11a8abcad54d2",
+    "hq/version-intelligence/sources/snapshots.mjs": "6ff5f5334f07670d364c92c27a9ef4655951b7d4",
+    "hq/version-intelligence/sources/snapshots.test.mjs": "d4a597ed135b3bed9857a53992224198bdd403f2"
+  }
 }

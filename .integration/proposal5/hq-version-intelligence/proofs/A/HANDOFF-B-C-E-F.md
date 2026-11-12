@@ -10,3 +10,5 @@
 - **H Host owner (future wave):** bind real actor/session/live development source grants to authorize; inspect revocation on every request; keep source projection read only.
 
 **Non-blocking integration handoffs:** No in-lane GitHub network adapter is implemented deliberately. Source grants, trusted recursive tree page provenance, Git SHA-256 repo support and durable offline manifest persistence need named owner acceptance. No new graph/store/scheduler/catalogue, mutable HEAD shortcut, source effect writer or browser sender introduced. Existing beta gates remain blocked.
+
+**Lane A initial source commit:** `18a5bae8afa915bb8fd5f6817774c17918a5a582`. **Executed source-only harness:** 14/14 synthetic assertions using V8 emulated Node APIs; no process exit. **Still UNRUN:** actual `node --test`, Node24 compatibility, Host grants, Rust, Windows/Android, CI.

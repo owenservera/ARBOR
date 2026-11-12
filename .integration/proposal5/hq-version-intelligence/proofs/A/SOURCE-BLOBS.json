@@ -1,0 +1,25 @@
+{
+  "schema": "arbor.hvi.a.source-blobs/1",
+  "sourceCommitSha": "18a5bae8afa915bb8fd5f6817774c17918a5a582",
+  "baseSha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+  "s0Sha": "2ef7a9f66419d681e040b459ba4762a63aa9564f",
+  "files": {
+    "hq/version-intelligence/sources/adapters.mjs": "2aef97a4379b2d50343239f58c7c6421407082c2",
+    "hq/version-intelligence/sources/common.mjs": "cea0916b0a2596ea6e9a918bc87cec564bb144b7",
+    "hq/version-intelligence/sources/fixtures.mjs": "bcac478f72cb7abe7209e9a0256e38e846739db5",
+    "hq/version-intelligence/sources/index.mjs": "6048248f4b77d021143dc24f43a11a8abcad54d2",
+    "hq/version-intelligence/sources/snapshots.mjs": "6ff5f5334f07670d364c92c27a9ef4655951b7d4",
+    "hq/version-intelligence/sources/snapshots.test.mjs": "d4a597ed135b3bed9857a53992224198bdd403f2"
+  },
+  "sourceReadAt": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+  "originalGitSourceBlobs": {
+    "hq/lib/git.mjs": "32e775537f74aa886239783081a82d2b8a670e04",
+    "hq/lib/git-context.mjs": "5296114e0fa5d3b0e30da4f8f4c7d8aa2ef3d8be",
+    "hq/lib/walk.mjs": "38f8bfe82220909cbd456d3115ecad350656fe1e",
+    "hq/lib/indexer.mjs": "4f5cf53c861d8052e0c56be38307f93cc65e2a5f",
+    "hq/lib/registry.mjs": "cc46131e051c30fbef1b022310f68b619814da86",
+    "hq/lib/arbor-service.mjs": "a47c232c188d69758daa8d6a2f18070ce8c9a27b",
+    "repos-hq@9b922ea049dbadc94e504b5b9432743995c020ca:hq/git/sync-state.json": "cdff770999da20f692555362d037ca4e365f352a"
+  },
+  "status": "PREPARED_NOT_PROMOTED"
+}

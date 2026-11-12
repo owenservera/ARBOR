@@ -152,3 +152,42 @@ test('T24 source paths are inert data; no scripts, provider calls or checkout', 
   assert.equal(m.entries.some(e => e.path.includes('src/')), true);
   assert.equal(f.calls.blobs.length, 0); // metadata scan does not even read blob contents
 });
+
+
+test('T19 access revocation is checked on every tree page', async () => {
+  const f = syntheticSource();
+  const p = await pin(f);
+  let pageAuthorizations = 0;
+  await assert.rejects(snapshotAt(p, {
+    adapter: f.adapter, limits: { pageSize: 2 },
+    authorize: ({ operation, repoIdentity, commitSha }) => {
+      if (operation === 'source.snapshot.page') pageAuthorizations++;
+      assert.equal(repoIdentity, 'owenservera/arbor');
+      assert.equal(commitSha, SYNTHETIC_SHAS.v1);
+      return pageAuthorizations < 2;
+    },
+  }), { code: 'SOURCE_UNAUTHORIZED' });
+  assert.equal(pageAuthorizations, 2);
+});
+
+test('T20 duplicate Git-tree paths cannot counterfeit a manifest', async () => {
+  const f = syntheticSource();
+  const record = { ...f.records[SYNTHETIC_SHAS.v1][0] };
+  const bad = syntheticSource({ malicious: record });
+  const p = await pin(bad);
+  await assert.rejects(snapshot(bad, p), { code: 'ID_CONFLICT' });
+});
+
+test('T07/T19 immutable metadata, oversized blobs and no speculative text inspection', async () => {
+  const f = syntheticSource();
+  const p = await pin(f);
+  const m = await snapshot(f, p, { limits: { maxBlobBytes: 16 } });
+  assert(Object.isFrozen(m.entries));
+  assert(Object.isFrozen(m.entries[0]));
+  const oversized = m.entries.filter(e => e.excludedReason === 'large_blob');
+  assert(oversized.length > 0);
+  assert(oversized.every(e => e.parseStatus === 'oversized'));
+  const uninspected = m.entries.filter(e => e.excludedReason === null);
+  assert(uninspected.some(e => e.parseStatus === 'uninspected'));
+  assert.equal(f.calls.blobs.length, 0);
+});

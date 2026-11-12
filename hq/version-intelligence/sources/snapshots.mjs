@@ -19,19 +19,21 @@ function limitsFor(input = {}) {
   }
   return out;
 }
-async function authorized(adapter, authorize, operation, scope) {
+async function authorized(adapter, authorize, operation, scope, context = {}) {
   if (scope !== 'development' || adapter?.authorizedDevelopmentSource !== true ||
       typeof authorize !== 'function') fail('SOURCE_UNAUTHORIZED', 'development_grant_required');
   // It is the trusted caller's responsibility to re-evaluate live Host grants.
   // No cached boolean grants or source registry records constitute permission.
-  if (await authorize({ operation, scope: 'development' }) !== true) {
+  if (await authorize({ operation, scope: 'development', ...context }) !== true) {
     fail('SOURCE_UNAUTHORIZED', 'grant_denied');
   }
 }
 function checkPin(pin) {
   if (pin?.schema !== SOURCE_SCHEMA || pin.scope !== 'development' ||
       pin.provider !== 'github') fail('SOURCE_UNAUTHORIZED', 'invalid_pin');
-  canonicalRepo(pin.repoIdentity, pin.provider);
+  if (canonicalRepo(pin.repoIdentity, pin.provider) !== pin.repoIdentity) {
+    fail('ID_CONFLICT', 'noncanonical_repo_identity');
+  }
   assertSha(pin.resolvedCommitSha);
   assertSha(pin.rootTreeSha);
   safePath(pin.subPath ?? '', { allowEmpty: true });
@@ -58,9 +60,10 @@ async function commitAt(pin, adapter) {
  * source = {repo, provider:'github', ref|sha, subPath?, approvedScope:'development'}
  */
 export async function resolvePin(source, { adapter, authorize, acquiredAt } = {}) {
-  await authorized(adapter, authorize, 'source.pin.resolve', source?.approvedScope);
-  const provider = source.provider;
-  const repoIdentity = canonicalRepo(source.repo, provider);
+  const provider = source?.provider;
+  const repoIdentity = canonicalRepo(source?.repo, provider);
+  await authorized(adapter, authorize, 'source.pin.resolve', source?.approvedScope,
+    { repoIdentity, sourceGrantRef: source.sourceGrantRef ?? null });
   const requestedRef = source.ref == null ? null : safeRef(source.ref);
   const specifiedSha = source.sha == null ? null : assertSha(source.sha);
   if (!requestedRef && !specifiedSha) fail('PIN_NOT_FOUND', 'ref_or_sha_required');
@@ -91,7 +94,9 @@ export async function resolvePin(source, { adapter, authorize, acquiredAt } = {}
  */
 export async function verifyPin(pin, { adapter, authorize, manifest, checkRef = true } = {}) {
   checkPin(pin);
-  await authorized(adapter, authorize, 'source.pin.verify', pin.scope);
+  await authorized(adapter, authorize, 'source.pin.verify', pin.scope,
+    { repoIdentity: pin.repoIdentity, commitSha: pin.resolvedCommitSha,
+      sourceGrantRef: pin.sourceGrantRef });
   await commitAt(pin, adapter);
   if (checkRef && pin.requestedRef) {
     const tip = await adapter.resolveRef({ repoIdentity: pin.repoIdentity, ref: pin.requestedRef });
@@ -188,7 +193,9 @@ export async function snapshotAt(pin, {
   adapter, authorize, limits = {}, inspectContent = false, signal,
 } = {}) {
   checkPin(pin);
-  await authorized(adapter, authorize, 'source.snapshot.read', pin.scope);
+  await authorized(adapter, authorize, 'source.snapshot.read', pin.scope,
+    { repoIdentity: pin.repoIdentity, commitSha: pin.resolvedCommitSha,
+      sourceGrantRef: pin.sourceGrantRef });
   await commitAt(pin, adapter);
   const lim = limitsFor(limits);
   const entries = new Map();
@@ -197,6 +204,9 @@ export async function snapshotAt(pin, {
   let pages = 0, omittedMinimum = 0, inspectBytes = 0, cursor = null, truncated = false;
   while (true) {
     checkCancel(signal);
+    await authorized(adapter, authorize, 'source.snapshot.page', pin.scope,
+      { repoIdentity: pin.repoIdentity, commitSha: pin.resolvedCommitSha,
+        sourceGrantRef: pin.sourceGrantRef });
     if (++pages > lim.maxPages) {
       truncated = true; omittedMinimum++;
       note(errors, 'RESOURCE_LIMIT', 'max_pages');
@@ -217,6 +227,7 @@ export async function snapshotAt(pin, {
     if (page?.verified !== true || !Array.isArray(page.entries)) {
       fail('INCOMPLETE_SCAN', 'unverified_tree_page');
     }
+    if (page.entries.length > lim.pageSize) fail('RESOURCE_LIMIT', 'oversized_tree_page');
     for (let i = 0; i < page.entries.length; i++) {
       checkCancel(signal);
       const entry = normalizedEntry(page.entries[i], pin, lim);
@@ -236,6 +247,9 @@ export async function snapshotAt(pin, {
       } else if (inspectContent && !entry.excludedReason && entry.kind !== 'submodule' &&
         entry.bytes !== null && entry.bytes <= lim.maxInspectBytes &&
         inspectBytes + entry.bytes <= lim.maxInspectTotalBytes) {
+        await authorized(adapter, authorize, 'source.snapshot.blob', pin.scope,
+          { repoIdentity: pin.repoIdentity, commitSha: pin.resolvedCommitSha,
+            sourceGrantRef: pin.sourceGrantRef, path: entry.path });
         const data = await readVerifiedBlob(adapter, pin, entry.blobSha, lim.maxInspectBytes);
         if (data.length !== entry.bytes) fail('DIGEST_CONFLICT', 'blob_length_mismatch');
         inspect(entry, data);
@@ -270,6 +284,10 @@ export async function snapshotAt(pin, {
   };
   manifest.manifestDigest = manifestDigestOf(manifest);
   manifest.pin = Object.freeze({ ...pin, completeness, manifestDigest: manifest.manifestDigest });
+  for (const entry of ordered) Object.freeze(entry);
+  for (const error of errors) Object.freeze(error);
+  Object.freeze(ordered);
+  Object.freeze(errors);
   return Object.freeze(manifest);
 }
 
@@ -278,7 +296,9 @@ export async function readPinnedBlob(pin, path, {
   adapter, authorize, manifest, maxBytes = DEFAULT_LIMITS.maxBlobBytes,
 } = {}) {
   checkPin(pin);
-  await authorized(adapter, authorize, 'source.blob.read', pin.scope);
+  await authorized(adapter, authorize, 'source.blob.read', pin.scope,
+    { repoIdentity: pin.repoIdentity, commitSha: pin.resolvedCommitSha,
+      sourceGrantRef: pin.sourceGrantRef, path: safePath(path) });
   if (!manifest || manifest.pinId !== pin.pinId) fail('ID_CONFLICT', 'manifest_required');
   if (manifest.manifestDigest !== manifestDigestOf(manifest)) fail('DIGEST_CONFLICT', 'manifest_modified');
   if (!Number.isSafeInteger(maxBytes) || maxBytes < 1 || maxBytes > DEFAULT_LIMITS.maxBlobBytes) {
