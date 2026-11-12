@@ -2,7 +2,7 @@
 
 **Version:** P5-R2, 2026-11-12  
 **Status:** Independent proposal; no source migration or product acceptance performed  
-**Branch:** \`architecture/proposal5-beta-first-centralization\`  
+**Branch:** `architecture/proposal5-beta-first-centralization`  
 **Objective:** **one-time source centralization and integration** into one internally self-contained product repository, using working implementations rather than a wholesale rewrite. The result must be a functioning Windows + paired PWA beta with Node 0 Prime and a future-proof capability contract, while deeper optimizations remain clearly deferred.
 
 ## The owner's correction (non-negotiable)
@@ -31,7 +31,7 @@ The one-time job is to create a consistent product **without a second integratio
 
 ## The conceptual product
 
-\`\`\`text
+```text
       Windows / Paired PWA / CLI / View / AutoWiki
                          │
       local editor + TierFlow presentation package
@@ -50,7 +50,7 @@ The one-time job is to create a consistent product **without a second integratio
         grants, plans, claims, receipts, recovery
                          │
          user-owned browser and files/OS/devices
-\`\`\`
+```
 
 Physical processes remain allowed for safety and technical necessity (Tauri, internal Node Host/Studio worker, Chrome). **Process separation does not imply separate system truth or a source repository dependency.**
 
