@@ -1,0 +1,48 @@
+{
+  "title": "TierFlow",
+  "accent": "#f2b134",
+  "panels": [
+    {
+      "id": "topology",
+      "title": "Tier stack",
+      "kind": "topology",
+      "span": 1,
+      "collapsed": false
+    },
+    {
+      "id": "timeline",
+      "title": "Execution timeline",
+      "kind": "timeline",
+      "span": 2,
+      "collapsed": false
+    },
+    {
+      "id": "runs",
+      "title": "Runs",
+      "kind": "runs",
+      "span": 1,
+      "collapsed": false
+    },
+    {
+      "id": "console",
+      "title": "Transcript",
+      "kind": "console",
+      "span": 3,
+      "collapsed": false
+    },
+    {
+      "id": "programs",
+      "title": "Programs",
+      "kind": "programs",
+      "span": 1,
+      "collapsed": false
+    },
+    {
+      "id": "metrics",
+      "title": "Hot path",
+      "kind": "metrics",
+      "span": 2,
+      "collapsed": false
+    }
+  ]
+}

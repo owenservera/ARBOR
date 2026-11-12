@@ -1,0 +1,19 @@
+{
+  "heartbeatMs": 400,
+  "frameTickMs": 50,
+  "reloadDebounceMs": 80,
+  "wsFlushMs": 16,
+  "wsMaxBatch": 256,
+  "defaultTimeoutMs": 120000,
+  "simTickMs": 50,
+  "maxConcurrentRuns": 24,
+  "traceCapacity": 500,
+  "traceSampleRate": 1,
+  "runRetention": 200,
+  "hotpathEnabled": true,
+  "injectLatency": {
+    "dispatchMs": 0,
+    "spawnMs": 0,
+    "firstOutputMs": 0
+  }
+}
