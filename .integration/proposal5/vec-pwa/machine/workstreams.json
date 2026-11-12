@@ -64,5 +64,15 @@
   "releaseDecision": "NO_GO_CLAIM",
   "sourceMaturity": "SOURCE_IMPLEMENTED_FIRST_PWA_ADAPTER",
   "wikiCompilerTakeover": "NOT_STARTED",
-  "commandCompilerTakeover": "NOT_STARTED"
+  "commandCompilerTakeover": "NOT_STARTED",
+  "uiTaxonomy": {
+    "schema": "vivim.ui-taxonomy/1",
+    "maturity": "SOURCE_DESCRIBED_AND_LOOKUP_WIRED",
+    "domainCount": 9,
+    "familyCount": 34,
+    "kindCount": 417,
+    "sourceBindingCount": 37,
+    "truth": "catalogued does not mean rendered/approved",
+    "testsExecuted": false
+  }
 }

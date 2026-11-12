@@ -11,3 +11,4 @@ This module is the first **runtime seam** of a broader three-output VEC compiler
 Tests: `node --test apps/mobile-relay/test/vec-ui-compiler.test.mjs apps/mobile-relay/test/build-vec-routing.test.mjs`.
 
 Migration workstreams and machine statuses: `.integration/proposal5/vec-pwa/`.
+The UI adapter now resolves its three initial component kinds through the [canonical layered taxonomy](ui-taxonomy/registry.mjs), and refuses missing/mismatched source bindings. The taxonomy describes hundreds of **potential** component kinds; it does not install new renderers. Current source adapters remain closed.

@@ -4,6 +4,7 @@
 // the existing paired Host revalidates and commits the exact revision.
 import { validateSurface, PROPOSAL_SCHEMA } from '../generative-ui/catalog.mjs';
 import { compileUiProposal } from '../generative-ui/compiler.mjs';
+import { getUiComponent, resolveUiSourceIdentity } from './ui-taxonomy/registry.mjs';
 
 const PREFIX = /^(?:add|create|rename|remove|delete|move)\b/i;
 // Refuse possible second actions/conditionals instead of treating them as card titles.
@@ -68,6 +69,22 @@ export function compileVecUiRequest({ text, surface } = {}) {
   try { current = validateSurface(surface, { refs: new Set() }); }
   catch { return outcome('refused', 'INVALID_OR_UNAVAILABLE_SURFACE'); }
   const found = add ?? rename ?? remove ?? move, type = normalized(found[1]);
+  // Canonical VEC identity is not a runtime install token. Both identity and a
+  // currently closed, reviewed source-type mapping must exist before preview.
+  const canonicalId = ({
+    card: 'vivim.ui.foundation.surface.card@1',
+    heading: 'vivim.ui.foundation.typography.heading@1',
+    text: 'vivim.ui.foundation.typography.text@1'
+  })[type];
+  const taxonomy = getUiComponent(canonicalId);
+  const nativeType = type === 'heading' ? 'text' : type;
+  const source = resolveUiSourceIdentity({
+    schema: 'vivim.ui-surface/1', nativeType,
+    props: type === 'heading' ? { variant: 'heading' } : {}
+  });
+  if (!taxonomy || source.outcome !== 'mapped' || source.component.id !== taxonomy.id ||
+      source.source.status !== 'source-closed')
+    return outcome('unsupported', 'UI_COMPONENT_ADAPTER_NOT_INSTALLED');
   const title = safeTitle(add ? add[2] : found[2]);
   if (!title) return outcome('refused', 'INVALID_UI_TITLE');
   let op, explanation;

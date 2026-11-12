@@ -28,6 +28,8 @@ var SHELL_PATHS = [
   'build-composer.mjs',
   'vec/compiler.mjs',
   'vec/ui-adapter.mjs',
+  'vec/ui-taxonomy/catalog.mjs',
+  'vec/ui-taxonomy/registry.mjs',
   'generative-ui/bootstrap-adapters.mjs',
   'generative-ui/catalog.mjs',
   'generative-ui/compiler.mjs',
