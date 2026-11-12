@@ -2,7 +2,7 @@ name: ARBOR W01-G reproducibility gate
 on:
   push:
     branches:
-      - integrate/proposal5-beta-r001
+      - main
   pull_request:
     branches:
       - main
@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
   generate-locks:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/integrate/proposal5-beta-r001' && github.actor != 'github-actions[bot]'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -59,7 +59,7 @@ jobs:
             exit 0
           fi
           git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'build(w01g): actual Cargo and Bun lockfiles from GitHub runner'
-          git push origin HEAD:integrate/proposal5-beta-r001
+          git push origin HEAD:main
 
   verify:
     runs-on: windows-latest
