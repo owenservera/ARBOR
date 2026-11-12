@@ -1,6 +1,6 @@
 {
   "schema": "arbor.proposal5.semantic-capability-fabric-proposal/1",
-  "status": "DESIGN_PREPARED_NOT_PRODUCT_PROMOTED",
+  "status": "IMPLEMENTATION_BLUEPRINT_COMPLETE_PRODUCT_NOT_IMPLEMENTED",
   "date": "2026-11-12",
   "branch": "work/p5-semantic-capability-fabric-r001",
   "baseMainSha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
@@ -47,7 +47,7 @@
     "researchSWCv01": "RESEARCH_IMPLEMENTED_NOT_PROMOTED",
     "extendedV3": "DESIGN_ONLY",
     "semanticCapabilityAbi": "DESIGN_ONLY",
-    "hvi": "WORK_ORDERS_PREPARED_IMPLEMENTATION_NOT_VERIFIED"
+    "hvi": "NATIVE_TOOLING_ONLY_SCOPE_CURRENT_SOURCE_ACCEPTANCE_NOT_ASSUMED"
   },
   "proposedCoreTags": [
     "@hq:context",
@@ -83,5 +83,27 @@
     ],
     "sourceBehaviorProved": false,
     "runtimeVerified": false
+  },
+  "implementationKit": {
+    "path": ".integration/proposal5/semantic-capability-fabric/implementation-ready/",
+    "status": "NEAR_CODE_DOCUMENTATION_ONLY",
+    "artifacts": 44,
+    "targetProductFiles": 32,
+    "testScenarios": 34,
+    "masterPrompt": "implementation-ready/prompts/00-MASTER-IMPLEMENT-ALL.md",
+    "noRealDonorComparisons": true,
+    "productCodeImplemented": false,
+    "testsExecuted": false,
+    "workflow": [
+      "S0",
+      "A+B+F",
+      "C+D+E",
+      "Z1",
+      "G1",
+      "H+U",
+      "Z2",
+      "G2",
+      "R"
+    ]
   }
 }

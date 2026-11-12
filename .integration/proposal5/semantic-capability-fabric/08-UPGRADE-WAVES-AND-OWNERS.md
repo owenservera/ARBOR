@@ -1,4 +1,6 @@
 # Upgrade waves — after current HVI gate
+**GOVERNING HVI CORRECTION:** Implementation/readiness tests are **synthetic invented Git fixtures only**. HVI `10-NATIVE-TOOLING-ONLY-SCOPE.md` defers real VIVIM donor/Labs/ARBOR migration comparisons until explicitly requested. Full implementation-ready kit: [implementation-ready/README.md](implementation-ready/README.md).
+
 **Safety:** This SCF-R011 is a design handoff, not a concurrent unscoped implementation order. Current HVI source owners A–F/G and ARBOR `main` remain protected. HVI should finish accepted source pins/compare before SCF assumes a product ABI.
 
 ## Stage 0 — source and interface lock (HQ D + HVI S0/G)

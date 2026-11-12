@@ -7,28 +7,32 @@
       "repository": "synthetic/atlas",
       "commitSha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
       "treeSha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
-      "sourceDigest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      "sourceDigest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "completeness": "complete"
     },
     {
       "pinId": "atlas-b",
       "repository": "synthetic/atlas",
       "commitSha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
       "treeSha": "ffffffffffffffffffffffffffffffffffffffff",
-      "sourceDigest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      "sourceDigest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "completeness": "complete"
     },
     {
       "pinId": "atlas-c",
       "repository": "synthetic/atlas",
       "commitSha": "cccccccccccccccccccccccccccccccccccccccc",
       "treeSha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
-      "sourceDigest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      "sourceDigest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "completeness": "partial"
     },
     {
       "pinId": "other-d",
       "repository": "synthetic/other",
       "commitSha": "dddddddddddddddddddddddddddddddddddddddd",
       "treeSha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
-      "sourceDigest": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      "sourceDigest": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "completeness": "complete"
     }
   ],
   "targetPinId": "atlas-c",

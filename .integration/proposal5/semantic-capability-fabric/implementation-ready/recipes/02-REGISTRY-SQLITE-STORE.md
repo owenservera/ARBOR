@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS scf_snapshots (
 );
 CREATE TABLE IF NOT EXISTS scf_facts (
   fact_id TEXT PRIMARY KEY,
-  pin_id TEXT NOT NULL REFERENCES scf_snapshots(pin_id) ON DELETE CASCADE,
+  pin_id TEXT NOT NULL REFERENCES scf_snapshots(pin_id) ON DELETE RESTRICT,
   subject TEXT NOT NULL,
   predicate TEXT NOT NULL,
   object_ref TEXT NOT NULL,
@@ -41,21 +41,21 @@ CREATE TABLE IF NOT EXISTS scf_facts (
 CREATE INDEX IF NOT EXISTS scf_facts_pin_subject ON scf_facts(pin_id,subject);
 CREATE INDEX IF NOT EXISTS scf_facts_pin_object ON scf_facts(pin_id,object_ref);
 CREATE TABLE IF NOT EXISTS scf_passports (
-  pin_id TEXT NOT NULL REFERENCES scf_snapshots(pin_id) ON DELETE CASCADE,
+  pin_id TEXT NOT NULL REFERENCES scf_snapshots(pin_id) ON DELETE RESTRICT,
   capability_id TEXT NOT NULL,
   passport_digest TEXT NOT NULL,
   passport_json TEXT NOT NULL,
   PRIMARY KEY(pin_id,capability_id)
 );
 CREATE TABLE IF NOT EXISTS scf_diagnostics (
-  pin_id TEXT NOT NULL REFERENCES scf_snapshots(pin_id) ON DELETE CASCADE,
+  pin_id TEXT NOT NULL REFERENCES scf_snapshots(pin_id) ON DELETE RESTRICT,
   ordinal INTEGER NOT NULL CHECK(ordinal>=0),
   code TEXT NOT NULL,
   diagnostic_json TEXT NOT NULL,
   PRIMARY KEY(pin_id,ordinal)
 );
 CREATE TABLE IF NOT EXISTS scf_evidence_refs (
-  pin_id TEXT NOT NULL REFERENCES scf_snapshots(pin_id) ON DELETE CASCADE,
+  pin_id TEXT NOT NULL REFERENCES scf_snapshots(pin_id) ON DELETE RESTRICT,
   capability_id TEXT NOT NULL,
   evidence_ref TEXT NOT NULL,
   source_digest TEXT NOT NULL,
@@ -70,7 +70,7 @@ CREATE TABLE IF NOT EXISTS scf_cache_index (
   last_used_at TEXT NOT NULL
 );
 ```
-**Storage correction:** the DDL above is a starting reference; G/B must prove SQLite safe migration for any current index DB, preserve `SCHEMA_VERSION=1` contract, and avoid FK delete chain on protected accepted snapshots (use explicit guarded GC operation, NOT unrestricted CASCADE). Only derived SCF records may be removed, never original `files/symbols/imports`/Host World. Snapshot ID must bind complete full SHA source identity (not branch label). No huge source bodies stored in passport_json.
+**Storage rule:** the proposed RESTRICT foreign keys prevent implicit deletion of accepted immutable snapshots. An optional future derived-only garbage collector must explicitly deny removal of accepted pins and remove child rows in one checked transaction. B/G must still prove migration on existing v1 databases, preserving old schema and rows. Only derived SCF records may be removed, never original `files/symbols/imports`/Host World. Snapshot ID must bind complete full SHA source identity (not branch label). No huge source bodies stored in passport_json.
 
 ## Proposed API
 ```ts

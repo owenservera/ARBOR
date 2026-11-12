@@ -1,4 +1,6 @@
 # How SCF turns costly HVI archaeology into cheap deterministic comparisons
+**GOVERNING HVI CORRECTION:** Implementation/readiness tests are **synthetic invented Git fixtures only**. HVI `10-NATIVE-TOOLING-ONLY-SCOPE.md` defers real VIVIM donor/Labs/ARBOR migration comparisons until explicitly requested. Full implementation-ready kit: [implementation-ready/README.md](implementation-ready/README.md).
+
 HVI `03-NWAY-CONTRACT.md` and six A–F workers stay unchanged. SCF adds a **preferred input ABI**, not a new N-way comparator or merge authority. Do not modify their active branches.
 
 ## Today (unannotated legacy)
