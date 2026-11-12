@@ -1,0 +1,400 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "arbor.p5.realtime-semantic-projection/1",
+  "title": "P5 V-visual inert revisioned parallel interpretation snapshot",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "sessionId",
+    "input",
+    "revisions",
+    "patches"
+  ],
+  "properties": {
+    "schema": {
+      "const": "arbor.p5.realtime-semantic-projection/1"
+    },
+    "sessionId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "revision",
+        "text",
+        "composing"
+      ],
+      "properties": {
+        "revision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "text": {
+          "type": "string",
+          "maxLength": 16384,
+          "description": "Full original human input; never truncate silently."
+        },
+        "composing": {
+          "type": "boolean"
+        }
+      }
+    },
+    "revisions": {
+      "$ref": "#/$defs/revisions"
+    },
+    "patches": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/patch"
+      },
+      "description": "Independent producers; never coerce to one winner."
+    }
+  },
+  "$defs": {
+    "revisions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source",
+        "catalog",
+        "policy",
+        "graph"
+      ],
+      "properties": {
+        "source": {
+          "type": "string",
+          "minLength": 1
+        },
+        "catalog": {
+          "type": "string",
+          "minLength": 1
+        },
+        "policy": {
+          "type": "string",
+          "minLength": 1
+        },
+        "graph": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "span": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "startUtf16",
+        "endUtf16",
+        "startUtf8",
+        "endUtf8",
+        "role",
+        "text"
+      ],
+      "properties": {
+        "startUtf16": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "endUtf16": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "startUtf8": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "endUtf8": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "role": {
+          "type": "string",
+          "minLength": 1,
+          "description": "e.g. verb, entity_reference, negation_scope, quote, literal, clause"
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "entity": {
+      "type": "object",
+      "required": [
+        "label",
+        "status",
+        "ids"
+      ],
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "grounded",
+            "ambiguous",
+            "unknown",
+            "stale",
+            "denied"
+          ]
+        },
+        "ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Owner-supplied IDs only; labels are not IDs."
+        }
+      },
+      "additionalProperties": false
+    },
+    "missingSlot": {
+      "type": "object",
+      "required": [
+        "name",
+        "status"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "unresolved",
+            "unknown",
+            "denied"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "risk": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "level",
+        "source"
+      ],
+      "properties": {
+        "level": {
+          "enum": [
+            "R0",
+            "R1",
+            "R2",
+            "R3",
+            "unknown"
+          ]
+        },
+        "source": {
+          "enum": [
+            "host_catalog",
+            "ui_contract",
+            "unverified_source",
+            "unknown"
+          ]
+        }
+      }
+    },
+    "sourceRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "revision",
+        "evidence"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "revision": {
+          "type": "string"
+        },
+        "evidence": {
+          "type": "string"
+        },
+        "ownerRef": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "domain": {
+          "enum": [
+            "development",
+            "personal",
+            "control",
+            "ui"
+          ]
+        },
+        "blobSha": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        }
+      }
+    },
+    "candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "label",
+        "status",
+        "spans",
+        "negations",
+        "quotations",
+        "entities",
+        "missingSlots",
+        "alternatives",
+        "sourceRefs",
+        "risk",
+        "permission",
+        "effectAuthorization",
+        "explanation"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "label": {
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "candidate",
+            "grounded",
+            "ambiguous",
+            "stale",
+            "denied",
+            "revoked",
+            "unknown"
+          ]
+        },
+        "spans": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/span"
+          }
+        },
+        "negations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/span"
+          }
+        },
+        "quotations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/span"
+          }
+        },
+        "entities": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/entity"
+          }
+        },
+        "missingSlots": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/missingSlot"
+          }
+        },
+        "alternatives": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "sourceRefs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/sourceRef"
+          }
+        },
+        "risk": {
+          "$ref": "#/$defs/risk"
+        },
+        "permission": {
+          "const": "not_assessed"
+        },
+        "effectAuthorization": {
+          "const": false
+        },
+        "explanation": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "patch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sessionId",
+        "inputRevision",
+        "revisions",
+        "producerId",
+        "producerRevision",
+        "coverage",
+        "candidates"
+      ],
+      "properties": {
+        "sessionId": {
+          "type": "string"
+        },
+        "inputRevision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "revisions": {
+          "$ref": "#/$defs/revisions"
+        },
+        "producerId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "producerRevision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "coverage": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status",
+            "facets"
+          ],
+          "properties": {
+            "status": {
+              "enum": [
+                "partial",
+                "complete",
+                "denied",
+                "revoked",
+                "stale",
+                "unknown"
+              ]
+            },
+            "facets": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "candidates": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/candidate"
+          }
+        }
+      }
+    }
+  }
+}

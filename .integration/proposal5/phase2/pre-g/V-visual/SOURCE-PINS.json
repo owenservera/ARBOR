@@ -1,0 +1,246 @@
+{
+  "schema": "arbor.p5.visual-source-pins/1",
+  "at": "2026-11-12",
+  "pins": [
+    {
+      "name": "ARBOR base",
+      "repo": "owenservera/ARBOR",
+      "ref": "work/p5-pre-g-convergence-r001",
+      "gitSha": "8b23c73bf450738a76b256bf0fa17ecbf86db591",
+      "path": null,
+      "blobSha": null
+    },
+    {
+      "name": "ARBOR A frozen",
+      "repo": "owenservera/ARBOR",
+      "ref": "work/p5-w01-a-native",
+      "gitSha": "dda546a11294920d6521a0f64ab7ee62ec993c70",
+      "path": null,
+      "blobSha": null
+    },
+    {
+      "name": "ARBOR B frozen",
+      "repo": "owenservera/ARBOR",
+      "ref": "work/p5-w01-b-host",
+      "gitSha": "78a5105a9c1f1880d658f350e130b1e2632d3532",
+      "path": "apps/vivim-host/control/intent-planner.mjs",
+      "blobSha": "3d1bbcd5ad80ffa6276ea4e5d2b5f0cfbd8cf4ab"
+    },
+    {
+      "name": "ARBOR B Host catalog",
+      "repo": "owenservera/ARBOR",
+      "ref": "work/p5-w01-b-host",
+      "gitSha": "78a5105a9c1f1880d658f350e130b1e2632d3532",
+      "path": "apps/vivim-host/control/action-catalog.v1.json",
+      "blobSha": "c423d5933c28ca9f534028aeaffd7929f767c269"
+    },
+    {
+      "name": "ARBOR B dispatcher",
+      "repo": "owenservera/ARBOR",
+      "ref": "work/p5-w01-b-host",
+      "gitSha": "78a5105a9c1f1880d658f350e130b1e2632d3532",
+      "path": "apps/vivim-host/control/dispatcher.mjs",
+      "blobSha": "723865482b8a0f98ab3214b2ec6a83aaea629c43"
+    },
+    {
+      "name": "ARBOR D metadata",
+      "repo": "owenservera/ARBOR",
+      "ref": "work/p5-w01-d-hq",
+      "gitSha": "ad55fe28c2c331841675f308f9199ee4c2add86a",
+      "path": "hq/lib/semantic-registry.mjs",
+      "blobSha": "ec982381c77147119f62e702a162a203df8e7d4e"
+    },
+    {
+      "name": "ARBOR D annotations",
+      "repo": "owenservera/ARBOR",
+      "ref": "work/p5-w01-d-hq",
+      "gitSha": "ad55fe28c2c331841675f308f9199ee4c2add86a",
+      "path": "hq/lib/annotation-v2.mjs",
+      "blobSha": "7e94dfbd4fbca8ef0fdb9e0610053364ce2c38c8"
+    },
+    {
+      "name": "ARBOR E command IR",
+      "repo": "owenservera/ARBOR",
+      "ref": "work/p5-w01-e-ui",
+      "gitSha": "1a5cf26ce14ebce4e31d9a4373060ace61852645",
+      "path": "packages/tierflow/src/visual-runtime/command/ir.ts",
+      "blobSha": "a6e581476af9d5b091b1939591ad5d5ba8a32a45"
+    },
+    {
+      "name": "ARBOR E command compile",
+      "repo": "owenservera/ARBOR",
+      "ref": "work/p5-w01-e-ui",
+      "gitSha": "1a5cf26ce14ebce4e31d9a4373060ace61852645",
+      "path": "packages/tierflow/src/visual-runtime/command/compile.ts",
+      "blobSha": "4cc5b63bea409171e2b4b0a29398c87907cd35ea"
+    },
+    {
+      "name": "ARBOR E render",
+      "repo": "owenservera/ARBOR",
+      "ref": "work/p5-w01-e-ui",
+      "gitSha": "1a5cf26ce14ebce4e31d9a4373060ace61852645",
+      "path": "packages/tierflow/src/visual-runtime/render/wave3-semantics.ts",
+      "blobSha": "5843f12213a2b82077ea1ffaed084a013c01b123"
+    },
+    {
+      "name": "ARBOR E revision",
+      "repo": "owenservera/ARBOR",
+      "ref": "work/p5-w01-e-ui",
+      "gitSha": "1a5cf26ce14ebce4e31d9a4373060ace61852645",
+      "path": "packages/tierflow/src/visual-runtime/revisions/port.ts",
+      "blobSha": "59cb23a5571a02d5cc5bd719af04cbca8b696cd8"
+    },
+    {
+      "name": "ARBOR E mobile semantic",
+      "repo": "owenservera/ARBOR",
+      "ref": "work/p5-w01-e-ui",
+      "gitSha": "1a5cf26ce14ebce4e31d9a4373060ace61852645",
+      "path": "apps/mobile-relay/generative-ui/semantic-projection.mjs",
+      "blobSha": "0a10271b605df29f067951e655e7233b909b012a"
+    },
+    {
+      "name": "TierFlow canonical upstream",
+      "repo": "owenservera/tierflow",
+      "ref": "main",
+      "gitSha": "50822f11ee63c3d80f631f8fea7dcb9b19bffc38",
+      "path": "src/visual-runtime/command/ir.ts",
+      "blobSha": "a6e581476af9d5b091b1939591ad5d5ba8a32a45"
+    },
+    {
+      "name": "ARBOR F interop types",
+      "repo": "owenservera/ARBOR",
+      "ref": "work/p5-w01-f-verify",
+      "gitSha": "be458f3c4cdb7eb38d47b1de2a00d441b7cdc704",
+      "path": "contracts/interop/v1/types.ts",
+      "blobSha": "e329eb1b8506938c8fc981b426c51a3582ae03c7"
+    },
+    {
+      "name": "ARBOR F interop schema",
+      "repo": "owenservera/ARBOR",
+      "ref": "work/p5-w01-f-verify",
+      "gitSha": "be458f3c4cdb7eb38d47b1de2a00d441b7cdc704",
+      "path": "contracts/interop/v1/protocol.schema.json",
+      "blobSha": "d13c0e6d5065400224bf7a4bbf89aa9a92f4156c"
+    },
+    {
+      "name": "Labs R005 lexical",
+      "repo": "owenservera/vivim-labs",
+      "ref": "lab/nlp-visual-command-ui-20261111",
+      "gitSha": "67e76c5b730dcc2cd3ab3919c3ba273a6c260db8",
+      "path": "nlp-command-ui-lab/src/semantic-lens.mjs",
+      "blobSha": "d5de11edf693eb67ffed23e1fd26e68240d4420c"
+    },
+    {
+      "name": "Labs R005 compiler",
+      "repo": "owenservera/vivim-labs",
+      "ref": "lab/nlp-visual-command-ui-20261111",
+      "gitSha": "67e76c5b730dcc2cd3ab3919c3ba273a6c260db8",
+      "path": "nlp-command-ui-lab/src/compiler.mjs",
+      "blobSha": "5df077d5f0d5873fbd3eb0a99afbcc5ed7f9031a"
+    },
+    {
+      "name": "Labs R005 bridge",
+      "repo": "owenservera/vivim-labs",
+      "ref": "lab/nlp-visual-command-ui-20261111",
+      "gitSha": "67e76c5b730dcc2cd3ab3919c3ba273a6c260db8",
+      "path": "nlp-command-ui-lab/src/bridge.mjs",
+      "blobSha": "2daeb4edac5c0122ac2752771d214f6ddd23be09"
+    },
+    {
+      "name": "Labs R005 affordances",
+      "repo": "owenservera/vivim-labs",
+      "ref": "lab/nlp-visual-command-ui-20261111",
+      "gitSha": "67e76c5b730dcc2cd3ab3919c3ba273a6c260db8",
+      "path": "nlp-command-ui-lab/src/affordances.mjs",
+      "blobSha": "8f010ef7d0e1ac444e9855055f6f4881fc36c56a"
+    },
+    {
+      "name": "Labs R005 tests",
+      "repo": "owenservera/vivim-labs",
+      "ref": "lab/nlp-visual-command-ui-20261111",
+      "gitSha": "67e76c5b730dcc2cd3ab3919c3ba273a6c260db8",
+      "path": "nlp-command-ui-lab/tests/semantic-lens.test.mjs",
+      "blobSha": "0b25d1f18f7fa5c1147ae9ac497f38815f1183fa"
+    },
+    {
+      "name": "Labs R005 bench",
+      "repo": "owenservera/vivim-labs",
+      "ref": "lab/nlp-visual-command-ui-20261111",
+      "gitSha": "67e76c5b730dcc2cd3ab3919c3ba273a6c260db8",
+      "path": "nlp-command-ui-lab/scripts/semantic-bench.mjs",
+      "blobSha": "f1555e2e42ad0fce376eceb5815d24cc24a9adba"
+    },
+    {
+      "name": "Labs R005 record",
+      "repo": "owenservera/vivim-labs",
+      "ref": "lab/nlp-visual-command-ui-20261111",
+      "gitSha": "67e76c5b730dcc2cd3ab3919c3ba273a6c260db8",
+      "path": "nlp-command-ui-lab/docs/R005-PROGRESSIVE-SPRINT.md",
+      "blobSha": "e8d8aeb663a8d3828b228ca1114f203a7bb4a6ce"
+    },
+    {
+      "name": "Labs R006",
+      "repo": "owenservera/vivim-labs",
+      "ref": "lab/nlp-visual-command-ui-20261111",
+      "gitSha": "67e76c5b730dcc2cd3ab3919c3ba273a6c260db8",
+      "path": "nlp-command-ui-lab/docs/R006-100-PREDICTIVE-REALTIME-COMPOSER-CAPABILITIES.md",
+      "blobSha": "a8300777bc4676f83eef789fe07984e3302e49f6"
+    },
+    {
+      "name": "Labs R007",
+      "repo": "owenservera/vivim-labs",
+      "ref": "lab/nlp-visual-command-ui-20261111",
+      "gitSha": "67e76c5b730dcc2cd3ab3919c3ba273a6c260db8",
+      "path": "nlp-command-ui-lab/docs/R007-TOTAL-INTERPRETATION-VIEW-ALL-AND-HQ-HANDOFF.md",
+      "blobSha": "cba4d05b853ae4de0cc69a0caee6fb7692fe867e"
+    },
+    {
+      "name": "Labs R010",
+      "repo": "owenservera/vivim-labs",
+      "ref": "lab/nlp-visual-command-ui-20261111",
+      "gitSha": "67e76c5b730dcc2cd3ab3919c3ba273a6c260db8",
+      "path": "nlp-command-ui-lab/docs/R010-SEMANTIC-WIKI-COMPILER-VISION.md",
+      "blobSha": "1affe8871bce006342a07fa0ede9446733577b88"
+    },
+    {
+      "name": "Labs IO event fabric",
+      "repo": "owenservera/vivim-labs",
+      "ref": "lab/user-io-rust-core-20261112",
+      "gitSha": "61d9fc15c55144c4f0b79afa248981c2b0ca9bd6",
+      "path": "user-io-rust-core/PARALLEL-EVENT-FABRIC-ARCHITECTURE.md",
+      "blobSha": "54d942eca63cd339adb8d7a959d3badf32afd0c1"
+    },
+    {
+      "name": "Labs IO native UI",
+      "repo": "owenservera/vivim-labs",
+      "ref": "lab/user-io-rust-core-20261112",
+      "gitSha": "61d9fc15c55144c4f0b79afa248981c2b0ca9bd6",
+      "path": "user-io-rust-core/rounds/R001-03-NATIVE-OUTPUT-AND-UI-BOUNDARY-PRD.md",
+      "blobSha": "0cde2b1c648f5529950dc7423ce4e287cd4c6214"
+    },
+    {
+      "name": "Labs IO migration",
+      "repo": "owenservera/vivim-labs",
+      "ref": "lab/user-io-rust-core-20261112",
+      "gitSha": "61d9fc15c55144c4f0b79afa248981c2b0ca9bd6",
+      "path": "user-io-rust-core/USER-IO-CONTRACT-AND-MIGRATION.md",
+      "blobSha": "3928de100a6a98183c1c6e0e8cf9c002497c5bd4"
+    },
+    {
+      "name": "Native Rust R001",
+      "repo": "owenservera/vivim-web-harness",
+      "ref": "work/native-user-io-r001-20261112",
+      "gitSha": "fa6dea9576c83496d95562b98b7a815fda4aec88",
+      "path": "core/programmability/src/user_io.rs",
+      "blobSha": "d8a53bb2a9216721323790ca96b9517af6528bec"
+    },
+    {
+      "name": "Native Rust exports",
+      "repo": "owenservera/vivim-web-harness",
+      "ref": "work/native-user-io-r001-20261112",
+      "gitSha": "fa6dea9576c83496d95562b98b7a815fda4aec88",
+      "path": "core/programmability/src/lib.rs",
+      "blobSha": "39a5142908956a1149a7a81a45b9f460e96222db"
+    }
+  ]
+}
