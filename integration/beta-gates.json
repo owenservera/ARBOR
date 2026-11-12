@@ -2,7 +2,7 @@
   "schema": "arbor.proposal5.beta-gates/1",
   "status": "BLOCKED_NOT_BETA",
   "updatedAt": "2026-11-12",
-  "branch": "integrate/proposal5-beta-r001",
+  "branch": "main",
   "sourceMergeSha": "0b3474a5cb2053d607453b18d319d225f1d3ca57",
   "unrunIsNotPass": true,
   "decision": "REPAIR_REQUIRED",
@@ -125,13 +125,17 @@
     "ciRunId": 43233248631,
     "ciConclusion": "startup_failure",
     "ciJobs": 0,
-    "merged": false,
+    "merged": true,
     "cargoLock": "ABSENT",
     "bunLock": "ABSENT",
     "betaGo": false,
     "nextWaveAcceptedSha": null,
     "securityAndDeviceUnrun": true,
     "toolchainTests": "UNRUN",
-    "deploymentAuthorized": false
+    "deploymentAuthorized": false,
+    "mergeCommit": "dc2ae81103925b18d962ff6c53d14c6a470b9f79",
+    "canonicalDevelopmentBranch": "main",
+    "releaseAllowed": false,
+    "checks": "UNRUN/STARTUP_FAILURE"
   }
 }
