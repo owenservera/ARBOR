@@ -1,0 +1,25 @@
+{
+  "name": "@software-hq/tierflow",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Universal 3-tier agentic workflow: interactive agent -> orchestrator -> realtime program execution, with a realtime visualization webapp. TypeScript 7 hot paths in Bun, Rust for the high-frequency event pipeline.",
+  "scripts": {
+    "start": "bun run src/server.ts",
+    "dev": "bun --watch src/server.ts",
+    "repl": "bun run src/cli.ts",
+    "test": "bun test tests/",
+    "typecheck": "tsc -p tsconfig.json",
+    "typecheck:tsgo": "bunx @typescript/native-preview -p tsconfig.json",
+    "core:build": "cargo build --release --manifest-path core/Cargo.toml",
+    "core:test": "cargo test --release --manifest-path core/Cargo.toml",
+    "bench": "bun run bench/hotpath.bench.ts",
+    "verify": "bun run typecheck && bun run core:test && bun run test",
+    "tokens:generate": "bun scripts/generate-host-tokens.mjs"
+  },
+  "devDependencies": {
+    "@typescript/native-preview": "^7.0.0-dev.20260707.2",
+    "bun-types": "latest",
+    "typescript": "^7.0.2"
+  }
+}
