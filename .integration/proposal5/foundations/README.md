@@ -26,6 +26,8 @@ The current working code already has much of the foundation: native generational
 | [DECISIONS-AND-DEFERRED.md](./DECISIONS-AND-DEFERRED.md) | 22 architecture decisions, open questions and explicit deferrals | Govern against architectural drift |
 | [VERIFICATION-AND-ACCEPTANCE.md](./VERIFICATION-AND-ACCEPTANCE.md) | Native/Host/HQ/Studio/TierFlow/PWA hard tests and negative corpus; real-vs-source evidence ladder | F/G acceptance |
 | [PROMPT-FACTORY-SCAFFOLD.md](./PROMPT-FACTORY-SCAFFOLD.md) | How to generate future isolated focused A–F prompts from current G HEAD and actual source; copy template **not executed** | Next round prompt creation |
+| [contracts/capability-manifest.v0.schema.json](./contracts/capability-manifest.v0.schema.json) | Strict **proposed** machine-readable source-pinned pure capability manifest with no authority | Schema DESIGN_ONLY |
+| [validate-program.mjs](./validate-program.mjs) / [validate-program.test.mjs](./validate-program.test.mjs) | Read-only source/wave/gap structural validator and 14 Node tests (declared; Node **UNRUN** here); 11 V8 structural checks observed | Program QA |
 
 ## Stage map
 
@@ -72,5 +74,7 @@ FB-01 future marketplace / full personal corpus / learning / automation / media 
 ## What did NOT happen
 
 No G integration, Cargo/Bun/Node/Windows/PWA live build or device acceptance was performed by this architecture round. No source features were promoted. No permissions/receipts/model or browser actions performed. A future worker must run actual test commands and show source/Host/device evidence before marking `VERIFIED`.
+
+**Machine validation:** 43 source entries, 43 gaps, 14 waves, 100 tasks; 11/11 V8 checks of actual committed manifests/validator succeeded after one bug fix. Actual Node test file, Cargo and device commands **UNRUN** in this round.
 
 **Next architectural action:** a subsequent round generates dedicated owner-focused runnable prompts from the 100-task manifest, after refreshing the active ARBOR refs and first G status. This branch is a stable reference and prep candidate only.
