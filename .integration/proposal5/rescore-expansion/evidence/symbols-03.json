@@ -1,0 +1,139 @@
+{
+  "schema": "arbor.rescore.symbol-declarations.part.v1",
+  "part": 3,
+  "source_commit": "98f15e327957956ec94189772d5e5813e7b6b07b",
+  "files": [
+    {
+      "path": "apps/vivim-host/bootstrap/command-worker.mjs",
+      "blob": "bfbe450a2f0cd4e3922537f0c078cae656b2f370",
+      "symbols": [
+        "createBootstrapCommandWorker",
+        "execute"
+      ]
+    },
+    {
+      "path": "apps/vivim-host/bootstrap/ledger.mjs",
+      "blob": "b40eb9ba34e49b034875936a0e7fc14964270a54",
+      "symbols": [
+        "openLedger",
+        "transaction"
+      ]
+    },
+    {
+      "path": "apps/vivim-host/bootstrap/scheduler.mjs",
+      "blob": "112a0baa757078935798f94cc15599b09b5341f0",
+      "symbols": [
+        "requestIdFor",
+        "publicState",
+        "checkReply",
+        "createBootstrapScheduler",
+        "change",
+        "updatePass",
+        "startGeneration",
+        "grantRevoked",
+        "grantValid",
+        "grantAllowsPacket",
+        "verifiedReady",
+        "verifiedApproval",
+        "packetFor",
+        "settle",
+        "reconcile",
+        "runOnce",
+        "cancelQueued"
+      ]
+    },
+    {
+      "path": "apps/vivim-host/bootstrap/web-memory.mjs",
+      "blob": "03908a63d61c2159cb667c362f25602714984a9c",
+      "symbols": [
+        "safeLocation",
+        "normalizeRustQuery",
+        "readMemoryParams",
+        "createWebMemory",
+        "setOptOut",
+        "project",
+        "recent",
+        "contextPreview",
+        "projectionId"
+      ]
+    },
+    {
+      "path": "apps/vivim-host/control/bootstrap-actions.mjs",
+      "blob": "04c5ff70b14ef17054b6f6913d75d49e2c55b640",
+      "symbols": []
+    },
+    {
+      "path": "apps/vivim-host/control/command-context-grounding.mjs",
+      "blob": "46364af8e64362a3bf4da2aa4c57f5e68526d6f3",
+      "symbols": [
+        "groundCommandReferences"
+      ]
+    },
+    {
+      "path": "apps/vivim-host/control/command-intent.d.ts",
+      "blob": "97e749156bd3b7ea47164d838b53a147c925c47d",
+      "symbols": []
+    },
+    {
+      "path": "apps/vivim-host/control/command-intent.mjs",
+      "blob": "52828ce955027b9e083a8afa5625cb0dbc1b730f",
+      "symbols": [
+        "refuse",
+        "canonical",
+        "checkedArgs",
+        "context",
+        "provenance",
+        "actionShape",
+        "toCommandIntent",
+        "validateAiCommandCandidate"
+      ]
+    },
+    {
+      "path": "apps/vivim-host/control/command-program.mjs",
+      "blob": "28a65908ea907b28593d8747b0bd6da06a9c7142",
+      "symbols": [
+        "validArgs",
+        "compileCommandProgram",
+        "visit"
+      ]
+    },
+    {
+      "path": "apps/vivim-host/control/intent-planner.mjs",
+      "blob": "3d1bbcd5ad80ffa6276ea4e5d2b5f0cfbd8cf4ab",
+      "symbols": [
+        "canonicalRisk",
+        "validLanguage",
+        "validateControlCatalog",
+        "loadControlCatalog",
+        "createControlPlanner",
+        "scopeFor",
+        "world",
+        "describe",
+        "planTyped",
+        "interpretText",
+        "planText",
+        "interpretCommand",
+        "validateCommandCandidate",
+        "planCandidate",
+        "languagePack"
+      ]
+    },
+    {
+      "path": "apps/vivim-host/control/journal.mjs",
+      "blob": "b9739a00c8345a0513dba32ddc0361e96bb9b16f",
+      "symbols": [
+        "newPlanId",
+        "createControlJournal",
+        "createExclusive",
+        "event"
+      ]
+    },
+    {
+      "path": "apps/vivim-host/control/lexicon.mjs",
+      "blob": "411ca2b111a7874bbbbdc909af78318dc8cb7a8a",
+      "symbols": [
+        "createLexiconStore"
+      ]
+    }
+  ]
+}
