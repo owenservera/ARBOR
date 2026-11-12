@@ -1,7 +1,7 @@
 {
   "schema": "vivim.control-action-catalog/1",
-  "version": 6,
-  "asOf": "2026-11-01",
+  "version": 7,
+  "asOf": "2026-11-12",
   "policy": {
     "allUserFacingActionsRequireTextPath": true,
     "uiSharesTypedExecutor": true,
@@ -875,6 +875,67 @@
       },
       "subject": "machine-network",
       "priority": "P2"
+    },
+    {
+      "id": "versions.compare.pinned",
+      "title": "Compare pinned repository versions",
+      "category": "development-intelligence",
+      "owner": "host-control",
+      "executor": null,
+      "readiness": "enforcement_missing",
+      "risk": "R0",
+      "target": "local-host",
+      "args": {
+        "selection": {
+          "type": "string",
+          "min": 3,
+          "max": 8000
+        }
+      },
+      "examples": [
+        "compare repository versions at commits A B and C",
+        "compare pinned repository versions and explain source changes"
+      ],
+      "surfaces": [
+        "text",
+        "desktop",
+        "mobile",
+        "visual"
+      ],
+      "reversible": true,
+      "privacy": "authenticated-development-source-grant",
+      "aiCandidate": true,
+      "subject": "versions",
+      "priority": "P2",
+      "precondition": "Explicit source grant and authenticated local Host session; remote access disabled pending security acceptance",
+      "language": {
+        "verbs": [
+          "compare",
+          "diff",
+          "contrast"
+        ],
+        "family": "?",
+        "reading": "Compare pinned versions: {selection}",
+        "objects": [
+          "versions",
+          "commits",
+          "repos",
+          "repositories"
+        ],
+        "scope": [
+          "repo",
+          "repository",
+          "versions",
+          "commits",
+          "git",
+          "source"
+        ],
+        "slots": {
+          "selection": {
+            "kind": "rest"
+          }
+        }
+      }
     }
   ],
   "readinessStates": {

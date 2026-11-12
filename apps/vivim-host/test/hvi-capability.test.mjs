@@ -1,45 +1,73 @@
-// HVI W2 H source-only synthetic tests; never run against real donor repositories.
+// Synthetic-only HVI read tests. No real corpus access.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createHviHostReadPort, HVI_HOST_ACTION_ID } from '../control/hvi-capability.mjs';
-import { syntheticSource } from '../../../hq/version-intelligence/sources/fixtures.mjs';
-import { resolvePin, snapshotAt } from '../../../hq/version-intelligence/sources/snapshots.mjs';
-import { HVI_TOOL_REQUEST_SCHEMA } from '../../../hq/version-intelligence/integration/index.mjs';
-const source = async () => {
-  const fixture = syntheticSource(); const manifests = [];
-  for (const ref of ['v1','v2','v3']) {
-    const p = await resolvePin({ provider:'github',repo:'synthetic/w2-host',ref,approvedScope:'development' },
-      { adapter:fixture.adapter,authorize:()=>true });
-    manifests.push(await snapshotAt(p,{adapter:fixture.adapter,authorize:()=>true}));
-  }
-  return {schema:HVI_TOOL_REQUEST_SCHEMA,sourceManifests:manifests,targetPinId:manifests[2].pin.pinId};
-};
-test('H has one discoverable existing action-registry descriptor, no enabled Host effect', () => {
-  const port=createHviHostReadPort({actorId:'owner',sessionId:'test',verifyGrant:()=>true});
-  assert.equal(port.action.id,HVI_HOST_ACTION_ID);
-  assert.equal(port.discover('compare pinned versions').outcome,'DECLARED_DISABLED');
-  assert.equal(port.remoteAccessible,false);
-  assert.equal(port.enabled,false);
+import {createHviHostReadPort,HVI_HOST_ACTION_ID,HVI_HOST_REQUEST_SCHEMA,
+  HVI_HOST_REPORT_SCHEMA} from '../control/hvi-capability.mjs';
+import {loadControlCatalog,createControlPlanner} from '../control/intent-planner.mjs';
+import {syntheticSource,SYNTHETIC_SHAS} from '../../../hq/version-intelligence/sources/fixtures.mjs';
+const sources=()=>['v1','v2','v3'].map(ref=>({repo:'synthetic/w2-host',ref}));
+const req=(o={})=>({schema:HVI_HOST_REQUEST_SCHEMA,sources:sources(),targetIndex:2,...o});
+const port=(o={})=>createHviHostReadPort({actorId:'owner',sessionId:'local',
+  approvedRepositories:['synthetic/w2-host'],verifySession:()=>true,
+  verifyGrant:()=>true,enabled:true,...o});
+test('single native catalog descriptor is discoverable, not executable',()=>{
+  const catalog=loadControlCatalog();
+  const hits=catalog.actions.filter(a=>a.id===HVI_HOST_ACTION_ID);
+  assert.equal(hits.length,1);assert.equal(hits[0].readiness,'enforcement_missing');
+  const planner=createControlPlanner({catalog});
+  assert.equal(planner.describe().actions.find(a=>a.actionId===HVI_HOST_ACTION_ID).executable,false);
+  assert.equal(planner.planTyped({actionId:HVI_HOST_ACTION_ID,
+    args:{selection:'synthetic commits v1 v2 v3'}}).outcome,'unavailable');
 });
-test('H disabled mode refuses even synthetic data', async () => {
-  const port=createHviHostReadPort({actorId:'owner',sessionId:'test',verifyGrant:()=>true});
-  await assert.rejects(port.invoke(await source()),{code:'HOST_FEATURE_DISABLED'});
+test('disabled and missing authority refuse',async()=>{
+  const fixture=syntheticSource();
+  await assert.rejects(port({enabled:false}).invoke(req(),{adapter:fixture.adapter}),
+    {code:'HOST_FEATURE_DISABLED'});
+  assert.throws(()=>createHviHostReadPort({actorId:'owner',sessionId:'local'}),
+    {code:'AUTHORITY_REQUIRED'});
 });
-test('H demands actor, session and live-grant callback', () => {
-  assert.throws(()=>createHviHostReadPort({actorId:'owner',sessionId:'test'}),{code:'AUTHORITY_REQUIRED'});
-  assert.throws(()=>createHviHostReadPort({actorId:'',sessionId:'test',verifyGrant:()=>true}),{code:'AUTHORITY_REQUIRED'});
+test('three immutable same-repo SHAs; many live checks; safe projection',async()=>{
+  const fixture=syntheticSource();let grants=0,sessions=0;
+  const result=await port({verifyGrant:()=>{grants++;return true;},
+    verifySession:()=>{sessions++;return true;}}).invoke(req(),{adapter:fixture.adapter});
+  assert.equal(result.report.schema,HVI_HOST_REPORT_SCHEMA);
+  assert.equal(result.report.sourcePins.length,3);
+  assert.equal(result.report.sourcePins[2].resolvedCommitSha,SYNTHETIC_SHAS.v3);
+  assert.ok(grants>=15);assert.equal(sessions,grants);
+  assert.equal(fixture.calls.blobs.length,0);
+  assert.equal(result.remoteAccepted,false);
+  assert.equal(result.runtimeAccepted,false);
+  assert.ok(!JSON.stringify(result).includes('MUST_NOT_READ_SECRET'));
+  assert.ok(!JSON.stringify(result).includes('.env.production'));
+  assert.ok(!JSON.stringify(result).includes('local'));
 });
-test('H injected revoked grant denies all source analysis', async () => {
-  const port=createHviHostReadPort({actorId:'owner',sessionId:'test',enabled:true,verifyGrant:()=>false});
-  await assert.rejects(port.invoke(await source()),{code:'SOURCE_UNAUTHORIZED'});
+test('no live grant or approved repository: no source read',async()=>{
+  const fixture=syntheticSource();
+  await assert.rejects(port({verifyGrant:()=>false}).invoke(req(),{adapter:fixture.adapter}),
+    {code:'SOURCE_UNAUTHORIZED'});
+  await assert.rejects(port({approvedRepositories:[]}).invoke(req(),{adapter:fixture.adapter}),
+    {code:'SOURCE_UNAUTHORIZED'});
+  assert.equal(fixture.calls.refs.length,0);
 });
-test('H synthetic local grant checks re-evaluate for each of 3 pins', async () => {
-  let calls=0;
-  const port=createHviHostReadPort({actorId:'owner',sessionId:'test',enabled:true,
-    verifyGrant:({actorId,sessionId})=>{calls++;return actorId==='owner'&&sessionId==='test'}});
-  const out=await port.invoke(await source());
-  assert.equal(out.grantCheckCount,3);
-  assert.equal(calls,3);
-  assert.equal(out.result.comparison.coverage.length,2);
-  assert.equal(out.remoteAccepted,false);
+test('revocation during source page denies without report',async()=>{
+  const fixture=syntheticSource();let n=0;
+  await assert.rejects(port({verifyGrant:()=>++n<4}).invoke(req(),{adapter:fixture.adapter}),
+    {code:'SOURCE_UNAUTHORIZED'});
+  assert.ok(n>=4);
+});
+test('revocation at final projection denies',async()=>{
+  const fixture=syntheticSource();let n=0;
+  await assert.rejects(port({verifyGrant:()=>++n<=15}).invoke(req(),{adapter:fixture.adapter}),
+    {code:'SOURCE_UNAUTHORIZED'});
+});
+test('incomplete pin list, secret subpath, moved SHA, unknown repository fail',async()=>{
+  const adapter=syntheticSource().adapter;
+  await assert.rejects(port().invoke(req({sources:[sources()[0]]}),{adapter}),
+    {code:'INVALID_REQUEST'});
+  await assert.rejects(port().invoke(req({sources:[{repo:'synthetic/w2-host',ref:'v1',subPath:'.env.production'},sources()[1]]}),{adapter}),
+    {code:'SCOPE_ESCAPE'});
+  await assert.rejects(port().invoke(req({sources:[{repo:'other/unapproved',ref:'v1'},sources()[1]]}),{adapter}),
+    {code:'SOURCE_UNAUTHORIZED'});
+  await assert.rejects(port().invoke(req({sources:[{repo:'synthetic/w2-host',ref:'v1',sha:SYNTHETIC_SHAS.v2},sources()[1]]}),{adapter}),
+    {code:'PIN_MOVED'});
 });
