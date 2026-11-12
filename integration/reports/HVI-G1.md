@@ -1,3 +1,5 @@
+> **LATEST OWNER DECISION:** GO_FOR_W2_TOOLING issued for **source-only H/U parallel development**, with an explicit owner exception to the missing Node24 runner. G1 remains G1_SOURCE_STAGED_TESTS_UNRUN and REPAIR_REQUIRED for integration acceptance; main remains unmodified. The historical paragraph below saying the gate cannot be claimed is superseded **only for W2 development start**, not testing, promotion or readiness. See proofs/G1/W2-OWNER-OVERRIDE.json.
+
 # ARBOR Proposal 5 — HVI G1 Serial Integration Report
 
 **Status:** REPAIR_REQUIRED / G1_SOURCE_STAGED_TESTS_UNRUN.

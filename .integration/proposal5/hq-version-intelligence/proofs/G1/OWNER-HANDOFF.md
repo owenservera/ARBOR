@@ -1,3 +1,5 @@
+> **2026-11-12 owner override:** GO_FOR_W2_TOOLING issued for H/U source development only, from G1 waiver commit bbe7e4896eea02bcdec6f8fedb66eab885250161. The requirements below for independent runtime verification and accepted main remain gating **promotion/readiness**, not preliminary H/U coding. Existing H/U branches were created from the exact waiver commit. See W2-OWNER-OVERRIDE.json. 
+
 # Exact G1 blockers, owner sequence and gate handoff
 
 1. **G1 / CI runner owner — P0:** restore or provide real Node24 execution against the exact integration candidate. GitHub Actions run 43303858096 ended startup_failure with jobs=0. The scoped synthetic workflow is at .github/workflows/hvi-g1-node24-synthetic.yml. Run all A-F + G1 tests with observed exit/stdout/stderr. Do not treat startup_failure as pass.
