@@ -19,3 +19,9 @@ After the three parallel chats commit their **isolated** branches, use [P2-G —
 **No outside VIVIM wiring:** future selected Labs code physically lands under the existing ARBOR owner, not an external Labs runtime dependency.
 
 **Beta rule:** extra Labs features are optional; migrate working/tested code cheaply, defer research-only ambitions. Source tests are not automatically device/runtime acceptance.
+
+## First-pass Labs source readiness — 2026-11-12
+
+**[Read the new 44-component readiness matrix, destination map and owner handoffs](readiness/README.md)**.
+
+This separate first-pass audit ran against pinned GitHub source trees while A–F were working. It records eight easy-migration candidates, ten core integration areas, nine high-value pending development areas and seventeen retain/review areas. It does not certify product integration. CI was attempted but GitHub Actions returned a startup failure before jobs ran, so fresh test receipts remain UNRUN. The report and repeatable scanner live in an isolated Labs branch. No active worker branch or ARBOR main has been modified by this assessment.
