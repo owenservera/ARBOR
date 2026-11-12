@@ -1,0 +1,391 @@
+{
+  "schema": "arbor.optimization.source-inventory/1",
+  "observedAt": "2026-11-12",
+  "pinnedRepository": "owenservera/ARBOR",
+  "commit": "98f15e327957956ec94189772d5e5813e7b6b07b",
+  "gitTreeTruncated": false,
+  "inspectedPaths": [
+    {
+      "repo": "owenservera/ARBOR",
+      "sha": "98f15e327957956ec94189772d5e5813e7b6b07b",
+      "path": "Cargo.toml",
+      "blobSha": "70eed79a00331ddd88b4ec207e714d77b4fbeb49",
+      "evidenceClass": "GITHUB_TREE_AND_SELECTIVE_SOURCE_INSPECTION",
+      "runtimeExecuted": false
+    },
+    {
+      "repo": "owenservera/ARBOR",
+      "sha": "98f15e327957956ec94189772d5e5813e7b6b07b",
+      "path": "apps/mobile-relay/generative-ui/compiler.mjs",
+      "blobSha": "e3b2fd31f09ce4724db10594f39ae6dae3b8e3fe",
+      "evidenceClass": "GITHUB_TREE_AND_SELECTIVE_SOURCE_INSPECTION",
+      "runtimeExecuted": false
+    },
+    {
+      "repo": "owenservera/ARBOR",
+      "sha": "98f15e327957956ec94189772d5e5813e7b6b07b",
+      "path": "apps/vivim-host/bootstrap/capability-activation.mjs",
+      "blobSha": "cc40981379610450ac457edc0fff3cd39270e467",
+      "evidenceClass": "GITHUB_TREE_AND_SELECTIVE_SOURCE_INSPECTION",
+      "runtimeExecuted": false
+    },
+    {
+      "repo": "owenservera/ARBOR",
+      "sha": "98f15e327957956ec94189772d5e5813e7b6b07b",
+      "path": "apps/vivim-host/bootstrap/command-worker.mjs",
+      "blobSha": "bfbe450a2f0cd4e3922537f0c078cae656b2f370",
+      "evidenceClass": "GITHUB_TREE_AND_SELECTIVE_SOURCE_INSPECTION",
+      "runtimeExecuted": false
+    },
+    {
+      "repo": "owenservera/ARBOR",
+      "sha": "98f15e327957956ec94189772d5e5813e7b6b07b",
+      "path": "apps/vivim-host/bootstrap/readiness-gate.mjs",
+      "blobSha": "6e51a7e8217d209f8681643d2ac6bcbf9908b7bc",
+      "evidenceClass": "GITHUB_TREE_AND_SELECTIVE_SOURCE_INSPECTION",
+      "runtimeExecuted": false
+    },
+    {
+      "repo": "owenservera/ARBOR",
+      "sha": "98f15e327957956ec94189772d5e5813e7b6b07b",
+      "path": "apps/vivim-host/bootstrap/scheduler.mjs",
+      "blobSha": "112a0baa757078935798f94cc15599b09b5341f0",
+      "evidenceClass": "GITHUB_TREE_AND_SELECTIVE_SOURCE_INSPECTION",
+      "runtimeExecuted": false
+    },
+    {
+      "repo": "owenservera/ARBOR",
+      "sha": "98f15e327957956ec94189772d5e5813e7b6b07b",
+      "path": "apps/vivim-host/bootstrap/web-memory.mjs",
+      "blobSha": "03908a63d61c2159cb667c362f25602714984a9c",
+      "evidenceClass": "GITHUB_TREE_AND_SELECTIVE_SOURCE_INSPECTION",
+      "runtimeExecuted": false
+    },
+    {
+      "repo": "owenservera/ARBOR",
+      "sha": "98f15e327957956ec94189772d5e5813e7b6b07b",
+      "path": "apps/vivim-host/control/command-intent.mjs",
+      "blobSha": "52828ce955027b9e083a8afa5625cb0dbc1b730f",
+      "evidenceClass": "GITHUB_TREE_AND_SELECTIVE_SOURCE_INSPECTION",
+      "runtimeExecuted": false
+    },
+    {
+      "repo": "owenservera/ARBOR",
+      "sha": "98f15e327957956ec94189772d5e5813e7b6b07b",
+      "path": "core/programmability/src/lib.rs",
+      "blobSha": "fe42cb6bf535c91d3ba05911977999a9d8f8c254",
+      "evidenceClass": "GITHUB_TREE_AND_SELECTIVE_SOURCE_INSPECTION",
+      "runtimeExecuted": false
+    },
+    {
+      "repo": "owenservera/ARBOR",
+      "sha": "98f15e327957956ec94189772d5e5813e7b6b07b",
+      "path": "hq/lib/arbor-service.mjs",
+      "blobSha": "a47c232c188d69758daa8d6a2f18070ce8c9a27b",
+      "evidenceClass": "GITHUB_TREE_AND_SELECTIVE_SOURCE_INSPECTION",
+      "runtimeExecuted": false
+    },
+    {
+      "repo": "owenservera/ARBOR",
+      "sha": "98f15e327957956ec94189772d5e5813e7b6b07b",
+      "path": "hq/lib/automation.mjs",
+      "blobSha": "4eeec1b7d8f64d8a5bae96639d191f6823aacb45",
+      "evidenceClass": "GITHUB_TREE_AND_SELECTIVE_SOURCE_INSPECTION",
+      "runtimeExecuted": false
+    },
+    {
+      "repo": "owenservera/ARBOR",
+      "sha": "98f15e327957956ec94189772d5e5813e7b6b07b",
+      "path": "hq/lib/context-budget.mjs",
+      "blobSha": "d8aec182dce906cfd84c8ac47fa2ebac10e3a06b",
+      "evidenceClass": "GITHUB_TREE_AND_SELECTIVE_SOURCE_INSPECTION",
+      "runtimeExecuted": false
+    },
+    {
+      "repo": "owenservera/ARBOR",
+      "sha": "98f15e327957956ec94189772d5e5813e7b6b07b",
+      "path": "hq/lib/graph.mjs",
+      "blobSha": "f824b0b9d940bbde9b80ee5d51db2e0eb21cf6a3",
+      "evidenceClass": "GITHUB_TREE_AND_SELECTIVE_SOURCE_INSPECTION",
+      "runtimeExecuted": false
+    },
+    {
+      "repo": "owenservera/ARBOR",
+      "sha": "98f15e327957956ec94189772d5e5813e7b6b07b",
+      "path": "hq/lib/indexer.mjs",
+      "blobSha": "4f5cf53c861d8052e0c56be38307f93cc65e2a5f",
+      "evidenceClass": "GITHUB_TREE_AND_SELECTIVE_SOURCE_INSPECTION",
+      "runtimeExecuted": false
+    },
+    {
+      "repo": "owenservera/ARBOR",
+      "sha": "98f15e327957956ec94189772d5e5813e7b6b07b",
+      "path": "hq/lib/refresh.mjs",
+      "blobSha": "712c287d45a1ed7d4deb7b948cc548411443f1e7",
+      "evidenceClass": "GITHUB_TREE_AND_SELECTIVE_SOURCE_INSPECTION",
+      "runtimeExecuted": false
+    },
+    {
+      "repo": "owenservera/ARBOR",
+      "sha": "98f15e327957956ec94189772d5e5813e7b6b07b",
+      "path": "hq/lib/schema.mjs",
+      "blobSha": "de479b0761dcdb70b90e75944b9d652db9cbefe3",
+      "evidenceClass": "GITHUB_TREE_AND_SELECTIVE_SOURCE_INSPECTION",
+      "runtimeExecuted": false
+    },
+    {
+      "repo": "owenservera/ARBOR",
+      "sha": "98f15e327957956ec94189772d5e5813e7b6b07b",
+      "path": "hq/lib/search.mjs",
+      "blobSha": "6891decb68a1b8830202b9d6f346d97deef3cd1e",
+      "evidenceClass": "GITHUB_TREE_AND_SELECTIVE_SOURCE_INSPECTION",
+      "runtimeExecuted": false
+    },
+    {
+      "repo": "owenservera/ARBOR",
+      "sha": "98f15e327957956ec94189772d5e5813e7b6b07b",
+      "path": "hq/lib/semantic-optimizers.mjs",
+      "blobSha": "ce620c4ae21a7ea4269bc772808dffbe12526233",
+      "evidenceClass": "GITHUB_TREE_AND_SELECTIVE_SOURCE_INSPECTION",
+      "runtimeExecuted": false
+    },
+    {
+      "repo": "owenservera/ARBOR",
+      "sha": "98f15e327957956ec94189772d5e5813e7b6b07b",
+      "path": "hq/lib/semantic-registry.mjs",
+      "blobSha": "ec982381c77147119f62e702a162a203df8e7d4e",
+      "evidenceClass": "GITHUB_TREE_AND_SELECTIVE_SOURCE_INSPECTION",
+      "runtimeExecuted": false
+    },
+    {
+      "repo": "owenservera/ARBOR",
+      "sha": "98f15e327957956ec94189772d5e5813e7b6b07b",
+      "path": "hq/lib/wiki.mjs",
+      "blobSha": "c85c8fbe1409273928ea5c52bc2c20f108ac4dce",
+      "evidenceClass": "GITHUB_TREE_AND_SELECTIVE_SOURCE_INSPECTION",
+      "runtimeExecuted": false
+    },
+    {
+      "repo": "owenservera/ARBOR",
+      "sha": "98f15e327957956ec94189772d5e5813e7b6b07b",
+      "path": "native/hqkg/Cargo.toml",
+      "blobSha": "b90c06fa3035ad7b8b7cdd2e97593c3e4fd2b19a",
+      "evidenceClass": "GITHUB_TREE_AND_SELECTIVE_SOURCE_INSPECTION",
+      "runtimeExecuted": false
+    },
+    {
+      "repo": "owenservera/ARBOR",
+      "sha": "98f15e327957956ec94189772d5e5813e7b6b07b",
+      "path": "native/hqkg/src/context_retrieval.rs",
+      "blobSha": "e966e3263b8350a3b05fe0d31cddaa4dba829f75",
+      "evidenceClass": "GITHUB_TREE_AND_SELECTIVE_SOURCE_INSPECTION",
+      "runtimeExecuted": false
+    },
+    {
+      "repo": "owenservera/ARBOR",
+      "sha": "98f15e327957956ec94189772d5e5813e7b6b07b",
+      "path": "native/hqkg/src/durable_dag.rs",
+      "blobSha": "140161b4f34874dee9c8540dfcd4733ed97f7cd4",
+      "evidenceClass": "GITHUB_TREE_AND_SELECTIVE_SOURCE_INSPECTION",
+      "runtimeExecuted": false
+    },
+    {
+      "repo": "owenservera/ARBOR",
+      "sha": "98f15e327957956ec94189772d5e5813e7b6b07b",
+      "path": "native/hqkg/src/engine.rs",
+      "blobSha": "fbb1100999fd229fb5a4352a78bbb0d77b643988",
+      "evidenceClass": "GITHUB_TREE_AND_SELECTIVE_SOURCE_INSPECTION",
+      "runtimeExecuted": false
+    },
+    {
+      "repo": "owenservera/ARBOR",
+      "sha": "98f15e327957956ec94189772d5e5813e7b6b07b",
+      "path": "native/hqkg/src/lib.rs",
+      "blobSha": "2f4eddd34e64a53430df97ada0e2bd3960592935",
+      "evidenceClass": "GITHUB_TREE_AND_SELECTIVE_SOURCE_INSPECTION",
+      "runtimeExecuted": false
+    },
+    {
+      "repo": "owenservera/ARBOR",
+      "sha": "98f15e327957956ec94189772d5e5813e7b6b07b",
+      "path": "native/hqkg/src/observability.rs",
+      "blobSha": "4696d63adf0c528c81f182388f4d1467f6a5d619",
+      "evidenceClass": "GITHUB_TREE_AND_SELECTIVE_SOURCE_INSPECTION",
+      "runtimeExecuted": false
+    },
+    {
+      "repo": "owenservera/ARBOR",
+      "sha": "98f15e327957956ec94189772d5e5813e7b6b07b",
+      "path": "native/hqkg/src/typed_dag.rs",
+      "blobSha": "24d4ef22ab76f1c8832f5c426b29860c74fac2a5",
+      "evidenceClass": "GITHUB_TREE_AND_SELECTIVE_SOURCE_INSPECTION",
+      "runtimeExecuted": false
+    },
+    {
+      "repo": "owenservera/ARBOR",
+      "sha": "98f15e327957956ec94189772d5e5813e7b6b07b",
+      "path": "native/hqkg/src/web_memory.rs",
+      "blobSha": "dc356713704991dc86825c57335f530c3676818a",
+      "evidenceClass": "GITHUB_TREE_AND_SELECTIVE_SOURCE_INSPECTION",
+      "runtimeExecuted": false
+    },
+    {
+      "repo": "owenservera/ARBOR",
+      "sha": "98f15e327957956ec94189772d5e5813e7b6b07b",
+      "path": "packages/tierflow/src/hotpath.ts",
+      "blobSha": "970a79c2627720e120a32f29df1351c109fd2106",
+      "evidenceClass": "GITHUB_TREE_AND_SELECTIVE_SOURCE_INSPECTION",
+      "runtimeExecuted": false
+    },
+    {
+      "repo": "owenservera/ARBOR",
+      "sha": "98f15e327957956ec94189772d5e5813e7b6b07b",
+      "path": "packages/tierflow/src/ui/store.ts",
+      "blobSha": "90aeae09c8c765fb385e7eeac5715d3d3577a57a",
+      "evidenceClass": "GITHUB_TREE_AND_SELECTIVE_SOURCE_INSPECTION",
+      "runtimeExecuted": false
+    },
+    {
+      "repo": "owenservera/ARBOR",
+      "sha": "98f15e327957956ec94189772d5e5813e7b6b07b",
+      "path": "packages/tierflow/src/visual-runtime/command/compile.ts",
+      "blobSha": "4cc5b63bea409171e2b4b0a29398c87907cd35ea",
+      "evidenceClass": "GITHUB_TREE_AND_SELECTIVE_SOURCE_INSPECTION",
+      "runtimeExecuted": false
+    },
+    {
+      "repo": "owenservera/ARBOR",
+      "sha": "98f15e327957956ec94189772d5e5813e7b6b07b",
+      "path": "packages/tierflow/src/visual-runtime/command/crosswalk.ts",
+      "blobSha": "2ed885976e7f28e27d13f7bc835ca42f83685873",
+      "evidenceClass": "GITHUB_TREE_AND_SELECTIVE_SOURCE_INSPECTION",
+      "runtimeExecuted": false
+    },
+    {
+      "repo": "owenservera/ARBOR",
+      "sha": "98f15e327957956ec94189772d5e5813e7b6b07b",
+      "path": "packages/tierflow/src/visual-runtime/document/validate.ts",
+      "blobSha": "ef6f2edaea190ba2353e3e92eff04bebcd45e4e7",
+      "evidenceClass": "GITHUB_TREE_AND_SELECTIVE_SOURCE_INSPECTION",
+      "runtimeExecuted": false
+    },
+    {
+      "repo": "owenservera/ARBOR",
+      "sha": "98f15e327957956ec94189772d5e5813e7b6b07b",
+      "path": "packages/tierflow/src/visual-runtime/final-wave/lane-a/normalize.ts",
+      "blobSha": "68e5fb7a150df87224468302fa3c32c889382c87",
+      "evidenceClass": "GITHUB_TREE_AND_SELECTIVE_SOURCE_INSPECTION",
+      "runtimeExecuted": false
+    },
+    {
+      "repo": "owenservera/ARBOR",
+      "sha": "98f15e327957956ec94189772d5e5813e7b6b07b",
+      "path": "packages/tierflow/src/visual-runtime/final-wave/lane-h/verification.ts",
+      "blobSha": "7a1f25539ae05c6083d7b107f05539d8f5b09029",
+      "evidenceClass": "GITHUB_TREE_AND_SELECTIVE_SOURCE_INSPECTION",
+      "runtimeExecuted": false
+    },
+    {
+      "repo": "owenservera/ARBOR",
+      "sha": "98f15e327957956ec94189772d5e5813e7b6b07b",
+      "path": "studio/scripts/local-verify.mjs",
+      "blobSha": "7cb083c8c63eb28fb58d93bdee5762eb984bfcaf",
+      "evidenceClass": "GITHUB_TREE_AND_SELECTIVE_SOURCE_INSPECTION",
+      "runtimeExecuted": false
+    },
+    {
+      "repo": "owenservera/ARBOR",
+      "sha": "98f15e327957956ec94189772d5e5813e7b6b07b",
+      "path": "studio/src/decode/csv.mjs",
+      "blobSha": "80b4611744d4d681ae44016675991ea6e3a59a8d",
+      "evidenceClass": "GITHUB_TREE_AND_SELECTIVE_SOURCE_INSPECTION",
+      "runtimeExecuted": false
+    },
+    {
+      "repo": "owenservera/ARBOR",
+      "sha": "98f15e327957956ec94189772d5e5813e7b6b07b",
+      "path": "studio/src/decode/decoders.mjs",
+      "blobSha": "630d7b148f8db97148f3b81bb7dcb6a95216ed7a",
+      "evidenceClass": "GITHUB_TREE_AND_SELECTIVE_SOURCE_INSPECTION",
+      "runtimeExecuted": false
+    },
+    {
+      "repo": "owenservera/ARBOR",
+      "sha": "98f15e327957956ec94189772d5e5813e7b6b07b",
+      "path": "studio/src/decode/delta.mjs",
+      "blobSha": "91b36a8ba765f2ab2947a3dc82c931638c5ce3d3",
+      "evidenceClass": "GITHUB_TREE_AND_SELECTIVE_SOURCE_INSPECTION",
+      "runtimeExecuted": false
+    },
+    {
+      "repo": "owenservera/ARBOR",
+      "sha": "98f15e327957956ec94189772d5e5813e7b6b07b",
+      "path": "studio/src/decode/protobuf.mjs",
+      "blobSha": "f9ce0e1aaf92fdd74cbd4e25d7c601654cd7026d",
+      "evidenceClass": "GITHUB_TREE_AND_SELECTIVE_SOURCE_INSPECTION",
+      "runtimeExecuted": false
+    },
+    {
+      "repo": "owenservera/ARBOR",
+      "sha": "98f15e327957956ec94189772d5e5813e7b6b07b",
+      "path": "studio/src/intel/graph-analytics.mjs",
+      "blobSha": "482c3e653194dcd86957f38bb25fb4c87719b992",
+      "evidenceClass": "GITHUB_TREE_AND_SELECTIVE_SOURCE_INSPECTION",
+      "runtimeExecuted": false
+    },
+    {
+      "repo": "owenservera/ARBOR",
+      "sha": "98f15e327957956ec94189772d5e5813e7b6b07b",
+      "path": "studio/src/intel/graph.mjs",
+      "blobSha": "60168f848ccfd6917a5ae6f36305de9bed92d177",
+      "evidenceClass": "GITHUB_TREE_AND_SELECTIVE_SOURCE_INSPECTION",
+      "runtimeExecuted": false
+    },
+    {
+      "repo": "owenservera/ARBOR",
+      "sha": "98f15e327957956ec94189772d5e5813e7b6b07b",
+      "path": "studio/src/store/compact.mjs",
+      "blobSha": "7abd8d3c16685fe262c2b531dc9716c7e2181341",
+      "evidenceClass": "GITHUB_TREE_AND_SELECTIVE_SOURCE_INSPECTION",
+      "runtimeExecuted": false
+    },
+    {
+      "repo": "owenservera/ARBOR",
+      "sha": "98f15e327957956ec94189772d5e5813e7b6b07b",
+      "path": "studio/src/store/integrity.mjs",
+      "blobSha": "10c695062cdee979d2df29a66462d9a06ddb47a7",
+      "evidenceClass": "GITHUB_TREE_AND_SELECTIVE_SOURCE_INSPECTION",
+      "runtimeExecuted": false
+    },
+    {
+      "repo": "owenservera/ARBOR",
+      "sha": "98f15e327957956ec94189772d5e5813e7b6b07b",
+      "path": "studio/src/store/raw-index.mjs",
+      "blobSha": "d3756a6f9a35347022d1ae5e708ef84559f0b1af",
+      "evidenceClass": "GITHUB_TREE_AND_SELECTIVE_SOURCE_INSPECTION",
+      "runtimeExecuted": false
+    },
+    {
+      "repo": "owenservera/ARBOR",
+      "sha": "98f15e327957956ec94189772d5e5813e7b6b07b",
+      "path": "studio/src/store/raw-log.mjs",
+      "blobSha": "e6e1aadbf4b37b2e0fabd4305bb9f0a9796d3adc",
+      "evidenceClass": "GITHUB_TREE_AND_SELECTIVE_SOURCE_INSPECTION",
+      "runtimeExecuted": false
+    },
+    {
+      "repo": "owenservera/ARBOR",
+      "sha": "98f15e327957956ec94189772d5e5813e7b6b07b",
+      "path": "studio/src/store/versioned.mjs",
+      "blobSha": "e2df7184188d92577f465162a483b4d93b118bdd",
+      "evidenceClass": "GITHUB_TREE_AND_SELECTIVE_SOURCE_INSPECTION",
+      "runtimeExecuted": false
+    }
+  ],
+  "notes": [
+    "Paths and blob SHA verified against pinned Git tree",
+    "Only select source contents manually inspected",
+    "No test, benchmark, CPU or IO profiler executed",
+    "No product modifications authorized"
+  ]
+}
