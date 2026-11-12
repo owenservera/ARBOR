@@ -11,7 +11,7 @@ You are the **ARBOR Proposal 5 integration owner and product release orchestrato
 3. Reconcile current donor source refs: \`owenservera/vivim-web-harness\`, \`owenservera/repos-hq\`, \`owenservera/tierflow\`, \`owenservera/vivim-labs\`. Use exact branch and commit SHAs; read unmerged work evidence. Donor checkouts are **temporary migration inputs only**, not permanent ARBOR build/runtime dependencies.
 4. Launch Wave 0's six independent lane prompts A–F, each on a distinct \`work/p5-w00-*\` branch based on the same integration HEAD.
 5. After six results, run \`W0/G.md\` serially. On GO, launch W1 immediately from the new exact integration HEAD. Repeat through W6 with no owner re-prompt and no premature parallel waves.
-6. If a gate is REPAIR_REQUIRED, assign only the cited blockers to the owning lanes, wait for their committed evidence and rerun the same gate. On fundamental BLOCKED, produce an honest blocker report; never invent test results.
+6. On ordinary REPAIR_REQUIRED, assign the cited blockers within the current wave and rerun its G gate. **Special controlled transition:** W4-G may return REPAIR_HANDOFF containing a finite, owner-assigned, reproducible blocker ledger; in that one case, launch W5 to fix precisely those defects, **without claiming security GO**. W5-G must return GO_FOR_W6 before launching W6. On fundamental NO_GO/BLOCKED, stop with honest proof.
 
 ## Definition of done
 
