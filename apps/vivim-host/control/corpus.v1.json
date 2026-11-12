@@ -1,0 +1,280 @@
+{
+ "schema": "vivim.control-corpus/1",
+ "note": "Golden semantic corpus for UTC02. Sources: UTC-V1 examples, Omega NCLL gap-narrowing design, AION SEMANTIC-CONTRACT E2/E3.",
+ "cases": [
+  {
+   "text": "Set my theme to dusk",
+   "outcome": "candidate",
+   "note": "plain",
+   "actionId": "ui.theme.set_preset",
+   "args": {
+    "preset": "dusk"
+   }
+  },
+  {
+   "text": "Use ink theme",
+   "outcome": "candidate",
+   "note": "plain",
+   "actionId": "ui.theme.set_preset",
+   "args": {
+    "preset": "ink"
+   }
+  },
+  {
+   "text": "change my theme to grove",
+   "outcome": "candidate",
+   "note": "plain",
+   "actionId": "ui.theme.set_preset",
+   "args": {
+    "preset": "grove"
+   }
+  },
+  {
+   "text": "theme ember",
+   "outcome": "candidate",
+   "note": "terse",
+   "actionId": "ui.theme.set_preset",
+   "args": {
+    "preset": "ember"
+   }
+  },
+  {
+   "text": "/theme ember",
+   "outcome": "candidate",
+   "note": "symbolic",
+   "actionId": "ui.theme.set_preset",
+   "args": {
+    "preset": "ember"
+   }
+  },
+  {
+   "text": "sett theme to ember",
+   "outcome": "candidate",
+   "note": "fuzzy verb",
+   "actionId": "ui.theme.set_preset",
+   "args": {
+    "preset": "ember"
+   }
+  },
+  {
+   "text": "!set theme to ember",
+   "outcome": "candidate",
+   "note": "force modifier is meaning only",
+   "actionId": "ui.theme.set_preset",
+   "args": {
+    "preset": "ember"
+   }
+  },
+  {
+   "text": "Undo my theme",
+   "outcome": "candidate",
+   "note": "plain",
+   "actionId": "ui.theme.undo",
+   "args": {}
+  },
+  {
+   "text": "revert the theme",
+   "outcome": "candidate",
+   "note": "synonym",
+   "actionId": "ui.theme.undo",
+   "args": {}
+  },
+  {
+   "text": "show my theme",
+   "outcome": "candidate",
+   "note": "read",
+   "actionId": "ui.theme.show",
+   "args": {}
+  },
+  {
+   "text": "show my exclusions",
+   "outcome": "candidate",
+   "note": "read",
+   "actionId": "privacy.hard_no.list",
+   "args": {}
+  },
+  {
+   "text": "status",
+   "outcome": "candidate",
+   "note": "read",
+   "actionId": "vivim.status.show",
+   "args": {}
+  },
+  {
+   "text": "help",
+   "outcome": "candidate",
+   "note": "help",
+   "actionId": "control.catalog.list",
+   "args": {}
+  },
+  {
+   "text": "what can I say?",
+   "outcome": "candidate",
+   "note": "help",
+   "actionId": "control.catalog.list",
+   "args": {}
+  },
+  {
+   "text": "Never mention my former employer",
+   "outcome": "candidate",
+   "note": "exact owner wording kept",
+   "actionId": "privacy.hard_no.add",
+   "args": {
+    "trait": "mention my former employer"
+   }
+  },
+  {
+   "text": "withdraw exclusion prf-owner-0123abcd",
+   "outcome": "candidate",
+   "note": "typed id extraction",
+   "actionId": "privacy.hard_no.clear",
+   "args": {
+    "id": "prf-owner-0123abcd"
+   }
+  },
+  {
+   "text": "teach blitz means undo",
+   "outcome": "candidate",
+   "note": "teach by verb",
+   "actionId": "control.lexicon.teach",
+   "args": {
+    "word": "blitz",
+    "action": "ui.theme.undo"
+   }
+  },
+  {
+   "text": "teach glow means theme",
+   "outcome": "candidate",
+   "note": "teach by verb",
+   "actionId": "control.lexicon.teach",
+   "args": {
+    "word": "glow",
+    "action": "ui.theme.set_preset"
+   }
+  },
+  {
+   "text": "forget blitz",
+   "outcome": "candidate",
+   "note": "unteach",
+   "actionId": "control.lexicon.forget",
+   "args": {
+    "word": "blitz"
+   }
+  },
+  {
+   "text": "Pause all VIVIM traffic",
+   "outcome": "candidate",
+   "note": "scoped",
+   "actionId": "vivim.network.pause_egress",
+   "args": {}
+  },
+  {
+   "text": "Disconnect my PC from the network",
+   "outcome": "candidate",
+   "note": "scoped",
+   "actionId": "machine.network.disable_all",
+   "args": {}
+  },
+  {
+   "text": "Stop all traffic",
+   "outcome": "clarification_required",
+   "note": "two meanings"
+  },
+  {
+   "text": "stop the network",
+   "outcome": "clarification_required",
+   "note": "two meanings"
+  },
+  {
+   "text": "show",
+   "outcome": "clarification_required",
+   "note": "shared verb without scope"
+  },
+  {
+   "text": "undo",
+   "outcome": "clarification_required",
+   "note": "undo what"
+  },
+  {
+   "text": "set theme to ember and stop all traffic",
+   "outcome": "clarification_required",
+   "note": "composite refused"
+  },
+  {
+   "text": "change my theme to purple",
+   "outcome": "incomplete",
+   "note": "enum outside catalog",
+   "actionId": "ui.theme.set_preset"
+  },
+  {
+   "text": "switch the theme to inq",
+   "outcome": "incomplete",
+   "note": "near-miss enum is not guessed",
+   "actionId": "ui.theme.set_preset"
+  },
+  {
+   "text": "teach zap means shutdown",
+   "outcome": "incomplete",
+   "note": "teach target unknown"
+  },
+  {
+   "text": "withdraw exclusion something",
+   "outcome": "incomplete",
+   "note": "no typed id",
+   "actionId": "privacy.hard_no.clear"
+  },
+  {
+   "text": "make me a private workspace",
+   "outcome": "interpretation_required",
+   "note": "unknown"
+  },
+  {
+   "text": "send this to Peter",
+   "outcome": "interpretation_required",
+   "note": "email ops not routable here"
+  },
+  {
+   "text": "delete all my files",
+   "outcome": "interpretation_required",
+   "note": "no such action"
+  },
+  {
+   "text": "stop",
+   "outcome": "interpretation_required",
+   "note": "no topic"
+  },
+  {
+   "text": "",
+   "outcome": "empty",
+   "note": "empty"
+  },
+  {
+   "text": "blitz",
+   "lexicon": [
+    {
+     "word": "blitz",
+     "actionId": "ui.theme.undo"
+    }
+   ],
+   "outcome": "candidate",
+   "actionId": "ui.theme.undo",
+   "args": {},
+   "note": "taught word satisfies scope"
+  },
+  {
+   "text": "glow dawn",
+   "lexicon": [
+    {
+     "word": "glow",
+     "actionId": "ui.theme.set_preset"
+    }
+   ],
+   "outcome": "candidate",
+   "actionId": "ui.theme.set_preset",
+   "args": {
+    "preset": "dawn"
+   },
+   "note": "taught verb keeps slots"
+  }
+ ]
+}
