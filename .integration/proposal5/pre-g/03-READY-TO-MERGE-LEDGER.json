@@ -60,7 +60,7 @@
     {
       "lane": "E",
       "branch": "work/p5-w01-e-ui",
-      "observed_head": "d5768821713abc0bbf7745e3639f50b2c8aba0e6",
+      "observed_head": "d9e4d332ed7545d6038b620dd251e0b9aaeaccb7",
       "final_frozen_head": null,
       "freeze_status": "UNCONFIRMED",
       "pre_g_report": "integration/worker-reports/PREG-E.md",
@@ -80,7 +80,7 @@
   ],
   "decisions": {
     "native_launch_security": "AGREEMENT_PENDING; IMPLEMENTATION_W2",
-    "browser_pwa_signer": "DECISION_PENDING; DEVICE_UNRUN",
+    "browser_pwa_signer": "SOURCE_IMPLEMENTED_IN_E_FOLLOWUP; HOST_INTEROP/DEVICE_TESTS_UNRUN; E_FREEZE_IN_PROGRESS",
     "host_sole_effect_writer": "RETAIN",
     "hqkg_only_graph_engine": "RETAIN",
     "tierflow_inert_renderer": "RETAIN",
