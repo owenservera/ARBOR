@@ -1,0 +1,7 @@
+/target/
+*.hqj
+*.hqkg.lock
+.env
+*.sqlite
+*.sqlite3
+*.db

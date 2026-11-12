@@ -1,0 +1,73 @@
+[package]
+name = "hq-knowledge-graph"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.74"
+license = "MIT"
+description = "Zero-dependency knowledge graph with hot-swappable compute engines and optional database adapters"
+
+[lib]
+name = "hqkg"
+path = "src/lib.rs"
+
+[[bin]]
+name = "hqkg"
+path = "src/main.rs"
+
+[[bin]]
+name = "hqkg-import"
+path = "src/bin/hqkg-import.rs"
+required-features = ["importer"]
+
+[[bin]]
+name = "hqkg-wave1-query"
+path = "src/bin/hqkg-wave1-query.rs"
+required-features = ["importer"]
+
+[[bin]]
+name = "hqkg-web-feed"
+path = "src/bin/hqkg-web-feed.rs"
+required-features = ["importer"]
+
+[[bin]]
+name = "hqkg-control"
+path = "src/bin/hqkg-control.rs"
+
+[[bin]]
+name = "hqkg-research"
+path = "src/bin/hqkg-research.rs"
+
+[[bin]]
+name = "hqkg-deps"
+path = "src/bin/hqkg-deps.rs"
+required-features = ["importer"]
+
+[[bin]]
+name = "hqkg-personal"
+path = "src/bin/hqkg-personal.rs"
+required-features = ["importer"]
+
+[features]
+default = []
+importer = ["dep:serde_json", "dep:sha2"]
+sqlite = ["dep:rusqlite"]
+postgres = ["dep:postgres"]
+databases = ["sqlite", "postgres"]
+
+[dependencies]
+rusqlite = { version = "0.32", optional = true, features = ["bundled"] }
+postgres = { version = "0.19", optional = true }
+serde_json = { version = "1.0", optional = true }
+sha2 = { version = "0.10", optional = true }
+
+# The refresh pipeline runs `cargo run --features importer --bin hqkg-import` on
+# every reindex, so this debug profile is built repeatedly on the owner's machine.
+# Debug info and the incremental cache cost gigabytes and buy nothing for a
+# short-lived importer process, so both stay off. Measured 2026-11-12:
+# target/debug was 4.9 GB with `deps/` 3.3 GB, `incremental/` 1.2 GB and
+# ~370 MB of .pdb files. Use `cargo build --profile dev` unchanged otherwise;
+# opt back in locally with RUSTFLAGS or a per-machine --config override if
+# step-debugging is ever needed.
+[profile.dev]
+debug = 0
+incremental = false
