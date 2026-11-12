@@ -20,7 +20,7 @@ The following requirements are source-observed and must be recorded before G mer
 ## Blocker states (before G)
 
 - S1 native bootstrap and origin: DESIGN PREPARED, CODE NOT FIXED, Windows adversarial test UNRUN.
-- S2 browser-only PWA pairing: SOURCE BRIDGE DEPENDENCY KNOWN, COMPATIBLE BROWSER SIGNER UNVERIFIED, physical device UNRUN.
+- S2 browser-only PWA pairing: E source now implements WebCrypto P-256/IndexedDB signer and synthetic enrollment tests; compatibility with B Host and physical device remains UNVERIFIED/UNRUN. E worker changed its branch during this audit.
 - G0 sequencing: integration branch absent; all workers branched from old architecture commit dd245d....
 - G1 integrated Cargo/Node/Bun tests: UNRUN.
 - C exact migration report: NOT FOUND in the current branch at pre-G inspection.
