@@ -6,12 +6,12 @@ Node 0 is mission-critical but beta-first centralization **does not** require a 
 
 ## Required upgrades (P0, cannot defer)
 
-1. **Patch Tauri coherently.** Current donor Cargo.toml pins \`tauri = "=2.0.0"\` and related 2.0.0 packages; prior official advisories affect that range, including a later fix at >=2.11.6. Select a currently supported patched v2 release, update full lockfile/capabilities and verify Windows installer. Do not merely change a version line.
-2. **Native origin/process identity.** Restrict \`src-tauri/capabilities/\` to the actual trusted webview and exact allowed origins. Do not send persistent owner bootstrap bearer token to an unverified localhost listener merely because an HTTP health response succeeds. Implement a process-bound handshake/secure inherited channel or native session mint with collision/impersonation tests.
+1. **Patch Tauri coherently.** Current donor Cargo.toml pins `tauri = "=2.0.0"` and related 2.0.0 packages; prior official advisories affect that range, including a later fix at >=2.11.6. Select a currently supported patched v2 release, update full lockfile/capabilities and verify Windows installer. Do not merely change a version line.
+2. **Native origin/process identity.** Restrict `src-tauri/capabilities/` to the actual trusted webview and exact allowed origins. Do not send persistent owner bootstrap bearer token to an unverified localhost listener merely because an HTTP health response succeeds. Implement a process-bound handshake/secure inherited channel or native session mint with collision/impersonation tests.
 3. **Input actor binding.** Native event ingress derives principal/device/session from authenticated Host/Tauri context; untrusted renderer-supplied actor/session/policy fields cannot grant source reads.
-4. **Bounded computation.** The R001 Rust spike used a Mutex around the whole \`apply_json\` computation and spawned scoped threads per input event. This is not the beta hotpath. Use short session snapshot/ack, existing native graph scheduler with bounded queues, replace-latest drafts, deadlines and CAS evidence commit. Never coalesce committed Submit/Approve/Cancel/Receipt.
+4. **Bounded computation.** The R001 Rust spike used a Mutex around the whole `apply_json` computation and spawned scoped threads per input event. This is not the beta hotpath. Use short session snapshot/ack, existing native graph scheduler with bounded queues, replace-latest drafts, deadlines and CAS evidence commit. Never coalesce committed Submit/Approve/Cancel/Receipt.
 5. **No draft effects.** Type/Tab suggestions and speculative HQKG reads are inert. Current Host JS dispatcher remains exclusive effect authority with approval/grant/claim/receipt; no native duplicate effect admission.
-6. **Source truth.** Native syntax/semantics use current internal Host action IDs and exact project/source refs; no fixture-only \`full\` action treated as available. Source unavailability and timeouts are visible.
+6. **Source truth.** Native syntax/semantics use current internal Host action IDs and exact project/source refs; no fixture-only `full` action treated as available. Source unavailability and timeouts are visible.
 7. **Private source isolation.** HQ dev-intelligence source data and Host personal World data have separate permission scopes, graph namespaces and cache keys; raw drafts are not broadcast to irrelevant source processors.
 8. **Offline/phone honesty.** The paired PWA has local text/IME and provisional cached views. When disconnected it cannot claim current Host auth/permission/effect status or run effects; reconnect revalidates source/device revisions.
 9. **Effect uncertainty.** Existing Host browser action claims/receipts remain durable, no automatic retry after uncertain send.
@@ -19,7 +19,7 @@ Node 0 is mission-critical but beta-first centralization **does not** require a 
 
 ## Event schema: beta minimum
 
-\`\`\`text
+```text
 InputSnapshot:
   schemaVersion
   trustedActorRef, trustedDeviceRef, trustedSessionRef
@@ -43,13 +43,13 @@ CommittedIntent:
   selectedFrame and exact slot IDs
   actor/session and stable request ID
   admissionStatus (UNASSESSED until Host explicitly checks)
-\`\`\`
+```
 
 Only user expressions and typed semantic state are unified; UI caret/IME remains local and instant. Views cannot promote an untrusted source claim or a high prediction score into a grant.
 
 ## Beta path
 
-\`\`\`text
+```text
 ARBO​​R desktop editor/PWA editor (local echo)
            │
   Actor-bound internal ingress
@@ -71,7 +71,7 @@ ARBO​​R desktop editor/PWA editor (local echo)
   Existing Studio/Chrome worker, observed receipt
            │
   Same source-linked status across desktop and PWA
-\`\`\`
+```
 
 The word "ARBOR" here is the local product, not a separate network service.
 
