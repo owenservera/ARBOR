@@ -1,0 +1,167 @@
+{
+  "schema": "arbor.rescore.symbol-declarations.part.v1",
+  "part": 5,
+  "source_commit": "98f15e327957956ec94189772d5e5813e7b6b07b",
+  "files": [
+    {
+      "path": "packages/tierflow/src/visual-runtime/command/compile.ts",
+      "blob": "4cc5b63bea409171e2b4b0a29398c87907cd35ea",
+      "symbols": [
+        "decodeText",
+        "toExactText",
+        "checkedInput",
+        "comparePins",
+        "validContext",
+        "compileVisualCommand"
+      ]
+    },
+    {
+      "path": "packages/tierflow/src/visual-runtime/command/crosswalk.ts",
+      "blob": "2ed885976e7f28e27d13f7bc835ca42f83685873",
+      "symbols": [
+        "validTarget",
+        "validSchema",
+        "validCapability",
+        "validRow",
+        "validDescriptor",
+        "resolveCrosswalk",
+        "checkArguments"
+      ]
+    },
+    {
+      "path": "packages/tierflow/src/visual-runtime/command/ir.ts",
+      "blob": "a6e581476af9d5b091b1939591ad5d5ba8a32a45",
+      "symbols": [
+        "safeRecord",
+        "onlyKeys",
+        "validArgs",
+        "validPins",
+        "refusal"
+      ]
+    },
+    {
+      "path": "packages/tierflow/src/visual-runtime/command/wave3-descriptor-proof.ts",
+      "blob": "4f2b8e4d1f729c7bcc559fe3be7f5f295b82dfda",
+      "symbols": [
+        "descriptorArgsDigest",
+        "refuse",
+        "reviewed",
+        "validContext",
+        "parseCatalog",
+        "compileDescriptorProof"
+      ]
+    },
+    {
+      "path": "packages/tierflow/src/visual-runtime/command/wave4-typed-transport-adapter.ts",
+      "blob": "91b0c587f5509baabe42695d14683030bfd18815",
+      "symbols": [
+        "record",
+        "canonical",
+        "digest",
+        "validAuthority",
+        "validControls",
+        "validCommand",
+        "validEvidence",
+        "semanticDigest",
+        "checkCandidate",
+        "identity",
+        "stageTypedCandidate",
+        "validateTypedEnvelope"
+      ]
+    },
+    {
+      "path": "packages/tierflow/src/ui/commands.ts",
+      "blob": "9ad3c6cf8864dc8f8728ade68088dea3ad406f4e",
+      "symbols": [
+        "mapStoreCode",
+        "mapStoreFailure",
+        "refuse",
+        "isStoredResult",
+        "requireExpectedRevision",
+        "projectionWriter",
+        "collectStateValues",
+        "normalizeStatePath",
+        "stripLeadingSlash",
+        "formatDiagnostics",
+        "worldErrorShape",
+        "isCommandKind",
+        "isNonEmptyString",
+        "isInteger",
+        "isScalar",
+        "isRecord",
+        "describeValue"
+      ]
+    },
+    {
+      "path": "packages/tierflow/src/visual-runtime/components/accessibility.ts",
+      "blob": "aae3117bf69ee8c5ca454bb71dfaa2940cc4da99",
+      "symbols": [
+        "plain",
+        "safeLabel",
+        "validateAccessibility",
+        "auditFocusOrder",
+        "visit"
+      ]
+    },
+    {
+      "path": "packages/tierflow/src/visual-runtime/components/catalog.ts",
+      "blob": "fdec0f7ff26b1489dcfb15b509c5941c13141db7",
+      "symbols": [
+        "plain",
+        "dataOnly",
+        "safeText",
+        "validateProps",
+        "inspectComponent"
+      ]
+    },
+    {
+      "path": "packages/tierflow/src/visual-runtime/components/layout.ts",
+      "blob": "af19bf0beef4e96f33bacd54cb847cae49be6d1d",
+      "symbols": [
+        "plain",
+        "integer",
+        "invalid",
+        "validateLayoutConstraints",
+        "resolveLayout"
+      ]
+    },
+    {
+      "path": "packages/tierflow/src/visual-runtime/components/wave3-canonical-map.ts",
+      "blob": "ea9ec8a6048cdec3ccea1c04e6c98c6236ca6ef6",
+      "symbols": [
+        "freeze",
+        "nodeKind",
+        "compatibleRole",
+        "layoutFor",
+        "sourceNodeIds",
+        "overflowText",
+        "mapCanonicalComponents"
+      ]
+    },
+    {
+      "path": "packages/tierflow/src/visual-runtime/device/wave4-desktop-adapter.ts",
+      "blob": "735557094337df1f2d6c8421360a8b6197c3ce8f",
+      "symbols": [
+        "refuse",
+        "safeViewport",
+        "safeRevision",
+        "validHost",
+        "refKey",
+        "focusIsSafe",
+        "visit",
+        "projectWave4DesktopAdapter",
+        "resizeWave4DesktopAdapter"
+      ]
+    },
+    {
+      "path": "packages/tierflow/src/visual-runtime/device/wave4-phone-adapter.ts",
+      "blob": "83aca19013f1ac2a9457ebf34c8caab906c7ce87",
+      "symbols": [
+        "refuse",
+        "sanitizeNode",
+        "projectWave4PhoneAdapter",
+        "projectWave4PhoneEvent"
+      ]
+    }
+  ]
+}
