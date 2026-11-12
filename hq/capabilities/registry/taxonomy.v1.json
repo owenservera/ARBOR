@@ -1,0 +1,197 @@
+{
+  "schema": "hq.capability-taxonomy/1",
+  "version": 1,
+  "description": "Bounded capability taxonomy for static candidate mapping. A node is a vocabulary entry, never an execution grant.",
+  "domains": [
+    { "id": "discovery", "name": "File and path discovery", "description": "Find, resolve and represent files without executing package code." },
+    { "id": "configuration", "name": "Configuration and input", "description": "Parse argv, normalize settings and read manifests." },
+    { "id": "orchestration", "name": "Task orchestration", "description": "Compose, sequence and run bounded work." },
+    { "id": "templates", "name": "Templates and scaffolding", "description": "Load, render and emit file content from templates." },
+    { "id": "state", "name": "State and persistence", "description": "Store bounded key/value state and options." },
+    { "id": "dependencies", "name": "Dependency inspection", "description": "Resolve, normalize and verify package dependency data." }
+  ],
+  "nodes": [
+    {
+      "id": "discovery.glob",
+      "domain": "discovery",
+      "name": "Glob matching",
+      "description": "Match paths against glob patterns.",
+      "rules": { "name": ["glob", "micromatch", "minimatch", "matched", "multimatch", "picomatch", "nanomatch"], "description": ["glob", "wildcard", "pattern match"], "keywords": ["glob", "pattern", "match"] }
+    },
+    {
+      "id": "discovery.walk",
+      "domain": "discovery",
+      "name": "Directory walking",
+      "description": "Enumerate directory trees and file streams.",
+      "rules": { "name": ["glob-stream", "walk", "readdir", "vinyl-fs", "through2"], "description": ["file system", "directory", "stream", "walk"], "keywords": ["fs", "walk", "stream"] }
+    },
+    {
+      "id": "discovery.resolve",
+      "domain": "discovery",
+      "name": "Path and module resolution",
+      "description": "Resolve files, modules and relative paths.",
+      "rules": { "name": ["^resolve$", "resolve-", "resolve-glob", "resolve-dir", "global-modules", "find-up"], "description": ["resolve", "require.resolve", "filepath"], "keywords": ["resolve", "path", "module"] }
+    },
+    {
+      "id": "discovery.vinyl",
+      "domain": "discovery",
+      "name": "Virtual file objects",
+      "description": "Represent files as inspectable objects before writing.",
+      "rules": { "name": ["vinyl", "cloneable-readable", "clone-stats"], "description": ["virtual file", "vinyl", "file object"], "keywords": ["vinyl", "file", "stream"] }
+    },
+    {
+      "id": "discovery.frontmatter",
+      "domain": "discovery",
+      "name": "Front-matter parsing",
+      "description": "Split structured metadata from document bodies.",
+      "rules": { "name": ["gray-matter", "front-matter", "parse-front"], "description": ["front matter", "frontmatter", "yaml front"], "keywords": ["yaml", "front-matter", "metadata"] }
+    },
+    {
+      "id": "configuration.argv",
+      "domain": "configuration",
+      "name": "argv parsing",
+      "description": "Normalize command-line arguments into typed options.",
+      "rules": { "name": ["minimist", "argparse", "yargs", "expand-args", "base-cli"], "description": ["argv", "command line", "arguments", "options"], "keywords": ["argv", "cli", "args"] }
+    },
+    {
+      "id": "configuration.schema",
+      "domain": "configuration",
+      "name": "Schema normalization",
+      "description": "Validate and normalize configuration against a schema.",
+      "rules": { "name": ["schema", "map-schema", "base-config", "normalize-config"], "description": ["schema", "normaliz", "validate config"], "keywords": ["schema", "config", "normalize"] }
+    },
+    {
+      "id": "configuration.store",
+      "domain": "configuration",
+      "name": "Configuration store",
+      "description": "Persist and retrieve namespaced configuration values.",
+      "rules": { "name": ["data-store", "base-store", "option-cache", "common-config", "config-store"], "description": ["config store", "store config", "persist", "options"], "keywords": ["config", "store", "options"] }
+    },
+    {
+      "id": "configuration.environment",
+      "domain": "configuration",
+      "name": "Environment normalization",
+      "description": "Build a normalized environment from arguments, files or instances.",
+      "rules": { "name": ["base-env", "expand-env", "env-"], "description": ["environment", "normalized environment"], "keywords": ["env", "environment"] }
+    },
+    {
+      "id": "configuration.package",
+      "domain": "configuration",
+      "name": "Manifest normalization",
+      "description": "Normalize package.json values into typed objects.",
+      "rules": { "name": ["normalize-pkg", "expand-pkg", "load-pkg", "read-pkg", "pkg-"], "description": ["package.json", "normalize values", "manifest"], "keywords": ["package", "pkg", "manifest"] }
+    },
+    {
+      "id": "configuration.prompts",
+      "domain": "configuration",
+      "name": "Interactive prompts",
+      "description": "Ask bounded questions and retain answers.",
+      "rules": { "name": ["inquirer", "question-cache", "base-questions", "prompt"], "description": ["interactive", "prompt", "questions"], "keywords": ["prompt", "question", "inquirer"] }
+    },
+    {
+      "id": "orchestration.task",
+      "domain": "orchestration",
+      "name": "Task runner",
+      "description": "Register and run named tasks with a small API.",
+      "rules": { "name": ["composer", "task", "run-task", "base-task"], "description": ["task runner", "task", "run and watch"], "keywords": ["task", "runner", "compose"] }
+    },
+    {
+      "id": "orchestration.flow",
+      "domain": "orchestration",
+      "name": "Async composition",
+      "description": "Sequence, parallelize and settle asynchronous functions.",
+      "rules": { "name": ["bach", "now-and-later", "async-settle", "async-done", "run-async", "each-series"], "description": ["parallel or series", "async", "settle", "compose"], "keywords": ["async", "series", "parallel"] }
+    },
+    {
+      "id": "orchestration.plugin",
+      "domain": "orchestration",
+      "name": "Plugin registration",
+      "description": "Register bounded plugins against an application object.",
+      "rules": { "name": ["^base$", "base-plugins", "is-valid-app", "is-registered"], "description": ["plugin", "base application", "register"], "keywords": ["plugin", "base", "register"] }
+    },
+    {
+      "id": "orchestration.generator",
+      "domain": "orchestration",
+      "name": "Project generators",
+      "description": "Add generator support to an application.",
+      "rules": { "name": ["base-generators", "generate", "generator"], "description": ["generator", "project-generator", "scaffold"], "keywords": ["generator", "generate", "project"] }
+    },
+    {
+      "id": "orchestration.route",
+      "domain": "orchestration",
+      "name": "Route dispatch",
+      "description": "Dispatch named routes to handlers.",
+      "rules": { "name": ["en-route", "route", "router"], "description": ["routing", "routes", "express"], "keywords": ["route", "router", "dispatch"] }
+    },
+    {
+      "id": "templates.collection",
+      "domain": "templates",
+      "name": "Template collections",
+      "description": "Load and manage collections of templates.",
+      "rules": { "name": ["templates", "load-templates", "template-collection"], "description": ["template collection", "templates", "render"], "keywords": ["template", "collection", "render"] }
+    },
+    {
+      "id": "templates.engine",
+      "domain": "templates",
+      "name": "Template engines",
+      "description": "Register and resolve template engines.",
+      "rules": { "name": ["engine", "engine-base", "engine-cache", "base-engines", "engine-utils"], "description": ["template engine", "engine", "helpers"], "keywords": ["engine", "template", "helper"] }
+    },
+    {
+      "id": "templates.render",
+      "domain": "templates",
+      "name": "Rendering pipeline",
+      "description": "Render views through a stream pipeline.",
+      "rules": { "name": ["assemble", "render", "render-file", "assemble-streams"], "description": ["render", "views", "pipeline"], "keywords": ["render", "view", "assemble"] }
+    },
+    {
+      "id": "templates.scaffold",
+      "domain": "templates",
+      "name": "Project scaffolding",
+      "description": "Emit files from templates and answers.",
+      "rules": { "name": ["^update$", "scaffold", "boilerplate", "common-config", "project-name"], "description": ["scaffold", "automating updates", "framework and CLI", "project"], "keywords": ["scaffold", "update", "project"] }
+    },
+    {
+      "id": "state.kv",
+      "domain": "state",
+      "name": "Key/value state",
+      "description": "Store and retrieve bounded state by key.",
+      "rules": { "name": ["data-store", "cache-base", "map-cache", "store", "state"], "description": ["cache", "store", "get, set, del"], "keywords": ["store", "cache", "state"] }
+    },
+    {
+      "id": "state.options",
+      "domain": "state",
+      "name": "Option cache",
+      "description": "Manage options with defaults and inheritance.",
+      "rules": { "name": ["option-cache", "options", "option"], "description": ["options", "manage options"], "keywords": ["option", "options", "defaults"] }
+    },
+    {
+      "id": "state.project",
+      "domain": "state",
+      "name": "Project metadata",
+      "description": "Read and normalize project identity and metadata.",
+      "rules": { "name": ["project-name", "project", "normalize-pkg"], "description": ["project name", "project", "metadata"], "keywords": ["project", "name", "metadata"] }
+    },
+    {
+      "id": "dependencies.resolve",
+      "domain": "dependencies",
+      "name": "Dependency resolution",
+      "description": "Resolve module and package locations.",
+      "rules": { "name": ["^resolve$", "resolve-dir", "resolve-glob", "global-modules", "find-up"], "description": ["resolve", "module", "package location"], "keywords": ["resolve", "module", "dependency"] }
+    },
+    {
+      "id": "dependencies.normalize",
+      "domain": "dependencies",
+      "name": "Dependency normalization",
+      "description": "Normalize dependency declarations and manifests.",
+      "rules": { "name": ["normalize-pkg", "expand-pkg", "deps"], "description": ["dependencies", "package.json", "normalize"], "keywords": ["dependencies", "package", "normalize"] }
+    },
+    {
+      "id": "dependencies.semver",
+      "domain": "dependencies",
+      "name": "Version ranges",
+      "description": "Parse and compare semantic version ranges.",
+      "rules": { "name": ["semver", "version"], "description": ["semantic version", "version range", "semver"], "keywords": ["semver", "version", "range"] }
+    }
+  ]
+}

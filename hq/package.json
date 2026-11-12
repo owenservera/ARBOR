@@ -1,0 +1,22 @@
+{
+  "name": "@arbor/dev-intelligence",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "ARBOR-internal, source-preserving development intelligence package",
+  "engines": {
+    "node": ">=24"
+  },
+  "exports": {
+    ".": "./lib/arbor-service.mjs"
+  },
+  "bin": {
+    "arbor-hq": "./bin/arbor-hq.mjs"
+  },
+  "scripts": {
+    "test:core": "node --test test/arbor-service.test.mjs test/indexer.test.mjs test/search.test.mjs test/graph.test.mjs test/context.test.mjs test/wiki.test.mjs test/semantic-registry.test.mjs",
+    "test:import": "node --test test/in-repo-closure.test.mjs",
+    "check:syntax": "node --check lib/arbor-service.mjs && node --check bin/arbor-hq.mjs",
+    "test:boundary": "node --test test/arbor-service.test.mjs test/arbor-boundary.test.mjs test/in-repo-closure.test.mjs"
+  }
+}
