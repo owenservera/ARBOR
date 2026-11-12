@@ -36,3 +36,5 @@ No actual ARBOR/VIVIM/Labs or donor-repository comparison was performed. Next ow
 - **Tracking issue:** [#24 — Actions startup_failure / Node24 receipts](https://github.com/owenservera/ARBOR/issues/24). Draft integration [PR #21](https://github.com/owenservera/ARBOR/pull/21) still unreviewed and unmerged.
 
 **Gate remains `REPAIR_REQUIRED`.** G1 accepted-main SHA remains null; Z2 independent approval remains absent. New G2 tests are not a substitute for executed Node24+AJV, live Host grants, canonical dispatch or UiCore revision attestation. R prerequisites unmet; no R branch/false certificate created.
+
+- **CI workflow now authored:** `.github/workflows/hvi-native-synthetic.yml` at `d2411bae45964f533b5c48f0faac727c31140932`, Node24, AJV 8.17.1, explicit synthetic G1/G2/Host/TierFlow tests, read-only checkout/no credentials. Latest [run 43320303173](https://github.com/owenservera/ARBOR/actions/runs/43320303173): `startup_failure`, **0 jobs**, **exit=null**. A workflow file is not an executed test receipt.
