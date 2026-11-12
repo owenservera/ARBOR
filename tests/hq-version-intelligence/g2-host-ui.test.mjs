@@ -63,3 +63,17 @@ test('reused same-repository pins never imply runtime or semantic equivalence',a
   assert.equal(out.remoteAccepted,false);
   assert.equal(out.runtimeAccepted,false);
 });
+
+test('five invented repositories resolve distinct exact pins without implicit HEAD',async()=>{
+  const repos=Array.from({length:5},(_,i)=>'synthetic/g2-invented-'+i);
+  const sources=repos.map((repo,i)=>({repo,ref:['v1','v2','v3','v1','v2'][i]}));
+  const fixture=syntheticSource();
+  const out=await port({approvedRepositories:repos}).invoke(
+    {schema:HVI_HOST_REQUEST_SCHEMA,sources,targetIndex:4},
+    {adapter:fixture.adapter});
+  assert.equal(out.inspector.originalComparison.sourcePins.length,5);
+  assert.equal(new Set(out.inspector.originalComparison.sourcePins.map(p=>p.pinId)).size,5);
+  assert.equal(out.inspector.originalComparison.coverage.length,4);
+  assert.equal(out.inspector.runtimeAccepted,false);
+  assert.equal(fixture.calls.blobs.length,0);
+});
