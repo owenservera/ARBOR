@@ -1,0 +1,79 @@
+{
+  "schema": "arbor.proposal5.foundations.validation-report/1",
+  "date": "2026-11-12",
+  "branch": "work/p5-foundational-architecture-prep-r001",
+  "baseRef": "work/p5-pre-g-convergence-r001",
+  "status": "PREPARED_NOT_PROMOTED",
+  "inspection": "connected GitHub actual source and blob pinned subset; focused read-only V8 validator; NO Node/Rust/Windows/PWA execution",
+  "scope": {
+    "pathPrefix": ".integration/proposal5/foundations/",
+    "commitsAgainstBaseAtAudit": 17,
+    "filesChangedAtAudit": 15,
+    "outOfScopeChanges": 0
+  },
+  "source": {
+    "pinnedSourceEntries": 43,
+    "gaps": 43,
+    "waves": 14,
+    "plannedAtomicTasks": 100,
+    "phaseCounts": {
+      "PRE_G": 4,
+      "G_OWNER_ONLY": 1,
+      "POST_G": 8,
+      "AFTER_BETA": 1
+    }
+  },
+  "structuralValidation": {
+    "runner": "V8 evaluating fetched committed validate-program.mjs and manifest JSON",
+    "status": "PASS",
+    "errors": 0,
+    "warnings": 0,
+    "negativeChecksPassed": 11,
+    "checked": [
+      "current plan consistency",
+      "false runtime acceptance rejection",
+      "bad Git SHA rejection",
+      "duplicate task IDs rejection",
+      "pre-G promotion rejection",
+      "PWA-only policy rejection",
+      "false execution status rejection",
+      "missing original G wave rejection",
+      "unknown source owner rejection",
+      "orphan source gap rejection",
+      "missing post-G dependency rejection"
+    ],
+    "note": "Synthetic data guards, not Node CLI nor real owner/runtime safety tests"
+  },
+  "nativeManifestSchema": {
+    "status": "DRAFT_SCHEMA_PARSED_NOT_VALIDATED_BY_JSON_SCHEMA_ENGINE",
+    "runtimeAccepted": false,
+    "authorityFields": false
+  },
+  "declaredNodeTests": {
+    "source": ".integration/proposal5/foundations/validate-program.test.mjs",
+    "count": 14,
+    "status": "UNRUN"
+  },
+  "realExecution": {
+    "node": "UNRUN",
+    "bun": "UNRUN",
+    "cargo": "UNRUN",
+    "windows": "UNRUN",
+    "pwaPhysicalDevice": "UNRUN",
+    "signedInBrowser": "UNRUN",
+    "HostActions": "NOT_INVOKED",
+    "realUserData": "NOT_ACCESSED"
+  },
+  "releaseState": {
+    "wave1G": "NOT_RUN_AS_CONFIRMED_BY_OWNER",
+    "mergedProduct": "NOT_CLAIMED",
+    "promotedSource": "NONE",
+    "mobilePolicy": "PWA_FIRST_APK_DEFERRED"
+  },
+  "safety": [
+    "No effect writer added or invoked",
+    "No independent graph store, scheduler, language router, wiki writer or UI publisher added",
+    "No source A-F, G, main or root workspaces modified",
+    "Future prompts must refresh exact integrated HEAD and owner source evidence"
+  ]
+}
