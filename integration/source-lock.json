@@ -60,5 +60,24 @@
   "notes": [
     "No donor process isolation or local compile executed by GitHub connector",
     "Root cargo/bun lock generation pending real toolchain execution"
-  ]
+  ],
+  "w01gR001": {
+    "startingSha": "6a9debe6cb7b43b2c77a18b6fd9c0f0125911c0a",
+    "sourceScannerCommit": "68a27342019161f7c961a215068c50100d996856",
+    "packagerCommit": "0d17aadec96ba09c0008bf308b3c59757c05fa2c",
+    "windowsRunnerCommit": "6fdbe89f6592b7f9e128b3c87f019ed73af658ac",
+    "sourceReportCommit": "2021110472cdd4a4aaf68917caa86f63bb3285e8",
+    "aOwnedDraftPr": 8,
+    "aOwnedDraftBranch": "work/p5-w01g-r001-a-pwa-packaging-review",
+    "aOwnedDraftSha": "fb5591c4f19544c6afd7dd3a2d899062f6e8bd5b",
+    "aOwnedDraftMerged": false,
+    "originalSourceMergeUnchanged": true,
+    "toolsExecutedAgainstIntegratedCheckout": false,
+    "cargoLockGenerated": false,
+    "bunLockGenerated": false,
+    "noDonorAccepted": false,
+    "decision": "REPAIR_REQUIRED",
+    "nextWaveAcceptedSha": null,
+    "report": "integration/reports/W01-G-R001-SOURCE-CLOSURE.md"
+  }
 }
