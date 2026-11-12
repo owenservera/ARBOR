@@ -48,6 +48,22 @@
       "examples": 9,
       "schemas": 8,
       "notes": "required fields, type, const, enum, regex, properties and array structure; conditional schema checks authored later but not rerun in this static audit"
+    },
+    {
+      "operation": "Parse four authored ESM test/support modules (imports/exports removed solely for V8 syntax parse); verify exactly T01–T24 IDs",
+      "environment": "GitHub fetch + ephemeral V8 parser; not Node module execution",
+      "exitCode": 0,
+      "modules": 4,
+      "tCases": 24,
+      "notes": "PARSE_ONLY, no node:test execution"
+    },
+    {
+      "operation": "Execute committed dependency-free schema-validator subset on four positive and four adversarial schema cases",
+      "environment": "GitHub fetch + ephemeral V8; not Node or a standards-compliant full JSON Schema engine",
+      "exitCode": 0,
+      "positiveExamples": 4,
+      "negativeCases": 4,
+      "notes": "conditional guards for equivalence, source-as-runtime, Host success without digest, and symlink"
     }
   ],
   "testsWithObservedExit": [],
