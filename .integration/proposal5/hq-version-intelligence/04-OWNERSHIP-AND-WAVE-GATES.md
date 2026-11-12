@@ -1,4 +1,14 @@
 # HVI wave owners, exclusive paths, gate and launch ordering
+
+> **2026-11-12 SCOPE CORRECTION — NATIVE TOOLING ONLY.** Read [10-NATIVE-TOOLING-ONLY-SCOPE.md](../10-NATIVE-TOOLING-ONLY-SCOPE.md) when this is a prompts/ file; for root docs see [10-NATIVE-TOOLING-ONLY-SCOPE.md](10-NATIVE-TOOLING-ONLY-SCOPE.md). This correction governs any conflicting original instructions below.
+
+## Updated gate overrides
+Current user scope: **tooling and native discoverability only**. X real audit is deferred indefinitely pending explicit user-triggered comparison request. H + U are the only W2 parallel lanes. Z2 follows H/U, G2 integrates H/U, R certifies tools using synthetic fixtures. S0/D's existing data remains pinned provenance, not a command to continue the 361 review. Z1X already launched and must remain untouched.
+`GO_FOR_W2_TOOLING`, `GO_FOR_G2_TOOLING_REVIEW`, `GO_FOR_READINESS_REVIEW` and `HVI_TOOLING_READY` supersede original gate labels for this correction. No requirement to finish X or complete 361 semantic disposition to install tools. Only a later explicit user request initiates an actual corpus audit.
+
+
+---
+
 `S0 (freeze & census) → [A source pins | B identities | C N-way diff | D parity atlas | E reports | F contracts/tests] IN PARALLEL → Z1 independent referee → G1 serial integration → [H Host | U TierFlow | X real audit] IN PARALLEL → Z2 referee → G2 serial integration → R final self-audit`
 
 ## Branch foundation

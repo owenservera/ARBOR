@@ -217,7 +217,8 @@
         "hq/lib/arbor-service.mjs",
         "proofs/H/"
       ],
-      "status": "NOT_STARTED"
+      "status": "NOT_STARTED",
+      "lane": "host-native-agent-tool-registration"
     },
     {
       "id": "U",
@@ -255,7 +256,8 @@
       "output": [
         "proofs/X/"
       ],
-      "status": "NOT_STARTED"
+      "status": "DEFERRED_USER_TRIGGER_ONLY",
+      "requiredForCurrentWave": false
     },
     {
       "id": "Z2",
@@ -264,8 +266,7 @@
       "role": "sequential",
       "dependsOn": [
         "H",
-        "U",
-        "X"
+        "U"
       ],
       "branch": "work/p5-hvi-w2-z-referee-r001",
       "prompt": ".integration/proposal5/hq-version-intelligence/prompts/50-Z2-CONVERGENCE.md",
@@ -285,7 +286,6 @@
       "dependsOn": [
         "H",
         "U",
-        "X",
         "Z2"
       ],
       "branch": "integrate/p5-hq-version-intelligence-r001",
@@ -318,9 +318,16 @@
         "proofs/R/",
         "full migration report"
       ],
-      "status": "NOT_STARTED"
+      "status": "NOT_STARTED",
+      "lane": "native-tooling-readiness-certification",
+      "requiredForCurrentWave": true
     }
   ],
   "releaseGate": "NOT_BETA_GO",
-  "testExecuted": false
+  "testExecuted": false,
+  "scopeCorrection": "NATIVE_TOOLING_ONLY_NO_REAL_REPOSITORY_COMPARISONS",
+  "scopePolicy": ".integration/proposal5/hq-version-intelligence/10-NATIVE-TOOLING-ONLY-SCOPE.md",
+  "usageRunsAuthorized": false,
+  "syntheticFixtureTestingAllowed": true,
+  "userTriggeredActualComparisonDeferred": true
 }

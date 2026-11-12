@@ -1,4 +1,16 @@
 # ARBOR Proposal 5 — HVI R: Final self-audit and release-neutral decision
+
+> **2026-11-12 SCOPE CORRECTION — NATIVE TOOLING ONLY.** Read [10-NATIVE-TOOLING-ONLY-SCOPE.md](../10-NATIVE-TOOLING-ONLY-SCOPE.md) when this is a prompts/ file; for root docs see [10-NATIVE-TOOLING-ONLY-SCOPE.md](10-NATIVE-TOOLING-ONLY-SCOPE.md). This correction governs any conflicting original instructions below.
+
+## Updated R: installed-capability readiness certificate ONLY
+- **Do not run any actual ARBOR, repos-hq, vivim-web-harness, TierFlow, Labs or other user repo comparison.** Explicitly suppress the original instruction below to invoke HQ on five real source snapshots and three historical real revisions. Do not issue any real migration decisions or backlog based on fresh comparisons.
+- Independently verify source presence, wiring, imports, native agent capability discovery, Host permissions and revocation, 2/3/N synthetic same-repo and cross-repo fixtures, report projection, safe failures, reproducible offline replay, UI empty-state and user-triggered-on-demand interface. All input repositories in executed tests must be invented fixtures with no real project data.
+- Produce `proofs/R/READINESS-CERTIFICATE.md`, `AGENT-DISCOVERY-RECEIPT.json`, `SYNTHETIC-VERSION-COMPARISON.json`, `AUTHORIZATION-TEST-RECEIPTS.json`, `RUNTIME-TEST-RECEIPTS.json`, `KNOWN-LIMITATIONS.md`. Original `VERSION-COMPARISON.json`, `MIGRATION-DECISIONS.json` and `FOLLOWON-MERGE-BACKLOG.md` are **not required**; do not make them up.
+- End with `HVI_TOOLING_READY`, `HVI_TOOLING_INSTALLED_NOT_VERIFIED` or `REPAIR_REQUIRED`, based on executed evidence. This is NOT an assertion that any real migration comparison has run.
+
+
+---
+
 **Status:** NEW EXECUTION WORK ORDER, not proof that it ran. **Destination:** `owenservera/ARBOR`. **Branch:** `work/p5-hvi-w3-r-self-audit-r001`.
 **First read every normative file:** `.integration/proposal5/hq-version-intelligence/README.md`, `01-SOURCE-PINS.json`, `02-SOURCE-CROSSWALK.md`, `03-NWAY-CONTRACT.md`, `04-OWNERSHIP-AND-WAVE-GATES.md`, `05-ACCEPTANCE-TEST-MATRIX.md`, `06-INTEGRATION-AND-ROLLBACK.md`, `08-RISK-AND-DECISIONS.md`, `wave-manifest.json`; read the original ARBOR `integration/source-lock.json`, `integration/beta-gates.json`.
 **Connected GitHub:** source and commit work here; do not pretend local Node, Bun, Cargo, Windows, Android or Chrome tests ran just because code can be inspected. **Allowed writes:** `.integration/proposal5/hq-version-intelligence/proofs/R/**`. No other worker paths, no root locks, no main, no provider-browser effects or personal data. **Finish:** commit all work, report exact HEAD/source pins/tests vs UNRUN/blockers and `PREPARED_NOT_PROMOTED` unless this order is an integrator gate.
