@@ -123,5 +123,75 @@
     "ownerConfirmed": {
       "type": "boolean"
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "executed_test"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "required": [
+          "command",
+          "exitCode",
+          "environment"
+        ],
+        "properties": {
+          "status": {
+            "const": "TEST_EXECUTED"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "RUNTIME_VERIFIED"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "kind": {
+            "enum": [
+              "host_receipt",
+              "device_receipt"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "owner_decision"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "required": [
+          "ownerConfirmed"
+        ],
+        "properties": {
+          "ownerConfirmed": {
+            "const": true
+          }
+        }
+      }
+    }
+  ]
 }
