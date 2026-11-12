@@ -4,6 +4,7 @@ import { loadControlCatalog, createControlPlanner } from './intent-planner.mjs';
 import { runHviTool, HVI_CAPABILITY_ID, HVI_TOOL_REQUEST_SCHEMA } from '../../../hq/version-intelligence/integration/index.mjs';
 import { resolvePin, snapshotAt } from '../../../hq/version-intelligence/sources/snapshots.mjs';
 import { verifyOwnerToken } from '../bootstrap/owner-auth.mjs';
+import { projectAuthorizedHviInspector } from '../../../hq/version-intelligence/integration/host-inspector-projection.mjs';
 import { canonicalRepo, safePath, sensitivePath } from '../../../hq/version-intelligence/sources/common.mjs';
 export const HVI_HOST_ACTION_ID='versions.compare.pinned';
 export const HVI_HOST_BINDING_SCHEMA='vivim.host.hvi-read-port/2';
@@ -90,6 +91,8 @@ export function createHviHostReadPort({actorId,sessionId,verifySession,verifyGra
     for(const m of manifests)await check({repoIdentity:m.pin.repoIdentity,
       operation:'report.project',resolvedCommitSha:m.pin.resolvedCommitSha,
       sourceGrantRef:m.pin.sourceGrantRef});
+    const inspector=await projectAuthorizedHviInspector(result,{verifyCurrentGrant:check,
+      signal,maxRows:Math.min(input.budgets?.maxFindings??200,200)});
     return {schema:HVI_HOST_BINDING_SCHEMA,actionId:HVI_HOST_ACTION_ID,
       capabilityId:HVI_CAPABILITY_ID,outcome:'SOURCE_ANALYSIS_ONLY',
       report:{schema:HVI_HOST_REPORT_SCHEMA,status:result.evidenceReport.status,
@@ -98,7 +101,7 @@ export function createHviHostReadPort({actorId,sessionId,verifySession,verifyGra
           pinId:m.pin.pinId,repoIdentity:m.pin.repoIdentity,
           resolvedCommitSha:m.pin.resolvedCommitSha,completeness:m.completeness})),
         note:'source evidence only; not runtime or migration acceptance'},
-      grantCheckCount:checks,remoteAccepted:false,runtimeAccepted:false,
+      inspector,grantCheckCount:checks,remoteAccepted:false,runtimeAccepted:false,
       authority:'injected-local-Host-callbacks-not-production-attested'};
   };
   return Object.freeze({schema:HVI_HOST_BINDING_SCHEMA,action,capabilityId:HVI_CAPABILITY_ID,
