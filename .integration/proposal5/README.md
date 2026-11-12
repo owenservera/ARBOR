@@ -66,6 +66,13 @@ Physical processes remain allowed for safety and technical necessity (Tauri, int
 
 Machine-checkable gates: [08-BETA-GATES.json](08-BETA-GATES.json).
 
+## Turnkey execution package — 7 waves, no repeated ChatGPT prompts
+
+- **[09 — Complete execution playbook](09-EXECUTION-PLAYBOOK.md):** source-to-beta sequence, six disjoint parallel lanes per wave and one serial integration gate, branch ownership, handoffs and GO rules.
+- **[One-paste AUTO-RUN-ALL master prompt](prompts/00-AUTO-RUN-ALL.md):** autonomous local orchestrator may drive W0–W6, pausing only for real blockers and explicit owner cutover approval.
+- **[Copy-link prompt index](prompts/INDEX.md):** 7 wave launcher prompts, 42 individual worker prompts (A–F), 7 serial integrator gate prompts (G). Every prompt is self-contained when read with this proposal's docs.
+
+
 ## What "full functional beta" means
 
 A clean Windows installation and connected PWA must run **independently of the donor repositories** with the currently functioning capabilities: owner onboarding, authenticated pairing, signed-in-browser AI conversation, existing command/control plan/grant/receipt behavior, internal HQ development intelligence and graph reasoning for selected local projects, context evidence and truthful source status, visual interaction, and safe restart/recovery.
