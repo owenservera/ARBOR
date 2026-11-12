@@ -1546,8 +1546,10 @@
     {
       "from": "hq/lib/walk.mjs",
       "to": "hq/lib/walk.mjs",
-      "blobSha": "c3fb10ada3b078f9f6f2e0429d0c5829a7b155fe",
-      "bytes": 3764
+      "blobSha": "38f8bfe82220909cbd456d3115ecad350656fe1e",
+      "bytes": 3764,
+      "donorBlobSha": "c3fb10ada3b078f9f6f2e0429d0c5829a7b155fe",
+      "modifiedAfterImport": true
     },
     {
       "from": "hq/lib/wave1-kb-read.mjs",
@@ -1904,5 +1906,20 @@
     "no donor SQLite or sessions copied",
     "native hqkg excluded; lane A owns it"
   ],
-  "integratorHandoff": "G copies this locked record into integration/source-lock.json and validates final merged release tree"
+  "integratorHandoff": "G copies this locked record into integration/source-lock.json and validates final merged release tree",
+  "followUp": {
+    "type": "W01-D-ISOLATED-HARDENING",
+    "baseHead": "16c590dbd97dc617b783d949268ddc8fb77da2c5",
+    "donorExactRetained": 314,
+    "adaptedDonorFiles": 1,
+    "adaptations": [
+      {
+        "sourcePath": "hq/lib/walk.mjs",
+        "donorBlobSha": "c3fb10ada3b078f9f6f2e0429d0c5829a7b155fe",
+        "arborBlobSha": "38f8bfe82220909cbd456d3115ecad350656fe1e",
+        "reason": "Refuse Git-tracked file symlinks escaping approved development root before stat/sniff/index"
+      }
+    ],
+    "notes": "Source originals remain pin-able; 314 imported donor blobs are unchanged. Entry-point and tests are ARBOR-owned."
+  }
 }

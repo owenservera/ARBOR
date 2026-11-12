@@ -29,7 +29,7 @@ function main() {
       + 'Registered source paths are NOT grants: pass --allow each time.\n');
     return;
   }
-  const intelligence = createDevIntelligence({ dataDir: flags.data, approvedRoots: flags.allow });
+  const intelligence = createDevIntelligence({ dataDir: flags.data, approvedRoots: flags.allow, mode: 'diagnostic' });
   const task = (flags.words || []).join(' ');
   let result;
   if (command === 'register') result = intelligence.registerSource({ name: flags.name, path: flags.source });

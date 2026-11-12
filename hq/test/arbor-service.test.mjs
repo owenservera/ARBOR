@@ -12,7 +12,7 @@ test('index, search, context and wiki operate on authorized local project withou
     const data = join(tmp, 'private-dev-index');
     mkdirSync(source);
     writeFileSync(join(source, 'example.mjs'), 'export function distinctArborGreeting() { return "ARBOR_SOURCE_SENTINEL"; }\n');
-    const hq = createDevIntelligence({ dataDir: data, approvedRoots: [source] });
+    const hq = createDevIntelligence({ mode: 'diagnostic', dataDir: data, approvedRoots: [source] });
     assert.equal(hq.contract, DEV_INTELLIGENCE_CONTRACT);
     hq.registerSource({ name: 'fixture', path: source });
     const indexed = hq.index();

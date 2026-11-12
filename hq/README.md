@@ -1,77 +1,70 @@
-# ARBOR Development Intelligence (HQ)
+# ARBOR development intelligence
 
-This is a **physically imported in-repository package**. It does not depend on a
-repos-hq checkout, external HQ daemon/server, donor database or cross-repo API.
-The original JavaScript/SQLite indexing, search, semantic registry, context
-bundle and deterministic wiki algorithms live under ./lib, with the original
-diagnostic CLI under ./bin/hq.mjs. Canonical taxonomy JSON and
-AII source-analysis fixture definitions are also physically included. Imported source files are unchanged and
-pinned by ./source-provenance.json.
+This HQ package is **physically internal** to ARBOR. Existing JS indexing,
+semantic IDs, FTS search, context, graph read, capability analysis and wiki
+algorithms remain under hq/lib. See source-provenance.json for donor ancestry,
+including the audited symlink-security amendment to hq/lib/walk.mjs.
 
-## Public integration entrypoint
+## Application-facing boundary
 
-Import createDevIntelligence from ./lib/arbor-service.mjs (or from
-@arbor/dev-intelligence after workspace installation). The wrapper uses the
-same HQ source algorithms; it does not implement a second index/search/wiki.
+Import createDevIntelligence from ./lib/arbor-service.mjs.
 
-createDevIntelligence({ dataDir, approvedRoots }) returns:
+**Host mode (required for ARBOR product callers):**
 
-- registerSource({name,path}), removeSource(name), index({force});
-- search({query,project,limit,offset}), symbols(...), files(...);
-- context({task,project,budgetTokens,maxFiles}), verifyContext(bundle);
-- indexWatermarks(), sourceEvidence({project,path,startLine,endLine});
-- graph({kind,project,target,depth}), wiki({force,maxFilePages});
-- semanticIds(), semanticId(id), scanCapabilities({path,id}), status().
+    const hq = createDevIntelligence({
+      mode: 'host', dataDir: hostUserDevDataDirectory,
+      actorId: trustedActorId, sessionId: trustedSessionId,
+      approvedRoots: hostApprovedDevelopmentSourceRoots,
+      authorize: ({ actorId, sessionId, sourceId, sourceRoot, operation, domain }) =>
+        hostCheckExistingGrant({ actorId, sessionId, sourceId, sourceRoot, operation, domain }),
+    });
 
-The Host MUST supply exact **consented development-project roots** in
-approvedRoots for each access. Registered paths are metadata, not grants.
-No projects are selected by default; methods reject unapproved registered
-sources instead of silently searching them. Host World/personal sources do
-not belong in this store. The adapter grants no Host effects.
+hostCheckExistingGrant is a Host-owned function supplied by Lane B and must
+read LIVE Host permissions on every operation. No grant is stored in HQ.
+Use exact approved project roots, not a shared parent folder.
+A registry row is metadata only. HQ has no personal World or effect authority.
 
-Runtime state is located under a per-user application data path by default:
-%LOCALAPPDATA%/ARBOR/development-intelligence on Windows, or
-~/.local/share/ARBOR/development-intelligence elsewhere. It holds
-projects.json, .hq/index.db, generated wiki and rebuildable caches.
-No state is committed to Git. Host may pass a different user-data folder.
-No external source DB is reused or needed.
-
-## Internal diagnostic CLI
-
-Run from the ARBOR checkout with Node 24+:
+**Diagnostic CLI (operator-local only):**
 
     node hq/bin/arbor-hq.mjs help
-    node hq/bin/arbor-hq.mjs register --name example --source C:\code\example --allow C:\code\example
-    node hq/bin/arbor-hq.mjs index --allow C:\code\example
-    node hq/bin/arbor-hq.mjs search indexer --allow C:\code\example
+    node hq/bin/arbor-hq.mjs register --name demo --source C:\code\demo --allow C:\code\demo
+    node hq/bin/arbor-hq.mjs index --allow C:\code\demo
+    node hq/bin/arbor-hq.mjs search indexer --allow C:\code\demo
 
---allow must be provided on *every* access. Use multiple --allow flags when
-more than one development source is registered. The original HQ CLI source
-remains available for behavior-parity inspection, but is NOT mounted as the
-general-purpose end-user command surface.
+It uses explicit mode=diagnostic, never to be exposed through phone/server
+endpoints. The original broad hq/bin/hq.mjs CLI is preserved as donor source,
+NOT a product-facing Host command router.
 
-## Runtime dependencies and tests
+## Source contracts
 
-Requires Node >=24 for built-in node:sqlite with SQLite FTS5, file access to
-explicitly approved development roots, local write permission to the selected
-per-user data directory, and Git for git-aware revision capture. Existing
-package-manager versions in donor: Bun 1.4.x; CI/workspace ownership belongs
-to Lane G. No third-party production package or outside HQ runtime required.
+Source root ID: dev-source:SHA256 of canonical root path (stable on same user
+device/root); legacy sourceId project:path preserved in
+arbor.dev-source-evidence/1. indexWatermarks reports Git-index revision and
+an honest HEAD-only freshness class; sourceEvidence hashes actual bytes and
+marks stale when its content or revision differs. Context verification discards
+untrusted absolute-path hints and checks every source against the index.
+Graph is a derived read projection only; native computation belongs to Lane A.
 
-From ARBOR/hq:
+## Storage
 
-    node --test test/arbor-service.test.mjs
-    node --test test/in-repo-closure.test.mjs
+Fixed per-user data root on Windows:
+%LOCALAPPDATA%/ARBOR/development-intelligence
+
+Index dataDir/.hq/index.db, registry dataDir/projects.json and generated
+dataDir/wiki. No donor SQLite, source checkout, service or network needed.
+SQLite FTS5 and node:sqlite require Node >=24 for the supported beta.
+Git is optional for non-Git repositories but needed for revision stamps.
+Do not bundle any user's cached data or index. The Host installer must
+enforce owner-only ACL on the data root.
+
+## Tests — pending execution by G / CI
+
+    cd hq
+    node --check lib/arbor-service.mjs
+    node --check lib/walk.mjs
+    node --test test/arbor-service.test.mjs test/arbor-boundary.test.mjs test/in-repo-closure.test.mjs
     node --test test/indexer.test.mjs test/search.test.mjs test/graph.test.mjs test/context.test.mjs test/wiki.test.mjs test/semantic-registry.test.mjs
 
-Additional imported focused tests under test/ are unmodified donor tests and
-some are not hermetic outside the assembled product tree; only G should
-enable a combined suite after required other lanes and fixtures are present.
-The commands above are intended tests, NOT claims that they have run.
-
-## Source/writer ownership
-
-HQ JS owns internal **development intelligence** index and derived wiki.
-HQKG Rust graph compute belongs exclusively to native/hqkg (Lane A);
-Host World, grants and effect writer belong to apps/vivim-host (Lane B).
-The dev index is rebuildable; it is never a personal World or effect ledger.
+Tests were authored and staged, **not executed** in the GitHub connector.
+Windows ACL/junction, low-disk and full cross-lane integration remain blocked.
+See W01D-FOLLOWUP-REPORT.md.

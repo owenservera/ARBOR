@@ -1,6 +1,6 @@
 // hq/lib/walk.mjs — file discovery. Git-aware when possible, bounded everywhere.
-import { readdirSync, statSync, openSync, readSync, closeSync, existsSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { readdirSync, statSync, realpathSync, openSync, readSync, closeSync, existsSync } from 'node:fs';
+import { join, relative, resolve, sep } from 'node:path';
 import { toPosix, matchesAny } from './util.mjs';
 import { detectLang, isGeneratedPath, isTestPath } from './lang.mjs';
 import { isGitRepo, lsTracked } from './git.mjs';
@@ -94,13 +94,22 @@ export function discoverFiles(root, {
   }
 
   const entries = [];
+  const canonicalRoot = realpathSync(root);
+  const lower = (p) => process.platform === 'win32' ? resolve(p).toLowerCase() : resolve(p);
+  const base = lower(canonicalRoot);
   for (const rel of rels) {
     const posix = toPosix(rel);
     if (posix.startsWith('../')) continue;
     if (!includeGenerated && isGeneratedPath(posix)) continue;
     if (posix.split('/').some((segment) => matchesAny(segment, ignores))) continue;
+    // A tracked Git symlink may point outside the selected project (including
+    // a private World path). Reject it BEFORE stat/sniffBinary/read/index.
     let stat;
-    try { stat = statSync(join(root, rel)); } catch { continue; }
+    try {
+      const actual = lower(realpathSync(join(root, rel)));
+      if (actual !== base && !actual.startsWith(base + sep)) continue;
+      stat = statSync(join(root, rel));
+    } catch { continue; }
     if (!stat.isFile()) continue;
     if (stat.size > maxFileBytes) continue;
     const { kind } = detectLang(posix);
