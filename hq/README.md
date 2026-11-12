@@ -4,7 +4,8 @@ This is a **physically imported in-repository package**. It does not depend on a
 repos-hq checkout, external HQ daemon/server, donor database or cross-repo API.
 The original JavaScript/SQLite indexing, search, semantic registry, context
 bundle and deterministic wiki algorithms live under ./lib, with the original
-diagnostic CLI under ./bin/hq.mjs. Imported source files are unchanged and
+diagnostic CLI under ./bin/hq.mjs. Canonical taxonomy JSON and
+AII source-analysis fixture definitions are also physically included. Imported source files are unchanged and
 pinned by ./source-provenance.json.
 
 ## Public integration entrypoint

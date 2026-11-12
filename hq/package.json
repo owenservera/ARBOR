@@ -8,8 +8,7 @@
     "node": ">=24"
   },
   "exports": {
-    ".": "./lib/arbor-service.mjs",
-    "./legacy-cli": "./bin/hq.mjs"
+    ".": "./lib/arbor-service.mjs"
   },
   "bin": {
     "arbor-hq": "./bin/arbor-hq.mjs"

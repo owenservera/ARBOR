@@ -20,10 +20,13 @@
   cover unrelated HQ agent/media/automation execution and are not copied.
 - hq/capabilities/registry: 2 versioned capability data contracts.
 - hq/types: 1 test typing support file.
+- hq/registry: 3 HQ canonical identity/taxonomy/binding registries.
+- hq/aii/fixtures: 126 source-grounded verification fixtures including shared
+  bounded read-only fixture harness (no prior assessment results).
 - Import map and exact per-file Git blob identities: source-provenance.json.
 - Added package.json, local adapter/diagnostic CLI, isolation tests, README.
 
-**Blob audit:** 186/186 imported source blobs match their original Git SHA;
+**Blob audit:** 315/315 imported source blobs match their original Git SHA;
 no copied blob modified. Native research/rust-knowledge-graph is excluded
 because Lane A owns native/hqkg. Donor data/.hq index, session dumps, secrets,
 profiles, work logs, generated artifacts, node_modules and caches excluded.

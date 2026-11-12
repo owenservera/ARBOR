@@ -8,6 +8,762 @@
   "targetPrefix": "hq/",
   "sourceFiles": [
     {
+      "from": "hq/aii/fixtures/harness.mjs",
+      "to": "hq/aii/fixtures/harness.mjs",
+      "blobSha": "1aac7b27bdcfc2128ac8bc3977b0612210ad8328",
+      "bytes": 10068
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-001-repositories.mjs",
+      "to": "hq/aii/fixtures/HQ-001-repositories.mjs",
+      "blobSha": "dad78caccac6e6b4911cc52a5b41fb7a9232e2d9",
+      "bytes": 5107
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-002-repo-folders.mjs",
+      "to": "hq/aii/fixtures/HQ-002-repo-folders.mjs",
+      "blobSha": "7343276b5de923457cb3dd1a0a5b684b4da852f4",
+      "bytes": 4771
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-003-same-repo-not-duplicated.mjs",
+      "to": "hq/aii/fixtures/HQ-003-same-repo-not-duplicated.mjs",
+      "blobSha": "3708f8cec70303070c70ab242deb0d7dc5123464",
+      "bytes": 5021
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-004-repository-classification.mjs",
+      "to": "hq/aii/fixtures/HQ-004-repository-classification.mjs",
+      "blobSha": "f151a413eee5948a72dd5ebebaa88195cb05b911",
+      "bytes": 3524
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-005-repository-dependencies.mjs",
+      "to": "hq/aii/fixtures/HQ-005-repository-dependencies.mjs",
+      "blobSha": "497077b55148c49e6a9ddfbb989c078a886fd9aa",
+      "bytes": 6500
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-006-local-vs-github.mjs",
+      "to": "hq/aii/fixtures/HQ-006-local-vs-github.mjs",
+      "blobSha": "ec59d38e9371fdfe1c974d9f9012cd7963a8eece",
+      "bytes": 6816
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-007-unintegrated-branches.mjs",
+      "to": "hq/aii/fixtures/HQ-007-unintegrated-branches.mjs",
+      "blobSha": "fd48d47949e7d914bf7eee7a4d602e3d407e4498",
+      "bytes": 4957
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-008-uncommitted-changes.mjs",
+      "to": "hq/aii/fixtures/HQ-008-uncommitted-changes.mjs",
+      "blobSha": "ea5ae7e93770a7d2b852fa28441b06c7952d0ee6",
+      "bytes": 5694
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-009-indexing-coverage-gaps.mjs",
+      "to": "hq/aii/fixtures/HQ-009-indexing-coverage-gaps.mjs",
+      "blobSha": "de06bb15a4062e7b2d41c775bdc20583ad77e746",
+      "bytes": 7126
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-010-removal-blast-radius.mjs",
+      "to": "hq/aii/fixtures/HQ-010-removal-blast-radius.mjs",
+      "blobSha": "b31654aeb0b965a6f1f970fbe729a7e5cd307cd0",
+      "bytes": 7211
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-011-architecture.mjs",
+      "to": "hq/aii/fixtures/HQ-011-architecture.mjs",
+      "blobSha": "5fb28277c0cffb089fe9c3c8da9dcea4a5e9ac32",
+      "bytes": 3691
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-012-entrypoint.mjs",
+      "to": "hq/aii/fixtures/HQ-012-entrypoint.mjs",
+      "blobSha": "29c7f01562db2d35bd5a784c2da734232c344373",
+      "bytes": 4050
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-013-trace.mjs",
+      "to": "hq/aii/fixtures/HQ-013-trace.mjs",
+      "blobSha": "a490d552db7d430c01712258785a567d13bec8e2",
+      "bytes": 3691
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-014-service-consumers.mjs",
+      "to": "hq/aii/fixtures/HQ-014-service-consumers.mjs",
+      "blobSha": "52647e208efb4ab0c2f0753fd6b4554af6556587",
+      "bytes": 6568
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-015-module-dependencies.mjs",
+      "to": "hq/aii/fixtures/HQ-015-module-dependencies.mjs",
+      "blobSha": "ac456eac47fc3a1da130f392b309c79c11c37ef5",
+      "bytes": 5743
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-016-database-writers.mjs",
+      "to": "hq/aii/fixtures/HQ-016-database-writers.mjs",
+      "blobSha": "0c3b52e5c07fa297449a48281e905264bb391695",
+      "bytes": 3035
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-017-authorization-enforcement.mjs",
+      "to": "hq/aii/fixtures/HQ-017-authorization-enforcement.mjs",
+      "blobSha": "7e447a8b43abaffb99b5c3574826e4b27b5728a3",
+      "bytes": 2927
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-018-same-responsibility.mjs",
+      "to": "hq/aii/fixtures/HQ-018-same-responsibility.mjs",
+      "blobSha": "27e1567d362deaa70c279c7b6fab6d836e9ca623",
+      "bytes": 7342
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-019-boundary-crossings.mjs",
+      "to": "hq/aii/fixtures/HQ-019-boundary-crossings.mjs",
+      "blobSha": "a428b52e1ec7d9277d953fbbfe12effcffa584b7",
+      "bytes": 7837
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-020-tight-coupling.mjs",
+      "to": "hq/aii/fixtures/HQ-020-tight-coupling.mjs",
+      "blobSha": "f0f45a5c1002d52e32d0b1e51c5dcd05ce8d0c25",
+      "bytes": 8953
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-021-planned-features-implemented.mjs",
+      "to": "hq/aii/fixtures/HQ-021-planned-features-implemented.mjs",
+      "blobSha": "43fd618621e6322e015e0db952c8738060d5da55",
+      "bytes": 7822
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-022-reachable-by-users.mjs",
+      "to": "hq/aii/fixtures/HQ-022-reachable-by-users.mjs",
+      "blobSha": "77d4739262bc1855d318f76c5099853dff3ffcca",
+      "bytes": 3924
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-023-no-runtime-consumers.mjs",
+      "to": "hq/aii/fixtures/HQ-023-no-runtime-consumers.mjs",
+      "blobSha": "01e230a9c1699ea46ac2b727a185c87c5d466f08",
+      "bytes": 4553
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-024-implemented-unmounted.mjs",
+      "to": "hq/aii/fixtures/HQ-024-implemented-unmounted.mjs",
+      "blobSha": "b08166fcb1a8a722bffda6d258006381edb29c14",
+      "bytes": 3384
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-025-imported-never-executed.mjs",
+      "to": "hq/aii/fixtures/HQ-025-imported-never-executed.mjs",
+      "blobSha": "5f24679ebe0077a93191cb53321e976137dd08e2",
+      "bytes": 4879
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-026-fixtures-only.mjs",
+      "to": "hq/aii/fixtures/HQ-026-fixtures-only.mjs",
+      "blobSha": "ac866b7515241c7c35e75cb79592351df83a8ffe",
+      "bytes": 4672
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-027-disabled-by-config.mjs",
+      "to": "hq/aii/fixtures/HQ-027-disabled-by-config.mjs",
+      "blobSha": "64b8d9b0e4f12e08c155cb55564aa6fc871c015e",
+      "bytes": 2925
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-028-retirement-candidates.mjs",
+      "to": "hq/aii/fixtures/HQ-028-retirement-candidates.mjs",
+      "blobSha": "d4bf44a6f84facb6a8e500e7cdd5ad5003d4c4ca",
+      "bytes": 5228
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-029-dynamically-loaded.mjs",
+      "to": "hq/aii/fixtures/HQ-029-dynamically-loaded.mjs",
+      "blobSha": "2afb75fc4b47cbffd099e6597a6e69d94df416e3",
+      "bytes": 7964
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-030-missing-final-integration.mjs",
+      "to": "hq/aii/fixtures/HQ-030-missing-final-integration.mjs",
+      "blobSha": "f842b44f6cd4a748f1ed4c42fa1092bf19efe693",
+      "bytes": 4591
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-031-machine-snapshot.json",
+      "to": "hq/aii/fixtures/HQ-031-machine-snapshot.json",
+      "blobSha": "220c78aadfaa91aa12ac2e235ce832e4be43aebd",
+      "bytes": 1493
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-031-running-services.mjs",
+      "to": "hq/aii/fixtures/HQ-031-running-services.mjs",
+      "blobSha": "e0ca2a8da6faf0c985825fa97c4166a17358252a",
+      "bytes": 6261
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-032-running-executable-version.mjs",
+      "to": "hq/aii/fixtures/HQ-032-running-executable-version.mjs",
+      "blobSha": "92c4aa4650faeabae1146027cb8c936830e0be38",
+      "bytes": 5317
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-032-running-version.mjs",
+      "to": "hq/aii/fixtures/HQ-032-running-version.mjs",
+      "blobSha": "f54e48dcb4e95bdb0846f9927fefc3145397d6b5",
+      "bytes": 4056
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-033-platform-conditional-features.mjs",
+      "to": "hq/aii/fixtures/HQ-033-platform-conditional-features.mjs",
+      "blobSha": "66e656da70a6d1d4ef583abf8b26a9b689bb2474",
+      "bytes": 6063
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-034-source-features-vs-manifest.mjs",
+      "to": "hq/aii/fixtures/HQ-034-source-features-vs-manifest.mjs",
+      "blobSha": "2f5fd32120ee1ff230824c45f4d86037037dad0b",
+      "bytes": 5397
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-035-device-verification-absence.mjs",
+      "to": "hq/aii/fixtures/HQ-035-device-verification-absence.mjs",
+      "blobSha": "5e9c480d8cdebc5dbc06c7d4f3ba6210851accef",
+      "bytes": 5986
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-036-documented-capabilities-without-implementation.mjs",
+      "to": "hq/aii/fixtures/HQ-036-documented-capabilities-without-implementation.mjs",
+      "blobSha": "a7788a7dc62c7280b4bdb6c78e9ff0b605740700",
+      "bytes": 6738
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-037-labs-designs-implemented-elsewhere.mjs",
+      "to": "hq/aii/fixtures/HQ-037-labs-designs-implemented-elsewhere.mjs",
+      "blobSha": "288ca6e649ad7a556a87364203593038f7bdc5f0",
+      "bytes": 5930
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-038-research-prototype-promotion.mjs",
+      "to": "hq/aii/fixtures/HQ-038-research-prototype-promotion.mjs",
+      "blobSha": "77cb115be52de0c0a3c4131dbcaf3c5e4c013531",
+      "bytes": 6612
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-039-outdated-docs.mjs",
+      "to": "hq/aii/fixtures/HQ-039-outdated-docs.mjs",
+      "blobSha": "e95a5624b0ae72c718b41013292e6113f2ba8988",
+      "bytes": 5032
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-040-contradicting-docs.mjs",
+      "to": "hq/aii/fixtures/HQ-040-contradicting-docs.mjs",
+      "blobSha": "d14b8b8578f8dc7c4f2a7d47b9a01b04d61b7830",
+      "bytes": 5661
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-041-superseded-decisions.mjs",
+      "to": "hq/aii/fixtures/HQ-041-superseded-decisions.mjs",
+      "blobSha": "8ce00ef0559daaed131299aa2cba6a15670a3b5c",
+      "bytes": 7704
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-042-decision-provenance.mjs",
+      "to": "hq/aii/fixtures/HQ-042-decision-provenance.mjs",
+      "blobSha": "7766658327c2705d3501c7b73aaaacf6e0e9f61b",
+      "bytes": 6402
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-043-requirements-owner.mjs",
+      "to": "hq/aii/fixtures/HQ-043-requirements-owner.mjs",
+      "blobSha": "6465e9d6ad01f75c3d474a7f74a1f789aef85db0",
+      "bytes": 4103
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-044-conflicting-specs.mjs",
+      "to": "hq/aii/fixtures/HQ-044-conflicting-specs.mjs",
+      "blobSha": "af16626b0d89edea800da8cb74682ce3804428a9",
+      "bytes": 7222
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-045-archival-knowledge-loss.mjs",
+      "to": "hq/aii/fixtures/HQ-045-archival-knowledge-loss.mjs",
+      "blobSha": "d5322b60e18719eb4e9db6470de0a80b84462dbe",
+      "bytes": 7034
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-046-prove-feature.mjs",
+      "to": "hq/aii/fixtures/HQ-046-prove-feature.mjs",
+      "blobSha": "9adece374bc564bc3857573ecda9a67579567718",
+      "bytes": 2427
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-047-completion-claims.mjs",
+      "to": "hq/aii/fixtures/HQ-047-completion-claims.mjs",
+      "blobSha": "f509b1efdc560b8980f92705cab0990a7d78548a",
+      "bytes": 3106
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-048-tests-older-revisions.mjs",
+      "to": "hq/aii/fixtures/HQ-048-tests-older-revisions.mjs",
+      "blobSha": "4b9f78c2da4116f59add9c48c9e5b2dccd68b9cf",
+      "bytes": 4736
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-049-not-reproducible.mjs",
+      "to": "hq/aii/fixtures/HQ-049-not-reproducible.mjs",
+      "blobSha": "a79b575ddf31ea7c1bc0945282625defee1f7134",
+      "bytes": 2204
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-050-evidence-needed.mjs",
+      "to": "hq/aii/fixtures/HQ-050-evidence-needed.mjs",
+      "blobSha": "031cad859f663651446f84bc7df47d4423850011",
+      "bytes": 7644
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-051-unit-only-critical-behaviors.mjs",
+      "to": "hq/aii/fixtures/HQ-051-unit-only-critical-behaviors.mjs",
+      "blobSha": "c170766bee5109d75aaebc4f2f20878bfcdbc4b1",
+      "bytes": 7977
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-052-never-independently-verified.mjs",
+      "to": "hq/aii/fixtures/HQ-052-never-independently-verified.mjs",
+      "blobSha": "d9e2a5d45aefa89ab599cbfe308b44ec3962cb5d",
+      "bytes": 6315
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-053-fixture-evidence.mjs",
+      "to": "hq/aii/fixtures/HQ-053-fixture-evidence.mjs",
+      "blobSha": "d06c6b59cdef00205aa1570ec56a93e3fa6cf317",
+      "bytes": 6696
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-054-uninspectable-environments.mjs",
+      "to": "hq/aii/fixtures/HQ-054-uninspectable-environments.mjs",
+      "blobSha": "f5e678e536307fa0b3b3c5769ebe497439fe9e20",
+      "bytes": 4889
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-055-strongest-evidence.mjs",
+      "to": "hq/aii/fixtures/HQ-055-strongest-evidence.mjs",
+      "blobSha": "ffd41b9ea0bd1fcfb6b2616dd600345c0dfafb79",
+      "bytes": 5993
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-056-disagreeing-completion-reports.mjs",
+      "to": "hq/aii/fixtures/HQ-056-disagreeing-completion-reports.mjs",
+      "blobSha": "8c9c90b795332a6daec288efe1137d07c476ca0b",
+      "bytes": 5554
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-057-authoritative-repo.mjs",
+      "to": "hq/aii/fixtures/HQ-057-authoritative-repo.mjs",
+      "blobSha": "0a1fd1dbe51a24cebee7d389a7f2b863cd92745b",
+      "bytes": 8430
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-058-route-documented-not-mounted.mjs",
+      "to": "hq/aii/fixtures/HQ-058-route-documented-not-mounted.mjs",
+      "blobSha": "39c6a81123abc6151a492e3fad2fde6193f610cb",
+      "bytes": 5852
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-059-changes-between-versions.mjs",
+      "to": "hq/aii/fixtures/HQ-059-changes-between-versions.mjs",
+      "blobSha": "e741ba9146d6e5701c6cb4094e06d5d868c5de2b",
+      "bytes": 4874
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-060-tests-pass-runtime-fails.mjs",
+      "to": "hq/aii/fixtures/HQ-060-tests-pass-runtime-fails.mjs",
+      "blobSha": "fc82fb959bf018c2722d6c0f32b30a476b2a0736",
+      "bytes": 6761
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-061-regression-attribution.mjs",
+      "to": "hq/aii/fixtures/HQ-061-regression-attribution.mjs",
+      "blobSha": "4f85efff55693723addecf3d78acea494e3e3f38",
+      "bytes": 7850
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-062-shared-assumptions.mjs",
+      "to": "hq/aii/fixtures/HQ-062-shared-assumptions.mjs",
+      "blobSha": "3ea904d31122bf765d5146f720dbb9ab4a7bf29e",
+      "bytes": 5601
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-063-missing-dependency.mjs",
+      "to": "hq/aii/fixtures/HQ-063-missing-dependency.mjs",
+      "blobSha": "e16a62913755c87e34a2d588748fa75bf8fba234",
+      "bytes": 5405
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-064-evidence-to-distinguish-explanations.mjs",
+      "to": "hq/aii/fixtures/HQ-064-evidence-to-distinguish-explanations.mjs",
+      "blobSha": "cf9fe364afcb45d00eaa9eb3340e3217370d2aff",
+      "bytes": 1852
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-065-root-cause.mjs",
+      "to": "hq/aii/fixtures/HQ-065-root-cause.mjs",
+      "blobSha": "9baf00de66f842cfdc5e358a19c640a190f6b915",
+      "bytes": 2055
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-066-agent-systems.mjs",
+      "to": "hq/aii/fixtures/HQ-066-agent-systems.mjs",
+      "blobSha": "91807dec47461ef1ff21d1be4e597ba0d72e247a",
+      "bytes": 5108
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-067-zcode-vs-opencode-config.mjs",
+      "to": "hq/aii/fixtures/HQ-067-zcode-vs-opencode-config.mjs",
+      "blobSha": "a28af44eaf6c1eca947c113d196567a41c5264b5",
+      "bytes": 5875
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-068-custom-hooks.mjs",
+      "to": "hq/aii/fixtures/HQ-068-custom-hooks.mjs",
+      "blobSha": "ea0433713a61faaf440c7a97db16eebf3ef807ee",
+      "bytes": 5749
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-069-agent-tool-coupling.mjs",
+      "to": "hq/aii/fixtures/HQ-069-agent-tool-coupling.mjs",
+      "blobSha": "7ad690c7dc5a0bc4dd034c47939163819a61b912",
+      "bytes": 4952
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-070-agent-instruction-conflicts.mjs",
+      "to": "hq/aii/fixtures/HQ-070-agent-instruction-conflicts.mjs",
+      "blobSha": "8cce620e41efce556eb476341bc27cbffcc87964",
+      "bytes": 3516
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-071-interface-change-impact.mjs",
+      "to": "hq/aii/fixtures/HQ-071-interface-change-impact.mjs",
+      "blobSha": "e60e94b4fdb1c14b8b9fd22429517cf48797f4dc",
+      "bytes": 4866
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-072-module-migration-consumers.mjs",
+      "to": "hq/aii/fixtures/HQ-072-module-migration-consumers.mjs",
+      "blobSha": "e14c9c1e25378f919d2567e4add406c81c07c826",
+      "bytes": 7014
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-073-tests-after-change.mjs",
+      "to": "hq/aii/fixtures/HQ-073-tests-after-change.mjs",
+      "blobSha": "4660bdd6103c17f393e880c7b2c9750902bb8312",
+      "bytes": 7171
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-074-minimal-orphan-connection.mjs",
+      "to": "hq/aii/fixtures/HQ-074-minimal-orphan-connection.mjs",
+      "blobSha": "462195c67ce2892072cdefb33b03cca2a3abf950",
+      "bytes": 6338
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-075-dependency-upgrade-impact.mjs",
+      "to": "hq/aii/fixtures/HQ-075-dependency-upgrade-impact.mjs",
+      "blobSha": "79cad391d378c5b951cafeed35b999b9488e6681",
+      "bytes": 5489
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-076-migration-risks.mjs",
+      "to": "hq/aii/fixtures/HQ-076-migration-risks.mjs",
+      "blobSha": "2664c5d2b6cd967eb6ea24271c9abb7d9f15f5f1",
+      "bytes": 6231
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-077-change-independence.mjs",
+      "to": "hq/aii/fixtures/HQ-077-change-independence.mjs",
+      "blobSha": "b7efcbdddea406fa035be7ae71af3acc56d9c666",
+      "bytes": 5988
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-078-integration-sequencing.mjs",
+      "to": "hq/aii/fixtures/HQ-078-integration-sequencing.mjs",
+      "blobSha": "ac2900484fc1a13ae434eb39a698a5a851f954e6",
+      "bytes": 6327
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-079-merge-evidence-gap.mjs",
+      "to": "hq/aii/fixtures/HQ-079-merge-evidence-gap.mjs",
+      "blobSha": "fe2f98187cc7a5852ab935677551c89ed9ec845b",
+      "bytes": 9129
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-080-consolidation-sequence.mjs",
+      "to": "hq/aii/fixtures/HQ-080-consolidation-sequence.mjs",
+      "blobSha": "1360f0858015b46f4baf5ecc0fe8ec23e840b56f",
+      "bytes": 5131
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-081-remaining-release-work.mjs",
+      "to": "hq/aii/fixtures/HQ-081-remaining-release-work.mjs",
+      "blobSha": "bd6891574190f70fa108099839fc1d888ae0333e",
+      "bytes": 7434
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-082-rank-unfinished-by-user-value.mjs",
+      "to": "hq/aii/fixtures/HQ-082-rank-unfinished-by-user-value.mjs",
+      "blobSha": "12c5305074e92cf108d21722b518d2e91d7195b7",
+      "bytes": 4605
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-083-blocked-same-dependency.mjs",
+      "to": "hq/aii/fixtures/HQ-083-blocked-same-dependency.mjs",
+      "blobSha": "8aeac6276edf854a6c8cc839af8a81d3302ea827",
+      "bytes": 6117
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-084-duplicate-completed-work.mjs",
+      "to": "hq/aii/fixtures/HQ-084-duplicate-completed-work.mjs",
+      "blobSha": "8cecebe1c073a5efe14f94b62f2db54197afce25",
+      "bytes": 4171
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-085-critical-path-ownerless.mjs",
+      "to": "hq/aii/fixtures/HQ-085-critical-path-ownerless.mjs",
+      "blobSha": "05985b8c920400659749749bdda2e4cd3623aba5",
+      "bytes": 6219
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-086-minimal-releasable-scope.mjs",
+      "to": "hq/aii/fixtures/HQ-086-minimal-releasable-scope.mjs",
+      "blobSha": "67acd5fe38e94bb9939ccb7984cfe206306489a6",
+      "bytes": 3182
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-087-unnecessary-planned-features.mjs",
+      "to": "hq/aii/fixtures/HQ-087-unnecessary-planned-features.mjs",
+      "blobSha": "02f6ee3a9d44c3783e5e84376f0d43f63adda6d4",
+      "bytes": 7258
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-088-release-blocking-integrations.mjs",
+      "to": "hq/aii/fixtures/HQ-088-release-blocking-integrations.mjs",
+      "blobSha": "0709b80d9100c26be9fdf413962a45317257c62b",
+      "bytes": 5582
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-089-component-regression.mjs",
+      "to": "hq/aii/fixtures/HQ-089-component-regression.mjs",
+      "blobSha": "1b77f435e370f601d428c9e1f1e4760655e8424e",
+      "bytes": 5954
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-089-performance-regression-components.mjs",
+      "to": "hq/aii/fixtures/HQ-089-performance-regression-components.mjs",
+      "blobSha": "1125b15c19c2559a90ea5b9043af78008147c5fc",
+      "bytes": 13780
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-090-redundant-computation.mjs",
+      "to": "hq/aii/fixtures/HQ-090-redundant-computation.mjs",
+      "blobSha": "fbf96c394d9a11802099c73130cb7628d837893b",
+      "bytes": 7642
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-090-redundant-indexing.mjs",
+      "to": "hq/aii/fixtures/HQ-090-redundant-indexing.mjs",
+      "blobSha": "e9a5a139d28a2fac4b71d09fb705d5497191f1e5",
+      "bytes": 4247
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-091-background-consumption.mjs",
+      "to": "hq/aii/fixtures/HQ-091-background-consumption.mjs",
+      "blobSha": "6c8c3f4a6c97afd20c990de37def61786e6479b1",
+      "bytes": 6056
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-091-background-process-consumption.mjs",
+      "to": "hq/aii/fixtures/HQ-091-background-process-consumption.mjs",
+      "blobSha": "303c672915421f1437cf7c1c624e5510b7c88126",
+      "bytes": 18448
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-092-best-verified-configuration.mjs",
+      "to": "hq/aii/fixtures/HQ-092-best-verified-configuration.mjs",
+      "blobSha": "35cdc8499dba9be225dae6ac5fa8b50dbb53e320",
+      "bytes": 8058
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-093-retrieval-latency-staleness.mjs",
+      "to": "hq/aii/fixtures/HQ-093-retrieval-latency-staleness.mjs",
+      "blobSha": "672d945a5a8e19e199f3c2a5afc732bec8f99cca",
+      "bytes": 8084
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-094-investigate-architectural-question.mjs",
+      "to": "hq/aii/fixtures/HQ-094-investigate-architectural-question.mjs",
+      "blobSha": "d01646cfaf6fd5972072800025820c97b291b455",
+      "bytes": 6754
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-095-unknowns-investigation.mjs",
+      "to": "hq/aii/fixtures/HQ-095-unknowns-investigation.mjs",
+      "blobSha": "c3c558f80e8cb05d7c867ad7a343be2932cef9d8",
+      "bytes": 6934
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-096-challenge-conclusions.mjs",
+      "to": "hq/aii/fixtures/HQ-096-challenge-conclusions.mjs",
+      "blobSha": "ee335346bc9e73ff2329e41b6605a6935eec489a",
+      "bytes": 9222
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-097-materially-changed.mjs",
+      "to": "hq/aii/fixtures/HQ-097-materially-changed.mjs",
+      "blobSha": "c0211f28d6478241f0ceee26d0ab58257be339d8",
+      "bytes": 6541
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-098-stale-findings.mjs",
+      "to": "hq/aii/fixtures/HQ-098-stale-findings.mjs",
+      "blobSha": "779914cabba95714e1861d3e665b60be2fccb4ae",
+      "bytes": 5787
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-099-self-audit.mjs",
+      "to": "hq/aii/fixtures/HQ-099-self-audit.mjs",
+      "blobSha": "c5c6bc1d4a46d529d81d97c355f447a5d6e22664",
+      "bytes": 9914
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-100-autonomous-investigation.mjs",
+      "to": "hq/aii/fixtures/HQ-100-autonomous-investigation.mjs",
+      "blobSha": "4c5f5690915cd1265faa41cd2db69b2ac28b21ce",
+      "bytes": 9896
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-101-frontier-model-candidates.mjs",
+      "to": "hq/aii/fixtures/HQ-101-frontier-model-candidates.mjs",
+      "blobSha": "9db9a191147b774e0c052d46f1284e1a48ecaa5b",
+      "bytes": 8062
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-102-core-vs-peripheral.mjs",
+      "to": "hq/aii/fixtures/HQ-102-core-vs-peripheral.mjs",
+      "blobSha": "640803fca1b95472815e3f70d78e12d397ab092c",
+      "bytes": 5624
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-103-strongest-model-only-components.mjs",
+      "to": "hq/aii/fixtures/HQ-103-strongest-model-only-components.mjs",
+      "blobSha": "65c46cb8a1a5faad2038d3ec6aa37d696c99ab11",
+      "bytes": 6762
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-104-high-impact-code.mjs",
+      "to": "hq/aii/fixtures/HQ-104-high-impact-code.mjs",
+      "blobSha": "4f5d50fcdce7f1c59e8b1ac53c8e865834268d2b",
+      "bytes": 4720
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-105-complex-modules.mjs",
+      "to": "hq/aii/fixtures/HQ-105-complex-modules.mjs",
+      "blobSha": "a0040264e01f5b3efdc073cfeae4b0e411fe71c3",
+      "bytes": 7268
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-106-expensive-areas.mjs",
+      "to": "hq/aii/fixtures/HQ-106-expensive-areas.mjs",
+      "blobSha": "333dccfe1344bf70de4755e6294f0efaac65173d",
+      "bytes": 6840
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-107-work-queue-model-ranking.mjs",
+      "to": "hq/aii/fixtures/HQ-107-work-queue-model-ranking.mjs",
+      "blobSha": "a6e35fa9c60a0137f09d256b2dd0d2d8187c899f",
+      "bytes": 5953
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-108-unscrutinized-core-changes.mjs",
+      "to": "hq/aii/fixtures/HQ-108-unscrutinized-core-changes.mjs",
+      "blobSha": "9acb031f1f7866e947111de2e5befa6313342779",
+      "bytes": 4727
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-109-subsystem-implicit-knowledge.mjs",
+      "to": "hq/aii/fixtures/HQ-109-subsystem-implicit-knowledge.mjs",
+      "blobSha": "59db8c2dbb77fa085e1f5619fa119125892bbfbc",
+      "bytes": 4634
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-110-autonomous-routing-decision.mjs",
+      "to": "hq/aii/fixtures/HQ-110-autonomous-routing-decision.mjs",
+      "blobSha": "042e3be313e7ed916d6b250bb57e76dfdb4a4481",
+      "bytes": 6495
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-111-register-new-repo-class.mjs",
+      "to": "hq/aii/fixtures/HQ-111-register-new-repo-class.mjs",
+      "blobSha": "1deaa441ec200cc1a9bab6a640eb32dd2e59a8b6",
+      "bytes": 5655
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-112-multi-class-sources.mjs",
+      "to": "hq/aii/fixtures/HQ-112-multi-class-sources.mjs",
+      "blobSha": "86700d0e05051670fe37909cc4081f6dde2d3bf6",
+      "bytes": 5690
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-113-harvestable-assets-identification.mjs",
+      "to": "hq/aii/fixtures/HQ-113-harvestable-assets-identification.mjs",
+      "blobSha": "c8828f7f6dce491122344afa0bb7197c583351b2",
+      "bytes": 9148
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-114-compare-registered-repos.mjs",
+      "to": "hq/aii/fixtures/HQ-114-compare-registered-repos.mjs",
+      "blobSha": "800f7119cad59228577b029772bd98592ec9bc2a",
+      "bytes": 7906
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-115-domain-query-ranking.mjs",
+      "to": "hq/aii/fixtures/HQ-115-domain-query-ranking.mjs",
+      "blobSha": "181a1b0b84d7f1ddebfd6c0d2962eff6fbcc7b27",
+      "bytes": 7737
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-116-harvest-ready-components.mjs",
+      "to": "hq/aii/fixtures/HQ-116-harvest-ready-components.mjs",
+      "blobSha": "a85b95ab815b3c971cc0c0fbb85bc90e3bb495aa",
+      "bytes": 7015
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-117-harvesting-plan.mjs",
+      "to": "hq/aii/fixtures/HQ-117-harvesting-plan.mjs",
+      "blobSha": "78c17a5cc805d06c25491a89b0bced821736cf3f",
+      "bytes": 7967
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-118-harvesting-provenance.mjs",
+      "to": "hq/aii/fixtures/HQ-118-harvesting-provenance.mjs",
+      "blobSha": "62fbc82e6a9ad2974314dadfd2e19ec0f4a264b9",
+      "bytes": 5152
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-119-autonomous-harvest-shortlist.mjs",
+      "to": "hq/aii/fixtures/HQ-119-autonomous-harvest-shortlist.mjs",
+      "blobSha": "01c8deaed01cedfceb63be3f9cbe98db88237edc",
+      "bytes": 7451
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-120-harvestable-update-monitoring.mjs",
+      "to": "hq/aii/fixtures/HQ-120-harvestable-update-monitoring.mjs",
+      "blobSha": "0ad5b767a4642c29d6defa462b68e32fd71df407",
+      "bytes": 7015
+    },
+    {
       "from": "hq/bin/autonomy.mjs",
       "to": "hq/bin/autonomy.mjs",
       "blobSha": "25431f4a7f1e5f5a8bec41ca91b49073d50ede37",
@@ -834,6 +1590,24 @@
       "to": "hq/lib/zcode-doctor.mjs",
       "blobSha": "89e97422c578c5ccf1e2d90a24f066ce77f598c4",
       "bytes": 18251
+    },
+    {
+      "from": "hq/registry/agentic-file-registry.v1.json",
+      "to": "hq/registry/agentic-file-registry.v1.json",
+      "blobSha": "f2fe716b2d2b70d03106a8ee5ca62b590db4039c",
+      "bytes": 240845
+    },
+    {
+      "from": "hq/registry/canonical-taxonomy.v1.json",
+      "to": "hq/registry/canonical-taxonomy.v1.json",
+      "blobSha": "8e2601d54b42621e1d5c27d6c2d4ad2190ed5909",
+      "bytes": 74975
+    },
+    {
+      "from": "hq/registry/kb-binding.v1.json",
+      "to": "hq/registry/kb-binding.v1.json",
+      "blobSha": "335d43e1a4d06e61c1ae857c4879ba6dacf9e4e2",
+      "bytes": 14061
     },
     {
       "from": "hq/test/action-map.test.mjs",
