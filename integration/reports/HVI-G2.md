@@ -1,3 +1,5 @@
+> **MAIN DRIFT RECONCILED AFTER INITIAL STAGING (2026-11-12):** Concurrent ARBOR main PR #23 advanced main from `3d45fbf1c3963e4834a5e51ee7f6e63f3a0da298` to `9b79d732da8b92713d399040db4a02d505bc7cf1`. Compare identified 11 paths all under `.integration/proposal5/rescore-expansion/**`, none touching HVI. A two-parent, no-force integration-branch merge `08abdd1f71471fa9d87ab89c3c46c449ff9d9b52` preserved new main's exact blobs and staged G2 source. No main write by this worker. See `.integration/proposal5/hq-version-intelligence/proofs/G2/MAIN-DRIFT-RECONCILIATION.md`. This does **not** change the `REPAIR_REQUIRED` gate or make G1 accepted.
+
 # ARBOR Proposal 5 — HVI G2 serial integration (NATIVE TOOLING ONLY)
 
 **2026-11-12 decision:** `REPAIR_REQUIRED`. **Status:** `PREPARED_NOT_PROMOTED` / `HVI_TOOLING_INSTALLED_NOT_VERIFIED` on the G integration branch only. **NOT** `GO_FOR_READINESS_REVIEW`, `HVI_TOOLING_READY`, real-repo audit, runtime security acceptance or beta GO.
