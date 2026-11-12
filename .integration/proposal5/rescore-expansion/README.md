@@ -54,3 +54,22 @@ Start with HQ because it offers reliable source fixtures and measurable indexing
 ## Cadence classification added
 
 The [100-target matrix](./100-COMPUTATIONAL-TARGETS.md) now distinguishes `ALWAYS_ON`, `HIGH_FREQUENCY`, `FREQUENT`, `USER_DEFINED`, `MEDIUM_FREQUENCY`, `LOW_FREQUENCY`, and `DEV_ADMIN`. User-driven H/M/L and development/admin H/M/L are **independent workload-intensity hypotheses**, not throughput measurements. This prevents a sporadic but CPU-heavy batch operation being mistaken for 24/7 background load, or an active-chat hot path being interpreted as continuous work. No always-on workload was established by this inventory. Counted bands are ALWAYS_ON: 0, HIGH_FREQUENCY: 14, FREQUENT: 11, USER_DEFINED: 36, MEDIUM_FREQUENCY: 6, LOW_FREQUENCY: 3, DEV_ADMIN: 30.
+
+
+## Rescore 1,000 expansion — current authoritative assessment
+
+The expanded atlas is now documented in two complementary formats:
+
+| Artifact | Format | Purpose |
+|---|---|---|
+| [1000-COMPUTATIONAL-TARGETS.md](./1000-COMPUTATIONAL-TARGETS.md) | Human-readable Markdown | Ranked, filterable-by-text list with estimated CPU, peak memory, run cadence, user/admin frequencies, native suitability and evidence tier |
+| [1000-COMPUTATIONAL-TARGETS.json](./1000-COMPUTATIONAL-TARGETS.json) | Machine-readable JSON | Exactly 1,000 typed records including IDs, source paths, Git blob SHA, score derivation, cadence fields, boundaries and provenance |
+| [MIDSTREAM-INTEGRATION-SITREP.md](./MIDSTREAM-INTEGRATION-SITREP.md) | Human-readable Markdown | ARBOR integration state, version pins, dependent workstreams, merge and verification gates |
+| [MIDSTREAM-INTEGRATION-SITREP.json](./MIDSTREAM-INTEGRATION-SITREP.json) | Machine-readable JSON | Exact observed gate statuses, commit and PR pins and counts |
+| [evidence/symbols-01.json](./evidence/symbols-01.json) through [symbols-06.json](./evidence/symbols-06.json) | Source-declaration receipts | Named function identifiers extracted from pinned source files; not runtime behavior proofs |
+
+**Population:** 100 original curated source modules + 626 additional non-test, non-fixture source modules + 274 exact named declarations. These are **nested assessment opportunities**, not 1,000 proven separate engines or 1,000 justified Rust ports. The original [100-item matrix](./100-COMPUTATIONAL-TARGETS.md) remains available as the initial curated view.
+
+**Caution:** All resource/cadence scores are estimates. No performance benchmark, native source parity run, test executable exit, or real repository-migration comparison was performed. Active HVI tooling, SCF, and semantic engineering drafts retain their own merge/readiness gates and cannot be promoted just because this atlas is complete.
+
+**Review rule:** Select promising *pure computations* only after actual owner/caller analysis; keep browser, personal-data consent, Host ledger effects, TierFlow renderer and PWA network handling in their current authorities. Extend one shared `native/hqkg` / `core/programmability` implementation when benchmarking justifies it; do not create a second store or scheduler.
