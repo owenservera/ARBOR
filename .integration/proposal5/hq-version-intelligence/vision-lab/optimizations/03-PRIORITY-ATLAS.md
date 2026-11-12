@@ -58,7 +58,7 @@ Each dimension is an editorial hypothesis (integer 1–5). Larger score suggests
 2. **Find actual idle activity.** A 5s poll or a 50ms flush interval costs nothing when not running; first verify which processes remain resident.
 3. **Measure data truth, not just speed.** Durable ACK, immutable originals and honest gap records outrank throughput.
 4. **Source closure/build debt is development cost.** An imported source file is not automatically a runnable Hot Path.
-5. **Avoid double optimization registries.** This observatory complements Proposal 5's [rescore expansion](../../rescore-expansion/README.md) and does not replace it.
+5. **Avoid double optimization registries.** This observatory complements Proposal 5's [rescore expansion](../../../rescore-expansion/README.md) and does not replace it.
 
 ## How to interpret ranking
 A high-ranked optional decoder can be dormant for weeks; a lower-ranked always-on poller can dominate lifetime CPU. Re-rank using **actual call rate × per-call cost**, tail peak, and measured memory-duration once receipts exist. No automatic code change is authorized from this table.
