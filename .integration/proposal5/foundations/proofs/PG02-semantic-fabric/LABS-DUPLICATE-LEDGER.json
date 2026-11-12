@@ -1,0 +1,71 @@
+{
+  "schema": "arbor.proposal5.fa.pg02.labs-dedup/1",
+  "rows": [
+    {
+      "component": "R005 semantic lens/compiler/affordances/context",
+      "classification": "SOURCE_ONLY",
+      "overlap": "V/E and B",
+      "disposition": "Keep Lab fixture; never install second product parser/UI owner",
+      "gap": "Actual trusted producer/context feed and device UX untested"
+    },
+    {
+      "component": "R006 two-Tab 100 ideas",
+      "classification": "DESIGN_ONLY",
+      "overlap": "R005 local menu, PG02 synthetic twoTabReadProposal",
+      "disposition": "Do not import predictor as runtime",
+      "gap": "No real full-update action or measured prediction performance"
+    },
+    {
+      "component": "R007 VIEW ALL/word semantic links",
+      "classification": "DESIGN_ONLY with V staged",
+      "overlap": "V view_all projection, E TierFlow",
+      "disposition": "Use E as one renderer",
+      "gap": "Real multi-producer/IME/accessibility/device path untested"
+    },
+    {
+      "component": "R008 AutoWiki screen mirror",
+      "classification": "DESIGN_ONLY with W staged",
+      "overlap": "W mirror and D wiki/KB",
+      "disposition": "Use W ephemeral read through B/D/E",
+      "gap": "No live trusted E ScreenContext + B personal grant + D read"
+    },
+    {
+      "component": "R009 Rock Core",
+      "classification": "DESIGN_ONLY",
+      "overlap": "D existing wiki/index and W ephemeral",
+      "disposition": "Storage constraint, NEVER another DB",
+      "gap": "Physical WAL/SHM quota/recovery tests UNRUN"
+    },
+    {
+      "component": "R010 SWC",
+      "classification": "SOURCE_ONLY/PREPARED_UNPROMOTED",
+      "overlap": "S exact same compiler, D annotation-v2",
+      "disposition": "No second compiler or parser",
+      "gap": "Source walker auth and schema/reader integration UNRUN"
+    },
+    {
+      "component": "N0 event fabric",
+      "classification": "PREPARED_UNPROMOTED",
+      "overlap": "A EngineRegistry/typed DAG and V",
+      "disposition": "A/F port only after accepted G",
+      "gap": "N0 unicode_scalar and V UTF-16 interop unproven"
+    },
+    {
+      "component": "D HQ source action vs B Host action",
+      "classification": "ALREADY_IMPORTED isolated",
+      "overlap": "Two distinct registries",
+      "disposition": "Keep source meaning separate from effect catalog",
+      "gap": "Reviewed exact version/owner/args binding absent"
+    }
+  ],
+  "mustNotIntroduce": [
+    "second compiler",
+    "second Host dispatcher",
+    "another HQ wiki store",
+    "parallel Rust graph store",
+    "new UI publisher",
+    "second Chrome provider sender",
+    "new durable automation scheduler",
+    "new personal memory store"
+  ]
+}
