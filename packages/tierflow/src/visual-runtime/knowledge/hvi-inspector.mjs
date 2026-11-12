@@ -6,8 +6,12 @@ export const HVI_INSPECTOR_SCHEMA = 'tierflow.hvi.inspector/1';
 const REPORT_SCHEMA = 'arbor.hvi.adapter.comparison-report/1';
 const SHA40 = /^[a-f0-9]{40}$/, SHA64 = /^[a-f0-9]{64}$/;
 const fail = code => { const e = new Error('HVI_INSPECTOR_' + code); e.code = code; throw e; };
-const safe = value => typeof value === 'string' && value.length <= 512 &&
-  !/[\\x00-\\x1f<>]/.test(value) ? value : '[REDACTED]';
+// Source names, paths, and evidence references are untrusted, even inside a report.
+const SECRET = /(?:^|[\\/])(?:\\.env[^\\/]*|\\.git|\\.ssh|cookies?|secrets?|credentials?|tokens?|profiles?|private|personal|sessions?|login.data)(?:[\\/]|$)|(?:\\.pem|\\.p12|\\.pfx|\\.key)$|(?:bearer|password|api[_-]?key|access[_-]?token|refresh[_-]?token)[=:]/i;
+const safe = value => typeof value === 'string' && value.length > 0 &&
+  value.length <= 240 && !/[\\u0000-\\u001f\\u007f<>]/.test(value) &&
+  !/(?:javascript:|data:|https?:\\/\\/|www\\.|=>|document\\.|window\\.)/i.test(value) &&
+  !SECRET.test(value) ? value : '[REDACTED]';
 const blank = { schema:HVI_INSPECTOR_SCHEMA, mode:'empty', caption:'No versions compared',
   pins:[], rows:[], coverage:[], targetPinId:null, actions:[],
   sourceOnly:true, runtimeVerified:false, featureEnabled:false, synthetic:false };
@@ -37,6 +41,9 @@ export function projectHviInspector({ envelope=null, selectedPins=null, targetPi
     choices.some(x=>!pins.some(p=>p.pinId===x))) fail('INVALID_SELECTION');
   const target=targetPinId??c.targetPinId;
   if (!choices.includes(target)) fail('INVALID_SELECTION');
+  // This envelope is target-relative. A new target needs a fresh Host-approved comparison.
+  if (target!==c.targetPinId) return { ...blank, mode:'request-access',
+    caption:'Changing the target requires a new authorized pinned comparison' };
   const findings=c.sourceDeltas.filter(r=>choices.includes(r.originPinId) &&
     r.targetPinId===target);
   const rows=findings.slice(offset,offset+limit).map(r=>({
@@ -64,5 +71,7 @@ export function projectHviInspector({ envelope=null, selectedPins=null, targetPi
     page:{offset,limit,hasMore:offset+rows.length<findings.length},
     incomplete:partial,sourceOnly:true,runtimeVerified:false,
     featureEnabled:false,actions:[],synthetic:synthetic===true,
-    provenance:{digest:c.reproducibilityDigest,schema:c.schema}};
+    provenance:{digest:c.reproducibilityDigest,schema:c.schema},
+    candidatePlanCount:Array.isArray(c.mergePlan)?Math.min(c.mergePlan.length,100):0,
+    evidenceKind:'source-only', canCompare:false,canApply:false};
 }

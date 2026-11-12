@@ -17,3 +17,66 @@ test('five synthetic repository matrix retains full selected pin count',()=>{let
 test('incomplete scan stays partial and cannot assert capability absence',()=>{let x=sample();x.originalComparison.sourcePins[0].completeness='partial';let v=projectHviInspector({envelope:x});assert.equal(v.mode,'partial');assert.equal(v.rows[0].capabilityState,'UNKNOWN')});
 test('forged runtime accepted and mismatched digest are rejected',()=>{let x=sample();x.runtimeAccepted=true;assert.throws(()=>projectHviInspector({envelope:x}),{code:'UNTRUSTED_REPORT'});let y=sample();y.sourceComparisonDigest='0'.repeat(64);assert.throws(()=>projectHviInspector({envelope:y}),{code:'UNTRUSTED_REPORT'})});
 test('invalid selectors and bounds fail closed',()=>{let x=sample();assert.throws(()=>projectHviInspector({envelope:x,selectedPins:[A,A]}),{code:'INVALID_SELECTION'});assert.throws(()=>projectHviInspector({envelope:x,limit:201}),{code:'RESOURCE_LIMIT'})});
+
+import { renderHviInspector, HVI_INSPECTOR_FEATURE } from '../src/visual-runtime/render/hvi-inspector.mjs';
+const renderOpts={expectedRevision:7,currentRevision:7,synthetic:true,previewSynthetic:true};
+const flatten=(node)=>[node,...node.children.flatMap(flatten)];
+test('same repository at three invented SHAs remains three distinct selectors and renders via canonical renderer',()=>{
+  const e=sample();e.originalComparison.sourcePins.forEach(p=>p.repoIdentity='invented/same-repo');
+  const r=renderHviInspector({...renderOpts,envelope:e},{viewportPx:360});
+  assert.equal(r.mode,'source-report');assert.equal(r.document.nodes[0].children.length>4,true);
+  assert.equal(r.renderPlan.schema,'vivim.ui-render-plan/1');
+  assert.equal(r.renderPlan.status,'ok');assert.equal(r.published,false);assert.equal(r.effectsInvoked,false);
+  assert.equal(flatten(r.renderPlan.root).filter(n=>(n.text||'').includes('invented/same-repo')).length,3);
+});
+test('five synthetic repositories render in phone and desktop viewports without actions',()=>{
+  for(const viewportPx of [320,390,1280]){
+    const r=renderHviInspector({...renderOpts,envelope:sample(5)},{viewportPx});
+    assert.equal(r.renderPlan.status,'ok');
+    assert.deepEqual(r.renderPlan.focusOrder,[]);
+    assert.equal(r.document.views.length,2);
+    assert.equal(r.document.nodes.every(n=>!n.actionRefs||n.actionRefs.length===0),true);
+  }
+});
+test('denied, revoked, stale publisher revision and cancellation hide all pins',()=>{
+  for(const opts of [{permission:'denied'},{permission:'revoked'},{expectedRevision:6},{phase:'cancelled'}]){
+    const r=renderHviInspector({...renderOpts,envelope:sample(5),...opts});
+    assert.equal(['denied','stale','cancelled'].includes(r.mode),true);
+    assert.equal(JSON.stringify(r).includes('synthetic/repo'),false);
+  }
+});
+test('real report remains feature-gated even with caller-supplied granted permission',()=>{
+  const r=renderHviInspector({envelope:sample(3),permission:'granted',expectedRevision:7,currentRevision:7});
+  assert.equal(r.mode,'unavailable');assert.equal(HVI_INSPECTOR_FEATURE.enabled,false);
+  assert.equal(JSON.stringify(r).includes('synthetic/repo'),false);
+});
+test('access request, progress and cancelled states are inert and explicit',()=>{
+  for(const [phase,mode] of [['request','request-access'],['progress','progress'],['cancelled','cancelled']]){
+    const r=renderHviInspector({expectedRevision:1,currentRevision:1,phase});
+    assert.equal(r.mode,mode);assert.equal(r.renderPlan.status,'ok');
+  }
+});
+test('synthetic partial, truncated, expansion and revised target do not claim verified results',()=>{
+  const e=sample(5);e.originalComparison.limits.truncated=true;
+  const finding=e.originalComparison.sourceDeltas[0].id;
+  const partial=renderHviInspector({...renderOpts,envelope:e,expandedRowIds:[finding],limit:1});
+  assert.equal(partial.mode,'partial');assert.equal(partial.renderPlan.status,'ok');
+  assert.equal(partial.feature.liveResultRendering,false);
+  const target=e.originalComparison.sourcePins[1].pinId;
+  const changed=renderHviInspector({...renderOpts,envelope:e,targetPinId:target});
+  assert.equal(changed.mode,'request-access');assert.equal(JSON.stringify(changed).includes('synthetic/repo'),false);
+});
+test('secret-looking synthetic paths are redacted and cannot reach canonical HTML text',()=>{
+  const e=sample();e.originalComparison.sourceDeltas[0].originPath='.env.production';
+  e.originalComparison.sourceDeltas[0].targetPaths=['secrets/password.key'];
+  const r=renderHviInspector({...renderOpts,envelope:e,expandedRowIds:['finding-0']});
+  assert.equal(r.renderPlan.status,'ok');assert.equal(JSON.stringify(r).includes('.env.production'),false);
+  assert.equal(JSON.stringify(r).includes('secrets/password.key'),false);
+});
+test('digest, scope, malformed expansion and viewport fail safely',()=>{
+  const e=sample();const r=renderHviInspector({...renderOpts,envelope:e,expectedDigest:'0'.repeat(64)});
+  assert.equal(r.mode,'stale');
+  assert.throws(()=>renderHviInspector({...renderOpts,envelope:e,ownerRef:'../bad'}),/INVALID_SCOPE/);
+  assert.throws(()=>renderHviInspector({...renderOpts,envelope:e,expandedRowIds:[1]}),/INVALID_EXPANSION/);
+  assert.equal(renderHviInspector({...renderOpts,envelope:e},{viewportPx:120}).renderPlan.status,'unavailable');
+});
