@@ -1,3 +1,5 @@
+> **Latest main reconciliation:** While G2 was running, ARBOR main advanced to `9b79d732da8b92713d399040db4a02d505bc7cf1` through unrelated PR #23 Rust Rescore documents. G2 preserved the 11 disjoint exact blobs in two-parent non-force integration merge `08abdd1f71471fa9d87ab89c3c46c449ff9d9b52`. Detailed `proofs/G2/MAIN-DRIFT-RECONCILIATION.md`. This source-only ancestry reconciliation makes **no change** to G1 acceptance, runtime evidence, main write authority or the `REPAIR_REQUIRED` gate.
+
 # HVI G2 — Serial integration decision, 2026-11-12
 
 **Decision: `REPAIR_REQUIRED`.** G2 source repairs are committed and can continue on the remote integration branch under the existing owner development waiver. **`GO_FOR_READINESS_REVIEW` is NOT issued.** `PREPARED_NOT_PROMOTED`, `HVI_TOOLING_INSTALLED_NOT_VERIFIED`. No beta GO.
