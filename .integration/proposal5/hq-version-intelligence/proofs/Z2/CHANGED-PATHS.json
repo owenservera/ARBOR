@@ -1,0 +1,60 @@
+{
+  "schema": "arbor.hvi.z2.changed-paths/1",
+  "branch": "work/p5-hvi-w2-z-referee-r001",
+  "sourceHeads": {
+    "G1": "69447c09f420310aa84c24a1908dede91c963ec8",
+    "H": "d24daa9966abb222cd25210f41dcbb4758aa1209",
+    "U": "5836e9c9f5ba3bee36dbe6896ebfd22364b4c450",
+    "mainObserved": "3d45fbf1c3963e4834a5e51ee7f6e63f3a0da298",
+    "acceptedG1Main": null,
+    "ownerWaiver": "bbe7e4896eea02bcdec6f8fedb66eab885250161"
+  },
+  "branchReconciliation": "All exact requested G1/H/U branch heads matched currently observed tips; Z2 branch newly created at G1 head",
+  "changedSources": {
+    "G1": {
+      "aheadOfWaiver": 1,
+      "behind": 0,
+      "paths": [
+        "proofs/G1/G1-DECISION.md",
+        "proofs/G1/OWNER-HANDOFF.md",
+        "integration/reports/HVI-G1.md"
+      ]
+    },
+    "H": {
+      "aheadOfWaiver": 4,
+      "behind": 0,
+      "paths": [
+        "apps/vivim-host/control/action-catalog.v1.json",
+        "apps/vivim-host/control/hvi-capability.mjs",
+        "apps/vivim-host/control/hvi-native-guide.json",
+        "apps/vivim-host/test/hvi-capability.test.mjs",
+        "proofs/H/SECURITY-READ-BOUNDARY.md",
+        "proofs/H/SOURCE-PORT-PREPARATION.md",
+        "proofs/H/W2-ADMISSION-OWNER-WAIVER.md"
+      ]
+    },
+    "U": {
+      "aheadOfWaiver": 9,
+      "behind": 0,
+      "paths": [
+        "packages/tierflow/src/visual-runtime/knowledge/hvi-inspector.mjs",
+        "packages/tierflow/src/visual-runtime/render/hvi-inspector.mjs",
+        "packages/tierflow/tests/hvi-inspector.test.mjs",
+        "proofs/U/FINAL-INSPECTOR-CLOSEOUT.md",
+        "proofs/U/FINAL-INSPECTOR-RECEIPT.json",
+        "proofs/U/SOURCE-INSPECTOR-PREPARATION.md",
+        "proofs/U/TEST-RECEIPTS.md",
+        "proofs/U/W2-ADMISSION-OWNER-WAIVER.md"
+      ]
+    }
+  },
+  "z2Writes": [
+    "RESULT.md",
+    "CHANGED-PATHS.json",
+    "GAP-AND-SECURITY-MATRIX.json",
+    "QA-RECEIPTS.md",
+    "HANDOFF-G2.md"
+  ],
+  "sourceOnly": true,
+  "realDonorComparisons": false
+}
