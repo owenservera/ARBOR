@@ -1,3 +1,5 @@
+> **UPDATED AFTER ALL FIRST FOLLOW-UPS:** use [05 — revised launch order](05-LAUNCH-ORDER-AFTER-FOLLOWUPS.md) and [04 — updated decision](04-REFRESHED-DECISION-AND-PHASE2-SLOTS.md) instead of resending the older six-prompt bundle below. A is already FREEZE_READY; only B–F need last handoff prompts. Three independent Phase2 preparation lanes may start now but must not block G.
+
 # Proposal 5 — Pre-G Launch Pad (for concurrent ChatGPT lanes)
 
 **Do this BEFORE the full W1-G integration prompt.** The six workers have physically landed their initial source migrations, but some focused follow-ups remain active or only prepared changes. No shared integration branch was present when checked.
