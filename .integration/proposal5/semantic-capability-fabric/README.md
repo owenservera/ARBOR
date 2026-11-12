@@ -21,5 +21,8 @@ One edit → changed annotation parsed → identities resolved → source facts 
 - [10 — Decision contract](10-DECISIONS-AND-HANDOFF.md): integration-ready owner tasks.
 - [Machine-readable scope and status](proposal-manifest.json).
 
+## Verification counterpart (SV-R012)
+**[Semantic Verifier — typed proof-carrying claims, execution evidence and explanation checking](verifier/README.md)** is a proposed independent verifier complement to SWC/SCF. It specifies minimal additive `@hq:verify`, `@hq:observe`, `@hq:explain` references, claim/proof/explanation schemas, a small independent checker, bounded falsification tests, runtime-owner witness interfaces and HVI 2..N proof deltas. **Design only; tests and runtime integration UNRUN.** It remains on this isolated branch and must not modify active HVI worker source pins.
+
 ## Critical boundaries
 Preserve `hq/lib/protocol.mjs` (v1), `hq/lib/annotation-v2.mjs` (v2), `hq/lib/semantic-registry.mjs`, `hq/lib/indexer.mjs`, `hq/lib/wiki.mjs`, `hq/lib/wiki-program.mjs`, `hq/lib/arbor-service.mjs` and HVI as canonical owned components. The **existing SWC v0.1** research compiler is an inert typed projection; opt-in v3 extensions are not currently parsed/installed. For low-cost rollout, require only a tiny metadata header and leave derived facts to the compiler. An annotation cannot prove that functionality is reachable, tested, shipped or permitted; source and runtime evidence remain independent.
