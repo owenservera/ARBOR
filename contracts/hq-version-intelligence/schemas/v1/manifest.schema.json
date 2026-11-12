@@ -47,7 +47,7 @@
         "properties": {
           "path": {
             "type": "string",
-            "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[^\\u0000-\\u001f]+$"
+            "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*(?:^|/)\\.git(?:/|$))(?!.*\\\\)(?!.*(?:^|/)(?:\\.env[^/]*|cookies|login data|session\\.json|storage-state\\.json)(?:/|$))[^\\u0000-\\u001f]+$"
           },
           "mode": {
             "enum": [
@@ -96,7 +96,34 @@
             "minLength": 1,
             "maxLength": 1024
           }
-        }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "kind": {
+                  "const": "symlink"
+                }
+              },
+              "required": [
+                "kind"
+              ]
+            },
+            "then": {
+              "required": [
+                "symlinkTarget"
+              ],
+              "properties": {
+                "parseStatus": {
+                  "enum": [
+                    "blocked",
+                    "unsupported"
+                  ]
+                }
+              }
+            }
+          }
+        ]
       }
     },
     "coverage": {
