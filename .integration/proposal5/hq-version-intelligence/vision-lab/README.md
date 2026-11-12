@@ -36,6 +36,7 @@ Agent needs instructions      Agent discovers native HQ      Agent becomes an ar
 | ✦ Fictional conversations | [07-CONVERSATIONS-WITH-TOMORROW.md](07-CONVERSATIONS-WITH-TOMORROW.md) | What the agent could someday sound like |
 | ? Open frontier | [08-UNANSWERED-QUESTIONS.md](08-UNANSWERED-QUESTIONS.md) | Questions worth carrying, not decisions to force |
 | ⌁ Machine-readable seeds | [ideas.json](ideas.json) | Stable IDs, themes and speculative horizons |
+| ⚙ Optimization Observatory | [optimizations/README.md](optimizations/README.md) | Source-grounded speed, storage, clock, compiler, verifier and maintainability research; 59 ranked hypotheses |
 
 ## Reading this material
 **CURRENT** means already source-grounded or contracted elsewhere. **NEAR** is a plausible product extension. **FAR** is a research leap. **WILD** is a creative provocation. These are **not** commitments, schedule estimates or priority labels.
