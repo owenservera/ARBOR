@@ -93,6 +93,10 @@ Any require/import/git path to ../repos-hq, ../tierflow, ../vivim-web-harness, .
 
 Phase 2 separates **easy source/test migration**, **core development/migration preparation**, and **high-value pending development**. It prepares disjoint source-based branches while W1 A–F are active. Phase 2 must not edit worker-owned product paths or merge into the shared integration branch without master G's collision review and approval. No new Labs runtime dependence, duplicate effect authority or feature creep.
 
+## Pre-G convergence: six migrated lanes, follow-ups pending
+
+**[Launch the pre-G ChatGPT finalization prompts](pre-g/README.md)**. This source-grounded stage freezes A–F worker branches, resolves required contract decisions and audits exact import SHAs **before** the full integration owner G creates/merges the single integration branch. Pre-G is documentation and read-only review; not a source merge or beta acceptance.
+
 ## Truthful status
 
 **Proposal only.** The ARBOR branch contains proposal documents, not a completed Cargo/Bun product. No graph import, HQ UI integration, Windows package, native test, source migration or device acceptance is claimed. That is the work this proposal defines.
