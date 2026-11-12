@@ -50,3 +50,7 @@ Start with HQ because it offers reliable source fixtures and measurable indexing
 - `.integration/proposal5/02-RUST-CORE-AND-HQ-WIRING.md` and `.integration/proposal5/hq-version-intelligence/`
 
 **No test commands executed.** GitHub tree/path verification is API source evidence, not an OS process exit or measured runtime speedup.
+
+## Cadence classification added
+
+The [100-target matrix](./100-COMPUTATIONAL-TARGETS.md) now distinguishes `ALWAYS_ON`, `HIGH_FREQUENCY`, `FREQUENT`, `USER_DEFINED`, `MEDIUM_FREQUENCY`, `LOW_FREQUENCY`, and `DEV_ADMIN`. User-driven H/M/L and development/admin H/M/L are **independent workload-intensity hypotheses**, not throughput measurements. This prevents a sporadic but CPU-heavy batch operation being mistaken for 24/7 background load, or an active-chat hot path being interpreted as continuous work. No always-on workload was established by this inventory. Counted bands are ALWAYS_ON: 0, HIGH_FREQUENCY: 14, FREQUENT: 11, USER_DEFINED: 36, MEDIUM_FREQUENCY: 6, LOW_FREQUENCY: 3, DEV_ADMIN: 30.
