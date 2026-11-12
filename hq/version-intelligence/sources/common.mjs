@@ -60,9 +60,15 @@ export function gitBlobSha(data) {
   const b = Buffer.isBuffer(data) ? data : Buffer.from(data);
   return createHash('sha1').update('blob ' + b.length + '\0').update(b).digest('hex');
 }
+/**
+ * One source-read denylist, including lower-level readPinnedBlob and A->C
+ * manifests. The C bridge applies its own independent, fail-closed filter.
+ * Matching is per path segment so innocuous suffixes cannot hide credentials.
+ */
 export function sensitivePath(path) {
-  return path.split('/').some(part =>
-    /^(?:\.env(?:\..+)?|\.npmrc|\.pypirc|\.netrc|id_rsa|id_ed25519|credentials(?:\..+)?|secrets?(?:\..+)?|cookies?(?:\..+)?|session(?:\..+)?|token(?:\..+)?)$/i.test(part));
+  if (typeof path !== 'string') return true;
+  return path.replaceAll('\\', '/').split('/').some(part =>
+    /^(?:\.git|\.ssh|\.aws|\.env[^/]*|\.npmrc|\.pypirc|\.netrc|id_rsa|id_ed25519|id_ecdsa|id_dsa|credentials?(?:\.[^/]*)?|secrets?(?:\.[^/]*)?|tokens?(?:\.[^/]*)?|cookies?(?:\.[^/]*)?|sessions?(?:\.[^/]*)?|login[ -]?data|storage-state\.json|release-profile\.json|private|personal|profiles?|.*\.(?:pem|p12|pfx|key|keystore))$/i.test(part));
 }
 export function checkCancel(signal) {
   if (signal?.aborted) fail('RESOURCE_LIMIT', 'cancelled');
