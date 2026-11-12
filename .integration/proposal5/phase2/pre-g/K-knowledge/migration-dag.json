@@ -1,0 +1,310 @@
+{
+  "schema": "arbor.p5.p2-k.migration-dag/1",
+  "source_baselines": {
+    "labs": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be",
+    "B": "78a5105a9c1f1880d658f350e130b1e2632d3532",
+    "A": "dda546a11294920d6521a0f64ab7ee62ec993c70",
+    "D": "ad55fe28c2c331841675f308f9199ee4c2add86a"
+  },
+  "graph_kind": "proposed_owner_dependencies_not_executed",
+  "disposition": "PREPARED_NOT_PROMOTED",
+  "nodes": [
+    {
+      "id": "consent",
+      "owner": "B",
+      "repo": "owenservera/ARBOR",
+      "commit": "78a5105a9c1f1880d658f350e130b1e2632d3532",
+      "path": "apps/vivim-host/onboarding/service.mjs",
+      "blob_sha": "287a107eab19411a7cf0a3cadb54ea025f9377f0",
+      "role": "owner/account/World/source-grant + retention + quota",
+      "status": "ADAPTER_REQUIRED"
+    },
+    {
+      "id": "raw-custody",
+      "owner": "B",
+      "repo": "owenservera/ARBOR",
+      "commit": "78a5105a9c1f1880d658f350e130b1e2632d3532",
+      "path": "apps/vivim-host/corpus/intake/host-intake.mjs",
+      "blob_sha": "1db63cf3b0cc2dca09590a203b93fc895d4c936c",
+      "role": "private raw file custody + signed acceptance, adapt existing corpus source",
+      "status": "ADAPTER_REQUIRED"
+    },
+    {
+      "id": "zip",
+      "owner": "B",
+      "repo": "owenservera/vivim-labs",
+      "commit": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be",
+      "path": "personal-knowledge-lifecycle/runtime/src/zip-reader.mjs",
+      "blob_sha": "896fdc198fa303f350a66c681e77423f759f50d2",
+      "role": "bounded ZIP validation+fingerprint",
+      "status": "SOURCE_PRESENT_LABS"
+    },
+    {
+      "id": "stream",
+      "owner": "B",
+      "repo": "owenservera/vivim-labs",
+      "commit": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be",
+      "path": "personal-knowledge-lifecycle/runtime/src/json-array-stream.mjs",
+      "blob_sha": "4f061bca5d3ee0e67646e63a6fdf9e23b244bfab",
+      "role": "bounded UTF-8 JSON parser",
+      "status": "SOURCE_PRESENT_LABS"
+    },
+    {
+      "id": "normalize",
+      "owner": "B",
+      "repo": "owenservera/vivim-labs",
+      "commit": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be",
+      "path": "personal-knowledge-lifecycle/runtime/src/chatgpt-normalize.mjs",
+      "blob_sha": "58b1ab985fbea2811eff3f4a2a5a70b4cb606d45",
+      "role": "source revision and omission preserving normalized conversation",
+      "status": "SOURCE_PRESENT_LABS"
+    },
+    {
+      "id": "import",
+      "owner": "B",
+      "repo": "owenservera/vivim-labs",
+      "commit": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be",
+      "path": "personal-knowledge-lifecycle/runtime/src/chatgpt-import.mjs",
+      "blob_sha": "9bfbcd40749774a3405a8d4f3456211fe4920253",
+      "role": "pending durable checkpoint and receipt reconciliation; 8 MiB staging ceiling",
+      "status": "BLOCKED_ACTIVATION"
+    },
+    {
+      "id": "ledger",
+      "owner": "B",
+      "repo": "owenservera/ARBOR",
+      "commit": "78a5105a9c1f1880d658f350e130b1e2632d3532",
+      "path": "apps/vivim-host/bootstrap/ledger.mjs",
+      "blob_sha": "b40eb9ba34e49b034875936a0e7fc14964270a54",
+      "role": "existing SQLite Host transaction/meta interface",
+      "status": "SOURCE_PRESENT_W1"
+    },
+    {
+      "id": "ledger-port",
+      "owner": "B",
+      "repo": "owenservera/vivim-labs",
+      "commit": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be",
+      "path": "personal-knowledge-lifecycle/runtime/src/host-ledger-port.mjs",
+      "blob_sha": "a6c68514c330af3cf60856e5cc5206514724e9db",
+      "role": "mapping to Host ledger; no new database",
+      "status": "ADAPTER_REQUIRED"
+    },
+    {
+      "id": "host-publish",
+      "owner": "B",
+      "repo": "owenservera/vivim-labs",
+      "commit": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be",
+      "path": "personal-knowledge-lifecycle/runtime/src/host-archive-wiring.mjs",
+      "blob_sha": "e8ddbb17a83fbc398d1b651e121237bd1dcd3ef9",
+      "role": "Host-injected inspect/publish APIs; digest binding missing in fallback",
+      "status": "BLOCKED_ACTIVATION"
+    },
+    {
+      "id": "corpus-port",
+      "owner": "B",
+      "repo": "owenservera/ARBOR",
+      "commit": "78a5105a9c1f1880d658f350e130b1e2632d3532",
+      "path": "apps/vivim-host/corpus/host-integration.mjs",
+      "blob_sha": "9c2df8dc742cc88f9f5e0757380137d8492a652c",
+      "role": "existing manual corpus Host receipt/read gate; not generic archive publisher",
+      "status": "SOURCE_PRESENT_W1"
+    },
+    {
+      "id": "graph-proposal",
+      "owner": "A+B",
+      "repo": "owenservera/vivim-labs",
+      "commit": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be",
+      "path": "personal-knowledge-lifecycle/runtime/src/scoped-graph-proposal.mjs",
+      "blob_sha": "6196af064d79a28e0ad3d59958264ac918d6b27c",
+      "role": "proposed scoped graph packet",
+      "status": "SOURCE_PRESENT_LABS"
+    },
+    {
+      "id": "graph-cas",
+      "owner": "A",
+      "repo": "owenservera/ARBOR",
+      "commit": "dda546a11294920d6521a0f64ab7ee62ec993c70",
+      "path": "native/hqkg/src/scoped_graph.rs",
+      "blob_sha": "586843b56eedd4a9926bb443cbbeda80d841bda4",
+      "role": "scoped graph namespace and revision guard",
+      "status": "SOURCE_PRESENT_W1"
+    },
+    {
+      "id": "graph-cli",
+      "owner": "A",
+      "repo": "owenservera/ARBOR",
+      "commit": "dda546a11294920d6521a0f64ab7ee62ec993c70",
+      "path": "native/hqkg/src/bin/hqkg-personal.rs",
+      "blob_sha": "8049558d6e5e625ede8d03be2504c7f947524233",
+      "role": "Host-invoked personal graph CLI, marker and erase-effects",
+      "status": "SOURCE_PRESENT_W1"
+    },
+    {
+      "id": "accounting",
+      "owner": "B",
+      "repo": "owenservera/vivim-labs",
+      "commit": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be",
+      "path": "personal-knowledge-lifecycle/runtime/src/t0-core.mjs",
+      "blob_sha": "39f9c5410c438ad1d5be4450cea0fdce928cb630",
+      "role": "source grant and observed receipt ledger metadata",
+      "status": "SOURCE_PRESENT_LABS"
+    },
+    {
+      "id": "privacy-view",
+      "owner": "D+F",
+      "repo": "owenservera/ARBOR",
+      "commit": "ad55fe28c2c331841675f308f9199ee4c2add86a",
+      "path": "hq/lib/personal-corpus-contract.mjs",
+      "blob_sha": "c842fe5848d47179dc3852335747e1227e344d1d",
+      "role": "pure source-envelope validation, read-only projection boundary",
+      "status": "SOURCE_PRESENT_W1"
+    },
+    {
+      "id": "erasure",
+      "owner": "B+A",
+      "repo": "owenservera/ARBOR",
+      "commit": "dda546a11294920d6521a0f64ab7ee62ec993c70",
+      "path": "native/hqkg/src/bin/hqkg-personal.rs",
+      "blob_sha": "8049558d6e5e625ede8d03be2504c7f947524233",
+      "role": "graph part exists; full Host raw/index/context/cache erasure orchestration absent",
+      "status": "BLOCKED_ACTIVATION"
+    },
+    {
+      "id": "storage-floor",
+      "owner": "B+F",
+      "repo": "owenservera/vivim-labs",
+      "commit": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be",
+      "path": "personal-knowledge-lifecycle/PIPELINE-CONTRACTS.md",
+      "blob_sha": "12c402c54d411ac94caf6ba6d2843f2054f5adcd",
+      "role": "Rock Core protected reserve, quota and eviction policy within existing stores",
+      "status": "DESIGN_ONLY"
+    }
+  ],
+  "edges": [
+    {
+      "from": "consent",
+      "to": "raw-custody",
+      "gate": "Requires explicit selected archive and private owner storage"
+    },
+    {
+      "from": "consent",
+      "to": "zip",
+      "gate": "Denied grant stops all parser-derived side effects"
+    },
+    {
+      "from": "consent",
+      "to": "storage-floor",
+      "gate": "Admission requires estimated peak bytes plus reserved floor"
+    },
+    {
+      "from": "storage-floor",
+      "to": "raw-custody",
+      "gate": "Insufficient headroom yields pause, not protected eviction"
+    },
+    {
+      "from": "zip",
+      "to": "stream",
+      "gate": "One conversations.json entry, same file descriptor and CRC before publish"
+    },
+    {
+      "from": "stream",
+      "to": "normalize",
+      "gate": "Object-count, byte-count, strict UTF-8 before normalized bytes"
+    },
+    {
+      "from": "normalize",
+      "to": "import",
+      "gate": "Stable account+source+revision digest batch construction"
+    },
+    {
+      "from": "ledger",
+      "to": "ledger-port",
+      "gate": "Host SQLite meta transaction is the only checkpoint writer"
+    },
+    {
+      "from": "ledger-port",
+      "to": "import",
+      "gate": "Pending intent durable before effect"
+    },
+    {
+      "from": "raw-custody",
+      "to": "host-publish",
+      "gate": "Host owns evidence custody and verifies signed receipt independently"
+    },
+    {
+      "from": "import",
+      "to": "host-publish",
+      "gate": "Inspect exact batch key+digest before any re-commit"
+    },
+    {
+      "from": "corpus-port",
+      "to": "host-publish",
+      "gate": "Adapt existing Host evidence protocol; do not auto-conflate grant schemas"
+    },
+    {
+      "from": "host-publish",
+      "to": "graph-proposal",
+      "gate": "Consent and evidence provenance must be authenticated by Host"
+    },
+    {
+      "from": "graph-proposal",
+      "to": "graph-cas",
+      "gate": "Namespace and exact epoch byte guard rechecked"
+    },
+    {
+      "from": "graph-cas",
+      "to": "graph-cli",
+      "gate": "Host-invoked bounded operation with durable journal marker"
+    },
+    {
+      "from": "graph-cli",
+      "to": "accounting",
+      "gate": "Only after verified committed marker can checkpoint advance"
+    },
+    {
+      "from": "host-publish",
+      "to": "accounting",
+      "gate": "Signed durable evidence journal must match key,digest,source,account"
+    },
+    {
+      "from": "accounting",
+      "to": "privacy-view",
+      "gate": "Only scoped accepted candidate+provenance reads; no raw HQ dev indexing"
+    },
+    {
+      "from": "consent",
+      "to": "erasure",
+      "gate": "Revocation fences replay before deletion starts"
+    },
+    {
+      "from": "host-publish",
+      "to": "erasure",
+      "gate": "Erase all authorized raw and derivative custody, not just graph"
+    },
+    {
+      "from": "graph-cli",
+      "to": "erasure",
+      "gate": "Rust targeted erase-effects needs Host coordinating receipt"
+    },
+    {
+      "from": "erasure",
+      "to": "privacy-view",
+      "gate": "Invalidates derived DCB/wiki/search and forbids resurrected old source"
+    }
+  ],
+  "hard_gates": [
+    "G merged source authority and freeze pins",
+    "B current owner/account-specific consent, privacy, disk reservation",
+    "B signed Host inspect(key,digest), commit and journal reconciliation",
+    "A Host invoked Rust CAS and marker bound to evidence operation",
+    "B+A revocation/erasure cascade and write fencing",
+    "F observed synthetic tests; physical device/consented export acceptance still separate"
+  ],
+  "never": [
+    "additional personal database",
+    "Labs runtime process in product",
+    "new provider API",
+    "direct HQ developer-session access to raw owner chats",
+    "automatic cleanup of protected Rock Core"
+  ]
+}
