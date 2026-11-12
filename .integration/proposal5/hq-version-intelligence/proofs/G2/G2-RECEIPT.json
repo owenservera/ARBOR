@@ -10,7 +10,7 @@
   "branch": "integrate/p5-hq-version-intelligence-r001",
   "baseSha": "69447c09f420310aa84c24a1908dede91c963ec8",
   "sourceStageSha": "bc644e2e3314ed80a3f9891695d8ad4798cee6b9",
-  "mainObserved": "3d45fbf1c3963e4834a5e51ee7f6e63f3a0da298",
+  "mainObserved": "9b79d732da8b92713d399040db4a02d505bc7cf1",
   "acceptedG1Main": null,
   "sources": {
     "H": {
@@ -156,5 +156,21 @@
     }
   ],
   "rollback": "Candidate integration branch only; no main merge or deployment. Revert G2 candidate commits via reviewed integration change if necessary; drill UNRUN.",
-  "nextGate": "G1 accepted main after real Node24+AJV, Host live source grants and canonical dispatch, full G2 synthetic Node/Host/TierFlow tests, independent Z2 re-review, reviewed PR; only then GO_FOR_READINESS_REVIEW."
+  "nextGate": "G1 accepted main after real Node24+AJV, Host live source grants and canonical dispatch, full G2 synthetic Node/Host/TierFlow tests, independent Z2 re-review, reviewed PR; only then GO_FOR_READINESS_REVIEW.",
+  "initialMainObserved": "3d45fbf1c3963e4834a5e51ee7f6e63f3a0da298",
+  "mainDrift": {
+    "previousMainSha": "3d45fbf1c3963e4834a5e51ee7f6e63f3a0da298",
+    "newMainSha": "9b79d732da8b92713d399040db4a02d505bc7cf1",
+    "mainAdvanceCommits": 12,
+    "changedPaths": 11,
+    "allInRescoreExpansion": true,
+    "overlapWithHviSource": false,
+    "integrationBranchReconciliationCommit": "08abdd1f71471fa9d87ab89c3c46c449ff9d9b52",
+    "parents": [
+      "54326ad8c1391567f2f64b06f406e492b388f28f",
+      "9b79d732da8b92713d399040db4a02d505bc7cf1"
+    ],
+    "mainModifiedByG2": false,
+    "gatePromotion": false
+  }
 }
