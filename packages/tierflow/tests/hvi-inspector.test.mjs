@@ -80,3 +80,34 @@ test('digest, scope, malformed expansion and viewport fail safely',()=>{
   assert.throws(()=>renderHviInspector({...renderOpts,envelope:e,expandedRowIds:[1]}),/INVALID_EXPANSION/);
   assert.equal(renderHviInspector({...renderOpts,envelope:e},{viewportPx:120}).renderPlan.status,'unavailable');
 });
+
+test('uninitialized inspector has an actual empty state, not a stale source',()=>{
+  const r=renderHviInspector();
+  assert.equal(r.mode,'empty');
+  assert.equal(r.renderPlan.status,'ok');
+  assert.equal(JSON.stringify(r).includes('synthetic/repo'),false);
+});
+test('maximum 16 invented source pins keep the canonical child/label bounds',()=>{
+  const ids=Array.from({length:16},(_,i)=>i.toString(16).padStart(64,'0'));
+  const target=ids.at(-1), e=sample();
+  e.originalComparison.targetPinId=target;e.report.targetPinId=target;
+  e.originalComparison.sourcePins=ids.map((pinId,i)=>({
+    pinId,repoIdentity:'invented/repo'+i,resolvedCommitSha:i.toString(16).repeat(40),completeness:'complete',
+  }));
+  e.originalComparison.coverage=ids.slice(0,-1).map(sourcePinId=>({
+    sourcePinId,targetPinId:target,sourceCompleteness:'complete',
+    targetCompleteness:'complete',totalCompared:1,
+  }));
+  e.originalComparison.sourceDeltas=ids.slice(0,-1).map((originPinId,i)=>({
+    id:'synthetic-finding-'+i,originPinId,targetPinId:target,originPath:'src/main.ts',
+    targetPaths:['src/renamed.ts'],state:'EXACT_RELOCATION',
+    certainty:'source_verified',evidenceRefs:['fixture'],
+  }));
+  const r=renderHviInspector({...renderOpts,envelope:e});
+  assert.equal(r.mode,'source-report');
+  assert.equal(r.renderPlan.status,'ok');
+  assert.ok(r.document.nodes.length<=64);
+  assert.ok(r.document.nodes.every(n=>n.children.length<=24));
+  assert.ok(r.document.nodes.every(n=>n.a11y.name.length<=120));
+  assert.equal(r.feature.enabled,false);
+});
