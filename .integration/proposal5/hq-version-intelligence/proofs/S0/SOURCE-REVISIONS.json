@@ -1,0 +1,232 @@
+{
+  "schema": "arbor.hvi.s0.revisions/1",
+  "snapshots": [
+    {
+      "repository": "owenservera/ARBOR",
+      "commitSha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+      "rootTreeSha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+      "truncated": false,
+      "blobCount": 1500,
+      "completeness": "complete"
+    },
+    {
+      "repository": "owenservera/repos-hq",
+      "commitSha": "9b922ea049dbadc94e504b5b9432743995c020ca",
+      "rootTreeSha": "9b922ea049dbadc94e504b5b9432743995c020ca",
+      "truncated": false,
+      "blobCount": 2024,
+      "completeness": "complete"
+    },
+    {
+      "repository": "owenservera/vivim-web-harness",
+      "commitSha": "cae97afe848d79957c9d6c698a90996a758bfd56",
+      "rootTreeSha": "cae97afe848d79957c9d6c698a90996a758bfd56",
+      "truncated": false,
+      "blobCount": 1712,
+      "completeness": "complete"
+    },
+    {
+      "repository": "owenservera/tierflow",
+      "commitSha": "50822f11ee63c3d80f631f8fea7dcb9b19bffc38",
+      "rootTreeSha": "50822f11ee63c3d80f631f8fea7dcb9b19bffc38",
+      "truncated": false,
+      "blobCount": 637,
+      "completeness": "complete"
+    },
+    {
+      "repository": "owenservera/vivim-labs",
+      "commitSha": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be",
+      "rootTreeSha": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be",
+      "truncated": false,
+      "blobCount": 885,
+      "completeness": "complete"
+    }
+  ],
+  "refs": [
+    {
+      "repository": "owenservera/ARBOR",
+      "ref": "main",
+      "historicalSha": "370d18d92dfa463f58bd145b307b488a64746ee5",
+      "freshSha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+      "branchMoved": true,
+      "verified": true
+    },
+    {
+      "repository": "owenservera/repos-hq",
+      "ref": "main",
+      "historicalSha": "9b922ea049dbadc94e504b5b9432743995c020ca",
+      "freshSha": "9b922ea049dbadc94e504b5b9432743995c020ca",
+      "branchMoved": false,
+      "verified": true
+    },
+    {
+      "repository": "owenservera/vivim-web-harness",
+      "ref": "main",
+      "historicalSha": "cae97afe848d79957c9d6c698a90996a758bfd56",
+      "freshSha": "cae97afe848d79957c9d6c698a90996a758bfd56",
+      "branchMoved": false,
+      "verified": true
+    },
+    {
+      "repository": "owenservera/tierflow",
+      "ref": "main",
+      "historicalSha": "50822f11ee63c3d80f631f8fea7dcb9b19bffc38",
+      "freshSha": "50822f11ee63c3d80f631f8fea7dcb9b19bffc38",
+      "branchMoved": false,
+      "verified": true
+    },
+    {
+      "repository": "owenservera/vivim-labs",
+      "ref": "main",
+      "historicalSha": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be",
+      "freshSha": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be",
+      "branchMoved": false,
+      "verified": true
+    },
+    {
+      "repository": "owenservera/repos-hq",
+      "ref": "research/semantic-wiki-compiler-20261112",
+      "historicalSha": "7cb2fadd88c5a08c0ec7e084410e150a5b6e0f3d",
+      "freshSha": "7cb2fadd88c5a08c0ec7e084410e150a5b6e0f3d",
+      "branchMoved": false,
+      "verified": true
+    },
+    {
+      "repository": "owenservera/repos-hq",
+      "ref": "research/autowiki-screen-mirror-20261112",
+      "historicalSha": "61507b5f9bafd0211d0a556280b367574e676ce1",
+      "freshSha": "61507b5f9bafd0211d0a556280b367574e676ce1",
+      "branchMoved": false,
+      "verified": true
+    },
+    {
+      "repository": "owenservera/repos-hq",
+      "ref": "research/rock-core-storage-bounds-20261112",
+      "historicalSha": "0a3c11a6df72434b46931f90b25bf1f93da09f92",
+      "freshSha": "0a3c11a6df72434b46931f90b25bf1f93da09f92",
+      "branchMoved": false,
+      "verified": true
+    },
+    {
+      "repository": "owenservera/repos-hq",
+      "ref": "research/interpretation-xray-intelligence-surface-20261112",
+      "historicalSha": "c80e45ff11b33aec785c2055e52420751ee8388d",
+      "freshSha": "c80e45ff11b33aec785c2055e52420751ee8388d",
+      "branchMoved": false,
+      "verified": true
+    },
+    {
+      "repository": "owenservera/vivim-labs",
+      "ref": "lab/nlp-visual-command-ui-20261111",
+      "historicalSha": "67e76c5b730dcc2cd3ab3919c3ba273a6c260db8",
+      "freshSha": "67e76c5b730dcc2cd3ab3919c3ba273a6c260db8",
+      "branchMoved": false,
+      "verified": true
+    },
+    {
+      "repository": "owenservera/vivim-labs",
+      "ref": "lab/user-io-rust-core-20261112",
+      "historicalSha": "61d9fc15c55144c4f0b79afa248981c2b0ca9bd6",
+      "freshSha": "61d9fc15c55144c4f0b79afa248981c2b0ca9bd6",
+      "branchMoved": false,
+      "verified": true
+    }
+  ],
+  "additionalCandidateBranches": [
+    "ARBOR:work/p5-fa-pg00-source-truth-r001",
+    "ARBOR:work/p5-fa-pg01-native-abi-r001",
+    "ARBOR:work/p5-fa-pg02-semantic-fabric-r001",
+    "ARBOR:work/p5-fa-pg03-pwa-storage-r001",
+    "ARBOR:work/p5-fa-pgz-convergence-r001"
+  ],
+  "inspectedPaths": [
+    {
+      "path": "hq/source-provenance.json",
+      "exists": true,
+      "blob": "c9631656c16de05d27b5b1a348a441219051372a",
+      "commitSha": "f9823a5131e73e7562db5a4ec14e1ec481557d69"
+    },
+    {
+      "path": "hq/lib/catalogue-delta.mjs",
+      "exists": true,
+      "blob": "6849e6df26bd136ee50ae08a260d8ab9e9445ac7",
+      "commitSha": "f9823a5131e73e7562db5a4ec14e1ec481557d69"
+    },
+    {
+      "path": "hq/lib/arbor-service.mjs",
+      "exists": true,
+      "blob": "a47c232c188d69758daa8d6a2f18070ce8c9a27b",
+      "commitSha": "f9823a5131e73e7562db5a4ec14e1ec481557d69"
+    },
+    {
+      "path": "hq/aii/fixtures/HQ-114-compare-registered-repos.mjs",
+      "exists": true,
+      "blob": "800f7119cad59228577b029772bd98592ec9bc2a",
+      "commitSha": "f9823a5131e73e7562db5a4ec14e1ec481557d69"
+    },
+    {
+      "path": "integration/reports/MAIN-CONSOLIDATION.md",
+      "exists": true,
+      "blob": "3400b213e030388c1fd901e46791151626b10d85",
+      "commitSha": "f9823a5131e73e7562db5a4ec14e1ec481557d69"
+    }
+  ],
+  "donorCatalogueFiles": [
+    {
+      "path": "hq/catalogue-identity/EXPORT-CONTRACT.md",
+      "blob": "2155ea7da524930458d2afb5df2ad999c32635c8"
+    },
+    {
+      "path": "hq/catalogue-identity/HANDOFF.md",
+      "blob": "a1478563ccecdf60b30bc34f2eed8b6d18a5a653"
+    },
+    {
+      "path": "hq/catalogue-identity/README.md",
+      "blob": "a74b4af575f44800ccc187c2fb7d53b0f199c4fe"
+    },
+    {
+      "path": "hq/catalogue-identity/cli.mjs",
+      "blob": "79354c1cb1145a940d4cb1adb3556dde3153c574"
+    },
+    {
+      "path": "hq/catalogue-identity/crosswalk.mjs",
+      "blob": "ed4cb6f561e055e1dd3145b61de6f50f2555687d"
+    },
+    {
+      "path": "hq/catalogue-identity/evidence/cli-smoke.json",
+      "blob": "fdea8251ffc8308ac92c44684819bf1a275c80c9"
+    },
+    {
+      "path": "hq/catalogue-identity/evidence/node-test.tap",
+      "blob": "3f3f2259ef73d8dd556a4f1738e06caa08ccd8f7"
+    },
+    {
+      "path": "hq/catalogue-identity/evidence/performance.jsonl",
+      "blob": "b41cebcb7ab9c2a6f60f701f177ee0ac95815e11"
+    },
+    {
+      "path": "hq/catalogue-identity/evidence/source-census.json",
+      "blob": "7cc108371e529056ac53e257cda482edc8197a64"
+    },
+    {
+      "path": "hq/catalogue-identity/labs-adapter.mjs",
+      "blob": "f3c026aad3726e0e1bdd52e96d1a4152699c43f0"
+    },
+    {
+      "path": "hq/catalogue-identity/observer-export.mjs",
+      "blob": "f41febb33ba610259c03c85b4f772d9162b4bebf"
+    },
+    {
+      "path": "hq/catalogue-identity/source-adapters.mjs",
+      "blob": "0100d7ce7ff5cd6b4dbc366ab93a74a1a33e4fed"
+    },
+    {
+      "path": "hq/catalogue-identity/test/benchmark.mjs",
+      "blob": "574949aeaf7e98bcca2b890c00378030830f1097"
+    },
+    {
+      "path": "hq/catalogue-identity/test/crosswalk.test.mjs",
+      "blob": "3da1b5f7f14affb1f206213453832bf5fe2f8844"
+    }
+  ]
+}
