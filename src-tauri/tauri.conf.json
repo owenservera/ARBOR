@@ -5,8 +5,7 @@
   "build": {
     "frontendDist": "../apps/vivim-host/public",
     "devUrl": "http://127.0.0.1:43187",
-    "beforeDevCommand": "node apps/vivim-host/server.mjs",
-    "beforeBuildCommand": "node tools/packaging/prepare-host-runtime.mjs"
+    "beforeDevCommand": "node apps/vivim-host/server.mjs"
   },
   "app": {
     "withGlobalTauri": true,
@@ -29,8 +28,6 @@
       "icons/icon.ico"
     ],
     "resources": {
-      "resources/vivim.apk": "vivim.apk",
-      "resources/vivim-release.manifest.json": "vivim-release.manifest.json",
       "resources/runtime/": "runtime/"
     }
   }
