@@ -1,0 +1,16 @@
+{
+  "schema": "arbor.hvi.evidence-receipt/1",
+  "id": "source:catalogue-delta",
+  "kind": "source_blob",
+  "claim": "source present only; runtime unverified",
+  "owner": "F-QA",
+  "source": {
+    "repo": "owenservera/ARBOR",
+    "commitSha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+    "path": "hq/lib/catalogue-delta.mjs",
+    "blobSha": "6849e6df26bd136ee50ae08a260d8ab9e9445ac7"
+  },
+  "evidenceDigest": "0000000000000000000000000000000000000000000000000000000000000000",
+  "observation": "2026-11-12T19:01:09Z",
+  "status": "SOURCE_PRESENT"
+}

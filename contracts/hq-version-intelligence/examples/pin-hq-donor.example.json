@@ -1,0 +1,17 @@
+{
+  "schema": "arbor.hvi.pin/1",
+  "pinId": "owenservera/repos-hq@9b922ea049dbadc94e504b5b9432743995c020ca",
+  "provider": "github",
+  "repoIdentity": {
+    "repository": "owenservera/repos-hq"
+  },
+  "requestedRef": "main",
+  "resolvedCommitSha": "9b922ea049dbadc94e504b5b9432743995c020ca",
+  "rootTreeSha": "a31e926bff898b02273b2044a871881f58ca61a9",
+  "manifestDigest": "0000000000000000000000000000000000000000000000000000000000000000",
+  "acquiredAt": "2026-11-12T19:01:09Z",
+  "completeness": "partial",
+  "scope": "development",
+  "owner": "HQ-source-read-only",
+  "evidenceRef": ".integration/proposal5/hq-version-intelligence/proofs/S0/SOURCE-REVISIONS.json"
+}

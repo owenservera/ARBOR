@@ -1,0 +1,17 @@
+{
+  "schema": "arbor.hvi.pin/1",
+  "pinId": "owenservera/ARBOR@f9823a5131e73e7562db5a4ec14e1ec481557d69",
+  "provider": "github",
+  "repoIdentity": {
+    "repository": "owenservera/ARBOR"
+  },
+  "requestedRef": "main",
+  "resolvedCommitSha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+  "rootTreeSha": "13eda0d9c7f717a46d00eee46a22b1a19edb65be",
+  "manifestDigest": "0000000000000000000000000000000000000000000000000000000000000000",
+  "acquiredAt": "2026-11-12T19:01:09Z",
+  "completeness": "partial",
+  "scope": "development",
+  "owner": "HQ-source-read-only",
+  "evidenceRef": ".integration/proposal5/hq-version-intelligence/proofs/S0/WORKER-BASE.json"
+}
