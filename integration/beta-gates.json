@@ -108,12 +108,15 @@
     "sourceScanner": "AUTHORED_UNRUN",
     "packagingHelper": "AUTHORED_UNRUN",
     "windowsToolchain": "UNAVAILABLE",
-    "cargoLock": "ABSENT_UNRUN",
-    "bunLock": "ABSENT_UNRUN",
-    "aPackagingPr": "#8 DRAFT_UNMERGED",
+    "cargoLock": "ABSENT",
+    "bunLock": "ABSENT",
+    "aPackagingPr": "#8 MERGED SOURCE_ONLY",
     "sourceClosure": "UNRUN",
     "noDonor": "UNRUN",
     "nextWaveSha": null,
-    "report": "integration/reports/W01-G-R001-SOURCE-CLOSURE.md"
+    "report": "integration/reports/W01-G-R001-SOURCE-CLOSURE.md",
+    "bPwaStaticModuleRoute": "MERGED_SOURCE_ONLY",
+    "canonicalMainPr": 10,
+    "securityStillBlocked": true
   }
 }
