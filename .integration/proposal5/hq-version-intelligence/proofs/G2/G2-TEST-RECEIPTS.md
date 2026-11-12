@@ -25,3 +25,14 @@ Source blob identities for isolated V8 checks:
 - `packages/tierflow/tests/hvi-inspector.test.mjs` = `f8a1707d154bb9d94824e03f5153b1131521ba60`
 
 No actual ARBOR/VIVIM/Labs or donor-repository comparison was performed. Next owner must run checked-out Node24 tests with injected **invented** Git fixtures on a functioning approved runner and record SHA, OS, commands and literal exits. No main merge or readiness gate before independent evidence review.
+
+## 2026-11-12 subsequent security-repair checks and CI diagnosis
+
+- **Committed G2 source fixes:** `77bec293a7f0144d1c0bae01a1102a26bf1a7e9f` (native Git sensitive-path read denial), `eec8a16f00e1e26459c6ad6a7e4c4c9851300d23` (C comparator reuses the same fail-closed classifier).
+- **Committed G2 synthetic tests:** `06858bf389338695969cff12e55ea1f1138bb20e`, `33b6059615aab0ec5571a3acf5674725b67fcd9f`. Cases include direct credential-family blob denial, excluded metadata removal, repository authorization/cancellation, and direct C metadata with a recomputed digest. **Authored, Node24 UNRUN, exit=null.**
+- **Executed isolated V8 check:** fetched the real `sensitivePath` implementation from `hq/version-intelligence/sources/common.mjs`; 11 synthetic credential paths correctly denied and 3 harmless paths accepted, **14/14 assertions passed**. A separately fetched G2 test file was parsed by V8 without syntax exception. **No OS test process exit, no Node24 module runner, no C comparator execution, no AJV.**
+- **Latest GitHub Actions:** [run 43319733234](https://github.com/owenservera/ARBOR/actions/runs/43319733234) on `33b6059615aab0ec5571a3acf5674725b67fcd9f`: `startup_failure`, `jobs=[]`, **no test process exit**.
+- **Attempt to retry an earlier failed run:** GitHub API returned **403 FORBIDDEN** with `This workflow run cannot be retried`. Retrying cannot supply a synthetic test receipt in this environment.
+- **Tracking issue:** [#24 — Actions startup_failure / Node24 receipts](https://github.com/owenservera/ARBOR/issues/24). Draft integration [PR #21](https://github.com/owenservera/ARBOR/pull/21) still unreviewed and unmerged.
+
+**Gate remains `REPAIR_REQUIRED`.** G1 accepted-main SHA remains null; Z2 independent approval remains absent. New G2 tests are not a substitute for executed Node24+AJV, live Host grants, canonical dispatch or UiCore revision attestation. R prerequisites unmet; no R branch/false certificate created.
