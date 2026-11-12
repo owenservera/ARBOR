@@ -1,0 +1,300 @@
+// Chat-first VIVIM control on the existing phone Talk surface.
+// Every request is planned by the same Host control dispatcher used by Control.
+// Nothing is applied from a typed message; approval is a separate deliberate tap.
+// Transcript is in-memory only: private control text is never duplicated in storage.
+import { createControlClient } from './control-client.mjs';
+
+const MAX_TEXT = 1000;
+const MAX_TURNS = 30;
+const KNOWN_OUTCOMES = new Set([
+  'done', 'approval_required', 'clarification_required', 'incomplete',
+  'interpretation_required', 'unavailable'
+]);
+export const CONTROL_CHAT_EXAMPLES = Object.freeze([
+  'show status', 'open World', 'what can I say?'
+]);
+// Navigating an already-mounted UI is not a Host effect. These exact,
+// deterministic phrases do not approve, schedule, send or mutate anything.
+const LOCAL_NAVIGATION = Object.freeze({
+  'open today': 'today', 'go to today': 'today',
+  'open world': 'world', 'go to world': 'world', 'show media library': 'world',
+  'open media library': 'world', 'open my media library': 'world',
+  'open build': 'build', 'go to build': 'build',
+  'open control': 'control', 'go to control': 'control',
+  'open me': 'me', 'open my profile': 'me',
+  'open pocket': 'pocket', 'capture a note': 'pocket'
+});
+export function resolveLocalDestination(input) {
+  if (typeof input !== 'string') return null;
+  const normalized = input.trim().toLowerCase().replace(/\s+/g, ' ');
+  return Object.hasOwn(LOCAL_NAVIGATION, normalized) ? LOCAL_NAVIGATION[normalized] : null;
+}
+
+export function createControlChat({
+  host, transport, fetchImpl, onChange = () => {},
+  onNavigate = null, onOpenPocket = null
+} = {}) {
+  if (!host || typeof host.replaceChildren !== 'function')
+    throw new TypeError('Chat transcript root required');
+  const client = createControlClient({ transport, fetchImpl });
+  const doc = host.ownerDocument;
+  let messages = [];
+  let busy = false;
+  let suggestions = [];
+  let loadingSuggestions = false;
+
+  const elem = (tag, className, content) => {
+    const node = doc.createElement(tag);
+    if (className) node.className = className;
+    if (content != null) node.textContent = String(content);
+    return node;
+  };
+  const redraw = () => { render(); onChange(); };
+  const note = (text, status = 'info', plan = null, receipt = null) => {
+    const msg = { role: 'vivim', text: String(text).slice(0, 1500), status, plan, receipt };
+    messages.push(msg);
+    if (messages.length > MAX_TURNS) messages = messages.slice(-MAX_TURNS);
+    return msg;
+  };
+  const describe = value => {
+    if (value === undefined || value === null) return '';
+    if (typeof value === 'string') return value.slice(0, 500);
+    try { return JSON.stringify(value).slice(0, 600); } catch { return 'Host returned details unavailable for display'; }
+  };
+  const planText = plan => {
+    switch (plan.outcome) {
+      case 'done':
+        return (plan.title || 'Done') + (plan.result === undefined ? '' : '\n' + describe(plan.result));
+      case 'approval_required':
+        return (plan.title || 'Proposed change') + '\nReview the exact plan below. Nothing has changed yet.';
+      case 'clarification_required':
+      case 'incomplete':
+        return (plan.question || 'Please give more detail.') + '\nNothing changed.';
+      case 'interpretation_required':
+        return 'VIVIM does not recognize that command yet. Try an available command; nothing was executed.';
+      case 'unavailable':
+        return (plan.title || 'That action') + ' is not available (' + (plan.readiness || 'not ready') + '). Nothing changed.';
+      default:
+        return 'The Host returned an unsupported plan state. Nothing changed.';
+    }
+  };
+
+  async function send(raw) {
+    const text = String(raw || '').trim();
+    if (busy || !text || text.length > MAX_TEXT) return false;
+    // A newer prompt supersedes only unapproved drafts, never a claimed effect.
+    for (const msg of messages) {
+      if (msg.status === 'approval') { msg.status = 'cancelled'; msg.plan = null; msg.text += '\nSuperseded by a new request.'; }
+    }
+    messages.push({ role: 'owner', text, status: 'sent' });
+    const destination = resolveLocalDestination(text);
+    if (destination) {
+      const available = destination === 'pocket'
+        ? typeof onOpenPocket === 'function'
+        : typeof onNavigate === 'function';
+      note(available ? 'Opening ' + (destination === 'pocket' ? 'offline Pocket' : destination) +
+        '… No command or AI message was sent.' :
+        'This screen is not available on the current device. Nothing changed.', available ? 'done' : 'info');
+      redraw();
+      if (available) {
+        if (destination === 'pocket') onOpenPocket();
+        else onNavigate(destination);
+      }
+      return true;
+    }
+    const reply = note('Asking your PC to preview the command…', 'waiting');
+    busy = true;
+    redraw();
+    try {
+      const plan = await client.preview(text);
+      if (!plan || !KNOWN_OUTCOMES.has(plan.outcome)) {
+        reply.text = 'The PC returned an unrecognized control response. Nothing changed.';
+        reply.status = 'error';
+      } else if (plan.outcome === 'approval_required') {
+        client.validatePlan(plan);
+        reply.text = planText(plan);
+        reply.status = 'approval';
+        reply.plan = plan;
+      } else {
+        reply.text = planText(plan);
+        reply.status = plan.outcome === 'done' ? 'done'
+          : plan.outcome === 'interpretation_required' ? 'unrecognized' : 'info';
+        if (reply.status === 'unrecognized') reply.requestText = text;
+      }
+    } catch (error) {
+      reply.status = 'error';
+      reply.text = String(error?.message || 'The PC could not preview this command. No action was approved.').slice(0, 500);
+    } finally {
+      busy = false;
+      redraw();
+    }
+    return true;
+  }
+
+  async function approve(reply) {
+    if (busy || reply.status !== 'approval' || !reply.plan) return;
+    const plan = reply.plan;
+    reply.planId = plan.planId;
+    reply.planDigest = plan.planDigest;
+    // Synchronous lock blocks double taps. No fallback and no retries.
+    reply.status = 'applying';
+    busy = true;
+    redraw();
+    try {
+      const receipt = await client.execute(plan);
+      reply.receipt = receipt;
+      reply.status = receipt?.status === 'applied' ? 'done' :
+        receipt?.status === 'uncertain' ? 'uncertain' : 'error';
+      reply.text = 'Host receipt: ' + describe({
+        action: receipt?.actionId ?? plan.actionId ?? plan.title,
+        status: receipt?.status ?? 'unknown',
+        receipt: receipt?.planId ?? null,
+        error: receipt?.error?.code ?? null
+      }) + '\nNo automatic retry was performed.';
+    } catch (error) {
+      reply.status = error?.code === 'CONTROL_UNCERTAIN' ? 'uncertain' : 'error';
+      reply.text = (reply.status === 'uncertain'
+        ? 'Outcome uncertain. Check the Host receipt before issuing another action. VIVIM has not retried.'
+        : String(error?.message || 'The PC refused this action.')) + '\nNo automatic retry was performed.';
+    } finally {
+      reply.plan = null;
+      busy = false;
+      redraw();
+    }
+  }
+
+  async function reconcile(reply) {
+    if (busy || reply.status !== 'uncertain' || !reply.planId || !reply.planDigest) return;
+    busy = true;
+    reply.status = 'reviewing';
+    redraw();
+    try {
+      // Existing read-only status route: never invokes the plan or executor again.
+      const status = await client.status(reply.planId);
+      const receipt = status?.receipt;
+      if (status?.planId === reply.planId &&
+          receipt?.schema === 'vivim.control-receipt/1' &&
+          receipt?.planId === reply.planId &&
+          receipt?.planDigest === reply.planDigest &&
+          ['applied', 'failed', 'uncertain'].includes(receipt.status)) {
+        reply.receipt = receipt;
+        reply.status = receipt.status === 'applied' ? 'done'
+          : receipt.status === 'failed' ? 'error' : 'uncertain';
+        reply.text = 'Reconciled Host receipt: ' + describe({
+          action: receipt.actionId, status: receipt.status, receipt: receipt.planId
+        }) + '\nNo command was sent again.';
+      } else {
+        reply.status = 'uncertain';
+        reply.text = 'The Host has not returned a matching settled receipt. Review this action on your PC. No retry occurred.';
+      }
+    } catch {
+      reply.status = 'uncertain';
+      reply.text = 'Unable to read the Host receipt. Reconnect and check again; no action was repeated.';
+    } finally {
+      busy = false;
+      redraw();
+    }
+  }
+
+  function cancel(reply) {
+    if (busy || reply.status !== 'approval') return;
+    reply.plan = null;
+    reply.status = 'cancelled';
+    reply.text = 'Cancelled. No change was applied.';
+    redraw();
+  }
+
+  function render() {
+    const fragment = doc.createDocumentFragment();
+    if (!messages.length) {
+      const empty = elem('div', 'vivim-intro');
+      empty.append(elem('span', 'tour-eyebrow', 'YOUR MACHINE · YOUR AI'),
+        elem('h3', '', 'Ask VIVIM'),
+        elem('p', 'muted', 'Ask what is happening on your PC or describe a change. VIVIM previews an available action and asks you to approve before applying it.'),
+        elem('p', 'ux-meta', transport.direct ? 'Direct Host · owner-controlled actions' : 'Connect to your PC directly to use controls'));
+      const examples = elem('div', 'vivim-examples');
+      for (const text of suggestions.length ? suggestions : CONTROL_CHAT_EXAMPLES) {
+        const button = elem('button', 'chip', text);
+        button.type = 'button';
+        button.addEventListener('click', () => {
+          // Examples fill the shared composer: never auto-send a command.
+          host.dispatchEvent(new CustomEvent('vivim:control-example', { bubbles: true, detail: { text } }));
+        });
+        examples.append(button);
+      }
+      empty.append(examples);
+      fragment.append(empty);
+    }
+    for (const msg of messages) {
+      const row = elem('div', 'm ' + (msg.role === 'owner' ? 'u' : 'a'));
+      if (msg.role !== 'owner') row.append(elem('div', 'badge', 'VIVIM · HOST'));
+      const bubble = elem('div', 'bub', msg.text);
+      bubble.style.whiteSpace = 'pre-wrap';
+      if (msg.status === 'error' || msg.status === 'uncertain') row.classList.add('err');
+      row.append(bubble);
+      if (msg.status === 'waiting' || msg.status === 'applying' || msg.status === 'reviewing')
+        row.append(elem('div', 'ux-meta', msg.status === 'applying' ? 'Applying once · waiting for receipt…' :
+          msg.status === 'reviewing' ? 'Reading the Host receipt · no second execution' : 'Previewing · no action executed'));
+      if (msg.status === 'uncertain' && msg.planId) {
+        const check = elem('button', 'btn sm ux-secondary', 'Check PC receipt');
+        check.type = 'button';
+        check.addEventListener('click', () => { void reconcile(msg); });
+        row.append(check);
+      }
+      if (msg.status === 'unrecognized' && msg.requestText) {
+        const redirect = elem('button', 'btn sm ux-secondary', 'Ask my AI instead');
+        redirect.type = 'button';
+        redirect.addEventListener('click', () => {
+          // Explicit mode switch with draft only; never sends to a provider.
+          host.dispatchEvent(new CustomEvent('vivim:ask-ai-draft', {
+            bubbles: true, detail: { text: msg.requestText }
+          }));
+        });
+        row.append(redirect);
+      }
+      if (msg.status === 'approval' && msg.plan) {
+        const plan = msg.plan;
+        const card = elem('div', 'vivim-plan');
+        card.append(elem('p', 'ux-meta',
+          'Risk ' + String(plan.risk || 'unknown') + ' · Expires ' + new Date(plan.expiresAt).toLocaleTimeString() +
+          (plan.liveAcceptance !== 'verified' ? ' · Not live-verified' : '')));
+        const args = plan.args && typeof plan.args === 'object' ? Object.entries(plan.args).slice(0, 12) : [];
+        if (args.length) card.append(elem('p', 'ux-note', args.map(([k,v])=>k + ': ' + describe(v)).join(' · ')));
+        const actions = elem('div', 'vivim-plan-actions');
+        const yes = elem('button', 'btn pri', 'Approve & apply');
+        yes.type = 'button'; yes.addEventListener('click', () => { void approve(msg); });
+        const no = elem('button', 'btn', 'Cancel');
+        no.type = 'button'; no.addEventListener('click', () => cancel(msg));
+        actions.append(yes, no); card.append(actions); row.append(card);
+      }
+      fragment.append(row);
+    }
+    host.replaceChildren(fragment);
+    host.scrollTop = host.scrollHeight;
+  }
+
+  async function loadSuggestions() {
+    if (loadingSuggestions || suggestions.length || !transport.direct) return;
+    loadingSuggestions = true;
+    try {
+      const catalog = await client.call('catalog');
+      const actions = Array.isArray(catalog?.actions) ? catalog.actions : [];
+      const verified = actions.filter(a => ['source_wired', 'verified'].includes(a.readiness) &&
+        a.risk === 'R0' && Array.isArray(a.examples));
+      suggestions = verified.flatMap(a => a.examples.slice(0, 1))
+        .filter(s => typeof s === 'string' && s.length <= MAX_TEXT).slice(0, 3);
+    } catch { /* keep conservative, local examples; no Host authority claim */ }
+    finally { loadingSuggestions = false; if (!messages.length) redraw(); }
+  }
+
+  function clear() {
+    if (busy || messages.some(msg => msg.status === 'uncertain')) return false;
+    messages = [];
+    redraw();
+    return true;
+  }
+  return Object.freeze({
+    send, render, clear, loadSuggestions, busy: () => busy,
+    hasPendingApproval: () => messages.some(msg => msg.status === 'approval')
+  });
+}
