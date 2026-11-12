@@ -88,15 +88,6 @@ function acceptDecision(path, owners, decisions, evidence) {
   return d;
 }
 /** A receipt MUST explicitly bind its target pin and current authorized Host context. */
-function acceptedRuntimeReceipt(receipts, target, entry) {
-  return receipts.some(r=>r && ['host_receipt','device_receipt'].includes(r.kind)
-    && r.accepted===true && r.exitCode===0 && r.source?.repo===target.repo
-    && r.source?.commitSha===target.commitSha && r.source?.path===entry.path
-    && r.source?.blobSha===entry.blobSha && typeof r.actorRef==='string'
-    && r.actorRef.length>0 && typeof r.sessionRef==='string'
-    && r.sessionRef.length>0 && typeof r.grantRef==='string'
-    && r.grantRef.length>0 && r.provenanceVerified===true);
-}
 /**
  * @param {{donor:object,target:object,owners?:Array,sourceEvidence?:Array,
  *          testReceipts?:Array,ownerDecisions?:Array}} input
@@ -127,8 +118,9 @@ export function buildParityAtlas(input={}) {
     // A byte match is physical parity only; never manufacture functional equivalence.
     // No runtime promotion from tests, documentation or previous user claims.
     if(capabilityState==='RUNTIME_VERIFIED') fail('RUNTIME_REQUIRES_RECEIPT');
-    if(!d && targetEntries.some(e=>acceptedRuntimeReceipt(input.testReceipts,target,e)))
-      capabilityState='RUNTIME_VERIFIED';
+    // Even a receipt-shaped input can be forged. Lane D has no Host authority
+    // to cryptographically validate actor/session/grant or device provenance.
+    // Product runtime acceptance is reserved to Host H and external referees.
     const evidenceIds=[...new Set([...inspected.map(x=>x.id),...(d?.evidenceIds??[])])].sort();
     rows.push({ id:digest([sourceKey({...donor,...entry}),target.repo,target.commitSha]).slice(0,24),
       origin_repo:donor.repo,origin_sha:donor.commitSha,origin_path:entry.path,

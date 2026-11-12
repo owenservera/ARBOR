@@ -71,14 +71,15 @@ test('source-only test receipt is never runtime verification',()=>{
  const fake={kind:'host_receipt',accepted:true,exitCode:0,source,provenanceVerified:true};
  assert.equal(run(d,t,{testReceipts:[fake]}).rows[0].capability_state,'UNKNOWN');
 });
-test('only fully-scoped attested Host receipt permits a per-row runtime label',()=>{
+test('even caller-marked attested receipts cannot promote runtime without Host verifier',()=>{
  const d=donor([entry('hq/x.mjs')]),t=target([entry('hq/x.mjs')]);
  const source={repo:t.repo,commitSha:t.commitSha,path:'hq/x.mjs',blobSha:sha('c')};
  const receipt={kind:'host_receipt',accepted:true,exitCode:0,source,
   actorRef:'actor',sessionRef:'session',grantRef:'grant',provenanceVerified:true};
  const r=run(d,t,{testReceipts:[receipt]});
- assert.equal(r.rows[0].capability_state,'RUNTIME_VERIFIED');
- assert.equal(r.runtimeAccepted,false); // atlas is never a product gate
+ assert.equal(r.rows[0].capability_state,'UNKNOWN');
+ assert.equal(r.rows[0].runtime_evidence,'UNRUN');
+ assert.equal(r.runtimeAccepted,false);
 });
 test('unsafe credential paths, escapes and duplicate evidence are rejected',()=>{
  for(const p of ['../secret','hq/.env','hq/session.json','hq/../x','/home/x','hq/secret.pem']){
