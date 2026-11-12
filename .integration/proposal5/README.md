@@ -87,6 +87,12 @@ Donor SHAs and file-level ancestry are recorded inside ARBOR. During constructio
 
 Any require/import/git path to ../repos-hq, ../tierflow, ../vivim-web-harness, ../vivim-labs; runtime HTTP/IPC calls to donor development processes; unbundled source programs; dual Host journals; second graph store/scheduler; fake "ready" sources; Tauri unpatched IPC/origin boundary; unverified owner bootstrap; PWA with its own effect authority; source-leaking debug telemetry; unconditional provider APIs.
 
+## Phase 2 — Parallel Labs intake during active Wave 1
+
+**[Three ChatGPT-ready Labs lanes](phase2/README.md)** · [Evidence-based assessment](10-PHASE2-LABS-INTAKE.md) · [Migration decision matrix](11-PHASE2-DECISION-MATRIX.md).
+
+Phase 2 separates **easy source/test migration**, **core development/migration preparation**, and **high-value pending development**. It prepares disjoint source-based branches while W1 A–F are active. Phase 2 must not edit worker-owned product paths or merge into the shared integration branch without master G's collision review and approval. No new Labs runtime dependence, duplicate effect authority or feature creep.
+
 ## Truthful status
 
 **Proposal only.** The ARBOR branch contains proposal documents, not a completed Cargo/Bun product. No graph import, HQ UI integration, Windows package, native test, source migration or device acceptance is claimed. That is the work this proposal defines.
