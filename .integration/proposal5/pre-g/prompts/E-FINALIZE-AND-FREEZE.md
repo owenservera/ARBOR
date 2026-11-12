@@ -6,7 +6,7 @@ You are continuing your existing ARBOR Proposal 5 ChatGPT worker. Read .integrat
 
 ## Focused final task
 
-Verify PWA and selected TierFlow source, explicit excluded external HQ sync-bus/executable policy programs, direct Host-served PWA and inert TierFlow projections, one UI publisher, revision guard and token CSS generator. Critical: ordinary browser PWA lacks existing VivimDeviceKey Android bridge; show exact code/verifier calls and recommend a safe WebCrypto browser-key enrollment contract or mark browser-only device pairing BLOCKED. No cloud fallback, new APK, UI redesign or fake phone PASS.
+Verify PWA and selected TierFlow source, explicit excluded external HQ sync-bus/executable policy programs, direct Host-served PWA and inert TierFlow projections, one UI publisher, revision guard and token CSS generator. Critical: current E follow-up has now implemented browser-device-key.mjs, adapted device-enrollment.mjs and new browser-enrollment-flow tests. Finish that code, check ECDSA/DER/nonce/Host verifier compatibility, nonextractable key persistence, lost-key refusal, no silent rotation, approval and revocation. Report actual tests separately from device UNRUN. No cloud fallback, new APK, UI redesign or fake phone PASS.
 
 ## Commit handoff
 
