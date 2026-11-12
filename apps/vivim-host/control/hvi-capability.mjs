@@ -39,23 +39,29 @@ function selected(input){
 }
 /** Trusted Host must inject actor/session, live callbacks and exact source allowlist. */
 export function createHviHostReadPort({actorId,sessionId,verifySession,verifyGrant,
-  approvedRepositories=[],enabled=false}={}){
+  approvedRepositories=[],enabled=false,observeUiRevision=null}={}){
   if(!id(actorId)||!id(sessionId)||typeof verifySession!=='function'||
     typeof verifyGrant!=='function'||!Array.isArray(approvedRepositories)||
     approvedRepositories.length>16)fail('AUTHORITY_REQUIRED');
+  if(observeUiRevision!==null&&typeof observeUiRevision!=='function')fail('INVALID_REQUEST');
   const approved=new Set(approvedRepositories.map(r=>canonicalRepo(r,'github')));
   const catalog=loadControlCatalog();
   const rows=catalog.actions.filter(a=>a.id===HVI_HOST_ACTION_ID);
-  if(rows.length!==1||rows[0].readiness!=='enforcement_missing'||
-    rows[0].risk!=='R0'||rows[0].executor!==null)fail('REGISTRATION_INVALID');
+  // The port may serve a declared (not yet executable) or a wired row, but never a
+  // live-accepted one: 'verified' asserts real Windows Host and paired-phone receipts
+  // that this branch does not hold. Readiness is read from the catalog, never assumed.
+  if(rows.length!==1||rows[0].risk!=='R0'||rows[0].readiness==='verified')fail('REGISTRATION_INVALID');
   const action=rows[0],planner=createControlPlanner({catalog});
   const discover=text=>{
     const p=typeof text==='string'&&text.trim()&&text.length<=1000?
       planner.planText(text,{source:'desktop'}):null;
     const found=p?.actionId===HVI_HOST_ACTION_ID;
-    return {schema:HVI_HOST_BINDING_SCHEMA,outcome:found?'DECLARED_DISABLED':'NO_MATCH',
+    // Report what is actually true: the catalog readiness, whether this port is enabled
+    // and whether a live development-source grant is required. Never claim execution.
+    return {schema:HVI_HOST_BINDING_SCHEMA,outcome:found?(enabled?'DECLARED_ENABLED':'DECLARED_DISABLED'):'NO_MATCH',
       actions:found?[{id:HVI_HOST_ACTION_ID,capabilityId:HVI_CAPABILITY_ID,
-        readiness:action.readiness,enabled:false,requiresLiveGrant:true}]:[],
+        readiness:action.readiness,enabled,requiresLiveGrant:true,
+        executable:action.readiness==='source_wired'||action.readiness==='verified'}]:[],
       executionAuthorized:false,remoteAccessible:false};
   };
   const live=async ctx=>{
@@ -71,6 +77,11 @@ export function createHviHostReadPort({actorId,sessionId,verifySession,verifyGra
     if(!enabled)fail('HOST_FEATURE_DISABLED');
     if(adapter?.authorizedDevelopmentSource!==true)fail('SOURCE_UNAUTHORIZED');
     if(signal?.aborted)fail('CANCELLED');
+    // The current UI revision is OBSERVED from the canonical Host owner, never taken
+    // from the request: the request schema is closed and carries no revision field, so
+    // no caller can claim a revision. A failing observer fails closed.
+    const observed=observeUiRevision?await observeUiRevision():null;
+    const uiRevision=observed&&Number.isSafeInteger(observed.revision)?observed:null;
     const sources=selected(input),manifests=[];let checks=0;
     const check=async ctx=>{checks++;return live(ctx);};
     for(const s of sources){
@@ -102,10 +113,12 @@ export function createHviHostReadPort({actorId,sessionId,verifySession,verifyGra
           resolvedCommitSha:m.pin.resolvedCommitSha,completeness:m.completeness})),
         note:'source evidence only; not runtime or migration acceptance'},
       inspector,grantCheckCount:checks,remoteAccepted:false,runtimeAccepted:false,
+      uiRevision:uiRevision?{revision:uiRevision.revision,status:uiRevision.status??null,
+        observedAt:uiRevision.at??null}:null,
       authority:'injected-local-Host-callbacks-not-production-attested'};
-  };
+  }
   return Object.freeze({schema:HVI_HOST_BINDING_SCHEMA,action,capabilityId:HVI_CAPABILITY_ID,
-    discover,invoke,enabled,remoteAccessible:false,readiness:'enforcement_missing'});
+    discover,invoke,enabled,remoteAccessible:false,readiness:action.readiness});
 }
 
 

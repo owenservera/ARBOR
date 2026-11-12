@@ -9,10 +9,17 @@ on:
     paths:
       - 'hq/version-intelligence/**'
       - 'hq/catalogue-identity/**'
+      - 'hq/lib/mcp.mjs'
+      - 'hq/lib/schema.mjs'
+      - 'hq/test/arbor-service.test.mjs'
+      - 'hq/test/hvi-mcp-tool.test.mjs'
       - 'contracts/hq-version-intelligence/**'
       - 'tests/hq-version-intelligence/**'
       - 'apps/vivim-host/control/hvi-capability.mjs'
+      - 'apps/vivim-host/control/hvi-source-grant.mjs'
+      - 'apps/vivim-host/control/hvi-native-guide.json'
       - 'apps/vivim-host/test/hvi-capability.test.mjs'
+      - 'apps/vivim-host/test/hvi-source-grant.test.mjs'
       - 'packages/tierflow/**/hvi-inspector*'
       - '.github/workflows/hvi-native-synthetic.yml'
   pull_request:
@@ -21,10 +28,17 @@ on:
     paths:
       - 'hq/version-intelligence/**'
       - 'hq/catalogue-identity/**'
+      - 'hq/lib/mcp.mjs'
+      - 'hq/lib/schema.mjs'
+      - 'hq/test/arbor-service.test.mjs'
+      - 'hq/test/hvi-mcp-tool.test.mjs'
       - 'contracts/hq-version-intelligence/**'
       - 'tests/hq-version-intelligence/**'
       - 'apps/vivim-host/control/hvi-capability.mjs'
+      - 'apps/vivim-host/control/hvi-source-grant.mjs'
+      - 'apps/vivim-host/control/hvi-native-guide.json'
       - 'apps/vivim-host/test/hvi-capability.test.mjs'
+      - 'apps/vivim-host/test/hvi-source-grant.test.mjs'
       - 'packages/tierflow/**/hvi-inspector*'
       - '.github/workflows/hvi-native-synthetic.yml'
   workflow_dispatch:
@@ -81,6 +95,23 @@ jobs:
         run: |
           set -euo pipefail
           node --test apps/vivim-host/test/hvi-capability.test.mjs
+      - name: Host development-source grant (revocable, expiring, fail closed)
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test apps/vivim-host/test/hvi-source-grant.test.mjs
+      - name: Native HQ capability discovery and invocation (synthetic MCP tool)
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd hq
+          node --test test/hvi-mcp-tool.test.mjs
+      - name: Existing HQ boundary suite
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd hq
+          node --test test/arbor-service.test.mjs test/arbor-boundary.test.mjs test/in-repo-closure.test.mjs
       - name: TierFlow inert inspector (no publisher effects)
         shell: bash
         run: |

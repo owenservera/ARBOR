@@ -17,6 +17,28 @@
     "explain source changes"
   ],
   "userIntentDoesNotGrantAccess": true,
+  "nativeDiscovery": {
+    "hqMcpTool": "hvi_compare_pinned",
+    "hqMcpSurface": "hq/lib/mcp.mjs",
+    "hqMcpInvocation": "tools/call (awaited)",
+    "hqMcpSourceRestriction": "synthetic/ fixtures only in the native-tooling wave",
+    "hostActionRegistered": true,
+    "hostActionExecutable": false
+  },
+  "developmentSourceGrant": {
+    "module": "apps/vivim-host/control/hvi-source-grant.mjs",
+    "store": "existing bootstrap ledger meta table",
+    "vocabulary": "existing bounded grant (absolute expiry, revocation tombstone)",
+    "maxExpiryMs": 86400000,
+    "revocable": true,
+    "expiring": true,
+    "failClosed": true
+  },
+  "uiRevisionAttestation": {
+    "observed": true,
+    "source": "runtime.uiRevisionStatus() (canonical Host owner)",
+    "callerControlled": false
+  },
   "usage": [
     "Inspect native Host catalog",
     "Ask for explicit 2..16 repo/ref/SHA selections and target index",
@@ -24,5 +46,5 @@
     "Trusted Host injects exact allowlist, read-only Git adapter and live callbacks",
     "Native tool resolves pins and source manifests, runs G1 typed HQ engine, projects bounded summary"
   ],
-  "pending": "Real source-grant service and remote security acceptance not yet wired"
+  "pending": "Canonical Host dispatcher execution is not wired: the Host control plane is synchronous by construction and this engine is async, so the catalog row stays enforcement_missing with a null executor. The development-source grant service and the HQ MCP registration are implemented. Remote security acceptance and live Host serving are still pending."
 }
