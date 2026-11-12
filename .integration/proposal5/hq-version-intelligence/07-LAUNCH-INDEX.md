@@ -33,3 +33,7 @@ Use one conversation per lane. **S0's actual post-plan main workerBaseSha** is t
 | R — Final self-audit and release-neutral decision | sequential | `work/p5-hvi-w3-r-self-audit-r001` | [70-R-FINAL-SELF-AUDIT.md](prompts/70-R-FINAL-SELF-AUDIT.md) |
 
 **Do not launch H/U/X merely because G1 opened a PR.** W2 requires accepted G1 main and explicit GO_FOR_W2.
+
+
+## CURRENT CHECK-IN UPDATE (2026-11-12)
+The original S0 and A–F lanes have committed isolated results. **Do not relaunch them by default**. For the updated pending-only order, use [09-PENDING-LAUNCH-BOARD.md](09-PENDING-LAUNCH-BOARD.md). The next gate is the **single** [high-intensity Z1X convergence work order](prompts/20-Z1-HIGH-INTENSITY-CONVERGENCE.md), **instead of**, not in addition to, the original Z1 prompt. Its follow-on G1/H/U/X/Z2/G2/R dependencies are unchanged. Always verify actual branch heads before launching.
