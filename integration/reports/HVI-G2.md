@@ -47,3 +47,15 @@ Read-only source analysis only. No real ARBOR/VIVIM/Labs/donor comparison; no pe
 Obtain G1 actual Node24 + AJV receipt and accepted `main` SHA; re-review G2 drift, wire canonical live grant and Host action dispatch without new authority; attest current UiCore revision; run and record full synthetic 2/3/5-source, 3-SHA, denial/revoke/expiry, secret/redaction, deterministic replay, report and UI tests; obtain new independent Z2 consent/review. **Only after the verified combined gate** may the integrator submit/merge a reviewed PR to main and issue `GO_FOR_READINESS_REVIEW`. Current final gate is `REPAIR_REQUIRED`; do not bypass gates based on owner source-development approval.
 
 Machine-readable ledger: [proofs/G2/G2-RECEIPT.json](../../.integration/proposal5/hq-version-intelligence/proofs/G2/G2-RECEIPT.json).
+
+## G2 follow-through: native HQ source-read security repairs (2026-11-12)
+
+**Actual code commits** on the existing integration branch after original G2 staging:
+
+1. `77bec293a7f0144d1c0bae01a1102a26bf1a7e9f` — align the low-level immutable Git source helper's sensitive-path exclusions with C bridge policy, including `.ssh`, `.aws`, private paths and key/certificate file extensions; `readPinnedBlob` now reuses the broadened helper.
+2. `eec8a16f00e1e26459c6ad6a7e4c4c9851300d23` — directly supplied N-way comparator source manifests use the same sensitive-path guard, not only the A→C bridge.
+3. `06858bf389338695969cff12e55ea1f1138bb20e` and `33b6059615aab0ec5571a3acf5674725b67fcd9f` — authored new synthetic regression cases for direct credential reads, projection redaction, disallowed repos, cancellation, and a malicious C manifest with a recomputed digest. **Tests authored, NOT executed on Node24**.
+
+**Observed verification**: 14/14 V8 assertions of the fetched native sensitive-path source slice and V8 syntax parse of the extended test file. **No OS test exit, full module import, cryptographic comparison, integrated Node24 or AJV receipt.** GitHub Actions latest [43319733234](https://github.com/owenservera/ARBOR/actions/runs/43319733234) on source SHA `33b6059615aab0ec5571a3acf5674725b67fcd9f`: `startup_failure`, jobs=0. A failed-job retry returned 403 `This workflow run cannot be retried`. Opened [tracking issue #24](https://github.com/owenservera/ARBOR/issues/24); [PR #21](https://github.com/owenservera/ARBOR/pull/21) remains DRAFT, no reviews, not merged.
+
+This advances source hardening but **does not change** `G1_NOT_ACCEPTED`, `Z2_REPAIR_REQUIRED`, `REPAIR_REQUIRED`, `HVI_TOOLING_INSTALLED_NOT_VERIFIED`, the disabled production Host action, the pending UiCore authoritative-revision requirement, or `BLOCKED_NOT_BETA`. A final R certificate is impermissible before real main and security gates. No real user-repository/donor comparisons were performed.
