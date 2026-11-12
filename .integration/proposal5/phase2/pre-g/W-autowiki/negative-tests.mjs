@@ -36,6 +36,11 @@ export async function runNegativeTests() {
   check(page.items[0].id==='hq.kb.1'&&page.items[0].source.nativeRef==='hq.kb.1','HQ ID preserved');
   check(page.readOnly&&page.effectPerformed===false,'effect-inert');
  });
+ await test('canonical HQ path-bearing document IDs preserved',async()=>{
+  const sourceId='doc:#4:docs/feature.md';
+  const page=await make(undefined,async()=>ready([record({id:sourceId,source:{nativeRef:sourceId,revision:'git.1',digest:'digest.1'}})])).open(baseScreen());
+  check(page.items[0]?.id===sourceId&&page.items[0]?.source.nativeRef===sourceId,'HQ path ID rewritten or dropped');
+ });
  await test('stale screen result invalidated',async()=>{
   let release;const pending=new Promise(resolve=>release=resolve);
   const mirror=make(undefined,()=>pending);const promise=mirror.open(baseScreen());
