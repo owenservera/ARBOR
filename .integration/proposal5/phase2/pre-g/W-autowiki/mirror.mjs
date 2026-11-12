@@ -12,6 +12,10 @@ const AUTHORITY = new Set(['hq-development','host-personal','host-runtime','tier
 const SCORE = {'accepted-decision':0,observed:1,conflicted:2,historical:3,proposal:4,stale:5};
 const str = (v,n) => typeof v === 'string' ? v.slice(0,n) : '';
 const valid = v => typeof v === 'string' && REF.test(v);
+// HQ native document IDs include path separators and project markers (kb.mjs docNodeId).
+// Never rewrite those IDs to fit an opaque Host token regex.
+const nativeId = v => typeof v === 'string' && v.length > 0 && v.length <= 191 &&
+  !/[\u0000-\u001f\u007f]/.test(v);
 const hash = x => { // identity hint only, NEVER a security/authorization digest
   let n=2166136261; for(const c of String(x)){n=Math.imul(n^c.charCodeAt(0),16777619);}
   return (n>>>0).toString(16).padStart(8,'0');
@@ -37,7 +41,7 @@ function authorized(s, trusted) {
     Array.isArray(trusted.allowedAudiences) && trusted.allowedAudiences.length>0;
 }
 function focusOf(s, denied=false) {
-  const projects=s.focus.projectCandidates.filter(p=>p && valid(p.ref));
+  const projects=s.focus.projectCandidates.filter(p=>p && nativeId(p.ref));
   const trusted=projects.filter(p=>p.state==='trusted');
   const ambiguous=projects.length>1 || (projects.length && trusted.length!==1);
   if(denied) return {title:'Access unavailable',projectRef:null,state:'unresolved',source:'heuristic'};
@@ -56,8 +60,8 @@ function emptyPage(s,status,readers=[],omissions=[],now=new Date().toISOString()
 function cleanRecord(r,s,scope) {
   // Secondary narrowing on already-authorized read-port results; never trust
   // a provider snippet or a source notice to grant source access.
-  if(!r || !valid(r.id) || !valid(r.source?.nativeRef) || !valid(r.source?.revision) ||
-     !valid(r.source?.digest) || !AUTHORITY.has(r.authority) || !ITEM_STATUS.has(r.status) ||
+  if(!r || !nativeId(r.id) || !nativeId(r.source?.nativeRef) || !nativeId(r.source?.revision) ||
+     !nativeId(r.source?.digest) || !AUTHORITY.has(r.authority) || !ITEM_STATUS.has(r.status) ||
      r.ownerRef!==scope.ownerRef || r.worldRef!==scope.worldRef ||
      !scope.allowedAudiences.includes(r.audience) ||
      (r.projectRef && !s.focus.projectCandidates.some(p=>p.state==='trusted' && p.ref===r.projectRef))) return null;
@@ -75,7 +79,7 @@ function cleanRecord(r,s,scope) {
 }
 function draftItem(s) {
   if(s.focus.draft?.state!=='present-unsubmitted' || !valid(s.focus.draft.digest) ||
-     !valid(s.source.viewRef))return null;
+     !nativeId(s.source.viewRef))return null;
   return {id:'draft:'+hash(s.contextId+':'+s.revision),kind:'draft_intent',
     title:'Unsubmitted editor draft',summary:'Provisional input, not an accepted decision.',
     authority:'tierflow-world',source:{nativeRef:s.source.viewRef,
@@ -150,7 +154,7 @@ export function createAutoWikiMirror({readScope,readSources,now=()=>new Date().t
       s.source.kind==='bound-web'||s.source.contentCoverage==='currently-rendered-only'||
       rejected>0||items.length>20;
     const revisions=(Array.isArray(result.sourceRevisions)?result.sourceRevisions:[])
-      .filter(r=>valid(r?.sourceId)&&valid(r?.revision))
+      .filter(r=>nativeId(r?.sourceId)&&nativeId(r?.revision))
       .slice(0,20).map(r=>({sourceId:r.sourceId,revision:r.revision,
         freshness:['current','stale','unknown','unavailable'].includes(r.freshness)?r.freshness:'unknown'}));
     const projectionRevision='projection:'+hash(s.contextId+':'+s.revision+':'+
