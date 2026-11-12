@@ -9,7 +9,8 @@ This packet answers: **What original Harness/Studio/PWA/TierFlow source actually
 1. [WEB-TIERFLOW-SITREP.md](WEB-TIERFLOW-SITREP.md) — human source-based investigation, original intent, four UI surfaces, real missing tests, architecture/cutover and prioritized repair table.
 2. [DELTA-ATLAS.v1.json](DELTA-ATLAS.v1.json) — **33 machine-readable UI/visual capability rows**, owners, status, priority, release journey IDs and next proof. Not a new runtime capability registry.
 3. [SOURCE-BLOBS.v1.json](SOURCE-BLOBS.v1.json) — **1,522 donor-path records** across 11 mapped original subtrees, each with source/destination blob SHA and `BYTE_IDENTICAL`, `ADAPTED` or `NOT_IMPORTED`; total is mapped donor paths, not all ARBOR files.
-4. [ACCEPTANCE-PLAN.md](ACCEPTANCE-PLAN.md) — owner-sequenced implementation/test/physical device gates; **18 planned checks**, **16 negative scenarios**, none misreported as run.
+4. [ARBOR-ADDITIONS.v1.json](ARBOR-ADDITIONS.v1.json) — reverse-direction inventory of 5 ARBOR-only mapped product paths (four PWA browser signer/fixture files and one native security preparation note).
+5. [ACCEPTANCE-PLAN.md](ACCEPTANCE-PLAN.md) — owner-sequenced implementation/test/physical device gates; **18 planned checks**, **16 negative scenarios**, none misreported as run.
 
 ## Pinned snapshot and guardrails
 
