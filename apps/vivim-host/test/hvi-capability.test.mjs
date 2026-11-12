@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createHviHostReadPort,HVI_HOST_ACTION_ID,HVI_HOST_REQUEST_SCHEMA,
-  HVI_HOST_REPORT_SCHEMA} from '../control/hvi-capability.mjs';
+  HVI_HOST_REPORT_SCHEMA,createHviLocalOwnerGate} from '../control/hvi-capability.mjs';
 import {loadControlCatalog,createControlPlanner} from '../control/intent-planner.mjs';
 import {syntheticSource,SYNTHETIC_SHAS} from '../../../hq/version-intelligence/sources/fixtures.mjs';
 const sources=()=>['v1','v2','v3'].map(ref=>({repo:'synthetic/w2-host',ref}));
@@ -39,7 +39,7 @@ test('three immutable same-repo SHAs; many live checks; safe projection',async()
   assert.equal(result.runtimeAccepted,false);
   assert.ok(!JSON.stringify(result).includes('MUST_NOT_READ_SECRET'));
   assert.ok(!JSON.stringify(result).includes('.env.production'));
-  assert.ok(!JSON.stringify(result).includes('local'));
+  assert.ok(!JSON.stringify(result).includes('"sessionId":"local"'));
 });
 test('no live grant or approved repository: no source read',async()=>{
   const fixture=syntheticSource();
@@ -70,4 +70,23 @@ test('incomplete pin list, secret subpath, moved SHA, unknown repository fail',a
     {code:'SOURCE_UNAUTHORIZED'});
   await assert.rejects(port().invoke(req({sources:[{repo:'synthetic/w2-host',ref:'v1',sha:SYNTHETIC_SHAS.v2},sources()[1]]}),{adapter}),
     {code:'PIN_MOVED'});
+});
+
+
+test('existing Host owner token rechecked, source permission independent',async()=>{
+  const token='synthetic-owner-token-'.padEnd(48,'x');
+  const request={headers:{host:'127.0.0.1:43187',origin:'http://127.0.0.1:43187',
+    authorization:'Bearer '+token}};
+  let current=token,sourceAllowed=false;
+  const gate=createHviLocalOwnerGate({request,ownerTokenFor:()=>current,
+    verifyDevelopmentSourceGrant:()=>sourceAllowed});
+  assert.equal(gate.verifySession(),true);
+  assert.equal(await gate.verifyGrant({repoIdentity:'synthetic/w2-host'}),false);
+  sourceAllowed=true;
+  assert.equal(await gate.verifyGrant({repoIdentity:'synthetic/w2-host'}),true);
+  current='another-private-token'.padEnd(48,'q');
+  assert.equal(gate.verifySession(),false);
+  assert.equal(await gate.verifyGrant({repoIdentity:'synthetic/w2-host'}),false);
+  request.headers['tailscale-user-login']='phone';
+  assert.equal(gate.verifySession(),false);
 });

@@ -15,3 +15,5 @@ Test file: apps/vivim-host/test/hvi-capability.test.mjs. Command: node --test ap
 Next owners: Host security grants + local trusted caller; Node24 CI; Z2 independent authority review; G2 merge reconciliation after accepted G1.
 
 **PREPARED_NOT_PROMOTED.**
+
+Additional boundary: createHviLocalOwnerGate reuses the existing Host owner-token verifier or live UI session, checking again on every read. It separately requires verifyDevelopmentSourceGrant, which must come from a real Host grant owner and is NOT provided by the owner token. Synthetic test verifies revoke and phone-proxy denial. No production grant store has been discovered, so normal invocation remains disabled.

@@ -3,6 +3,7 @@
 import { loadControlCatalog, createControlPlanner } from './intent-planner.mjs';
 import { runHviTool, HVI_CAPABILITY_ID, HVI_TOOL_REQUEST_SCHEMA } from '../../../hq/version-intelligence/integration/index.mjs';
 import { resolvePin, snapshotAt } from '../../../hq/version-intelligence/sources/snapshots.mjs';
+import { verifyOwnerToken } from '../bootstrap/owner-auth.mjs';
 import { canonicalRepo, safePath, sensitivePath } from '../../../hq/version-intelligence/sources/common.mjs';
 export const HVI_HOST_ACTION_ID='versions.compare.pinned';
 export const HVI_HOST_BINDING_SCHEMA='vivim.host.hvi-read-port/2';
@@ -59,8 +60,8 @@ export function createHviHostReadPort({actorId,sessionId,verifySession,verifyGra
   const live=async ctx=>{
     if(!approved.has(canonicalRepo(ctx.repoIdentity,'github')))fail('SOURCE_UNAUTHORIZED');
     if(ctx.path&&sensitivePath(ctx.path))fail('SOURCE_UNAUTHORIZED');
-    const trusted={actorId,sessionId,sourceDomain:'development',
-      capabilityId:HVI_CAPABILITY_ID,...ctx};
+    const trusted={...ctx,actorId,sessionId,sourceDomain:'development',
+      capabilityId:HVI_CAPABILITY_ID};
     if(await verifySession(trusted)!==true||await verifyGrant(trusted)!==true)
       fail('SOURCE_UNAUTHORIZED');
     return true;
@@ -102,4 +103,36 @@ export function createHviHostReadPort({actorId,sessionId,verifySession,verifyGra
   };
   return Object.freeze({schema:HVI_HOST_BINDING_SCHEMA,action,capabilityId:HVI_CAPABILITY_ID,
     discover,invoke,enabled,remoteAccessible:false,readiness:'enforcement_missing'});
+}
+
+
+/**
+ * Host's ACTUAL owner credential or live browser UI session is checked on each
+ * read, not captured as a stale approval. This is only the authentication half:
+ * a separate canonical development-source grant service is REQUIRED and absent.
+ * No HTTP handler or new bearer credential is created here.
+ */
+export function createHviLocalOwnerGate({
+  request, ownerTokenFor, uiSessions, verifyDevelopmentSourceGrant,
+}={}){
+  if(typeof ownerTokenFor!=='function'||typeof verifyDevelopmentSourceGrant!=='function')
+    fail('AUTHORITY_REQUIRED');
+  function verifySession(){
+    const h=request?.headers;
+    if(!h||typeof h.host!=='string'||!/^(127\.0\.0\.1|localhost)(:\d{1,5})?$/.test(h.host)||
+      h['x-forwarded-proto']||h['tailscale-user-login'])return false;
+    if(h.origin!==undefined&&String(h.origin).toLowerCase()!=='http://'+h.host.toLowerCase())
+      return false;
+    let token=null;
+    try {token=ownerTokenFor();} catch {return false;}
+    if(verifyOwnerToken(h.authorization,token))return true;
+    // UI session is rechecked on every step: logout/revoke immediately denies.
+    return uiSessions?.authorized?.(request,{mutate:true})===true;
+  }
+  async function verifyGrant(ctx){
+    if(!verifySession())return false;
+    // A valid owner session alone NEVER grants repository access.
+    return await verifyDevelopmentSourceGrant(ctx)===true;
+  }
+  return Object.freeze({verifySession,verifyGrant});
 }
