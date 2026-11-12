@@ -1,0 +1,181 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ARBOR minimal pure interoperability contract",
+  "$id": "arbor.interop/1",
+  "description": "Derived/read-only interoperability. Does not authorize effects, reassign source identities or replace Host action catalog.",
+  "$defs": {
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "domain",
+        "ownerRef",
+        "revision"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "domain": {
+          "enum": [
+            "development",
+            "personal",
+            "control",
+            "ui"
+          ]
+        },
+        "ownerRef": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source",
+        "digest",
+        "confidence"
+      ],
+      "properties": {
+        "source": {
+          "$ref": "#/$defs/source"
+        },
+        "digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "confidence": {
+          "enum": [
+            "rule",
+            "accepted-pattern",
+            "source-observed",
+            "model-proposed"
+          ]
+        }
+      }
+    },
+    "event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "eventId",
+        "kind",
+        "source",
+        "expectedRevision"
+      ],
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "enum": [
+            "draft",
+            "accept",
+            "submit",
+            "cancel",
+            "approve",
+            "receipt",
+            "observation"
+          ]
+        },
+        "source": {
+          "$ref": "#/$defs/source"
+        },
+        "expectedRevision": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "capability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "owner",
+        "risk",
+        "source"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "owner": {
+          "type": "string",
+          "minLength": 1
+        },
+        "risk": {
+          "enum": [
+            "R0",
+            "R1",
+            "R2",
+            "R3",
+            null
+          ]
+        },
+        "source": {
+          "$ref": "#/$defs/source"
+        }
+      }
+    },
+    "effectState": {
+      "enum": [
+        "planned",
+        "approved",
+        "uncertain",
+        "applied",
+        "failed"
+      ]
+    },
+    "view": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "source",
+        "inert",
+        "status",
+        "actions"
+      ],
+      "properties": {
+        "schema": {
+          "const": "arbor.inert-view/1"
+        },
+        "source": {
+          "$ref": "#/$defs/source"
+        },
+        "inert": {
+          "const": true
+        },
+        "status": {
+          "enum": [
+            "candidate",
+            "grounded",
+            "ambiguous",
+            "stale",
+            "unavailable"
+          ]
+        },
+        "actions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}
