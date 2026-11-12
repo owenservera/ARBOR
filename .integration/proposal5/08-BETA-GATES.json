@@ -1,0 +1,211 @@
+{
+  "schema": "arbor.proposal5.beta-gates/1",
+  "status": "PROPOSED_UNRUN",
+  "proposal": "ARBOR/.integration/proposal5",
+  "source_branch": "architecture/proposal5-beta-first-centralization",
+  "principle": "No outside VIVIM repository wiring; full beta assembled from internally imported working source without wholesale rewrite.",
+  "releases": {
+    "beta_requires_all_hard_gates": true,
+    "conditional_feature_exceptions_require_owner_approval": true,
+    "unrun_is_not_pass": true,
+    "external_provider_websites_are_targets_not_donor_wiring": true
+  },
+  "gates": [
+    {
+      "id": "G00",
+      "title": "Freeze source import list",
+      "priority": "BLOCKER",
+      "status": "UNRUN",
+      "requirements": [
+        "All selected donor branch and subtree SHAs pinned",
+        "No credentials/user data in imported source",
+        "Every active incumbent runtime owner classified"
+      ],
+      "required_proof": "source/import inventory",
+      "observed_evidence": null,
+      "owner_accepted": false
+    },
+    {
+      "id": "G01",
+      "title": "Self-contained workspace",
+      "priority": "BLOCKER",
+      "status": "UNRUN",
+      "requirements": [
+        "All selected Tauri, Host, Studio, PWA, HQ JS, HQKG Rust and TierFlow source inside ARBOR",
+        "Cargo/Bun builds from ARBOR only",
+        "No external Git/submodule/path runtime dependencies"
+      ],
+      "required_proof": "clean build",
+      "observed_evidence": null,
+      "owner_accepted": false
+    },
+    {
+      "id": "G02",
+      "title": "Native HQKG",
+      "priority": "BLOCKER",
+      "status": "UNRUN",
+      "requirements": [
+        "Imported HQKG source and tests pass",
+        "Development/Personal graph namespace restrictions verified",
+        "One canonical graph crate in release"
+      ],
+      "required_proof": "cargo test",
+      "observed_evidence": null,
+      "owner_accepted": false
+    },
+    {
+      "id": "G03",
+      "title": "HQ operations internal",
+      "priority": "BLOCKER",
+      "status": "UNRUN",
+      "requirements": [
+        "In-repo HQ index/search/context/wiki run on synthetic local project",
+        "No external HQ process/database/path necessary",
+        "Source SHA, index freshness and permission scopes preserved"
+      ],
+      "required_proof": "bun tests and index/context/wiki smoke",
+      "observed_evidence": null,
+      "owner_accepted": false
+    },
+    {
+      "id": "G04",
+      "title": "Host effects",
+      "priority": "BLOCKER",
+      "status": "UNRUN",
+      "requirements": [
+        "One current Host catalog and authoritative journal",
+        "Approval/claim/receipt/uncertain-send behavior verified",
+        "No independent Rust or UI effect writer"
+      ],
+      "required_proof": "fault-injection test",
+      "observed_evidence": null,
+      "owner_accepted": false
+    },
+    {
+      "id": "G05",
+      "title": "Node 0 safe path",
+      "priority": "BLOCKER",
+      "status": "UNRUN",
+      "requirements": [
+        "IME/text remains locally responsive",
+        "Bounded native event work, stale revision refusal",
+        "Typed actor and source scopes; Tab cannot cause effect"
+      ],
+      "required_proof": "native/desktop test",
+      "observed_evidence": null,
+      "owner_accepted": false
+    },
+    {
+      "id": "G06",
+      "title": "Native security",
+      "priority": "BLOCKER",
+      "status": "UNRUN",
+      "requirements": [
+        "Patched supported Tauri v2 manifest and lock",
+        "Exact native IPC origin scopes",
+        "Host child listener identity verified before owner token transfer"
+      ],
+      "required_proof": "adversarial Windows test",
+      "observed_evidence": null,
+      "owner_accepted": false
+    },
+    {
+      "id": "G07",
+      "title": "Studio browser",
+      "priority": "BLOCKER",
+      "status": "UNRUN",
+      "requirements": [
+        "Real signed-in supported provider conversation through ARBOR",
+        "Source/target thread evidence and explicit send fencing",
+        "Browser failure does not block local editing"
+      ],
+      "required_proof": "owner-authorized browser E2E",
+      "observed_evidence": null,
+      "owner_accepted": false
+    },
+    {
+      "id": "G08",
+      "title": "Paired PWA",
+      "priority": "BLOCKER",
+      "status": "UNRUN",
+      "requirements": [
+        "Real physical phone pairs and revokes",
+        "Phone input uses same Host authority and semantic identifiers",
+        "Offline/stale state never grants effects"
+      ],
+      "required_proof": "physical PWA acceptance",
+      "observed_evidence": null,
+      "owner_accepted": false
+    },
+    {
+      "id": "G09",
+      "title": "TierFlow UI",
+      "priority": "BLOCKER",
+      "status": "UNRUN",
+      "requirements": [
+        "Selected TierFlow source builds internally",
+        "Single source-backed visual publisher",
+        "Desktop and PWA status source identities compatible"
+      ],
+      "required_proof": "browser/UI acceptance",
+      "observed_evidence": null,
+      "owner_accepted": false
+    },
+    {
+      "id": "G10",
+      "title": "Capabilities and Labs",
+      "priority": "BLOCKER",
+      "status": "UNRUN",
+      "requirements": [
+        "Every selected Labs component has source SHA/status/owner/target",
+        "Working incumbent capabilities preserved or explicitly scope-approved",
+        "Generated capability status distinguishes preview from available"
+      ],
+      "required_proof": "capability truth audit",
+      "observed_evidence": null,
+      "owner_accepted": false
+    },
+    {
+      "id": "G11",
+      "title": "World and storage",
+      "priority": "BLOCKER",
+      "status": "UNRUN",
+      "requirements": [
+        "Owner data export/backup/restore integrity",
+        "Rock Core protected from cache compaction",
+        "HQ dev index separate from private World and bounded disk"
+      ],
+      "required_proof": "state and storage acceptance",
+      "observed_evidence": null,
+      "owner_accepted": false
+    },
+    {
+      "id": "G12",
+      "title": "Zero outside wiring",
+      "priority": "BLOCKER",
+      "status": "UNRUN",
+      "requirements": [
+        "No donor repository checkout needed",
+        "No donor process, server or SQLite file needed",
+        "Self-contained release works with donor folders removed or renamed"
+      ],
+      "required_proof": "donor removal build/install E2E",
+      "observed_evidence": null,
+      "owner_accepted": false
+    },
+    {
+      "id": "G13",
+      "title": "One beta release",
+      "priority": "BLOCKER",
+      "status": "UNRUN",
+      "requirements": [
+        "Windows package and PWA version compatible",
+        "Exactly one live Host effect writer after cutover",
+        "Rollback tested with in-flight/uncertain receipts reconciled"
+      ],
+      "required_proof": "release acceptance",
+      "observed_evidence": null,
+      "owner_accepted": false
+    }
+  ]
+}
