@@ -23,10 +23,12 @@
     "rootLockfiles": "ABSENT",
     "packagerSource": "PRESENT_UNRUN",
     "packagedNode24": "ABSENT",
-    "tauriPwaOnlyConfig": "DRAFT_PR_8_UNMERGED",
+    "tauriPwaOnlyConfig": "SOURCE_MERGED_UNTESTED",
     "windowsMsi": "UNRUN",
     "donorRemoval": "UNRUN",
     "sourceClosure": "UNRUN",
-    "nextWaveApproved": false
+    "nextWaveApproved": false,
+    "bPwaSignerStaticRoute": "MERGED_UNTESTED",
+    "canonicalMainPr": 10
   }
 }
