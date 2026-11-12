@@ -75,3 +75,29 @@ export function classifyResearch({design=false,implemented=false,installed=false
  if(implemented)return 'RESEARCH_IMPLEMENTED';
  return design?'DESIGN_ONLY':'UNKNOWN';
 }
+
+/** Read-only fixture classification of object-type hazards, NOT Git IO. */
+export function classifyGitObject({mode='100644',content='',bytes=0,readable=true,sparse=false,pinnedCommit=null}={}){
+ if(!readable)return {status:'blocked',reason:'unreadable',complete:false};
+ if(mode==='120000')return {status:'blocked',reason:'symlink',complete:false};
+ if(mode==='160000')return {status:'unsupported',reason:'submodule',complete:false};
+ if(bytes>1500000)return {status:'truncated',reason:'oversized_blob',complete:false};
+ if(typeof content==='string'&&content.startsWith('version https://git-lfs.github.com/spec/v1'))
+  return {status:'unsupported',reason:'lfs_pointer',complete:false};
+ if(typeof content==='string'&&content.includes('\0'))return {status:'unsupported',reason:'binary',complete:false};
+ if(sparse)return {status:'partial',reason:'sparse_clone',complete:false};
+ if(!/^[a-f0-9]{40}$/.test(pinnedCommit||''))return {status:'blocked',reason:'unpinned_or_detached_head_without_sha',complete:false};
+ return {status:'source_only',reason:null,complete:true};
+}
+/** No dynamic Git option/command parsing in fixture; pinned hash is preferred. */
+export function safeGitRef(ref){
+ return typeof ref==='string'&&ref.length>0&&ref.length<=256&&!ref.startsWith('-')&&
+ /^[A-Za-z0-9._/-]+$/.test(ref)&&!ref.includes('..')&&!ref.includes('//')&&
+ !ref.split('/').some(x=>x==='.'||x==='..'||x==='.git');
+}
+/** ENOSPC must preserve previous snapshot; actual disk simulation belongs to G1. */
+export function storageBound({error=null,previousSnapshot=null}={}){
+ if(error==='ENOSPC'||error==='SQLITE_FULL')
+  return {status:'blocked',previousSnapshotKept:previousSnapshot!==null,deletePrevious:false};
+ return {status:'ok',previousSnapshotKept:previousSnapshot!==null,deletePrevious:false};
+}
