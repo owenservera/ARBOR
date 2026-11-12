@@ -1,7 +1,7 @@
 // Pure, dependency-free guard. Never a Host dispatcher, signer or identity issuer.
 export const HOST_EFFECT_STATES=Object.freeze(['planned','approved','uncertain','applied','failed']);
 export const GRADUATION_STATES=Object.freeze(['IMPLEMENTED','VERIFIED','DESIGN_ONLY','PREVIEW','DEFERRED','BLOCKED']);
-const ref=v=>typeof v==='string'&&v.length>0&&v.length<=256&&!/[\\x00-\\x1f]/.test(v);
+const ref=v=>typeof v==='string'&&v.length>0&&v.length<=256&&!/[\x00-\x1f]/.test(v);
 export function isSourceRef(s){
  return !!s&&typeof s==='object'&&!Array.isArray(s)&&ref(s.id)&&
  ['development','personal','control','ui'].includes(s.domain)&&
