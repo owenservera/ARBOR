@@ -3,18 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Universal 3-tier agentic workflow: interactive agent -> orchestrator -> realtime program execution, with a realtime visualization webapp. TypeScript 7 hot paths in Bun, Rust for the high-frequency event pipeline.",
+  "description": "ARBOR-internal source-preserved TierFlow visual renderer, typed commands and projections; no standalone product server",
   "scripts": {
-    "start": "bun run src/server.ts",
-    "dev": "bun --watch src/server.ts",
-    "repl": "bun run src/cli.ts",
-    "test": "bun test tests/",
+    "test": "bun test tests/visual-runtime",
+    "test:visual": "bun test tests/visual-runtime",
+    "test:legacy": "bun test tests/",
     "typecheck": "tsc -p tsconfig.json",
     "typecheck:tsgo": "bunx @typescript/native-preview -p tsconfig.json",
-    "core:build": "cargo build --release --manifest-path core/Cargo.toml",
-    "core:test": "cargo test --release --manifest-path core/Cargo.toml",
-    "bench": "bun run bench/hotpath.bench.ts",
-    "verify": "bun run typecheck && bun run core:test && bun run test",
+    "verify": "bun run typecheck && bun run test:visual",
     "tokens:generate": "bun scripts/generate-host-tokens.mjs"
   },
   "devDependencies": {
