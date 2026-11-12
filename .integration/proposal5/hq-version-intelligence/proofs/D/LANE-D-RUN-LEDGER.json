@@ -57,53 +57,100 @@
   "sourceOnly": true,
   "hostAuthorized": false,
   "runtimeAccepted": false,
-  "testsExecuted": [],
+  "testsExecuted": [
+    {
+      "suite": "V8 isolated authored synthetic parity test callbacks (Node imports and hash substituted)",
+      "cases": 12,
+      "passed": 12,
+      "failed": 0,
+      "exit": 0,
+      "environment": "connected GitHub source fetched into fresh JS V8 isolate; non-Node deterministic digest shim",
+      "sourceTestBlob": "d58b8ed68e50c05093190a259913c7cf4cbcaf62",
+      "status": "SYNTHETIC_SHIM_ONLY_NOT_NODE24",
+      "commandDescription": "V8 new Function compilation and execution of authored atlas.test.mjs callbacks, without node:test or native crypto"
+    },
+    {
+      "suite": "V8 focused source smoke check",
+      "cases": 8,
+      "passed": 8,
+      "failed": 0,
+      "exit": 0,
+      "environment": "V8 isolate source transform with digest shim",
+      "status": "SYNTHETIC_SHIM_ONLY_NOT_NODE24",
+      "commandDescription": "same/moved/changed/partial, unknown, forged receipts, secret path denial, tombstone denial"
+    },
+    {
+      "suite": "GitHub pinned path/digest/source-scope proof assertions",
+      "cases": 9,
+      "passed": 9,
+      "failed": 0,
+      "exit": 0,
+      "environment": "connected GitHub API and JavaScript checks",
+      "status": "SOURCE_INTEGRITY_ONLY",
+      "commandDescription": "branch head/base ancestry, nine write paths allowed, 361 distinct donor paths, 23 inspected, 338 unknown, no retirement, 40-hex blob and fixed SHA"
+    }
+  ],
   "sourceVerifications": [
     {
       "operation": "connected GitHub S0 branch gate and exact worker base",
-      "result": "verified"
+      "result": "verified",
+      "exit": 0,
+      "kind": "GitHub_content_inspection"
     },
     {
       "operation": "pinned Git blob reads and exports/imports observed",
-      "result": "observed"
+      "result": "observed",
+      "exit": 0,
+      "kind": "GitHub_content_inspection"
     },
     {
       "operation": "S0 361-path row enumeration",
-      "result": "361 exact source pinned rows"
+      "result": "361 exact source pinned rows",
+      "exit": 0,
+      "kind": "GitHub_content_inspection"
     },
     {
       "operation": "privacy and owner boundary source review",
-      "result": "source-only"
+      "result": "source-only",
+      "exit": 0,
+      "kind": "GitHub_content_inspection"
     }
   ],
   "unrun": [
     {
       "command": "node --test hq/version-intelligence/parity/atlas.test.mjs",
-      "reason": "connected GitHub source connector has no Node checkout runner; test source committed only"
+      "reason": "connected GitHub source connector has no Node checkout runner; test source committed only",
+      "status": "UNRUN"
     },
     {
       "command": "node --test tests/hq-version-intelligence",
-      "reason": "Lane F tests and G1 integrated checkout not available at D base"
+      "reason": "Lane F tests and G1 integrated checkout not available at D base",
+      "status": "UNRUN"
     },
     {
       "command": "bun test",
-      "reason": "Bun/checkout not invoked"
+      "reason": "Bun/checkout not invoked",
+      "status": "UNRUN"
     },
     {
       "command": "cargo test",
-      "reason": "Cargo/checkout not invoked"
+      "reason": "Cargo/checkout not invoked",
+      "status": "UNRUN"
     },
     {
       "command": "Windows/MSVC build",
-      "reason": "no Windows runner"
+      "reason": "no Windows runner",
+      "status": "UNRUN"
     },
     {
       "command": "Android device + PWA signer/revoke",
-      "reason": "no device/live Host integration"
+      "reason": "no device/live Host integration",
+      "status": "UNRUN"
     },
     {
       "command": "full private-data/secret scanner",
-      "reason": "not performed; source only checked selected files"
+      "reason": "not performed; source only checked selected files",
+      "status": "UNRUN"
     }
   ],
   "blockers": [
@@ -121,5 +168,10 @@
     "X real five-repo audit after GO_FOR_W2",
     "B catalogue identity donor migration; F shared tests",
     "HQ/Rust live graph read model; Host source/effect owner for supervisor and personal intake"
+  ],
+  "notes": [
+    "12/12 authored test callbacks executed under V8 with Node imports and cryptographic hash substituted. This is NOT an actual Node24 suite pass and cannot be promoted to project gate.",
+    "Actual Node24 command `node --test hq/version-intelligence/parity/atlas.test.mjs` remains UNRUN. Cargo/Bun/Windows/Android/Host security/CI are also UNRUN.",
+    "D has no authority to cryptographically authenticate caller-supplied Host receipt data. Parity classifier never returns RUNTIME_VERIFIED or product runtimeAccepted."
   ]
 }
