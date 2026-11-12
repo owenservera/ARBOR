@@ -99,7 +99,7 @@ export function createBrowserDeviceSigner({
   const encode64 = bytes => base64(Array.from(bytes, x => String.fromCharCode(x)).join(''));
   async function signTranscript(fields) {
     const pair = await keys();
-    const bytes = new Encoder().encode(fields.join('\n'));
+    const bytes = new Encoder().encode(fields.join('\\n'));
     const raw = await crypto.subtle.sign({ name: 'ECDSA', hash: 'SHA-256' }, pair.privateKey, bytes);
     return encode64(derEncodeP256(raw)); // Node Host verifier requires ASN.1 DER, not P1363.
   }

@@ -48,7 +48,7 @@ test('nonextractable browser P-256 key emits Node Host-compatible DER signatures
   assert.equal(key.privateKey.algorithm.namedCurve, 'P-256');
   assert.equal(key.publicKey.type, 'public');
   const pem = await signer.publicKeyPem();
-  const msg = ['vivim-enrollment-v1','challengeId','challenge','nonce','https://pc.ts.net','owner'].join('\n');
+  const msg = ['vivim-enrollment-v1','challengeId','challenge','nonce','https://pc.ts.net','owner'].join('\\n');
   const signature = await signer.signEnrollment('challengeId','challenge','nonce','https://pc.ts.net','owner');
   assert.ok(verifySig(pem, signature, msg));
   assert.equal(verifySig(pem, signature, msg + '\nchanged'), false);
@@ -61,7 +61,7 @@ test('keys persist across signer instances; a stolen grant ID without its key ca
   const originalPem = await a.publicKeyPem();
   const b = createBrowserDeviceSigner(env(db));
   assert.equal(await b.publicKeyPem(), originalPem);
-  const msg = ['vivim-session-v1','grantId','a'.repeat(32),'123456','https://pc.ts.net','owner'].join('\n');
+  const msg = ['vivim-session-v1','grantId','a'.repeat(32),'123456','https://pc.ts.net','owner'].join('\\n');
   const proof = await b.signSession('grantId','a'.repeat(32),'123456','https://pc.ts.net','owner');
   assert.ok(verifySig(originalPem, proof, msg));
   const attacker = createBrowserDeviceSigner(env());
@@ -85,7 +85,7 @@ test('simulated Host state: even valid proof cannot authorize pending/revoked/re
   const pem = await signer.publicKeyPem();
   const nonce = 'f'.repeat(32), time = String(Date.now());
   const sig = await signer.signSession('g', nonce, time, 'https://pc.ts.net', 'owner');
-  const wire = ['vivim-session-v1','g',nonce,time,'https://pc.ts.net','owner'].join('\n');
+  const wire = ['vivim-session-v1','g',nonce,time,'https://pc.ts.net','owner'].join('\\n');
   const used = new Set();
   const authorize = status => status === 'active' && !used.has(nonce) && verifySig(pem,sig,wire);
   assert.equal(authorize('pending'),false);
