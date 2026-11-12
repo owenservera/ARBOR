@@ -18,7 +18,7 @@ const SECRET = /(?:^|\/)(?:\.git|\.ssh|\.env[^/]*|\.npmrc|\.netrc|secrets?|crede
 function fail(code) { const error = new Error('HVI_G2_' + code); error.code = code; throw error; }
 function safeText(input, max=200) {
   if (typeof input!=='string'||input.length<1||input.length>max||SECRET.test(input)||
-      /[^\x20-\x7e]/.test(input)||/[<>\\x60\[\]{}|*!~$=%?&"']/.test(input)||
+      /[^\x20-\x7e]/.test(input)||/[<>\x60\[\]{}|*!~$=%?&"']/.test(input)||
       /(?:javascript:|data:|https?:|www[.])/i.test(input)) return '[REDACTED]';
   return input;
 }
