@@ -1,0 +1,67 @@
+{
+  "schema": "arbor.hvi.s0.run-ledger/1",
+  "gate": "GO_TO_PARALLEL",
+  "environment": "connected GitHub through API and ephemeral JavaScript orchestration",
+  "observed": [
+    {
+      "operation": "fetch recursive Git trees for 5 fixed main snapshots",
+      "exit": 0,
+      "result": "complete and not truncated"
+    },
+    {
+      "operation": "recompute 13 prefix census rows via blob SHAs",
+      "exit": 0,
+      "result": "all match authored baseline"
+    },
+    {
+      "operation": "resolve 11 GitHub branch heads",
+      "exit": 0,
+      "result": "all refs resolved; only ARBOR main moved"
+    },
+    {
+      "operation": "compare ARBOR authored baseline with current main",
+      "exit": 0,
+      "result": "ahead 4 behind 0, 26 HVI-only planning files"
+    },
+    {
+      "operation": "enumerate all 361 missing original-path HQ source blobs",
+      "exit": 0,
+      "result": "recorded per-item provenance"
+    }
+  ],
+  "unrun": [
+    {
+      "command": "node --test",
+      "reason": "no integrated checkout used"
+    },
+    {
+      "command": "bun test",
+      "reason": "no Bun runtime invoked"
+    },
+    {
+      "command": "cargo test",
+      "reason": "no Cargo runtime invoked"
+    },
+    {
+      "command": "Windows/MSVC build",
+      "reason": "no Windows runner invoked"
+    },
+    {
+      "command": "Android physical device tests",
+      "reason": "no device connection"
+    },
+    {
+      "command": "Host live grant/revoke and native loopback tests",
+      "reason": "outside S0"
+    },
+    {
+      "command": "full credential-content scanner",
+      "reason": "not executed"
+    }
+  ],
+  "blockers": [
+    "Release beta gate BLOCKED_NOT_BETA (separate from S0 preflight)"
+  ],
+  "runtimeAccepted": false,
+  "sourceOnly": true
+}
