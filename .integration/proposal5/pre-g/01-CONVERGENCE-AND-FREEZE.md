@@ -12,7 +12,7 @@ Lock six final worker snapshots and cross-owner decisions BEFORE the sole G inte
 | B Host | c12f4a27a8c700c9df4cba17a9ff96efd5897748 | 135 source blobs; bootstrap/authority follow-up preparation, no new native launch implementation | LANDING DONE; A/B CONTRACT REQUIRED |
 | C Studio | 4bca551d58a1972cc02a8b20b772e1e2417b874d | Studio and harness subtrees present, but canonical W01-C report not found | LANDING PRESENT; FINAL INVENTORY/REPORT REQUIRED |
 | D HQ | 16c590dbd97dc617b783d949268ddc8fb77da2c5 | in-repo HQ JS and source tests; service adapter not mounted into Host | LANDING DONE; PRODUCT PORT UNWIRED |
-| E PWA/TierFlow | d5768821713abc0bbf7745e3639f50b2c8aba0e6 | 87 mobile and selected 268 TierFlow copied source blobs; browser-only PWA pairing unproven | LANDING DONE; PWA ENROLLMENT DECISION |
+| E PWA/TierFlow | d9e4d332ed7545d6038b620dd251e0b9aaeaccb7 (head changed during audit) | Original mobile/TierFlow source; new browser-device-key.mjs WebCrypto P-256/IndexedDB code and enrollment tests now committed | SOURCE PATCHED; HOST INTEROP/DEVICE UNRUN; FREEZE NOT CONFIRMED |
 | F Contracts | 7538ebc706f98c15530fe39ba3a40b479448b37f | Interop/test/source evidence; reported pure V8 assertions, Node/Cargo unrun | LANDING DONE; COMBINED TESTS UNRUN |
 
 Every lane branched from older architecture commit dd245d78ff3c110ba8630cad557ea0479c51a635, while the current Proposal 5 architecture branch is 6ab7e6976c02cac2ee71f030deda3f6541f8102f. No integrate/proposal5-beta-r001 branch existed when checked. Do not claim W0-G or W1-G GO. Later follow-up commits may still be arriving: these SHAs are observations, NOT final freeze receipts.
