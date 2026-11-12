@@ -18,5 +18,15 @@
   "rollback": {
     "strategy": "revert G merge commits in reverse order on integration branch only; preserve frozen A-F refs",
     "tested": false
+  },
+  "w01gR001": {
+    "rootLockfiles": "ABSENT",
+    "packagerSource": "PRESENT_UNRUN",
+    "packagedNode24": "ABSENT",
+    "tauriPwaOnlyConfig": "DRAFT_PR_8_UNMERGED",
+    "windowsMsi": "UNRUN",
+    "donorRemoval": "UNRUN",
+    "sourceClosure": "UNRUN",
+    "nextWaveApproved": false
   }
 }
