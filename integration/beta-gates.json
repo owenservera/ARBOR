@@ -1,0 +1,104 @@
+{
+  "schema": "arbor.proposal5.beta-gates/1",
+  "status": "BLOCKED_NOT_BETA",
+  "updatedAt": "2026-11-12",
+  "branch": "integrate/proposal5-beta-r001",
+  "sourceMergeSha": "0b3474a5cb2053d607453b18d319d225f1d3ca57",
+  "unrunIsNotPass": true,
+  "decision": "NO_GO_REPAIR_REQUIRED",
+  "pwaFirst": true,
+  "apk": "DEFERRED",
+  "gates": [
+    {
+      "id": "G00",
+      "status": "SOURCE_MERGED_REVIEW_PENDING",
+      "owner_accepted": false,
+      "observed_evidence": "GitHub PR merges #2-#7 from frozen A-F SHA; source-lock recorded; full independent closure/secret scan UNRUN"
+    },
+    {
+      "id": "G01",
+      "status": "BLOCKED_UNRUN",
+      "owner_accepted": false,
+      "observed_evidence": null
+    },
+    {
+      "id": "G02",
+      "status": "BLOCKED_UNRUN",
+      "owner_accepted": false,
+      "observed_evidence": null
+    },
+    {
+      "id": "G03",
+      "status": "BLOCKED_UNRUN",
+      "owner_accepted": false,
+      "observed_evidence": null
+    },
+    {
+      "id": "G04",
+      "status": "BLOCKED_UNRUN",
+      "owner_accepted": false,
+      "observed_evidence": null
+    },
+    {
+      "id": "G05",
+      "status": "BLOCKED_UNRUN",
+      "owner_accepted": false,
+      "observed_evidence": null
+    },
+    {
+      "id": "G06",
+      "status": "BLOCKED_UNRUN",
+      "owner_accepted": false,
+      "observed_evidence": null
+    },
+    {
+      "id": "G07",
+      "status": "BLOCKED_UNRUN",
+      "owner_accepted": false,
+      "observed_evidence": null
+    },
+    {
+      "id": "G08",
+      "status": "BLOCKED_UNRUN",
+      "owner_accepted": false,
+      "observed_evidence": null
+    },
+    {
+      "id": "G09",
+      "status": "BLOCKED_UNRUN",
+      "owner_accepted": false,
+      "observed_evidence": null
+    },
+    {
+      "id": "G10",
+      "status": "BLOCKED_UNRUN",
+      "owner_accepted": false,
+      "observed_evidence": null
+    },
+    {
+      "id": "G11",
+      "status": "BLOCKED_UNRUN",
+      "owner_accepted": false,
+      "observed_evidence": null
+    },
+    {
+      "id": "G12",
+      "status": "BLOCKED_UNRUN",
+      "owner_accepted": false,
+      "observed_evidence": null
+    },
+    {
+      "id": "G13",
+      "status": "BLOCKED_UNRUN",
+      "owner_accepted": false,
+      "observed_evidence": null
+    }
+  ],
+  "p0Blockers": [
+    "A/B unverified native loopback listener and bearer transfer",
+    "Tauri wildcard privileged origin and pinned 2.0.0 family",
+    "B/E missing PWA device signer static route and active-bearer request replay prevention",
+    "Tauri mandatory APK resource and missing runtime packaging hook",
+    "Root Cargo.lock and bun.lock not generated; compilation, build, no-donor test UNRUN"
+  ]
+}
