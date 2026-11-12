@@ -1,0 +1,815 @@
+{
+  "schema": "arbor.proposal5.phase2.highvalue.cards/1",
+  "generatedOn": "2026-11-12",
+  "status": "PREPARED_NOT_PROMOTED",
+  "sourceInspection": "connected-GitHub-read-only",
+  "execution": {
+    "testsRun": 0,
+    "testsStatus": "UNRUN",
+    "liveRuntimeAcceptance": "UNRUN",
+    "windowsAcceptance": "UNRUN",
+    "phoneAcceptance": "UNRUN",
+    "merge": false,
+    "featuresBuilt": false
+  },
+  "target": {
+    "repo": "owenservera/ARBOR",
+    "branch": "work/p5-p2-highvalue-labs",
+    "baseSha": "6ab7e6976c02cac2ee71f030deda3f6541f8102f",
+    "writeScope": ".integration/proposal5/phase2/highvalue/"
+  },
+  "pins": {
+    "ARBOR_BASE": {
+      "repo": "owenservera/ARBOR",
+      "branch": "architecture/proposal5-beta-first-centralization",
+      "sha": "6ab7e6976c02cac2ee71f030deda3f6541f8102f"
+    },
+    "ARBOR_PROMPT": {
+      "repo": "owenservera/ARBOR",
+      "branch": "work/p5-phase2-readiness-docs-r001",
+      "sha": "a9caad49347749cb0630ae1719bc2d7a8621d645"
+    },
+    "ARBOR_A": {
+      "repo": "owenservera/ARBOR",
+      "branch": "work/p5-w01-a-native",
+      "sha": "dda546a11294920d6521a0f64ab7ee62ec993c70"
+    },
+    "ARBOR_B": {
+      "repo": "owenservera/ARBOR",
+      "branch": "work/p5-w01-b-host",
+      "sha": "78a5105a9c1f1880d658f350e130b1e2632d3532"
+    },
+    "ARBOR_C": {
+      "repo": "owenservera/ARBOR",
+      "branch": "work/p5-w01-c-studio",
+      "sha": "f950b91685927f37b48d020433aa8d2d3c271419"
+    },
+    "ARBOR_D": {
+      "repo": "owenservera/ARBOR",
+      "branch": "work/p5-w01-d-hq",
+      "sha": "ad55fe28c2c331841675f308f9199ee4c2add86a"
+    },
+    "ARBOR_E": {
+      "repo": "owenservera/ARBOR",
+      "branch": "work/p5-w01-e-ui",
+      "sha": "1a5cf26ce14ebce4e31d9a4373060ace61852645"
+    },
+    "ARBOR_F": {
+      "repo": "owenservera/ARBOR",
+      "branch": "work/p5-w01-f-verify",
+      "sha": "be458f3c4cdb7eb38d47b1de2a00d441b7cdc704"
+    },
+    "ARBOR_PRE_G": {
+      "repo": "owenservera/ARBOR",
+      "branch": "work/p5-pre-g-convergence-r001",
+      "sha": "8b23c73bf450738a76b256bf0fa17ecbf86db591"
+    },
+    "LABS_MAIN": {
+      "repo": "owenservera/vivim-labs",
+      "branch": "main",
+      "sha": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be"
+    },
+    "LABS_UI": {
+      "repo": "owenservera/vivim-labs",
+      "branch": "lab/nlp-visual-command-ui-20261111",
+      "sha": "67e76c5b730dcc2cd3ab3919c3ba273a6c260db8"
+    },
+    "LABS_NODE0": {
+      "repo": "owenservera/vivim-labs",
+      "branch": "lab/user-io-rust-core-20261112",
+      "sha": "61d9fc15c55144c4f0b79afa248981c2b0ca9bd6"
+    },
+    "LABS_READINESS": {
+      "repo": "owenservera/vivim-labs",
+      "branch": "work/p5-phase2-readiness-r001",
+      "sha": "f5edc9fc45c6c3208621d9ca172b36e9a0d547c0"
+    },
+    "LABS_CHRONOS": {
+      "repo": "owenservera/vivim-labs",
+      "branch": "work/chronos-toolkit-2026-11-08",
+      "sha": "b87ea71c653c3833451bd0af19d9ef1c4327728e"
+    },
+    "LABS_AUTOMATION": {
+      "repo": "owenservera/vivim-labs",
+      "branch": "proposal/automation-queen-system-intake-20261107",
+      "sha": "809228cc9859f771caec2ac725baab737cb9cc1c"
+    },
+    "HQ_MAIN": {
+      "repo": "owenservera/repos-hq",
+      "branch": "main",
+      "sha": "9b922ea049dbadc94e504b5b9432743995c020ca"
+    },
+    "HQ_SWC": {
+      "repo": "owenservera/repos-hq",
+      "branch": "research/semantic-wiki-compiler-20261112",
+      "sha": "7cb2fadd88c5a08c0ec7e084410e150a5b6e0f3d"
+    },
+    "HQ_XRAY": {
+      "repo": "owenservera/repos-hq",
+      "branch": "research/interpretation-xray-intelligence-surface-20261112",
+      "sha": "c80e45ff11b33aec785c2055e52420751ee8388d"
+    },
+    "HQ_AUTOWIKI": {
+      "repo": "owenservera/repos-hq",
+      "branch": "research/autowiki-screen-mirror-20261112",
+      "sha": "61507b5f9bafd0211d0a556280b367574e676ce1"
+    },
+    "HQ_ROCK": {
+      "repo": "owenservera/repos-hq",
+      "branch": "research/rock-core-storage-bounds-20261112",
+      "sha": "0a3c11a6df72434b46931f90b25bf1f93da09f92"
+    },
+    "TIERFLOW_MAIN": {
+      "repo": "owenservera/tierflow",
+      "branch": "main",
+      "sha": "50822f11ee63c3d80f631f8fea7dcb9b19bffc38"
+    },
+    "HARNESS_MAIN": {
+      "repo": "owenservera/vivim-web-harness",
+      "branch": "main",
+      "sha": "cae97afe848d79957c9d6c698a90996a758bfd56"
+    }
+  },
+  "rankedLimit": 5,
+  "rankedIds": [
+    "H1-01",
+    "H1-02",
+    "H1-03",
+    "H1-04",
+    "H1-05"
+  ],
+  "cards": [
+    {
+      "id": "H1-01",
+      "rank": 1,
+      "title": "Source-truth composer semantic strip (R005)",
+      "category": "OPTIONAL-LOW-COST-DURING-BETA",
+      "value": "high",
+      "effort": "low-to-medium",
+      "risk": "medium",
+      "status": "LABS_PROTOTYPE_SOURCE_PRESENT__ARBOR_RUNTIME_UNRUN",
+      "owner": "E TierFlow+PWA display; F truth/conformance; B Host read-only planner; D HQ source discovery",
+      "package": "packages/tierflow/src/visual-runtime/ (inert view adapter); existing Host/HQ read ports",
+      "gate": "After W2-G GO; optional W3 acceptance only if G approves zero-critical-path cost",
+      "improvement": "Text composer visibly distinguishes guessed meaning, source identity, missing slots, negation, refusal, permission/availability and exact accepted spans with quiet/assisted modes.",
+      "implemented": "Labs semantic-lens/compiler/bridge/UI and six test suites; author reports 28/28 local Node tests and 100/100 synthetic probes, not executed here. Existing Host planText and HQ inventory remain read owners.",
+      "designOnly": "Full native reactive screen/IME integration, verified current-source completeness, real runtime verified availability and mobile visual acceptance.",
+      "reuse": [
+        "Host pure intent-planner/catalog",
+        "HQ semantic registry and annotation-v2, indexed source identity",
+        "TierFlow inert visual-command IR and single publisher",
+        "Node0 bounded read-only event/revision path"
+      ],
+      "proof": "Run source Lab Node tests and 100-probe bench on actual pinned checkout; on accepted ARBOR W2 baseline show ONE inert negated command and one missing-slot hint in existing composer using Host planner and actual catalog, no execute endpoint.",
+      "tests": [
+        "quote/negation and Host refusal outrank local heuristic",
+        "stale response dropped after input/source revision changes; no Tab effect",
+        "IME/caret/undo/keyboard/phone accessibility, source ≠ runtime verified"
+      ],
+      "risks": [
+        "false permission claims",
+        "typing latency/IME corruption",
+        "leaking personal sources into dev HQ"
+      ],
+      "wontBuild": [
+        "second command parser/router",
+        "send endpoint or real-contact fixture promotion",
+        "new TierFlow publisher",
+        "full R007 graph rendering"
+      ],
+      "sources": [
+        {
+          "pin": "LABS_UI",
+          "path": "nlp-command-ui-lab/src/semantic-lens.mjs",
+          "observed": "pure presentation implementation; blob d5de11edf693eb67ffed23e1fd26e68240d4420c"
+        },
+        {
+          "pin": "LABS_UI",
+          "path": "nlp-command-ui-lab/docs/R005-PROGRESSIVE-SPRINT.md",
+          "observed": "28/28 + 100/100 author-reported tests; blob e8d8aeb663a8d3828b228ca1114f203a7bb4a6ce"
+        },
+        {
+          "pin": "ARBOR_E",
+          "path": "packages/tierflow/src/visual-runtime/command/ir.ts",
+          "observed": "inert command IR; blob a6e581476af9d5b091b1939591ad5d5ba8a32a45"
+        },
+        {
+          "pin": "ARBOR_B",
+          "path": "apps/vivim-host/control/intent-planner.mjs",
+          "observed": "actual Host planner source present; blob 3d1bbcd5ad80ffa6276ea4e5d2b5f0cfbd8cf4ab"
+        }
+      ]
+    },
+    {
+      "id": "H1-02",
+      "rank": 2,
+      "title": "Bounded storage and protected Rock baseline (R009)",
+      "category": "CORE-BETA-BLOCKER",
+      "value": "critical-safety",
+      "effort": "medium",
+      "risk": "critical-data-loss",
+      "status": "RESEARCH_POLICY_PRESENT__BETA_BASELINE_REQUIRED__WRITER_UNRUN",
+      "owner": "B Host protected World/effect receipts; D HQ dev index/wiki; A existing Rust graph compaction; E UI local cache; F storage/red-team; G acceptance",
+      "package": "Existing apps/vivim-host/, hq/, native/hqkg/, packages/tierflow/ owners (NO new store)",
+      "gate": "W2 source owner wiring → W3 G3 read-path proof → W4-G low-storage acceptance; must close by W5-G, W6-G release",
+      "improvement": "On nearly full PCs, protected World/receipts remain intact and derived HQ indexes/wiki/cache observe measured byte budgets and transparent degraded state.",
+      "implemented": "HQ research storage-policy.mjs and rock-membership.mjs pure no-write planners; existing HQ wiki, graph journal and Host data owners. Existing Proposal 5 B12 / G11 explicitly require baseline.",
+      "designOnly": "Real filesystem inventory, quota enforcement and owner-specific safe eviction, crash-tested compaction, Windows disk-reserve handling and per-user Rock pinning.",
+      "reuse": [
+        "existing Host World and journal writer",
+        "HQ deterministic generated wiki and index ownership",
+        "native/hqkg shared Rust engine/journal",
+        "TierFlow screen/phone quota display"
+      ],
+      "proof": "On a synthetic low-storage fixture compute PURE deterministic reclaim plan; then owner-approved W4 Windows storage acceptance with protected fake World/receipt/original, rebuildable wiki/index, OS free-space reserve and interrupted compaction; prove no protected writes/deletes.",
+      "tests": [
+        "never evict original, grants, receipts, pinned, leased or unrecoverable artifact",
+        "free-space reserve and scratch-space shortfall refuse growth including FULL mode",
+        "revocation clears derived caches without keeping hidden copies; interrupted run leaves source intact",
+        "measure bytes, reclaim report and restart-safe degraded reads"
+      ],
+      "risks": [
+        "accidental irreversible deletion",
+        "SQLite VACUUM double-space overhead",
+        "false source-rebuildability",
+        "disk exhaustion during checkpoint"
+      ],
+      "wontBuild": [
+        "new Rock database",
+        "automatic deletion or summarization of originals",
+        "general hot/warm/cold production tier migration during beta",
+        "unlimited always-available writes"
+      ],
+      "sources": [
+        {
+          "pin": "HQ_ROCK",
+          "path": "research/rock-core-storage/storage-policy.mjs",
+          "observed": "pure nonmutating policy; blob 4606b90c2635564e74c712e19771c5d244576e3e"
+        },
+        {
+          "pin": "HQ_ROCK",
+          "path": "research/rock-core-storage/rock-membership.mjs",
+          "observed": "owner-filtered membership planner; blob 9023bd026a311cadf9f9d6d024562166a3176a3c"
+        },
+        {
+          "pin": "LABS_UI",
+          "path": "nlp-command-ui-lab/docs/R009-ROCK-CORE-STORAGE-BOUNDED-INTELLIGENCE.md",
+          "observed": "not wired; blob 1c82e411503967364bfdaf25bd702733bf6f2cdc"
+        },
+        {
+          "pin": "ARBOR_BASE",
+          "path": ".integration/proposal5/08-BETA-GATES.json",
+          "observed": "G11 hard gate; blob 360a59b7352b0eb40565228ea9cb8e454f6bcfd6"
+        },
+        {
+          "pin": "ARBOR_D",
+          "path": "hq/lib/wiki.mjs",
+          "observed": "existing deterministic wiki owner; blob c85c8fbe1409273928ea5c52bc2c20f108ac4dce"
+        }
+      ]
+    },
+    {
+      "id": "H1-03",
+      "rank": 3,
+      "title": "One-screen reversible AutoWiki (R008)",
+      "category": "POST-BETA",
+      "value": "very-high",
+      "effort": "medium-to-high",
+      "risk": "high-privacy",
+      "status": "RESEARCH_CONTRACT_ONLY__NO_PRODUCT_MIRROR",
+      "owner": "D HQ source/query/knowledge owner; B Host personal permissions; E TierFlow UI flip; F truth/retention",
+      "package": "hq/ read model + existing packages/tierflow/src/visual-runtime/knowledge/ client",
+      "gate": "After W3-G verified internal HQ+Host source reading; security G4 source/permission proof; full trial after W6 beta",
+      "improvement": "One source-identified screen flips into an ephemeral conceptual page linking current work, relevant decisions, recent verified source changes, and real unknowns, then returns with draft/caret/scroll intact.",
+      "implemented": "HQ dev wiki/index/search and TierFlow knowledge projection/client exist in isolated W1 lanes. HQ research contains PRD, contracts/fixtures; no screen flip implementation proven.",
+      "designOnly": "Typed ScreenContext source capture, trusted provider thread binding, cross-domain source ranking, reversible current-screen mirror and per-screen retention.",
+      "reuse": [
+        "HQ generated dev wiki, kb/search/context and source freshness",
+        "Host owner-authorized personal World reads and DCB refs",
+        "TierFlow existing knowledge client",
+        "source-vector revision semantics and existing Rust graph pure joins"
+      ],
+      "proof": "ONE native owned project-screen ScreenContext(sourceRef,revision,scope) → HQ actual authorized read → ephemeral AutoWikiPage with source links/coverage → flip back, verify exact UI state. Unbound ChatGPT thread must show PARTIAL/UNAVAILABLE; add second thread only after C binding accepted.",
+      "tests": [
+        "no private data via development HQ index",
+        "revoked/stale/unsupported source produces explicit PARTIAL/UNAVAILABLE",
+        "rapid screen switch cancels stale page",
+        "return restores unsent draft, caret, selection, scroll",
+        "generated page cache evicts within quota without losing canonical source"
+      ],
+      "risks": [
+        "private World data crossing HQ.dev boundary",
+        "misleading latest/canonical conflict",
+        "unbounded per-screen materialization",
+        "browser DOM incompleteness"
+      ],
+      "wontBuild": [
+        "permanent markdown page per screen",
+        "screen OCR/scraper",
+        "second wiki writer or personal history DB",
+        "unverified cross-provider memory"
+      ],
+      "sources": [
+        {
+          "pin": "LABS_UI",
+          "path": "nlp-command-ui-lab/docs/R008-AUTOWIKI-SCREEN-STATE-MIRROR-VISION.md",
+          "observed": "explicit vision not live; blob a819245e0c13b4cf7838129340ca5e04c34f5853"
+        },
+        {
+          "pin": "HQ_AUTOWIKI",
+          "path": "research/autowiki-screen-mirror/README.md",
+          "observed": "PRD/architecture/contracts research; blob 2f98824dd8aeaac3d6c546dbb71cbe1d2c2fcd95"
+        },
+        {
+          "pin": "ARBOR_D",
+          "path": "hq/lib/wiki.mjs",
+          "observed": "actual dev wiki implemented"
+        },
+        {
+          "pin": "ARBOR_E",
+          "path": "packages/tierflow/src/visual-runtime/knowledge/client.ts",
+          "observed": "existing typed knowledge read client; blob 9022f9f618eb555bb2367aba671e7fb702da6490"
+        }
+      ]
+    },
+    {
+      "id": "H1-04",
+      "rank": 4,
+      "title": "One multi-producer VIEW ALL trace (R007)",
+      "category": "POST-BETA",
+      "value": "very-high",
+      "effort": "high",
+      "risk": "high",
+      "status": "DESIGN_ONLY_WITH_SOURCE_CENSUS__NO_UNIVERSAL_TRACE",
+      "owner": "A pure Rust source/revision join; D HQ producers; B Host authorized memory/DCB views; E TierFlow view; F conformance",
+      "package": "existing native/hqkg/ pure computation; hq/ source manifest; packages/tierflow/ view",
+      "gate": "After W3-G source-grounding and G4 privacy+Node0 checks; expansion only post-W6",
+      "improvement": "Show all ACTUALLY emitted authorized interpretations of a sentence, overlapping spans and relation edges, with producer ran/skipped/denied status and no fabricated hidden data.",
+      "implemented": "R005 partial negation/chips; HQ R007 research audit enumerates 43 facets, 22 gaps and 31 source-observed producers. TierFlow typed IR exists. These counts are not live coverage.",
+      "designOnly": "Source-verified producer manifest, shared span/hyperedge trace across Rust/Host/HQ/DCB and multi-layer accessible UI.",
+      "reuse": [
+        "HQ static source census and semantic IDs",
+        "Node0 bounded native read-only event stream",
+        "Host grants/memory/DCB identity",
+        "TierFlow visual IR projection"
+      ],
+      "proof": "Synthetic one-utterance trace on registered source stubs: memory proposal + two flavor candidates + negated provider-send span; collect produced/not_run/skipped_privacy per producer; render Quiet and VIEW ALL from ONE immutable trace. No user memory committed.",
+      "tests": [
+        "Unicode/quoted spans, overlapping edges and precisely scoped negation",
+        "memory candidate ≠ persisted; flavor ≠ definition",
+        "suppressed private producers do not leak existence",
+        "zero executions, approvals, sends or graph writes",
+        "one trace preserved through UI density toggle"
+      ],
+      "risks": [
+        "cross-principal data inference",
+        "producer count mistaken for coverage",
+        "heavy trace causing IME lag"
+      ],
+      "wontBuild": [
+        "all 43 facets in initial release",
+        "new universal graph datastore",
+        "model mind reading",
+        "new UI publisher"
+      ],
+      "sources": [
+        {
+          "pin": "LABS_UI",
+          "path": "nlp-command-ui-lab/docs/R007-TOTAL-INTERPRETATION-VIEW-ALL-AND-HQ-HANDOFF.md",
+          "observed": "design-only; blob cba4d05b853ae4de0cc69a0caee6fb7692fe867e"
+        },
+        {
+          "pin": "HQ_XRAY",
+          "path": "research/semantic-interpretation-surface/HQ-SURFACE-AND-GAP-AUDIT.md",
+          "observed": "43 facets/22 gaps audit; blob 2ea6cc555a979b375d13b0c861dbdf641b49d195"
+        },
+        {
+          "pin": "HQ_XRAY",
+          "path": "research/semantic-interpretation-surface/source-census.v0.json",
+          "observed": "31 source-observed entries; blob 20d3deb3fcc78a225bb9c1d681c749ea2552314f"
+        },
+        {
+          "pin": "ARBOR_E",
+          "path": "packages/tierflow/src/visual-runtime/command/ir.ts",
+          "observed": "inert IR, not execution"
+        }
+      ]
+    },
+    {
+      "id": "H1-05",
+      "rank": 5,
+      "title": "Grounded two-Tab predictive command proof (R006)",
+      "category": "POST-BETA",
+      "value": "high",
+      "effort": "medium-to-high",
+      "risk": "high-source-staleness",
+      "status": "100_IDEAS_DESIGN_ONLY__R005_PREVIEW_PRECURSOR",
+      "owner": "A Node0 bounded pure candidate work; D HQ semantic/source resolution; B Host planner/admission; E composer; F benchmark",
+      "package": "native/ read-only hints + existing Host intent planner + TierFlow presentation",
+      "gate": "After W3-G Node0 and source IDs safe; require W4-G security/latency then post-W6 personalized features",
+      "improvement": "Typing `full` proposes a verified supported project/update frame; two Tabs choose grounded project and focus without implying an effect or pretending unsupported command is available.",
+      "implemented": "Labs R005 session menu and source-backed lexical preview prototype; Host planText exists, but source census says no canonical full-project-update action. R006 list of 100 is design.",
+      "designOnly": "Autonomous prediction, 2-Tab universal behavior, stable source-aware ranking and private personalization benchmark.",
+      "reuse": [
+        "Host existing command action catalog and pure planner",
+        "HQ v2 semantic annotations and compiler research IR",
+        "Node0 stale-revision/cancel rules",
+        "TierFlow input IR and keyboard presentation"
+      ],
+      "proof": "Synthetic fixture with one REAL supported read-only Host action (not invented project-update), typed slots, explicit revision and no effect. `full` example must return UNKNOWN/UNAVAILABLE if absent from verified catalog; add a new action only by later B approval.",
+      "tests": [
+        "two-Tab only if grounded unique choices; ambiguous requires choice",
+        "stale project/policy revision aborts suggestion",
+        "Tab cannot admit effect, update permission or create task",
+        "500-edit/paste/IME queue bound on Windows",
+        "abstention on unsupported utterances; held-out whole-frame accuracy"
+      ],
+      "risks": [
+        "false source grounding",
+        "implicit preference memory",
+        "latency/CPU while typing",
+        "invented capabilities"
+      ],
+      "wontBuild": [
+        "100 capability list as product",
+        "new planner",
+        "autocomplete-driven send",
+        "unbounded prewarm of personal corpus"
+      ],
+      "sources": [
+        {
+          "pin": "LABS_UI",
+          "path": "nlp-command-ui-lab/docs/R006-100-PREDICTIVE-REALTIME-COMPOSER-CAPABILITIES.md",
+          "observed": "100 designs not implemented; blob a8300777bc4676f83eef789fe07984e3302e49f6"
+        },
+        {
+          "pin": "LABS_UI",
+          "path": "nlp-command-ui-lab/docs/R005-PROGRESSIVE-SPRINT.md",
+          "observed": "prototype precursor"
+        },
+        {
+          "pin": "ARBOR_B",
+          "path": "apps/vivim-host/control/action-catalog.v1.json",
+          "observed": "actual catalog snapshot; blob c423d5933c28ca9f534028aeaffd7929f767c269"
+        },
+        {
+          "pin": "LABS_NODE0",
+          "path": "user-io-rust-core/node-0-prime/",
+          "observed": "native R001 design/draft only, not production accepted"
+        }
+      ]
+    },
+    {
+      "id": "H1-06",
+      "rank": null,
+      "title": "User-facing visual app builder",
+      "category": "POST-BETA",
+      "value": "high",
+      "effort": "high",
+      "risk": "critical-effect-authority",
+      "status": "ARCHITECTURE_AND_PORTS__NO_VERIFIED_PRODUCT_BUILDER",
+      "owner": "B Host typed capability admission and program acceptance; A Rust typed DAG; E TierFlow editor; F sandbox conformance",
+      "package": "existing core/programmability/, apps/vivim-host/control/command-program.mjs, packages/tierflow/",
+      "gate": "After W6 beta; depends on G3 canonical capability IDs/Host writer, G4 permission/security and accepted typed program ABI",
+      "improvement": "Build an inspectable source/versioned mini-app by wiring supported typed read/view ports; preview cannot bypass Host grants.",
+      "implemented": "Rust typed DAG and Host command-program source, TierFlow visual typed command IR; Labs UI-PROGRAMMABILITY is architectural reference. Real drag/drop app-builder program activation not verified.",
+      "designOnly": "End-user editor, program install lifecycle, sandbox for user plugins, typed port discovery with live acceptance.",
+      "reuse": [
+        "Rust existing typed DAG",
+        "Host action admission/receipts",
+        "TierFlow document/visual runtime",
+        "HQ source-linked port descriptions"
+      ],
+      "proof": "One disabled two-node read-only program (source.read → inert display) whose stable ports are validated against real catalog; compare text and visual IR; rejected unauthorized effect node.",
+      "tests": [
+        "type mismatch/cycle/resource quota rejection",
+        "untrusted code cannot access private data",
+        "UI config never grants effect",
+        "revoked source makes view stale"
+      ],
+      "risks": [
+        "arbitrary effect executor",
+        "untrusted extension sandbox absent",
+        "new duplicated action catalog"
+      ],
+      "wontBuild": [
+        "general plugin marketplace",
+        "arbitrary effect scripts",
+        "independent publisher",
+        "new graph engine"
+      ],
+      "sources": [
+        {
+          "pin": "LABS_MAIN",
+          "path": "KB-consolidation/docs/UI-PROGRAMMABILITY.md",
+          "observed": "design reference"
+        },
+        {
+          "pin": "ARBOR_A",
+          "path": "core/programmability/",
+          "observed": "imported typed program owner"
+        },
+        {
+          "pin": "ARBOR_B",
+          "path": "apps/vivim-host/control/command-program.mjs",
+          "observed": "Host command program source; blob 28a65908ea907b28593d8747b0bd6da06a9c7142"
+        },
+        {
+          "pin": "ARBOR_E",
+          "path": "packages/tierflow/src/visual-runtime/command/ir.ts",
+          "observed": "inert typed UI path"
+        }
+      ]
+    },
+    {
+      "id": "H1-07",
+      "rank": null,
+      "title": "Voice note to reviewed task draft",
+      "category": "POST-BETA",
+      "value": "very-high",
+      "effort": "medium-to-high",
+      "risk": "high-private-audio",
+      "status": "CAPTURE_AND_PURE_WORKBENCH_EXIST__END_TO_END_UNPROVEN",
+      "owner": "E phone recorder/UI; B Host consent/task receipt; C Studio supported import; A optional bounded ASR adapter; F hardware tests",
+      "package": "existing apps/mobile-relay/ or donor Android source; apps/vivim-host/ task admission",
+      "gate": "Conditional existing capability only if W3-G inventory proves donor operational path and G scopes it; otherwise post-W6 real device validation",
+      "improvement": "One spoken note becomes zero or more editable, source-anchored task drafts and only selected tasks commit once through Host, then sync to phone.",
+      "implemented": "Donor PocketRecorder Android source and Labs zero-dependency synthetic workbench; Labs reports 10/10 offline subtests. No ASR or actual task pipeline acceptance.",
+      "designOnly": "Host file ASR, original transcript chain, task commit/restart cross-device proof and model benchmarking.",
+      "reuse": [
+        "existing phone capture/file custody",
+        "single Host task/approval/receipt writer",
+        "current actor/pairing envelope",
+        "existing time/DST logic"
+      ],
+      "proof": "Synthetic recorded-note metadata→fixed transcript fixture→task drafts→review decision (no writes); later owner-authorized genuine audio ASR and Host task one-write receipt on phone/Windows.",
+      "tests": [
+        "no microphone without user initiation",
+        "denied transcription remains local",
+        "duplicate upload/retry not double task",
+        "es/ca dates ambiguity and DST refusal",
+        "restart/offline shows pending not completed"
+      ],
+      "risks": [
+        "audio disclosure",
+        "large ASR weights on low disk",
+        "duplicated task writer"
+      ],
+      "wontBuild": [
+        "new task DB",
+        "always-on microphone",
+        "cloud provider API by default",
+        "unbenchmarked LLM on phone"
+      ],
+      "sources": [
+        {
+          "pin": "LABS_MAIN",
+          "path": "vivim/voice-to-tasks/README.md",
+          "observed": "explicit research, pure workbench, 10/10 reported; blob 4cb2df93a369b3e45631d0c21934d34743422a08"
+        },
+        {
+          "pin": "HARNESS_MAIN",
+          "path": "studio/android/src/inc/vivim/app/PocketRecorder.java",
+          "observed": "source seam; no proven ASR"
+        },
+        {
+          "pin": "ARBOR_B",
+          "path": "apps/vivim-host/control/journal.mjs",
+          "observed": "single effect receipt owner; blob b9739a00c8345a0513dba32ddc0361e96bb9b16f"
+        }
+      ]
+    },
+    {
+      "id": "H1-08",
+      "rank": null,
+      "title": "Automation Queen and self-healing mission visibility",
+      "category": "POST-BETA",
+      "value": "medium-to-high",
+      "effort": "high",
+      "risk": "critical-duplicate-executor",
+      "status": "DISCOVERY_COPY_ONLY__NO_QUEEN_EXECUTOR",
+      "owner": "B Host mission/effect admission; D HQ developer observability; F verification; G dedup authority",
+      "package": "existing apps/vivim-host/ + hq/ observability only",
+      "gate": "After G4 trust/recovery and W6 beta; no Phase2 admission of new scheduler",
+      "improvement": "One mission view reports work, pending approvals, failures and retries from current owner receipts and can recommend repair without running unauthorized operations.",
+      "implemented": "Labs automation-queen taxonomy and local archaeology. HQ automation and mission files exist; current installed scheduler and end-to-end Host wiring not audited here.",
+      "designOnly": "Universal Queen, cross-run self-healing and root scheduler.",
+      "reuse": [
+        "Host journal/mission status",
+        "HQ mission-intelligence/automation source",
+        "existing native utility/Chronos read projection when accepted"
+      ],
+      "proof": "Read-only source-pinned mission/receipt projection of ONE existing Host workflow with unavailable states; observe crash/retry without double effect.",
+      "tests": [
+        "no new executor/process/scheduler",
+        "uncertain send never resent",
+        "approval gate cannot be skipped",
+        "misleading source inventory labelled unknown"
+      ],
+      "risks": [
+        "competing scheduling",
+        "retry double-effects",
+        "privilege amplification"
+      ],
+      "wontBuild": [
+        "new automation runtime",
+        "new scheduler",
+        "ownerless self-healing effects",
+        "claim 153 extension surfaces live"
+      ],
+      "sources": [
+        {
+          "pin": "LABS_MAIN",
+          "path": "automation-queen/README.md",
+          "observed": "discovery/copy-only, blob 073c68a788db436c5a6341306911f7f663a5eada"
+        },
+        {
+          "pin": "HQ_MAIN",
+          "path": "hq/lib/automation.mjs",
+          "observed": "HQ automation source present; operational activation unverified"
+        },
+        {
+          "pin": "ARBOR_B",
+          "path": "apps/vivim-host/control/journal.mjs",
+          "observed": "single Host writer"
+        }
+      ]
+    },
+    {
+      "id": "H1-09",
+      "rank": null,
+      "title": "Personal DCB/Oracle read intelligence",
+      "category": "POST-BETA",
+      "value": "high",
+      "effort": "high",
+      "risk": "critical-consent",
+      "status": "MIXED_RESEARCH_AND_CURRENT_HOST_CONTRACTS__PERSONAL_LIFECYCLE_UNPROVEN",
+      "owner": "B Host World/consent/DCB definition owner; D HQ dev context (not personal store); A scoped graph pure reads; F privacy",
+      "package": "apps/vivim-host/ personal read port, native/hqkg/ source-scoped derive, TierFlow projection",
+      "gate": "After W3-G B08 authorized source proof and G4 privacy/erasure; advanced learning post-W6",
+      "improvement": "Owner-approved dynamic context bundle gives contextual source-rev'd read preview and hides revoked/expired/private evidence, not silent permanent memory.",
+      "implemented": "Host corpus/semantic observer and HQ personal corpus contracts are source present; personal ZIP import in Labs runtime remains uncutover; R007 DCB references are semantic candidates only.",
+      "designOnly": "Oracle self-directed memory writing, advanced Zero Intent Graph, universal DCB live lifecycle and learning algorithms.",
+      "reuse": [
+        "Host DCB flavor/definitions if actually source verified",
+        "Host permission+receipt and personal source revisions",
+        "native scoped graph join without new DB",
+        "TierFlow inert knowledge projection"
+      ],
+      "proof": "One synthetic authorized DCB definition with actual scoped owner/ref → preview and revoke/expire → no longer readable; an inferred flavor cannot masquerade as a stored definition.",
+      "tests": [
+        "no personal data into HQ dev index",
+        "revocation/erasure invalidates all derived caches",
+        "scope crossing aborts without leaking hidden IDs",
+        "candidate memory never persists without Host commit"
+      ],
+      "risks": [
+        "quiet retention of private data",
+        "cross-owner graph contamination",
+        "unsupported corpus completeness"
+      ],
+      "wontBuild": [
+        "second memory store",
+        "autonomous private ingestion",
+        "unverified personal archive mirror",
+        "automatic preference authority"
+      ],
+      "sources": [
+        {
+          "pin": "LABS_MAIN",
+          "path": "personal-knowledge-lifecycle/runtime/",
+          "observed": "ZIP streaming and normalization partial source; no Host cutover"
+        },
+        {
+          "pin": "HQ_MAIN",
+          "path": "hq/lib/personal-corpus-contract.mjs",
+          "observed": "source contract present; blob c842fe5848d47179dc3852335747e1227e344d1"
+        },
+        {
+          "pin": "ARBOR_B",
+          "path": "apps/vivim-host/control/personal-semantic-observer.mjs",
+          "observed": "Host semantic source; blob 2d5da36ace8ebc83a845c1bbba887088e6a9c577"
+        },
+        {
+          "pin": "LABS_UI",
+          "path": "nlp-command-ui-lab/docs/R007-TOTAL-INTERPRETATION-VIEW-ALL-AND-HQ-HANDOFF.md",
+          "observed": "memory/DCB producer distinctions"
+        }
+      ]
+    },
+    {
+      "id": "H1-10",
+      "rank": null,
+      "title": "Semantic Wiki Compiler R010 evidence bridge",
+      "category": "POST-BETA",
+      "value": "very-high-enabler",
+      "effort": "medium",
+      "risk": "medium-to-high-truth",
+      "status": "HQ_PURE_RESEARCH_COMPILER_PRESENT__NO_RUNTIME",
+      "owner": "D HQ comment/semantic registry compiler; B Host catalog crosswalk; A Rust pure interpreter; E visual trace; F comparison",
+      "package": "hq/ annotation-v2 and semantic-registry; no runtime action parser replacement",
+      "gate": "After W3-G verified internal HQ and Host versioned catalogs; post-W6 compiled semantic grammar trial",
+      "improvement": "Same source-linked semantic ID explains commands in wiki and composer, while Host independently checks actual availability/authorization.",
+      "implemented": "HQ annotation-v2 parser and deterministic wiki are implemented; separate research semantic-wiki-compiler.mjs builds inert IR. Research author reports 22 V8 tests; Node/Bun/Windows/ARBOR unrun.",
+      "designOnly": "v3 comment tags, signed/digested runtime semantic packs, Rust matching latency/coverage and the 90% eligible request hypothesis.",
+      "reuse": [
+        "HQ actual comment scanner/source indices",
+        "Host actual action catalog and planner",
+        "native graph pure transforms",
+        "TierFlow existing UI command IR"
+      ],
+      "proof": "Using a pinned synthetic @hq:action and injected current catalog projection, compile semantic wiki IR with executable:false, then compare against Host action ID; reject unknown/mismatched/unverified mappings.",
+      "tests": [
+        "unknown semantic action ID remains unbound",
+        "caller-supplied source hash ≠ verified digest",
+        "no source comments grant effects",
+        "90% claim requires held-out whole-frame evaluation"
+      ],
+      "risks": [
+        "comment-based permission confusion",
+        "untrusted source digest",
+        "source semantic drift"
+      ],
+      "wontBuild": [
+        "parallel command authority",
+        "new graph/publisher",
+        "assume v3 parser exists",
+        "claim 90% accuracy"
+      ],
+      "sources": [
+        {
+          "pin": "HQ_SWC",
+          "path": "research/semantic-wiki-compiler/semantic-wiki-compiler.mjs",
+          "observed": "pure compiler; blob 83c2eab7921c84dd55f0503518e7fc7e4a466657"
+        },
+        {
+          "pin": "HQ_SWC",
+          "path": "research/semantic-wiki-compiler/README.md",
+          "observed": "22 V8-reported, native unrun; blob d0e819fbe86e95d15f65fe109cec05f9ef4b3c68"
+        },
+        {
+          "pin": "ARBOR_D",
+          "path": "hq/lib/annotation-v2.mjs",
+          "observed": "actual v2 parser; blob 7e94dfbd4fbca8ef0fdb9e0610053364ce2c38c8"
+        },
+        {
+          "pin": "ARBOR_D",
+          "path": "hq/lib/wiki.mjs",
+          "observed": "dev wiki source"
+        }
+      ]
+    },
+    {
+      "id": "H1-11",
+      "rank": null,
+      "title": "Verified extension hook atlas, not marketplace",
+      "category": "OPTIONAL-LOW-COST-DURING-BETA",
+      "value": "medium",
+      "effort": "low",
+      "risk": "low-if-readonly",
+      "status": "RESEARCH_HOOK_MAP__NO_PLUGIN_RUNTIME",
+      "owner": "F source-truth audit; A/B/D/E each verify owned hook",
+      "package": "existing contract/capability inventory (G owns integration); evidence only",
+      "gate": "After G2 source import and G10 capability audit; no executor promotion",
+      "improvement": "Developer can see which first-party typed ports have actual source and which proposed 153 surfaces are uninstalled or unverified.",
+      "implemented": "Labs verified-hook investigation; HQKG EngineRegistry, Host action catalog, TierFlow typed IR and HQ wiki modules source-present.",
+      "designOnly": "Unified plugin contribution manifest, third-party sandbox and marketplace.",
+      "reuse": [
+        "existing source catalogs and in-repo code search",
+        "F observatory status vocabulary"
+      ],
+      "proof": "Produce one static id→owner→path→observed status crosswalk for known hooks and assert no proposed hook promoted to installed.",
+      "tests": [
+        "unknown hook remains UNKNOWN",
+        "unregistered driver never executable",
+        "third-party module cannot claim Host effect"
+      ],
+      "risks": [
+        "installed false-positive",
+        "untrusted plugin privilege"
+      ],
+      "wontBuild": [
+        "marketplace",
+        "dynamic plugin loader",
+        "153 working extensions"
+      ],
+      "sources": [
+        {
+          "pin": "LABS_MAIN",
+          "path": "vivim/extension-points/VERIFIED-HOOKS.md",
+          "observed": "research hook map"
+        },
+        {
+          "pin": "ARBOR_A",
+          "path": "native/hqkg/src/engine.rs",
+          "observed": "real EngineRegistry owner; blob fbb1100999fd229fb5a4352a78bbb0d77b643988"
+        },
+        {
+          "pin": "ARBOR_E",
+          "path": "packages/tierflow/src/visual-runtime/command/ir.ts",
+          "observed": "inert command IR"
+        }
+      ]
+    }
+  ]
+}
