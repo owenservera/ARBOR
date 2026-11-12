@@ -1,0 +1,57 @@
+{
+  "schema": "arbor.w01f.evidence/1",
+  "date": "2026-11-12",
+  "branch": "work/p5-w01-f-verify",
+  "sourceCommitTested": "43cf1edaf87d7b6d52c1e64ccdee597656700beb",
+  "scope": "pure authored contract assertions and donor file equality; no real product/device tests",
+  "checks": {
+    "pureV8ContractSmoke": {
+      "status": "PASS",
+      "passed": 25,
+      "total": 25,
+      "environment": "isolated connector V8; no Node modules"
+    },
+    "donorByteParity": {
+      "status": "PASS",
+      "identical": 7,
+      "total": 7,
+      "donorRepo": "owenservera/vivim-labs",
+      "donorRef": "main"
+    },
+    "jsonParseAndGeneratorChecks": {
+      "status": "PASS",
+      "notes": "precommit JSON.parse + test-only Host catalog baseline count"
+    },
+    "nodeTest": {
+      "status": "NOT_RUN"
+    },
+    "cargoAndRustc": {
+      "status": "NOT_RUN"
+    },
+    "windowsInstall": {
+      "status": "NOT_RUN"
+    },
+    "physicalPwa": {
+      "status": "NOT_RUN"
+    },
+    "providerE2e": {
+      "status": "NOT_RUN"
+    },
+    "donorRemoval": {
+      "status": "NOT_RUN"
+    },
+    "fullPrivacyAudit": {
+      "status": "NOT_RUN"
+    }
+  },
+  "defectFixed": {
+    "description": "overescaped control-character regex",
+    "fixCommit": "43cf1edaf87d7b6d52c1e64ccdee597656700beb"
+  },
+  "acceptance": "NOT_GO",
+  "reasons": [
+    "shared W0-G integration baseline missing",
+    "Node/Cargo/Windows/PWA/signed-in E2E unrun",
+    "Host and TierFlow donor imports still in disjoint worker branches"
+  ]
+}
