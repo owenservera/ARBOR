@@ -1,0 +1,97 @@
+{
+  "schema": "arbor.proposal5.hvi.g1.serial-merge-ledger/1",
+  "date": "2026-11-12",
+  "repo": "owenservera/ARBOR",
+  "branch": "integrate/p5-hq-version-intelligence-r001",
+  "workerBaseSha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+  "startingMainSha": "aece3618395f215d825bf4eb41dcc07d6d656ab7",
+  "startingMainReconcilation": "post-S0 newer main had 9 planning/research commits, no A-F owner path collision",
+  "requiredOrder": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E",
+    "F"
+  ],
+  "workers": [
+    {
+      "lane": "A",
+      "sourceSha": "53d4bddf4c2a8fd22f12c8d7f3949aac5fd2fe38",
+      "mergeSha": "bf84c96135d99b4f9211861eea6b672320f7976a",
+      "files": 12,
+      "conflicts": [],
+      "mode": "exact-source-blob-tree-import-with-worker-merge-parent",
+      "sourceHistoryPreserved": true
+    },
+    {
+      "lane": "B",
+      "sourceSha": "1206a343ab98a6e7abe0c19a9549c6b8c32ea9e0",
+      "mergeSha": "35020c78c075f193495578ed8a1788a0a6685476",
+      "files": 17,
+      "conflicts": [],
+      "mode": "exact-source-blob-tree-import-with-worker-merge-parent",
+      "sourceHistoryPreserved": true
+    },
+    {
+      "lane": "C",
+      "sourceSha": "7f72c1415d75a7904eb5c267c2a55a9172d33cd8",
+      "mergeSha": "8e3dcfa3d123c92de1eb35d20516ac0bbb32c066",
+      "files": 4,
+      "conflicts": [],
+      "mode": "exact-source-blob-tree-import-with-worker-merge-parent",
+      "sourceHistoryPreserved": true
+    },
+    {
+      "lane": "D",
+      "sourceSha": "622569e9b20f1d6dfae474594eecf544d4fe3d9d",
+      "mergeSha": "7f98ff21fb55e75eb5a2732107225f9216d4ace6",
+      "files": 9,
+      "conflicts": [],
+      "mode": "exact-source-blob-tree-import-with-worker-merge-parent",
+      "sourceHistoryPreserved": true
+    },
+    {
+      "lane": "E",
+      "sourceSha": "d8080a4056361266702f38cf47f2a0885fe892eb",
+      "mergeSha": "f6bbbb930967952b3252bda647788e7294f5624f",
+      "files": 21,
+      "conflicts": [],
+      "mode": "exact-source-blob-tree-import-with-worker-merge-parent",
+      "sourceHistoryPreserved": true
+    },
+    {
+      "lane": "F",
+      "sourceSha": "34f5c1568007977e0e3bf0286d4c1ec730d6af26",
+      "mergeSha": "bcc3e590cb7b12bea0424f5218c52432a9345ae9",
+      "files": 32,
+      "conflicts": [],
+      "mode": "exact-source-blob-tree-import-with-worker-merge-parent",
+      "sourceHistoryPreserved": true
+    }
+  ],
+  "evidenceBranches": [
+    {
+      "lane": "S0",
+      "sourceSha": "2ef7a9f66419d681e040b459ba4762a63aa9564f",
+      "mergeSha": "02835ca44920d3303c7782c32b39c3e31a01a402",
+      "files": 6
+    },
+    {
+      "lane": "Z1X",
+      "sourceSha": "c789227038b28483c3bbd6703f539d7c13331ce6",
+      "mergeSha": "28f551559ea0ad1389071942b7cc25f4bf125cac",
+      "files": 14
+    }
+  ],
+  "repairCodeHead": "0dfb08406c50df2e385c0ff924694e0aeaa33565",
+  "candidateTreeSha": "6a78da85d5a661e090c77ce20d8cedf3e2d544eb",
+  "node24IntegratedTests": "UNRUN",
+  "node24TestExitCode": null,
+  "sourceClosure": "STATIC_IMPORTS_CHECKED_NON_EXECUTABLE",
+  "reviewedPr": null,
+  "mergedMainSha": null,
+  "toolingGate": "G1_SOURCE_STAGED_TESTS_UNRUN",
+  "releaseGate": "BLOCKED_NOT_BETA",
+  "comparisonsOnActualDonorRepos": 0
+}
