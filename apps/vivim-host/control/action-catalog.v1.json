@@ -1,0 +1,892 @@
+{
+  "schema": "vivim.control-action-catalog/1",
+  "version": 6,
+  "asOf": "2026-11-01",
+  "policy": {
+    "allUserFacingActionsRequireTextPath": true,
+    "uiSharesTypedExecutor": true,
+    "unverifiedActionsAreNotAvailable": true,
+    "missingAdapter": "unavailable",
+    "unknownLanguage": "interpretation_required",
+    "modelRole": "candidate_only",
+    "sourceWiredIsNotLiveAcceptance": true,
+    "forceModifierGrantsNothing": true,
+    "aiMayNotTeachLanguage": true
+  },
+  "actions": [
+    {
+      "id": "control.catalog.list",
+      "title": "What can I say?",
+      "category": "control",
+      "owner": "host-control",
+      "executor": "apps/vivim-host/control/dispatcher.mjs:describe",
+      "readiness": "source_wired",
+      "risk": "R0",
+      "target": "local-host",
+      "args": {},
+      "examples": [
+        "help",
+        "what can I say?"
+      ],
+      "surfaces": [
+        "text",
+        "desktop",
+        "mobile",
+        "visual"
+      ],
+      "reversible": true,
+      "privacy": "pc-only",
+      "subject": "help",
+      "priority": "P1"
+    },
+    {
+      "id": "vivim.status.show",
+      "title": "Show VIVIM status",
+      "category": "system",
+      "owner": "host",
+      "executor": "apps/vivim-host/bootstrap/runtime.mjs:status",
+      "readiness": "source_wired",
+      "risk": "R0",
+      "target": "local-host",
+      "args": {},
+      "examples": [
+        "status",
+        "show status",
+        "how is vivim doing"
+      ],
+      "surfaces": [
+        "text",
+        "desktop",
+        "mobile",
+        "visual"
+      ],
+      "reversible": true,
+      "privacy": "pc-only",
+      "language": {
+        "verbs": [
+          "status",
+          "health",
+          "show",
+          "doing"
+        ],
+        "family": "?",
+        "reading": "Show VIVIM status",
+        "scope": [
+          "status",
+          "health",
+          "vivim",
+          "doing"
+        ],
+        "scopeQuestion": "Show what? Try: show my theme, show my exclusions, or show status."
+      },
+      "subject": "status",
+      "priority": "P1"
+    },
+    {
+      "category": "devices",
+      "owner": "host-device-authority",
+      "target": "local-host",
+      "surfaces": [
+        "text",
+        "desktop",
+        "mobile",
+        "visual"
+      ],
+      "priority": "P1",
+      "privacy": "authenticated-owner",
+      "id": "devices.summary",
+      "title": "Summarize paired phones",
+      "executor": "apps/vivim-host/control/dispatcher.mjs:createExecutors",
+      "readiness": "source_wired",
+      "risk": "R0",
+      "args": {},
+      "examples": [
+        "show paired phones",
+        "device status"
+      ],
+      "reversible": true,
+      "subject": "devices",
+      "language": {
+        "verbs": [
+          "show",
+          "list",
+          "inspect"
+        ],
+        "family": "?",
+        "reading": "Summarize paired phone grants",
+        "scope": [
+          "devices",
+          "phones",
+          "paired"
+        ],
+        "objects": [
+          "devices",
+          "phones"
+        ]
+      }
+    },
+    {
+      "id": "devices.approve",
+      "title": "Approve a phone's requested permissions",
+      "category": "devices",
+      "owner": "host-device-authority",
+      "executor": "apps/vivim-host/apk/enrollment.mjs:approveGrant",
+      "readiness": "source_wired",
+      "risk": "R2",
+      "target": "local-host",
+      "args": {
+        "grant_id": {
+          "type": "string",
+          "min": 32,
+          "max": 32
+        },
+        "scopes": {
+          "type": "string",
+          "min": 1,
+          "max": 180
+        }
+      },
+      "examples": [
+        "approve phone grant 0123456789abcdef0123456789abcdef scopes relay:read,relay:write"
+      ],
+      "surfaces": [
+        "text",
+        "desktop",
+        "mobile",
+        "visual"
+      ],
+      "reversible": true,
+      "privacy": "authenticated-pc-owner-only",
+      "undo": {
+        "actionId": "devices.revoke",
+        "argFromResult": {
+          "grant_id": "grantId"
+        }
+      },
+      "subject": "devices",
+      "priority": "P1"
+    },
+    {
+      "category": "devices",
+      "owner": "host-device-authority",
+      "target": "local-host",
+      "surfaces": [
+        "text",
+        "desktop",
+        "mobile",
+        "visual"
+      ],
+      "priority": "P1",
+      "privacy": "authenticated-owner",
+      "id": "devices.revoke",
+      "title": "Revoke paired phone access",
+      "executor": "apps/vivim-host/apk/enrollment.mjs:revokeGrant",
+      "readiness": "source_wired",
+      "risk": "R2",
+      "args": {
+        "grant_id": {
+          "type": "string",
+          "min": 32,
+          "max": 32
+        }
+      },
+      "examples": [
+        "revoke phone grant 0123456789abcdef0123456789abcdef"
+      ],
+      "reversible": false,
+      "subject": "devices",
+      "language": {
+        "verbs": [
+          "revoke",
+          "disconnect"
+        ],
+        "family": "-",
+        "reading": "Revoke paired phone grant: {grant_id}",
+        "slots": {
+          "grant_id": {
+            "kind": "rest",
+            "match": "[a-f0-9]{32}"
+          }
+        }
+      }
+    },
+    {
+      "id": "personalization.context.summary",
+      "title": "Summarize my personal context",
+      "category": "personalization",
+      "owner": "host-bootstrap",
+      "executor": "apps/vivim-host/control/dispatcher.mjs:createExecutors",
+      "readiness": "source_wired",
+      "risk": "R0",
+      "target": "local-host",
+      "args": {},
+      "examples": [
+        "summarize my personal context",
+        "show my personalization status"
+      ],
+      "surfaces": [
+        "text",
+        "desktop",
+        "mobile",
+        "visual"
+      ],
+      "reversible": true,
+      "privacy": "pc-only",
+      "language": {
+        "verbs": [
+          "summarize",
+          "show",
+          "view"
+        ],
+        "family": "?",
+        "reading": "Show personal context summary",
+        "objects": [
+          "personalization",
+          "context"
+        ],
+        "scope": [
+          "personalization",
+          "context",
+          "preferences"
+        ],
+        "scopeQuestion": "Which context? Try: summarize my personal context."
+      },
+      "subject": "personalization",
+      "priority": "P1"
+    },
+    {
+      "id": "personalization.preference.list",
+      "title": "List my saved preferences",
+      "category": "personalization",
+      "owner": "host-bootstrap",
+      "executor": "apps/vivim-host/control/dispatcher.mjs:createExecutors",
+      "readiness": "source_wired",
+      "risk": "R0",
+      "target": "local-host",
+      "args": {},
+      "examples": [
+        "list my saved preferences",
+        "show what I asked VIVIM to remember"
+      ],
+      "surfaces": [
+        "text",
+        "desktop",
+        "mobile",
+        "visual"
+      ],
+      "reversible": true,
+      "privacy": "authenticated-owner",
+      "language": {
+        "verbs": [
+          "list",
+          "show",
+          "review"
+        ],
+        "family": "?",
+        "reading": "List explicitly saved owner preferences",
+        "objects": [
+          "preferences"
+        ],
+        "scope": [
+          "preferences",
+          "saved"
+        ]
+      },
+      "subject": "preferences",
+      "priority": "P1"
+    },
+    {
+      "id": "personalization.preference.add",
+      "title": "Remember my preference",
+      "category": "personalization",
+      "owner": "host-bootstrap",
+      "executor": "apps/vivim-host/bootstrap/runtime.mjs:setOwnerPreference",
+      "readiness": "source_wired",
+      "risk": "R1",
+      "target": "local-host",
+      "args": {
+        "value": {
+          "type": "string",
+          "min": 1,
+          "max": 200
+        }
+      },
+      "examples": [
+        "remember that I prefer compact layouts",
+        "prefer quiet notifications"
+      ],
+      "surfaces": [
+        "text",
+        "desktop",
+        "mobile",
+        "visual"
+      ],
+      "reversible": true,
+      "privacy": "owner-approved",
+      "language": {
+        "verbs": [
+          "remember",
+          "prefer"
+        ],
+        "family": "+",
+        "reading": "Remember owner preference: {value}",
+        "slots": {
+          "value": {
+            "kind": "rest"
+          }
+        }
+      },
+      "undo": {
+        "actionId": "personalization.preference.remove",
+        "argFromResult": {
+          "id": "id"
+        }
+      },
+      "subject": "preferences",
+      "priority": "P1"
+    },
+    {
+      "id": "personalization.preference.remove",
+      "title": "Forget saved owner preference",
+      "category": "personalization",
+      "owner": "host-bootstrap",
+      "executor": "apps/vivim-host/bootstrap/runtime.mjs:clearOwnerPreference",
+      "readiness": "source_wired",
+      "risk": "R1",
+      "target": "local-host",
+      "args": {
+        "id": {
+          "type": "string",
+          "min": 16,
+          "max": 80
+        }
+      },
+      "examples": [
+        "forget preference prf-owner-pref-000000000000000000000000"
+      ],
+      "surfaces": [
+        "text",
+        "desktop",
+        "mobile",
+        "visual"
+      ],
+      "reversible": false,
+      "privacy": "owner-approved",
+      "language": {
+        "verbs": [
+          "forget",
+          "remove"
+        ],
+        "family": "-",
+        "reading": "Remove saved owner preference: {id}",
+        "slots": {
+          "id": {
+            "kind": "rest",
+            "match": "prf-owner-pref-[a-f0-9]{24}"
+          }
+        }
+      },
+      "subject": "preferences",
+      "priority": "P1"
+    },
+    {
+      "id": "ui.theme.show",
+      "title": "Show current theme",
+      "category": "appearance",
+      "owner": "host-bootstrap",
+      "executor": "apps/vivim-host/bootstrap/runtime.mjs:projection",
+      "readiness": "source_wired",
+      "risk": "R0",
+      "target": "local-host",
+      "args": {},
+      "examples": [
+        "show my theme",
+        "current theme"
+      ],
+      "surfaces": [
+        "text",
+        "desktop",
+        "mobile",
+        "visual"
+      ],
+      "reversible": true,
+      "privacy": "pc-only",
+      "language": {
+        "verbs": [
+          "show",
+          "current",
+          "which"
+        ],
+        "family": "?",
+        "reading": "Show the current theme",
+        "scope": [
+          "theme",
+          "look",
+          "colors",
+          "colours",
+          "appearance",
+          "palette"
+        ],
+        "scopeQuestion": "Show what? Try: show my theme, show my exclusions, or show status."
+      },
+      "subject": "theme",
+      "priority": "P1"
+    },
+    {
+      "id": "ui.theme.set_preset",
+      "title": "Choose visual theme",
+      "category": "appearance",
+      "owner": "host-bootstrap",
+      "executor": "apps/vivim-host/bootstrap/runtime.mjs:choosePreset",
+      "readiness": "source_wired",
+      "risk": "R1",
+      "target": "local-host",
+      "args": {
+        "preset": {
+          "type": "enum",
+          "values": [
+            "lab",
+            "tide",
+            "dusk",
+            "ember",
+            "grove",
+            "ink",
+            "dawn"
+          ]
+        }
+      },
+      "examples": [
+        "Set my theme to dusk",
+        "Use ink theme",
+        "theme ember"
+      ],
+      "surfaces": [
+        "text",
+        "desktop",
+        "mobile",
+        "visual"
+      ],
+      "reversible": true,
+      "privacy": "pc-only",
+      "language": {
+        "verbs": [
+          "theme",
+          "set",
+          "change",
+          "switch",
+          "use",
+          "apply",
+          "make"
+        ],
+        "family": "%",
+        "reading": "Set the theme to {preset}",
+        "slots": {
+          "preset": {
+            "preps": [
+              "to",
+              "as"
+            ]
+          }
+        },
+        "objects": [
+          "theme",
+          "look",
+          "colors",
+          "colours",
+          "appearance",
+          "palette"
+        ]
+      },
+      "undo": {
+        "actionId": "ui.theme.undo"
+      },
+      "subject": "theme",
+      "priority": "P0"
+    },
+    {
+      "id": "ui.theme.undo",
+      "title": "Undo theme",
+      "category": "appearance",
+      "owner": "host-bootstrap",
+      "executor": "apps/vivim-host/bootstrap/runtime.mjs:undoTheme",
+      "readiness": "source_wired",
+      "risk": "R1",
+      "target": "local-host",
+      "args": {},
+      "examples": [
+        "Undo my theme",
+        "revert the theme"
+      ],
+      "surfaces": [
+        "text",
+        "desktop",
+        "mobile",
+        "visual"
+      ],
+      "reversible": true,
+      "privacy": "pc-only",
+      "language": {
+        "verbs": [
+          "undo",
+          "revert",
+          "restore"
+        ],
+        "family": "-",
+        "reading": "Undo the last theme change",
+        "scope": [
+          "theme",
+          "look",
+          "colors",
+          "colours",
+          "appearance",
+          "palette"
+        ],
+        "scopeQuestion": "Undo what? Only the last theme change can be undone by text today."
+      },
+      "subject": "theme",
+      "priority": "P0"
+    },
+    {
+      "id": "privacy.hard_no.list",
+      "title": "List personal AI exclusions",
+      "category": "privacy",
+      "owner": "host-bootstrap",
+      "executor": "apps/vivim-host/bootstrap/runtime.mjs:projection",
+      "readiness": "source_wired",
+      "risk": "R0",
+      "target": "local-host",
+      "args": {},
+      "examples": [
+        "show my exclusions",
+        "list privacy exclusions"
+      ],
+      "surfaces": [
+        "text",
+        "desktop",
+        "mobile",
+        "visual"
+      ],
+      "reversible": true,
+      "privacy": "pc-only",
+      "language": {
+        "verbs": [
+          "show",
+          "list",
+          "exclusions",
+          "boundaries"
+        ],
+        "family": "?",
+        "reading": "List your exclusions",
+        "scope": [
+          "exclusion",
+          "exclusions",
+          "boundary",
+          "boundaries",
+          "privacy",
+          "hard"
+        ],
+        "scopeQuestion": "Show what? Try: show my theme, show my exclusions, or show status."
+      },
+      "subject": "exclusions",
+      "priority": "P1"
+    },
+    {
+      "id": "privacy.hard_no.add",
+      "title": "Add personal AI exclusion",
+      "category": "privacy",
+      "owner": "host-bootstrap",
+      "executor": "apps/vivim-host/bootstrap/runtime.mjs:setHardNo",
+      "readiness": "source_wired",
+      "risk": "R2",
+      "target": "local-host",
+      "args": {
+        "trait": {
+          "type": "string",
+          "min": 1,
+          "max": 200
+        }
+      },
+      "examples": [
+        "Never mention my former employer",
+        "exclude my medical history"
+      ],
+      "surfaces": [
+        "text",
+        "desktop",
+        "mobile",
+        "visual"
+      ],
+      "reversible": true,
+      "privacy": "pc-only",
+      "language": {
+        "verbs": [
+          "never",
+          "exclude",
+          "forbid"
+        ],
+        "family": "-",
+        "reading": "Never use: {trait}",
+        "slots": {
+          "trait": {
+            "kind": "rest"
+          }
+        }
+      },
+      "undo": {
+        "actionId": "privacy.hard_no.clear",
+        "argFromResult": {
+          "id": "id"
+        }
+      },
+      "subject": "exclusions",
+      "priority": "P0"
+    },
+    {
+      "id": "privacy.hard_no.clear",
+      "title": "Remove personal AI exclusion",
+      "category": "privacy",
+      "owner": "host-bootstrap",
+      "executor": "apps/vivim-host/bootstrap/runtime.mjs:clearHardNo",
+      "readiness": "source_wired",
+      "risk": "R2",
+      "target": "local-host",
+      "args": {
+        "id": {
+          "type": "string",
+          "min": 1,
+          "max": 80
+        }
+      },
+      "examples": [
+        "withdraw exclusion prf-owner-0123abcd"
+      ],
+      "surfaces": [
+        "text",
+        "desktop",
+        "mobile",
+        "visual"
+      ],
+      "reversible": true,
+      "privacy": "pc-only",
+      "language": {
+        "verbs": [
+          "withdraw",
+          "unexclude"
+        ],
+        "family": "-",
+        "reading": "Remove exclusion {id}",
+        "slots": {
+          "id": {
+            "kind": "rest",
+            "match": "prf-[a-z0-9-]{1,90}"
+          }
+        }
+      },
+      "subject": "exclusions",
+      "priority": "P0"
+    },
+    {
+      "id": "control.lexicon.teach",
+      "title": "Teach a word",
+      "category": "control",
+      "owner": "host-control",
+      "executor": "apps/vivim-host/control/lexicon.mjs:teach",
+      "readiness": "source_wired",
+      "risk": "R1",
+      "target": "local-host",
+      "args": {
+        "word": {
+          "type": "string",
+          "min": 2,
+          "max": 40
+        },
+        "action": {
+          "type": "string",
+          "min": 3,
+          "max": 96
+        }
+      },
+      "examples": [
+        "teach blitz means undo",
+        "glow = theme"
+      ],
+      "surfaces": [
+        "text",
+        "desktop",
+        "mobile",
+        "visual"
+      ],
+      "reversible": true,
+      "privacy": "pc-only",
+      "aiCandidate": false,
+      "undo": {
+        "actionId": "control.lexicon.forget",
+        "argFromArgs": {
+          "word": "word"
+        }
+      },
+      "subject": "lexicon",
+      "priority": "P2"
+    },
+    {
+      "id": "control.lexicon.forget",
+      "title": "Forget a taught word",
+      "category": "control",
+      "owner": "host-control",
+      "executor": "apps/vivim-host/control/lexicon.mjs:forget",
+      "readiness": "source_wired",
+      "risk": "R1",
+      "target": "local-host",
+      "args": {
+        "word": {
+          "type": "string",
+          "min": 2,
+          "max": 40
+        }
+      },
+      "examples": [
+        "forget blitz"
+      ],
+      "surfaces": [
+        "text",
+        "desktop",
+        "mobile",
+        "visual"
+      ],
+      "reversible": true,
+      "privacy": "pc-only",
+      "aiCandidate": false,
+      "subject": "lexicon",
+      "priority": "P2"
+    },
+    {
+      "id": "vivim.network.pause_egress",
+      "title": "Pause VIVIM outbound traffic",
+      "category": "network",
+      "owner": "harness-host-relay",
+      "executor": null,
+      "readiness": "enforcement_missing",
+      "risk": "R2",
+      "target": "multi-component-local",
+      "args": {},
+      "examples": [
+        "Pause all VIVIM traffic"
+      ],
+      "surfaces": [
+        "text",
+        "desktop",
+        "mobile",
+        "visual"
+      ],
+      "reversible": true,
+      "privacy": "pc-only",
+      "precondition": "host-enforced outbound gate across send, capture, relay and jobs",
+      "language": {
+        "verbs": [
+          "pause",
+          "stop",
+          "block",
+          "halt",
+          "disable",
+          "freeze"
+        ],
+        "family": "-",
+        "reading": "Pause VIVIM outbound activity",
+        "objects": [
+          "traffic",
+          "network",
+          "networking",
+          "internet",
+          "egress",
+          "outbound",
+          "connection",
+          "connections",
+          "online",
+          "sync",
+          "sending",
+          "wifi"
+        ],
+        "scope": [
+          "vivim"
+        ],
+        "group": "network.stop"
+      },
+      "subject": "egress",
+      "priority": "P0"
+    },
+    {
+      "id": "machine.network.disable_all",
+      "title": "Disconnect machine networking",
+      "category": "machine",
+      "owner": "os-privileged-adapter",
+      "executor": null,
+      "readiness": "unsupported",
+      "risk": "R3",
+      "target": "operating-system",
+      "args": {},
+      "examples": [
+        "Disconnect my PC from the network"
+      ],
+      "surfaces": [
+        "text",
+        "desktop",
+        "mobile",
+        "visual"
+      ],
+      "reversible": false,
+      "privacy": "pc-only",
+      "precondition": "platform privilege, verified local recovery, warning that remote control will be lost",
+      "language": {
+        "verbs": [
+          "disconnect",
+          "stop",
+          "disable",
+          "block",
+          "cut",
+          "kill"
+        ],
+        "family": "-",
+        "reading": "Disconnect this machine from the network",
+        "objects": [
+          "traffic",
+          "network",
+          "networking",
+          "internet",
+          "egress",
+          "outbound",
+          "connection",
+          "connections",
+          "online",
+          "sync",
+          "sending",
+          "wifi"
+        ],
+        "scope": [
+          "machine",
+          "computer",
+          "pc",
+          "laptop",
+          "desktop",
+          "device",
+          "ethernet",
+          "offline"
+        ],
+        "group": "network.stop"
+      },
+      "subject": "machine-network",
+      "priority": "P2"
+    }
+  ],
+  "readinessStates": {
+    "verified": "live acceptance receipts on Windows Host and a real paired phone",
+    "source_wired": "Host dispatcher executor exists and offline tests pass; live acceptance pending",
+    "adapter_pending": "no executor connected",
+    "enforcement_missing": "enforcement across owner boundaries not built",
+    "unsupported": "refused until platform privilege and recovery guarantees exist"
+  },
+  "languageGroups": {
+    "network.stop": {
+      "question": "Do you mean pause only VIVIM outbound activity, or disconnect networking for the entire machine?"
+    }
+  }
+}

@@ -1,0 +1,138 @@
+{
+  "schema": "vivim.command-intent-fixtures/0.1",
+  "note": "Cross-repository interchange fixtures for Lane 3 wiki gestures. expected fields are a stable subset of V0.1 JSON; provenance revisions are runtime-bound, never authorizations.",
+  "cases": [
+    {
+      "id": "show-theme-desktop",
+      "input": {
+        "text": "show my theme",
+        "scope": "desktop"
+      },
+      "expected": {
+        "schema": "vivim.command-intent/0.1",
+        "outcome": "candidate",
+        "actionId": "ui.theme.show",
+        "args": {},
+        "canonical": "/ui.theme.show",
+        "risk": "R0",
+        "requiredScopes": []
+      }
+    },
+    {
+      "id": "show-theme-phone",
+      "input": {
+        "text": "show my theme",
+        "scope": "mobile"
+      },
+      "expected": {
+        "schema": "vivim.command-intent/0.1",
+        "outcome": "candidate",
+        "actionId": "ui.theme.show",
+        "args": {},
+        "canonical": "/ui.theme.show",
+        "risk": "R0",
+        "requiredScopes": []
+      }
+    },
+    {
+      "id": "set-theme",
+      "input": {
+        "text": "Set my theme to dusk",
+        "scope": "text"
+      },
+      "expected": {
+        "schema": "vivim.command-intent/0.1",
+        "outcome": "candidate",
+        "actionId": "ui.theme.set_preset",
+        "args": {
+          "preset": "dusk"
+        },
+        "canonical": "/ui.theme.set_preset preset=\"dusk\"",
+        "risk": "R1",
+        "requiredScopes": []
+      }
+    },
+    {
+      "id": "privacy-exclusion",
+      "input": {
+        "text": "Never mention my former employer"
+      },
+      "expected": {
+        "schema": "vivim.command-intent/0.1",
+        "outcome": "candidate",
+        "actionId": "privacy.hard_no.add",
+        "args": {
+          "trait": "mention my former employer"
+        },
+        "risk": "R2"
+      }
+    },
+    {
+      "id": "negated-mutation",
+      "input": {
+        "text": "don't remember my salary"
+      },
+      "expected": {
+        "schema": "vivim.command-intent/0.1",
+        "outcome": "refused",
+        "refusal": {
+          "code": "NEGATED_ACTION"
+        }
+      }
+    },
+    {
+      "id": "negated-spanish",
+      "input": {
+        "text": "no cambies el tema a dusk"
+      },
+      "expected": {
+        "schema": "vivim.command-intent/0.1",
+        "outcome": "refused",
+        "refusal": {
+          "code": "NEGATED_ACTION"
+        }
+      }
+    },
+    {
+      "id": "compound-comma",
+      "input": {
+        "text": "pause egress, show status"
+      },
+      "expected": {
+        "schema": "vivim.command-intent/0.1",
+        "outcome": "clarification_required",
+        "alternatives": []
+      }
+    },
+    {
+      "id": "ambiguous-network",
+      "input": {
+        "text": "Stop all traffic"
+      },
+      "expected": {
+        "schema": "vivim.command-intent/0.1",
+        "outcome": "clarification_required"
+      }
+    },
+    {
+      "id": "invalid-enum",
+      "input": {
+        "text": "change my theme to purple"
+      },
+      "expected": {
+        "schema": "vivim.command-intent/0.1",
+        "outcome": "clarification_required"
+      }
+    },
+    {
+      "id": "missing-catalog-operation",
+      "input": {
+        "text": "send this to Peter"
+      },
+      "expected": {
+        "schema": "vivim.command-intent/0.1",
+        "outcome": "interpretation_required"
+      }
+    }
+  ]
+}
