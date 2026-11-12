@@ -1,7 +1,7 @@
 diff --git a/apps/vivim-host/direct-phone.mjs b/apps/vivim-host/direct-phone.mjs
 --- a/apps/vivim-host/direct-phone.mjs
 +++ b/apps/vivim-host/direct-phone.mjs
-@@ -26,7 +26,8 @@ const assets = new Map(Object.entries({
+@@ -26,6 +26,7 @@ const assets = new Map(Object.entries({
    'ux/mission-experience.mjs': ['ux/mission-experience.mjs', 'text/javascript; charset=utf-8'],
    'ux/render.mjs': ['ux/render.mjs', 'text/javascript; charset=utf-8'],
    'pairing-link.mjs': ['pairing-link.mjs', 'text/javascript; charset=utf-8'],
