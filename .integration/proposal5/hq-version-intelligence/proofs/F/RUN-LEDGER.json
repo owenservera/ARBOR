@@ -1,0 +1,127 @@
+{
+  "schema": "arbor.hvi.f.run-ledger/1",
+  "gate": "PREPARED_NOT_PROMOTED",
+  "workBranch": "work/p5-hvi-w1-f-verify-r001",
+  "baseSha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+  "prerequisite": {
+    "branch": "work/p5-hvi-s0-source-lock-r001",
+    "headSha": "2ef7a9f66419d681e040b459ba4762a63aa9564f",
+    "gate": "GO_TO_PARALLEL",
+    "workerBaseSha": "f9823a5131e73e7562db5a4ec14e1ec481557d69"
+  },
+  "sourcePins": {
+    "ARBOR": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+    "repos-hq": "9b922ea049dbadc94e504b5b9432743995c020ca",
+    "vivim-web-harness": "cae97afe848d79957c9d6c698a90996a758bfd56",
+    "tierflow": "50822f11ee63c3d80f631f8fea7dcb9b19bffc38",
+    "vivim-labs": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be"
+  },
+  "originalSourceAudit": {
+    "hqDonor": 676,
+    "samePath": 315,
+    "exactBlob": 314,
+    "patched": 1,
+    "missingAtOriginalPath": 361,
+    "missingFixtureBlobSource": "ec8bea5a5d81510cc2f60ce7201336c0bcced9f7"
+  },
+  "sourceInspection": {
+    "kind": "GitHub connector pinned blob content",
+    "exit": 0,
+    "files": [
+      "hq/lib/catalogue-delta.mjs",
+      "hq/lib/semantic-registry.mjs",
+      "hq/lib/arbor-service.mjs",
+      "hq/test/catalogue-delta.test.mjs",
+      "hq/aii/fixtures/HQ-114-compare-registered-repos.mjs",
+      "repos-hq/hq/catalogue-identity/crosswalk.mjs",
+      "repos-hq/hq/catalogue-identity/test/crosswalk.test.mjs",
+      "repos-hq/hq/catalogue-identity/source-adapters.mjs",
+      "integration/source-lock.json",
+      "integration/beta-gates.json"
+    ]
+  },
+  "executedChecks": [
+    {
+      "operation": "connected GitHub V8 static JSON example structural audit (not Node or a full JSON Schema engine)",
+      "environment": "GitHub read connector + ephemeral JS V8",
+      "exitCode": 0,
+      "examples": 9,
+      "schemas": 8,
+      "notes": "required fields, type, const, enum, regex, properties and array structure; conditional schema checks authored later but not rerun in this static audit"
+    },
+    {
+      "operation": "Parse four authored ESM test/support modules (imports/exports removed solely for V8 syntax parse); verify exactly T01–T24 IDs",
+      "environment": "GitHub fetch + ephemeral V8 parser; not Node module execution",
+      "exitCode": 0,
+      "modules": 4,
+      "tCases": 24,
+      "notes": "PARSE_ONLY, no node:test execution"
+    },
+    {
+      "operation": "Execute committed dependency-free schema-validator subset on four positive and four adversarial schema cases",
+      "environment": "GitHub fetch + ephemeral V8; not Node or a standards-compliant full JSON Schema engine",
+      "exitCode": 0,
+      "positiveExamples": 4,
+      "negativeCases": 4,
+      "notes": "conditional guards for equivalence, source-as-runtime, Host success without digest, and symlink"
+    },
+    {
+      "operation": "Final committed version: static syntax parse of all five ESM QA/support modules and selective source-only oracle negatives",
+      "environment": "ephemeral V8 after stripping ESM declarations for parse; not Node module execution",
+      "exitCode": 0,
+      "modulesParsed": 5,
+      "oracleNegativeCases": 4,
+      "notes": "Git malicious ref, symlink, LFS pointer and ENOSPC preservation oracles; real Git/storage IO UNRUN"
+    }
+  ],
+  "testsWithObservedExit": [],
+  "unrun": [
+    {
+      "command": "node --test tests/hq-version-intelligence/*.test.mjs",
+      "reason": "No integrated ARBOR checkout / Node 24 execution of committed suite"
+    },
+    {
+      "command": "node --test hq/test/catalogue-delta.test.mjs tests/hq-version-intelligence/*.test.mjs",
+      "reason": "Not executed against ARBOR checkout"
+    },
+    {
+      "command": "standards-compliant JSON Schema Draft 2020-12 validation",
+      "reason": "Only subset structural read audit executed"
+    },
+    {
+      "command": "G1 actual A-E integrated N-way and offline replay tests",
+      "reason": "Parallel worker modules not yet merged"
+    },
+    {
+      "command": "10k-record Node benchmark with OS/RSS/elapsed data",
+      "reason": "Test source committed, no Node execution"
+    },
+    {
+      "command": "Host actor/session/grant/revoke tests",
+      "reason": "H/G2 product wiring not executed"
+    },
+    {
+      "command": "Windows/MSVC, Android physical device and PWA acceptance",
+      "reason": "No device/runner connected, beta remains blocked"
+    },
+    {
+      "command": "Cargo, Bun, full no-donor source closure and credential content scan",
+      "reason": "Not in F test environment or write authority"
+    }
+  ],
+  "securityPrivacy": {
+    "personalWorldRead": false,
+    "providerEffect": false,
+    "secretContentStored": false,
+    "hostAuthorizationVerified": false,
+    "sourceOnly": true
+  },
+  "blockers": [
+    "No Node 24 installed/attached integrated checkout acceptance in connected GitHub session",
+    "A-E implementations are independent worker branches; cannot import before G1",
+    "Host live grants and revoke acceptance defer to H/G2",
+    "Beta release status BLOCKED_NOT_BETA"
+  ],
+  "nextOwner": "Z1 independent review, then G1 serial A-E-F integration, then H/G2 live authorization checks",
+  "releaseGate": "BLOCKED_NOT_BETA"
+}

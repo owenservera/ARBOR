@@ -1,0 +1,9 @@
+{
+  "schema": "arbor.hvi.refusal-error/1",
+  "code": "SOURCE_UNAUTHORIZED",
+  "message": "Denied by live Host grant; no source text returned.",
+  "owner": "Host",
+  "retryable": false,
+  "scope": "development",
+  "evidenceRefs": []
+}
