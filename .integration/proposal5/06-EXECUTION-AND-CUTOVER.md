@@ -6,12 +6,12 @@
 
 Record exact Git SHAs (including work branches with source not yet on main), source trees, current built entrypoints and tests for:
 - vivim-web-harness native Tauri, Host control, mobile, Studio, media, onboarding, World;
-- repos-hq HQKG Rust + operational \`hq/\` JS dependencies and tests;
+- repos-hq HQKG Rust + operational `hq/` JS dependencies and tests;
 - tierflow renderer/typed interaction and tests;
 - vivim-labs ratified architecture/source, Node 0 R001, UI R005/R007, personal knowledge, Chronos, media and voice;
 - old private vivim and vivim-platform only if an identified, licensed, useful component is needed.
 
-Output: ARBOR \`integration/source-lock.json\`, manifest of **exact files to physically import**, branch resolution conflicts and a source redaction check. Protect historical secrets: no Git history bulk merge or \`node_modules\`, browser profiles, user DBs or source chats.
+Output: ARBOR `integration/source-lock.json`, manifest of **exact files to physically import**, branch resolution conflicts and a source redaction check. Protect historical secrets: no Git history bulk merge or `node_modules`, browser profiles, user DBs or source chats.
 
 ## Stage 1 — Source-preserving import (maximum fan-out)
 
@@ -19,13 +19,13 @@ Parallel workstreams, all targeting one fixed internal tree:
 
 **A. Native:** import HQKG + programmability + Tauri under preserved paths, establish Cargo workspace, source hash checks, patched Tauri and its native binary tests.
 
-**B. Host:** import current Host and required dependency closure under existing \`apps/vivim-host/\`, keep its action catalog/World/journal semantics; test read/plan/approval/receipt.
+**B. Host:** import current Host and required dependency closure under existing `apps/vivim-host/`, keep its action catalog/World/journal semantics; test read/plan/approval/receipt.
 
-**C. Studio:** import signed-in browser worker + harness helpers under \`studio/\`, \`harness/\`; preserve Chrome profile linkage but never commit profile; test exact-thread read/send with synthetic and live authorized tests.
+**C. Studio:** import signed-in browser worker + harness helpers under `studio/`, `harness/`; preserve Chrome profile linkage but never commit profile; test exact-thread read/send with synthetic and live authorized tests.
 
-**D. Mobile/UI:** import PWA \`apps/mobile-relay/\`, one in-repo \`packages/tierflow/\` source snapshot and a thin inert visual adapter; test desktop/PWA UI mounts and current grants.
+**D. Mobile/UI:** import PWA `apps/mobile-relay/`, one in-repo `packages/tierflow/` source snapshot and a thin inert visual adapter; test desktop/PWA UI mounts and current grants.
 
-**E. HQ intelligence:** import selected HQ \`hq/bin/\`, \`hq/lib/\` and full checked transitive dependency into **ARBOR/hq/**. Wire HQ indexer/search/context/wiki to ARBOR-owned local data and selected source roots. No outside source/service calls.
+**E. HQ intelligence:** import selected HQ `hq/bin/`, `hq/lib/` and full checked transitive dependency into **ARBOR/hq/**. Wire HQ indexer/search/context/wiki to ARBOR-owned local data and selected source roots. No outside source/service calls.
 
 **F. Contracts/Labs:** generate shared IDs/protocol and capability inventory from **internal** source owners; promote only ratified Lab types, tests and confirmed code into their owners. Build no generic plugin system.
 
@@ -57,8 +57,8 @@ The **one system truth** lives in typed IDs, source ownership, source revisions 
 ## Stage 4 — Build-test matrix and isolated donor removal
 
 Mandatory test ordering:
-1. \`cargo test\` and Rust graph equality/parity against frozen HQ source;
-2. \`bun test\` for imported HQ intelligence, Host, mobile/Studio and TierFlow packages;
+1. `cargo test` and Rust graph equality/parity against frozen HQ source;
+2. `bun test` for imported HQ intelligence, Host, mobile/Studio and TierFlow packages;
 3. cross-language golden schema tests and NLCL/Host semantic parity for core command set;
 4. Node 0 event scheduling, 500-edit/IME/stale/sensitive input adversarial tests;
 5. security: foreign Tauri origin, localhost service impersonation, actor/phone revoke, untrusted provider text as command;
@@ -82,9 +82,9 @@ Do not claim this works until tests execute on Windows and real provider session
 ## One-time integration status ledger
 
 Every source item must be in exactly one actionable status:
-\`NOT_IMPORTED\`, \`IMPORTED\`, \`COMPILES\`, \`CONTRACT_WIRED\`, \`RUNTIME_VERIFIED\`, \`DEVICE_ACCEPTED\`, \`DEFERRED_APPROVED\`, \`RETIRED\`, or \`BLOCKED\`.
+`NOT_IMPORTED`, `IMPORTED`, `COMPILES`, `CONTRACT_WIRED`, `RUNTIME_VERIFIED`, `DEVICE_ACCEPTED`, `DEFERRED_APPROVED`, `RETIRED`, or `BLOCKED`.
 
-Every row includes \`sourceRepo, sourceSha, sourcePath, importedPath, capabilityOwner, existingUsers, portContract, dataClass, testCommand, observedResult, rollback, ownerSignOff\`.
+Every row includes `sourceRepo, sourceSha, sourcePath, importedPath, capabilityOwner, existingUsers, portContract, dataClass, testCommand, observedResult, rollback, ownerSignOff`.
 
 **Success means real old product capabilities are reachable in ARBOR, not merely that code directories exist.**
 
