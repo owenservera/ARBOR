@@ -1,5 +1,8 @@
 # Z1X Independent Convergence Decision
 
+> **LATER GOVERNING SCOPE OVERRIDE, main@539146ac741516e7d9711c63f4570585b3c3367e — NATIVE TOOLING ONLY.** The 2026-11-12 HVI `10-NATIVE-TOOLING-ONLY-SCOPE.md` explicitly overrides earlier real five-repository/361 semantic audit and X-lane requirements. Preserve historical S0/D proof as reference only. **G1 tests entirely synthetic 2/3/5 invented repos, provides a stable native callable tool API; H/U only after `GO_FOR_W2_TOOLING`; X deferred until expressly requested; Z2/G2/R certify tooling/readiness, not migration corpus.** See `SCOPE-CORRECTION-ADDENDUM.md`. Any older contradictory text below is **superseded**.
+
+
 **GATE: REPAIR_REQUIRED**
 
 **Work branch:** `work/p5-hvi-w1-z-referee-r001`; created from the immutable S0 worker source base `f9823a5131e73e7562db5a4ec14e1ec481557d69`. **No worker source modified. No integration or main branch merge. No beta/devices/runtime acceptance.**
@@ -21,8 +24,8 @@
 ## Gate policy
 - Source lanes: `PREPARED_NOT_PROMOTED`.
 - Referee: **REPAIR_REQUIRED** (G1 may review and execute the surgical repair plan, but no compatibility/promotion claim is authorized).
-- After G1 stages repairs, it must execute exact **Node24** combined tests, dual-digest verification, source provenance preservation, standards-compliant schema validation, synthetic 3-SHA/real 5-repo tests, real no-donor offline replay, security negatives and source closure. A verified and reviewed integration PR is the only route to accepted main.
-- Later W2 H/U/X requires G1 accepted `GO_FOR_W2` main SHA. Any staging without observed exits remains `G1_SOURCE_STAGED_TESTS_UNRUN` / `REPAIR_REQUIRED`.
+- After G1 stages repairs, it must execute exact **Node24** combined tests, dual-digest verification, source provenance preservation, standards-compliant schema validation, synthetic 3-SHA/synthetic 5-repo tests, real no-donor offline replay, security negatives and source closure. A verified and reviewed integration PR is the only route to accepted main.
+- Later W2 H/U requires accepted `GO_FOR_W2_TOOLING` main SHA; X is deferred until an explicit user request. Any staging without observed exits remains `G1_SOURCE_STAGED_TESTS_UNRUN` / `REPAIR_REQUIRED`.
 - Existing beta release gate stays **BLOCKED_NOT_BETA**; binary/native/Windows/PWA/Android/Host security acceptance is separate and UNRUN.
 
 **Do not run G1 from Z1. STOP at proof commit and handoff.**

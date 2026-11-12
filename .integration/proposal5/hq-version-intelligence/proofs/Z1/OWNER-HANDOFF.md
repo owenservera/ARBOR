@@ -1,4 +1,7 @@
 # Z1X → G1 owner handoff
+
+> **LATER GOVERNING SCOPE OVERRIDE, main@539146ac741516e7d9711c63f4570585b3c3367e — NATIVE TOOLING ONLY.** The 2026-11-12 HVI `10-NATIVE-TOOLING-ONLY-SCOPE.md` explicitly overrides earlier real five-repository/361 semantic audit and X-lane requirements. Preserve historical S0/D proof as reference only. **G1 tests entirely synthetic 2/3/5 invented repos, provides a stable native callable tool API; H/U only after `GO_FOR_W2_TOOLING`; X deferred until expressly requested; Z2/G2/R certify tooling/readiness, not migration corpus.** See `SCOPE-CORRECTION-ADDENDUM.md`. Any older contradictory text below is **superseded**.
+
 **Gate: REPAIR_REQUIRED (planning/source review only).** All source heads and immutable base are frozen in `BRANCH-SHA-MATRIX.json`. Z1 contains **no fixes** and **no** integration branch/main edits.
 
 | Urgency | Required narrow repair | Authorized owner | Exact source/review |
@@ -10,9 +13,9 @@
 | P0 | Observe real Node24 integrated suite plus genuine no-donor/3 SHA replay and test blob receipts; no work on main before reviewed PR | G1 / F | `tests/hq-version-intelligence/`, `hq/test/catalogue-delta.test.mjs`, `proofs/G1/TEST-RECEIPTS.md` |
 | P0 | Source grants, malicious path/symlink/submodule, secret leaks and incomplete manifest refusal | A/G1 for operator source; H/G2 for live Host authority | `sources/adapters.mjs`, `sources/snapshots.mjs`, `contracts/hq-version-intelligence/` |
 | P1 | B source pin normalized repo, stable lineage and aliases, C4 legacy exports, owner decision validation; no fake equivalence | B/C/G1 | `hq/version-intelligence/identity/{index,legacy-adapters}.mjs`, `hq/catalogue-identity/EXPORT-CONTRACT.md` |
-| P1 | Inspect remaining 338 missing HQ original paths; full semantic and wiring assessments of 361 only after G1 acceptance | X / HQ with Host/Rust/TierFlow owners | `proofs/D/HQ-361-TRIAGE.json`, `proofs/Z1/EVIDENCE-COVERAGE.json` |
+| P1 | DEFERRED: 338 original HQ source paths are historical unknowns; no current-wave semantic review, only future explicit user-triggered audit | X / HQ with Host/Rust/TierFlow owners | `proofs/D/HQ-361-TRIAGE.json`, `proofs/Z1/EVIDENCE-COVERAGE.json` |
 | P1 | Decide whether any donor supervisor/admission/recovery utilities can be pure adapters without duplicate Host supervisor, and graph readers without duplicate native/hqkg graph store | Host/HQKG/TierFlow with X; no automatic code import | `proofs/D/OWNERSHIP-CONFLICTS.md` |
-| Future gate | Host live per-operation actor/session/grant/revoke, PWA/world isolation; inert TierFlow read-only inspector | H/U/G2 after accepted G1 `GO_FOR_W2` | No H/U/X start from this referee's source-only branch |
+| Future gate | Host live per-operation actor/session/grant/revoke, PWA/world isolation; inert TierFlow read-only inspector | H/U/G2 after accepted G1 `GO_FOR_W2_TOOLING` | No H/U/X start from this referee's source-only branch |
 
 ## Exact pin / outcome
 - S0: `2ef7a9f66419d681e040b459ba4762a63aa9564f`; worker base `f9823a5131e73e7562db5a4ec14e1ec481557d69`, `GO_TO_PARALLEL`.

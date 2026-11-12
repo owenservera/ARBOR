@@ -838,5 +838,14 @@
   "allScopesPass": true,
   "z1WriteScope": ".integration/proposal5/hq-version-intelligence/proofs/Z1/",
   "betaReleaseGate": "BLOCKED_NOT_BETA",
-  "testGate": "UNRUN_INTEGRATED_NODE24"
+  "testGate": "UNRUN_INTEGRATED_NODE24",
+  "postCommitMainAdvance": {
+    "initialMain": "cbe768031e0797040a09c084b7b8bc12f07fbe0a",
+    "subsequentMain": "539146ac741516e7d9711c63f4570585b3c3367e",
+    "commits": 2,
+    "changedPaths": 15,
+    "pathsType": "HVI scope and launch contracts only; no worker source edits",
+    "governingScope": "NATIVE_TOOLING_ONLY",
+    "requiresG1Reconcile": true
+  }
 }

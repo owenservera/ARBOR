@@ -170,7 +170,7 @@
     "node --test hq/version-intelligence/sources/snapshots.test.mjs hq/version-intelligence/identity/test/identity.test.mjs hq/catalogue-identity/test/crosswalk.test.mjs hq/version-intelligence/compare/index.test.mjs hq/version-intelligence/parity/atlas.test.mjs hq/version-intelligence/report/test/report.test.mjs tests/hq-version-intelligence/*.test.mjs",
     "node --test hq/test/catalogue-delta.test.mjs",
     "Full JSON Schema Draft 2020-12 validator against actual integrated comparison",
-    "Actual A->C->B/D->E 3 SHA same-repo and five-repo no-donor offline replay",
+    "Synthetic A->C->B/D->E three SHA same invented repo and five invented repo no-donor offline replay",
     "Host actor/session and live grant/revoke plus personal World deny",
     "cargo test, bun test, generate Cargo.lock/bun.lock, Windows MSVC, physical Android/PWA, signed-in Chrome",
     "full credential/secret content scanning, low-disk/ENOSPC rollback and security/device acceptance"
@@ -184,5 +184,9 @@
   "releaseGate": "BLOCKED_NOT_BETA",
   "workerSourcePromotion": "PREPARED_NOT_PROMOTED",
   "z1Decision": "REPAIR_REQUIRED",
-  "node24IntegratedAcceptance": false
+  "node24IntegratedAcceptance": false,
+  "governingCurrentWave": "NATIVE_TOOLING_ONLY_SYNTHETIC_FIXTURES",
+  "realRepoComparison": "DEFERRED_USER_TRIGGER_ONLY",
+  "currentMainContractSha": "539146ac741516e7d9711c63f4570585b3c3367e",
+  "governingPolicyBlobSha": "0fd38aed3c7f85c7c73183d80ea4fee121372462"
 }

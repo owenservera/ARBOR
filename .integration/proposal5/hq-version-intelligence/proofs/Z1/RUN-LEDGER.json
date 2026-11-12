@@ -106,5 +106,19 @@
       "name": "real live source grant/revoke and personal World exclusion"
     }
   ],
-  "commitReceipt": "See verified branch HEAD; this value is not a runtime test result"
+  "commitReceipt": "See verified branch HEAD; this value is not a runtime test result",
+  "postCommitScopeCorrection": {
+    "initialMain": "cbe768031e0797040a09c084b7b8bc12f07fbe0a",
+    "advancedMain": "539146ac741516e7d9711c63f4570585b3c3367e",
+    "commits": 2,
+    "changedPaths": 15,
+    "scope": "governing HVI planning/prompt/manifest",
+    "policy": "10-NATIVE-TOOLING-ONLY-SCOPE.md",
+    "policyBlob": "0fd38aed3c7f85c7c73183d80ea4fee121372462",
+    "currentWave": "NATIVE_TOOLING_ONLY",
+    "X": "DEFERRED_USER_TRIGGER_ONLY",
+    "syntheticTestsOnly": true,
+    "workerBaseUnchanged": true,
+    "mainWrittenByZ1": false
+  }
 }
