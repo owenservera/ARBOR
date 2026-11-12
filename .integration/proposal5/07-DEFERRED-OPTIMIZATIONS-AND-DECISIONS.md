@@ -21,7 +21,7 @@ Choose **source-preserving internal consolidation first**, not an external-facad
 | Debt | Beta implementation | Future upgrade and migration trigger |
 | --- | --- | --- |
 | Host JS → Rust admission/journal | Keep current JS one-writer Host; Rust reads/derives only | Port to Rust only after a shadow comparator and crash/recovery parity; retain single writer |
-| HQ JS operational intelligence → Rust | Import selected HQ JS index/search/context/wiki into \`ARBOR/hq\` | Port specific measured hotpath algorithms into Rust; source results must remain identical |
+| HQ JS operational intelligence → Rust | Import selected HQ JS index/search/context/wiki into `ARBOR/hq` | Port specific measured hotpath algorithms into Rust; source results must remain identical |
 | Full Node 0 semantic reactor fabric | Bounded native read-only hint/trace path + existing Host NLCL canonical execution | Expand subscriptions to all eligible interpretation facets when real source truth and time budgets justify |
 | Universal program/composition engine | Thin typed operation/capability model, reuse existing Rust typed DAG and Host registered actions | Extend to declarative typed programs only after one working cross-domain composition proves necessity |
 | Extension/plugin execution | Source-owned declarative capability space descriptors and trusted internal adapters | Sandboxed third-party/user code only with verified isolation/permission model |
