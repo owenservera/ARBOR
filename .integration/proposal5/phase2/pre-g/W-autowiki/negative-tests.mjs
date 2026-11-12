@@ -87,14 +87,18 @@ export async function runNegativeTests() {
   check(m.current()===null,'closed mirror still displayed');
  });
  await test('out-of-order async responses cannot overwrite newer screen',async()=>{
-  let first,second;const a=new Promise(resolve=>first=resolve);
-  const b=new Promise(resolve=>second=resolve);let calls=0;
-  const mirror=make(undefined,()=>++calls===1?a:b);
+  let release,entered;const pending=new Promise(resolve=>release=resolve);
+  const began=new Promise(resolve=>entered=resolve);let calls=0;
+  const mirror=make(undefined,()=>{
+    if(++calls===1){entered();return pending;}
+    return Promise.resolve({...ready(),contextRevision:2});
+  });
   const s1=baseScreen(),s2=baseScreen();s2.revision=2;
-  const p1=mirror.open(s1),p2=mirror.open(s2);
-  await Promise.resolve();await Promise.resolve();
-  second({...ready(),contextRevision:2});const newer=await p2;
-  first(ready());const older=await p1;
+  const p1=mirror.open(s1);
+  await began; // test-controlled barrier: first source read is actually in flight
+  const p2=mirror.open(s2);
+  const newer=await p2;
+  release(ready());const older=await p1;
   check(newer.status==='ready'&&older.status==='stale','out of order accepted');
   check(mirror.current().contextRevision===2,'older response overwrote current');
  });
