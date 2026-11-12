@@ -104,7 +104,27 @@
     "canonicalDispatcher": "UNRUN_AND_DISABLED",
     "tierflowPublisherRevision": "UNRUN",
     "offlineReplay": "UNRUN",
-    "physicalPwaAndroidWindows": "UNRUN"
+    "physicalPwaAndroidWindows": "UNRUN",
+    "additionalSyntheticV8": {
+      "status": "SOURCE_SLICE_CHECKS_EXECUTED",
+      "passed": 14,
+      "total": 14,
+      "node": false,
+      "actualProcessExit": null,
+      "description": "Fetched production native sensitivePath function, evaluated with invented 11 secret and 3 safe paths. G2 Node test source separately syntax-parsed; not runtime suite."
+    },
+    "githubActionsLatest": {
+      "runId": 43319733234,
+      "sha": "33b6059615aab0ec5571a3acf5674725b67fcd9f",
+      "conclusion": "startup_failure",
+      "jobs": 0,
+      "actualTestProcessExit": null
+    },
+    "actionsRetry": {
+      "runId": 43316968825,
+      "result": "FORBIDDEN_403_THIS_WORKFLOW_RUN_CANNOT_BE_RETRIED",
+      "actualTestProcessExit": null
+    }
   },
   "security": {
     "realRepositoryComparisonsExecuted": false,
@@ -172,5 +192,42 @@
     ],
     "mainModifiedByG2": false,
     "gatePromotion": false
-  }
+  },
+  "latestG2SourceRepairSha": "33b6059615aab0ec5571a3acf5674725b67fcd9f",
+  "additionalSourceRepair": {
+    "scope": "G2_INTEGRATOR_CROSS_LANE_SECURITY_RECONCILIATION",
+    "commits": [
+      {
+        "path": "hq/version-intelligence/sources/common.mjs",
+        "sha": "77bec293a7f0144d1c0bae01a1102a26bf1a7e9f",
+        "change": "Expand lower-level Git source read denylist for credential and private paths"
+      },
+      {
+        "path": "tests/hq-version-intelligence/g2-host-ui.test.mjs",
+        "sha": "06858bf389338695969cff12e55ea1f1138bb20e",
+        "change": "Authored synthetic direct blob denial, Host redaction, allowlist and cancellation regressions"
+      },
+      {
+        "path": "hq/version-intelligence/compare/index.mjs",
+        "sha": "eec8a16f00e1e26459c6ad6a7e4c4c9851300d23",
+        "change": "Make direct N-way comparison use native sensitive path denylist"
+      },
+      {
+        "path": "tests/hq-version-intelligence/g2-host-ui.test.mjs",
+        "sha": "33b6059615aab0ec5571a3acf5674725b67fcd9f",
+        "change": "Authored negative C comparator test with explicitly recomputed digest"
+      }
+    ],
+    "sourceReview": "G2_ONLY_NOT_MAIN",
+    "testsAuthoredNotExecuted": true
+  },
+  "blockerTrackingIssue": "https://github.com/owenservera/ARBOR/issues/24",
+  "integrationPullRequest": {
+    "number": 21,
+    "url": "https://github.com/owenservera/ARBOR/pull/21",
+    "draft": true,
+    "merged": false,
+    "reviewCount": 0
+  },
+  "acceptanceNote": "G1 main not accepted; independent Z2 REPAIR_REQUIRED; no Node24/AJV/Host security acceptance. All new test source UNRUN. Do not merge or create R proofs before required gate."
 }
