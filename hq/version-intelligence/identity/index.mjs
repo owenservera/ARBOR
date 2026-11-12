@@ -53,6 +53,7 @@ function validatePins(input){
     const pinId=id(p.pinId),repoIdentity=field(p.repoIdentity,180);
     if(!REPO.test(repoIdentity)||!SHA40.test(p.resolvedCommitSha))fail('PIN_NOT_FOUND');
     if(!SOURCE_STATES.has(p.completeness))fail('INCOMPLETE_SCAN');
+    if(p.scope!==undefined && p.scope!=='development')fail('SOURCE_UNAUTHORIZED');
     const manifestDigest=pinDigest(p.manifestDigest);
     const entry={pinId,repoIdentity,resolvedCommitSha:p.resolvedCommitSha,manifestDigest,completeness:p.completeness};
     if(byId.has(pinId))fail('ID_CONFLICT');
@@ -108,12 +109,13 @@ function sanitizeDecision(raw,known){
 }
 function overlaps(records,decisions,maxPairs){
   const candidates=new Map(),conflicts=new Map(),groups=new Map();
+  let hitLimit=false;
   const byId=new Map(records.map(r=>[r.id,r]));
   const add=(a,b,basis)=>{
     if(a.id===b.id)return;
     const k=makePair(a.id,b.id);
     if(!candidates.has(k)){
-      if(candidates.size>=maxPairs)return;
+      if(candidates.size>=maxPairs){hitLimit=true;return;}
       candidates.set(k,{id:k,left:[a.id,b.id].sort(cmp)[0],right:[a.id,b.id].sort(cmp)[1],
         basis:new Set(),disposition:'REVIEW_REQUIRED',sourceRevisions:[a.commitSha,b.commitSha].sort(cmp),
         evidenceRefs:[...new Set([...a.evidenceRefs,...b.evidenceRefs])].sort(cmp),certainty:'candidate'});
@@ -136,7 +138,11 @@ function overlaps(records,decisions,maxPairs){
   }
   for(const [key,group] of groups){
     group.sort((a,b)=>cmp(a.id,b.id));
-    for(let i=0;i<group.length;i++)for(let j=i+1;j<group.length;j++)add(group[i],group[j],key.startsWith('canonical:')?'DECLARED_CANONICAL_ID':'SAME_REPO_SOURCE_LINEAGE');
+    outer: for(let i=0;i<group.length;i++)for(let j=i+1;j<group.length;j++){
+      add(group[i],group[j],key.startsWith('canonical:')?'DECLARED_CANONICAL_ID':'SAME_REPO_SOURCE_LINEAGE');
+      if(hitLimit)break outer;
+    }
+    if(hitLimit)break;
   }
   const result=[...candidates.values()].sort((a,b)=>cmp(a.id,b.id)).map(c=>{
     const decision=decisions.find(d=>d.id===c.id)??null;
@@ -146,7 +152,7 @@ function overlaps(records,decisions,maxPairs){
   const orphanDecisions=decisions.filter(d=>!candidates.has(d.id));
   if(orphanDecisions.length)fail('EQUIVALENCE_UNPROVEN');
   return {candidates:result,conflicts:[...conflicts.values()].sort((a,b)=>cmp(a.id,b.id)),
-    truncated:candidates.size>=maxPairs};
+    truncated:hitLimit};
 }
 /** Read-only source comparison identity projection. Input requires immutable pins, not refs or live HEAD. */
 export function buildPinnedIdentityCrosswalk({pins:rawPins,records:rawRecords=[],links:rawLinks=[],decisions:rawDecisions=[],previous=null,maxRecords=100000,maxCandidatePairs=10000}={}){
@@ -154,7 +160,7 @@ export function buildPinnedIdentityCrosswalk({pins:rawPins,records:rawRecords=[]
   const {pins,byId}=validatePins(rawPins);
   const bound=Math.min(100000,Math.max(1,Number.isInteger(maxRecords)?maxRecords:100000));
   const pairBound=Math.min(10000,Math.max(1,Number.isInteger(maxCandidatePairs)?maxCandidatePairs:10000));
-  if(!Array.isArray(rawRecords)||rawRecords.length>bound||!Array.isArray(rawLinks)||rawLinks.length>bound)fail('RESOURCE_LIMIT');
+  if(!Array.isArray(rawRecords)||rawRecords.length>bound||!Array.isArray(rawLinks)||rawLinks.length>bound||!Array.isArray(rawDecisions)||rawDecisions.length>pairBound)fail('RESOURCE_LIMIT');
   const prevPins=new Map((prior?.pins??[]).map(p=>[p.pinId,p]));
   const revs=new Map((prior?.pins??[]).map(p=>[p.repoIdentity+'\0'+p.resolvedCommitSha,p.manifestDigest]));
   for(const p of pins){
