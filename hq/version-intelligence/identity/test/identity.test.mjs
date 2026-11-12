@@ -20,8 +20,8 @@ test('stable revision-scoped IDs distinguish same repo/three SHAs and different 
   assert.equal(r.identityCandidates.length,1);
   assert.equal(r.identityCandidates[0].disposition,'REVIEW_REQUIRED');
   assert.ok(r.records.every(x=>x.runtimeProof==='UNRUN'));
-  assert.equal(sourceScopedRevisionId('owenservera/repos-hq',sha('a'),'same-record'),r.records[0].id);
-  assert.equal(stableLineageId('owenservera/repos-hq','same-record'),r.records[0].lineageId);
+  assert.equal(sourceScopedRevisionId('owenservera/repos-hq',sha('a'),'same-record'),r.records.find(x=>x.pinId==='p1').id);
+  assert.equal(stableLineageId('owenservera/repos-hq','same-record'),r.records.find(x=>x.pinId==='p1').lineageId);
 });
 test('input order and pin order cannot change output digest',()=>{
   const p=[pin('p2','owenservera/repos-hq',sha('d')),pin('p1')];
