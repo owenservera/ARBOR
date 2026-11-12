@@ -46,7 +46,7 @@
 - Each worker reports \`BASE_SHA, HEAD_SHA, changed_paths, source_import_SHAs, tests_run_with_exit_codes, evidence_paths, blockers, classification\` and commits results. If work is impossible, create an evidence-backed BLOCKED report instead of faking source or passing tests.
 - G merges/cherry-picks **one branch at a time**, adjusts root workspace/lockfiles (exclusive writer), runs combined tests, resolves conflicts from actual source owners and emits \`GO / NO_GO / REPAIR_REQUIRED\` with exact SHA and next wave base. No blanket overwrite or merge solely because a worker says "done."
 - A lane may not alter another lane's owned subtree without a documented handoff. For shared code, deliver a small patch proposal in lane-owned report, which G or the designated owner applies.
-- On a gate failure, do not launch next wave. Repair within current wave using assigned domain worker branches and re-run G; do not restart the entire process.
+- On an ordinary gate failure, do not launch the next wave. Repair within the current wave and re-run G. **Exception:** W4-G may issue a finite **REPAIR_HANDOFF** to the specifically designed W5 blocker-closure wave. This is **not release GO**; W5-G must close all hard blockers and return GO_FOR_W6 before W6 starts. On fundamental NO_GO stop.
 
 ## Exclusively owned paths
 
