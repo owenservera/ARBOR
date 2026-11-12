@@ -1,6 +1,6 @@
 # One proposed end-to-end contract
 
-\`\`\`text
+```text
 Developer source + opt-in comment Rust capsule (untrusted)
     -> HQ/SCF source identities + source digest
     -> independent SV verification + reviewed SDK module manifest
@@ -14,7 +14,7 @@ User natural language / voice / gesture
     -> Owner review + Host personal-program revision/trigger/journal
     -> Host effect dispatcher ONLY (if necessary) -> receipt
     -> TierFlow desktop + PWA view (same source/World/Program revision)
-\`\`\`
+```
 
 ## Concrete user example
 **"Every weekday morning, show unfinished tasks from my active project at the top of my phone."**

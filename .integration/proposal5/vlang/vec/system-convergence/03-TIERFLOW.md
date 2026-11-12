@@ -2,18 +2,18 @@
 
 ## Source-level truth
 TierFlow has **three different UI payload models**:
-- \`packages/tierflow/src/ui/types.ts\`: persisted World/1, objects, five semantic layers, relationships and data flows; pure transforms in \`world.ts\`, source-preserved versioned SQLite/CAS in \`store.ts\`.
-- \`packages/tierflow/src/visual-runtime/document/schema.ts\`: Canonical Visual \`vivim.ui-document/1\`, 10 component kinds, 32KiB/64-node/7-deep limits, accessibility, typed binding and action references, fail-closed validator and inert RenderPlan.
-- \`apps/mobile-relay/generative-ui/catalog.mjs\`: phone Build \`vivim.ui-surface/1\`, separate theme/component tree with its own validator/renderer.
+- `packages/tierflow/src/ui/types.ts`: persisted World/1, objects, five semantic layers, relationships and data flows; pure transforms in `world.ts`, source-preserved versioned SQLite/CAS in `store.ts`.
+- `packages/tierflow/src/visual-runtime/document/schema.ts`: Canonical Visual `vivim.ui-document/1`, 10 component kinds, 32KiB/64-node/7-deep limits, accessibility, typed binding and action references, fail-closed validator and inert RenderPlan.
+- `apps/mobile-relay/generative-ui/catalog.mjs`: phone Build `vivim.ui-surface/1`, separate theme/component tree with its own validator/renderer.
 
-A **real safe subset** World→Visual adapter exists at \`world-visual-bridge.ts\`: maps static text, box and plane to text/cards, rejects dynamic/unsupported objects, retains source relationships/dataflows only in the pinned original, creates no knowledge/action bindings and only proposes review-required reverse *move* edits. The generic mapping remains incomplete; \`lane-b/studio-editing.ts\` still reports \`SCHEMA_BRIDGE_NOT_READY\`.
+A **real safe subset** World→Visual adapter exists at `world-visual-bridge.ts`: maps static text, box and plane to text/cards, rejects dynamic/unsupported objects, retains source relationships/dataflows only in the pinned original, creates no knowledge/action bindings and only proposes review-required reverse *move* edits. The generic mapping remains incomplete; `lane-b/studio-editing.ts` still reports `SCHEMA_BRIDGE_NOT_READY`.
 
-TierFlow command compiler currently supports closed exact \`/semantic.id@1 key="value"\` grammar; it is not unrestricted natural-language intent analysis. Host phone already has deterministic NLCL. Final-wave Lane A combines trusted NLCL projections and visual controls to create **inert** authoring operations. Template/preview, multi-device integration and publisher fence remain non-effectful source; no physical acceptance.
+TierFlow command compiler currently supports closed exact `/semantic.id@1 key="value"` grammar; it is not unrestricted natural-language intent analysis. Host phone already has deterministic NLCL. Final-wave Lane A combines trusted NLCL projections and visual controls to create **inert** authoring operations. Template/preview, multi-device integration and publisher fence remain non-effectful source; no physical acceptance.
 
 ## The dream
 Every UI object becomes a **programmable affordance**: discover its source, permissions, transform, update cadence, revision, last receipt and edit possibilities. The user says 'show my active tasks here' or drags a task source to a card. Both yield the same typed ProgramDelta candidate. TierFlow previews what would change, including denied/unknown data, and Host approves the program/effect; user never learns JSON or Rust.
 
-Instead of relying on a model for every Build request (\`apps/mobile-relay/build-composer.mjs\` currently drafts a model prompt), try **NLCL+installed SDK+typed TierFlow operations first**, then optional LLM proposal for unfamiliar layouts. Ordinary execution uses precompiled Rust/Host functions and updates a single authorized TierFlow projection on phone and Windows.
+Instead of relying on a model for every Build request (`apps/mobile-relay/build-composer.mjs` currently drafts a model prompt), try **NLCL+installed SDK+typed TierFlow operations first**, then optional LLM proposal for unfamiliar layouts. Ordinary execution uses precompiled Rust/Host functions and updates a single authorized TierFlow projection on phone and Windows.
 
 **Key prerequisite:** choose the existing Host-controlled canonical publisher and implement loss-reportable crosswalk across World/1, Visual/1 and phone UI Surface/1. Do not activate TierFlow's historical independent server/store as a duplicate. Inert visual diff/gesture must not grant an effect. A UI rollback is not an undo of a previously sent message or deletion.
 

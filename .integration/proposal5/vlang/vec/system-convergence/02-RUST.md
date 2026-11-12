@@ -1,14 +1,14 @@
 # Rust core deep research — two crates, distinct responsibilities
 
 ## HQKG: graph/revision/compute
-The imported \`native/hqkg\` crate is real Rust source with graph algorithms, journal, generational \`ComputeEngine\` slots and leases, bounded scheduler, typed DAG, scoped Development/Personal namespaces, source watermarks, incremental invalidation, change sets/tombstones, metadata-only durable computation descriptors, diagnostics and optional database/importer adapters. \`algorithm_adapter.rs\` catalogues **30 research algorithm IDs**, not 30 confirmed installed engines.
+The imported `native/hqkg` crate is real Rust source with graph algorithms, journal, generational `ComputeEngine` slots and leases, bounded scheduler, typed DAG, scoped Development/Personal namespaces, source watermarks, incremental invalidation, change sets/tombstones, metadata-only durable computation descriptors, diagnostics and optional database/importer adapters. `algorithm_adapter.rs` catalogues **30 research algorithm IDs**, not 30 confirmed installed engines.
 
-\`typed_dag.rs\` advertises a PURE_INTERFACE contract **inside trusted Rust**, not a sandbox. A native engine implementation can still perform OS I/O if given code privileges. For future untrusted or model-produced Rust capsules, use isolated pinned builds, an artifact signature/review chain and an actual execution sandbox with fuel/memory/time ceilings and no ambient file/network/process/credential interfaces. EngineSlot hot-swap remains appropriate for reviewed *trusted* implementations and gradual rollback, not arbitrary comment code.
+`typed_dag.rs` advertises a PURE_INTERFACE contract **inside trusted Rust**, not a sandbox. A native engine implementation can still perform OS I/O if given code privileges. For future untrusted or model-produced Rust capsules, use isolated pinned builds, an artifact signature/review chain and an actual execution sandbox with fuel/memory/time ceilings and no ambient file/network/process/credential interfaces. EngineSlot hot-swap remains appropriate for reviewed *trusted* implementations and gradual rollback, not arbitrary comment code.
 
-\`scoped_graph.rs\` checks provenance shape, not identity authenticity. The Host must authenticate source/owner/session before providing data. \`web_memory.rs\` models scoped observations but does not control browsers. Durable DAG stores redacted descriptions, not output payloads. Source import is optional and data-only, with size limits and tombstones; it is not external donor comparison authorization.
+`scoped_graph.rs` checks provenance shape, not identity authenticity. The Host must authenticate source/owner/session before providing data. `web_memory.rs` models scoped observations but does not control browsers. Durable DAG stores redacted descriptions, not output payloads. Source import is optional and data-only, with size limits and tombstones; it is not external donor comparison authorization.
 
 ## Product-native Rust
-\`core/programmability\` defines \`vivim.native-program/1\`: bounded \`Program\`, \`TransformStep\`, source revisions/digests, risk/data sensitivity, a strict JSON wire and metadata-only lineage. It has no timers, grants, storage, effect executor, browser sender or UI. The currently written \`GRAPH-INTEGRATION.md\` describes source-level Tauri wiring but **Node Host/native ABI and Android paths lack accepted end-to-end proof**.
+`core/programmability` defines `vivim.native-program/1`: bounded `Program`, `TransformStep`, source revisions/digests, risk/data sensitivity, a strict JSON wire and metadata-only lineage. It has no timers, grants, storage, effect executor, browser sender or UI. The currently written `GRAPH-INTEGRATION.md` describes source-level Tauri wiring but **Node Host/native ABI and Android paths lack accepted end-to-end proof**.
 
 ## Proposed division
 - **Product Rust core:** small portable deterministic validator for user-program candidates and typed transformation IR, called behind an authenticated Host native boundary.
@@ -19,7 +19,7 @@ The imported \`native/hqkg\` crate is real Rust source with graph algorithms, jo
 ## Performance targets to measure, not claim
 Source/context BFS, ordered DAG execution, graph deltas, ingestion normalization, coded UI diff, repeated alias parsing and bounded immutable context. Classify workloads as ALWAYS_ON, HIGH_FREQUENCY, FREQUENT, USER_DEFINED or DEV_ADMIN. The existing [Rescore](https://github.com/owenservera/ARBOR/tree/main/.integration/proposal5/rescore-expansion) and [Optimization Observatory](https://github.com/owenservera/ARBOR/tree/main/.integration/proposal5/hq-version-intelligence/vision-lab/optimizations) already map hundreds of targets; shortlist **3–5 measured pure kernels** after product proof, rather than duplicating the 1000-row backlog.
 
-\`native/hqkg/Cargo.toml\` records \`[profile.dev] debug=0, incremental=false\` to reduce historic multi-GB target churn. This is source rationale, **not current disk measurement**.
+`native/hqkg/Cargo.toml` records `[profile.dev] debug=0, incremental=false` to reduce historic multi-GB target churn. This is source rationale, **not current disk measurement**.
 
 ## Rust source atlas
 | Inspected source | Finding | Evidence |

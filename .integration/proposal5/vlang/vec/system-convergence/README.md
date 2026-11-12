@@ -1,6 +1,6 @@
 # VEC — Deep convergence research: TierFlow × HQ × Rust
 
-**Date:** 2026-11-12. **Observed ARBOR main:** \`9b79d732da8b92713d399040db4a02d505bc7cf1\`. **Status:** SOURCE_GROUNDED_RESEARCH_ONLY, no executable tests, no code changes, no beta acceptance.
+**Date:** 2026-11-12. **Observed ARBOR main:** `9b79d732da8b92713d399040db4a02d505bc7cf1`. **Status:** SOURCE_GROUNDED_RESEARCH_ONLY, no executable tests, no code changes, no beta acceptance.
 
 The product opportunity is **natural-language reprogramming for ordinary VIVIM users**, normally with no LLM when installed typed SDK capabilities already express the behavior.
 
