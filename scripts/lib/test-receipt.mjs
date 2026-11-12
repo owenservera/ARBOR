@@ -58,9 +58,11 @@ export function runtimeEvidence(runtimes = []) {
     // The runtime the GATE itself ran under.
     gateRuntime: `bun ${binaryVersion('bun') ?? 'unknown'}`,
     // The runtimes that actually executed the tests, with their real versions.
+    // Each manifest runtime is named separately even when two of them share a
+    // binary, so the record never hides which mode ran which test.
     testRuntimes: names.map((name) => {
       const binary = RUNTIME_BINARY[name] ?? name;
-      return `${binary} ${binaryVersion(binary) ?? 'unknown'}`;
+      return { runtime: name, binary, version: binaryVersion(binary) };
     }),
     nodeVersion: binaryVersion('node'),
     bunVersion: binaryVersion('bun'),
