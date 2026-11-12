@@ -1,0 +1,231 @@
+{
+  "schema": "arbor.proposal5.pg03-negative-cases/1",
+  "classification": "SYNTHETIC_FIXTURES_NO_PRODUCTION_REPLAY",
+  "cases": [
+    {
+      "id": "AUTH-01",
+      "scenario": "Spoofed localhost Host replies 200 before real child",
+      "owner": "A/B",
+      "expected": "REFUSE owner bearer/UI bootstrap; no credential sent to unknown listener",
+      "status": "SPECIFIED_UNRUN",
+      "runtimeAsserted": false,
+      "syntheticOnly": true
+    },
+    {
+      "id": "AUTH-02",
+      "scenario": "Injected window at http://127.0.0.1:random uses broad Tauri IPC",
+      "owner": "A",
+      "expected": "REFUSE non-attested origin and IPC invoke",
+      "status": "SPECIFIED_UNRUN",
+      "runtimeAsserted": false,
+      "syntheticOnly": true
+    },
+    {
+      "id": "AUTH-03",
+      "scenario": "Stolen grantId plus active sessionId without P-256 key",
+      "owner": "B",
+      "expected": "REFUSE privileged GET/POST under per-request proof or rotated short session",
+      "status": "SPECIFIED_UNRUN",
+      "runtimeAsserted": false,
+      "syntheticOnly": true
+    },
+    {
+      "id": "AUTH-04",
+      "scenario": "Replayed signed session challenge nonce/timestamp",
+      "owner": "B",
+      "expected": "REFUSE with SESSION_PROOF_REPLAY",
+      "status": "SPECIFIED_UNRUN",
+      "runtimeAsserted": false,
+      "syntheticOnly": true
+    },
+    {
+      "id": "AUTH-05",
+      "scenario": "Replay same privileged execute HTTP request on active session",
+      "owner": "B",
+      "expected": "NO duplicated effect, require bound operation nonce/plan and claim-once receipt",
+      "status": "SPECIFIED_UNRUN",
+      "runtimeAsserted": false,
+      "syntheticOnly": true
+    },
+    {
+      "id": "AUTH-06",
+      "scenario": "Revoked or scope-reduced grant with existing active session",
+      "owner": "B",
+      "expected": "REFUSE immediately and invalidate private screens",
+      "status": "SPECIFIED_UNRUN",
+      "runtimeAsserted": false,
+      "syntheticOnly": true
+    },
+    {
+      "id": "AUTH-07",
+      "scenario": "Cross-origin /mobile/api/enrollment/start/prove/session POST",
+      "owner": "B",
+      "expected": "REFUSE incorrect Origin/CSRF, no pending grants minted",
+      "status": "SPECIFIED_UNRUN",
+      "runtimeAsserted": false,
+      "syntheticOnly": true
+    },
+    {
+      "id": "AUTH-08",
+      "scenario": "Lost IndexedDB key with stored approved grant ID",
+      "owner": "E/B",
+      "expected": "REFUSE silent key rotation, require new owner-approved enrollment",
+      "status": "SPECIFIED_UNRUN",
+      "runtimeAsserted": false,
+      "syntheticOnly": true
+    },
+    {
+      "id": "AUTH-09",
+      "scenario": "Same-origin XSS attempts to invoke nonextractable key signer",
+      "owner": "B/E",
+      "expected": "No implied authorization; CSP/integrity and request authorizations independently enforced",
+      "status": "SPECIFIED_UNRUN",
+      "runtimeAsserted": false,
+      "syntheticOnly": true
+    },
+    {
+      "id": "PWA-01",
+      "scenario": "SW receives authenticated POST /mobile/api/control/execute while offline",
+      "owner": "E",
+      "expected": "NO SW interception, cache, queued effects, or fake receipt",
+      "status": "SPECIFIED_UNRUN",
+      "runtimeAsserted": false,
+      "syntheticOnly": true
+    },
+    {
+      "id": "PWA-02",
+      "scenario": "SW receives GET /mobile/api/memory/recent or range/media",
+      "owner": "E",
+      "expected": "NO authenticated/private cache",
+      "status": "SPECIFIED_UNRUN",
+      "runtimeAsserted": false,
+      "syntheticOnly": true
+    },
+    {
+      "id": "PWA-03",
+      "scenario": "Offline/stale source composer suggests executable action",
+      "owner": "E/B",
+      "expected": "SHOW offline_unverified/source_stale and disable execution until Host refresh",
+      "status": "SPECIFIED_UNRUN",
+      "runtimeAsserted": false,
+      "syntheticOnly": true
+    },
+    {
+      "id": "PWA-04",
+      "scenario": "Lost response after Host execute/Studio send",
+      "owner": "E/B/C",
+      "expected": "SHOW uncertain; never automatically repeat; reconcile Host receipt",
+      "status": "SPECIFIED_UNRUN",
+      "runtimeAsserted": false,
+      "syntheticOnly": true
+    },
+    {
+      "id": "PWA-05",
+      "scenario": "Stale UI/World revision, control catalog and plan digest",
+      "owner": "E/B",
+      "expected": "REFUSE or re-plan against current Host World and approval",
+      "status": "SPECIFIED_UNRUN",
+      "runtimeAsserted": false,
+      "syntheticOnly": true
+    },
+    {
+      "id": "PACKAGE-01",
+      "scenario": "Windows bundle without any resources/vivim.apk or signing files",
+      "owner": "A/G",
+      "expected": "PASS MSI build after declared resource removal, no fabricated APK",
+      "status": "SPECIFIED_UNRUN",
+      "runtimeAsserted": false,
+      "syntheticOnly": true
+    },
+    {
+      "id": "PACKAGE-02",
+      "scenario": "PWA manifest /icon.svg path not served by Host",
+      "owner": "B/E",
+      "expected": "RESOLVE real /mobile/ icon path and install icon on Android",
+      "status": "SPECIFIED_UNRUN",
+      "runtimeAsserted": false,
+      "syntheticOnly": true
+    },
+    {
+      "id": "STORAGE-01",
+      "scenario": "Free bytes below OS reserve, requested wiki materialization",
+      "owner": "D/B",
+      "expected": "READ_ONLY_PROTECTED or safe planning only; no protected deletion",
+      "status": "SPECIFIED_UNRUN",
+      "runtimeAsserted": false,
+      "syntheticOnly": true
+    },
+    {
+      "id": "STORAGE-02",
+      "scenario": "Full profile quota larger than spare volume capacity",
+      "owner": "D/B",
+      "expected": "OS reserve still wins, no admission",
+      "status": "SPECIFIED_UNRUN",
+      "runtimeAsserted": false,
+      "syntheticOnly": true
+    },
+    {
+      "id": "STORAGE-03",
+      "scenario": "Rebuildable=true but unique source missing/revoked",
+      "owner": "D/B",
+      "expected": "NO eviction, sourceAvailable must be verified true",
+      "status": "SPECIFIED_UNRUN",
+      "runtimeAsserted": false,
+      "syntheticOnly": true
+    },
+    {
+      "id": "STORAGE-04",
+      "scenario": "Crash/ENOSPC during VACUUM INTO or database checkpoint",
+      "owner": "D/B/A",
+      "expected": "KEEP original DB and WAL/journal; fail closed, remeasure temp space",
+      "status": "SPECIFIED_UNRUN",
+      "runtimeAsserted": false,
+      "syntheticOnly": true
+    },
+    {
+      "id": "STORAGE-05",
+      "scenario": "Auto-clean targets original personal ZIP, Host receipt or DCB",
+      "owner": "B/D",
+      "expected": "REFUSE; protected unique and authoritative never auto-evicted",
+      "status": "SPECIFIED_UNRUN",
+      "runtimeAsserted": false,
+      "syntheticOnly": true
+    },
+    {
+      "id": "STORAGE-06",
+      "scenario": "Delete only HQ index.db without preserving its note/receipt rows",
+      "owner": "D",
+      "expected": "REFUSE whole-file deletion until full protected-row proof",
+      "status": "SPECIFIED_UNRUN",
+      "runtimeAsserted": false,
+      "syntheticOnly": true
+    },
+    {
+      "id": "STORAGE-07",
+      "scenario": "Unverified imported ChatGPT ZIP/CRC or skipped digest check",
+      "owner": "B/A",
+      "expected": "NO publication, no checkpoint, no graph CAS, no memory resurrection",
+      "status": "SPECIFIED_UNRUN",
+      "runtimeAsserted": false,
+      "syntheticOnly": true
+    },
+    {
+      "id": "STORAGE-08",
+      "scenario": "Compaction while source permission revoked or active lease",
+      "owner": "D/B/A",
+      "expected": "NO reclaim; protected provenance and tombstone survive",
+      "status": "SPECIFIED_UNRUN",
+      "runtimeAsserted": false,
+      "syntheticOnly": true
+    },
+    {
+      "id": "STORAGE-09",
+      "scenario": "Paired phone reopens during Host outage",
+      "owner": "E",
+      "expected": "CACHED SHELL only, offline state truthful, no source/receipt claim",
+      "status": "SPECIFIED_UNRUN",
+      "runtimeAsserted": false,
+      "syntheticOnly": true
+    }
+  ]
+}

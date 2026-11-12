@@ -1,0 +1,151 @@
+{
+  "schema": "arbor.proposal5.fa-worker-run/1",
+  "lane": "PG03",
+  "disposition": "PREPARED_NOT_PROMOTED",
+  "repository": "owenservera/ARBOR",
+  "branch": "work/p5-fa-pg03-pwa-storage-r001",
+  "base": {
+    "branch": "work/p5-foundational-architecture-prep-r001",
+    "sha": "80c29fbc0d45afbce0fadde5388a8f912cdd2762"
+  },
+  "head": {
+    "sha": null,
+    "reason": "A commit cannot embed its own SHA; resolve from verified branch ref and final worker report after commit"
+  },
+  "g": {
+    "branch": "integrate/proposal5-beta-r001",
+    "status": "ABSENT_AT_PREFLIGHT",
+    "accepted": false
+  },
+  "sourceHeads": {
+    "A": "dda546a11294920d6521a0f64ab7ee62ec993c70",
+    "B": "78a5105a9c1f1880d658f350e130b1e2632d3532",
+    "C": "f950b91685927f37b48d020433aa8d2d3c271419",
+    "D": "ad55fe28c2c331841675f308f9199ee4c2add86a",
+    "E": "1a5cf26ce14ebce4e31d9a4373060ace61852645",
+    "F": "be458f3c4cdb7eb38d47b1de2a00d441b7cdc704",
+    "ROCK": "0a3c11a6df72434b46931f90b25bf1f93da09f92",
+    "LABS": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be",
+    "P2K": "4db9e0c2068be36ab42663a76186422c8f9813a1",
+    "P2T": "c807010e52b4a9f82ea9578a979befd38f74cb31"
+  },
+  "frozenWorkers": {
+    "A": {
+      "head": "dda546a11294920d6521a0f64ab7ee62ec993c70",
+      "reportStatus": "FREEZE_READY_SOURCE_ONLY",
+      "refValidated": true
+    },
+    "B": {
+      "head": "78a5105a9c1f1880d658f350e130b1e2632d3532",
+      "reportStatus": "FREEZE_READY_SOURCE_ONLY",
+      "refValidated": true
+    },
+    "C": {
+      "head": "f950b91685927f37b48d020433aa8d2d3c271419",
+      "reportStatus": "FREEZE_READY_SOURCE_ONLY",
+      "refValidated": true
+    },
+    "D": {
+      "head": "ad55fe28c2c331841675f308f9199ee4c2add86a",
+      "reportStatus": "FREEZE_READY_SOURCE_ONLY",
+      "refValidated": true
+    },
+    "E": {
+      "head": "1a5cf26ce14ebce4e31d9a4373060ace61852645",
+      "reportStatus": "FREEZE_READY_SOURCE_ONLY",
+      "refValidated": true
+    },
+    "F": {
+      "head": "be458f3c4cdb7eb38d47b1de2a00d441b7cdc704",
+      "reportStatus": "FREEZE_READY_SOURCE_ONLY",
+      "refValidated": true
+    }
+  },
+  "executionEnvironment": "Connected GitHub read/write connector; no Node/Cargo/Windows/Android runtime through GitHub API",
+  "tests": [
+    {
+      "id": "git-ref-source-preflight",
+      "method": "GitHub ref fetch + file blob inspections",
+      "status": "OBSERVED_SOURCE",
+      "actual": true,
+      "exitCode": null,
+      "note": "All A-F refs match, G absent, source blobs fetched; this is not execution test"
+    },
+    {
+      "id": "pg03-synthetic-node",
+      "command": "node --test .integration/proposal5/foundations/proofs/PG03-pwa-storage/synthetic-contracts.test.mjs",
+      "status": "UNRUN",
+      "actual": false,
+      "exitCode": null
+    },
+    {
+      "id": "donor-rock-node",
+      "command": "node --test research/rock-core-storage/test/storage-policy.test.mjs research/rock-core-storage/test/rock-membership.test.mjs",
+      "status": "UNRUN",
+      "actual": false,
+      "exitCode": null
+    },
+    {
+      "id": "host-control",
+      "command": "node --test apps/vivim-host/test/*.test.mjs",
+      "status": "UNRUN",
+      "actual": false,
+      "exitCode": null
+    },
+    {
+      "id": "hqkg-cargo",
+      "command": "cargo test --manifest-path native/hqkg/Cargo.toml",
+      "status": "UNRUN",
+      "actual": false,
+      "exitCode": null
+    },
+    {
+      "id": "tauri-msi-no-apk",
+      "command": "G/F accepted release packaging command (unverified)",
+      "status": "UNRUN",
+      "actual": false,
+      "exitCode": null
+    },
+    {
+      "id": "android-chrome-https",
+      "command": "Owner Android Chrome PWA physical install/pair/revoke/offline acceptance",
+      "status": "UNRUN",
+      "actual": false,
+      "exitCode": null
+    },
+    {
+      "id": "rock-disk-physical",
+      "command": "Per-volume read-only byte inventory + synthetic ENOSPC/recovery",
+      "status": "UNRUN",
+      "actual": false,
+      "exitCode": null
+    }
+  ],
+  "changedPaths": [
+    ".integration/proposal5/foundations/proofs/PG03-pwa-storage/NEGATIVE-ACCEPTANCE.md",
+    ".integration/proposal5/foundations/proofs/PG03-pwa-storage/NEGATIVE-CASES.json",
+    ".integration/proposal5/foundations/proofs/PG03-pwa-storage/OWNER-HANDOFF.md",
+    ".integration/proposal5/foundations/proofs/PG03-pwa-storage/PROOF-PLAN.md",
+    ".integration/proposal5/foundations/proofs/PG03-pwa-storage/PWA-AUTH-AND-PACKAGING-MATRIX.md",
+    ".integration/proposal5/foundations/proofs/PG03-pwa-storage/README.md",
+    ".integration/proposal5/foundations/proofs/PG03-pwa-storage/RUN-LEDGER.json",
+    ".integration/proposal5/foundations/proofs/PG03-pwa-storage/SOURCE-DELTA.json",
+    ".integration/proposal5/foundations/proofs/PG03-pwa-storage/STORAGE-CLASSIFICATION.json",
+    ".integration/proposal5/foundations/proofs/PG03-pwa-storage/synthetic-contracts.test.mjs"
+  ],
+  "risks": [
+    "P0 Host static map omits E browser-device-key.mjs",
+    "P0 signed session grant only, no per-request key proof/replay defense",
+    "P0 fixed-port desktop bootstrap and wildcard Tauri IPC",
+    "P0 mandatory signed APK resource conflicts with PWA-only MSI",
+    "P1 no measured physical storage or proven rehydrate across durable/derived mixed stores",
+    "P1 P2-K consent/erasure source-only, integrated runtime unrun",
+    "P0 G absent; no combined Host/Android acceptance"
+  ],
+  "privacy": "No private user exports, tokens, screenshots, phone location, original data or graph written. Synthetic names, metadata and GitHub source SHAs only.",
+  "writesOnlyPrefix": ".integration/proposal5/foundations/proofs/PG03-pwa-storage/",
+  "mergePerformed": false,
+  "dataDeletionPerformed": false,
+  "activeRuntimeModified": false,
+  "apkBuilt": false
+}

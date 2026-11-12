@@ -1,0 +1,245 @@
+{
+  "schema": "arbor.proposal5.pg03-storage-classification/1",
+  "sourceHeads": {
+    "A": "dda546a11294920d6521a0f64ab7ee62ec993c70",
+    "B": "78a5105a9c1f1880d658f350e130b1e2632d3532",
+    "C": "f950b91685927f37b48d020433aa8d2d3c271419",
+    "D": "ad55fe28c2c331841675f308f9199ee4c2add86a",
+    "E": "1a5cf26ce14ebce4e31d9a4373060ace61852645",
+    "ROCK": "0a3c11a6df72434b46931f90b25bf1f93da09f92",
+    "LABS": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be",
+    "P2K": "4db9e0c2068be36ab42663a76186422c8f9813a1"
+  },
+  "measuredOnDevice": false,
+  "volumeInventory": {
+    "volumes": [],
+    "physicalBytesObserved": false,
+    "measurementStatus": "UNRUN",
+    "requiredMeasurements": [
+      "filesystem volume identity and free/total bytes for every dataRoot/vault/SQLite/cache/temp",
+      "allocated and logical bytes by path, including -wal/-shm/FTS and hardlinks",
+      "incoming peak bytes and compaction temporary peak",
+      "active leases, pinned versions, source readability and owner consent",
+      "reconstruction digest, source revision and dry-run proof"
+    ]
+  },
+  "rockResearch": {
+    "planSchema": "vivim.rock-storage-plan/0.1",
+    "softProfilesMiB": {
+      "survival": 96,
+      "lean": 256,
+      "balanced": 768,
+      "full": 4096
+    },
+    "freeReserveRule": "max(512MiB, 2% volume), capped 2GiB; user/owner may increase",
+    "enforcePhysicalReserveInAllModes": true,
+    "pureOnly": true,
+    "operationalAdoption": "DESIGN_ONLY",
+    "source": "owenservera/repos-hq@0a3c11a6df72434b46931f90b25bf1f93da09f92/research/rock-core-storage/storage-policy.mjs",
+    "sourceBlob": "4606b90c2635564e74c712e19771c5d244576e3e"
+  },
+  "classes": [
+    "PROTECTED_UNIQUE",
+    "DERIVED_RECOVERABLE",
+    "DERIVED_UNPROVEN",
+    "TEMPORARY"
+  ],
+  "policy": {
+    "autoDeleteOriginals": false,
+    "autoDeleteReceipts": false,
+    "autoDeleteConsentAndMemory": false,
+    "autoDeleteKernel": false,
+    "autoVacuum": false,
+    "neverClaimFullProfileCanOverrideReserve": true,
+    "unsafeIfMissingRehydrateProof": true
+  },
+  "items": [
+    {
+      "id": "originals",
+      "kind": "user ZIP exports and original selected source vault",
+      "owner": "B",
+      "writer": "explicit owner-controlled local custody",
+      "class": "PROTECTED_UNIQUE",
+      "category": "source-vault",
+      "bytes": null,
+      "proof": "Owner selection, version/digest, readable independent original and documented safe backup; never delete for cache quota",
+      "compaction": "NEVER_AUTO"
+    },
+    {
+      "id": "grants",
+      "kind": "device-grants/grants.json and approved/revoked history",
+      "owner": "B",
+      "writer": "apk/enrollment.mjs",
+      "class": "PROTECTED_UNIQUE",
+      "category": "authoritative",
+      "bytes": null,
+      "proof": "Persisted CAS writer, revocation, recovery and replay fence",
+      "compaction": "NO_AUTO"
+    },
+    {
+      "id": "pairing",
+      "kind": "pairing/pairing.json short-lived QR state",
+      "owner": "B",
+      "writer": "apk/pairing.mjs",
+      "class": "DERIVED_UNPROVEN",
+      "category": "authoritative",
+      "bytes": null,
+      "proof": "Prove no active challenge/re-enrollment or audit requirement before any trim",
+      "compaction": "OWNER_ONLY"
+    },
+    {
+      "id": "control-journal",
+      "kind": "control journal plans approvals claims receipts events.jsonl",
+      "owner": "B",
+      "writer": "control/journal.mjs",
+      "class": "PROTECTED_UNIQUE",
+      "category": "authoritative",
+      "bytes": null,
+      "proof": "Claim-once/reconciliation and legal retention; preserve uncertain sends",
+      "compaction": "NO_AUTO"
+    },
+    {
+      "id": "host-ledger",
+      "kind": "Host bootstrap SQLite including evidence/jobs/ui revisions/receipts",
+      "owner": "B",
+      "writer": "bootstrap/ledger.mjs",
+      "class": "PROTECTED_UNIQUE",
+      "category": "authoritative",
+      "bytes": null,
+      "proof": "Per-table retention and durable receipt source; SQLite DB WAL SHM as coherent unit",
+      "compaction": "WRITER_TRANSACTION_AND_BACKUP_ONLY"
+    },
+    {
+      "id": "studio-dcb",
+      "kind": "Studio DCBs and personal-agent state",
+      "owner": "C/B",
+      "writer": "Studio DCB/personal owner; Host approval as applicable",
+      "class": "PROTECTED_UNIQUE",
+      "category": "authoritative",
+      "bytes": null,
+      "proof": "Actor/grant provenance, owner retention and signed invalidation on erasure",
+      "compaction": "NO_AUTO"
+    },
+    {
+      "id": "memory",
+      "kind": "personal memory, accepted notes, consent checkpoints, import staging receipts",
+      "owner": "B/A",
+      "writer": "Host ledger and explicitly approved native graph",
+      "class": "PROTECTED_UNIQUE",
+      "category": "authoritative",
+      "bytes": null,
+      "proof": "Consent/account/scope, erasure fences, checkpoint durability, graph CAS",
+      "compaction": "NO_AUTO"
+    },
+    {
+      "id": "tierflow-world",
+      "kind": "TierFlow authoritative World and revision histories",
+      "owner": "E/B",
+      "writer": "single TierFlow publisher, Host authorized revisions",
+      "class": "PROTECTED_UNIQUE",
+      "category": "authoritative",
+      "bytes": null,
+      "proof": "Owner-approved state and undo/restore durability; not UI bitmap cache",
+      "compaction": "NO_AUTO"
+    },
+    {
+      "id": "hq-kernel",
+      "kind": "HQ durable kernel store DB WAL SHM revisions/tombstones/provenance",
+      "owner": "D",
+      "writer": "hq/lib/kernel/store.mjs",
+      "class": "PROTECTED_UNIQUE",
+      "category": "authoritative",
+      "bytes": null,
+      "proof": "verifyKernelDb chain plus independent full-size VACUUM INTO backup; ENOSPC reservation",
+      "compaction": "ONLY_OWNER_CONTROLLED_BACKUP_RESTORE"
+    },
+    {
+      "id": "hq-index",
+      "kind": ".hq/index.db FTS and indexes; mixed notes and receipts",
+      "owner": "D",
+      "writer": "hq/lib/schema.mjs and index owner",
+      "class": "DERIVED_UNPROVEN",
+      "category": "index",
+      "bytes": null,
+      "proof": "Prove protected note/receipt rows not lost, source full availability, migration and reindex parity before any file-level reclaim",
+      "compaction": "NO_AUTO_UNTIL_SPLIT_OR_FULL_REHYDRATE_PROVEN"
+    },
+    {
+      "id": "wiki",
+      "kind": "generated wiki Markdown per-file pages and hash metadata",
+      "owner": "D",
+      "writer": "hq/lib/wiki.mjs/refresh.mjs",
+      "class": "DERIVED_RECOVERABLE",
+      "category": "wiki",
+      "bytes": null,
+      "proof": "Regenerate from available authorized source and immutable source revision; no page under owner pin/lease",
+      "compaction": "OWNER_DRY_RUN_AND_PATH_ALLOWLIST"
+    },
+    {
+      "id": "hq-kg-journal",
+      "kind": ".hq/kg-journal.hqj export/import and native graph journals",
+      "owner": "A/D",
+      "writer": "refresh.mjs and native HQKG writer",
+      "class": "DERIVED_UNPROVEN",
+      "category": "graph",
+      "bytes": null,
+      "proof": "Prove complete journal replay/checkpoint and no protected provenance/erasure loss before reclaim",
+      "compaction": "NO_AUTO"
+    },
+    {
+      "id": "host-live",
+      "kind": "Host bridge commands.jsonl, live-state projection and replay cursors",
+      "owner": "B/C",
+      "writer": "Host bridge ledger and Studio reply observations",
+      "class": "DERIVED_UNPROVEN",
+      "category": "authoritative",
+      "bytes": null,
+      "proof": "Distinguish canonical bridge from rebuildable live projection; receipts/unknown must survive",
+      "compaction": "NO_AUTO_WHILE_UNCLASSIFIED"
+    },
+    {
+      "id": "rock",
+      "kind": "bounded Rock membership/capsules inside existing owner stores",
+      "owner": "D/B",
+      "writer": "not yet adopted; pure repos-hq research only",
+      "class": "DERIVED_UNPROVEN",
+      "category": "rock",
+      "bytes": null,
+      "proof": "Owner-supplied authorized refs; mandatory capsule set not silently truncated; independent source custody",
+      "compaction": "NEVER_AUTO"
+    },
+    {
+      "id": "pwa-shell",
+      "kind": "SW same-origin read-only shell CacheStorage",
+      "owner": "E",
+      "writer": "apps/mobile-relay/sw.js",
+      "class": "DERIVED_RECOVERABLE",
+      "category": "cache",
+      "bytes": null,
+      "proof": "Trusted HTTPS origin, versioned shell rebuilt from deployed Host, no token/private API in shell",
+      "compaction": "SW_VERSIONED_ONLY"
+    },
+    {
+      "id": "browser-device-key",
+      "kind": "PWA IndexedDB nonextractable P-256 device key and local grant ID",
+      "owner": "E/B",
+      "writer": "browser-device-key.mjs; device-enrollment.mjs",
+      "class": "PROTECTED_UNIQUE",
+      "category": "authoritative",
+      "bytes": null,
+      "proof": "Lost key means re-enrollment; no silent rotation and no key export",
+      "compaction": "NO_AUTO"
+    },
+    {
+      "id": "temporary",
+      "kind": "ZIP staging/scratch, SQLite VACUUM INTO destination, .tmp wiki",
+      "owner": "owning writer",
+      "writer": "per-store staging owner",
+      "class": "TEMPORARY",
+      "category": "cache",
+      "bytes": null,
+      "proof": "No in-flight claim/receipt, abort transaction and temp identity; reserve must cover write+rollback before deletion",
+      "compaction": "AFTER_CRASH_AND_OWNER_RECONCILIATION"
+    }
+  ]
+}
