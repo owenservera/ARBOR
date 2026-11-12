@@ -1,0 +1,125 @@
+{
+  "schema": "arbor.hvi.d.run-ledger/1",
+  "status": "PREPARED_NOT_PROMOTED",
+  "branch": "work/p5-hvi-w1-d-parity-r001",
+  "baseSha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+  "s0Gate": "GO_TO_PARALLEL",
+  "s0Commit": "2ef7a9f66419d681e040b459ba4762a63aa9564f",
+  "sourcePins": [
+    {
+      "name": "labs",
+      "repo": "owenservera/vivim-labs",
+      "sha": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be"
+    },
+    {
+      "name": "labui",
+      "repo": "owenservera/vivim-labs",
+      "sha": "67e76c5b730dcc2cd3ab3919c3ba273a6c260db8"
+    },
+    {
+      "name": "labio",
+      "repo": "owenservera/vivim-labs",
+      "sha": "61d9fc15c55144c4f0b79afa248981c2b0ca9bd6"
+    },
+    {
+      "name": "swc",
+      "repo": "owenservera/repos-hq",
+      "sha": "7cb2fadd88c5a08c0ec7e084410e150a5b6e0f3d"
+    },
+    {
+      "name": "aw",
+      "repo": "owenservera/repos-hq",
+      "sha": "61507b5f9bafd0211d0a556280b367574e676ce1"
+    },
+    {
+      "name": "rock",
+      "repo": "owenservera/repos-hq",
+      "sha": "0a3c11a6df72434b46931f90b25bf1f93da09f92"
+    },
+    {
+      "name": "xray",
+      "repo": "owenservera/repos-hq",
+      "sha": "c80e45ff11b33aec785c2055e52420751ee8388d"
+    },
+    {
+      "name": "arbor",
+      "repo": "owenservera/ARBOR",
+      "sha": "f9823a5131e73e7562db5a4ec14e1ec481557d69"
+    }
+  ],
+  "sourceInspection": {
+    "missingPathRows": 361,
+    "inspected": 23,
+    "unreviewed": 338,
+    "inspectedPercent": 6.37,
+    "labsResearchSelectedSources": 22
+  },
+  "sourceOnly": true,
+  "hostAuthorized": false,
+  "runtimeAccepted": false,
+  "testsExecuted": [],
+  "sourceVerifications": [
+    {
+      "operation": "connected GitHub S0 branch gate and exact worker base",
+      "result": "verified"
+    },
+    {
+      "operation": "pinned Git blob reads and exports/imports observed",
+      "result": "observed"
+    },
+    {
+      "operation": "S0 361-path row enumeration",
+      "result": "361 exact source pinned rows"
+    },
+    {
+      "operation": "privacy and owner boundary source review",
+      "result": "source-only"
+    }
+  ],
+  "unrun": [
+    {
+      "command": "node --test hq/version-intelligence/parity/atlas.test.mjs",
+      "reason": "connected GitHub source connector has no Node checkout runner; test source committed only"
+    },
+    {
+      "command": "node --test tests/hq-version-intelligence",
+      "reason": "Lane F tests and G1 integrated checkout not available at D base"
+    },
+    {
+      "command": "bun test",
+      "reason": "Bun/checkout not invoked"
+    },
+    {
+      "command": "cargo test",
+      "reason": "Cargo/checkout not invoked"
+    },
+    {
+      "command": "Windows/MSVC build",
+      "reason": "no Windows runner"
+    },
+    {
+      "command": "Android device + PWA signer/revoke",
+      "reason": "no device/live Host integration"
+    },
+    {
+      "command": "full private-data/secret scanner",
+      "reason": "not performed; source only checked selected files"
+    }
+  ],
+  "blockers": [
+    "338 of 361 missing HQ path contents unreviewed; not equivalent to missing capabilities",
+    "source-only test authoring without local Node24/Bun/Cargo execution",
+    "Host and beta P0 release gates remain BLOCKED_NOT_BETA"
+  ],
+  "security": [
+    "No personal corpora/session/token reads or writes",
+    "No provider APIs, browser automation, graph writer, scheduler, Host effect execution or new authority database",
+    "No other worker write scopes touched; no main mutation"
+  ],
+  "nextOwnerHandoff": [
+    "Z1 independent review then G1 serial integration",
+    "X real five-repo audit after GO_FOR_W2",
+    "B catalogue identity donor migration; F shared tests",
+    "HQ/Rust live graph read model; Host source/effect owner for supervisor and personal intake"
+  ]
+}
