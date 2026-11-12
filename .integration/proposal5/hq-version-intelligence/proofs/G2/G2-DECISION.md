@@ -25,3 +25,9 @@ H and U were serially imported with 20 total scoped files including Z2 proofs; n
 G1+CI: attain executable synthetic test receipts and accepted main via reviewed PR. Host security/H: wire real canonical revocable development-source grants and admitted action (default disabled until proof). U/G2: attest live UiCore revision and run full synthetic UI tests. Independent Z2: review repairs and exits. Only then may G2 request a reviewed main promotion and possibly issue `GO_FOR_READINESS_REVIEW`. Keep `integration/beta-gates.json` blocked.
 
 Detailed evidence: `integration/reports/HVI-G2.md` and `proofs/G2/G2-RECEIPT.json`.
+
+## Subsequent G2 source-security closeout (2026-11-12)
+
+After the earlier G2 source stage, the integration master committed four further in-scope source/test repairs: `77bec293a7f0144d1c0bae01a1102a26bf1a7e9f`, `06858bf389338695969cff12e55ea1f1138bb20e`, `eec8a16f00e1e26459c6ad6a7e4c4c9851300d23`, and `33b6059615aab0ec5571a3acf5674725b67fcd9f`. The low-level source read helper and direct comparator now share credential-path refusal semantics; synthetic regression test cases are authored. Isolated V8 source-slice checks: **14/14**, not Node24, OS test exits or integrated acceptance. GitHub Actions [43319733234](https://github.com/owenservera/ARBOR/actions/runs/43319733234) still ended `startup_failure` with zero jobs; retry returned 403 and was disallowed. See [issue #24](https://github.com/owenservera/ARBOR/issues/24).
+
+**Fresh decision: `REPAIR_REQUIRED`, no promotion.** PR #21 remains a draft without independent review. The original `G1_NOT_ACCEPTED`, `Z2_REPAIR_REQUIRED`, Node24/AJV `UNRUN`, live grant/dispatcher and publisher-revision gates still block an honest `GO_FOR_READINESS_REVIEW` or R certification. No real repository comparisons, main merge, live access or beta changes were executed.
