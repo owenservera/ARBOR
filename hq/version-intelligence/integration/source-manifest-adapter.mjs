@@ -14,6 +14,8 @@ function reject(code, why) {
 const sha40 = v => typeof v === 'string' && /^[a-f0-9]{40}$/.test(v);
 const sha64 = v => typeof v === 'string' && /^[a-f0-9]{64}$/.test(v);
 const cmp = (a, b) => a < b ? -1 : a > b ? 1 : 0;
+const BLOCKED_PART = /^(?:\.env[^/]*|\.npmrc|\.netrc|\.pypirc|\.ssh|secrets?|credentials?(?:\.[^/]*)?|tokens?(?:\.[^/]*)?|cookies?(?:\.[^/]*)?|login[ -]?data|session(?:\.[^/]*)?|storage-state\.json|release-profile\.json|private|personal|profiles?|.*\.(?:pem|p12|pfx|key|keystore))$/i;
+const restricted = name => sensitivePath(name) || name.split('/').some(part => BLOCKED_PART.test(part));
 
 /** Input must be an actual Lane-A snapshotAt result, including its pinned source. */
 export function bridgeSourceManifest(native) {
@@ -34,7 +36,7 @@ export function bridgeSourceManifest(native) {
       !Number.isSafeInteger(native.observedEntries) ||
       native.observedEntries !== native.entries.length ||
       !Number.isSafeInteger(native.omittedMinimum) || native.omittedMinimum < 0 ||
-      !Array.isArray(native.errors)) reject('INCOMPLETE_SCAN', 'native_coverage');
+      !Array.isArray(native.errors) || native.entries.length > 50000) reject('INCOMPLETE_SCAN', 'native_coverage');
   if (native.truncated && native.completeness === 'complete') reject('INCOMPLETE_SCAN', 'false_completeness');
   const aDigest = manifestDigestOf(native);
   if (aDigest !== native.manifestDigest || p.manifestDigest !== aDigest) reject('DIGEST_CONFLICT', 'native_digest');
@@ -47,7 +49,9 @@ export function bridgeSourceManifest(native) {
     previous = name;
     if (!sha40(original.blobSha) || !/^[0-7]{6}$/.test(original.mode) ||
         !['file','symlink','submodule'].includes(original.kind)) reject('INCOMPLETE_SCAN', 'native_entry');
-    if (sensitivePath(name)) { redacted++; continue; }
+    if (original.excludedReason && !['sensitive_path','large_blob'].includes(original.excludedReason)) reject('INCOMPLETE_SCAN', 'unknown_exclusion');
+    if (!['gitlink_only','uninspected','symlink_metadata','lfs_pointer','binary','text','oversized','inspection_deferred'].includes(original.parseStatus)) reject('INCOMPLETE_SCAN', 'unknown_parse_status');
+    if (restricted(name)) { redacted++; continue; }
     const unsupported = original.kind === 'symlink' ? 'SYMLINK_NOT_FOLLOWED'
       : original.kind === 'submodule' ? 'SUBMODULE_NOT_FOLLOWED'
       : original.parseStatus === 'lfs_pointer' ? 'LFS_POINTER_NOT_CONTENT'
@@ -86,8 +90,6 @@ export function bridgeSourceManifests(manifests) {
   }
   const out = manifests.map(bridgeSourceManifest), ids = new Set(), revisions = new Map();
   for (const x of out) {
-    if (ids.has(x.pin.pinId)) reject('ID_CONFLICT', 'duplicate_pin');
-    ids.add(x.pin.pinId);
     const key = x.pin.repoIdentity + '@' + x.pin.resolvedCommitSha;
     const prior = revisions.get(key);
     if (prior && (prior.aDigest !== x.receipt.aDigest ||
@@ -95,6 +97,8 @@ export function bridgeSourceManifests(manifests) {
       prior.tree !== x.pin.rootTreeSha)) reject('DIGEST_CONFLICT', 'same_revision_conflicting_source');
     revisions.set(key, { aDigest: x.receipt.aDigest,
       cProjectionDigest: x.receipt.cProjectionDigest, tree: x.pin.rootTreeSha });
+    if (ids.has(x.pin.pinId)) reject('ID_CONFLICT', 'duplicate_pin');
+    ids.add(x.pin.pinId);
   }
   return out;
 }

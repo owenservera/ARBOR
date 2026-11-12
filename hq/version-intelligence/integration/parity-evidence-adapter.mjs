@@ -38,15 +38,16 @@ export function joinParityEvidence({ donorBridge, targetBridge, comparison } = {
   const joinedRows = atlas.rows.map(r => {
     const match = lookup.get(key(r.origin_repo, r.origin_sha, r.origin_path, r.origin_blob));
     if (!match) fail('UNMATCHED_SOURCE_EVIDENCE');
+    const effectiveSourceState = donor.completeness === 'complete' &&
+      target.completeness === 'complete' ? r.source_state :
+      r.source_state === 'MISSING_AT_TARGET' ? 'UNOBSERVABLE' : r.source_state;
     return { pinId: donorBridge.pin.pinId, targetPinId: targetBridge.pin.pinId,
       repo: r.origin_repo, commitSha: r.origin_sha, path: r.origin_path,
-      blobSha: r.origin_blob, sourceState: donor.completeness === 'complete' &&
-        target.completeness === 'complete' ? r.source_state :
-        r.source_state === 'MISSING_AT_TARGET' ? 'UNOBSERVABLE' : r.source_state,
+      blobSha: r.origin_blob, sourceState: effectiveSourceState,
       capabilityState: r.capability_state, inspected: r.inspected,
       evidenceRefs: r.evidence_refs, testStatus: r.tests,
       runtimeEvidence: 'UNRUN', ownerDecision: 'UNKNOWN_UNREVIEWED',
-      classification: r.source_state === 'MISSING_AT_TARGET' ?
+      classification: effectiveSourceState === 'MISSING_AT_TARGET' ?
         'PHYSICAL_PATH_ABSENCE_ONLY' : 'SOURCE_PROJECTION',
       comparisonFindingId: match.id };
   });
