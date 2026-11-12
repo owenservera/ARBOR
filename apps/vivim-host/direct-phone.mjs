@@ -27,6 +27,7 @@ const assets = new Map(Object.entries({
   'ux/render.mjs': ['ux/render.mjs', 'text/javascript; charset=utf-8'],
   'pairing-link.mjs': ['pairing-link.mjs', 'text/javascript; charset=utf-8'],
   'device-enrollment.mjs': ['device-enrollment.mjs', 'text/javascript; charset=utf-8'],
+  'browser-device-key.mjs': ['browser-device-key.mjs', 'text/javascript; charset=utf-8'],
   'control-phone.mjs': ['control-phone.mjs', 'text/javascript; charset=utf-8'],
   'control-client.mjs': ['control-client.mjs', 'text/javascript; charset=utf-8'],
   'control-chat.mjs': ['control-chat.mjs', 'text/javascript; charset=utf-8'],
