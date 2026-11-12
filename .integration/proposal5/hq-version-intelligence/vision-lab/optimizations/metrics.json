@@ -1,0 +1,231 @@
+{
+  "schema": "arbor.optimization.metrics/1",
+  "stage": "DEFINITIONS_ONLY",
+  "sourcePin": "98f15e327957956ec94189772d5e5813e7b6b07b",
+  "units": "SI plus MiB (binary)",
+  "metrics": [
+    {
+      "id": "latency_p50_ms",
+      "title": "Latency p50",
+      "unit": "ms",
+      "direction": "lower",
+      "measuredValue": null,
+      "measurementStatus": "NOT_MEASURED"
+    },
+    {
+      "id": "latency_p95_ms",
+      "title": "Latency p95",
+      "unit": "ms",
+      "direction": "lower",
+      "measuredValue": null,
+      "measurementStatus": "NOT_MEASURED"
+    },
+    {
+      "id": "latency_p99_ms",
+      "title": "Latency p99",
+      "unit": "ms",
+      "direction": "lower",
+      "measuredValue": null,
+      "measurementStatus": "NOT_MEASURED"
+    },
+    {
+      "id": "throughput_events_sec",
+      "title": "Processed events per second",
+      "unit": "events/s",
+      "direction": "higher",
+      "measuredValue": null,
+      "measurementStatus": "NOT_MEASURED"
+    },
+    {
+      "id": "cpu_core_seconds",
+      "title": "CPU core-seconds per workload",
+      "unit": "core-seconds",
+      "direction": "lower",
+      "measuredValue": null,
+      "measurementStatus": "NOT_MEASURED"
+    },
+    {
+      "id": "rss_peak_mib",
+      "title": "Peak resident memory",
+      "unit": "MiB",
+      "direction": "lower",
+      "measuredValue": null,
+      "measurementStatus": "NOT_MEASURED"
+    },
+    {
+      "id": "heap_retained_mib",
+      "title": "Heap retained after idle",
+      "unit": "MiB",
+      "direction": "lower",
+      "measuredValue": null,
+      "measurementStatus": "NOT_MEASURED"
+    },
+    {
+      "id": "alloc_bytes_event",
+      "title": "Allocated bytes per event",
+      "unit": "bytes/event",
+      "direction": "lower",
+      "measuredValue": null,
+      "measurementStatus": "NOT_MEASURED"
+    },
+    {
+      "id": "db_base_bytes",
+      "title": "Database main-file bytes",
+      "unit": "bytes",
+      "direction": "lower",
+      "measuredValue": null,
+      "measurementStatus": "NOT_MEASURED"
+    },
+    {
+      "id": "db_wal_bytes",
+      "title": "SQLite WAL bytes",
+      "unit": "bytes",
+      "direction": "lower",
+      "measuredValue": null,
+      "measurementStatus": "NOT_MEASURED"
+    },
+    {
+      "id": "db_freelist_bytes",
+      "title": "SQLite free pages",
+      "unit": "bytes",
+      "direction": "lower",
+      "measuredValue": null,
+      "measurementStatus": "NOT_MEASURED"
+    },
+    {
+      "id": "db_growth_bytes_per_1k",
+      "title": "Growth per 1k records",
+      "unit": "bytes/1000 records",
+      "direction": "lower",
+      "measuredValue": null,
+      "measurementStatus": "NOT_MEASURED"
+    },
+    {
+      "id": "read_amplification",
+      "title": "Read amplification",
+      "unit": "ratio",
+      "direction": "lower",
+      "measuredValue": null,
+      "measurementStatus": "NOT_MEASURED"
+    },
+    {
+      "id": "write_amplification",
+      "title": "Write amplification",
+      "unit": "ratio",
+      "direction": "lower",
+      "measuredValue": null,
+      "measurementStatus": "NOT_MEASURED"
+    },
+    {
+      "id": "fsync_p99_ms",
+      "title": "Durable commit p99",
+      "unit": "ms",
+      "direction": "lower",
+      "measuredValue": null,
+      "measurementStatus": "NOT_MEASURED"
+    },
+    {
+      "id": "recovery_p95_ms",
+      "title": "Recovery p95",
+      "unit": "ms",
+      "direction": "lower",
+      "measuredValue": null,
+      "measurementStatus": "NOT_MEASURED"
+    },
+    {
+      "id": "peak_temp_disk_bytes",
+      "title": "Peak extra disk during compaction",
+      "unit": "bytes",
+      "direction": "lower",
+      "measuredValue": null,
+      "measurementStatus": "NOT_MEASURED"
+    },
+    {
+      "id": "idle_wakeups_hour",
+      "title": "Idle wakeups per hour",
+      "unit": "wakes/hour",
+      "direction": "lower",
+      "measuredValue": null,
+      "measurementStatus": "NOT_MEASURED"
+    },
+    {
+      "id": "energy_wh_session",
+      "title": "Energy per session",
+      "unit": "Wh/session",
+      "direction": "lower",
+      "measuredValue": null,
+      "measurementStatus": "NOT_MEASURED"
+    },
+    {
+      "id": "frame_p99_ms",
+      "title": "Visual frame p99",
+      "unit": "ms",
+      "direction": "lower",
+      "measuredValue": null,
+      "measurementStatus": "NOT_MEASURED"
+    },
+    {
+      "id": "compiler_cold_s",
+      "title": "Cold build duration",
+      "unit": "s",
+      "direction": "lower",
+      "measuredValue": null,
+      "measurementStatus": "NOT_MEASURED"
+    },
+    {
+      "id": "compiler_warm_s",
+      "title": "Incremental rebuild duration",
+      "unit": "s",
+      "direction": "lower",
+      "measuredValue": null,
+      "measurementStatus": "NOT_MEASURED"
+    },
+    {
+      "id": "build_target_bytes",
+      "title": "Build directory size",
+      "unit": "bytes",
+      "direction": "lower",
+      "measuredValue": null,
+      "measurementStatus": "NOT_MEASURED"
+    },
+    {
+      "id": "verified_cache_hit_rate",
+      "title": "Scoped cache hit rate",
+      "unit": "%",
+      "direction": "higher",
+      "measuredValue": null,
+      "measurementStatus": "NOT_MEASURED"
+    },
+    {
+      "id": "correctness_parity",
+      "title": "Golden and adverse test parity",
+      "unit": "boolean",
+      "direction": "MUST_PASS",
+      "measuredValue": null,
+      "measurementStatus": "NOT_MEASURED"
+    },
+    {
+      "id": "authorization_parity",
+      "title": "Grant/revoke/effect safety",
+      "unit": "boolean",
+      "direction": "MUST_PASS",
+      "measuredValue": null,
+      "measurementStatus": "NOT_MEASURED"
+    },
+    {
+      "id": "replay_digest_parity",
+      "title": "Repeatable exact replay",
+      "unit": "boolean",
+      "direction": "MUST_PASS",
+      "measuredValue": null,
+      "measurementStatus": "NOT_MEASURED"
+    }
+  ],
+  "acceptanceRules": [
+    "CORRECTNESS_MUST_PASS",
+    "AUTHORIZATION_MUST_PASS",
+    "REPLAY_MUST_PASS",
+    "NO_PROTECTED_ORIGINAL_EVICTION",
+    "NO_FABRICATED_RUNTIME_CLAIMS"
+  ]
+}
