@@ -24,6 +24,7 @@ export function observerExport(snapshot, {allowSourceIds=[]}={}) {
   if (snapshot?.schema!==SCHEMA) throw new Error('invalid_snapshot');
   const {snapshot_sha256, ...body}=snapshot;
   if (sha(JSON.stringify(stable(body)))!==snapshot_sha256) throw new Error('invalid_snapshot_digest');
+  if(!Array.isArray(allowSourceIds)||allowSourceIds.some(id=>typeof id!=='string'))throw new Error('invalid_source_allowlist');
   const allow=new Set(allowSourceIds);
   const sources=sorted(snapshot.sources.filter(s=>allow.has(s.id)).map(s=>({
     id:s.id,repository:s.repository,revision:s.revision,completeness:s.completeness,
