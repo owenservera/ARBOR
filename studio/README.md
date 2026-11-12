@@ -6,6 +6,8 @@
 
 **Own your AI · Share your AI · Evolve your AI**
 
+[**VIVIM taglines & messaging principles**](docs/VIVIM-TAGLINES-AND-MESSAGING.md)
+
 VIVIM is building a **local-first personal world for your webapps and AI**. Interact with the services you already use, bring useful information together on your own machine, and organize, search, and reuse it under your direction.
 
 [**The vision**](#the-idea) · [**How it works**](#a-world-you-can-return-to) · [**What's available**](#what-exists-today) · [**Try the preview**](#try-the-developer-preview)
