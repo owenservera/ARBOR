@@ -1,0 +1,64 @@
+{
+  "schema": "arbor.proposal5.source-lock/1",
+  "integrationBranch": "integrate/proposal5-beta-r001",
+  "startingArchitectureCommit": "6ab7e6976c02cac2ee71f030deda3f6541f8102f",
+  "commonWorkerAncestor": "dd245d78ff3c110ba8630cad557ea0479c51a635",
+  "mergeMethod": "GitHub merge commits serial A-F",
+  "workerHeads": {
+    "A": "dda546a11294920d6521a0f64ab7ee62ec993c70",
+    "B": "78a5105a9c1f1880d658f350e130b1e2632d3532",
+    "C": "f950b91685927f37b48d020433aa8d2d3c271419",
+    "D": "ad55fe28c2c331841675f308f9199ee4c2add86a",
+    "E": "1a5cf26ce14ebce4e31d9a4373060ace61852645",
+    "F": "be458f3c4cdb7eb38d47b1de2a00d441b7cdc704"
+  },
+  "mergeCommits": {
+    "A": "57ae0bae83b47fadeea2cc6038365e7d3f577fe3",
+    "B": "0d0d39e9debe4ebe3121f387334a47e0be42be90",
+    "C": "362b6e376a90999c35ba5a803971c83a241ed00e",
+    "D": "8fd4b1abb16f2d5ab418fdba42a03e2b918231c8",
+    "E": "ad07a0dd937fe02235f0a27c5d40c4f0bb4caada",
+    "F": "0b3474a5cb2053d607453b18d319d225f1d3ca57"
+  },
+  "sourceIntegrationSha": "0b3474a5cb2053d607453b18d319d225f1d3ca57",
+  "owners": {
+    "A": [
+      "native/hqkg",
+      "core/programmability",
+      "src-tauri"
+    ],
+    "B": [
+      "apps/vivim-host"
+    ],
+    "C": [
+      "studio",
+      "harness"
+    ],
+    "D": [
+      "hq"
+    ],
+    "E": [
+      "apps/mobile-relay",
+      "packages/tierflow"
+    ],
+    "F": [
+      "contracts",
+      "tests",
+      "capability-spaces"
+    ],
+    "G": [
+      "Cargo.toml",
+      "Cargo.lock",
+      "rust-toolchain.toml",
+      "package.json",
+      "bun.lock",
+      "integration"
+    ]
+  },
+  "foundationProofs": "PREPARED_NOT_PROMOTED; not merged",
+  "validation": "SOURCE_MERGED_BUILD_UNRUN",
+  "notes": [
+    "No donor process isolation or local compile executed by GitHub connector",
+    "Root cargo/bun lock generation pending real toolchain execution"
+  ]
+}
