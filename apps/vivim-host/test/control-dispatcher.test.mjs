@@ -1,0 +1,244 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { mkdtempSync, rmSync, unlinkSync, writeFileSync, readFileSync, mkdirSync } from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { createBootstrapRuntime } from '../bootstrap/runtime.mjs';
+import { createControlDispatcher } from '../control/dispatcher.mjs';
+import { loadControlCatalog } from '../control/intent-planner.mjs';
+
+const DESKTOP = { channel: 'desktop-owner-token', actor: 'owner' };
+const PHONE = { channel: 'direct-phone', actor: 'owner@example.com' };
+
+function fixture(t, { grant = 'full-bootstrap', clock = { t: Date.parse('2026-11-01T10:00:00Z') } } = {}) {
+  const dataRoot = mkdtempSync(path.join(os.tmpdir(), 'vivim-control-dispatch-'));
+  const runtime = createBootstrapRuntime({ dataRoot, file: ':memory:', now: () => new Date(clock.t).toISOString() });
+  if (grant) runtime.grantBootstrap({ scope: grant });
+  const control = createControlDispatcher({ dataRoot, runtime, now: () => clock.t });
+  t.after(() => { runtime.close(); rmSync(dataRoot, { recursive: true, force: true }); });
+  return { dataRoot, runtime, control, clock };
+}
+
+test('text → plan → owner approval → Host executor → receipt, end to end for the theme', t => {
+  const { control, runtime } = fixture(t);
+  const before = runtime.projection().preset;
+  const plan = control.plan({ text: 'set my theme to ember' }, { source: 'mobile' });
+  assert.equal(plan.outcome, 'approval_required');
+  assert.match(plan.planId, /^ctl-[a-f0-9]{16}$/);
+  assert.equal(runtime.projection().preset, before, 'planning changes nothing');
+  assert.equal(control.status(plan.planId).state, 'planned');
+  const receipt = control.execute({ planId: plan.planId, planDigest: plan.planDigest, approval: PHONE });
+  assert.equal(receipt.status, 'applied');
+  assert.equal(receipt.result.preset, 'ember');
+  assert.equal(runtime.projection().preset, 'ember');
+  assert.deepEqual(receipt.undo, { actionId: 'ui.theme.undo', args: {} });
+  assert.equal(receipt.liveAcceptance, 'pending');
+  assert.equal(control.status(plan.planId).state, 'applied');
+  // Undo is its own approved plan through the same path.
+  const undo = control.plan({ actionId: receipt.undo.actionId, args: receipt.undo.args }, { source: 'mobile' });
+  assert.equal(control.execute({ planId: undo.planId, planDigest: undo.planDigest, approval: PHONE }).status, 'applied');
+  assert.equal(runtime.projection().preset, before);
+});
+
+test('reads run immediately with no journal entry and no approval', t => {
+  const { control } = fixture(t);
+  const r = control.plan({ text: 'show my theme' });
+  assert.equal(r.outcome, 'done');
+  assert.equal(r.effect, 'read');
+  assert.equal(control.recent().length, 0);
+  assert.ok(control.plan({ text: 'help' }).result.actions.length >= 12);
+});
+
+test('an approval binds one exact digest; replay returns the receipt and never re-applies', t => {
+  const { control, runtime } = fixture(t);
+  const plan = control.plan({ text: 'set theme to dusk' });
+  assert.throws(() => control.execute({ planId: plan.planId, planDigest: 'f'.repeat(64), approval: DESKTOP }), /CONTROL_PLAN_MISMATCH/);
+  assert.throws(() => control.execute({ planId: plan.planId, planDigest: plan.planDigest, approval: { channel: 'model' } }), /CONTROL_APPROVAL_CHANNEL/);
+  const first = control.execute({ planId: plan.planId, planDigest: plan.planDigest, approval: DESKTOP });
+  const revision = runtime.projection().revision;
+  const again = control.execute({ planId: plan.planId, planDigest: plan.planDigest, approval: DESKTOP });
+  assert.equal(again.replayed, true);
+  assert.equal(again.planId, first.planId);
+  assert.equal(runtime.projection().revision, revision, 'no second effect');
+});
+
+test('tampering with the stored plan is detected before any effect', t => {
+  const { control, dataRoot, runtime } = fixture(t);
+  const before = runtime.projection().preset;
+  const plan = control.plan({ text: 'set theme to dusk' });
+  const file = path.join(dataRoot, 'control', 'plans', plan.planId + '.plan.json');
+  const stored = JSON.parse(readFileSync(file, 'utf8'));
+  writeFileSync(file, JSON.stringify({ ...stored, args: { preset: 'ink' } }));
+  assert.throws(() => control.execute({ planId: plan.planId, planDigest: plan.planDigest, approval: DESKTOP }), /CONTROL_PLAN_TAMPERED/);
+  assert.equal(runtime.projection().preset, before);
+});
+
+test('a claimed plan without a receipt is uncertain and is never retried', t => {
+  const { control, dataRoot, runtime } = fixture(t);
+  const before = runtime.projection().preset;
+  const plan = control.plan({ text: 'set theme to grove' });
+  writeFileSync(path.join(dataRoot, 'control', 'plans', plan.planId + '.claimed'), 'crash');
+  assert.equal(control.status(plan.planId).state, 'uncertain');
+  assert.throws(() => control.execute({ planId: plan.planId, planDigest: plan.planDigest, approval: DESKTOP }), /CONTROL_UNCERTAIN/);
+  assert.equal(runtime.projection().preset, before);
+});
+
+test('expired plans and stale phone approvals of R2 actions are refused', t => {
+  const clock = { t: Date.parse('2026-11-01T10:00:00Z') };
+  const { control } = fixture(t, { clock });
+  const theme = control.plan({ text: 'set theme to ink' });
+  const privacy = control.plan({ text: 'never mention my former employer' });
+  assert.equal(privacy.risk, 'R2');
+  assert.equal(privacy.approval.freshOwner, true);
+  clock.t += 3 * 60_000;
+  assert.throws(() => control.execute({ planId: privacy.planId, planDigest: privacy.planDigest, approval: PHONE }), /CONTROL_FRESH_APPROVAL_REQUIRED/);
+  assert.equal(control.execute({ planId: privacy.planId, planDigest: privacy.planDigest, approval: DESKTOP }).status, 'applied');
+  clock.t += 10 * 60_000;
+  assert.throws(() => control.execute({ planId: theme.planId, planDigest: theme.planDigest, approval: DESKTOP }), /CONTROL_PLAN_EXPIRED/);
+});
+
+test('privacy exclusions round-trip: add, list with ids, withdraw via the receipt undo', t => {
+  const { control } = fixture(t);
+  const add = control.plan({ text: 'Never mention my former employer' });
+  const receipt = control.execute({ planId: add.planId, planDigest: add.planDigest, approval: DESKTOP });
+  assert.equal(receipt.result.value, 'mention my former employer');
+  assert.equal(receipt.undo.actionId, 'privacy.hard_no.clear');
+  const listed = control.plan({ text: 'show my exclusions' }).result.exclusions;
+  assert.deepEqual(listed.map(x => x.id), [receipt.result.id]);
+  const clear = control.plan({ text: `withdraw exclusion ${receipt.result.id}` });
+  assert.equal(control.execute({ planId: clear.planId, planDigest: clear.planDigest, approval: DESKTOP }).status, 'applied');
+  assert.deepEqual(control.plan({ text: 'show my exclusions' }).result.exclusions, []);
+});
+
+test('a missing bootstrap grant is a failed receipt with the Host reason, not a silent success', t => {
+  const { control } = fixture(t, { grant: null });
+  const plan = control.plan({ text: 'set theme to dawn' });
+  const r = control.execute({ planId: plan.planId, planDigest: plan.planDigest, approval: DESKTOP });
+  assert.equal(r.status, 'failed');
+  assert.equal(r.error.code, 'GRANT_REQUIRED');
+  assert.equal(r.executionPerformed, false);
+});
+
+test('teaching changes reading only; the taught word still needs approval for its action', t => {
+  const { control, runtime } = fixture(t);
+  const before = runtime.projection().preset;
+  const teach = control.plan({ text: 'teach glow means theme' });
+  assert.equal(teach.actionId, 'control.lexicon.teach');
+  control.execute({ planId: teach.planId, planDigest: teach.planDigest, approval: DESKTOP });
+  assert.deepEqual(control.lexicon().entries, [{ word: 'glow', actionId: 'ui.theme.set_preset' }]);
+  const used = control.plan({ text: 'glow dawn' });
+  assert.equal(used.actionId, 'ui.theme.set_preset');
+  assert.equal(used.outcome, 'approval_required');
+  assert.equal(runtime.projection().preset, before);
+  const reserved = control.plan({ text: 'teach stop means theme' });
+  const r = control.execute({ planId: reserved.planId, planDigest: reserved.planDigest, approval: DESKTOP });
+  assert.equal(r.status, 'failed');
+  assert.equal(r.error.code, 'CONTROL_WORD_RESERVED');
+  const forget = control.plan({ text: 'forget glow' });
+  control.execute({ planId: forget.planId, planDigest: forget.planDigest, approval: DESKTOP });
+  assert.equal(control.plan({ text: 'glow dawn' }).outcome, 'interpretation_required');
+});
+
+test('unavailable and unsupported actions never reach the journal', t => {
+  const { control } = fixture(t);
+  assert.equal(control.plan({ text: 'Pause all VIVIM traffic' }).outcome, 'unavailable');
+  assert.equal(control.plan({ text: 'Disconnect my PC from the network' }).outcome, 'unavailable');
+  assert.equal(control.plan({ actionId: 'machine.network.disable_all', args: {} }).outcome, 'unavailable');
+  assert.equal(control.recent().length, 0);
+});
+
+test('the catalog cannot claim an executor the Host lacks', t => {
+  const dataRoot = mkdtempSync(path.join(os.tmpdir(), 'vivim-control-mismatch-'));
+  t.after(() => rmSync(dataRoot, { recursive: true, force: true }));
+  const catalog = loadControlCatalog();
+  catalog.actions.find(a => a.id === 'vivim.network.pause_egress').readiness = 'source_wired';
+  catalog.actions.find(a => a.id === 'vivim.network.pause_egress').executor = 'nowhere.mjs:none';
+  assert.throws(() => createControlDispatcher({ dataRoot, runtime: { status() {} }, catalog }), /CONTROL_EXECUTOR_MISMATCH/);
+});
+
+test('Personal World summary is a safe R0 Host read on both desktop and phone',t=>{
+  const {control}=fixture(t);
+  for(const source of ['desktop','mobile']) {
+    const result=control.plan({actionId:'personalization.context.summary',args:{}},{source});
+    assert.equal(result.outcome,'done');
+    assert.equal(result.effect,'read');
+    assert.equal(result.result.state,'ready');
+    assert.equal(result.result.detailLocation,'Private Personal World view on your PC');
+    assert.ok(!JSON.stringify(result.result).includes('hardNos'));
+    assert.ok(!JSON.stringify(result.result).includes('statement'));
+  }
+});
+
+test('owner-approved preference text actions write to single Host ledger and support undo',t=>{
+  const {control,runtime}=fixture(t);
+  const plan=control.plan({actionId:'personalization.preference.add',
+    args:{value:'Compact layouts with fewer animations'}},{source:'mobile'});
+  assert.equal(plan.outcome,'approval_required');
+  assert.equal(runtime.status().preferences.some(p=>p.value==='Compact layouts with fewer animations'),false);
+  const receipt=control.execute({planId:plan.planId,planDigest:plan.planDigest,approval:PHONE});
+  assert.equal(receipt.status,'applied');
+  assert.match(receipt.result.id,/^prf-owner-pref-[a-f0-9]{24}$/);
+  assert.deepEqual(receipt.undo,{actionId:'personalization.preference.remove',
+    args:{id:receipt.result.id}});
+  const stored=runtime.status().preferences.find(p=>p.id===receipt.result.id);
+  assert.equal(stored.source,'owner');
+  assert.equal(stored.basis,'explicitly_stated');
+  assert.equal(stored.hard,false);
+  assert.equal(stored.value,'Compact layouts with fewer animations');
+  const replay=control.execute({planId:plan.planId,planDigest:plan.planDigest,approval:PHONE});
+  assert.equal(replay.status,'applied');
+  assert.equal(runtime.status().preferences.filter(p=>p.id===receipt.result.id).length,1);
+  const undo=control.plan({actionId:receipt.undo.actionId,args:receipt.undo.args},
+    {source:'mobile'});
+  assert.equal(undo.outcome,'approval_required');
+  const removed=control.execute({planId:undo.planId,planDigest:undo.planDigest,approval:PHONE});
+  assert.equal(removed.status,'applied');
+  assert.equal(runtime.status().preferences.some(p=>p.id===receipt.result.id),false);
+});
+
+test('owner preference removal cannot withdraw an inferred or hard-boundary row',t=>{
+  const {runtime}=fixture(t);
+  runtime.ledger.preferences.upsert({id:'prf-owner-pref-'+'a'.repeat(24),
+    worldId:runtime.worldId,key:'provider.suggestion',value:'inferred',
+    polarity:'want',hard:false,basis:'inferred',source:'provider',
+    scope:'work',confidence:0.8,updatedAt:new Date().toISOString()});
+  assert.throws(()=>runtime.clearOwnerPreference({id:'prf-owner-pref-'+'a'.repeat(24)}),
+    /unknown or non-owner preference/);
+  const boundary=runtime.setHardNo({trait:'Never share secrets'});
+  assert.throws(()=>runtime.clearOwnerPreference({id:boundary.id}),
+    /not an editable owner preference/);
+});
+
+test('Personal World preference list shows only explicitly editable owner rows',t=>{
+  const {control,runtime}=fixture(t);
+  const saved=runtime.setOwnerPreference({value:'No animations in technical views'});
+  runtime.setHardNo({trait:'Never share private project information'});
+  runtime.ledger.preferences.upsert({id:'inferred-1',worldId:runtime.worldId,
+    key:'inferred.layout',value:'Maybe bright colors',polarity:'want',hard:false,
+    basis:'inferred',source:'provider',scope:'work',confidence:0.5,
+    updatedAt:new Date().toISOString()});
+  const read=control.plan({actionId:'personalization.preference.list',args:{}},
+    {source:'mobile'});
+  assert.equal(read.outcome,'done');
+  assert.equal(read.result.state,'source-backed');
+  assert.equal(read.result.preferences.length,1);
+  assert.deepEqual(read.result.preferences[0],{
+    id:saved.id,value:'No animations in technical views',
+    scope:'global',source:'owner'
+  });
+  assert.doesNotMatch(JSON.stringify(read.result),/Maybe bright colors|Never share private/);
+  assert.equal(control.recent().length,0,'reading saved preferences does not create a write plan');
+});
+
+test('a held lexicon lock makes teach fail with CONTROL_LEXICON_BUSY, not uncertain', t => {
+  const { control, dataRoot } = fixture(t);
+  const plan = control.plan({ text: 'teach blitz means theme' });
+  assert.equal(plan.actionId, 'control.lexicon.teach');
+  // Hold the exclusive cross-process lock file that lexicon.save() acquires.
+  mkdirSync(path.join(dataRoot, 'control'), { recursive: true });
+  writeFileSync(path.join(dataRoot, 'control', 'lexicon.json.lock'), '');
+  const receipt = control.execute({ planId: plan.planId, planDigest: plan.planDigest, approval: DESKTOP });
+  assert.equal(receipt.status, 'failed');
+  assert.equal(receipt.error.code, 'CONTROL_LEXICON_BUSY');
+  assert.equal(receipt.executionPerformed, false);
+});

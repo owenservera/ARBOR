@@ -1,0 +1,34 @@
+{
+  "productName": "VIVIM Host",
+  "version": "0.1.0",
+  "identifier": "com.vivim.host",
+  "build": {
+    "frontendDist": "../apps/vivim-host/public",
+    "devUrl": "http://127.0.0.1:43187",
+    "beforeDevCommand": "node apps/vivim-host/server.mjs"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "title": "VIVIM Host",
+        "width": 1200,
+        "height": 800,
+        "resizable": true,
+        "fullscreen": false
+      }
+    ]
+  },
+  "bundle": {
+    "active": true,
+    "targets": [
+      "msi"
+    ],
+    "icon": [
+      "icons/icon.ico"
+    ],
+    "resources": {
+      "resources/runtime/": "runtime/"
+    }
+  }
+}

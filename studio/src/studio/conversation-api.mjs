@@ -1,0 +1,162 @@
+// Thin authenticated-server surface over the shared lifecycle runtime. No browser logic here.
+import { readdirSync, readFileSync } from 'node:fs';
+import path from 'node:path';
+import { json, object, problem, storageName, text } from './http.mjs';
+import { TRANSCRIPT_LIMITS } from '../capture/conversation-thread.mjs';
+import { chatIndexExpression } from '../capture/chatgpt-chat-index.mjs';
+import { getAdapter } from '../profiles/sites/index.mjs';
+import { DCB_HOST_FACADE_SCHEMA, createDcbHostContextRuntime } from '../agents/dcb-context-runtime.mjs';
+import { createDcbSourceAdapters } from '../../../harness/src/context/dcb-sources.mjs';
+
+// DCB Host facade (Lane A) — constructed ONCE per conversation runtime in this module
+// (prior verification: studio/src/agents/dcb-context-runtime.mjs was test-only dead code with no
+// live send-path consumer; this is the wiring). Host-owned callbacks derive from EXISTING
+// evidence only, never caller flags:
+//   - verifyTarget: a thread verifies only if THIS Host observed it bound on the provider's
+//     origin (conversation binding records written by authenticated connect flows, site-matched
+//     through the existing adapter registry).
+//   - authorizeSourceDisclosure: the Host has NO source-disclosure grant evidence store yet, so
+//     the callback refuses unconditionally. The dispatch gate can therefore never mint a send
+//     candidate — the facade structurally runs in OBSERVATION-ONLY mode: assemble context and
+//     record provenance, never block a send (log-and-continue), refuse to invent authority.
+//     Flipping to enforcing REQUIRES replacing this refuser with a callback backed by real
+//     grant evidence first.
+export function createDcbConversationFacade({ paths } = {}) {
+  const directory = path.join(paths.root, 'conversations');
+  const verifyTarget = async ({ principalRef, destinationProvider, threadRef }) => {
+    let verified = false;
+    try {
+      for (const name of readdirSync(directory)) {
+        if (!name.endsWith('.conversation.json')) continue;
+        let record; try { record = JSON.parse(readFileSync(path.join(directory, name), 'utf8')); } catch { continue; }
+        if (record?.binding?.thread?.ref !== threadRef) continue;
+        const matched = await getAdapter(record.binding.origin ?? '').catch(() => null);
+        if (matched?.id === destinationProvider) { verified = true; break; }
+      }
+    } catch { verified = false; }
+    return { verified, principalRef, destinationProvider, threadRef };
+  };
+  const authorizeSourceDisclosure = async (request) => ({ authorized: false, proofRef: null,
+    principalRef: request?.principalRef ?? null, destinationProvider: request?.destinationProvider ?? null,
+    sourceRefs: Array.isArray(request?.sourceRefs) ? [...request.sourceRefs] : [],
+    reason: 'NO_HOST_DISCLOSURE_GRANT_EVIDENCE' });
+  const facade = createDcbHostContextRuntime({
+    paths, ownerRef: 'owner:studio-host', sourceAdapters: createDcbSourceAdapters({}),
+    verifyTarget, authorizeSourceDisclosure,
+  });
+  // The evidence callbacks are returned for inspection/testing in the SAME trusted module
+  // boundary; the frozen facade surface itself never exposes them.
+  return { facade, mode: 'observation-only', verifyTarget, authorizeSourceDisclosure };
+}
+
+export async function defaultConversationRuntime(options) {
+  const { createConversationRuntime } = await import('../capture/conversation-runtime.mjs');
+  // Single DCB facade construction site; threaded to the runtime via dependencies.dcb.
+  let dcb = null;
+  try { dcb = createDcbConversationFacade({ paths: options?.paths }); }
+  catch (e) { console.warn(`[dcb] Host facade unavailable (${e?.code ?? String(e?.message ?? e)}); conversation sends continue without DCB observation`); }
+  return createConversationRuntime(options && dcb
+    ? { ...options, dependencies: { ...options.dependencies, dcb } }
+    : options);
+}
+
+// Sites the fresh-conversation ('create') path accepts. Narrower than src/profiles/sites'
+// ADAPTER_IDS on purpose: this is the create-a-tab-and-type gate, kept to accounts the owner has
+// actually signed into and that compare/ask exercise (chatgpt, claude, zai, qwen as of 2026-10-30).
+// runtime.connect() (src/capture/conversation-runtime.mjs) independently re-checks against the
+// full adapter registry; this list only needs to grow when another account is wired up end to end.
+export const CREATE_SITES = Object.freeze(['chatgpt', 'claude', 'zai', 'qwen', 'deepseek', 'gemini']);
+
+export function validateConversationBody(kind, body) {
+  object(body);
+  const fields = { create: ['site'], connect: ['site', 'targetId', 'freshTab', 'expectedThread', 'prefixSource'], prefix: ['site', 'targetId', 'expectedThread', 'source', 'promptAttestation'], submit: ['key', 'prompt', 'confirm', 'expectedRevision'], reconcile: ['expectedRevision', 'turnId'], finish: ['closeTab'],
+    chatIndex: ['targetId', 'site', 'maxEntries', 'maxTitleChars', 'scanLimit', 'containers'], read: ['maxMessages', 'maxChars'] }[kind];
+  if (Object.keys(body).some((key) => !fields.includes(key))) throw problem(400, 'Unexpected request field');
+  if (kind === 'create') {
+    if (!CREATE_SITES.includes(body.site)) throw problem(400, `Choose ${CREATE_SITES.map((s) => (s === 'zai' ? 'Z.ai' : s[0].toUpperCase() + s.slice(1))).join(', ')} for a fresh conversation`, 'INVALID_CREATE');
+  }
+  if (kind === 'connect') {
+    text(body.site, 'site', 128);
+    if (body.targetId !== undefined) text(body.targetId, 'targetId', 256);
+    if (body.freshTab !== undefined && typeof body.freshTab !== 'boolean') throw problem(400, 'freshTab must be boolean');
+    if (body.expectedThread !== undefined) text(body.expectedThread, 'expectedThread', 200);
+    if (body.prefixSource !== undefined) {
+      object(body.prefixSource);
+      if (Object.keys(body.prefixSource).some((k) => !['conversationId', 'attemptId', 'payloadDigest'].includes(k))) throw problem(400, 'Unexpected prefix source field');
+      text(body.prefixSource.conversationId, 'conversationId', 128); text(body.prefixSource.attemptId, 'attemptId', 128); text(body.prefixSource.payloadDigest, 'payloadDigest', 64);
+    }
+  }
+  if (kind === 'prefix') {
+    text(body.site, 'site', 128); text(body.targetId, 'targetId', 256); text(body.expectedThread, 'expectedThread', 200);
+    object(body.source);
+    if (Object.keys(body.source).some((k) => !['conversationId', 'attemptId'].includes(k))) throw problem(400, 'Unexpected source field');
+    text(body.source.conversationId, 'conversationId', 128); text(body.source.attemptId, 'attemptId', 128);
+    if (body.promptAttestation !== undefined) text(body.promptAttestation, 'promptAttestation', 250000);
+  }
+  if (kind === 'chatIndex') {
+    text(body.targetId, 'targetId', 256);
+    if (body.site !== undefined && body.site !== 'chatgpt') throw problem(400, 'site must be chatgpt');
+    chatIndexExpression(body); // Reuse the canonical pure bounds/containers validator, not a second schema.
+  }
+  if (kind === 'read') {
+    const L = TRANSCRIPT_LIMITS;
+    for (const [name, spec] of [['maxMessages', L.maxMessages], ['maxChars', L.maxChars]]) {
+      if (body[name] !== undefined && (!Number.isSafeInteger(body[name]) || body[name] < spec.min || body[name] > spec.max)) throw problem(400, `${name} must be an integer from ${spec.min} to ${spec.max}`);
+    }
+  }
+  if (kind === 'submit') {
+    text(body.key, 'key', 200); text(body.prompt, 'prompt', 250000);
+    if (body.confirm !== true) throw problem(400, 'Explicit confirm:true required');
+  }
+  if (kind === 'submit' || kind === 'reconcile') {
+    if (kind === 'reconcile' && body.turnId !== undefined) text(body.turnId, 'turnId', 200);
+    if (!Number.isSafeInteger(body.expectedRevision) || body.expectedRevision < 0) throw problem(400, 'expectedRevision must be a nonnegative integer');
+  }
+  if (kind === 'finish' && body.closeTab !== undefined && typeof body.closeTab !== 'boolean') throw problem(400, 'closeTab must be boolean');
+  return body;
+}
+
+function throwUnavailable() { throw problem(501, 'Conversation event stream is not available', 'CONVERSATION_EVENTS_UNAVAILABLE'); }
+
+export function createConversationApi({ runtime, events } = {}) {
+  return { async handle(req, res, url, body = {}) {
+    const p = url.pathname;
+    if (p !== '/api/v1/chat-index' && p !== '/api/v1/conversation-targets' && p !== '/api/v1/conversations' && !p.startsWith('/api/v1/conversations/')) return false;
+    let methods, run;
+    if (p === '/api/v1/chat-index') {
+      methods = ['POST']; run = async () => json(res, 200, await runtime.chatIndex(validateConversationBody('chatIndex', body)));
+    } else if (p === '/api/v1/conversation-targets') {
+      methods = ['GET']; run = async () => json(res, 200, await runtime.targets());
+    } else if (p === '/api/v1/conversations/create') {
+      methods = ['POST']; run = async () => json(res, 201, { conversation: await runtime.connect({ ...validateConversationBody('create', body), freshTab: true }) });
+    } else if (p === '/api/v1/conversations/prefix') {
+      methods = ['POST']; run = async () => json(res, 201, { conversation: await runtime.bindObservedPrefix(validateConversationBody('prefix', body)) });
+    } else if (p === '/api/v1/conversations') {
+      methods = ['GET', 'POST'];
+      run = async () => req.method === 'GET'
+        ? json(res, 200, { conversations: await runtime.list() })
+        : json(res, 201, { conversation: await runtime.connect(validateConversationBody('connect', body)) });
+    } else {
+      const match = /^\/api\/v1\/conversations\/([^/]+)(?:\/(turns|reconcile|finish|read|events|capsule))?$/.exec(p);
+      if (!match) { json(res, 404, { error: 'Unknown conversation endpoint' }); return true; }
+      let id;
+      try { id = storageName(decodeURIComponent(match[1]), 'conversation'); } catch { throw problem(400, 'Invalid conversation id'); }
+      const kind = match[2] === 'turns' ? 'submit' : match[2];
+      methods = kind === 'events' || kind === 'capsule' ? ['GET'] : kind ? ['POST'] : ['GET'];
+      // Read answers with a bounded transcript (a browser observation), never a conversation snapshot wrapper.
+      // events is a resumable SSE stream of derived conversation state (no prompt/reply text; reconnect via
+      // Last-Event-ID, reset on cursor loss — clients re-read state, never replay actions).
+      run = async () => kind === 'read'
+        ? json(res, 200, { transcript: await runtime.read(id, validateConversationBody('read', body)) })
+        : kind === 'events'
+          ? (events ?? throwUnavailable()).subscribe(req, res, id, Object.fromEntries(url.searchParams))
+          : kind === 'capsule'
+            ? json(res, 200, typeof runtime.capsule === 'function' ? await runtime.capsule(id) : throwUnavailable())
+            : json(res, kind === 'submit' ? 202 : 200, { conversation: kind ? await runtime[kind](id, validateConversationBody(kind, body)) : await runtime.get(id) });
+    }
+    if (!methods.includes(req.method)) {
+      res.setHeader('allow', methods.join(', ')); json(res, 405, { error: `${methods.join(' or ')} required` }); return true;
+    }
+    await run(); return true;
+  } };
+}

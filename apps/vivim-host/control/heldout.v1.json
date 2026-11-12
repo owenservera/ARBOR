@@ -1,0 +1,511 @@
+{
+ "schema": "vivim.control-heldout/1",
+ "note": "Held-out phrasings written BEFORE the first scoring run and not used to tune the parser. Used by the UTC maturity scorer (LNG-03..06). Replace/extend with real owner phrasing from an opt-in miss log (LRN-04) when it exists. Do not tune against these cases; add new unseen ones instead.",
+ "cases": [
+  {
+   "text": "can you switch my theme over to ember",
+   "tags": [
+    "paraphrase"
+   ],
+   "note": "",
+   "outcome": "candidate",
+   "actionId": "ui.theme.set_preset",
+   "args": {
+    "preset": "ember"
+   }
+  },
+  {
+   "text": "I'd like the dusk look please",
+   "tags": [
+    "paraphrase"
+   ],
+   "note": "",
+   "outcome": "candidate",
+   "actionId": "ui.theme.set_preset",
+   "args": {
+    "preset": "dusk"
+   }
+  },
+  {
+   "text": "make everything ink",
+   "tags": [
+    "paraphrase"
+   ],
+   "note": "",
+   "outcome": "candidate",
+   "actionId": "ui.theme.set_preset",
+   "args": {
+    "preset": "ink"
+   }
+  },
+  {
+   "text": "switch to the grove theme",
+   "tags": [
+    "paraphrase"
+   ],
+   "note": "",
+   "outcome": "candidate",
+   "actionId": "ui.theme.set_preset",
+   "args": {
+    "preset": "grove"
+   }
+  },
+  {
+   "text": "go back to my previous theme",
+   "tags": [
+    "paraphrase"
+   ],
+   "note": "",
+   "outcome": "candidate",
+   "actionId": "ui.theme.undo",
+   "args": {}
+  },
+  {
+   "text": "put my theme back how it was",
+   "tags": [
+    "paraphrase"
+   ],
+   "note": "",
+   "outcome": "candidate",
+   "actionId": "ui.theme.undo",
+   "args": {}
+  },
+  {
+   "text": "what theme am I using",
+   "tags": [
+    "paraphrase"
+   ],
+   "note": "",
+   "outcome": "candidate",
+   "actionId": "ui.theme.show",
+   "args": {}
+  },
+  {
+   "text": "which look is active right now",
+   "tags": [
+    "paraphrase"
+   ],
+   "note": "",
+   "outcome": "candidate",
+   "actionId": "ui.theme.show",
+   "args": {}
+  },
+  {
+   "text": "never bring up my salary",
+   "tags": [
+    "paraphrase"
+   ],
+   "note": "",
+   "outcome": "candidate",
+   "actionId": "privacy.hard_no.add",
+   "args": {
+    "trait": "bring up my salary"
+   }
+  },
+  {
+   "text": "is vivim healthy",
+   "tags": [
+    "paraphrase"
+   ],
+   "note": "",
+   "outcome": "candidate",
+   "actionId": "vivim.status.show",
+   "args": {}
+  },
+  {
+   "text": "how's everything running",
+   "tags": [
+    "paraphrase"
+   ],
+   "note": "",
+   "outcome": "candidate",
+   "actionId": "vivim.status.show",
+   "args": {}
+  },
+  {
+   "text": "what are you able to do",
+   "tags": [
+    "paraphrase"
+   ],
+   "note": "",
+   "outcome": "candidate",
+   "actionId": "control.catalog.list",
+   "args": {}
+  },
+  {
+   "text": "list the things you must never use",
+   "tags": [
+    "paraphrase"
+   ],
+   "note": "",
+   "outcome": "candidate",
+   "actionId": "privacy.hard_no.list",
+   "args": {}
+  },
+  {
+   "text": "cut vivim's internet",
+   "tags": [
+    "paraphrase"
+   ],
+   "note": "must not resolve to the whole-machine disconnect",
+   "outcomeIn": [
+    "candidate",
+    "clarification_required"
+   ],
+   "forbidActionIds": [
+    "machine.network.disable_all"
+   ]
+  },
+  {
+   "text": "block everything vivim sends out",
+   "tags": [
+    "paraphrase"
+   ],
+   "note": "",
+   "outcomeIn": [
+    "candidate",
+    "clarification_required"
+   ],
+   "forbidActionIds": [
+    "machine.network.disable_all"
+   ]
+  },
+  {
+   "text": "set the colors to dawn",
+   "tags": [
+    "paraphrase"
+   ],
+   "note": "",
+   "outcome": "candidate",
+   "actionId": "ui.theme.set_preset",
+   "args": {
+    "preset": "dawn"
+   }
+  },
+  {
+   "text": "theme: tide",
+   "tags": [
+    "paraphrase"
+   ],
+   "note": "",
+   "outcome": "candidate",
+   "actionId": "ui.theme.set_preset",
+   "args": {
+    "preset": "tide"
+   }
+  },
+  {
+   "text": "switch my appearance to ember please",
+   "tags": [
+    "paraphrase"
+   ],
+   "note": "",
+   "outcome": "candidate",
+   "actionId": "ui.theme.set_preset",
+   "args": {
+    "preset": "ember"
+   }
+  },
+  {
+   "text": "stop using anything about my family",
+   "tags": [
+    "paraphrase"
+   ],
+   "note": "'stop' is also a network verb",
+   "outcomeIn": [
+    "clarification_required",
+    "interpretation_required",
+    "incomplete"
+   ],
+   "forbidActionIds": [
+    "vivim.network.pause_egress",
+    "machine.network.disable_all"
+   ]
+  },
+  {
+   "text": "SET MY THEME TO EMBER",
+   "tags": [
+    "format"
+   ],
+   "note": "",
+   "outcome": "candidate",
+   "actionId": "ui.theme.set_preset",
+   "args": {
+    "preset": "ember"
+   }
+  },
+  {
+   "text": "Set my theme to ember.",
+   "tags": [
+    "format"
+   ],
+   "note": "",
+   "outcome": "candidate",
+   "actionId": "ui.theme.set_preset",
+   "args": {
+    "preset": "ember"
+   }
+  },
+  {
+   "text": "  set   my   theme  to   ember  ",
+   "tags": [
+    "format"
+   ],
+   "note": "",
+   "outcome": "candidate",
+   "actionId": "ui.theme.set_preset",
+   "args": {
+    "preset": "ember"
+   }
+  },
+  {
+   "text": "set my theme to Ember!",
+   "tags": [
+    "format"
+   ],
+   "note": "",
+   "outcome": "candidate",
+   "actionId": "ui.theme.set_preset",
+   "args": {
+    "preset": "ember"
+   }
+  },
+  {
+   "text": "don't set my theme to ember",
+   "tags": [
+    "negation",
+    "adversarial"
+   ],
+   "note": "",
+   "outcomeIn": [
+    "clarification_required",
+    "interpretation_required",
+    "incomplete"
+   ],
+   "forbidActionIds": [
+    "ui.theme.set_preset"
+   ]
+  },
+  {
+   "text": "do not undo my theme",
+   "tags": [
+    "negation",
+    "adversarial"
+   ],
+   "note": "",
+   "outcomeIn": [
+    "clarification_required",
+    "interpretation_required",
+    "incomplete"
+   ],
+   "forbidActionIds": [
+    "ui.theme.undo"
+   ]
+  },
+  {
+   "text": "please don't stop all traffic",
+   "tags": [
+    "negation",
+    "adversarial"
+   ],
+   "note": "",
+   "outcomeIn": [
+    "clarification_required",
+    "interpretation_required",
+    "incomplete"
+   ],
+   "forbidActionIds": [
+    "vivim.network.pause_egress",
+    "machine.network.disable_all"
+   ]
+  },
+  {
+   "text": "never disconnect my pc from the network",
+   "tags": [
+    "negation",
+    "adversarial"
+   ],
+   "note": "",
+   "outcomeIn": [
+    "clarification_required",
+    "interpretation_required",
+    "incomplete"
+   ],
+   "forbidActionIds": [
+    "machine.network.disable_all"
+   ]
+  },
+  {
+   "text": "what does 'disconnect my pc from the network' do",
+   "tags": [
+    "negation",
+    "adversarial"
+   ],
+   "note": "quoted command being asked about",
+   "outcomeIn": [
+    "clarification_required",
+    "interpretation_required",
+    "incomplete"
+   ],
+   "forbidActionIds": [
+    "machine.network.disable_all"
+   ]
+  },
+  {
+   "text": "without changing my theme to ember",
+   "tags": [
+    "negation",
+    "adversarial"
+   ],
+   "note": "",
+   "outcomeIn": [
+    "clarification_required",
+    "interpretation_required",
+    "incomplete"
+   ],
+   "forbidActionIds": [
+    "ui.theme.set_preset"
+   ]
+  },
+  {
+   "text": "set my theme to ember; shutdown now",
+   "tags": [
+    "trailing",
+    "adversarial"
+   ],
+   "note": "unrecognised second clause is not ignored",
+   "outcomeIn": [
+    "clarification_required",
+    "interpretation_required",
+    "incomplete"
+   ]
+  },
+  {
+   "text": "set my theme to ember and then format my hard drive",
+   "tags": [
+    "trailing",
+    "adversarial"
+   ],
+   "note": "",
+   "outcomeIn": [
+    "clarification_required",
+    "interpretation_required",
+    "incomplete"
+   ]
+  },
+  {
+   "text": "set my theme to ember and also never mention my boss",
+   "tags": [
+    "trailing",
+    "adversarial"
+   ],
+   "note": "two mutations in one sentence",
+   "outcomeIn": [
+    "clarification_required"
+   ]
+  },
+  {
+   "text": "set my theme to ember $(rm -rf /)",
+   "tags": [
+    "trailing",
+    "adversarial"
+   ],
+   "note": "",
+   "outcomeIn": [
+    "clarification_required",
+    "interpretation_required",
+    "incomplete"
+   ]
+  },
+  {
+   "text": "set my theme to еmber",
+   "tags": [
+    "adversarial"
+   ],
+   "note": "Cyrillic e",
+   "outcomeIn": [
+    "incomplete",
+    "interpretation_required"
+   ],
+   "forbidActionIds": [
+    "ui.theme.set_preset"
+   ]
+  },
+  {
+   "text": "set my theme to emb​er",
+   "tags": [
+    "adversarial"
+   ],
+   "note": "zero-width space",
+   "outcomeIn": [
+    "incomplete",
+    "interpretation_required"
+   ],
+   "forbidActionIds": [
+    "ui.theme.set_preset"
+   ]
+  },
+  {
+   "text": "cambia mi tema a ember",
+   "tags": [
+    "es"
+   ],
+   "note": "",
+   "outcome": "candidate",
+   "actionId": "ui.theme.set_preset",
+   "args": {
+    "preset": "ember"
+   }
+  },
+  {
+   "text": "deshaz el cambio de tema",
+   "tags": [
+    "es"
+   ],
+   "note": "",
+   "outcome": "candidate",
+   "actionId": "ui.theme.undo",
+   "args": {}
+  },
+  {
+   "text": "muéstrame mi tema actual",
+   "tags": [
+    "es"
+   ],
+   "note": "",
+   "outcome": "candidate",
+   "actionId": "ui.theme.show",
+   "args": {}
+  },
+  {
+   "text": "para todo el tráfico",
+   "tags": [
+    "es"
+   ],
+   "note": "same ambiguity as English",
+   "outcome": "clarification_required"
+  },
+  {
+   "text": "nunca menciones mi antiguo empleador",
+   "tags": [
+    "es"
+   ],
+   "note": "",
+   "outcome": "candidate",
+   "actionId": "privacy.hard_no.add",
+   "args": {
+    "trait": "menciones mi antiguo empleador"
+   }
+  },
+  {
+   "text": "ayuda",
+   "tags": [
+    "es"
+   ],
+   "note": "",
+   "outcome": "candidate",
+   "actionId": "control.catalog.list",
+   "args": {}
+  }
+ ]
+}

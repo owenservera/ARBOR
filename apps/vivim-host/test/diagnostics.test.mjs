@@ -1,0 +1,58 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { createWorkerHeartbeat } from '../../../studio/src/studio/worker-heartbeat.mjs';
+import { workerHealth, messageJourney } from '../diagnostics.mjs';
+import { hostSnapshot } from '../server.mjs';
+
+function withData(fn) {
+  const root = mkdtempSync(path.join(os.tmpdir(), 'vivim-m1-'));
+  try { return fn(root); } finally { rmSync(root, { recursive: true, force: true }); }
+}
+const DATE = '2026-10-31T10:00:00.000Z';
+test('healthy heartbeat is evidenced; stale, error, malformed and absent are never online', () => withData(root => {
+  assert.equal(workerHealth(root, 'relay', { now: DATE }).state, 'unknown');
+  const beat = createWorkerHeartbeat({ root, worker: 'relay', now: () => DATE });
+  beat.record();
+  assert.equal(workerHealth(root, 'relay', { now: DATE }).state, 'online');
+  assert.equal(workerHealth(root, 'relay', { now: '2026-10-31T10:00:20.000Z' }).state, 'stale');
+  beat.record('error');
+  assert.equal(workerHealth(root, 'relay', { now: DATE }).state, 'blocked');
+  assert.equal(workerHealth(root, 'chatWorker', { now: DATE }).state, 'unknown');
+  assert.throws(() => createWorkerHeartbeat({root,worker:'anything'}));
+  assert.doesNotMatch(JSON.stringify(hostSnapshot({ dataRoot: root, now: () => DATE })), /secret/);
+}));
+test('message journey distinguishes claimed, pending cloud update, cloud ack without declaring phone delivery', () => withData(root => {
+  const bridge = path.join(root, 'bridge'); mkdirSync(bridge);
+  const cmd = 'cmd-1234567890abcdef';
+  const rows = [
+    { id: cmd, rev: 1, status: 'queued', origin: 'relay', text: 'PRIVATE PROMPT', createdAt: DATE, updatedAt: DATE, consumer: 'harness' },
+    { id: cmd, rev: 2, status: 'claimed', origin: 'relay', text: 'PRIVATE PROMPT', claimedBy: 'harness', createdAt: DATE, updatedAt: DATE, consumer: 'harness' },
+    { id: cmd, rev: 3, status: 'done', origin: 'relay', text: 'PRIVATE PROMPT', result: 'PRIVATE ANSWER', claimedBy: 'harness', createdAt: DATE, updatedAt: DATE, consumer: 'harness' },
+  ];
+  writeFileSync(path.join(bridge, 'commands.jsonl'), rows.map(JSON.stringify).join('\n')+'\ninvalid tail\n');
+  let snap = messageJourney(root, { now: DATE });
+  assert.equal(snap.recent.length, 1);
+  assert.equal(snap.recent[0].currentStage, 'waiting_for_cloud_update');
+  assert.equal(snap.recent[0].evidence.cloudPulled, true);
+  assert.equal(snap.recent[0].evidence.consumerClaimed, true);
+  assert.equal(snap.recent[0].evidence.phoneDisplayed, null);
+  assert.doesNotMatch(JSON.stringify(snap), /PRIVATE PROMPT|PRIVATE ANSWER/);
+  writeFileSync(path.join(bridge, 'relay-state.json'), JSON.stringify({ pushed: { [cmd]: 3 } }));
+  snap = messageJourney(root, { now: DATE });
+  assert.equal(snap.recent[0].currentStage, 'cloud_update_accepted');
+  assert.equal(snap.recent[0].evidence.phoneDisplayed, null);
+}));
+test('journal link remains metadata-only and uncertain cannot be called delivered', () => withData(root => {
+  const bridge = path.join(root, 'bridge'), journal = path.join(root, 'journal');
+  mkdirSync(bridge); mkdirSync(journal);
+  const requestId = '11111111-2222-4333-8444-555555555555';
+  writeFileSync(path.join(journal, `${requestId}.json`), JSON.stringify({ state:'uncertain', submitted:'unknown', prompt:'SENSITIVE', reply:'SENSITIVE' }));
+  writeFileSync(path.join(bridge, 'commands.jsonl'), JSON.stringify({id:'cmd-aaaaaaaaaaaaaaaa', status:'claimed', rev:3, consumer:'harness', claimedBy:'harness', origin:'relay', result:`sent to claude, waiting… (request ${requestId})`, createdAt:DATE, updatedAt:DATE}));
+  const snap = messageJourney(root,{now:DATE,journalRoot:journal});
+  assert.equal(snap.recent[0].currentStage, 'send_outcome_uncertain');
+  assert.equal(snap.recent[0].evidence.journalState, 'uncertain');
+  assert.doesNotMatch(JSON.stringify(snap), /SENSITIVE|sent to claude/);
+}));

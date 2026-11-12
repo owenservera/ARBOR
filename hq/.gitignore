@@ -1,0 +1,18 @@
+# Runtime data and credentials must not ship in a source snapshot
+.hq/
+wiki/
+projects.json
+*.db
+*.db-*
+*.sqlite
+*.sqlite-*
+*.log
+*.jsonl
+.env
+.env.*
+node_modules/
+dist/
+cache/
+caches/
+profiles/
+sessions/

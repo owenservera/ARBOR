@@ -1,0 +1,24 @@
+node_modules/
+coverage/
+.cache/
+*.log
+.env
+.env.*
+!.env.example
+sessions/
+captures/
+data/
+chrome-profile/
+*.sqlite
+*.sqlite-*
+.DS_Store
+
+# Vercel UI preview build output (derived from canonical frontend)
+ui-preview/dist/
+
+# Local lane scratch: baseline captures, debug probes, gate logs. Never committed.
+.prof/
+
+# Native Android shell: build outputs and local debug signing material.
+android/build/
+android/.keystore

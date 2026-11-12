@@ -1,0 +1,13 @@
+{
+  "name": "web-harness",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "One local interface over the user's own signed-in AI webapps (ChatGPT, Claude, DeepSeek, Qwen, Z.ai, Gemini).",
+  "engines": { "node": ">=22" },
+  "bin": { "wh": "bin/wh.mjs", "wh-mcp": "bin/wh-mcp.mjs" },
+  "scripts": {
+    "test": "node --test \"test/**/*.test.mjs\"",
+    "wh": "node bin/wh.mjs"
+  }
+}

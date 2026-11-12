@@ -1,0 +1,836 @@
+{
+  "schema": "arbor.proposal5.host-import/1",
+  "sourceRepository": "owenservera/vivim-web-harness",
+  "sourceBranch": "main",
+  "sourceCommit": "cae97afe848d79957c9d6c698a90996a758bfd56",
+  "sourceTree": "f7dc72f3045f7fcd4a67e680e52b97ec29aefb64",
+  "targetRepository": "owenservera/ARBOR",
+  "targetBranch": "work/p5-w01-b-host",
+  "targetRoot": "apps/vivim-host",
+  "baseCommit": "dd245d78ff3c110ba8630cad557ea0479c51a635",
+  "selectedCount": 135,
+  "sourceBytes": 1231234,
+  "preservation": "Exact Git blob SHA equivalence verified for all imported paths",
+  "excluded": [
+    {
+      "path": "corpus/INTEGRATION-5-ISOLATED-TESTS.tap",
+      "reason": "generated test output"
+    },
+    {
+      "path": "corpus/transport/test-results-2026-11-06.tap",
+      "reason": "generated test output"
+    }
+  ],
+  "files": [
+    {
+      "path": "apps/vivim-host/README.md",
+      "sourceBlobSHA": "3981fc1e400f24489a2e6efb561357784f011157",
+      "bytes": 4734,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/apk/enrollment.mjs",
+      "sourceBlobSHA": "cf8e44b12e9a81e0dfc348246dcc3d46c3649519",
+      "bytes": 11426,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/apk/pairing.mjs",
+      "sourceBlobSHA": "c54ef0dcc75b4310e01d3919198864d6dd0042d5",
+      "bytes": 6075,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/apk/registry.mjs",
+      "sourceBlobSHA": "050842b757859b3d75fe9fd7fba91cc155d93a0a",
+      "bytes": 5049,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/bootstrap/capability-activation.mjs",
+      "sourceBlobSHA": "cc40981379610450ac457edc0fff3cd39270e467",
+      "bytes": 10269,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/bootstrap/command-worker.mjs",
+      "sourceBlobSHA": "bfbe450a2f0cd4e3922537f0c078cae656b2f370",
+      "bytes": 5953,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/bootstrap/ledger.mjs",
+      "sourceBlobSHA": "b40eb9ba34e49b034875936a0e7fc14964270a54",
+      "bytes": 24908,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/bootstrap/owner-auth.mjs",
+      "sourceBlobSHA": "22d25dfe2484bf0db56b6c2b3970c209a0351c5f",
+      "bytes": 5396,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/bootstrap/readiness-gate.mjs",
+      "sourceBlobSHA": "6e51a7e8217d209f8681643d2ac6bcbf9908b7bc",
+      "bytes": 5944,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/bootstrap/runtime.mjs",
+      "sourceBlobSHA": "cc6805424bf5a382168bcfac0ec4dafa1d1ab096",
+      "bytes": 6907,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/bootstrap/rust-web-reader.mjs",
+      "sourceBlobSHA": "287758ef07431129eefb075d2afad0b3e772ba78",
+      "bytes": 2841,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/bootstrap/rust-web-reader.test.mjs",
+      "sourceBlobSHA": "7bf7db5a912fcccf6405f5a9f3929b91880bbaff",
+      "bytes": 3046,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/bootstrap/scheduler.mjs",
+      "sourceBlobSHA": "112a0baa757078935798f94cc15599b09b5341f0",
+      "bytes": 17371,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/bootstrap/service.mjs",
+      "sourceBlobSHA": "308b10d5679c34a8a7e164190f0f3b74c77a6055",
+      "bytes": 47145,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/bootstrap/web-memory-auth.test.mjs",
+      "sourceBlobSHA": "a7f175e3351832cc150d682585f0927251cf8684",
+      "bytes": 2651,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/bootstrap/web-memory-phone-auth.test.mjs",
+      "sourceBlobSHA": "1aa040dc97a03b4d5c158c826415795a8d82d392",
+      "bytes": 1630,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/bootstrap/web-memory.mjs",
+      "sourceBlobSHA": "03908a63d61c2159cb667c362f25602714984a9c",
+      "bytes": 10666,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/bootstrap/web-memory.test.mjs",
+      "sourceBlobSHA": "4f509ed6a1dca8c02f650bdc2cb9e0b4ba19e73f",
+      "bytes": 7327,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/bootstrap/worker-supervisor.mjs",
+      "sourceBlobSHA": "86a4bf8598d8c51db490daa60f504877e2d39e47",
+      "bytes": 5948,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/control/action-catalog.v1.json",
+      "sourceBlobSHA": "c423d5933c28ca9f534028aeaffd7929f767c269",
+      "bytes": 21407,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/control/bootstrap-actions.mjs",
+      "sourceBlobSHA": "04c5ff70b14ef17054b6f6913d75d49e2c55b640",
+      "bytes": 675,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/control/browser-session.mjs",
+      "sourceBlobSHA": "7122287992ce52e99ded1b9ff41b8ba13013b6e3",
+      "bytes": 2704,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/control/cli.mjs",
+      "sourceBlobSHA": "d88284146ed829f4c7f6ab9fc0d10ce7ba9719e9",
+      "bytes": 4698,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/control/command-context-grounding.mjs",
+      "sourceBlobSHA": "46364af8e64362a3bf4da2aa4c57f5e68526d6f3",
+      "bytes": 3871,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/control/command-intent.d.ts",
+      "sourceBlobSHA": "97e749156bd3b7ea47164d838b53a147c925c47d",
+      "bytes": 3148,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/control/command-intent.mjs",
+      "sourceBlobSHA": "52828ce955027b9e083a8afa5625cb0dbc1b730f",
+      "bytes": 9665,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/control/command-program.mjs",
+      "sourceBlobSHA": "28a65908ea907b28593d8747b0bd6da06a9c7142",
+      "bytes": 4273,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/control/corpus.v1.json",
+      "sourceBlobSHA": "0b55f6c2361c0987f8a9acff212d01f92adeb596",
+      "bytes": 5757,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/control/dispatcher.mjs",
+      "sourceBlobSHA": "723865482b8a0f98ab3214b2ec6a83aaea629c43",
+      "bytes": 19637,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/control/heldout.v1.json",
+      "sourceBlobSHA": "d59ab33bea7b82b625b259141091b249f86dfa6b",
+      "bytes": 9344,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/control/http-status.mjs",
+      "sourceBlobSHA": "d45ae10e00cceff69f64129718447a63f4094052",
+      "bytes": 586,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/control/intent-planner.mjs",
+      "sourceBlobSHA": "3d1bbcd5ad80ffa6276ea4e5d2b5f0cfbd8cf4ab",
+      "bytes": 17271,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/control/journal.mjs",
+      "sourceBlobSHA": "b9739a00c8345a0513dba32ddc0361e96bb9b16f",
+      "bytes": 5003,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/control/lexicon.mjs",
+      "sourceBlobSHA": "411ca2b111a7874bbbbdc909af78318dc8cb7a8a",
+      "bytes": 4722,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/control/personal-correction.mjs",
+      "sourceBlobSHA": "77c61f9fadc4e2123c45e18d7c6947d39860915f",
+      "bytes": 4613,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/control/personal-rule-store.mjs",
+      "sourceBlobSHA": "a77b7e88e2facfa460c5d5916ceb44183a60a46c",
+      "bytes": 8213,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/control/personal-semantic-observer.mjs",
+      "sourceBlobSHA": "2d5da36ace8ebc83a845c1bbba887088e6a9c577",
+      "bytes": 3682,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/control/personal-semantics.mjs",
+      "sourceBlobSHA": "9c8e8f6fe9ffc06f03cbc4dd11800d66b88b4293",
+      "bytes": 6253,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/conversations/bridge-evidence.mjs",
+      "sourceBlobSHA": "3984a12745032b7625a15c5e6325a16b6f55cc68",
+      "bytes": 4852,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/conversations/live-projection.mjs",
+      "sourceBlobSHA": "f3d1948552a6bc513225f0affe989420d2bb6c57",
+      "bytes": 21878,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/conversations/phone-delivery-acks.mjs",
+      "sourceBlobSHA": "e94f6264cc17863d5627be04001bb86cea6525ba",
+      "bytes": 4465,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/conversations/studio-journal-evidence.mjs",
+      "sourceBlobSHA": "0bb6ec0430aa7a309f10acfe23be9153ff4bca63",
+      "bytes": 2569,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/corpus/host-integration.mjs",
+      "sourceBlobSHA": "9c2df8dc742cc88f9f5e0757380137d8492a652c",
+      "bytes": 14887,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/corpus/host-integration.test.mjs",
+      "sourceBlobSHA": "824942b589912b366e4cb6db1374b05638e027ff",
+      "bytes": 12332,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/corpus/intake/INTEGRATION-5B-HANDOFF.md",
+      "sourceBlobSHA": "a362d997a4afd765a1b24e2cf9cd8368e73449a7",
+      "bytes": 10830,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/corpus/intake/host-intake.mjs",
+      "sourceBlobSHA": "1db63cf3b0cc2dca09590a203b93fc895d4c936c",
+      "bytes": 16519,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/corpus/intake/host-intake.test.mjs",
+      "sourceBlobSHA": "50d5c782762c4ee349ce0b8315dafa6b6228fb11",
+      "bytes": 16623,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/corpus/transport/INTEGRATION-5A-HANDOFF.md",
+      "sourceBlobSHA": "3b813d1010a9d339beace6dd6cbdb12cd1dc5f13",
+      "bytes": 13314,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/corpus/transport/hq-contract.test.mjs",
+      "sourceBlobSHA": "ebafe7253a2925c5d6b7caba2468ba0b3d6d943b",
+      "bytes": 2427,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/corpus/transport/protocol.mjs",
+      "sourceBlobSHA": "b6a6976a8b100b69d73309a69bed7d6578cbbd3b",
+      "bytes": 15194,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/corpus/transport/protocol.test.mjs",
+      "sourceBlobSHA": "94e55bed8219fd505a1ec49a0cc5fb65d94c63c2",
+      "bytes": 12083,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/data-intelligence/catalog.mjs",
+      "sourceBlobSHA": "9fb3d5951e30f8e270516b5858c2d317ddcc333a",
+      "bytes": 3110,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/data-intelligence/journal-adapter.mjs",
+      "sourceBlobSHA": "10b1911e941e31437b25681b7059c073a562f4c7",
+      "bytes": 3002,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/diagnostics.mjs",
+      "sourceBlobSHA": "db3d063a38a066b98970c551267883cdf3c94d45",
+      "bytes": 6136,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/direct-phone.mjs",
+      "sourceBlobSHA": "6bb604cf7a64e4623c28bc86495f39a1f40f1626",
+      "bytes": 26090,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/grokbot/linux-preflight.mjs",
+      "sourceBlobSHA": "e221b259f1b21df917830ee6d6660ba6c59efa2d",
+      "bytes": 1668,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/grokbot/run.mjs",
+      "sourceBlobSHA": "0e534c9bc516b979e51c2072de6cd5fe7f5c24d1",
+      "bytes": 3245,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/grokbot/worker.mjs",
+      "sourceBlobSHA": "6362a76437b4251b2c3d1868d4e652b71791ca57",
+      "bytes": 2285,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/insights.mjs",
+      "sourceBlobSHA": "0306ff7926b5a32a365ac44a4f1740f0d08a631d",
+      "bytes": 5311,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/media/library-summary.mjs",
+      "sourceBlobSHA": "d435f7ff627de1bbbfb78c77ab8f1630f7e02b6e",
+      "bytes": 3357,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/onboarding/environment.mjs",
+      "sourceBlobSHA": "848e4d3eef4388e5147df21371653cbc4ba88d1c",
+      "bytes": 2385,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/onboarding/service.mjs",
+      "sourceBlobSHA": "287a107eab19411a7cf0a3cadb54ea025f9377f0",
+      "bytes": 14575,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/onboarding/studio-port.mjs",
+      "sourceBlobSHA": "b58a036d752389af7b4fbfa430dd117172b439d5",
+      "bytes": 2272,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/package.json",
+      "sourceBlobSHA": "55e339d3e962173f8a9e3dd2bca6f242065af729",
+      "bytes": 263,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/phone-sessions.mjs",
+      "sourceBlobSHA": "c1921d6556c636c28e93bc270610c53322a19f86",
+      "bytes": 9903,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/public/control-panel.js",
+      "sourceBlobSHA": "0cb3fe3bc7f756c599be60c0d341090943bc5871",
+      "bytes": 22165,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/public/geist-latin-wght-normal.woff2",
+      "sourceBlobSHA": "991445d78ae619a7378ff219385588c7811c88ab",
+      "bytes": 29400,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/public/host.css",
+      "sourceBlobSHA": "0f91d96e9f07d120a23e4fa805eb3cb149c9d718",
+      "bytes": 26996,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/public/host.js",
+      "sourceBlobSHA": "090e8a53c95b851e65ed5ee7946aafd9f042fa9d",
+      "bytes": 11113,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/public/index.html",
+      "sourceBlobSHA": "a7cb482f47b19713f70e7208d3a2ab8b88385356",
+      "bytes": 9974,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/public/jetbrains-mono-latin-wght-normal.woff2",
+      "sourceBlobSHA": "cd5102a44c763f1cfe9f2b199fd5d7257491c0dd",
+      "bytes": 40404,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/public/onboarding.html",
+      "sourceBlobSHA": "196d6ebdfe6b982050bb1f1f988dcfc8ee15abbe",
+      "bytes": 1892,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/public/onboarding.js",
+      "sourceBlobSHA": "a58d7a24a2c322445d23f68967dcc99efa94c3d2",
+      "bytes": 22201,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/public/qrcode.js",
+      "sourceBlobSHA": "76889b589ec831dd9b791601f6592793356ce9cd",
+      "bytes": 56694,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/public/space-grotesk-latin-wght-normal.woff2",
+      "sourceBlobSHA": "0f3474ee8af2f8253225f3b41bf79be986a1ae13",
+      "bytes": 22288,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/public/vivim-tokens.css",
+      "sourceBlobSHA": "1e4df8312524eaa2c4339d27e841d81abe69a542",
+      "bytes": 5021,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/receipt-runner.mjs",
+      "sourceBlobSHA": "50659ac8c65aaff032eafb01e0f802dd67e0bba0",
+      "bytes": 14879,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/recovery/README.md",
+      "sourceBlobSHA": "4e648bc166e862c081c5090ac5e939209e5bc408",
+      "bytes": 4715,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/recovery/host-adapter.mjs",
+      "sourceBlobSHA": "a4ae2f3f7ed93913b40e836c71060bcc4697b4c9",
+      "bytes": 4008,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/recovery/intelligence.d.ts",
+      "sourceBlobSHA": "a3b4b3d189b224e769338c0cd84de1ac499d0d99",
+      "bytes": 6208,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/recovery/intelligence.mjs",
+      "sourceBlobSHA": "547cc45bb73ab158a9dc8573dd3647b9bf4671e2",
+      "bytes": 19009,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/runtime/supervisor.mjs",
+      "sourceBlobSHA": "26a27d93e6e10824a7d093d929fe991a9c276db3",
+      "bytes": 11389,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/server.mjs",
+      "sourceBlobSHA": "b34a4998e8719e31645a4546c39b1a434c26cdeb",
+      "bytes": 51791,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/test/apk-enrollment.test.mjs",
+      "sourceBlobSHA": "fdb23060adc6042d23a6475e9fbbb5ed61f83bd2",
+      "bytes": 5291,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/test/apk-registry.test.mjs",
+      "sourceBlobSHA": "95849cc2dc6656cf1fe3fd43b8d233d474f0b9d8",
+      "bytes": 3419,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/test/bootstrap-actions-allowlist.test.mjs",
+      "sourceBlobSHA": "f9f07f49c4c8cd0ed6d00162c3387ffd85283f63",
+      "bytes": 3202,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/test/bootstrap-command-apply.test.mjs",
+      "sourceBlobSHA": "a6a76e931737a52b31a0c40a2630e70f35623545",
+      "bytes": 6865,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/test/bootstrap-command.test.mjs",
+      "sourceBlobSHA": "1aec88a509a35de48cd67c56ee687b7649e1c44a",
+      "bytes": 1988,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/test/bootstrap-grant.test.mjs",
+      "sourceBlobSHA": "355fd71bb54646cf160cf64978561f2f4080ed5b",
+      "bytes": 21044,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/test/bootstrap.test.mjs",
+      "sourceBlobSHA": "fc8d8787dd634bfc52b99ec77bbebd92daa22709",
+      "bytes": 20250,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/test/bridge-evidence.test.mjs",
+      "sourceBlobSHA": "53dac9cbff9aa147bb93fcc6e3637f2be390ef64",
+      "bytes": 6624,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/test/command-context-grounding.test.mjs",
+      "sourceBlobSHA": "1159eabd4cfcce01a99ecaf8250f4fe190e2ebc2",
+      "bytes": 2744,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/test/command-intent-v01.test.mjs",
+      "sourceBlobSHA": "80f9f5aef2c57a915120687ebd4817a804869f04",
+      "bytes": 10297,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/test/command-program.test.mjs",
+      "sourceBlobSHA": "24d2382ce2ca644901c50b807f48ba750ea7aa44",
+      "bytes": 2919,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/test/control-browser-session.test.mjs",
+      "sourceBlobSHA": "cbb182b9dca96cc473d0920a9b6aea0a86382c10",
+      "bytes": 4629,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/test/control-desktop-surface.test.mjs",
+      "sourceBlobSHA": "f8f0b829bb36f577c345b161e215187ebcf85d13",
+      "bytes": 5319,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/test/control-devices.test.mjs",
+      "sourceBlobSHA": "4cb25db5b9cf10b7b3cd642405f92472f3c57c37",
+      "bytes": 5205,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/test/control-dispatcher.test.mjs",
+      "sourceBlobSHA": "f08709ab996f14d2f8f56873a99cce90a4bf9476",
+      "bytes": 14342,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/test/control-http.test.mjs",
+      "sourceBlobSHA": "77c190eaf27a73e57af58853bc5247fa1404fecb",
+      "bytes": 8597,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/test/control-intent-planner.test.mjs",
+      "sourceBlobSHA": "aab8fe1198bcba7e374e127c7f167d29abf4cefe",
+      "bytes": 5093,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/test/control-language.test.mjs",
+      "sourceBlobSHA": "f85a04cbfa6c6159d793082887b06b044166a84a",
+      "bytes": 4445,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/test/control-panel-browser.test.mjs",
+      "sourceBlobSHA": "3372c25b152421a8e8ae7b5abc7b6c02d7c969c7",
+      "bytes": 7745,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/test/data-intelligence-journal.test.mjs",
+      "sourceBlobSHA": "3a32e88c499f698b5a4a6542035cd6c947a3da1f",
+      "bytes": 2304,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/test/data-intelligence.test.mjs",
+      "sourceBlobSHA": "4caad173fe06164387f7396402e5c0f28572ca53",
+      "bytes": 5963,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/test/device-ui-wiring.test.mjs",
+      "sourceBlobSHA": "74db8d66f37b1f7f9b8956c7c3bb02191962d3ce",
+      "bytes": 1869,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/test/diagnostics.test.mjs",
+      "sourceBlobSHA": "18860a81f2f03d96bd3f9f4bef65b2d135409b6f",
+      "bytes": 4015,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/test/direct-phone.test.mjs",
+      "sourceBlobSHA": "671ac09d6a123516681558fc2a712fb4bfd650db",
+      "bytes": 14251,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/test/enrollment-security.test.mjs",
+      "sourceBlobSHA": "d4c18f47cc2322943787c52b79b0f6f64ddfad34",
+      "bytes": 10635,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/test/first-run-phone-contract.test.mjs",
+      "sourceBlobSHA": "4e061bcfde62ae6fb3d5032e0f8cb11d6a3c1718",
+      "bytes": 6539,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/test/fixtures/command-intent-v01.json",
+      "sourceBlobSHA": "cdcd24ca59650c06f47e6e8642a63b4dac0f03a0",
+      "bytes": 3359,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/test/grokbot-worker.test.mjs",
+      "sourceBlobSHA": "16135f2cea075fa0ef89e33522c7df66a9f8d954",
+      "bytes": 2046,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/test/host.test.mjs",
+      "sourceBlobSHA": "ab1e638324d191cac02a181ab68db46ae3e3bf8c",
+      "bytes": 3300,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/test/insights.test.mjs",
+      "sourceBlobSHA": "d6db779c75648e8679e9959e780b66724c7763d1",
+      "bytes": 4073,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/test/kpi-utc.test.mjs",
+      "sourceBlobSHA": "217793eac159543007ed7a4512074d5fda1816a0",
+      "bytes": 13577,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/test/legacy-device-authority.test.mjs",
+      "sourceBlobSHA": "e68c6e435d55bcb5a84cdd137cdbd7ff588d1189",
+      "bytes": 626,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/test/media-library-summary.test.mjs",
+      "sourceBlobSHA": "a1b5e144f297aff6f2aff46c65b7280a661b58d3",
+      "bytes": 3293,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/test/onboarding.test.mjs",
+      "sourceBlobSHA": "9bb90604f02f9c470ac1fb59e428abd276db78e1",
+      "bytes": 15433,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/test/owner-auth.test.mjs",
+      "sourceBlobSHA": "812bf32fbf8fbbaa8f3f5b108a529e00ddc123e8",
+      "bytes": 1670,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/test/personal-correction.test.mjs",
+      "sourceBlobSHA": "f85ecc005b579b6c73101844c6f1017b90435bc0",
+      "bytes": 2867,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/test/personal-rule-store.test.mjs",
+      "sourceBlobSHA": "5f6278153541b2c83918d3c18e75bc3ad1c5c6d0",
+      "bytes": 5237,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/test/personal-semantic-corpus.test.mjs",
+      "sourceBlobSHA": "c7d11a7ea2c3f28ce3ee26bc29bf429601243892",
+      "bytes": 2027,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/test/personal-semantic-host.test.mjs",
+      "sourceBlobSHA": "f1ad50fc1aa3bee8a66aa8810e2ff2803b70da11",
+      "bytes": 3450,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/test/personal-semantic-observer.test.mjs",
+      "sourceBlobSHA": "a1576d69db8fe0e38765d9bfff5909a9000c8b62",
+      "bytes": 2880,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/test/personal-semantics-integration.test.mjs",
+      "sourceBlobSHA": "ad8c5d9a5dbfa5387754d293397ec98c2abc26fc",
+      "bytes": 5152,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/test/personal-semantics.test.mjs",
+      "sourceBlobSHA": "9058be53f8552ecee039c2429a8a300c6dacba6d",
+      "bytes": 4457,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/test/phone-delivery-acks.test.mjs",
+      "sourceBlobSHA": "856bb1f191b6c4611460e68085bce4105f34f227",
+      "bytes": 2357,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/test/phone-sessions.test.mjs",
+      "sourceBlobSHA": "5bf7fa930226b302729d3b162829f026533cc74f",
+      "bytes": 8983,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/test/receipt-runner.test.mjs",
+      "sourceBlobSHA": "886f6c8b2628261f2550fc90e5f9fff66129d1d5",
+      "bytes": 3726,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/test/recovery-host-adapter.test.mjs",
+      "sourceBlobSHA": "7c02c9027c6966889ab2e2a18801e6813011eb22",
+      "bytes": 3182,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/test/recovery-intelligence.test.mjs",
+      "sourceBlobSHA": "f36ef2d55070338b14eb0ba1b813c4932edaf01f",
+      "bytes": 13396,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/test/studio-journal-evidence.test.mjs",
+      "sourceBlobSHA": "895e432e557ce62c516e60e30da83a6718125393",
+      "bytes": 6942,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/test/ui-revision.test.mjs",
+      "sourceBlobSHA": "8e2a1c14fb4e44bb6095a64836796e3e27ea8464",
+      "bytes": 15246,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/test/worker-route-security.test.mjs",
+      "sourceBlobSHA": "1a7df8a2f5774cac9b9a6fedb9d232a3476e7d91",
+      "bytes": 2321,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/test/worker-supervisor.test.mjs",
+      "sourceBlobSHA": "29e07efdd9f08b0bddc86a5113ef4f916bc57873",
+      "bytes": 3444,
+      "gitMode": "100644"
+    },
+    {
+      "path": "apps/vivim-host/vercel.json",
+      "sourceBlobSHA": "b833378a9cdc4daa9ede60747e61d04c7527a46c",
+      "bytes": 66,
+      "gitMode": "100644"
+    }
+  ]
+}

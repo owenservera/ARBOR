@@ -1,0 +1,49 @@
+{
+  "schema": "arbor.proposal5.beta-release/1",
+  "version": "0.1.0",
+  "status": "BLOCKED_NOT_BUILT",
+  "platforms": {
+    "windowsTauri": "UNRUN",
+    "androidPwa": "UNRUN",
+    "androidApk": "DEFERRED"
+  },
+  "authoritativeEffectOwner": "apps/vivim-host",
+  "runtimeNodeMin": "24",
+  "sourceLock": "integration/source-lock.json",
+  "sourceMerge": "0b3474a5cb2053d607453b18d319d225f1d3ca57",
+  "securityAccepted": false,
+  "deviceAccepted": false,
+  "noDonorBuildAccepted": false,
+  "artifacts": [],
+  "rollback": {
+    "strategy": "revert G merge commits in reverse order on integration branch only; preserve frozen A-F refs",
+    "tested": false
+  },
+  "w01gR001": {
+    "rootLockfiles": "ABSENT",
+    "packagerSource": "PRESENT_UNRUN",
+    "packagedNode24": "ABSENT",
+    "tauriPwaOnlyConfig": "SOURCE_MERGED_UNTESTED",
+    "windowsMsi": "UNRUN",
+    "donorRemoval": "UNRUN",
+    "sourceClosure": "UNRUN",
+    "nextWaveApproved": false,
+    "bPwaSignerStaticRoute": "MERGED_UNTESTED",
+    "canonicalMainPr": 10
+  },
+  "mainConsolidation": {
+    "pr": 10,
+    "sourceOnly": true,
+    "ciRunId": 43233248631,
+    "ciConclusion": "startup_failure",
+    "ciJobs": 0,
+    "merged": false,
+    "cargoLock": "ABSENT",
+    "bunLock": "ABSENT",
+    "betaGo": false,
+    "nextWaveAcceptedSha": null,
+    "securityAndDeviceUnrun": true,
+    "toolchainTests": "UNRUN",
+    "deploymentAuthorized": false
+  }
+}

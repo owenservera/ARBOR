@@ -1,0 +1,1925 @@
+{
+  "schema": "arbor.hq-source-provenance/1",
+  "donorRepo": "owenservera/repos-hq",
+  "donorCommit": "9b922ea049dbadc94e504b5b9432743995c020ca",
+  "donorSubtree": "hq/",
+  "donorTreeSha": "48e48313187e3747ac70206276a1a286c94ab002",
+  "target": "owenservera/ARBOR",
+  "targetPrefix": "hq/",
+  "sourceFiles": [
+    {
+      "from": "hq/aii/fixtures/harness.mjs",
+      "to": "hq/aii/fixtures/harness.mjs",
+      "blobSha": "1aac7b27bdcfc2128ac8bc3977b0612210ad8328",
+      "bytes": 10068
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-001-repositories.mjs",
+      "to": "hq/aii/fixtures/HQ-001-repositories.mjs",
+      "blobSha": "dad78caccac6e6b4911cc52a5b41fb7a9232e2d9",
+      "bytes": 5107
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-002-repo-folders.mjs",
+      "to": "hq/aii/fixtures/HQ-002-repo-folders.mjs",
+      "blobSha": "7343276b5de923457cb3dd1a0a5b684b4da852f4",
+      "bytes": 4771
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-003-same-repo-not-duplicated.mjs",
+      "to": "hq/aii/fixtures/HQ-003-same-repo-not-duplicated.mjs",
+      "blobSha": "3708f8cec70303070c70ab242deb0d7dc5123464",
+      "bytes": 5021
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-004-repository-classification.mjs",
+      "to": "hq/aii/fixtures/HQ-004-repository-classification.mjs",
+      "blobSha": "f151a413eee5948a72dd5ebebaa88195cb05b911",
+      "bytes": 3524
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-005-repository-dependencies.mjs",
+      "to": "hq/aii/fixtures/HQ-005-repository-dependencies.mjs",
+      "blobSha": "497077b55148c49e6a9ddfbb989c078a886fd9aa",
+      "bytes": 6500
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-006-local-vs-github.mjs",
+      "to": "hq/aii/fixtures/HQ-006-local-vs-github.mjs",
+      "blobSha": "ec59d38e9371fdfe1c974d9f9012cd7963a8eece",
+      "bytes": 6816
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-007-unintegrated-branches.mjs",
+      "to": "hq/aii/fixtures/HQ-007-unintegrated-branches.mjs",
+      "blobSha": "fd48d47949e7d914bf7eee7a4d602e3d407e4498",
+      "bytes": 4957
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-008-uncommitted-changes.mjs",
+      "to": "hq/aii/fixtures/HQ-008-uncommitted-changes.mjs",
+      "blobSha": "ea5ae7e93770a7d2b852fa28441b06c7952d0ee6",
+      "bytes": 5694
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-009-indexing-coverage-gaps.mjs",
+      "to": "hq/aii/fixtures/HQ-009-indexing-coverage-gaps.mjs",
+      "blobSha": "de06bb15a4062e7b2d41c775bdc20583ad77e746",
+      "bytes": 7126
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-010-removal-blast-radius.mjs",
+      "to": "hq/aii/fixtures/HQ-010-removal-blast-radius.mjs",
+      "blobSha": "b31654aeb0b965a6f1f970fbe729a7e5cd307cd0",
+      "bytes": 7211
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-011-architecture.mjs",
+      "to": "hq/aii/fixtures/HQ-011-architecture.mjs",
+      "blobSha": "5fb28277c0cffb089fe9c3c8da9dcea4a5e9ac32",
+      "bytes": 3691
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-012-entrypoint.mjs",
+      "to": "hq/aii/fixtures/HQ-012-entrypoint.mjs",
+      "blobSha": "29c7f01562db2d35bd5a784c2da734232c344373",
+      "bytes": 4050
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-013-trace.mjs",
+      "to": "hq/aii/fixtures/HQ-013-trace.mjs",
+      "blobSha": "a490d552db7d430c01712258785a567d13bec8e2",
+      "bytes": 3691
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-014-service-consumers.mjs",
+      "to": "hq/aii/fixtures/HQ-014-service-consumers.mjs",
+      "blobSha": "52647e208efb4ab0c2f0753fd6b4554af6556587",
+      "bytes": 6568
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-015-module-dependencies.mjs",
+      "to": "hq/aii/fixtures/HQ-015-module-dependencies.mjs",
+      "blobSha": "ac456eac47fc3a1da130f392b309c79c11c37ef5",
+      "bytes": 5743
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-016-database-writers.mjs",
+      "to": "hq/aii/fixtures/HQ-016-database-writers.mjs",
+      "blobSha": "0c3b52e5c07fa297449a48281e905264bb391695",
+      "bytes": 3035
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-017-authorization-enforcement.mjs",
+      "to": "hq/aii/fixtures/HQ-017-authorization-enforcement.mjs",
+      "blobSha": "7e447a8b43abaffb99b5c3574826e4b27b5728a3",
+      "bytes": 2927
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-018-same-responsibility.mjs",
+      "to": "hq/aii/fixtures/HQ-018-same-responsibility.mjs",
+      "blobSha": "27e1567d362deaa70c279c7b6fab6d836e9ca623",
+      "bytes": 7342
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-019-boundary-crossings.mjs",
+      "to": "hq/aii/fixtures/HQ-019-boundary-crossings.mjs",
+      "blobSha": "a428b52e1ec7d9277d953fbbfe12effcffa584b7",
+      "bytes": 7837
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-020-tight-coupling.mjs",
+      "to": "hq/aii/fixtures/HQ-020-tight-coupling.mjs",
+      "blobSha": "f0f45a5c1002d52e32d0b1e51c5dcd05ce8d0c25",
+      "bytes": 8953
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-021-planned-features-implemented.mjs",
+      "to": "hq/aii/fixtures/HQ-021-planned-features-implemented.mjs",
+      "blobSha": "43fd618621e6322e015e0db952c8738060d5da55",
+      "bytes": 7822
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-022-reachable-by-users.mjs",
+      "to": "hq/aii/fixtures/HQ-022-reachable-by-users.mjs",
+      "blobSha": "77d4739262bc1855d318f76c5099853dff3ffcca",
+      "bytes": 3924
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-023-no-runtime-consumers.mjs",
+      "to": "hq/aii/fixtures/HQ-023-no-runtime-consumers.mjs",
+      "blobSha": "01e230a9c1699ea46ac2b727a185c87c5d466f08",
+      "bytes": 4553
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-024-implemented-unmounted.mjs",
+      "to": "hq/aii/fixtures/HQ-024-implemented-unmounted.mjs",
+      "blobSha": "b08166fcb1a8a722bffda6d258006381edb29c14",
+      "bytes": 3384
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-025-imported-never-executed.mjs",
+      "to": "hq/aii/fixtures/HQ-025-imported-never-executed.mjs",
+      "blobSha": "5f24679ebe0077a93191cb53321e976137dd08e2",
+      "bytes": 4879
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-026-fixtures-only.mjs",
+      "to": "hq/aii/fixtures/HQ-026-fixtures-only.mjs",
+      "blobSha": "ac866b7515241c7c35e75cb79592351df83a8ffe",
+      "bytes": 4672
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-027-disabled-by-config.mjs",
+      "to": "hq/aii/fixtures/HQ-027-disabled-by-config.mjs",
+      "blobSha": "64b8d9b0e4f12e08c155cb55564aa6fc871c015e",
+      "bytes": 2925
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-028-retirement-candidates.mjs",
+      "to": "hq/aii/fixtures/HQ-028-retirement-candidates.mjs",
+      "blobSha": "d4bf44a6f84facb6a8e500e7cdd5ad5003d4c4ca",
+      "bytes": 5228
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-029-dynamically-loaded.mjs",
+      "to": "hq/aii/fixtures/HQ-029-dynamically-loaded.mjs",
+      "blobSha": "2afb75fc4b47cbffd099e6597a6e69d94df416e3",
+      "bytes": 7964
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-030-missing-final-integration.mjs",
+      "to": "hq/aii/fixtures/HQ-030-missing-final-integration.mjs",
+      "blobSha": "f842b44f6cd4a748f1ed4c42fa1092bf19efe693",
+      "bytes": 4591
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-031-machine-snapshot.json",
+      "to": "hq/aii/fixtures/HQ-031-machine-snapshot.json",
+      "blobSha": "220c78aadfaa91aa12ac2e235ce832e4be43aebd",
+      "bytes": 1493
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-031-running-services.mjs",
+      "to": "hq/aii/fixtures/HQ-031-running-services.mjs",
+      "blobSha": "e0ca2a8da6faf0c985825fa97c4166a17358252a",
+      "bytes": 6261
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-032-running-executable-version.mjs",
+      "to": "hq/aii/fixtures/HQ-032-running-executable-version.mjs",
+      "blobSha": "92c4aa4650faeabae1146027cb8c936830e0be38",
+      "bytes": 5317
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-032-running-version.mjs",
+      "to": "hq/aii/fixtures/HQ-032-running-version.mjs",
+      "blobSha": "f54e48dcb4e95bdb0846f9927fefc3145397d6b5",
+      "bytes": 4056
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-033-platform-conditional-features.mjs",
+      "to": "hq/aii/fixtures/HQ-033-platform-conditional-features.mjs",
+      "blobSha": "66e656da70a6d1d4ef583abf8b26a9b689bb2474",
+      "bytes": 6063
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-034-source-features-vs-manifest.mjs",
+      "to": "hq/aii/fixtures/HQ-034-source-features-vs-manifest.mjs",
+      "blobSha": "2f5fd32120ee1ff230824c45f4d86037037dad0b",
+      "bytes": 5397
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-035-device-verification-absence.mjs",
+      "to": "hq/aii/fixtures/HQ-035-device-verification-absence.mjs",
+      "blobSha": "5e9c480d8cdebc5dbc06c7d4f3ba6210851accef",
+      "bytes": 5986
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-036-documented-capabilities-without-implementation.mjs",
+      "to": "hq/aii/fixtures/HQ-036-documented-capabilities-without-implementation.mjs",
+      "blobSha": "a7788a7dc62c7280b4bdb6c78e9ff0b605740700",
+      "bytes": 6738
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-037-labs-designs-implemented-elsewhere.mjs",
+      "to": "hq/aii/fixtures/HQ-037-labs-designs-implemented-elsewhere.mjs",
+      "blobSha": "288ca6e649ad7a556a87364203593038f7bdc5f0",
+      "bytes": 5930
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-038-research-prototype-promotion.mjs",
+      "to": "hq/aii/fixtures/HQ-038-research-prototype-promotion.mjs",
+      "blobSha": "77cb115be52de0c0a3c4131dbcaf3c5e4c013531",
+      "bytes": 6612
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-039-outdated-docs.mjs",
+      "to": "hq/aii/fixtures/HQ-039-outdated-docs.mjs",
+      "blobSha": "e95a5624b0ae72c718b41013292e6113f2ba8988",
+      "bytes": 5032
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-040-contradicting-docs.mjs",
+      "to": "hq/aii/fixtures/HQ-040-contradicting-docs.mjs",
+      "blobSha": "d14b8b8578f8dc7c4f2a7d47b9a01b04d61b7830",
+      "bytes": 5661
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-041-superseded-decisions.mjs",
+      "to": "hq/aii/fixtures/HQ-041-superseded-decisions.mjs",
+      "blobSha": "8ce00ef0559daaed131299aa2cba6a15670a3b5c",
+      "bytes": 7704
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-042-decision-provenance.mjs",
+      "to": "hq/aii/fixtures/HQ-042-decision-provenance.mjs",
+      "blobSha": "7766658327c2705d3501c7b73aaaacf6e0e9f61b",
+      "bytes": 6402
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-043-requirements-owner.mjs",
+      "to": "hq/aii/fixtures/HQ-043-requirements-owner.mjs",
+      "blobSha": "6465e9d6ad01f75c3d474a7f74a1f789aef85db0",
+      "bytes": 4103
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-044-conflicting-specs.mjs",
+      "to": "hq/aii/fixtures/HQ-044-conflicting-specs.mjs",
+      "blobSha": "af16626b0d89edea800da8cb74682ce3804428a9",
+      "bytes": 7222
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-045-archival-knowledge-loss.mjs",
+      "to": "hq/aii/fixtures/HQ-045-archival-knowledge-loss.mjs",
+      "blobSha": "d5322b60e18719eb4e9db6470de0a80b84462dbe",
+      "bytes": 7034
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-046-prove-feature.mjs",
+      "to": "hq/aii/fixtures/HQ-046-prove-feature.mjs",
+      "blobSha": "9adece374bc564bc3857573ecda9a67579567718",
+      "bytes": 2427
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-047-completion-claims.mjs",
+      "to": "hq/aii/fixtures/HQ-047-completion-claims.mjs",
+      "blobSha": "f509b1efdc560b8980f92705cab0990a7d78548a",
+      "bytes": 3106
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-048-tests-older-revisions.mjs",
+      "to": "hq/aii/fixtures/HQ-048-tests-older-revisions.mjs",
+      "blobSha": "4b9f78c2da4116f59add9c48c9e5b2dccd68b9cf",
+      "bytes": 4736
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-049-not-reproducible.mjs",
+      "to": "hq/aii/fixtures/HQ-049-not-reproducible.mjs",
+      "blobSha": "a79b575ddf31ea7c1bc0945282625defee1f7134",
+      "bytes": 2204
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-050-evidence-needed.mjs",
+      "to": "hq/aii/fixtures/HQ-050-evidence-needed.mjs",
+      "blobSha": "031cad859f663651446f84bc7df47d4423850011",
+      "bytes": 7644
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-051-unit-only-critical-behaviors.mjs",
+      "to": "hq/aii/fixtures/HQ-051-unit-only-critical-behaviors.mjs",
+      "blobSha": "c170766bee5109d75aaebc4f2f20878bfcdbc4b1",
+      "bytes": 7977
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-052-never-independently-verified.mjs",
+      "to": "hq/aii/fixtures/HQ-052-never-independently-verified.mjs",
+      "blobSha": "d9e2a5d45aefa89ab599cbfe308b44ec3962cb5d",
+      "bytes": 6315
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-053-fixture-evidence.mjs",
+      "to": "hq/aii/fixtures/HQ-053-fixture-evidence.mjs",
+      "blobSha": "d06c6b59cdef00205aa1570ec56a93e3fa6cf317",
+      "bytes": 6696
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-054-uninspectable-environments.mjs",
+      "to": "hq/aii/fixtures/HQ-054-uninspectable-environments.mjs",
+      "blobSha": "f5e678e536307fa0b3b3c5769ebe497439fe9e20",
+      "bytes": 4889
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-055-strongest-evidence.mjs",
+      "to": "hq/aii/fixtures/HQ-055-strongest-evidence.mjs",
+      "blobSha": "ffd41b9ea0bd1fcfb6b2616dd600345c0dfafb79",
+      "bytes": 5993
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-056-disagreeing-completion-reports.mjs",
+      "to": "hq/aii/fixtures/HQ-056-disagreeing-completion-reports.mjs",
+      "blobSha": "8c9c90b795332a6daec288efe1137d07c476ca0b",
+      "bytes": 5554
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-057-authoritative-repo.mjs",
+      "to": "hq/aii/fixtures/HQ-057-authoritative-repo.mjs",
+      "blobSha": "0a1fd1dbe51a24cebee7d389a7f2b863cd92745b",
+      "bytes": 8430
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-058-route-documented-not-mounted.mjs",
+      "to": "hq/aii/fixtures/HQ-058-route-documented-not-mounted.mjs",
+      "blobSha": "39c6a81123abc6151a492e3fad2fde6193f610cb",
+      "bytes": 5852
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-059-changes-between-versions.mjs",
+      "to": "hq/aii/fixtures/HQ-059-changes-between-versions.mjs",
+      "blobSha": "e741ba9146d6e5701c6cb4094e06d5d868c5de2b",
+      "bytes": 4874
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-060-tests-pass-runtime-fails.mjs",
+      "to": "hq/aii/fixtures/HQ-060-tests-pass-runtime-fails.mjs",
+      "blobSha": "fc82fb959bf018c2722d6c0f32b30a476b2a0736",
+      "bytes": 6761
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-061-regression-attribution.mjs",
+      "to": "hq/aii/fixtures/HQ-061-regression-attribution.mjs",
+      "blobSha": "4f85efff55693723addecf3d78acea494e3e3f38",
+      "bytes": 7850
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-062-shared-assumptions.mjs",
+      "to": "hq/aii/fixtures/HQ-062-shared-assumptions.mjs",
+      "blobSha": "3ea904d31122bf765d5146f720dbb9ab4a7bf29e",
+      "bytes": 5601
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-063-missing-dependency.mjs",
+      "to": "hq/aii/fixtures/HQ-063-missing-dependency.mjs",
+      "blobSha": "e16a62913755c87e34a2d588748fa75bf8fba234",
+      "bytes": 5405
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-064-evidence-to-distinguish-explanations.mjs",
+      "to": "hq/aii/fixtures/HQ-064-evidence-to-distinguish-explanations.mjs",
+      "blobSha": "cf9fe364afcb45d00eaa9eb3340e3217370d2aff",
+      "bytes": 1852
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-065-root-cause.mjs",
+      "to": "hq/aii/fixtures/HQ-065-root-cause.mjs",
+      "blobSha": "9baf00de66f842cfdc5e358a19c640a190f6b915",
+      "bytes": 2055
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-066-agent-systems.mjs",
+      "to": "hq/aii/fixtures/HQ-066-agent-systems.mjs",
+      "blobSha": "91807dec47461ef1ff21d1be4e597ba0d72e247a",
+      "bytes": 5108
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-067-zcode-vs-opencode-config.mjs",
+      "to": "hq/aii/fixtures/HQ-067-zcode-vs-opencode-config.mjs",
+      "blobSha": "a28af44eaf6c1eca947c113d196567a41c5264b5",
+      "bytes": 5875
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-068-custom-hooks.mjs",
+      "to": "hq/aii/fixtures/HQ-068-custom-hooks.mjs",
+      "blobSha": "ea0433713a61faaf440c7a97db16eebf3ef807ee",
+      "bytes": 5749
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-069-agent-tool-coupling.mjs",
+      "to": "hq/aii/fixtures/HQ-069-agent-tool-coupling.mjs",
+      "blobSha": "7ad690c7dc5a0bc4dd034c47939163819a61b912",
+      "bytes": 4952
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-070-agent-instruction-conflicts.mjs",
+      "to": "hq/aii/fixtures/HQ-070-agent-instruction-conflicts.mjs",
+      "blobSha": "8cce620e41efce556eb476341bc27cbffcc87964",
+      "bytes": 3516
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-071-interface-change-impact.mjs",
+      "to": "hq/aii/fixtures/HQ-071-interface-change-impact.mjs",
+      "blobSha": "e60e94b4fdb1c14b8b9fd22429517cf48797f4dc",
+      "bytes": 4866
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-072-module-migration-consumers.mjs",
+      "to": "hq/aii/fixtures/HQ-072-module-migration-consumers.mjs",
+      "blobSha": "e14c9c1e25378f919d2567e4add406c81c07c826",
+      "bytes": 7014
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-073-tests-after-change.mjs",
+      "to": "hq/aii/fixtures/HQ-073-tests-after-change.mjs",
+      "blobSha": "4660bdd6103c17f393e880c7b2c9750902bb8312",
+      "bytes": 7171
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-074-minimal-orphan-connection.mjs",
+      "to": "hq/aii/fixtures/HQ-074-minimal-orphan-connection.mjs",
+      "blobSha": "462195c67ce2892072cdefb33b03cca2a3abf950",
+      "bytes": 6338
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-075-dependency-upgrade-impact.mjs",
+      "to": "hq/aii/fixtures/HQ-075-dependency-upgrade-impact.mjs",
+      "blobSha": "79cad391d378c5b951cafeed35b999b9488e6681",
+      "bytes": 5489
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-076-migration-risks.mjs",
+      "to": "hq/aii/fixtures/HQ-076-migration-risks.mjs",
+      "blobSha": "2664c5d2b6cd967eb6ea24271c9abb7d9f15f5f1",
+      "bytes": 6231
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-077-change-independence.mjs",
+      "to": "hq/aii/fixtures/HQ-077-change-independence.mjs",
+      "blobSha": "b7efcbdddea406fa035be7ae71af3acc56d9c666",
+      "bytes": 5988
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-078-integration-sequencing.mjs",
+      "to": "hq/aii/fixtures/HQ-078-integration-sequencing.mjs",
+      "blobSha": "ac2900484fc1a13ae434eb39a698a5a851f954e6",
+      "bytes": 6327
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-079-merge-evidence-gap.mjs",
+      "to": "hq/aii/fixtures/HQ-079-merge-evidence-gap.mjs",
+      "blobSha": "fe2f98187cc7a5852ab935677551c89ed9ec845b",
+      "bytes": 9129
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-080-consolidation-sequence.mjs",
+      "to": "hq/aii/fixtures/HQ-080-consolidation-sequence.mjs",
+      "blobSha": "1360f0858015b46f4baf5ecc0fe8ec23e840b56f",
+      "bytes": 5131
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-081-remaining-release-work.mjs",
+      "to": "hq/aii/fixtures/HQ-081-remaining-release-work.mjs",
+      "blobSha": "bd6891574190f70fa108099839fc1d888ae0333e",
+      "bytes": 7434
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-082-rank-unfinished-by-user-value.mjs",
+      "to": "hq/aii/fixtures/HQ-082-rank-unfinished-by-user-value.mjs",
+      "blobSha": "12c5305074e92cf108d21722b518d2e91d7195b7",
+      "bytes": 4605
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-083-blocked-same-dependency.mjs",
+      "to": "hq/aii/fixtures/HQ-083-blocked-same-dependency.mjs",
+      "blobSha": "8aeac6276edf854a6c8cc839af8a81d3302ea827",
+      "bytes": 6117
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-084-duplicate-completed-work.mjs",
+      "to": "hq/aii/fixtures/HQ-084-duplicate-completed-work.mjs",
+      "blobSha": "8cecebe1c073a5efe14f94b62f2db54197afce25",
+      "bytes": 4171
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-085-critical-path-ownerless.mjs",
+      "to": "hq/aii/fixtures/HQ-085-critical-path-ownerless.mjs",
+      "blobSha": "05985b8c920400659749749bdda2e4cd3623aba5",
+      "bytes": 6219
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-086-minimal-releasable-scope.mjs",
+      "to": "hq/aii/fixtures/HQ-086-minimal-releasable-scope.mjs",
+      "blobSha": "67acd5fe38e94bb9939ccb7984cfe206306489a6",
+      "bytes": 3182
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-087-unnecessary-planned-features.mjs",
+      "to": "hq/aii/fixtures/HQ-087-unnecessary-planned-features.mjs",
+      "blobSha": "02f6ee3a9d44c3783e5e84376f0d43f63adda6d4",
+      "bytes": 7258
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-088-release-blocking-integrations.mjs",
+      "to": "hq/aii/fixtures/HQ-088-release-blocking-integrations.mjs",
+      "blobSha": "0709b80d9100c26be9fdf413962a45317257c62b",
+      "bytes": 5582
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-089-component-regression.mjs",
+      "to": "hq/aii/fixtures/HQ-089-component-regression.mjs",
+      "blobSha": "1b77f435e370f601d428c9e1f1e4760655e8424e",
+      "bytes": 5954
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-089-performance-regression-components.mjs",
+      "to": "hq/aii/fixtures/HQ-089-performance-regression-components.mjs",
+      "blobSha": "1125b15c19c2559a90ea5b9043af78008147c5fc",
+      "bytes": 13780
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-090-redundant-computation.mjs",
+      "to": "hq/aii/fixtures/HQ-090-redundant-computation.mjs",
+      "blobSha": "fbf96c394d9a11802099c73130cb7628d837893b",
+      "bytes": 7642
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-090-redundant-indexing.mjs",
+      "to": "hq/aii/fixtures/HQ-090-redundant-indexing.mjs",
+      "blobSha": "e9a5a139d28a2fac4b71d09fb705d5497191f1e5",
+      "bytes": 4247
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-091-background-consumption.mjs",
+      "to": "hq/aii/fixtures/HQ-091-background-consumption.mjs",
+      "blobSha": "6c8c3f4a6c97afd20c990de37def61786e6479b1",
+      "bytes": 6056
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-091-background-process-consumption.mjs",
+      "to": "hq/aii/fixtures/HQ-091-background-process-consumption.mjs",
+      "blobSha": "303c672915421f1437cf7c1c624e5510b7c88126",
+      "bytes": 18448
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-092-best-verified-configuration.mjs",
+      "to": "hq/aii/fixtures/HQ-092-best-verified-configuration.mjs",
+      "blobSha": "35cdc8499dba9be225dae6ac5fa8b50dbb53e320",
+      "bytes": 8058
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-093-retrieval-latency-staleness.mjs",
+      "to": "hq/aii/fixtures/HQ-093-retrieval-latency-staleness.mjs",
+      "blobSha": "672d945a5a8e19e199f3c2a5afc732bec8f99cca",
+      "bytes": 8084
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-094-investigate-architectural-question.mjs",
+      "to": "hq/aii/fixtures/HQ-094-investigate-architectural-question.mjs",
+      "blobSha": "d01646cfaf6fd5972072800025820c97b291b455",
+      "bytes": 6754
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-095-unknowns-investigation.mjs",
+      "to": "hq/aii/fixtures/HQ-095-unknowns-investigation.mjs",
+      "blobSha": "c3c558f80e8cb05d7c867ad7a343be2932cef9d8",
+      "bytes": 6934
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-096-challenge-conclusions.mjs",
+      "to": "hq/aii/fixtures/HQ-096-challenge-conclusions.mjs",
+      "blobSha": "ee335346bc9e73ff2329e41b6605a6935eec489a",
+      "bytes": 9222
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-097-materially-changed.mjs",
+      "to": "hq/aii/fixtures/HQ-097-materially-changed.mjs",
+      "blobSha": "c0211f28d6478241f0ceee26d0ab58257be339d8",
+      "bytes": 6541
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-098-stale-findings.mjs",
+      "to": "hq/aii/fixtures/HQ-098-stale-findings.mjs",
+      "blobSha": "779914cabba95714e1861d3e665b60be2fccb4ae",
+      "bytes": 5787
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-099-self-audit.mjs",
+      "to": "hq/aii/fixtures/HQ-099-self-audit.mjs",
+      "blobSha": "c5c6bc1d4a46d529d81d97c355f447a5d6e22664",
+      "bytes": 9914
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-100-autonomous-investigation.mjs",
+      "to": "hq/aii/fixtures/HQ-100-autonomous-investigation.mjs",
+      "blobSha": "4c5f5690915cd1265faa41cd2db69b2ac28b21ce",
+      "bytes": 9896
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-101-frontier-model-candidates.mjs",
+      "to": "hq/aii/fixtures/HQ-101-frontier-model-candidates.mjs",
+      "blobSha": "9db9a191147b774e0c052d46f1284e1a48ecaa5b",
+      "bytes": 8062
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-102-core-vs-peripheral.mjs",
+      "to": "hq/aii/fixtures/HQ-102-core-vs-peripheral.mjs",
+      "blobSha": "640803fca1b95472815e3f70d78e12d397ab092c",
+      "bytes": 5624
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-103-strongest-model-only-components.mjs",
+      "to": "hq/aii/fixtures/HQ-103-strongest-model-only-components.mjs",
+      "blobSha": "65c46cb8a1a5faad2038d3ec6aa37d696c99ab11",
+      "bytes": 6762
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-104-high-impact-code.mjs",
+      "to": "hq/aii/fixtures/HQ-104-high-impact-code.mjs",
+      "blobSha": "4f5d50fcdce7f1c59e8b1ac53c8e865834268d2b",
+      "bytes": 4720
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-105-complex-modules.mjs",
+      "to": "hq/aii/fixtures/HQ-105-complex-modules.mjs",
+      "blobSha": "a0040264e01f5b3efdc073cfeae4b0e411fe71c3",
+      "bytes": 7268
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-106-expensive-areas.mjs",
+      "to": "hq/aii/fixtures/HQ-106-expensive-areas.mjs",
+      "blobSha": "333dccfe1344bf70de4755e6294f0efaac65173d",
+      "bytes": 6840
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-107-work-queue-model-ranking.mjs",
+      "to": "hq/aii/fixtures/HQ-107-work-queue-model-ranking.mjs",
+      "blobSha": "a6e35fa9c60a0137f09d256b2dd0d2d8187c899f",
+      "bytes": 5953
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-108-unscrutinized-core-changes.mjs",
+      "to": "hq/aii/fixtures/HQ-108-unscrutinized-core-changes.mjs",
+      "blobSha": "9acb031f1f7866e947111de2e5befa6313342779",
+      "bytes": 4727
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-109-subsystem-implicit-knowledge.mjs",
+      "to": "hq/aii/fixtures/HQ-109-subsystem-implicit-knowledge.mjs",
+      "blobSha": "59db8c2dbb77fa085e1f5619fa119125892bbfbc",
+      "bytes": 4634
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-110-autonomous-routing-decision.mjs",
+      "to": "hq/aii/fixtures/HQ-110-autonomous-routing-decision.mjs",
+      "blobSha": "042e3be313e7ed916d6b250bb57e76dfdb4a4481",
+      "bytes": 6495
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-111-register-new-repo-class.mjs",
+      "to": "hq/aii/fixtures/HQ-111-register-new-repo-class.mjs",
+      "blobSha": "1deaa441ec200cc1a9bab6a640eb32dd2e59a8b6",
+      "bytes": 5655
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-112-multi-class-sources.mjs",
+      "to": "hq/aii/fixtures/HQ-112-multi-class-sources.mjs",
+      "blobSha": "86700d0e05051670fe37909cc4081f6dde2d3bf6",
+      "bytes": 5690
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-113-harvestable-assets-identification.mjs",
+      "to": "hq/aii/fixtures/HQ-113-harvestable-assets-identification.mjs",
+      "blobSha": "c8828f7f6dce491122344afa0bb7197c583351b2",
+      "bytes": 9148
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-114-compare-registered-repos.mjs",
+      "to": "hq/aii/fixtures/HQ-114-compare-registered-repos.mjs",
+      "blobSha": "800f7119cad59228577b029772bd98592ec9bc2a",
+      "bytes": 7906
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-115-domain-query-ranking.mjs",
+      "to": "hq/aii/fixtures/HQ-115-domain-query-ranking.mjs",
+      "blobSha": "181a1b0b84d7f1ddebfd6c0d2962eff6fbcc7b27",
+      "bytes": 7737
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-116-harvest-ready-components.mjs",
+      "to": "hq/aii/fixtures/HQ-116-harvest-ready-components.mjs",
+      "blobSha": "a85b95ab815b3c971cc0c0fbb85bc90e3bb495aa",
+      "bytes": 7015
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-117-harvesting-plan.mjs",
+      "to": "hq/aii/fixtures/HQ-117-harvesting-plan.mjs",
+      "blobSha": "78c17a5cc805d06c25491a89b0bced821736cf3f",
+      "bytes": 7967
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-118-harvesting-provenance.mjs",
+      "to": "hq/aii/fixtures/HQ-118-harvesting-provenance.mjs",
+      "blobSha": "62fbc82e6a9ad2974314dadfd2e19ec0f4a264b9",
+      "bytes": 5152
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-119-autonomous-harvest-shortlist.mjs",
+      "to": "hq/aii/fixtures/HQ-119-autonomous-harvest-shortlist.mjs",
+      "blobSha": "01c8deaed01cedfceb63be3f9cbe98db88237edc",
+      "bytes": 7451
+    },
+    {
+      "from": "hq/aii/fixtures/HQ-120-harvestable-update-monitoring.mjs",
+      "to": "hq/aii/fixtures/HQ-120-harvestable-update-monitoring.mjs",
+      "blobSha": "0ad5b767a4642c29d6defa462b68e32fd71df407",
+      "bytes": 7015
+    },
+    {
+      "from": "hq/bin/autonomy.mjs",
+      "to": "hq/bin/autonomy.mjs",
+      "blobSha": "25431f4a7f1e5f5a8bec41ca91b49073d50ede37",
+      "bytes": 23642
+    },
+    {
+      "from": "hq/bin/console.mjs",
+      "to": "hq/bin/console.mjs",
+      "blobSha": "2a29bb3d6ca2157deb3a5fd22f5f39f8b6c75211",
+      "bytes": 8338
+    },
+    {
+      "from": "hq/bin/dogfood-execution.mjs",
+      "to": "hq/bin/dogfood-execution.mjs",
+      "blobSha": "ac44aaa6d5cafe2dc0d9c12da63b7bd12f191996",
+      "bytes": 42078
+    },
+    {
+      "from": "hq/bin/dogfood.mjs",
+      "to": "hq/bin/dogfood.mjs",
+      "blobSha": "cfd8cdf846dee95eb8bf4d6bfa1a56e83a433ed3",
+      "bytes": 13901
+    },
+    {
+      "from": "hq/bin/hq.mjs",
+      "to": "hq/bin/hq.mjs",
+      "blobSha": "332212f8c5f15121cd7454975a34b4413ada0962",
+      "bytes": 218015
+    },
+    {
+      "from": "hq/bin/revive.mjs",
+      "to": "hq/bin/revive.mjs",
+      "blobSha": "5379616d9b42559c8d6ccb6d8a9311e0161a6cb2",
+      "bytes": 9346
+    },
+    {
+      "from": "hq/bin/spawn.mjs",
+      "to": "hq/bin/spawn.mjs",
+      "blobSha": "c8f9fbdebb5dd87ff4f80c889a5bb8f7a3c32775",
+      "bytes": 24198
+    },
+    {
+      "from": "hq/bin/wave1-kb-export.mjs",
+      "to": "hq/bin/wave1-kb-export.mjs",
+      "blobSha": "a6db9f258a4107c695f59c9f9c6902675822e63c",
+      "bytes": 1678
+    },
+    {
+      "from": "hq/bin/wave1-lane-a.mjs",
+      "to": "hq/bin/wave1-lane-a.mjs",
+      "blobSha": "1d301bbc1794cb7c56688b5392dccd73bcc3590f",
+      "bytes": 5179
+    },
+    {
+      "from": "hq/capabilities/registry/contracts.v1.json",
+      "to": "hq/capabilities/registry/contracts.v1.json",
+      "blobSha": "25a0c54a81468830d3db54dd3045ffc692c78424",
+      "bytes": 9195
+    },
+    {
+      "from": "hq/capabilities/registry/taxonomy.v1.json",
+      "to": "hq/capabilities/registry/taxonomy.v1.json",
+      "blobSha": "002b17fb9e363b97a00017dbc79e73e4f6edb934",
+      "bytes": 10708
+    },
+    {
+      "from": "hq/lib/action-registry.mjs",
+      "to": "hq/lib/action-registry.mjs",
+      "blobSha": "275ccefd76f69f365d13f7f7bb21cb91f0228369",
+      "bytes": 11691
+    },
+    {
+      "from": "hq/lib/action-router.mjs",
+      "to": "hq/lib/action-router.mjs",
+      "blobSha": "f7911158a18d73029850013a76fc91207b69ab51",
+      "bytes": 7120
+    },
+    {
+      "from": "hq/lib/actions/aliases.mjs",
+      "to": "hq/lib/actions/aliases.mjs",
+      "blobSha": "ed310c251e51694ccdb9d11b49dda89d000dbc5e",
+      "bytes": 3169
+    },
+    {
+      "from": "hq/lib/actions/domains-1.mjs",
+      "to": "hq/lib/actions/domains-1.mjs",
+      "blobSha": "1eff0720e4e0b389c6bf4f2310bae177e6265d02",
+      "bytes": 7649
+    },
+    {
+      "from": "hq/lib/actions/domains-2.mjs",
+      "to": "hq/lib/actions/domains-2.mjs",
+      "blobSha": "467b937b49e8ba0f2f7a1b9a9387c52252e9e626",
+      "bytes": 12767
+    },
+    {
+      "from": "hq/lib/actions/domains-3.mjs",
+      "to": "hq/lib/actions/domains-3.mjs",
+      "blobSha": "d6cc9ed8fd1faf0e8a06363121e3acf2093f02f7",
+      "bytes": 10228
+    },
+    {
+      "from": "hq/lib/actions/domains-4.mjs",
+      "to": "hq/lib/actions/domains-4.mjs",
+      "blobSha": "4a98716b336bd7c6bddfe6a659d49d6a4e48dfcc",
+      "bytes": 9953
+    },
+    {
+      "from": "hq/lib/actions/handlers.mjs",
+      "to": "hq/lib/actions/handlers.mjs",
+      "blobSha": "c76fc5e5e47b61614418cb41e3dd8f28bea4c1d3",
+      "bytes": 5475
+    },
+    {
+      "from": "hq/lib/actions/verbs.mjs",
+      "to": "hq/lib/actions/verbs.mjs",
+      "blobSha": "bab94269836971946a0860ea4cc4b17e37fc090c",
+      "bytes": 4254
+    },
+    {
+      "from": "hq/lib/aii/plan.mjs",
+      "to": "hq/lib/aii/plan.mjs",
+      "blobSha": "71cb71331181c5fab432950265f5c267c86f0dd4",
+      "bytes": 14227
+    },
+    {
+      "from": "hq/lib/aii/receipts-policy.mjs",
+      "to": "hq/lib/aii/receipts-policy.mjs",
+      "blobSha": "4986057674afe66ea90b55778a1625058ee3e853",
+      "bytes": 9868
+    },
+    {
+      "from": "hq/lib/aii/registry.mjs",
+      "to": "hq/lib/aii/registry.mjs",
+      "blobSha": "81ab3ca0240e830d3af6515c162f288899ac8759",
+      "bytes": 8824
+    },
+    {
+      "from": "hq/lib/aii/runner.mjs",
+      "to": "hq/lib/aii/runner.mjs",
+      "blobSha": "ea9a617193d8960a10eaf1be371dde9d5b912f21",
+      "bytes": 9826
+    },
+    {
+      "from": "hq/lib/aii/scenarios.mjs",
+      "to": "hq/lib/aii/scenarios.mjs",
+      "blobSha": "c2a134dea2b30e3ea85fcc66a321d379b38716e0",
+      "bytes": 13434
+    },
+    {
+      "from": "hq/lib/aii/state.mjs",
+      "to": "hq/lib/aii/state.mjs",
+      "blobSha": "27400070b13eb3f2dadd6f040ace0aec7bef70a3",
+      "bytes": 9197
+    },
+    {
+      "from": "hq/lib/aii/views.mjs",
+      "to": "hq/lib/aii/views.mjs",
+      "blobSha": "3b008b1d815aec962aec3f75c5f084541fa5266c",
+      "bytes": 8719
+    },
+    {
+      "from": "hq/lib/annotation-v2.mjs",
+      "to": "hq/lib/annotation-v2.mjs",
+      "blobSha": "7e94dfbd4fbca8ef0fdb9e0610053364ce2c38c8",
+      "bytes": 12999
+    },
+    {
+      "from": "hq/lib/approvals.mjs",
+      "to": "hq/lib/approvals.mjs",
+      "blobSha": "27a5ad2c1482e7102f7c974b7f397f3943995dd4",
+      "bytes": 12878
+    },
+    {
+      "from": "hq/lib/ask.mjs",
+      "to": "hq/lib/ask.mjs",
+      "blobSha": "e47390f5afe09841e0532ce5e8c80d29f0382176",
+      "bytes": 4960
+    },
+    {
+      "from": "hq/lib/automation.mjs",
+      "to": "hq/lib/automation.mjs",
+      "blobSha": "4eeec1b7d8f64d8a5bae96639d191f6823aacb45",
+      "bytes": 21563
+    },
+    {
+      "from": "hq/lib/autonomy.mjs",
+      "to": "hq/lib/autonomy.mjs",
+      "blobSha": "6cb34bdbb7b3299490e806453b71c110e17ac374",
+      "bytes": 35897
+    },
+    {
+      "from": "hq/lib/canon.mjs",
+      "to": "hq/lib/canon.mjs",
+      "blobSha": "d256675519435aad2f9dfd84dd9f3a47d6cd21b2",
+      "bytes": 95967
+    },
+    {
+      "from": "hq/lib/canvas.mjs",
+      "to": "hq/lib/canvas.mjs",
+      "blobSha": "22bf5059f99f70fc84c7cf96f8236097a2054aeb",
+      "bytes": 42186
+    },
+    {
+      "from": "hq/lib/capabilities.mjs",
+      "to": "hq/lib/capabilities.mjs",
+      "blobSha": "342563729c6743e98870aa899d2d6876d7369d75",
+      "bytes": 31790
+    },
+    {
+      "from": "hq/lib/capability-schema.mjs",
+      "to": "hq/lib/capability-schema.mjs",
+      "blobSha": "fa7e25c1328b69300c285ff86dd973620fde62bd",
+      "bytes": 7060
+    },
+    {
+      "from": "hq/lib/catalogue-delta.mjs",
+      "to": "hq/lib/catalogue-delta.mjs",
+      "blobSha": "6849e6df26bd136ee50ae08a260d8ab9e9445ac7",
+      "bytes": 9742
+    },
+    {
+      "from": "hq/lib/channel-broker.mjs",
+      "to": "hq/lib/channel-broker.mjs",
+      "blobSha": "05ed792209f68242c1a5fdf5305e4102b07e78c1",
+      "bytes": 49346
+    },
+    {
+      "from": "hq/lib/channel-seats.mjs",
+      "to": "hq/lib/channel-seats.mjs",
+      "blobSha": "3879ef4932a7c77c480ccccda878674f66e80548",
+      "bytes": 13836
+    },
+    {
+      "from": "hq/lib/channel-transport.mjs",
+      "to": "hq/lib/channel-transport.mjs",
+      "blobSha": "3bb425c474b31ff9c555fe02677f23dcc319fd05",
+      "bytes": 18306
+    },
+    {
+      "from": "hq/lib/channel-wake.mjs",
+      "to": "hq/lib/channel-wake.mjs",
+      "blobSha": "ac3a4672544243527a0c0434bce31e1314c1c289",
+      "bytes": 6043
+    },
+    {
+      "from": "hq/lib/cnp.mjs",
+      "to": "hq/lib/cnp.mjs",
+      "blobSha": "d515beed6a84acdea33605e1755ec7ccaa383a02",
+      "bytes": 8344
+    },
+    {
+      "from": "hq/lib/comment-wiki-bridge.mjs",
+      "to": "hq/lib/comment-wiki-bridge.mjs",
+      "blobSha": "996b0f75362a66b823d95b321754f2ff17275325",
+      "bytes": 12535
+    },
+    {
+      "from": "hq/lib/comms-roof.mjs",
+      "to": "hq/lib/comms-roof.mjs",
+      "blobSha": "877ab3eab921bb1fe49f3b105e06353e65ac2031",
+      "bytes": 30828
+    },
+    {
+      "from": "hq/lib/components.mjs",
+      "to": "hq/lib/components.mjs",
+      "blobSha": "ae3b6775d6135d84a533fd7a23ccec9c64526d34",
+      "bytes": 86223
+    },
+    {
+      "from": "hq/lib/context-budget.mjs",
+      "to": "hq/lib/context-budget.mjs",
+      "blobSha": "d8aec182dce906cfd84c8ac47fa2ebac10e3a06b",
+      "bytes": 13077
+    },
+    {
+      "from": "hq/lib/context.mjs",
+      "to": "hq/lib/context.mjs",
+      "blobSha": "2da8285d5b6977df54467cd1cc795a63dd329f64",
+      "bytes": 31185
+    },
+    {
+      "from": "hq/lib/dogfood.mjs",
+      "to": "hq/lib/dogfood.mjs",
+      "blobSha": "e0f925d9553c17f219bfe04369383a3a4e6af1b5",
+      "bytes": 56736
+    },
+    {
+      "from": "hq/lib/evidence-join.mjs",
+      "to": "hq/lib/evidence-join.mjs",
+      "blobSha": "3cec75cc9c0132ca79885195b8df832eef80ff9a",
+      "bytes": 13106
+    },
+    {
+      "from": "hq/lib/extract.mjs",
+      "to": "hq/lib/extract.mjs",
+      "blobSha": "2b0696542b0027f474b57c5692f939f326d24ae4",
+      "bytes": 51525
+    },
+    {
+      "from": "hq/lib/filetypes.mjs",
+      "to": "hq/lib/filetypes.mjs",
+      "blobSha": "39b63e77cbea19f46a45eb2e432f14950aef15cb",
+      "bytes": 39754
+    },
+    {
+      "from": "hq/lib/freshness.mjs",
+      "to": "hq/lib/freshness.mjs",
+      "blobSha": "4589513407d640ab07734c155d3eca0885c3cb4f",
+      "bytes": 2097
+    },
+    {
+      "from": "hq/lib/fsf/client.mjs",
+      "to": "hq/lib/fsf/client.mjs",
+      "blobSha": "d275e5b7ec3368d895da298a9d8a25af8eea8faf",
+      "bytes": 10889
+    },
+    {
+      "from": "hq/lib/fsf/server.mjs",
+      "to": "hq/lib/fsf/server.mjs",
+      "blobSha": "aa8a45bb364dfc795d72208f4518c943ded6602e",
+      "bytes": 27243
+    },
+    {
+      "from": "hq/lib/fsf/slices.mjs",
+      "to": "hq/lib/fsf/slices.mjs",
+      "blobSha": "0a754331533583bd333f7982cd79b616d42ad94d",
+      "bytes": 10933
+    },
+    {
+      "from": "hq/lib/fsf/store.mjs",
+      "to": "hq/lib/fsf/store.mjs",
+      "blobSha": "d12b6c803d95360d972f86b85ff36026dd019064",
+      "bytes": 15106
+    },
+    {
+      "from": "hq/lib/git-context.mjs",
+      "to": "hq/lib/git-context.mjs",
+      "blobSha": "5296114e0fa5d3b0e30da4f8f4c7d8aa2ef3d8be",
+      "bytes": 15716
+    },
+    {
+      "from": "hq/lib/git.mjs",
+      "to": "hq/lib/git.mjs",
+      "blobSha": "32e775537f74aa886239783081a82d2b8a670e04",
+      "bytes": 5034
+    },
+    {
+      "from": "hq/lib/graph.mjs",
+      "to": "hq/lib/graph.mjs",
+      "blobSha": "f824b0b9d940bbde9b80ee5d51db2e0eb21cf6a3",
+      "bytes": 34348
+    },
+    {
+      "from": "hq/lib/home.mjs",
+      "to": "hq/lib/home.mjs",
+      "blobSha": "98c69aae89ab8d6f3468557c7d55c13281841562",
+      "bytes": 38365
+    },
+    {
+      "from": "hq/lib/indexer.mjs",
+      "to": "hq/lib/indexer.mjs",
+      "blobSha": "4f5cf53c861d8052e0c56be38307f93cc65e2a5f",
+      "bytes": 34326
+    },
+    {
+      "from": "hq/lib/kb-bind.mjs",
+      "to": "hq/lib/kb-bind.mjs",
+      "blobSha": "2c3a64b7c19eb118472aa076be2b25e8eabf9ca2",
+      "bytes": 10281
+    },
+    {
+      "from": "hq/lib/kb-intake.mjs",
+      "to": "hq/lib/kb-intake.mjs",
+      "blobSha": "8ca235b4eeea51b5a103316d7b85d29735d1ad16",
+      "bytes": 57148
+    },
+    {
+      "from": "hq/lib/kb.mjs",
+      "to": "hq/lib/kb.mjs",
+      "blobSha": "cde5f2f57e9b6fff7651fc6af013ad76fcae32ac",
+      "bytes": 42039
+    },
+    {
+      "from": "hq/lib/kernel/cli.mjs",
+      "to": "hq/lib/kernel/cli.mjs",
+      "blobSha": "0402b900c9d600a19468ff18d8f9d4e26f1f876a",
+      "bytes": 5228
+    },
+    {
+      "from": "hq/lib/kernel/store.mjs",
+      "to": "hq/lib/kernel/store.mjs",
+      "blobSha": "906aaca3f6c1969392a8a8862101ab4e7c36e92e",
+      "bytes": 29780
+    },
+    {
+      "from": "hq/lib/kg-export.mjs",
+      "to": "hq/lib/kg-export.mjs",
+      "blobSha": "2d0573bb051a5faaf41f01506f29294efd3bb4c7",
+      "bytes": 13899
+    },
+    {
+      "from": "hq/lib/lake.mjs",
+      "to": "hq/lib/lake.mjs",
+      "blobSha": "e063fd37c0317d48cca765de24c9d4a88d60658d",
+      "bytes": 52611
+    },
+    {
+      "from": "hq/lib/lane-health.mjs",
+      "to": "hq/lib/lane-health.mjs",
+      "blobSha": "5be24641d5161ab2e85127b7e7b1470f56eb1a09",
+      "bytes": 6410
+    },
+    {
+      "from": "hq/lib/lang.mjs",
+      "to": "hq/lib/lang.mjs",
+      "blobSha": "28ce92b6116ff3866bc8f8bb2c2b4d394dd0d9de",
+      "bytes": 5046
+    },
+    {
+      "from": "hq/lib/live-graph/wave1/lane-a-r2-audit.mjs",
+      "to": "hq/lib/live-graph/wave1/lane-a-r2-audit.mjs",
+      "blobSha": "3a26286727ed080f9e02c7ea60081ef8a87af192",
+      "bytes": 13033
+    },
+    {
+      "from": "hq/lib/live-graph/wave1/lane-a-r2-discovery.mjs",
+      "to": "hq/lib/live-graph/wave1/lane-a-r2-discovery.mjs",
+      "blobSha": "9a54459d6e61bdcaee0d228b892c026e3d445eb2",
+      "bytes": 6488
+    },
+    {
+      "from": "hq/lib/live-graph/wave1/lane-a.mjs",
+      "to": "hq/lib/live-graph/wave1/lane-a.mjs",
+      "blobSha": "ffc7b311979e1d36d7a6a467da7a4dd027d8f19d",
+      "bytes": 8479
+    },
+    {
+      "from": "hq/lib/machine-probe.mjs",
+      "to": "hq/lib/machine-probe.mjs",
+      "blobSha": "fb4419591ec072d3bd64a6164b1030a209e97205",
+      "bytes": 10890
+    },
+    {
+      "from": "hq/lib/mcp-team-tools.mjs",
+      "to": "hq/lib/mcp-team-tools.mjs",
+      "blobSha": "a2bc71982de3956d4808a0ae3def92a34cad8275",
+      "bytes": 28620
+    },
+    {
+      "from": "hq/lib/mcp.mjs",
+      "to": "hq/lib/mcp.mjs",
+      "blobSha": "8d5f83f171fc1b96873e97fe9f7b1910849cdef2",
+      "bytes": 14743
+    },
+    {
+      "from": "hq/lib/memory.mjs",
+      "to": "hq/lib/memory.mjs",
+      "blobSha": "9d2d2ac9d744c40afa9b3321aa47c8ce35377dd6",
+      "bytes": 8305
+    },
+    {
+      "from": "hq/lib/mission-evaluator.mjs",
+      "to": "hq/lib/mission-evaluator.mjs",
+      "blobSha": "da6da69e6b4b3faa2380c001545980d70ad75700",
+      "bytes": 7511
+    },
+    {
+      "from": "hq/lib/mission-intelligence.mjs",
+      "to": "hq/lib/mission-intelligence.mjs",
+      "blobSha": "83077643029fa454a50327782bb0b3a8615143d2",
+      "bytes": 12176
+    },
+    {
+      "from": "hq/lib/mission-shadow.mjs",
+      "to": "hq/lib/mission-shadow.mjs",
+      "blobSha": "6ede8d013e5a66fec501e2f8fa579b489e4afdc4",
+      "bytes": 8821
+    },
+    {
+      "from": "hq/lib/mission-sources.mjs",
+      "to": "hq/lib/mission-sources.mjs",
+      "blobSha": "09e746a1ad46c0d7721c7a1caa9d1ad95d38c088",
+      "bytes": 6940
+    },
+    {
+      "from": "hq/lib/model-budget.mjs",
+      "to": "hq/lib/model-budget.mjs",
+      "blobSha": "a97dbae0f3a32d31bf186d97b602d5efa08cc721",
+      "bytes": 15448
+    },
+    {
+      "from": "hq/lib/model-inventory.mjs",
+      "to": "hq/lib/model-inventory.mjs",
+      "blobSha": "134ea0df166dfe6c959710e7d37ad61024a6dc22",
+      "bytes": 8005
+    },
+    {
+      "from": "hq/lib/model-router.mjs",
+      "to": "hq/lib/model-router.mjs",
+      "blobSha": "4806f78e18e73380be70f2f612237e528f644859",
+      "bytes": 43360
+    },
+    {
+      "from": "hq/lib/nomenclature.mjs",
+      "to": "hq/lib/nomenclature.mjs",
+      "blobSha": "ef2babaa2b5012eef51653ab7119319ee00a9266",
+      "bytes": 3935
+    },
+    {
+      "from": "hq/lib/personal-corpus-contract.mjs",
+      "to": "hq/lib/personal-corpus-contract.mjs",
+      "blobSha": "c842fe5848d47179dc3852335747e1227e344d1d",
+      "bytes": 8479
+    },
+    {
+      "from": "hq/lib/pmo.mjs",
+      "to": "hq/lib/pmo.mjs",
+      "blobSha": "0e7c4337ed1dae3844a3ec1905cffcf34ef4a44c",
+      "bytes": 42410
+    },
+    {
+      "from": "hq/lib/protocol.mjs",
+      "to": "hq/lib/protocol.mjs",
+      "blobSha": "388cb501e03b73d80cfcf756547f59d736a076b4",
+      "bytes": 19169
+    },
+    {
+      "from": "hq/lib/realtime.mjs",
+      "to": "hq/lib/realtime.mjs",
+      "blobSha": "fe5bcbde30a866315fe69f2cea308d333fa3ac0d",
+      "bytes": 12744
+    },
+    {
+      "from": "hq/lib/receipts.mjs",
+      "to": "hq/lib/receipts.mjs",
+      "blobSha": "c0bc00a630eed02be496ebd31cd01ce66641013a",
+      "bytes": 3910
+    },
+    {
+      "from": "hq/lib/refresh.mjs",
+      "to": "hq/lib/refresh.mjs",
+      "blobSha": "712c287d45a1ed7d4deb7b948cc548411443f1e7",
+      "bytes": 16965
+    },
+    {
+      "from": "hq/lib/registry.mjs",
+      "to": "hq/lib/registry.mjs",
+      "blobSha": "cc46131e051c30fbef1b022310f68b619814da86",
+      "bytes": 12959
+    },
+    {
+      "from": "hq/lib/release-plan.mjs",
+      "to": "hq/lib/release-plan.mjs",
+      "blobSha": "22bdb8f6e280e21aa6b92c9d8f1895e2d704be06",
+      "bytes": 12011
+    },
+    {
+      "from": "hq/lib/release-status.mjs",
+      "to": "hq/lib/release-status.mjs",
+      "blobSha": "2cabb4bf2542e2c86bf806af66a80d145916944f",
+      "bytes": 5002
+    },
+    {
+      "from": "hq/lib/revive-daemon.mjs",
+      "to": "hq/lib/revive-daemon.mjs",
+      "blobSha": "8bbd58e6cd5233de0af848cbfdb1b98d9456236d",
+      "bytes": 9519
+    },
+    {
+      "from": "hq/lib/revive-lane.mjs",
+      "to": "hq/lib/revive-lane.mjs",
+      "blobSha": "cbb6d65f44e256628defd6d8fe32cf7e54aae72b",
+      "bytes": 11349
+    },
+    {
+      "from": "hq/lib/revocations.mjs",
+      "to": "hq/lib/revocations.mjs",
+      "blobSha": "7f7232077360c0082cb08b5ffce735b6a372836e",
+      "bytes": 8967
+    },
+    {
+      "from": "hq/lib/schema.mjs",
+      "to": "hq/lib/schema.mjs",
+      "blobSha": "de479b0761dcdb70b90e75944b9d652db9cbefe3",
+      "bytes": 18668
+    },
+    {
+      "from": "hq/lib/search.mjs",
+      "to": "hq/lib/search.mjs",
+      "blobSha": "6891decb68a1b8830202b9d6f346d97deef3cd1e",
+      "bytes": 15952
+    },
+    {
+      "from": "hq/lib/seat-heartbeat.mjs",
+      "to": "hq/lib/seat-heartbeat.mjs",
+      "blobSha": "2d0e0cb2018b9e836faaf66010a4a33edae97bbe",
+      "bytes": 14464
+    },
+    {
+      "from": "hq/lib/seat-watch.mjs",
+      "to": "hq/lib/seat-watch.mjs",
+      "blobSha": "14e81103137cb04f11c00b38e3899600a10b6810",
+      "bytes": 8092
+    },
+    {
+      "from": "hq/lib/semantic-optimizers.mjs",
+      "to": "hq/lib/semantic-optimizers.mjs",
+      "blobSha": "ce620c4ae21a7ea4269bc772808dffbe12526233",
+      "bytes": 14036
+    },
+    {
+      "from": "hq/lib/semantic-registry.mjs",
+      "to": "hq/lib/semantic-registry.mjs",
+      "blobSha": "ec982381c77147119f62e702a162a203df8e7d4e",
+      "bytes": 17340
+    },
+    {
+      "from": "hq/lib/session-card.mjs",
+      "to": "hq/lib/session-card.mjs",
+      "blobSha": "9fb8bd8b2de8d25ecd52e0ce416e5e76804dfe27",
+      "bytes": 9378
+    },
+    {
+      "from": "hq/lib/session-import.mjs",
+      "to": "hq/lib/session-import.mjs",
+      "blobSha": "4bbd82832bd6d5bdf961ad884e6de9012bd5d464",
+      "bytes": 12724
+    },
+    {
+      "from": "hq/lib/session-parts.mjs",
+      "to": "hq/lib/session-parts.mjs",
+      "blobSha": "547867bcf9fbf94aea274bf7a1f228df2d8d4d20",
+      "bytes": 14408
+    },
+    {
+      "from": "hq/lib/session-views.mjs",
+      "to": "hq/lib/session-views.mjs",
+      "blobSha": "24c73518378b2713f598b83c270bf811b43af0fc",
+      "bytes": 9630
+    },
+    {
+      "from": "hq/lib/sessions.mjs",
+      "to": "hq/lib/sessions.mjs",
+      "blobSha": "ab7e6a3640eb1dbce236cda129c3873359206992",
+      "bytes": 66187
+    },
+    {
+      "from": "hq/lib/skills.mjs",
+      "to": "hq/lib/skills.mjs",
+      "blobSha": "bc461c4c6e915375afedb8ceae4a4326739298d9",
+      "bytes": 17288
+    },
+    {
+      "from": "hq/lib/spawn.mjs",
+      "to": "hq/lib/spawn.mjs",
+      "blobSha": "1b81f69c0c042fad0d629b5855e7d8d7419de253",
+      "bytes": 15348
+    },
+    {
+      "from": "hq/lib/task-lifecycle.mjs",
+      "to": "hq/lib/task-lifecycle.mjs",
+      "blobSha": "4f7e1dd36eaba3938a5a253c360fd618033a6a27",
+      "bytes": 13981
+    },
+    {
+      "from": "hq/lib/taxonomy.mjs",
+      "to": "hq/lib/taxonomy.mjs",
+      "blobSha": "38e380f62d6f387b95ce52eb08a70ec0c31d60de",
+      "bytes": 14369
+    },
+    {
+      "from": "hq/lib/team-automation.mjs",
+      "to": "hq/lib/team-automation.mjs",
+      "blobSha": "ff7a9366a69ac8741cca17d345657b1e05fbcd06",
+      "bytes": 23951
+    },
+    {
+      "from": "hq/lib/team-dashboard.mjs",
+      "to": "hq/lib/team-dashboard.mjs",
+      "blobSha": "805e2ff7e52c401aadd8f1ac4b346e5a621c606e",
+      "bytes": 30856
+    },
+    {
+      "from": "hq/lib/team-panel.mjs",
+      "to": "hq/lib/team-panel.mjs",
+      "blobSha": "cac40a4efe4bcadd9da129452f84f4b1b1151115",
+      "bytes": 25307
+    },
+    {
+      "from": "hq/lib/team-protocol.mjs",
+      "to": "hq/lib/team-protocol.mjs",
+      "blobSha": "dbbdf32156b6156427c8a373527e9b93f9863d68",
+      "bytes": 22082
+    },
+    {
+      "from": "hq/lib/telemetry.mjs",
+      "to": "hq/lib/telemetry.mjs",
+      "blobSha": "d8e823511524b504a33e842eb51a61f87b43580a",
+      "bytes": 32086
+    },
+    {
+      "from": "hq/lib/thread-index.mjs",
+      "to": "hq/lib/thread-index.mjs",
+      "blobSha": "8db313fa53fb7b813d0b2ba2ac69f9e20f9b5265",
+      "bytes": 14987
+    },
+    {
+      "from": "hq/lib/thread-resolve.mjs",
+      "to": "hq/lib/thread-resolve.mjs",
+      "blobSha": "3988c358c274aa8f74b9743113bbe7015c8d9e20",
+      "bytes": 5819
+    },
+    {
+      "from": "hq/lib/toolchain-guard.mjs",
+      "to": "hq/lib/toolchain-guard.mjs",
+      "blobSha": "6a6ae49afb061ec38bb1f908e5a8e8ea84bd1ce8",
+      "bytes": 6453
+    },
+    {
+      "from": "hq/lib/torrent/auto.mjs",
+      "to": "hq/lib/torrent/auto.mjs",
+      "blobSha": "9ad3ad6053a50f3eb788c7d86ac9a8f3c1b0f43d",
+      "bytes": 5942
+    },
+    {
+      "from": "hq/lib/torrent/dispatch-adapter.mjs",
+      "to": "hq/lib/torrent/dispatch-adapter.mjs",
+      "blobSha": "5a3ef79f1fc53310df0aa3848cfa099fda040721",
+      "bytes": 10579
+    },
+    {
+      "from": "hq/lib/torrent/library.mjs",
+      "to": "hq/lib/torrent/library.mjs",
+      "blobSha": "b3b87db5f2c7c189f5a13c4f61194ac4ad8964ba",
+      "bytes": 9258
+    },
+    {
+      "from": "hq/lib/torrent/poll.mjs",
+      "to": "hq/lib/torrent/poll.mjs",
+      "blobSha": "4379d1f1c1ba921b5cf0c767ce77b04a1f2f83d0",
+      "bytes": 20632
+    },
+    {
+      "from": "hq/lib/torrent/qbittorrent.mjs",
+      "to": "hq/lib/torrent/qbittorrent.mjs",
+      "blobSha": "294017d4915f0489cf3daf0b8fd62c6beb6b156c",
+      "bytes": 5305
+    },
+    {
+      "from": "hq/lib/torrent/releases.mjs",
+      "to": "hq/lib/torrent/releases.mjs",
+      "blobSha": "64feccc7f1432d2b23789f023b8da698bcf61bc3",
+      "bytes": 6810
+    },
+    {
+      "from": "hq/lib/torrent/search1337x.mjs",
+      "to": "hq/lib/torrent/search1337x.mjs",
+      "blobSha": "63fbf3301837b23ec3c3ce5990e5d97c5aa0ad48",
+      "bytes": 3844
+    },
+    {
+      "from": "hq/lib/torrent/wanted.mjs",
+      "to": "hq/lib/torrent/wanted.mjs",
+      "blobSha": "c919402b9dc1771df8c6b33b47ec6b60eae0fe95",
+      "bytes": 4458
+    },
+    {
+      "from": "hq/lib/util.mjs",
+      "to": "hq/lib/util.mjs",
+      "blobSha": "aefc0b0d8b6c7683b6a05ab93e0e932901d45a66",
+      "bytes": 4102
+    },
+    {
+      "from": "hq/lib/vivim.mjs",
+      "to": "hq/lib/vivim.mjs",
+      "blobSha": "f9cf3d16f9dfc3eaf806bd6bd63f37200da99f55",
+      "bytes": 43834
+    },
+    {
+      "from": "hq/lib/walk.mjs",
+      "to": "hq/lib/walk.mjs",
+      "blobSha": "38f8bfe82220909cbd456d3115ecad350656fe1e",
+      "bytes": 3764,
+      "donorBlobSha": "c3fb10ada3b078f9f6f2e0429d0c5829a7b155fe",
+      "modifiedAfterImport": true
+    },
+    {
+      "from": "hq/lib/wave1-kb-read.mjs",
+      "to": "hq/lib/wave1-kb-read.mjs",
+      "blobSha": "c6bc8a8a961fc49bde0b8da27b3e280cd50bca0a",
+      "bytes": 12290
+    },
+    {
+      "from": "hq/lib/wiki-program.mjs",
+      "to": "hq/lib/wiki-program.mjs",
+      "blobSha": "97cde5d6dbb14fc421bfa5eddb11236e9b71c745",
+      "bytes": 20969
+    },
+    {
+      "from": "hq/lib/wiki-runtime/graph-index.mjs",
+      "to": "hq/lib/wiki-runtime/graph-index.mjs",
+      "blobSha": "e0ef095b0a3aab6d7c64453f0db7ead947f9deab",
+      "bytes": 7241
+    },
+    {
+      "from": "hq/lib/wiki-runtime/rust-comment-adapter.mjs",
+      "to": "hq/lib/wiki-runtime/rust-comment-adapter.mjs",
+      "blobSha": "222718033bd7f6eaa319ede2ef8b2a5102f67252",
+      "bytes": 10102
+    },
+    {
+      "from": "hq/lib/wiki.mjs",
+      "to": "hq/lib/wiki.mjs",
+      "blobSha": "c85c8fbe1409273928ea5c52bc2c20f108ac4dce",
+      "bytes": 95451
+    },
+    {
+      "from": "hq/lib/work-orders.mjs",
+      "to": "hq/lib/work-orders.mjs",
+      "blobSha": "b9dacb8942b9f1b67925ff1fa88eaa034f0c154f",
+      "bytes": 15454
+    },
+    {
+      "from": "hq/lib/zcode-doctor.mjs",
+      "to": "hq/lib/zcode-doctor.mjs",
+      "blobSha": "89e97422c578c5ccf1e2d90a24f066ce77f598c4",
+      "bytes": 18251
+    },
+    {
+      "from": "hq/registry/agentic-file-registry.v1.json",
+      "to": "hq/registry/agentic-file-registry.v1.json",
+      "blobSha": "f2fe716b2d2b70d03106a8ee5ca62b590db4039c",
+      "bytes": 240845
+    },
+    {
+      "from": "hq/registry/canonical-taxonomy.v1.json",
+      "to": "hq/registry/canonical-taxonomy.v1.json",
+      "blobSha": "8e2601d54b42621e1d5c27d6c2d4ad2190ed5909",
+      "bytes": 74975
+    },
+    {
+      "from": "hq/registry/kb-binding.v1.json",
+      "to": "hq/registry/kb-binding.v1.json",
+      "blobSha": "335d43e1a4d06e61c1ae857c4879ba6dacf9e4e2",
+      "bytes": 14061
+    },
+    {
+      "from": "hq/test/action-map.test.mjs",
+      "to": "hq/test/action-map.test.mjs",
+      "blobSha": "923901b08ce80a4eb462350c102b1cbf1de412bd",
+      "bytes": 7490
+    },
+    {
+      "from": "hq/test/action-registry-builder.test.mjs",
+      "to": "hq/test/action-registry-builder.test.mjs",
+      "blobSha": "e51eeb34b23702caa0f6080574ed8e5ff32c9b18",
+      "bytes": 10115
+    },
+    {
+      "from": "hq/test/annotation-v2.test.mjs",
+      "to": "hq/test/annotation-v2.test.mjs",
+      "blobSha": "91ec4914bbaa353bb612fcdcd3bae13afd4329f2",
+      "bytes": 16069
+    },
+    {
+      "from": "hq/test/capabilities.test.mjs",
+      "to": "hq/test/capabilities.test.mjs",
+      "blobSha": "9020fc73d2e5c57f78a1697e88ac5c3e871ac765",
+      "bytes": 18027
+    },
+    {
+      "from": "hq/test/capability-surfaces.test.mjs",
+      "to": "hq/test/capability-surfaces.test.mjs",
+      "blobSha": "f6569afbe6477f8330af05405d45693568096d51",
+      "bytes": 8216
+    },
+    {
+      "from": "hq/test/catalogue-delta.test.mjs",
+      "to": "hq/test/catalogue-delta.test.mjs",
+      "blobSha": "c377a19a1a5a9b44abc4a1aa00e74d76edf183b9",
+      "bytes": 6142
+    },
+    {
+      "from": "hq/test/check-freshness-parity.test.mjs",
+      "to": "hq/test/check-freshness-parity.test.mjs",
+      "blobSha": "93a46b55801d0b5d058e4abeab883194b17f1b16",
+      "bytes": 5020
+    },
+    {
+      "from": "hq/test/cli.test.mjs",
+      "to": "hq/test/cli.test.mjs",
+      "blobSha": "5f80116dc2f6bb21d4fd10412ca6ff159d0a4f7d",
+      "bytes": 973
+    },
+    {
+      "from": "hq/test/comment-program-integration.test.mjs",
+      "to": "hq/test/comment-program-integration.test.mjs",
+      "blobSha": "6824f7d874fa38d1dabb30beff5f0ab2aa60e480",
+      "bytes": 12157
+    },
+    {
+      "from": "hq/test/comment-wiki-bridge.test.mjs",
+      "to": "hq/test/comment-wiki-bridge.test.mjs",
+      "blobSha": "c4a1cdbc823569ee15cb45fefeb1b6b275b3efea",
+      "bytes": 17359
+    },
+    {
+      "from": "hq/test/components.test.mjs",
+      "to": "hq/test/components.test.mjs",
+      "blobSha": "f039c0993a75a29ff02a1267d0fc36bbbb783ef8",
+      "bytes": 29229
+    },
+    {
+      "from": "hq/test/context-budget.test.mjs",
+      "to": "hq/test/context-budget.test.mjs",
+      "blobSha": "ebb78ee4ac429295fa2aef37a29c69003e219961",
+      "bytes": 9790
+    },
+    {
+      "from": "hq/test/context-ranking.test.mjs",
+      "to": "hq/test/context-ranking.test.mjs",
+      "blobSha": "1b0f2a1ea926ef8300010514cec62fc58f599f4d",
+      "bytes": 10105
+    },
+    {
+      "from": "hq/test/context.test.mjs",
+      "to": "hq/test/context.test.mjs",
+      "blobSha": "3583152f5f3ef16d2b842589ea3bbb4b0a35b4ca",
+      "bytes": 9703
+    },
+    {
+      "from": "hq/test/day-one-context.test.mjs",
+      "to": "hq/test/day-one-context.test.mjs",
+      "blobSha": "563675c296ae6924444b6199dfaf77c4c1e2e651",
+      "bytes": 5379
+    },
+    {
+      "from": "hq/test/evidence-join.test.mjs",
+      "to": "hq/test/evidence-join.test.mjs",
+      "blobSha": "c899a128d76ebfbddab8c153974923ff698ddf82",
+      "bytes": 8045
+    },
+    {
+      "from": "hq/test/extract.test.mjs",
+      "to": "hq/test/extract.test.mjs",
+      "blobSha": "c8418076d02fa48c231863f2ee0a7462ae454634",
+      "bytes": 15710
+    },
+    {
+      "from": "hq/test/filetypes.test.mjs",
+      "to": "hq/test/filetypes.test.mjs",
+      "blobSha": "6e29de5283f94d0a89f2e5f78ff76e87b3e354d6",
+      "bytes": 13071
+    },
+    {
+      "from": "hq/test/foundation.test.mjs",
+      "to": "hq/test/foundation.test.mjs",
+      "blobSha": "1d0d163e783514155f7d5fece4d97f2af98dc764",
+      "bytes": 5412
+    },
+    {
+      "from": "hq/test/git-context.test.mjs",
+      "to": "hq/test/git-context.test.mjs",
+      "blobSha": "bfc81dab7a6ebb01690636a3f5aeff78ed88fcfd",
+      "bytes": 1360
+    },
+    {
+      "from": "hq/test/git-main-sync.test.mjs",
+      "to": "hq/test/git-main-sync.test.mjs",
+      "blobSha": "c9d1f13e71f9b890ecdfaf0bc51f98c8079b5885",
+      "bytes": 6158
+    },
+    {
+      "from": "hq/test/git.test.mjs",
+      "to": "hq/test/git.test.mjs",
+      "blobSha": "18126924db13ab728a5f68c2d40c5999253e21f6",
+      "bytes": 1014
+    },
+    {
+      "from": "hq/test/graph.test.mjs",
+      "to": "hq/test/graph.test.mjs",
+      "blobSha": "0247db34dbbe904b36c4801ebf29c020a56aed6b",
+      "bytes": 8748
+    },
+    {
+      "from": "hq/test/indexer.test.mjs",
+      "to": "hq/test/indexer.test.mjs",
+      "blobSha": "803e307c19b91acbf391b9e8a1758edd7acf4075",
+      "bytes": 16069
+    },
+    {
+      "from": "hq/test/intelligence-contracts.test.mjs",
+      "to": "hq/test/intelligence-contracts.test.mjs",
+      "blobSha": "72e5826affb82b36377a20a531fc90e401e4e64b",
+      "bytes": 2912
+    },
+    {
+      "from": "hq/test/kb-bind.test.mjs",
+      "to": "hq/test/kb-bind.test.mjs",
+      "blobSha": "c1d2b00ddb4c013a10c671db5cb4f7e71b977fe3",
+      "bytes": 6905
+    },
+    {
+      "from": "hq/test/kb-query-capability.test.mjs",
+      "to": "hq/test/kb-query-capability.test.mjs",
+      "blobSha": "55b98c715309f690433b46312bf97760cf77b05d",
+      "bytes": 8638
+    },
+    {
+      "from": "hq/test/kg-export.test.mjs",
+      "to": "hq/test/kg-export.test.mjs",
+      "blobSha": "3b01a1c28bb296153a6812ac1fbfdd7b2efc830b",
+      "bytes": 10840
+    },
+    {
+      "from": "hq/test/lake.test.mjs",
+      "to": "hq/test/lake.test.mjs",
+      "blobSha": "3cce6cc878e19f8649fad1146706c37ac20a30b3",
+      "bytes": 8769
+    },
+    {
+      "from": "hq/test/live-graph-wave1-a-r2-audit.test.mjs",
+      "to": "hq/test/live-graph-wave1-a-r2-audit.test.mjs",
+      "blobSha": "f5ec06f5cfe35b895770f97b5ff420136a40890f",
+      "bytes": 10458
+    },
+    {
+      "from": "hq/test/live-graph-wave1-a-r2-discovery.test.mjs",
+      "to": "hq/test/live-graph-wave1-a-r2-discovery.test.mjs",
+      "blobSha": "be30984d1937eb3ca034f60d058adf8254c13910",
+      "bytes": 5323
+    },
+    {
+      "from": "hq/test/live-graph-wave1-a-r2-preflight.test.mjs",
+      "to": "hq/test/live-graph-wave1-a-r2-preflight.test.mjs",
+      "blobSha": "962211e4a0177796083629959784235cece3cebf",
+      "bytes": 3970
+    },
+    {
+      "from": "hq/test/live-graph-wave1-a.test.mjs",
+      "to": "hq/test/live-graph-wave1-a.test.mjs",
+      "blobSha": "7ebe8b14b5cbb8a130c80b5bbda3f6bd0fa710bf",
+      "bytes": 4112
+    },
+    {
+      "from": "hq/test/live-graph-wave1-master.test.mjs",
+      "to": "hq/test/live-graph-wave1-master.test.mjs",
+      "blobSha": "75124ee5d821eeeb1a9ca7e6b89e3fd8c5384452",
+      "bytes": 12524
+    },
+    {
+      "from": "hq/test/native-graph-wiki-admission.test.mjs",
+      "to": "hq/test/native-graph-wiki-admission.test.mjs",
+      "blobSha": "f5aa80a653f8476ab22000ffed312fdbb4ae38ed",
+      "bytes": 5370
+    },
+    {
+      "from": "hq/test/nomenclature.test.mjs",
+      "to": "hq/test/nomenclature.test.mjs",
+      "blobSha": "2217e83c51ca17bf7e2324e75dc88bdd99e25959",
+      "bytes": 2479
+    },
+    {
+      "from": "hq/test/registry.test.mjs",
+      "to": "hq/test/registry.test.mjs",
+      "blobSha": "309a6b9188616590dfd482938297c743f814099b",
+      "bytes": 2141
+    },
+    {
+      "from": "hq/test/search.test.mjs",
+      "to": "hq/test/search.test.mjs",
+      "blobSha": "6d165c49816e20ff91ff9f6d46ce7c8c47392a6b",
+      "bytes": 10844
+    },
+    {
+      "from": "hq/test/semantic-convergence.test.mjs",
+      "to": "hq/test/semantic-convergence.test.mjs",
+      "blobSha": "b519cfb4e8c2ffeab9ad2394995cef48365e4f28",
+      "bytes": 16964
+    },
+    {
+      "from": "hq/test/semantic-optimizers.test.mjs",
+      "to": "hq/test/semantic-optimizers.test.mjs",
+      "blobSha": "4d3024da096090b81faa15babad5cfaa8479606f",
+      "bytes": 11771
+    },
+    {
+      "from": "hq/test/semantic-registry.test.mjs",
+      "to": "hq/test/semantic-registry.test.mjs",
+      "blobSha": "9327f3f48176d15ede9c76d8f1fd78fc2a0b9863",
+      "bytes": 15471
+    },
+    {
+      "from": "hq/test/taxonomy.test.mjs",
+      "to": "hq/test/taxonomy.test.mjs",
+      "blobSha": "c1000bf72f3aa01c7490560e4a6026b2de88683a",
+      "bytes": 8038
+    },
+    {
+      "from": "hq/test/util.test.mjs",
+      "to": "hq/test/util.test.mjs",
+      "blobSha": "7548006029c391cc071951c127dba9305681ad4a",
+      "bytes": 688
+    },
+    {
+      "from": "hq/test/walk-bin-source.test.mjs",
+      "to": "hq/test/walk-bin-source.test.mjs",
+      "blobSha": "8b2e6c8fa8501fb8c93998db82f900648aadd26b",
+      "bytes": 5178
+    },
+    {
+      "from": "hq/test/walk.test.mjs",
+      "to": "hq/test/walk.test.mjs",
+      "blobSha": "b48fcac0bf19d3d68b450c4e04de3ce3227fa2bc",
+      "bytes": 1929
+    },
+    {
+      "from": "hq/test/wiki-program.test.mjs",
+      "to": "hq/test/wiki-program.test.mjs",
+      "blobSha": "0bef0c0ba87f7d7626d782317ff9dcbfffe9e613",
+      "bytes": 18868
+    },
+    {
+      "from": "hq/test/wiki.test.mjs",
+      "to": "hq/test/wiki.test.mjs",
+      "blobSha": "97b2c947fd133011f5dab4a8ab0c8ae19d6302df",
+      "bytes": 19400
+    },
+    {
+      "from": "hq/types/bun-test.d.ts",
+      "to": "hq/types/bun-test.d.ts",
+      "blobSha": "323f09273b2ee9eb230aa6db44cd5d6582893b88",
+      "bytes": 1497
+    }
+  ],
+  "invariants": [
+    "exact_git_blob_identity",
+    "no donor source checkout",
+    "no donor SQLite or sessions copied",
+    "native hqkg excluded; lane A owns it"
+  ],
+  "integratorHandoff": "G copies this locked record into integration/source-lock.json and validates final merged release tree",
+  "followUp": {
+    "type": "W01-D-ISOLATED-HARDENING",
+    "baseHead": "16c590dbd97dc617b783d949268ddc8fb77da2c5",
+    "donorExactRetained": 314,
+    "adaptedDonorFiles": 1,
+    "adaptations": [
+      {
+        "sourcePath": "hq/lib/walk.mjs",
+        "donorBlobSha": "c3fb10ada3b078f9f6f2e0429d0c5829a7b155fe",
+        "arborBlobSha": "38f8bfe82220909cbd456d3115ecad350656fe1e",
+        "reason": "Refuse Git-tracked file symlinks escaping approved development root before stat/sniff/index"
+      }
+    ],
+    "notes": "Source originals remain pin-able; 314 imported donor blobs are unchanged. Entry-point and tests are ARBOR-owned."
+  }
+}

@@ -1,0 +1,107 @@
+{
+  "schema": "arbor.test-only.host-catalog-baseline/1",
+  "note": "TEST-ONLY: no executable catalog; Host apps/vivim-host/control/action-catalog.v1.json is the exclusive action/risk owner.",
+  "sourceRepo": "owenservera/vivim-web-harness",
+  "sourceCommit": "cae97afe848d79957c9d6c698a90996a758bfd56",
+  "sourcePath": "apps/vivim-host/control/action-catalog.v1.json",
+  "sourceBlobSha": "c423d5933c28ca9f534028aeaffd7929f767c269",
+  "catalogVersion": 6,
+  "actions": [
+    {
+      "id": "control.catalog.list",
+      "risk": "R0",
+      "readiness": "source_wired"
+    },
+    {
+      "id": "vivim.status.show",
+      "risk": "R0",
+      "readiness": "source_wired"
+    },
+    {
+      "id": "devices.summary",
+      "risk": "R0",
+      "readiness": "source_wired"
+    },
+    {
+      "id": "devices.approve",
+      "risk": "R2",
+      "readiness": "source_wired"
+    },
+    {
+      "id": "devices.revoke",
+      "risk": "R2",
+      "readiness": "source_wired"
+    },
+    {
+      "id": "personalization.context.summary",
+      "risk": "R0",
+      "readiness": "source_wired"
+    },
+    {
+      "id": "personalization.preference.list",
+      "risk": "R0",
+      "readiness": "source_wired"
+    },
+    {
+      "id": "personalization.preference.add",
+      "risk": "R1",
+      "readiness": "source_wired"
+    },
+    {
+      "id": "personalization.preference.remove",
+      "risk": "R1",
+      "readiness": "source_wired"
+    },
+    {
+      "id": "ui.theme.show",
+      "risk": "R0",
+      "readiness": "source_wired"
+    },
+    {
+      "id": "ui.theme.set_preset",
+      "risk": "R1",
+      "readiness": "source_wired"
+    },
+    {
+      "id": "ui.theme.undo",
+      "risk": "R1",
+      "readiness": "source_wired"
+    },
+    {
+      "id": "privacy.hard_no.list",
+      "risk": "R0",
+      "readiness": "source_wired"
+    },
+    {
+      "id": "privacy.hard_no.add",
+      "risk": "R2",
+      "readiness": "source_wired"
+    },
+    {
+      "id": "privacy.hard_no.clear",
+      "risk": "R2",
+      "readiness": "source_wired"
+    },
+    {
+      "id": "control.lexicon.teach",
+      "risk": "R1",
+      "readiness": "source_wired"
+    },
+    {
+      "id": "control.lexicon.forget",
+      "risk": "R1",
+      "readiness": "source_wired"
+    },
+    {
+      "id": "vivim.network.pause_egress",
+      "risk": "R2",
+      "readiness": "enforcement_missing"
+    },
+    {
+      "id": "machine.network.disable_all",
+      "risk": "R3",
+      "readiness": "unsupported"
+    }
+  ],
+  "availableNow": false
+}

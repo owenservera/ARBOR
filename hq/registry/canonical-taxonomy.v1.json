@@ -1,0 +1,2237 @@
+{
+  "authority": [
+    {
+      "assignable_by": "the tool vendor or the official documentation of the provider",
+      "evidence": "docs/AGENTIC-RULEBOOK.md §4; hq/lib/canon.mjs DOCUMENT_AUTHORITY",
+      "id": "authority.vendor_documented",
+      "label": "vendor_documented",
+      "meaning": "An official provider or tool convention.",
+      "promotion_rule": "Never promoted by HQ; a local file cannot claim it.",
+      "vocabulary": "document",
+      "weight": 1
+    },
+    {
+      "assignable_by": "the HQ indexer during the census",
+      "evidence": "hq/lib/canon.mjs classifyDocument",
+      "id": "authority.project_observed",
+      "label": "project_observed",
+      "meaning": "An actual repository file, observed in the census.",
+      "promotion_rule": "Observation never becomes current by itself.",
+      "vocabulary": "document",
+      "weight": 0.9
+    },
+    {
+      "assignable_by": "a project maintainer",
+      "evidence": "docs/AGENTIC-RULEBOOK.md §4",
+      "id": "authority.local_custom",
+      "label": "local_custom",
+      "meaning": "A local convention that has not been verified.",
+      "promotion_rule": "Must not be promoted without owner confirmation.",
+      "vocabulary": "document",
+      "weight": 0.7
+    },
+    {
+      "assignable_by": "any author or agent",
+      "evidence": "docs/AGENTIC-RULEBOOK.md §4",
+      "id": "authority.proposed",
+      "label": "proposed",
+      "meaning": "A candidate that has not been adopted.",
+      "promotion_rule": "Stays proposed until the owner accepts it.",
+      "vocabulary": "document",
+      "weight": 0.5
+    },
+    {
+      "assignable_by": "the indexer, when a path segment marks archive, history or donor material",
+      "evidence": "hq/lib/canon.mjs lifecycleFor; buildDocument",
+      "id": "authority.historical",
+      "label": "historical",
+      "meaning": "Archived or donor material. It stays historical.",
+      "promotion_rule": "Never promoted to current without an owner decision.",
+      "vocabulary": "document",
+      "weight": 0.2
+    },
+    {
+      "assignable_by": "explicit owner confirmation only",
+      "evidence": "hq/lib/canon.mjs AUTHORITY; confirmDecision; confirmTerm",
+      "id": "authority.owner",
+      "label": "owner",
+      "meaning": "The owner of the record.",
+      "promotion_rule": "The only value that produces an accepted decision or a current CANON term.",
+      "vocabulary": "decision",
+      "weight": null
+    },
+    {
+      "assignable_by": "the architecture decision group",
+      "evidence": "hq/lib/canon.mjs normalizeAuthorityValue default",
+      "id": "authority.architecture",
+      "label": "architecture",
+      "meaning": "Authority recorded by the architecture group.",
+      "promotion_rule": "Never promotes to `owner`; it is the default for extracted decisions and terms.",
+      "vocabulary": "decision",
+      "weight": null
+    },
+    {
+      "assignable_by": "a named team",
+      "evidence": "hq/lib/canon.mjs AUTHORITY",
+      "id": "authority.team",
+      "label": "team",
+      "meaning": "Authority recorded by one team.",
+      "promotion_rule": "Never promotes to `owner`.",
+      "vocabulary": "decision",
+      "weight": null
+    },
+    {
+      "assignable_by": "an agent acting without authority",
+      "evidence": "hq/lib/canon.mjs AUTHORITY",
+      "id": "authority.agent_proposed",
+      "label": "agent_proposed",
+      "meaning": "A proposal raised by an agent.",
+      "promotion_rule": "Never promotes to `owner`.",
+      "vocabulary": "decision",
+      "weight": null
+    },
+    {
+      "assignable_by": "the extractor, when it reads an @hq:why or @hq:invariant annotation",
+      "evidence": "hq/lib/canon.mjs annotationDecisions; extractCanonTerms",
+      "id": "authority.source_annotation",
+      "label": "source_annotation",
+      "meaning": "A value observed in the source text rather than decided.",
+      "promotion_rule": "Never promotes to `owner`; it stays observed.",
+      "vocabulary": "decision",
+      "weight": null
+    }
+  ],
+  "authority_notice": "A document never grants execution authority. This taxonomy names what exists; it does not permit anything.",
+  "digest": "5c609a2b85c44013ee3221dd44d7715ad0c756bff53760a289ba0bda9c0f38ac",
+  "effects": [
+    {
+      "approval_scope": null,
+      "default_effect": "allow",
+      "description": "Read a file from the local disk.",
+      "effect": "fs:read",
+      "evidence": "hq/lib/components.mjs READ_EFFECT_RE",
+      "hq_performs": true,
+      "id": "effect.fs:read",
+      "requires_scopes": [
+        "read"
+      ],
+      "rule": "Allowed by default under the read scope; secret paths stay excluded by the walker."
+    },
+    {
+      "approval_scope": "owner",
+      "default_effect": "deny",
+      "description": "Create or change a file on the local disk.",
+      "effect": "fs:write",
+      "evidence": "hq/lib/components.mjs READ_EFFECT_RE; docs/AGENTIC-AUTOMATION-TOOLKIT.md §8",
+      "hq_performs": true,
+      "id": "effect.fs:write",
+      "requires_scopes": [
+        "index:write",
+        "wiki:write",
+        "hooks:write"
+      ],
+      "rule": "Denied by default. Requires one of the write scopes or an explicit owner approval."
+    },
+    {
+      "approval_scope": null,
+      "default_effect": "allow",
+      "description": "Read rows from the local index.",
+      "effect": "db:read",
+      "evidence": "hq/lib/components.mjs READ_EFFECT_RE",
+      "hq_performs": true,
+      "id": "effect.db:read",
+      "requires_scopes": [
+        "read"
+      ],
+      "rule": "Allowed by default under the read scope."
+    },
+    {
+      "approval_scope": "owner",
+      "default_effect": "deny",
+      "description": "Write rows to the local index.",
+      "effect": "db:write",
+      "evidence": "hq/lib/components.mjs READ_EFFECT_RE; docs/AGENTIC-AUTOMATION-TOOLKIT.md §8",
+      "hq_performs": true,
+      "id": "effect.db:write",
+      "requires_scopes": [
+        "index:write"
+      ],
+      "rule": "Denied by default. Requires the index scope or an explicit owner approval."
+    },
+    {
+      "approval_scope": null,
+      "default_effect": "allow",
+      "description": "Read git history and refs.",
+      "effect": "git:read",
+      "evidence": "hq/lib/lake.mjs; hq/lib/git.mjs",
+      "hq_performs": true,
+      "id": "effect.git:read",
+      "requires_scopes": [
+        "read"
+      ],
+      "rule": "Allowed by default under the read scope. A project without git falls back to a directory walk."
+    },
+    {
+      "approval_scope": "owner",
+      "default_effect": "deny",
+      "description": "Create a commit, a branch or a hook in a repository.",
+      "effect": "git:write",
+      "evidence": "hq/lib/automation.mjs; docs/AGENTIC-AUTOMATION-TOOLKIT.md §8",
+      "hq_performs": false,
+      "id": "effect.git:write",
+      "requires_scopes": [
+        "hooks:write",
+        "owner"
+      ],
+      "rule": "Denied by default. HQ installs its own managed hooks and never creates a commit, a branch or a push on its own."
+    },
+    {
+      "approval_scope": null,
+      "default_effect": "deny",
+      "description": "Send or receive data over the network.",
+      "effect": "network",
+      "evidence": "hq/lib/components.mjs FORBIDDEN_EFFECT_RE",
+      "hq_performs": false,
+      "id": "effect.network",
+      "requires_scopes": [],
+      "rule": "HQ never performs a network effect. A component that declares one is refused at registration."
+    },
+    {
+      "approval_scope": null,
+      "default_effect": "deny",
+      "description": "Drive a browser or change provider state.",
+      "effect": "browser:effect",
+      "evidence": "hq/lib/components.mjs FORBIDDEN_EFFECT_RE; docs/COMPONENT-REGISTRY.md §10",
+      "hq_performs": false,
+      "id": "effect.browser:effect",
+      "requires_scopes": [],
+      "rule": "HQ never performs a browser effect. A component that declares one is refused at registration."
+    },
+    {
+      "approval_scope": "owner",
+      "default_effect": "deny",
+      "description": "Wait for an owner decision before continuing.",
+      "effect": "owner:approval",
+      "evidence": "docs/AGENTIC-AUTOMATION-TOOLKIT.md §6; hq/lib/components.mjs approval",
+      "hq_performs": true,
+      "id": "effect.owner:approval",
+      "requires_scopes": [
+        "owner"
+      ],
+      "rule": "An approval gate is the only way a write effect may proceed without a standing scope, and the decision is recorded as a receipt."
+    },
+    {
+      "approval_scope": null,
+      "default_effect": "deny",
+      "description": "Send a message to a provider or a person.",
+      "effect": "send",
+      "evidence": "hq/lib/components.mjs FORBIDDEN_EFFECT_RE; hq/lib/nomenclature.mjs invariants",
+      "hq_performs": false,
+      "id": "effect.send",
+      "requires_scopes": [],
+      "rule": "HQ never sends. A component that declares a send effect is refused at registration."
+    }
+  ],
+  "entities": [
+    {
+      "id": "entity.project",
+      "id_prefix": "project",
+      "lifecycle": "current",
+      "note": "A registered directory with an absolute path; rows are created by `hq project add`.",
+      "owner": "hq",
+      "persistence": "table:projects",
+      "status_enum": null,
+      "title": "Project"
+    },
+    {
+      "authority": "project_observed",
+      "id": "entity.document",
+      "id_prefix": "doc",
+      "lifecycle": "current",
+      "note": "Every indexed Markdown, YAML or ADR file, classified into one of the 21 families plus `unclassified`.",
+      "owner": "hq",
+      "persistence": "table:documents",
+      "status_enum": "status.document",
+      "title": "Document"
+    },
+    {
+      "authority": "architecture",
+      "id": "entity.decision",
+      "id_prefix": "decision",
+      "lifecycle": "current",
+      "note": "A dated outcome with rationale, alternatives, consequences and evidence.",
+      "owner": "hq",
+      "persistence": "table:decisions",
+      "status_enum": "status.decision",
+      "title": "Decision"
+    },
+    {
+      "authority": "architecture",
+      "id": "entity.canon_term",
+      "id_prefix": "canon",
+      "lifecycle": "current",
+      "note": "A bounded term with a definition, aliases and explicit non-equivalences.",
+      "owner": "hq",
+      "persistence": "table:canon_terms",
+      "status_enum": "status.canon_term",
+      "title": "CANON term"
+    },
+    {
+      "id": "entity.session",
+      "id_prefix": "session",
+      "lifecycle": "current",
+      "note": "One harness session recorded from the provider transcript.",
+      "owner": "hq",
+      "persistence": "table:sessions",
+      "status_enum": null,
+      "title": "Session"
+    },
+    {
+      "id": "entity.turn",
+      "id_prefix": "turn",
+      "lifecycle": "historical",
+      "note": "A single exchange inside a session. There is no `turn` table; docs/VIVIM-KB-INTAKE.md §8.4 lists `turn` under entitiesMissingTable, and turn text lives in `session_messages`.",
+      "owner": "hq",
+      "persistence": "none",
+      "status_enum": null,
+      "title": "Turn"
+    },
+    {
+      "id": "entity.note",
+      "id_prefix": "note",
+      "lifecycle": "current",
+      "note": "A tiered memory row (`now`, `later`, `canon`) with origin, confidence and evidence.",
+      "owner": "hq",
+      "persistence": "table:notes",
+      "status_enum": null,
+      "title": "Note"
+    },
+    {
+      "id": "entity.symbol",
+      "id_prefix": "symbol",
+      "lifecycle": "generated",
+      "note": "A declaration extracted from a source file by hq/lib/extract.mjs; rebuildable and never authoritative.",
+      "owner": "hq",
+      "persistence": "table:symbols",
+      "status_enum": null,
+      "title": "Symbol"
+    },
+    {
+      "id": "entity.file",
+      "id_prefix": "file",
+      "lifecycle": "current",
+      "note": "One indexed file with its language, size, hash and mtime.",
+      "owner": "hq",
+      "persistence": "table:files",
+      "status_enum": null,
+      "title": "File"
+    },
+    {
+      "id": "entity.commit",
+      "id_prefix": "commit",
+      "lifecycle": "historical",
+      "note": "A git commit ingested into the event lake; immutable history, never rewritten.",
+      "owner": "hq",
+      "persistence": "table:commits",
+      "status_enum": null,
+      "title": "Commit"
+    },
+    {
+      "id": "entity.event",
+      "id_prefix": "evt",
+      "lifecycle": "current",
+      "note": "The `events` table is declared in hq/lib/schema.mjs but no module in hq/lib inserts into it; the hq.event/1 store is contract-only (docs/AGENTIC-AUTOMATION-TOOLKIT.md §3).",
+      "owner": "hq",
+      "persistence": "table:events",
+      "status_enum": null,
+      "title": "Event"
+    },
+    {
+      "id": "entity.component",
+      "id_prefix": "component",
+      "lifecycle": "current",
+      "note": "A versioned, declared action with effects and authority; the table is created by hq/lib/components.mjs, not by hq/lib/schema.mjs.",
+      "owner": "hq",
+      "persistence": "table:components",
+      "status_enum": "status.component",
+      "title": "Component"
+    },
+    {
+      "id": "entity.pipeline",
+      "id_prefix": "pipeline",
+      "lifecycle": "current",
+      "note": "A versioned DAG of component references with edges, defaults and config.",
+      "owner": "hq",
+      "persistence": "table:pipelines",
+      "status_enum": "status.pipeline",
+      "title": "Pipeline"
+    },
+    {
+      "id": "entity.run",
+      "id_prefix": "run",
+      "lifecycle": "historical",
+      "note": "One execution of a pipeline version; the row records config, input and output digests.",
+      "owner": "hq",
+      "persistence": "table:pipeline_runs",
+      "status_enum": "status.task_run",
+      "title": "Run"
+    },
+    {
+      "id": "entity.step",
+      "id_prefix": "step",
+      "lifecycle": "historical",
+      "note": "One attempt of one component inside a run.",
+      "owner": "hq",
+      "persistence": "table:pipeline_steps",
+      "status_enum": "status.task_run",
+      "title": "Step"
+    },
+    {
+      "id": "entity.task",
+      "id_prefix": "task",
+      "lifecycle": "current",
+      "note": "A scheduled unit of work with a lease and attempts; the table and its statuses are contract-only (docs/AGENTIC-AUTOMATION-TOOLKIT.md §5).",
+      "owner": "hq",
+      "persistence": "table:automation_tasks",
+      "status_enum": "status.task_run",
+      "title": "Task"
+    },
+    {
+      "id": "entity.bundle",
+      "id_prefix": "bundle",
+      "lifecycle": "generated",
+      "note": "The bounded, scored set of sources returned by hq/lib/context.mjs. It is not stored; the receipt that records it is.",
+      "owner": "hq",
+      "persistence": "projection:context_bundle",
+      "status_enum": null,
+      "title": "Context bundle"
+    },
+    {
+      "id": "entity.receipt",
+      "id_prefix": "receipt",
+      "lifecycle": "historical",
+      "note": "An append-only evidence row: what was read, with source hashes and a digest.",
+      "owner": "hq",
+      "persistence": "table:receipts",
+      "status_enum": null,
+      "title": "Receipt"
+    },
+    {
+      "id": "entity.model",
+      "id_prefix": "model",
+      "lifecycle": "current",
+      "note": "The KB domain model block (`hq.vivim-model/1`). No module stores it yet; hq/lib/kb-model.mjs is the planned projection.",
+      "owner": "kb",
+      "persistence": "none",
+      "status_enum": null,
+      "title": "Model"
+    },
+    {
+      "id": "entity.feature",
+      "id_prefix": "feature",
+      "lifecycle": "current",
+      "note": "A KB-declared feature that names the flows and actions that deliver it.",
+      "owner": "kb",
+      "persistence": "none",
+      "status_enum": "status.feature",
+      "title": "Feature"
+    },
+    {
+      "id": "entity.use_case",
+      "id_prefix": "usecase",
+      "lifecycle": "current",
+      "note": "A KB-declared given/when/then with a feature, a flow and evidence; the traceability spine.",
+      "owner": "kb",
+      "persistence": "none",
+      "status_enum": null,
+      "title": "Use case"
+    },
+    {
+      "id": "entity.action",
+      "id_prefix": "action",
+      "lifecycle": "current",
+      "note": "A KB-declared action that materialises as an HQ component with its declared effects and authority copied verbatim.",
+      "owner": "kb",
+      "persistence": "projection:component",
+      "status_enum": null,
+      "title": "Action"
+    },
+    {
+      "id": "entity.flow",
+      "id_prefix": "flow",
+      "lifecycle": "current",
+      "note": "A KB-declared sequence of steps; HQ compiles it to a DAG view and rejects cycles.",
+      "owner": "kb",
+      "persistence": "none",
+      "status_enum": null,
+      "title": "Flow"
+    },
+    {
+      "id": "entity.source",
+      "id_prefix": "source",
+      "lifecycle": "current",
+      "note": "A KB-declared origin of data (file, table, api, capture) with a trust level and an owner.",
+      "owner": "kb",
+      "persistence": "none",
+      "status_enum": null,
+      "title": "Source"
+    }
+  ],
+  "extension": [
+    {
+      "definition": "A request to add a term, an entity, a status, an effect, a scope or a schema id to the taxonomy.",
+      "evidence": "docs/AGENTIC-RULEBOOK.md §15",
+      "id": "extension.propose",
+      "rule": "The proposal names the new item, the reason it is needed and the surfaces that would use it.",
+      "title": "Proposal"
+    },
+    {
+      "definition": "The code, contract or observation that shows the new item is real.",
+      "evidence": "docs/AGENTIC-RULEBOOK.md §9",
+      "id": "extension.evidence",
+      "rule": "No proposal advances without evidence that points at a file, a contract or a recorded observation.",
+      "title": "Evidence"
+    },
+    {
+      "definition": "The owner accepts the proposal.",
+      "evidence": "docs/AGENTIC-RULEBOOK.md §1",
+      "id": "extension.confirm",
+      "rule": "Only the owner confirms. A document, an agent or a registry never confirms itself.",
+      "title": "Owner confirmation"
+    },
+    {
+      "definition": "A published revision of the taxonomy with a new version and a new digest.",
+      "evidence": "docs/DCB-PROTOCOL.md §12",
+      "id": "extension.version",
+      "rule": "A confirmed change publishes a new version. The previous version stays readable so old bundles still verify.",
+      "title": "New taxonomy version"
+    },
+    {
+      "definition": "A change that alters the meaning of an existing entry.",
+      "evidence": "docs/AGENTIC-RULEBOOK.md §15",
+      "id": "extension.no-silent-edit",
+      "rule": "Never applied in place. The entry is amended by publishing a new version that records the change.",
+      "title": "No silent edit"
+    },
+    {
+      "definition": "Reusing an existing id for a different concept.",
+      "evidence": "docs/AGENTIC-RULEBOOK.md §15",
+      "id": "extension.no-redefinition",
+      "rule": "Never allowed. A different concept gets a new id; the old id keeps its meaning and its history.",
+      "title": "No redefinition"
+    }
+  ],
+  "families": [
+    {
+      "code": "10",
+      "id": "family.10",
+      "name": "Tool configuration & hooks",
+      "role": "config",
+      "rule": "Family membership is navigation, not a ranking and not an authority order.",
+      "source_of_record": "hq/registry/agentic-file-registry.v1.json",
+      "typical_files": [
+        "opencode.json",
+        "opencode.jsonc",
+        "hooks.json",
+        ".mcp.json",
+        "settings.json"
+      ]
+    },
+    {
+      "code": "11",
+      "id": "family.11",
+      "name": "Memory & durable learning",
+      "role": "memory",
+      "rule": "Family membership is navigation, not a ranking and not an authority order.",
+      "source_of_record": "hq/registry/agentic-file-registry.v1.json",
+      "typical_files": [
+        "MEMORY.md",
+        "NOTES.md",
+        "PREFERENCES.md",
+        "LESSONS.md",
+        "FACTS.md"
+      ]
+    },
+    {
+      "code": "12",
+      "id": "family.12",
+      "name": "State, status & telemetry",
+      "role": "state",
+      "rule": "Family membership is navigation, not a ranking and not an authority order.",
+      "source_of_record": "hq/registry/agentic-file-registry.v1.json",
+      "typical_files": [
+        "STATE.md",
+        "SITREP.md",
+        "HEALTH.md",
+        "METRICS.md",
+        "TIMING.md"
+      ]
+    },
+    {
+      "code": "13",
+      "drift": "HANDOFF.md is listed under both family 13 (session boundaries) and family 19 (collaboration); the registry decides which one a given path lands in.",
+      "id": "family.13",
+      "name": "Session boundaries & recovery",
+      "role": "continuity",
+      "rule": "Family membership is navigation, not a ranking and not an authority order.",
+      "source_of_record": "hq/registry/agentic-file-registry.v1.json",
+      "typical_files": [
+        "HANDOFF.md",
+        "CHECKPOINT.md",
+        "RESUME.md"
+      ]
+    },
+    {
+      "code": "14",
+      "id": "family.14",
+      "name": "Work inventory & scheduling",
+      "role": "work",
+      "rule": "Family membership is navigation, not a ranking and not an authority order.",
+      "source_of_record": "hq/registry/agentic-file-registry.v1.json",
+      "typical_files": [
+        "TASKS.md",
+        "TODO.md",
+        "BACKLOG.md",
+        "MILESTONES.md"
+      ]
+    },
+    {
+      "code": "15",
+      "id": "family.15",
+      "name": "Planning & decomposition",
+      "role": "plan",
+      "rule": "Family membership is navigation, not a ranking and not an authority order.",
+      "source_of_record": "hq/registry/agentic-file-registry.v1.json",
+      "typical_files": [
+        "PLAN.md",
+        "ROADMAP.md",
+        "WORKSTREAM.md",
+        "WORKSTREAMS.md"
+      ]
+    },
+    {
+      "code": "16",
+      "id": "family.16",
+      "name": "Execution & operations",
+      "role": "operations",
+      "rule": "Family membership is navigation, not a ranking and not an authority order.",
+      "source_of_record": "hq/registry/agentic-file-registry.v1.json",
+      "typical_files": [
+        "RUNBOOK.md",
+        "COMMANDS.md",
+        "DEPLOY.md",
+        "WORKLOG.md"
+      ]
+    },
+    {
+      "code": "17",
+      "id": "family.17",
+      "name": "Testing & validation",
+      "role": "validation",
+      "rule": "Family membership is navigation, not a ranking and not an authority order.",
+      "source_of_record": "hq/registry/agentic-file-registry.v1.json",
+      "typical_files": [
+        "TEST-PLAN.md",
+        "VERIFY.md",
+        "EVAL.md",
+        "BENCHMARKS.md"
+      ]
+    },
+    {
+      "code": "18",
+      "id": "family.18",
+      "name": "Proof, lineage & audit",
+      "role": "evidence",
+      "rule": "Family membership is navigation, not a ranking and not an authority order.",
+      "source_of_record": "hq/registry/agentic-file-registry.v1.json",
+      "typical_files": [
+        "EVIDENCE.md",
+        "PROVENANCE.md",
+        "RECEIPTS.md"
+      ]
+    },
+    {
+      "code": "19",
+      "drift": "HANDOFF.md is listed under both family 13 (session boundaries) and family 19 (collaboration); the registry decides which one a given path lands in.",
+      "id": "family.19",
+      "name": "Collaboration & handoffs",
+      "role": "collaboration",
+      "rule": "Family membership is navigation, not a ranking and not an authority order.",
+      "source_of_record": "hq/registry/agentic-file-registry.v1.json",
+      "typical_files": [
+        "INBOX.md",
+        "ESCALATION.md",
+        "DECISIONS-NEEDED.md"
+      ]
+    },
+    {
+      "code": "20",
+      "drift": "The rule book and hq/lib/canon.mjs call this family \"Decision & governance\"; the registry carries \"Decision & governance record\". The registry name is the source of record.",
+      "id": "family.20",
+      "name": "Decision & governance record",
+      "role": "decision",
+      "rule": "Family membership is navigation, not a ranking and not an authority order.",
+      "source_of_record": "hq/registry/agentic-file-registry.v1.json",
+      "typical_files": [
+        "DECISIONS.md",
+        "DECISION_LOG.md",
+        "ADR.md",
+        "CONFLICT-REGISTER.md"
+      ]
+    },
+    {
+      "code": "21",
+      "id": "family.21",
+      "name": "Closeout, release & retirement",
+      "role": "closeout",
+      "rule": "Family membership is navigation, not a ranking and not an authority order.",
+      "source_of_record": "hq/registry/agentic-file-registry.v1.json",
+      "typical_files": [
+        "CLOSEOUT_PROTOCOL.md",
+        "RELEASE.md",
+        "ROLLBACK.md",
+        "POSTMORTEM.md"
+      ]
+    },
+    {
+      "code": "01",
+      "id": "family.01",
+      "name": "Agent entry & bootstrap",
+      "role": "instruction",
+      "rule": "Family membership is navigation, not a ranking and not an authority order.",
+      "source_of_record": "hq/registry/agentic-file-registry.v1.json",
+      "typical_files": [
+        "AGENTS.md",
+        "BOOTSTRAP.md",
+        "START-HERE.md"
+      ]
+    },
+    {
+      "code": "02",
+      "drift": "The rule book and hq/lib/canon.mjs call this family \"Provider-native rules\"; the registry carries \"Provider-native instruction rules\". The registry name is the source of record.",
+      "id": "family.02",
+      "name": "Provider-native instruction rules",
+      "role": "instruction",
+      "rule": "Family membership is navigation, not a ranking and not an authority order.",
+      "source_of_record": "hq/registry/agentic-file-registry.v1.json",
+      "typical_files": [
+        "CLAUDE.md",
+        "GEMINI.md",
+        ".cursorrules",
+        ".cursor/rules/*.mdc",
+        ".github/copilot-instructions.md"
+      ]
+    },
+    {
+      "code": "03",
+      "drift": "The rule book and hq/lib/canon.mjs call this family \"Roles & identity\"; the registry carries \"Agent roles & identity\". The registry name is the source of record.",
+      "id": "family.03",
+      "name": "Agent roles & identity",
+      "role": "identity",
+      "rule": "Family membership is navigation, not a ranking and not an authority order.",
+      "source_of_record": "hq/registry/agentic-file-registry.v1.json",
+      "typical_files": [
+        "ROLE.md",
+        "PERSONA.md",
+        "CHARTER.md",
+        "GENOME.md",
+        "FLEET.md"
+      ]
+    },
+    {
+      "code": "04",
+      "id": "family.04",
+      "name": "Context & retrieval",
+      "role": "context",
+      "rule": "Family membership is navigation, not a ranking and not an authority order.",
+      "source_of_record": "hq/registry/agentic-file-registry.v1.json",
+      "typical_files": [
+        "CONTEXT.md",
+        "PROJECT-CONTEXT.md",
+        "GLOSSARY.md",
+        "CANON-DICTIONARY.md",
+        "WORLD.md",
+        "APERTURE.md"
+      ]
+    },
+    {
+      "code": "05",
+      "id": "family.05",
+      "name": "Law, policy & guardrails",
+      "role": "law",
+      "rule": "Family membership is navigation, not a ranking and not an authority order.",
+      "source_of_record": "hq/registry/agentic-file-registry.v1.json",
+      "typical_files": [
+        "RULES.md",
+        "POLICY.md",
+        "INVARIANTS.md",
+        "AUTHORITY.md",
+        "GUARDRAILS.md"
+      ]
+    },
+    {
+      "code": "06",
+      "id": "family.06",
+      "name": "Goals & product intent",
+      "role": "intent",
+      "rule": "Family membership is navigation, not a ranking and not an authority order.",
+      "source_of_record": "hq/registry/agentic-file-registry.v1.json",
+      "typical_files": [
+        "VISION.md",
+        "GOALS.md",
+        "PRD.md",
+        "SPEC.md",
+        "NORTH-STARS.md"
+      ]
+    },
+    {
+      "code": "07",
+      "id": "family.07",
+      "name": "Architecture & interfaces",
+      "role": "architecture",
+      "rule": "Family membership is navigation, not a ranking and not an authority order.",
+      "source_of_record": "hq/registry/agentic-file-registry.v1.json",
+      "typical_files": [
+        "ARCHITECTURE.md",
+        "CONTRACT.md",
+        "API.md",
+        "SCHEMA.md"
+      ]
+    },
+    {
+      "code": "08",
+      "id": "family.08",
+      "name": "Capabilities & discovery",
+      "role": "capability",
+      "rule": "Family membership is navigation, not a ranking and not an authority order.",
+      "source_of_record": "hq/registry/agentic-file-registry.v1.json",
+      "typical_files": [
+        "CAPABILITIES.md",
+        "TOOLS.md",
+        "MCP.md",
+        "INTEGRATIONS.md"
+      ]
+    },
+    {
+      "code": "09",
+      "id": "family.09",
+      "name": "Skills & reusable methods",
+      "role": "skill",
+      "rule": "Family membership is navigation, not a ranking and not an authority order.",
+      "source_of_record": "hq/registry/agentic-file-registry.v1.json",
+      "typical_files": [
+        "SKILL.md",
+        "PLAYBOOK.md",
+        "RECIPES.md"
+      ]
+    }
+  ],
+  "idGrammar": [
+    {
+      "charset": "[a-z0-9._-]",
+      "evidence": "hq/lib/schema.mjs:15 (projects.name)",
+      "example": "project:repos-hq",
+      "grammar": "project:<name>",
+      "id": "grammar.project",
+      "immutable": true,
+      "max_length": 64,
+      "prefix": "project"
+    },
+    {
+      "charset": "[A-Za-z0-9._:/-]",
+      "evidence": "hq/lib/kb.mjs docNodeId",
+      "example": "doc:repos-hq:AGENTS.md",
+      "grammar": "doc:<project>:<path>",
+      "id": "grammar.doc",
+      "immutable": true,
+      "max_length": 400,
+      "prefix": "doc"
+    },
+    {
+      "charset": "[a-z0-9_]",
+      "evidence": "hq/lib/canon.mjs decisionId",
+      "example": "decision:dec_0123456789abcdef01234567",
+      "grammar": "decision:dec_<24 hex>",
+      "id": "grammar.decision",
+      "immutable": true,
+      "max_length": 32,
+      "prefix": "decision"
+    },
+    {
+      "charset": "[a-z0-9_]",
+      "evidence": "hq/lib/canon.mjs termId",
+      "example": "canon:canon_0123456789abcdef01234567",
+      "grammar": "canon:canon_<24 hex>",
+      "id": "grammar.canon",
+      "immutable": true,
+      "max_length": 32,
+      "prefix": "canon"
+    },
+    {
+      "charset": "[A-Za-z0-9._-]",
+      "evidence": "hq/lib/kb.mjs sessionNode; sessions.sessions.id",
+      "example": "session:ses_01HQ8Z",
+      "grammar": "session:<session_id>",
+      "id": "grammar.session",
+      "immutable": true,
+      "max_length": 128,
+      "prefix": "session"
+    },
+    {
+      "charset": "[A-Za-z0-9._/-]",
+      "evidence": "hq/lib/schema.mjs session_messages.seq",
+      "example": "turn:ses_01HQ8Z/12",
+      "grammar": "turn:<session_id>/<seq>",
+      "id": "grammar.turn",
+      "immutable": true,
+      "max_length": 160,
+      "prefix": "turn"
+    },
+    {
+      "charset": "[a-z0-9_]",
+      "evidence": "hq/lib/memory.mjs noteId",
+      "example": "note:note_0123456789abcdef01234567",
+      "grammar": "note:note_<24 hex>",
+      "id": "grammar.note",
+      "immutable": true,
+      "max_length": 32,
+      "prefix": "note"
+    },
+    {
+      "charset": "[A-Za-z0-9._#:/-]",
+      "evidence": "hq/lib/schema.mjs symbols(file_id, name, line)",
+      "example": "symbol:hq/lib/context.mjs#composeContext:412",
+      "grammar": "symbol:<path>#<name>:<line>",
+      "id": "grammar.symbol",
+      "immutable": true,
+      "max_length": 300,
+      "prefix": "symbol"
+    },
+    {
+      "charset": "[A-Za-z0-9._:/-]",
+      "evidence": "hq/lib/schema.mjs files(project_id, path)",
+      "example": "file:repos-hq:hq/lib/context.mjs",
+      "grammar": "file:<project>:<path>",
+      "id": "grammar.file",
+      "immutable": true,
+      "max_length": 400,
+      "prefix": "file"
+    },
+    {
+      "charset": "[0-9a-f]",
+      "evidence": "hq/lib/schema.mjs commits.sha",
+      "example": "commit:9fceb02d0ae598e95dc970b74767f19372d61af8",
+      "grammar": "commit:<40 hex>",
+      "id": "grammar.commit",
+      "immutable": true,
+      "max_length": 48,
+      "prefix": "commit"
+    },
+    {
+      "charset": "[0-9a-f_]",
+      "drift": "docs/AGENTIC-AUTOMATION-TOOLKIT.md §3 declares `evt_<sha256>` (64 hex). The 24-hex form is what the code emits.",
+      "evidence": "hq/lib/sessions.mjs:308 emits `evt_` + sha256(idBase).slice(0, 24)",
+      "example": "evt:0123456789abcdef01234567",
+      "grammar": "evt:<24 hex>",
+      "id": "grammar.evt",
+      "immutable": true,
+      "max_length": 28,
+      "prefix": "evt"
+    },
+    {
+      "charset": "[A-Za-z0-9._:-] plus @ and semver",
+      "evidence": "hq/lib/components.mjs ID_RE and version column",
+      "example": "component:hq.tool.index@1.2.0",
+      "grammar": "component:<id>@<semver>",
+      "id": "grammar.component",
+      "immutable": true,
+      "max_length": 200,
+      "prefix": "component"
+    },
+    {
+      "charset": "[A-Za-z0-9._:-] plus @ and semver",
+      "evidence": "hq/lib/components.mjs pipelines table",
+      "example": "pipeline:index-after-edit@2.0.0",
+      "grammar": "pipeline:<id>@<semver>",
+      "id": "grammar.pipeline",
+      "immutable": true,
+      "max_length": 200,
+      "prefix": "pipeline"
+    },
+    {
+      "charset": "[0-9a-f_]",
+      "evidence": "hq/lib/components.mjs recordReplayRun",
+      "example": "run:0123456789abcdef01234567",
+      "grammar": "run:<24 hex>",
+      "id": "grammar.run",
+      "immutable": true,
+      "max_length": 28,
+      "prefix": "run"
+    },
+    {
+      "charset": "[A-Za-z0-9._/-]",
+      "evidence": "hq/lib/components.mjs pipeline_steps(run_id, step_id)",
+      "example": "step:run_0123456789abcdef01234567/index",
+      "grammar": "step:<run_id>/<step_id>",
+      "id": "grammar.step",
+      "immutable": true,
+      "max_length": 200,
+      "prefix": "step"
+    },
+    {
+      "charset": "[0-9a-f_]",
+      "drift": "No module emits a task id yet; the automation scheduler is contract-only.",
+      "evidence": "docs/AGENTIC-AUTOMATION-TOOLKIT.md §3",
+      "example": "task:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+      "grammar": "task:<64 hex>",
+      "id": "grammar.task",
+      "immutable": true,
+      "max_length": 68,
+      "prefix": "task"
+    },
+    {
+      "charset": "[0-9a-f]",
+      "evidence": "hq/lib/context.mjs bundleDigest",
+      "example": "bundle:9c1f0e2b8f7a4d1c6b3e5a09f2c7d4b1e8a05f3c6d9b2e7a41c8f05d3b6e9a2c",
+      "grammar": "bundle:<64 hex digest>",
+      "id": "grammar.bundle",
+      "immutable": true,
+      "max_length": 70,
+      "prefix": "bundle"
+    },
+    {
+      "charset": "[a-z0-9_]",
+      "evidence": "hq/lib/receipts.mjs receiptId",
+      "example": "receipt:rcpt_0123456789abcdef01234567",
+      "grammar": "receipt:rcpt_<24 hex>",
+      "id": "grammar.receipt",
+      "immutable": true,
+      "max_length": 32,
+      "prefix": "receipt"
+    },
+    {
+      "charset": "[A-Za-z0-9._-] plus @ and version",
+      "evidence": "docs/VIVIM-KB-INTAKE.md §8.1",
+      "example": "model:vivim@2026-11-02",
+      "grammar": "model:<id>@<version>",
+      "id": "grammar.model",
+      "immutable": true,
+      "max_length": 200,
+      "prefix": "model"
+    },
+    {
+      "charset": "[A-Za-z0-9._-]",
+      "evidence": "docs/VIVIM-KB-INTAKE.md §8.2 features",
+      "example": "feature:capability-discovery",
+      "grammar": "feature:<id>",
+      "id": "grammar.feature",
+      "immutable": true,
+      "max_length": 120,
+      "prefix": "feature"
+    },
+    {
+      "charset": "[A-Za-z0-9._-]",
+      "evidence": "docs/VIVIM-KB-INTAKE.md §8.2 useCases",
+      "example": "usecase:UC-014",
+      "grammar": "usecase:<id>",
+      "id": "grammar.usecase",
+      "immutable": true,
+      "max_length": 120,
+      "prefix": "usecase"
+    },
+    {
+      "charset": "[A-Za-z0-9._:-]",
+      "evidence": "docs/VIVIM-KB-INTAKE.md §8.2 actions",
+      "example": "action:hq.action.send-message",
+      "grammar": "action:<id>",
+      "id": "grammar.action",
+      "immutable": true,
+      "max_length": 120,
+      "prefix": "action"
+    },
+    {
+      "charset": "[A-Za-z0-9._-]",
+      "evidence": "docs/VIVIM-KB-INTAKE.md §8.2 flows",
+      "example": "flow:capture-and-read",
+      "grammar": "flow:<id>",
+      "id": "grammar.flow",
+      "immutable": true,
+      "max_length": 120,
+      "prefix": "flow"
+    },
+    {
+      "charset": "[A-Za-z0-9._-]",
+      "evidence": "docs/VIVIM-KB-INTAKE.md §8.2 sources",
+      "example": "source:studio-capture",
+      "grammar": "source:<id>",
+      "id": "grammar.source",
+      "immutable": true,
+      "max_length": 120,
+      "prefix": "source"
+    },
+    {
+      "id": "grammar.rule",
+      "rule": "An id is immutable. A record whose content changes keeps its id; a record whose id changes is a new record. An id is never reused for a different meaning.",
+      "title": "Immutability"
+    }
+  ],
+  "layers": [
+    {
+      "evidence": "docs/VIVIM-KB-INTAKE.md §8.3",
+      "id": "layer.kb",
+      "kind": "layer",
+      "may_define": [
+        "entities",
+        "types",
+        "schemas",
+        "flows",
+        "sources",
+        "actions",
+        "authority rules",
+        "features",
+        "use cases"
+      ],
+      "may_not_define": [
+        "local status values",
+        "execution permissions",
+        "the file layout of HQ",
+        "surface behaviour"
+      ],
+      "rank": 1,
+      "rule": "The KB owns the domain model; HQ materialises it and reports drift against it instead of overriding it.",
+      "title": "KB model authority"
+    },
+    {
+      "evidence": "hq/lib/kb.mjs; hq/lib/kb-intake.mjs; docs/VIVIM-KB-INTAKE.md §8.3",
+      "id": "layer.hq",
+      "kind": "layer",
+      "may_define": [
+        "local projections",
+        "indexes",
+        "derived views",
+        "receipts",
+        "context bundles",
+        "the local decision register",
+        "the local CANON register"
+      ],
+      "may_not_define": [
+        "entities the KB declares",
+        "execution authority",
+        "the meaning of a KB term",
+        "a replacement for an owner decision"
+      ],
+      "rank": 2,
+      "rule": "HQ projects. A conflict between the model and an HQ table is reported as drift, never resolved locally.",
+      "title": "HQ projection and evidence"
+    },
+    {
+      "evidence": "docs/WIKI-CONSOLE.md §1",
+      "id": "layer.surface",
+      "kind": "layer",
+      "may_define": [
+        "presentation",
+        "argument parsing",
+        "output format"
+      ],
+      "may_not_define": [
+        "new record kinds",
+        "new statuses",
+        "authority",
+        "effects"
+      ],
+      "rank": 3,
+      "rule": "A surface may not introduce a concept the KB or HQ has not declared.",
+      "title": "Surface"
+    },
+    {
+      "evidence": "hq/bin/hq.mjs",
+      "id": "surface.cli",
+      "kind": "surface",
+      "layer": "layer.surface",
+      "may_define": [
+        "command surface",
+        "argument parsing",
+        "text and JSON output"
+      ],
+      "may_not_define": [
+        "a second implementation",
+        "a private vocabulary"
+      ],
+      "rank": 3,
+      "rule": "The CLI is the reference surface: every other surface calls the same commands.",
+      "title": "Command line"
+    },
+    {
+      "evidence": "hq/lib/wiki.mjs; docs/COMPONENT-REGISTRY.md §8",
+      "id": "surface.wiki",
+      "kind": "surface",
+      "layer": "layer.surface",
+      "may_define": [
+        "generated pages",
+        "page navigation"
+      ],
+      "may_not_define": [
+        "new records",
+        "write actions",
+        "authority"
+      ],
+      "rank": 3,
+      "rule": "A wiki page is a rebuildable projection of the index, never a command and never a source of truth.",
+      "title": "Wiki"
+    },
+    {
+      "evidence": "docs/WIKI-CONSOLE.md §1",
+      "id": "surface.console",
+      "kind": "surface",
+      "layer": "layer.surface",
+      "may_define": [
+        "the command palette",
+        "the read-only result view"
+      ],
+      "may_not_define": [
+        "write commands",
+        "indexing",
+        "hook installation",
+        "sends"
+      ],
+      "rank": 3,
+      "rule": "The console is a second CLI with no state: every command it exposes is read-only.",
+      "title": "Console"
+    },
+    {
+      "evidence": "hq/lib/mcp.mjs",
+      "id": "surface.mcp",
+      "kind": "surface",
+      "layer": "layer.surface",
+      "may_define": [
+        "tool exposure",
+        "tool input schemas"
+      ],
+      "may_not_define": [
+        "a private index",
+        "a private vocabulary",
+        "unbounded output"
+      ],
+      "rank": 3,
+      "rule": "MCP is a transport over the same tools the CLI runs; a tool not in the registry does not exist.",
+      "title": "MCP server"
+    },
+    {
+      "evidence": "docs/SOTA-UPGRADE-TARGETS.md §6",
+      "id": "surface.plugin",
+      "kind": "surface",
+      "layer": "layer.surface",
+      "may_define": [
+        "event subscription",
+        "session instruction injection"
+      ],
+      "may_not_define": [
+        "a second index",
+        "write paths"
+      ],
+      "rank": 3,
+      "rule": "The plugin observes events and injects context; it never mutates provider state.",
+      "title": "Harness plugin"
+    }
+  ],
+  "lifecycle": [
+    {
+      "evidence": "docs/AGENTIC-RULEBOOK.md §4",
+      "id": "lifecycle.current",
+      "label": "current",
+      "meaning": "The live version of a record.",
+      "promotion_rule": "A current record becomes historical only through an owner decision or an explicit supersession.",
+      "rule": "A current record is the one every surface reads. Only the owner can demote it."
+    },
+    {
+      "evidence": "hq/lib/canon.mjs lifecycleFor",
+      "id": "lifecycle.historical",
+      "label": "historical",
+      "meaning": "A record kept because it was once true.",
+      "promotion_rule": "Never becomes current without an owner decision.",
+      "rule": "Historical material stays historical and stays visible."
+    },
+    {
+      "evidence": "hq/lib/canon.mjs GENERATED_SEGMENTS",
+      "id": "lifecycle.generated",
+      "label": "generated",
+      "meaning": "A rebuildable view derived from other records.",
+      "promotion_rule": "It is never promoted; it is replaced.",
+      "rule": "A generated view is never authoritative and is rewritten on the next build."
+    },
+    {
+      "drift": "hq/lib/canon.mjs lifecycleFor never returns `archived`; it maps archive, archived, history, historical and donor path segments to `historical`. The value is declared by the rule book but emitted by no module.",
+      "evidence": "docs/AGENTIC-RULEBOOK.md §4; hq/lib/filetypes.mjs renderRuleBook",
+      "id": "lifecycle.archived",
+      "label": "archived",
+      "meaning": "A record retired but retained.",
+      "promotion_rule": "Never promoted automatically.",
+      "rule": "An archived record is retained, not deleted."
+    }
+  ],
+  "naming": [
+    {
+      "applies_to": "record ids, table columns and stored JSON field names",
+      "evidence": "hq/lib/schema.mjs; hq/lib/canon.mjs",
+      "example": "source_path, last_verified, binds_to, canon_terms",
+      "id": "naming.ids",
+      "rule": "Machine identifiers are snake_case and stay stable across releases.",
+      "style": "snake_case"
+    },
+    {
+      "applies_to": "file path segments and CLI toggles",
+      "evidence": "hq/bin/hq.mjs; hq/registry/agentic-file-registry.v1.json",
+      "example": "docs/CANONICAL-TAXONOMY.md, --owner-confirmed, --no-wiki",
+      "id": "naming.paths",
+      "rule": "Paths use kebab-case segments; top-level documents are written in uppercase kebab-case.",
+      "style": "kebab-case"
+    },
+    {
+      "applies_to": "type and class names",
+      "evidence": "hq/lib/nomenclature.mjs VIVIM_TAXONOMY",
+      "example": "Evidence, Authority, Receipt",
+      "id": "naming.pascal",
+      "rule": "PascalCase appears nowhere except CANON Terms, which are written as titles.",
+      "style": "PascalCase"
+    },
+    {
+      "applies_to": "record kinds, statuses, lifecycle values, effects and scopes",
+      "evidence": "hq/lib/canon.mjs; hq/lib/components.mjs",
+      "example": "decision, canon, current, fs:read, index:write",
+      "id": "naming.kinds",
+      "rule": "Every enumeration value is lowercase so it can be compared without normalisation.",
+      "style": "lowercase"
+    },
+    {
+      "applies_to": "component and pipeline versions",
+      "evidence": "hq/lib/components.mjs resolveVersion; docs/COMPONENT-REGISTRY.md §2",
+      "example": "hq.tool.index@1.2.0, ^1.2.0",
+      "id": "naming.versions",
+      "rule": "A version is a semver string; a published version is immutable and a change produces a new version.",
+      "style": "@semver"
+    }
+  ],
+  "nonEquivalences": [
+    {
+      "id": "neq.self-knowledge",
+      "left": "Self-knowledge",
+      "meaning": "What a system knows about itself does not authorise it.",
+      "right": "authority",
+      "source": "docs/AGENTIC-RULEBOOK.md §12"
+    },
+    {
+      "id": "neq.grounding",
+      "left": "Grounding",
+      "meaning": "Being grounded in a source does not authorise an effect.",
+      "right": "authorization",
+      "source": "docs/AGENTIC-RULEBOOK.md §12"
+    },
+    {
+      "id": "neq.confidence",
+      "left": "Confidence",
+      "meaning": "A confidence score is not a proof.",
+      "right": "proof",
+      "source": "docs/AGENTIC-RULEBOOK.md §12"
+    },
+    {
+      "id": "neq.interpretation",
+      "left": "Interpretation",
+      "meaning": "Reading a record is not performing an effect.",
+      "right": "execution",
+      "source": "docs/AGENTIC-RULEBOOK.md §12"
+    },
+    {
+      "id": "neq.intent",
+      "left": "Intent",
+      "meaning": "A stated intention is not completed work.",
+      "right": "Work",
+      "source": "docs/AGENTIC-RULEBOOK.md §12"
+    },
+    {
+      "id": "neq.representation",
+      "left": "Representation",
+      "meaning": "A displayed form is not the canonical identity of the record.",
+      "right": "canonical identity",
+      "source": "docs/AGENTIC-RULEBOOK.md §12"
+    },
+    {
+      "id": "neq.visual-projection",
+      "left": "Visual projection",
+      "meaning": "A rendered page carries no execution authority.",
+      "right": "execution authority",
+      "source": "docs/AGENTIC-RULEBOOK.md §12"
+    },
+    {
+      "id": "neq.historical-name",
+      "left": "Historical name",
+      "meaning": "The name a record used to carry is not what it means now.",
+      "right": "current canonical meaning",
+      "source": "docs/AGENTIC-RULEBOOK.md §12"
+    },
+    {
+      "id": "neq.document",
+      "left": "Document",
+      "meaning": "A document never becomes law by writing itself down.",
+      "right": "law",
+      "source": "docs/AGENTIC-RULEBOOK.md §12"
+    },
+    {
+      "id": "neq.memory",
+      "left": "Memory",
+      "meaning": "A remembered fact is not permission.",
+      "right": "authority",
+      "source": "docs/AGENTIC-RULEBOOK.md §12"
+    },
+    {
+      "id": "neq.capability",
+      "left": "Capability",
+      "meaning": "Being able to act is not being allowed to act.",
+      "right": "authorization",
+      "source": "docs/AGENTIC-RULEBOOK.md §12"
+    },
+    {
+      "id": "neq.evidence",
+      "left": "Evidence",
+      "meaning": "What was observed is not what was concluded.",
+      "right": "inference",
+      "source": "docs/AGENTIC-RULEBOOK.md §12"
+    },
+    {
+      "id": "neq.projection",
+      "left": "Projection",
+      "meaning": "The indexed copy of a record is not the record itself.",
+      "right": "source",
+      "source": "docs/COMPONENT-REGISTRY.md §8"
+    },
+    {
+      "id": "neq.bundle",
+      "left": "Bundle",
+      "meaning": "A context bundle is evidence of what was read, never permission to act.",
+      "right": "authority",
+      "source": "docs/DCB-PROTOCOL.md §8"
+    },
+    {
+      "id": "neq.wiki-page",
+      "left": "Wiki page",
+      "meaning": "A generated page documents a command; it never replaces it.",
+      "right": "command",
+      "source": "docs/WIKI-CONSOLE.md §1"
+    },
+    {
+      "id": "neq.console",
+      "left": "Console",
+      "meaning": "The console is a read-only lens over the same commands.",
+      "right": "write surface",
+      "source": "docs/WIKI-CONSOLE.md §1"
+    },
+    {
+      "id": "neq.model",
+      "left": "Model",
+      "meaning": "A declared model is not the code that implements it.",
+      "right": "implementation",
+      "source": "docs/VIVIM-KB-INTAKE.md §8.4"
+    },
+    {
+      "id": "neq.use-case",
+      "left": "Use case",
+      "meaning": "A use case that cites no evidence is not accepted.",
+      "right": "acceptance",
+      "source": "docs/VIVIM-KB-INTAKE.md §8.4"
+    }
+  ],
+  "schema": "hq.canonical-taxonomy/1",
+  "schemaIds": [
+    {
+      "evidence": "hq/lib/context.mjs:20",
+      "id": "hq.context-bundle/1",
+      "implementation": "implemented",
+      "owner": "hq/lib/context.mjs",
+      "rule": "A contract id is versioned. A breaking change publishes a new id; the old id stays readable.",
+      "schema_id": "hq.context-bundle/1",
+      "title": "Context bundle"
+    },
+    {
+      "evidence": "docs/DCB-PROTOCOL.md",
+      "id": "hq.dcb-protocol/1",
+      "implementation": "implemented",
+      "owner": "hq/lib/context.mjs",
+      "rule": "A contract id is versioned. A breaking change publishes a new id; the old id stays readable.",
+      "schema_id": "hq.dcb-protocol/1",
+      "title": "DCB protocol"
+    },
+    {
+      "evidence": "hq/lib/receipts.mjs; docs/AGENTIC-AUTOMATION-TOOLKIT.md §3",
+      "id": "hq.receipt/1",
+      "implementation": "implemented",
+      "owner": "hq/lib/receipts.mjs",
+      "rule": "A contract id is versioned. A breaking change publishes a new id; the old id stays readable.",
+      "schema_id": "hq.receipt/1",
+      "title": "Receipt"
+    },
+    {
+      "evidence": "hq/lib/components.mjs:12",
+      "id": "hq.component/1",
+      "implementation": "implemented",
+      "owner": "hq/lib/components.mjs",
+      "rule": "A contract id is versioned. A breaking change publishes a new id; the old id stays readable.",
+      "schema_id": "hq.component/1",
+      "title": "Component"
+    },
+    {
+      "evidence": "hq/lib/components.mjs:13",
+      "id": "hq.pipeline/1",
+      "implementation": "implemented",
+      "owner": "hq/lib/components.mjs",
+      "rule": "A contract id is versioned. A breaking change publishes a new id; the old id stays readable.",
+      "schema_id": "hq.pipeline/1",
+      "title": "Pipeline"
+    },
+    {
+      "evidence": "docs/AGENTIC-AUTOMATION-TOOLKIT.md §3",
+      "id": "hq.event/1",
+      "implementation": "contract",
+      "owner": "hq/lib/events.mjs (planned)",
+      "rule": "A contract id is versioned. A breaking change publishes a new id; the old id stays readable.",
+      "schema_id": "hq.event/1",
+      "title": "Event"
+    },
+    {
+      "evidence": "docs/AGENTIC-AUTOMATION-TOOLKIT.md §3",
+      "id": "hq.task/1",
+      "implementation": "contract",
+      "owner": "hq/lib/scheduler.mjs (planned)",
+      "rule": "A contract id is versioned. A breaking change publishes a new id; the old id stays readable.",
+      "schema_id": "hq.task/1",
+      "title": "Task"
+    },
+    {
+      "evidence": "docs/AGENTIC-AUTOMATION-TOOLKIT.md §3",
+      "id": "hq.workflow/1",
+      "implementation": "contract",
+      "owner": "hq/lib/workflow.mjs (planned)",
+      "rule": "A contract id is versioned. A breaking change publishes a new id; the old id stays readable.",
+      "schema_id": "hq.workflow/1",
+      "title": "Workflow"
+    },
+    {
+      "evidence": "docs/AGENTIC-AUTOMATION-TOOLKIT.md §3",
+      "id": "hq.policy/1",
+      "implementation": "contract",
+      "owner": "hq/lib/policy.mjs (planned)",
+      "rule": "A contract id is versioned. A breaking change publishes a new id; the old id stays readable.",
+      "schema_id": "hq.policy/1",
+      "title": "Policy"
+    },
+    {
+      "evidence": "docs/AGENTIC-AUTOMATION-TOOLKIT.md §3",
+      "id": "hq.eval/1",
+      "implementation": "contract",
+      "owner": "hq/lib/evals.mjs (planned)",
+      "rule": "A contract id is versioned. A breaking change publishes a new id; the old id stays readable.",
+      "schema_id": "hq.eval/1",
+      "title": "Eval"
+    },
+    {
+      "evidence": "hq/CONTRACT.md hq/lib/bootstrap.mjs (lane O)",
+      "id": "hq.bootstrap/1",
+      "implementation": "contract",
+      "owner": "hq/lib/bootstrap.mjs (planned)",
+      "rule": "A contract id is versioned. A breaking change publishes a new id; the old id stays readable.",
+      "schema_id": "hq.bootstrap/1",
+      "title": "Bootstrap"
+    },
+    {
+      "evidence": "hq/lib/kb.mjs:15",
+      "id": "hq.kb/1",
+      "implementation": "implemented",
+      "owner": "hq/lib/kb.mjs",
+      "rule": "A contract id is versioned. A breaking change publishes a new id; the old id stays readable.",
+      "schema_id": "hq.kb/1",
+      "title": "KB read model"
+    },
+    {
+      "evidence": "hq/CONTRACT.md hq/lib/coverage.mjs (lane Q)",
+      "id": "hq.coverage/1",
+      "implementation": "contract",
+      "owner": "hq/lib/coverage.mjs (planned)",
+      "rule": "A contract id is versioned. A breaking change publishes a new id; the old id stays readable.",
+      "schema_id": "hq.coverage/1",
+      "title": "Coverage selection"
+    },
+    {
+      "evidence": "hq/lib/realtime.mjs:14",
+      "id": "hq.realtime/1",
+      "implementation": "implemented",
+      "owner": "hq/lib/realtime.mjs",
+      "rule": "A contract id is versioned. A breaking change publishes a new id; the old id stays readable.",
+      "schema_id": "hq.realtime/1",
+      "title": "Realtime event plan"
+    },
+    {
+      "evidence": "hq/CONTRACT.md hq/lib/vivim-bridge.mjs (lane T)",
+      "id": "hq.vivim-bridge/1",
+      "implementation": "contract",
+      "owner": "hq/lib/vivim-bridge.mjs (planned)",
+      "rule": "A contract id is versioned. A breaking change publishes a new id; the old id stays readable.",
+      "schema_id": "hq.vivim-bridge/1",
+      "title": "VIVIM bridge"
+    },
+    {
+      "evidence": "hq/CONTRACT.md hq/lib/kb-model.mjs (lane V)",
+      "id": "hq.vivim-model/1",
+      "implementation": "contract",
+      "owner": "hq/lib/kb-model.mjs (planned)",
+      "rule": "A contract id is versioned. A breaking change publishes a new id; the old id stays readable.",
+      "schema_id": "hq.vivim-model/1",
+      "title": "VIVIM model"
+    },
+    {
+      "evidence": "hq/lib/kb-intake.mjs:33",
+      "id": "hq.vivim-kb-intake/1",
+      "implementation": "implemented",
+      "owner": "hq/lib/kb-intake.mjs",
+      "rule": "A contract id is versioned. A breaking change publishes a new id; the old id stays readable.",
+      "schema_id": "hq.vivim-kb-intake/1",
+      "title": "VIVIM KB intake"
+    },
+    {
+      "evidence": "docs/WIKI-CONSOLE.md §7",
+      "id": "hq.wiki-console/1",
+      "implementation": "contract",
+      "owner": "hq/lib/wiki-console.mjs (planned)",
+      "rule": "A contract id is versioned. A breaking change publishes a new id; the old id stays readable.",
+      "schema_id": "hq.wiki-console/1",
+      "title": "Wiki console"
+    },
+    {
+      "evidence": "hq/registry/agentic-file-registry.v1.json:2",
+      "id": "hq.agentic-file-registry/1",
+      "implementation": "implemented",
+      "owner": "hq/lib/filetypes.mjs (loader over hq/registry/agentic-file-registry.v1.json)",
+      "rule": "A contract id is versioned. A breaking change publishes a new id; the old id stays readable.",
+      "schema_id": "hq.agentic-file-registry/1",
+      "title": "Agentic file registry"
+    },
+    {
+      "evidence": "hq/lib/vivim.mjs:11",
+      "id": "hq.vivim-alignment/1",
+      "implementation": "implemented",
+      "owner": "hq/lib/vivim.mjs",
+      "rule": "A contract id is versioned. A breaking change publishes a new id; the old id stays readable.",
+      "schema_id": "hq.vivim-alignment/1",
+      "title": "VIVIM alignment"
+    }
+  ],
+  "scopes": [
+    {
+      "evidence": "docs/AGENTIC-AUTOMATION-TOOLKIT.md §8",
+      "id": "scope.read",
+      "rule": "Every agent holds the read scope by default. It opens no write path.",
+      "scope": "read",
+      "unlocks": [
+        "search",
+        "find",
+        "file",
+        "context",
+        "brief",
+        "docs",
+        "decisions",
+        "canon",
+        "kb",
+        "receipts"
+      ]
+    },
+    {
+      "evidence": "hq/lib/indexer.mjs; hq/lib/kb-intake.mjs",
+      "id": "scope.index:write",
+      "rule": "Allows writing to the local index. It does not allow writing files outside the index.",
+      "scope": "index:write",
+      "unlocks": [
+        "index",
+        "ingest",
+        "lake ingest",
+        "kb intake"
+      ]
+    },
+    {
+      "evidence": "hq/lib/wiki.mjs",
+      "id": "scope.wiki:write",
+      "rule": "Allows regenerating the derived wiki pages. A generated page is never authoritative.",
+      "scope": "wiki:write",
+      "unlocks": [
+        "wiki",
+        "wiki --changed"
+      ]
+    },
+    {
+      "evidence": "hq/lib/automation.mjs",
+      "id": "scope.hooks:write",
+      "rule": "Allows installing HQ-managed git hooks and the file watcher.",
+      "scope": "hooks:write",
+      "unlocks": [
+        "hooks install",
+        "watch"
+      ]
+    },
+    {
+      "evidence": "hq/lib/canon.mjs confirmDecision; docs/AGENTIC-RULEBOOK.md §1",
+      "id": "scope.owner",
+      "rule": "The owner scope is what makes a confirmation legal. It is granted by the owner, never by a document.",
+      "scope": "owner",
+      "unlocks": [
+        "decisions confirm",
+        "decisions supersede",
+        "canon confirm",
+        "canon deprecate",
+        "note promote --to canon",
+        "approval gates"
+      ]
+    },
+    {
+      "evidence": "hq/bin/hq.mjs",
+      "id": "scope.admin",
+      "rule": "Covers the registry of spaces and the configuration. It does not imply a send or a browser effect.",
+      "scope": "admin",
+      "unlocks": [
+        "project add",
+        "project remove",
+        "config",
+        "reset",
+        "scope grants"
+      ]
+    }
+  ],
+  "statuses": [
+    {
+      "evidence": "hq/lib/canon.mjs DECISION_STATUS, documentStatusOf, confirmDecision, supersedeDecision",
+      "id": "status.decision",
+      "record": "decision",
+      "records": [
+        "decision"
+      ],
+      "rule": "Only an explicit owner confirmation moves a decision to `accepted`. A document that claims `Accepted` is extracted as `proposed` and the claim is kept as evidence.",
+      "terminal": [
+        "rejected",
+        "superseded",
+        "deprecated"
+      ],
+      "transitions": {
+        "accepted": [
+          "superseded",
+          "deprecated"
+        ],
+        "deprecated": [],
+        "observed": [
+          "proposed"
+        ],
+        "proposed": [
+          "accepted",
+          "rejected",
+          "deprecated"
+        ],
+        "rejected": [],
+        "superseded": []
+      },
+      "values": [
+        "proposed",
+        "accepted",
+        "rejected",
+        "superseded",
+        "deprecated",
+        "observed"
+      ]
+    },
+    {
+      "evidence": "hq/lib/canon.mjs termStatusOf, confirmTerm, deprecateTerm",
+      "id": "status.canon_term",
+      "record": "canon_term",
+      "records": [
+        "canon_term",
+        "term"
+      ],
+      "rule": "Only an explicit owner confirmation moves a term to `current`. A document that claims `current` is extracted as `provisional`.",
+      "terminal": [
+        "deprecated",
+        "historical"
+      ],
+      "transitions": {
+        "current": [
+          "deprecated"
+        ],
+        "deprecated": [],
+        "historical": [],
+        "observed": [
+          "provisional"
+        ],
+        "provisional": [
+          "current",
+          "deprecated"
+        ]
+      },
+      "values": [
+        "current",
+        "provisional",
+        "deprecated",
+        "historical",
+        "observed"
+      ]
+    },
+    {
+      "evidence": "hq/lib/filetypes.mjs classifyPath; hq/lib/canon.mjs classifyDocument",
+      "id": "status.document",
+      "record": "document",
+      "records": [
+        "document",
+        "doc"
+      ],
+      "rule": "A document has no manual status. The value is derived from the file path on every index run by the 217/133 registry, and `unclassified` is a real outcome rather than a failure.",
+      "terminal": [],
+      "transitions": {},
+      "values": [
+        "unclassified",
+        "family_01",
+        "family_02",
+        "family_03",
+        "family_04",
+        "family_05",
+        "family_06",
+        "family_07",
+        "family_08",
+        "family_09",
+        "family_10",
+        "family_11",
+        "family_12",
+        "family_13",
+        "family_14",
+        "family_15",
+        "family_16",
+        "family_17",
+        "family_18",
+        "family_19",
+        "family_20",
+        "family_21"
+      ]
+    },
+    {
+      "evidence": "docs/AGENTIC-AUTOMATION-TOOLKIT.md §3 and §5; hq/lib/components.mjs pipeline_runs.status",
+      "id": "status.task_run",
+      "record": "task_run",
+      "records": [
+        "task",
+        "run",
+        "step"
+      ],
+      "rule": "An uncertain effect is reconciled read-only before any retry. A blind resend of an uncertain effect is forbidden.",
+      "terminal": [
+        "succeeded",
+        "failed",
+        "cancelled"
+      ],
+      "transitions": {
+        "cancelled": [],
+        "failed": [],
+        "queued": [
+          "running",
+          "cancelled"
+        ],
+        "running": [
+          "waiting_approval",
+          "succeeded",
+          "failed",
+          "uncertain"
+        ],
+        "succeeded": [],
+        "uncertain": [
+          "running",
+          "failed"
+        ],
+        "waiting_approval": [
+          "running",
+          "cancelled"
+        ]
+      },
+      "values": [
+        "queued",
+        "running",
+        "waiting_approval",
+        "succeeded",
+        "failed",
+        "uncertain",
+        "cancelled"
+      ]
+    },
+    {
+      "drift": "docs/COMPONENT-REGISTRY.md §5 mentions only `deprecated` and `retired` as moves; the module also allows `draft`, which is the default for a forked pipeline version.",
+      "evidence": "hq/lib/components.mjs COMPONENT_STATUSES",
+      "id": "status.component",
+      "record": "component",
+      "records": [
+        "component"
+      ],
+      "rule": "A published version is immutable. Retirement keeps the row queryable.",
+      "terminal": [
+        "retired"
+      ],
+      "transitions": {
+        "active": [
+          "deprecated"
+        ],
+        "deprecated": [
+          "retired"
+        ],
+        "draft": [
+          "active"
+        ],
+        "retired": []
+      },
+      "values": [
+        "active",
+        "draft",
+        "deprecated",
+        "retired"
+      ]
+    },
+    {
+      "evidence": "hq/lib/components.mjs PIPELINE_STATUSES",
+      "id": "status.pipeline",
+      "record": "pipeline",
+      "records": [
+        "pipeline"
+      ],
+      "rule": "A published pipeline version is immutable; a change produces a new version with a parent link.",
+      "terminal": [
+        "retired"
+      ],
+      "transitions": {
+        "active": [
+          "deprecated"
+        ],
+        "deprecated": [
+          "retired"
+        ],
+        "draft": [
+          "active"
+        ],
+        "retired": []
+      },
+      "values": [
+        "active",
+        "draft",
+        "deprecated",
+        "retired"
+      ]
+    },
+    {
+      "drift": "No module emits the literal strings. The intake returns `ok: true` or `ok: false` plus `reasons[]` and `missingFromPackage[]`; `accepted` is `ok: true` with nothing missing, `refused` is `ok: false`, `partial` is `ok: true` with files reported missing from the package.",
+      "evidence": "docs/VIVIM-KB-INTAKE.md §5 and §6; hq/lib/kb-intake.mjs ingestKbPackage",
+      "id": "status.intake",
+      "record": "intake",
+      "records": [
+        "intake",
+        "kb_intake"
+      ],
+      "rule": "A refusal is a receipt, not an exception: a refused package writes nothing.",
+      "terminal": [
+        "refused"
+      ],
+      "transitions": {
+        "accepted": [
+          "partial"
+        ],
+        "partial": [],
+        "refused": []
+      },
+      "values": [
+        "accepted",
+        "refused",
+        "partial"
+      ]
+    },
+    {
+      "drift": "The stage list is declared in the contract; no module in hq/lib exports it yet.",
+      "evidence": "hq/CONTRACT.md hq/lib/bootstrap.mjs (lane O)",
+      "id": "status.bootstrap",
+      "record": "bootstrap",
+      "records": [
+        "bootstrap"
+      ],
+      "rule": "Stages are idempotent and cannot be skipped. `ready` requires owner confirmation and evidence.",
+      "terminal": [
+        "ready"
+      ],
+      "transitions": {
+        "authority": [
+          "evidence"
+        ],
+        "capability": [
+          "authority"
+        ],
+        "evidence": [
+          "ready"
+        ],
+        "identity": [
+          "capability"
+        ],
+        "ready": [],
+        "uninitialized": [
+          "identity"
+        ]
+      },
+      "values": [
+        "uninitialized",
+        "identity",
+        "capability",
+        "authority",
+        "evidence",
+        "ready"
+      ]
+    },
+    {
+      "evidence": "docs/VIVIM-KB-INTAKE.md §8.2 features",
+      "id": "status.feature",
+      "record": "feature",
+      "records": [
+        "feature"
+      ],
+      "rule": "A feature is declared by the KB. HQ reports which features have flows, actions and evidence; it never promotes one.",
+      "terminal": [
+        "retired"
+      ],
+      "transitions": {
+        "partial": [
+          "shipped",
+          "retired"
+        ],
+        "planned": [
+          "partial",
+          "retired"
+        ],
+        "retired": [],
+        "shipped": [
+          "retired"
+        ]
+      },
+      "values": [
+        "planned",
+        "partial",
+        "shipped",
+        "retired"
+      ]
+    }
+  ],
+  "trust": [
+    {
+      "authority_ref": "vendor_documented",
+      "dcb_weight": 1,
+      "evidence": "docs/DCB-PROTOCOL.md §3.2",
+      "id": "trust.vendor_documented",
+      "level": "vendor_documented",
+      "meaning": "The source is an official provider or tool convention.",
+      "rule": "Scores highest in a context bundle and may surface without a task-token match."
+    },
+    {
+      "authority_ref": "project_observed",
+      "dcb_weight": 0.9,
+      "evidence": "docs/DCB-PROTOCOL.md §3.2",
+      "id": "trust.project_observed",
+      "level": "project_observed",
+      "meaning": "The source is a file that was actually observed in the repository.",
+      "rule": "Scores below vendor material and above an unverified local convention."
+    },
+    {
+      "authority_ref": "local_custom",
+      "dcb_weight": 0.7,
+      "evidence": "docs/DCB-PROTOCOL.md §3.2",
+      "id": "trust.local_custom",
+      "level": "local_custom",
+      "meaning": "The source is a local convention that has not been verified.",
+      "rule": "Scores below observed material; a strong local convention still needs a task match to surface."
+    },
+    {
+      "authority_ref": null,
+      "dcb_weight": null,
+      "drift": "No numeric DCB weight is declared for `capture` in docs/DCB-PROTOCOL.md §3.2; only the five authority labels carry weights.",
+      "evidence": "docs/VIVIM-KB-INTAKE.md §8.2 sources",
+      "id": "trust.capture",
+      "level": "capture",
+      "meaning": "The source is a runtime capture of what a provider actually returned.",
+      "rule": "Evidence of what was seen, never a declared standard. The KB model carries capture sources with a trust level; HQ keeps them out of the authority vocabulary."
+    },
+    {
+      "authority_ref": null,
+      "dcb_weight": null,
+      "drift": "No numeric DCB weight is declared for `inferred` in docs/DCB-PROTOCOL.md §3.2.",
+      "evidence": "docs/AGENTIC-RULEBOOK.md §12",
+      "id": "trust.inferred",
+      "level": "inferred",
+      "meaning": "The value was derived by HQ rather than read from a source.",
+      "rule": "Never an authority and never a substitute for evidence. It is recorded as inference, not as fact."
+    },
+    {
+      "drift": "hq/lib/context.mjs docAuthority() does not read the registry authority label. It returns 1 for README.md and AGENTS.md, 0.6 for any other Markdown file and for anything under docs/, and 0 for everything else. The path heuristic is what the code does; the registry weights above are the declared model.",
+      "evidence": "docs/DCB-PROTOCOL.md §4; hq/lib/context.mjs",
+      "id": "trust.dcb_scoring",
+      "rule": "A context bundle scores each candidate with `1 + 3.6 * coverage + 1.2 * symbolBonus + 0.8 * recency + 0.6 * authority + 0.5 * proximity` and then selects under the token budget with an exact knapsack. The authority term is the only place trust enters the score.",
+      "title": "DCB scoring effect"
+    }
+  ],
+  "version": "1.0.0",
+  "vocabulary": [
+    {
+      "definition": "The registry of projects and the local index built over them.",
+      "engineering_term": "workspace registry + local index",
+      "id": "vocab.world",
+      "key": "world",
+      "owner_term": "My World",
+      "rule": "Owner surfaces use the owner term; code, schemas and logs use the engineering term."
+    },
+    {
+      "definition": "A project directory that is registered with HQ and indexed.",
+      "engineering_term": "registered project",
+      "id": "vocab.space",
+      "key": "space",
+      "owner_term": "Space",
+      "rule": "Owner surfaces use the owner term; code, schemas and logs use the engineering term."
+    },
+    {
+      "definition": "The agent surface bound to the owner rather than to one project.",
+      "engineering_term": "owner-scoped agent surface",
+      "id": "vocab.personalAgent",
+      "key": "personalAgent",
+      "owner_term": "My Agent",
+      "rule": "Owner surfaces use the owner term; code, schemas and logs use the engineering term."
+    },
+    {
+      "definition": "The roster of agents registered to work on this workspace.",
+      "engineering_term": "registered agent roster",
+      "id": "vocab.fleet",
+      "key": "fleet",
+      "owner_term": "My AI Team",
+      "rule": "Owner surfaces use the owner term; code, schemas and logs use the engineering term."
+    },
+    {
+      "definition": "A session in which several agents run at the same time.",
+      "engineering_term": "parallel agent session",
+      "id": "vocab.swarm",
+      "key": "swarm",
+      "owner_term": "Team Session",
+      "rule": "Owner surfaces use the owner term; code, schemas and logs use the engineering term."
+    },
+    {
+      "definition": "The named specialisation an agent is assigned to.",
+      "engineering_term": "agent specialty",
+      "id": "vocab.role",
+      "key": "role",
+      "owner_term": "Specialty",
+      "rule": "Owner surfaces use the owner term; code, schemas and logs use the engineering term."
+    },
+    {
+      "definition": "The manifest that describes an agent; it holds references and never credentials.",
+      "engineering_term": "agent manifest (references only, never credentials)",
+      "id": "vocab.genome",
+      "key": "genome",
+      "owner_term": "Agent DNA",
+      "rule": "Owner surfaces use the owner term; code, schemas and logs use the engineering term."
+    },
+    {
+      "definition": "The tiered note store with provenance that backs Recent, Saved Knowledge and Core Memory.",
+      "engineering_term": "notes table with tiers + provenance",
+      "id": "vocab.memory",
+      "key": "memory",
+      "owner_term": "Memory",
+      "rule": "Owner surfaces use the owner term; code, schemas and logs use the engineering term."
+    },
+    {
+      "definition": "A unit of tracked work with a handoff bundle.",
+      "engineering_term": "task / handoff bundle",
+      "id": "vocab.work",
+      "key": "work",
+      "owner_term": "Task",
+      "rule": "Owner surfaces use the owner term; code, schemas and logs use the engineering term."
+    },
+    {
+      "definition": "The situation report that summarises the current state.",
+      "engineering_term": "brief",
+      "id": "vocab.sitrep",
+      "key": "sitrep",
+      "owner_term": "Progress Report",
+      "rule": "Owner surfaces use the owner term; code, schemas and logs use the engineering term."
+    },
+    {
+      "definition": "One callable action exposed as a CLI command or an MCP tool.",
+      "engineering_term": "CLI command or MCP tool",
+      "id": "vocab.capability",
+      "key": "capability",
+      "owner_term": "Ability",
+      "rule": "Owner surfaces use the owner term; code, schemas and logs use the engineering term."
+    },
+    {
+      "definition": "The boundary that decides which effect a caller is allowed to cause.",
+      "engineering_term": "scope + approval boundary",
+      "id": "vocab.authority",
+      "key": "authority",
+      "owner_term": "Permissions",
+      "rule": "Owner surfaces use the owner term; code, schemas and logs use the engineering term."
+    },
+    {
+      "definition": "The append-only ledger of what was read and what was produced.",
+      "engineering_term": "receipts ledger",
+      "id": "vocab.evidence",
+      "key": "evidence",
+      "owner_term": "Activity Record",
+      "rule": "Owner surfaces use the owner term; code, schemas and logs use the engineering term."
+    },
+    {
+      "definition": "The bounded bundle of context assembled for one task.",
+      "engineering_term": "context bundle",
+      "id": "vocab.aperture",
+      "key": "aperture",
+      "owner_term": "Discover",
+      "rule": "Owner surfaces use the owner term; code, schemas and logs use the engineering term."
+    },
+    {
+      "definition": "Generation of the derived wiki pages.",
+      "engineering_term": "wiki generation",
+      "id": "vocab.forge",
+      "key": "forge",
+      "owner_term": "Build",
+      "rule": "Owner surfaces use the owner term; code, schemas and logs use the engineering term."
+    },
+    {
+      "definition": "The HQ runtime running on the owner machine.",
+      "engineering_term": "local HQ runtime",
+      "id": "vocab.host",
+      "key": "host",
+      "owner_term": "VIVIM on my computer",
+      "rule": "Owner surfaces use the owner term; code, schemas and logs use the engineering term."
+    },
+    {
+      "definition": "The command-line surface where the advanced controls live.",
+      "engineering_term": "CLI",
+      "id": "vocab.studio",
+      "key": "studio",
+      "owner_term": "Advanced panel",
+      "rule": "Owner surfaces use the owner term; code, schemas and logs use the engineering term."
+    },
+    {
+      "definition": "The transport that connects a remote surface to HQ.",
+      "engineering_term": "MCP / CLI transport",
+      "id": "vocab.bridge",
+      "key": "bridge",
+      "owner_term": "Phone Connection",
+      "rule": "Owner surfaces use the owner term; code, schemas and logs use the engineering term."
+    },
+    {
+      "evidence": "hq/lib/nomenclature.mjs VIVIM_TAXONOMY; docs/AGENTIC-RULEBOOK.md §3",
+      "id": "vocab.rule",
+      "memory_tiers": {
+        "canon": "Core Memory",
+        "later": "Saved Knowledge",
+        "now": "Recent"
+      },
+      "rule": "Owner surfaces use the owner term; code, schemas and logs use the engineering term.",
+      "tier_rule": "Recent and Saved Knowledge are added freely; Core Memory requires owner confirmation.",
+      "title": "Vocabulary rule"
+    }
+  ]
+}

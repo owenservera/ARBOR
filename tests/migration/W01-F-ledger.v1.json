@@ -1,0 +1,199 @@
+{
+  "schema": "arbor.w01f.migration-ledger/1",
+  "proposalBaseSha": "dd245d78ff3c110ba8630cad557ea0479c51a635",
+  "branch": "work/p5-w01-f-verify",
+  "sharedIntegrationBranch": "integrate/proposal5-beta-r001",
+  "sharedIntegrationHeadObserved": null,
+  "basePolicy": "provisional isolated branch; W0-G source lock unavailable; G must reconcile before merge",
+  "sourceCommits": {
+    "labs": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be",
+    "host": "cae97afe848d79957c9d6c698a90996a758bfd56",
+    "hq": "9b922ea049dbadc94e504b5b9432743995c020ca",
+    "tierflow": "50822f11ee63c3d80f631f8fea7dcb9b19bffc38"
+  },
+  "entries": [
+    {
+      "sourceRepo": "owenservera/vivim-labs",
+      "sourceCommit": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be",
+      "sourcePath": "vivim/voice-to-tasks/workbench/fixtures.json",
+      "sourceSha": "49c0a1fab872353aa24c5861f5dccf71bbefe32d",
+      "targetPath": "tests/fixtures/labs/voice-to-tasks/fixtures.json",
+      "ownerDecision": "owner-selected bounded contract/fixture from Proposal 5",
+      "implementationStatus": "VERIFIED",
+      "privacyClass": "synthetic-or-public-contract",
+      "requiredTransform": "none; source-preserving tested fixture",
+      "testEvidence": "source-side evidence only; ARBOR run pending",
+      "retirementCondition": "replace when owning runtime supplies integrated accepted tests"
+    },
+    {
+      "sourceRepo": "owenservera/vivim-labs",
+      "sourceCommit": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be",
+      "sourcePath": "vivim/voice-to-tasks/workbench/trace-check.mjs",
+      "sourceSha": "af25ab69cae6169c27246414b7ab52c60d2b5c78",
+      "targetPath": "tests/fixtures/labs/voice-to-tasks/trace-check.mjs",
+      "ownerDecision": "owner-selected bounded contract/fixture from Proposal 5",
+      "implementationStatus": "VERIFIED",
+      "privacyClass": "synthetic-or-public-contract",
+      "requiredTransform": "none; source-preserving tested fixture",
+      "testEvidence": "source-side evidence only; ARBOR run pending",
+      "retirementCondition": "replace when owning runtime supplies integrated accepted tests"
+    },
+    {
+      "sourceRepo": "owenservera/vivim-labs",
+      "sourceCommit": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be",
+      "sourcePath": "capability-observatory/data/capabilities.json",
+      "sourceSha": "4c5876bd40d727b6e7464f71dbe23679f5558f8a",
+      "targetPath": "tests/fixtures/labs/capability-observatory/seed.json",
+      "ownerDecision": "owner-selected bounded contract/fixture from Proposal 5",
+      "implementationStatus": "VERIFIED",
+      "privacyClass": "synthetic-or-public-contract",
+      "requiredTransform": "none; source-preserving tested fixture",
+      "testEvidence": "source-side evidence only; ARBOR run pending",
+      "retirementCondition": "replace when owning runtime supplies integrated accepted tests"
+    },
+    {
+      "sourceRepo": "owenservera/vivim-labs",
+      "sourceCommit": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be",
+      "sourcePath": "capability-observatory/schemas/capabilities.schema.json",
+      "sourceSha": "e2d9437e9560b813a2a9cfb255344c287b645903",
+      "targetPath": "tests/fixtures/labs/capability-observatory/schema.json",
+      "ownerDecision": "owner-selected bounded contract/fixture from Proposal 5",
+      "implementationStatus": "VERIFIED",
+      "privacyClass": "synthetic-or-public-contract",
+      "requiredTransform": "none; source-preserving tested fixture",
+      "testEvidence": "source-side evidence only; ARBOR run pending",
+      "retirementCondition": "replace when owning runtime supplies integrated accepted tests"
+    },
+    {
+      "sourceRepo": "owenservera/vivim-labs",
+      "sourceCommit": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be",
+      "sourcePath": "chronos-toolkit/wave2/repos-hq/contracts/chronos/contract.v1.json",
+      "sourceSha": "a74a612458e1854a95bc8331e6ed14747fec2742",
+      "targetPath": "contracts/chronos/staged-contract.v1.json",
+      "ownerDecision": "owner-selected bounded contract/fixture from Proposal 5",
+      "implementationStatus": "PREVIEW",
+      "privacyClass": "synthetic-or-public-contract",
+      "requiredTransform": "none; source-preserving tested fixture",
+      "testEvidence": "source-side evidence only; ARBOR run pending",
+      "retirementCondition": "replace when owning runtime supplies integrated accepted tests"
+    },
+    {
+      "sourceRepo": "owenservera/vivim-labs",
+      "sourceCommit": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be",
+      "sourcePath": "personal-knowledge-lifecycle/runtime/src/chatgpt-normalize.mjs",
+      "sourceSha": "58b1ab985fbea2811eff3f4a2a5a70b4cb606d45",
+      "targetPath": "tests/fixtures/labs/personal-knowledge/src/chatgpt-normalize.mjs",
+      "ownerDecision": "owner-selected bounded contract/fixture from Proposal 5",
+      "implementationStatus": "VERIFIED",
+      "privacyClass": "synthetic-or-public-contract",
+      "requiredTransform": "none; source-preserving tested fixture",
+      "testEvidence": "source-side evidence only; ARBOR run pending",
+      "retirementCondition": "replace when owning runtime supplies integrated accepted tests"
+    },
+    {
+      "sourceRepo": "owenservera/vivim-labs",
+      "sourceCommit": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be",
+      "sourcePath": "personal-knowledge-lifecycle/runtime/tests/chatgpt-normalize.test.mjs",
+      "sourceSha": "0959739489de9b5e10096ec13147d423931c00ce",
+      "targetPath": "tests/fixtures/labs/personal-knowledge/tests/chatgpt-normalize.test.mjs",
+      "ownerDecision": "owner-selected bounded contract/fixture from Proposal 5",
+      "implementationStatus": "VERIFIED",
+      "privacyClass": "synthetic-or-public-contract",
+      "requiredTransform": "none; source-preserving tested fixture",
+      "testEvidence": "source test imported; ARBOR run pending",
+      "retirementCondition": "replace when owning runtime supplies integrated accepted tests"
+    },
+    {
+      "sourceRepo": "owenservera/vivim-web-harness",
+      "sourceCommit": "cae97afe848d79957c9d6c698a90996a758bfd56",
+      "sourcePath": "apps/vivim-host/control/action-catalog.v1.json",
+      "sourceSha": "c423d5933c28ca9f534028aeaffd7929f767c269",
+      "targetPath": "tests/compatibility/host-actions.baseline.v1.json",
+      "ownerDecision": "test-only action/risk continuity baseline",
+      "implementationStatus": "IMPLEMENTED",
+      "privacyClass": "public-metadata",
+      "requiredTransform": "derive IDs, risk, readiness; never executable catalog",
+      "testEvidence": "catalog diff deferred until Lane B imported",
+      "retirementCondition": "regenerate baseline only after owner-approved action version change"
+    },
+    {
+      "sourceRepo": "owenservera/repos-hq",
+      "sourceCommit": "9b922ea049dbadc94e504b5b9432743995c020ca",
+      "sourcePath": "hq/lib/semantic-registry.mjs",
+      "sourceSha": "ec982381c77147119f62e702a162a203df8e7d4e",
+      "targetPath": "contracts/interop/v1/protocol.schema.json",
+      "ownerDecision": "source-derived minimal interop; no original code copied",
+      "implementationStatus": "PREVIEW",
+      "privacyClass": "metadata-only",
+      "requiredTransform": "read-only source/revision + Host journal semantics",
+      "testEvidence": "synthetic compatibility tests pending Node execution",
+      "retirementCondition": "replace with generated schema after A/B/D/E joint parity"
+    },
+    {
+      "sourceRepo": "owenservera/tierflow",
+      "sourceCommit": "50822f11ee63c3d80f631f8fea7dcb9b19bffc38",
+      "sourcePath": "src/visual-runtime/host/wave4-h-host-status-contract.ts",
+      "sourceSha": "923c08afe0c23c568321fa6e97fa2ceb5f0b206a",
+      "targetPath": "contracts/interop/v1/types.ts",
+      "ownerDecision": "source-derived minimal interop; no original code copied",
+      "implementationStatus": "PREVIEW",
+      "privacyClass": "metadata-only",
+      "requiredTransform": "read-only source/revision + Host journal semantics",
+      "testEvidence": "synthetic compatibility tests pending Node execution",
+      "retirementCondition": "replace with generated schema after A/B/D/E joint parity"
+    },
+    {
+      "sourceRepo": "owenservera/vivim-web-harness",
+      "sourceCommit": "cae97afe848d79957c9d6c698a90996a758bfd56",
+      "sourcePath": "apps/vivim-host/control/journal.mjs",
+      "sourceSha": "b9739a00c8345a0513dba32ddc0361e96bb9b16f",
+      "targetPath": "contracts/interop/v1/validate.mjs",
+      "ownerDecision": "source-derived minimal interop; no original code copied",
+      "implementationStatus": "PREVIEW",
+      "privacyClass": "metadata-only",
+      "requiredTransform": "read-only source/revision + Host journal semantics",
+      "testEvidence": "synthetic compatibility tests pending Node execution",
+      "retirementCondition": "replace with generated schema after A/B/D/E joint parity"
+    }
+  ],
+  "notImported": [
+    "user-io-rust-core/node-0-prime (not located in Labs main)",
+    "nlp-command-ui-lab R007 (not a verified Labs main implementation)",
+    "private exports/profiles/transcripts",
+    "whole Labs personal-knowledge Host runtime",
+    "chronos daemon or native scheduler",
+    "generic plugin marketplace"
+  ],
+  "gaps": [
+    {
+      "id": "BASELINE",
+      "severity": "BLOCKED",
+      "note": "W0-G shared integration branch/source-lock absent; this branch starts from Proposal 5 docs SHA, not claimed GO"
+    },
+    {
+      "id": "LANE-B",
+      "severity": "BLOCKED",
+      "note": "Actual Host catalog/journal not yet imported into this branch; guard must compare after lane merge"
+    },
+    {
+      "id": "LANE-A",
+      "severity": "BLOCKED",
+      "note": "Rust mirror not yet compiled/bound into HQKG or Tauri"
+    },
+    {
+      "id": "LANE-E",
+      "severity": "BLOCKED",
+      "note": "Authenticated TierFlow/phone projection/device acceptance not run"
+    },
+    {
+      "id": "PRIVACY",
+      "severity": "PREVIEW",
+      "note": "Synthetic-only imports; no approved personal data ingestion"
+    },
+    {
+      "id": "EXTERNAL",
+      "severity": "BLOCKED",
+      "note": "Repository-wide donor-removal build/scan requires integration G and completed imports"
+    }
+  ]
+}

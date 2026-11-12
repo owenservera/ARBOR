@@ -1,0 +1,16 @@
+[package]
+name = "vivim-programmability-core"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "Pure native types and deterministic validation for VIVIM programmable transformations"
+
+[lib]
+name = "vivim_programmability_core"
+path = "src/lib.rs"
+
+[dependencies]
+
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"

@@ -1,0 +1,780 @@
+// Real browser seam; runtime tests inject an adapter instead. No network/body decoder here.
+import { createHash } from 'node:crypto';
+import { browserWsUrl, listTargets } from '../cdp/discovery.mjs';
+import { CdpConnection } from '../cdp/client.mjs';
+import { listSessions } from '../store/session.mjs';
+import { Recorder } from './recorder.mjs';
+import { evaluate, findComposer, focusComposer, clearComposer, typeText, sendMessage, sendState, readTranscript, waitForCompletion, detectAuthWall, detectSiteFailure } from './actions.mjs';
+import { recordTypedPrompt, matchesTypedPrompt, isPrefixOfTyped } from './typed-prompt-ledger.mjs';
+import { setTimeout as sleep } from 'node:timers/promises';
+import { parseThread, sameThread, isNewChatPath, idleControlSelectors, transcriptSpec, transcriptExpression, turnObservationExpression, boundTranscript, TRANSCRIPT_LIMITS } from './conversation-thread.mjs';
+
+const norm = (s) => String(s ?? '').replace(/\s+/g, ' ').trim();
+const problem = (code) => Object.assign(new Error(code), { code, status: 409 });
+const digest = (text) => createHash('sha256').update(text, 'utf8').digest('hex');
+// Key-by-key typing costs ~0.1s per character and holds the one shared writer window the whole time:
+// a 5,000-character prompt blocked every other AI for 10+ minutes (live fan-out, 2026-10-30). Only short
+// prompts keep the human pauses; longer ones are typed at machine speed.
+// A single bulk insertion is NOT an option for long prompts: rich editors (ChatGPT, Claude) rewrite
+// newlines and code blocks on insertText, the strict read-back then fails (TYPING_UNCONFIRMED). So
+// long prompts are inserted one line at a time (see `chunked` in human.mjs), newlines one by one.
+const HUMAN_TYPE_MAX_CHARS = 400;
+const typeOptions = (prompt) => ({ human: true, chunked: String(prompt ?? '').length > HUMAN_TYPE_MAX_CHARS });
+// Typed-text readback contract for rich composers. A contenteditable (ProseMirror/Lexical) reports
+// the trailing block break as one extra newline, so the readback may carry exactly ONE appended
+// newline beyond the payload. Only the readback is normalized/trimmed; the payload is never
+// altered, so a prompt that already ends in a newline still needs its own exact match first.
+// Anything else — mid-payload drift, two appended newlines, a non-string readback — does not match.
+// Editors also rewrite typography without changing the words: nbsp, zero-width characters and curly
+// quotes. Both sides are canonicalised for those only; newlines and every other character stay exact.
+const canon = (s) => s.replace(/\r\n/g, '\n').replace(/[\u00A0\u202F\u2007]/g, ' ').replace(/[\u200B-\u200D\u2060\uFEFF]/g, '')
+  .replace(/[\u2018\u2019\u201A\u2032]/g, "'").replace(/[\u201C\u201D\u201E\u2033]/g, '"');
+const readbackMatches = (readback, prompt) => {
+  if (typeof readback !== 'string' || typeof prompt !== 'string') return false;
+  const want = canon(prompt), got = canon(readback);
+  return got === want || got === `${want}\n`;
+};
+// The composer DOM settles after an insert: an immediate read of a multiline payload can report
+// doubled, dropped or otherwise transient separators while the outbound text is already correct.
+// Re-read a bounded number of times before refusing, well inside the per-turn envelope.
+//
+// Acceptance requires the freshly read PAGE DRAFT to match. The owner snapshot (`typed.typed`) is a
+// single read of the same editor taken at insertion time and can be as transient as the page read,
+// so it may prove the payload landed but may never substitute for the draft: a stale matching
+// snapshot next to persistently drifted composer content must not authorize a send.
+const TYPING_READBACK_ATTEMPTS = 3;
+const TYPING_READBACK_DELAY_MS = 250;
+const settleTypingReadback = async (read, prompt) => {
+  for (let attempt = 0; attempt < TYPING_READBACK_ATTEMPTS; attempt++) {
+    if (attempt) await sleep(TYPING_READBACK_DELAY_MS);
+    const after = await read();
+    if (readbackMatches(after?.draft?.text, prompt)) return after;
+  }
+  return null;
+};
+const transcriptArgs = (adapter) => { const s = transcriptSpec(adapter);
+  return { userSelectors: s.user, assistantSelectors: s.assistant, textSelector: s.textSelector, idAttribute: s.idAttribute }; };
+export const readTurnPage = (page, adapter) => evaluate(page, turnObservationExpression(adapter));
+// Read-only observed-prefix page read: one evaluation, same shaper, reports the positive-idle
+// controls alongside the transcript so idle and empty composer describe the same instant.
+export const readPrefixPage = (page, adapter) => evaluate(page, transcriptExpression({ ...transcriptArgs(adapter), composerSelectors: adapter?.composer?.selectors ?? [],
+  streamingSelectors: adapter?.assistant?.streamingSelectors ?? [], sendSelectors: idleControlSelectors(adapter) }));
+
+// Pre-send per-turn cursor: what already exists on the page (count, role split, ordered ids, content
+// digest) and the prior stream cursor (raw-log sequence). Metadata only; never message bodies.
+export function turnCursor(messages, streamSequence) {
+  const list = Array.isArray(messages) ? messages : [];
+  const count = (role) => list.filter((m) => m?.role === role).length;
+  return { messageCount: list.length, userCount: count('user'), assistantCount: count('assistant'),
+    // JSON tuples delimit each field unambiguously; ids may contain colons/newlines.
+    // Null and missing ids remain distinct from an actual string "undefined".
+    idsDigest: digest(JSON.stringify(list.map((m) => [m?.role ?? null, m?.id ?? null]))),
+    contentDigest: digest(JSON.stringify(list.map((m) => [m?.role ?? null, m?.id ?? null, digest(String(m?.text ?? ''))]))),
+    streamSequence };
+}
+
+// Specific user-authored nodes, not generic markdown/sidebar text. Keep duplicate text: two
+// identical prompts are two turns. Require the entire old prefix unchanged before attributing one.
+export async function readUserTurns(page) {
+  return evaluate(page, `(() => {
+    const sels = '[data-message-author-role="user"],[data-content-search-unit-key$="user"],[data-chatgpt-search-unit-key$="user"],[data-testid="user-message"]';
+    const nodes = [...document.querySelectorAll(sels)].filter(el => {
+      const r = el.getBoundingClientRect(); return r.width > 1 && r.height > 1;
+    });
+    return nodes.filter(el => !nodes.some(other => other !== el && other.contains(el)))
+      .map(el => String(el.innerText ?? el.textContent ?? '').replace(/\\r\\n/g, '\\n'));
+  })()`);
+}
+
+export function createConversationBrowserAdapter({ paths, profileStore, familyStore, port, siteAdapter, targetId,
+  freshTab, conversationId, ownerToken, maxBytes = 0, dependencies = {} } = {}) {
+  // replySettleMs/replySettlePolls: interactive-ready needs the SAME reply content observed across
+  // a real quiet window with positively idle controls. Two fast identical samples are not enough:
+  // a table/code block can render its header first, look idle between chunks, then add rows several
+  // hundred ms later. This only lengthens OBSERVATION; it never sends, retries or grants acceptance.
+  const d = { listTargets, listSessions, Recorder, CdpConnection, browserWsUrl, fetch: globalThis.fetch, evaluate, findComposer, focusComposer, clearComposer,
+    recordTypedPrompt, matchesTypedPrompt,
+    typeText, sendMessage, sendState, readTranscript, waitForCompletion, readUserTurns, detectAuthWall, detectSiteFailure,
+    readTurnPage, readPrefixPage, sleep, now: () => Date.now(), replyPollMs: 250, replyTimeoutMs: 120000, replySettleMs: 2000, replySettlePolls: 2,
+    // A just-opened provider tab can take 10-30s to paint its composer on a loaded machine; a new tab gets a longer wait.
+    readinessTimeoutMs: freshTab ? 45000 : 20000, readinessPollMs: 200, checkAgainTimeoutMs: 3000, fetchTimeoutMs: 10000, connectGraceMs: 2000, ...dependencies };
+  let recorder, binding, pending, stopResult, tap, idlePage, idleConn, connectHooks;
+  const attempts = new Map();
+  let mayOwnResources = false;
+  let submissionStopped = false, connectAborted = false, finalized = false, createdTargetId = null, tabRequested = false;
+  const waiting = new AbortController();
+  // Hard bound for a step that may never settle (a fake or a wedged CDP/HTTP call). The timer is a
+  // real timer on purpose: the race, not the callee's cooperation, guarantees the caller proceeds.
+  function bounded(run, ms, code) {
+    const controller = new AbortController(); let timer;
+    const timeout = new Promise((_, reject) => { timer = setTimeout(() => { controller.abort(); reject(problem(code)); }, ms); });
+    return Promise.race([Promise.resolve().then(() => run(controller.signal)), timeout]).finally(() => clearTimeout(timer));
+  }
+  const httpFetch = (url, init) => bounded((signal) => d.fetch(url, { ...init, signal }), d.fetchTimeoutMs, 'BROWSER_HTTP_TIMEOUT');
+  async function closeCreatedTab(targetId) {
+    const response = await httpFetch(`http://127.0.0.1:${port}/json/close/${encodeURIComponent(targetId)}`);
+    if (!response.ok) throw problem('TAB_CLOSE_UNCONFIRMED');
+  }
+  // A bound thread must match from both sources: the DevTools target URL and the page's own location.
+  const threadMatches = (url) => !binding.thread || sameThread(parseThread(siteAdapter.id, url), binding.thread);
+  // A target URL Chrome reports can be unparseable (chrome-error://, data:, a crashed page). That is a
+  // changed binding, not an internal TypeError.
+  const originOf = (url) => { try { return new URL(url).origin; } catch { return null; } };
+  const livePage = () => recorder?.page ?? idlePage;
+  async function pageThreadMatches() {
+    if (!binding.thread) return true;
+    return threadMatches(`${binding.origin}${await d.evaluate(livePage(), 'location.pathname')}`);
+  }
+  // Idle connect attaches a page for exact-target checks only. Network.enable, the DOM
+  // MutationObserver and the capture clocks stay off until armCapture() on an explicit send.
+  async function openIdlePage(targetId) {
+    if (idlePage) return idlePage;
+    if (typeof d.attachIdlePage === 'function') { idlePage = await d.attachIdlePage(targetId); return idlePage; }
+    if (d.evaluate !== evaluate || d.findComposer !== findComposer) {
+      idlePage = { send: async (method, params) => { d.tracePage?.(method, params); return {}; } };
+      return idlePage;
+    }
+    if (d.CdpConnection && d.browserWsUrl) {
+      const ws = await d.browserWsUrl({ port });
+      idleConn = await d.CdpConnection.connect(ws, { requestTimeoutMs: 30_000 });
+      idlePage = await idleConn.attach(targetId);
+      return idlePage;
+    }
+    idlePage = { send: async (method, params) => d.tracePage?.(method, params) ?? {} };
+    return idlePage;
+  }
+  async function creationLocation() {
+    const page = livePage();
+    const target = (await d.listTargets({ port })).find((t) => t.id === binding.targetId);
+    if (!target) throw problem('TARGET_DISAPPEARED');
+    let parsed; try { parsed = new URL(target.url); } catch { throw problem('BINDING_CHANGED'); }
+    if (parsed.origin !== binding.origin) throw problem('BINDING_CHANGED');
+    const pathname = String(await d.evaluate(page, 'location.pathname') ?? '');
+    if (await d.evaluate(page, 'location.origin') !== binding.origin) throw problem('BINDING_CHANGED');
+    return { targetThread: parseThread(siteAdapter.id, target.url), pageThread: parseThread(siteAdapter.id, `${binding.origin}${pathname}`), targetPath: parsed.pathname, pathname };
+  }
+  function requireRecording() {
+    if (!recorder?.page || recorder.state !== 'recording') throw problem('CAPTURE_NOT_ACTIVE');
+  }
+  // Residue handling for Studio-owned tabs. Providers (Claude) persist UNSENT composer text and restore it
+  // into every new chat, so one failed typing would otherwise block every later send as DRAFT_PRESENT.
+  // Only text that is provably VIVIM's own is ever cleared; any other draft stays protected.
+  async function clearOwnText() {
+    const page = livePage();
+    try {
+      await page.send('Page.bringToFront', {});
+      const focus = await d.focusComposer(page, siteAdapter);
+      if (!focus?.ok) return false;
+      const cleared = await d.clearComposer(page);
+      return cleared?.ok === true;
+    } catch { return false; }
+  }
+  // Fresh, unthreaded Studio tab holding a draft that matches a prompt VIVIM typed earlier (ledger).
+  async function reclaimResidue(draftText) {
+    if (!freshTab || binding?.thread || typeof draftText !== 'string') return false;
+    let mine = false;
+    try { mine = d.matchesTypedPrompt(paths?.root, draftText) === true; } catch { mine = false; }
+    if (!mine || !await clearOwnText()) return false;
+    await d.sleep(300); // let the provider's editor state settle before the caller re-reads the composer
+    return true;
+  }
+  // After a typing/insert failure (or a proven-not-dispatched send): remove what VIVIM typed so the
+  // provider cannot persist it. Only when the composer text is a prefix of (or equal to) our prompt.
+  async function cleanupTypedFailure(prompt) {
+    if (!freshTab || binding?.thread || typeof prompt !== 'string') return false;
+    try {
+      const page = await d.readTurnPage(livePage(), siteAdapter);
+      // The tab moved into a conversation (sent after all, or navigated): that composer's draft may be
+      // the user's own for that thread. Never clear there.
+      if (typeof page?.pathname !== 'string' || parseThread(siteAdapter.id, `${binding.origin}${page.pathname}`)) return false;
+      const text = page?.draft?.text;
+      if (typeof text !== 'string' || !text.trim() || !isPrefixOfTyped(text, prompt)) return false;
+      return await clearOwnText();
+    } catch { return false; }
+  }
+  const ledgerTyped = (prompt) => { try { d.recordTypedPrompt(paths?.root, prompt); } catch { /* ledger is best-effort protection */ } };
+  // @serves 006
+  async function readiness(end) {
+    // `diagnostic` is additive-only: the plain coded `reason` (AUTH_WALL etc.) that every existing
+    // caller/consumer-facing surface already keys off of is unchanged. Only auth-wall call sites pass
+    // a diagnostic today, carrying detectAuthWall's own reason string (which selector/URL/modal
+    // matched) through to an operator-visible field instead of being discarded at the bare code.
+    const blocked = (reason, draft = { present: null, chars: null }, diagnostic = null) =>
+      ({ ready: false, reason, draft, ...(diagnostic ? { diagnostic } : {}) });
+    let lastReason = null; // Reset every tick: an earlier sample must never become the timeout verdict.
+    let residueTries = 0;
+    do {
+      lastReason = null;
+      const target = (await d.listTargets({ port })).find((t) => t.id === binding.targetId);
+      if (!target) return blocked('TARGET_DISAPPEARED');
+      let actual; try { actual = new URL(target.url).origin; } catch { actual = 'null'; }
+      if (actual !== binding.origin) {
+        // A fresh tab that has not committed yet reports the string origin 'null' — `about:blank`,
+        // but equally `chrome://newtab/` or any other non-special scheme. That is the same
+        // uncommitted state :127 already tolerates for the page origin, so it must not be reported as
+        // a binding change; a committed foreign origin still is.
+        if (!(freshTab && (actual === 'null' || target.url === 'about:blank'))) return blocked('BINDING_CHANGED');
+      } else {
+        const pageOrigin = await d.evaluate(livePage(), 'location.origin');
+        if (pageOrigin !== binding.origin) {
+          if (!(freshTab && pageOrigin === 'null')) return blocked('BINDING_CHANGED');
+        } else if (!threadMatches(target.url) || !(await pageThreadMatches())) {
+          return blocked('BINDING_CHANGED');
+        } else if (freshTab && !binding.thread) {
+          // A single unreadable location sample is a transient of a polling function, not a terminal
+          // binding change: the same tab legitimately reports a null origin mid-navigation (:124-125).
+          // The reason is remembered for the deadline verdict; the composer probe below is only
+          // reached on a successful sample, so a persistent wrong location can never report ready.
+          let loc = null;
+          try { loc = await creationLocation(); }
+          catch (e) {
+            const code = /^[A-Z][A-Z0-9_]{0,79}$/.test(e?.code ?? '') ? e.code : 'BINDING_CHANGED';
+            // Only page-level samples are transient. A target that has committed a parseable URL on
+            // a different origin is a real binding change and stays terminal, exactly as before; an
+            // unparseable URL means the tab has not committed yet, an `about:blank` target reports the
+            // string origin 'null' (the same uncommitted state :123-127 already tolerate), and a
+            // same-origin target with an unreadable page sample is the mid-navigation case this loop
+            // is allowed to survive.
+            let targetOrigin = null;
+            try {
+              const now = (await d.listTargets({ port })).find((t) => t.id === binding.targetId);
+              if (!now) return blocked('TARGET_DISAPPEARED');
+              try { targetOrigin = new URL(now.url).origin; } catch { targetOrigin = null; }
+            } catch { targetOrigin = null; }
+            if (targetOrigin !== null && targetOrigin !== 'null' && targetOrigin !== binding.origin) throw problem(code);
+            lastReason = code;
+          }
+          if (loc) {
+            if (loc.targetThread || loc.pageThread) return blocked('PREEXISTING_THREAD');
+            // A project/custom-GPT route is not a fresh home composer.
+            if (!isNewChatPath(siteAdapter.id, loc.targetPath) || !isNewChatPath(siteAdapter.id, loc.pathname)) return blocked('BINDING_CHANGED');
+            const composer = await d.findComposer(livePage(), siteAdapter);
+            const auth = await d.detectAuthWall(livePage(), siteAdapter);
+            if (auth.blocked) { lastReason = 'AUTH_WALL'; } else {
+              const gate = await d.detectSiteFailure(livePage(), siteAdapter);
+              if (gate.failed) return blocked('SITE_GATE');
+              if (composer.found) {
+                const state = await d.sendState(livePage(), siteAdapter);
+                const page = await d.readTurnPage(livePage(), siteAdapter);
+                if (!state.evalOk) { /* keep polling */ }
+                else if (parseThread(siteAdapter.id, `${binding.origin}${page?.pathname ?? ''}`)) return blocked('PREEXISTING_THREAD');
+                else if (state.draftChars > 0 || page?.draft?.chars > 0) {
+                  // VIVIM's own earlier (failed) typing, restored by the provider: clear it and re-check.
+                  if (residueTries < 2 && ++residueTries && await reclaimResidue(page?.draft?.text)) continue;
+                  return blocked('DRAFT_PRESENT', { present: true, chars: state.draftChars });
+                }
+                else if (state.draftChars === 0 && freshComposerReady(page))
+                  return { ready: true, draft: { present: false, chars: 0 }, reason: null, creation: { threadless: true } };
+              }
+            }
+          }
+        } else {
+          const composer = await d.findComposer(livePage(), siteAdapter);
+          const auth = await d.detectAuthWall(livePage(), siteAdapter);
+          if (auth.blocked) {
+            lastReason = 'AUTH_WALL';
+          } else {
+            const gate = await d.detectSiteFailure(livePage(), siteAdapter);
+            if (gate.failed) return blocked('SITE_GATE');
+            if (composer.found) {
+              const state = await d.sendState(livePage(), siteAdapter);
+              if (state.evalOk) {
+                const draft = { present: state.draftChars > 0, chars: state.draftChars };
+                return draft.present ? blocked('DRAFT_PRESENT', draft) : { ready: true, draft, reason: null };
+              }
+            }
+          }
+        }
+      }
+      if (Date.now() >= end) break;
+      await d.sleep(d.readinessPollMs);
+    } while (Date.now() <= end);
+    return blocked(lastReason ?? 'READINESS_TIMEOUT');
+  }
+  async function check() {
+    if (!livePage()) throw problem('CAPTURE_NOT_ACTIVE');
+    const targets = await d.listTargets({ port });
+    const target = targets.find((t) => t.id === binding.targetId);
+    if (!target || originOf(target.url) !== binding.origin || !threadMatches(target.url)) throw problem('BINDING_CHANGED');
+    if (await d.evaluate(livePage(), 'location.origin') !== binding.origin) throw problem('BINDING_CHANGED');
+    if (!(await pageThreadMatches())) throw problem('BINDING_CHANGED');
+    if (freshTab && !binding.thread) {
+      // Unbound NEW_CHAT is only the exact blank home route. It must never read
+      // (or start an effect on) a different thread/project after same-origin drift.
+      const targetPath = (() => { try { return new URL(target.url).pathname; } catch { return null; } })();
+      const pagePath = await d.evaluate(livePage(), 'location.pathname');
+      if (!isNewChatPath(siteAdapter.id, targetPath) || !isNewChatPath(siteAdapter.id, pagePath)) throw problem('BINDING_CHANGED');
+    }
+    return { ...binding };
+  }
+  async function pageState() {
+    await check();
+    requireRecording();
+    const page = await d.readTurnPage(recorder.page, siteAdapter);
+    await check();
+    if (!page || page.origin !== binding.origin || !threadMatches(`${page.origin}${page.pathname}`) || !Array.isArray(page.messages)) throw problem('BINDING_CHANGED');
+    if (page.messages.some((m) => !m || !['user', 'assistant'].includes(m.role) || typeof m.text !== 'string'
+      || typeof m.id !== 'string' || !m.id || m.id.length > 200) || new Set(page.messages.map((m) => m.id)).size !== page.messages.length) throw problem('MESSAGE_IDENTITY_UNAVAILABLE');
+    return page;
+  }
+  const idleControls = (c) => c?.observed === true && ['idle', 'terminal'].includes(c.state)
+    && c.idleControlPresent === true && c.stopPresent === false && c.composerEnabled === true;
+  // Blank NEW_CHAT has no usable Send control until text is typed. An enabled, empty
+  // composer and empty observed transcript are enough to BEGIN typing, not to send.
+  // Bound-thread/reply completion continues to require positive idleControls evidence.
+  const freshComposerReady = (page) => page?.controls?.composerEnabled === true
+    && page.controls.stopPresent === false && page.controls.state !== 'busy' && page?.draft?.chars === 0
+    && Array.isArray(page.messages) && page.messages.length === 0;
+  const samePrefix = (page, saved) => saved.baseline.every((m, i) => page.messages[i]?.id === m.id
+    && page.messages[i]?.role === m.role && page.messages[i]?.text === m.text);
+  const persist = (record) => recorder.recordConversationObservation({ ...record, binding: structuredClone(binding) });
+  async function observation(args) {
+    const page = await pageState(), saved = attempts.get(args.turnId);
+    if (!saved || saved.payloadDigest !== args.payloadDigest || !samePrefix(page, saved)) return null;
+    const user = page.messages[saved.baseline.length];
+    if (!user || user.role !== 'user' || saved.baseline.some((m) => m.id === user.id) || user.text !== saved.prompt.replace(/\r\n/g, '\n')
+      || page.messages.slice(saved.baseline.length + 1).some((m) => m.role === 'user')) return null;
+    if (saved.outgoing) return { binding: structuredClone(binding), evidence: saved.outgoing };
+    const sequence = persist({ source: 'page', kind: 'new-user-turn', identity: user.id, turnId: saved.turnId,
+      payloadDigest: saved.payloadDigest, text: user.text, baselineSequence: saved.boundary.sequence });
+    saved.outgoing = { turnId: saved.turnId, payloadDigest: saved.payloadDigest, sessionId: recorder.session.id,
+      sequence, kind: 'new-user-turn', source: 'page', identity: user.id };
+    return { binding: structuredClone(binding), evidence: saved.outgoing };
+  }
+  function sampleReply(saved, message, controls) {
+    const contentDigest = digest(message.text), prior = saved.reply;
+    if (prior && prior.identity !== message.id) throw problem('REPLY_IDENTITY_CHANGED');
+    const revision = prior ? prior.revision + (prior.contentDigest !== contentDigest ? 1 : 0) : 1;
+    const metadata = { identity: message.id, revision, contentDigest, chars: message.text.length };
+    const sequence = persist({ source: 'page', kind: 'reply-sample', turnId: saved.turnId, payloadDigest: saved.payloadDigest,
+      ...metadata, text: message.text, controls });
+    const evidence = { turnId: saved.turnId, payloadDigest: saved.payloadDigest, sessionId: recorder.session.id,
+      sequence, kind: 'assistant-reply', source: 'page', ...metadata };
+    if (!prior || prior.contentDigest !== contentDigest) saved.samples = [];
+    saved.reply = { ...evidence, text: message.text };
+    saved.samples.push({ sequence, ...metadata }); saved.samples = saved.samples.slice(-2);
+    return { turnId: saved.turnId, binding: structuredClone(binding), state: 'streaming', text: message.text, evidence };
+  }
+  function auditReplies(page) {
+    const updates = [];
+    for (const saved of attempts.values()) {
+      if (!saved.reply || saved.reply.sessionId !== recorder?.session?.id) continue;
+      const message = page.messages.find((m) => m.id === saved.reply.identity && m.role === 'assistant');
+      if (!message) throw problem('PRIOR_REPLY_UNAVAILABLE');
+      if (digest(message.text) !== saved.reply.contentDigest) updates.push(sampleReply(saved, message, page.controls));
+    }
+    return updates;
+  }
+  async function effectPreflight(saved, beforeEffect, empty) {
+    if (!binding.thread) throw problem('THREAD_IDENTITY_UNVERIFIED');
+    const page = await pageState(), priorReplies = auditReplies(page);
+    if (priorReplies.length) throw Object.assign(problem('PRIOR_REPLY_CHANGED'), { priorReplies });
+    if (!idleControls(page.controls)) throw problem('GENERATION_CONTROLS_UNAVAILABLE_OR_BUSY');
+    // An empty rich-text (ProseMirror) composer reports a lone trailing line break, not ''.
+    const trailing = (t) => canon(String(t)).replace(/\n$/, '');
+    if (typeof page.draft?.text !== 'string' || trailing(page.draft.text) !== (empty ? '' : trailing(saved.prompt))) throw problem('COMPOSER_READBACK_MISMATCH');
+    if (page.messages.length !== saved.baseline.length || !samePrefix(page, saved)) throw problem('TURN_BOUNDARY_CHANGED');
+    if (submissionStopped) throw problem('SUBMISSION_STOPPED');
+    beforeEffect?.(page); // Fresh persisted thread+reply fence check is LAST, after asynchronous page inspection.
+  }
+  async function connectSteps(initial, hooks, startedAt) {
+    const aborted = () => { if (connectAborted) throw problem('CONNECT_ABORTED'); };
+    binding = { ...initial };
+    if (freshTab) {
+      mayOwnResources = true; tabRequested = true; // An acknowledgement can be lost even if Chrome created the tab.
+      const response = await httpFetch(`http://127.0.0.1:${port}/json/new?about:blank`, { method: 'PUT' });
+      if (!response.ok) throw problem('TAB_OPEN_FAILED');
+      const target = await bounded(() => response.json(), d.fetchTimeoutMs, 'BROWSER_HTTP_TIMEOUT');
+      if (!target.id) throw problem('TAB_OPEN_UNCONFIRMED');
+      createdTargetId = target.id;
+      if (connectAborted) { await closeCreatedTab(target.id).catch(() => {}); aborted(); }
+      binding.targetId = target.id; hooks.bind(binding);
+    } else {
+      const target = (await d.listTargets({ port })).find((t) => t.id === targetId);
+      aborted();
+      if (!target || originOf(target.url) !== binding.origin || !threadMatches(target.url)) throw problem('BINDING_CHANGED');
+      // Never replace/stop an unknown recorder, including an interrupted recorder with no proof
+      // of finalization. Only the selected exact target is guarded; unrelated captures continue.
+      if (d.listSessions(paths.sessions).some((s) => s.target?.id === targetId && ['recording', 'stopping'].includes(s.status))) throw problem('TARGET_RECORDER_BUSY');
+    }
+    let profile = siteAdapter.id;
+    try { profileStore.load(profile); } catch { profile = 'generic'; profileStore.load(profile); }
+    connectHooks = hooks;
+    captureProfile = profile;
+    mayOwnResources = freshTab; // A Studio tab may need closing. The recorder is not armed yet.
+    await openIdlePage(binding.targetId);
+    if (connectAborted) { if (freshTab && createdTargetId) await closeCreatedTab(createdTargetId).catch(() => {}); aborted(); }
+    if (freshTab) {
+      await livePage().send('Page.navigate', { url: siteAdapter.url });
+      // Navigation/composer readiness is checked on submit, not guessed from a navigate ACK.
+    }
+    aborted();
+    const ready = await readiness(startedAt + d.readinessTimeoutMs);
+    aborted();
+    return { binding: { ...binding }, sessionId: null, deferredCapture: true, readiness: ready };
+  }
+  let captureProfile = siteAdapter.id;
+  async function armCapture() {
+    if (recorder?.state === 'recording' && recorder.session?.id) return recorder.session.id;
+    if (finalized) throw problem('CAPTURE_NOT_ACTIVE');
+    mayOwnResources = true;
+    recorder = new d.Recorder({ sessionsDir: paths.sessions, profileStore, familyStore, port, tabs: 'one', follow: false,
+      reconnect: false, maxSessionBytes: maxBytes });
+    recorder.on('warn', () => {}); // Never leak transport/URL/content errors into shared summaries.
+    const mine = recorder;
+    const run = recorder.start({ target: binding.targetId, exactTarget: true, profile: captureProfile, label: siteAdapter.id, follow: false,
+      owner: { conversationId, pid: process.pid, token: ownerToken, port },
+      onSessionCreated: (session) => connectHooks.ownSession(session.id) });
+    run.catch(() => {});
+    let timer;
+    const timeout = new Promise((_, reject) => { timer = setTimeout(() => reject(problem('CONNECT_TIMEOUT')), d.readinessTimeoutMs + d.connectGraceMs); });
+    try { await Promise.race([run, timeout]); }
+    finally { clearTimeout(timer); }
+    tap = mine.tap({ decode: false, text: false }); // Full turn capture: network bodies, DOM observer, raw log. Not a second driver.
+    return recorder.session.id;
+  }
+  // Shared by finish (stop) and failed-connect cleanup. Idempotent once finalized.
+  async function stopRecorder(reason) {
+    if (!recorder?.session) return null;
+    if (recorder.state === 'idle' && stopResult) return stopResult;
+    if (['recording', 'stopping', 'stop_failed'].includes(recorder.state) || recorder._stopPromise) {
+      stopResult = await recorder.stop({ reason });
+      if (!stopResult) throw problem('CAPTURE_STOP_UNCONFIRMED');
+    } else {
+      clearInterval(recorder.persistTimer); clearInterval(recorder.statusTimer);
+      recorder.conn?.close(); await recorder.session.raw.close();
+      recorder.session.meta.status = 'incomplete'; recorder.session.meta.endReason = 'conversation_attachment_failed'; recorder.session.saveMeta();
+      stopResult = { verify: null };
+    }
+    tap?.close(); tap = null;
+    return stopResult;
+  }
+  async function stopCapture() {
+    if (finalized) return;
+    waiting.abort();
+    if (!recorder?.session) { finalized = true; return; }
+    await stopRecorder('conversation_finish');
+    mayOwnResources = false; finalized = true;
+  }
+  async function stopTurnCapture() {
+    if (!recorder?.session) return stopResult ?? null;
+    const stopped = await stopRecorder('conversation_turn');
+    recorder = null; // Next explicit send arms a new full capture. pause() is not the off switch.
+    return stopped;
+  }
+  return {
+    get mayOwnResources() { return mayOwnResources; },
+    get sessionId() { return recorder?.session?.id ?? null; },
+    get integrity() { return stopResult?.verify ?? null; },
+    get active() { return recorder?.state === 'recording' || recorder?.state === 'stopping'; },
+    get limitReason() { return recorder?._quotaHit ? 'byte-budget' : null; },
+    get bytesWritten() { return recorder?.session?.raw?.stats?.bytes ?? 0; },
+    // An exact-target idle attachment; never starts capture or drives the page.
+    async readPrefixEvidence({ targetId: requested, origin, expectedThread }) {
+      const targetCheck = async () => {
+        let targets;
+        try { targets = await d.listTargets({ port }); } catch { throw problem('PREFIX_TARGET_NOT_FOUND'); }
+        if (!Array.isArray(targets)) throw problem('PREFIX_TARGET_NOT_FOUND');
+        const selected = targets.filter((t) => t.id === requested);
+        if (selected.length !== 1) throw problem('PREFIX_TARGET_NOT_FOUND');
+        const target = selected[0];
+        if (target.type !== 'page') throw problem('PREFIX_TARGET_NOT_PAGE');
+        let url; try { url = new URL(target.url); } catch { throw problem('PREFIX_TARGET_ORIGIN_MISMATCH'); }
+        if (!['https://chatgpt.com', 'https://chat.openai.com'].includes(url.origin) || url.origin !== origin) throw problem('PREFIX_TARGET_ORIGIN_MISMATCH');
+        const thread = parseThread(siteAdapter.id, target.url);
+        if (!thread) throw problem('PREFIX_TARGET_URL_UNSUPPORTED');
+        if (thread.ref !== expectedThread || url.search || url.hash || url.username || url.password) throw problem('PREFIX_THREAD_ID_MISMATCH');
+        if (targets.filter((t) => t.type === 'page' && parseThread(siteAdapter.id, t.url)?.ref === thread.ref).length !== 1) throw problem('PREFIX_TARGET_AMBIGUOUS');
+        if (d.listSessions(paths.sessions).some((s) => s.target?.id === requested && ['recording', 'stopping'].includes(s.status))) throw problem('TARGET_RECORDER_BUSY');
+        return thread;
+      };
+      return bounded(async () => {
+        const thread = await targetCheck();
+        let result;
+        try { result = await d.readPrefixPage(await openIdlePage(requested), siteAdapter); } catch { throw problem('PREFIX_PAGE_UNREADABLE'); }
+        if (!result || !Array.isArray(result.messages)) throw problem('PREFIX_PAGE_UNREADABLE');
+        if (result.origin !== origin || parseThread(siteAdapter.id, `${result.origin}${result.pathname}`)?.ref !== thread.ref
+          || result.pathname !== `/c/${thread.id}` && result.pathname !== `/c/${thread.id}/`) throw problem('PREFIX_PAGE_THREAD_MISMATCH');
+        try { await targetCheck(); } catch (e) { if (e.code === 'TARGET_RECORDER_BUSY') throw e; throw problem('PREFIX_TARGET_CHANGED'); }
+        return { ...result, targetId: requested, thread };
+      }, d.fetchTimeoutMs, 'PREFIX_PAGE_UNREADABLE');
+    },
+    // Detach only our own observation client, never close a tab.
+    async closePrefixReader() { idleConn?.close(); idleConn = null; idlePage = null; },
+    // Total connect time is bounded by readinessTimeoutMs + a small grace. A hung step fails closed
+    // with CONNECT_TIMEOUT; whatever it creates late is cleaned up by the continuation itself.
+    async connect(initial, hooks) {
+      connectAborted = false;
+      const startedAt = Date.now(), run = connectSteps(initial, hooks, startedAt); let timer;
+      const timeout = new Promise((_, reject) => { timer = setTimeout(() => { connectAborted = true; reject(problem('CONNECT_TIMEOUT')); }, d.readinessTimeoutMs + d.connectGraceMs); });
+      run.catch(() => {});
+      try { return await Promise.race([run, timeout]); } finally { clearTimeout(timer); }
+    },
+    armCapture,
+    async stopTurnCapture() { return stopTurnCapture(); },
+    async pinThread(thread, denylist = []) {
+      if (!thread?.ref || !Array.isArray(denylist) || denylist.includes(thread.ref)) return null;
+      const loc = await creationLocation();
+      if (!loc.targetThread || !loc.pageThread || loc.targetThread.ref !== loc.pageThread.ref || loc.targetThread.ref !== thread.ref) return null;
+      binding.thread = { kind: loc.targetThread.kind, id: loc.targetThread.id, ref: loc.targetThread.ref };
+      return structuredClone(binding);
+    },
+    adoptTurn(fromId, toId) {
+      const saved = attempts.get(fromId);
+      if (!saved || attempts.has(toId)) throw problem('TURN_NOT_FOUND');
+      saved.turnId = toId; attempts.delete(fromId); attempts.set(toId, saved);
+      recorder?.session?.kv?.set?.(`CONVERSATION_ATTEMPT_${toId}`, saved);
+    },
+    // The pre-send freshness cursor for acceptance G1/G2: user/assistant turn counts from the
+    // SAME page-agent full-DOM scan that later produces DOM_TURNS, sampled before anything is
+    // typed. Unmeasurable (agent down, page gone) is reported as null, never guessed as 0.
+    async sampleTurnBaseline() {
+      try {
+        const turns = await recorder.domTurns();
+        const count = (role) => turns.filter((t) => t?.role === role).length;
+        return { userTurns: count('user'), assistantTurns: count('assistant'), sampledAt: new Date().toISOString() };
+      } catch { return null; }
+    },
+    async preflight(_, { priorTurns = [], readOnly = false, prefix = null } = {}) {
+      // Read-only "Check again" with no armed capture (deferred first turn, or between turns): inspect the
+      // idle page only. No recorder is armed, nothing is typed or sent, and no turn baseline is taken.
+      if (readOnly && !recorder?.page) {
+        if (!livePage()) throw problem('CAPTURE_NOT_ACTIVE');
+        const result = await readiness(Date.now() + d.checkAgainTimeoutMs);
+        return { binding: { ...binding }, ready: result.ready, reason: result.reason, draft: result.draft,
+          boundary: { sequence: 0, transcriptCount: 0 }, readOnly: true, ...(result.creation ? { creation: result.creation } : {}) };
+      }
+      await check();
+      if (!binding.thread) {
+        if (!freshTab) throw problem('THREAD_IDENTITY_UNVERIFIED');
+        requireRecording();
+        const loc = await creationLocation();
+        if (loc.targetThread || loc.pageThread) throw Object.assign(problem('PREEXISTING_THREAD'), { notDispatched: true, notTyped: true });
+        if (!isNewChatPath(siteAdapter.id, loc.targetPath) || !isNewChatPath(siteAdapter.id, loc.pathname)) throw problem('BINDING_CHANGED');
+        const composer = await d.findComposer(recorder.page, siteAdapter);
+        if ((await d.detectAuthWall(recorder.page, siteAdapter)).blocked) throw problem('AUTH_WALL');
+        if ((await d.detectSiteFailure(recorder.page, siteAdapter)).failed) throw problem('SITE_GATE');
+        if (!composer.found) throw problem('COMPOSER_UNAVAILABLE');
+        let state = await d.sendState(recorder.page, siteAdapter);
+        if (!state.evalOk) throw problem('COMPOSER_UNREADABLE');
+        let page = await d.readTurnPage(recorder.page, siteAdapter);
+        if (parseThread(siteAdapter.id, `${binding.origin}${page?.pathname ?? ''}`)) throw Object.assign(problem('PREEXISTING_THREAD'), { notDispatched: true, notTyped: true });
+        if ((state.draftChars !== 0 || page?.draft?.chars !== 0) && await reclaimResidue(page?.draft?.text)) {
+          state = await d.sendState(recorder.page, siteAdapter);
+          if (!state.evalOk) throw problem('COMPOSER_UNREADABLE');
+          page = await d.readTurnPage(recorder.page, siteAdapter);
+        }
+        if (state.draftChars !== 0 || page?.draft?.chars !== 0) {
+          // Lengths only, never the text: enough to tell VIVIM residue from a user draft when tracing.
+          console.error('[conv] fresh tab draft present:', siteAdapter.id, 'sendStateChars=', state.draftChars, 'pageChars=', page?.draft?.chars, 'looseLen=', [...String(page?.draft?.text ?? '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '')].length);
+          throw problem('DRAFT_PRESENT');
+        }
+        if (!freshComposerReady(page)) throw problem('GENERATION_CONTROLS_UNAVAILABLE_OR_BUSY');
+        const boundary = { sessionId: recorder.session.id, sequence: recorder.session.raw.seq, transcriptCount: 0 };
+        pending = { baseline: [], boundary, creation: true };
+        // A just-created page has no rendered turns; the scan is still taken from the same store
+        // so the cursor semantics match every other path.
+        return { binding: { ...binding }, draft: { present: false, chars: 0 }, boundary, controls: page.controls, priorReplies: [], ready: true, creation: { threadless: true },
+          baseline: { userTurns: 0, assistantTurns: 0, sampledAt: new Date().toISOString() }, cursor: turnCursor([], boundary.sequence) };
+      }
+      requireRecording();
+      const composer = await d.findComposer(recorder.page, siteAdapter);
+      if ((await d.detectAuthWall(recorder.page, siteAdapter)).blocked) throw problem('AUTH_WALL');
+      if ((await d.detectSiteFailure(recorder.page, siteAdapter)).failed) throw problem('SITE_GATE');
+      if (!composer.found) throw problem('COMPOSER_UNAVAILABLE');
+      const state = await d.sendState(recorder.page, siteAdapter);
+      if (!state.evalOk) throw problem('COMPOSER_UNREADABLE');
+      const page = await pageState(), priorReplies = auditReplies(page);
+      const invalidatedTurnIds = priorTurns.filter((t) => t.reply.state === 'observed' && (!attempts.has(t.id) || attempts.get(t.id)?.reply?.sessionId !== recorder.session.id)).filter((t) => {
+        const r = t.reply.evidence, message = page.messages.find((m) => m.id === r.identity && m.role === 'assistant');
+        return !message || digest(message.text) !== r.contentDigest || message.text.length !== r.chars;
+      }).map((t) => t.id);
+      if (invalidatedTurnIds.length) {
+        persist({ source: 'page', kind: 'prior-reply-invalidated', turnIds: invalidatedTurnIds });
+        throw Object.assign(problem('PRIOR_REPLY_CHANGED'), { invalidatedTurnIds });
+      }
+      // Every earlier turn this thread delivered by a page-visible user message must still be on the page:
+      // an edited/branched/regenerated history is a different thread state, so this turn is blocked pre-effect.
+      const missing = priorTurns.filter((t) => t.delivery?.state === 'observed' && t.delivery.evidence?.kind === 'new-user-turn'
+        && !page.messages.some((m) => m.id === t.delivery.evidence.identity && m.role === 'user')).map((t) => t.id);
+      if (missing.length) {
+        persist({ source: 'page', kind: 'prior-turn-missing', turnIds: missing });
+        throw problem('THREAD_CHANGED_BETWEEN_TURNS');
+      }
+      const boundary = { sessionId: recorder.session.id, sequence: recorder.session.raw.seq, transcriptCount: page.messages.length };
+      pending = { baseline: structuredClone(page.messages), boundary };
+      const user = page.messages[0], assistant = page.messages[1];
+      const prefixAudit = prefix ? (!user || user.role !== 'user' || user.id !== prefix.userMessageId || digest(user.text) !== prefix.userMessageDigest
+        ? { ok: false, reason: 'PREFIX_USER_MESSAGE_MISSING' }
+        : !assistant || assistant.role !== 'assistant' || assistant.id !== prefix.assistantMessageId || digest(assistant.text) !== prefix.assistantDigest || assistant.text.length !== prefix.assistantChars
+          ? { ok: false, reason: 'PREFIX_REPLY_CHANGED' } : { ok: true, reason: null }) : undefined;
+      return { binding: { ...binding }, draft: { present: page.draft?.chars > 0, chars: page.draft?.chars }, boundary,
+        controls: page.controls, priorReplies, ready: idleControls(page.controls) && !priorReplies.length,
+        baseline: await this.sampleTurnBaseline(), cursor: turnCursor(page.messages, boundary.sequence), ...(prefix ? { prefixAudit } : {}) };
+    },
+    async type({ prompt, turnId, beforeEffect }) {
+      await check();
+      requireRecording();
+      if (!binding.thread) {
+        if (!freshTab || !pending?.creation) throw problem('THREAD_IDENTITY_UNVERIFIED');
+        const guard = async () => {
+          const loc = await creationLocation();
+          if (loc.targetThread || loc.pageThread) throw Object.assign(problem('PREEXISTING_THREAD'), { notDispatched: true, notTyped: true });
+        };
+        await guard();
+        await recorder.page.send('Page.bringToFront', {});
+        const focus = await d.focusComposer(recorder.page, siteAdapter);
+        if (!focus.ok) throw problem('COMPOSER_NOT_FOCUSED');
+        let state = await d.sendState(recorder.page, siteAdapter);
+        if (state.evalOk && state.draftChars !== 0) {
+          const page = await d.readTurnPage(recorder.page, siteAdapter);
+          if (await reclaimResidue(page?.draft?.text)) state = await d.sendState(recorder.page, siteAdapter);
+        }
+        if (!state.evalOk || state.draftChars !== 0) throw problem('DRAFT_PRESENT');
+        const saved = { ...pending, turnId, prompt, payloadDigest: digest(prompt), samples: [], creation: true };
+        attempts.set(turnId, saved);
+        recorder.session.kv.set(`CONVERSATION_ATTEMPT_${turnId}`, saved);
+        ledgerTyped(prompt); // before the first character: a typing that dies half way must stay recognisable
+        try {
+          const typed = await d.typeText(recorder.page, prompt, { ...typeOptions(prompt), beforeInsert: async () => { await guard(); beforeEffect?.(); } });
+          await check();
+          const after = await settleTypingReadback(async () => {
+            const page = await d.readTurnPage(recorder.page, siteAdapter);
+            if (parseThread(siteAdapter.id, `${binding.origin}${page?.pathname ?? ''}`)) throw problem('PREEXISTING_THREAD');
+            return page;
+          }, prompt);
+          if (!typed.ok || !after) throw problem('TYPING_UNCONFIRMED');
+        } catch (e) { await cleanupTypedFailure(prompt); throw e; }
+        return;
+      }
+      if (!pending) throw problem('THREAD_IDENTITY_UNVERIFIED');
+      await recorder.page.send('Page.bringToFront', {}); // Exact bound target only.
+      const focus = await d.focusComposer(recorder.page, siteAdapter);
+      if (!focus.ok) throw problem('COMPOSER_NOT_FOCUSED');
+      const state = await d.sendState(recorder.page, siteAdapter);
+      if (!state.evalOk || state.draftChars !== 0) throw problem('DRAFT_PRESENT');
+      const saved = { ...pending, turnId, prompt, payloadDigest: digest(prompt), samples: [] };
+      attempts.set(turnId, saved);
+      recorder.session.kv.set(`CONVERSATION_ATTEMPT_${turnId}`, saved); // Protected local capture storage only.
+      ledgerTyped(prompt);
+      try {
+        const typed = await d.typeText(recorder.page, prompt, { ...typeOptions(prompt),
+          beforeInsert: () => effectPreflight(saved, beforeEffect, true) });
+        await check();
+        if (!typed.ok || !await settleTypingReadback(pageState, prompt)) throw problem('TYPING_UNCONFIRMED');
+      } catch (e) { await cleanupTypedFailure(prompt); throw e; }
+    },
+    async submit(args) {
+      try {
+      await check();
+      requireRecording();
+      const saved = attempts.get(args.turnId);
+      if (!saved || saved.payloadDigest !== args.payloadDigest) throw problem('TURN_NOT_FOUND');
+      if (submissionStopped) throw Object.assign(problem('SUBMISSION_STOPPED'), { notDispatched: true });
+      if (!binding.thread && saved.creation) {
+        const guard = async () => {
+          const loc = await creationLocation();
+          if (loc.targetThread || loc.pageThread) throw Object.assign(problem('PREEXISTING_THREAD'), { notDispatched: true });
+        };
+        const result = await d.sendMessage(recorder.page, siteAdapter, { canDispatch: () => !submissionStopped,
+          beforeDispatch: async () => { await guard(); args.beforeEffect?.(); } });
+        if (result?.dispatched === false) {
+          if (submissionStopped) throw Object.assign(problem('SUBMISSION_STOPPED'), { notDispatched: true });
+          if (result.sendStatus === 'not-attempted' && result.uncertain === false) throw Object.assign(problem('SEND_NOT_DISPATCHED'), { notDispatched: true });
+        }
+        // The CDP target URL and the page's own location move to /c/<id> at slightly different
+        // moments after the provider navigates. Read-only bounded wait for them to agree.
+        let loc = await creationLocation();
+        for (const deadline = Date.now() + 12000;
+          !(loc.targetThread && loc.pageThread && loc.targetThread.ref === loc.pageThread.ref) && Date.now() < deadline;) {
+          await d.sleep(250); loc = await creationLocation();
+        }
+        return { creation: true, dispatched: true, targetThread: loc.targetThread, pageThread: loc.pageThread, binding: structuredClone(binding) };
+      }
+      const result = await d.sendMessage(recorder.page, siteAdapter, { canDispatch: () => !submissionStopped,
+        beforeDispatch: () => effectPreflight(saved, args.beforeEffect, false) });
+      if (result?.dispatched === false) {
+        if (submissionStopped) throw Object.assign(problem('SUBMISSION_STOPPED'), { notDispatched: true });
+        // Proven not dispatched = sendMessage's own preflight/button/latch refusal. Anything else
+        // (dispatched undefined/true, dispatch errors, missing fields) stays ambiguous -> observation.
+        if (result.sendStatus === 'not-attempted' && result.uncertain === false) throw Object.assign(problem('SEND_NOT_DISPATCHED'), { notDispatched: true });
+      }
+      return await observation(args);
+      } catch (e) {
+        // Proven NOT dispatched: the typed prompt is still sitting unsent in the composer, which the
+        // provider would persist. Remove VIVIM's own text (never anything else) before releasing.
+        if (e?.notDispatched === true) await cleanupTypedFailure(attempts.get(args?.turnId)?.prompt);
+        throw e;
+      }
+    },
+    reconcile: observation,
+    async readReply(onUpdate, args = {}) {
+      const saved = attempts.get(args.turnId);
+      if (!saved?.outgoing || saved.payloadDigest !== args.payloadDigest) throw problem('ATTRIBUTABLE_DELIVERY_REQUIRED');
+      const end = Date.now() + d.replyTimeoutMs;
+      // Interactive-ready requires content stability over wall-clock time, not merely two adjacent
+      // polls: a late table body or code block must not be cut off by an early idle control.
+      saved.stable = null;
+      while (!waiting.signal.aborted && Date.now() < end) {
+        const page = await pageState(), index = page.messages.findIndex((m) => m.id === saved.outgoing.identity && m.role === 'user');
+        // The turn's own user message must sit directly after the pre-send baseline, and everything before it must be
+        // unchanged: an earlier reply regenerated/edited, or history rewritten, mid-wait is never attributed to this turn.
+        if (!samePrefix(page, saved) || (index >= 0 && index !== saved.baseline.length)) throw problem('TURN_BOUNDARY_CHANGED');
+        const candidate = index < 0 ? null : page.messages[index + 1];
+        if (candidate?.role === 'assistant' && !saved.baseline.some((m) => m.id === candidate.id)) {
+          const update = sampleReply(saved, candidate, page.controls);
+          const stamp = d.now(), contentDigest = update.evidence.contentDigest;
+          const idle = idleControls(page.controls);
+          if (!idle) saved.stable = null;
+          else if (saved.stable?.digest !== contentDigest) saved.stable = { digest: contentDigest, since: stamp, polls: 1 };
+          else saved.stable.polls++;
+          const quietFor = saved.stable ? stamp - saved.stable.since : 0;
+          const settled = saved.samples.length >= 2 && saved.stable?.polls >= d.replySettlePolls
+            && quietFor >= d.replySettleMs;
+          if (settled && idle && candidate.text.trim().length > 0) {
+            update.state = 'ready';
+            update.readiness = { ...update.evidence, kind: 'interactive-ready', source: 'adapter', rule: 'chatgpt-controls-idle', ruleVersion: 1,
+              threadKey: args.threadKey, boundarySequence: saved.boundary.sequence, samples: structuredClone(saved.samples), controls: page.controls };
+          }
+          await onUpdate?.(update);
+          if (update.state === 'ready') return update;
+        } else saved.stable = null;
+        await d.sleep(d.replyPollMs);
+      }
+      return { turnId: saved.turnId, state: waiting.signal.aborted ? 'interrupted' : 'unknown', text: saved.reply?.text ?? '' };
+    },
+    // Zero-send Read of the currently rendered transcript. Observation only: no focus, scroll, typing,
+    // draft change, navigation, send or raw-log write. The binding is verified before and after, and the
+    // page's own location is part of the evaluated result, so a thread switch mid-read discards it.
+    async readTranscript({ maxMessages = TRANSCRIPT_LIMITS.maxMessages.default, maxChars = TRANSCRIPT_LIMITS.maxChars.default, perMessageCap = TRANSCRIPT_LIMITS.perMessageCap } = {}) {
+      await check();
+      const result = await d.evaluate(livePage(), transcriptExpression({ ...transcriptArgs(siteAdapter), composerSelectors: siteAdapter.composer?.selectors ?? [],
+         streamingSelectors: siteAdapter.assistant?.streamingSelectors ?? [], sendSelectors: idleControlSelectors(siteAdapter),
+         perMessageCap: Math.min(perMessageCap, maxChars) }));
+      const after = await check();
+      if (!result || typeof result !== 'object' || !Array.isArray(result.messages)) throw problem('READ_FAILED');
+      if (binding.thread && !threadMatches(`${binding.origin}${String(result?.pathname ?? '')}`)) throw problem('BINDING_CHANGED');
+      if (freshTab && !binding.thread && !isNewChatPath(siteAdapter.id, result.pathname)) throw problem('BINDING_CHANGED');
+      if (result?.origin !== undefined && result.origin !== binding.origin) throw problem('BINDING_CHANGED');
+      return { binding: after, transcript: boundTranscript(result, { maxMessages, maxChars, perMessageCap: Math.min(perMessageCap, maxChars) }) };
+    },
+    stopWaiting() { submissionStopped = true; waiting.abort(); },
+    async stop() { await stopCapture(); },
+    // Failed-connect cleanup: finalize any half-created session as incomplete, then close ONLY the
+    // tab this Studio created (freshTab + exact id reported by Chrome). An owner/selected tab is never touched.
+    async abortConnect() {
+      connectAborted = true; submissionStopped = true;
+      const out = { captureFinalized: true, tab: 'none', targetId: createdTargetId };
+      if (recorder?.session) { try { await stopCapture(); } catch { out.captureFinalized = false; } }
+      else mayOwnResources = false; // No session was ever created: no capture-side resource to finalize.
+      if (freshTab) {
+        if (!createdTargetId) out.tab = tabRequested ? 'unconfirmed' : 'none';
+        else { try { await closeCreatedTab(createdTargetId); out.tab = 'closed'; } catch { out.tab = 'kept'; } }
+      }
+      return out;
+    },
+    async closeTab(b) {
+      if (!b.ownedByStudio || b.targetId !== binding.targetId || b.origin !== binding.origin) throw problem('TAB_NOT_OWNED');
+      await closeCreatedTab(b.targetId);
+    },  };
+}

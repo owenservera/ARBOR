@@ -1,0 +1,53 @@
+{
+  "schema": "arbor.w01f.synthetic-only/1",
+  "source": {
+    "id": "synthetic://owner-a/context-01",
+    "domain": "personal",
+    "ownerRef": "synthetic-owner-a",
+    "revision": 4
+  },
+  "wrongOwner": {
+    "id": "synthetic://owner-a/context-01",
+    "domain": "personal",
+    "ownerRef": "synthetic-owner-b",
+    "revision": 4
+  },
+  "stale": {
+    "id": "synthetic://owner-a/context-01",
+    "domain": "personal",
+    "ownerRef": "synthetic-owner-a",
+    "revision": 3
+  },
+  "grounded": {
+    "schema": "arbor.inert-view/1",
+    "source": {
+      "id": "synthetic://owner-a/context-01",
+      "domain": "personal",
+      "ownerRef": "synthetic-owner-a",
+      "revision": 4
+    },
+    "inert": true,
+    "status": "grounded",
+    "actions": [
+      "vivim.status.show"
+    ]
+  },
+  "candidate": {
+    "schema": "arbor.inert-view/1",
+    "source": {
+      "id": "synthetic://owner-a/context-01",
+      "domain": "personal",
+      "ownerRef": "synthetic-owner-a",
+      "revision": 4
+    },
+    "inert": true,
+    "status": "candidate",
+    "actions": []
+  },
+  "unownedPersonal": {
+    "id": "synthetic://unowned",
+    "domain": "personal",
+    "ownerRef": null,
+    "revision": 1
+  }
+}

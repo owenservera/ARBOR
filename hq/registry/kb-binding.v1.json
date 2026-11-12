@@ -1,0 +1,362 @@
+{
+  "schema": "hq.kb-binding/1",
+  "version": 1,
+  "generatedFrom": {
+    "path": "vivim-web-harness:docs/knowledge/kb-types.v1.json",
+    "sha256": "415a3b85886adb04b3c6a8ac92905fd471d76e7f6ca332de7a7293f4ed090d73"
+  },
+  "bindings": [
+    {
+      "kbId": "KB-ACTION",
+      "title": "Typed actions and capabilities",
+      "target": "grammar.action",
+      "targetKind": "canonical",
+      "family": "system",
+      "reason": "HQ already declares the action id namespace (grammar.action); the KB type names that same family and must not be duplicated as an extension."
+    },
+    {
+      "kbId": "KB-AUTHORITY-GRANT",
+      "title": "Authority grants and revocations",
+      "target": "hq.ext.kb-authority-grant",
+      "targetKind": "unbound",
+      "family": "system",
+      "reason": "Grant state is permission authority; HQ is read-only and must not expose a lookup that could be read as an approval."
+    },
+    {
+      "kbId": "KB-AUTHORITY-RULE",
+      "title": "Authority and precedence rules",
+      "target": "hq.ext.kb-authority-rule",
+      "targetKind": "extension",
+      "family": "system",
+      "reason": "HQ records and compares authority rules; it never grants, so the rule type stays a namespaced catalog entry."
+    },
+    {
+      "kbId": "KB-CAPABILITY-STATUS",
+      "title": "Capability and evidence status",
+      "target": "hq.ext.kb-capability-status",
+      "targetKind": "extension",
+      "family": "operational",
+      "reason": "The HQ capability registry is HQ-owned; this KB status projection stays namespaced and never overwrites it."
+    },
+    {
+      "kbId": "KB-CHROME-PROFILE",
+      "title": "Chrome profiles and account bindings",
+      "target": "hq.ext.kb-chrome-profile",
+      "targetKind": "extension",
+      "family": "system",
+      "reason": "Profile paths and account bindings are sensitive (S2); HQ catalogues the type but never stores cookies or profile data."
+    },
+    {
+      "kbId": "KB-COMMAND",
+      "title": "VIVIM commands and settings",
+      "target": "hq.ext.kb-command",
+      "targetKind": "extension",
+      "family": "operational",
+      "reason": "Commands are generated from source; the type is catalogued as vocabulary and is never an authoritative command list."
+    },
+    {
+      "kbId": "KB-COMMITMENT",
+      "title": "Commitments and follow-ups",
+      "target": "hq.ext.kb-commitment",
+      "targetKind": "extension",
+      "family": "personal",
+      "reason": "HQ holds no commitment or reminder store; the type is vocabulary only and schedules nothing."
+    },
+    {
+      "kbId": "KB-CONFIG-SETTING",
+      "title": "Platform-wide configuration settings",
+      "target": "hq.ext.kb-config-setting",
+      "targetKind": "extension",
+      "family": "system",
+      "reason": "Config files remain the write authority and secrets stay out; a namespaced type avoids an HQ config store."
+    },
+    {
+      "kbId": "KB-CONTRACT",
+      "title": "Platform contracts",
+      "target": "hq.ext.kb-contract",
+      "targetKind": "extension",
+      "family": "system",
+      "reason": "Contract files stay authoritative; the KB catalog type is discoverable vocabulary and not an HQ contract id."
+    },
+    {
+      "kbId": "KB-CONVERSATION-SUMMARY",
+      "title": "Conversation summaries",
+      "target": "hq.ext.kb-conversation-summary",
+      "targetKind": "extension",
+      "family": "personal",
+      "reason": "HQ ingests whole sessions, not KB summaries; a separate extension prevents conflating evidence with a projection."
+    },
+    {
+      "kbId": "KB-DATA-MODEL",
+      "title": "Platform data models",
+      "target": "grammar.model",
+      "targetKind": "canonical",
+      "family": "system",
+      "reason": "HQ declares grammar.model; the KB data-model type binds to it rather than creating a second model namespace."
+    },
+    {
+      "kbId": "KB-DATA-SCHEMA",
+      "title": "Platform data schema registry",
+      "target": "hq.ext.kb-data-schema",
+      "targetKind": "extension",
+      "family": "system",
+      "reason": "The schema file stays authoritative; the KB catalog row is discoverable vocabulary, not an HQ schema registry entry."
+    },
+    {
+      "kbId": "KB-DATA-TYPE",
+      "title": "Platform data types",
+      "target": "hq.ext.kb-data-type",
+      "targetKind": "extension",
+      "family": "system",
+      "reason": "Type definitions stay in the model files; a namespaced catalog type avoids a competing type authority."
+    },
+    {
+      "kbId": "KB-DECISION",
+      "title": "Decisions and rationale",
+      "target": "hq.ext.kb-decision",
+      "targetKind": "extension",
+      "family": "personal",
+      "reason": "KB decisions arrive proposed; HQ decision register is owner-confirmed, so the types must not merge."
+    },
+    {
+      "kbId": "KB-DEVICE",
+      "title": "Device and performance intelligence",
+      "target": "hq.ext.kb-device",
+      "targetKind": "extension",
+      "family": "system",
+      "reason": "Device facts are locally observed and coarse; HQ has no device table and the extension claims none."
+    },
+    {
+      "kbId": "KB-DOMAIN-NOTE",
+      "title": "Durable reference notes",
+      "target": "hq.ext.kb-domain-note",
+      "targetKind": "extension",
+      "family": "personal",
+      "reason": "The KB entry points at an authoritative body HQ does not copy; a namespaced type avoids implying an HQ note table."
+    },
+    {
+      "kbId": "KB-ENVIRONMENT",
+      "title": "Devices, workspace and environment",
+      "target": "hq.ext.kb-environment",
+      "targetKind": "extension",
+      "family": "personal",
+      "reason": "Machine and workspace facts are VIVIM-owned; HQ catalogues the type without claiming an environment table."
+    },
+    {
+      "kbId": "KB-FAILURE-EVENT",
+      "title": "Failures and incidents",
+      "target": "hq.ext.kb-failure-event",
+      "targetKind": "extension",
+      "family": "system",
+      "reason": "Failure records are evidence with redaction rules; an HQ extension marks them as KB vocabulary, not HQ incidents."
+    },
+    {
+      "kbId": "KB-FAQ",
+      "title": "Recurring questions and answers",
+      "target": "hq.ext.kb-faq",
+      "targetKind": "extension",
+      "family": "operational",
+      "reason": "Recurring Q&A is a KB projection; HQ has no FAQ store and the extension claims none."
+    },
+    {
+      "kbId": "KB-FEATURE",
+      "title": "Features and acceptance state",
+      "target": "grammar.feature",
+      "targetKind": "canonical",
+      "family": "system",
+      "reason": "HQ declares grammar.feature; binding keeps one feature vocabulary instead of a parallel extension."
+    },
+    {
+      "kbId": "KB-FLOW",
+      "title": "Platform and user flows",
+      "target": "grammar.flow",
+      "targetKind": "canonical",
+      "family": "system",
+      "reason": "HQ declares grammar.flow for model flows; the KB flow type binds to that canonical id family."
+    },
+    {
+      "kbId": "KB-HEALTH-SNAPSHOT",
+      "title": "System health snapshots",
+      "target": "hq.ext.kb-health-snapshot",
+      "targetKind": "extension",
+      "family": "system",
+      "reason": "Health aggregates are runtime projections; HQ keeps the type namespaced and stores no snapshots."
+    },
+    {
+      "kbId": "KB-IDENTITY",
+      "title": "Owner identity and locale",
+      "target": "hq.ext.kb-identity",
+      "targetKind": "unbound",
+      "family": "personal",
+      "reason": "Owner identity is S2 personal data with no HQ table; materialising a type would imply HQ projects identity, so it stays unbound."
+    },
+    {
+      "kbId": "KB-INSIGHT",
+      "title": "Derived insights about the owner",
+      "target": "hq.ext.kb-insight",
+      "targetKind": "unbound",
+      "family": "personal",
+      "reason": "Derived personal inference; HQ runs no inference store, and a vocabulary row would imply conclusions HQ never drew."
+    },
+    {
+      "kbId": "KB-INSTALLED-APP",
+      "title": "Installed applications and last use",
+      "target": "hq.ext.kb-installed-app",
+      "targetKind": "extension",
+      "family": "system",
+      "reason": "Opt-in software inventory is VIVIM-owned; the type is catalogued as vocabulary only."
+    },
+    {
+      "kbId": "KB-MAINTENANCE-FINDING",
+      "title": "PC health and maintenance findings",
+      "target": "hq.ext.kb-maintenance-finding",
+      "targetKind": "extension",
+      "family": "system",
+      "reason": "Findings are advisory and never executed; HQ records the type without gaining an action path."
+    },
+    {
+      "kbId": "KB-PERFORMANCE-METRIC",
+      "title": "Performance metrics",
+      "target": "hq.ext.kb-performance-metric",
+      "targetKind": "extension",
+      "family": "system",
+      "reason": "HQ measures its own timings; KB metrics are a separate surface, so the type stays namespaced."
+    },
+    {
+      "kbId": "KB-PERSON",
+      "title": "People and relationships",
+      "target": "hq.ext.kb-person",
+      "targetKind": "unbound",
+      "family": "personal",
+      "reason": "Third-party personal data (S3), never phone-projected; HQ holds no people table and must not create one."
+    },
+    {
+      "kbId": "KB-POLICY",
+      "title": "Policy and consent rules",
+      "target": "hq.ext.kb-policy",
+      "targetKind": "extension",
+      "family": "operational",
+      "reason": "Policy text lives in documents and CANON; a namespaced type avoids a second policy authority."
+    },
+    {
+      "kbId": "KB-PREFERENCE",
+      "title": "Preferences and working style",
+      "target": "hq.ext.kb-preference",
+      "targetKind": "extension",
+      "family": "personal",
+      "reason": "No HQ counterpart; the preference type is catalogued as namespaced vocabulary, not as an HQ store."
+    },
+    {
+      "kbId": "KB-PROJECT",
+      "title": "Projects, goals and status",
+      "target": "hq.ext.kb-project",
+      "targetKind": "extension",
+      "family": "personal",
+      "reason": "HQ registered spaces are not KB project records; the extension keeps the two concepts apart."
+    },
+    {
+      "kbId": "KB-PROVIDER-ACCOUNT",
+      "title": "Provider accounts",
+      "target": "hq.ext.kb-provider-account",
+      "targetKind": "unbound",
+      "family": "system",
+      "reason": "Email-keyed provider account identity is credentials-adjacent; HQ never stores account identity or sign-in state."
+    },
+    {
+      "kbId": "KB-PROVIDER-CAPABILITY",
+      "title": "Models, features and limits per account",
+      "target": "hq.ext.kb-provider-capability",
+      "targetKind": "extension",
+      "family": "system",
+      "reason": "Model availability is per account and plan-gated; HQ catalogues the type without asserting entitlement."
+    },
+    {
+      "kbId": "KB-PROVIDER-QUIRK",
+      "title": "Provider and model quirks",
+      "target": "hq.ext.kb-provider-quirk",
+      "targetKind": "extension",
+      "family": "operational",
+      "reason": "Observed provider behaviour is evidence, not an HQ contract; the type is vocabulary only."
+    },
+    {
+      "kbId": "KB-PROVIDER-SUBSCRIPTION",
+      "title": "Provider plans, costs and expiry",
+      "target": "hq.ext.kb-provider-subscription",
+      "targetKind": "extension",
+      "family": "system",
+      "reason": "Plan and billing facts are provider-observed display metadata; HQ holds no billing state."
+    },
+    {
+      "kbId": "KB-PROVIDER-USAGE",
+      "title": "Provider usage and quota state",
+      "target": "hq.ext.kb-provider-usage",
+      "targetKind": "extension",
+      "family": "system",
+      "reason": "Usage is mostly unknown and provider-scoped; the extension records the type, never a quota fact."
+    },
+    {
+      "kbId": "KB-RELEASE-NOTE",
+      "title": "Release notes and migrations",
+      "target": "hq.ext.kb-release-note",
+      "targetKind": "extension",
+      "family": "operational",
+      "reason": "HQ reads git history, not KB release notes; the extension keeps append-only KB notes distinct."
+    },
+    {
+      "kbId": "KB-RUNBOOK",
+      "title": "Operational runbooks",
+      "target": "hq.ext.kb-runbook",
+      "targetKind": "extension",
+      "family": "operational",
+      "reason": "HQ holds no runbook executor; the type stays namespaced so it cannot be mistaken for an operational capability."
+    },
+    {
+      "kbId": "KB-SOURCE-RECORD",
+      "title": "Source catalog records",
+      "target": "grammar.source",
+      "targetKind": "canonical",
+      "family": "system",
+      "reason": "HQ declares grammar.source; the KB source record names that canonical family."
+    },
+    {
+      "kbId": "KB-TELEMETRY-STREAM",
+      "title": "Telemetry stream catalog",
+      "target": "hq.ext.kb-telemetry-stream",
+      "targetKind": "extension",
+      "family": "system",
+      "reason": "The stream catalog describes VIVIM telemetry; HQ catalogs the type and duplicates no raw stream."
+    },
+    {
+      "kbId": "KB-USE-CASE",
+      "title": "Use cases and user jobs",
+      "target": "grammar.usecase",
+      "targetKind": "canonical",
+      "family": "system",
+      "reason": "HQ declares grammar.usecase; the KB use-case type is the same id family."
+    },
+    {
+      "kbId": "KB-VIVIM-LOCK",
+      "title": "VIVIM Lock and mutability boundaries",
+      "target": "hq.ext.kb-vivim-lock",
+      "targetKind": "extension",
+      "family": "system",
+      "reason": "Lock classes are product integrity boundaries; HQ catalogues the type without claiming enforcement."
+    },
+    {
+      "kbId": "KB-VOCABULARY",
+      "title": "Vocabulary, names and aliases",
+      "target": "hq.ext.kb-vocabulary",
+      "targetKind": "extension",
+      "family": "personal",
+      "reason": "Lexical vocabulary (spellings, aliases, pronunciation) is not owner-confirmed CANON, so it stays a namespaced extension."
+    },
+    {
+      "kbId": "KB-WORKSPACE",
+      "title": "VIVIM workspaces and data roots",
+      "target": "hq.ext.kb-workspace",
+      "targetKind": "extension",
+      "family": "system",
+      "reason": "A VIVIM workspace is keyed by root digest; an HQ project is a registered space, so the types stay separate."
+    }
+  ]
+}

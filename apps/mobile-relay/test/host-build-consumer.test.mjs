@@ -1,0 +1,61 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { createSurface } from '../generative-ui/catalog.mjs';
+import { mountBuildSurface } from '../generative-ui/phone-surface.mjs';
+
+function mockDom() {
+  const handlers=new Map();
+  globalThis.window={ addEventListener(name, fn) { handlers.set(name, fn); } };
+  const doc={ createElement(tag) {
+    return { tag, children:[], style:{}, attrs:{}, listeners:{},
+      setAttribute(name,value){this.attrs[name]=value;},
+      addEventListener(name,fn){this.listeners[name]=fn;},
+      appendChild(child){this.children.push(child);},
+      replaceChildren(...children){this.children=children;}
+    };
+  }};
+  const mount={ownerDocument:doc, children:[],replaceChildren(...children){this.children=children;}};
+  return {mount,handlers};
+}
+const host = (revision, status='applied') => {
+  const surface={...createSurface(), revision};
+  return {...surface, surface, status, changeId:'committed-change', parentRevision:revision-1};
+};
+
+test('actual phone Build consumer unwraps only applied Host head, refuses stale and clears disconnected paint', () => {
+  const {mount,handlers}=mockDom();
+  const build=mountBuildSurface(mount);
+  const first=build.setSurface(host(5));
+  assert.equal(first.state,'ready');
+  assert.equal(build.surface().revision,5);
+  assert.equal(mount.children.length,1,'actual renderer mounted the clean surface');
+
+  const same=build.setSurface(host(5));
+  assert.equal(same.changed,false);
+  assert.equal(build.revisionState().highRevision,5);
+
+  const regression=build.setSurface(host(4));
+  assert.equal(regression.reason,'ROLLBACK_PROOF_REQUIRED');
+  assert.equal(build.surface(),null);
+  assert.equal(mount.children.length,0,'old private nodes must be removed');
+
+  handlers.get('vivim:bootstrap-status')({detail:{snapshot:{bootstrap:{uiRevision:host(6)}}}});
+  assert.equal(build.surface().revision,6,'status event uses the mounted consumer');
+  assert.equal(mount.children.length,1);
+
+  handlers.get('vivim:bootstrap-status')({detail:{snapshot:{bootstrap:{uiRevision:host(7,'previewed')}}}});
+  assert.equal(build.surface(),null,'unapproved revision must not remain visible');
+  assert.equal(mount.children.length,0);
+
+  build.clear();
+  assert.equal(build.surface(),null);
+  assert.equal(build.revisionState().state,'blocked');
+});
+
+test('polling path checks full Host head and clears Build UI on lost status authority', () => {
+  const source=readFileSync(new URL('../app.js',import.meta.url),'utf8');
+  assert.match(source,/const observed = build\.setSurface\(rev\)/);
+  assert.match(source,/if \(build\) build\.clear\(\)/);
+  assert.doesNotMatch(source,/if \(rev && key !== buildKey\)/);
+});
