@@ -20,11 +20,11 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
     steps:
       - uses: actions/checkout@v4
         with:
-          persist-credentials: true
+          persist-credentials: false
       - uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: '1.99.0'
@@ -50,16 +50,15 @@ jobs:
           bun install --frozen-lockfile --ignore-scripts
           test -s Cargo.lock
           test -s bun.lock
-      - name: Commit actual generated locks only
-        run: |
-          set -eu
-          git add -- Cargo.lock bun.lock
-          if git diff --cached --quiet; then
-            echo "Lockfiles already exact."
-            exit 0
-          fi
-          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'build(w01g): actual Cargo and Bun lockfiles from GitHub runner'
-          git push origin HEAD:main
+      - name: Preserve generated lockfiles for owner review
+        uses: actions/upload-artifact@v4
+        with:
+          name: w01g-generated-lockfiles
+          path: |
+            Cargo.lock
+            bun.lock
+          retention-days: 7
+          if-no-files-found: error
 
   verify:
     runs-on: windows-latest
