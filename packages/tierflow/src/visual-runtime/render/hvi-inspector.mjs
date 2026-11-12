@@ -4,7 +4,7 @@
  * No network, Host authorization simulation, provider control, or browser effects.
  * Source reports are HIDDEN until H/G2 live authorization is independently verified.
  */
-import { projectHviInspector, HVI_INSPECTOR_SCHEMA } from '../knowledge/hvi-inspector.mjs';
+import { projectHviInspector, HVI_INSPECTOR_SCHEMA, safeHviText } from '../knowledge/hvi-inspector.mjs';
 import { validateUiDocument } from '../document/validate.ts';
 import { renderUiDocument } from './dom.ts';
 
@@ -15,13 +15,7 @@ export const HVI_INSPECTOR_FEATURE = Object.freeze({
   hostApproval:'per-invocation-current-grant', activePublisher:'existing-UiCore',
 });
 const ID = /^[A-Za-z][A-Za-z0-9._:-]{0,95}$/;
-const BLOCKED = /(?:^|[\\/])(?:\\.env[^\\/]*|\\.git|\\.ssh|cookies?|secrets?|credentials?|tokens?|private|personal|profiles?|sessions?|login.data)(?:[\\/]|$)|(?:\\.pem|\\.p12|\\.pfx|\\.key)$|(?:bearer|password|api[_-]?key|access[_-]?token|refresh[_-]?token)[=:]/i;
-function label(value, max=220) {
-  return typeof value==='string' && value.length>0 && value.length<=max &&
-    !/[\\u0000-\\u001f\\u007f<>]/.test(value) &&
-    !/(?:javascript:|data:|https?:\\/\\/|www\\.|=>|document\\.|window\\.)/i.test(value) &&
-    !BLOCKED.test(value) ? value : '[REDACTED]';
-}
+const label = safeHviText;
 function state(mode) {
   return {
     empty:'No comparison has been run. Select 2 or more immutable revision pins.',

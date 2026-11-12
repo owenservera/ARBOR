@@ -6,12 +6,20 @@ export const HVI_INSPECTOR_SCHEMA = 'tierflow.hvi.inspector/1';
 const REPORT_SCHEMA = 'arbor.hvi.adapter.comparison-report/1';
 const SHA40 = /^[a-f0-9]{40}$/, SHA64 = /^[a-f0-9]{64}$/;
 const fail = code => { const e = new Error('HVI_INSPECTOR_' + code); e.code = code; throw e; };
-// Source names, paths, and evidence references are untrusted, even inside a report.
-const SECRET = /(?:^|[\\/])(?:\\.env[^\\/]*|\\.git|\\.ssh|cookies?|secrets?|credentials?|tokens?|profiles?|private|personal|sessions?|login.data)(?:[\\/]|$)|(?:\\.pem|\\.p12|\\.pfx|\\.key)$|(?:bearer|password|api[_-]?key|access[_-]?token|refresh[_-]?token)[=:]/i;
-const safe = value => typeof value === 'string' && value.length > 0 &&
-  value.length <= 240 && !/[\\u0000-\\u001f\\u007f<>]/.test(value) &&
-  !/(?:javascript:|data:|https?:\\/\\/|www\\.|=>|document\\.|window\\.)/i.test(value) &&
-  !SECRET.test(value) ? value : '[REDACTED]';
+// Strict metadata-only redaction shared with the canonical view adapter.
+const SECRET_SEGMENT = /^(?:[.]env.*|[.]git|[.]ssh|cookies?|secrets?|credentials?|tokens?|profiles?|private|personal|sessions?|login.data)$/i;
+const SECRET_FILE = /[.](?:pem|p12|pfx|key)$/i;
+const SECRET_CLAIM = /(?:bearer|password|api[_-]?key|access[_-]?token|refresh[_-]?token)[=:]/i;
+export function safeHviText(value, max=240) {
+  if(typeof value!=='string'||!value.length||value.length>max) return '[REDACTED]';
+  const normalized=value.replaceAll(String.fromCharCode(92),'/');
+  if(normalized.split('/').some(s=>SECRET_SEGMENT.test(s)||SECRET_FILE.test(s)) ||
+    SECRET_CLAIM.test(value) ||
+    [...value].some(c=>c.charCodeAt(0)<32||c.charCodeAt(0)===127||c==='<'||c==='>') ||
+    /(?:javascript:|data:|https?:|www[.]|=>|document[.]|window[.])/i.test(value)) return '[REDACTED]';
+  return value;
+}
+const safe = safeHviText;
 const blank = { schema:HVI_INSPECTOR_SCHEMA, mode:'empty', caption:'No versions compared',
   pins:[], rows:[], coverage:[], targetPinId:null, actions:[],
   sourceOnly:true, runtimeVerified:false, featureEnabled:false, synthetic:false };
