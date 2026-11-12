@@ -1,6 +1,6 @@
-# FA-PROMPT-FACTORY-001 — Dedicated Lane Prompt Scaffolding (Future Rounds)
+# FA-PROMPT-FACTORY-001 — Dedicated Lane Prompt Scaffolding and First PG Cohort
 
-**Status:** DESIGN/PREPARATION ONLY. This file is **not itself a runnable lane prompt**, does not authorize a merge, and is intentionally not replacing the original `.integration/proposal5/prompts/W0..W6` or master G.
+**Status:** SOURCE-GROUNDED DESIGN/PREPARATION ONLY. **The four actual runnable pre-G prompts plus PGZ referee have now been authored** in [prompts/README.md](./prompts/README.md). This factory document is **not itself a runnable lane prompt**, does not authorize a merge, and is intentionally not replacing the original `.integration/proposal5/prompts/W0..W6` or master G.
 
 ## 1. Why separate orchestration from worker prompts
 
@@ -80,9 +80,9 @@ STOP:
 no automatic merge, release publication, owner World migration or main write.
 ```
 
-## 5. Planned prompt cohorts (not generated or executable this round)
+## 5. First pre-G prompt cohort generated; post-G cohorts remain conditional
 
-**Cohort P (pre-G, no product writes):**
+**Cohort P (pre-G, no product writes):** executable instructions are committed under [prompts/](./prompts/), but **worker missions are NOT started**.
 - **P0-SOURCE-TRUTH:** A–F frozen audit, source duplication and runtime module census; outputs owner source-read and collisions.
 - **P1-NATIVE-ABI:** pure Rust source compare, generational engine swap/typed manifest proposal, negative compatibility tests.
 - **P2-SEMANTIC-FABRIC:** reconcile HQ annotation/wiki/S-semantic + V/N0/W protos and exact trace contracts, candidate source map only.
@@ -137,3 +137,11 @@ If a worker cannot establish full source/G baseline, it must still produce an ev
 - Does any hard beta issue require an APK? Per owner policy: no; remove the packaging dependency while preserving the existing PWA.
 
 **Future prompt authors must not turn an architecture unknown into a claimed implementation.**
+
+
+## 8. Cohort 1 authoring result (2026-11-12)
+
+- [PG00](./prompts/FA-PG00-SOURCE-TRUTH.md), [PG01](./prompts/FA-PG01-NATIVE-ABI.md), [PG02](./prompts/FA-PG02-SEMANTIC-FABRIC.md), [PG03](./prompts/FA-PG03-PWA-ROCK-SECURITY.md) and [PGZ independent referee](./prompts/FA-PGZ-CONVERGENCE-REFEREE.md) are authored with exclusive proof prefixes and concrete source/read/negative-test requirements.
+- [Machine lane registry](./prompts/LANE-REGISTRY.v1.json) tracks four parallel + one later referee and covers **all 32** pre-G tasks in waves PG-00–03.
+- [Shared worker execution contract](./prompts/00-SHARED-PRE-G-CONTRACT.md) preserves frozen A–F, sole original G, no product writes, exact Git SHA evidence and test truth.
+- Post-G owner implementation prompts remain **NOT CREATED** because original W1-G has no accepted integrated HEAD. Do not infer that generating worker prompts started/ran workers.
