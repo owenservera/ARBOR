@@ -1,0 +1,827 @@
+{
+  "schema": "arbor.proposal5.web-tierflow-delta/1",
+  "asOfDate": "2026-11-12",
+  "source": "GitHub REST tree/file/code search and checked-in gate reports",
+  "canonicalRepo": "owenservera/ARBOR",
+  "mainSha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+  "donorPins": {
+    "owenservera/vivim-web-harness": "cae97afe848d79957c9d6c698a90996a758bfd56",
+    "owenservera/tierflow": "50822f11ee63c3d80f631f8fea7dcb9b19bffc38",
+    "owenservera/vivim-labs": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be"
+  },
+  "policy": {
+    "destination": ".integration/proposal5/web-tierflow-delta-20261112/",
+    "documentationOnly": true,
+    "operationalStatus": "SOURCE_CONSOLIDATED_RELEASE_BLOCKED",
+    "platform": "WINDOWS_PLUS_PWA_FIRST",
+    "apk": "DEFERRED",
+    "hostEffectAuthority": "apps/vivim-host",
+    "tierflowRole": "INERT_VISUAL_PACKAGE",
+    "providerApis": false,
+    "secondPublisher": false,
+    "neverTreatUnrunAsPassed": true
+  },
+  "releaseTruth": {
+    "sourceMerged": true,
+    "workspaceDeclared": true,
+    "rootCargoLockPresent": false,
+    "rootBunLockPresent": false,
+    "windowsMsiVerified": false,
+    "physicalPwaVerified": false,
+    "realProviderVerified": false,
+    "donorIsolationVerified": false,
+    "securityAccepted": false,
+    "betaGo": false,
+    "recordedCiRunId": 43233248631,
+    "recordedCiConclusion": "startup_failure",
+    "recordedCiJobs": 0,
+    "ciCurrentRunStatus": "NOT_RECHECKED"
+  },
+  "vocabulary": {
+    "SOURCE_PRESENT": "Source in main only",
+    "SOURCE_PRESENT_INERT": "Pure/fixture interface in main, no product mount",
+    "SOURCE_PATCHED_NOT_DEVICE_ACCEPTED": "Source patch present; device proof missing",
+    "CONTRACT_ONLY": "Contract in source, integration unaccepted",
+    "PREPARED_NOT_PROMOTED": "Isolated branch/proposal not in main",
+    "BLOCKED_SECURITY": "Explicit P0 security blocker",
+    "BLOCKED_BUILD": "Missing reproducible release proof"
+  },
+  "items": [
+    {
+      "id": "UI-001",
+      "requirement": "One canonical Windows Host UI",
+      "observedArborPaths": [
+        "apps/vivim-host/public/{index.html,host.js,control-panel.js,host.css}"
+      ],
+      "observedStatus": "SOURCE_PRESENT",
+      "evidenceClass": "SOURCE_ONLY",
+      "priority": "P0",
+      "ownerLanes": [
+        "B",
+        "A",
+        "G"
+      ],
+      "betaJourneyIds": [
+        "B01",
+        "B06",
+        "B09"
+      ],
+      "nextProof": "Authenticated owner desktop control and navigation on installed Windows; one publisher",
+      "deviceAccepted": false,
+      "runtimeAccepted": false,
+      "releaseReady": false
+    },
+    {
+      "id": "UI-002",
+      "requirement": "Six-tab phone journey Today/Talk/Build/World/Me/Control",
+      "observedArborPaths": [
+        "apps/mobile-relay/index.html",
+        "apps/mobile-relay/app.js",
+        "apps/mobile-relay/ux/{model,render}.mjs"
+      ],
+      "observedStatus": "SOURCE_PRESENT",
+      "evidenceClass": "SOURCE_ONLY",
+      "priority": "P0",
+      "ownerLanes": [
+        "E",
+        "B"
+      ],
+      "betaJourneyIds": [
+        "B04",
+        "B09"
+      ],
+      "nextProof": "Physical phone visual acceptance and shared Host projection",
+      "deviceAccepted": false,
+      "runtimeAccepted": false,
+      "releaseReady": false
+    },
+    {
+      "id": "UI-003",
+      "requirement": "Universal phone Talk/controller",
+      "observedArborPaths": [
+        "apps/mobile-relay/control-chat.mjs",
+        "apps/mobile-relay/control-phone.mjs",
+        "apps/vivim-host/control/dispatcher.mjs"
+      ],
+      "observedStatus": "SOURCE_PRESENT",
+      "evidenceClass": "SOURCE_ONLY",
+      "priority": "P0",
+      "ownerLanes": [
+        "E",
+        "B",
+        "F"
+      ],
+      "betaJourneyIds": [
+        "B04",
+        "B06",
+        "B09"
+      ],
+      "nextProof": "Signed request review, grants, receipts, stale/uncertain rejection",
+      "deviceAccepted": false,
+      "runtimeAccepted": false,
+      "releaseReady": false
+    },
+    {
+      "id": "UI-004",
+      "requirement": "Build app visual surface",
+      "observedArborPaths": [
+        "apps/mobile-relay/generative-ui/{phone-surface,renderer,compiler,design-composer}.mjs",
+        "apps/mobile-relay/build-canvas.mjs"
+      ],
+      "observedStatus": "SOURCE_PRESENT",
+      "evidenceClass": "SOURCE_ONLY",
+      "priority": "P1",
+      "ownerLanes": [
+        "E",
+        "B",
+        "F"
+      ],
+      "betaJourneyIds": [
+        "B09"
+      ],
+      "nextProof": "Prove Host-committed revision and action mapping, no parallel publisher",
+      "deviceAccepted": false,
+      "runtimeAccepted": false,
+      "releaseReady": false
+    },
+    {
+      "id": "UI-005",
+      "requirement": "Host World/UI revision publisher",
+      "observedArborPaths": [
+        "apps/vivim-host/direct-phone.mjs",
+        "apps/vivim-host/public/host.js",
+        "apps/mobile-relay/generative-ui/host-revision-guard.mjs"
+      ],
+      "observedStatus": "SOURCE_PRESENT_RUNTIME_UNVERIFIED",
+      "evidenceClass": "SOURCE_ONLY",
+      "priority": "P0",
+      "ownerLanes": [
+        "B",
+        "E",
+        "F"
+      ],
+      "betaJourneyIds": [
+        "B08",
+        "B09"
+      ],
+      "nextProof": "Same World IDs, revisions, principal across desktop and phone; one writer",
+      "deviceAccepted": false,
+      "runtimeAccepted": false,
+      "releaseReady": false
+    },
+    {
+      "id": "UI-006",
+      "requirement": "TierFlow typed visual-document schema",
+      "observedArborPaths": [
+        "packages/tierflow/src/visual-runtime/document/{schema,validate,import-legacy}.ts"
+      ],
+      "observedStatus": "SOURCE_PRESENT_INERT",
+      "evidenceClass": "SOURCE_AND_FIXTURE",
+      "priority": "P1",
+      "ownerLanes": [
+        "E",
+        "F"
+      ],
+      "betaJourneyIds": [
+        "B09"
+      ],
+      "nextProof": "Roundtrip accepted supported subset, fail closed unsupported and stale",
+      "deviceAccepted": false,
+      "runtimeAccepted": false,
+      "releaseReady": false
+    },
+    {
+      "id": "UI-007",
+      "requirement": "TierFlow component renderer and accessibility",
+      "observedArborPaths": [
+        "packages/tierflow/src/visual-runtime/{components,render}/"
+      ],
+      "observedStatus": "SOURCE_PRESENT_INERT",
+      "evidenceClass": "SOURCE_AND_FIXTURE",
+      "priority": "P1",
+      "ownerLanes": [
+        "E",
+        "F"
+      ],
+      "betaJourneyIds": [
+        "B09"
+      ],
+      "nextProof": "Product browser DOM mount and keyboard/TalkBack/accessibility tests",
+      "deviceAccepted": false,
+      "runtimeAccepted": false,
+      "releaseReady": false
+    },
+    {
+      "id": "UI-008",
+      "requirement": "TierFlow visual command IR and typed compiler",
+      "observedArborPaths": [
+        "packages/tierflow/src/visual-runtime/command/"
+      ],
+      "observedStatus": "SOURCE_PRESENT_INERT",
+      "evidenceClass": "SOURCE_AND_FIXTURE",
+      "priority": "P1",
+      "ownerLanes": [
+        "E",
+        "F",
+        "B"
+      ],
+      "betaJourneyIds": [
+        "B06",
+        "B09"
+      ],
+      "nextProof": "Inert candidate mapped to current Host catalog under approval; negative tests",
+      "deviceAccepted": false,
+      "runtimeAccepted": false,
+      "releaseReady": false
+    },
+    {
+      "id": "UI-009",
+      "requirement": "TierFlow World-to-canonical safe subset",
+      "observedArborPaths": [
+        "packages/tierflow/src/visual-runtime/final-wave/integration/world-visual-bridge.ts"
+      ],
+      "observedStatus": "SOURCE_PRESENT_INERT",
+      "evidenceClass": "SOURCE_AND_FIXTURE",
+      "priority": "P0",
+      "ownerLanes": [
+        "E",
+        "B",
+        "F"
+      ],
+      "betaJourneyIds": [
+        "B08",
+        "B09"
+      ],
+      "nextProof": "Authenticated Host read port and source/revision/scope conservation",
+      "deviceAccepted": false,
+      "runtimeAccepted": false,
+      "releaseReady": false
+    },
+    {
+      "id": "UI-010",
+      "requirement": "TierFlow desktop and phone adapters",
+      "observedArborPaths": [
+        "packages/tierflow/src/visual-runtime/device/"
+      ],
+      "observedStatus": "SOURCE_PRESENT_INERT",
+      "evidenceClass": "SOURCE_AND_FIXTURE",
+      "priority": "P1",
+      "ownerLanes": [
+        "E",
+        "B",
+        "F"
+      ],
+      "betaJourneyIds": [
+        "B04",
+        "B09"
+      ],
+      "nextProof": "Real Host/phone mounts and parity on same source revision",
+      "deviceAccepted": false,
+      "runtimeAccepted": false,
+      "releaseReady": false
+    },
+    {
+      "id": "UI-011",
+      "requirement": "TierFlow Integration-4 and final-wave glue",
+      "observedArborPaths": [
+        "packages/tierflow/src/visual-runtime/{integration-4,final-wave}/"
+      ],
+      "observedStatus": "SOURCE_PRESENT_INERT",
+      "evidenceClass": "SOURCE_AND_FIXTURE",
+      "priority": "P1",
+      "ownerLanes": [
+        "E",
+        "G",
+        "F"
+      ],
+      "betaJourneyIds": [
+        "B09"
+      ],
+      "nextProof": "Resolve prior guard/root mismatch and execute combined integration fixtures",
+      "deviceAccepted": false,
+      "runtimeAccepted": false,
+      "releaseReady": false
+    },
+    {
+      "id": "UI-012",
+      "requirement": "Single UI publisher, rollback and cutover",
+      "observedArborPaths": [
+        "packages/tierflow/src/visual-runtime/final-wave/lane-g/cutover-dry-run.ts"
+      ],
+      "observedStatus": "TEST_FIXTURE_ONLY",
+      "evidenceClass": "SOURCE_AND_PROPOSAL",
+      "priority": "P0",
+      "ownerLanes": [
+        "B",
+        "E",
+        "G",
+        "F"
+      ],
+      "betaJourneyIds": [
+        "B09",
+        "B10"
+      ],
+      "nextProof": "Actual staged shadow, fence, replay, rollback, no dual writer",
+      "deviceAccepted": false,
+      "runtimeAccepted": false,
+      "releaseReady": false
+    },
+    {
+      "id": "UI-013",
+      "requirement": "TierFlow standalone server and browser assets",
+      "observedArborPaths": [
+        "packages/tierflow/src/server.ts",
+        "packages/tierflow/web/"
+      ],
+      "observedStatus": "SOURCE_PRESERVED_NOT_PRODUCT_MOUNTED",
+      "evidenceClass": "SOURCE_AND_PROPOSAL",
+      "priority": "P2",
+      "ownerLanes": [
+        "E",
+        "G"
+      ],
+      "betaJourneyIds": [
+        "B09"
+      ],
+      "nextProof": "Keep dormant or prove explicit internal read-only mounting; never second Host",
+      "deviceAccepted": false,
+      "runtimeAccepted": false,
+      "releaseReady": false
+    },
+    {
+      "id": "UI-014",
+      "requirement": "TierFlow donor-coupled HQ sync-bus",
+      "observedArborPaths": [
+        "packages/tierflow/src/adapters/hq/sync-bus.ts (absent by design)"
+      ],
+      "observedStatus": "INTENTIONALLY_EXCLUDED",
+      "evidenceClass": "WORKER_EXCLUSION",
+      "priority": "P1",
+      "ownerLanes": [
+        "D",
+        "E",
+        "G"
+      ],
+      "betaJourneyIds": [
+        "B07",
+        "B09"
+      ],
+      "nextProof": "Internal typed read port if demand proven, not donor process spawn",
+      "deviceAccepted": false,
+      "runtimeAccepted": false,
+      "releaseReady": false
+    },
+    {
+      "id": "UI-015",
+      "requirement": "TierFlow legacy executable programs, Rust sidecar",
+      "observedArborPaths": [
+        "packages/tierflow/runtime/programs/ (absent)",
+        " packages/tierflow/core/ (absent)"
+      ],
+      "observedStatus": "INTENTIONALLY_EXCLUDED",
+      "evidenceClass": "WORKER_EXCLUSION",
+      "priority": "P2",
+      "ownerLanes": [
+        "A",
+        "E",
+        "G"
+      ],
+      "betaJourneyIds": [
+        "B06"
+      ],
+      "nextProof": "Canonical Host and native owners; no alternate executor",
+      "deviceAccepted": false,
+      "runtimeAccepted": false,
+      "releaseReady": false
+    },
+    {
+      "id": "UI-016",
+      "requirement": "PWA browser-native device signer",
+      "observedArborPaths": [
+        "apps/mobile-relay/browser-device-key.mjs",
+        "apps/mobile-relay/device-enrollment.mjs"
+      ],
+      "observedStatus": "SOURCE_PATCHED_NOT_DEVICE_ACCEPTED",
+      "evidenceClass": "SOURCE_AND_PROPOSAL",
+      "priority": "P0",
+      "ownerLanes": [
+        "B",
+        "E",
+        "F"
+      ],
+      "betaJourneyIds": [
+        "B04"
+      ],
+      "nextProof": "HTTPS secure context, enrollment, revocation and replay on real browser",
+      "deviceAccepted": false,
+      "runtimeAccepted": false,
+      "releaseReady": false
+    },
+    {
+      "id": "UI-017",
+      "requirement": "PWA static signer delivery through Host",
+      "observedArborPaths": [
+        "apps/vivim-host/direct-phone.mjs:browser-device-key.mjs allowlist"
+      ],
+      "observedStatus": "SOURCE_PATCHED_NOT_DEVICE_ACCEPTED",
+      "evidenceClass": "SOURCE_AND_PROPOSAL",
+      "priority": "P0",
+      "ownerLanes": [
+        "B",
+        "E",
+        "G",
+        "F"
+      ],
+      "betaJourneyIds": [
+        "B04"
+      ],
+      "nextProof": "Prove static route and CSP under exact packaged Host",
+      "deviceAccepted": false,
+      "runtimeAccepted": false,
+      "releaseReady": false
+    },
+    {
+      "id": "UI-018",
+      "requirement": "Per-privileged-request PWA proof/replay prevention",
+      "observedArborPaths": [
+        "apps/mobile-relay/transport.mjs",
+        "apps/vivim-host/direct-phone.mjs"
+      ],
+      "observedStatus": "BLOCKED_SECURITY",
+      "evidenceClass": "SOURCE_AND_GATE_REPORT",
+      "priority": "P0",
+      "ownerLanes": [
+        "B",
+        "E",
+        "F"
+      ],
+      "betaJourneyIds": [
+        "B04",
+        "B06"
+      ],
+      "nextProof": "Bind actor/grant/session/method/path/body to nonce and durable replay refusal",
+      "deviceAccepted": false,
+      "runtimeAccepted": false,
+      "releaseReady": false
+    },
+    {
+      "id": "UI-019",
+      "requirement": "Direct Host PWA routing / no Cloud dependency",
+      "observedArborPaths": [
+        "apps/mobile-relay/transport.mjs",
+        "apps/vivim-host/direct-phone.mjs"
+      ],
+      "observedStatus": "SOURCE_PRESENT_RELEASE_UNVERIFIED",
+      "evidenceClass": "SOURCE_ONLY",
+      "priority": "P0",
+      "ownerLanes": [
+        "G",
+        "B",
+        "E",
+        "F"
+      ],
+      "betaJourneyIds": [
+        "B04",
+        "B12"
+      ],
+      "nextProof": "Installed product uses only Host Direct; cloud fallback not advertised",
+      "deviceAccepted": false,
+      "runtimeAccepted": false,
+      "releaseReady": false
+    },
+    {
+      "id": "UI-020",
+      "requirement": "Offline PWA shell and cache safety",
+      "observedArborPaths": [
+        "apps/mobile-relay/sw.js"
+      ],
+      "observedStatus": "SOURCE_PRESENT_TESTS_UNRUN",
+      "evidenceClass": "SOURCE_ONLY",
+      "priority": "P1",
+      "ownerLanes": [
+        "E",
+        "F"
+      ],
+      "betaJourneyIds": [
+        "B04",
+        "B10"
+      ],
+      "nextProof": "Offline asset allowlist; no auth/API caching; stale permissions declined",
+      "deviceAccepted": false,
+      "runtimeAccepted": false,
+      "releaseReady": false
+    },
+    {
+      "id": "UI-021",
+      "requirement": "Studio provider UI and same-thread conversation",
+      "observedArborPaths": [
+        "studio/src/studio/ui/{index,chat,platform}.html",
+        "studio/src/studio/chat-channel.mjs"
+      ],
+      "observedStatus": "SOURCE_PARTIAL_SELECTIVE",
+      "evidenceClass": "SOURCE_AND_PROPOSAL",
+      "priority": "P0",
+      "ownerLanes": [
+        "C",
+        "B",
+        "F"
+      ],
+      "betaJourneyIds": [
+        "B02",
+        "B03"
+      ],
+      "nextProof": "Signed-in Chrome real-provider send-once and exact-thread receipts",
+      "deviceAccepted": false,
+      "runtimeAccepted": false,
+      "releaseReady": false
+    },
+    {
+      "id": "UI-022",
+      "requirement": "Tauri native bootstrap security and Host launch",
+      "observedArborPaths": [
+        "src-tauri/src/main.rs",
+        "src-tauri/tauri.conf.json"
+      ],
+      "observedStatus": "BLOCKED_SECURITY_AND_BUILD",
+      "evidenceClass": "SOURCE_AND_GATE_REPORT",
+      "priority": "P0",
+      "ownerLanes": [
+        "A",
+        "B",
+        "F",
+        "G"
+      ],
+      "betaJourneyIds": [
+        "B01",
+        "B06"
+      ],
+      "nextProof": "Authenticated child attestation, narrowed origins, patched Tauri, packaged MSI",
+      "deviceAccepted": false,
+      "runtimeAccepted": false,
+      "releaseReady": false
+    },
+    {
+      "id": "UI-023",
+      "requirement": "Unified Host/TierFlow action and status ID crosswalk",
+      "observedArborPaths": [
+        "apps/vivim-host/control/action-catalog.v1.json",
+        "packages/tierflow/src/visual-runtime/host/wave4-h-host-status-contract.ts"
+      ],
+      "observedStatus": "CONTRACT_ONLY",
+      "evidenceClass": "SOURCE_AND_PROPOSAL",
+      "priority": "P0",
+      "ownerLanes": [
+        "B",
+        "E",
+        "F"
+      ],
+      "betaJourneyIds": [
+        "B06",
+        "B09"
+      ],
+      "nextProof": "One Host catalog, mapped statuses/source revs, no synthetic effects",
+      "deviceAccepted": false,
+      "runtimeAccepted": false,
+      "releaseReady": false
+    },
+    {
+      "id": "UI-024",
+      "requirement": "Common desktop/mobile design tokens",
+      "observedArborPaths": [
+        "apps/vivim-host/public/vivim-tokens.css",
+        "packages/tierflow/scripts/generate-host-tokens.mjs",
+        "apps/mobile-relay/visual-theme.mjs"
+      ],
+      "observedStatus": "SOURCE_PRESENT_NOT_VISUALLY_ACCEPTED",
+      "evidenceClass": "SOURCE_ONLY",
+      "priority": "P1",
+      "ownerLanes": [
+        "E",
+        "B",
+        "F"
+      ],
+      "betaJourneyIds": [
+        "B09"
+      ],
+      "nextProof": "Rendered visual diff light/dark, contrast, phone viewport, token regeneration",
+      "deviceAccepted": false,
+      "runtimeAccepted": false,
+      "releaseReady": false
+    },
+    {
+      "id": "UI-025",
+      "requirement": "R005 semantic lens and R006/R007 predictive/VIEW ALL UI",
+      "observedArborPaths": [
+        "Not promoted to main",
+        " Labs research and isolated PREG branches"
+      ],
+      "observedStatus": "PREPARED_NOT_PROMOTED",
+      "evidenceClass": "BRANCH_PLAN_NOT_MAIN",
+      "priority": "P2",
+      "ownerLanes": [
+        "E",
+        "A",
+        "F",
+        "G"
+      ],
+      "betaJourneyIds": [
+        "B05",
+        "B09"
+      ],
+      "nextProof": "Approved pure IR/semantic fixtures only after owner proof; no effect auto-execute",
+      "deviceAccepted": false,
+      "runtimeAccepted": false,
+      "releaseReady": false
+    },
+    {
+      "id": "UI-026",
+      "requirement": "AutoWiki screen-state mirror",
+      "observedArborPaths": [
+        "Not promoted to main",
+        " isolated pre-G preparation branch"
+      ],
+      "observedStatus": "PREPARED_NOT_PROMOTED",
+      "evidenceClass": "BRANCH_PLAN_NOT_MAIN",
+      "priority": "P2",
+      "ownerLanes": [
+        "D",
+        "B",
+        "E",
+        "F",
+        "G"
+      ],
+      "betaJourneyIds": [
+        "B07",
+        "B08",
+        "B11"
+      ],
+      "nextProof": "Host consented read projections, bounded source freshness, no watcher or second store",
+      "deviceAccepted": false,
+      "runtimeAccepted": false,
+      "releaseReady": false
+    },
+    {
+      "id": "UI-027",
+      "requirement": "General end-user app builder",
+      "observedArborPaths": [
+        "apps/mobile-relay/build-canvas.mjs existing narrow Build surface",
+        " capability-spaces/app-builder absent"
+      ],
+      "observedStatus": "PREVIEW_ONLY",
+      "evidenceClass": "SOURCE_AND_PROPOSAL",
+      "priority": "P2",
+      "ownerLanes": [
+        "B",
+        "E",
+        "F",
+        "G"
+      ],
+      "betaJourneyIds": [
+        "B09"
+      ],
+      "nextProof": "Explicitly distinguish Host-backed Build from general full-stack app compiler",
+      "deviceAccepted": false,
+      "runtimeAccepted": false,
+      "releaseReady": false
+    },
+    {
+      "id": "UI-028",
+      "requirement": "HQ version-delta inspector inside UI",
+      "observedArborPaths": [
+        "HVI docs on main",
+        " no hq/version-intelligence implementation or TierFlow inspector in main"
+      ],
+      "observedStatus": "PLANNED_NOT_PROMOTED",
+      "evidenceClass": "BRANCH_PLAN_NOT_MAIN",
+      "priority": "P2",
+      "ownerLanes": [
+        "D",
+        "B",
+        "E",
+        "G"
+      ],
+      "betaJourneyIds": [
+        "B07",
+        "B11"
+      ],
+      "nextProof": "S0→A-F→Z1→G1→H/U/X gated promotion then actual UI acceptance",
+      "deviceAccepted": false,
+      "runtimeAccepted": false,
+      "releaseReady": false
+    },
+    {
+      "id": "UI-029",
+      "requirement": "Realtime diagnostics and honest unavailable states",
+      "observedArborPaths": [
+        "apps/vivim-host/public/host.js",
+        "apps/mobile-relay/ux/model.mjs",
+        "integration/beta-gates.json"
+      ],
+      "observedStatus": "SOURCE_PRESENT_RUNTIME_UNVERIFIED",
+      "evidenceClass": "SOURCE_ONLY",
+      "priority": "P1",
+      "ownerLanes": [
+        "B",
+        "E",
+        "F",
+        "G"
+      ],
+      "betaJourneyIds": [
+        "B11"
+      ],
+      "nextProof": "Runtime capability status generated from proofs, not marketing flags",
+      "deviceAccepted": false,
+      "runtimeAccepted": false,
+      "releaseReady": false
+    },
+    {
+      "id": "UI-030",
+      "requirement": "Storage/recovery/low-disk UI continuity",
+      "observedArborPaths": [
+        "apps/vivim-host/control/journal.mjs",
+        "apps/mobile-relay/ux/model.mjs"
+      ],
+      "observedStatus": "BLOCKED_ACCEPTANCE",
+      "evidenceClass": "SOURCE_AND_GATE_REPORT",
+      "priority": "P0",
+      "ownerLanes": [
+        "B",
+        "E",
+        "D",
+        "G",
+        "F"
+      ],
+      "betaJourneyIds": [
+        "B10",
+        "B12"
+      ],
+      "nextProof": "Crash/uncertain, reinstall, ENOSPC, protected World provenance and phone convergence",
+      "deviceAccepted": false,
+      "runtimeAccepted": false,
+      "releaseReady": false
+    },
+    {
+      "id": "UI-031",
+      "requirement": "Lockfiles and installed UI dependency closure",
+      "observedArborPaths": [
+        "Cargo.toml",
+        "package.json",
+        "Cargo.lock absent",
+        "bun.lock absent"
+      ],
+      "observedStatus": "BLOCKED_BUILD",
+      "evidenceClass": "SOURCE_AND_GATE_REPORT",
+      "priority": "P0",
+      "ownerLanes": [
+        "G",
+        "A",
+        "E",
+        "F"
+      ],
+      "betaJourneyIds": [
+        "B01",
+        "B09",
+        "B12"
+      ],
+      "nextProof": "Actual Rust/Bun resolve, Windows test, bundled Node24 and no-donor install",
+      "deviceAccepted": false,
+      "runtimeAccepted": false,
+      "releaseReady": false
+    },
+    {
+      "id": "UI-032",
+      "requirement": "Native Android source vs PWA-first policy",
+      "observedArborPaths": [
+        "studio/android/ mostly not imported",
+        " Tauri MSI config removed mandatory APK resource"
+      ],
+      "observedStatus": "DEFERRED_APK",
+      "evidenceClass": "SOURCE_AND_PROPOSAL",
+      "priority": "P2",
+      "ownerLanes": [
+        "A",
+        "C",
+        "G"
+      ],
+      "betaJourneyIds": [
+        "B04"
+      ],
+      "nextProof": "Verify browser PWA first; APK not required for current scope",
+      "deviceAccepted": false,
+      "runtimeAccepted": false,
+      "releaseReady": false
+    }
+  ],
+  "requiredGateStatus": "NO_GO_UNTIL_RUNTIME_SECURITY_DEVICE_AND_BUILD_PROOFS",
+  "testReceipts": {
+    "GitHubTreeComparison": "PASS_API_NO_SHELL_EXIT",
+    "SourceFileInspection": "PASS_API_NO_SHELL_EXIT",
+    "NodeBunCargoTest": "UNRUN",
+    "WindowsMSI": "UNRUN",
+    "PhysicalAndroidPwa": "UNRUN",
+    "TauriSecurity": "UNRUN",
+    "RealSignedInProvider": "UNRUN",
+    "NoDonorBuild": "UNRUN",
+    "VisualRegression": "UNRUN"
+  }
+}
