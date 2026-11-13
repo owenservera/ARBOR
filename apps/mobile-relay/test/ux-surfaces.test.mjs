@@ -320,3 +320,14 @@ test('World offers Play only for verified Host mapped media and never for a cata
   renderWorld(cloud,worldModel(null,[],{media:catalog}),{});
   assert.equal(findAll(cloud,n=>n.tag==='button'&&n.textContent==='Play').length,0);
 });
+
+
+test('offline shell blocks all sends and clears private paired state',()=>{
+  assert.match(app,/function showOfflineShell\(\)/);
+  assert.match(app,/clearPrivatePhoneState\(\);\s*\$\('pairbox'\)\.hidden = true/);
+  assert.match(app,/Offline · local PWA shell only/);
+  assert.match(app,/if \(HOST_PREVIEW \|\| !S\.paired\) \{ \$\('send'\)\.disabled = true/);
+  assert.match(app,/if \(!S\.paired && !HOST_PREVIEW\) \{/);
+  assert.match(app,/window\.addEventListener\('offline'/);
+  assert.match(app,/window\.addEventListener\('online'/);
+});

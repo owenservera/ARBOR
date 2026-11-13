@@ -117,7 +117,12 @@ function handles(request) {
   // A pairing link must reach the PC to redeem its token; an offline shell must never pretend it did.
   try { if (url.searchParams && url.searchParams.has('token')) return false; } catch (error) { return true; }
   if (hasHeader(request, 'authorization') || hasHeader(request, 'range')) return false;
-  if (request.mode === 'navigate') return true;
+  if (request.mode === 'navigate') {
+    // Offline HTML fallback belongs only to the real PWA entrypoints. Never
+    // return the phone shell for unrelated same-origin pages on Cloud.
+    return url.pathname === BASE.pathname || url.pathname === INDEX_PATH ||
+      (BASE.pathname === '/' && (url.pathname === '/mobile' || url.pathname === '/pair'));
+  }
   return SHELL[url.pathname] === true;
 }
 

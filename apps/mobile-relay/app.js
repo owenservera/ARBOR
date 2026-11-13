@@ -171,7 +171,11 @@ function renderTabs() {
   }
   // The retired stub panel is hidden for every tab in the strip, so no surface can fall back to it.
   $('v-talk').hidden = S.tab !== 'talk'; $('v-control').hidden = S.tab !== 'control'; $('v-soon').hidden = ['talk', 'build', 'today', 'world', 'me', 'control'].includes(S.tab); $('v-today').hidden = S.tab !== 'today'; $('v-build').hidden = S.tab !== 'build'; $('v-world').hidden = S.tab !== 'world'; $('v-me').hidden = S.tab !== 'me';
-  if (S.tab === 'build') { mountBuild(); scheduleBuild(0); }
+  if (S.tab === 'build' && !S.paired && !HOST_PREVIEW) {
+    $('build-compose').replaceChildren(el('p', 'muted pad',
+      'Offline or unpaired · Build is view-only until the PC confirms your device.'));
+    $('build-surface').replaceChildren();
+  } else if (S.tab === 'build') { mountBuild(); scheduleBuild(0); }
   else { clearTimeout(buildTimer); buildTimer = 0; }
 }
 
@@ -381,6 +385,7 @@ function renderComposer() {
     $('text').maxLength = 1000;
     $('composer-note').textContent = HOST_PREVIEW
       ? 'Phone preview only · open Host menu to pair and connect'
+      : !S.paired ? 'Offline or unpaired · no sends or Host actions'
       : 'PC-authoritative · previews first · approval required for changes';
     updateSend(); return;
   }
@@ -418,7 +423,7 @@ function renderComposer() {
   updateSend();
 }
 function updateSend() {
-  if (HOST_PREVIEW) { $('send').disabled = true; return; }
+  if (HOST_PREVIEW || !S.paired) { $('send').disabled = true; return; }
   $('send').disabled = N.target === 'vivim'
     ? !transport.direct || vivimChat.busy() || !$('text').value.trim() || $('text').value.trim().length > 1000
     : N.target === 'phone'
@@ -741,6 +746,10 @@ async function nativeSend() {
 
 /* ---------- send ---------- */
 async function send() {
+  if (!S.paired && !HOST_PREVIEW) {
+    toast('This phone is offline or unpaired. No message was sent.');
+    return;
+  }
   if (HOST_PREVIEW) {
     toast('This is your phone preview. Pair a phone or open Host Control to perform actions.');
     return;
@@ -920,6 +929,18 @@ document.addEventListener('visibilitychange', () => {
     start();
   }
 });
+function showOfflineShell() {
+  // Offline can only render public app modules and empty/local navigation.
+  // A cached former owner session is not proof of ongoing authorization.
+  clearPrivatePhoneState();
+  $('pairbox').hidden = true; $('app').hidden = false;
+  S.tab = 'today'; N.target = 'vivim'; $('talk-target').value = 'vivim';
+  S.device = { status: 'offline', scopes: [] };
+  setConn('Offline · local PWA shell only', true);
+  renderAll(true);
+}
+window.addEventListener('offline', () => { if (!HOST_PREVIEW) showOfflineShell(); });
+window.addEventListener('online', () => { if (!HOST_PREVIEW) void start(); });
 async function start() {
   // Foreground resume and pending-approval polling can arrive together.
   // Serializing prevents overlapping Keystore proofs from invalidating each
@@ -930,6 +951,9 @@ async function start() {
   try{return await attempt;}finally{if(starting===attempt)starting=null;}
 }
 async function runStart() {
+  if (!HOST_PREVIEW && navigator.onLine === false) {
+    showOfflineShell(); return;
+  }
   const fragment = parsePairFragment(location.hash);
   if (transport.direct) $('pair-legacy').hidden = true;
   if (fragment.type === 'device') {

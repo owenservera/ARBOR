@@ -342,3 +342,17 @@ test('sw.js stays ES5-safe for older Android WebViews', () => {
   assert.equal(/^\s*await\b/m.test(SW_SOURCE), false, 'no top-level await');
   assert.equal(/async\s+(?:function|\()/.test(SW_SOURCE), false, 'no async functions');
 });
+
+
+test('unrelated HTML navigations never masquerade as the offline PWA', async () => {
+  const worker = loadWorker({ fetchImpl: async () => shellResponse('should not cache') });
+  for (const route of ['/host/control','/admin','/docs/unrelated','/mobile/other']) {
+    const state = await worker.runFetch(makeRequest('https://phone.example'+route,{mode:'navigate'}));
+    assert.equal(state.responded,false,'unrelated navigation '+route);
+  }
+  const direct = loadWorker({ scope:DIRECT, fetchImpl: async () => shellResponse() });
+  const nested = await direct.runFetch(makeRequest(DIRECT+'not-a-pwa-page',{mode:'navigate'}));
+  assert.equal(nested.responded,false);
+  const launch = await direct.runFetch(makeRequest(DIRECT,{mode:'navigate'}));
+  assert.equal(launch.responded,true);
+});
