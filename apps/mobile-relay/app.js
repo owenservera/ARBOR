@@ -204,6 +204,13 @@ function goTab(tab) {
   else if (tab === 'world') void refreshMedia(false);
 }
 
+// Media authorization failures have two different meanings. Missing control:read
+// is a scoped denial and should NOT invalidate other phone grants. Revoked,
+// missing or expired device sessions must hide all privileged projections.
+function isInvalidDeviceSession(code) {
+  return ['DEVICE_SESSION_REQUIRED', 'GRANT_UNKNOWN', 'GRANT_NOT_ACTIVE',
+    'GRANT_REVOKED', 'SESSION_EXPIRED', 'SESSION_MISMATCH'].includes(code);
+}
 // A lost grant must clear *all* private phone projections, not just hide tabs.
 // Session restoration must start from new device proof; no offline replay.
 function clearPrivatePhoneState() {
@@ -282,6 +289,13 @@ async function openMediaPlayer(mediaId, title) {
       body: JSON.stringify({ mediaId })
     });
     const payload = await response.json().catch(() => ({}));
+    if (isInvalidDeviceSession(payload?.code)) {
+      transport.setDeviceSession(null);
+      clearPrivatePhoneState();
+      showPairingState('error', 'Your PC session changed. Reconnect to continue streaming.');
+      setConn('PC device authorization expired or revoked', true);
+      return;
+    }
     if (!S.paired || !transport.deviceHeaders?.() ||
         transport.deviceHeaders()['x-vivim-device-session'] !== device['x-vivim-device-session'])
       throw new Error('Device session changed while opening the stream');
@@ -331,8 +345,17 @@ async function refreshMedia(force = false) {
       credentials: 'same-origin', cache: 'no-store', headers
     });
     const result = await response.json();
-    if (generation !== mediaGeneration || !S.paired) return;
+    if (generation !== mediaGeneration || !S.paired ||
+        transport.deviceHeaders?.()?.['x-vivim-device-session'] !==
+          headers['x-vivim-device-session']) return;
     if (response.status === 401 || response.status === 403) {
+      if (isInvalidDeviceSession(result?.reason)) {
+        transport.setDeviceSession(null);
+        clearPrivatePhoneState();
+        showPairingState('error', 'This PC session is no longer authorized. Reconnect your phone.');
+        setConn('PC device authorization expired or revoked', true);
+        return;
+      }
       S.media = { state: 'not-authorized' };
     } else if (!response.ok || result?.schema !== 'vivim.media-library-summary/1') {
       S.media = { state: 'unavailable', reason: result?.reason || 'MEDIA_READ_UNAVAILABLE' };
@@ -342,9 +365,11 @@ async function refreshMedia(force = false) {
   } catch {
     if (generation === mediaGeneration) S.media = { state: 'unavailable', reason: 'PC_CONNECTION_UNAVAILABLE' };
   } finally {
-    if (generation === mediaGeneration) S.mediaAt = Date.now();
-    S.mediaLoading = false;
-    if (S.tab === 'world') renderSurfaces();
+    if (generation === mediaGeneration) {
+      S.mediaAt = Date.now();
+      S.mediaLoading = false;
+      if (S.tab === 'world') renderSurfaces();
+    }
   }
 }
 function openVivimDraft(text) {

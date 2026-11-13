@@ -390,3 +390,15 @@ test('PWA starts on Today consistently in the desktop preview and the paired pho
   assert.match(html,/id="tab-today" class="tab on"/);
   assert.match(html,/id="tab-talk" class="tab"/);
 });
+
+
+test('media session expiry clears sensitive views but scope denial keeps unrelated grants',()=>{
+  assert.match(app,/function isInvalidDeviceSession\(code\)/);
+  assert.match(app,/GRANT_REVOKED/);
+  assert.match(app,/SESSION_EXPIRED/);
+  assert.match(app,/if \(isInvalidDeviceSession\(result\?\.reason\)\) \{/);
+  assert.match(app,/transport\.setDeviceSession\(null\);\s*clearPrivatePhoneState\(\)/);
+  assert.match(app,/S\.media = \{ state: 'not-authorized' \}/);
+  assert.match(app,/transport\.deviceHeaders\?\.\(\)\?\.\['x-vivim-device-session'\]/);
+  assert.match(app,/if \(generation === mediaGeneration\) \{\s*S\.mediaAt = Date\.now\(\);\s*S\.mediaLoading = false/);
+});
