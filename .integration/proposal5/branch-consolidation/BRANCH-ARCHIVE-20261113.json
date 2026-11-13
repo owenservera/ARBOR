@@ -1,0 +1,299 @@
+{
+  "schema": "arbor.branch-archive/1",
+  "snapshotDate": "2026-11-13",
+  "mainAtSnapshot": "8a0c6fe66776a4978c650d69ccc2f9558024117f",
+  "branchCount": 58,
+  "method": "Git ancestry archive with a subsequent multi-parent no-tree-change commit; archive manifest is not product code",
+  "branches": [
+    {
+      "name": "architecture/node0-prime-backbone-r001",
+      "sha": "5d71f02a52282c9239a4f127b26260d6390296eb",
+      "protected": false
+    },
+    {
+      "name": "architecture/proposal4-composable-system-truth",
+      "sha": "ef175ea088ebf9dfa938f8b37deeb4ea440b8e5e",
+      "protected": false
+    },
+    {
+      "name": "architecture/proposal5-beta-first-centralization",
+      "sha": "6ab7e6976c02cac2ee71f030deda3f6541f8102f",
+      "protected": false
+    },
+    {
+      "name": "audit/p5-web-tierflow-delta-20261112",
+      "sha": "f817a40bea3003d935cbdab9c0cb556ab4e85881",
+      "protected": false
+    },
+    {
+      "name": "docs/p5-vlang-program-sitrep-r001",
+      "sha": "2286a36aa4f3f853b01540eb605de2a574159b64",
+      "protected": false
+    },
+    {
+      "name": "docs/vivim-taglines-reasoning-economics-20261112",
+      "sha": "f4f36fd97b569892f6144859fbe8467647d96dc4",
+      "protected": false
+    },
+    {
+      "name": "integrate/p5-hq-version-intelligence-r001",
+      "sha": "aead9174d893027193941fc747009bbc517df0e4",
+      "protected": false
+    },
+    {
+      "name": "integrate/proposal5-beta-r001",
+      "sha": "cdc74102ddac960d01ac390b4ffc68abf5d6ca3f",
+      "protected": false
+    },
+    {
+      "name": "work/host-mobile-first-r001",
+      "sha": "8a0c6fe66776a4978c650d69ccc2f9558024117f",
+      "protected": false
+    },
+    {
+      "name": "work/p5-fa-pg00-source-truth-r001",
+      "sha": "f8415bb793b1a88b920b3ac509f4820e7a4f5e46",
+      "protected": false
+    },
+    {
+      "name": "work/p5-fa-pg01-native-abi-r001",
+      "sha": "78e43165f76c1f6ad18a63b725d75d40501259ce",
+      "protected": false
+    },
+    {
+      "name": "work/p5-fa-pg02-semantic-fabric-r001",
+      "sha": "021864846783d28679b29e563490d4bb100ac079",
+      "protected": false
+    },
+    {
+      "name": "work/p5-fa-pg03-pwa-storage-r001",
+      "sha": "82fcffc1217ac58dd323627c698d71ed422a9534",
+      "protected": false
+    },
+    {
+      "name": "work/p5-fa-pgz-convergence-r001",
+      "sha": "f0b0ce2522eef0929af498a6d0cc31c3294f61b3",
+      "protected": false
+    },
+    {
+      "name": "work/p5-foundational-architecture-prep-r001",
+      "sha": "80c29fbc0d45afbce0fadde5388a8f912cdd2762",
+      "protected": false
+    },
+    {
+      "name": "work/p5-hq-version-intelligence-prep-r001",
+      "sha": "384c2b9ae0ef236e18b7952a43805c3ac0612b58",
+      "protected": false
+    },
+    {
+      "name": "work/p5-hvi-first-real-audit-local-mission-r001",
+      "sha": "0cfe0f227160b65a59e5770cf549b0cfaafe488d",
+      "protected": false
+    },
+    {
+      "name": "work/p5-hvi-launch-update-r001",
+      "sha": "10a79dd689d009829c1b497cc7b75be5c007fa51",
+      "protected": false
+    },
+    {
+      "name": "work/p5-hvi-s0-source-lock-r001",
+      "sha": "2ef7a9f66419d681e040b459ba4762a63aa9564f",
+      "protected": false
+    },
+    {
+      "name": "work/p5-hvi-tooling-only-update-r001",
+      "sha": "1c9c83f4b2f0000f4dfa0dad95bd00860dea7b77",
+      "protected": false
+    },
+    {
+      "name": "work/p5-hvi-vision-lab-r001",
+      "sha": "eeaad8009b079fc1e3a448c20a0e843771a50db5",
+      "protected": false
+    },
+    {
+      "name": "work/p5-hvi-vision-optimizations-r001",
+      "sha": "4c4553e34045ad0d378dbfd44871c42995cefe58",
+      "protected": false
+    },
+    {
+      "name": "work/p5-hvi-w1-a-snapshots-r001",
+      "sha": "53d4bddf4c2a8fd22f12c8d7f3949aac5fd2fe38",
+      "protected": false
+    },
+    {
+      "name": "work/p5-hvi-w1-b-identity-r001",
+      "sha": "1206a343ab98a6e7abe0c19a9549c6b8c32ea9e0",
+      "protected": false
+    },
+    {
+      "name": "work/p5-hvi-w1-c-compare-r001",
+      "sha": "7f72c1415d75a7904eb5c267c2a55a9172d33cd8",
+      "protected": false
+    },
+    {
+      "name": "work/p5-hvi-w1-d-parity-r001",
+      "sha": "622569e9b20f1d6dfae474594eecf544d4fe3d9d",
+      "protected": false
+    },
+    {
+      "name": "work/p5-hvi-w1-e-reports-r001",
+      "sha": "d8080a4056361266702f38cf47f2a0885fe892eb",
+      "protected": false
+    },
+    {
+      "name": "work/p5-hvi-w1-f-verify-r001",
+      "sha": "34f5c1568007977e0e3bf0286d4c1ec730d6af26",
+      "protected": false
+    },
+    {
+      "name": "work/p5-hvi-w1-z-referee-r001",
+      "sha": "c789227038b28483c3bbd6703f539d7c13331ce6",
+      "protected": false
+    },
+    {
+      "name": "work/p5-hvi-w2-h-host-r001",
+      "sha": "d24daa9966abb222cd25210f41dcbb4758aa1209",
+      "protected": false
+    },
+    {
+      "name": "work/p5-hvi-w2-u-inspector-r001",
+      "sha": "5836e9c9f5ba3bee36dbe6896ebfd22364b4c450",
+      "protected": false
+    },
+    {
+      "name": "work/p5-hvi-w2-z-referee-r001",
+      "sha": "725132c640a1f21d3af5c4b9123b314e4df3133d",
+      "protected": false
+    },
+    {
+      "name": "work/p5-p2-highvalue-labs",
+      "sha": "3e6954d21bd70eeccc6e00a310bcb337c3164f50",
+      "protected": false
+    },
+    {
+      "name": "work/p5-p2-preg-interop-r001",
+      "sha": "73b1ea769de6023dfff857d7e9c4003731f3b112",
+      "protected": false
+    },
+    {
+      "name": "work/p5-p2-preg-knowledge-r001",
+      "sha": "4db9e0c2068be36ab42663a76186422c8f9813a1",
+      "protected": false
+    },
+    {
+      "name": "work/p5-p2-preg-tests-r001",
+      "sha": "c807010e52b4a9f82ea9578a979befd38f74cb31",
+      "protected": false
+    },
+    {
+      "name": "work/p5-phase2-readiness-docs-r001",
+      "sha": "a9caad49347749cb0630ae1719bc2d7a8621d645",
+      "protected": false
+    },
+    {
+      "name": "work/p5-pre-g-convergence-r001",
+      "sha": "8b23c73bf450738a76b256bf0fa17ecbf86db591",
+      "protected": false
+    },
+    {
+      "name": "work/p5-preg-autowiki-r001",
+      "sha": "827d21d1c33aa8597c600b45179452abc35c7af9",
+      "protected": false
+    },
+    {
+      "name": "work/p5-preg-n0-io-r001",
+      "sha": "cde3b6e5521d5b17215ab10088cb8090f8b87e6f",
+      "protected": false
+    },
+    {
+      "name": "work/p5-preg-semantic-wiki-r001",
+      "sha": "d7e59a389a6ec5278595e317dfa904a801783c5b",
+      "protected": false
+    },
+    {
+      "name": "work/p5-preg-visual-language-r001",
+      "sha": "7ad5b3c49aefdf1fdd8b212e5b7eea0e7b92338e",
+      "protected": false
+    },
+    {
+      "name": "work/p5-rescore-1000-r001",
+      "sha": "d8eada9f06cf338ff09f191e73b5f7596f4f842c",
+      "protected": false
+    },
+    {
+      "name": "work/p5-rescore-cadence-r001",
+      "sha": "ef211b5466f9e8e056afa70b0647284bf57faddc",
+      "protected": false
+    },
+    {
+      "name": "work/p5-rescore-expansion-r001",
+      "sha": "3002b667e45d5a43c89304034046d61e2892e896",
+      "protected": false
+    },
+    {
+      "name": "work/p5-scf-s0-lock-r001",
+      "sha": "605665b9389163128b10b9639c8ecd1d68420271",
+      "protected": false
+    },
+    {
+      "name": "work/p5-semantic-capability-fabric-r001",
+      "sha": "0e35c54105f7b8ee8a772b3159d243c6788fb7d4",
+      "protected": false
+    },
+    {
+      "name": "work/p5-semantic-engineering-program-scaffold-r001",
+      "sha": "e41b943e2eb0fd0c60b73918596b219c087f0052",
+      "protected": false
+    },
+    {
+      "name": "work/p5-vec-pwa-ui-kernel-r001",
+      "sha": "d5a5d09b37fbd2d7dfe2a746a6f0cc054f5b1096",
+      "protected": false
+    },
+    {
+      "name": "work/p5-vec-ui-engine-foundation-r001",
+      "sha": "d29c3b4d7eed3d61c285e089c928e74ab7e0f2d6",
+      "protected": false
+    },
+    {
+      "name": "work/p5-w01-a-native",
+      "sha": "dda546a11294920d6521a0f64ab7ee62ec993c70",
+      "protected": false
+    },
+    {
+      "name": "work/p5-w01-b-host",
+      "sha": "78a5105a9c1f1880d658f350e130b1e2632d3532",
+      "protected": false
+    },
+    {
+      "name": "work/p5-w01-c-studio",
+      "sha": "f950b91685927f37b48d020433aa8d2d3c271419",
+      "protected": false
+    },
+    {
+      "name": "work/p5-w01-d-hq",
+      "sha": "ad55fe28c2c331841675f308f9199ee4c2add86a",
+      "protected": false
+    },
+    {
+      "name": "work/p5-w01-e-ui",
+      "sha": "1a5cf26ce14ebce4e31d9a4373060ace61852645",
+      "protected": false
+    },
+    {
+      "name": "work/p5-w01-f-verify",
+      "sha": "be458f3c4cdb7eb38d47b1de2a00d441b7cdc704",
+      "protected": false
+    },
+    {
+      "name": "work/p5-w01g-b-pwa-static-closure-r001",
+      "sha": "b8d1b80b57bd41fe3a6e5cb3a8fa809e59de1bd3",
+      "protected": false
+    },
+    {
+      "name": "work/p5-w01g-r001-a-pwa-packaging-review",
+      "sha": "fb5591c4f19544c6afd7dd3a2d899062f6e8bd5b",
+      "protected": false
+    }
+  ]
+}
