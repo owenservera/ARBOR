@@ -53,7 +53,7 @@ function memory(){
 
 test('capability launcher works with only local navigation and restores prior focus',()=>{
   const document=fake(),called=[];
-  let state={mode:'direct',paired:true,online:true,mediaVisible:true};
+  let state={mode:'direct',paired:true,online:true,mediaVisible:true,controlRead:true};
   const launcher=mountCapabilityLauncher({
     host:document.body,context:()=>state,onActivate:x=>called.push(x.id)
   });
