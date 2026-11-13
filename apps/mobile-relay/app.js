@@ -76,7 +76,7 @@ const S = {
   hidden: new Set(lsGet('relay.hidden.v1', [])), cmds: [], files: [], sending: false, paired: false,
   statusAt: 0, statusObj: null, timer: 0, busy: false, sigs: {}, shownConv: null,
   conn: { label: '', tone: 'ok' }, device: { status: null, scopes: null },
-  media: { state: 'idle' }, mediaAt: 0, mediaLoading: false
+  media: { state: 'idle' }, mediaAt: 0, mediaOffset: 0, mediaLoading: false
 };
 const N = { target: transport.direct ? 'vivim' : 'harness', session: '', sessions: [], messages: [], timer: 0, generation: 0, sending: false, note: '', pending: null };
 const vivimChat = createControlChat({
@@ -220,7 +220,7 @@ function clearPrivatePhoneState() {
   vivimChat.redact();
   S.files = []; N.messages = []; N.sessions = []; N.session = '';
   $('text').value = ''; $('dbg').hidden = true;
-  S.media = { state: 'not-authorized' }; S.mediaAt = 0; S.mediaLoading = false;
+  S.media = { state: 'not-authorized' }; S.mediaAt = 0; S.mediaOffset = 0; S.mediaLoading = false;
   S.sigs.ux = null; S.sigs.msgs = null; S.sigs.list = null;
   $('app').hidden = true; $('pairbox').hidden = false;
   document.body.classList.remove('paired', 'offline-shell');
@@ -349,8 +349,10 @@ async function openMediaPlayer(mediaId, title) {
 // Owner media metadata travels over a separate Direct-only, device-scoped read.
 // It never uses the cloud relay, reveals local file paths, or starts playback.
 let mediaGeneration = 0;
-async function refreshMedia(force = false) {
+async function refreshMedia(force = false, offset = S.mediaOffset) {
   if (!S.paired || S.mediaLoading) return;
+  if (!Number.isSafeInteger(offset) || offset < 0 || offset > 100000) return;
+  if (offset !== S.mediaOffset) { S.mediaOffset = offset; S.mediaAt = 0; }
   if (!transport.direct) {
     S.media = { state: 'direct-only' };
     if (S.tab === 'world') renderSurfaces();
@@ -368,7 +370,7 @@ async function refreshMedia(force = false) {
   S.media = { state: 'loading' };
   if (S.tab === 'world') renderSurfaces();
   try {
-    const response = await fetch('/mobile/api/media/library', {
+    const response = await fetch('/mobile/api/media/library?offset=' + offset, {
       credentials: 'same-origin', cache: 'no-store', headers
     });
     const result = await response.json();
@@ -384,7 +386,8 @@ async function refreshMedia(force = false) {
         return;
       }
       S.media = { state: 'not-authorized' };
-    } else if (!response.ok || result?.schema !== 'vivim.media-library-summary/1') {
+    } else if (!response.ok || result?.schema !== 'vivim.media-library-summary/1' ||
+        result?.offset !== offset) {
       S.media = { state: 'unavailable', reason: result?.reason || 'MEDIA_READ_UNAVAILABLE' };
     } else {
       S.media = result;
@@ -424,6 +427,8 @@ function renderSurfaces() {
     onRefreshMedia: HOST_PREVIEW ? () => { void refreshHostPreview(); }
       : S.paired && transport.direct ? () => { void refreshMedia(true); } : undefined,
     onPlayMedia: transport.direct && S.paired && !HOST_PREVIEW ? openMediaPlayer : undefined,
+    onMediaPage: transport.direct && S.paired && !HOST_PREVIEW
+      ? offset => { void refreshMedia(true, offset); } : undefined,
     onOpenPocket: () => { if (pocketButton && !pocketButton.hidden) pocketButton.click(); },
     onReplay: () => { if (welcome) welcome.open(); } };
   if (S.tab === 'today') renderToday(host, model, options);

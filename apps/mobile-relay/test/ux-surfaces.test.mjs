@@ -446,3 +446,26 @@ test('Ask VIVIM drops stale command suggestions when pairing changes',()=>{
   assert.match(chat,/suggestionEpoch\+\+;\s*messages = \[\]/);
   assert.match(chat,/if \(epoch === suggestionEpoch && !messages\.length\) redraw\(\)/);
 });
+
+
+test('World catalog pagination is read-only, bounded and does not request playback',()=>{
+  const nav=[];
+  const host=fakeHost();
+  const catalog={state:'ready',total:60,shown:25,pageSize:25,offset:25,hasMore:true,
+    playback:'none-mapped',items:Array.from({length:25},(_,i)=>({
+      title:'Film '+(i+25),kind:'movie',state:'complete',playable:false
+    }))};
+  renderWorld(host,worldModel(null,[],{media:catalog}),{
+    onMediaPage:offset=>nav.push(offset),onRefreshMedia(){}
+  });
+  const pager=byClass(host,'ux-media-pager');
+  assert.equal(pager.length,1);
+  const buttons=findAll(pager[0],n=>n.tag==='button');
+  assert.equal(buttons.length,2);
+  assert.equal(buttons[0].textContent,'Previous');
+  assert.equal(buttons[1].textContent,'Next');
+  buttons[0].events.click();
+  buttons[1].events.click();
+  assert.deepEqual(nav,[0,50]);
+  assert.equal(findAll(host,n=>n.tag==='button'&&n.textContent==='Play').length,0);
+});

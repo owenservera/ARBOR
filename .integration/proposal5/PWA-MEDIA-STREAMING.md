@@ -15,3 +15,7 @@ Only a complete HQ row with a valid mapping and an actual non-symlinked file is 
 The owner-approved Direct device calls POST /mobile/api/media/open with its control:read grant, exact Origin and explicit x-vivim-media header. The Host returns a same-origin stream URL and an HttpOnly Secure SameSite=Strict cookie. The ticket stays in process memory and binds the file fingerprint, session, media ID and grant. Revoke the device to stop subsequent reads. GET/HEAD support full body, one byte range 206, and unsatisfiable 416. Node streams handle backpressure and abort. The service worker does not cache media or authenticated APIs.
 
 Device pairing, launch, the actual browser media codecs and Windows acceptance are UNRUN until confirmed by executable tests and a paired Android device. The PWA player is usable only over authenticated Tailscale Direct, not Cloud or loopback desktop preview. Native buffering exists, but durable offline media cache and transcoding are NOT implemented.
+
+## Catalog pagination
+
+The Direct mobile catalog uses read-only `GET /mobile/api/media/library?offset=N`, with a bounded integer offset (0 to 100000), a 25-item page size and an exact total. Previous/Next on World re-read metadata only. `POST /mobile/api/media/open` still resolves an opaque ID against the full HQ catalog, so a legitimately mapped movie beyond page one is playable. Cloud and desktop preview never inherit a phone stream grant.

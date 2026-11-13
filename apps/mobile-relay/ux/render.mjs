@@ -271,6 +271,33 @@ export function renderWorld(host, model, options = {}) {
       'The PC has not confirmed its media catalog.'));
     if (library.reason) media.append(make(doc, 'p', 'ux-meta', library.reason));
   }
+  if (library.state === 'ready' && typeof options.onMediaPage === 'function' &&
+      Number.isSafeInteger(library.total) && library.total > 0) {
+    const offset = Number.isSafeInteger(library.offset) ? library.offset : 0;
+    const shown = Number.isSafeInteger(library.shown) ? library.shown : 0;
+    const pageSize = Number.isSafeInteger(library.pageSize) && library.pageSize > 0
+      ? library.pageSize : 25;
+    if (offset > 0 || library.hasMore === true) {
+      const pager = make(doc, 'div', 'ux-media-pager');
+      const previous = make(doc, 'button', 'btn sm ux-secondary', 'Previous');
+      previous.type = 'button';
+      previous.disabled = offset === 0;
+      previous.addEventListener('click', () => {
+        if (offset > 0) options.onMediaPage(Math.max(0, offset - pageSize));
+      });
+      const range = make(doc, 'span', 'ux-meta',
+        (shown ? String(offset + 1) + '–' + String(offset + shown) : 'No items') +
+        ' of ' + library.total);
+      const next = make(doc, 'button', 'btn sm ux-secondary', 'Next');
+      next.type = 'button';
+      next.disabled = library.hasMore !== true || shown === 0;
+      next.addEventListener('click', () => {
+        if (library.hasMore === true && shown > 0) options.onMediaPage(offset + shown);
+      });
+      pager.append(previous, range, next);
+      media.append(pager);
+    }
+  }
   if (typeof options.onRefreshMedia === 'function' && library.state !== 'direct-only') {
     const refresh = make(doc, 'button', 'btn sm ux-secondary', 'Refresh library');
     refresh.type = 'button';
