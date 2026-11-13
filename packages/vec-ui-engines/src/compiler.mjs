@@ -13,7 +13,7 @@ export function compileUiConfiguration({component,sourceSchema,baseRevision,chan
     !inertData(changes,2048))return reject('INVALID_CONFIG_REQUEST');
   const seen=new Set(),edits=[];
   for(const item of changes){
-    if(!plain(item)||Object.keys(item).some(k=>!['capabilityId','value','choices'].includes(k)))
+    if(!plain(item)||Object.keys(item).some(k=>!['capabilityId','value'].includes(k)))
       return reject('INVALID_CHANGE');
     if(typeof item.capabilityId!=='string'||seen.has(item.capabilityId))return reject('DUPLICATE_OR_INVALID_CAPABILITY');
     seen.add(item.capabilityId);

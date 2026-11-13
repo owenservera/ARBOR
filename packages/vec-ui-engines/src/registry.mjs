@@ -1,6 +1,7 @@
 // Pure cross-runtime engine lookup, semantic applicability, and type validation.
 import {ENGINE_CATALOG_SCHEMA,ENGINE_FAMILIES,ENGINE_CAPABILITIES} from './catalog.mjs';
 import {validateUiValue,inertData,plain} from './validators.mjs';
+import {ENGINE_ENUM_CHOICES} from './enum-choices.mjs';
 export const ENGINE_ID_SCHEMA='vivim.ui-engine-registry/1';
 const groupById=new Map(),capById=new Map();
 for(const g of ENGINE_FAMILIES){
@@ -57,10 +58,10 @@ export function inspectUiEngineApplicability({component,engineId,sourceSchema}={
     applicable,sourceMapped:source,installed:false,authorized:false,
     implementation:'MISSING_RENDERER_ADAPTER',capabilityId:capability.id,componentId:component.id};
 }
-export function validateEngineSetting({capabilityId,value,choices}={}){
+export function validateEngineSetting({capabilityId,value}={}){
   const capability=getEngineCapability(capabilityId);
   if(!capability)return {outcome:'refused',code:'UNKNOWN_ENGINE_CAPABILITY'};
-  const result=validateUiValue(capability.valueSchema.type,value,{choices});
+  const result=validateUiValue(capability.valueSchema.type,value,{choices:ENGINE_ENUM_CHOICES[capability.id]});
   if(!result.ok)return {outcome:'refused',code:result.code,capabilityId};
   return {outcome:'valid',capabilityId,value:result.value,
     installed:false,authorization:'none'};
