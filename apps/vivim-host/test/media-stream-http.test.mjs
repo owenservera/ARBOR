@@ -70,6 +70,13 @@ test('stream uses a paired owner ticket, exact file and 200/206/416 semantics', 
   device={'x-vivim-grant-id':grant.grantId,'x-vivim-device-session':session.sessionId};
   const listing=json(await call('/mobile/api/media/library'));
   assert.equal(listing.state,'ready');
+  assert.equal(listing.offset,0);
+  const emptyPage=json(await call('/mobile/api/media/library?offset=25'));
+  assert.equal(emptyPage.offset,25);
+  assert.equal(emptyPage.shown,0);
+  assert.equal((await call('/mobile/api/media/library?offset=-1')).status,400);
+  assert.equal((await call('/mobile/api/media/library?offset=0&offset=25')).status,400);
+  assert.equal((await call('/mobile/api/media/library?foreign=1')).status,400);
   assert.equal(listing.playback,'available');
   assert.equal(listing.items[0].playable,true);
   assert.doesNotMatch(JSON.stringify(listing),/sample\.mp4|secret\.invalid|sourceUrl/);

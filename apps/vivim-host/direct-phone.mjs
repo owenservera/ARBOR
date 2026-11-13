@@ -371,8 +371,13 @@ export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'wo
       if (req.method !== 'GET') { json(res, 405, { code: 'METHOD' }); return; }
       try {
         authorizeDevice(req, 'control:read');
-        if (new URL(req.url, origin).search) throw failure(400, 'MEDIA_QUERY_UNSUPPORTED');
-        json(res, 200, await media.list());
+        const query = [...new URL(req.url, origin).searchParams.entries()];
+        if (query.length > 1 || (query.length === 1 && query[0][0] !== 'offset'))
+          throw failure(400,'MEDIA_QUERY_UNSUPPORTED');
+        const rawOffset = query.length ? query[0][1] : '0';
+        if (!/^(?:0|[1-9][0-9]{0,5})$/.test(rawOffset) || Number(rawOffset) > 100000)
+          throw failure(400,'MEDIA_OFFSET_INVALID');
+        json(res, 200, await media.list({offset:Number(rawOffset)}));
       } catch (error) {
         json(res, error.status || 503, { schema: 'vivim.media-library-summary/1',
           state: 'unavailable', reason: error.status ? error.message : 'MEDIA_READ_UNAVAILABLE',

@@ -81,6 +81,9 @@ test('direct phone authenticates proxy, bounds routes and uses the shared queue'
   assert.equal(mediaView.playback, 'not-integrated');
   assert.ok(Array.isArray(mediaView.items));
   assert.equal((await call('/mobile/api/media/library?foreign=1')).status, 400);
+  assert.equal((await call('/mobile/api/media/library?offset=0')).status, 200);
+  assert.equal((await call('/mobile/api/media/library?offset=not-a-number')).status, 400);
+  assert.equal((await call('/mobile/api/media/library?offset=100001')).status, 400);
   assert.equal((await call('/mobile/api/media/library', { method:'POST' })).status, 405);
   assert.equal((await call('/mobile/api/live/ack',{
     method:'POST',headers:{origin:'https://invalid.example','x-vivim-ack':'1',
