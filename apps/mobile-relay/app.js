@@ -197,6 +197,83 @@ function goTab(tab) {
   else if (tab === 'world') void refreshMedia(false);
 }
 
+// Native media playback is an explicit user action. All bytes stay on the Host
+// and flow through one grant-bound, HttpOnly-cookie ticket. No blob URLs, model
+// outputs, browser storage, provider API or cloud fallback.
+let playerActive = false;
+function stopMediaPlayer() {
+  const sheet = $('media-player-sheet');
+  const video = $('media-player-video');
+  if (!sheet || !video) return;
+  video.pause();
+  video.removeAttribute('src');
+  video.load(); // abort outstanding native range requests
+  sheet.hidden = true;
+  playerActive = false;
+}
+function ensureMediaPlayer() {
+  if ($('media-player-sheet')) return;
+  const sheet = el('section', 'media-player-sheet');
+  sheet.id = 'media-player-sheet';
+  sheet.hidden = true;
+  sheet.setAttribute('role', 'dialog');
+  sheet.setAttribute('aria-modal', 'true');
+  sheet.setAttribute('aria-label', 'Playing media from VIVIM Host');
+  const header = el('div', 'media-player-head');
+  const title = el('h2', '', 'Your media');
+  title.id = 'media-player-title';
+  const close = el('button', 'btn sm', 'Close');
+  close.type = 'button';
+  close.setAttribute('aria-label', 'Stop playback and close');
+  close.addEventListener('click', stopMediaPlayer);
+  const video = document.createElement('video');
+  video.id = 'media-player-video';
+  video.controls = true;
+  video.playsInline = true;
+  video.preload = 'auto';
+  video.setAttribute('aria-label', 'Direct Host media player');
+  const state = el('p', 'muted', '');
+  state.id = 'media-player-state';
+  state.setAttribute('role', 'status');
+  video.addEventListener('error', () => {
+    state.textContent = 'Playback could not continue. Reopen this item to request a fresh authorized stream.';
+  });
+  header.append(title, close);
+  sheet.append(header, video, state);
+  document.body.append(sheet);
+}
+async function openMediaPlayer(mediaId, title) {
+  if (HOST_PREVIEW || !S.paired || !transport.direct ||
+      !/^[a-f0-9]{32}$/.test(mediaId || '')) return;
+  const device = transport.deviceHeaders?.();
+  if (!device || playerActive) return;
+  playerActive = true;
+  try {
+    const response = await fetch('/mobile/api/media/open', {
+      method: 'POST', credentials: 'same-origin', cache: 'no-store',
+      headers: { ...device, origin: location.origin,
+        'x-vivim-media': '1', 'content-type': 'application/json' },
+      body: JSON.stringify({ mediaId })
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || payload.schema !== 'vivim.media-playback-ticket/1' ||
+        payload.url !== '/mobile/api/media/stream/' + mediaId)
+      throw new Error(payload.code || 'Host did not authorize this playable file');
+    ensureMediaPlayer();
+    $('media-player-title').textContent = String(title || 'Your media').slice(0, 160);
+    $('media-player-state').textContent = 'Streaming securely from your PC · Internet buffering is not retained offline.';
+    $('media-player-sheet').hidden = false;
+    $('media-player-video').src = payload.url;
+    $('media-player-video').load();
+    $('media-player-video').play().catch(() => {
+      $('media-player-state').textContent = 'Ready. Press Play to start streaming from your PC.';
+    });
+  } catch (cause) {
+    playerActive = false;
+    toast('Playback unavailable: ' + String(cause?.message || 'Host denied stream').slice(0, 120));
+  }
+}
+
 // Owner media metadata travels over a separate Direct-only, device-scoped read.
 // It never uses the cloud relay, reveals local file paths, or starts playback.
 async function refreshMedia(force = false) {
@@ -259,6 +336,7 @@ function renderSurfaces() {
   const options = { onNavigate: goTab, onRefresh: () => HOST_PREVIEW ? refreshHostPreview() : refresh(),
     onAskVivim: transport.direct && !HOST_PREVIEW ? openVivimDraft : undefined,
     onRefreshMedia: () => { void refreshMedia(true); },
+    onPlayMedia: transport.direct && S.paired && !HOST_PREVIEW ? openMediaPlayer : undefined,
     onOpenPocket: () => { if (pocketButton && !pocketButton.hidden) pocketButton.click(); },
     onReplay: () => { if (welcome) welcome.open(); } };
   if (S.tab === 'today') renderToday(host, model, options);
@@ -892,7 +970,7 @@ async function runStart() {
   $('pairbox').hidden = paired; $('app').hidden = !paired;
   document.body.classList.toggle('paired', paired);
   setConn(paired ? 'Paired' : 'Not paired', !paired);
-  S.paired = paired; clearTimeout(S.timer); S.busy = false;
+  S.paired = paired; if (!paired) stopMediaPlayer(); clearTimeout(S.timer); S.busy = false;
   window.dispatchEvent(new CustomEvent('vivim:paired', { detail: { paired } }));
   if (paired) { renderAll(true); refresh(); }
 }

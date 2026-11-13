@@ -234,13 +234,31 @@ export function renderWorld(host, model, options = {}) {
       String(library.total ?? 0) + ' tracked · ' + String(library.favorites ?? 0) + ' favorites' +
       (library.hasMore ? ' · showing first ' + library.shown : '')));
     const listed = Array.isArray(library.items) ? library.items : [];
-    if (listed.length) media.append(items(doc, listed.map(item => ({
-      title: item.title,
-      detail: (item.favorite ? 'Favorite · ' : '') + item.kind + ' · ' + item.state
-    }))));
-    else media.append(make(doc, 'p', 'ux-empty', 'No tracked movies or shows in the PC library.'));
-    media.append(make(doc, 'p', 'ux-note',
-      'Catalog metadata only. Complete means a download state, not verified playable media. Streaming is not connected here.'));
+    if (listed.length) {
+      const rows = make(doc, 'ul', 'ux-list');
+      for (const item of listed) {
+        const entry = make(doc, 'li', 'ux-item');
+        entry.append(make(doc, 'strong', 'ux-item-title', item.title));
+        entry.append(make(doc, 'span', 'ux-item-detail',
+          (item.favorite ? 'Favorite · ' : '') + item.kind + ' · ' + item.state));
+        if (item.playable === true && /^[a-f0-9]{32}$/.test(item.mediaId || '') &&
+            typeof options.onPlayMedia === 'function') {
+          const play = make(doc, 'button', 'btn sm ux-secondary', 'Play');
+          play.type = 'button';
+          play.setAttribute('aria-label', 'Play ' + item.title);
+          play.addEventListener('click', () => options.onPlayMedia(item.mediaId, item.title));
+          entry.append(play);
+        } else if (item.state === 'complete') {
+          entry.append(make(doc, 'span', 'ux-item-detail',
+            'No verified playable file mapped on this PC'));
+        }
+        rows.append(entry);
+      }
+      media.append(rows);
+    } else media.append(make(doc, 'p', 'ux-empty', 'No tracked movies or shows in the PC library.'));
+    media.append(make(doc, 'p', 'ux-note', library.playback === 'available'
+      ? 'Stream from your PC over your private Direct connection. Only mapped, verified local files can play.'
+      : 'HQ tracks download states, not playable files. The PC owner must configure an explicit playback mapping before Play appears.'));
   } else {
     const messages = {
       idle: 'Checking the owner-approved PC media catalog…',

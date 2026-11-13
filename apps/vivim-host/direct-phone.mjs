@@ -126,7 +126,7 @@ export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'wo
   // is therefore an HttpOnly Secure cookie, never a URL query or JS bearer.
   const mediaTickets = new Map();
   const MEDIA_COOKIE = 'vivim_media_stream';
-  const mediaTtlMs = 5 * 60_000;
+  const mediaTtlMs = 4 * 60 * 60_000;
   const pruneMediaTickets = () => {
     const now = Date.now();
     for (const [id, record] of mediaTickets)
@@ -275,7 +275,7 @@ export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'wo
           deviceId: device.deviceId
         });
         res.setHeader('set-cookie', MEDIA_COOKIE + '=' + ticket +
-          '; Secure; HttpOnly; SameSite=Strict; Path=/mobile/api/media/stream/; Max-Age=300');
+          '; Secure; HttpOnly; SameSite=Strict; Path=/mobile/api/media/stream/; Max-Age=14400');
         res.setHeader('cache-control','private, no-store');
         json(res,200,{schema:'vivim.media-playback-ticket/1',
           url:'/mobile/api/media/stream/' + mediaId, mime:info.mime,

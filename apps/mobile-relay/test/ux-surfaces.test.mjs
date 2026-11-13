@@ -301,3 +301,22 @@ test('connection status stays accessible and motion respects user settings', () 
   assert.match(html, /transition-duration:0s!important/);
   assert.match(html, /prefers-contrast:more/);
 });
+
+
+test('World offers Play only for verified Host mapped media and never for a catalog download state', () => {
+  const played = [];
+  const catalog = { state:'ready', total:2, favorites:0, playback:'available', items:[
+    {mediaId:'a'.repeat(32),title:'Ready Movie',kind:'movie',state:'complete',playable:true},
+    {mediaId:'b'.repeat(32),title:'Torrent completed',kind:'movie',state:'complete',playable:false}
+  ]};
+  const host = fakeHost();
+  renderWorld(host,worldModel(null,[],{media:catalog}),{onPlayMedia:(id,title)=>played.push([id,title])});
+  const play = findAll(host,n=>n.tag==='button'&&n.textContent==='Play');
+  assert.equal(play.length,1);
+  play[0].events.click();
+  assert.deepEqual(played,[['a'.repeat(32),'Ready Movie']]);
+  assert.match(textOf(host),/No verified playable file mapped/);
+  const cloud = fakeHost();
+  renderWorld(cloud,worldModel(null,[],{media:catalog}),{});
+  assert.equal(findAll(cloud,n=>n.tag==='button'&&n.textContent==='Play').length,0);
+});
