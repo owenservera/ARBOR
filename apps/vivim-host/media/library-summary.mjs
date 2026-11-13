@@ -2,8 +2,12 @@
 // dispatches downloads, serves bytes, or infers that a completed torrent is playable.
 import { lstat, readFile } from 'node:fs/promises';
 import path from 'node:path';
+import { createHash } from 'node:crypto';
 
 export const MEDIA_SUMMARY_SCHEMA = 'vivim.media-library-summary/1';
+// Opaque stable catalog address; never expose HQ's source ID, URL or info hash.
+export const mediaIdFor = id => typeof id === 'string' && id.length > 0 && id.length <= 256
+  ? createHash('sha256').update('vivim.media/1:' + id).digest('hex').slice(0, 32) : null;
 const MAX_BYTES = 1024 * 1024;
 const MAX_ITEMS = 25;
 const VALID_STATES = new Set(['dispatched', 'folder-detected', 'complete', 'seeded']);
@@ -54,6 +58,7 @@ export async function readMediaLibrarySummary({
       VALID_STATES.has(row.state) && bounded(row.title, 160));
     const normalized = rows.map(row => ({
       title: bounded(row.title, 160),
+      ...(mediaIdFor(row.id) ? { mediaId: mediaIdFor(row.id) } : {}),
       kind: row.kind,
       state: row.state,
       favorite: typeof row.id === 'string' && favoriteIds.has(row.id)
