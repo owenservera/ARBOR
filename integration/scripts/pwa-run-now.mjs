@@ -18,13 +18,17 @@ const suites = [
     'apps/mobile-relay/test/pwa-activation-readiness.test.mjs',
     'apps/mobile-relay/test/pwa-local-notes.test.mjs',
     'apps/mobile-relay/test/pwa-preflight-ui.test.mjs',
-    'apps/mobile-relay/test/pwa-asset-graph.test.mjs'
+    'apps/mobile-relay/test/pwa-asset-graph.test.mjs',
+    'apps/mobile-relay/test/chat-universal-controller.test.mjs',
+    'apps/mobile-relay/test/pwa-voice-capture.test.mjs'
   ]],
   ['Host entry, authorization and Direct phone HTTP', [
     'apps/vivim-host/test/mobile-first-entry.test.mjs',
     'apps/vivim-host/test/control-browser-session.test.mjs',
     'apps/vivim-host/test/control-http.test.mjs',
-    'apps/vivim-host/test/direct-phone.test.mjs'
+    'apps/vivim-host/test/direct-phone.test.mjs',
+    'apps/vivim-host/test/chat-rust-context.test.mjs',
+    'apps/vivim-host/test/chat-provider-projection.test.mjs'
   ]],
   ['HQ media mapping, streaming and revocation', [
     'apps/vivim-host/test/media-library-summary.test.mjs',
@@ -36,6 +40,9 @@ const suites = [
 const sources = [
   'apps/vivim-host/server.mjs',
   'apps/vivim-host/direct-phone.mjs',
+  'apps/vivim-host/chat/rust-context.mjs',
+  'apps/vivim-host/chat/provider-projection.mjs',
+  'apps/vivim-host/onboarding/service.mjs',
   'apps/vivim-host/media/playback.mjs',
   'apps/vivim-host/media/stream-guard.mjs',
   'apps/vivim-host/media/library-summary.mjs',
@@ -46,6 +53,7 @@ const sources = [
   'apps/mobile-relay/ux/launcher-ui.mjs',
   'apps/mobile-relay/ux/local-notes.mjs',
   'apps/mobile-relay/ux/local-notes-ui.mjs',
+  'apps/mobile-relay/ux/voice-capture.mjs',
   'apps/mobile-relay/generative-ui/host-revision-guard.mjs',
   'apps/mobile-relay/sw.js',
   'apps/mobile-relay/vec/compiler.mjs',
