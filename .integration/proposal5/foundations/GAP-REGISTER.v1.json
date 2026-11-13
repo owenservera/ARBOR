@@ -1,0 +1,634 @@
+{
+  "schema": "arbor.proposal5.foundations.gaps/1",
+  "date": "2026-11-12",
+  "status": "SOURCE-GROUNDED_OPEN_AND_SELECTIVE",
+  "sourceAtlas": ".integration/proposal5/foundations/SOURCE-ATLAS.v1.json",
+  "count": 43,
+  "counts": {
+    "P0": 13,
+    "P1": 22,
+    "P2": 8
+  },
+  "gaps": [
+    {
+      "area": "integration",
+      "owner": "G/F",
+      "phase": "G-01",
+      "priority": "P0",
+      "sourceIds": [
+        "SRC-028",
+        "SRC-029"
+      ],
+      "gap": "No serial G merged tree/source lock or combined runtime acceptance",
+      "closure": "Resolve exact frozen A-F roots, root Cargo/Bun/Node and no-donor test",
+      "negative": "No GO from source-only reports",
+      "disposition": "OPEN_SOURCE_AUDITED_NOT_IMPLEMENTED",
+      "id": "FA-G01"
+    },
+    {
+      "area": "native-security",
+      "owner": "A/B/F",
+      "phase": "W2-F0",
+      "priority": "P0",
+      "sourceIds": [
+        "SRC-007"
+      ],
+      "gap": "Native Tauri launcher trusts unverified fixed loopback; Host owner bearer vulnerable",
+      "closure": "A process-bound attested Host launch + challenge/one-use UI code",
+      "negative": "Foreign :43187 listener can't receive bearer",
+      "disposition": "OPEN_SOURCE_AUDITED_NOT_IMPLEMENTED",
+      "id": "FA-G02"
+    },
+    {
+      "area": "pwa-security",
+      "owner": "B/E/F",
+      "phase": "W2-F0",
+      "priority": "P0",
+      "sourceIds": [
+        "SRC-027"
+      ],
+      "gap": "PWA signer source not fully Host static-mounted and request binding/replay unverified",
+      "closure": "B allowlist patch + per-request authenticated origin/session/nonce boundary",
+      "negative": "Stolen session ID cannot authorize privileged request",
+      "disposition": "OPEN_SOURCE_AUDITED_NOT_IMPLEMENTED",
+      "id": "FA-G03"
+    },
+    {
+      "area": "runtime-build",
+      "owner": "G/F",
+      "phase": "W2-F0",
+      "priority": "P0",
+      "sourceIds": [
+        "SRC-002"
+      ],
+      "gap": "Native/HQ/Host/Studio/TierFlow imported isolated, not single build",
+      "closure": "One root workspaces/toolchains and internal package imports",
+      "negative": "Works with all donor sibling checkouts unavailable",
+      "disposition": "OPEN_SOURCE_AUDITED_NOT_IMPLEMENTED",
+      "id": "FA-G04"
+    },
+    {
+      "area": "hq-isolation",
+      "owner": "D/B",
+      "phase": "W2-F0",
+      "priority": "P0",
+      "sourceIds": [
+        "SRC-020"
+      ],
+      "gap": "D source-scoped development reader not mounted to Host World",
+      "closure": "Host-trusted grants and safe developer-source read proof",
+      "negative": "Symlink/junction traversal, revoked/forbidden owner read refused",
+      "disposition": "OPEN_SOURCE_AUDITED_NOT_IMPLEMENTED",
+      "id": "FA-G05"
+    },
+    {
+      "area": "capability-truth",
+      "owner": "B/F",
+      "phase": "W2-F0",
+      "priority": "P0",
+      "sourceIds": [
+        "SRC-010"
+      ],
+      "gap": "Catalog v6 has 19 Host source actions; not whole platform availability coverage",
+      "closure": "Generate owner-catalog+HQ semantic+TierFlow source/handler status read-only census",
+      "negative": "Unknown action never inferred runnable",
+      "disposition": "OPEN_SOURCE_AUDITED_NOT_IMPLEMENTED",
+      "id": "FA-G06"
+    },
+    {
+      "area": "effects",
+      "owner": "B/F",
+      "phase": "W2-F0",
+      "priority": "P0",
+      "sourceIds": [
+        "SRC-007"
+      ],
+      "gap": "Host dispatcher source exists, but merged approval/journal/uncertain-send parity not executed",
+      "closure": "Run actual Host effect/adversarial receipt tests against combined source",
+      "negative": "No R3 and no uncertain-send automatic retry",
+      "disposition": "OPEN_SOURCE_AUDITED_NOT_IMPLEMENTED",
+      "id": "FA-G07"
+    },
+    {
+      "area": "native-identity",
+      "owner": "A/B",
+      "phase": "W2-F1",
+      "priority": "P0",
+      "sourceIds": [
+        "SRC-001"
+      ],
+      "gap": "Pure Rust caller-scoped structs do not authenticate actor/grants",
+      "closure": "Verified native ingress injects and seals actor/source/session provenance",
+      "negative": "Caller-supplied actor ignored or denied",
+      "disposition": "OPEN_SOURCE_AUDITED_NOT_IMPLEMENTED",
+      "id": "FA-G08"
+    },
+    {
+      "area": "native-generation",
+      "owner": "A/F",
+      "phase": "W2-F1",
+      "priority": "P1",
+      "sourceIds": [
+        "SRC-002"
+      ],
+      "gap": "EngineRegistry swaps pure engines; no owner-admitted end-user pack activation ABI",
+      "closure": "Versioned signed/admitted manifest+generation CAS with old lease drain and rollback",
+      "negative": "Old/new gen source mix cannot affect Host effects",
+      "disposition": "OPEN_SOURCE_AUDITED_NOT_IMPLEMENTED",
+      "id": "FA-G09"
+    },
+    {
+      "area": "native-event",
+      "owner": "A/E/F",
+      "phase": "W2-F1",
+      "priority": "P1",
+      "sourceIds": [
+        "SRC-037",
+        "SRC-042"
+      ],
+      "gap": "Lab multi-producer event fabric not wired to Rust input ingress",
+      "closure": "Bounded draft fan-out, source epoch, cancel, stale reducer",
+      "negative": "Old event completion never overwrites new input",
+      "disposition": "OPEN_SOURCE_AUDITED_NOT_IMPLEMENTED",
+      "id": "FA-G10"
+    },
+    {
+      "area": "native-typed-dag",
+      "owner": "A/F",
+      "phase": "W2-F1",
+      "priority": "P1",
+      "sourceIds": [
+        "SRC-003",
+        "SRC-004"
+      ],
+      "gap": "Typed DAG source revision and budgets exist; no product-level hot context parity",
+      "closure": "Rust/JS typed source/graph trace parity on known fixtures",
+      "negative": "Cross-owner graph ref denied; source rev mismatch fails",
+      "disposition": "OPEN_SOURCE_AUDITED_NOT_IMPLEMENTED",
+      "id": "FA-G11"
+    },
+    {
+      "area": "native-durability",
+      "owner": "A/B",
+      "phase": "W2-F1",
+      "priority": "P1",
+      "sourceIds": [
+        "SRC-005"
+      ],
+      "gap": "Durable DAG descriptions can't be treated as durable Host effect receipts",
+      "closure": "Explicit pure replay/Host journal boundary and crash/unknown semantics",
+      "negative": "No duplicate effect from replay",
+      "disposition": "OPEN_SOURCE_AUDITED_NOT_IMPLEMENTED",
+      "id": "FA-G12"
+    },
+    {
+      "area": "capability-abi",
+      "owner": "A/D/B/F",
+      "phase": "W2-F1",
+      "priority": "P1",
+      "sourceIds": [
+        "SRC-028",
+        "SRC-029"
+      ],
+      "gap": "F type mirrors are not trusted runtime manifests",
+      "closure": "Closed capability definition/activation schemas and cross-language validators",
+      "negative": "Unknown schema/effect owner fails closed",
+      "disposition": "OPEN_SOURCE_AUDITED_NOT_IMPLEMENTED",
+      "id": "FA-G13"
+    },
+    {
+      "area": "reprogramming",
+      "owner": "A/C/B/F",
+      "phase": "W4-F5",
+      "priority": "P1",
+      "sourceIds": [
+        "SRC-011",
+        "SRC-034",
+        "SRC-035"
+      ],
+      "gap": "Studio plugin registry is source-only fixed-kind registry; not installed user packages",
+      "closure": "Start with pure manifest extension, owner review, isolate, version swap, rollback",
+      "negative": "Untrusted plugin can't load arbitrary native/shell code",
+      "disposition": "OPEN_SOURCE_AUDITED_NOT_IMPLEMENTED",
+      "id": "FA-G14"
+    },
+    {
+      "area": "reprogramming",
+      "owner": "D/A/F",
+      "phase": "W3-F2",
+      "priority": "P1",
+      "sourceIds": [
+        "SRC-015",
+        "SRC-016",
+        "SRC-017"
+      ],
+      "gap": "No single versioned semantic ABI between comment parser, HQ wiki, Rust and user language",
+      "closure": "Source-attested SemanticWikiIR tied to owner registry and actual acceptance",
+      "negative": "Unknown/deprecated ID no runnable effect",
+      "disposition": "OPEN_SOURCE_AUDITED_NOT_IMPLEMENTED",
+      "id": "FA-G15"
+    },
+    {
+      "area": "comment-language",
+      "owner": "D/F",
+      "phase": "W3-F2",
+      "priority": "P1",
+      "sourceIds": [
+        "SRC-019"
+      ],
+      "gap": "Rust @hq:wiki and HQ annotation v2 are distinct grammars",
+      "closure": "Crosswalk without replacing either grammar; v3 explicit opt-in only",
+      "negative": "Unsupported @hq:executor cannot grant handler",
+      "disposition": "OPEN_SOURCE_AUDITED_NOT_IMPLEMENTED",
+      "id": "FA-G16"
+    },
+    {
+      "area": "wiki-program",
+      "owner": "D/F",
+      "phase": "W3-F2",
+      "priority": "P1",
+      "sourceIds": [
+        "SRC-018"
+      ],
+      "gap": "Existing wiki-program has owner-confirmed configs; compiler needs read-only projection",
+      "closure": "Existing wiki/KB read model consumes semantic IR without second writer",
+      "negative": "No new markdown per keystroke or unsafe path",
+      "disposition": "OPEN_SOURCE_AUDITED_NOT_IMPLEMENTED",
+      "id": "FA-G17"
+    },
+    {
+      "area": "language",
+      "owner": "B/A/D",
+      "phase": "W3-F2",
+      "priority": "P1",
+      "sourceIds": [
+        "SRC-006"
+      ],
+      "gap": "Host NLCL and HQ source semantic intent have no accepted owner crosswalk",
+      "closure": "Reviewed typed language pack → original-text Host replan; ambiguity preserved",
+      "negative": "Negated delete/send never converted into positive candidate",
+      "disposition": "OPEN_SOURCE_AUDITED_NOT_IMPLEMENTED",
+      "id": "FA-G18"
+    },
+    {
+      "area": "language-learning",
+      "owner": "B/F",
+      "phase": "W3-F3",
+      "priority": "P2",
+      "sourceIds": [
+        "SRC-009"
+      ],
+      "gap": "Personal rule store exists but adaptive candidate ranking/rollback unverified",
+      "closure": "Owner-approved corrections + version revision, negative observations bounded",
+      "negative": "Model-generated preference doesn't auto-activate",
+      "disposition": "OPEN_SOURCE_AUDITED_NOT_IMPLEMENTED",
+      "id": "FA-G19"
+    },
+    {
+      "area": "multi-step",
+      "owner": "B/A/F",
+      "phase": "W3-F2",
+      "priority": "P1",
+      "sourceIds": [
+        "SRC-008"
+      ],
+      "gap": "Inert command DAG is not end-to-end authorized multi-step workflow",
+      "closure": "Per-step Host checks, dependency/partial receipts and uncertain external semantics",
+      "negative": "Read step success never authorizes send step",
+      "disposition": "OPEN_SOURCE_AUDITED_NOT_IMPLEMENTED",
+      "id": "FA-G20"
+    },
+    {
+      "area": "visual-spans",
+      "owner": "E/A/F",
+      "phase": "W3-F3",
+      "priority": "P1",
+      "sourceIds": [
+        "SRC-040"
+      ],
+      "gap": "Pure V-visual projection not live wired to TierFlow",
+      "closure": "One revisioned interpretability trace, Quiet/Assisted/VIEW ALL masks",
+      "negative": "No second parser, stale/private node filtered",
+      "disposition": "OPEN_SOURCE_AUDITED_NOT_IMPLEMENTED",
+      "id": "FA-G21"
+    },
+    {
+      "area": "visual-identity",
+      "owner": "E/F",
+      "phase": "W3-F3",
+      "priority": "P1",
+      "sourceIds": [
+        "SRC-023",
+        "SRC-024"
+      ],
+      "gap": "Visual command compiler IDs differ from semantic/wiki and Host catalogs",
+      "closure": "Typed ID/version/source crosswalk with explicit availability",
+      "negative": "Colored wire never represents permission",
+      "disposition": "OPEN_SOURCE_AUDITED_NOT_IMPLEMENTED",
+      "id": "FA-G22"
+    },
+    {
+      "area": "visual-accessibility",
+      "owner": "E/F",
+      "phase": "W3-F3",
+      "priority": "P1",
+      "sourceIds": [
+        "SRC-025"
+      ],
+      "gap": "No observed device-level IME, caret, screen reader parity",
+      "closure": "PWA native browser accessible overlays and reversible Tab slots",
+      "negative": "Surrogate split, composition submit or silent text mutation rejected",
+      "disposition": "OPEN_SOURCE_AUDITED_NOT_IMPLEMENTED",
+      "id": "FA-G23"
+    },
+    {
+      "area": "autowiki",
+      "owner": "D/B/E",
+      "phase": "W3-F3",
+      "priority": "P1",
+      "sourceIds": [
+        "SRC-041"
+      ],
+      "gap": "W-autowiki inert mirror not attached to actual authorized current screen",
+      "closure": "Source-scoped current ScreenContext→AutoWikiPage read, revision cancel",
+      "negative": "Revoked source ID invisible; flip/return leaves draft unchanged",
+      "disposition": "OPEN_SOURCE_AUDITED_NOT_IMPLEMENTED",
+      "id": "FA-G24"
+    },
+    {
+      "area": "rock-core",
+      "owner": "D/B/F",
+      "phase": "W4-F5",
+      "priority": "P0",
+      "sourceIds": [
+        "SRC-043"
+      ],
+      "gap": "HQ wiki count cap not physical size bound; pure policy research not writer",
+      "closure": "Measured quota/reserve, protected records and deterministic reclamation",
+      "negative": "ENOSPC cannot delete Host receipts or personal originals",
+      "disposition": "OPEN_SOURCE_AUDITED_NOT_IMPLEMENTED",
+      "id": "FA-G25"
+    },
+    {
+      "area": "rock-compaction",
+      "owner": "A/D/F",
+      "phase": "W4-F5",
+      "priority": "P1",
+      "sourceIds": [
+        "SRC-043"
+      ],
+      "gap": "Graph/wal/wiki compaction lacks accepted scratch-space/rollback gates",
+      "closure": "Use existing verified journal compaction and cautious SQLite/WAL strategy",
+      "negative": "Crash during compact leaves last good epoch",
+      "disposition": "OPEN_SOURCE_AUDITED_NOT_IMPLEMENTED",
+      "id": "FA-G26"
+    },
+    {
+      "area": "personal-ingest",
+      "owner": "B/D/F",
+      "phase": "FB-01",
+      "priority": "P1",
+      "sourceIds": [
+        "SRC-030",
+        "SRC-031"
+      ],
+      "gap": "Labs ChatGPT ZIP/normalizer source not accepted into product with consent",
+      "closure": "Host T0 streaming importer, checkpoints, provenance, delete/reindex",
+      "negative": "No real user archive ingested without consent",
+      "disposition": "OPEN_SOURCE_AUDITED_NOT_IMPLEMENTED",
+      "id": "FA-G27"
+    },
+    {
+      "area": "personal-dcb",
+      "owner": "B/C/D",
+      "phase": "W3-F3",
+      "priority": "P1",
+      "sourceIds": [
+        "SRC-012"
+      ],
+      "gap": "Studio definition source exists, but personal graph links/owner read and grant unclear",
+      "closure": "Host-scoped DCB ID/flavor/source and versioned relation proposals",
+      "negative": "Flavor hint not presented as persisted DCB",
+      "disposition": "OPEN_SOURCE_AUDITED_NOT_IMPLEMENTED",
+      "id": "FA-G28"
+    },
+    {
+      "area": "agent-missions",
+      "owner": "B/C/A",
+      "phase": "W3-F4",
+      "priority": "P2",
+      "sourceIds": [
+        "SRC-013"
+      ],
+      "gap": "Agent service scaffold/recipes do not establish autonomous local OS",
+      "closure": "One Host-linked mission status and safe pure native computation",
+      "negative": "Agent cannot bypass Host effect claim",
+      "disposition": "OPEN_SOURCE_AUDITED_NOT_IMPLEMENTED",
+      "id": "FA-G29"
+    },
+    {
+      "area": "automation",
+      "owner": "B/A/F",
+      "phase": "W4-F5",
+      "priority": "P2",
+      "sourceIds": [
+        "SRC-022"
+      ],
+      "gap": "HQ workspace watcher isn't user Chronos scheduler",
+      "closure": "One Host-durable task/rule with pure time predicate and owner review",
+      "negative": "Timer firing cannot mint approval or duplicate send",
+      "disposition": "OPEN_SOURCE_AUDITED_NOT_IMPLEMENTED",
+      "id": "FA-G30"
+    },
+    {
+      "area": "voice",
+      "owner": "B/E/F",
+      "phase": "W3-F4",
+      "priority": "P2",
+      "sourceIds": [
+        "SRC-032"
+      ],
+      "gap": "Labs pure voice-to-task proposals but no native recorded/audio/runtime acceptance",
+      "closure": "VoiceFinal→typed proposal→Host task review via authenticated ingress",
+      "negative": "VoicePartial never becomes committed task",
+      "disposition": "OPEN_SOURCE_AUDITED_NOT_IMPLEMENTED",
+      "id": "FA-G31"
+    },
+    {
+      "area": "media",
+      "owner": "B/E/F",
+      "phase": "FB-01",
+      "priority": "P2",
+      "sourceIds": [
+        "SRC-027"
+      ],
+      "gap": "Host media subtree and mobile player require full code/byte range verification",
+      "closure": "Source audit/HEAD/206/416/offline cache and resumable playback tests",
+      "negative": "No private media cache leak or effect replay",
+      "disposition": "OPEN_SOURCE_AUDITED_NOT_IMPLEMENTED",
+      "id": "FA-G32"
+    },
+    {
+      "area": "app-builder",
+      "owner": "E/B/F",
+      "phase": "W3-F4",
+      "priority": "P2",
+      "sourceIds": [
+        "SRC-026"
+      ],
+      "gap": "Inert generative UI proposal compiler is not a live publisher",
+      "closure": "Review/diff/accepted TierFlow draft with Host World revision",
+      "negative": "Prompt alone can't publish app or UI",
+      "disposition": "OPEN_SOURCE_AUDITED_NOT_IMPLEMENTED",
+      "id": "FA-G33"
+    },
+    {
+      "area": "studio-browser",
+      "owner": "C/B/F",
+      "phase": "W2-F0",
+      "priority": "P0",
+      "sourceIds": [
+        "SRC-014"
+      ],
+      "gap": "Studio Chrome exact-thread and Host single effect journal not end-to-end acceptance tested",
+      "closure": "One browser send/observe proof with unknown-state recovery",
+      "negative": "No alternative provider API or blind resend",
+      "disposition": "OPEN_SOURCE_AUDITED_NOT_IMPLEMENTED",
+      "id": "FA-G34"
+    },
+    {
+      "area": "plugin-safety",
+      "owner": "C/A/B/F",
+      "phase": "FB-01",
+      "priority": "P2",
+      "sourceIds": [
+        "SRC-011",
+        "SRC-034",
+        "SRC-035"
+      ],
+      "gap": "Labs 153 proposed extension surfaces are not installed/verified",
+      "closure": "One explicit vetted pure hook kind, deny unknown kind, rollback lifecycle",
+      "negative": "Extension cannot declare new Host effect",
+      "disposition": "OPEN_SOURCE_AUDITED_NOT_IMPLEMENTED",
+      "id": "FA-G35"
+    },
+    {
+      "area": "observability",
+      "owner": "F/B/D",
+      "phase": "W2-F0",
+      "priority": "P1",
+      "sourceIds": [
+        "SRC-033"
+      ],
+      "gap": "Labs read-only observatory not installed; SourceTruth across repos lacks runtime receipts",
+      "closure": "Single read-only capability truth projection over owner manifests/tests",
+      "negative": "No second catalog or synthetic PASS",
+      "disposition": "OPEN_SOURCE_AUDITED_NOT_IMPLEMENTED",
+      "id": "FA-G36"
+    },
+    {
+      "area": "knowledge-ranked",
+      "owner": "D/B/A",
+      "phase": "FB-01",
+      "priority": "P2",
+      "sourceIds": [
+        "SRC-036"
+      ],
+      "gap": "Labs ranking/context/semantic algorithms are research, no accepted online learning benchmark",
+      "closure": "Bench one pure ranking against held-out authorized source corpus",
+      "negative": "Novel entity/risk cannot be learned as executable command",
+      "disposition": "OPEN_SOURCE_AUDITED_NOT_IMPLEMENTED",
+      "id": "FA-G37"
+    },
+    {
+      "area": "pwa-delivery",
+      "owner": "E/G/F",
+      "phase": "W6-F7",
+      "priority": "P0",
+      "sourceIds": [
+        "SRC-027"
+      ],
+      "gap": "Full APK resource reference may block native packaging, contrary to PWA-first choice",
+      "closure": "PWA-first bundle, manifest, SW and no mandatory APK resource",
+      "negative": "Install works without APK signing/build",
+      "disposition": "OPEN_SOURCE_AUDITED_NOT_IMPLEMENTED",
+      "id": "FA-G38"
+    },
+    {
+      "area": "pwa-offline",
+      "owner": "E/B/F",
+      "phase": "W4-F5",
+      "priority": "P1",
+      "sourceIds": [
+        "SRC-027"
+      ],
+      "gap": "Existing SW shell-only cache; advanced offline intelligence not source verified",
+      "closure": "Keep shell-only/read-cache policies, draft queue after explicit owner acceptance",
+      "negative": "POST/actions never replayed by SW",
+      "disposition": "OPEN_SOURCE_AUDITED_NOT_IMPLEMENTED",
+      "id": "FA-G39"
+    },
+    {
+      "area": "device-runtime",
+      "owner": "E/F",
+      "phase": "W5-F6",
+      "priority": "P0",
+      "sourceIds": [
+        "SRC-027"
+      ],
+      "gap": "No reported physical PWA device acceptance yet",
+      "closure": "Android browser real HTTPS key/rotate/revoke/restart/IME run",
+      "negative": "Device denied after revoke",
+      "disposition": "OPEN_SOURCE_AUDITED_NOT_IMPLEMENTED",
+      "id": "FA-G40"
+    },
+    {
+      "area": "source-attestation",
+      "owner": "D/A/B",
+      "phase": "W2-F1",
+      "priority": "P1",
+      "sourceIds": [
+        "SRC-020"
+      ],
+      "gap": "Research source hashes can be caller-supplied, not trusted Git/walker attestation",
+      "closure": "Trusted source-walker verifies repo blob/digest/active scope and restricts admission",
+      "negative": "Forged comment digest can't install grammar pack",
+      "disposition": "OPEN_SOURCE_AUDITED_NOT_IMPLEMENTED",
+      "id": "FA-G41"
+    },
+    {
+      "area": "failure-visibility",
+      "owner": "E/F/B",
+      "phase": "W3-F3",
+      "priority": "P1",
+      "sourceIds": [
+        "SRC-040"
+      ],
+      "gap": "Visual status may confuse interpreted, grounded, source-wired, approved, executed",
+      "closure": "Five independent status axes and coverage in trace",
+      "negative": "No green effect success from compilation only",
+      "disposition": "OPEN_SOURCE_AUDITED_NOT_IMPLEMENTED",
+      "id": "FA-G42"
+    },
+    {
+      "area": "scope-governance",
+      "owner": "G/F",
+      "phase": "G-01",
+      "priority": "P0",
+      "sourceIds": [
+        "SRC-028",
+        "SRC-029"
+      ],
+      "gap": "Proposal5 W1 G not run; post-G work lacks accepted single root baseline",
+      "closure": "G serial one-time merge and exact SOURCE_LOCK/manifest/wave report",
+      "negative": "No lab research direct source merge before G",
+      "disposition": "OPEN_SOURCE_AUDITED_NOT_IMPLEMENTED",
+      "id": "FA-G43"
+    }
+  ],
+  "notes": [
+    "These are architecture/release and source closure gaps, not necessarily missing individual modules.",
+    "A source-evidence pin is not a passing test or runtime behavior proof.",
+    "Full repo exhaustive import dependency and code owner map must be refreshed at G from exact merged tree."
+  ]
+}

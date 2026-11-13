@@ -1,0 +1,231 @@
+{
+  "schema": "arbor.proposal5.fa-pg01.engine-abi-crosswalk/1",
+  "status": "PREPARED_NOT_PROMOTED",
+  "pins": {
+    "foundation": {
+      "repo": "owenservera/ARBOR",
+      "branch": "work/p5-foundational-architecture-prep-r001",
+      "sha": "80c29fbc0d45afbce0fadde5388a8f912cdd2762"
+    },
+    "A": {
+      "repo": "owenservera/ARBOR",
+      "branch": "work/p5-w01-a-native",
+      "sha": "dda546a11294920d6521a0f64ab7ee62ec993c70"
+    },
+    "B": {
+      "repo": "owenservera/ARBOR",
+      "branch": "work/p5-w01-b-host",
+      "sha": "78a5105a9c1f1880d658f350e130b1e2632d3532"
+    },
+    "C": {
+      "repo": "owenservera/ARBOR",
+      "branch": "work/p5-w01-c-studio",
+      "sha": "f950b91685927f37b48d020433aa8d2d3c271419"
+    },
+    "D": {
+      "repo": "owenservera/ARBOR",
+      "branch": "work/p5-w01-d-hq",
+      "sha": "ad55fe28c2c331841675f308f9199ee4c2add86a"
+    },
+    "E": {
+      "repo": "owenservera/ARBOR",
+      "branch": "work/p5-w01-e-ui",
+      "sha": "1a5cf26ce14ebce4e31d9a4373060ace61852645"
+    },
+    "F": {
+      "repo": "owenservera/ARBOR",
+      "branch": "work/p5-w01-f-verify",
+      "sha": "be458f3c4cdb7eb38d47b1de2a00d441b7cdc704"
+    },
+    "N0": {
+      "repo": "owenservera/ARBOR",
+      "branch": "work/p5-preg-n0-io-r001",
+      "sha": "cde3b6e5521d5b17215ab10088cb8090f8b87e6f"
+    },
+    "P2C": {
+      "repo": "owenservera/ARBOR",
+      "branch": "work/p5-p2-preg-interop-r001",
+      "sha": "73b1ea769de6023dfff857d7e9c4003731f3b112"
+    },
+    "LabsNode0": {
+      "repo": "owenservera/vivim-labs",
+      "branch": "lab/user-io-rust-core-20261112",
+      "sha": "61d9fc15c55144c4f0b79afa248981c2b0ca9bd6"
+    }
+  },
+  "distinction": "Existing Rust types are in-process, neither JSON ABI nor runtime source/auth proof. Proposed fields below are DESIGNED, not implemented.",
+  "mapping": [
+    {
+      "from": "hqkg::engine::EngineDescriptor{slot,implementation,interface,capabilities}",
+      "to": "manifest.capabilityId, engine.slotId, engine.implementationDigest, interface.abiVersion, interface.inputSchemaRef/outputSchemaRef",
+      "retained": [
+        "slot",
+        "interface",
+        "capabilities"
+      ],
+      "missing": [
+        "trust anchor for implementationDigest",
+        "typed schemas",
+        "semver/ABI negotiation",
+        "source code review admission"
+      ],
+      "warning": "implementation is a free-form String; no cryptographic binding; interface merely equality checked on replacement"
+    },
+    {
+      "from": "hqkg::engine::EngineRequest{operation,data:String}",
+      "to": "CapabilityInvocation{capabilityId,slot,generation,operation,inputSchemaRef,typedPayload,actorBoundReadContext,deadlines}",
+      "missing": [
+        "serializable typed payload",
+        "bounded input bytes",
+        "owner-authenticated source scope",
+        "deadline/token cancellation inheritance",
+        "no raw actor trust"
+      ],
+      "warning": "EngineRequest accepts arbitrary String; no effect classification"
+    },
+    {
+      "from": "hqkg::engine::EngineOutput{data:String}",
+      "to": "DerivedEvidence{producer,revision,contentRefOrRedactedPayload,confidence,state,effectPerformed:false}",
+      "missing": [
+        "typed output bytes/schema",
+        "classification/redaction",
+        "audience/source-policy fence",
+        "result size before allocation"
+      ],
+      "warning": "No Host receipt can be inferred from EngineOutput"
+    },
+    {
+      "from": "hqkg::engine::SwapReceipt{slot,previous,generation}",
+      "to": "ActivationDecision{manifestDigest,expectedRegistryRevision,admissionReceiptRef,decision,engineGeneration}",
+      "missing": [
+        "manifest/source attestation",
+        "review receipt",
+        "owner admission",
+        "rollback/revocation identity",
+        "serialization"
+      ],
+      "warning": "SwapReceipt proves registry mutation only, not owner approval or effect"
+    },
+    {
+      "from": "hqkg::typed_dag::Namespace{domain,owner}",
+      "to": "F SourceRef{domain,ownerRef} + N0 session actor/audience",
+      "missing": [
+        "authenticated actor principal",
+        "separation of development/personal/control/ui domains",
+        "explicit trusted source read"
+      ],
+      "warning": "A GraphDomain has only Development/Personal; F/N0 use four domains; do not cast them blindly"
+    },
+    {
+      "from": "hqkg::typed_dag::RevisionToken{namespace,graph_epoch}",
+      "to": "N0 {inputRevision,graphEpoch,policyVersion,engineVersion} + F RevisionEvent + Host policy/World version",
+      "missing": [
+        "sourceEpoch",
+        "World/policy/catalog/pack revisions",
+        "actor/session input sequence"
+      ],
+      "warning": "Revision equality local only; no source revocation check"
+    },
+    {
+      "from": "hqkg::typed_dag::SourceBinding{id,revision,digest,provenance}",
+      "to": "manifest.source{repo,commit,path,contentSha256,ownerDomain} + F EvidenceRef",
+      "missing": [
+        "trusted walker attestation",
+        "read permit",
+        "revocation epoch",
+        "source class",
+        "user data redaction"
+      ],
+      "warning": "Digest and provenance supplied by caller; not checked against actual bytes"
+    },
+    {
+      "from": "vivim_programmability_core::Program/ValidatedProgram",
+      "to": "manifest.mode + inert owner-admitted DAG declaration",
+      "missing": [
+        "manifest wire type",
+        "source manifest verification",
+        "capability owner registry binding"
+      ],
+      "warning": "validated.execution_authorized=false even with allow_effect_candidates=true"
+    },
+    {
+      "from": "F contracts/interop/v1 {SourceRef,InertViewProjection}",
+      "to": "capability event trace/projection",
+      "missing": [
+        "generation,manifestDigest,actor-verified context",
+        "status precision: skipped stale, budget, revoked"
+      ],
+      "warning": "Type mirrors/JS display guard not admission"
+    },
+    {
+      "from": "N0 IO-CONTRACT + Labs event fabric",
+      "to": "FanOutInputSnapshot -> independent bounded pure DerivedEvidence[] -> revision/source/policy gate -> E inert projection",
+      "missing": [
+        "actual runtime producer registry/quota",
+        "concurrent fanout",
+        "ingress binding",
+        "source-epoch rejection"
+      ],
+      "warning": "Do not create a new dispatcher, scheduler, graph, journal or plugin VM"
+    }
+  ],
+  "plannedABI": {
+    "name": "arbor.native-pure-capability/0-candidate",
+    "status": "DESIGN_ONLY",
+    "activationRequirements": [
+      "Trusted in-repo source walker matches commit,path,contentSha256 to compiled reviewed engine",
+      "Owner-domain approval and unique capabilityId",
+      "Reject unknown manifest schema / incompatible ABI / bad risk or effect class",
+      "Compare and swap expected exact generation; keep old leases for pure reads",
+      "Owner-verified revoke/source epoch/policy invalidates pending outputs"
+    ],
+    "invocationFields": [
+      "slot",
+      "expectedGeneration",
+      "operation",
+      "schemaVersion",
+      "inputRevision",
+      "namespace",
+      "sourceEpoch",
+      "policyVersion",
+      "graphEpoch",
+      "budget",
+      "cancelRef"
+    ],
+    "outputFields": [
+      "slot",
+      "generation",
+      "manifestDigest",
+      "producerId",
+      "inputRevision",
+      "graphEpoch",
+      "sourceEpoch",
+      "policyVersion",
+      "status",
+      "redactedEvidenceRef",
+      "effectPerformed=false"
+    ],
+    "trustBoundary": "No client-provided actor, approval, granted=true, Host receipt, source attest or arbitrary executable payload is accepted as authority."
+  },
+  "parallelFabric": {
+    "status": "DESIGN_ONLY",
+    "ingress": "One Host/Tauri authenticated bounded immutable InputSnapshot per verified actor+session+sequence; no local DOM typing delay",
+    "independentPureProducers": [
+      "lexical-negation",
+      "semantic-grammar",
+      "owner-authorized context",
+      "Chronos pure-time",
+      "visual-roles"
+    ],
+    "bounds": {
+      "maxUtf8DraftBytes": 4096,
+      "maxSourceRefs": 16,
+      "maxDerivedPerRevision": 32,
+      "maxTtlRevisions": 16,
+      "maxActiveProducers": "owner-budgeted; not yet specified",
+      "maxQueue": "owner-budgeted; not yet specified"
+    },
+    "convergence": "Existing HQKG typed DAG/source revision and existing E projection; old revision discarded; errors SKIPPED_STALE, SKIPPED_BUDGET, CANCELLED, UNAVAILABLE; no action dispatch",
+    "host": "Submit uses B original-text/current-catalog current-policy admission/journal/receipt; Studio browser sender remains C; all preview candidates inert"
+  }
+}

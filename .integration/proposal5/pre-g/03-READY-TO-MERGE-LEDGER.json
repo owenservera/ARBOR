@@ -1,0 +1,90 @@
+{
+  "schema": "arbor.p5.pre-g-freeze/1",
+  "date": "2026-11-12",
+  "review_branch": "work/p5-pre-g-convergence-r001",
+  "source_architecture_head": "6ab7e6976c02cac2ee71f030deda3f6541f8102f",
+  "common_worker_base": "dd245d78ff3c110ba8630cad557ea0479c51a635",
+  "integration_branch": "integrate/proposal5-beta-r001",
+  "integration_branch_exists_at_review": false,
+  "status": "NOT_READY_FOR_G",
+  "requirements": [
+    "all six worker branches frozen after follow-up",
+    "each PREG report committed with source inventory",
+    "A/B native launch contract agreed as pre-W2 blocker",
+    "B/E/F browser PWA key/enrollment decision documented",
+    "C import report complete",
+    "no private source/secret/repo external dependency",
+    "source ports and root build ownership mapped"
+  ],
+  "lanes": [
+    {
+      "lane": "A",
+      "branch": "work/p5-w01-a-native",
+      "observed_head": "1acce99e75d300208715f68b6db7ab11cc0cd93c",
+      "final_frozen_head": null,
+      "freeze_status": "UNCONFIRMED",
+      "pre_g_report": "integration/worker-reports/PREG-A.md",
+      "actual_tests": "UNRUN_OR_WORKER_REPORTED",
+      "merged": false
+    },
+    {
+      "lane": "B",
+      "branch": "work/p5-w01-b-host",
+      "observed_head": "c12f4a27a8c700c9df4cba17a9ff96efd5897748",
+      "final_frozen_head": null,
+      "freeze_status": "UNCONFIRMED",
+      "pre_g_report": "integration/worker-reports/PREG-B.md",
+      "actual_tests": "UNRUN_OR_WORKER_REPORTED",
+      "merged": false
+    },
+    {
+      "lane": "C",
+      "branch": "work/p5-w01-c-studio",
+      "observed_head": "4bca551d58a1972cc02a8b20b772e1e2417b874d",
+      "final_frozen_head": null,
+      "freeze_status": "UNCONFIRMED",
+      "pre_g_report": "integration/worker-reports/PREG-C.md",
+      "actual_tests": "UNRUN_OR_WORKER_REPORTED",
+      "merged": false
+    },
+    {
+      "lane": "D",
+      "branch": "work/p5-w01-d-hq",
+      "observed_head": "16c590dbd97dc617b783d949268ddc8fb77da2c5",
+      "final_frozen_head": null,
+      "freeze_status": "UNCONFIRMED",
+      "pre_g_report": "integration/worker-reports/PREG-D.md",
+      "actual_tests": "UNRUN_OR_WORKER_REPORTED",
+      "merged": false
+    },
+    {
+      "lane": "E",
+      "branch": "work/p5-w01-e-ui",
+      "observed_head": "0140e101353a889f15b157a4887614aa9267c401",
+      "final_frozen_head": null,
+      "freeze_status": "UNCONFIRMED",
+      "pre_g_report": "integration/worker-reports/PREG-E.md",
+      "actual_tests": "UNRUN_OR_WORKER_REPORTED",
+      "merged": false
+    },
+    {
+      "lane": "F",
+      "branch": "work/p5-w01-f-verify",
+      "observed_head": "7538ebc706f98c15530fe39ba3a40b479448b37f",
+      "final_frozen_head": null,
+      "freeze_status": "UNCONFIRMED",
+      "pre_g_report": "integration/worker-reports/PREG-F.md",
+      "actual_tests": "UNRUN_OR_WORKER_REPORTED",
+      "merged": false
+    }
+  ],
+  "decisions": {
+    "native_launch_security": "AGREEMENT_PENDING; IMPLEMENTATION_W2",
+    "browser_pwa_signer": "E SOURCE PATCH AND STATIC HOST-ALLOWLIST TEST PRESENT; LIVE WORKER STILL MOVING; HOST/DEVICE ACCEPTANCE UNRUN; FREEZE_UNCONFIRMED",
+    "host_sole_effect_writer": "RETAIN",
+    "hqkg_only_graph_engine": "RETAIN",
+    "tierflow_inert_renderer": "RETAIN",
+    "labs_phase2": "PREPARED_NOT_PROMOTED"
+  },
+  "g_may_integrate": false
+}

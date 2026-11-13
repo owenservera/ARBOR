@@ -1,0 +1,367 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vivim.local/contracts/arbor.capability-manifest.v0.schema.json",
+  "title": "ARBOR P5 FA proposed inert capability manifest v0",
+  "description": "DESIGN ONLY. Data-only source descriptor for a compiled pure engine, inert view or existing owner action declaration. Validation grants no permission, source authenticity, approval, executor registration or runtime readiness.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "manifestRevision",
+    "capabilityId",
+    "ownerDomain",
+    "source",
+    "interface",
+    "mode",
+    "safety",
+    "tests",
+    "presentation",
+    "runtimeAccepted"
+  ],
+  "properties": {
+    "schema": {
+      "const": "arbor.capability-manifest/0"
+    },
+    "manifestRevision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "capabilityId": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9._-]{1,95}$"
+    },
+    "ownerDomain": {
+      "enum": [
+        "native",
+        "host",
+        "hq",
+        "studio",
+        "tierflow"
+      ]
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repo",
+        "commit",
+        "path",
+        "contentSha256",
+        "ownerDomain"
+      ],
+      "properties": {
+        "repo": {
+          "const": "owenservera/ARBOR"
+        },
+        "commit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^(?!/)(?!.*(?:^|/)\\\\.\\\\.(?:/|$))[A-Za-z0-9._/-]+$"
+        },
+        "contentSha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "ownerDomain": {
+          "enum": [
+            "native",
+            "host",
+            "hq",
+            "studio",
+            "tierflow"
+          ]
+        }
+      }
+    },
+    "interface": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "inputSchemaRef",
+        "outputSchemaRef",
+        "abiVersion"
+      ],
+      "properties": {
+        "inputSchemaRef": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9._-]{1,95}$"
+        },
+        "outputSchemaRef": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9._-]{1,95}$"
+        },
+        "abiVersion": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 99
+        }
+      }
+    },
+    "mode": {
+      "enum": [
+        "pure-transform",
+        "inert-view",
+        "owner-action-declaration"
+      ]
+    },
+    "engine": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "slotId",
+        "implementationDigest",
+        "budgetClass"
+      ],
+      "properties": {
+        "slotId": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9._-]{1,95}$"
+        },
+        "implementationDigest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "budgetClass": {
+          "enum": [
+            "tiny",
+            "interactive",
+            "background"
+          ]
+        }
+      }
+    },
+    "targetOwner": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "owner",
+        "catalogId",
+        "catalogRevision"
+      ],
+      "properties": {
+        "owner": {
+          "enum": [
+            "host",
+            "tierflow"
+          ]
+        },
+        "catalogId": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9._-]{1,95}$"
+        },
+        "catalogRevision": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "semantic": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "wikiIrId"
+      ],
+      "properties": {
+        "wikiIrId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "grammarPackId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        }
+      }
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "risk",
+        "allowedSourceClasses",
+        "budget"
+      ],
+      "properties": {
+        "risk": {
+          "enum": [
+            "R0",
+            "R1",
+            "R2",
+            "R3"
+          ]
+        },
+        "allowedSourceClasses": {
+          "type": "array",
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "development",
+              "personal",
+              "control",
+              "ui"
+            ]
+          }
+        },
+        "budget": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "maxInputs",
+            "maxOutputBytes",
+            "maxComputeBudgetMs",
+            "maxGraphSteps"
+          ],
+          "properties": {
+            "maxInputs": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 128
+            },
+            "maxOutputBytes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1048576
+            },
+            "maxComputeBudgetMs": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 5000
+            },
+            "maxGraphSteps": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 512
+            }
+          }
+        }
+      }
+    },
+    "tests": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "digest",
+        "sourceRef"
+      ],
+      "properties": {
+        "digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "sourceRef": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        }
+      }
+    },
+    "presentation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "visualRoleRefs"
+      ],
+      "properties": {
+        "iconRole": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "visualRoleRefs": {
+          "type": "array",
+          "maxItems": 16,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9._-]{1,95}$"
+          }
+        }
+      }
+    },
+    "runtimeAccepted": {
+      "const": false
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "mode": {
+            "const": "pure-transform"
+          }
+        },
+        "required": [
+          "mode"
+        ]
+      },
+      "then": {
+        "required": [
+          "engine"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "mode": {
+            "const": "owner-action-declaration"
+          }
+        },
+        "required": [
+          "mode"
+        ]
+      },
+      "then": {
+        "required": [
+          "targetOwner"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "mode": {
+            "const": "inert-view"
+          }
+        },
+        "required": [
+          "mode"
+        ]
+      },
+      "then": {
+        "not": {
+          "required": [
+            "targetOwner"
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "mode": {
+            "const": "pure-transform"
+          }
+        },
+        "required": [
+          "mode"
+        ]
+      },
+      "then": {
+        "not": {
+          "required": [
+            "targetOwner"
+          ]
+        }
+      }
+    }
+  ]
+}

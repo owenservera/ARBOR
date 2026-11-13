@@ -1,0 +1,135 @@
+{
+  "schema": "arbor.proposal5.fa-worker-run/1",
+  "lane": "PG02-semantic-fabric",
+  "branch": "work/p5-fa-pg02-semantic-fabric-r001",
+  "base": "80c29fbc0d45afbce0fadde5388a8f912cdd2762",
+  "headAtLedgerAuthorship": "3cdcc9cb621d792e181d342a5c2bd7739be4aa5c",
+  "finalHead": "READ_GITHUB_BRANCH_REF_AFTER_COMMIT",
+  "headSelfReference": "Commit cannot self-embed own SHA; final checked SHA reported in final worker response.",
+  "changedPaths": [
+    ".integration/proposal5/foundations/proofs/PG02-semantic-fabric/semantic-visual-crosswalk.mjs",
+    ".integration/proposal5/foundations/proofs/PG02-semantic-fabric/test/semantic-visual-crosswalk.test.mjs",
+    ".integration/proposal5/foundations/proofs/PG02-semantic-fabric/SOURCE-DELTA.json",
+    ".integration/proposal5/foundations/proofs/PG02-semantic-fabric/SEMANTIC-ABI-CROSSWALK.json",
+    ".integration/proposal5/foundations/proofs/PG02-semantic-fabric/CAPABILITY-COMMAND-CROSSWALK.json",
+    ".integration/proposal5/foundations/proofs/PG02-semantic-fabric/LABS-DUPLICATE-LEDGER.json",
+    ".integration/proposal5/foundations/proofs/PG02-semantic-fabric/README.md",
+    ".integration/proposal5/foundations/proofs/PG02-semantic-fabric/PROOF-PLAN.md",
+    ".integration/proposal5/foundations/proofs/PG02-semantic-fabric/NEGATIVE-ACCEPTANCE.md",
+    ".integration/proposal5/foundations/proofs/PG02-semantic-fabric/OWNER-HANDOFF.md",
+    ".integration/proposal5/foundations/proofs/PG02-semantic-fabric/BENCHMARK-PLAN.md",
+    ".integration/proposal5/foundations/proofs/PG02-semantic-fabric/RUN-LEDGER.json"
+  ],
+  "sourceHeads": {
+    "A": "dda546a11294920d6521a0f64ab7ee62ec993c70",
+    "B": "78a5105a9c1f1880d658f350e130b1e2632d3532",
+    "C": "f950b91685927f37b48d020433aa8d2d3c271419",
+    "D": "ad55fe28c2c331841675f308f9199ee4c2add86a",
+    "E": "1a5cf26ce14ebce4e31d9a4373060ace61852645",
+    "F": "be458f3c4cdb7eb38d47b1de2a00d441b7cdc704",
+    "S": "d7e59a389a6ec5278595e317dfa904a801783c5b",
+    "V": "7ad5b3c49aefdf1fdd8b212e5b7eea0e7b92338e",
+    "W": "827d21d1c33aa8597c600b45179452abc35c7af9",
+    "N0": "cde3b6e5521d5b17215ab10088cb8090f8b87e6f"
+  },
+  "sourceBlobCount": 41,
+  "githubOriginalSCompilerBlob": "83c2eab7921c84dd55f0503518e7fc7e4a466657",
+  "originalSWCSameAsS": true,
+  "stagedModuleBlob": "8d773c67888634c52e9ea2ad80e42efa5eeac8dd",
+  "stagedTestBlob": "0862a2eeab19afc72008b2df86dcde60d5581916",
+  "tests": [
+    {
+      "kind": "local Node synthetic",
+      "runtime": "Node.js v22.16.0",
+      "command": "node --test test/semantic-visual-crosswalk.test.mjs",
+      "status": "PASS",
+      "exitCode": 0,
+      "passed": 20,
+      "failed": 0,
+      "skipped": 0,
+      "blobsMatchGitHub": true,
+      "note": "Initially 19/20 due synthetic R0/R2 fixture mismatch; corrected, rerun final 20/20."
+    },
+    {
+      "kind": "GitHub source identity",
+      "status": "PASS",
+      "detail": "original HQ research SWC Git blob matches staged S copy"
+    },
+    {
+      "kind": "original HQ SWC ESM Node test",
+      "status": "UNRUN",
+      "exitCode": null
+    },
+    {
+      "kind": "S/V/W/N0 original suites",
+      "status": "UNRUN",
+      "exitCode": null
+    },
+    {
+      "kind": "Cargo Rust",
+      "status": "UNRUN",
+      "exitCode": null
+    },
+    {
+      "kind": "B live Host/dispatcher",
+      "status": "UNRUN",
+      "exitCode": null
+    },
+    {
+      "kind": "D source walker/KB SQLite",
+      "status": "UNRUN",
+      "exitCode": null
+    },
+    {
+      "kind": "C signed-in Chrome",
+      "status": "UNRUN",
+      "exitCode": null
+    },
+    {
+      "kind": "E visual/Android PWA",
+      "status": "UNRUN",
+      "exitCode": null
+    },
+    {
+      "kind": "F schema parity",
+      "status": "UNRUN",
+      "exitCode": null
+    },
+    {
+      "kind": "B private DCB/memory",
+      "status": "UNRUN",
+      "exitCode": null
+    },
+    {
+      "kind": "Bun",
+      "status": "UNRUN",
+      "exitCode": null
+    },
+    {
+      "kind": "G serial integration/build",
+      "status": "UNRUN",
+      "exitCode": null
+    },
+    {
+      "kind": "Rock disk/recovery",
+      "status": "UNRUN",
+      "exitCode": null
+    }
+  ],
+  "blockers": [
+    "G branch absent at preflight; source-only frozen A-F",
+    "No trusted D walker to S source compiler",
+    "N0 scalar-to-UTF16 typed adapter unaccepted",
+    "No full update Host v6 action",
+    "No actor trusted event ingress",
+    "No real memory/DCB scope or Host receipt",
+    "Device and runtime unrun"
+  ],
+  "effectPerformed": false,
+  "executable": false,
+  "personalDataUsed": false,
+  "wikiWritten": false,
+  "productEdited": false,
+  "GInterference": false,
+  "disposition": "PREPARED_NOT_PROMOTED"
+}

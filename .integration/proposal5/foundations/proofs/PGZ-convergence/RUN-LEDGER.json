@@ -1,0 +1,246 @@
+{
+  "schema": "arbor.proposal5.fa-pgz-run/1",
+  "date": "2026-11-12",
+  "branch": "work/p5-fa-pgz-convergence-r001",
+  "base": {
+    "ref": "work/p5-foundational-architecture-prep-r001",
+    "sha": "80c29fbc0d45afbce0fadde5388a8f912cdd2762",
+    "tree": "f6d4d621fab456f99eaa2dbe14bcba750e284b72"
+  },
+  "head": {
+    "sha": null,
+    "resolution": "Read exact branch HEAD from GitHub after this commit; self-referential SHA cannot be stored."
+  },
+  "disposition": "PREPARED_NOT_PROMOTED",
+  "writePrefix": ".integration/proposal5/foundations/proofs/PGZ-convergence/",
+  "workerPins": {
+    "PG00": {
+      "branch": "work/p5-fa-pg00-source-truth-r001",
+      "sha": "f8415bb793b1a88b920b3ac509f4820e7a4f5e46",
+      "files": 9,
+      "commits": 1
+    },
+    "PG01": {
+      "branch": "work/p5-fa-pg01-native-abi-r001",
+      "sha": "78e43165f76c1f6ad18a63b725d75d40501259ce",
+      "files": 9,
+      "commits": 1
+    },
+    "PG02": {
+      "branch": "work/p5-fa-pg02-semantic-fabric-r001",
+      "sha": "021864846783d28679b29e563490d4bb100ac079",
+      "files": 12,
+      "commits": 2
+    },
+    "PG03": {
+      "branch": "work/p5-fa-pg03-pwa-storage-r001",
+      "sha": "82fcffc1217ac58dd323627c698d71ed422a9534",
+      "files": 10,
+      "commits": 1
+    }
+  },
+  "frozenHeads": {
+    "A": "dda546a11294920d6521a0f64ab7ee62ec993c70",
+    "B": "78a5105a9c1f1880d658f350e130b1e2632d3532",
+    "C": "f950b91685927f37b48d020433aa8d2d3c271419",
+    "D": "ad55fe28c2c331841675f308f9199ee4c2add86a",
+    "E": "1a5cf26ce14ebce4e31d9a4373060ace61852645",
+    "F": "be458f3c4cdb7eb38d47b1de2a00d441b7cdc704"
+  },
+  "adjacentHeads": {
+    "S": "d7e59a389a6ec5278595e317dfa904a801783c5b",
+    "V": "7ad5b3c49aefdf1fdd8b212e5b7eea0e7b92338e",
+    "W": "827d21d1c33aa8597c600b45179452abc35c7af9",
+    "N0": "cde3b6e5521d5b17215ab10088cb8090f8b87e6f",
+    "T": "c807010e52b4a9f82ea9578a979befd38f74cb31",
+    "K": "4db9e0c2068be36ab42663a76186422c8f9813a1",
+    "C": "73b1ea769de6023dfff857d7e9c4003731f3b112",
+    "H1": "3e6954d21bd70eeccc6e00a310bcb337c3164f50"
+  },
+  "g": {
+    "ref": "integrate/proposal5-beta-r001",
+    "observed": "NOT_FOUND_404",
+    "accepted": false
+  },
+  "workerCompares": {
+    "PG00": {
+      "commits": 1,
+      "changed": 9,
+      "outside": 0,
+      "behind": 0
+    },
+    "PG01": {
+      "commits": 1,
+      "changed": 9,
+      "outside": 0,
+      "behind": 0
+    },
+    "PG02": {
+      "commits": 2,
+      "changed": 12,
+      "outside": 0,
+      "behind": 0
+    },
+    "PG03": {
+      "commits": 1,
+      "changed": 10,
+      "outside": 0,
+      "behind": 0
+    }
+  },
+  "workerProofFileTotal": 40,
+  "sourceBlobChecks": [
+    {
+      "ref": "dda546a11294920d6521a0f64ab7ee62ec993c70",
+      "path": "native/hqkg/src/engine.rs",
+      "sha": "fbb1100999fd229fb5a4352a78bbb0d77b643988"
+    },
+    {
+      "ref": "dda546a11294920d6521a0f64ab7ee62ec993c70",
+      "path": "native/hqkg/src/typed_dag.rs",
+      "sha": "24d4ef22ab76f1c8832f5c426b29860c74fac2a5"
+    },
+    {
+      "ref": "78a5105a9c1f1880d658f350e130b1e2632d3532",
+      "path": "apps/vivim-host/control/action-catalog.v1.json",
+      "sha": "c423d5933c28ca9f534028aeaffd7929f767c269"
+    },
+    {
+      "ref": "ad55fe28c2c331841675f308f9199ee4c2add86a",
+      "path": "hq/lib/annotation-v2.mjs",
+      "sha": "7e94dfbd4fbca8ef0fdb9e0610053364ce2c38c8"
+    },
+    {
+      "ref": "1a5cf26ce14ebce4e31d9a4373060ace61852645",
+      "path": "apps/mobile-relay/sw.js",
+      "sha": "0fb3fb52d57eb81d82bc10cc48e1f2e58ffd0b48"
+    },
+    {
+      "ref": "1a5cf26ce14ebce4e31d9a4373060ace61852645",
+      "path": "packages/tierflow/src/visual-runtime/command/ir.ts",
+      "sha": "a6e581476af9d5b091b1939591ad5d5ba8a32a45"
+    },
+    {
+      "ref": "be458f3c4cdb7eb38d47b1de2a00d441b7cdc704",
+      "path": "contracts/interop/v1/types.rs",
+      "sha": "ccfb0808a4152146b753445ae40842ab30d2826d"
+    },
+    {
+      "ref": "d7e59a389a6ec5278595e317dfa904a801783c5b",
+      "path": ".integration/proposal5/phase2/pre-g/S-semantic/inert-adapter.mjs",
+      "sha": "778fcd186d0517ada4399b3d637c1e35b8b0e233"
+    },
+    {
+      "ref": "cde3b6e5521d5b17215ab10088cb8090f8b87e6f",
+      "path": ".integration/proposal5/phase2/pre-g/N0-io/IO-CONTRACT.json",
+      "sha": "5089373f8106061c341a6b525a60a650db48b57a"
+    }
+  ],
+  "executed": [
+    {
+      "kind": "GITHUB_READ",
+      "detail": "all 4 heads + original G absent + six frozen heads and PREG files, current S/V/W/N0/T/K/C/H1 refs and actual source snippets",
+      "status": "OBSERVED",
+      "exitCode": null
+    },
+    {
+      "kind": "GITHUB_COMPARE",
+      "detail": "base..PG00 9, PG01 9, PG02 12, PG03 10; zero out-of-scope",
+      "status": "OBSERVED",
+      "exitCode": null
+    },
+    {
+      "kind": "V8_CONTENT_CONTRACT",
+      "detail": "eight connector-fetched source content assertions for catalog parity, no full update, missing static signer vs import, native loopback, mandatory APK, PG02 20 test declarations, PG03 25 unrun negatives",
+      "status": "PASS_V8_ONLY",
+      "assertions": 8,
+      "passed": 8,
+      "failed": 0,
+      "exitCode": null
+    }
+  ],
+  "workerTests": [
+    {
+      "lane": "PG00",
+      "cmd": "node --test .integration/proposal5/foundations/proofs/PG00-source-truth/negative-contracts.test.mjs",
+      "status": "UNRUN",
+      "exitCode": null
+    },
+    {
+      "lane": "PG01",
+      "cmd": "cargo test --manifest-path native/hqkg/Cargo.toml --test pg01_engine_abi",
+      "status": "UNRUN",
+      "exitCode": null
+    },
+    {
+      "lane": "PG01",
+      "cmd": "cargo test --manifest-path core/programmability/Cargo.toml --test pg01_program_abi",
+      "status": "UNRUN",
+      "exitCode": null
+    },
+    {
+      "lane": "PG02",
+      "cmd": "node --test test/semantic-visual-crosswalk.test.mjs",
+      "runner": "Node.js v22.16.0",
+      "status": "WORKER_REPORTED_TEST_EXECUTED_NOT_PGZ_RERUN",
+      "passed": 20,
+      "failed": 0,
+      "exitCode": 0,
+      "codeBlob": "8d773c67888634c52e9ea2ad80e42efa5eeac8dd",
+      "testBlob": "0862a2eeab19afc72008b2df86dcde60d5581916"
+    },
+    {
+      "lane": "PG03",
+      "cmd": "node --test .integration/proposal5/foundations/proofs/PG03-pwa-storage/synthetic-contracts.test.mjs",
+      "status": "UNRUN",
+      "exitCode": null
+    }
+  ],
+  "pgzRuntimeTests": [
+    {
+      "cmd": "node --test combined PGZ/Host/HQ/PWA",
+      "status": "UNRUN",
+      "exitCode": null
+    },
+    {
+      "cmd": "bun test",
+      "status": "UNRUN",
+      "exitCode": null
+    },
+    {
+      "cmd": "cargo test --workspace",
+      "status": "UNRUN",
+      "exitCode": null
+    },
+    {
+      "cmd": "signed-in Chrome, Windows Tauri, Android HTTPS PWA, ENOSPC physical",
+      "status": "UNRUN",
+      "exitCode": null
+    }
+  ],
+  "securityBlockers": [
+    "Native fixed loopback+owner bearer/wildcard Tauri IPC",
+    "PWA static browser-device-key missing",
+    "Active paired bearer has no signed per privileged request proof",
+    "Mandatory APK resource and unverified build hook closure",
+    "Storage physical reserve/rehydration UNVERIFIED"
+  ],
+  "privacy": {
+    "realUserDataIngested": false,
+    "sourceWritersChanged": false,
+    "hostEffectsPerformed": false,
+    "apkBuilt": false,
+    "merged": false
+  },
+  "plannedPostGOwnerHandoffs": 5,
+  "changedPaths": [
+    ".integration/proposal5/foundations/proofs/PGZ-convergence/README.md",
+    ".integration/proposal5/foundations/proofs/PGZ-convergence/FOUNDATION-CONVERGENCE-MATRIX.json",
+    ".integration/proposal5/foundations/proofs/PGZ-convergence/CONTRACT-COLLISIONS.md",
+    ".integration/proposal5/foundations/proofs/PGZ-convergence/MINIMUM-SOURCE-PATCHES.md",
+    ".integration/proposal5/foundations/proofs/PGZ-convergence/READINESS-MATRIX.md",
+    ".integration/proposal5/foundations/proofs/PGZ-convergence/NEGATIVE-ACCEPTANCE.md",
+    ".integration/proposal5/foundations/proofs/PGZ-convergence/RUN-LEDGER.json"
+  ],
+  "scopeVerification": "Verify GitHub compare 80c29fbc0d45afbce0fadde5388a8f912cdd2762...<PGZ_FINAL_SHA> AFTER pushing branch, require 0 path outside .integration/proposal5/foundations/proofs/PGZ-convergence/"
+}

@@ -1,0 +1,300 @@
+{
+  "schema": "arbor.proposal5.fa-pg01.source-delta/1",
+  "disposition": "PREPARED_NOT_PROMOTED",
+  "pins": {
+    "foundation": {
+      "repo": "owenservera/ARBOR",
+      "branch": "work/p5-foundational-architecture-prep-r001",
+      "sha": "80c29fbc0d45afbce0fadde5388a8f912cdd2762"
+    },
+    "A": {
+      "repo": "owenservera/ARBOR",
+      "branch": "work/p5-w01-a-native",
+      "sha": "dda546a11294920d6521a0f64ab7ee62ec993c70"
+    },
+    "B": {
+      "repo": "owenservera/ARBOR",
+      "branch": "work/p5-w01-b-host",
+      "sha": "78a5105a9c1f1880d658f350e130b1e2632d3532"
+    },
+    "C": {
+      "repo": "owenservera/ARBOR",
+      "branch": "work/p5-w01-c-studio",
+      "sha": "f950b91685927f37b48d020433aa8d2d3c271419"
+    },
+    "D": {
+      "repo": "owenservera/ARBOR",
+      "branch": "work/p5-w01-d-hq",
+      "sha": "ad55fe28c2c331841675f308f9199ee4c2add86a"
+    },
+    "E": {
+      "repo": "owenservera/ARBOR",
+      "branch": "work/p5-w01-e-ui",
+      "sha": "1a5cf26ce14ebce4e31d9a4373060ace61852645"
+    },
+    "F": {
+      "repo": "owenservera/ARBOR",
+      "branch": "work/p5-w01-f-verify",
+      "sha": "be458f3c4cdb7eb38d47b1de2a00d441b7cdc704"
+    },
+    "N0": {
+      "repo": "owenservera/ARBOR",
+      "branch": "work/p5-preg-n0-io-r001",
+      "sha": "cde3b6e5521d5b17215ab10088cb8090f8b87e6f"
+    },
+    "P2C": {
+      "repo": "owenservera/ARBOR",
+      "branch": "work/p5-p2-preg-interop-r001",
+      "sha": "73b1ea769de6023dfff857d7e9c4003731f3b112"
+    },
+    "LabsNode0": {
+      "repo": "owenservera/vivim-labs",
+      "branch": "lab/user-io-rust-core-20261112",
+      "sha": "61d9fc15c55144c4f0b79afa248981c2b0ca9bd6"
+    }
+  },
+  "blobs": [
+    {
+      "pin": "A",
+      "path": "native/hqkg/src/engine.rs",
+      "blobSha": "fbb1100999fd229fb5a4352a78bbb0d77b643988"
+    },
+    {
+      "pin": "A",
+      "path": "native/hqkg/src/typed_dag.rs",
+      "blobSha": "24d4ef22ab76f1c8832f5c426b29860c74fac2a5"
+    },
+    {
+      "pin": "A",
+      "path": "native/hqkg/src/scoped_graph.rs",
+      "blobSha": "586843b56eedd4a9926bb443cbbeda80d841bda4"
+    },
+    {
+      "pin": "A",
+      "path": "native/hqkg/src/durable_dag.rs",
+      "blobSha": "140161b4f34874dee9c8540dfcd4733ed97f7cd4"
+    },
+    {
+      "pin": "A",
+      "path": "core/programmability/src/lib.rs",
+      "blobSha": "fe42cb6bf535c91d3ba05911977999a9d8f8c254"
+    },
+    {
+      "pin": "A",
+      "path": "native/hqkg/src/lib.rs",
+      "blobSha": "2f4eddd34e64a53430df97ada0e2bd3960592935"
+    },
+    {
+      "pin": "A",
+      "path": "native/hqkg/Cargo.toml",
+      "blobSha": "b90c06fa3035ad7b8b7cdd2e97593c3e4fd2b19a"
+    },
+    {
+      "pin": "A",
+      "path": "core/programmability/Cargo.toml",
+      "blobSha": "9c3a8e997897a8aa4079ecbef420adc1af41c090"
+    },
+    {
+      "pin": "B",
+      "path": "apps/vivim-host/control/dispatcher.mjs",
+      "blobSha": "723865482b8a0f98ab3214b2ec6a83aaea629c43"
+    },
+    {
+      "pin": "B",
+      "path": "apps/vivim-host/control/command-program.mjs",
+      "blobSha": "28a65908ea907b28593d8747b0bd6da06a9c7142"
+    },
+    {
+      "pin": "E",
+      "path": "packages/tierflow/src/visual-runtime/command/ir.ts",
+      "blobSha": "a6e581476af9d5b091b1939591ad5d5ba8a32a45"
+    },
+    {
+      "pin": "E",
+      "path": "packages/tierflow/src/visual-runtime/command/compile.ts",
+      "blobSha": "4cc5b63bea409171e2b4b0a29398c87907cd35ea"
+    },
+    {
+      "pin": "F",
+      "path": "contracts/interop/v1/types.rs",
+      "blobSha": "ccfb0808a4152146b753445ae40842ab30d2826d"
+    },
+    {
+      "pin": "F",
+      "path": "contracts/interop/v1/types.ts",
+      "blobSha": "e329eb1b8506938c8fc981b426c51a3582ae03c7"
+    },
+    {
+      "pin": "F",
+      "path": "contracts/interop/v1/protocol.schema.json",
+      "blobSha": "d13c0e6d5065400224bf7a4bbf89aa9a92f4156c"
+    },
+    {
+      "pin": "F",
+      "path": "contracts/interop/v1/validate.mjs",
+      "blobSha": "25c0b36b11f2e6f3b003920e14e166a8f74354b7"
+    },
+    {
+      "pin": "N0",
+      "path": ".integration/proposal5/phase2/pre-g/N0-io/IO-CONTRACT.json",
+      "blobSha": "5089373f8106061c341a6b525a60a650db48b57a"
+    },
+    {
+      "pin": "N0",
+      "path": ".integration/proposal5/phase2/pre-g/N0-io/reference.types.rs",
+      "blobSha": "afefc7d7c73d19e79ea068c44ff546b095389ab6"
+    },
+    {
+      "pin": "P2C",
+      "path": ".integration/proposal5/phase2/pre-g/C-interop/interop.types.ts",
+      "blobSha": "e73a1561cf1bd54cf270116e4c4ef0af8958813d"
+    },
+    {
+      "pin": "LabsNode0",
+      "path": "user-io-rust-core/PARALLEL-EVENT-FABRIC-ARCHITECTURE.md",
+      "blobSha": "54d942eca63cd339adb8d7a959d3badf32afd0c1"
+    },
+    {
+      "pin": "LabsNode0",
+      "path": "user-io-rust-core/USER-IO-CONTRACT-AND-MIGRATION.md",
+      "blobSha": "3928de100a6a98183c1c6e0e8cf9c002497c5bd4"
+    },
+    {
+      "pin": "foundation",
+      "path": ".integration/proposal5/foundations/contracts/capability-manifest.v0.schema.json",
+      "blobSha": "d2de502f98212e18dca970eb152044d05e4000fe"
+    },
+    {
+      "pin": "foundation",
+      "path": ".integration/proposal5/foundations/prompts/FA-PG01-NATIVE-ABI.md",
+      "blobSha": "7f7e8c53c8e1077d1d84e0bf4a3372dce1ad29d1"
+    },
+    {
+      "pin": "foundation",
+      "path": ".integration/proposal5/foundations/prompts/00-SHARED-PRE-G-CONTRACT.md",
+      "blobSha": "d373259e0fb89016b07ba22b27e9479dcf1f24a3"
+    }
+  ],
+  "items": [
+    {
+      "id": "ENG-01",
+      "owner": "A",
+      "classification": "ALREADY_IMPORTED",
+      "path": "native/hqkg/src/engine.rs",
+      "reused": "EngineRegistry::install CAS on previous generation; interface equality; capability monotonic subset; Arc-backed pinned EngineLease; SwapReceipt slot/previous/generation",
+      "missing": "Owner admission, source attestation, signed compiled implementation hash, generic engine ABI version, bounded per-call preemption, revocation."
+    },
+    {
+      "id": "ENG-02",
+      "owner": "A",
+      "classification": "ALREADY_IMPORTED",
+      "path": "native/hqkg/src/engine.rs",
+      "reused": "Scheduler synchronous dependency ordering, max_tasks, max_elapsed_ms (between execute calls), max_output_bytes; CancellationToken before/after execute",
+      "missing": "Execution preemption, bounded raw input byte cap, queue concurrency quota, force-stop for blocking or malicious engine; a stalled execute may block indefinitely."
+    },
+    {
+      "id": "DAG-01",
+      "owner": "A",
+      "classification": "ALREADY_IMPORTED",
+      "path": "native/hqkg/src/typed_dag.rs",
+      "reused": "Namespace(GraphDomain,owner), RevisionToken(graph_epoch), SourceBinding(id,revision,digest,provenance), bounded steps/deps, exact input stamp, RunState, cache cap/eviction and staged commit",
+      "missing": "Actor verification, live source permit/revocation, sourceEpoch and policy/World revision vector, cross-runtime redacted receipt, manifest digest."
+    },
+    {
+      "id": "DAG-02",
+      "owner": "A",
+      "classification": "ALREADY_IMPORTED",
+      "path": "native/hqkg/src/typed_dag.rs",
+      "reused": "RunState Complete/Cancelled/Failed/StaleGeneration/Backpressure; Scheduler task repinning is compared to original lease generation",
+      "missing": "A swap between pin and scheduler repin can yield StaleGeneration instead of running old lease; run() validation mismatch returns Err before DagReport; source ref expiry not checked."
+    },
+    {
+      "id": "GRAPH-01",
+      "owner": "A",
+      "classification": "ALREADY_IMPORTED",
+      "path": "native/hqkg/src/scoped_graph.rs",
+      "reused": "Qualified scope boundaries; record provenance structural validation; atomic staging of Graph and ApplyLedger",
+      "missing": "Caller-provided provenance is NOT cryptographically or actor authenticated; graph epoch is not Host grant."
+    },
+    {
+      "id": "DURABLE-01",
+      "owner": "A",
+      "classification": "ALREADY_IMPORTED",
+      "path": "native/hqkg/src/durable_dag.rs",
+      "reused": "Existing HQD1 journal stores redacted run descriptors; no result or input bytes",
+      "missing": "It is not Host effect journal/approval state; raw DagReport outputs and provenance still need audience-aware projection redaction."
+    },
+    {
+      "id": "PROGRAM-01",
+      "owner": "A",
+      "classification": "ALREADY_IMPORTED",
+      "path": "core/programmability/src/lib.rs",
+      "reused": "Program and PolicyLimits validated as inert; risk/data-class/taint/destination checks; ValidatedProgram has execution_authorized=false and effect_performed=false",
+      "missing": "Manifest relation, source bundle review, actor/current policy verification, typed serialized capability ABI; even EffectCandidate is NOT an executable action."
+    },
+    {
+      "id": "SCHEMA-01",
+      "owner": "F",
+      "classification": "DESIGN_ONLY",
+      "path": ".integration/proposal5/foundations/contracts/capability-manifest.v0.schema.json",
+      "reused": "Strict data-only manifest schema: source commit/content SHA, input/output refs, ABI version, budget, tests digest, runtimeAccepted=false",
+      "missing": "No Rust/TS/Host admitted implementation or verified digest computation; cannot infer runtimeAccepted from schema validation."
+    },
+    {
+      "id": "INTEROP-01",
+      "owner": "F",
+      "classification": "ALREADY_IMPORTED",
+      "path": "contracts/interop/v1/types.rs",
+      "reused": "SourceRef domain/owner_ref/revision, EvidenceRef, RevisionEvent, InertViewProjection",
+      "missing": "Not Cargo-linked; no mandatory actor/digest/engine generation; Rust mirror lacks TS schema+inert parity."
+    },
+    {
+      "id": "INTEROP-02",
+      "owner": "F",
+      "classification": "ALREADY_IMPORTED",
+      "path": "contracts/interop/v1/validate.mjs",
+      "reused": "isSourceRef, isEvidenceRef, canDisplayProjection exact owner/revision equality",
+      "missing": "Cannot authenticate caller; F mirrors require trusted actor and source epochs in native versioned envelopes."
+    },
+    {
+      "id": "N0-01",
+      "owner": "A+B+F",
+      "classification": "PREPARED_UNPROMOTED",
+      "path": ".integration/proposal5/phase2/pre-g/N0-io/IO-CONTRACT.json",
+      "reused": "Data-only Input/Derived/Output bounded schema; 4096 UTF-8 draft bytes, 16 source refs, 32 derived per revision, 16 TTL; actor must be injected at Host ingress",
+      "missing": "No accepted compiled native fan-out, actor-bound ingress or true concurrent bounded queue; engineVersion string differs from generation u64."
+    },
+    {
+      "id": "P2C-01",
+      "owner": "F+E",
+      "classification": "PREPARED_UNPROMOTED",
+      "path": ".integration/proposal5/phase2/pre-g/C-interop/interop.types.ts",
+      "reused": "TrustedReadContext, InertReadEnvelope; no effect, no auto retry",
+      "missing": "No proof of combined actor/session/source/revision/ABI compatibility in product."
+    },
+    {
+      "id": "LABS-01",
+      "owner": "A",
+      "classification": "DESIGN_ONLY",
+      "path": "user-io-rust-core/PARALLEL-EVENT-FABRIC-ARCHITECTURE.md",
+      "reused": "One immutable ingress event and independent pure subscribers; revision-checked convergence design",
+      "missing": "No native shipped event fan-out runner or thread/budget/resource acceptance."
+    },
+    {
+      "id": "HOST-01",
+      "owner": "B",
+      "classification": "ALREADY_IMPORTED",
+      "path": "apps/vivim-host/control/dispatcher.mjs",
+      "reused": "Canonical Host planner/approval/claim/journal/receipt and fixed executor IDs",
+      "missing": "Native ingress proof, attested engine manifest and verified Host receipt projection post-G; no new Host action via engine."
+    },
+    {
+      "id": "UI-01",
+      "owner": "E",
+      "classification": "ALREADY_IMPORTED",
+      "path": "packages/tierflow/src/visual-runtime/command/compile.ts",
+      "reused": "Inert command candidate, revision pins, safe argument constraints",
+      "missing": "Typed engine generation/subscriber trace subscription into existing World publisher; no live PWA evidence."
+    }
+  ]
+}

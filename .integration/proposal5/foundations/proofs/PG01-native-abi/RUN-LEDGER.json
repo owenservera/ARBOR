@@ -1,0 +1,266 @@
+{
+  "schema": "arbor.proposal5.fa-worker-run/1",
+  "lane": "PG01-native-abi",
+  "branch": "work/p5-fa-pg01-native-abi-r001",
+  "baseSha": "80c29fbc0d45afbce0fadde5388a8f912cdd2762",
+  "finalHeadSha": null,
+  "finalHeadResolution": "Git commit cannot embed its own SHA without changing that SHA. Resolve the exact worker tip from GitHub ref after this artifact is committed; terminal report records it.",
+  "disposition": "PREPARED_NOT_PROMOTED",
+  "asOf": "2026-11-12",
+  "sourcePins": {
+    "foundation": {
+      "repo": "owenservera/ARBOR",
+      "branch": "work/p5-foundational-architecture-prep-r001",
+      "sha": "80c29fbc0d45afbce0fadde5388a8f912cdd2762"
+    },
+    "A": {
+      "repo": "owenservera/ARBOR",
+      "branch": "work/p5-w01-a-native",
+      "sha": "dda546a11294920d6521a0f64ab7ee62ec993c70"
+    },
+    "B": {
+      "repo": "owenservera/ARBOR",
+      "branch": "work/p5-w01-b-host",
+      "sha": "78a5105a9c1f1880d658f350e130b1e2632d3532"
+    },
+    "C": {
+      "repo": "owenservera/ARBOR",
+      "branch": "work/p5-w01-c-studio",
+      "sha": "f950b91685927f37b48d020433aa8d2d3c271419"
+    },
+    "D": {
+      "repo": "owenservera/ARBOR",
+      "branch": "work/p5-w01-d-hq",
+      "sha": "ad55fe28c2c331841675f308f9199ee4c2add86a"
+    },
+    "E": {
+      "repo": "owenservera/ARBOR",
+      "branch": "work/p5-w01-e-ui",
+      "sha": "1a5cf26ce14ebce4e31d9a4373060ace61852645"
+    },
+    "F": {
+      "repo": "owenservera/ARBOR",
+      "branch": "work/p5-w01-f-verify",
+      "sha": "be458f3c4cdb7eb38d47b1de2a00d441b7cdc704"
+    },
+    "N0": {
+      "repo": "owenservera/ARBOR",
+      "branch": "work/p5-preg-n0-io-r001",
+      "sha": "cde3b6e5521d5b17215ab10088cb8090f8b87e6f"
+    },
+    "P2C": {
+      "repo": "owenservera/ARBOR",
+      "branch": "work/p5-p2-preg-interop-r001",
+      "sha": "73b1ea769de6023dfff857d7e9c4003731f3b112"
+    },
+    "LabsNode0": {
+      "repo": "owenservera/vivim-labs",
+      "branch": "lab/user-io-rust-core-20261112",
+      "sha": "61d9fc15c55144c4f0b79afa248981c2b0ca9bd6"
+    }
+  },
+  "sourceBlobs": [
+    {
+      "pin": "A",
+      "path": "native/hqkg/src/engine.rs",
+      "blobSha": "fbb1100999fd229fb5a4352a78bbb0d77b643988"
+    },
+    {
+      "pin": "A",
+      "path": "native/hqkg/src/typed_dag.rs",
+      "blobSha": "24d4ef22ab76f1c8832f5c426b29860c74fac2a5"
+    },
+    {
+      "pin": "A",
+      "path": "native/hqkg/src/scoped_graph.rs",
+      "blobSha": "586843b56eedd4a9926bb443cbbeda80d841bda4"
+    },
+    {
+      "pin": "A",
+      "path": "native/hqkg/src/durable_dag.rs",
+      "blobSha": "140161b4f34874dee9c8540dfcd4733ed97f7cd4"
+    },
+    {
+      "pin": "A",
+      "path": "core/programmability/src/lib.rs",
+      "blobSha": "fe42cb6bf535c91d3ba05911977999a9d8f8c254"
+    },
+    {
+      "pin": "A",
+      "path": "native/hqkg/src/lib.rs",
+      "blobSha": "2f4eddd34e64a53430df97ada0e2bd3960592935"
+    },
+    {
+      "pin": "A",
+      "path": "native/hqkg/Cargo.toml",
+      "blobSha": "b90c06fa3035ad7b8b7cdd2e97593c3e4fd2b19a"
+    },
+    {
+      "pin": "A",
+      "path": "core/programmability/Cargo.toml",
+      "blobSha": "9c3a8e997897a8aa4079ecbef420adc1af41c090"
+    },
+    {
+      "pin": "B",
+      "path": "apps/vivim-host/control/dispatcher.mjs",
+      "blobSha": "723865482b8a0f98ab3214b2ec6a83aaea629c43"
+    },
+    {
+      "pin": "B",
+      "path": "apps/vivim-host/control/command-program.mjs",
+      "blobSha": "28a65908ea907b28593d8747b0bd6da06a9c7142"
+    },
+    {
+      "pin": "E",
+      "path": "packages/tierflow/src/visual-runtime/command/ir.ts",
+      "blobSha": "a6e581476af9d5b091b1939591ad5d5ba8a32a45"
+    },
+    {
+      "pin": "E",
+      "path": "packages/tierflow/src/visual-runtime/command/compile.ts",
+      "blobSha": "4cc5b63bea409171e2b4b0a29398c87907cd35ea"
+    },
+    {
+      "pin": "F",
+      "path": "contracts/interop/v1/types.rs",
+      "blobSha": "ccfb0808a4152146b753445ae40842ab30d2826d"
+    },
+    {
+      "pin": "F",
+      "path": "contracts/interop/v1/types.ts",
+      "blobSha": "e329eb1b8506938c8fc981b426c51a3582ae03c7"
+    },
+    {
+      "pin": "F",
+      "path": "contracts/interop/v1/protocol.schema.json",
+      "blobSha": "d13c0e6d5065400224bf7a4bbf89aa9a92f4156c"
+    },
+    {
+      "pin": "F",
+      "path": "contracts/interop/v1/validate.mjs",
+      "blobSha": "25c0b36b11f2e6f3b003920e14e166a8f74354b7"
+    },
+    {
+      "pin": "N0",
+      "path": ".integration/proposal5/phase2/pre-g/N0-io/IO-CONTRACT.json",
+      "blobSha": "5089373f8106061c341a6b525a60a650db48b57a"
+    },
+    {
+      "pin": "N0",
+      "path": ".integration/proposal5/phase2/pre-g/N0-io/reference.types.rs",
+      "blobSha": "afefc7d7c73d19e79ea068c44ff546b095389ab6"
+    },
+    {
+      "pin": "P2C",
+      "path": ".integration/proposal5/phase2/pre-g/C-interop/interop.types.ts",
+      "blobSha": "e73a1561cf1bd54cf270116e4c4ef0af8958813d"
+    },
+    {
+      "pin": "LabsNode0",
+      "path": "user-io-rust-core/PARALLEL-EVENT-FABRIC-ARCHITECTURE.md",
+      "blobSha": "54d942eca63cd339adb8d7a959d3badf32afd0c1"
+    },
+    {
+      "pin": "LabsNode0",
+      "path": "user-io-rust-core/USER-IO-CONTRACT-AND-MIGRATION.md",
+      "blobSha": "3928de100a6a98183c1c6e0e8cf9c002497c5bd4"
+    },
+    {
+      "pin": "foundation",
+      "path": ".integration/proposal5/foundations/contracts/capability-manifest.v0.schema.json",
+      "blobSha": "d2de502f98212e18dca970eb152044d05e4000fe"
+    },
+    {
+      "pin": "foundation",
+      "path": ".integration/proposal5/foundations/prompts/FA-PG01-NATIVE-ABI.md",
+      "blobSha": "7f7e8c53c8e1077d1d84e0bf4a3372dce1ad29d1"
+    },
+    {
+      "pin": "foundation",
+      "path": ".integration/proposal5/foundations/prompts/00-SHARED-PRE-G-CONTRACT.md",
+      "blobSha": "d373259e0fb89016b07ba22b27e9479dcf1f24a3"
+    }
+  ],
+  "observed": [
+    {
+      "action": "GitHub fetched complete FA-PG01 work order and shared contract; reviewed foundation baseline/schema/architecture/verification; frozen code + F/N0/P2C/Labs",
+      "status": "OBSERVED"
+    },
+    {
+      "action": "GitHub branch create from pinned exact base",
+      "status": "OBSERVED",
+      "branch": "work/p5-fa-pg01-native-abi-r001",
+      "baseSha": "80c29fbc0d45afbce0fadde5388a8f912cdd2762"
+    },
+    {
+      "action": "Frozen A–F heads match shared contract; each PREG report reports FREEZE_READY",
+      "status": "OBSERVED"
+    },
+    {
+      "action": "Integrate G branch at probe",
+      "status": "ABSENT_404"
+    },
+    {
+      "action": "Local tool presence check",
+      "status": "OBSERVED",
+      "cargo": "NOT_INSTALLED",
+      "rustc": "NOT_INSTALLED",
+      "node": "AVAILABLE",
+      "git": "AVAILABLE"
+    }
+  ],
+  "tests": [
+    {
+      "command": "cargo test --manifest-path native/hqkg/Cargo.toml --test pg01_engine_abi",
+      "status": "UNRUN",
+      "exitCode": null,
+      "reason": "cargo/rustc not installed; harness has not been compile/type-checked"
+    },
+    {
+      "command": "cargo test --manifest-path core/programmability/Cargo.toml --test pg01_program_abi",
+      "status": "UNRUN",
+      "exitCode": null,
+      "reason": "cargo/rustc not installed; harness has not been compile/type-checked"
+    },
+    {
+      "command": "cargo check --manifest-path native/hqkg/Cargo.toml",
+      "status": "UNRUN",
+      "exitCode": null
+    },
+    {
+      "command": "cargo test --manifest-path native/hqkg/Cargo.toml",
+      "status": "UNRUN",
+      "exitCode": null
+    },
+    {
+      "command": "cargo test --manifest-path core/programmability/Cargo.toml",
+      "status": "UNRUN",
+      "exitCode": null
+    },
+    {
+      "command": "Rust/TS/JS cross-runtime parity, actor auth, source attestation, Windows/Tauri/PWA, G integrated runtime",
+      "status": "UNRUN",
+      "exitCode": null
+    }
+  ],
+  "changedPaths": [
+    ".integration/proposal5/foundations/proofs/PG01-native-abi/README.md",
+    ".integration/proposal5/foundations/proofs/PG01-native-abi/SOURCE-DELTA.json",
+    ".integration/proposal5/foundations/proofs/PG01-native-abi/ENGINE-ABI-CROSSWALK.json",
+    ".integration/proposal5/foundations/proofs/PG01-native-abi/PROOF-PLAN.md",
+    ".integration/proposal5/foundations/proofs/PG01-native-abi/NEGATIVE-ACCEPTANCE.md",
+    ".integration/proposal5/foundations/proofs/PG01-native-abi/OWNER-HANDOFF.md",
+    ".integration/proposal5/foundations/proofs/PG01-native-abi/RUN-LEDGER.json",
+    ".integration/proposal5/foundations/proofs/PG01-native-abi/rust/pg01_engine_abi.rs",
+    ".integration/proposal5/foundations/proofs/PG01-native-abi/rust/pg01_program_abi.rs"
+  ],
+  "outOfScopePathsExpected": 0,
+  "unresolvedRisks": [
+    "EngineRegistry::install not tied to source attestation or actor/source owner admission",
+    "ComputeEngine::execute not sandboxed or preemptible; pure interface label is a trusted Rust integration promise only",
+    "DagExecutor pins generation then Scheduler repins; stale race returns StaleGeneration and must be tested",
+    "A GraphDomain and F/N0 SourceDomain cardinality mismatch; SourceBinding digest caller asserted",
+    "N0 fan-out and typed ABI not live; Host authority binding and per-event reader revocation unverified",
+    "No G merged baseline/combined Cargo workspace or device acceptance at observation"
+  ]
+}

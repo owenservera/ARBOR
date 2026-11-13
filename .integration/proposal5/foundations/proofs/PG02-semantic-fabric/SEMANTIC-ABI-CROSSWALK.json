@@ -1,0 +1,251 @@
+{
+  "schema": "arbor.proposal5.fa.pg02.semantic-abi/1",
+  "acceptedSharedRuntimeABI": false,
+  "grammars": [
+    {
+      "schema": "hq.annotation/2",
+      "owner": "D annotation-v2",
+      "fields": [
+        "type",
+        "capability",
+        "effect",
+        "evidence",
+        "contract",
+        "emits",
+        "consumes",
+        "action",
+        "test"
+      ],
+      "contract": "source comments only"
+    },
+    {
+      "schema": "HQ old @hq:context/@hq:invariant",
+      "owner": "D KB/index",
+      "fields": [
+        "context",
+        "invariant"
+      ],
+      "contract": "legacy explanatory tags distinct from v2"
+    },
+    {
+      "schema": "hq.comment-program/0.1",
+      "owner": "D comment-wiki-bridge + Rust @hq:wiki",
+      "fields": [
+        "compilerVersion",
+        "sourceMap",
+        "config",
+        "bindings",
+        "diagnostics"
+      ],
+      "contract": "preview/activation of wiki program is not a Host handler"
+    },
+    {
+      "schema": "hq.wiki-program/1",
+      "owner": "D wiki-program",
+      "fields": [
+        "id",
+        "version",
+        "project",
+        "source",
+        "filters",
+        "layout",
+        "selection",
+        "expectedRevision"
+      ],
+      "contract": "HQ bounded read view"
+    },
+    {
+      "schema": "vivim.semantic-wiki-ir/0.1",
+      "owner": "HQ original/S",
+      "fields": [
+        "sources",
+        "nodes",
+        "edges",
+        "actions",
+        "diagnostics",
+        "rejections",
+        "coverage",
+        "effectPerformed"
+      ],
+      "contract": "source-comment semantic read IR, not command planner"
+    },
+    {
+      "schema": "vivim.control-language/1",
+      "owner": "B/E Omega NCLL",
+      "fields": [
+        "world",
+        "candidate.actionId",
+        "candidate.args"
+      ],
+      "contract": "local phrase interpreter, not permit"
+    },
+    {
+      "schema": "vivim.command-intent/0.1",
+      "owner": "B",
+      "fields": [
+        "outcome",
+        "actionId",
+        "args",
+        "worldRevision",
+        "catalogRevision"
+      ],
+      "contract": "typed inert meaning"
+    },
+    {
+      "schema": "vivim.command-program/1",
+      "owner": "B",
+      "fields": [
+        "steps",
+        "catalogVersion",
+        "dependsOn",
+        "risk",
+        "needsApproval"
+      ],
+      "contract": "inert DAG"
+    },
+    {
+      "schema": "vivim.visual-command/1",
+      "owner": "E",
+      "fields": [
+        "semanticRef",
+        "target",
+        "risk",
+        "sourceVersions",
+        "capability"
+      ],
+      "contract": "typed UI command, not approval"
+    },
+    {
+      "schema": "arbor.p5.realtime-semantic-projection/1",
+      "owner": "V→E",
+      "fields": [
+        "input.revision",
+        "revisions.source",
+        "revisions.catalog",
+        "revisions.policy",
+        "revisions.graph",
+        "patches",
+        "spans.startUtf16"
+      ],
+      "contract": "inert view; quiet/assisted/view_all"
+    },
+    {
+      "schema": "arbor.n0-io/1",
+      "owner": "N0→A/F",
+      "fields": [
+        "sessionId",
+        "inputRevision",
+        "interactionRevision",
+        "sourceRefs",
+        "policyVersion",
+        "engineVersion",
+        "span.unit=unicode_scalar"
+      ],
+      "contract": "immutable event, actor injected by owner"
+    },
+    {
+      "schema": "vivim.screen-context/0.1",
+      "owner": "W→B/E",
+      "fields": [
+        "contextId",
+        "revision",
+        "scope.ownerRef",
+        "scope.worldRef",
+        "scope.policyRevision",
+        "focus",
+        "coverage"
+      ],
+      "contract": "source selection hint, readScope still required"
+    },
+    {
+      "schema": "vivim.autowiki-page/0.1 + delta/0.1",
+      "owner": "W→D/B/E",
+      "fields": [
+        "items[].source.nativeRef",
+        "contextRevision",
+        "projectionRevision",
+        "removedItemIds"
+      ],
+      "contract": "ephemeral bounded read projection"
+    },
+    {
+      "schema": "F SourceRef",
+      "owner": "F",
+      "fields": [
+        "id",
+        "domain",
+        "ownerRef",
+        "revision"
+      ],
+      "contract": "interop type mirror only"
+    }
+  ],
+  "minimalIntersection": {
+    "verifiedIngress": [
+      "actorRef",
+      "sessionId",
+      "ownerRef",
+      "worldRef",
+      "dataClass/audience"
+    ],
+    "versionFence": [
+      "inputRevision",
+      "sourceRevision",
+      "catalogVersion/digest",
+      "policyRevision",
+      "graphEpoch",
+      "worldRevision",
+      "screenRevision if W"
+    ],
+    "sourceEvidence": [
+      "F SourceRef domain/ownerRef/revision",
+      "D file path/line/actual content hash and semantic ID",
+      "S node source ref"
+    ],
+    "producerStates": [
+      "ran",
+      "denied",
+      "skipped_budget",
+      "stale",
+      "unavailable",
+      "failed"
+    ],
+    "view": [
+      "original text/caret",
+      "UTF-16 spans with boundary check",
+      "IME composition",
+      "word links & explicit missing coverage",
+      "Quiet/Assisted/VIEW ALL same trace"
+    ],
+    "authority": [
+      "B original planText",
+      "B current grants and approvals",
+      "B durable journal/receipt",
+      "C exact Chrome sender only after B"
+    ]
+  },
+  "incompatibleNow": [
+    "N0 unicode_scalar span offsets versus V UTF-16 offsets; require checked conversion",
+    "V lacks trusted actor/world identity and world version in base revisions",
+    "E kb/hostWorld/uiRevision/policy pins differ from V source/catalog/policy/graph",
+    "S input digest is supplied by caller, not authenticated by HQ source walker",
+    "W trusted ScreenContext scope fields alone cannot confer personal read grants",
+    "No accepted DCB/memory sourced interpreted-node producer or shared runtime ABI"
+  ],
+  "exactFiveGates": [
+    "source-comment parser",
+    "machine wiki/read",
+    "local phrase grammar",
+    "visual user display",
+    "Host effect/approval/real receipt"
+  ],
+  "sourceSemanticIRToHQRead": {
+    "sources": "D source walker verified source identity (repo/path/line/hash) before read; no new index",
+    "nodes": "D existing semantic-registry and KB source read links, not new stored graph nodes",
+    "edges": "explanatory read-only UI refs; no second graph writer",
+    "actions": "source_crosswalk_only; Host handler not created",
+    "diagnostics": "visible coverage, never authority",
+    "writer": "D existing hq/lib/wiki.mjs ONLY when its authorized workflow runs, never on each focus"
+  },
+  "effectPerformed": false
+}
