@@ -258,10 +258,21 @@ test('every surface keeps one thumb-reachable primary action and issues no other
     assert.equal(foot.length, 1, 'each surface has exactly one action footer');
     const primary = byClass(foot[0], 'ux-primary');
     assert.equal(primary.length, 1, 'the footer holds exactly one primary action');
-    // No other control: a read-only surface must not offer an effect.
+    // Local navigation and read-only refresh are permitted; Host effects are not.
     const buttons = findAll(host, n => n.tag === 'button');
-    assert.equal(buttons.length, 1, 'a read-only surface must offer only its primary action');
+    assert.ok(buttons.every(b => ['ux-primary', 'ux-surface-tile', 'ux-secondary']
+      .some(name => String(b.className).split(' ').includes(name))),
+      'every button is explicitly classified as local navigation or read-only refresh');
   }
+  const routes = [];
+  const shortcuts = fakeHost();
+  renderToday(shortcuts, todayModel(null, [], { connection: 'Connecting…' }),
+    { onNavigate: tab => { routes.push(tab); } });
+  const tiles = byClass(shortcuts, 'ux-surface-tile');
+  assert.equal(tiles.length, 5, 'Today links to exactly the five other sections');
+  tiles.forEach(tile => tile.events.click());
+  assert.deepEqual(routes, ['talk', 'build', 'world', 'me', 'control'],
+    'shortcuts can only navigate local tabs and never invoke a Host effect');
 });
 
 test('the Today primary action leads to a real surface and never claims an effect happened', () => {
