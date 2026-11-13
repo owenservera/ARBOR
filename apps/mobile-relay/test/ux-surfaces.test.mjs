@@ -347,7 +347,7 @@ test('offline shell blocks all sends and clears private paired state',()=>{
 test('late media responses never repopulate an unpaired World after revocation',()=>{
   assert.match(app,/let mediaGeneration = 0/);
   assert.match(app,/const generation = mediaGeneration/);
-  assert.match(app,/if \(generation !== mediaGeneration \|\| !S\.paired\) return/);
+  assert.match(app,/if \(generation !== mediaGeneration \|\| !S\.paired \|\|/);
   assert.match(app,/function clearPrivatePhoneState\(\) \{\s*mediaGeneration\+\+/);
 });
 
