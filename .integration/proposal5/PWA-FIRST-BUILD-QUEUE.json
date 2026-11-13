@@ -180,14 +180,14 @@
     {
       "id": "PWA-12",
       "title": "Windows+paired Android operational acceptance",
-      "status": "queued",
+      "status": "real_local_verifier_authored_unrun_device_unrun",
       "owner": "Integration",
       "paths": [
         "src-tauri",
         "apps/vivim-host/test",
         "apps/mobile-relay/test"
       ],
-      "proof": "Node24/Bun/Cargo plus real Windows+Android Tailscale pairing, grants, restarts and offline; no external donor runtimes",
+      "proof": "node integration/scripts/pwa-run-now.mjs runs Node24 source syntax plus local synthetic Host/PWA suites; Windows and paired Android acceptance remain UNRUN",
       "dependsOn": [
         "PWA-04",
         "PWA-05",

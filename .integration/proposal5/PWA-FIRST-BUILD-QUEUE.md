@@ -23,7 +23,7 @@
 
 - **PWA-10 · Offline shell, drafts and installability** — offline_shell_source_implemented_tests_unrun. offline read-only shell, clear stale state, no API caching/replayed mutations, valid PWA icons.
 - **PWA-11 · Adaptive UI, accessibility and one-thumb polish** — accessible_mobile_source_implemented_tests_unrun. Android Chrome, keyboard, safe areas, reduced motion, screen reader; device validation.
-- **PWA-12 · Windows+paired Android operational acceptance** — queued. Node24/Bun/Cargo plus real Windows+Android Tailscale pairing, grants, restarts and offline; no external donor runtimes.
+- **PWA-12 · Windows+paired Android operational acceptance** — real_local_verifier_authored_unrun_device_unrun. Node24/Bun/Cargo plus real Windows+Android Tailscale pairing, grants, restarts and offline; no external donor runtimes.
 
 ## Working rules
 
@@ -43,3 +43,5 @@
 ## Current next step
 
 PWA-12 is now the only remaining original queue item without source completion. It requires executable Node24, Windows and real Android/Tailscale proof. GitHub Actions is returning startup_failure with zero jobs, so that acceptance has **not** happened. Continue code fixes directly on main; never claim release GO from V8 syntax checks.
+
+Run the original tests in one command from the real repo checkout: `node integration/scripts/pwa-run-now.mjs`. It prints real runtime version and per-suite exit codes. This is a local verifier, not another PR gate or service; Node/Windows and physical Android acceptance are still UNRUN until executed.
