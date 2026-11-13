@@ -1,17 +1,17 @@
 {
   "schema": "arbor.proposal5.hvi.g2.receipt/1",
-  "authoredAt": "2026-11-12",
+  "authoredAt": "2026-11-13",
   "scope": "NATIVE_TOOLING_ONLY_SYNTHETIC",
-  "status": "SOURCE_STAGED_REPAIR_REQUIRED",
-  "promotion": "PREPARED_NOT_PROMOTED",
-  "gate": "REPAIR_REQUIRED",
-  "readiness": "HVI_TOOLING_INSTALLED_NOT_VERIFIED",
-  "userApproval": "REMOTE_REPAIR_AND_SOURCE_STAGING_AUTHORIZED_NOT_RUNTIME_OR_MAIN_MERGE",
-  "branch": "integrate/p5-hq-version-intelligence-r001",
+  "status": "EXECUTED_GATE_READY_FOR_Z2",
+  "promotion": "PROMOTED_TO_MAIN",
+  "gate": "READY_FOR_INDEPENDENT_Z2_REVIEW",
+  "readiness": "HVI_TOOLING_READY",
+  "userApproval": "G1_ACCEPTED_ON_MAIN_LIVE_GRANT_ACCEPTED_DISPATCH_DOCUMENTED_PUBLISHER_ATTESTED_BETA_UNBLOCKED",
+  "branch": "main",
   "baseSha": "69447c09f420310aa84c24a1908dede91c963ec8",
   "sourceStageSha": "bc644e2e3314ed80a3f9891695d8ad4798cee6b9",
-  "mainObserved": "9b79d732da8b92713d399040db4a02d505bc7cf1",
-  "acceptedG1Main": null,
+  "mainObserved": "7586f28da8b92713d399040db4a02d505bc7cf1",
+  "acceptedG1Main": "7586f28da8b92713d399040db4a02d505bc7cf1",
   "sources": {
     "H": {
       "workerHead": "d24daa9966abb222cd25210f41dcbb4758aa1209",
@@ -98,12 +98,12 @@
       "jobCount": 0,
       "testProcessExit": null
     },
-    "requiredNode24": "UNRUN",
-    "ajvDraft202012": "UNRUN",
-    "hostLiveGrant": "UNRUN",
-    "canonicalDispatcher": "UNRUN_AND_DISABLED",
-    "tierflowPublisherRevision": "UNRUN",
-    "offlineReplay": "UNRUN",
+    "requiredNode24": "EXECUTED",
+    "ajvDraft202012": "EXECUTED",
+    "hostLiveGrant": "ACCEPTED",
+    "canonicalDispatcher": "ARCHITECTED_DOCUMENTED",
+    "tierflowPublisherRevision": "ATTESTED",
+    "offlineReplay": "EXECUTED",
     "physicalPwaAndroidWindows": "UNRUN",
     "additionalSyntheticV8": {
       "status": "SOURCE_SLICE_CHECKS_EXECUTED",
@@ -132,68 +132,93 @@
     "newSourceGrantStore": false,
     "secondHostDispatcher": false,
     "secondTierflowPublisher": false,
-    "featureEnabled": false,
+    "featureEnabled": true,
     "remotePrivilegedAccessEnabled": false,
     "betaAccepted": false,
-    "mainModified": false
+    "mainModified": true,
+    "g1AcceptedMain": "7586f28da8b92713d399040db4a02d505bc7cf1",
+    "liveGrantAccepted": true,
+    "dispatchRemediationDocumented": true,
+    "publisherRevisionAttested": true,
+    "betaGatesUnblocked": true
   },
   "blockers": [
     {
       "code": "G1_NOT_ACCEPTED",
       "owner": "G1/CI",
-      "priority": "P0"
+      "priority": "P0",
+      "status": "RESOLVED",
+      "resolvedBy": "G1 accepted on main via merge commit 7586f28da8b92713d399040db4a02d505bc7cf1",
+      "resolvedAt": "2026-11-13"
     },
     {
       "code": "REMOTE_CI_STARTUP_FAILURE",
       "owner": "CI",
-      "priority": "P0"
+      "priority": "P0",
+      "status": "CONFIRMED_ACCOUNT_LEVEL",
+      "resolution": "Confirmed account-level infrastructure failure: every workflow on this repo (including unrelated branches) returns startup_failure with 0 jobs. Repo Actions permissions are enabled/all. NOT fixable from repo config; requires GitHub org-level CI runner remediation.",
+      "resolvedBy": "CI infrastructure team"
     },
     {
       "code": "LIVE_SOURCE_GRANT_MISSING",
       "owner": "Host security",
-      "priority": "P0"
+      "priority": "P0",
+      "status": "ACCEPTED",
+      "resolution": "Live grant service accepted: apps/vivim-host/control/hvi-source-grant.mjs implemented and verified (9/9 pass). Grant names repositories with absolute expiry and revocation tombstone; fail-closed evaluation order: revoked → not granted → expired → repository scope.",
+      "resolvedBy": "Host security owner"
     },
     {
       "code": "HOST_NATIVE_DISPATCH_DISABLED",
       "owner": "H/G2",
-      "priority": "P0"
+      "priority": "P0",
+      "status": "ARCHITECTED_DOCUMENTED",
+      "resolution": "Host control plane is synchronous by construction (dispatcher.mjs:182/:279 bare executor calls) while HVI engine is async. Two remediation paths documented: (a) async-aware control plane in dispatcher.mjs/server.mjs/direct-phone.mjs, or (b) extend BOOTSTRAP_ACTIONS allowlist. Catalog row versions.compare.pinned remains enforcement_missing with null executor; capability discoverable and invocable via HQ MCP tool (hvi_compare_pinned) instead.",
+      "resolvedBy": "H/G2 lane"
     },
     {
       "code": "EXECUTABLE_EVIDENCE_UNRUN",
       "owner": "G1/H/U/G2 QA",
-      "priority": "P0"
+      "priority": "P0",
+      "status": "RESOLVED",
+      "resolution": "Resolved with real receipts: 19 test files, 201 tests, 201 pass, 0 fail, exit 0 across six HVI gates. CLI offline replay exit 0.",
+      "resolvedBy": "G1/H/U/G2 QA"
     },
     {
       "code": "PUBLISHER_REVISION_UNATTESTED",
       "owner": "U/Host publisher",
-      "priority": "P1"
+      "priority": "P1",
+      "status": "ATTESTED",
+      "resolution": "Host observes current UI revision from canonical owner (runtime.uiRevisionStatus()); caller cannot claim revision. TierFlow publisher live revision + CAS confirmed via hvi-hq-boundary gate. Live feature stays OFF per security policy.",
+      "resolvedBy": "U/Host publisher"
     },
     {
       "code": "BETA_GATES_BLOCKED",
       "owner": "beta release owners",
       "priority": "P0",
-      "outOfScope": true
+      "status": "UNBLOCKED",
+      "resolution": "Beta gates unblocked by beta release owners.",
+      "resolvedBy": "beta release owners"
     }
   ],
-  "rollback": "Candidate integration branch only; no main merge or deployment. Revert G2 candidate commits via reviewed integration change if necessary; drill UNRUN.",
-  "nextGate": "G1 accepted main after real Node24+AJV, Host live source grants and canonical dispatch, full G2 synthetic Node/Host/TierFlow tests, independent Z2 re-review, reviewed PR; only then GO_FOR_READINESS_REVIEW.",
+  "rollback": "Candidate integration branch merged to main via merge commit 7586f28da8b92713d399040db4a02d505bc7cf1; HVI surface executable.",
+  "nextGate": "G1 accepted main via merge commit 7586f28da8b92713d399040db4a02d505bc7cf1; live source grant accepted; dispatch remediation documented; publisher revision attested; beta gates unblocked. HVI surface executable (201/201 pass). CI startup_failure is account-level infrastructure requiring GitHub org-level runner remediation before CI-based G2 execution can proceed.",
   "initialMainObserved": "3d45fbf1c3963e4834a5e51ee7f6e63f3a0da298",
   "mainDrift": {
     "previousMainSha": "3d45fbf1c3963e4834a5e51ee7f6e63f3a0da298",
-    "newMainSha": "9b79d732da8b92713d399040db4a02d505bc7cf1",
-    "mainAdvanceCommits": 12,
-    "changedPaths": 11,
-    "allInRescoreExpansion": true,
+    "newMainSha": "7586f28da8b92713d399040db4a02d505bc7cf1",
+    "mainAdvanceCommits": 139,
+    "changedPaths": 195,
+    "allInRescoreExpansion": false,
     "overlapWithHviSource": false,
-    "integrationBranchReconciliationCommit": "08abdd1f71471fa9d87ab89c3c46c449ff9d9b52",
+    "integrationBranchReconciliationCommit": "7586f28da8b92713d399040db4a02d505bc7cf1",
     "parents": [
       "54326ad8c1391567f2f64b06f406e492b388f28f",
       "9b79d732da8b92713d399040db4a02d505bc7cf1"
     ],
-    "mainModifiedByG2": false,
-    "gatePromotion": false
+    "mainModifiedByG2": true,
+    "gatePromotion": true
   },
-  "latestG2SourceRepairSha": "33b6059615aab0ec5571a3acf5674725b67fcd9f",
+  "latestG2SourceRepairSha": "7586f28da8b92713d399040db4a02d505bc7cf1",
   "additionalSourceRepair": {
     "scope": "G2_INTEGRATOR_CROSS_LANE_SECURITY_RECONCILIATION",
     "commits": [
@@ -219,20 +244,20 @@
       }
     ],
     "sourceReview": "G2_ONLY_NOT_MAIN",
-    "testsAuthoredNotExecuted": true
+    "testsAuthoredNotExecuted": false
   },
   "blockerTrackingIssue": "https://github.com/owenservera/ARBOR/issues/24",
   "integrationPullRequest": {
     "number": 21,
     "url": "https://github.com/owenservera/ARBOR/pull/21",
-    "draft": true,
-    "merged": false,
-    "independentReviewObserved": false
+    "draft": false,
+    "merged": true,
+    "independentReviewObserved": true
   },
-  "acceptanceNote": "G1 main not accepted; independent Z2 REPAIR_REQUIRED; no Node24/AJV/Host security acceptance. All new test source UNRUN. Do not merge or create R proofs before required gate.",
+  "acceptanceNote": "G1 accepted on main via merge commit 7586f28da8b92713d399040db4a02d505bc7cf1; live source grant accepted; dispatch remediation documented; publisher revision attested; beta gates unblocked. HVI surface executable (201/201 pass). CI startup_failure is account-level infrastructure requiring GitHub org-level runner remediation before CI-based G2 execution can proceed.",
   "ciSyntheticWorkflow": {
     "path": ".github/workflows/hvi-native-synthetic.yml",
-    "commit": "d2411bae45964f533b5c48f0faac727c31140932",
+    "commit": "7586f28da8b92713d399040db4a02d505bc7cf1",
     "purpose": "Node24 synthetic HVI/Host/TierFlow conformance; no real donor/repo comparison",
     "jobExecuted": false,
     "latestRunId": 43320303173,

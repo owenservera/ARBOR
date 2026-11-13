@@ -1,0 +1,4447 @@
+{
+  "schema": "arbor.hvi.gate-run-receipt/1",
+  "runId": "20261112T235455Z-aead9174d893",
+  "command": "bun scripts/test-gate.mjs",
+  "os": "win32",
+  "osRelease": "10.0.29704",
+  "osArch": "x64",
+  "gateRuntime": "bun 1.4.2",
+  "testRuntimes": [
+    {
+      "runtime": "bun",
+      "binary": "bun",
+      "version": "1.4.2"
+    },
+    {
+      "runtime": "node-strip-types",
+      "binary": "node",
+      "version": "v24.22.1"
+    },
+    {
+      "runtime": "node24-ajv",
+      "binary": "node",
+      "version": "v24.22.1"
+    }
+  ],
+  "nodeVersion": "v24.22.1",
+  "bunVersion": "1.4.2",
+  "ajvVersion": "8.17.1",
+  "commitSha": "aead9174d893027193941fc747009bbc517df0e4",
+  "totals": {
+    "tests": 2416,
+    "pass": 2377,
+    "fail": 39
+  },
+  "exitCode": 1,
+  "durationMs": 560289,
+  "startedAt": "2026-11-12T23:54:55.396Z",
+  "finishedAt": "2026-11-13T00:04:17.465Z",
+  "tests": [
+    {
+      "path": "apps/mobile-relay/test/bootstrap-actions-allowlist.test.mjs",
+      "root": "apps/mobile-relay/test",
+      "runtime": "node24-ajv",
+      "gate": "interop",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 5,
+        "pass": 5,
+        "fail": 0
+      },
+      "durationMs": 536,
+      "command": "node --test apps/mobile-relay/test/bootstrap-actions-allowlist.test.mjs"
+    },
+    {
+      "path": "apps/mobile-relay/test/bootstrap-f02.test.mjs",
+      "root": "apps/mobile-relay/test",
+      "runtime": "node24-ajv",
+      "gate": "interop",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 4,
+        "pass": 4,
+        "fail": 0
+      },
+      "durationMs": 435,
+      "command": "node --test apps/mobile-relay/test/bootstrap-f02.test.mjs"
+    },
+    {
+      "path": "apps/mobile-relay/test/bootstrap-phone.test.mjs",
+      "root": "apps/mobile-relay/test",
+      "runtime": "node24-ajv",
+      "gate": "interop",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 5,
+        "pass": 5,
+        "fail": 0
+      },
+      "durationMs": 441,
+      "command": "node --test apps/mobile-relay/test/bootstrap-phone.test.mjs"
+    },
+    {
+      "path": "apps/mobile-relay/test/browser-device-key.test.mjs",
+      "root": "apps/mobile-relay/test",
+      "runtime": "node24-ajv",
+      "gate": "interop",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 4,
+        "pass": 4,
+        "fail": 0
+      },
+      "durationMs": 548,
+      "command": "node --test apps/mobile-relay/test/browser-device-key.test.mjs"
+    },
+    {
+      "path": "apps/mobile-relay/test/browser-enrollment-flow.test.mjs",
+      "root": "apps/mobile-relay/test",
+      "runtime": "node24-ajv",
+      "gate": "interop",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 4,
+        "pass": 4,
+        "fail": 0
+      },
+      "durationMs": 542,
+      "command": "node --test apps/mobile-relay/test/browser-enrollment-flow.test.mjs"
+    },
+    {
+      "path": "apps/mobile-relay/test/build-composer.test.mjs",
+      "root": "apps/mobile-relay/test",
+      "runtime": "node24-ajv",
+      "gate": "interop",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 6,
+        "pass": 6,
+        "fail": 0
+      },
+      "durationMs": 523,
+      "command": "node --test apps/mobile-relay/test/build-composer.test.mjs"
+    },
+    {
+      "path": "apps/mobile-relay/test/control-tab-navigation.test.mjs",
+      "root": "apps/mobile-relay/test",
+      "runtime": "node24-ajv",
+      "gate": "interop",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 1,
+        "pass": 1,
+        "fail": 0
+      },
+      "durationMs": 463,
+      "command": "node --test apps/mobile-relay/test/control-tab-navigation.test.mjs"
+    },
+    {
+      "path": "apps/mobile-relay/test/design-composer.test.mjs",
+      "root": "apps/mobile-relay/test",
+      "runtime": "node24-ajv",
+      "gate": "interop",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 11,
+        "pass": 11,
+        "fail": 0
+      },
+      "durationMs": 536,
+      "command": "node --test apps/mobile-relay/test/design-composer.test.mjs"
+    },
+    {
+      "path": "apps/mobile-relay/test/device-enrollment.test.mjs",
+      "root": "apps/mobile-relay/test",
+      "runtime": "node24-ajv",
+      "gate": "interop",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 1,
+        "pass": 1,
+        "fail": 0
+      },
+      "durationMs": 496,
+      "command": "node --test apps/mobile-relay/test/device-enrollment.test.mjs"
+    },
+    {
+      "path": "apps/mobile-relay/test/generative-bootstrap.test.mjs",
+      "root": "apps/mobile-relay/test",
+      "runtime": "node24-ajv",
+      "gate": "interop",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 16,
+        "pass": 16,
+        "fail": 0
+      },
+      "durationMs": 571,
+      "command": "node --test apps/mobile-relay/test/generative-bootstrap.test.mjs"
+    },
+    {
+      "path": "apps/mobile-relay/test/generative-browser-compat.test.mjs",
+      "root": "apps/mobile-relay/test",
+      "runtime": "node24-ajv",
+      "gate": "interop",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 5,
+        "pass": 5,
+        "fail": 0
+      },
+      "durationMs": 640,
+      "command": "node --test apps/mobile-relay/test/generative-browser-compat.test.mjs"
+    },
+    {
+      "path": "apps/mobile-relay/test/generative-semantic.test.mjs",
+      "root": "apps/mobile-relay/test",
+      "runtime": "node24-ajv",
+      "gate": "interop",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 10,
+        "pass": 10,
+        "fail": 0
+      },
+      "durationMs": 610,
+      "command": "node --test apps/mobile-relay/test/generative-semantic.test.mjs"
+    },
+    {
+      "path": "apps/mobile-relay/test/generative-ui.test.mjs",
+      "root": "apps/mobile-relay/test",
+      "runtime": "node24-ajv",
+      "gate": "interop",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 25,
+        "pass": 25,
+        "fail": 0
+      },
+      "durationMs": 581,
+      "command": "node --test apps/mobile-relay/test/generative-ui.test.mjs"
+    },
+    {
+      "path": "apps/mobile-relay/test/host-build-consumer.test.mjs",
+      "root": "apps/mobile-relay/test",
+      "runtime": "node24-ajv",
+      "gate": "interop",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 2,
+        "pass": 2,
+        "fail": 0
+      },
+      "durationMs": 447,
+      "command": "node --test apps/mobile-relay/test/host-build-consumer.test.mjs"
+    },
+    {
+      "path": "apps/mobile-relay/test/host-revision-guard.test.mjs",
+      "root": "apps/mobile-relay/test",
+      "runtime": "node24-ajv",
+      "gate": "interop",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 9,
+        "pass": 9,
+        "fail": 0
+      },
+      "durationMs": 451,
+      "command": "node --test apps/mobile-relay/test/host-revision-guard.test.mjs"
+    },
+    {
+      "path": "apps/mobile-relay/test/host-static-allowlist-contract.test.mjs",
+      "root": "apps/mobile-relay/test",
+      "runtime": "node24-ajv",
+      "gate": "interop",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 1,
+        "pass": 1,
+        "fail": 0
+      },
+      "durationMs": 520,
+      "command": "node --test apps/mobile-relay/test/host-static-allowlist-contract.test.mjs"
+    },
+    {
+      "path": "apps/mobile-relay/test/mission-experience.test.mjs",
+      "root": "apps/mobile-relay/test",
+      "runtime": "node24-ajv",
+      "gate": "interop",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 16,
+        "pass": 16,
+        "fail": 0
+      },
+      "durationMs": 558,
+      "command": "node --test apps/mobile-relay/test/mission-experience.test.mjs"
+    },
+    {
+      "path": "apps/mobile-relay/test/mobile-orphan-exposure.test.mjs",
+      "root": "apps/mobile-relay/test",
+      "runtime": "node24-ajv",
+      "gate": "interop",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 4,
+        "pass": 4,
+        "fail": 0
+      },
+      "durationMs": 592,
+      "command": "node --test apps/mobile-relay/test/mobile-orphan-exposure.test.mjs"
+    },
+    {
+      "path": "apps/mobile-relay/test/pairing-link.test.mjs",
+      "root": "apps/mobile-relay/test",
+      "runtime": "node24-ajv",
+      "gate": "interop",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 3,
+        "pass": 3,
+        "fail": 0
+      },
+      "durationMs": 589,
+      "command": "node --test apps/mobile-relay/test/pairing-link.test.mjs"
+    },
+    {
+      "path": "apps/mobile-relay/test/redis-store.test.mjs",
+      "root": "apps/mobile-relay/test",
+      "runtime": "node24-ajv",
+      "gate": "interop",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 1,
+        "pass": 1,
+        "fail": 0
+      },
+      "durationMs": 576,
+      "command": "node --test apps/mobile-relay/test/redis-store.test.mjs"
+    },
+    {
+      "path": "apps/mobile-relay/test/relay-core.test.mjs",
+      "root": "apps/mobile-relay/test",
+      "runtime": "node24-ajv",
+      "gate": "interop",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 5,
+        "pass": 5,
+        "fail": 0
+      },
+      "durationMs": 617,
+      "command": "node --test apps/mobile-relay/test/relay-core.test.mjs"
+    },
+    {
+      "path": "apps/mobile-relay/test/service-worker.test.mjs",
+      "root": "apps/mobile-relay/test",
+      "runtime": "node24-ajv",
+      "gate": "interop",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 9,
+        "pass": 9,
+        "fail": 0
+      },
+      "durationMs": 1020,
+      "command": "node --test apps/mobile-relay/test/service-worker.test.mjs"
+    },
+    {
+      "path": "apps/mobile-relay/test/transport.test.mjs",
+      "root": "apps/mobile-relay/test",
+      "runtime": "node24-ajv",
+      "gate": "interop",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 12,
+        "pass": 12,
+        "fail": 0
+      },
+      "durationMs": 676,
+      "command": "node --test apps/mobile-relay/test/transport.test.mjs"
+    },
+    {
+      "path": "apps/mobile-relay/test/universal-control-chat.test.mjs",
+      "root": "apps/mobile-relay/test",
+      "runtime": "node24-ajv",
+      "gate": "interop",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 9,
+        "pass": 9,
+        "fail": 0
+      },
+      "durationMs": 781,
+      "command": "node --test apps/mobile-relay/test/universal-control-chat.test.mjs"
+    },
+    {
+      "path": "apps/mobile-relay/test/ux-surfaces.test.mjs",
+      "root": "apps/mobile-relay/test",
+      "runtime": "node24-ajv",
+      "gate": "interop",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 18,
+        "pass": 18,
+        "fail": 0
+      },
+      "durationMs": 621,
+      "command": "node --test apps/mobile-relay/test/ux-surfaces.test.mjs"
+    },
+    {
+      "path": "apps/mobile-relay/test/visual-bootstrap-startup.test.mjs",
+      "root": "apps/mobile-relay/test",
+      "runtime": "node24-ajv",
+      "gate": "interop",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 1,
+        "pass": 1,
+        "fail": 0
+      },
+      "durationMs": 541,
+      "command": "node --test apps/mobile-relay/test/visual-bootstrap-startup.test.mjs"
+    },
+    {
+      "path": "apps/mobile-relay/test/visual-theme.test.mjs",
+      "root": "apps/mobile-relay/test",
+      "runtime": "node24-ajv",
+      "gate": "interop",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 5,
+        "pass": 5,
+        "fail": 0
+      },
+      "durationMs": 594,
+      "command": "node --test apps/mobile-relay/test/visual-theme.test.mjs"
+    },
+    {
+      "path": "apps/vivim-host/bootstrap/rust-web-reader.test.mjs",
+      "root": "apps",
+      "runtime": "node24-ajv",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 5,
+        "pass": 5,
+        "fail": 0
+      },
+      "durationMs": 652,
+      "command": "node --test apps/vivim-host/bootstrap/rust-web-reader.test.mjs"
+    },
+    {
+      "path": "apps/vivim-host/bootstrap/web-memory-auth.test.mjs",
+      "root": "apps",
+      "runtime": "node24-ajv",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 1,
+        "pass": 1,
+        "fail": 0
+      },
+      "durationMs": 1112,
+      "command": "node --test apps/vivim-host/bootstrap/web-memory-auth.test.mjs"
+    },
+    {
+      "path": "apps/vivim-host/bootstrap/web-memory-phone-auth.test.mjs",
+      "root": "apps",
+      "runtime": "node24-ajv",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 1,
+      "totals": {
+        "tests": 1,
+        "pass": 0,
+        "fail": 1
+      },
+      "durationMs": 855,
+      "command": "node --test apps/vivim-host/bootstrap/web-memory-phone-auth.test.mjs"
+    },
+    {
+      "path": "apps/vivim-host/bootstrap/web-memory.test.mjs",
+      "root": "apps",
+      "runtime": "node24-ajv",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 8,
+        "pass": 8,
+        "fail": 0
+      },
+      "durationMs": 589,
+      "command": "node --test apps/vivim-host/bootstrap/web-memory.test.mjs"
+    },
+    {
+      "path": "apps/vivim-host/corpus/host-integration.test.mjs",
+      "root": "apps",
+      "runtime": "node24-ajv",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 8,
+        "pass": 8,
+        "fail": 0
+      },
+      "durationMs": 927,
+      "command": "node --test apps/vivim-host/corpus/host-integration.test.mjs"
+    },
+    {
+      "path": "apps/vivim-host/corpus/intake/host-intake.test.mjs",
+      "root": "apps",
+      "runtime": "node24-ajv",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 1,
+      "totals": {
+        "tests": 29,
+        "pass": 11,
+        "fail": 18
+      },
+      "durationMs": 901,
+      "command": "node --test apps/vivim-host/corpus/intake/host-intake.test.mjs"
+    },
+    {
+      "path": "apps/vivim-host/corpus/transport/hq-contract.test.mjs",
+      "root": "apps",
+      "runtime": "node24-ajv",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 0,
+        "pass": 0,
+        "fail": 0
+      },
+      "durationMs": 510,
+      "command": "node --test apps/vivim-host/corpus/transport/hq-contract.test.mjs"
+    },
+    {
+      "path": "apps/vivim-host/corpus/transport/protocol.test.mjs",
+      "root": "apps",
+      "runtime": "node24-ajv",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 11,
+        "pass": 11,
+        "fail": 0
+      },
+      "durationMs": 1390,
+      "command": "node --test apps/vivim-host/corpus/transport/protocol.test.mjs"
+    },
+    {
+      "path": "apps/vivim-host/test/apk-enrollment.test.mjs",
+      "root": "apps/vivim-host/test",
+      "runtime": "node24-ajv",
+      "gate": "host-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 2,
+        "pass": 2,
+        "fail": 0
+      },
+      "durationMs": 589,
+      "command": "node --test apps/vivim-host/test/apk-enrollment.test.mjs"
+    },
+    {
+      "path": "apps/vivim-host/test/apk-registry.test.mjs",
+      "root": "apps/vivim-host/test",
+      "runtime": "node24-ajv",
+      "gate": "host-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 3,
+        "pass": 3,
+        "fail": 0
+      },
+      "durationMs": 563,
+      "command": "node --test apps/vivim-host/test/apk-registry.test.mjs"
+    },
+    {
+      "path": "apps/vivim-host/test/bootstrap-actions-allowlist.test.mjs",
+      "root": "apps/vivim-host/test",
+      "runtime": "node24-ajv",
+      "gate": "host-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 6,
+        "pass": 6,
+        "fail": 0
+      },
+      "durationMs": 532,
+      "command": "node --test apps/vivim-host/test/bootstrap-actions-allowlist.test.mjs"
+    },
+    {
+      "path": "apps/vivim-host/test/bootstrap-command-apply.test.mjs",
+      "root": "apps/vivim-host/test",
+      "runtime": "node24-ajv",
+      "gate": "host-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 4,
+        "pass": 4,
+        "fail": 0
+      },
+      "durationMs": 732,
+      "command": "node --test apps/vivim-host/test/bootstrap-command-apply.test.mjs"
+    },
+    {
+      "path": "apps/vivim-host/test/bootstrap-command.test.mjs",
+      "root": "apps/vivim-host/test",
+      "runtime": "node24-ajv",
+      "gate": "host-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 1,
+        "pass": 1,
+        "fail": 0
+      },
+      "durationMs": 1027,
+      "command": "node --test apps/vivim-host/test/bootstrap-command.test.mjs"
+    },
+    {
+      "path": "apps/vivim-host/test/bootstrap-grant.test.mjs",
+      "root": "apps/vivim-host/test",
+      "runtime": "node24-ajv",
+      "gate": "host-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 12,
+        "pass": 12,
+        "fail": 0
+      },
+      "durationMs": 2264,
+      "command": "node --test apps/vivim-host/test/bootstrap-grant.test.mjs"
+    },
+    {
+      "path": "apps/vivim-host/test/bootstrap.test.mjs",
+      "root": "apps/vivim-host/test",
+      "runtime": "node24-ajv",
+      "gate": "host-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 16,
+        "pass": 16,
+        "fail": 0
+      },
+      "durationMs": 1326,
+      "command": "node --test apps/vivim-host/test/bootstrap.test.mjs"
+    },
+    {
+      "path": "apps/vivim-host/test/bridge-evidence.test.mjs",
+      "root": "apps/vivim-host/test",
+      "runtime": "node24-ajv",
+      "gate": "host-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 6,
+        "pass": 6,
+        "fail": 0
+      },
+      "durationMs": 901,
+      "command": "node --test apps/vivim-host/test/bridge-evidence.test.mjs"
+    },
+    {
+      "path": "apps/vivim-host/test/command-context-grounding.test.mjs",
+      "root": "apps/vivim-host/test",
+      "runtime": "node24-ajv",
+      "gate": "host-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 6,
+        "pass": 6,
+        "fail": 0
+      },
+      "durationMs": 523,
+      "command": "node --test apps/vivim-host/test/command-context-grounding.test.mjs"
+    },
+    {
+      "path": "apps/vivim-host/test/command-intent-v01.test.mjs",
+      "root": "apps/vivim-host/test",
+      "runtime": "node24-ajv",
+      "gate": "host-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 149,
+        "pass": 149,
+        "fail": 0
+      },
+      "durationMs": 937,
+      "command": "node --test apps/vivim-host/test/command-intent-v01.test.mjs"
+    },
+    {
+      "path": "apps/vivim-host/test/command-program.test.mjs",
+      "root": "apps/vivim-host/test",
+      "runtime": "node24-ajv",
+      "gate": "host-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 5,
+        "pass": 5,
+        "fail": 0
+      },
+      "durationMs": 670,
+      "command": "node --test apps/vivim-host/test/command-program.test.mjs"
+    },
+    {
+      "path": "apps/vivim-host/test/control-browser-session.test.mjs",
+      "root": "apps/vivim-host/test",
+      "runtime": "node24-ajv",
+      "gate": "host-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 2,
+        "pass": 2,
+        "fail": 0
+      },
+      "durationMs": 1832,
+      "command": "node --test apps/vivim-host/test/control-browser-session.test.mjs"
+    },
+    {
+      "path": "apps/vivim-host/test/control-desktop-surface.test.mjs",
+      "root": "apps/vivim-host/test",
+      "runtime": "node24-ajv",
+      "gate": "host-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 3,
+        "pass": 3,
+        "fail": 0
+      },
+      "durationMs": 1402,
+      "command": "node --test apps/vivim-host/test/control-desktop-surface.test.mjs"
+    },
+    {
+      "path": "apps/vivim-host/test/control-devices.test.mjs",
+      "root": "apps/vivim-host/test",
+      "runtime": "node24-ajv",
+      "gate": "host-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 4,
+        "pass": 4,
+        "fail": 0
+      },
+      "durationMs": 878,
+      "command": "node --test apps/vivim-host/test/control-devices.test.mjs"
+    },
+    {
+      "path": "apps/vivim-host/test/control-dispatcher.test.mjs",
+      "root": "apps/vivim-host/test",
+      "runtime": "node24-ajv",
+      "gate": "host-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 16,
+        "pass": 16,
+        "fail": 0
+      },
+      "durationMs": 1659,
+      "command": "node --test apps/vivim-host/test/control-dispatcher.test.mjs"
+    },
+    {
+      "path": "apps/vivim-host/test/control-http.test.mjs",
+      "root": "apps/vivim-host/test",
+      "runtime": "node24-ajv",
+      "gate": "host-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 1,
+        "pass": 1,
+        "fail": 0
+      },
+      "durationMs": 1526,
+      "command": "node --test apps/vivim-host/test/control-http.test.mjs"
+    },
+    {
+      "path": "apps/vivim-host/test/control-intent-planner.test.mjs",
+      "root": "apps/vivim-host/test",
+      "runtime": "node24-ajv",
+      "gate": "host-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 8,
+        "pass": 8,
+        "fail": 0
+      },
+      "durationMs": 798,
+      "command": "node --test apps/vivim-host/test/control-intent-planner.test.mjs"
+    },
+    {
+      "path": "apps/vivim-host/test/control-language.test.mjs",
+      "root": "apps/vivim-host/test",
+      "runtime": "node24-ajv",
+      "gate": "host-suite",
+      "cached": false,
+      "exitCode": 1,
+      "totals": {
+        "tests": 44,
+        "pass": 43,
+        "fail": 1
+      },
+      "durationMs": 1086,
+      "command": "node --test apps/vivim-host/test/control-language.test.mjs"
+    },
+    {
+      "path": "apps/vivim-host/test/control-panel-browser.test.mjs",
+      "root": "apps/vivim-host/test",
+      "runtime": "node24-ajv",
+      "gate": "host-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 1,
+        "pass": 1,
+        "fail": 0
+      },
+      "durationMs": 614,
+      "command": "node --test apps/vivim-host/test/control-panel-browser.test.mjs"
+    },
+    {
+      "path": "apps/vivim-host/test/data-intelligence-journal.test.mjs",
+      "root": "apps/vivim-host/test",
+      "runtime": "node24-ajv",
+      "gate": "host-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 2,
+        "pass": 2,
+        "fail": 0
+      },
+      "durationMs": 546,
+      "command": "node --test apps/vivim-host/test/data-intelligence-journal.test.mjs"
+    },
+    {
+      "path": "apps/vivim-host/test/data-intelligence.test.mjs",
+      "root": "apps/vivim-host/test",
+      "runtime": "node24-ajv",
+      "gate": "host-suite",
+      "cached": false,
+      "exitCode": 1,
+      "totals": {
+        "tests": 4,
+        "pass": 0,
+        "fail": 4
+      },
+      "durationMs": 305289,
+      "command": "node --test apps/vivim-host/test/data-intelligence.test.mjs"
+    },
+    {
+      "path": "apps/vivim-host/test/device-ui-wiring.test.mjs",
+      "root": "apps/vivim-host/test",
+      "runtime": "node24-ajv",
+      "gate": "host-suite",
+      "cached": false,
+      "exitCode": 1,
+      "totals": {
+        "tests": 2,
+        "pass": 1,
+        "fail": 1
+      },
+      "durationMs": 543,
+      "command": "node --test apps/vivim-host/test/device-ui-wiring.test.mjs"
+    },
+    {
+      "path": "apps/vivim-host/test/diagnostics.test.mjs",
+      "root": "apps/vivim-host/test",
+      "runtime": "node24-ajv",
+      "gate": "host-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 3,
+        "pass": 3,
+        "fail": 0
+      },
+      "durationMs": 768,
+      "command": "node --test apps/vivim-host/test/diagnostics.test.mjs"
+    },
+    {
+      "path": "apps/vivim-host/test/direct-phone.test.mjs",
+      "root": "apps/vivim-host/test",
+      "runtime": "node24-ajv",
+      "gate": "host-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 1,
+        "pass": 1,
+        "fail": 0
+      },
+      "durationMs": 1459,
+      "command": "node --test apps/vivim-host/test/direct-phone.test.mjs"
+    },
+    {
+      "path": "apps/vivim-host/test/enrollment-security.test.mjs",
+      "root": "apps/vivim-host/test",
+      "runtime": "node24-ajv",
+      "gate": "host-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 7,
+        "pass": 7,
+        "fail": 0
+      },
+      "durationMs": 693,
+      "command": "node --test apps/vivim-host/test/enrollment-security.test.mjs"
+    },
+    {
+      "path": "apps/vivim-host/test/first-run-phone-contract.test.mjs",
+      "root": "apps/vivim-host/test",
+      "runtime": "node24-ajv",
+      "gate": "host-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 1,
+        "pass": 1,
+        "fail": 0
+      },
+      "durationMs": 1031,
+      "command": "node --test apps/vivim-host/test/first-run-phone-contract.test.mjs"
+    },
+    {
+      "path": "apps/vivim-host/test/grokbot-worker.test.mjs",
+      "root": "apps/vivim-host/test",
+      "runtime": "node24-ajv",
+      "gate": "host-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 3,
+        "pass": 3,
+        "fail": 0
+      },
+      "durationMs": 615,
+      "command": "node --test apps/vivim-host/test/grokbot-worker.test.mjs"
+    },
+    {
+      "path": "apps/vivim-host/test/host.test.mjs",
+      "root": "apps/vivim-host/test",
+      "runtime": "node24-ajv",
+      "gate": "host-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 4,
+        "pass": 4,
+        "fail": 0
+      },
+      "durationMs": 1186,
+      "command": "node --test apps/vivim-host/test/host.test.mjs"
+    },
+    {
+      "path": "apps/vivim-host/test/hvi-capability.test.mjs",
+      "root": "apps/vivim-host/test",
+      "runtime": "node24-ajv",
+      "gate": "hvi-host-read-port",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 8,
+        "pass": 8,
+        "fail": 0
+      },
+      "durationMs": 682,
+      "command": "node --test apps/vivim-host/test/hvi-capability.test.mjs"
+    },
+    {
+      "path": "apps/vivim-host/test/hvi-source-grant.test.mjs",
+      "root": "apps/vivim-host/test",
+      "runtime": "node24-ajv",
+      "gate": "hvi-host-read-port",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 9,
+        "pass": 9,
+        "fail": 0
+      },
+      "durationMs": 854,
+      "command": "node --test apps/vivim-host/test/hvi-source-grant.test.mjs"
+    },
+    {
+      "path": "apps/vivim-host/test/insights.test.mjs",
+      "root": "apps/vivim-host/test",
+      "runtime": "node24-ajv",
+      "gate": "host-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 4,
+        "pass": 4,
+        "fail": 0
+      },
+      "durationMs": 908,
+      "command": "node --test apps/vivim-host/test/insights.test.mjs"
+    },
+    {
+      "path": "apps/vivim-host/test/kpi-utc.test.mjs",
+      "root": "apps/vivim-host/test",
+      "runtime": "node24-ajv",
+      "gate": "host-suite",
+      "cached": false,
+      "exitCode": 1,
+      "totals": {
+        "tests": 1,
+        "pass": 0,
+        "fail": 1
+      },
+      "durationMs": 428,
+      "command": "node --test apps/vivim-host/test/kpi-utc.test.mjs"
+    },
+    {
+      "path": "apps/vivim-host/test/legacy-device-authority.test.mjs",
+      "root": "apps/vivim-host/test",
+      "runtime": "node24-ajv",
+      "gate": "host-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 1,
+        "pass": 1,
+        "fail": 0
+      },
+      "durationMs": 533,
+      "command": "node --test apps/vivim-host/test/legacy-device-authority.test.mjs"
+    },
+    {
+      "path": "apps/vivim-host/test/media-library-summary.test.mjs",
+      "root": "apps/vivim-host/test",
+      "runtime": "node24-ajv",
+      "gate": "host-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 3,
+        "pass": 3,
+        "fail": 0
+      },
+      "durationMs": 613,
+      "command": "node --test apps/vivim-host/test/media-library-summary.test.mjs"
+    },
+    {
+      "path": "apps/vivim-host/test/onboarding.test.mjs",
+      "root": "apps/vivim-host/test",
+      "runtime": "node24-ajv",
+      "gate": "host-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 10,
+        "pass": 10,
+        "fail": 0
+      },
+      "durationMs": 1734,
+      "command": "node --test apps/vivim-host/test/onboarding.test.mjs"
+    },
+    {
+      "path": "apps/vivim-host/test/owner-auth.test.mjs",
+      "root": "apps/vivim-host/test",
+      "runtime": "node24-ajv",
+      "gate": "host-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 2,
+        "pass": 2,
+        "fail": 0
+      },
+      "durationMs": 529,
+      "command": "node --test apps/vivim-host/test/owner-auth.test.mjs"
+    },
+    {
+      "path": "apps/vivim-host/test/personal-correction.test.mjs",
+      "root": "apps/vivim-host/test",
+      "runtime": "node24-ajv",
+      "gate": "host-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 5,
+        "pass": 5,
+        "fail": 0
+      },
+      "durationMs": 549,
+      "command": "node --test apps/vivim-host/test/personal-correction.test.mjs"
+    },
+    {
+      "path": "apps/vivim-host/test/personal-rule-store.test.mjs",
+      "root": "apps/vivim-host/test",
+      "runtime": "node24-ajv",
+      "gate": "host-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 7,
+        "pass": 7,
+        "fail": 0
+      },
+      "durationMs": 686,
+      "command": "node --test apps/vivim-host/test/personal-rule-store.test.mjs"
+    },
+    {
+      "path": "apps/vivim-host/test/personal-semantic-corpus.test.mjs",
+      "root": "apps/vivim-host/test",
+      "runtime": "node24-ajv",
+      "gate": "host-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 4,
+        "pass": 4,
+        "fail": 0
+      },
+      "durationMs": 2428,
+      "command": "node --test apps/vivim-host/test/personal-semantic-corpus.test.mjs"
+    },
+    {
+      "path": "apps/vivim-host/test/personal-semantic-host.test.mjs",
+      "root": "apps/vivim-host/test",
+      "runtime": "node24-ajv",
+      "gate": "host-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 4,
+        "pass": 4,
+        "fail": 0
+      },
+      "durationMs": 963,
+      "command": "node --test apps/vivim-host/test/personal-semantic-host.test.mjs"
+    },
+    {
+      "path": "apps/vivim-host/test/personal-semantic-observer.test.mjs",
+      "root": "apps/vivim-host/test",
+      "runtime": "node24-ajv",
+      "gate": "host-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 6,
+        "pass": 6,
+        "fail": 0
+      },
+      "durationMs": 552,
+      "command": "node --test apps/vivim-host/test/personal-semantic-observer.test.mjs"
+    },
+    {
+      "path": "apps/vivim-host/test/personal-semantics-integration.test.mjs",
+      "root": "apps/vivim-host/test",
+      "runtime": "node24-ajv",
+      "gate": "host-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 9,
+        "pass": 9,
+        "fail": 0
+      },
+      "durationMs": 617,
+      "command": "node --test apps/vivim-host/test/personal-semantics-integration.test.mjs"
+    },
+    {
+      "path": "apps/vivim-host/test/personal-semantics.test.mjs",
+      "root": "apps/vivim-host/test",
+      "runtime": "node24-ajv",
+      "gate": "host-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 10,
+        "pass": 10,
+        "fail": 0
+      },
+      "durationMs": 527,
+      "command": "node --test apps/vivim-host/test/personal-semantics.test.mjs"
+    },
+    {
+      "path": "apps/vivim-host/test/phone-delivery-acks.test.mjs",
+      "root": "apps/vivim-host/test",
+      "runtime": "node24-ajv",
+      "gate": "host-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 2,
+        "pass": 2,
+        "fail": 0
+      },
+      "durationMs": 528,
+      "command": "node --test apps/vivim-host/test/phone-delivery-acks.test.mjs"
+    },
+    {
+      "path": "apps/vivim-host/test/phone-sessions.test.mjs",
+      "root": "apps/vivim-host/test",
+      "runtime": "node24-ajv",
+      "gate": "host-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 5,
+        "pass": 5,
+        "fail": 0
+      },
+      "durationMs": 783,
+      "command": "node --test apps/vivim-host/test/phone-sessions.test.mjs"
+    },
+    {
+      "path": "apps/vivim-host/test/receipt-runner.test.mjs",
+      "root": "apps/vivim-host/test",
+      "runtime": "node24-ajv",
+      "gate": "host-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 1,
+        "pass": 1,
+        "fail": 0
+      },
+      "durationMs": 603,
+      "command": "node --test apps/vivim-host/test/receipt-runner.test.mjs"
+    },
+    {
+      "path": "apps/vivim-host/test/recovery-host-adapter.test.mjs",
+      "root": "apps/vivim-host/test",
+      "runtime": "node24-ajv",
+      "gate": "host-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 7,
+        "pass": 7,
+        "fail": 0
+      },
+      "durationMs": 499,
+      "command": "node --test apps/vivim-host/test/recovery-host-adapter.test.mjs"
+    },
+    {
+      "path": "apps/vivim-host/test/recovery-intelligence.test.mjs",
+      "root": "apps/vivim-host/test",
+      "runtime": "node24-ajv",
+      "gate": "host-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 22,
+        "pass": 22,
+        "fail": 0
+      },
+      "durationMs": 527,
+      "command": "node --test apps/vivim-host/test/recovery-intelligence.test.mjs"
+    },
+    {
+      "path": "apps/vivim-host/test/studio-journal-evidence.test.mjs",
+      "root": "apps/vivim-host/test",
+      "runtime": "node24-ajv",
+      "gate": "host-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 2,
+        "pass": 2,
+        "fail": 0
+      },
+      "durationMs": 1040,
+      "command": "node --test apps/vivim-host/test/studio-journal-evidence.test.mjs"
+    },
+    {
+      "path": "apps/vivim-host/test/ui-revision.test.mjs",
+      "root": "apps/vivim-host/test",
+      "runtime": "node24-ajv",
+      "gate": "host-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 8,
+        "pass": 8,
+        "fail": 0
+      },
+      "durationMs": 1156,
+      "command": "node --test apps/vivim-host/test/ui-revision.test.mjs"
+    },
+    {
+      "path": "apps/vivim-host/test/worker-route-security.test.mjs",
+      "root": "apps/vivim-host/test",
+      "runtime": "node24-ajv",
+      "gate": "host-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 1,
+        "pass": 1,
+        "fail": 0
+      },
+      "durationMs": 944,
+      "command": "node --test apps/vivim-host/test/worker-route-security.test.mjs"
+    },
+    {
+      "path": "apps/vivim-host/test/worker-supervisor.test.mjs",
+      "root": "apps/vivim-host/test",
+      "runtime": "node24-ajv",
+      "gate": "host-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 7,
+        "pass": 7,
+        "fail": 0
+      },
+      "durationMs": 610,
+      "command": "node --test apps/vivim-host/test/worker-supervisor.test.mjs"
+    },
+    {
+      "path": "harness/test/agents/cli.test.mjs",
+      "root": "harness/test",
+      "runtime": "node24-ajv",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 1,
+      "totals": {
+        "tests": 4,
+        "pass": 1,
+        "fail": 3
+      },
+      "durationMs": 675,
+      "command": "node --test harness/test/agents/cli.test.mjs"
+    },
+    {
+      "path": "harness/test/agents/fleet.test.mjs",
+      "root": "harness/test",
+      "runtime": "node24-ajv",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 1,
+      "totals": {
+        "tests": 8,
+        "pass": 7,
+        "fail": 1
+      },
+      "durationMs": 918,
+      "command": "node --test harness/test/agents/fleet.test.mjs"
+    },
+    {
+      "path": "harness/test/agents/roles.test.mjs",
+      "root": "harness/test",
+      "runtime": "node24-ajv",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 6,
+        "pass": 6,
+        "fail": 0
+      },
+      "durationMs": 607,
+      "command": "node --test harness/test/agents/roles.test.mjs"
+    },
+    {
+      "path": "harness/test/agents/roundrobin.test.mjs",
+      "root": "harness/test",
+      "runtime": "node24-ajv",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 19,
+        "pass": 19,
+        "fail": 0
+      },
+      "durationMs": 768,
+      "command": "node --test harness/test/agents/roundrobin.test.mjs"
+    },
+    {
+      "path": "harness/test/agents/swarm.test.mjs",
+      "root": "harness/test",
+      "runtime": "node24-ajv",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 1,
+      "totals": {
+        "tests": 12,
+        "pass": 11,
+        "fail": 1
+      },
+      "durationMs": 593,
+      "command": "node --test harness/test/agents/swarm.test.mjs"
+    },
+    {
+      "path": "harness/test/build/build.test.mjs",
+      "root": "harness/test",
+      "runtime": "node24-ajv",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 11,
+        "pass": 11,
+        "fail": 0
+      },
+      "durationMs": 2649,
+      "command": "node --test harness/test/build/build.test.mjs"
+    },
+    {
+      "path": "harness/test/build/review-cli.test.mjs",
+      "root": "harness/test",
+      "runtime": "node24-ajv",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 2,
+        "pass": 2,
+        "fail": 0
+      },
+      "durationMs": 565,
+      "command": "node --test harness/test/build/review-cli.test.mjs"
+    },
+    {
+      "path": "harness/test/build/review.test.mjs",
+      "root": "harness/test",
+      "runtime": "node24-ajv",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 14,
+        "pass": 14,
+        "fail": 0
+      },
+      "durationMs": 506,
+      "command": "node --test harness/test/build/review.test.mjs"
+    },
+    {
+      "path": "harness/test/context/dcb-claims.test.mjs",
+      "root": "harness/test",
+      "runtime": "node24-ajv",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 8,
+        "pass": 8,
+        "fail": 0
+      },
+      "durationMs": 576,
+      "command": "node --test harness/test/context/dcb-claims.test.mjs"
+    },
+    {
+      "path": "harness/test/context/dcb-dispatch-gate.test.mjs",
+      "root": "harness/test",
+      "runtime": "node24-ajv",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 7,
+        "pass": 7,
+        "fail": 0
+      },
+      "durationMs": 489,
+      "command": "node --test harness/test/context/dcb-dispatch-gate.test.mjs"
+    },
+    {
+      "path": "harness/test/context/dcb-flavors.test.mjs",
+      "root": "harness/test",
+      "runtime": "node24-ajv",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 6,
+        "pass": 6,
+        "fail": 0
+      },
+      "durationMs": 581,
+      "command": "node --test harness/test/context/dcb-flavors.test.mjs"
+    },
+    {
+      "path": "harness/test/context/dcb-graph-lineage.test.mjs",
+      "root": "harness/test",
+      "runtime": "node24-ajv",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 7,
+        "pass": 7,
+        "fail": 0
+      },
+      "durationMs": 636,
+      "command": "node --test harness/test/context/dcb-graph-lineage.test.mjs"
+    },
+    {
+      "path": "harness/test/context/dcb-invalidation.test.mjs",
+      "root": "harness/test",
+      "runtime": "node24-ajv",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 6,
+        "pass": 6,
+        "fail": 0
+      },
+      "durationMs": 571,
+      "command": "node --test harness/test/context/dcb-invalidation.test.mjs"
+    },
+    {
+      "path": "harness/test/context/dcb-lifecycle.test.mjs",
+      "root": "harness/test",
+      "runtime": "node24-ajv",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 8,
+        "pass": 8,
+        "fail": 0
+      },
+      "durationMs": 616,
+      "command": "node --test harness/test/context/dcb-lifecycle.test.mjs"
+    },
+    {
+      "path": "harness/test/context/dcb-maintenance.test.mjs",
+      "root": "harness/test",
+      "runtime": "node24-ajv",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 8,
+        "pass": 8,
+        "fail": 0
+      },
+      "durationMs": 616,
+      "command": "node --test harness/test/context/dcb-maintenance.test.mjs"
+    },
+    {
+      "path": "harness/test/context/dcb-observation-intake.test.mjs",
+      "root": "harness/test",
+      "runtime": "node24-ajv",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 7,
+        "pass": 7,
+        "fail": 0
+      },
+      "durationMs": 518,
+      "command": "node --test harness/test/context/dcb-observation-intake.test.mjs"
+    },
+    {
+      "path": "harness/test/context/dcb-policy-eval.test.mjs",
+      "root": "harness/test",
+      "runtime": "node24-ajv",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 7,
+        "pass": 7,
+        "fail": 0
+      },
+      "durationMs": 622,
+      "command": "node --test harness/test/context/dcb-policy-eval.test.mjs"
+    },
+    {
+      "path": "harness/test/context/dcb-source-selection.test.mjs",
+      "root": "harness/test",
+      "runtime": "node24-ajv",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 6,
+        "pass": 6,
+        "fail": 0
+      },
+      "durationMs": 550,
+      "command": "node --test harness/test/context/dcb-source-selection.test.mjs"
+    },
+    {
+      "path": "harness/test/context/dcb-synthetic-eval.test.mjs",
+      "root": "harness/test",
+      "runtime": "node24-ajv",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 3,
+        "pass": 3,
+        "fail": 0
+      },
+      "durationMs": 1091,
+      "command": "node --test harness/test/context/dcb-synthetic-eval.test.mjs"
+    },
+    {
+      "path": "harness/test/context/dcb-universal-activity.test.mjs",
+      "root": "harness/test",
+      "runtime": "node24-ajv",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 5,
+        "pass": 5,
+        "fail": 0
+      },
+      "durationMs": 496,
+      "command": "node --test harness/test/context/dcb-universal-activity.test.mjs"
+    },
+    {
+      "path": "harness/test/context/dcb-v2-planner.test.mjs",
+      "root": "harness/test",
+      "runtime": "node24-ajv",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 10,
+        "pass": 10,
+        "fail": 0
+      },
+      "durationMs": 528,
+      "command": "node --test harness/test/context/dcb-v2-planner.test.mjs"
+    },
+    {
+      "path": "harness/test/core/core.test.mjs",
+      "root": "harness/test",
+      "runtime": "node24-ajv",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 34,
+        "pass": 34,
+        "fail": 0
+      },
+      "durationMs": 5454,
+      "command": "node --test harness/test/core/core.test.mjs"
+    },
+    {
+      "path": "harness/test/core/effort.test.mjs",
+      "root": "harness/test",
+      "runtime": "node24-ajv",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 3,
+        "pass": 3,
+        "fail": 0
+      },
+      "durationMs": 474,
+      "command": "node --test harness/test/core/effort.test.mjs"
+    },
+    {
+      "path": "harness/test/core/g3-reply.test.mjs",
+      "root": "harness/test",
+      "runtime": "node24-ajv",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 8,
+        "pass": 8,
+        "fail": 0
+      },
+      "durationMs": 523,
+      "command": "node --test harness/test/core/g3-reply.test.mjs"
+    },
+    {
+      "path": "harness/test/core/models.test.mjs",
+      "root": "harness/test",
+      "runtime": "node24-ajv",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 9,
+        "pass": 9,
+        "fail": 0
+      },
+      "durationMs": 504,
+      "command": "node --test harness/test/core/models.test.mjs"
+    },
+    {
+      "path": "harness/test/core/pinchtab.test.mjs",
+      "root": "harness/test",
+      "runtime": "node24-ajv",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 34,
+        "pass": 34,
+        "fail": 0
+      },
+      "durationMs": 533,
+      "command": "node --test harness/test/core/pinchtab.test.mjs"
+    },
+    {
+      "path": "harness/test/core/relay-chat-fixes.test.mjs",
+      "root": "harness/test",
+      "runtime": "node24-ajv",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 3,
+        "pass": 3,
+        "fail": 0
+      },
+      "durationMs": 446,
+      "command": "node --test harness/test/core/relay-chat-fixes.test.mjs"
+    },
+    {
+      "path": "harness/test/core/reply-error.test.mjs",
+      "root": "harness/test",
+      "runtime": "node24-ajv",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 5,
+        "pass": 5,
+        "fail": 0
+      },
+      "durationMs": 484,
+      "command": "node --test harness/test/core/reply-error.test.mjs"
+    },
+    {
+      "path": "harness/test/core/send-reason.test.mjs",
+      "root": "harness/test",
+      "runtime": "node24-ajv",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 1,
+        "pass": 1,
+        "fail": 0
+      },
+      "durationMs": 466,
+      "command": "node --test harness/test/core/send-reason.test.mjs"
+    },
+    {
+      "path": "harness/test/core/tab-lifecycle.test.mjs",
+      "root": "harness/test",
+      "runtime": "node24-ajv",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 10,
+        "pass": 10,
+        "fail": 0
+      },
+      "durationMs": 455,
+      "command": "node --test harness/test/core/tab-lifecycle.test.mjs"
+    },
+    {
+      "path": "harness/test/core/tabs.test.mjs",
+      "root": "harness/test",
+      "runtime": "node24-ajv",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 5,
+        "pass": 5,
+        "fail": 0
+      },
+      "durationMs": 592,
+      "command": "node --test harness/test/core/tabs.test.mjs"
+    },
+    {
+      "path": "harness/test/dev/agent.test.mjs",
+      "root": "harness/test",
+      "runtime": "node24-ajv",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 7,
+        "pass": 7,
+        "fail": 0
+      },
+      "durationMs": 491,
+      "command": "node --test harness/test/dev/agent.test.mjs"
+    },
+    {
+      "path": "harness/test/dev/cli.test.mjs",
+      "root": "harness/test",
+      "runtime": "node24-ajv",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 6,
+        "pass": 6,
+        "fail": 0
+      },
+      "durationMs": 1830,
+      "command": "node --test harness/test/dev/cli.test.mjs"
+    },
+    {
+      "path": "harness/test/dev/workspace.test.mjs",
+      "root": "harness/test",
+      "runtime": "node24-ajv",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 3,
+        "pass": 3,
+        "fail": 0
+      },
+      "durationMs": 609,
+      "command": "node --test harness/test/dev/workspace.test.mjs"
+    },
+    {
+      "path": "harness/test/interface/attach-target.test.mjs",
+      "root": "harness/test",
+      "runtime": "node24-ajv",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 9,
+        "pass": 9,
+        "fail": 0
+      },
+      "durationMs": 650,
+      "command": "node --test harness/test/interface/attach-target.test.mjs"
+    },
+    {
+      "path": "harness/test/interface/deps-pinchtab.test.mjs",
+      "root": "harness/test",
+      "runtime": "node24-ajv",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 6,
+        "pass": 6,
+        "fail": 0
+      },
+      "durationMs": 485,
+      "command": "node --test harness/test/interface/deps-pinchtab.test.mjs"
+    },
+    {
+      "path": "harness/test/interface/dev-auto-approve.test.mjs",
+      "root": "harness/test",
+      "runtime": "node24-ajv",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 6,
+        "pass": 6,
+        "fail": 0
+      },
+      "durationMs": 650,
+      "command": "node --test harness/test/interface/dev-auto-approve.test.mjs"
+    },
+    {
+      "path": "harness/test/interface/intent.test.mjs",
+      "root": "harness/test",
+      "runtime": "node24-ajv",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 13,
+        "pass": 13,
+        "fail": 0
+      },
+      "durationMs": 441,
+      "command": "node --test harness/test/interface/intent.test.mjs"
+    },
+    {
+      "path": "harness/test/interface/interface.test.mjs",
+      "root": "harness/test",
+      "runtime": "node24-ajv",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 5,
+        "pass": 5,
+        "fail": 0
+      },
+      "durationMs": 848,
+      "command": "node --test harness/test/interface/interface.test.mjs"
+    },
+    {
+      "path": "harness/test/interface/linux-checks.test.mjs",
+      "root": "harness/test",
+      "runtime": "node24-ajv",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 5,
+        "pass": 5,
+        "fail": 0
+      },
+      "durationMs": 487,
+      "command": "node --test harness/test/interface/linux-checks.test.mjs"
+    },
+    {
+      "path": "harness/test/interface/models-router.test.mjs",
+      "root": "harness/test",
+      "runtime": "node24-ajv",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 18,
+        "pass": 18,
+        "fail": 0
+      },
+      "durationMs": 1299,
+      "command": "node --test harness/test/interface/models-router.test.mjs"
+    },
+    {
+      "path": "harness/test/interface/prefs.test.mjs",
+      "root": "harness/test",
+      "runtime": "node24-ajv",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 7,
+        "pass": 7,
+        "fail": 0
+      },
+      "durationMs": 576,
+      "command": "node --test harness/test/interface/prefs.test.mjs"
+    },
+    {
+      "path": "harness/test/interface/standing-unlimited.test.mjs",
+      "root": "harness/test",
+      "runtime": "node24-ajv",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 7,
+        "pass": 7,
+        "fail": 0
+      },
+      "durationMs": 686,
+      "command": "node --test harness/test/interface/standing-unlimited.test.mjs"
+    },
+    {
+      "path": "harness/test/interface/standing.test.mjs",
+      "root": "harness/test",
+      "runtime": "node24-ajv",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 10,
+        "pass": 10,
+        "fail": 0
+      },
+      "durationMs": 659,
+      "command": "node --test harness/test/interface/standing.test.mjs"
+    },
+    {
+      "path": "harness/test/interface/tabs-router.test.mjs",
+      "root": "harness/test",
+      "runtime": "node24-ajv",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 5,
+        "pass": 5,
+        "fail": 0
+      },
+      "durationMs": 618,
+      "command": "node --test harness/test/interface/tabs-router.test.mjs"
+    },
+    {
+      "path": "harness/test/onboarding/compare-runner.test.mjs",
+      "root": "harness/test",
+      "runtime": "node24-ajv",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 21,
+        "pass": 21,
+        "fail": 0
+      },
+      "durationMs": 983,
+      "command": "node --test harness/test/onboarding/compare-runner.test.mjs"
+    },
+    {
+      "path": "harness/test/onboarding/grant.test.mjs",
+      "root": "harness/test",
+      "runtime": "node24-ajv",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 19,
+        "pass": 19,
+        "fail": 0
+      },
+      "durationMs": 691,
+      "command": "node --test harness/test/onboarding/grant.test.mjs"
+    },
+    {
+      "path": "harness/test/provenance/ledger.test.mjs",
+      "root": "harness/test",
+      "runtime": "node24-ajv",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 18,
+        "pass": 18,
+        "fail": 0
+      },
+      "durationMs": 743,
+      "command": "node --test harness/test/provenance/ledger.test.mjs"
+    },
+    {
+      "path": "harness/test/providers/providers.test.mjs",
+      "root": "harness/test",
+      "runtime": "node24-ajv",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 12,
+        "pass": 12,
+        "fail": 0
+      },
+      "durationMs": 789,
+      "command": "node --test harness/test/providers/providers.test.mjs"
+    },
+    {
+      "path": "hq/catalogue-identity/test/crosswalk.test.mjs",
+      "root": "hq",
+      "runtime": "node24-ajv",
+      "gate": "hvi-modules",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 20,
+        "pass": 20,
+        "fail": 0
+      },
+      "durationMs": 833,
+      "command": "node --test hq/catalogue-identity/test/crosswalk.test.mjs"
+    },
+    {
+      "path": "hq/test/action-map.test.mjs",
+      "root": "hq/test",
+      "runtime": "bun",
+      "gate": "hq-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 0,
+        "pass": 0,
+        "fail": 0
+      },
+      "durationMs": 254,
+      "command": "bun test hq/test/action-map.test.mjs"
+    },
+    {
+      "path": "hq/test/action-registry-builder.test.mjs",
+      "root": "hq/test",
+      "runtime": "bun",
+      "gate": "hq-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 0,
+        "pass": 0,
+        "fail": 0
+      },
+      "durationMs": 136,
+      "command": "bun test hq/test/action-registry-builder.test.mjs"
+    },
+    {
+      "path": "hq/test/annotation-v2.test.mjs",
+      "root": "hq/test",
+      "runtime": "node24-ajv",
+      "gate": "hq-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 25,
+        "pass": 25,
+        "fail": 0
+      },
+      "durationMs": 464,
+      "command": "node --test hq/test/annotation-v2.test.mjs"
+    },
+    {
+      "path": "hq/test/arbor-boundary.test.mjs",
+      "root": "hq/test",
+      "runtime": "node24-ajv",
+      "gate": "hvi-hq-boundary",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 6,
+        "pass": 6,
+        "fail": 0
+      },
+      "durationMs": 3726,
+      "command": "node --test hq/test/arbor-boundary.test.mjs"
+    },
+    {
+      "path": "hq/test/arbor-service.test.mjs",
+      "root": "hq/test",
+      "runtime": "node24-ajv",
+      "gate": "hvi-hq-boundary",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 2,
+        "pass": 2,
+        "fail": 0
+      },
+      "durationMs": 1407,
+      "command": "node --test hq/test/arbor-service.test.mjs"
+    },
+    {
+      "path": "hq/test/capabilities.test.mjs",
+      "root": "hq/test",
+      "runtime": "bun",
+      "gate": "hq-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 0,
+        "pass": 0,
+        "fail": 0
+      },
+      "durationMs": 3914,
+      "command": "bun test hq/test/capabilities.test.mjs"
+    },
+    {
+      "path": "hq/test/capability-surfaces.test.mjs",
+      "root": "hq/test",
+      "runtime": "node24-ajv",
+      "gate": "hq-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 5,
+        "pass": 5,
+        "fail": 0
+      },
+      "durationMs": 1436,
+      "command": "node --test hq/test/capability-surfaces.test.mjs"
+    },
+    {
+      "path": "hq/test/catalogue-delta.test.mjs",
+      "root": "hq/test",
+      "runtime": "node24-ajv",
+      "gate": "hq-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 7,
+        "pass": 7,
+        "fail": 0
+      },
+      "durationMs": 1432,
+      "command": "node --test hq/test/catalogue-delta.test.mjs"
+    },
+    {
+      "path": "hq/test/check-freshness-parity.test.mjs",
+      "root": "hq/test",
+      "runtime": "node24-ajv",
+      "gate": "hq-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 3,
+        "pass": 3,
+        "fail": 0
+      },
+      "durationMs": 5782,
+      "command": "node --test hq/test/check-freshness-parity.test.mjs"
+    },
+    {
+      "path": "hq/test/cli.test.mjs",
+      "root": "hq/test",
+      "runtime": "node24-ajv",
+      "gate": "hq-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 1,
+        "pass": 1,
+        "fail": 0
+      },
+      "durationMs": 694,
+      "command": "node --test hq/test/cli.test.mjs"
+    },
+    {
+      "path": "hq/test/comment-program-integration.test.mjs",
+      "root": "hq/test",
+      "runtime": "node24-ajv",
+      "gate": "hq-suite",
+      "cached": false,
+      "exitCode": 1,
+      "totals": {
+        "tests": 3,
+        "pass": 0,
+        "fail": 3
+      },
+      "durationMs": 1590,
+      "command": "node --test hq/test/comment-program-integration.test.mjs"
+    },
+    {
+      "path": "hq/test/comment-wiki-bridge.test.mjs",
+      "root": "hq/test",
+      "runtime": "node24-ajv",
+      "gate": "hq-suite",
+      "cached": false,
+      "exitCode": 1,
+      "totals": {
+        "tests": 1,
+        "pass": 0,
+        "fail": 1
+      },
+      "durationMs": 482,
+      "command": "node --test hq/test/comment-wiki-bridge.test.mjs"
+    },
+    {
+      "path": "hq/test/components.test.mjs",
+      "root": "hq/test",
+      "runtime": "node24-ajv",
+      "gate": "hq-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 12,
+        "pass": 12,
+        "fail": 0
+      },
+      "durationMs": 3113,
+      "command": "node --test hq/test/components.test.mjs"
+    },
+    {
+      "path": "hq/test/context-budget.test.mjs",
+      "root": "hq/test",
+      "runtime": "bun",
+      "gate": "hq-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 0,
+        "pass": 0,
+        "fail": 0
+      },
+      "durationMs": 141,
+      "command": "bun test hq/test/context-budget.test.mjs"
+    },
+    {
+      "path": "hq/test/context-ranking.test.mjs",
+      "root": "hq/test",
+      "runtime": "node24-ajv",
+      "gate": "hq-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 8,
+        "pass": 8,
+        "fail": 0
+      },
+      "durationMs": 759,
+      "command": "node --test hq/test/context-ranking.test.mjs"
+    },
+    {
+      "path": "hq/test/context.test.mjs",
+      "root": "hq/test",
+      "runtime": "node24-ajv",
+      "gate": "hq-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 6,
+        "pass": 6,
+        "fail": 0
+      },
+      "durationMs": 855,
+      "command": "node --test hq/test/context.test.mjs"
+    },
+    {
+      "path": "hq/test/day-one-context.test.mjs",
+      "root": "hq/test",
+      "runtime": "bun",
+      "gate": "hq-suite",
+      "cached": false,
+      "exitCode": 1,
+      "totals": {
+        "tests": 0,
+        "pass": 0,
+        "fail": 0
+      },
+      "durationMs": 135,
+      "command": "bun test hq/test/day-one-context.test.mjs"
+    },
+    {
+      "path": "hq/test/evidence-join.test.mjs",
+      "root": "hq/test",
+      "runtime": "bun",
+      "gate": "hq-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 0,
+        "pass": 0,
+        "fail": 0
+      },
+      "durationMs": 126,
+      "command": "bun test hq/test/evidence-join.test.mjs"
+    },
+    {
+      "path": "hq/test/extract.test.mjs",
+      "root": "hq/test",
+      "runtime": "node24-ajv",
+      "gate": "hq-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 22,
+        "pass": 22,
+        "fail": 0
+      },
+      "durationMs": 517,
+      "command": "node --test hq/test/extract.test.mjs"
+    },
+    {
+      "path": "hq/test/filetypes.test.mjs",
+      "root": "hq/test",
+      "runtime": "node24-ajv",
+      "gate": "hq-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 13,
+        "pass": 13,
+        "fail": 0
+      },
+      "durationMs": 612,
+      "command": "node --test hq/test/filetypes.test.mjs"
+    },
+    {
+      "path": "hq/test/foundation.test.mjs",
+      "root": "hq/test",
+      "runtime": "node24-ajv",
+      "gate": "hq-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 10,
+        "pass": 10,
+        "fail": 0
+      },
+      "durationMs": 563,
+      "command": "node --test hq/test/foundation.test.mjs"
+    },
+    {
+      "path": "hq/test/git-context.test.mjs",
+      "root": "hq/test",
+      "runtime": "node24-ajv",
+      "gate": "hq-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 5,
+        "pass": 5,
+        "fail": 0
+      },
+      "durationMs": 454,
+      "command": "node --test hq/test/git-context.test.mjs"
+    },
+    {
+      "path": "hq/test/git-main-sync.test.mjs",
+      "root": "hq/test",
+      "runtime": "node24-ajv",
+      "gate": "hq-suite",
+      "cached": false,
+      "exitCode": 1,
+      "totals": {
+        "tests": 1,
+        "pass": 0,
+        "fail": 1
+      },
+      "durationMs": 387,
+      "command": "node --test hq/test/git-main-sync.test.mjs"
+    },
+    {
+      "path": "hq/test/git.test.mjs",
+      "root": "hq/test",
+      "runtime": "node24-ajv",
+      "gate": "hq-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 3,
+        "pass": 3,
+        "fail": 0
+      },
+      "durationMs": 746,
+      "command": "node --test hq/test/git.test.mjs"
+    },
+    {
+      "path": "hq/test/graph.test.mjs",
+      "root": "hq/test",
+      "runtime": "node24-ajv",
+      "gate": "hq-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 9,
+        "pass": 9,
+        "fail": 0
+      },
+      "durationMs": 706,
+      "command": "node --test hq/test/graph.test.mjs"
+    },
+    {
+      "path": "hq/test/hvi-mcp-tool.test.mjs",
+      "root": "hq/test",
+      "runtime": "node24-ajv",
+      "gate": "hvi-discovery",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 4,
+        "pass": 4,
+        "fail": 0
+      },
+      "durationMs": 574,
+      "command": "node --test hq/test/hvi-mcp-tool.test.mjs"
+    },
+    {
+      "path": "hq/test/in-repo-closure.test.mjs",
+      "root": "hq/test",
+      "runtime": "node24-ajv",
+      "gate": "hvi-hq-boundary",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 1,
+        "pass": 1,
+        "fail": 0
+      },
+      "durationMs": 433,
+      "command": "node --test hq/test/in-repo-closure.test.mjs"
+    },
+    {
+      "path": "hq/test/indexer.test.mjs",
+      "root": "hq/test",
+      "runtime": "node24-ajv",
+      "gate": "hq-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 9,
+        "pass": 9,
+        "fail": 0
+      },
+      "durationMs": 5288,
+      "command": "node --test hq/test/indexer.test.mjs"
+    },
+    {
+      "path": "hq/test/intelligence-contracts.test.mjs",
+      "root": "hq/test",
+      "runtime": "bun",
+      "gate": "hq-suite",
+      "cached": false,
+      "exitCode": 1,
+      "totals": {
+        "tests": 0,
+        "pass": 0,
+        "fail": 0
+      },
+      "durationMs": 123,
+      "command": "bun test hq/test/intelligence-contracts.test.mjs"
+    },
+    {
+      "path": "hq/test/kb-bind.test.mjs",
+      "root": "hq/test",
+      "runtime": "node24-ajv",
+      "gate": "hq-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 7,
+        "pass": 7,
+        "fail": 0
+      },
+      "durationMs": 597,
+      "command": "node --test hq/test/kb-bind.test.mjs"
+    },
+    {
+      "path": "hq/test/kb-query-capability.test.mjs",
+      "root": "hq/test",
+      "runtime": "bun",
+      "gate": "hq-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 0,
+        "pass": 0,
+        "fail": 0
+      },
+      "durationMs": 439,
+      "command": "bun test hq/test/kb-query-capability.test.mjs"
+    },
+    {
+      "path": "hq/test/kg-export.test.mjs",
+      "root": "hq/test",
+      "runtime": "node24-ajv",
+      "gate": "hq-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 4,
+        "pass": 4,
+        "fail": 0
+      },
+      "durationMs": 16793,
+      "command": "node --test hq/test/kg-export.test.mjs"
+    },
+    {
+      "path": "hq/test/lake.test.mjs",
+      "root": "hq/test",
+      "runtime": "node24-ajv",
+      "gate": "hq-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 6,
+        "pass": 6,
+        "fail": 0
+      },
+      "durationMs": 10405,
+      "command": "node --test hq/test/lake.test.mjs"
+    },
+    {
+      "path": "hq/test/live-graph-wave1-a-r2-audit.test.mjs",
+      "root": "hq/test",
+      "runtime": "node24-ajv",
+      "gate": "hq-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 23,
+        "pass": 23,
+        "fail": 0
+      },
+      "durationMs": 735,
+      "command": "node --test hq/test/live-graph-wave1-a-r2-audit.test.mjs"
+    },
+    {
+      "path": "hq/test/live-graph-wave1-a-r2-discovery.test.mjs",
+      "root": "hq/test",
+      "runtime": "node24-ajv",
+      "gate": "hq-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 7,
+        "pass": 7,
+        "fail": 0
+      },
+      "durationMs": 10751,
+      "command": "node --test hq/test/live-graph-wave1-a-r2-discovery.test.mjs"
+    },
+    {
+      "path": "hq/test/live-graph-wave1-a-r2-preflight.test.mjs",
+      "root": "hq/test",
+      "runtime": "node24-ajv",
+      "gate": "hq-suite",
+      "cached": false,
+      "exitCode": 1,
+      "totals": {
+        "tests": 1,
+        "pass": 0,
+        "fail": 1
+      },
+      "durationMs": 364,
+      "command": "node --test hq/test/live-graph-wave1-a-r2-preflight.test.mjs"
+    },
+    {
+      "path": "hq/test/live-graph-wave1-a.test.mjs",
+      "root": "hq/test",
+      "runtime": "node24-ajv",
+      "gate": "hq-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 4,
+        "pass": 4,
+        "fail": 0
+      },
+      "durationMs": 796,
+      "command": "node --test hq/test/live-graph-wave1-a.test.mjs"
+    },
+    {
+      "path": "hq/test/live-graph-wave1-master.test.mjs",
+      "root": "hq/test",
+      "runtime": "node24-ajv",
+      "gate": "hq-suite",
+      "cached": false,
+      "exitCode": 1,
+      "totals": {
+        "tests": 1,
+        "pass": 0,
+        "fail": 1
+      },
+      "durationMs": 446,
+      "command": "node --test hq/test/live-graph-wave1-master.test.mjs"
+    },
+    {
+      "path": "hq/test/native-graph-wiki-admission.test.mjs",
+      "root": "hq/test",
+      "runtime": "node24-ajv",
+      "gate": "hq-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 7,
+        "pass": 7,
+        "fail": 0
+      },
+      "durationMs": 612,
+      "command": "node --test hq/test/native-graph-wiki-admission.test.mjs"
+    },
+    {
+      "path": "hq/test/nomenclature.test.mjs",
+      "root": "hq/test",
+      "runtime": "node24-ajv",
+      "gate": "hq-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 7,
+        "pass": 7,
+        "fail": 0
+      },
+      "durationMs": 526,
+      "command": "node --test hq/test/nomenclature.test.mjs"
+    },
+    {
+      "path": "hq/test/registry.test.mjs",
+      "root": "hq/test",
+      "runtime": "node24-ajv",
+      "gate": "hq-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 6,
+        "pass": 6,
+        "fail": 0
+      },
+      "durationMs": 596,
+      "command": "node --test hq/test/registry.test.mjs"
+    },
+    {
+      "path": "hq/test/search.test.mjs",
+      "root": "hq/test",
+      "runtime": "node24-ajv",
+      "gate": "hq-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 10,
+        "pass": 10,
+        "fail": 0
+      },
+      "durationMs": 756,
+      "command": "node --test hq/test/search.test.mjs"
+    },
+    {
+      "path": "hq/test/semantic-convergence.test.mjs",
+      "root": "hq/test",
+      "runtime": "bun",
+      "gate": "hq-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 0,
+        "pass": 0,
+        "fail": 0
+      },
+      "durationMs": 815,
+      "command": "bun test hq/test/semantic-convergence.test.mjs"
+    },
+    {
+      "path": "hq/test/semantic-optimizers.test.mjs",
+      "root": "hq/test",
+      "runtime": "node24-ajv",
+      "gate": "hq-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 33,
+        "pass": 33,
+        "fail": 0
+      },
+      "durationMs": 656,
+      "command": "node --test hq/test/semantic-optimizers.test.mjs"
+    },
+    {
+      "path": "hq/test/semantic-registry.test.mjs",
+      "root": "hq/test",
+      "runtime": "node24-ajv",
+      "gate": "hq-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 16,
+        "pass": 16,
+        "fail": 0
+      },
+      "durationMs": 844,
+      "command": "node --test hq/test/semantic-registry.test.mjs"
+    },
+    {
+      "path": "hq/test/taxonomy.test.mjs",
+      "root": "hq/test",
+      "runtime": "node24-ajv",
+      "gate": "hq-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 10,
+        "pass": 10,
+        "fail": 0
+      },
+      "durationMs": 476,
+      "command": "node --test hq/test/taxonomy.test.mjs"
+    },
+    {
+      "path": "hq/test/util.test.mjs",
+      "root": "hq/test",
+      "runtime": "node24-ajv",
+      "gate": "hq-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 3,
+        "pass": 3,
+        "fail": 0
+      },
+      "durationMs": 404,
+      "command": "node --test hq/test/util.test.mjs"
+    },
+    {
+      "path": "hq/test/walk-bin-source.test.mjs",
+      "root": "hq/test",
+      "runtime": "node24-ajv",
+      "gate": "hq-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 5,
+        "pass": 5,
+        "fail": 0
+      },
+      "durationMs": 1656,
+      "command": "node --test hq/test/walk-bin-source.test.mjs"
+    },
+    {
+      "path": "hq/test/walk.test.mjs",
+      "root": "hq/test",
+      "runtime": "node24-ajv",
+      "gate": "hq-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 3,
+        "pass": 3,
+        "fail": 0
+      },
+      "durationMs": 514,
+      "command": "node --test hq/test/walk.test.mjs"
+    },
+    {
+      "path": "hq/test/wiki-program.test.mjs",
+      "root": "hq/test",
+      "runtime": "node24-ajv",
+      "gate": "hq-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 20,
+        "pass": 20,
+        "fail": 0
+      },
+      "durationMs": 933,
+      "command": "node --test hq/test/wiki-program.test.mjs"
+    },
+    {
+      "path": "hq/test/wiki.test.mjs",
+      "root": "hq/test",
+      "runtime": "node24-ajv",
+      "gate": "hq-suite",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 6,
+        "pass": 6,
+        "fail": 0
+      },
+      "durationMs": 2597,
+      "command": "node --test hq/test/wiki.test.mjs"
+    },
+    {
+      "path": "hq/version-intelligence/compare/index.test.mjs",
+      "root": "hq",
+      "runtime": "node24-ajv",
+      "gate": "hvi-modules",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 9,
+        "pass": 9,
+        "fail": 0
+      },
+      "durationMs": 549,
+      "command": "node --test hq/version-intelligence/compare/index.test.mjs"
+    },
+    {
+      "path": "hq/version-intelligence/identity/test/identity.test.mjs",
+      "root": "hq",
+      "runtime": "node24-ajv",
+      "gate": "hvi-modules",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 13,
+        "pass": 13,
+        "fail": 0
+      },
+      "durationMs": 486,
+      "command": "node --test hq/version-intelligence/identity/test/identity.test.mjs"
+    },
+    {
+      "path": "hq/version-intelligence/parity/atlas.test.mjs",
+      "root": "hq",
+      "runtime": "node24-ajv",
+      "gate": "hvi-modules",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 12,
+        "pass": 12,
+        "fail": 0
+      },
+      "durationMs": 478,
+      "command": "node --test hq/version-intelligence/parity/atlas.test.mjs"
+    },
+    {
+      "path": "hq/version-intelligence/report/test/report.test.mjs",
+      "root": "hq",
+      "runtime": "node24-ajv",
+      "gate": "hvi-modules",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 13,
+        "pass": 13,
+        "fail": 0
+      },
+      "durationMs": 546,
+      "command": "node --test hq/version-intelligence/report/test/report.test.mjs"
+    },
+    {
+      "path": "hq/version-intelligence/sources/snapshots.test.mjs",
+      "root": "hq",
+      "runtime": "node24-ajv",
+      "gate": "hvi-modules",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 14,
+        "pass": 14,
+        "fail": 0
+      },
+      "durationMs": 551,
+      "command": "node --test hq/version-intelligence/sources/snapshots.test.mjs"
+    },
+    {
+      "path": "packages/tierflow/tests/architecture-boundary.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "bun",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 0,
+        "pass": 0,
+        "fail": 0
+      },
+      "durationMs": 162,
+      "command": "bun test packages/tierflow/tests/architecture-boundary.test.ts"
+    },
+    {
+      "path": "packages/tierflow/tests/bus.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "bun",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 0,
+        "pass": 0,
+        "fail": 0
+      },
+      "durationMs": 134,
+      "command": "bun test packages/tierflow/tests/bus.test.ts"
+    },
+    {
+      "path": "packages/tierflow/tests/e2e.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "bun",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 1,
+      "totals": {
+        "tests": 0,
+        "pass": 0,
+        "fail": 0
+      },
+      "durationMs": 622,
+      "command": "bun test packages/tierflow/tests/e2e.test.ts"
+    },
+    {
+      "path": "packages/tierflow/tests/executor.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "bun",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 0,
+        "pass": 0,
+        "fail": 0
+      },
+      "durationMs": 2295,
+      "command": "bun test packages/tierflow/tests/executor.test.ts"
+    },
+    {
+      "path": "packages/tierflow/tests/hvi-inspector.test.mjs",
+      "root": "packages/tierflow/tests",
+      "runtime": "node-strip-types",
+      "gate": "hvi-tierflow-inspector",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 17,
+        "pass": 17,
+        "fail": 0
+      },
+      "durationMs": 859,
+      "command": "node --experimental-strip-types --test packages/tierflow/tests/hvi-inspector.test.mjs"
+    },
+    {
+      "path": "packages/tierflow/tests/lab.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "bun",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 0,
+        "pass": 0,
+        "fail": 0
+      },
+      "durationMs": 418,
+      "command": "bun test packages/tierflow/tests/lab.test.ts"
+    },
+    {
+      "path": "packages/tierflow/tests/protocol.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "bun",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 0,
+        "pass": 0,
+        "fail": 0
+      },
+      "durationMs": 162,
+      "command": "bun test packages/tierflow/tests/protocol.test.ts"
+    },
+    {
+      "path": "packages/tierflow/tests/router.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "bun",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 0,
+        "pass": 0,
+        "fail": 0
+      },
+      "durationMs": 1482,
+      "command": "bun test packages/tierflow/tests/router.test.ts"
+    },
+    {
+      "path": "packages/tierflow/tests/security.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "bun",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 0,
+        "pass": 0,
+        "fail": 0
+      },
+      "durationMs": 147,
+      "command": "bun test packages/tierflow/tests/security.test.ts"
+    },
+    {
+      "path": "packages/tierflow/tests/stats.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "bun",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 0,
+        "pass": 0,
+        "fail": 0
+      },
+      "durationMs": 151,
+      "command": "bun test packages/tierflow/tests/stats.test.ts"
+    },
+    {
+      "path": "packages/tierflow/tests/tier-capability.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "bun",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 0,
+        "pass": 0,
+        "fail": 0
+      },
+      "durationMs": 387,
+      "command": "bun test packages/tierflow/tests/tier-capability.test.ts"
+    },
+    {
+      "path": "packages/tierflow/tests/ui-commands.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "bun",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 0,
+        "pass": 0,
+        "fail": 0
+      },
+      "durationMs": 1228,
+      "command": "bun test packages/tierflow/tests/ui-commands.test.ts"
+    },
+    {
+      "path": "packages/tierflow/tests/ui-http-surface.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "bun",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 0,
+        "pass": 0,
+        "fail": 0
+      },
+      "durationMs": 204,
+      "command": "bun test packages/tierflow/tests/ui-http-surface.test.ts"
+    },
+    {
+      "path": "packages/tierflow/tests/ui-realtime.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "bun",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 0,
+        "pass": 0,
+        "fail": 0
+      },
+      "durationMs": 168,
+      "command": "bun test packages/tierflow/tests/ui-realtime.test.ts"
+    },
+    {
+      "path": "packages/tierflow/tests/ui-store.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "bun",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 0,
+        "pass": 0,
+        "fail": 0
+      },
+      "durationMs": 1414,
+      "command": "bun test packages/tierflow/tests/ui-store.test.ts"
+    },
+    {
+      "path": "packages/tierflow/tests/ui-websocket-surface.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "bun",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 0,
+        "pass": 0,
+        "fail": 0
+      },
+      "durationMs": 186,
+      "command": "bun test packages/tierflow/tests/ui-websocket-surface.test.ts"
+    },
+    {
+      "path": "packages/tierflow/tests/ui-world.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "bun",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 0,
+        "pass": 0,
+        "fail": 0
+      },
+      "durationMs": 226,
+      "command": "bun test packages/tierflow/tests/ui-world.test.ts"
+    },
+    {
+      "path": "packages/tierflow/tests/visual-runtime/command-negative.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "node-strip-types",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 10,
+        "pass": 10,
+        "fail": 0
+      },
+      "durationMs": 711,
+      "command": "node --experimental-strip-types --test packages/tierflow/tests/visual-runtime/command-negative.test.ts"
+    },
+    {
+      "path": "packages/tierflow/tests/visual-runtime/command.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "node-strip-types",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 6,
+        "pass": 6,
+        "fail": 0
+      },
+      "durationMs": 673,
+      "command": "node --experimental-strip-types --test packages/tierflow/tests/visual-runtime/command.test.ts"
+    },
+    {
+      "path": "packages/tierflow/tests/visual-runtime/components.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "node-strip-types",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 15,
+        "pass": 15,
+        "fail": 0
+      },
+      "durationMs": 744,
+      "command": "node --experimental-strip-types --test packages/tierflow/tests/visual-runtime/components.test.ts"
+    },
+    {
+      "path": "packages/tierflow/tests/visual-runtime/document-compat.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "node-strip-types",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 8,
+        "pass": 8,
+        "fail": 0
+      },
+      "durationMs": 791,
+      "command": "node --experimental-strip-types --test packages/tierflow/tests/visual-runtime/document-compat.test.ts"
+    },
+    {
+      "path": "packages/tierflow/tests/visual-runtime/document.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "node-strip-types",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 10,
+        "pass": 10,
+        "fail": 0
+      },
+      "durationMs": 652,
+      "command": "node --experimental-strip-types --test packages/tierflow/tests/visual-runtime/document.test.ts"
+    },
+    {
+      "path": "packages/tierflow/tests/visual-runtime/experience.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "node-strip-types",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 18,
+        "pass": 18,
+        "fail": 0
+      },
+      "durationMs": 595,
+      "command": "node --experimental-strip-types --test packages/tierflow/tests/visual-runtime/experience.test.ts"
+    },
+    {
+      "path": "packages/tierflow/tests/visual-runtime/final-wave/integration/i4-real-import.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "node-strip-types",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 4,
+        "pass": 4,
+        "fail": 0
+      },
+      "durationMs": 907,
+      "command": "node --experimental-strip-types --test packages/tierflow/tests/visual-runtime/final-wave/integration/i4-real-import.test.ts"
+    },
+    {
+      "path": "packages/tierflow/tests/visual-runtime/final-wave/integration/master.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "node-strip-types",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 11,
+        "pass": 11,
+        "fail": 0
+      },
+      "durationMs": 1246,
+      "command": "node --experimental-strip-types --test packages/tierflow/tests/visual-runtime/final-wave/integration/master.test.ts"
+    },
+    {
+      "path": "packages/tierflow/tests/visual-runtime/final-wave/integration/world-visual-bridge.refusals.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "bun",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 0,
+        "pass": 0,
+        "fail": 0
+      },
+      "durationMs": 114,
+      "command": "bun test packages/tierflow/tests/visual-runtime/final-wave/integration/world-visual-bridge.refusals.test.ts"
+    },
+    {
+      "path": "packages/tierflow/tests/visual-runtime/final-wave/integration/world-visual-bridge.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "bun",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 0,
+        "pass": 0,
+        "fail": 0
+      },
+      "durationMs": 180,
+      "command": "bun test packages/tierflow/tests/visual-runtime/final-wave/integration/world-visual-bridge.test.ts"
+    },
+    {
+      "path": "packages/tierflow/tests/visual-runtime/final-wave/lane-a/normalize.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "bun",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 0,
+        "pass": 0,
+        "fail": 0
+      },
+      "durationMs": 190,
+      "command": "bun test packages/tierflow/tests/visual-runtime/final-wave/lane-a/normalize.test.ts"
+    },
+    {
+      "path": "packages/tierflow/tests/visual-runtime/final-wave/lane-b/studio-editing.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "bun",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 0,
+        "pass": 0,
+        "fail": 0
+      },
+      "durationMs": 1502,
+      "command": "bun test packages/tierflow/tests/visual-runtime/final-wave/lane-b/studio-editing.test.ts"
+    },
+    {
+      "path": "packages/tierflow/tests/visual-runtime/final-wave/lane-c/adapters.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "node-strip-types",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 18,
+        "pass": 18,
+        "fail": 0
+      },
+      "durationMs": 1006,
+      "command": "node --experimental-strip-types --test packages/tierflow/tests/visual-runtime/final-wave/lane-c/adapters.test.ts"
+    },
+    {
+      "path": "packages/tierflow/tests/visual-runtime/final-wave/lane-c/first-edit.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "node-strip-types",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 19,
+        "pass": 19,
+        "fail": 0
+      },
+      "durationMs": 602,
+      "command": "node --experimental-strip-types --test packages/tierflow/tests/visual-runtime/final-wave/lane-c/first-edit.test.ts"
+    },
+    {
+      "path": "packages/tierflow/tests/visual-runtime/final-wave/lane-c/templates.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "node-strip-types",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 41,
+        "pass": 41,
+        "fail": 0
+      },
+      "durationMs": 769,
+      "command": "node --experimental-strip-types --test packages/tierflow/tests/visual-runtime/final-wave/lane-c/templates.test.ts"
+    },
+    {
+      "path": "packages/tierflow/tests/visual-runtime/final-wave/lane-d/knowledge-presentation.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "node-strip-types",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 23,
+        "pass": 23,
+        "fail": 0
+      },
+      "durationMs": 812,
+      "command": "node --experimental-strip-types --test packages/tierflow/tests/visual-runtime/final-wave/lane-d/knowledge-presentation.test.ts"
+    },
+    {
+      "path": "packages/tierflow/tests/visual-runtime/final-wave/lane-e/host-journey.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "node-strip-types",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 34,
+        "pass": 34,
+        "fail": 0
+      },
+      "durationMs": 744,
+      "command": "node --experimental-strip-types --test packages/tierflow/tests/visual-runtime/final-wave/lane-e/host-journey.test.ts"
+    },
+    {
+      "path": "packages/tierflow/tests/visual-runtime/final-wave/lane-f/existing-clients.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "node-strip-types",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 17,
+        "pass": 17,
+        "fail": 0
+      },
+      "durationMs": 761,
+      "command": "node --experimental-strip-types --test packages/tierflow/tests/visual-runtime/final-wave/lane-f/existing-clients.test.ts"
+    },
+    {
+      "path": "packages/tierflow/tests/visual-runtime/final-wave/lane-f/real-wave4b-regression.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "node-strip-types",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 4,
+        "pass": 4,
+        "fail": 0
+      },
+      "durationMs": 1084,
+      "command": "node --experimental-strip-types --test packages/tierflow/tests/visual-runtime/final-wave/lane-f/real-wave4b-regression.test.ts"
+    },
+    {
+      "path": "packages/tierflow/tests/visual-runtime/final-wave/lane-g/cutover-dry-run.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "node-strip-types",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 40,
+        "pass": 40,
+        "fail": 0
+      },
+      "durationMs": 660,
+      "command": "node --experimental-strip-types --test packages/tierflow/tests/visual-runtime/final-wave/lane-g/cutover-dry-run.test.ts"
+    },
+    {
+      "path": "packages/tierflow/tests/visual-runtime/final-wave/lane-h/verification.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "node-strip-types",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 26,
+        "pass": 26,
+        "fail": 0
+      },
+      "durationMs": 613,
+      "command": "node --experimental-strip-types --test packages/tierflow/tests/visual-runtime/final-wave/lane-h/verification.test.ts"
+    },
+    {
+      "path": "packages/tierflow/tests/visual-runtime/help.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "node-strip-types",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 12,
+        "pass": 12,
+        "fail": 0
+      },
+      "durationMs": 616,
+      "command": "node --experimental-strip-types --test packages/tierflow/tests/visual-runtime/help.test.ts"
+    },
+    {
+      "path": "packages/tierflow/tests/visual-runtime/host-fixture.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "node-strip-types",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 11,
+        "pass": 11,
+        "fail": 0
+      },
+      "durationMs": 683,
+      "command": "node --experimental-strip-types --test packages/tierflow/tests/visual-runtime/host-fixture.test.ts"
+    },
+    {
+      "path": "packages/tierflow/tests/visual-runtime/host-security.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "node-strip-types",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 18,
+        "pass": 18,
+        "fail": 0
+      },
+      "durationMs": 684,
+      "command": "node --experimental-strip-types --test packages/tierflow/tests/visual-runtime/host-security.test.ts"
+    },
+    {
+      "path": "packages/tierflow/tests/visual-runtime/integration-2/action-adapter.test.mjs",
+      "root": "packages/tierflow/tests",
+      "runtime": "node24-ajv",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 4,
+        "pass": 4,
+        "fail": 0
+      },
+      "durationMs": 477,
+      "command": "node --test packages/tierflow/tests/visual-runtime/integration-2/action-adapter.test.mjs"
+    },
+    {
+      "path": "packages/tierflow/tests/visual-runtime/integration-2/compose.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "node-strip-types",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 15,
+        "pass": 15,
+        "fail": 0
+      },
+      "durationMs": 774,
+      "command": "node --experimental-strip-types --test packages/tierflow/tests/visual-runtime/integration-2/compose.test.ts"
+    },
+    {
+      "path": "packages/tierflow/tests/visual-runtime/integration-2/real-a-h.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "node-strip-types",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 25,
+        "pass": 25,
+        "fail": 0
+      },
+      "durationMs": 900,
+      "command": "node --experimental-strip-types --test packages/tierflow/tests/visual-runtime/integration-2/real-a-h.test.ts"
+    },
+    {
+      "path": "packages/tierflow/tests/visual-runtime/integration-3.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "bun",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 0,
+        "pass": 0,
+        "fail": 0
+      },
+      "durationMs": 1032,
+      "command": "bun test packages/tierflow/tests/visual-runtime/integration-3.test.ts"
+    },
+    {
+      "path": "packages/tierflow/tests/visual-runtime/integration-4/compose.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "node-strip-types",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 48,
+        "pass": 48,
+        "fail": 0
+      },
+      "durationMs": 1477,
+      "command": "node --experimental-strip-types --test packages/tierflow/tests/visual-runtime/integration-4/compose.test.ts"
+    },
+    {
+      "path": "packages/tierflow/tests/visual-runtime/knowledge-privacy.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "node-strip-types",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 7,
+        "pass": 7,
+        "fail": 0
+      },
+      "durationMs": 630,
+      "command": "node --experimental-strip-types --test packages/tierflow/tests/visual-runtime/knowledge-privacy.test.ts"
+    },
+    {
+      "path": "packages/tierflow/tests/visual-runtime/knowledge.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "node-strip-types",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 7,
+        "pass": 7,
+        "fail": 0
+      },
+      "durationMs": 619,
+      "command": "node --experimental-strip-types --test packages/tierflow/tests/visual-runtime/knowledge.test.ts"
+    },
+    {
+      "path": "packages/tierflow/tests/visual-runtime/layout.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "node-strip-types",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 13,
+        "pass": 13,
+        "fail": 0
+      },
+      "durationMs": 599,
+      "command": "node --experimental-strip-types --test packages/tierflow/tests/visual-runtime/layout.test.ts"
+    },
+    {
+      "path": "packages/tierflow/tests/visual-runtime/render-snapshots.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "node-strip-types",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 5,
+        "pass": 5,
+        "fail": 0
+      },
+      "durationMs": 579,
+      "command": "node --experimental-strip-types --test packages/tierflow/tests/visual-runtime/render-snapshots.test.ts"
+    },
+    {
+      "path": "packages/tierflow/tests/visual-runtime/render.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "node-strip-types",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 13,
+        "pass": 13,
+        "fail": 0
+      },
+      "durationMs": 672,
+      "command": "node --experimental-strip-types --test packages/tierflow/tests/visual-runtime/render.test.ts"
+    },
+    {
+      "path": "packages/tierflow/tests/visual-runtime/revisions.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "node-strip-types",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 7,
+        "pass": 7,
+        "fail": 0
+      },
+      "durationMs": 603,
+      "command": "node --experimental-strip-types --test packages/tierflow/tests/visual-runtime/revisions.test.ts"
+    },
+    {
+      "path": "packages/tierflow/tests/visual-runtime/wave3-a-schema.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "node-strip-types",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 6,
+        "pass": 6,
+        "fail": 0
+      },
+      "durationMs": 696,
+      "command": "node --experimental-strip-types --test packages/tierflow/tests/visual-runtime/wave3-a-schema.test.ts"
+    },
+    {
+      "path": "packages/tierflow/tests/visual-runtime/wave3-b-components.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "node-strip-types",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 14,
+        "pass": 14,
+        "fail": 0
+      },
+      "durationMs": 722,
+      "command": "node --experimental-strip-types --test packages/tierflow/tests/visual-runtime/wave3-b-components.test.ts"
+    },
+    {
+      "path": "packages/tierflow/tests/visual-runtime/wave3-c-replay.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "bun",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 0,
+        "pass": 0,
+        "fail": 0
+      },
+      "durationMs": 859,
+      "command": "bun test packages/tierflow/tests/visual-runtime/wave3-c-replay.test.ts"
+    },
+    {
+      "path": "packages/tierflow/tests/visual-runtime/wave3-d-render.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "node-strip-types",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 11,
+        "pass": 11,
+        "fail": 0
+      },
+      "durationMs": 650,
+      "command": "node --experimental-strip-types --test packages/tierflow/tests/visual-runtime/wave3-d-render.test.ts"
+    },
+    {
+      "path": "packages/tierflow/tests/visual-runtime/wave3-e-experience.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "node-strip-types",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 15,
+        "pass": 15,
+        "fail": 0
+      },
+      "durationMs": 851,
+      "command": "node --experimental-strip-types --test packages/tierflow/tests/visual-runtime/wave3-e-experience.test.ts"
+    },
+    {
+      "path": "packages/tierflow/tests/visual-runtime/wave3-f-knowledge.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "node-strip-types",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 18,
+        "pass": 18,
+        "fail": 0
+      },
+      "durationMs": 743,
+      "command": "node --experimental-strip-types --test packages/tierflow/tests/visual-runtime/wave3-f-knowledge.test.ts"
+    },
+    {
+      "path": "packages/tierflow/tests/visual-runtime/wave3-g-command.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "node-strip-types",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 15,
+        "pass": 15,
+        "fail": 0
+      },
+      "durationMs": 773,
+      "command": "node --experimental-strip-types --test packages/tierflow/tests/visual-runtime/wave3-g-command.test.ts"
+    },
+    {
+      "path": "packages/tierflow/tests/visual-runtime/wave3-h-host.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "node-strip-types",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 15,
+        "pass": 15,
+        "fail": 0
+      },
+      "durationMs": 760,
+      "command": "node --experimental-strip-types --test packages/tierflow/tests/visual-runtime/wave3-h-host.test.ts"
+    },
+    {
+      "path": "packages/tierflow/tests/visual-runtime/wave4-a-desktop-adapter.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "node-strip-types",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 12,
+        "pass": 12,
+        "fail": 0
+      },
+      "durationMs": 753,
+      "command": "node --experimental-strip-types --test packages/tierflow/tests/visual-runtime/wave4-a-desktop-adapter.test.ts"
+    },
+    {
+      "path": "packages/tierflow/tests/visual-runtime/wave4-b-phone-adapter.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "node-strip-types",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 18,
+        "pass": 18,
+        "fail": 0
+      },
+      "durationMs": 675,
+      "command": "node --experimental-strip-types --test packages/tierflow/tests/visual-runtime/wave4-b-phone-adapter.test.ts"
+    },
+    {
+      "path": "packages/tierflow/tests/visual-runtime/wave4-c-device-semantics.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "node-strip-types",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 23,
+        "pass": 23,
+        "fail": 0
+      },
+      "durationMs": 885,
+      "command": "node --experimental-strip-types --test packages/tierflow/tests/visual-runtime/wave4-c-device-semantics.test.ts"
+    },
+    {
+      "path": "packages/tierflow/tests/visual-runtime/wave4-d-session-reconcile.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "node-strip-types",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 19,
+        "pass": 19,
+        "fail": 0
+      },
+      "durationMs": 702,
+      "command": "node --experimental-strip-types --test packages/tierflow/tests/visual-runtime/wave4-d-session-reconcile.test.ts"
+    },
+    {
+      "path": "packages/tierflow/tests/visual-runtime/wave4-e-onboarding-resume.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "node-strip-types",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 27,
+        "pass": 27,
+        "fail": 0
+      },
+      "durationMs": 685,
+      "command": "node --experimental-strip-types --test packages/tierflow/tests/visual-runtime/wave4-e-onboarding-resume.test.ts"
+    },
+    {
+      "path": "packages/tierflow/tests/visual-runtime/wave4-f-device-snapshot.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "node-strip-types",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 22,
+        "pass": 22,
+        "fail": 0
+      },
+      "durationMs": 812,
+      "command": "node --experimental-strip-types --test packages/tierflow/tests/visual-runtime/wave4-f-device-snapshot.test.ts"
+    },
+    {
+      "path": "packages/tierflow/tests/visual-runtime/wave4-g-typed-transport.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "node-strip-types",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 12,
+        "pass": 12,
+        "fail": 0
+      },
+      "durationMs": 827,
+      "command": "node --experimental-strip-types --test packages/tierflow/tests/visual-runtime/wave4-g-typed-transport.test.ts"
+    },
+    {
+      "path": "packages/tierflow/tests/visual-runtime/wave4-h-host-status.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "node-strip-types",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 23,
+        "pass": 23,
+        "fail": 0
+      },
+      "durationMs": 710,
+      "command": "node --experimental-strip-types --test packages/tierflow/tests/visual-runtime/wave4-h-host-status.test.ts"
+    },
+    {
+      "path": "packages/tierflow/tests/world-client.test.ts",
+      "root": "packages/tierflow/tests",
+      "runtime": "bun",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 0,
+        "pass": 0,
+        "fail": 0
+      },
+      "durationMs": 165,
+      "command": "bun test packages/tierflow/tests/world-client.test.ts"
+    },
+    {
+      "path": "tests/compatibility/wave1f.test.mjs",
+      "root": "tests/compatibility",
+      "runtime": "node24-ajv",
+      "gate": "compatibility",
+      "cached": false,
+      "exitCode": 1,
+      "totals": {
+        "tests": 6,
+        "pass": 5,
+        "fail": 1
+      },
+      "durationMs": 511,
+      "command": "node --test tests/compatibility/wave1f.test.mjs"
+    },
+    {
+      "path": "tests/fixtures/labs/personal-knowledge/tests/chatgpt-normalize.test.mjs",
+      "root": "tests",
+      "runtime": "node24-ajv",
+      "gate": "uncategorized",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 2,
+        "pass": 2,
+        "fail": 0
+      },
+      "durationMs": 648,
+      "command": "node --test tests/fixtures/labs/personal-knowledge/tests/chatgpt-normalize.test.mjs"
+    },
+    {
+      "path": "tests/hq-version-intelligence/g1-v2-schema.test.mjs",
+      "root": "tests/hq-version-intelligence",
+      "runtime": "node24-ajv",
+      "gate": "hvi-g1-g2",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 3,
+        "pass": 3,
+        "fail": 0
+      },
+      "durationMs": 1200,
+      "command": "node --test tests/hq-version-intelligence/g1-v2-schema.test.mjs"
+    },
+    {
+      "path": "tests/hq-version-intelligence/g2-host-ui.test.mjs",
+      "root": "tests/hq-version-intelligence",
+      "runtime": "node-strip-types",
+      "gate": "hvi-g1-g2",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 10,
+        "pass": 10,
+        "fail": 0
+      },
+      "durationMs": 847,
+      "command": "node --experimental-strip-types --test tests/hq-version-intelligence/g2-host-ui.test.mjs"
+    },
+    {
+      "path": "tests/hq-version-intelligence/git-edge-negative-gates.test.mjs",
+      "root": "tests/hq-version-intelligence",
+      "runtime": "node24-ajv",
+      "gate": "hvi-g1-g2",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 3,
+        "pass": 3,
+        "fail": 0
+      },
+      "durationMs": 527,
+      "command": "node --test tests/hq-version-intelligence/git-edge-negative-gates.test.mjs"
+    },
+    {
+      "path": "tests/hq-version-intelligence/hvi-contract-qa.test.mjs",
+      "root": "tests/hq-version-intelligence",
+      "runtime": "node24-ajv",
+      "gate": "hvi-g1-g2",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 25,
+        "pass": 25,
+        "fail": 0
+      },
+      "durationMs": 646,
+      "command": "node --test tests/hq-version-intelligence/hvi-contract-qa.test.mjs"
+    },
+    {
+      "path": "tests/hq-version-intelligence/integrated-nway.test.mjs",
+      "root": "tests/hq-version-intelligence",
+      "runtime": "node24-ajv",
+      "gate": "hvi-g1-g2",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 27,
+        "pass": 27,
+        "fail": 0
+      },
+      "durationMs": 1083,
+      "command": "node --test tests/hq-version-intelligence/integrated-nway.test.mjs"
+    },
+    {
+      "path": "tests/hq-version-intelligence/schema-negative-gates.test.mjs",
+      "root": "tests/hq-version-intelligence",
+      "runtime": "node24-ajv",
+      "gate": "hvi-g1-g2",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 5,
+        "pass": 5,
+        "fail": 0
+      },
+      "durationMs": 664,
+      "command": "node --test tests/hq-version-intelligence/schema-negative-gates.test.mjs"
+    },
+    {
+      "path": "tests/privacy/w01-f-source-lint.test.mjs",
+      "root": "tests/privacy",
+      "runtime": "node24-ajv",
+      "gate": "interop",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 1,
+        "pass": 1,
+        "fail": 0
+      },
+      "durationMs": 586,
+      "command": "node --test tests/privacy/w01-f-source-lint.test.mjs"
+    }
+  ],
+  "gates": [
+    {
+      "schema": "arbor.hvi.gate-receipt/1",
+      "command": "node --test apps/mobile-relay/test/bootstrap-actions-allowlist.test.mjs",
+      "os": "win32",
+      "osRelease": "10.0.29704",
+      "osArch": "x64",
+      "gateRuntime": "bun 1.4.2",
+      "testRuntimes": [
+        {
+          "runtime": "node24-ajv",
+          "binary": "node",
+          "version": "v24.22.1"
+        }
+      ],
+      "nodeVersion": "v24.22.1",
+      "bunVersion": "1.4.2",
+      "ajvVersion": "8.17.1",
+      "commitSha": "aead9174d893027193941fc747009bbc517df0e4",
+      "gate": "interop",
+      "totals": {
+        "tests": 193,
+        "pass": 193,
+        "fail": 0
+      },
+      "exitCode": 0,
+      "durationMs": 16091,
+      "startedAt": "2026-11-12T23:54:55.396Z",
+      "finishedAt": "2026-11-13T00:04:17.465Z"
+    },
+    {
+      "schema": "arbor.hvi.gate-receipt/1",
+      "command": "node --test apps/vivim-host/bootstrap/rust-web-reader.test.mjs",
+      "os": "win32",
+      "osRelease": "10.0.29704",
+      "osArch": "x64",
+      "gateRuntime": "bun 1.4.2",
+      "testRuntimes": [
+        {
+          "runtime": "bun",
+          "binary": "bun",
+          "version": "1.4.2"
+        },
+        {
+          "runtime": "node-strip-types",
+          "binary": "node",
+          "version": "v24.22.1"
+        },
+        {
+          "runtime": "node24-ajv",
+          "binary": "node",
+          "version": "v24.22.1"
+        }
+      ],
+      "nodeVersion": "v24.22.1",
+      "bunVersion": "1.4.2",
+      "ajvVersion": "8.17.1",
+      "commitSha": "aead9174d893027193941fc747009bbc517df0e4",
+      "gate": "uncategorized",
+      "totals": {
+        "tests": 1257,
+        "pass": 1233,
+        "fail": 24
+      },
+      "exitCode": 1,
+      "durationMs": 93576,
+      "startedAt": "2026-11-12T23:54:55.396Z",
+      "finishedAt": "2026-11-13T00:04:17.465Z"
+    },
+    {
+      "schema": "arbor.hvi.gate-receipt/1",
+      "command": "node --test apps/vivim-host/test/apk-enrollment.test.mjs",
+      "os": "win32",
+      "osRelease": "10.0.29704",
+      "osArch": "x64",
+      "gateRuntime": "bun 1.4.2",
+      "testRuntimes": [
+        {
+          "runtime": "node24-ajv",
+          "binary": "node",
+          "version": "v24.22.1"
+        }
+      ],
+      "nodeVersion": "v24.22.1",
+      "bunVersion": "1.4.2",
+      "ajvVersion": "8.17.1",
+      "commitSha": "aead9174d893027193941fc747009bbc517df0e4",
+      "gate": "host-suite",
+      "totals": {
+        "tests": 437,
+        "pass": 430,
+        "fail": 7
+      },
+      "exitCode": 1,
+      "durationMs": 349746,
+      "startedAt": "2026-11-12T23:54:55.396Z",
+      "finishedAt": "2026-11-13T00:04:17.465Z"
+    },
+    {
+      "schema": "arbor.hvi.gate-receipt/1",
+      "command": "node --test apps/vivim-host/test/hvi-capability.test.mjs",
+      "os": "win32",
+      "osRelease": "10.0.29704",
+      "osArch": "x64",
+      "gateRuntime": "bun 1.4.2",
+      "testRuntimes": [
+        {
+          "runtime": "node24-ajv",
+          "binary": "node",
+          "version": "v24.22.1"
+        }
+      ],
+      "nodeVersion": "v24.22.1",
+      "bunVersion": "1.4.2",
+      "ajvVersion": "8.17.1",
+      "commitSha": "aead9174d893027193941fc747009bbc517df0e4",
+      "gate": "hvi-host-read-port",
+      "totals": {
+        "tests": 17,
+        "pass": 17,
+        "fail": 0
+      },
+      "exitCode": 0,
+      "durationMs": 1536,
+      "startedAt": "2026-11-12T23:54:55.396Z",
+      "finishedAt": "2026-11-13T00:04:17.465Z"
+    },
+    {
+      "schema": "arbor.hvi.gate-receipt/1",
+      "command": "node --test hq/catalogue-identity/test/crosswalk.test.mjs",
+      "os": "win32",
+      "osRelease": "10.0.29704",
+      "osArch": "x64",
+      "gateRuntime": "bun 1.4.2",
+      "testRuntimes": [
+        {
+          "runtime": "node24-ajv",
+          "binary": "node",
+          "version": "v24.22.1"
+        }
+      ],
+      "nodeVersion": "v24.22.1",
+      "bunVersion": "1.4.2",
+      "ajvVersion": "8.17.1",
+      "commitSha": "aead9174d893027193941fc747009bbc517df0e4",
+      "gate": "hvi-modules",
+      "totals": {
+        "tests": 81,
+        "pass": 81,
+        "fail": 0
+      },
+      "exitCode": 0,
+      "durationMs": 3443,
+      "startedAt": "2026-11-12T23:54:55.396Z",
+      "finishedAt": "2026-11-13T00:04:17.465Z"
+    },
+    {
+      "schema": "arbor.hvi.gate-receipt/1",
+      "command": "bun test hq/test/action-map.test.mjs",
+      "os": "win32",
+      "osRelease": "10.0.29704",
+      "osArch": "x64",
+      "gateRuntime": "bun 1.4.2",
+      "testRuntimes": [
+        {
+          "runtime": "bun",
+          "binary": "bun",
+          "version": "1.4.2"
+        },
+        {
+          "runtime": "node24-ajv",
+          "binary": "node",
+          "version": "v24.22.1"
+        }
+      ],
+      "nodeVersion": "v24.22.1",
+      "bunVersion": "1.4.2",
+      "ajvVersion": "8.17.1",
+      "commitSha": "aead9174d893027193941fc747009bbc517df0e4",
+      "gate": "hq-suite",
+      "totals": {
+        "tests": 322,
+        "pass": 315,
+        "fail": 7
+      },
+      "exitCode": 1,
+      "durationMs": 83420,
+      "startedAt": "2026-11-12T23:54:55.396Z",
+      "finishedAt": "2026-11-13T00:04:17.465Z"
+    },
+    {
+      "schema": "arbor.hvi.gate-receipt/1",
+      "command": "node --test hq/test/arbor-boundary.test.mjs",
+      "os": "win32",
+      "osRelease": "10.0.29704",
+      "osArch": "x64",
+      "gateRuntime": "bun 1.4.2",
+      "testRuntimes": [
+        {
+          "runtime": "node24-ajv",
+          "binary": "node",
+          "version": "v24.22.1"
+        }
+      ],
+      "nodeVersion": "v24.22.1",
+      "bunVersion": "1.4.2",
+      "ajvVersion": "8.17.1",
+      "commitSha": "aead9174d893027193941fc747009bbc517df0e4",
+      "gate": "hvi-hq-boundary",
+      "totals": {
+        "tests": 9,
+        "pass": 9,
+        "fail": 0
+      },
+      "exitCode": 0,
+      "durationMs": 5566,
+      "startedAt": "2026-11-12T23:54:55.396Z",
+      "finishedAt": "2026-11-13T00:04:17.465Z"
+    },
+    {
+      "schema": "arbor.hvi.gate-receipt/1",
+      "command": "node --test hq/test/hvi-mcp-tool.test.mjs",
+      "os": "win32",
+      "osRelease": "10.0.29704",
+      "osArch": "x64",
+      "gateRuntime": "bun 1.4.2",
+      "testRuntimes": [
+        {
+          "runtime": "node24-ajv",
+          "binary": "node",
+          "version": "v24.22.1"
+        }
+      ],
+      "nodeVersion": "v24.22.1",
+      "bunVersion": "1.4.2",
+      "ajvVersion": "8.17.1",
+      "commitSha": "aead9174d893027193941fc747009bbc517df0e4",
+      "gate": "hvi-discovery",
+      "totals": {
+        "tests": 4,
+        "pass": 4,
+        "fail": 0
+      },
+      "exitCode": 0,
+      "durationMs": 574,
+      "startedAt": "2026-11-12T23:54:55.396Z",
+      "finishedAt": "2026-11-13T00:04:17.465Z"
+    },
+    {
+      "schema": "arbor.hvi.gate-receipt/1",
+      "command": "node --experimental-strip-types --test packages/tierflow/tests/hvi-inspector.test.mjs",
+      "os": "win32",
+      "osRelease": "10.0.29704",
+      "osArch": "x64",
+      "gateRuntime": "bun 1.4.2",
+      "testRuntimes": [
+        {
+          "runtime": "node-strip-types",
+          "binary": "node",
+          "version": "v24.22.1"
+        }
+      ],
+      "nodeVersion": "v24.22.1",
+      "bunVersion": "1.4.2",
+      "ajvVersion": "8.17.1",
+      "commitSha": "aead9174d893027193941fc747009bbc517df0e4",
+      "gate": "hvi-tierflow-inspector",
+      "totals": {
+        "tests": 17,
+        "pass": 17,
+        "fail": 0
+      },
+      "exitCode": 0,
+      "durationMs": 859,
+      "startedAt": "2026-11-12T23:54:55.396Z",
+      "finishedAt": "2026-11-13T00:04:17.465Z"
+    },
+    {
+      "schema": "arbor.hvi.gate-receipt/1",
+      "command": "node --test tests/compatibility/wave1f.test.mjs",
+      "os": "win32",
+      "osRelease": "10.0.29704",
+      "osArch": "x64",
+      "gateRuntime": "bun 1.4.2",
+      "testRuntimes": [
+        {
+          "runtime": "node24-ajv",
+          "binary": "node",
+          "version": "v24.22.1"
+        }
+      ],
+      "nodeVersion": "v24.22.1",
+      "bunVersion": "1.4.2",
+      "ajvVersion": "8.17.1",
+      "commitSha": "aead9174d893027193941fc747009bbc517df0e4",
+      "gate": "compatibility",
+      "totals": {
+        "tests": 6,
+        "pass": 5,
+        "fail": 1
+      },
+      "exitCode": 1,
+      "durationMs": 511,
+      "startedAt": "2026-11-12T23:54:55.396Z",
+      "finishedAt": "2026-11-13T00:04:17.465Z"
+    },
+    {
+      "schema": "arbor.hvi.gate-receipt/1",
+      "command": "node --test tests/hq-version-intelligence/g1-v2-schema.test.mjs",
+      "os": "win32",
+      "osRelease": "10.0.29704",
+      "osArch": "x64",
+      "gateRuntime": "bun 1.4.2",
+      "testRuntimes": [
+        {
+          "runtime": "node-strip-types",
+          "binary": "node",
+          "version": "v24.22.1"
+        },
+        {
+          "runtime": "node24-ajv",
+          "binary": "node",
+          "version": "v24.22.1"
+        }
+      ],
+      "nodeVersion": "v24.22.1",
+      "bunVersion": "1.4.2",
+      "ajvVersion": "8.17.1",
+      "commitSha": "aead9174d893027193941fc747009bbc517df0e4",
+      "gate": "hvi-g1-g2",
+      "totals": {
+        "tests": 73,
+        "pass": 73,
+        "fail": 0
+      },
+      "exitCode": 0,
+      "durationMs": 4967,
+      "startedAt": "2026-11-12T23:54:55.396Z",
+      "finishedAt": "2026-11-13T00:04:17.465Z"
+    }
+  ]
+}

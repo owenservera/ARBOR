@@ -1,0 +1,29 @@
+{
+  "schema": "arbor.hvi.gate-receipt/1",
+  "command": "node --test apps/mobile-relay/test/bootstrap-actions-allowlist.test.mjs",
+  "os": "win32",
+  "osRelease": "10.0.29704",
+  "osArch": "x64",
+  "gateRuntime": "bun 1.4.2",
+  "testRuntimes": [
+    {
+      "runtime": "node24-ajv",
+      "binary": "node",
+      "version": "v24.22.1"
+    }
+  ],
+  "nodeVersion": "v24.22.1",
+  "bunVersion": "1.4.2",
+  "ajvVersion": "8.17.1",
+  "commitSha": "aead9174d893027193941fc747009bbc517df0e4",
+  "gate": "interop",
+  "totals": {
+    "tests": 193,
+    "pass": 193,
+    "fail": 0
+  },
+  "exitCode": 0,
+  "durationMs": 16091,
+  "startedAt": "2026-11-12T23:54:55.396Z",
+  "finishedAt": "2026-11-13T00:04:17.465Z"
+}

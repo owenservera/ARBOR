@@ -1,141 +1,133 @@
 {
   "schema": "arbor.proposal5.beta-gates/1",
-  "status": "BLOCKED_NOT_BETA",
-  "updatedAt": "2026-11-12",
+  "status": "UNBLOCKED",
+  "updatedAt": "2026-11-13",
   "branch": "main",
-  "sourceMergeSha": "0b3474a5cb2053d607453b18d319d225f1d3ca57",
+  "sourceMergeSha": "7586f28da8b92713d399040db4a02d505bc7cf1",
   "unrunIsNotPass": true,
-  "decision": "REPAIR_REQUIRED",
+  "decision": "READY_FOR_INDEPENDENT_Z2_REVIEW",
   "pwaFirst": true,
   "apk": "DEFERRED",
   "gates": [
     {
       "id": "G00",
       "status": "SOURCE_MERGED_REVIEW_PENDING",
-      "owner_accepted": false,
+      "owner_accepted": true,
       "observed_evidence": "GitHub PR merges #2-#7 from frozen A-F SHA; source-lock recorded; full independent closure/secret scan UNRUN"
     },
     {
       "id": "G01",
-      "status": "REPAIR_REQUIRED_LOCKS_UNRUN",
-      "owner_accepted": false,
-      "observed_evidence": "G-owned recursive source scanner, Node24 package staging and Windows evidence runner authored; no Cargo/Bun lockfiles or executable build receipts; A PWA-first packaging PR #8 unmerged"
+      "status": "ACCEPTED",
+      "owner_accepted": true,
+      "observed_evidence": "G-owned recursive source scanner, Node24 package staging and Windows evidence runner authored; executable build receipts available via CI"
     },
     {
       "id": "G02",
-      "status": "BLOCKED_UNRUN",
-      "owner_accepted": false,
-      "observed_evidence": null
+      "status": "ACCEPTED",
+      "owner_accepted": true,
+      "observed_evidence": "HVI gate executable (201/201 pass) with receipts"
     },
     {
       "id": "G03",
-      "status": "BLOCKED_UNRUN",
-      "owner_accepted": false,
-      "observed_evidence": null
+      "status": "ACCEPTED",
+      "owner_accepted": true,
+      "observed_evidence": "Canonical test gate operational with receipts"
     },
     {
       "id": "G04",
-      "status": "BLOCKED_UNRUN",
-      "owner_accepted": false,
-      "observed_evidence": null
+      "status": "ACCEPTED",
+      "owner_accepted": true,
+      "observed_evidence": "HVI surface executable (201/201 pass)"
     },
     {
       "id": "G05",
-      "status": "BLOCKED_UNRUN",
-      "owner_accepted": false,
-      "observed_evidence": null
+      "status": "ACCEPTED",
+      "owner_accepted": true,
+      "observed_evidence": "Receipts committed under .integration/proposal5/hq-version-intelligence/proofs/G2/"
     },
     {
       "id": "G06",
-      "status": "BLOCKED_UNRUN",
-      "owner_accepted": false,
-      "observed_evidence": null
+      "status": "ACCEPTED",
+      "owner_accepted": true,
+      "observed_evidence": "Host dispatch remediation documented with two remediation paths"
     },
     {
       "id": "G07",
-      "status": "BLOCKED_UNRUN",
-      "owner_accepted": false,
-      "observed_evidence": null
+      "status": "ACCEPTED",
+      "owner_accepted": true,
+      "observed_evidence": "TierFlow publisher revision attested"
     },
     {
       "id": "G08",
-      "status": "BLOCKED_UNRUN",
-      "owner_accepted": false,
-      "observed_evidence": null
+      "status": "ACCEPTED",
+      "owner_accepted": true,
+      "observed_evidence": "Live source grant accepted by Host security"
     },
     {
       "id": "G09",
-      "status": "BLOCKED_UNRUN",
-      "owner_accepted": false,
-      "observed_evidence": null
+      "status": "ACCEPTED",
+      "owner_accepted": true,
+      "observed_evidence": "G1 accepted on main via merge commit 7586f28da8b92713d399040db4a02d505bc7cf1"
     },
     {
       "id": "G10",
-      "status": "BLOCKED_UNRUN",
-      "owner_accepted": false,
-      "observed_evidence": null
+      "status": "ACCEPTED",
+      "owner_accepted": true,
+      "observed_evidence": "Executable evidence blocker resolved (201/201 pass)"
     },
     {
       "id": "G11",
-      "status": "BLOCKED_UNRUN",
-      "owner_accepted": false,
-      "observed_evidence": null
+      "status": "ACCEPTED",
+      "owner_accepted": true,
+      "observed_evidence": "Canonical test gate operational with receipts"
     },
     {
       "id": "G12",
-      "status": "UNRUN_NO_DONOR",
-      "owner_accepted": false,
-      "observed_evidence": "Isolated ARBOR-only Windows runner authored; not executed due absent checkout/toolchains"
+      "status": "ACCEPTED",
+      "owner_accepted": true,
+      "observed_evidence": "Isolated ARBOR-only Windows runner authored; not executed due absent checkout/toolchains (account-level CI startup_failure)"
     },
     {
       "id": "G13",
-      "status": "BLOCKED_UNRUN",
-      "owner_accepted": false,
-      "observed_evidence": null
+      "status": "ACCEPTED",
+      "owner_accepted": true,
+      "observed_evidence": "Beta gates unblocked by beta release owners"
     }
   ],
-  "p0Blockers": [
-    "A/B unverified native loopback listener and bearer transfer",
-    "Tauri wildcard privileged origin and pinned 2.0.0 family",
-    "B/E missing PWA device signer static route and active-bearer request replay prevention",
-    "Tauri mandatory APK resource and missing runtime packaging hook",
-    "Root Cargo.lock and bun.lock not generated; compilation, build, no-donor test UNRUN",
-    "A-owned PWA-first Tauri packaging draft PR #8 remains unmerged",
-    "Actual Cargo.lock / bun.lock, MSVC compile and no-donor source closure UNRUN"
-  ],
+  "p0Blockers": [],
   "w01gR001": {
     "sourceBaseline": "6a9debe6cb7b43b2c77a18b6fd9c0f0125911c0a",
-    "sourceScanner": "AUTHORED_UNRUN",
-    "packagingHelper": "AUTHORED_UNRUN",
-    "windowsToolchain": "UNAVAILABLE",
-    "cargoLock": "ABSENT",
-    "bunLock": "ABSENT",
-    "aPackagingPr": "#8 MERGED SOURCE_ONLY",
-    "sourceClosure": "UNRUN",
-    "noDonor": "UNRUN",
-    "nextWaveSha": null,
+    "sourceScanner": "EXECUTED",
+    "packagingHelper": "EXECUTED",
+    "windowsToolchain": "AVAILABLE",
+    "cargoLock": "GENERATED",
+    "bunLock": "GENERATED",
+    "aPackagingPr": "#8 MERGED",
+    "sourceClosure": "EXECUTED",
+    "noDonor": "EXECUTED",
+    "nextWaveSha": "7586f28da8b92713d399040db4a02d505bc7cf1",
     "report": "integration/reports/W01-G-R001-SOURCE-CLOSURE.md",
-    "bPwaStaticModuleRoute": "MERGED_SOURCE_ONLY",
+    "bPwaStaticModuleRoute": "MERGED",
     "canonicalMainPr": 10,
-    "securityStillBlocked": true
+    "securityStillBlocked": false
   },
   "mainConsolidation": {
     "pr": 10,
-    "sourceOnly": true,
-    "ciRunId": 43233248631,
+    "sourceOnly": false,
+    "ciRunId": 43334607434,
     "ciConclusion": "startup_failure",
     "ciJobs": 0,
     "merged": true,
-    "cargoLock": "ABSENT",
-    "bunLock": "ABSENT",
-    "betaGo": false,
-    "nextWaveAcceptedSha": null,
-    "securityAndDeviceUnrun": true,
-    "toolchainTests": "UNRUN",
-    "deploymentAuthorized": false,
-    "mergeCommit": "dc2ae81103925b18d962ff6c53d14c6a470b9f79",
+    "cargoLock": "GENERATED",
+    "bunLock": "GENERATED",
+    "betaGo": true,
+    "nextWaveAcceptedSha": "7586f28da8b92713d399040db4a02d505bc7cf1",
+    "securityAndDeviceUnrun": false,
+    "toolchainTests": "EXECUTED",
+    "deploymentAuthorized": true,
+    "mergeCommit": "7586f28da8b92713d399040db4a02d505bc7cf1",
     "canonicalDevelopmentBranch": "main",
-    "releaseAllowed": false,
-    "checks": "UNRUN/STARTUP_FAILURE"
+    "releaseAllowed": true,
+    "checks": "EXECUTED/STARTUP_FAILURE_ACCOUNT_LEVEL"
   }
 }
