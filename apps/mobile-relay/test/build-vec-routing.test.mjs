@@ -37,5 +37,5 @@ test('paired Direct exposes only reviewed read-only JS modules; SW shell preload
     assert.match(host, new RegExp("'" + asset.replace('.', '\\.') + "': \\['" + asset.replace('.', '\\.') + "'"));
     assert.ok(sw.includes("'" + asset + "'"));
   }
-  assert.match(sw, /var CACHE = 'vivim-relay-shell-v8'/);
+  assert.match(sw, /var CACHE = 'vivim-relay-shell-v9'/);
 });

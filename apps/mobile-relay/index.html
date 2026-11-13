@@ -317,6 +317,46 @@ body.host-preview #grokbot-direct-link{display:none!important}
 .pwa-notes>.muted{font-size:13px;line-height:1.4}
 @media(max-width:520px){.pwa-launcher,.pwa-notes{width:100vw;max-height:90dvh;margin:auto 0 0;
   border-radius:var(--r-lg) var(--r-lg) 0 0;padding-bottom:calc(14px + env(safe-area-inset-bottom,0px))}}
+/* Universal composer: one DOM input, one send path, all six existing tabs. */
+#app{position:relative}
+#chat-composer{flex:none;z-index:30;padding-bottom:calc(8px + env(safe-area-inset-bottom,0px))}
+#chat-composer.is-collapsed{padding:5px 10px;min-height:52px}
+#chat-composer.is-collapsed> :not(#dock-preview){display:none!important}
+.dock-preview{display:flex;align-items:center;gap:12px;width:100%;min-height:43px;padding:9px 14px;
+  color:var(--tx);background:var(--s2);border:1px solid var(--line-strong);border-radius:var(--r-md);
+  text-align:left;font:500 14px/1.4 var(--font-sans)}
+.dock-preview span:first-child{color:var(--ac);font-size:20px}
+.dock-chevron{margin-left:auto;color:var(--mu)}
+.dock-rail{display:flex;align-items:center;gap:7px;min-width:0}
+.dock-modes,.dock-l0{display:flex;gap:5px}
+.dock-rail button{width:38px;height:36px;display:grid;place-items:center;background:var(--s2);
+  border:1px solid var(--bd);border-radius:var(--r-sm);font-size:18px;color:var(--mu)}
+.dock-rail button[aria-pressed=true]{color:var(--ac);border-color:var(--ac);background:var(--ac2)}
+.dock-l0{margin-left:auto}.dock-surface-label{font:11px var(--font-mono);color:var(--mu);max-width:120px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chat-context-panel{position:fixed;right:0;top:calc(56px + env(safe-area-inset-top,0px));
+  bottom:calc(62px + env(safe-area-inset-bottom,0px));width:min(92vw,360px);z-index:55;
+  padding:16px;overflow:auto;background:var(--s1);border-left:1px solid var(--line-strong);
+  box-shadow:-12px 0 50px #0009}
+.chat-context-panel[hidden]{display:none!important}
+.chat-context-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.chat-context-head h2{font:600 22px/1.2 var(--font-display);margin:0}
+.chat-context-panel h3{font:600 13px/1.2 var(--font-mono);margin:16px 0 9px}
+.chat-context-panel p{font-size:13px}
+.chat-focus-views{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+.chat-focus-views button{min-height:36px;padding:5px 12px;border:1px solid var(--bd);
+  border-radius:var(--r-sm);background:var(--s2);color:var(--tx)}
+.chat-focus-views button[aria-current=page]{border-color:var(--ac);color:var(--ac)}
+.chat-context-evidence{border:1px solid var(--bd);padding:9px;margin:6px 0;background:var(--bg);
+  border-radius:var(--r-sm);font-size:13px}
+.chat-context-evidence small{color:var(--mu);display:block}
+@media(max-width:640px){
+ #chat-composer{padding-bottom:6px}
+ .chat-context-panel{bottom:calc(62px + env(safe-area-inset-bottom,0px))}
+ #chat-composer .dock-surface-label{display:none}
+ #chat-composer .dock-rail button{width:36px;height:34px}
+ body.dock-expanded main{padding-bottom:calc(62px + env(safe-area-inset-bottom,0px))}
+}
 .ux-media-pager{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:12px}
 .ux-media-pager button{min-height:40px}
 .media-player-sheet{position:fixed;inset:0;z-index:80;padding:calc(16px + env(safe-area-inset-top,0px)) 14px calc(20px + env(safe-area-inset-bottom,0px));background:var(--bg);display:flex;flex-direction:column;gap:18px;overflow:auto}
@@ -392,7 +432,25 @@ body.host-preview #grokbot-direct-link{display:none!important}
           <span id="native-status" class="muted" role="status" style="width:100%;font-size:12px" hidden></span>
         </div>
         <div id="msgs" role="log" aria-live="polite"></div>
-        <div class="composer">
+        <div class="composer" id="chat-composer">
+          <button type="button" id="dock-preview" class="dock-preview" hidden
+            aria-label="Open universal VIVIM chat" title="Open VIVIM chat">
+            <span aria-hidden="true">✦</span><span id="dock-preview-title">Ask VIVIM · current view</span>
+            <span class="dock-chevron" aria-hidden="true">⌃</span>
+          </button>
+          <div id="dock-rail" class="dock-rail" aria-label="Chat controls">
+            <div class="dock-modes" role="group" aria-label="Chat destination">
+              <button type="button" data-chat-target="vivim" aria-label="VIVIM Host controller" title="VIVIM Host">✦</button>
+              <button type="button" data-chat-target="harness" aria-label="Combined signed-in AI" title="My AIs">◇</button>
+              <button type="button" data-chat-target="phone" aria-label="Existing PC sessions" title="PC sessions">▤</button>
+            </div>
+            <div class="dock-l0" role="group" aria-label="Chat navigation">
+              <button id="dock-home" type="button" title="Chat Home" aria-label="Chat Home">⌂</button>
+              <button id="dock-recents" type="button" title="Recent conversations" aria-label="Recent conversations">◷</button>
+              <button id="dock-focus" type="button" title="Context and focus" aria-label="Context and focus">◎</button>
+            </div>
+            <span id="dock-surface-label" class="dock-surface-label">Today · context</span>
+          </div>
           <div id="chips" class="chips" role="group" aria-label="Provider"></div>
           <div class="sels">
             <label id="modelwrap" hidden><select id="model" aria-label="Model"></select></label>
@@ -413,6 +471,20 @@ body.host-preview #grokbot-direct-link{display:none!important}
         </div>
       </div>
     </section>
+    <aside id="chat-context-panel" class="chat-context-panel" hidden
+      role="dialog" aria-label="Context and focus">
+      <header class="chat-context-head"><h2>Context and focus</h2>
+        <button id="chat-context-close" type="button" class="btn sm">Close</button>
+      </header>
+      <p class="muted">Choose an existing view. Context is advisory; the Host still authorizes every action.</p>
+      <div id="chat-focus-views" class="chat-focus-views" role="group" aria-label="Focus views"></div>
+      <h3>Rust graph context</h3>
+      <p id="chat-rust-state" class="muted" role="status">Not loaded · Direct connection only</p>
+      <div id="chat-rust-items"></div>
+      <button type="button" class="btn sm" id="chat-rust-refresh">Read verified context</button>
+      <h3>Current activity</h3>
+      <div id="chat-focus-activity" class="chat-focus-activity"></div>
+    </aside>
     <section id="v-control" role="tabpanel" aria-labelledby="tab-control" hidden style="height:100%;overflow:auto;padding:20px;max-width:900px;margin:0 auto">
       <h2>Control your VIVIM</h2>
       <p class="muted">Configure your home computer by describing the change. Direct connection only. Review each proposed action and explicitly approve it before VIVIM applies any available change.</p>
