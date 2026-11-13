@@ -227,6 +227,28 @@ test('Build VEC modules are served through the PWA shell and Direct Host', () =>
   }
 });
 
+test('installable PNG icons have exact PNG dimensions and safe manifest roles', () => {
+  const manifest=JSON.parse(source('../../mobile-relay/manifest.webmanifest'));
+  const icons=[
+    {name:'icon-192.png',size:192,purpose:'any'},
+    {name:'icon-512.png',size:512,purpose:'any'},
+    {name:'icon-maskable-512.png',size:512,purpose:'maskable'}
+  ];
+  for(const item of icons){
+    const binary=readFileSync(new URL('../../mobile-relay/'+item.name,import.meta.url));
+    assert.ok(binary.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10])));
+    assert.equal(binary.toString('ascii',12,16),'IHDR');
+    assert.equal(binary.readUInt32BE(16),item.size);
+    assert.equal(binary.readUInt32BE(20),item.size);
+    assert.equal(binary[24],2); // 2-bit indexed palette, bounded tiny offline asset
+    assert.equal(binary[25],3); // indexed color
+    assert.ok(binary.length>1000);
+    const record=manifest.icons.find(icon=>icon.src==='./'+item.name);
+    assert.equal(record.sizes,item.size+'x'+item.size);
+    assert.equal(record.purpose,item.purpose);
+  }
+});
+
 test('owner desktop PWA uses the same read-only HQ media summary and clears private state', () => {
   const server = source('../server.mjs');
   const app = source('../../mobile-relay/app.js');

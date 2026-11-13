@@ -152,13 +152,13 @@
     {
       "id": "PWA-10",
       "title": "Offline shell, drafts and installability",
-      "status": "offline_shell_source_implemented_tests_unrun",
+      "status": "offline_and_install_assets_source_implemented_node_unrun",
       "owner": "PWA",
       "paths": [
         "apps/mobile-relay/sw.js",
         "apps/mobile-relay/manifest.webmanifest"
       ],
-      "proof": "public offline PWA shell, no private cached projections, no sends, revoked/changed sessions cleared; SW excludes API/media/auth and unrelated navigations; device UNRUN",
+      "proof": "Offline public shell, safe no-replay SW v6 52 assets, explicit SVG/PNG 192/512 and maskable 512, Android install and Node binary tests UNRUN",
       "dependsOn": [
         "PWA-03"
       ]

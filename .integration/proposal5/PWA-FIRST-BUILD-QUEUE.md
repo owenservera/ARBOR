@@ -21,7 +21,7 @@
 
 ## ERA 3 — Polish and ship
 
-- **PWA-10 · Offline shell, drafts and installability** — offline_shell_source_implemented_tests_unrun. offline read-only shell, clear stale state, no API caching/replayed mutations, valid PWA icons.
+- **PWA-10 · Offline shell, drafts and installability** — offline_and_install_assets_source_implemented_node_unrun. offline read-only shell, clear stale state, no API caching/replayed mutations, valid PWA icons.
 - **PWA-11 · Adaptive UI, accessibility and one-thumb polish** — accessible_mobile_source_implemented_tests_unrun. Android Chrome, keyboard, safe areas, reduced motion, screen reader; device validation.
 - **PWA-12 · Windows+paired Android operational acceptance** — real_local_verifier_authored_unrun_device_unrun. Node24/Bun/Cargo plus real Windows+Android Tailscale pairing, grants, restarts and offline; no external donor runtimes.
 
@@ -51,3 +51,7 @@ Run the original tests in one command from the real repo checkout: `node integra
 At `952834db330142ded0e08657c7eb22a4639cf491` (2026-11-13), source-level V8 execution of the checked-in test callbacks and the corresponding pure JS implementation returned **33/33 PWA UI + 9/9 VEC + 10/10 Build = 52/52 PASS**. This is **not** the Node test runner, real HTTP stack, Windows launch, or Android phone. It does not prove PWA release acceptance. Main also includes Direct media library paging (25 items per page), full-catalog matched-file resolution, stream close on World tab exit, private Control/history redaction and abort-safe opening.
 
 GitHub Actions run for this work is still `startup_failure` with no jobs. The next operational step is to run `node integration/scripts/pwa-run-now.mjs` in the real Windows ARBOR checkout and exercise a paired Android browser over Tailscale Direct. Do not claim device acceptance from the source checks.
+
+## Android PWA install assets (2026-11-13)
+
+The manifest now includes SVG-any, PNG 192×192, PNG 512×512, and a full-bleed maskable PNG 512×512. All three raster files are committed to the canonical PWA, served by the existing Direct Host allowlist and listed in service-worker shell v6. A committed Node test checks the binary PNG signatures, IHDR dimensions, bit depth, color type, and manifest roles. **Actual install on Android Chrome and this Node binary test remain UNRUN**.
