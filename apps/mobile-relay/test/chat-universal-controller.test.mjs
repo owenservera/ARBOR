@@ -50,7 +50,7 @@ test('microphone button and local recorder cannot issue Host or AI requests',()=
 
 test('combined inbox is source-backed aggregation only, never implicit multi-send',()=>{
  assert.match(app,/let combinedInbox = true/);
- assert.match(app,/combinedInbox \? 'Combined inbox/);
+ assert.match(app,/combinedInbox\s*\?\s*'Combined inbox/);
  assert.match(app,/combined\.dataset\.combined='1'/);
  assert.match(app,/All conversations\. Sends only to the selected provider/);
  assert.match(app,/if\(e\.target\.closest\('\[data-combined\]'\)\)/);
