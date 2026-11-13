@@ -183,9 +183,9 @@ window.addEventListener('vivim:paired', event => {
   if (!event.detail?.paired) {
     viewEpoch++;
     pack = null;
-    input.value = '';
+    if (input) input.value = '';
     live.replaceChildren();
-    btn.disabled = true;
+    if (btn) btn.disabled = true;
     show('PC authorization ended. Reconnect to plan or approve another action.');
     if (activity) {
       activity.replaceChildren(el('p', { class: 'muted' }, 'Device is no longer paired.'));
@@ -193,7 +193,7 @@ window.addEventListener('vivim:paired', event => {
     }
     return;
   }
-  btn.disabled = false;
+  if (btn) btn.disabled = false;
   if (document.querySelector('[data-tab="control"].on')) {
     void loadPack();
     void refreshControlActivity();

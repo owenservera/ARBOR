@@ -42,6 +42,7 @@ export function createControlChat({
   let busy = false;
   let suggestions = [];
   let loadingSuggestions = false;
+  let suggestionEpoch = 0;
 
   const elem = (tag, className, content) => {
     const node = doc.createElement(tag);
@@ -275,21 +276,27 @@ export function createControlChat({
 
   async function loadSuggestions() {
     if (loadingSuggestions || suggestions.length || !transport.direct) return;
+    const epoch = suggestionEpoch;
     loadingSuggestions = true;
     try {
       const catalog = await client.call('catalog');
+      if (epoch !== suggestionEpoch) return;
       const actions = Array.isArray(catalog?.actions) ? catalog.actions : [];
       const verified = actions.filter(a => ['source_wired', 'verified'].includes(a.readiness) &&
         a.risk === 'R0' && Array.isArray(a.examples));
       suggestions = verified.flatMap(a => a.examples.slice(0, 1))
         .filter(s => typeof s === 'string' && s.length <= MAX_TEXT).slice(0, 3);
     } catch { /* keep conservative, local examples; no Host authority claim */ }
-    finally { loadingSuggestions = false; if (!messages.length) redraw(); }
+    finally {
+      loadingSuggestions = false;
+      if (epoch === suggestionEpoch && !messages.length) redraw();
+    }
   }
 
   // Session-loss redaction never cancels an already claimed Host effect or
   // retries an uncertain action. It only drops private local presentation.
   function redact() {
+    suggestionEpoch++;
     messages = [];
     suggestions = [];
     redraw();

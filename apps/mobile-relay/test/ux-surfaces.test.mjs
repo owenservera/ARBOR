@@ -436,3 +436,13 @@ test('Control and Ask VIVIM redact private plans and ignore late Host reads afte
   assert.match(chat,/function redact\(\) \{\s*messages = \[\];\s*suggestions = \[\];\s*redraw\(\)/);
   assert.match(chat,/send, render, clear, redact, loadSuggestions/);
 });
+
+
+test('Ask VIVIM drops stale command suggestions when pairing changes',()=>{
+  const chat = readFileSync(new URL('../control-chat.mjs', import.meta.url),'utf8');
+  assert.match(chat,/let suggestionEpoch = 0/);
+  assert.match(chat,/const epoch = suggestionEpoch/);
+  assert.match(chat,/if \(epoch !== suggestionEpoch\) return/);
+  assert.match(chat,/suggestionEpoch\+\+;\s*messages = \[\]/);
+  assert.match(chat,/if \(epoch === suggestionEpoch && !messages\.length\) redraw\(\)/);
+});
