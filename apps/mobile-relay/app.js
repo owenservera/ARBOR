@@ -207,6 +207,8 @@ function clearPrivatePhoneState() {
   mediaGeneration++;
   stopMediaPlayer();
   S.paired = false; S.cmds = []; S.statusObj = null; S.manifest = null;
+  S.files = []; N.messages = []; N.sessions = []; N.session = '';
+  $('text').value = ''; $('dbg').hidden = true;
   S.media = { state: 'not-authorized' }; S.mediaAt = 0; S.mediaLoading = false;
   S.sigs.ux = null; S.sigs.msgs = null; S.sigs.list = null;
   $('app').hidden = true; $('pairbox').hidden = false;
@@ -367,6 +369,11 @@ function renderSurfaces() {
   else renderMe(host, model, options);
 }
 function renderList() {
+  if (!S.paired && !HOST_PREVIEW) {
+    $('convlist').replaceChildren(el('p', 'muted pad',
+      'Connect your PC to view private conversations.'));
+    return;
+  }
   const items = [...S.convs].sort((a, b) => b.updatedAt - a.updatedAt);
   const sig = S.active + JSON.stringify(items.map(c => [c.id, c.title, c.updatedAt, c.provider, c.model]));
   if (S.sigs.list === sig) return; S.sigs.list = sig;
@@ -457,6 +464,12 @@ async function acknowledgeRenderedReply({commandId,messageId,conversationId,repl
   }catch{}finally{pendingRenders.delete(key);}
 }
 function renderMsgs(force) {
+  if (!S.paired && !HOST_PREVIEW) {
+    $('title').textContent = 'VIVIM offline';
+    $('msgs').replaceChildren(el('div', 'empty',
+      'Your conversations remain private until the PC reconnects.'));
+    return;
+  }
   if (N.target === 'vivim') {
     $('title').textContent = 'Ask VIVIM';
     vivimChat.render();
@@ -678,6 +691,10 @@ async function startHostPreview() {
 
 /* Existing PC sessions only; transcript reads never create or fork sessions. */
 function renderNative() {
+  if (!S.paired) {
+    $('msgs').replaceChildren(el('div', 'empty', 'Connect to your PC to read its sessions.'));
+    return;
+  }
   const box = $('msgs'), session = N.sessions.find(s => s.id === N.session);
   $('title').textContent = session?.title || 'PC sessions';
   $('native-status').textContent = !transport.direct ? 'Your PC needs a Direct connection.' : N.note || (N.session ? 'Existing session' : 'Choose an existing session.');

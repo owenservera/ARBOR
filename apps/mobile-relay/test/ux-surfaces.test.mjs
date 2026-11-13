@@ -339,3 +339,12 @@ test('late media responses never repopulate an unpaired World after revocation',
   assert.match(app,/if \(generation !== mediaGeneration \|\| !S\.paired\) return/);
   assert.match(app,/function clearPrivatePhoneState\(\) \{\s*mediaGeneration\+\+/);
 });
+
+
+test('unpaired PWA never displays retained conversations or PC session bodies',()=>{
+  assert.match(app,/function renderList\(\) \{\s*if \(!S\.paired && !HOST_PREVIEW\)/);
+  assert.match(app,/function renderMsgs\(force\) \{\s*if \(!S\.paired && !HOST_PREVIEW\)/);
+  assert.match(app,/function renderNative\(\) \{\s*if \(!S\.paired\)/);
+  assert.match(app,/S\.files = \[\]; N\.messages = \[\]; N\.sessions = \[\]; N\.session = ''/);
+  assert.match(app,/S\.statusObj = null; S\.manifest = null/);
+});
