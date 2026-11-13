@@ -1,0 +1,9 @@
+{
+  "schema": "arbor.branch-archive-supplement/1",
+  "snapshotDate": "2026-11-13",
+  "reason": "Live worker branch moved while cleanup was running; preserving new tip as well",
+  "branch": "work/host-mobile-first-r001",
+  "originalSha": "8a0c6fe66776a4978c650d69ccc2f9558024117f",
+  "newSha": "67f91b7b71e284e06930df8313aac2ccd5b8c606",
+  "status": "ACTIVE_BRANCH_MOVED_DURING_CLEANUP"
+}
