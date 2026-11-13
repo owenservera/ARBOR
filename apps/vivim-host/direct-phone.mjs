@@ -33,6 +33,7 @@ const assets = new Map(Object.entries({
   'ux/launcher-ui.mjs': ['ux/launcher-ui.mjs', 'text/javascript; charset=utf-8'],
   'ux/local-notes.mjs': ['ux/local-notes.mjs', 'text/javascript; charset=utf-8'],
   'ux/local-notes-ui.mjs': ['ux/local-notes-ui.mjs', 'text/javascript; charset=utf-8'],
+  'ux/voice-capture.mjs': ['ux/voice-capture.mjs', 'text/javascript; charset=utf-8'],
   'pairing-link.mjs': ['pairing-link.mjs', 'text/javascript; charset=utf-8'],
   'device-enrollment.mjs': ['device-enrollment.mjs', 'text/javascript; charset=utf-8'],
   'browser-device-key.mjs': ['browser-device-key.mjs', 'text/javascript; charset=utf-8'],
@@ -94,7 +95,7 @@ export async function serveLoopbackPhoneAsset(req, res, pathname) {
   // by the new loopback Host presentation shell only.
   res.setHeader('x-frame-options', 'SAMEORIGIN');
   res.setHeader('content-security-policy',
-    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; frame-src 'none'; object-src 'none'; frame-ancestors 'self'; base-uri 'none'; form-action 'none'");
+    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; media-src 'self' blob:; frame-src 'none'; object-src 'none'; frame-ancestors 'self'; base-uri 'none'; form-action 'none'");
   try {
     const content = await readFile(path.join(root, asset[0]));
     res.setHeader('content-type', asset[1]);
@@ -216,7 +217,7 @@ export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'wo
   return async function directPhone(req, res) {
     const remote = req.socket.remoteAddress;
     if (!['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(remote) || req.headers.host !== url.host || req.headers['x-forwarded-proto'] !== 'https' || req.headers['tailscale-user-login'] !== user) { json(res, 403, { error: 'Forbidden' }); return; }
-    res.setHeader('content-security-policy', "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; frame-src 'none'; object-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'");
+    res.setHeader('content-security-policy', "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; media-src 'self' blob:; frame-src 'none'; object-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'");
     const rawPath = (req.url || '').split('?')[0];
     if (rawPath === '/mobile') { res.writeHead(308, { location: '/mobile/' }); res.end(); return; }
     if (!rawPath.startsWith('/mobile/')) { json(res, 404, { error: 'Not found' }); return; }

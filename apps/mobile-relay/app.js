@@ -11,6 +11,7 @@ import { createControlChat } from './control-chat.mjs';
 import { deriveReadiness, safeReadinessReport } from './ux/readiness.mjs';
 import { mountCapabilityLauncher } from './ux/launcher-ui.mjs';
 import { mountLocalNotes } from './ux/local-notes-ui.mjs';
+import { mountVoiceCapture } from './ux/voice-capture.mjs';
 const $ = id => document.getElementById(id);
 const api = transport.request;
 // Only the loopback Host wrapper may display a read-only, unpaired desktop
@@ -92,6 +93,7 @@ let build = null, buildTimer = 0, buildKey = '';
 let welcome = null;
 let capabilityLauncher = null;
 let localNotes = null;
+let localVoice = null;
 let approvalPoll = null;
 let starting = null;
 try { N.pending = JSON.parse(sessionStorage.getItem('vivim.phone.pending.v1') || 'null'); } catch {}
@@ -651,6 +653,8 @@ function renderSurfaces() {
   const options = { onNavigate: goTab,
     onExplore: () => capabilityLauncher?.open(),
     onCapture: !HOST_PREVIEW ? () => localNotes?.open() : undefined,
+    onRecordVoice: !HOST_PREVIEW && localVoice?.available
+      ? () => localVoice.open() : undefined,
     onCheckReadiness: () => {
       if (navigator.onLine === false) { toast('Offline. Check again when your PC is reachable.'); return; }
       if (HOST_PREVIEW) void refreshHostPreview();
@@ -1191,7 +1195,14 @@ welcome = mountWelcome({ host: $('welcome') });
 if (!HOST_PREVIEW) {
   try { localNotes = mountLocalNotes({ host: document.body, storage: window.localStorage }); }
   catch { /* Browser storage may be blocked; Today still works without notes. */ }
+  try { localVoice = mountVoiceCapture({host:document.body}); }
+  catch { /* No recording permission is requested until the owner taps Start. */ }
 }
+$('dock-mic').hidden = HOST_PREVIEW || !(localVoice?.available || (pocketButton&&!pocketButton.hidden));
+$('dock-mic').addEventListener('click',()=>{
+  if(pocketButton&&!pocketButton.hidden)pocketButton.click();
+  else localVoice?.open();
+});
 function launcherContext() {
   return {mode:HOST_PREVIEW?'desktop-preview':transport.direct?'direct':'cloud',
     paired:S.paired&&(!transport.direct||!!transport.deviceHeaders?.()),

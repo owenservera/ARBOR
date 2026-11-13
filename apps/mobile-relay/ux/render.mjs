@@ -120,6 +120,12 @@ export function renderToday(host, model, options = {}) {
       capture.addEventListener('click', () => options.onCapture());
       explore.append(capture);
     }
+    if (typeof options.onRecordVoice === 'function') {
+      const voice = make(doc,'button','btn sm ux-secondary','Record voice · local only');
+      voice.type='button';
+      voice.addEventListener('click',()=>options.onRecordVoice());
+      explore.append(voice);
+    }
     scroll.append(explore);
   }
 

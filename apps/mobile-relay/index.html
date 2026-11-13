@@ -350,6 +350,14 @@ body.host-preview #grokbot-direct-link{display:none!important}
 .chat-context-evidence{border:1px solid var(--bd);padding:9px;margin:6px 0;background:var(--bg);
   border-radius:var(--r-sm);font-size:13px}
 .chat-context-evidence small{color:var(--mu);display:block}
+.voice-note-sheet{position:fixed;inset:auto;margin:auto;width:min(92vw,520px);max-height:90dvh;overflow:auto;
+  padding:22px;background:var(--s1);color:var(--tx);border:1px solid var(--line-strong);border-radius:var(--r-lg);z-index:90}
+.voice-note-sheet::backdrop{background:#000b}
+.voice-note-sheet h2{font:600 23px/1.2 var(--font-display)}
+.voice-note-actions{display:flex;flex-wrap:wrap;gap:8px}
+.voice-preview{width:100%;margin:12px 0}
+@media(max-width:640px){.voice-note-sheet{width:100vw;margin:auto 0 0;border-radius:var(--r-lg) var(--r-lg) 0 0}}
+
 @media(max-width:640px){
  #chat-composer{padding-bottom:6px}
  .chat-context-panel{bottom:calc(62px + env(safe-area-inset-bottom,0px))}
@@ -464,6 +472,8 @@ body.host-preview #grokbot-direct-link{display:none!important}
               <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5l-8.5 8.5a5 5 0 01-7-7L14 4.5a3.3 3.3 0 014.7 4.7L10 18a1.7 1.7 0 01-2.4-2.4l7.8-7.8"/></svg>
             </button>
             <input id="file" type="file" multiple hidden>
+            <button type="button" class="round" id="dock-mic" hidden
+              aria-label="Record a local voice note" title="Local voice · no automatic send">♩</button>
             <textarea id="text" rows="1" placeholder="Message…" aria-label="Message"></textarea>
             <button id="send" class="round" type="button" aria-label="Send" disabled>
               <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>

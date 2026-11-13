@@ -37,6 +37,7 @@ const SHELL_FILES = [
   'ux/launcher-ui.mjs',
   'ux/local-notes.mjs',
   'ux/local-notes-ui.mjs',
+  'ux/voice-capture.mjs',
   'bootstrap-f02.mjs',
   'bootstrap-phone.mjs',
   'visual-theme.mjs',
@@ -208,7 +209,7 @@ test('install precaches every shell asset from the network with cache reload', a
   const keys = new Set(await cache.keys());
   const expected = expectedKeys(ROOT);
   assert.equal(SHELL_FILES.length, expected.size, 'shell list has no duplicate entries');
-  assert.equal(SHELL_FILES.length, 58);
+  assert.equal(SHELL_FILES.length, 59);
   assert.deepEqual(SHELL_FILES, SW_SHELL_PATHS, 'the suite shell list must mirror sw.js SHELL_PATHS');
   expected.delete(failure);
   assert.deepEqual(keys, expected);
