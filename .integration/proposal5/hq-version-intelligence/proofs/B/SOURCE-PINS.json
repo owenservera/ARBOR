@@ -1,0 +1,70 @@
+{
+  "schema": "arbor.hvi.b.source-pins/1",
+  "hviBase": {
+    "repo": "owenservera/ARBOR",
+    "workerBaseSha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+    "rootTreeSha": "13eda0d9c7f717a46d00eee46a22b1a19edb65be",
+    "source": "S0/WORKER-BASE.json + GitHub commit"
+  },
+  "s0": {
+    "repo": "owenservera/ARBOR",
+    "branch": "work/p5-hvi-s0-source-lock-r001",
+    "headSha": "2ef7a9f66419d681e040b459ba4762a63aa9564f",
+    "gate": "GO_TO_PARALLEL",
+    "source": "S0/RUN-LEDGER.json, SOURCE-REVISIONS.json, WORKER-BASE.json"
+  },
+  "donors": [
+    {
+      "repo": "owenservera/repos-hq",
+      "ref": "main",
+      "commitSha": "9b922ea049dbadc94e504b5b9432743995c020ca",
+      "rootTreeSha": "a31e926bff898b02273b2044a871881f58ca61a9",
+      "verification": "independently resolved GitHub main, donor blobs inspected"
+    },
+    {
+      "repo": "owenservera/vivim-labs",
+      "ref": "main",
+      "commitSha": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be",
+      "rootTreeSha": "22c96f972b31153497c845c12e28efcf912278f9",
+      "verification": "S0 resolved; capability-observatory/data/capabilities.json pinned blob independently inspected"
+    }
+  ],
+  "libraries": [
+    {
+      "repo": "owenservera/ARBOR",
+      "commitSha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+      "path": "hq/lib/catalogue-delta.mjs",
+      "blob": "6849e6df26bd136ee50ae08a260d8ab9e9445ac7"
+    },
+    {
+      "repo": "owenservera/ARBOR",
+      "commitSha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+      "path": "hq/lib/semantic-registry.mjs",
+      "blob": "ec982381c77147119f62e702a162a203df8e7d4e"
+    },
+    {
+      "repo": "owenservera/ARBOR",
+      "commitSha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+      "path": "hq/lib/capabilities.mjs",
+      "blob": "342563729c6743e98870aa899d2d6876d7369d75"
+    },
+    {
+      "repo": "owenservera/vivim-labs",
+      "commitSha": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be",
+      "path": "capability-observatory/data/capabilities.json",
+      "blob": "4c5876bd40d727b6e7464f71dbe23679f5558f8a"
+    }
+  ],
+  "remainingSourcePins": "Use S0/SOURCE-REVISIONS.json for all 11 refs; not re-pinned or rewritten in this B lane",
+  "baselineParities": {
+    "hq": {
+      "donor": 676,
+      "samePath": 315,
+      "identical": 314,
+      "patched": 1,
+      "absentAtSamePath": 361
+    },
+    "meaning": "mechanical, not semantic equivalence"
+  },
+  "status": "SOURCE_INSPECTED_NOT_RUNTIME_ACCEPTED"
+}

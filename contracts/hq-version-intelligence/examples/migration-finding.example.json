@@ -1,0 +1,33 @@
+{
+  "schema": "arbor.hvi.migration-finding/1",
+  "id": "hq-missing:example",
+  "origin_repo": "owenservera/repos-hq",
+  "origin_sha": "9b922ea049dbadc94e504b5b9432743995c020ca",
+  "origin_path": "hq/catalogue-identity/crosswalk.mjs",
+  "origin_blob": "ed4cb6f561e055e1dd3145b61de6f50f2555687d",
+  "target_repo": "owenservera/ARBOR",
+  "target_sha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+  "target_path": [],
+  "target_blob": [],
+  "identity_basis": "unobservable",
+  "source_lineage": "missing_at_path",
+  "capability_id": null,
+  "source_type": "executable",
+  "tests": [],
+  "runtime_evidence": [],
+  "decision": "REVIEW_REQUIRED",
+  "certainty": "unknown",
+  "missing_reason": "not at original path; semantic relocation unverified",
+  "owner": "D-parity",
+  "merge_recommendation": "REVIEW",
+  "evidence_refs": [
+    "S0:HQ-MISSING-361"
+  ],
+  "coverage": {
+    "completeness": "partial",
+    "observed": 1,
+    "expected": null,
+    "truncated": true,
+    "reason": "synthetic example; not a live scan"
+  }
+}

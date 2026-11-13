@@ -1,0 +1,426 @@
+{
+  "schema": "arbor.hvi.z1.interface-compatibility/1",
+  "sourceBaseSha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+  "branches": {
+    "S0": "2ef7a9f66419d681e040b459ba4762a63aa9564f",
+    "A": "53d4bddf4c2a8fd22f12c8d7f3949aac5fd2fe38",
+    "B": "1206a343ab98a6e7abe0c19a9549c6b8c32ea9e0",
+    "C": "7f72c1415d75a7904eb5c267c2a55a9172d33cd8",
+    "D": "622569e9b20f1d6dfae474594eecf544d4fe3d9d",
+    "E": "d8080a4056361266702f38cf47f2a0885fe892eb",
+    "F": "34f5c1568007977e0e3bf0286d4c1ec730d6af26"
+  },
+  "policy": {
+    "sourcePinIdentity": "A: SHA256 canonical JSON provider+lowercaseRepo+commitSha+subPath",
+    "aManifestDigest": "SHA256 canonical A manifest payload including repo,revision,tree,subpath,raw entry metadata,completeness,budget/errors",
+    "cProjectionDigest": "SHA256 canonical C projection schema/pinId/completeness/truncated/ordered raw entries; not equal to A",
+    "comparisonWire": "arbor.hvi.version-comparison/1, C source semantic preserving",
+    "fSchemas": "F v1 remains historical incompatible; new explicit v2 contract required",
+    "runtime": "UNVERIFIED",
+    "legacy": "Preserve hq.catalogue-crosswalk/1, vivim.catalogue-export/1, hq.semantic-registry/1"
+  },
+  "modules": [
+    {
+      "lane": "A",
+      "path": "hq/version-intelligence/sources/common.mjs",
+      "blob": "cea0916b0a2596ea6e9a918bc87cec564bb144b7",
+      "contracts": [
+        "arbor.hvi.source/1",
+        "arbor.hvi.manifest/1",
+        "SHA256(canonicalJson)"
+      ]
+    },
+    {
+      "lane": "A",
+      "path": "hq/version-intelligence/sources/snapshots.mjs",
+      "blob": "6ff5f5334f07670d364c92c27a9ef4655951b7d4",
+      "contracts": [
+        "manifestDigestOf(manifest)",
+        "resolvePin",
+        "snapshotAt",
+        "verifyPin"
+      ]
+    },
+    {
+      "lane": "B",
+      "path": "hq/version-intelligence/identity/index.mjs",
+      "blob": "c75311a7d6f8ca02c234a6b72d65e9a5b796bc37",
+      "contracts": [
+        "arbor.hvi.identity/1",
+        "repo+SHA+sourceScopedRecordId",
+        "candidate decisions never auto-merge"
+      ]
+    },
+    {
+      "lane": "B",
+      "path": "hq/version-intelligence/identity/legacy-adapters.mjs",
+      "blob": "058b11ccaa5beefa9c7e9988d56c117785017ffc",
+      "contracts": [
+        "explicit C4 snapshot SHA",
+        "existing catalogue-delta digest first",
+        "legacy sourceRevision not Git SHA"
+      ]
+    },
+    {
+      "lane": "C",
+      "path": "hq/version-intelligence/compare/index.mjs",
+      "blob": "5203df02605b82951dfa2d5dbee9f0f179e0ecfe",
+      "contracts": [
+        "arbor.hvi.source-manifest/1",
+        "arbor.hvi.version-comparison/1",
+        "digestManifest()"
+      ]
+    },
+    {
+      "lane": "D",
+      "path": "hq/version-intelligence/parity/atlas.mjs",
+      "blob": "0493246c0a56380ec1605aa56ccda6ea59493017",
+      "contracts": [
+        "arbor.hvi.parity-atlas/1",
+        "physical source_state distinct capability_state",
+        "no runtime receipts verified"
+      ]
+    },
+    {
+      "lane": "E",
+      "path": "hq/version-intelligence/report/index.mjs",
+      "blob": "a9b7a07f276fc36ec0a39aaee227ac511ed67d4f",
+      "contracts": [
+        "arbor.hvi.version-comparison/1",
+        "arbor.hvi.report/1"
+      ]
+    },
+    {
+      "lane": "F",
+      "path": "contracts/hq-version-intelligence/schemas/v1/comparison.schema.json",
+      "blob": "e27ef483dcf2d8987b253f7daea6653aba495ba3",
+      "contracts": [
+        "arbor.hvi.comparison/1",
+        "incompatible strict schema"
+      ]
+    },
+    {
+      "lane": "F",
+      "path": "contracts/hq-version-intelligence/schemas/v1/manifest.schema.json",
+      "blob": "1b19545031d3ebbede7518cb941766cef86dc9ec",
+      "contracts": [
+        "arbor.hvi.manifest/1 root diverges A"
+      ]
+    },
+    {
+      "lane": "F",
+      "path": "contracts/hq-version-intelligence/schemas/v1/pin.schema.json",
+      "blob": "369059f9ab49d7f1eb9af820a7375ed95d7edda4",
+      "contracts": [
+        "arbor.hvi.pin/1 diverges A"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "AC-01",
+      "from": "A SourceManifest",
+      "to": "C source-manifest",
+      "verdict": "INCOMPATIBLE_NO_DIRECT_HASH_EQUIVALENCE",
+      "fields": [
+        {
+          "field": "schema",
+          "A": "arbor.hvi.manifest/1",
+          "C": "arbor.hvi.source-manifest/1"
+        },
+        {
+          "field": "digest field",
+          "A": "manifest.manifestDigest",
+          "C": "manifest.digest"
+        },
+        {
+          "field": "digest payload",
+          "A": "pinId+repoIdentity+resolvedCommitSha+rootTreeSha+subPath+entries+completeness+truncated+observedEntries+omittedMinimum+errors",
+          "C": "schema+pinId+completeness+truncated+entries ordered by path"
+        },
+        {
+          "field": "entry metadata",
+          "A": "bytes,null,parseStatus,symlinkTarget,excludedReason,kind:file|symlink|submodule",
+          "C": "validates and normalizes to path/mode/kind/blobSha/capabilityIds/excludedReason"
+        }
+      ],
+      "repair": "verify A digest against exact A canonical payload; explicitly project validated C subset (with documented digest domain); compute and verify independently C digest and pin copy; never substitute one digest as an alias; bind both to pinId+SHA+tree"
+    },
+    {
+      "id": "AF-PIN",
+      "from": "A PinnedSource",
+      "to": "F pin.schema.v1",
+      "verdict": "INCOMPATIBLE",
+      "fields": [
+        {
+          "field": "schema",
+          "A": "arbor.hvi.source/1",
+          "F": "arbor.hvi.pin/1"
+        },
+        {
+          "field": "repoIdentity",
+          "A": "lowercase owner/repo string",
+          "F": "{repository,remoteFingerprint?} object"
+        },
+        {
+          "field": "requestedRef",
+          "A": "null for direct SHA",
+          "F": "required string"
+        },
+        {
+          "field": "manifestDigest",
+          "A": "null until snapshotAt",
+          "F": "required sha64"
+        },
+        {
+          "field": "owner/evidenceRef",
+          "A": "owner absent; evidenceRef nullable",
+          "F": "required strings"
+        },
+        {
+          "field": "subPath",
+          "A": "empty string allowed",
+          "F": "if present minLength1"
+        }
+      ],
+      "repair": "version-tagged v2 wire pin with explicit nullability, provenance and owner supplied only by reviewed trusted caller, not inferred"
+    },
+    {
+      "id": "AF-MANIFEST",
+      "from": "A SourceManifest",
+      "to": "F manifest.schema.v1",
+      "verdict": "INCOMPATIBLE",
+      "fields": [
+        {
+          "field": "schema",
+          "A": "arbor.hvi.manifest/1",
+          "F": "same const but distinct body"
+        },
+        {
+          "field": "commitSha/digest",
+          "A": "resolvedCommitSha/manifestDigest",
+          "F": "commitSha/digest"
+        },
+        {
+          "field": "coverage/owner",
+          "A": "completeness,truncated,counts/errors; no owner",
+          "F": "coverage object and owner required"
+        },
+        {
+          "field": "parseStatus",
+          "A": "uninspected/text/binary/lfs_pointer/symlink_metadata/oversized/inspection_deferred",
+          "F": "parsed/not_parsed/blocked/truncated/unsupported"
+        },
+        {
+          "field": "bytes",
+          "A": "nullable",
+          "F": "integer only if supplied"
+        },
+        {
+          "field": "symlinkTarget",
+          "A": "null before inspection",
+          "F": "required string for symlink"
+        },
+        {
+          "field": "additionalProperties",
+          "A": "repo/tree/counts/errors/pin",
+          "F": "false"
+        }
+      ],
+      "repair": "preserve A native envelope; explicit v2 adapter with conservative parse-status mapping and coverage provenance"
+    },
+    {
+      "id": "CF-ROOT",
+      "from": "C VersionComparison",
+      "to": "F comparison.schema.v1",
+      "verdict": "INCOMPATIBLE",
+      "fields": [
+        {
+          "field": "schema",
+          "C": "arbor.hvi.version-comparison/1",
+          "F": "arbor.hvi.comparison/1"
+        },
+        {
+          "field": "sourcePins",
+          "C": "objects incl pinId,repoIdentity,commit,tree,manifestDigest,scope; 2..16",
+          "F": "string[], unique, 2..64"
+        },
+        {
+          "field": "owner",
+          "C": "absent root; finding owner specified",
+          "F": "root owner REQUIRED"
+        },
+        {
+          "field": "coverage",
+          "C": "array of per-donor pair coverage objects incl state counts",
+          "F": "single coverage object with completeness, observed, expected, truncated"
+        },
+        {
+          "field": "summary",
+          "C": "counts, observedFindings, emittedFindings,candidatesObserved,semanticParity,runtimeParity",
+          "F": "required source/capability/runtime enums"
+        },
+        {
+          "field": "sourceDeltas",
+          "C": "objects id,originPinId,targetPinId,originPath,originBlob,targetPaths, state,owner,evidenceRefs etc",
+          "F": "objects strict id,pinId,status,evidenceRefs; extra props forbidden"
+        },
+        {
+          "field": "capabilityDeltas",
+          "C": "id,state,capabilityIds,originPinId,...",
+          "F": "id,status,owner,evidenceRefs strict"
+        },
+        {
+          "field": "identityCandidates",
+          "C": "structured candidate objects",
+          "F": "string[]"
+        },
+        {
+          "field": "authorityConflicts/unported/intentionallyExcluded/unobserved",
+          "C": "structured objects (or empty)",
+          "F": "string[]"
+        },
+        {
+          "field": "runtimeProof/mergePlan/evidenceIndex/errors",
+          "C": "structured proof/plan/evidence/error objects",
+          "F": "string[]"
+        },
+        {
+          "field": "limits",
+          "C": "maxPins,maxEntries,maxFindings,maxPairs,totalEntries,truncated,omittedFindings,omittedCandidates,scopedPrefixes",
+          "F": "maxPins,maxEntries,maxBlobBytes,truncated strict"
+        },
+        {
+          "field": "pairwise",
+          "C": "null or structured array",
+          "F": "if present string[]"
+        },
+        {
+          "field": "reproducibilityDigest",
+          "C": "SHA256 over C full pre-digest report",
+          "F": "sha64 lexical only; incompatible projection digest"
+        }
+      ],
+      "repair": "v2 schema for actual C typed envelope; validation before transform; compatibility view cannot suppress evidence; E accepts explicitly validated C or v2 adapter"
+    },
+    {
+      "id": "CE",
+      "from": "C finding/provenance",
+      "to": "E projection",
+      "verdict": "LOSSY_WITHOUT_ADAPTER",
+      "fields": [
+        {
+          "field": "originPath",
+          "C": "originPath",
+          "E": "sourcePath || origin_path || path; C value LOST -> [REDACTED]"
+        },
+        {
+          "field": "originBlob",
+          "C": "originBlob",
+          "E": "sourceBlob || origin_blob; C value LOST -> null"
+        },
+        {
+          "field": "sourceLineage",
+          "C": "EXACT_BLOB_IDENTITY|UNVERIFIED",
+          "E": "no projected field; LOST"
+        },
+        {
+          "field": "sourceDeltas.state",
+          "C": "source state",
+          "E": "recognized but partiality evaluated source pin only, not target pin"
+        },
+        {
+          "field": "identityCandidates",
+          "C": "candidate objects",
+          "E": "not projected into report findings"
+        },
+        {
+          "field": "coverage",
+          "C": "per-donor array including state counts",
+          "E": "only derived pin/evidence coverage; LOST"
+        },
+        {
+          "field": "limits/errors",
+          "C": "truncation and errors",
+          "E": "not fully preserved to user output"
+        },
+        {
+          "field": "evidenceRefs",
+          "C": "source/target refs",
+          "E": "page-local evidence may discard unreferenced data and mark incomplete"
+        }
+      ],
+      "repair": "versioned strict C->E projection adapter with originPath and originBlob aliases, per-pair coverage/truncation/candidate identity preserved and evidence-by-pin integrity checks"
+    },
+    {
+      "id": "CD",
+      "from": "C multi-pin sourceDeltas",
+      "to": "D two-pin parity atlas",
+      "verdict": "NO_DIRECT_ENVELOPE_ADAPTER",
+      "fields": [
+        {
+          "field": "D input",
+          "D": "donor/target objects repo+commitSha+entries",
+          "C": "pins/manifests with pinId,rootTreeSha,manifestDigest"
+        },
+        {
+          "field": "D rows",
+          "D": "snake_case source_state/capability_state/inspected/owner_decision/evidence_refs",
+          "C": "camelCase sourceDeltas + candidate capabilityDeltas"
+        },
+        {
+          "field": "semantic confidence",
+          "D": "only inspected==true or owner decision; UNKNOWN_UNREVIEWED",
+          "C": "source_verified byte/path != semantic proof"
+        },
+        {
+          "field": "physical vs semantic",
+          "D": "separate state dimensions",
+          "C": "sourceDeltas separate capabilityDeltas"
+        }
+      ],
+      "repair": "explicit D parity evidence-join by repo+SHA+path+blob and pinId; keep provenance/certainty and unknowns; do not fabricate runtimeProof"
+    },
+    {
+      "id": "BC",
+      "from": "B identity crosswalk",
+      "to": "C comparePinned identityDecisions",
+      "verdict": "NO_CONFIRMED_EQUIVALENCE_WIRING",
+      "fields": [
+        {
+          "field": "pin and repo",
+          "B": "repoIdentity string + commitSha + sourceScopedRecordId; pin SHA64 stable",
+          "C": "repoIdentity string + commitSha; pinId free string"
+        },
+        {
+          "field": "identity decisions",
+          "B": "source_declared canonical candidates/confirm_equivalence with reviewer (not crypto-verified)",
+          "C": "identityDecisions nonempty always throws EQUIVALENCE_UNPROVEN"
+        },
+        {
+          "field": "alias collision",
+          "B": "candidate and owner conflicts flagged",
+          "C": "capabilityIds treated candidates; no external B decision binding"
+        },
+        {
+          "field": "C4 export",
+          "B": "hq.catalogue-crosswalk/1 with snapshot_sha256 and sourceRevision",
+          "C": "not accepted as manifest"
+        }
+      ],
+      "repair": "preserve C4 and semantic registry; typed B->C candidate bridge only; no auto equivalence/retirement, trusted Host owner receipt later"
+    }
+  ],
+  "hashPolicy": {
+    "AandCsemanticallyDifferent": true,
+    "aliasingWithoutRehash": "FORBIDDEN",
+    "verification": [
+      "A native payload digest and pin.manifestDigest agree",
+      "C projected digest and C projection pin.manifestDigest agree",
+      "both receipts bind same repoIdentity/commitSha/rootTreeSha/pinId",
+      "full source entry list and omission counts explicitly preserved",
+      "fail closed on source digest conflict, malformed entry, unknown status, revoked read grant"
+    ]
+  },
+  "gate": "REPAIR_REQUIRED"
+}

@@ -1,0 +1,502 @@
+{
+  "schema": "arbor.hvi.gate-run-receipt/1",
+  "runId": "20261112T235311Z-c7aaae125bc1",
+  "command": "bun scripts/test-gate.mjs",
+  "os": "win32",
+  "osRelease": "10.0.29704",
+  "osArch": "x64",
+  "gateRuntime": "bun 1.4.2",
+  "testRuntimes": [
+    {
+      "runtime": "node-strip-types",
+      "binary": "node",
+      "version": "v24.22.1"
+    },
+    {
+      "runtime": "node24-ajv",
+      "binary": "node",
+      "version": "v24.22.1"
+    }
+  ],
+  "nodeVersion": "v24.22.1",
+  "bunVersion": "1.4.2",
+  "ajvVersion": "8.17.1",
+  "commitSha": "c7aaae125bc1252cf06c6acd17a0f80c9fbd311b",
+  "totals": {
+    "tests": 201,
+    "pass": 201,
+    "fail": 0
+  },
+  "exitCode": 0,
+  "durationMs": 17045,
+  "startedAt": "2026-11-12T23:53:11.338Z",
+  "finishedAt": "2026-11-12T23:53:28.641Z",
+  "tests": [
+    {
+      "path": "apps/vivim-host/test/hvi-capability.test.mjs",
+      "root": "apps/vivim-host/test",
+      "runtime": "node24-ajv",
+      "gate": "hvi-host-read-port",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 8,
+        "pass": 8,
+        "fail": 0
+      },
+      "durationMs": 753,
+      "command": "node --test apps/vivim-host/test/hvi-capability.test.mjs"
+    },
+    {
+      "path": "apps/vivim-host/test/hvi-source-grant.test.mjs",
+      "root": "apps/vivim-host/test",
+      "runtime": "node24-ajv",
+      "gate": "hvi-host-read-port",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 9,
+        "pass": 9,
+        "fail": 0
+      },
+      "durationMs": 768,
+      "command": "node --test apps/vivim-host/test/hvi-source-grant.test.mjs"
+    },
+    {
+      "path": "hq/catalogue-identity/test/crosswalk.test.mjs",
+      "root": "hq",
+      "runtime": "node24-ajv",
+      "gate": "hvi-modules",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 20,
+        "pass": 20,
+        "fail": 0
+      },
+      "durationMs": 906,
+      "command": "node --test hq/catalogue-identity/test/crosswalk.test.mjs"
+    },
+    {
+      "path": "hq/test/arbor-boundary.test.mjs",
+      "root": "hq/test",
+      "runtime": "node24-ajv",
+      "gate": "hvi-hq-boundary",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 6,
+        "pass": 6,
+        "fail": 0
+      },
+      "durationMs": 4356,
+      "command": "node --test hq/test/arbor-boundary.test.mjs"
+    },
+    {
+      "path": "hq/test/arbor-service.test.mjs",
+      "root": "hq/test",
+      "runtime": "node24-ajv",
+      "gate": "hvi-hq-boundary",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 2,
+        "pass": 2,
+        "fail": 0
+      },
+      "durationMs": 1578,
+      "command": "node --test hq/test/arbor-service.test.mjs"
+    },
+    {
+      "path": "hq/test/hvi-mcp-tool.test.mjs",
+      "root": "hq/test",
+      "runtime": "node24-ajv",
+      "gate": "hvi-discovery",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 4,
+        "pass": 4,
+        "fail": 0
+      },
+      "durationMs": 594,
+      "command": "node --test hq/test/hvi-mcp-tool.test.mjs"
+    },
+    {
+      "path": "hq/test/in-repo-closure.test.mjs",
+      "root": "hq/test",
+      "runtime": "node24-ajv",
+      "gate": "hvi-hq-boundary",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 1,
+        "pass": 1,
+        "fail": 0
+      },
+      "durationMs": 479,
+      "command": "node --test hq/test/in-repo-closure.test.mjs"
+    },
+    {
+      "path": "hq/version-intelligence/compare/index.test.mjs",
+      "root": "hq",
+      "runtime": "node24-ajv",
+      "gate": "hvi-modules",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 9,
+        "pass": 9,
+        "fail": 0
+      },
+      "durationMs": 525,
+      "command": "node --test hq/version-intelligence/compare/index.test.mjs"
+    },
+    {
+      "path": "hq/version-intelligence/identity/test/identity.test.mjs",
+      "root": "hq",
+      "runtime": "node24-ajv",
+      "gate": "hvi-modules",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 13,
+        "pass": 13,
+        "fail": 0
+      },
+      "durationMs": 545,
+      "command": "node --test hq/version-intelligence/identity/test/identity.test.mjs"
+    },
+    {
+      "path": "hq/version-intelligence/parity/atlas.test.mjs",
+      "root": "hq",
+      "runtime": "node24-ajv",
+      "gate": "hvi-modules",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 12,
+        "pass": 12,
+        "fail": 0
+      },
+      "durationMs": 547,
+      "command": "node --test hq/version-intelligence/parity/atlas.test.mjs"
+    },
+    {
+      "path": "hq/version-intelligence/report/test/report.test.mjs",
+      "root": "hq",
+      "runtime": "node24-ajv",
+      "gate": "hvi-modules",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 13,
+        "pass": 13,
+        "fail": 0
+      },
+      "durationMs": 582,
+      "command": "node --test hq/version-intelligence/report/test/report.test.mjs"
+    },
+    {
+      "path": "hq/version-intelligence/sources/snapshots.test.mjs",
+      "root": "hq",
+      "runtime": "node24-ajv",
+      "gate": "hvi-modules",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 14,
+        "pass": 14,
+        "fail": 0
+      },
+      "durationMs": 515,
+      "command": "node --test hq/version-intelligence/sources/snapshots.test.mjs"
+    },
+    {
+      "path": "packages/tierflow/tests/hvi-inspector.test.mjs",
+      "root": "packages/tierflow/tests",
+      "runtime": "node-strip-types",
+      "gate": "hvi-tierflow-inspector",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 17,
+        "pass": 17,
+        "fail": 0
+      },
+      "durationMs": 738,
+      "command": "node --experimental-strip-types --test packages/tierflow/tests/hvi-inspector.test.mjs"
+    },
+    {
+      "path": "tests/hq-version-intelligence/g1-v2-schema.test.mjs",
+      "root": "tests/hq-version-intelligence",
+      "runtime": "node24-ajv",
+      "gate": "hvi-g1-g2",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 3,
+        "pass": 3,
+        "fail": 0
+      },
+      "durationMs": 1115,
+      "command": "node --test tests/hq-version-intelligence/g1-v2-schema.test.mjs"
+    },
+    {
+      "path": "tests/hq-version-intelligence/g2-host-ui.test.mjs",
+      "root": "tests/hq-version-intelligence",
+      "runtime": "node-strip-types",
+      "gate": "hvi-g1-g2",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 10,
+        "pass": 10,
+        "fail": 0
+      },
+      "durationMs": 889,
+      "command": "node --experimental-strip-types --test tests/hq-version-intelligence/g2-host-ui.test.mjs"
+    },
+    {
+      "path": "tests/hq-version-intelligence/git-edge-negative-gates.test.mjs",
+      "root": "tests/hq-version-intelligence",
+      "runtime": "node24-ajv",
+      "gate": "hvi-g1-g2",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 3,
+        "pass": 3,
+        "fail": 0
+      },
+      "durationMs": 450,
+      "command": "node --test tests/hq-version-intelligence/git-edge-negative-gates.test.mjs"
+    },
+    {
+      "path": "tests/hq-version-intelligence/hvi-contract-qa.test.mjs",
+      "root": "tests/hq-version-intelligence",
+      "runtime": "node24-ajv",
+      "gate": "hvi-g1-g2",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 25,
+        "pass": 25,
+        "fail": 0
+      },
+      "durationMs": 555,
+      "command": "node --test tests/hq-version-intelligence/hvi-contract-qa.test.mjs"
+    },
+    {
+      "path": "tests/hq-version-intelligence/integrated-nway.test.mjs",
+      "root": "tests/hq-version-intelligence",
+      "runtime": "node24-ajv",
+      "gate": "hvi-g1-g2",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 27,
+        "pass": 27,
+        "fail": 0
+      },
+      "durationMs": 687,
+      "command": "node --test tests/hq-version-intelligence/integrated-nway.test.mjs"
+    },
+    {
+      "path": "tests/hq-version-intelligence/schema-negative-gates.test.mjs",
+      "root": "tests/hq-version-intelligence",
+      "runtime": "node24-ajv",
+      "gate": "hvi-g1-g2",
+      "cached": false,
+      "exitCode": 0,
+      "totals": {
+        "tests": 5,
+        "pass": 5,
+        "fail": 0
+      },
+      "durationMs": 463,
+      "command": "node --test tests/hq-version-intelligence/schema-negative-gates.test.mjs"
+    }
+  ],
+  "gates": [
+    {
+      "schema": "arbor.hvi.gate-receipt/1",
+      "command": "node --test apps/vivim-host/test/hvi-capability.test.mjs",
+      "os": "win32",
+      "osRelease": "10.0.29704",
+      "osArch": "x64",
+      "gateRuntime": "bun 1.4.2",
+      "testRuntimes": [
+        {
+          "runtime": "node24-ajv",
+          "binary": "node",
+          "version": "v24.22.1"
+        }
+      ],
+      "nodeVersion": "v24.22.1",
+      "bunVersion": "1.4.2",
+      "ajvVersion": "8.17.1",
+      "commitSha": "c7aaae125bc1252cf06c6acd17a0f80c9fbd311b",
+      "gate": "hvi-host-read-port",
+      "totals": {
+        "tests": 17,
+        "pass": 17,
+        "fail": 0
+      },
+      "exitCode": 0,
+      "durationMs": 1521,
+      "startedAt": "2026-11-12T23:53:11.338Z",
+      "finishedAt": "2026-11-12T23:53:28.641Z"
+    },
+    {
+      "schema": "arbor.hvi.gate-receipt/1",
+      "command": "node --test hq/catalogue-identity/test/crosswalk.test.mjs",
+      "os": "win32",
+      "osRelease": "10.0.29704",
+      "osArch": "x64",
+      "gateRuntime": "bun 1.4.2",
+      "testRuntimes": [
+        {
+          "runtime": "node24-ajv",
+          "binary": "node",
+          "version": "v24.22.1"
+        }
+      ],
+      "nodeVersion": "v24.22.1",
+      "bunVersion": "1.4.2",
+      "ajvVersion": "8.17.1",
+      "commitSha": "c7aaae125bc1252cf06c6acd17a0f80c9fbd311b",
+      "gate": "hvi-modules",
+      "totals": {
+        "tests": 81,
+        "pass": 81,
+        "fail": 0
+      },
+      "exitCode": 0,
+      "durationMs": 3620,
+      "startedAt": "2026-11-12T23:53:11.338Z",
+      "finishedAt": "2026-11-12T23:53:28.641Z"
+    },
+    {
+      "schema": "arbor.hvi.gate-receipt/1",
+      "command": "node --test hq/test/arbor-boundary.test.mjs",
+      "os": "win32",
+      "osRelease": "10.0.29704",
+      "osArch": "x64",
+      "gateRuntime": "bun 1.4.2",
+      "testRuntimes": [
+        {
+          "runtime": "node24-ajv",
+          "binary": "node",
+          "version": "v24.22.1"
+        }
+      ],
+      "nodeVersion": "v24.22.1",
+      "bunVersion": "1.4.2",
+      "ajvVersion": "8.17.1",
+      "commitSha": "c7aaae125bc1252cf06c6acd17a0f80c9fbd311b",
+      "gate": "hvi-hq-boundary",
+      "totals": {
+        "tests": 9,
+        "pass": 9,
+        "fail": 0
+      },
+      "exitCode": 0,
+      "durationMs": 6413,
+      "startedAt": "2026-11-12T23:53:11.338Z",
+      "finishedAt": "2026-11-12T23:53:28.641Z"
+    },
+    {
+      "schema": "arbor.hvi.gate-receipt/1",
+      "command": "node --test hq/test/hvi-mcp-tool.test.mjs",
+      "os": "win32",
+      "osRelease": "10.0.29704",
+      "osArch": "x64",
+      "gateRuntime": "bun 1.4.2",
+      "testRuntimes": [
+        {
+          "runtime": "node24-ajv",
+          "binary": "node",
+          "version": "v24.22.1"
+        }
+      ],
+      "nodeVersion": "v24.22.1",
+      "bunVersion": "1.4.2",
+      "ajvVersion": "8.17.1",
+      "commitSha": "c7aaae125bc1252cf06c6acd17a0f80c9fbd311b",
+      "gate": "hvi-discovery",
+      "totals": {
+        "tests": 4,
+        "pass": 4,
+        "fail": 0
+      },
+      "exitCode": 0,
+      "durationMs": 594,
+      "startedAt": "2026-11-12T23:53:11.338Z",
+      "finishedAt": "2026-11-12T23:53:28.641Z"
+    },
+    {
+      "schema": "arbor.hvi.gate-receipt/1",
+      "command": "node --experimental-strip-types --test packages/tierflow/tests/hvi-inspector.test.mjs",
+      "os": "win32",
+      "osRelease": "10.0.29704",
+      "osArch": "x64",
+      "gateRuntime": "bun 1.4.2",
+      "testRuntimes": [
+        {
+          "runtime": "node-strip-types",
+          "binary": "node",
+          "version": "v24.22.1"
+        }
+      ],
+      "nodeVersion": "v24.22.1",
+      "bunVersion": "1.4.2",
+      "ajvVersion": "8.17.1",
+      "commitSha": "c7aaae125bc1252cf06c6acd17a0f80c9fbd311b",
+      "gate": "hvi-tierflow-inspector",
+      "totals": {
+        "tests": 17,
+        "pass": 17,
+        "fail": 0
+      },
+      "exitCode": 0,
+      "durationMs": 738,
+      "startedAt": "2026-11-12T23:53:11.338Z",
+      "finishedAt": "2026-11-12T23:53:28.641Z"
+    },
+    {
+      "schema": "arbor.hvi.gate-receipt/1",
+      "command": "node --test tests/hq-version-intelligence/g1-v2-schema.test.mjs",
+      "os": "win32",
+      "osRelease": "10.0.29704",
+      "osArch": "x64",
+      "gateRuntime": "bun 1.4.2",
+      "testRuntimes": [
+        {
+          "runtime": "node-strip-types",
+          "binary": "node",
+          "version": "v24.22.1"
+        },
+        {
+          "runtime": "node24-ajv",
+          "binary": "node",
+          "version": "v24.22.1"
+        }
+      ],
+      "nodeVersion": "v24.22.1",
+      "bunVersion": "1.4.2",
+      "ajvVersion": "8.17.1",
+      "commitSha": "c7aaae125bc1252cf06c6acd17a0f80c9fbd311b",
+      "gate": "hvi-g1-g2",
+      "totals": {
+        "tests": 73,
+        "pass": 73,
+        "fail": 0
+      },
+      "exitCode": 0,
+      "durationMs": 4159,
+      "startedAt": "2026-11-12T23:53:11.338Z",
+      "finishedAt": "2026-11-12T23:53:28.641Z"
+    }
+  ]
+}

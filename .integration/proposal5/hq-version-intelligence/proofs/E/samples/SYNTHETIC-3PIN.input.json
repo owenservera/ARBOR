@@ -1,0 +1,138 @@
+{
+  "schema": "arbor.hvi.version-comparison/1",
+  "targetPinId": "synthetic2",
+  "sourcePins": [
+    {
+      "pinId": "synthetic0",
+      "repoIdentity": "synthetic/repo0",
+      "resolvedCommitSha": "1111111111111111111111111111111111111111",
+      "manifestDigest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "completeness": "partial"
+    },
+    {
+      "pinId": "synthetic1",
+      "repoIdentity": "synthetic/repo1",
+      "resolvedCommitSha": "2222222222222222222222222222222222222222",
+      "manifestDigest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "completeness": "complete"
+    },
+    {
+      "pinId": "synthetic2",
+      "repoIdentity": "synthetic/repo2",
+      "resolvedCommitSha": "3333333333333333333333333333333333333333",
+      "manifestDigest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "completeness": "complete"
+    }
+  ],
+  "evidenceIndex": [
+    {
+      "id": "evidence0",
+      "type": "source_blob",
+      "commitSha": "1111111111111111111111111111111111111111",
+      "blobSha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "path": "src/module-0.mjs",
+      "lines": [
+        10,
+        20
+      ]
+    },
+    {
+      "id": "evidence1",
+      "type": "source_blob",
+      "commitSha": "2222222222222222222222222222222222222222",
+      "blobSha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "path": "src/module-1.mjs",
+      "lines": [
+        10,
+        20
+      ]
+    },
+    {
+      "id": "evidence2",
+      "type": "source_blob",
+      "commitSha": "3333333333333333333333333333333333333333",
+      "blobSha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "path": "src/module-2.mjs",
+      "lines": [
+        10,
+        20
+      ]
+    }
+  ],
+  "sourceDeltas": [
+    {
+      "id": "delta0",
+      "sourcePinId": "synthetic0",
+      "category": "MISSING_AT_TARGET",
+      "sourcePath": "src/module-0.mjs",
+      "targetPaths": [],
+      "sourceBlob": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "sourceLines": [
+        10,
+        20
+      ],
+      "certainty": "candidate",
+      "similarityConfidence": 0.5,
+      "owner": "hq",
+      "evidenceRefs": [
+        "evidence0"
+      ]
+    },
+    {
+      "id": "delta1",
+      "sourcePinId": "synthetic1",
+      "category": "EXACT_RELOCATION",
+      "sourcePath": "src/module-1.mjs",
+      "targetPaths": [
+        "hq/relocated-1.mjs"
+      ],
+      "sourceBlob": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "sourceLines": [
+        10,
+        20
+      ],
+      "certainty": "candidate",
+      "similarityConfidence": 0.5,
+      "owner": "hq",
+      "evidenceRefs": [
+        "evidence1"
+      ]
+    },
+    {
+      "id": "delta2",
+      "sourcePinId": "synthetic2",
+      "category": "SPLIT_CANDIDATE",
+      "sourcePath": "src/module-2.mjs",
+      "targetPaths": [
+        "hq/relocated-2.mjs"
+      ],
+      "sourceBlob": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "sourceLines": [
+        10,
+        20
+      ],
+      "certainty": "candidate",
+      "similarityConfidence": 0.5,
+      "owner": "hq",
+      "evidenceRefs": [
+        "evidence2"
+      ]
+    }
+  ],
+  "capabilityDeltas": [
+    {
+      "id": "cap:synthetic",
+      "sourcePinId": "synthetic0",
+      "category": "DESIGN_ONLY",
+      "owner": "labs",
+      "sourcePath": "docs/plan.md",
+      "evidenceRefs": []
+    }
+  ],
+  "runtimeProof": [
+    {
+      "id": "synthetic-node-test",
+      "state": "UNRUN"
+    }
+  ]
+}

@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.arbor.local/hvi/v1/pin.schema.json",
+  "title": "ARBOR HVI pin v1",
+  "description": "Source-only normative wire contract; no runtime authority inferred.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "pinId",
+    "provider",
+    "repoIdentity",
+    "requestedRef",
+    "resolvedCommitSha",
+    "rootTreeSha",
+    "manifestDigest",
+    "acquiredAt",
+    "completeness",
+    "scope",
+    "owner",
+    "evidenceRef"
+  ],
+  "properties": {
+    "schema": {
+      "const": "arbor.hvi.pin/1"
+    },
+    "pinId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024
+    },
+    "provider": {
+      "enum": [
+        "github",
+        "git-local-approved"
+      ]
+    },
+    "repoIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository"
+      ],
+      "properties": {
+        "repository": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"
+        },
+        "remoteFingerprint": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      }
+    },
+    "requestedRef": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024
+    },
+    "resolvedCommitSha": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{40}$"
+    },
+    "rootTreeSha": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{40}$"
+    },
+    "manifestDigest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "acquiredAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "completeness": {
+      "enum": [
+        "complete",
+        "partial",
+        "blocked",
+        "missing"
+      ]
+    },
+    "scope": {
+      "const": "development"
+    },
+    "owner": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024
+    },
+    "evidenceRef": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024
+    },
+    "subPath": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024
+    },
+    "sourceGrantRef": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024
+    }
+  }
+}

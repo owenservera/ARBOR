@@ -1,0 +1,97 @@
+{
+  "schema": "arbor.hvi.b.test-ledger/1",
+  "branch": "work/p5-hvi-w1-b-identity-r001",
+  "workerBaseSha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+  "environment": {
+    "source": "connected GitHub connector",
+    "runtime": "No authenticated local ARBOR checkout; isolated tool container Node 22.16.0, not G1-required Node 24",
+    "runner": "GitHub Actions not dispatched; prior CI startup_failure is not a pass"
+  },
+  "testsWithCommandAndExit": [],
+  "sourceVerification": [
+    {
+      "operation": "GitHub REST /branches/work/p5-hvi-s0-source-lock-r001 and S0 WORKER-BASE/RUN-LEDGER",
+      "result": "GO_TO_PARALLEL; workerBaseSha matches requested branch base",
+      "processExit": null,
+      "classification": "source_inspection_not_test"
+    },
+    {
+      "operation": "GitHub REST /branches/main and ARBOR worker base commit",
+      "result": "f9823a5131e73e7562db5a4ec14e1ec481557d69; tree 13eda0d9c7f717a46d00eee46a22b1a19edb65be",
+      "processExit": null,
+      "classification": "source_inspection_not_test"
+    },
+    {
+      "operation": "GitHub REST donor main and C4 source blob inventory",
+      "result": "repos-hq main 9b922ea049dbadc94e504b5b9432743995c020ca; all 14 source donor blob identities read",
+      "processExit": null,
+      "classification": "source_inspection_not_test"
+    },
+    {
+      "operation": "GitHub Git tree source-to-target SHA comparison",
+      "result": "7 exact blobs, 2 source adapted, 5 historical intentionally excluded; tree not truncated",
+      "processExit": null,
+      "classification": "source_inspection_not_test"
+    }
+  ],
+  "unrun": [
+    {
+      "command": "node --test hq/catalogue-identity/test/crosswalk.test.mjs",
+      "runtime": "Node 24",
+      "reason": "No authenticated ARBOR checkout in worker; source-only GitHub connector"
+    },
+    {
+      "command": "node --test hq/version-intelligence/identity/test/identity.test.mjs",
+      "runtime": "Node 24",
+      "reason": "No authenticated ARBOR checkout in worker; synthetic fixtures authored but not executed"
+    },
+    {
+      "command": "node hq/catalogue-identity/test/benchmark.mjs",
+      "runtime": "Node 24",
+      "reason": "No executable checkout, so no measured 10k record time/memory"
+    },
+    {
+      "command": "git diff --check",
+      "runtime": "git checkout",
+      "reason": "GitHub API tree compare substitutes for scope review, not local diff whitespace test"
+    },
+    {
+      "command": "bun test hq/catalogue-identity/test/",
+      "runtime": "Bun",
+      "reason": "Bun unavailable and checkout absent"
+    },
+    {
+      "command": "cargo test",
+      "runtime": "Cargo",
+      "reason": "Out of Lane B's pure JavaScript scope and no product/native checkout"
+    },
+    {
+      "command": "Windows/MSVC compile and Android physical-device test",
+      "runtime": "physical devices",
+      "reason": "Not accessible to this worker"
+    },
+    {
+      "command": "Host actor/session/grant read and immediate revoke refusal",
+      "runtime": "live Host",
+      "reason": "H lane only; no Host effect authority given to B"
+    },
+    {
+      "command": "real five-repo offline replay with no donor checkout",
+      "runtime": "G1 integration",
+      "reason": "A/C/E/F not merged; synthetic source cannot certify integrated replay"
+    }
+  ],
+  "negativeTestSource": [
+    "T12 candidate ID / implementation collisions and declared canonical alias conflict",
+    "T13 partial or missing pin cannot infer tombstones",
+    "T15 same repository 3 SHAs and separate repo identity",
+    "T16 different owners remain explicit authority conflicts",
+    "T20 corrupt replay digest and conflicting pin revision",
+    "T17 path/sensitive reference refusal",
+    "T23 Labs observer allowlist default deny and digest tamper denial"
+  ],
+  "securityGate": "BLOCKED_NOT_BETA",
+  "hviWorkerGate": "PREPARED_NOT_PROMOTED",
+  "releaseAccepted": false,
+  "runtimeAccepted": false
+}

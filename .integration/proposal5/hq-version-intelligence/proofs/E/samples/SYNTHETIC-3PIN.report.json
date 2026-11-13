@@ -1,0 +1,249 @@
+{
+  "schema": "arbor.hvi.report/1",
+  "targetPinId": "synthetic2",
+  "pins": [
+    {
+      "pinId": "synthetic0",
+      "repoIdentity": "synthetic/repo0",
+      "resolvedCommitSha": "1111111111111111111111111111111111111111",
+      "completeness": "partial",
+      "manifestDigest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "column": "synthetic/repo0@111111111111"
+    },
+    {
+      "pinId": "synthetic1",
+      "repoIdentity": "synthetic/repo1",
+      "resolvedCommitSha": "2222222222222222222222222222222222222222",
+      "completeness": "complete",
+      "manifestDigest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "column": "synthetic/repo1@222222222222"
+    },
+    {
+      "pinId": "synthetic2",
+      "repoIdentity": "synthetic/repo2",
+      "resolvedCommitSha": "3333333333333333333333333333333333333333",
+      "completeness": "complete",
+      "manifestDigest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "column": "synthetic/repo2@333333333333"
+    }
+  ],
+  "summary": {
+    "totalFindings": 4,
+    "selectedFindings": 4,
+    "sourceFindings": 3,
+    "capabilityFindings": 1,
+    "incompleteFindings": 2,
+    "missingAtTargetSource": 0,
+    "relocatedSource": 1,
+    "splitCandidates": 1,
+    "intentionallyExcluded": 0,
+    "replacedConfirmed": 0,
+    "runtimeVerifiedClaims": 0
+  },
+  "coverage": {
+    "filter": "all",
+    "completePins": 2,
+    "incompletePins": [
+      "synthetic0"
+    ],
+    "completeness": "incomplete_source_evidence",
+    "missingEvidenceRefs": []
+  },
+  "table": {
+    "total": 4,
+    "offset": 0,
+    "limit": 20,
+    "returned": 4,
+    "hasMore": false,
+    "truncated": false,
+    "rows": [
+      {
+        "id": "cap:synthetic",
+        "kind": "capability",
+        "path": "docs/plan.md",
+        "sourceBlob": null,
+        "sourceLines": null,
+        "targetPaths": [],
+        "sourcePinId": "synthetic0",
+        "classification": "DESIGN_ONLY",
+        "migrationCategory": "other",
+        "certainty": "unknown",
+        "similarityConfidence": null,
+        "owner": "labs",
+        "evidenceRefs": [],
+        "evidenceComplete": false,
+        "completeness": "incomplete",
+        "cells": {
+          "synthetic0": "UNOBSERVED",
+          "synthetic1": "UNOBSERVED",
+          "synthetic2": "UNOBSERVED"
+        }
+      },
+      {
+        "id": "delta0",
+        "kind": "source",
+        "path": "src/module-0.mjs",
+        "sourceBlob": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "sourceLines": "10-20",
+        "targetPaths": [],
+        "sourcePinId": "synthetic0",
+        "classification": "UNOBSERVABLE",
+        "migrationCategory": "other",
+        "certainty": "candidate",
+        "similarityConfidence": 0.5,
+        "owner": "hq",
+        "evidenceRefs": [
+          "evidence0"
+        ],
+        "evidenceComplete": true,
+        "completeness": "incomplete",
+        "cells": {
+          "synthetic0": "UNOBSERVED",
+          "synthetic1": "UNOBSERVED",
+          "synthetic2": "UNOBSERVED"
+        }
+      },
+      {
+        "id": "delta1",
+        "kind": "source",
+        "path": "src/module-1.mjs",
+        "sourceBlob": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "sourceLines": "10-20",
+        "targetPaths": [
+          "hq/relocated-1.mjs"
+        ],
+        "sourcePinId": "synthetic1",
+        "classification": "EXACT_RELOCATION",
+        "migrationCategory": "relocated",
+        "certainty": "candidate",
+        "similarityConfidence": 0.5,
+        "owner": "hq",
+        "evidenceRefs": [
+          "evidence1"
+        ],
+        "evidenceComplete": true,
+        "completeness": "complete",
+        "cells": {
+          "synthetic0": "UNOBSERVED",
+          "synthetic1": "EXACT_RELOCATION",
+          "synthetic2": "UNOBSERVED"
+        }
+      },
+      {
+        "id": "delta2",
+        "kind": "source",
+        "path": "src/module-2.mjs",
+        "sourceBlob": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "sourceLines": "10-20",
+        "targetPaths": [
+          "hq/relocated-2.mjs"
+        ],
+        "sourcePinId": "synthetic2",
+        "classification": "SPLIT_CANDIDATE",
+        "migrationCategory": "split_candidate",
+        "certainty": "candidate",
+        "similarityConfidence": 0.5,
+        "owner": "hq",
+        "evidenceRefs": [
+          "evidence2"
+        ],
+        "evidenceComplete": true,
+        "completeness": "complete",
+        "cells": {
+          "synthetic0": "UNOBSERVED",
+          "synthetic1": "UNOBSERVED",
+          "synthetic2": "SPLIT_CANDIDATE"
+        }
+      }
+    ]
+  },
+  "mergePlan": {
+    "total": 3,
+    "returned": 3,
+    "truncated": false,
+    "rows": [
+      {
+        "findingId": "delta0",
+        "kind": "source",
+        "priority": "P1",
+        "owner": "hq",
+        "classification": "UNOBSERVABLE",
+        "recommendation": "Complete source scan and corroborate provenance",
+        "decision": "OWNER_REVIEW_REQUIRED",
+        "evidenceComplete": true
+      },
+      {
+        "findingId": "delta2",
+        "kind": "source",
+        "priority": "P1",
+        "owner": "hq",
+        "classification": "SPLIT_CANDIDATE",
+        "recommendation": "Require owner review of split lineage",
+        "decision": "OWNER_REVIEW_REQUIRED",
+        "evidenceComplete": true
+      },
+      {
+        "findingId": "cap:synthetic",
+        "kind": "capability",
+        "priority": "P2",
+        "owner": "labs",
+        "classification": "DESIGN_ONLY",
+        "recommendation": "Retain as design; no runtime claim",
+        "decision": "OWNER_REVIEW_REQUIRED",
+        "evidenceComplete": false
+      }
+    ]
+  },
+  "evidenceIndex": [
+    {
+      "id": "evidence0",
+      "type": "source_blob",
+      "commitSha": "1111111111111111111111111111111111111111",
+      "path": "src/module-0.mjs",
+      "blobSha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "lines": "10-20",
+      "complete": true
+    },
+    {
+      "id": "evidence1",
+      "type": "source_blob",
+      "commitSha": "2222222222222222222222222222222222222222",
+      "path": "src/module-1.mjs",
+      "blobSha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "lines": "10-20",
+      "complete": true
+    },
+    {
+      "id": "evidence2",
+      "type": "source_blob",
+      "commitSha": "3333333333333333333333333333333333333333",
+      "path": "src/module-2.mjs",
+      "blobSha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "lines": "10-20",
+      "complete": true
+    }
+  ],
+  "receiptStates": [
+    {
+      "id": "synthetic-node-test",
+      "state": "UNRUN",
+      "exitCode": null,
+      "hasCommandReceipt": false,
+      "provenance": "unverified_claim"
+    }
+  ],
+  "runtimeAcceptance": "NOT_DETERMINED_BY_SOURCE_REPORT",
+  "limits": {
+    "maxPins": 16,
+    "maxInputRows": 20000,
+    "maxPage": 200,
+    "maxPlan": 100,
+    "evidencePageScoped": true
+  },
+  "notes": [
+    "UNOBSERVED means no confirmed state for a pinned snapshot, not absence",
+    "Evidence metadata is projection only; no file contents, test stdout or permission grants",
+    "Runtime acceptance requires independent Host/device gate and verified receipts"
+  ],
+  "reproducibilityDigest": "fe0116c06b78aa83268d053ee085569be9af80cd42cdb8efcb107183a31f0040"
+}

@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://arbor.local/hvi/v2/pin.schema.json",
+  "title": "Pinned Source",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "arbor.hvi.source/1"
+    },
+    "pinId": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "provider": {
+      "const": "github"
+    },
+    "repoIdentity": {
+      "type": "string",
+      "pattern": "^[a-z0-9_.-]+/[a-z0-9_.-]+$"
+    },
+    "requestedRef": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 255
+    },
+    "resolvedCommitSha": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{40}$"
+    },
+    "rootTreeSha": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{40}$"
+    },
+    "subPath": {
+      "type": "string",
+      "maxLength": 4096
+    },
+    "manifestDigest": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "acquiredAt": {
+      "type": "string"
+    },
+    "completeness": {
+      "enum": [
+        "complete",
+        "partial",
+        "blocked",
+        "missing"
+      ]
+    },
+    "scope": {
+      "const": "development"
+    },
+    "sourceGrantRef": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 255
+    },
+    "evidenceRef": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 255
+    }
+  },
+  "required": [
+    "pinId",
+    "provider",
+    "repoIdentity",
+    "resolvedCommitSha",
+    "rootTreeSha",
+    "manifestDigest",
+    "completeness",
+    "scope"
+  ],
+  "additionalProperties": false
+}

@@ -1,0 +1,177 @@
+{
+  "schema": "arbor.hvi.d.run-ledger/1",
+  "status": "PREPARED_NOT_PROMOTED",
+  "branch": "work/p5-hvi-w1-d-parity-r001",
+  "baseSha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+  "s0Gate": "GO_TO_PARALLEL",
+  "s0Commit": "2ef7a9f66419d681e040b459ba4762a63aa9564f",
+  "sourcePins": [
+    {
+      "name": "labs",
+      "repo": "owenservera/vivim-labs",
+      "sha": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be"
+    },
+    {
+      "name": "labui",
+      "repo": "owenservera/vivim-labs",
+      "sha": "67e76c5b730dcc2cd3ab3919c3ba273a6c260db8"
+    },
+    {
+      "name": "labio",
+      "repo": "owenservera/vivim-labs",
+      "sha": "61d9fc15c55144c4f0b79afa248981c2b0ca9bd6"
+    },
+    {
+      "name": "swc",
+      "repo": "owenservera/repos-hq",
+      "sha": "7cb2fadd88c5a08c0ec7e084410e150a5b6e0f3d"
+    },
+    {
+      "name": "aw",
+      "repo": "owenservera/repos-hq",
+      "sha": "61507b5f9bafd0211d0a556280b367574e676ce1"
+    },
+    {
+      "name": "rock",
+      "repo": "owenservera/repos-hq",
+      "sha": "0a3c11a6df72434b46931f90b25bf1f93da09f92"
+    },
+    {
+      "name": "xray",
+      "repo": "owenservera/repos-hq",
+      "sha": "c80e45ff11b33aec785c2055e52420751ee8388d"
+    },
+    {
+      "name": "arbor",
+      "repo": "owenservera/ARBOR",
+      "sha": "f9823a5131e73e7562db5a4ec14e1ec481557d69"
+    }
+  ],
+  "sourceInspection": {
+    "missingPathRows": 361,
+    "inspected": 23,
+    "unreviewed": 338,
+    "inspectedPercent": 6.37,
+    "labsResearchSelectedSources": 22
+  },
+  "sourceOnly": true,
+  "hostAuthorized": false,
+  "runtimeAccepted": false,
+  "testsExecuted": [
+    {
+      "suite": "V8 isolated authored synthetic parity test callbacks (Node imports and hash substituted)",
+      "cases": 12,
+      "passed": 12,
+      "failed": 0,
+      "exit": 0,
+      "environment": "connected GitHub source fetched into fresh JS V8 isolate; non-Node deterministic digest shim",
+      "sourceTestBlob": "d58b8ed68e50c05093190a259913c7cf4cbcaf62",
+      "status": "SYNTHETIC_SHIM_ONLY_NOT_NODE24",
+      "commandDescription": "V8 new Function compilation and execution of authored atlas.test.mjs callbacks, without node:test or native crypto"
+    },
+    {
+      "suite": "V8 focused source smoke check",
+      "cases": 8,
+      "passed": 8,
+      "failed": 0,
+      "exit": 0,
+      "environment": "V8 isolate source transform with digest shim",
+      "status": "SYNTHETIC_SHIM_ONLY_NOT_NODE24",
+      "commandDescription": "same/moved/changed/partial, unknown, forged receipts, secret path denial, tombstone denial"
+    },
+    {
+      "suite": "GitHub pinned path/digest/source-scope proof assertions",
+      "cases": 9,
+      "passed": 9,
+      "failed": 0,
+      "exit": 0,
+      "environment": "connected GitHub API and JavaScript checks",
+      "status": "SOURCE_INTEGRITY_ONLY",
+      "commandDescription": "branch head/base ancestry, nine write paths allowed, 361 distinct donor paths, 23 inspected, 338 unknown, no retirement, 40-hex blob and fixed SHA"
+    }
+  ],
+  "sourceVerifications": [
+    {
+      "operation": "connected GitHub S0 branch gate and exact worker base",
+      "result": "verified",
+      "exit": 0,
+      "kind": "GitHub_content_inspection"
+    },
+    {
+      "operation": "pinned Git blob reads and exports/imports observed",
+      "result": "observed",
+      "exit": 0,
+      "kind": "GitHub_content_inspection"
+    },
+    {
+      "operation": "S0 361-path row enumeration",
+      "result": "361 exact source pinned rows",
+      "exit": 0,
+      "kind": "GitHub_content_inspection"
+    },
+    {
+      "operation": "privacy and owner boundary source review",
+      "result": "source-only",
+      "exit": 0,
+      "kind": "GitHub_content_inspection"
+    }
+  ],
+  "unrun": [
+    {
+      "command": "node --test hq/version-intelligence/parity/atlas.test.mjs",
+      "reason": "connected GitHub source connector has no Node checkout runner; test source committed only",
+      "status": "UNRUN"
+    },
+    {
+      "command": "node --test tests/hq-version-intelligence",
+      "reason": "Lane F tests and G1 integrated checkout not available at D base",
+      "status": "UNRUN"
+    },
+    {
+      "command": "bun test",
+      "reason": "Bun/checkout not invoked",
+      "status": "UNRUN"
+    },
+    {
+      "command": "cargo test",
+      "reason": "Cargo/checkout not invoked",
+      "status": "UNRUN"
+    },
+    {
+      "command": "Windows/MSVC build",
+      "reason": "no Windows runner",
+      "status": "UNRUN"
+    },
+    {
+      "command": "Android device + PWA signer/revoke",
+      "reason": "no device/live Host integration",
+      "status": "UNRUN"
+    },
+    {
+      "command": "full private-data/secret scanner",
+      "reason": "not performed; source only checked selected files",
+      "status": "UNRUN"
+    }
+  ],
+  "blockers": [
+    "338 of 361 missing HQ path contents unreviewed; not equivalent to missing capabilities",
+    "source-only test authoring without local Node24/Bun/Cargo execution",
+    "Host and beta P0 release gates remain BLOCKED_NOT_BETA"
+  ],
+  "security": [
+    "No personal corpora/session/token reads or writes",
+    "No provider APIs, browser automation, graph writer, scheduler, Host effect execution or new authority database",
+    "No other worker write scopes touched; no main mutation"
+  ],
+  "nextOwnerHandoff": [
+    "Z1 independent review then G1 serial integration",
+    "X real five-repo audit after GO_FOR_W2",
+    "B catalogue identity donor migration; F shared tests",
+    "HQ/Rust live graph read model; Host source/effect owner for supervisor and personal intake"
+  ],
+  "notes": [
+    "12/12 authored test callbacks executed under V8 with Node imports and cryptographic hash substituted. This is NOT an actual Node24 suite pass and cannot be promoted to project gate.",
+    "Actual Node24 command `node --test hq/version-intelligence/parity/atlas.test.mjs` remains UNRUN. Cargo/Bun/Windows/Android/Host security/CI are also UNRUN.",
+    "D has no authority to cryptographically authenticate caller-supplied Host receipt data. Parity classifier never returns RUNTIME_VERIFIED or product runtimeAccepted."
+  ]
+}

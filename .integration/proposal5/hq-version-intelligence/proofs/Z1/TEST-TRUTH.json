@@ -1,0 +1,192 @@
+{
+  "schema": "arbor.hvi.z1.test-truth/1",
+  "gate": "SOURCE_ONLY_Z1_INTEGRATED_TESTS_UNRUN",
+  "baseSha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+  "sourceRefs": {
+    "S0": "2ef7a9f66419d681e040b459ba4762a63aa9564f",
+    "A": "53d4bddf4c2a8fd22f12c8d7f3949aac5fd2fe38",
+    "B": "1206a343ab98a6e7abe0c19a9549c6b8c32ea9e0",
+    "C": "7f72c1415d75a7904eb5c267c2a55a9172d33cd8",
+    "D": "622569e9b20f1d6dfae474594eecf544d4fe3d9d",
+    "E": "d8080a4056361266702f38cf47f2a0885fe892eb",
+    "F": "34f5c1568007977e0e3bf0286d4c1ec730d6af26"
+  },
+  "workerLedgers": [
+    {
+      "lane": "S0",
+      "kind": "GitHub object inspection",
+      "observed": "all five fixed trees/361 HQ paths checked in S0 ledger",
+      "processExit": null,
+      "classification": "SOURCE_METADATA_ONLY",
+      "testSuite": "UNRUN"
+    },
+    {
+      "lane": "A",
+      "environment": "Code Mode V8 isolates with emulated node:crypto and Buffer, NOT Node",
+      "testSourceBlob": "d4a597ed135b3bed9857a53992224198bdd403f2",
+      "subjectBlob": "6ff5f5334f07670d364c92c27a9ef4655951b7d4",
+      "commandDescription": "isolated V8 synthetic test callbacks/syntax parse; no actual Node process",
+      "reportedCases": 14,
+      "reportedPass": 14,
+      "processExit": null,
+      "classification": "V8_SYNTHETIC_SHIM_ONLY",
+      "unrunCommand": "node --test hq/version-intelligence/sources/snapshots.test.mjs"
+    },
+    {
+      "lane": "B",
+      "environment": "GitHub source-only read; no authenticated integrated checkout",
+      "testSourceBlob": "b99a97dc2d3486f4d0c05708c082f50251d4cfa0",
+      "reportedCases": null,
+      "reportedPass": null,
+      "testsWithCommandAndExit": [],
+      "processExit": null,
+      "classification": "UNRUN",
+      "unrunCommand": "node --test hq/catalogue-identity/test/crosswalk.test.mjs hq/version-intelligence/identity/test/identity.test.mjs"
+    },
+    {
+      "lane": "C",
+      "environment": "ephemeral Linux, Node v22.16.0, isolated source copy",
+      "testSourceBlob": "85f949bcfbf8701d5a5aa1feabf79fd1867161f4",
+      "subjectBlob": "5203df02605b82951dfa2d5dbee9f0f179e0ecfe",
+      "commands": [
+        {
+          "command": "node --check /mnt/data/hvi-c/compare/index.mjs",
+          "exit": 0,
+          "sourceBlob": "5203df02605b82951dfa2d5dbee9f0f179e0ecfe",
+          "result": "syntax"
+        },
+        {
+          "command": "node --test /mnt/data/hvi-c/compare/index.test.mjs",
+          "exit": 0,
+          "sourceBlob": "85f949bcfbf8701d5a5aa1feabf79fd1867161f4",
+          "result": "TAP 9/9 pass 0 fail"
+        },
+        {
+          "command": "node --input-type=module (inline synthetic 10000-entry/pin, maxFindings=1000)",
+          "exit": 0,
+          "sourceBlob": "5203df02605b82951dfa2d5dbee9f0f179e0ecfe",
+          "result": "20000 entries, 10000 observed findings, 1000 emitted, truncation true, 156 ms/90MiB RSS claimed in worker receipt"
+        },
+        {
+          "command": "git hash-object on isolated tested source files",
+          "exit": 0,
+          "result": "source/test Git blob hashes matched connected GitHub"
+        }
+      ],
+      "classification": "NODE22_ISOLATED_EXECUTED_NOT_NODE24_G1",
+      "unrunCommand": "node --test hq/version-intelligence/compare/index.test.mjs (integrated Node24)"
+    },
+    {
+      "lane": "D",
+      "environment": "Code Mode V8 with Node imports/hash substituted, NOT Node24",
+      "testSourceBlob": "5c90aca87cbb45bd2b5036dfd498d259dcb89ddd",
+      "subjectBlob": "0493246c0a56380ec1605aa56ccda6ea59493017",
+      "reportedCases": 12,
+      "reportedPass": 12,
+      "additionalFocused": 8,
+      "additionalSourceAssertions": 9,
+      "processExit": null,
+      "reportedExitFromV8Ledger": 0,
+      "classification": "V8_SYNTHETIC_SHIM_ONLY",
+      "unrunCommand": "node --test hq/version-intelligence/parity/atlas.test.mjs"
+    },
+    {
+      "lane": "E",
+      "environment": "ephemeral Linux, Node v22.16.0, isolated source copy not integrated",
+      "testSourceBlob": "fffad251123a80fa8bae464798bb044c26260a0e",
+      "subjectBlob": "a9b7a07f276fc36ec0a39aaee227ac511ed67d4f",
+      "commands": [
+        {
+          "command": "node --check hq/version-intelligence/report/index.mjs",
+          "exit": 0,
+          "result": "syntax"
+        },
+        {
+          "command": "node --test hq/version-intelligence/report/test/report.test.mjs",
+          "exit": 0,
+          "testSourceBlob": "fffad251123a80fa8bae464798bb044c26260a0e",
+          "result": "TAP 13/13 pass 0 fail"
+        },
+        {
+          "command": "node hq/version-intelligence/report/test/benchmark.mjs",
+          "exit": 0,
+          "testSourceBlob": "35b92ab3f71257ab5f17743177bf8a4845059102",
+          "result": "10000 synthetic records, 5 pins; E benchmark proof"
+        },
+        {
+          "command": "node hq/version-intelligence/report/test/generate-samples.mjs",
+          "exit": 0,
+          "result": "synthetic 2/3/5 pin samples"
+        }
+      ],
+      "ledgerCaveat": "E ledger commitSha field contains unresolved placeholder RESOLVE_GITHUB_BRANCH_TIP_AFTER_COMMIT; actual verified E HEAD captured independently",
+      "classification": "NODE22_ISOLATED_EXECUTED_NOT_NODE24_G1",
+      "unrunCommand": "node --test hq/version-intelligence/report/test/report.test.mjs (integrated Node24)"
+    },
+    {
+      "lane": "F",
+      "environment": "GitHub Code Mode V8 structural subset; imports stripped; NOT Node24, not Draft 2020-12 full validator",
+      "testSourceBlob": "87649480c8faf4f3c519958f55183f5b9ebc994c",
+      "reportedSchemaPositive": 4,
+      "reportedSchemaNegative": 4,
+      "reportedOracleNegative": 4,
+      "testsWithObservedExit": [],
+      "processExit": null,
+      "classification": "V8_STRUCTURAL_ONLY_NODE24_UNRUN",
+      "unrunCommand": "node --test tests/hq-version-intelligence/*.test.mjs"
+    }
+  ],
+  "z1Checks": [
+    {
+      "operation": "Fetch GitHub refs + compare exact base to seven worker heads",
+      "httpSuccess": true,
+      "processExit": null,
+      "kind": "source inspection",
+      "result": "all seven exact heads and scopes match"
+    },
+    {
+      "operation": "Compare 361 D rows to original S0 rows by origin_path/blob, source SHA and target SHA",
+      "httpSuccess": true,
+      "processExit": null,
+      "kind": "source inspection",
+      "result": "361 equal, 0 conflicting, 0 duplicate"
+    },
+    {
+      "operation": "Read source blobs A/B/C/D/E/F and F JSON schemas",
+      "httpSuccess": true,
+      "processExit": null,
+      "kind": "source inspection",
+      "result": "incompatibilities recorded in interface matrix"
+    },
+    {
+      "operation": "Produce synthetic three pin hash/example via off-repo Python math",
+      "httpSuccess": null,
+      "processExit": 0,
+      "kind": "fixture-generation-not-product-test",
+      "result": "SHA256 canonical JSON expected digests explicitly embedded; no donor code executed"
+    }
+  ],
+  "integratedUnrun": [
+    "node --test hq/version-intelligence/sources/snapshots.test.mjs hq/version-intelligence/identity/test/identity.test.mjs hq/catalogue-identity/test/crosswalk.test.mjs hq/version-intelligence/compare/index.test.mjs hq/version-intelligence/parity/atlas.test.mjs hq/version-intelligence/report/test/report.test.mjs tests/hq-version-intelligence/*.test.mjs",
+    "node --test hq/test/catalogue-delta.test.mjs",
+    "Full JSON Schema Draft 2020-12 validator against actual integrated comparison",
+    "Synthetic A->C->B/D->E three SHA same invented repo and five invented repo no-donor offline replay",
+    "Host actor/session and live grant/revoke plus personal World deny",
+    "cargo test, bun test, generate Cargo.lock/bun.lock, Windows MSVC, physical Android/PWA, signed-in Chrome",
+    "full credential/secret content scanning, low-disk/ENOSPC rollback and security/device acceptance"
+  ],
+  "ciContext": {
+    "runId": 43233248631,
+    "conclusion": "startup_failure",
+    "jobs": 0,
+    "verdict": "NO_TEST_EXECUTED"
+  },
+  "releaseGate": "BLOCKED_NOT_BETA",
+  "workerSourcePromotion": "PREPARED_NOT_PROMOTED",
+  "z1Decision": "REPAIR_REQUIRED",
+  "node24IntegratedAcceptance": false,
+  "governingCurrentWave": "NATIVE_TOOLING_ONLY_SYNTHETIC_FIXTURES",
+  "realRepoComparison": "DEFERRED_USER_TRIGGER_ONLY",
+  "currentMainContractSha": "539146ac741516e7d9711c63f4570585b3c3367e",
+  "governingPolicyBlobSha": "0fd38aed3c7f85c7c73183d80ea4fee121372462"
+}

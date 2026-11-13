@@ -1,0 +1,59 @@
+{
+  "schema": "arbor.hvi.f.source-receipt/1",
+  "baseSha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+  "s0": {
+    "branch": "work/p5-hvi-s0-source-lock-r001",
+    "sha": "2ef7a9f66419d681e040b459ba4762a63aa9564f",
+    "gate": "GO_TO_PARALLEL"
+  },
+  "donorBlobs": [
+    {
+      "repository": "ARBOR",
+      "commitSha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+      "path": "hq/lib/catalogue-delta.mjs",
+      "blobSha": "6849e6df26bd136ee50ae08a260d8ab9e9445ac7"
+    },
+    {
+      "repository": "ARBOR",
+      "commitSha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+      "path": "hq/lib/semantic-registry.mjs",
+      "blobSha": "ec982381c77147119f62e702a162a203df8e7d4e"
+    },
+    {
+      "repository": "ARBOR",
+      "commitSha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+      "path": "hq/lib/arbor-service.mjs",
+      "blobSha": "a47c232c188d69758daa8d6a2f18070ce8c9a27b"
+    },
+    {
+      "repository": "ARBOR",
+      "commitSha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+      "path": "hq/test/catalogue-delta.test.mjs",
+      "blobSha": "c377a19a1a5a9b44abc4a1aa00e74d76edf183b9"
+    },
+    {
+      "repository": "ARBOR",
+      "commitSha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+      "path": "hq/aii/fixtures/HQ-114-compare-registered-repos.mjs",
+      "blobSha": "800f7119cad59228577b029772bd98592ec9bc2a"
+    },
+    {
+      "repository": "repos-hq",
+      "commitSha": "9b922ea049dbadc94e504b5b9432743995c020ca",
+      "path": "hq/catalogue-identity/crosswalk.mjs",
+      "blobSha": "ed4cb6f561e055e1dd3145b61de6f50f2555687d"
+    },
+    {
+      "repository": "repos-hq",
+      "commitSha": "9b922ea049dbadc94e504b5b9432743995c020ca",
+      "path": "hq/catalogue-identity/test/crosswalk.test.mjs",
+      "blobSha": "3da1b5f7f14affb1f206213453832bf5fe2f8844"
+    },
+    {
+      "repository": "repos-hq",
+      "commitSha": "9b922ea049dbadc94e504b5b9432743995c020ca",
+      "path": "hq/catalogue-identity/source-adapters.mjs",
+      "blobSha": "0100d7ce7ff5cd6b4dbc366ab93a74a1a33e4fed"
+    }
+  ]
+}

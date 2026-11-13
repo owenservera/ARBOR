@@ -1,0 +1,209 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://arbor.local/hvi/v2/migration-finding.schema.json",
+  "title": "Typed physical-source or candidate-capability finding",
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:@/#-]{0,255}$"
+        },
+        "originPinId": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "targetPinId": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "originRepo": {
+          "type": "string",
+          "pattern": "^[a-z0-9_.-]+/[a-z0-9_.-]+$"
+        },
+        "originSha": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        "originPath": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096,
+              "pattern": "^(?!/)[^\\\\\\x00-\\x1f]+$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "originBlob": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-f0-9]{40}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "targetPaths": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096,
+            "pattern": "^(?!/)[^\\\\\\x00-\\x1f]+$"
+          }
+        },
+        "targetBlobs": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-f0-9]{40}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "state": {
+          "enum": [
+            "EXACT_BLOB",
+            "SAME_PATH_CHANGED",
+            "EXACT_RELOCATION",
+            "SPLIT_CANDIDATE",
+            "COMBINE_CANDIDATE",
+            "SIMILARITY_CANDIDATE",
+            "MISSING_AT_TARGET",
+            "NEW_AT_TARGET",
+            "UNOBSERVABLE"
+          ]
+        },
+        "sourceLineage": {
+          "type": "string"
+        },
+        "certainty": {
+          "enum": [
+            "unknown",
+            "candidate",
+            "source_verified",
+            "uncertain"
+          ]
+        },
+        "decision": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:@/#-]{0,255}$"
+        },
+        "owner": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:@/#-]{0,255}$"
+        },
+        "evidenceRefs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:@/#-]{0,255}$"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "originPinId",
+        "targetPinId",
+        "originRepo",
+        "originSha",
+        "originPath",
+        "originBlob",
+        "targetPaths",
+        "targetBlobs",
+        "state",
+        "sourceLineage",
+        "certainty",
+        "decision",
+        "owner",
+        "evidenceRefs"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:@/#-]{0,255}$"
+        },
+        "capabilityIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:@/#-]{0,255}$"
+          }
+        },
+        "originPinId": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "targetPinId": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "state": {
+          "enum": [
+            "PRESENT_EQUIVALENT_CONFIRMED",
+            "PRESENT_CHANGED",
+            "IMPORTED_NOT_WIRED",
+            "SOURCE_WIRED_UNVERIFIED",
+            "RUNTIME_VERIFIED",
+            "DESIGN_ONLY",
+            "RESEARCH_IMPLEMENTED",
+            "INTENTIONALLY_EXCLUDED",
+            "BLOCKED",
+            "UNKNOWN"
+          ]
+        },
+        "certainty": {
+          "enum": [
+            "candidate",
+            "unknown",
+            "uncertain",
+            "confirmed"
+          ]
+        },
+        "decision": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:@/#-]{0,255}$"
+        },
+        "owner": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:@/#-]{0,255}$"
+        },
+        "evidenceRefs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:@/#-]{0,255}$"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "capabilityIds",
+        "originPinId",
+        "targetPinId",
+        "state",
+        "certainty",
+        "decision",
+        "owner",
+        "evidenceRefs"
+      ],
+      "additionalProperties": false
+    }
+  ]
+}

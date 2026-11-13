@@ -16,6 +16,8 @@ export const MCP_INSTRUCTIONS = [
   'hq_route for mandatory instructions and skills, hq_brief for workspace state,',
   'and hq_wiki_page for generated documentation. All tools are read-only.',
   'hq_release_status reports version, pending bump, bundle digest and the last quality-gate result.',
+  'hvi_compare_pinned compares 2..N pinned source manifests and reports source facts only;',
+  'it is never runtime proof, and accepts synthetic/ fixtures only until a Host grant is accepted.',
   'Memory is not authority; evidence is not inference. Nothing is sent anywhere.',
 ].join(' ');
 
@@ -158,6 +160,22 @@ const TOOLS = [
     description: 'Read-only release readiness: package version, last tag, pending semver bump, bundle digest, last quality-gate result and workflow presence.',
     inputSchema: { type: 'object', properties: {} },
   },
+  {
+    name: 'hvi_compare_pinned',
+    description: 'Compare 2..N explicitly pinned Git-object source manifests and report source facts only: identical, changed, relocated, physically absent or unobservable. Source facts are never runtime proof. Synthetic fixtures only until a Host development-source grant is accepted.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        sourceManifests: { type: 'array', description: '2..16 arbor.hvi.manifest/1 objects, each carrying its immutable pin copy.', items: { type: 'object' } },
+        targetPinId: { type: 'string', description: 'The sha256 pin ID of the target among the supplied manifests.' },
+        pairwise: { type: 'boolean', default: false },
+        scope: { type: 'object', description: 'Bounded approved source prefixes.' },
+        budgets: { type: 'object', description: 'Resource ceilings: maxPins, maxEntries, maxFindings, maxPairs.' },
+        includeParity: { type: 'boolean', default: false },
+      },
+      required: ['sourceManifests', 'targetPinId'],
+    },
+  },
   ...TEAM_TOOLS,
 ];
 
@@ -283,6 +301,34 @@ export function createMcpServer({ root, db }) {
       case 'hq_release_status': {
         const { releaseStatus } = await import('./release-status.mjs');
         return releaseStatus({ root });
+      }
+      case 'hvi_compare_pinned': {
+        const { runHviTool, HVI_TOOL_REQUEST_SCHEMA } =
+          await import('../version-intelligence/integration/index.mjs');
+        const manifests = Array.isArray(args.sourceManifests) ? args.sourceManifests : [];
+        // This wave is native tooling only. A synthetic fixture is the only source an agent
+        // may compare here, so the grant callback below can never widen authority: real
+        // comparison needs a Host-attested development-source grant, which is a separate
+        // surface and is not enabled by default.
+        const synthetic = manifests.length > 0 && manifests.every(m =>
+          typeof m?.pin?.repoIdentity === 'string' && m.pin.repoIdentity.startsWith('synthetic/'));
+        if (!synthetic) {
+          throw Object.assign(
+            new Error('hvi: only synthetic/ source fixtures may be compared through this tool in the native-tooling wave'),
+            { code: 'SOURCE_UNAUTHORIZED' });
+        }
+        const request = {
+          schema: HVI_TOOL_REQUEST_SCHEMA,
+          sourceManifests: manifests,
+          targetPinId: args.targetPinId,
+          pairwise: args.pairwise === true,
+          scope: args.scope,
+          budgets: args.budgets,
+          includeParity: args.includeParity === true,
+        };
+        const result = await runHviTool(request, { authorize: async () => true });
+        // Disclose exactly what this is: a synthetic comparison, never runtime proof.
+        return { ...result, provenance: 'SYNTHETIC_ONLY', runtimeAccepted: false };
       }
       case 'team_state':
       case 'route_model':

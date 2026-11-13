@@ -1,0 +1,35 @@
+{
+  "schema": "arbor.proposal5.hvi.g2.receipt/1",
+  "authoredAt": "2026-11-13",
+  "scope": "NATIVE_TOOLING_ONLY_SYNTHETIC",
+  "status": "PASSED",
+  "gate": "CLI offline no-donor replay",
+  "branch": "integrate/p5-hq-version-intelligence-r001",
+  "commitSha": "a256611b9375bbed1c657393f2ff034e278b8bed",
+  "os": "Windows 10.0.29704 x64 (MINGW64_NT-10.0-29704 3.6.5-22c95533.x86_64)",
+  "nodeVersion": "v24.22.1",
+  "bunVersion": "1.4.2",
+  "ajvVersion": "8.17.1",
+  "command": "node hq/version-intelligence/integration/cli.mjs --synthetic-stdin < synthetic-request.json",
+  "verification": {
+    "executions": 1,
+    "passed": 1,
+    "failed": 0,
+    "exitCode": 0,
+    "syntheticOnly": true,
+    "noRealDonorComparison": true,
+    "runtimeAccepted": false,
+    "notRuntimeProof": true,
+    "capabilityId": "arbor.hvi.compare.pinned/1",
+    "provenance": "SYNTHETIC_ONLY",
+    "hostBound": false,
+    "sourcePins": 3
+  },
+  "security": {
+    "realRepositoryComparisonsExecuted": false,
+    "browserOrProviderEffects": false,
+    "featureEnabled": false,
+    "mainModified": false
+  },
+  "note": "Single successful offline no-donor replay over invented repo synthetic/offline-replay at pins v1/v2/v3 (exit 0). Synthetic fixtures only; no donor checkout, no provider API, no network, no runtime proof."
+}

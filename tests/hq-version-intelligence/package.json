@@ -1,0 +1,11 @@
+{
+  "name": "@arbor/hvi-g1-schema-tests",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "ajv": "8.17.1"
+  },
+  "scripts": {
+    "test": "node --test g1-v2-schema.test.mjs integrated-nway.test.mjs"
+  }
+}

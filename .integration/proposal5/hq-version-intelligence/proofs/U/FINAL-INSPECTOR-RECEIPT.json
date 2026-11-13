@@ -1,0 +1,90 @@
+{
+  "schema": "arbor.hvi.u.inspector-closeout/1",
+  "status": "PREPARED_NOT_PROMOTED",
+  "liveFeatureEnabled": false,
+  "remoteSourceAccessEnabled": false,
+  "repo": "owenservera/ARBOR",
+  "branch": "work/p5-hvi-w2-u-inspector-r001",
+  "sourceHead": "80448f871a3658726382f09a8d57a9b03beb671d",
+  "baseSha": "bc9e2dcc5eca44cfe8d4bcec31e9deb513c0a7d4",
+  "ownerWaiverBase": "bbe7e4896eea02bcdec6f8fedb66eab885250161",
+  "observedG1IntegrationSha": "69447c09f420310aa84c24a1908dede91c963ec8",
+  "observedMainSha": "3d45fbf1c3963e4834a5e51ee7f6e63f3a0da298",
+  "observedHHead": "d24daa9966abb222cd25210f41dcbb4758aa1209",
+  "sourceChanges": [
+    "packages/tierflow/src/visual-runtime/knowledge/hvi-inspector.mjs",
+    "packages/tierflow/src/visual-runtime/render/hvi-inspector.mjs",
+    "packages/tierflow/tests/hvi-inspector.test.mjs"
+  ],
+  "execution": [
+    {
+      "kind": "in_process_v8_smoke",
+      "source": "actual committed U JS with mocked canonical validator/renderer",
+      "assertions": 21,
+      "result": "PASS",
+      "shellCommand": null,
+      "exitCode": null,
+      "releaseEvidence": false
+    },
+    {
+      "kind": "repo_node_suite",
+      "command": "node --experimental-strip-types --test packages/tierflow/tests/hvi-inspector.test.mjs",
+      "result": "UNRUN",
+      "exitCode": null
+    },
+    {
+      "kind": "repo_visual_suite",
+      "command": "bun test packages/tierflow/tests/visual-runtime",
+      "result": "UNRUN",
+      "exitCode": null
+    },
+    {
+      "kind": "repo_typecheck",
+      "command": "bun run --cwd packages/tierflow typecheck",
+      "result": "UNRUN",
+      "exitCode": null
+    },
+    {
+      "kind": "physical_android_windows_accessibility",
+      "command": null,
+      "result": "UNRUN",
+      "exitCode": null
+    }
+  ],
+  "security": {
+    "realGitComparisonsExecuted": false,
+    "hostGrantEstablished": false,
+    "standalonePublisherCreated": false,
+    "sourceScannerAdded": false,
+    "currentUiCoreRevisionRequiredForSyntheticReports": true,
+    "liveReportsDeniedByCompileTimeFeatureFlag": true
+  },
+  "blockers": [
+    {
+      "owner": "G1",
+      "code": "G1_NOT_PROMOTED",
+      "detail": "G1 candidate still not accepted into main; Node24/AJV/runtime tests not verified"
+    },
+    {
+      "owner": "H/Host-security",
+      "code": "LIVE_DEVELOPMENT_SOURCE_GRANT_ABSENT",
+      "detail": "H native discovery exists but no production-attested source-grant provider; H action enforcement_missing and disabled"
+    },
+    {
+      "owner": "H/G2",
+      "code": "HOST_DETAIL_ENVELOPE_MISSING",
+      "detail": "H typed safe report projects summary/digest/pins but not comparison-report adapter envelope or target-relative findings required by U inspector; review authorized read model and grant check before exposing"
+    },
+    {
+      "owner": "G2",
+      "code": "CANONICAL_PUBLISHER_MOUNT_PENDING",
+      "detail": "U calls existing canonical validator/renderer but no runtime publisher mount or approved flag flip; reconcile against accepted G1 main and H interface"
+    },
+    {
+      "owner": "CI/devices",
+      "code": "EXECUTABLE_AND_DEVICE_TESTS_UNRUN",
+      "detail": "No repository checkout in this GitHub connection; startup_failure observed in G1; physical PWA/TalkBack UNRUN"
+    }
+  ],
+  "next": "Z2 independent review and G2 guarded integration only; do not merge U to main."
+}

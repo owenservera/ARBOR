@@ -1,0 +1,12 @@
+# Installed dependencies are never committed.
+node_modules/
+
+# Local build/verification scratch
+*.log
+.DS_Store
+
+# Test gate cache (never committed; fail-closed gate rebuilds when absent)
+.hq/test-cache/
+
+# ZCode session artifacts are never committed
+.zcode/

@@ -1,0 +1,851 @@
+{
+  "schema": "arbor.hvi.z1.branch-sha-matrix/1",
+  "verification": "GitHub compare exact source base to observed worker ref; snapshot as of Z1 read; not runtime",
+  "workerBaseSha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+  "workerBaseTreeSha": "13eda0d9c7f717a46d00eee46a22b1a19edb65be",
+  "mainObservedSha": "cbe768031e0797040a09c084b7b8bc12f07fbe0a",
+  "z1Branch": "work/p5-hvi-w1-z-referee-r001",
+  "z1StartedSha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+  "workers": [
+    {
+      "lane": "S0",
+      "branch": "work/p5-hvi-s0-source-lock-r001",
+      "observedHead": "2ef7a9f66419d681e040b459ba4762a63aa9564f",
+      "compareBase": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+      "aheadBy": 8,
+      "behindBy": 0,
+      "totalCommits": 8,
+      "allowedPrefixes": [
+        ".integration/proposal5/hq-version-intelligence/proofs/S0/"
+      ],
+      "changedPaths": [
+        {
+          "path": ".integration/proposal5/hq-version-intelligence/proofs/S0/HQ-MISSING-361.json",
+          "status": "added",
+          "additions": 9033,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": ".integration/proposal5/hq-version-intelligence/proofs/S0/MECHANICAL-PARITY.json",
+          "status": "added",
+          "additions": 158,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": ".integration/proposal5/hq-version-intelligence/proofs/S0/RISK-DELTA.md",
+          "status": "added",
+          "additions": 18,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": ".integration/proposal5/hq-version-intelligence/proofs/S0/RUN-LEDGER.json",
+          "status": "added",
+          "additions": 67,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": ".integration/proposal5/hq-version-intelligence/proofs/S0/SOURCE-REVISIONS.json",
+          "status": "added",
+          "additions": 232,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": ".integration/proposal5/hq-version-intelligence/proofs/S0/WORKER-BASE.json",
+          "status": "added",
+          "additions": 17,
+          "deletions": 0,
+          "scopeValid": true
+        }
+      ],
+      "scopePass": true,
+      "workerSourceNotMergedToMain": true
+    },
+    {
+      "lane": "A",
+      "branch": "work/p5-hvi-w1-a-snapshots-r001",
+      "observedHead": "53d4bddf4c2a8fd22f12c8d7f3949aac5fd2fe38",
+      "compareBase": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+      "aheadBy": 2,
+      "behindBy": 0,
+      "totalCommits": 2,
+      "allowedPrefixes": [
+        "hq/version-intelligence/sources/",
+        ".integration/proposal5/hq-version-intelligence/proofs/A/"
+      ],
+      "changedPaths": [
+        {
+          "path": ".integration/proposal5/hq-version-intelligence/proofs/A/API-CONTRACT.md",
+          "status": "added",
+          "additions": 33,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": ".integration/proposal5/hq-version-intelligence/proofs/A/HANDOFF-B-C-E-F.md",
+          "status": "added",
+          "additions": 14,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": ".integration/proposal5/hq-version-intelligence/proofs/A/RUN-LEDGER.json",
+          "status": "added",
+          "additions": 152,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": ".integration/proposal5/hq-version-intelligence/proofs/A/SOURCE-BLOBS.json",
+          "status": "added",
+          "additions": 25,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": ".integration/proposal5/hq-version-intelligence/proofs/A/SOURCE-MAP.md",
+          "status": "added",
+          "additions": 34,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": "hq/version-intelligence/sources/README.md",
+          "status": "added",
+          "additions": 23,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": "hq/version-intelligence/sources/adapters.mjs",
+          "status": "added",
+          "additions": 21,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": "hq/version-intelligence/sources/common.mjs",
+          "status": "added",
+          "additions": 69,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": "hq/version-intelligence/sources/fixtures.mjs",
+          "status": "added",
+          "additions": 92,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": "hq/version-intelligence/sources/index.mjs",
+          "status": "added",
+          "additions": 6,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": "hq/version-intelligence/sources/snapshots.mjs",
+          "status": "added",
+          "additions": 317,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": "hq/version-intelligence/sources/snapshots.test.mjs",
+          "status": "added",
+          "additions": 193,
+          "deletions": 0,
+          "scopeValid": true
+        }
+      ],
+      "scopePass": true,
+      "workerSourceNotMergedToMain": true
+    },
+    {
+      "lane": "B",
+      "branch": "work/p5-hvi-w1-b-identity-r001",
+      "observedHead": "1206a343ab98a6e7abe0c19a9549c6b8c32ea9e0",
+      "compareBase": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+      "aheadBy": 23,
+      "behindBy": 0,
+      "totalCommits": 23,
+      "allowedPrefixes": [
+        "hq/catalogue-identity/",
+        "hq/version-intelligence/identity/",
+        ".integration/proposal5/hq-version-intelligence/proofs/B/"
+      ],
+      "changedPaths": [
+        {
+          "path": ".integration/proposal5/hq-version-intelligence/proofs/B/COMPATIBILITY.md",
+          "status": "added",
+          "additions": 29,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": ".integration/proposal5/hq-version-intelligence/proofs/B/DONOR-MAP.json",
+          "status": "added",
+          "additions": 206,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": ".integration/proposal5/hq-version-intelligence/proofs/B/HANDOFF-G1.md",
+          "status": "added",
+          "additions": 39,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": ".integration/proposal5/hq-version-intelligence/proofs/B/SOURCE-PINS.json",
+          "status": "added",
+          "additions": 70,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": ".integration/proposal5/hq-version-intelligence/proofs/B/TEST-LEDGER.json",
+          "status": "added",
+          "additions": 97,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": "hq/catalogue-identity/EXPORT-CONTRACT.md",
+          "status": "added",
+          "additions": 79,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": "hq/catalogue-identity/README.md",
+          "status": "added",
+          "additions": 28,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": "hq/catalogue-identity/cli.mjs",
+          "status": "added",
+          "additions": 48,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": "hq/catalogue-identity/crosswalk.mjs",
+          "status": "added",
+          "additions": 294,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": "hq/catalogue-identity/labs-adapter.mjs",
+          "status": "added",
+          "additions": 29,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": "hq/catalogue-identity/observer-export.mjs",
+          "status": "added",
+          "additions": 58,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": "hq/catalogue-identity/source-adapters.mjs",
+          "status": "added",
+          "additions": 68,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": "hq/catalogue-identity/test/benchmark.mjs",
+          "status": "added",
+          "additions": 13,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": "hq/catalogue-identity/test/crosswalk.test.mjs",
+          "status": "added",
+          "additions": 156,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": "hq/version-intelligence/identity/index.mjs",
+          "status": "added",
+          "additions": 229,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": "hq/version-intelligence/identity/legacy-adapters.mjs",
+          "status": "added",
+          "additions": 84,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": "hq/version-intelligence/identity/test/identity.test.mjs",
+          "status": "added",
+          "additions": 125,
+          "deletions": 0,
+          "scopeValid": true
+        }
+      ],
+      "scopePass": true,
+      "workerSourceNotMergedToMain": true
+    },
+    {
+      "lane": "C",
+      "branch": "work/p5-hvi-w1-c-compare-r001",
+      "observedHead": "7f72c1415d75a7904eb5c267c2a55a9172d33cd8",
+      "compareBase": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+      "aheadBy": 4,
+      "behindBy": 0,
+      "totalCommits": 4,
+      "allowedPrefixes": [
+        "hq/version-intelligence/compare/",
+        ".integration/proposal5/hq-version-intelligence/proofs/C/"
+      ],
+      "changedPaths": [
+        {
+          "path": ".integration/proposal5/hq-version-intelligence/proofs/C/HANDOFF-G1.md",
+          "status": "added",
+          "additions": 26,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": ".integration/proposal5/hq-version-intelligence/proofs/C/TEST-RECEIPT.md",
+          "status": "added",
+          "additions": 35,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": "hq/version-intelligence/compare/index.mjs",
+          "status": "added",
+          "additions": 296,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": "hq/version-intelligence/compare/index.test.mjs",
+          "status": "added",
+          "additions": 111,
+          "deletions": 0,
+          "scopeValid": true
+        }
+      ],
+      "scopePass": true,
+      "workerSourceNotMergedToMain": true
+    },
+    {
+      "lane": "D",
+      "branch": "work/p5-hvi-w1-d-parity-r001",
+      "observedHead": "622569e9b20f1d6dfae474594eecf544d4fe3d9d",
+      "compareBase": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+      "aheadBy": 8,
+      "behindBy": 0,
+      "totalCommits": 8,
+      "allowedPrefixes": [
+        "hq/version-intelligence/parity/",
+        ".integration/proposal5/hq-version-intelligence/proofs/D/"
+      ],
+      "changedPaths": [
+        {
+          "path": ".integration/proposal5/hq-version-intelligence/proofs/D/FULL-DONOR-COVERAGE.md",
+          "status": "added",
+          "additions": 37,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": ".integration/proposal5/hq-version-intelligence/proofs/D/HQ-361-TRIAGE.json",
+          "status": "added",
+          "additions": 10559,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": ".integration/proposal5/hq-version-intelligence/proofs/D/LABS-AND-RESEARCH-CROSSWALK.json",
+          "status": "added",
+          "additions": 764,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": ".integration/proposal5/hq-version-intelligence/proofs/D/LANE-D-RUN-LEDGER.json",
+          "status": "added",
+          "additions": 177,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": ".integration/proposal5/hq-version-intelligence/proofs/D/OWNERSHIP-CONFLICTS.md",
+          "status": "added",
+          "additions": 29,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": ".integration/proposal5/hq-version-intelligence/proofs/D/PRIORITIZED-MERGE-PLAN.md",
+          "status": "added",
+          "additions": 30,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": "hq/version-intelligence/parity/README.md",
+          "status": "added",
+          "additions": 8,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": "hq/version-intelligence/parity/atlas.mjs",
+          "status": "added",
+          "additions": 146,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": "hq/version-intelligence/parity/atlas.test.mjs",
+          "status": "added",
+          "additions": 102,
+          "deletions": 0,
+          "scopeValid": true
+        }
+      ],
+      "scopePass": true,
+      "workerSourceNotMergedToMain": true
+    },
+    {
+      "lane": "E",
+      "branch": "work/p5-hvi-w1-e-reports-r001",
+      "observedHead": "d8080a4056361266702f38cf47f2a0885fe892eb",
+      "compareBase": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+      "aheadBy": 2,
+      "behindBy": 0,
+      "totalCommits": 2,
+      "allowedPrefixes": [
+        "hq/version-intelligence/report/",
+        ".integration/proposal5/hq-version-intelligence/proofs/E/"
+      ],
+      "changedPaths": [
+        {
+          "path": ".integration/proposal5/hq-version-intelligence/proofs/E/BENCHMARK-10K.json",
+          "status": "added",
+          "additions": 17,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": ".integration/proposal5/hq-version-intelligence/proofs/E/HANDOFF.md",
+          "status": "added",
+          "additions": 23,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": ".integration/proposal5/hq-version-intelligence/proofs/E/RUN-LEDGER.json",
+          "status": "added",
+          "additions": 89,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": ".integration/proposal5/hq-version-intelligence/proofs/E/SECURITY-NEGATIVES.md",
+          "status": "added",
+          "additions": 5,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": ".integration/proposal5/hq-version-intelligence/proofs/E/samples/SYNTHETIC-2PIN.input.json",
+          "status": "added",
+          "additions": 100,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": ".integration/proposal5/hq-version-intelligence/proofs/E/samples/SYNTHETIC-2PIN.report.json",
+          "status": "added",
+          "additions": 193,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": ".integration/proposal5/hq-version-intelligence/proofs/E/samples/SYNTHETIC-2PIN.report.md",
+          "status": "added",
+          "additions": 53,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": ".integration/proposal5/hq-version-intelligence/proofs/E/samples/SYNTHETIC-2PIN.review.csv",
+          "status": "added",
+          "additions": 4,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": ".integration/proposal5/hq-version-intelligence/proofs/E/samples/SYNTHETIC-3PIN.input.json",
+          "status": "added",
+          "additions": 138,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": ".integration/proposal5/hq-version-intelligence/proofs/E/samples/SYNTHETIC-3PIN.report.json",
+          "status": "added",
+          "additions": 249,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": ".integration/proposal5/hq-version-intelligence/proofs/E/samples/SYNTHETIC-3PIN.report.md",
+          "status": "added",
+          "additions": 57,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": ".integration/proposal5/hq-version-intelligence/proofs/E/samples/SYNTHETIC-3PIN.review.csv",
+          "status": "added",
+          "additions": 5,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": ".integration/proposal5/hq-version-intelligence/proofs/E/samples/SYNTHETIC-5PIN.input.json",
+          "status": "added",
+          "additions": 214,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": ".integration/proposal5/hq-version-intelligence/proofs/E/samples/SYNTHETIC-5PIN.report.json",
+          "status": "added",
+          "additions": 357,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": ".integration/proposal5/hq-version-intelligence/proofs/E/samples/SYNTHETIC-5PIN.report.md",
+          "status": "added",
+          "additions": 64,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": ".integration/proposal5/hq-version-intelligence/proofs/E/samples/SYNTHETIC-5PIN.review.csv",
+          "status": "added",
+          "additions": 7,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": "hq/version-intelligence/report/README.md",
+          "status": "added",
+          "additions": 39,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": "hq/version-intelligence/report/index.mjs",
+          "status": "added",
+          "additions": 316,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": "hq/version-intelligence/report/test/benchmark.mjs",
+          "status": "added",
+          "additions": 15,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": "hq/version-intelligence/report/test/generate-samples.mjs",
+          "status": "added",
+          "additions": 27,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": "hq/version-intelligence/report/test/report.test.mjs",
+          "status": "added",
+          "additions": 157,
+          "deletions": 0,
+          "scopeValid": true
+        }
+      ],
+      "scopePass": true,
+      "workerSourceNotMergedToMain": true
+    },
+    {
+      "lane": "F",
+      "branch": "work/p5-hvi-w1-f-verify-r001",
+      "observedHead": "34f5c1568007977e0e3bf0286d4c1ec730d6af26",
+      "compareBase": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+      "aheadBy": 16,
+      "behindBy": 0,
+      "totalCommits": 16,
+      "allowedPrefixes": [
+        "contracts/hq-version-intelligence/",
+        "tests/hq-version-intelligence/",
+        ".integration/proposal5/hq-version-intelligence/proofs/F/"
+      ],
+      "changedPaths": [
+        {
+          "path": ".integration/proposal5/hq-version-intelligence/proofs/F/G1-OWNER-HANDOFF.md",
+          "status": "added",
+          "additions": 20,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": ".integration/proposal5/hq-version-intelligence/proofs/F/INDEPENDENT-TEST-PLAN.md",
+          "status": "added",
+          "additions": 44,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": ".integration/proposal5/hq-version-intelligence/proofs/F/RUN-LEDGER.json",
+          "status": "added",
+          "additions": 127,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": ".integration/proposal5/hq-version-intelligence/proofs/F/SECURITY-NEGATIVES.md",
+          "status": "added",
+          "additions": 31,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": ".integration/proposal5/hq-version-intelligence/proofs/F/SOURCE-AUDIT.json",
+          "status": "added",
+          "additions": 59,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": "contracts/hq-version-intelligence/README.md",
+          "status": "added",
+          "additions": 3,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": "contracts/hq-version-intelligence/examples/comparison.example.json",
+          "status": "added",
+          "additions": 52,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": "contracts/hq-version-intelligence/examples/evidence-receipt.example.json",
+          "status": "added",
+          "additions": 16,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": "contracts/hq-version-intelligence/examples/host-read-result.example.json",
+          "status": "added",
+          "additions": 20,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": "contracts/hq-version-intelligence/examples/identity-crosswalk.example.json",
+          "status": "added",
+          "additions": 30,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": "contracts/hq-version-intelligence/examples/manifest.example.json",
+          "status": "added",
+          "additions": 23,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": "contracts/hq-version-intelligence/examples/migration-finding.example.json",
+          "status": "added",
+          "additions": 33,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": "contracts/hq-version-intelligence/examples/pin-hq-donor.example.json",
+          "status": "added",
+          "additions": 17,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": "contracts/hq-version-intelligence/examples/pin-target.example.json",
+          "status": "added",
+          "additions": 17,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": "contracts/hq-version-intelligence/examples/refusal-error.example.json",
+          "status": "added",
+          "additions": 9,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": "contracts/hq-version-intelligence/schemas/v1/comparison.schema.json",
+          "status": "added",
+          "additions": 332,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": "contracts/hq-version-intelligence/schemas/v1/evidence-receipt.schema.json",
+          "status": "added",
+          "additions": 197,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": "contracts/hq-version-intelligence/schemas/v1/host-read-result.schema.json",
+          "status": "added",
+          "additions": 153,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": "contracts/hq-version-intelligence/schemas/v1/identity-crosswalk.schema.json",
+          "status": "added",
+          "additions": 188,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": "contracts/hq-version-intelligence/schemas/v1/manifest.schema.json",
+          "status": "added",
+          "additions": 174,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": "contracts/hq-version-intelligence/schemas/v1/migration-finding.schema.json",
+          "status": "added",
+          "additions": 226,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": "contracts/hq-version-intelligence/schemas/v1/pin.schema.json",
+          "status": "added",
+          "additions": 108,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": "contracts/hq-version-intelligence/schemas/v1/refusal-error.schema.json",
+          "status": "added",
+          "additions": 59,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": "contracts/hq-version-intelligence/types.d.ts",
+          "status": "added",
+          "additions": 16,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": "tests/hq-version-intelligence/README.md",
+          "status": "added",
+          "additions": 14,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": "tests/hq-version-intelligence/fixtures/fixed-prefix-census.json",
+          "status": "added",
+          "additions": 129,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": "tests/hq-version-intelligence/fixtures/hq-missing-361.json",
+          "status": "added",
+          "additions": 1456,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": "tests/hq-version-intelligence/git-edge-negative-gates.test.mjs",
+          "status": "added",
+          "additions": 27,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": "tests/hq-version-intelligence/hvi-contract-qa.test.mjs",
+          "status": "added",
+          "additions": 169,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": "tests/hq-version-intelligence/reference-oracle.mjs",
+          "status": "added",
+          "additions": 103,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": "tests/hq-version-intelligence/schema-negative-gates.test.mjs",
+          "status": "added",
+          "additions": 38,
+          "deletions": 0,
+          "scopeValid": true
+        },
+        {
+          "path": "tests/hq-version-intelligence/schema-validator.mjs",
+          "status": "added",
+          "additions": 38,
+          "deletions": 0,
+          "scopeValid": true
+        }
+      ],
+      "scopePass": true,
+      "workerSourceNotMergedToMain": true
+    }
+  ],
+  "allScopesPass": true,
+  "z1WriteScope": ".integration/proposal5/hq-version-intelligence/proofs/Z1/",
+  "betaReleaseGate": "BLOCKED_NOT_BETA",
+  "testGate": "UNRUN_INTEGRATED_NODE24",
+  "postCommitMainAdvance": {
+    "initialMain": "cbe768031e0797040a09c084b7b8bc12f07fbe0a",
+    "subsequentMain": "539146ac741516e7d9711c63f4570585b3c3367e",
+    "commits": 2,
+    "changedPaths": 15,
+    "pathsType": "HVI scope and launch contracts only; no worker source edits",
+    "governingScope": "NATIVE_TOOLING_ONLY",
+    "requiresG1Reconcile": true
+  }
+}

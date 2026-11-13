@@ -1,0 +1,764 @@
+{
+  "schema": "arbor.hvi.d.labs-research-crosswalk/1",
+  "status": "PREPARED_NOT_PROMOTED",
+  "targetPin": {
+    "repo": "owenservera/ARBOR",
+    "sha": "f9823a5131e73e7562db5a4ec14e1ec481557d69"
+  },
+  "candidates": 22,
+  "statusCounts": {
+    "RESEARCH_IMPLEMENTED": 11,
+    "DESIGN_ONLY": 7,
+    "DESIGN_AUDIT_ONLY": 1,
+    "FIXTURE_OR_AUDIT": 1,
+    "TARGET_SOURCE_PRESENT": 1,
+    "STAGED_CONTRACT": 1
+  },
+  "coverage": {
+    "method": "select executable source and documents by exact pinned blob; selection not exhaustive",
+    "runtimeVerified": 0,
+    "installedFeaturesVerified": 0,
+    "testExecutions": 0
+  },
+  "nonPromotionRule": "Neither research implementation nor staging branch counts as installed product functionality",
+  "rows": [
+    {
+      "capability_id": "labs.capability-observatory",
+      "area": "observability",
+      "source": {
+        "repo": "owenservera/vivim-labs",
+        "commitSha": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be",
+        "path": "capability-observatory/lane-d/src/observatory.mjs",
+        "blobSha": "4b0284b209ca4bb45155a82aab02af1bc2f99101"
+      },
+      "target": {
+        "repo": "owenservera/ARBOR",
+        "sha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+        "evidence": [
+          {
+            "path": "hq/lib/wiki.mjs",
+            "blobSha": "c85c8fbe1409273928ea5c52bc2c20f108ac4dce"
+          }
+        ]
+      },
+      "source_status": "RESEARCH_IMPLEMENTED",
+      "installed_in_arbor": "NOT_DEMONSTRATED",
+      "wiring": "UNVERIFIED",
+      "runtime_evidence": "UNRUN",
+      "test_execution": "UNRUN",
+      "owner": "HQ/X",
+      "safety_boundary": "read_only_projection",
+      "notes": "Pure Labs snapshot and certifiedProduction export; historical observations not live production attestation.",
+      "evidence_refs": [
+        "https://github.com/owenservera/vivim-labs/blob/022608f5797e7b4a14ccc4c393bd3c5a4704a4be/capability-observatory/lane-d/src/observatory.mjs",
+        "https://github.com/owenservera/ARBOR/blob/f9823a5131e73e7562db5a4ec14e1ec481557d69/hq/lib/wiki.mjs"
+      ]
+    },
+    {
+      "capability_id": "labs.personal-knowledge-chatgpt-zip",
+      "area": "personal-knowledge",
+      "source": {
+        "repo": "owenservera/vivim-labs",
+        "commitSha": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be",
+        "path": "personal-knowledge-lifecycle/runtime/src/chatgpt-import.mjs",
+        "blobSha": "9bfbcd40749774a3405a8d4f3456211fe4920253"
+      },
+      "target": {
+        "repo": "owenservera/ARBOR",
+        "sha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+        "evidence": [
+          {
+            "path": "apps/vivim-host/corpus/intake/host-intake.mjs",
+            "blobSha": "1db63cf3b0cc2dca09590a203b93fc895d4c936c"
+          }
+        ]
+      },
+      "source_status": "RESEARCH_IMPLEMENTED",
+      "installed_in_arbor": "NOT_DEMONSTRATED",
+      "wiring": "UNVERIFIED",
+      "runtime_evidence": "UNRUN",
+      "test_execution": "UNRUN",
+      "owner": "Host/Knowledge",
+      "safety_boundary": "Host_only_personal_data",
+      "notes": "Streaming official export ZIP normalization to injected Host evidence sink; ingestion and erasure acceptance not demonstrated.",
+      "evidence_refs": [
+        "https://github.com/owenservera/vivim-labs/blob/022608f5797e7b4a14ccc4c393bd3c5a4704a4be/personal-knowledge-lifecycle/runtime/src/chatgpt-import.mjs",
+        "https://github.com/owenservera/ARBOR/blob/f9823a5131e73e7562db5a4ec14e1ec481557d69/apps/vivim-host/corpus/intake/host-intake.mjs"
+      ]
+    },
+    {
+      "capability_id": "labs.personal-knowledge-host-wiring",
+      "area": "personal-knowledge",
+      "source": {
+        "repo": "owenservera/vivim-labs",
+        "commitSha": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be",
+        "path": "personal-knowledge-lifecycle/runtime/src/host-archive-wiring.mjs",
+        "blobSha": "e8ddbb17a83fbc398d1b651e121237bd1dcd3ef9"
+      },
+      "target": {
+        "repo": "owenservera/ARBOR",
+        "sha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+        "evidence": [
+          {
+            "path": "apps/vivim-host/corpus/intake/host-intake.mjs",
+            "blobSha": "1db63cf3b0cc2dca09590a203b93fc895d4c936c"
+          },
+          {
+            "path": "native/hqkg/src/lib.rs",
+            "blobSha": "2f4eddd34e64a53430df97ada0e2bd3960592935"
+          }
+        ]
+      },
+      "source_status": "RESEARCH_IMPLEMENTED",
+      "installed_in_arbor": "NOT_DEMONSTRATED",
+      "wiring": "UNVERIFIED",
+      "runtime_evidence": "UNRUN",
+      "test_execution": "UNRUN",
+      "owner": "Host/Knowledge",
+      "safety_boundary": "Host_only_personal_data",
+      "notes": "Injected ledger port adapter, not proof live Host route, consent/checkpoint or native graph cutover.",
+      "evidence_refs": [
+        "https://github.com/owenservera/vivim-labs/blob/022608f5797e7b4a14ccc4c393bd3c5a4704a4be/personal-knowledge-lifecycle/runtime/src/host-archive-wiring.mjs",
+        "https://github.com/owenservera/ARBOR/blob/f9823a5131e73e7562db5a4ec14e1ec481557d69/apps/vivim-host/corpus/intake/host-intake.mjs",
+        "https://github.com/owenservera/ARBOR/blob/f9823a5131e73e7562db5a4ec14e1ec481557d69/native/hqkg/src/lib.rs"
+      ]
+    },
+    {
+      "capability_id": "labs.chronos-supervisor-projection",
+      "area": "temporal",
+      "source": {
+        "repo": "owenservera/vivim-labs",
+        "commitSha": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be",
+        "path": "chronos-toolkit/wave2/repos-hq/hq/lib/chronos/supervisor-timeline.mjs",
+        "blobSha": "d24b645939467a0d00e0dff088da87890f5310c2"
+      },
+      "target": {
+        "repo": "owenservera/ARBOR",
+        "sha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+        "evidence": [
+          {
+            "path": "apps/vivim-host/bootstrap/worker-supervisor.mjs",
+            "blobSha": "86a4bf8598d8c51db490daa60f504877e2d39e47"
+          },
+          {
+            "path": "contracts/chronos/staged-contract.v1.json",
+            "blobSha": "a74a612458e1854a95bc8331e6ed14747fec2742"
+          }
+        ]
+      },
+      "source_status": "RESEARCH_IMPLEMENTED",
+      "installed_in_arbor": "NOT_DEMONSTRATED",
+      "wiring": "UNVERIFIED",
+      "runtime_evidence": "UNRUN",
+      "test_execution": "UNRUN",
+      "owner": "Host/HQ",
+      "safety_boundary": "read_only_projection",
+      "notes": "Pure read-only projection over original HQ supervisor events; references missing supervisor recovery module.",
+      "evidence_refs": [
+        "https://github.com/owenservera/vivim-labs/blob/022608f5797e7b4a14ccc4c393bd3c5a4704a4be/chronos-toolkit/wave2/repos-hq/hq/lib/chronos/supervisor-timeline.mjs",
+        "https://github.com/owenservera/ARBOR/blob/f9823a5131e73e7562db5a4ec14e1ec481557d69/apps/vivim-host/bootstrap/worker-supervisor.mjs",
+        "https://github.com/owenservera/ARBOR/blob/f9823a5131e73e7562db5a4ec14e1ec481557d69/contracts/chronos/staged-contract.v1.json"
+      ]
+    },
+    {
+      "capability_id": "labs.r005.compiler",
+      "area": "semantic-ui",
+      "source": {
+        "repo": "owenservera/vivim-labs",
+        "commitSha": "67e76c5b730dcc2cd3ab3919c3ba273a6c260db8",
+        "path": "nlp-command-ui-lab/src/compiler.mjs",
+        "blobSha": "5df077d5f0d5873fbd3eb0a99afbcc5ed7f9031a"
+      },
+      "target": {
+        "repo": "owenservera/ARBOR",
+        "sha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+        "evidence": [
+          {
+            "path": "packages/tierflow/src/visual-runtime/command/ir.ts",
+            "blobSha": "a6e581476af9d5b091b1939591ad5d5ba8a32a45"
+          },
+          {
+            "path": "packages/tierflow/src/visual-runtime/command/compile.ts",
+            "blobSha": "4cc5b63bea409171e2b4b0a29398c87907cd35ea"
+          },
+          {
+            "path": "apps/vivim-host/control/dispatcher.mjs",
+            "blobSha": "723865482b8a0f98ab3214b2ec6a83aaea629c43"
+          }
+        ]
+      },
+      "source_status": "RESEARCH_IMPLEMENTED",
+      "installed_in_arbor": "NOT_DEMONSTRATED",
+      "wiring": "UNVERIFIED",
+      "runtime_evidence": "UNRUN",
+      "test_execution": "UNRUN",
+      "owner": "TierFlow/Host",
+      "safety_boundary": "read_only_projection",
+      "notes": "R005 visualCompile is executable source in Labs; product mounting and Host acceptance not demonstrated.",
+      "evidence_refs": [
+        "https://github.com/owenservera/vivim-labs/blob/67e76c5b730dcc2cd3ab3919c3ba273a6c260db8/nlp-command-ui-lab/src/compiler.mjs",
+        "https://github.com/owenservera/ARBOR/blob/f9823a5131e73e7562db5a4ec14e1ec481557d69/packages/tierflow/src/visual-runtime/command/ir.ts",
+        "https://github.com/owenservera/ARBOR/blob/f9823a5131e73e7562db5a4ec14e1ec481557d69/packages/tierflow/src/visual-runtime/command/compile.ts",
+        "https://github.com/owenservera/ARBOR/blob/f9823a5131e73e7562db5a4ec14e1ec481557d69/apps/vivim-host/control/dispatcher.mjs"
+      ]
+    },
+    {
+      "capability_id": "labs.r005.semantic-lens",
+      "area": "semantic-ui",
+      "source": {
+        "repo": "owenservera/vivim-labs",
+        "commitSha": "67e76c5b730dcc2cd3ab3919c3ba273a6c260db8",
+        "path": "nlp-command-ui-lab/src/semantic-lens.mjs",
+        "blobSha": "d5de11edf693eb67ffed23e1fd26e68240d4420c"
+      },
+      "target": {
+        "repo": "owenservera/ARBOR",
+        "sha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+        "evidence": [
+          {
+            "path": "packages/tierflow/src/visual-runtime/command/ir.ts",
+            "blobSha": "a6e581476af9d5b091b1939591ad5d5ba8a32a45"
+          },
+          {
+            "path": "packages/tierflow/src/visual-runtime/command/compile.ts",
+            "blobSha": "4cc5b63bea409171e2b4b0a29398c87907cd35ea"
+          }
+        ]
+      },
+      "source_status": "RESEARCH_IMPLEMENTED",
+      "installed_in_arbor": "NOT_DEMONSTRATED",
+      "wiring": "UNVERIFIED",
+      "runtime_evidence": "UNRUN",
+      "test_execution": "UNRUN",
+      "owner": "TierFlow/HQ",
+      "safety_boundary": "read_only_projection",
+      "notes": "Pure zero-effect semantic rendering including density and meaningDelta; only Host establishes operational intent.",
+      "evidence_refs": [
+        "https://github.com/owenservera/vivim-labs/blob/67e76c5b730dcc2cd3ab3919c3ba273a6c260db8/nlp-command-ui-lab/src/semantic-lens.mjs",
+        "https://github.com/owenservera/ARBOR/blob/f9823a5131e73e7562db5a4ec14e1ec481557d69/packages/tierflow/src/visual-runtime/command/ir.ts",
+        "https://github.com/owenservera/ARBOR/blob/f9823a5131e73e7562db5a4ec14e1ec481557d69/packages/tierflow/src/visual-runtime/command/compile.ts"
+      ]
+    },
+    {
+      "capability_id": "labs.r005.bridge",
+      "area": "semantic-ui",
+      "source": {
+        "repo": "owenservera/vivim-labs",
+        "commitSha": "67e76c5b730dcc2cd3ab3919c3ba273a6c260db8",
+        "path": "nlp-command-ui-lab/src/bridge.mjs",
+        "blobSha": "2daeb4edac5c0122ac2752771d214f6ddd23be09"
+      },
+      "target": {
+        "repo": "owenservera/ARBOR",
+        "sha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+        "evidence": [
+          {
+            "path": "apps/vivim-host/control/dispatcher.mjs",
+            "blobSha": "723865482b8a0f98ab3214b2ec6a83aaea629c43"
+          }
+        ]
+      },
+      "source_status": "RESEARCH_IMPLEMENTED",
+      "installed_in_arbor": "NOT_DEMONSTRATED",
+      "wiring": "UNVERIFIED",
+      "runtime_evidence": "UNRUN",
+      "test_execution": "UNRUN",
+      "owner": "Host/TierFlow",
+      "safety_boundary": "read_only_projection",
+      "notes": "Read-only fixture/source bridge; not a Host approval grant or production route.",
+      "evidence_refs": [
+        "https://github.com/owenservera/vivim-labs/blob/67e76c5b730dcc2cd3ab3919c3ba273a6c260db8/nlp-command-ui-lab/src/bridge.mjs",
+        "https://github.com/owenservera/ARBOR/blob/f9823a5131e73e7562db5a4ec14e1ec481557d69/apps/vivim-host/control/dispatcher.mjs"
+      ]
+    },
+    {
+      "capability_id": "labs.r005.playground-ui",
+      "area": "semantic-ui",
+      "source": {
+        "repo": "owenservera/vivim-labs",
+        "commitSha": "67e76c5b730dcc2cd3ab3919c3ba273a6c260db8",
+        "path": "nlp-command-ui-lab/public/app.js",
+        "blobSha": "507c6e8204a1698cbd8e96e7ed4e12b305275dba"
+      },
+      "target": {
+        "repo": "owenservera/ARBOR",
+        "sha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+        "evidence": [
+          {
+            "path": "packages/tierflow/src/visual-runtime/command/compile.ts",
+            "blobSha": "4cc5b63bea409171e2b4b0a29398c87907cd35ea"
+          }
+        ]
+      },
+      "source_status": "RESEARCH_IMPLEMENTED",
+      "installed_in_arbor": "NOT_DEMONSTRATED",
+      "wiring": "UNVERIFIED",
+      "runtime_evidence": "UNRUN",
+      "test_execution": "UNRUN",
+      "owner": "TierFlow",
+      "safety_boundary": "read_only_projection",
+      "notes": "Labs playground UI, not VIVIM app installation.",
+      "evidence_refs": [
+        "https://github.com/owenservera/vivim-labs/blob/67e76c5b730dcc2cd3ab3919c3ba273a6c260db8/nlp-command-ui-lab/public/app.js",
+        "https://github.com/owenservera/ARBOR/blob/f9823a5131e73e7562db5a4ec14e1ec481557d69/packages/tierflow/src/visual-runtime/command/compile.ts"
+      ]
+    },
+    {
+      "capability_id": "labs.r006.prediction",
+      "area": "prediction",
+      "source": {
+        "repo": "owenservera/vivim-labs",
+        "commitSha": "67e76c5b730dcc2cd3ab3919c3ba273a6c260db8",
+        "path": "nlp-command-ui-lab/docs/R006-100-PREDICTIVE-REALTIME-COMPOSER-CAPABILITIES.md",
+        "blobSha": "a8300777bc4676f83eef789fe07984e3302e49f6"
+      },
+      "target": {
+        "repo": "owenservera/ARBOR",
+        "sha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+        "evidence": [
+          {
+            "path": "packages/tierflow/src/visual-runtime/command/ir.ts",
+            "blobSha": "a6e581476af9d5b091b1939591ad5d5ba8a32a45"
+          }
+        ]
+      },
+      "source_status": "DESIGN_ONLY",
+      "installed_in_arbor": "NOT_DEMONSTRATED",
+      "wiring": "UNVERIFIED",
+      "runtime_evidence": "UNRUN",
+      "test_execution": "UNRUN",
+      "owner": "Host/TierFlow",
+      "safety_boundary": "read_only_projection",
+      "notes": "100 predicted composer capabilities, architecture proposals; no full implementation proof.",
+      "evidence_refs": [
+        "https://github.com/owenservera/vivim-labs/blob/67e76c5b730dcc2cd3ab3919c3ba273a6c260db8/nlp-command-ui-lab/docs/R006-100-PREDICTIVE-REALTIME-COMPOSER-CAPABILITIES.md",
+        "https://github.com/owenservera/ARBOR/blob/f9823a5131e73e7562db5a4ec14e1ec481557d69/packages/tierflow/src/visual-runtime/command/ir.ts"
+      ]
+    },
+    {
+      "capability_id": "labs.r007.view-all",
+      "area": "interpretation",
+      "source": {
+        "repo": "owenservera/vivim-labs",
+        "commitSha": "67e76c5b730dcc2cd3ab3919c3ba273a6c260db8",
+        "path": "nlp-command-ui-lab/docs/R007-TOTAL-INTERPRETATION-VIEW-ALL-AND-HQ-HANDOFF.md",
+        "blobSha": "cba4d05b853ae4de0cc69a0caee6fb7692fe867e"
+      },
+      "target": {
+        "repo": "owenservera/ARBOR",
+        "sha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+        "evidence": [
+          {
+            "path": "packages/tierflow/src/visual-runtime/command/ir.ts",
+            "blobSha": "a6e581476af9d5b091b1939591ad5d5ba8a32a45"
+          }
+        ]
+      },
+      "source_status": "DESIGN_ONLY",
+      "installed_in_arbor": "NOT_DEMONSTRATED",
+      "wiring": "UNVERIFIED",
+      "runtime_evidence": "UNRUN",
+      "test_execution": "UNRUN",
+      "owner": "HQ/TierFlow",
+      "safety_boundary": "read_only_projection",
+      "notes": "VIEW ALL product owner vision; no accepted UI wiring.",
+      "evidence_refs": [
+        "https://github.com/owenservera/vivim-labs/blob/67e76c5b730dcc2cd3ab3919c3ba273a6c260db8/nlp-command-ui-lab/docs/R007-TOTAL-INTERPRETATION-VIEW-ALL-AND-HQ-HANDOFF.md",
+        "https://github.com/owenservera/ARBOR/blob/f9823a5131e73e7562db5a4ec14e1ec481557d69/packages/tierflow/src/visual-runtime/command/ir.ts"
+      ]
+    },
+    {
+      "capability_id": "labs.r008.autowiki",
+      "area": "knowledge-ui",
+      "source": {
+        "repo": "owenservera/vivim-labs",
+        "commitSha": "67e76c5b730dcc2cd3ab3919c3ba273a6c260db8",
+        "path": "nlp-command-ui-lab/docs/R008-AUTOWIKI-SCREEN-STATE-MIRROR-VISION.md",
+        "blobSha": "a819245e0c13b4cf7838129340ca5e04c34f5853"
+      },
+      "target": {
+        "repo": "owenservera/ARBOR",
+        "sha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+        "evidence": [
+          {
+            "path": "hq/lib/wiki.mjs",
+            "blobSha": "c85c8fbe1409273928ea5c52bc2c20f108ac4dce"
+          }
+        ]
+      },
+      "source_status": "DESIGN_ONLY",
+      "installed_in_arbor": "NOT_DEMONSTRATED",
+      "wiring": "UNVERIFIED",
+      "runtime_evidence": "UNRUN",
+      "test_execution": "UNRUN",
+      "owner": "HQ/Host/TierFlow",
+      "safety_boundary": "read_only_projection",
+      "notes": "Per-screen AutoWiki design; separate HQ research proof has schemas/fixtures only.",
+      "evidence_refs": [
+        "https://github.com/owenservera/vivim-labs/blob/67e76c5b730dcc2cd3ab3919c3ba273a6c260db8/nlp-command-ui-lab/docs/R008-AUTOWIKI-SCREEN-STATE-MIRROR-VISION.md",
+        "https://github.com/owenservera/ARBOR/blob/f9823a5131e73e7562db5a4ec14e1ec481557d69/hq/lib/wiki.mjs"
+      ]
+    },
+    {
+      "capability_id": "labs.r009.rock-core",
+      "area": "storage",
+      "source": {
+        "repo": "owenservera/vivim-labs",
+        "commitSha": "67e76c5b730dcc2cd3ab3919c3ba273a6c260db8",
+        "path": "nlp-command-ui-lab/docs/R009-ROCK-CORE-STORAGE-BOUNDED-INTELLIGENCE.md",
+        "blobSha": "1c82e411503967364bfdaf25bd702733bf6f2cdc"
+      },
+      "target": {
+        "repo": "owenservera/ARBOR",
+        "sha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+        "evidence": []
+      },
+      "source_status": "DESIGN_ONLY",
+      "installed_in_arbor": "NOT_DEMONSTRATED",
+      "wiring": "UNVERIFIED",
+      "runtime_evidence": "UNRUN",
+      "test_execution": "UNRUN",
+      "owner": "Host/HQ/Rust",
+      "safety_boundary": "read_only_projection",
+      "notes": "Product vision not installed; protect original data, low-disk and ENOSPC safety.",
+      "evidence_refs": [
+        "https://github.com/owenservera/vivim-labs/blob/67e76c5b730dcc2cd3ab3919c3ba273a6c260db8/nlp-command-ui-lab/docs/R009-ROCK-CORE-STORAGE-BOUNDED-INTELLIGENCE.md"
+      ]
+    },
+    {
+      "capability_id": "labs.r010.semantic-wiki",
+      "area": "compiler",
+      "source": {
+        "repo": "owenservera/vivim-labs",
+        "commitSha": "67e76c5b730dcc2cd3ab3919c3ba273a6c260db8",
+        "path": "nlp-command-ui-lab/docs/R010-SEMANTIC-WIKI-COMPILER-VISION.md",
+        "blobSha": "1affe8871bce006342a07fa0ede9446733577b88"
+      },
+      "target": {
+        "repo": "owenservera/ARBOR",
+        "sha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+        "evidence": [
+          {
+            "path": "hq/lib/annotation-v2.mjs",
+            "blobSha": "7e94dfbd4fbca8ef0fdb9e0610053364ce2c38c8"
+          },
+          {
+            "path": "hq/lib/wiki.mjs",
+            "blobSha": "c85c8fbe1409273928ea5c52bc2c20f108ac4dce"
+          }
+        ]
+      },
+      "source_status": "DESIGN_ONLY",
+      "installed_in_arbor": "NOT_DEMONSTRATED",
+      "wiring": "UNVERIFIED",
+      "runtime_evidence": "UNRUN",
+      "test_execution": "UNRUN",
+      "owner": "HQ",
+      "safety_boundary": "read_only_projection",
+      "notes": "Design backed by research executable compiler; not installed.",
+      "evidence_refs": [
+        "https://github.com/owenservera/vivim-labs/blob/67e76c5b730dcc2cd3ab3919c3ba273a6c260db8/nlp-command-ui-lab/docs/R010-SEMANTIC-WIKI-COMPILER-VISION.md",
+        "https://github.com/owenservera/ARBOR/blob/f9823a5131e73e7562db5a4ec14e1ec481557d69/hq/lib/annotation-v2.mjs",
+        "https://github.com/owenservera/ARBOR/blob/f9823a5131e73e7562db5a4ec14e1ec481557d69/hq/lib/wiki.mjs"
+      ]
+    },
+    {
+      "capability_id": "hq.research.swc-compiler",
+      "area": "compiler",
+      "source": {
+        "repo": "owenservera/repos-hq",
+        "commitSha": "7cb2fadd88c5a08c0ec7e084410e150a5b6e0f3d",
+        "path": "research/semantic-wiki-compiler/semantic-wiki-compiler.mjs",
+        "blobSha": "83c2eab7921c84dd55f0503518e7fc7e4a466657"
+      },
+      "target": {
+        "repo": "owenservera/ARBOR",
+        "sha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+        "evidence": [
+          {
+            "path": "hq/lib/annotation-v2.mjs",
+            "blobSha": "7e94dfbd4fbca8ef0fdb9e0610053364ce2c38c8"
+          },
+          {
+            "path": "hq/lib/wiki.mjs",
+            "blobSha": "c85c8fbe1409273928ea5c52bc2c20f108ac4dce"
+          }
+        ]
+      },
+      "source_status": "RESEARCH_IMPLEMENTED",
+      "installed_in_arbor": "NOT_DEMONSTRATED",
+      "wiring": "UNVERIFIED",
+      "runtime_evidence": "UNRUN",
+      "test_execution": "UNRUN",
+      "owner": "HQ",
+      "safety_boundary": "read_only_projection",
+      "notes": "Pure source-annotation to semantic IR compiler importing existing annotation-v2, not Host executor or product wiki writer.",
+      "evidence_refs": [
+        "https://github.com/owenservera/repos-hq/blob/7cb2fadd88c5a08c0ec7e084410e150a5b6e0f3d/research/semantic-wiki-compiler/semantic-wiki-compiler.mjs",
+        "https://github.com/owenservera/ARBOR/blob/f9823a5131e73e7562db5a4ec14e1ec481557d69/hq/lib/annotation-v2.mjs",
+        "https://github.com/owenservera/ARBOR/blob/f9823a5131e73e7562db5a4ec14e1ec481557d69/hq/lib/wiki.mjs"
+      ]
+    },
+    {
+      "capability_id": "hq.research.autowiki",
+      "area": "knowledge-ui",
+      "source": {
+        "repo": "owenservera/repos-hq",
+        "commitSha": "61507b5f9bafd0211d0a556280b367574e676ce1",
+        "path": "research/autowiki-screen-mirror/ARCHITECTURE-AW-001.md",
+        "blobSha": "b849f3beff9da8ac2ac17fac0856882dbfd075b9"
+      },
+      "target": {
+        "repo": "owenservera/ARBOR",
+        "sha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+        "evidence": [
+          {
+            "path": "hq/lib/wiki.mjs",
+            "blobSha": "c85c8fbe1409273928ea5c52bc2c20f108ac4dce"
+          }
+        ]
+      },
+      "source_status": "DESIGN_ONLY",
+      "installed_in_arbor": "NOT_DEMONSTRATED",
+      "wiring": "UNVERIFIED",
+      "runtime_evidence": "UNRUN",
+      "test_execution": "UNRUN",
+      "owner": "HQ/Host/TierFlow",
+      "safety_boundary": "read_only_projection",
+      "notes": "Read-only architecture, schema drafts, synthetic fixture. No production implementation.",
+      "evidence_refs": [
+        "https://github.com/owenservera/repos-hq/blob/61507b5f9bafd0211d0a556280b367574e676ce1/research/autowiki-screen-mirror/ARCHITECTURE-AW-001.md",
+        "https://github.com/owenservera/ARBOR/blob/f9823a5131e73e7562db5a4ec14e1ec481557d69/hq/lib/wiki.mjs"
+      ]
+    },
+    {
+      "capability_id": "hq.research.rock-budget",
+      "area": "storage",
+      "source": {
+        "repo": "owenservera/repos-hq",
+        "commitSha": "0a3c11a6df72434b46931f90b25bf1f93da09f92",
+        "path": "research/rock-core-storage/storage-policy.mjs",
+        "blobSha": "4606b90c2635564e74c712e19771c5d244576e3e"
+      },
+      "target": {
+        "repo": "owenservera/ARBOR",
+        "sha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+        "evidence": [
+          {
+            "path": "native/hqkg/src/lib.rs",
+            "blobSha": "2f4eddd34e64a53430df97ada0e2bd3960592935"
+          }
+        ]
+      },
+      "source_status": "RESEARCH_IMPLEMENTED",
+      "installed_in_arbor": "NOT_DEMONSTRATED",
+      "wiring": "UNVERIFIED",
+      "runtime_evidence": "UNRUN",
+      "test_execution": "UNRUN",
+      "owner": "Host/HQ/Rust",
+      "safety_boundary": "protect_originals_and_receipts",
+      "notes": "Pure bounded reconstructible-cache budget planner; not a disk mutation/eviction policy.",
+      "evidence_refs": [
+        "https://github.com/owenservera/repos-hq/blob/0a3c11a6df72434b46931f90b25bf1f93da09f92/research/rock-core-storage/storage-policy.mjs",
+        "https://github.com/owenservera/ARBOR/blob/f9823a5131e73e7562db5a4ec14e1ec481557d69/native/hqkg/src/lib.rs"
+      ]
+    },
+    {
+      "capability_id": "hq.research.rock-membership",
+      "area": "storage",
+      "source": {
+        "repo": "owenservera/repos-hq",
+        "commitSha": "0a3c11a6df72434b46931f90b25bf1f93da09f92",
+        "path": "research/rock-core-storage/rock-membership.mjs",
+        "blobSha": "9023bd026a311cadf9f9d6d024562166a3176a3c"
+      },
+      "target": {
+        "repo": "owenservera/ARBOR",
+        "sha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+        "evidence": [
+          {
+            "path": "native/hqkg/src/lib.rs",
+            "blobSha": "2f4eddd34e64a53430df97ada0e2bd3960592935"
+          }
+        ]
+      },
+      "source_status": "RESEARCH_IMPLEMENTED",
+      "installed_in_arbor": "NOT_DEMONSTRATED",
+      "wiring": "UNVERIFIED",
+      "runtime_evidence": "UNRUN",
+      "test_execution": "UNRUN",
+      "owner": "Host/HQ/Rust",
+      "safety_boundary": "protect_originals_and_receipts",
+      "notes": "Pure owner-scoped membership planning, not memory ownership or deletion.",
+      "evidence_refs": [
+        "https://github.com/owenservera/repos-hq/blob/0a3c11a6df72434b46931f90b25bf1f93da09f92/research/rock-core-storage/rock-membership.mjs",
+        "https://github.com/owenservera/ARBOR/blob/f9823a5131e73e7562db5a4ec14e1ec481557d69/native/hqkg/src/lib.rs"
+      ]
+    },
+    {
+      "capability_id": "hq.research.xray-audit",
+      "area": "interpretation",
+      "source": {
+        "repo": "owenservera/repos-hq",
+        "commitSha": "c80e45ff11b33aec785c2055e52420751ee8388d",
+        "path": "research/semantic-interpretation-surface/HQ-SURFACE-AND-GAP-AUDIT.md",
+        "blobSha": "2ea6cc555a979b375d13b0c861dbdf641b49d195"
+      },
+      "target": {
+        "repo": "owenservera/ARBOR",
+        "sha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+        "evidence": [
+          {
+            "path": "packages/tierflow/src/visual-runtime/command/compile.ts",
+            "blobSha": "4cc5b63bea409171e2b4b0a29398c87907cd35ea"
+          }
+        ]
+      },
+      "source_status": "DESIGN_AUDIT_ONLY",
+      "installed_in_arbor": "NOT_DEMONSTRATED",
+      "wiring": "UNVERIFIED",
+      "runtime_evidence": "UNRUN",
+      "test_execution": "UNRUN",
+      "owner": "HQ/TierFlow",
+      "safety_boundary": "read_only_projection",
+      "notes": "31 selected producers in evidence audit, not total runtime coverage or integrated X-ray display.",
+      "evidence_refs": [
+        "https://github.com/owenservera/repos-hq/blob/c80e45ff11b33aec785c2055e52420751ee8388d/research/semantic-interpretation-surface/HQ-SURFACE-AND-GAP-AUDIT.md",
+        "https://github.com/owenservera/ARBOR/blob/f9823a5131e73e7562db5a4ec14e1ec481557d69/packages/tierflow/src/visual-runtime/command/compile.ts"
+      ]
+    },
+    {
+      "capability_id": "hq.research.xray-census",
+      "area": "interpretation",
+      "source": {
+        "repo": "owenservera/repos-hq",
+        "commitSha": "c80e45ff11b33aec785c2055e52420751ee8388d",
+        "path": "research/semantic-interpretation-surface/source-census.v0.json",
+        "blobSha": "20d3deb3fcc78a225bb9c1d681c749ea2552314f"
+      },
+      "target": {
+        "repo": "owenservera/ARBOR",
+        "sha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+        "evidence": [
+          {
+            "path": "packages/tierflow/src/visual-runtime/command/compile.ts",
+            "blobSha": "4cc5b63bea409171e2b4b0a29398c87907cd35ea"
+          }
+        ]
+      },
+      "source_status": "FIXTURE_OR_AUDIT",
+      "installed_in_arbor": "NOT_DEMONSTRATED",
+      "wiring": "UNVERIFIED",
+      "runtime_evidence": "UNRUN",
+      "test_execution": "UNRUN",
+      "owner": "HQ/X",
+      "safety_boundary": "read_only_projection",
+      "notes": "Selected known source census; explicitly incomplete, not a runtime inventory.",
+      "evidence_refs": [
+        "https://github.com/owenservera/repos-hq/blob/c80e45ff11b33aec785c2055e52420751ee8388d/research/semantic-interpretation-surface/source-census.v0.json",
+        "https://github.com/owenservera/ARBOR/blob/f9823a5131e73e7562db5a4ec14e1ec481557d69/packages/tierflow/src/visual-runtime/command/compile.ts"
+      ]
+    },
+    {
+      "capability_id": "labs.node0-io-event-fabric",
+      "area": "native-io",
+      "source": {
+        "repo": "owenservera/vivim-labs",
+        "commitSha": "61d9fc15c55144c4f0b79afa248981c2b0ca9bd6",
+        "path": "user-io-rust-core/PARALLEL-EVENT-FABRIC-ARCHITECTURE.md",
+        "blobSha": "54d942eca63cd339adb8d7a959d3badf32afd0c1"
+      },
+      "target": {
+        "repo": "owenservera/ARBOR",
+        "sha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+        "evidence": [
+          {
+            "path": "native/hqkg/src/lib.rs",
+            "blobSha": "2f4eddd34e64a53430df97ada0e2bd3960592935"
+          },
+          {
+            "path": "apps/vivim-host/control/dispatcher.mjs",
+            "blobSha": "723865482b8a0f98ab3214b2ec6a83aaea629c43"
+          }
+        ]
+      },
+      "source_status": "DESIGN_ONLY",
+      "installed_in_arbor": "NOT_DEMONSTRATED",
+      "wiring": "UNVERIFIED",
+      "runtime_evidence": "UNRUN",
+      "test_execution": "UNRUN",
+      "owner": "Rust/Host",
+      "safety_boundary": "read_only_projection",
+      "notes": "Fan-out/convergence event fabric architecture only; not native cutover or accepted Rust ABI.",
+      "evidence_refs": [
+        "https://github.com/owenservera/vivim-labs/blob/61d9fc15c55144c4f0b79afa248981c2b0ca9bd6/user-io-rust-core/PARALLEL-EVENT-FABRIC-ARCHITECTURE.md",
+        "https://github.com/owenservera/ARBOR/blob/f9823a5131e73e7562db5a4ec14e1ec481557d69/native/hqkg/src/lib.rs",
+        "https://github.com/owenservera/ARBOR/blob/f9823a5131e73e7562db5a4ec14e1ec481557d69/apps/vivim-host/control/dispatcher.mjs"
+      ]
+    },
+    {
+      "capability_id": "arbor.tierflow.command-ir",
+      "area": "visual-ui",
+      "source": {
+        "repo": "owenservera/ARBOR",
+        "commitSha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+        "path": "packages/tierflow/src/visual-runtime/command/ir.ts",
+        "blobSha": "a6e581476af9d5b091b1939591ad5d5ba8a32a45"
+      },
+      "target": {
+        "repo": "owenservera/ARBOR",
+        "sha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+        "evidence": [
+          {
+            "path": "packages/tierflow/src/visual-runtime/command/ir.ts",
+            "blobSha": "a6e581476af9d5b091b1939591ad5d5ba8a32a45"
+          }
+        ]
+      },
+      "source_status": "TARGET_SOURCE_PRESENT",
+      "installed_in_arbor": "NOT_DEMONSTRATED",
+      "wiring": "UNVERIFIED",
+      "runtime_evidence": "UNRUN",
+      "test_execution": "UNRUN",
+      "owner": "TierFlow",
+      "safety_boundary": "read_only_projection",
+      "notes": "Existing fixture-only inert command IR, not approved effect/publisher or real app acceptance.",
+      "evidence_refs": [
+        "https://github.com/owenservera/ARBOR/blob/f9823a5131e73e7562db5a4ec14e1ec481557d69/packages/tierflow/src/visual-runtime/command/ir.ts",
+        "https://github.com/owenservera/ARBOR/blob/f9823a5131e73e7562db5a4ec14e1ec481557d69/packages/tierflow/src/visual-runtime/command/ir.ts"
+      ]
+    },
+    {
+      "capability_id": "arbor.chronos.staged-contract",
+      "area": "temporal",
+      "source": {
+        "repo": "owenservera/ARBOR",
+        "commitSha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+        "path": "contracts/chronos/staged-contract.v1.json",
+        "blobSha": "a74a612458e1854a95bc8331e6ed14747fec2742"
+      },
+      "target": {
+        "repo": "owenservera/ARBOR",
+        "sha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+        "evidence": [
+          {
+            "path": "contracts/chronos/staged-contract.v1.json",
+            "blobSha": "a74a612458e1854a95bc8331e6ed14747fec2742"
+          }
+        ]
+      },
+      "source_status": "STAGED_CONTRACT",
+      "installed_in_arbor": "NOT_DEMONSTRATED",
+      "wiring": "UNVERIFIED",
+      "runtime_evidence": "UNRUN",
+      "test_execution": "UNRUN",
+      "owner": "Host/Rust",
+      "safety_boundary": "read_only_projection",
+      "notes": "Chronos staged contract explicitly not activated.",
+      "evidence_refs": [
+        "https://github.com/owenservera/ARBOR/blob/f9823a5131e73e7562db5a4ec14e1ec481557d69/contracts/chronos/staged-contract.v1.json",
+        "https://github.com/owenservera/ARBOR/blob/f9823a5131e73e7562db5a4ec14e1ec481557d69/contracts/chronos/staged-contract.v1.json"
+      ]
+    }
+  ]
+}

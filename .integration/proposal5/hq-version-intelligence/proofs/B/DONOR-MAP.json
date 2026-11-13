@@ -1,0 +1,206 @@
+{
+  "schema": "arbor.hvi.b.donor-map/1",
+  "sourcePins": {
+    "repo": "owenservera/repos-hq",
+    "commit": "9b922ea049dbadc94e504b5b9432743995c020ca",
+    "target": "owenservera/ARBOR",
+    "workerBaseSha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+    "s0Commit": "2ef7a9f66419d681e040b459ba4762a63aa9564f"
+  },
+  "counts": {
+    "donor": 14,
+    "byteIdentical": 7,
+    "sourceAdapted": 2,
+    "intentionallyNotPorted": 5
+  },
+  "files": [
+    {
+      "originRepo": "owenservera/repos-hq",
+      "originCommit": "9b922ea049dbadc94e504b5b9432743995c020ca",
+      "originPath": "hq/catalogue-identity/EXPORT-CONTRACT.md",
+      "originBlob": "2155ea7da524930458d2afb5df2ad999c32635c8",
+      "targetRepo": "owenservera/ARBOR",
+      "targetBaseSha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+      "targetPath": "hq/catalogue-identity/EXPORT-CONTRACT.md",
+      "targetBlob": "2155ea7da524930458d2afb5df2ad999c32635c8",
+      "status": "EXACT_BLOB",
+      "decision": "versioned C4 contract preserved"
+    },
+    {
+      "originRepo": "owenservera/repos-hq",
+      "originCommit": "9b922ea049dbadc94e504b5b9432743995c020ca",
+      "originPath": "hq/catalogue-identity/HANDOFF.md",
+      "originBlob": "a1478563ccecdf60b30bc34f2eed8b6d18a5a653",
+      "targetRepo": "owenservera/ARBOR",
+      "targetBaseSha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+      "targetPath": null,
+      "targetBlob": null,
+      "status": "INTENTIONALLY_EXCLUDED",
+      "decision": "historical donor lane handoff, not HVI integration acceptance"
+    },
+    {
+      "originRepo": "owenservera/repos-hq",
+      "originCommit": "9b922ea049dbadc94e504b5b9432743995c020ca",
+      "originPath": "hq/catalogue-identity/README.md",
+      "originBlob": "a74b4af575f44800ccc187c2fb7d53b0f199c4fe",
+      "targetRepo": "owenservera/ARBOR",
+      "targetBaseSha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+      "targetPath": "hq/catalogue-identity/README.md",
+      "targetBlob": "02a84fc3afa38b7cadf219e6d59a6ddfeda25806",
+      "status": "SOURCE_ADAPTED",
+      "decision": "replaced donor-root instructions with ARBOR-only source/authority constraints"
+    },
+    {
+      "originRepo": "owenservera/repos-hq",
+      "originCommit": "9b922ea049dbadc94e504b5b9432743995c020ca",
+      "originPath": "hq/catalogue-identity/cli.mjs",
+      "originBlob": "79354c1cb1145a940d4cb1adb3556dde3153c574",
+      "targetRepo": "owenservera/ARBOR",
+      "targetBaseSha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+      "targetPath": "hq/catalogue-identity/cli.mjs",
+      "targetBlob": "79354c1cb1145a940d4cb1adb3556dde3153c574",
+      "status": "EXACT_BLOB",
+      "decision": "operator-only offline CLI, not product mounted"
+    },
+    {
+      "originRepo": "owenservera/repos-hq",
+      "originCommit": "9b922ea049dbadc94e504b5b9432743995c020ca",
+      "originPath": "hq/catalogue-identity/crosswalk.mjs",
+      "originBlob": "ed4cb6f561e055e1dd3145b61de6f50f2555687d",
+      "targetRepo": "owenservera/ARBOR",
+      "targetBaseSha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+      "targetPath": "hq/catalogue-identity/crosswalk.mjs",
+      "targetBlob": "ed4cb6f561e055e1dd3145b61de6f50f2555687d",
+      "status": "EXACT_BLOB",
+      "decision": "pure source identity and orphan projection"
+    },
+    {
+      "originRepo": "owenservera/repos-hq",
+      "originCommit": "9b922ea049dbadc94e504b5b9432743995c020ca",
+      "originPath": "hq/catalogue-identity/evidence/cli-smoke.json",
+      "originBlob": "fdea8251ffc8308ac92c44684819bf1a275c80c9",
+      "targetRepo": "owenservera/ARBOR",
+      "targetBaseSha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+      "targetPath": null,
+      "targetBlob": null,
+      "status": "INTENTIONALLY_EXCLUDED",
+      "decision": "historical donor smoke result, not HVI executed proof"
+    },
+    {
+      "originRepo": "owenservera/repos-hq",
+      "originCommit": "9b922ea049dbadc94e504b5b9432743995c020ca",
+      "originPath": "hq/catalogue-identity/evidence/node-test.tap",
+      "originBlob": "3f3f2259ef73d8dd556a4f1738e06caa08ccd8f7",
+      "targetRepo": "owenservera/ARBOR",
+      "targetBaseSha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+      "targetPath": null,
+      "targetBlob": null,
+      "status": "INTENTIONALLY_EXCLUDED",
+      "decision": "historical donor test TAP, not HVI executed proof"
+    },
+    {
+      "originRepo": "owenservera/repos-hq",
+      "originCommit": "9b922ea049dbadc94e504b5b9432743995c020ca",
+      "originPath": "hq/catalogue-identity/evidence/performance.jsonl",
+      "originBlob": "b41cebcb7ab9c2a6f60f701f177ee0ac95815e11",
+      "targetRepo": "owenservera/ARBOR",
+      "targetBaseSha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+      "targetPath": null,
+      "targetBlob": null,
+      "status": "INTENTIONALLY_EXCLUDED",
+      "decision": "historical benchmark, must rerun on ARBOR"
+    },
+    {
+      "originRepo": "owenservera/repos-hq",
+      "originCommit": "9b922ea049dbadc94e504b5b9432743995c020ca",
+      "originPath": "hq/catalogue-identity/evidence/source-census.json",
+      "originBlob": "7cc108371e529056ac53e257cda482edc8197a64",
+      "targetRepo": "owenservera/ARBOR",
+      "targetBaseSha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+      "targetPath": null,
+      "targetBlob": null,
+      "status": "INTENTIONALLY_EXCLUDED",
+      "decision": "old catalogue census not authoritative for HVI pinned five-repo scan"
+    },
+    {
+      "originRepo": "owenservera/repos-hq",
+      "originCommit": "9b922ea049dbadc94e504b5b9432743995c020ca",
+      "originPath": "hq/catalogue-identity/labs-adapter.mjs",
+      "originBlob": "f3c026aad3726e0e1bdd52e96d1a4152699c43f0",
+      "targetRepo": "owenservera/ARBOR",
+      "targetBaseSha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+      "targetPath": "hq/catalogue-identity/labs-adapter.mjs",
+      "targetBlob": "f3c026aad3726e0e1bdd52e96d1a4152699c43f0",
+      "status": "EXACT_BLOB",
+      "decision": "Labs observer claims, no runtime inference"
+    },
+    {
+      "originRepo": "owenservera/repos-hq",
+      "originCommit": "9b922ea049dbadc94e504b5b9432743995c020ca",
+      "originPath": "hq/catalogue-identity/observer-export.mjs",
+      "originBlob": "f41febb33ba610259c03c85b4f772d9162b4bebf",
+      "targetRepo": "owenservera/ARBOR",
+      "targetBaseSha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+      "targetPath": "hq/catalogue-identity/observer-export.mjs",
+      "targetBlob": "cb19ca145d273e7ea3b3fb6aa58cfd79a0685e83",
+      "status": "SOURCE_ADAPTED",
+      "decision": "digest validation and typed explicit source allowlist hardening"
+    },
+    {
+      "originRepo": "owenservera/repos-hq",
+      "originCommit": "9b922ea049dbadc94e504b5b9432743995c020ca",
+      "originPath": "hq/catalogue-identity/source-adapters.mjs",
+      "originBlob": "0100d7ce7ff5cd6b4dbc366ab93a74a1a33e4fed",
+      "targetRepo": "owenservera/ARBOR",
+      "targetBaseSha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+      "targetPath": "hq/catalogue-identity/source-adapters.mjs",
+      "targetBlob": "0100d7ce7ff5cd6b4dbc366ab93a74a1a33e4fed",
+      "status": "EXACT_BLOB",
+      "decision": "pure legacy catalogue source adapters"
+    },
+    {
+      "originRepo": "owenservera/repos-hq",
+      "originCommit": "9b922ea049dbadc94e504b5b9432743995c020ca",
+      "originPath": "hq/catalogue-identity/test/benchmark.mjs",
+      "originBlob": "574949aeaf7e98bcca2b890c00378030830f1097",
+      "targetRepo": "owenservera/ARBOR",
+      "targetBaseSha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+      "targetPath": "hq/catalogue-identity/test/benchmark.mjs",
+      "targetBlob": "574949aeaf7e98bcca2b890c00378030830f1097",
+      "status": "EXACT_BLOB",
+      "decision": "10k record benchmark source, unrun"
+    },
+    {
+      "originRepo": "owenservera/repos-hq",
+      "originCommit": "9b922ea049dbadc94e504b5b9432743995c020ca",
+      "originPath": "hq/catalogue-identity/test/crosswalk.test.mjs",
+      "originBlob": "3da1b5f7f14affb1f206213453832bf5fe2f8844",
+      "targetRepo": "owenservera/ARBOR",
+      "targetBaseSha": "f9823a5131e73e7562db5a4ec14e1ec481557d69",
+      "targetPath": "hq/catalogue-identity/test/crosswalk.test.mjs",
+      "targetBlob": "3da1b5f7f14affb1f206213453832bf5fe2f8844",
+      "status": "EXACT_BLOB",
+      "decision": "original C4 negative/replay/observer tests, unrun"
+    }
+  ],
+  "addedHviFiles": [
+    {
+      "path": "hq/version-intelligence/identity/index.mjs",
+      "kind": "pure_revision_identity"
+    },
+    {
+      "path": "hq/version-intelligence/identity/legacy-adapters.mjs",
+      "kind": "versioned_schema_shims"
+    },
+    {
+      "path": "hq/version-intelligence/identity/test/identity.test.mjs",
+      "kind": "synthetic_adversarial_tests"
+    }
+  ],
+  "limitations": [
+    "GitHub object equality, not runtime acceptance",
+    "Original donor tests and benchmark source present but UNRUN",
+    "Historical donor evidence deliberately not attributed to HVI",
+    "No Host grant or graph writer added"
+  ]
+}

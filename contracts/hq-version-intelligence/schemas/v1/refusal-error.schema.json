@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.arbor.local/hvi/v1/refusal-error.schema.json",
+  "title": "ARBOR HVI refusal-error v1",
+  "description": "Source-only normative wire contract; no runtime authority inferred.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "code",
+    "message",
+    "owner",
+    "retryable",
+    "scope",
+    "evidenceRefs"
+  ],
+  "properties": {
+    "schema": {
+      "const": "arbor.hvi.refusal-error/1"
+    },
+    "code": {
+      "enum": [
+        "PIN_NOT_FOUND",
+        "SOURCE_UNAUTHORIZED",
+        "PIN_MOVED",
+        "SCOPE_ESCAPE",
+        "INCOMPLETE_SCAN",
+        "DIGEST_CONFLICT",
+        "ID_CONFLICT",
+        "EQUIVALENCE_UNPROVEN",
+        "RESOURCE_LIMIT"
+      ]
+    },
+    "message": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024
+    },
+    "owner": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024
+    },
+    "retryable": {
+      "type": "boolean"
+    },
+    "scope": {
+      "const": "development"
+    },
+    "evidenceRefs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 1024
+      }
+    }
+  }
+}
