@@ -197,3 +197,23 @@ test('PWA-first pairing keeps one-use QR in browser and exposes approval/revocat
   assert.match(html, /id="pair-check"/);
   assert.match(html, /id="pair-legacy"/);
 });
+
+test('Build VEC modules are served through the PWA shell and Direct Host', () => {
+  const direct = source('../direct-phone.mjs');
+  const sw = source('../../mobile-relay/sw.js');
+  const composer = source('../../mobile-relay/build-composer.mjs');
+  const canvas = source('../../mobile-relay/build-canvas.mjs');
+  const html = source('../../mobile-relay/index.html');
+  const manifest = JSON.parse(source('../../mobile-relay/manifest.webmanifest'));
+  for (const module of ['vec/compiler.mjs', 'vec/ui-adapter.mjs',
+    'vec/ui-taxonomy/catalog.mjs', 'vec/ui-taxonomy/registry.mjs']) {
+    assert.ok(direct.includes("'" + module + "':"), module + ' in Direct allowlist');
+    assert.ok(sw.includes("'" + module + "'"), module + ' in shell cache');
+  }
+  assert.match(composer, /resolveBuildRequest/);
+  assert.match(canvas, /local\.outcome === 'candidate'/);
+  assert.match(html, /rel="manifest" href="manifest.webmanifest"/);
+  assert.equal(manifest.start_url, './');
+  assert.equal(manifest.scope, './');
+  assert.equal(manifest.icons[0].src, './icon.svg');
+});

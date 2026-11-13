@@ -15,13 +15,13 @@
 
 - **PWA-05 · Phone pairing and reconnect UX** — source_implemented_tests_unrun. trusted HTTPS, browser P-256 key, approvals, revoke, lost-key, reconnect; no APK requirement.
 - **PWA-06 · Universal text command preview in PWA** — queued. plan, permission, approve/deny and receipt through one Host executor; no silent send.
-- **PWA-07 · Build canvas visual proposal and activation** — queued. preview and safe activate/undo against Host revision; stale edits rejected.
-- **PWA-08 · VEC deterministic UI edits and compiler contract** — queued. known text edits compile locally and safely; unsupported requests use existing optional model flow; tests run.
+- **PWA-07 · Build canvas visual proposal and activation** — existing_paired_flow_and_readonly_desktop_tests_unrun. preview and safe activate/undo against Host revision; stale edits rejected.
+- **PWA-08 · VEC deterministic UI edits and compiler contract** — source_implemented_tests_unrun. known text edits compile locally and safely; unsupported requests use existing optional model flow; tests run.
 - **PWA-09 · Mobile media library and playback entry** — queued. authorized library cards and streamed playback with range/cache/abort proofs.
 
 ## ERA 3 — Polish and ship
 
-- **PWA-10 · Offline shell, drafts and installability** — queued. offline read-only shell, clear stale state, no API caching/replayed mutations, valid PWA icons.
+- **PWA-10 · Offline shell, drafts and installability** — manifest_and_offline_shell_source_updated_tests_unrun. offline read-only shell, clear stale state, no API caching/replayed mutations, valid PWA icons.
 - **PWA-11 · Adaptive UI, accessibility and one-thumb polish** — queued. Android Chrome, keyboard, safe areas, reduced motion, screen reader; device validation.
 - **PWA-12 · Windows+paired Android operational acceptance** — queued. Node24/Bun/Cargo plus real Windows+Android Tailscale pairing, grants, restarts and offline; no external donor runtimes.
 

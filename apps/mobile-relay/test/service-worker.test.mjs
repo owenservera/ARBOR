@@ -55,6 +55,10 @@ const SHELL_FILES = [
   'nlcl/symbols.mjs',
   'nlcl/text.mjs',
   'nlcl/types.mjs',
+  'vec/compiler.mjs',
+  'vec/ui-adapter.mjs',
+  'vec/ui-taxonomy/catalog.mjs',
+  'vec/ui-taxonomy/registry.mjs',
   'build-canvas.mjs',
   'welcome.mjs',
   'pairing-link.mjs',
@@ -195,7 +199,7 @@ test('install precaches every shell asset from the network with cache reload', a
   const keys = new Set(await cache.keys());
   const expected = expectedKeys(ROOT);
   assert.equal(SHELL_FILES.length, expected.size, 'shell list has no duplicate entries');
-  assert.equal(SHELL_FILES.length, 45);
+  assert.equal(SHELL_FILES.length, 49);
   assert.deepEqual(SHELL_FILES, SW_SHELL_PATHS, 'the suite shell list must mirror sw.js SHELL_PATHS');
   expected.delete(failure);
   assert.deepEqual(keys, expected);

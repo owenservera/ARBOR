@@ -4,12 +4,21 @@
 import { composeDesignContext } from './generative-ui/design-composer.mjs';
 import { compileUiProposal } from './generative-ui/compiler.mjs';
 import { createSurface, PROPOSAL_SCHEMA } from './generative-ui/catalog.mjs';
+import { createVecCompiler } from './vec/compiler.mjs';
+import { compileVecUiRequest } from './vec/ui-adapter.mjs';
 
 export const SUGGESTIONS = Object.freeze(['Set up everything for me', 'I need help researching', 'Make a simple AI workspace']);
 export const BUILD_COMPONENTS = Object.freeze(['stack', 'grid', 'text', 'card', 'button', 'collection', 'timeline', 'chart']);
 export const MAX_REQUEST = 400;
 
 export function blankSurface() { return createSurface({ surfaceId: 'my-space' }); }
+
+// Deterministic first, same canonical UI proposal and Host approval as the model path.
+// The compiler is an inert preview boundary, not a new action dispatcher or publisher.
+const vec = createVecCompiler({ adapters: { ui: compileVecUiRequest } });
+export function resolveBuildRequest({ request, surface = blankSurface() } = {}) {
+  return vec.compile({ domain: 'ui', text: request, context: { surface } });
+}
 
 export function buildDesignPrompt({ request, surface = blankSurface(), taskId }) {
   const text = String(request ?? '').trim().replace(/\s+/g, ' ');

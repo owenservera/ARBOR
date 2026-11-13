@@ -110,7 +110,7 @@
     {
       "id": "PWA-07",
       "title": "Build canvas visual proposal and activation",
-      "status": "queued",
+      "status": "existing_paired_flow_and_readonly_desktop_tests_unrun",
       "owner": "PWA/TierFlow",
       "paths": [
         "apps/mobile-relay/build-canvas.mjs",
@@ -124,7 +124,7 @@
     {
       "id": "PWA-08",
       "title": "VEC deterministic UI edits and compiler contract",
-      "status": "queued",
+      "status": "source_implemented_tests_unrun",
       "owner": "VEC",
       "paths": [
         ".integration/proposal5/vec-pwa",
@@ -152,7 +152,7 @@
     {
       "id": "PWA-10",
       "title": "Offline shell, drafts and installability",
-      "status": "queued",
+      "status": "manifest_and_offline_shell_source_updated_tests_unrun",
       "owner": "PWA",
       "paths": [
         "apps/mobile-relay/sw.js",
