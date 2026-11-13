@@ -16,7 +16,7 @@ test('the universal controller reuses exactly one real composer and send path',(
  assert.match(app,/mountUniversalDock\(\);/);
  assert.match(app,/dockExpanded=false;\s*chatContextEpoch\+\+/);
  assert.match(app,/if \(N\.target === 'vivim'\)/);
- assert.match(app,/client\.preview\(text\)/g); // retained by control-chat, not app
+ assert.match(source('../control-chat.mjs'),/client\.preview\(text\)/); // existing Host planner
 });
 test('L0 and L1 navigate existing Talk modes and source-backed focused surfaces only',()=>{
  for(const id of ['dock-home','dock-recents','dock-focus','dock-feed']){
