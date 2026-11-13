@@ -82,6 +82,7 @@ const S = {
   conn: { label: '', tone: 'ok' }, device: { status: null, scopes: null },
   media: { state: 'idle' }, mediaAt: 0, mediaOffset: 0, mediaLoading: false
 };
+let combinedInbox = true; // UI-only inbox aggregation; never fan-out or a provider target.
 const N = { target: transport.direct ? 'vivim' : 'harness', session: '', sessions: [], messages: [], timer: 0, generation: 0, sending: false, note: '', pending: null };
 const vivimChat = createControlChat({
   host: $('msgs'), transport,
@@ -261,6 +262,7 @@ function mountUniversalDock() {
   $('dock-home').addEventListener('click',()=>goTab('talk'));
   $('dock-recents').addEventListener('click',()=>{
     if(!S.paired)return;
+    combinedInbox=true;S.sigs.comp=null;S.sigs.list=null;
     if(N.target!=='harness'){
       $('talk-target').value='harness';
       $('talk-target').dispatchEvent(new Event('change'));
@@ -688,8 +690,10 @@ function renderList() {
       'Connect your PC to view private conversations.'));
     return;
   }
-  const items = [...S.convs].sort((a, b) => b.updatedAt - a.updatedAt);
-  const sig = S.active + JSON.stringify(items.map(c => [c.id, c.title, c.updatedAt, c.provider, c.model]));
+  const items = S.convs.filter(c => N.target !== 'harness' || combinedInbox ||
+    c.provider === curConv()?.provider).sort((a, b) => b.updatedAt - a.updatedAt);
+  const sig = S.active + '|' + N.target + '|' + combinedInbox + '|' +
+    JSON.stringify(items.map(c => [c.id, c.title, c.updatedAt, c.provider, c.model]));
   if (S.sigs.list === sig) return; S.sigs.list = sig;
   const box = $('convlist'); box.replaceChildren();
   for (const c of items) {
@@ -716,7 +720,9 @@ function renderComposer() {
   }
   $('composer-note').textContent = N.target === 'phone'
     ? 'Continue an existing PC session · never automatically resent'
-    : 'Choose a signed-in AI · send-once through your PC';
+    : combinedInbox
+      ? 'Combined inbox · one message goes to the selected signed-in AI, never all providers'
+      : 'Provider inbox · send-once through your signed-in PC browser';
   if (N.target === 'phone') {
     $('chips').hidden = true; $('modelwrap').hidden = true; $('effortwrap').hidden = true;
     $('clip').hidden = true; $('files').hidden = true; $('text').placeholder = 'Message your PC…'; $('text').maxLength = MAXTEXT;
@@ -725,11 +731,20 @@ function renderComposer() {
   $('chips').hidden = false;
   normalizeConv();
   const c = curConv(), ps = providers(), p = c && ps.find(x => x.id === c.provider);
-  const sig = JSON.stringify([ps, c && [c.id, c.provider, c.model, c.effort], S.files.map(f => f.name + f.size)]);
+  const sig = JSON.stringify([ps, combinedInbox, c && [c.id, c.provider, c.model, c.effort],
+    S.files.map(f => f.name + f.size)]);
   if (S.sigs.comp !== sig) {
     S.sigs.comp = sig;
     const chips = $('chips'); chips.replaceChildren();
-    for (const x of ps) { const b = el('button', 'chip', x.label || x.id); b.type = 'button'; b.dataset.p = x.id; b.setAttribute('aria-pressed', String(!!c && x.id === c.provider)); chips.append(b); }
+    const combined = el('button','chip','Combined');
+    combined.type='button';combined.dataset.combined='1';
+    combined.setAttribute('aria-pressed',String(combinedInbox));
+    combined.title='All conversations. Sends only to the selected provider.';
+    chips.append(combined);
+    for (const x of ps) { const b = el('button', 'chip', x.label || x.id); b.type = 'button';
+      b.dataset.p = x.id;
+      b.setAttribute('aria-pressed', String(!combinedInbox && !!c && x.id === c.provider));
+      chips.append(b); }
     if (!ps.length) chips.append(el('span', 'muted', 'No signed-in providers'));
     const models = (p && p.models) || [], cur = models.find(m => m.current);
     $('modelwrap').hidden = !models.length;
@@ -1471,8 +1486,15 @@ $('convlist').addEventListener('click', e => {
   const b = e.target.closest('[data-id]'); if (b) selectConv(b.dataset.id);
 });
 $('chips').addEventListener('click', e => {
-  const b = e.target.closest('[data-p]'), c = curConv(); if (!b || !c || c.provider === b.dataset.p) return;
-  c.provider = b.dataset.p; c.model = c.effort = null; saveConvs(); renderAll();
+  if(e.target.closest('[data-combined]')){
+    combinedInbox=true;S.sigs.comp=null;S.sigs.list=null;renderAll();return;
+  }
+  const b=e.target.closest('[data-p]'),c=curConv();
+  if(!b||!c)return;
+  const changed=c.provider!==b.dataset.p;
+  combinedInbox=false;
+  if(changed){c.provider=b.dataset.p;c.model=c.effort=null;saveConvs();}
+  S.sigs.comp=null;S.sigs.list=null;renderAll();
 });
 $('model').addEventListener('change', e => { const c = curConv(); if (c) { c.model = e.target.value || null; saveConvs(); renderAll(); } });
 $('effort').addEventListener('change', e => { const c = curConv(); if (c) { c.effort = e.target.value || null; saveConvs(); renderAll(); } });

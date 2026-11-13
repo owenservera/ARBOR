@@ -47,3 +47,13 @@ test('microphone button and local recorder cannot issue Host or AI requests',()=
  assert.match(voice,/Download or explicitly discard the recording/);
  assert.doesNotMatch(voice,/fetch\(|WebSocket|XMLHttpRequest|SpeechRecognition|sendToHost/);
 });
+
+test('combined inbox is source-backed aggregation only, never implicit multi-send',()=>{
+ assert.match(app,/let combinedInbox = true/);
+ assert.match(app,/combinedInbox \? 'Combined inbox/);
+ assert.match(app,/combined\.dataset\.combined='1'/);
+ assert.match(app,/All conversations\. Sends only to the selected provider/);
+ assert.match(app,/if\(e\.target\.closest\('\[data-combined\]'\)\)/);
+ assert.match(app,/combinedInbox=false/);
+ assert.doesNotMatch(app,/Promise\.all\(providers\(\)\.map/);
+});
