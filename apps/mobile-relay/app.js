@@ -285,7 +285,9 @@ function renderComposer() {
     $('clip').hidden = true; $('files').hidden = true;
     $('text').placeholder = 'Ask VIVIM: show status, or describe a change…';
     $('text').maxLength = 1000;
-    $('composer-note').textContent = 'PC-authoritative · previews first · approval required for changes';
+    $('composer-note').textContent = HOST_PREVIEW
+      ? 'Phone preview only · open Host menu to pair and connect'
+      : 'PC-authoritative · previews first · approval required for changes';
     updateSend(); return;
   }
   $('composer-note').textContent = N.target === 'phone'
@@ -322,6 +324,7 @@ function renderComposer() {
   updateSend();
 }
 function updateSend() {
+  if (HOST_PREVIEW) { $('send').disabled = true; return; }
   $('send').disabled = N.target === 'vivim'
     ? !transport.direct || vivimChat.busy() || !$('text').value.trim() || $('text').value.trim().length > 1000
     : N.target === 'phone'
@@ -456,6 +459,7 @@ function installHostMenu() {
   ]) {
     const anchor = el('a', '', label);
     anchor.href = href;
+    anchor.target = '_top';
     items.append(anchor);
   }
   const personalize = el('button', '', 'Appearance');
@@ -501,8 +505,9 @@ async function startHostPreview() {
   $('pairbox').hidden = true;
   $('app').hidden = false;
   S.paired = false;
+  S.cmds = []; S.convs = []; S.active = null;
   S.device = { status: 'preview', scopes: [] };
-  setConn('Phone preview · not paired', true);
+  setConn('Desktop preview · phone not paired', true);
   renderAll(true);
 }
 
