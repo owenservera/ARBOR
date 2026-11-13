@@ -19,5 +19,26 @@
   "androidPhone": "UNRUN",
   "windowsHost": "UNRUN",
   "productDecision": "NO_GO",
-  "reason": "source foundation only; no accepted adapter or device evidence"
+  "reason": "source foundation only; no accepted adapter or device evidence",
+  "sourceHeadAtReview": "9fc1c08ea4804050a7dc7c1845842757835a07b6",
+  "isolatedV8Checks": {
+    "firstRun": {
+      "pass": 21,
+      "total": 21
+    },
+    "postHardening": {
+      "pass": 11,
+      "total": 11
+    }
+  },
+  "agentWorkOrdersVerified": 100,
+  "agentWorkOrderFileMismatches": 0,
+  "noNodeRuntimeExecution": true,
+  "knownEnumOptions": 128,
+  "unreviewedEnumOptions": 51,
+  "unitSuitesAuthored": [
+    "engine-core.test.mjs",
+    "tokens.test.mjs",
+    "manifest.test.mjs"
+  ]
 }

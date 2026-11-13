@@ -1,0 +1,37 @@
+name: VEC UI Engine source verification
+on:
+  pull_request:
+    paths:
+      - 'packages/vec-ui-engines/**'
+      - '.integration/proposal5/vec-ui-engines/**'
+      - '.github/workflows/vec-ui-engines.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Print actual runtime version
+        run: node --version
+      - name: Syntax check canonical engine source
+        run: |
+          node --check packages/vec-ui-engines/src/catalog.mjs
+          node --check packages/vec-ui-engines/src/enum-choices.mjs
+          node --check packages/vec-ui-engines/src/validators.mjs
+          node --check packages/vec-ui-engines/src/tokens.mjs
+          node --check packages/vec-ui-engines/src/registry.mjs
+          node --check packages/vec-ui-engines/src/compiler.mjs
+      - name: Execute actual synthetic engine unit suites
+        run: |
+          node --test packages/vec-ui-engines/test/engine-core.test.mjs packages/vec-ui-engines/test/tokens.test.mjs packages/vec-ui-engines/test/manifest.test.mjs
