@@ -200,37 +200,63 @@
     }
   ],
   "executionEvidence": {
-    "assessedMainSha": "7b9987884cb8aca1e1d568bac7da42135fa06c71",
-    "mode": "execution of real checked-in source-level test callbacks and production pure modules in V8, with Node/browser API shims where specified",
+    "assessedMainSha": "93a6fc922b225dabbdc03414c925e70c3a062b9d",
+    "mode": "Checked-in JS test callbacks exercised against production source in V8; selective shims for Node/browser APIs; media guard with a transform shim",
     "modules": [
       {
-        "name": "PWA UI, Control, World, media paging and browser install affordance",
+        "area": "existing phone Today/World/Me and Control lifecycle",
         "passed": 34,
         "failed": 0
       },
       {
-        "name": "VEC deterministic UI compiler",
+        "area": "pre-local readiness, permissions, safe report and local-note data rules",
+        "passed": 11,
+        "failed": 0
+      },
+      {
+        "area": "capability launcher and local-note dialog interactions",
+        "passed": 3,
+        "failed": 0
+      },
+      {
+        "area": "VEC deterministic UI proposals",
         "passed": 9,
         "failed": 0
       },
       {
-        "name": "Build request routing, composer and service-worker v6 reference",
+        "area": "Build routing and composer on SW v8",
         "passed": 10,
         "failed": 0
       },
       {
-        "name": "active-media stream grant guard, checked against source with a stream shim",
+        "area": "live Host media-stream grant guards",
         "passed": 3,
         "failed": 0
       }
     ],
-    "totalSourceChecksPass": 56,
+    "totalSourceChecksPass": 70,
     "node24TestSuites": "UNRUN",
     "windowsHostAcceptance": "UNRUN",
     "androidDirectTailscaleAcceptance": "UNRUN",
     "androidPwaInstallation": "UNRUN",
+    "automatedFullImportGraphNodeTest": "AUTHORED_UNRUN",
     "githubActions": "startup_failure before jobs",
     "releaseAcceptance": "NOT_CLAIMED",
     "localExecutableCommand": "node integration/scripts/pwa-run-now.mjs"
+  },
+  "preLocalUpgrade": {
+    "sourceSha": "93a6fc922b225dabbdc03414c925e70c3a062b9d",
+    "status": "SOURCE_COMMITTED_NOT_DEVICE_ACCEPTED",
+    "features": [
+      "Local capability finder: 15 existing feature routes",
+      "10-check redacted readiness matrix",
+      "Explicit offline Quick Capture: bounded notes, no silent eviction, copy and JSON export",
+      "Active device-session and permission-aware launcher gating",
+      "Host preview remains read-only",
+      "Missing Build revision guard added to Direct Host allowlist and offline service-worker v8",
+      "Automated PWA source import-closure test",
+      "One-command local verifier expanded with PWA preflight tests"
+    ],
+    "next": "PWA-12"
   }
 }

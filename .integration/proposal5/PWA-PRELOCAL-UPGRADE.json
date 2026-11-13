@@ -1,0 +1,91 @@
+{
+  "schema": "arbor.pwa-prelocal-upgrade/1",
+  "repository": "owenservera/ARBOR",
+  "branch": "main",
+  "assessedSourceCommit": "93a6fc922b225dabbdc03414c925e70c3a062b9d",
+  "installedDeviceAcceptance": false,
+  "sourceCheckResults": [
+    {
+      "area": "existing phone Today/World/Me and Control lifecycle",
+      "passed": 34,
+      "failed": 0
+    },
+    {
+      "area": "pre-local readiness, permissions, safe report and local-note data rules",
+      "passed": 11,
+      "failed": 0
+    },
+    {
+      "area": "capability launcher and local-note dialog interactions",
+      "passed": 3,
+      "failed": 0
+    },
+    {
+      "area": "VEC deterministic UI proposals",
+      "passed": 9,
+      "failed": 0
+    },
+    {
+      "area": "Build routing and composer on SW v8",
+      "passed": 10,
+      "failed": 0
+    },
+    {
+      "area": "live Host media-stream grant guards",
+      "passed": 3,
+      "failed": 0
+    }
+  ],
+  "sourceCheckTotal": 70,
+  "runtime": {
+    "node24": "UNRUN",
+    "windowsHost": "UNRUN",
+    "androidChrome": "UNRUN",
+    "tailscaleDirect": "UNRUN",
+    "actions": "startup_failure"
+  },
+  "authority": {
+    "hostExecutes": true,
+    "phoneExecutes": false,
+    "providerApis": false,
+    "offlineReplay": false
+  },
+  "staticShell": {
+    "cache": "vivim-relay-shell-v8",
+    "assetCount": 58
+  },
+  "features": [
+    {
+      "id": "feature-finder",
+      "path": "apps/mobile-relay/ux/launcher-ui.mjs",
+      "type": "local-navigation",
+      "count": 15
+    },
+    {
+      "id": "device-readiness",
+      "path": "apps/mobile-relay/ux/readiness.mjs",
+      "type": "redacted-read-only",
+      "checks": 10
+    },
+    {
+      "id": "quick-capture",
+      "path": "apps/mobile-relay/ux/local-notes.mjs",
+      "type": "explicit-browser-local",
+      "unencrypted": true,
+      "maxNotes": 12,
+      "maxLength": 1200
+    },
+    {
+      "id": "build-guard",
+      "path": "apps/mobile-relay/generative-ui/host-revision-guard.mjs",
+      "type": "served-static-import"
+    },
+    {
+      "id": "asset-closure",
+      "path": "apps/mobile-relay/test/pwa-asset-graph.test.mjs",
+      "type": "real-node-test-authored-unrun"
+    }
+  ],
+  "localCommand": "node integration/scripts/pwa-run-now.mjs",
+  "next": "PWA-12"
+}

@@ -59,3 +59,7 @@ The manifest now includes SVG-any, PNG 192×192, PNG 512×512, and a full-bleed 
 ## Latest main-bound source checks
 
 Source checked at `7b9987884cb8aca1e1d568bac7da42135fa06c71` on 2026-11-13: **34/34 UI**, **9/9 VEC**, **10/10 Build**, and **3/3 media-stream-grant source checks**, for **56/56 passing source-level checks**. These use V8 test callbacks and Node/browser API shims as needed, not the actual Node or Android runtime. New source includes 52-item SW v6 install shell with SVG/PNG/maskable icons; install action appears only when the browser offers it; media pager, remote read-only authorization and active-stream grant reevaluation remain Host-owned. **Node24, actual HTTP sessions, Windows Host, Tailscale phone, Android installation and media codecs are all UNRUN.** Keep PWA-12 open until actual results exist.
+
+## Single pre-local comprehensive upgrade (93a6fc922b22)
+
+The consolidated source upgrade is documented in [PWA-PRELOCAL-UPGRADE.md](PWA-PRELOCAL-UPGRADE.md), with machine-readable [PWA-PRELOCAL-UPGRADE.json](PWA-PRELOCAL-UPGRADE.json). It adds a local 15-item capability finder; a 10-check redacted device-readiness view; explicit, exportable offline Quick Capture with no silent data eviction; session-aware permissions; a repaired Build revision-guard static import; and a Node import-closure verifier. Service-worker shell v8 now lists 58 assets. Source-level V8 checks are **70/70 pass**; real Node/Windows/Android remain **UNRUN** and PWA-12 stays open.
