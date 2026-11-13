@@ -370,6 +370,17 @@ export function renderMe(host, model, options = {}) {
     scroll.append(memory);
   }
 
+  if (typeof options.onInstall === 'function') {
+    const install = card(doc, 'Install VIVIM');
+    install.append(make(doc, 'p', 'ux-note',
+      'Your browser says VIVIM can be added to this device. Installation is confirmed by your browser, not by Host.'));
+    const action = make(doc, 'button', 'btn sm ux-secondary', 'Install on this device');
+    action.type = 'button';
+    action.addEventListener('click', () => options.onInstall());
+    install.append(action);
+    scroll.append(install);
+  }
+
   const activity = card(doc, 'Activity Record');
   if ((m.activity?.rows || []).length) {
     activity.append(items(doc, m.activity.rows.map(r => ({

@@ -237,6 +237,34 @@ let playerActive = false;
 let priorMediaFocus = null;
 let playerOpen = null;
 let playerEpoch = 0;
+let deferredInstallPrompt = null;
+// The browser, not VIVIM, decides whether installation is offered.
+window.addEventListener('beforeinstallprompt', event => {
+  if (HOST_PREVIEW) return;
+  event.preventDefault();
+  deferredInstallPrompt = event;
+  S.sigs.ux = null;
+  if (S.tab === 'me') renderSurfaces();
+});
+window.addEventListener('appinstalled', () => {
+  deferredInstallPrompt = null;
+  S.sigs.ux = null;
+  if (S.tab === 'me') renderSurfaces();
+});
+async function requestPwaInstall() {
+  if (!deferredInstallPrompt || HOST_PREVIEW) return;
+  const prompt = deferredInstallPrompt;
+  deferredInstallPrompt = null;
+  S.sigs.ux = null;
+  if (S.tab === 'me') renderSurfaces();
+  try {
+    await prompt.prompt(); // Browser-owned confirmation; not a Host action.
+    const choice = await prompt.userChoice;
+    if (choice?.outcome === 'dismissed') toast('You can install VIVIM later from your browser menu.');
+  } catch {
+    toast('Use your browser menu to add VIVIM to your home screen.');
+  }
+}
 function stopMediaPlayer() {
   const wasOpeningOrPlaying = playerActive;
   playerEpoch++;
@@ -432,6 +460,7 @@ function renderSurfaces() {
     onPlayMedia: transport.direct && S.paired && !HOST_PREVIEW ? openMediaPlayer : undefined,
     onMediaPage: transport.direct && S.paired && !HOST_PREVIEW
       ? offset => { void refreshMedia(true, offset); } : undefined,
+    onInstall: !HOST_PREVIEW && deferredInstallPrompt ? requestPwaInstall : undefined,
     onOpenPocket: () => { if (pocketButton && !pocketButton.hidden) pocketButton.click(); },
     onReplay: () => { if (welcome) welcome.open(); } };
   if (S.tab === 'today') renderToday(host, model, options);

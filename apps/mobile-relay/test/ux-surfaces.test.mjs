@@ -475,3 +475,22 @@ test('leaving World aborts active media instead of leaving a hidden stream open'
   assert.match(app,/if \(S\.tab === 'world' && tab !== 'world' && playerActive\) stopMediaPlayer\(\)/);
   assert.match(app,/if \(S\.tab !== 'world' \|\| HOST_PREVIEW \|\| !S\.paired \|\| !transport\.direct \|\|/);
 });
+
+
+test('install UI appears only for a real browser install offer and does not claim success',()=>{
+  let requested=0;
+  const offered=fakeHost();
+  renderMe(offered,meModel(null,[],{}),{onInstall:()=>{requested++}});
+  const actions=findAll(offered,n=>n.tag==='button'&&n.textContent==='Install on this device');
+  assert.equal(actions.length,1);
+  actions[0].events.click();
+  assert.equal(requested,1);
+  const absent=fakeHost();
+  renderMe(absent,meModel(null,[],{}),{});
+  assert.equal(findAll(absent,n=>n.tag==='button'&&n.textContent==='Install on this device').length,0);
+  assert.match(app,/window\.addEventListener\('beforeinstallprompt'/);
+  assert.match(app,/window\.addEventListener\('appinstalled'/);
+  assert.match(app,/onInstall: !HOST_PREVIEW && deferredInstallPrompt/);
+  assert.match(app,/await prompt\.prompt\(\)/);
+  assert.doesNotMatch(app,/VIVIM installed successfully/);
+});
