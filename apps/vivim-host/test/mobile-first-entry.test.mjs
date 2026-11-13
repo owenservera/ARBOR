@@ -112,3 +112,59 @@ test('the phone shell exposes all canonical sections and Today launches existing
   assert.match(html, /\.ux-surface-tiles/);
   assert.match(html, /id="v-soon" hidden aria-hidden="true"/);
 });
+
+
+test('PWA Host view is scoped to the owner browser session and never exposes device credentials', async () => {
+  const root = mkdtempSync(path.join(os.tmpdir(), 'vivim-pwa-owner-view-'));
+  const ownerToken = 'owner-unit-test-token-for-pwa';
+  const server = createHostServer({ dataRoot: root, ownerToken });
+  try {
+    await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+    const base = 'http://127.0.0.1:' + server.address().port;
+    const route = '/api/host/control/pwa-view';
+    assert.equal((await fetch(base + route)).status, 401);
+    assert.equal((await fetch(base + route, { method: 'POST' })).status, 401);
+    const issue = await fetch(base + '/api/host/control/ui-session', {
+      method: 'POST',
+      headers: { authorization: 'Bearer ' + ownerToken, origin: base, 'x-vivim-control': '1' }
+    });
+    assert.equal(issue.status, 201);
+    const { code } = await issue.json();
+    const exchange = await fetch(base + '/api/host/control/ui-exchange', {
+      method: 'POST',
+      headers: { origin: base, 'x-vivim-control': '1', 'content-type': 'application/json' },
+      body: JSON.stringify({ code })
+    });
+    assert.equal(exchange.status, 200);
+    const { csrf } = await exchange.json();
+    const cookie = exchange.headers.get('set-cookie')?.split(';')[0];
+    assert.ok(/^vivim_control_ui=[a-f0-9]{64}$/.test(cookie || ''), 'the session cookie is HttpOnly');
+    assert.match(exchange.headers.get('set-cookie'), /HttpOnly; SameSite=Strict/);
+    const headers = { cookie };
+    assert.equal((await fetch(base + route, { headers: { ...headers, origin: 'https://evil.invalid' } })).status, 403);
+    assert.equal((await fetch(base + route, { method: 'POST', headers })).status, 405);
+    const response = await fetch(base + route, { headers });
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get('cache-control'), 'no-store');
+    const data = await response.json();
+    assert.equal(data.schema, 'vivim.host-pwa-view/1');
+    assert.equal(data.snapshot.control.schema, 'vivim.control-recent/1');
+    assert.ok(Array.isArray(data.snapshot.control.recent));
+    assert.ok(Array.isArray(data.snapshot.bootstrap.cards));
+    assert.deepEqual(data.snapshot.bootstrap.preferences, []);
+    assert.deepEqual(data.snapshot.bootstrap.hardNos, []);
+    assert.equal(data.snapshot.devices.total, 0);
+    assert.equal(JSON.stringify(data).includes(ownerToken), false);
+    assert.equal(JSON.stringify(data).includes('sessionId'), false);
+    assert.equal(JSON.stringify(data).includes('grantId'), false);
+    const logOut = await fetch(base + '/api/host/control/ui-logout', {
+      method: 'POST',
+      headers: { ...headers, origin: base, 'x-vivim-control': '1', 'x-vivim-ui-csrf': csrf }
+    });
+    assert.equal(logOut.status, 200);
+    assert.equal((await fetch(base + route, { headers })).status, 401);
+  } finally {
+    await new Promise(resolve => server.close(resolve));
+    rmSync(root, { recursive: true, force: true });
+  }
+});

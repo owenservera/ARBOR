@@ -616,6 +616,41 @@ async function handleControl(req, res, pathname, host, controlFor, tokenFor, uiS
   if (owner && verifyOwnerToken(req.headers.authorization, owner)) authorized = true;
   if (!authorized && uiSessions.authorized(req, { mutate: isMutation })) authorized = true;
   if (!authorized) { sendJson(res, 401, { code: 'OWNER_AUTH', error: 'Owner authorization required' }); return; }
+  // Desktop PWA reads the Host's existing phone-safe projection using ONLY the
+  // one-use owner browser session or local owner capability. This is not a phone
+  // grant, a relay, a live-message transcript or an execution endpoint.
+  if (route === 'pwa-view') {
+    if (req.method !== 'GET') { res.setHeader('allow', 'GET'); sendJson(res, 405, { code: 'METHOD' }); return; }
+    if (req.headers.origin !== undefined && !sameOrigin) { sendJson(res, 403, { code: 'ORIGIN' }); return; }
+    try {
+      const projected = runtimeFor().projection();
+      const { cards, preferences, hardNos, ...phoneSafe } = projected;
+      // Provenance and private owner preferences never leave through this
+      // generic PWA summary. Reuse the existing Host projection; no new store.
+      const recent = controlFor().recent(12).map(r => ({
+        planId: r.planId, actionId: r.actionId, risk: r.risk,
+        state: r.state, createdAt: r.createdAt, source: r.source
+      }));
+      const grants = enrollment.listGrants();
+      sendJson(res, 200, {
+        schema: 'vivim.host-pwa-view/1', observedAt: new Date().toISOString(),
+        state: projected.state === 'ready' ? 'source-backed' : 'unavailable',
+        snapshot: {
+          bootstrap: { ...phoneSafe, cards: Array.isArray(cards) ? cards.slice(0, 3).map(c => ({
+            id: c.id, title: c.title, basis: c.basis
+          })) : [], preferences: [], hardNos: [] },
+          control: { schema: 'vivim.control-recent/1', recent },
+          devices: { schema: 'vivim.device-counts/1', total: grants.length,
+            pending: grants.filter(g => g.status === 'pending').length,
+            active: grants.filter(g => g.status === 'active').length }
+        }
+      });
+    } catch {
+      // No private internal error body, no guessed Host state.
+      sendJson(res, 503, { schema: 'vivim.host-pwa-view/1', state: 'unavailable', code: 'PWA_VIEW_UNAVAILABLE' });
+    }
+    return;
+  }
   // Private read-only web memory: identical Host read model as the paired phone.
   // The existing owner token or short-lived HttpOnly control cookie is mandatory.
   if (route === 'web-memory') {
