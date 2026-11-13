@@ -197,7 +197,12 @@ function renderFocusPanel() {
   const activity=$('chat-focus-activity');activity.replaceChildren();
   const current=todayModel(S.statusObj,S.cmds,surfaceContext());
   const entries=[...(current.attention||[]),...(current.running||[])].slice(0,6);
-  if(!entries.length)activity.append(focusPreview('No reported activity','No other activity is inferred.'));
+  if(current.mission?.schema==='vivim.mission-card/1'){
+    activity.append(focusPreview(current.mission.title||'Current mission',
+      (current.mission.phase||'')+' · '+(current.mission.needsYou?'Owner action needed':'No action requested')));
+  }
+  if(!entries.length && !current.mission)
+    activity.append(focusPreview('No reported activity','No work or ETA is inferred.'));
   else for(const item of entries)activity.append(focusPreview(item.title||item.label||'Activity',
     item.detail||'Source-backed Host status'));
 }
@@ -264,6 +269,10 @@ function mountUniversalDock() {
     }
   });
   $('dock-focus').addEventListener('click',openFocusPanel);
+  $('dock-feed').addEventListener('click',()=>{
+    if($('chat-context-panel').hidden)openFocusPanel();
+    $('chat-focus-activity').scrollIntoView?.({block:'nearest'});
+  });
   $('chat-context-close').addEventListener('click',closeFocusPanel);
   $('chat-rust-refresh').addEventListener('click',()=>void readGraphContext());
   updateDock();
