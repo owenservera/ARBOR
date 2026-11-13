@@ -265,6 +265,13 @@ export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'wo
         const info = await media.resolve(mediaId);
         await info.handle.close();
         pruneMediaTickets();
+        // One currently selected native video per approved device session.
+        // Replace its obsolete ticket instead of accumulating four-hour grants.
+        for (const [priorId, prior] of mediaTickets) {
+          if (prior.grantId === req.headers['x-vivim-grant-id'] &&
+              prior.sessionId === req.headers['x-vivim-device-session'])
+            mediaTickets.delete(priorId);
+        }
         if (mediaTickets.size >= 32) throw failure(429,'MEDIA_STREAM_CAPACITY');
         const ticket = randomBytes(32).toString('hex');
         const expiresAt = Date.now() + mediaTtlMs;

@@ -20,7 +20,7 @@
     "apkDeferred": true,
     "testsNotRunAreNotPass": true
   },
-  "next": "PWA-11",
+  "next": "PWA-12",
   "items": [
     {
       "id": "PWA-01",
@@ -166,13 +166,13 @@
     {
       "id": "PWA-11",
       "title": "Adaptive UI, accessibility and one-thumb polish",
-      "status": "mobile_accessibility_source_updated_tests_unrun",
+      "status": "accessible_mobile_source_implemented_tests_unrun",
       "owner": "PWA/TierFlow",
       "paths": [
         "apps/mobile-relay/index.html",
         "packages/tierflow"
       ],
-      "proof": "Android Chrome, keyboard, safe areas, reduced motion, screen reader; device validation",
+      "proof": "tablist/tabpanel semantics, arrow/Home/End keyboard navigation, player focus restore, narrow-screen and reduced-motion CSS, private state clearing; physical Android UNRUN",
       "dependsOn": [
         "PWA-03"
       ]

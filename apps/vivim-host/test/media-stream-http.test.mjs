@@ -105,6 +105,13 @@ test('stream uses a paired owner ticket, exact file and 200/206/416 semantics', 
   assert.equal(head.body.length,0);
   assert.equal((await call('/mobile/api/media/stream/'+'f'.repeat(32),
     {headers:{cookie}})).status,401);
+  const renewed=await call('/mobile/api/media/open',{method:'POST',
+    headers:{origin,'x-vivim-media':'1','content-type':'application/json'},body});
+  assert.equal(renewed.status,200);
+  const currentCookie=renewed.headers['set-cookie'][0].split(';')[0];
+  assert.notEqual(currentCookie,cookie);
+  assert.equal((await call(route,{headers:{cookie}})).status,401);
+  assert.equal((await call(route,{headers:{cookie:currentCookie}})).status,200);
   owner.revokeGrant({grantId:grant.grantId,revokedBy:'desktop-owner'});
-  assert.ok([401,403].includes((await call(route,{headers:{cookie}})).status));
+  assert.ok([401,403].includes((await call(route,{headers:{cookie:currentCookie}})).status));
 });
