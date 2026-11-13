@@ -3,7 +3,7 @@
 export const LAUNCHER_SCHEMA = 'vivim.pwa-capability-catalog/1';
 const CATALOG = Object.freeze([
   ['today','Today','Connection, next action and what needs you','today','any'],
-  ['talk','Ask VIVIM','Describe a supported Host request and review its plan','talk','paired'],
+  ['talk','Ask VIVIM','Describe a supported Host request and review its plan','talk','direct'],
   ['ai','My AIs','Use signed-in AI conversations via the existing signed-in browser harness','talk','paired'],
   ['sessions','PC sessions','Read existing sessions on your Host','talk','direct'],
   ['build','Build','Propose a deterministic UI edit or preview a design','build','paired'],
@@ -27,7 +27,10 @@ export function capabilityCatalog(context={}) {
     let available = requires==='any' || requires==='phone' && !preview
       || requires==='paired' && paired || requires==='direct' && paired && mode==='direct';
     if(id==='theme' && preview) available=true; // Local appearance preview only.
-    if(id==='install' && preview) available=false;
+    if(id==='install') available=!preview && context.installOffered===true &&
+      context.installed!==true;
+    if(['talk','control','media','memory'].includes(id) && context.controlRead!==true)
+      available=false;
     if(id==='media' && !context.mediaVisible) available=false;
     if(id==='control' && preview) available=false;
     if(id==='sessions' && preview) available=false;
@@ -35,6 +38,10 @@ export function capabilityCatalog(context={}) {
     if(id==='notes' && preview) available=false;
     if(offline && !['today','world','me','readiness','notes','install'].includes(id)) available=false;
     const reason=available?'Available':preview?'Phone-only action unavailable in read-only Host preview'
+      :id==='install' && context.installed===true?'Already running as an installed PWA'
+      :id==='install'?'Browser has not offered installation'
+      :['talk','control','media','memory'].includes(id) && !context.controlRead
+        ? 'Requires approved control:read permission'
       :offline?'Connect to your PC first'
       :requires==='direct'?'Requires approved Direct phone connection'
       :requires==='paired'?'Requires an approved phone session'

@@ -1020,7 +1020,11 @@ if (!HOST_PREVIEW) {
 function launcherContext() {
   return {mode:HOST_PREVIEW?'desktop-preview':transport.direct?'direct':'cloud',
     paired:S.paired,online:navigator.onLine!==false,
-    mediaVisible:transport.direct&&S.paired};
+    mediaVisible:transport.direct&&S.paired,
+    controlRead:Array.isArray(S.device.scopes)&&S.device.scopes.includes('control:read'),
+    installOffered:!!deferredInstallPrompt,
+    installed:!!window.matchMedia?.('(display-mode: standalone)')?.matches ||
+      navigator.standalone===true};
 }
 function launcherActivate(item) {
   if (item.id === 'notes') { localNotes?.open(); return; }

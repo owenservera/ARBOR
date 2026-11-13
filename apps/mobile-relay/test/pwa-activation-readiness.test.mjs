@@ -31,7 +31,8 @@ test('capability finder shows real tabs and refuses inaccessible actions',()=>{
   const owner=capabilityCatalog({mode:'desktop-preview',paired:false,online:true});
   assert.equal(owner.rows.find(x=>x.id==='control').available,false);
   assert.equal(owner.rows.find(x=>x.id==='notes').available,false);
-  const phone=capabilityCatalog({mode:'direct',paired:true,online:true,mediaVisible:true});
+  const phone=capabilityCatalog({mode:'direct',paired:true,online:true,
+    mediaVisible:true,controlRead:true});
   assert.deepEqual(phone.rows.filter(x=>x.available).map(x=>x.tab).includes('world'),true);
   assert.equal(phone.rows.find(x=>x.id==='media').available,true);
   const offline=capabilityCatalog({mode:'direct',online:false,paired:false});
@@ -42,7 +43,7 @@ test('capability finder shows real tabs and refuses inaccessible actions',()=>{
 test('capability finder searches locally, bounds input, never returns an effect instruction',()=>{
   assert.equal(searchCapabilities('movie',{mode:'direct',paired:true,mediaVisible:true})[0].id,'media');
   assert.equal(searchCapabilities('history',{mode:'direct',paired:true}).length,0);
-  const match=searchCapabilities('web memory',{mode:'direct',paired:true});
+  const match=searchCapabilities('web memory',{mode:'direct',paired:true,controlRead:true});
   assert.equal(match[0].id,'memory');
   for(const hit of searchCapabilities('',{})){
     assert.ok(['today','talk','build','world','me','control'].includes(hit.tab));
@@ -71,4 +72,17 @@ test('pre-local features are wired to the one PWA entry and offline safe shell',
   assert.match(renderer,/Quick capture · works offline/);
   assert.match(model,/readiness: ctx\.readiness\?\.schema/);
   assert.match(sw,/var CACHE = 'vivim-relay-shell-v7'/);
+});
+
+test('Direct controls and install prompts require reported authority and browser state',()=>{
+  const cloud=capabilityCatalog({mode:'cloud',paired:true,controlRead:true});
+  assert.equal(cloud.rows.find(x=>x.id==='talk').available,false);
+  const missing=capabilityCatalog({mode:'direct',paired:true,controlRead:false,mediaVisible:true});
+  for(const id of ['talk','control','media','memory'])
+    assert.equal(missing.rows.find(x=>x.id===id).available,false,id);
+  const install=capabilityCatalog({mode:'direct',paired:true,installOffered:true});
+  assert.equal(install.rows.find(x=>x.id==='install').available,true);
+  assert.equal(capabilityCatalog({mode:'direct',paired:true}).rows.find(x=>x.id==='install').available,false);
+  assert.equal(capabilityCatalog({mode:'direct',paired:true,installed:true,installOffered:true})
+    .rows.find(x=>x.id==='install').available,false);
 });
