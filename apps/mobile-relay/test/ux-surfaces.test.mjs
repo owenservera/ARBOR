@@ -363,3 +363,11 @@ test('tabs provide accessible selection, keyboard navigation and media dialog fo
   assert.match(app,/priorMediaFocus = document\.activeElement/);
   assert.match(app,/if \(playerActive\) stopMediaPlayer\(\)/);
 });
+
+
+test('offline shell exposes navigation but never private content',()=>{
+  assert.match(html,/body:not\(\.paired\):not\(\.offline-shell\) \.needpair/);
+  assert.match(app,/document\.body\.classList\.add\('offline-shell'\)/);
+  assert.match(app,/document\.body\.classList\.remove\('paired', 'offline-shell'\)/);
+  assert.match(app,/if \(paired\) document\.body\.classList\.remove\('offline-shell'\)/);
+});

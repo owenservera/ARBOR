@@ -43,7 +43,7 @@ button:disabled{opacity:.45;cursor:default}
 #conn{font:500 10px/14px var(--font-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--mu);max-width:30vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .dot{width:8px;height:8px;border-radius:1px;background:var(--ok);flex:none}
 .dot.bad{background:var(--bad)}
-body:not(.paired) .needpair{display:none!important}
+body:not(.paired):not(.offline-shell) .needpair{display:none!important}
 body:not(.tab-talk) #menu{display:none}
 body:not(.paired) #tabs{flex:1}
 @media(max-width:560px){body.paired #conn{display:none}}

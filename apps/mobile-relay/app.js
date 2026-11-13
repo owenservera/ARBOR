@@ -215,7 +215,7 @@ function clearPrivatePhoneState() {
   S.media = { state: 'not-authorized' }; S.mediaAt = 0; S.mediaLoading = false;
   S.sigs.ux = null; S.sigs.msgs = null; S.sigs.list = null;
   $('app').hidden = true; $('pairbox').hidden = false;
-  document.body.classList.remove('paired');
+  document.body.classList.remove('paired', 'offline-shell');
   if (build) build.clear();
   window.dispatchEvent(new CustomEvent('vivim:paired', { detail: { paired: false } }));
 }
@@ -964,6 +964,7 @@ function showOfflineShell() {
   // A cached former owner session is not proof of ongoing authorization.
   clearPrivatePhoneState();
   $('pairbox').hidden = true; $('app').hidden = false;
+  document.body.classList.add('offline-shell');
   S.tab = 'today'; N.target = 'vivim'; $('talk-target').value = 'vivim';
   S.device = { status: 'offline', scopes: [] };
   setConn('Offline · local PWA shell only', true);
@@ -1049,6 +1050,7 @@ async function runStart() {
   }
   $('pairbox').hidden = paired; $('app').hidden = !paired;
   document.body.classList.toggle('paired', paired);
+  if (paired) document.body.classList.remove('offline-shell');
   setConn(paired ? 'Paired' : 'Not paired', !paired);
   if (!paired) clearPrivatePhoneState();
   S.paired = paired; clearTimeout(S.timer); S.busy = false;
