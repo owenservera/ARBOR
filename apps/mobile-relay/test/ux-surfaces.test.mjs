@@ -348,3 +348,18 @@ test('unpaired PWA never displays retained conversations or PC session bodies',(
   assert.match(app,/S\.files = \[\]; N\.messages = \[\]; N\.sessions = \[\]; N\.session = ''/);
   assert.match(app,/S\.statusObj = null; S\.manifest = null/);
 });
+
+
+test('tabs provide accessible selection, keyboard navigation and media dialog focus',()=>{
+  assert.match(html,/role="tablist"/);
+  for (const tab of ['today','talk','build','world','me','control']) {
+    assert.match(html,new RegExp('id="tab-'+tab+'"[^>]*role="tab"'));
+    assert.match(html,new RegExp('id="v-'+tab+'" role="tabpanel" aria-labelledby="tab-'+tab+'"'));
+  }
+  assert.match(app,/b\.setAttribute\('aria-selected', String\(selected\)\)/);
+  assert.match(app,/b\.tabIndex = selected \? 0 : -1/);
+  assert.match(app,/event\.key === 'ArrowRight'/);
+  assert.match(app,/event\.key === 'End'/);
+  assert.match(app,/priorMediaFocus = document\.activeElement/);
+  assert.match(app,/if \(playerActive\) stopMediaPlayer\(\)/);
+});

@@ -305,13 +305,13 @@ body.host-preview #grokbot-direct-link{display:none!important}
   <button id="menu" class="icon needpair" type="button" aria-label="Conversations">
     <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
   </button>
-  <nav id="tabs" class="needpair" aria-label="Sections">
-    <button class="tab" type="button" data-tab="today">Today</button>
-    <button class="tab on" type="button" data-tab="talk">Talk</button>
-    <button class="tab" type="button" data-tab="build">Build</button>
-    <button class="tab" type="button" data-tab="world">World</button>
-    <button class="tab" type="button" data-tab="me">Me</button>
-    <button class="tab" type="button" data-tab="control">Control</button>
+  <nav id="tabs" class="needpair" role="tablist" aria-label="Sections">
+    <button id="tab-today" class="tab" type="button" role="tab" aria-selected="false" aria-controls="v-today" tabindex="-1" data-tab="today">Today</button>
+    <button id="tab-talk" class="tab on" type="button" role="tab" aria-selected="false" aria-controls="v-talk" tabindex="-1" data-tab="talk">Talk</button>
+    <button id="tab-build" class="tab" type="button" role="tab" aria-selected="false" aria-controls="v-build" tabindex="-1" data-tab="build">Build</button>
+    <button id="tab-world" class="tab" type="button" role="tab" aria-selected="false" aria-controls="v-world" tabindex="-1" data-tab="world">World</button>
+    <button id="tab-me" class="tab" type="button" role="tab" aria-selected="false" aria-controls="v-me" tabindex="-1" data-tab="me">Me</button>
+    <button id="tab-control" class="tab" type="button" role="tab" aria-selected="false" aria-controls="v-control" tabindex="-1" data-tab="control">Control</button>
   </nav>
   <span id="dot" class="dot bad" aria-hidden="true"></span><span id="conn">Connecting…</span><span id="connection-announcer" class="sr-only" role="status" aria-live="polite">Connecting…</span>
   <button id="theme-toggle" class="icon needpair" type="button" aria-label="Choose background" aria-expanded="false" aria-controls="theme-panel" title="Background">◐</button>
@@ -342,7 +342,7 @@ body.host-preview #grokbot-direct-link{display:none!important}
   </section>
 
   <div id="app" hidden>
-    <section id="v-talk">
+    <section id="v-talk" role="tabpanel" aria-labelledby="tab-talk">
       <div id="scrim" hidden></div>
       <aside id="drawer" aria-label="Conversations">
         <h3>Conversations</h3>
@@ -385,7 +385,7 @@ body.host-preview #grokbot-direct-link{display:none!important}
         </div>
       </div>
     </section>
-    <section id="v-control" hidden style="height:100%;overflow:auto;padding:20px;max-width:900px;margin:0 auto">
+    <section id="v-control" role="tabpanel" aria-labelledby="tab-control" hidden style="height:100%;overflow:auto;padding:20px;max-width:900px;margin:0 auto">
       <h2>Control your VIVIM</h2>
       <p class="muted">Configure your home computer by describing the change. Direct connection only. Review each proposed action and explicitly approve it before VIVIM applies any available change.</p>
       <label for="control-text">What would you like to change?</label>
@@ -398,13 +398,13 @@ body.host-preview #grokbot-direct-link{display:none!important}
     <!-- Retired stub panel. Kept only so the shell's tab wiring stays explicit; it is hidden
          for every tab in the strip and nothing routes to it. -->
     <section id="v-soon" hidden aria-hidden="true"></section>
-    <section id="v-build" hidden>
+    <section id="v-build" role="tabpanel" aria-labelledby="tab-build" hidden>
       <div id="build-compose"></div>
       <div id="build-surface"></div>
     </section>
-    <section id="v-today" hidden aria-label="Today"></section>
-    <section id="v-world" hidden aria-label="World"></section>
-    <section id="v-me" hidden aria-label="Me"></section>
+    <section id="v-today" role="tabpanel" aria-labelledby="tab-today" hidden aria-label="Today"></section>
+    <section id="v-world" role="tabpanel" aria-labelledby="tab-world" hidden aria-label="World"></section>
+    <section id="v-me" role="tabpanel" aria-labelledby="tab-me" hidden aria-label="Me"></section>
   </div>
 </main>
 

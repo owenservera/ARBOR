@@ -166,6 +166,8 @@ function renderTabs() {
   for (const b of document.querySelectorAll('.tab')) {
     const selected = b.dataset.tab === S.tab;
     b.classList.toggle('on', selected);
+    b.setAttribute('aria-selected', String(selected));
+    b.tabIndex = selected ? 0 : -1;
     if (selected) b.setAttribute('aria-current', 'page');
     else b.removeAttribute('aria-current');
   }
@@ -197,6 +199,7 @@ function surfaceContext() {
 function goTab(tab) {
   if (!tab || !TABS.includes(tab)) return;
   S.tab = tab; closeDrawer(); renderTabs(); renderSurfaces();
+  document.getElementById('tab-' + tab)?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   if (HOST_PREVIEW) void refreshHostPreview();
   else if (tab === 'world') void refreshMedia(false);
 }
@@ -220,6 +223,7 @@ function clearPrivatePhoneState() {
 // and flow through one grant-bound, HttpOnly-cookie ticket. No blob URLs, model
 // outputs, browser storage, provider API or cloud fallback.
 let playerActive = false;
+let priorMediaFocus = null;
 function stopMediaPlayer() {
   const sheet = $('media-player-sheet');
   const video = $('media-player-video');
@@ -229,6 +233,9 @@ function stopMediaPlayer() {
   video.load(); // abort outstanding native range requests
   sheet.hidden = true;
   playerActive = false;
+  const restore = priorMediaFocus;
+  priorMediaFocus = null;
+  if (restore?.isConnected && typeof restore.focus === 'function') restore.focus();
 }
 function ensureMediaPlayer() {
   if ($('media-player-sheet')) return;
@@ -281,10 +288,12 @@ async function openMediaPlayer(mediaId, title) {
     if (!response.ok || payload.schema !== 'vivim.media-playback-ticket/1' ||
         payload.url !== '/mobile/api/media/stream/' + mediaId)
       throw new Error(payload.code || 'Host did not authorize this playable file');
+    priorMediaFocus = document.activeElement;
     ensureMediaPlayer();
     $('media-player-title').textContent = String(title || 'Your media').slice(0, 160);
     $('media-player-state').textContent = 'Streaming securely from your PC · Internet buffering is not retained offline.';
     $('media-player-sheet').hidden = false;
+    $('media-player-sheet').querySelector('button')?.focus();
     $('media-player-video').src = payload.url;
     $('media-player-video').load();
     $('media-player-video').play().catch(() => {
@@ -1051,6 +1060,19 @@ $('pairbtn').onclick = async () => { try { localStorage.removeItem('vivim.bootst
 
 /* ---------- events ---------- */
 $('tabs').addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (!b) return; goTab(b.dataset.tab); });
+$('tabs').addEventListener('keydown', event => {
+  const keys = ['ArrowRight', 'ArrowLeft', 'Home', 'End'];
+  if (!keys.includes(event.key)) return;
+  const all = Array.from($('tabs').querySelectorAll('[role="tab"]'));
+  const active = all.indexOf(document.activeElement);
+  if (active < 0 || !all.length) return;
+  event.preventDefault();
+  const next = event.key === 'Home' ? 0 : event.key === 'End' ? all.length - 1
+    : event.key === 'ArrowRight' ? (active + 1) % all.length
+    : (active - 1 + all.length) % all.length;
+  goTab(all[next].dataset.tab);
+  all[next].focus();
+});
 $('talk-target').value = N.target;
 $('talk-target').addEventListener('change', () => {
   N.target = $('talk-target').value; N.generation++; clearTimeout(N.timer); clearTimeout(S.timer);
@@ -1133,7 +1155,7 @@ $('connection-apply').addEventListener('click', () => {
 });
 $('dbgclose').addEventListener('click', closeDebug);
 $('dbg').addEventListener('click', e => { if (e.target === $('dbg')) closeDebug(); });
-document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeDebug(); closeDrawer(); if (HOST_PREVIEW) { $('host-preview-menu').hidden = true; $('gear').setAttribute('aria-expanded', 'false'); } } });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { if (playerActive) stopMediaPlayer(); closeDebug(); closeDrawer(); if (HOST_PREVIEW) { $('host-preview-menu').hidden = true; $('gear').setAttribute('aria-expanded', 'false'); } } });
 $('dbgsend').addEventListener('click', async () => {
   const text = $('dbgtext').value.trim(); if (!text) return;
   try { await api('commands', { method: 'POST', body: JSON.stringify({ text, kind: $('kind').value, consumer: $('consumer').value }) }); $('dbgtext').value = ''; refresh(); }
