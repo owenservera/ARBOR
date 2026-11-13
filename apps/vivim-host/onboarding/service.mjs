@@ -252,6 +252,11 @@ export function createOnboardingService({ dataRoot, getRuntime, studio = null, d
     };
   }
 
+  // Read only: Studio-owned, previously observed provider checks; no probe,
+  // browser tab creation or inferred login. Never advertise stale results.
+  const providerSnapshot = () => PROVIDERS.map(p => ({
+    id:p.id,label:p.label,check:probes.get(p.id) ?? null
+  }));
   const primary = () => load().primary;
-  return { schema: ONBOARDING_SCHEMA, primary, status, openSignIn, check, setPrimary, review, approveAndStart, pump, start, stop, phoneSeen };
+  return { schema: ONBOARDING_SCHEMA, primary, providerSnapshot, status, openSignIn, check, setPrimary, review, approveAndStart, pump, start, stop, phoneSeen };
 }

@@ -16,6 +16,7 @@ import { createPairingStore } from './apk/pairing.mjs';
 import { readMemoryParams } from './bootstrap/web-memory.mjs';
 import { createMediaPlaybackService, parseMediaRange } from './media/playback.mjs';
 import { createMediaStreamGrantGuard } from './media/stream-guard.mjs';
+import { projectChatProviders } from './chat/provider-projection.mjs';
 import { controlErrorStatus } from './control/http-status.mjs';
 
 const root = fileURLToPath(new URL('../mobile-relay/', import.meta.url));
@@ -121,7 +122,7 @@ async function readBody(req) {
   try { return JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}'); } catch { throw failure(400, 'Invalid JSON'); }
 }
 
-export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'world-local', projection, control = null, apkRegistry = null, pairingStore = null, onPhoneSeen = () => {}, primary = () => null, webMemory = null, mediaPlayback = null, chatContext = null }) {
+export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'world-local', projection, control = null, apkRegistry = null, pairingStore = null, onPhoneSeen = () => {}, primary = () => null, providerSnapshot = () => [], webMemory = null, mediaPlayback = null, chatContext = null }) {
   let url;
   try { url = new URL(origin); } catch { throw new TypeError('Direct phone origin must be an HTTPS origin'); }
   if (url.protocol !== 'https:' || url.origin !== origin || url.username || url.password || !user || typeof user !== 'string' || user.trim() !== user) throw new TypeError('Direct phone requires an exact HTTPS origin and user');
@@ -184,9 +185,14 @@ export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'wo
       } catch (e) {
         console.warn('[vivim-live] timeline read unavailable:',e.code||'PROJECTION_ERROR');
       }
+      // Checked Studio observations only. A model cache or open tab is not
+      // proof that the owner is signed into a provider.
+      let providerRecords=[];
+      try {providerRecords=providerSnapshot()}catch{providerRecords=[]}
+      const manifest=projectChatProviders(providerRecords);
       return { at: new Date().toISOString(), snapshot: {
         bootstrap: { ...visual, cards: phoneCards, preferences: [], hardNos: [] },
-        onboarding: { primary: primary() }, live: liveSummary } };
+        onboarding: { primary: primary() }, manifest, live: liveSummary } };
     },
   };
   const relay = createRelay({ store, env: { VIVIM_RELAY_PAIR_SECRET: secret } });

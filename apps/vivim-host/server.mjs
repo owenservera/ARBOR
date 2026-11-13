@@ -234,6 +234,7 @@ export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path
     projection: () => runtimeFor().projection(),
     webMemory: opts => runtimeFor().webMemory(opts),
     chatContext: createRustChatContext(),
+    providerSnapshot: () => onboardingService.providerSnapshot(),
     control: controlFor, apkRegistry: apk, pairingStore: pairing,
     onPhoneSeen: () => onboardingService.phoneSeen(),
     primary: () => onboardingService.primary()
