@@ -124,15 +124,22 @@ export function createMediaPlaybackService({
   async function list() {
     const index = await readMediaLibrarySummary({ storeDir });
     if (index.state !== 'ready') return index;
+    // One catalog and mapping read per refresh. Previously both were reloaded
+    // for each of the 25 visible items; these are owner local disk reads.
+    let map = null;
+    if (configured) {
+      try { map = await mapping(); } catch { map = null; }
+    }
     const items = [];
     let any = false;
     for (const row of index.items) {
       let playable = false, mime = null;
-      if (configured && row.state === 'complete' && row.mediaId) {
+      const parts = row.state === 'complete' ? map?.get(row.mediaId) : null;
+      if (parts) {
         try {
-          const info = await resolve(row.mediaId);
+          const info = await safeFile(parts, row.mediaId);
           mime = info.mime; playable = true; any = true; await info.handle.close();
-        } catch { /* Unmapped or changing files are not advertised as playable. */ }
+        } catch { /* A missing, linked or changed file cannot become a Play action. */ }
       }
       items.push({ ...row, playable, ...(playable ? { mime } : {}) });
     }
