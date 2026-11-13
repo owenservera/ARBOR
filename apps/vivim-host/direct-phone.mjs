@@ -2,6 +2,7 @@
 import path from 'node:path';
 import { readFile } from 'node:fs/promises';
 import { createReadStream } from 'node:fs';
+import { pipeline } from 'node:stream/promises';
 import { fileURLToPath } from 'node:url';
 import { randomBytes } from 'node:crypto';
 import { createRelay, COOKIE, sessionValue } from '../mobile-relay/lib/relay-core.mjs';
@@ -13,7 +14,7 @@ import { createApkRegistry } from './apk/registry.mjs';
 import { createEnrollment } from './apk/enrollment.mjs';
 import { createPairingStore } from './apk/pairing.mjs';
 import { readMemoryParams } from './bootstrap/web-memory.mjs';
-import { readMediaLibrarySummary } from './media/library-summary.mjs';
+import { createMediaPlaybackService, parseMediaRange } from './media/playback.mjs';
 import { controlErrorStatus } from './control/http-status.mjs';
 
 const root = fileURLToPath(new URL('../mobile-relay/', import.meta.url));
@@ -110,7 +111,7 @@ async function readBody(req) {
   try { return JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}'); } catch { throw failure(400, 'Invalid JSON'); }
 }
 
-export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'world-local', projection, control = null, apkRegistry = null, pairingStore = null, onPhoneSeen = () => {}, primary = () => null, webMemory = null }) {
+export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'world-local', projection, control = null, apkRegistry = null, pairingStore = null, onPhoneSeen = () => {}, primary = () => null, webMemory = null, mediaPlayback = null }) {
   let url;
   try { url = new URL(origin); } catch { throw new TypeError('Direct phone origin must be an HTTPS origin'); }
   if (url.protocol !== 'https:' || url.origin !== origin || url.username || url.password || !user || typeof user !== 'string' || user.trim() !== user) throw new TypeError('Direct phone requires an exact HTTPS origin and user');
@@ -118,6 +119,22 @@ export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'wo
   // Source-backed metadata projection; bridge remains the sole queue authority.
   const live = createSourceVerifiedLiveProjection({dataRoot,worldId});
   const secret = randomBytes(32).toString('hex');
+  const media = mediaPlayback ?? createMediaPlaybackService();
+  // Short-lived stream capability is confined to this Host process and the
+  // authenticated Tailscale owner, then checked against the live device grant.
+  // Native HTML media elements cannot attach the device headers; the ticket
+  // is therefore an HttpOnly Secure cookie, never a URL query or JS bearer.
+  const mediaTickets = new Map();
+  const MEDIA_COOKIE = 'vivim_media_stream';
+  const mediaTtlMs = 5 * 60_000;
+  const pruneMediaTickets = () => {
+    const now = Date.now();
+    for (const [id, record] of mediaTickets)
+      if (record.expiresAt <= now) mediaTickets.delete(id);
+  };
+  const mediaCookie = req => String(req.headers.cookie || '').split(';')
+    .map(value => value.trim()).find(value => value.startsWith(MEDIA_COOKIE + '='))?.slice(MEDIA_COOKIE.length + 1);
+
   const store = {
     async listCommands() { return bridge.list({ limit: 200 }).items.map(({ claimToken, ...record }) => record); },
     async putCommand(record) {
@@ -232,6 +249,94 @@ export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'wo
       }
       return;
     }
+    // Playback begins with a POST authenticated by the device's existing
+    // control:read grant. Neither the catalog ID nor this route is a file path.
+    if (route === 'api/media/open') {
+      if (req.method !== 'POST') { res.setHeader('allow','POST'); json(res,405,{code:'METHOD'}); return; }
+      try {
+        const device = authorizeDevice(req,'control:read');
+        if (req.headers.origin !== origin || req.headers['x-vivim-media'] !== '1')
+          throw failure(403,'ORIGIN_OR_CSRF');
+        const body = await readBody(req);
+        if (!body || typeof body !== 'object' || Array.isArray(body) ||
+            Object.keys(body).length !== 1 || typeof body.mediaId !== 'string')
+          throw failure(400,'MEDIA_OPEN_INPUT_INVALID');
+        const mediaId = body.mediaId;
+        const info = await media.resolve(mediaId);
+        await info.handle.close();
+        pruneMediaTickets();
+        if (mediaTickets.size >= 32) throw failure(429,'MEDIA_STREAM_CAPACITY');
+        const ticket = randomBytes(32).toString('hex');
+        const expiresAt = Date.now() + mediaTtlMs;
+        mediaTickets.set(ticket, {
+          mediaId, fingerprint: info.fingerprint, expiresAt,
+          grantId: req.headers['x-vivim-grant-id'],
+          sessionId: req.headers['x-vivim-device-session'],
+          deviceId: device.deviceId
+        });
+        res.setHeader('set-cookie', MEDIA_COOKIE + '=' + ticket +
+          '; Secure; HttpOnly; SameSite=Strict; Path=/mobile/api/media/stream/; Max-Age=300');
+        res.setHeader('cache-control','private, no-store');
+        json(res,200,{schema:'vivim.media-playback-ticket/1',
+          url:'/mobile/api/media/stream/' + mediaId, mime:info.mime,
+          bytes:info.size, expiresAt:new Date(expiresAt).toISOString()});
+      } catch (cause) {
+        json(res,cause.status || 503,{code:cause.status ? cause.message : 'MEDIA_OPEN_UNAVAILABLE'});
+      }
+      return;
+    }
+    const streamId = /^api\/media\/stream\/([a-f0-9]{32})$/.exec(route);
+    if (streamId) {
+      if (req.method !== 'GET' && req.method !== 'HEAD') {
+        res.setHeader('allow','GET, HEAD'); json(res,405,{code:'METHOD'}); return;
+      }
+      let info = null;
+      try {
+        if (new URL(req.url,origin).search) throw failure(400,'MEDIA_QUERY_UNSUPPORTED');
+        pruneMediaTickets();
+        const ticket = mediaCookie(req);
+        const record = /^[a-f0-9]{64}$/.test(ticket || '') ? mediaTickets.get(ticket) : null;
+        if (!record || record.mediaId !== streamId[1])
+          throw failure(401,'MEDIA_STREAM_SESSION_REQUIRED');
+        // A revoked or expired device must stop streaming even with the cookie.
+        const grant = enrollment.validateGrant({grantId:record.grantId,sessionId:record.sessionId});
+        if (!Array.isArray(grant.scopes) || !grant.scopes.includes('control:read'))
+          throw failure(403,'MEDIA_STREAM_SCOPE_DENIED');
+        info = await media.resolve(streamId[1],record.fingerprint);
+        let bytes;
+        try { bytes = parseMediaRange(req.headers.range,info.size); }
+        catch (cause) {
+          if (cause.status === 416) {
+            res.setHeader('content-range','bytes */' + info.size);
+            res.setHeader('accept-ranges','bytes');
+            res.setHeader('cache-control','private, no-store');
+            res.writeHead(416); res.end();
+            await info.handle.close(); return;
+          }
+          throw cause;
+        }
+        res.setHeader('content-type',info.mime);
+        res.setHeader('content-length',String(bytes.end - bytes.start + 1));
+        res.setHeader('accept-ranges','bytes');
+        res.setHeader('cache-control','private, no-store');
+        res.setHeader('x-content-type-options','nosniff');
+        res.setHeader('etag',info.etag);
+        if (bytes.partial)
+          res.setHeader('content-range','bytes ' + bytes.start + '-' + bytes.end + '/' + info.size);
+        res.writeHead(bytes.partial ? 206 : 200);
+        if (req.method === 'HEAD') { res.end(); await info.handle.close(); return; }
+        const reader = info.handle.createReadStream({
+          start:bytes.start,end:bytes.end,autoClose:true
+        });
+        // pipeline handles backpressure and aborts both ends on disconnect.
+        await pipeline(reader,res);
+      } catch (cause) {
+        try { await info?.handle.close(); } catch {}
+        if (res.headersSent) { res.destroy(); return; }
+        json(res,cause.status || 503,{code:cause.status ? cause.message : 'MEDIA_STREAM_UNAVAILABLE'});
+      }
+      return;
+    }
     if (route === 'api/media/library') {
       // Private metadata only: a device-approved control:read capability is required.
       // This is not a streaming endpoint; never expose local paths or torrent URLs.
@@ -239,7 +344,7 @@ export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'wo
       try {
         authorizeDevice(req, 'control:read');
         if (new URL(req.url, origin).search) throw failure(400, 'MEDIA_QUERY_UNSUPPORTED');
-        json(res, 200, await readMediaLibrarySummary());
+        json(res, 200, await media.list());
       } catch (error) {
         json(res, error.status || 503, { schema: 'vivim.media-library-summary/1',
           state: 'unavailable', reason: error.status ? error.message : 'MEDIA_READ_UNAVAILABLE',
