@@ -1,0 +1,445 @@
+{
+  "schema": "arbor.p5.p2-k.source-delta/1",
+  "generated_at": "2026-11-12",
+  "execution_branch": "work/p5-p2-preg-knowledge-r001",
+  "execution_base": "8b23c73bf450738a76b256bf0fa17ecbf86db591",
+  "labs_main": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be",
+  "worker_heads": {
+    "A": "dda546a11294920d6521a0f64ab7ee62ec993c70",
+    "B": "78a5105a9c1f1880d658f350e130b1e2632d3532",
+    "D": "ad55fe28c2c331841675f308f9199ee4c2add86a"
+  },
+  "readiness_matrix_blob": "b02a7c3c8e25a825e4c9a7cf3bc8fcd9247333f3",
+  "semantics": {
+    "ALREADY_IMPORTED": "present on one frozen-or-current isolated Wave 1 owner branch, NOT G or pre-G base",
+    "TEST_ONLY": "donor synthetic test or fixture, optional post-G",
+    "ADAPTER_REQUIRED": "source exists but owner-specific Host/Rust adapter not verified",
+    "DESIGN_ONLY": "design/reference/schema, not running product",
+    "DEFERRED": "not beta critical; requires downstream consent/source or capacity gate",
+    "BLOCKED": "unsafe to activate without explicit owner fix and observed evidence"
+  },
+  "disposition": "PREPARED_NOT_PROMOTED",
+  "promotion_allowed": false,
+  "production_personal_ingest_accepted": false,
+  "actual_tests_executed_in_current_lane": [],
+  "reported_donor_tests": "28 Node synthetic tests reported in Labs runtime/ARCHITECTURE.md; not rerun in this lane",
+  "counts": {
+    "ADAPTER_REQUIRED": 6,
+    "BLOCKED": 2,
+    "DEFERRED": 2,
+    "DESIGN_ONLY": 7,
+    "TEST_ONLY": 14,
+    "ALREADY_IMPORTED": 9
+  },
+  "entries": [
+    {
+      "repo": "owenservera/vivim-labs",
+      "commit": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be",
+      "path": "personal-knowledge-lifecycle/runtime/src/zip-reader.mjs",
+      "blob_sha": "896fdc198fa303f350a66c681e77423f759f50d2",
+      "classification": "ADAPTER_REQUIRED",
+      "owner": "B",
+      "target": "apps/vivim-host/onboarding/personal-knowledge",
+      "reason": "Safe ZIP reader; owner-local archive selection + disk preflight required"
+    },
+    {
+      "repo": "owenservera/vivim-labs",
+      "commit": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be",
+      "path": "personal-knowledge-lifecycle/runtime/src/json-array-stream.mjs",
+      "blob_sha": "4f061bca5d3ee0e67646e63a6fdf9e23b244bfab",
+      "classification": "ADAPTER_REQUIRED",
+      "owner": "B",
+      "target": "apps/vivim-host/onboarding/personal-knowledge",
+      "reason": "Strict object array stream; Host integration and schema variants unrun"
+    },
+    {
+      "repo": "owenservera/vivim-labs",
+      "commit": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be",
+      "path": "personal-knowledge-lifecycle/runtime/src/chatgpt-normalize.mjs",
+      "blob_sha": "58b1ab985fbea2811eff3f4a2a5a70b4cb606d45",
+      "classification": "ADAPTER_REQUIRED",
+      "owner": "B",
+      "target": "apps/vivim-host/onboarding/personal-knowledge",
+      "reason": "Content revisions and omissions; do not auto-admit derived claims"
+    },
+    {
+      "repo": "owenservera/vivim-labs",
+      "commit": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be",
+      "path": "personal-knowledge-lifecycle/runtime/src/chatgpt-import.mjs",
+      "blob_sha": "9bfbcd40749774a3405a8d4f3456211fe4920253",
+      "classification": "BLOCKED",
+      "owner": "B",
+      "target": "apps/vivim-host/onboarding/personal-knowledge",
+      "reason": "8MiB staging cap; real owner sink, memory and crash acceptance missing"
+    },
+    {
+      "repo": "owenservera/vivim-labs",
+      "commit": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be",
+      "path": "personal-knowledge-lifecycle/runtime/src/t0-core.mjs",
+      "blob_sha": "39f9c5410c438ad1d5be4450cea0fdce928cb630",
+      "classification": "ADAPTER_REQUIRED",
+      "owner": "B",
+      "target": "apps/vivim-host/onboarding/personal-knowledge",
+      "reason": "Host grant and receipt map; unbounded evidence metadata requires policy"
+    },
+    {
+      "repo": "owenservera/vivim-labs",
+      "commit": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be",
+      "path": "personal-knowledge-lifecycle/runtime/src/host-ledger-port.mjs",
+      "blob_sha": "a6c68514c330af3cf60856e5cc5206514724e9db",
+      "classification": "ADAPTER_REQUIRED",
+      "owner": "B",
+      "target": "apps/vivim-host/onboarding/personal-knowledge",
+      "reason": "Host SQLite transaction/meta match observed; real integration unrun"
+    },
+    {
+      "repo": "owenservera/vivim-labs",
+      "commit": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be",
+      "path": "personal-knowledge-lifecycle/runtime/src/scoped-graph-proposal.mjs",
+      "blob_sha": "6196af064d79a28e0ad3d59958264ac918d6b27c",
+      "classification": "ADAPTER_REQUIRED",
+      "owner": "A+B",
+      "target": "native/hqkg and apps/vivim-host/onboarding/personal-knowledge",
+      "reason": "Pure Rust packet proposal, no evidence-backed typed apply proof"
+    },
+    {
+      "repo": "owenservera/vivim-labs",
+      "commit": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be",
+      "path": "personal-knowledge-lifecycle/runtime/src/host-archive-wiring.mjs",
+      "blob_sha": "e8ddbb17a83fbc398d1b651e121237bd1dcd3ef9",
+      "classification": "BLOCKED",
+      "owner": "B+A",
+      "target": "apps/vivim-host/onboarding/personal-knowledge",
+      "reason": "Proposed Host method names not verified; fallback inspection omits batch digest"
+    },
+    {
+      "repo": "owenservera/vivim-labs",
+      "commit": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be",
+      "path": "personal-knowledge-lifecycle/runtime/src/fastlane-snapshot.mjs",
+      "blob_sha": "fd59bedd5897124aecb81abd07a326555187453a",
+      "classification": "DEFERRED",
+      "owner": "B+C",
+      "target": "apps/vivim-host/onboarding/personal-knowledge",
+      "reason": "Candidate profile snapshots need trusted real Studio receipts and source grants"
+    },
+    {
+      "repo": "owenservera/vivim-labs",
+      "commit": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be",
+      "path": "personal-knowledge-lifecycle/runtime/src/ports.mjs",
+      "blob_sha": "b4fdc2466f8fb1da3779a4350ac1bcd13ab8b8d7",
+      "classification": "DESIGN_ONLY",
+      "owner": "B+F",
+      "target": "contracts/personal-knowledge",
+      "reason": "Reference owner paths + test fixture; no production implementation"
+    },
+    {
+      "repo": "owenservera/vivim-labs",
+      "commit": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be",
+      "path": "personal-knowledge-lifecycle/runtime/bin/inspect-chatgpt-export.mjs",
+      "blob_sha": "ec42ea09db01adb631427bd1cecfc633233a080a",
+      "classification": "DEFERRED",
+      "owner": "B",
+      "target": "tools/personal-knowledge",
+      "reason": "User-invoked inspection only; real archive runs prohibited in this lane"
+    },
+    {
+      "repo": "owenservera/vivim-labs",
+      "commit": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be",
+      "path": "personal-knowledge-lifecycle/runtime/bin/bench-synthetic.mjs",
+      "blob_sha": "05ef6ddc7f6e4148f88d716575f38cd45496c013",
+      "classification": "TEST_ONLY",
+      "owner": "F",
+      "target": "tests/personal-knowledge",
+      "reason": "Synthetic throughput only; no real export performance proof"
+    },
+    {
+      "repo": "owenservera/vivim-labs",
+      "commit": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be",
+      "path": "personal-knowledge-lifecycle/runtime/package.json",
+      "blob_sha": "c8f2762cf0f8ea191ac1a2b6eebd0633fdecbdde",
+      "classification": "DESIGN_ONLY",
+      "owner": "F",
+      "target": "tests/personal-knowledge",
+      "reason": "Labs package script manifest; do not add second product package"
+    },
+    {
+      "repo": "owenservera/vivim-labs",
+      "commit": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be",
+      "path": "personal-knowledge-lifecycle/runtime/README.md",
+      "blob_sha": "4b3ceaaba90ab383fc0130c067ac261da2d1456e",
+      "classification": "DESIGN_ONLY",
+      "owner": "F",
+      "target": "integration/source-evidence",
+      "reason": "Reports no production Host or Rust cutover"
+    },
+    {
+      "repo": "owenservera/vivim-labs",
+      "commit": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be",
+      "path": "personal-knowledge-lifecycle/runtime/ARCHITECTURE.md",
+      "blob_sha": "9d2f9171150455e16aad1bbba161ac6839604aa8",
+      "classification": "DESIGN_ONLY",
+      "owner": "B+A+F",
+      "target": "integration/source-evidence",
+      "reason": "Source map and donor-reported synthetic 28 tests"
+    },
+    {
+      "repo": "owenservera/vivim-labs",
+      "commit": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be",
+      "path": "personal-knowledge-lifecycle/runtime/tests/chatgpt-import.test.mjs",
+      "blob_sha": "0195a5096a848f1d5934ef34ef9ec1698e5358fd",
+      "classification": "TEST_ONLY",
+      "owner": "F+B",
+      "target": "tests/personal-knowledge",
+      "reason": "Donor-authored synthetic regression, no runtime/device proof; promote only post-G with owner"
+    },
+    {
+      "repo": "owenservera/vivim-labs",
+      "commit": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be",
+      "path": "personal-knowledge-lifecycle/runtime/tests/chatgpt-normalize.test.mjs",
+      "blob_sha": "0959739489de9b5e10096ec13147d423931c00ce",
+      "classification": "TEST_ONLY",
+      "owner": "F+B",
+      "target": "tests/personal-knowledge",
+      "reason": "Donor-authored synthetic regression, no runtime/device proof; promote only post-G with owner"
+    },
+    {
+      "repo": "owenservera/vivim-labs",
+      "commit": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be",
+      "path": "personal-knowledge-lifecycle/runtime/tests/durable-ingestion.test.mjs",
+      "blob_sha": "19877a0205e8e8fb56cbe7f79e239dfb7c342fb7",
+      "classification": "TEST_ONLY",
+      "owner": "F+B",
+      "target": "tests/personal-knowledge",
+      "reason": "Donor-authored synthetic regression, no runtime/device proof; promote only post-G with owner"
+    },
+    {
+      "repo": "owenservera/vivim-labs",
+      "commit": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be",
+      "path": "personal-knowledge-lifecycle/runtime/tests/fastlane-snapshot.test.mjs",
+      "blob_sha": "53afee2f746739436c9dab60e25da66257082b3b",
+      "classification": "TEST_ONLY",
+      "owner": "F+B",
+      "target": "tests/personal-knowledge",
+      "reason": "Donor-authored synthetic regression, no runtime/device proof; promote only post-G with owner"
+    },
+    {
+      "repo": "owenservera/vivim-labs",
+      "commit": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be",
+      "path": "personal-knowledge-lifecycle/runtime/tests/fixtures.mjs",
+      "blob_sha": "64e0dff60e94abfc4de3dba1a158381c0750f54a",
+      "classification": "TEST_ONLY",
+      "owner": "F+B",
+      "target": "tests/personal-knowledge",
+      "reason": "Donor-authored synthetic regression, no runtime/device proof; promote only post-G with owner"
+    },
+    {
+      "repo": "owenservera/vivim-labs",
+      "commit": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be",
+      "path": "personal-knowledge-lifecycle/runtime/tests/fuzz-stream.test.mjs",
+      "blob_sha": "09dcc4a825c6feef262081e64da50ecbb05d8926",
+      "classification": "TEST_ONLY",
+      "owner": "F+B",
+      "target": "tests/personal-knowledge",
+      "reason": "Donor-authored synthetic regression, no runtime/device proof; promote only post-G with owner"
+    },
+    {
+      "repo": "owenservera/vivim-labs",
+      "commit": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be",
+      "path": "personal-knowledge-lifecycle/runtime/tests/host-archive-wiring.test.mjs",
+      "blob_sha": "15f6e26a6f1c0cc6d4a43056d4b49dfa18a2b693",
+      "classification": "TEST_ONLY",
+      "owner": "F+B",
+      "target": "tests/personal-knowledge",
+      "reason": "Donor-authored synthetic regression, no runtime/device proof; promote only post-G with owner"
+    },
+    {
+      "repo": "owenservera/vivim-labs",
+      "commit": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be",
+      "path": "personal-knowledge-lifecycle/runtime/tests/json-array-stream.test.mjs",
+      "blob_sha": "e5e8f2a39f7a80c55006c1a1c42cf4fdc8ca9be9",
+      "classification": "TEST_ONLY",
+      "owner": "F+B",
+      "target": "tests/personal-knowledge",
+      "reason": "Donor-authored synthetic regression, no runtime/device proof; promote only post-G with owner"
+    },
+    {
+      "repo": "owenservera/vivim-labs",
+      "commit": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be",
+      "path": "personal-knowledge-lifecycle/runtime/tests/lifecycle-acceptance.test.mjs",
+      "blob_sha": "0d685d5d221bf0f6a293616c2cdea478706b9d90",
+      "classification": "TEST_ONLY",
+      "owner": "F+B",
+      "target": "tests/personal-knowledge",
+      "reason": "Donor-authored synthetic regression, no runtime/device proof; promote only post-G with owner"
+    },
+    {
+      "repo": "owenservera/vivim-labs",
+      "commit": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be",
+      "path": "personal-knowledge-lifecycle/runtime/tests/scoped-graph-proposal.test.mjs",
+      "blob_sha": "69bd665c551830ee7c080c5100f88cb6e148db1a",
+      "classification": "TEST_ONLY",
+      "owner": "F+B",
+      "target": "tests/personal-knowledge",
+      "reason": "Donor-authored synthetic regression, no runtime/device proof; promote only post-G with owner"
+    },
+    {
+      "repo": "owenservera/vivim-labs",
+      "commit": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be",
+      "path": "personal-knowledge-lifecycle/runtime/tests/staging-integration.test.mjs",
+      "blob_sha": "40b2fe8a57b6d8250ce64b709a0b2a19ba2d28de",
+      "classification": "TEST_ONLY",
+      "owner": "F+B",
+      "target": "tests/personal-knowledge",
+      "reason": "Donor-authored synthetic regression, no runtime/device proof; promote only post-G with owner"
+    },
+    {
+      "repo": "owenservera/vivim-labs",
+      "commit": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be",
+      "path": "personal-knowledge-lifecycle/runtime/tests/t0-core.test.mjs",
+      "blob_sha": "1be22e061308ca8411fe0cfd14f0bda75f5de417",
+      "classification": "TEST_ONLY",
+      "owner": "F+B",
+      "target": "tests/personal-knowledge",
+      "reason": "Donor-authored synthetic regression, no runtime/device proof; promote only post-G with owner"
+    },
+    {
+      "repo": "owenservera/vivim-labs",
+      "commit": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be",
+      "path": "personal-knowledge-lifecycle/runtime/tests/zip-reader.test.mjs",
+      "blob_sha": "ac5b2686bbde3cf9d735659ee4e695d39aa1f8e8",
+      "classification": "TEST_ONLY",
+      "owner": "F+B",
+      "target": "tests/personal-knowledge",
+      "reason": "Donor-authored synthetic regression, no runtime/device proof; promote only post-G with owner"
+    },
+    {
+      "repo": "owenservera/vivim-labs",
+      "commit": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be",
+      "path": "personal-knowledge-lifecycle/PIPELINE-CONTRACTS.md",
+      "blob_sha": "12c402c54d411ac94caf6ba6d2843f2054f5adcd",
+      "classification": "DESIGN_ONLY",
+      "owner": "B+F",
+      "target": "integration/source-evidence",
+      "reason": "Proposed lifecycle/source-grant schema"
+    },
+    {
+      "repo": "owenservera/vivim-labs",
+      "commit": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be",
+      "path": "personal-knowledge-lifecycle/CHATGPT-FIRST-USER-WORKFLOW.md",
+      "blob_sha": "fe9d8780fd8d3fa7e31621e144d037b2fc4f00e6",
+      "classification": "DESIGN_ONLY",
+      "owner": "B+E",
+      "target": "integration/source-evidence",
+      "reason": "User onboarding direction, not consent implementation"
+    },
+    {
+      "repo": "owenservera/vivim-labs",
+      "commit": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be",
+      "path": "personal-knowledge-lifecycle/SOURCE-ATLAS.md",
+      "blob_sha": "734f872938a20955381f15fec5555f7e0e09cb10",
+      "classification": "DESIGN_ONLY",
+      "owner": "F",
+      "target": "integration/source-evidence",
+      "reason": "Source catalog design and research"
+    },
+    {
+      "repo": "owenservera/ARBOR",
+      "branch": "work/p5-w01-b-host",
+      "commit": "78a5105a9c1f1880d658f350e130b1e2632d3532",
+      "path": "apps/vivim-host/bootstrap/ledger.mjs",
+      "blob_sha": "b40eb9ba34e49b034875936a0e7fc14964270a54",
+      "classification": "ALREADY_IMPORTED",
+      "owner": "B",
+      "target": "apps/vivim-host/bootstrap/ledger.mjs",
+      "reason": "SQLite transaction/meta API present; archive-specific grant/custody absent"
+    },
+    {
+      "repo": "owenservera/ARBOR",
+      "branch": "work/p5-w01-b-host",
+      "commit": "78a5105a9c1f1880d658f350e130b1e2632d3532",
+      "path": "apps/vivim-host/onboarding/service.mjs",
+      "blob_sha": "287a107eab19411a7cf0a3cadb54ea025f9377f0",
+      "classification": "ALREADY_IMPORTED",
+      "owner": "B",
+      "target": "apps/vivim-host/onboarding/service.mjs",
+      "reason": "Owner-approved F02/F01 bootstrap; does not authorize archive"
+    },
+    {
+      "repo": "owenservera/ARBOR",
+      "branch": "work/p5-w01-b-host",
+      "commit": "78a5105a9c1f1880d658f350e130b1e2632d3532",
+      "path": "apps/vivim-host/corpus/host-integration.mjs",
+      "blob_sha": "9c2df8dc742cc88f9f5e0757380137d8492a652c",
+      "classification": "ALREADY_IMPORTED",
+      "owner": "B",
+      "target": "apps/vivim-host/corpus/host-integration.mjs",
+      "reason": "Signed corpus receipt bridge for separate manually approved source"
+    },
+    {
+      "repo": "owenservera/ARBOR",
+      "branch": "work/p5-w01-b-host",
+      "commit": "78a5105a9c1f1880d658f350e130b1e2632d3532",
+      "path": "apps/vivim-host/corpus/intake/host-intake.mjs",
+      "blob_sha": "1db63cf3b0cc2dca09590a203b93fc895d4c936c",
+      "classification": "ALREADY_IMPORTED",
+      "owner": "B",
+      "target": "apps/vivim-host/corpus/intake/host-intake.mjs",
+      "reason": "Host raw corpus intake isolated; ChatGPT adapter not wired"
+    },
+    {
+      "repo": "owenservera/ARBOR",
+      "branch": "work/p5-w01-a-native",
+      "commit": "dda546a11294920d6521a0f64ab7ee62ec993c70",
+      "path": "native/hqkg/src/scoped_graph.rs",
+      "blob_sha": "586843b56eedd4a9926bb443cbbeda80d841bda4",
+      "classification": "ALREADY_IMPORTED",
+      "owner": "A",
+      "target": "native/hqkg/src/scoped_graph.rs",
+      "reason": "Typed personal namespace and epoch CAS; caller provenance not authenticated"
+    },
+    {
+      "repo": "owenservera/ARBOR",
+      "branch": "work/p5-w01-a-native",
+      "commit": "dda546a11294920d6521a0f64ab7ee62ec993c70",
+      "path": "native/hqkg/src/bin/hqkg-personal.rs",
+      "blob_sha": "8049558d6e5e625ede8d03be2504c7f947524233",
+      "classification": "ALREADY_IMPORTED",
+      "owner": "A",
+      "target": "native/hqkg/src/bin/hqkg-personal.rs",
+      "reason": "Host CLI packet, graph markers, compact and erase effects; process-bound Host auth not tested"
+    },
+    {
+      "repo": "owenservera/ARBOR",
+      "branch": "work/p5-w01-a-native",
+      "commit": "dda546a11294920d6521a0f64ab7ee62ec993c70",
+      "path": "native/hqkg/tests/personal_lifecycle.rs",
+      "blob_sha": "e5147c8a39674408377287e7f78bdf334706b01b",
+      "classification": "ALREADY_IMPORTED",
+      "owner": "A",
+      "target": "native/hqkg/tests/personal_lifecycle.rs",
+      "reason": "Native personal lifecycle source tests present on A branch, not executed here"
+    },
+    {
+      "repo": "owenservera/ARBOR",
+      "branch": "work/p5-w01-d-hq",
+      "commit": "ad55fe28c2c331841675f308f9199ee4c2add86a",
+      "path": "hq/lib/personal-corpus-contract.mjs",
+      "blob_sha": "c842fe5848d47179dc3852335747e1227e344d1d",
+      "classification": "ALREADY_IMPORTED",
+      "owner": "D",
+      "target": "hq/lib/personal-corpus-contract.mjs",
+      "reason": "Pure envelope validation, no personal DB or authority"
+    },
+    {
+      "repo": "owenservera/ARBOR",
+      "branch": "work/p5-w01-d-hq",
+      "commit": "ad55fe28c2c331841675f308f9199ee4c2add86a",
+      "path": "hq/lib/session-import.mjs",
+      "blob_sha": "4bbd82832bd6d5bdf961ad884e6de9012bd5d464",
+      "classification": "ALREADY_IMPORTED",
+      "owner": "D",
+      "target": "hq/lib/session-import.mjs",
+      "reason": "Development OpenCode session import; not ChatGPT history"
+    }
+  ]
+}

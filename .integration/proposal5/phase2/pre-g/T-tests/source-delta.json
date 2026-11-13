@@ -1,0 +1,95 @@
+{
+  "schema": "arbor.p5.p2-t-source-delta/1",
+  "disposition": "PREPARED_NOT_PROMOTED",
+  "sourceBaselines": {
+    "labsMain": "022608f5797e7b4a14ccc4c393bd3c5a4704a4be",
+    "labsR005": "56bb145ea1eb479e4d8ec629163a84322797367a",
+    "labsChronos": "b87ea71c653c3833451bd0af19d9ef1c4327728e"
+  },
+  "entries": [
+    {
+      "path": "capability-observatory/lane-d/src/observatory.mjs",
+      "blob": "4b0284b209ca4bb45155a82aab02af1bc2f99101",
+      "status": "TEST_ONLY",
+      "owner": "F",
+      "reason": "pure source-status evidence and redaction checks, no second server"
+    },
+    {
+      "path": "capability-observatory/lane-d/tests/observatory.test.mjs",
+      "status": "TEST_ONLY",
+      "owner": "F",
+      "reason": "dedupe donor historical 7-test suite"
+    },
+    {
+      "path": "ARBOR/hq/lib/arbor-service.mjs on D worker branch",
+      "status": "ALREADY_IMPORTED",
+      "owner": "D",
+      "reason": "source imported isolated, G integration and Host grant unverified"
+    },
+    {
+      "path": "vivim/voice-to-tasks/workbench/core.mjs",
+      "blob": "24120e5214833e4365ef9ad76ec7fe40f6339ef2",
+      "status": "TEST_ONLY",
+      "owner": "B+E",
+      "reason": "draft proposal reference, no actual task writes"
+    },
+    {
+      "path": "vivim/voice-to-tasks/workbench/workbench.test.mjs",
+      "blob": "f36284e31f10dce0f47c0f955202a7780ffae185",
+      "status": "TEST_ONLY",
+      "owner": "F+B",
+      "reason": "reuse negative evidence spans, consent and receipt checks"
+    },
+    {
+      "path": "voice recorder to ASR to Host commit",
+      "status": "BLOCKED",
+      "owner": "B+E",
+      "reason": "live device task flow not verified"
+    },
+    {
+      "path": "nlp-command-ui-lab/src/semantic-lens.mjs",
+      "blob": "d5de11edf693eb67ffed23e1fd26e68240d4420c",
+      "status": "TEST_ONLY",
+      "owner": "E+F",
+      "reason": "negative and quoted text must not trigger actions"
+    },
+    {
+      "path": "nlp-command-ui-lab/src/affordances.mjs",
+      "blob": "8f010ef7d0e1ac444e9855055f6f4881fc36c56a",
+      "status": "ADAPTER_REQUIRED",
+      "owner": "E+B+F",
+      "reason": "visual risk/identity not Host action ID or grant"
+    },
+    {
+      "path": "nlp-command-ui-lab/docs/R008-",
+      "status": "DESIGN_ONLY",
+      "owner": "D+E",
+      "reason": "personal per-screen AutoWiki not a live mirror"
+    },
+    {
+      "path": "chronos-toolkit/wave2/vivim-web-harness/studio/src/studio/chronos-conversation-projection.mjs",
+      "blob": "94d43ae2a3c20dcc054d6c16f3b44ec664862d42",
+      "status": "TEST_ONLY",
+      "owner": "C+F",
+      "reason": "inert read projection"
+    },
+    {
+      "path": "chronos-toolkit/wave2/repos-hq/research/rust-knowledge-graph/src/chronos.rs",
+      "status": "DEFERRED",
+      "owner": "A+D",
+      "reason": "unactivated staged Rust, no second scheduler"
+    },
+    {
+      "path": "ARBOR/packages/tierflow on E worker branch",
+      "status": "ALREADY_IMPORTED",
+      "owner": "E",
+      "reason": "source import, not G merge or device acceptance"
+    },
+    {
+      "path": "ARBOR/integration/worker-reports/PREG-F.md",
+      "status": "ADAPTER_REQUIRED",
+      "owner": "F+G",
+      "reason": "final F report unavailable at inspection; verify inventory before reuse"
+    }
+  ]
+}
