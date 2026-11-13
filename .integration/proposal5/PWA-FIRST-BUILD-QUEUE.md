@@ -45,3 +45,9 @@
 PWA-12 is now the only remaining original queue item without source completion. It requires executable Node24, Windows and real Android/Tailscale proof. GitHub Actions is returning startup_failure with zero jobs, so that acceptance has **not** happened. Continue code fixes directly on main; never claim release GO from V8 syntax checks.
 
 Run the original tests in one command from the real repo checkout: `node integration/scripts/pwa-run-now.mjs`. It prints real runtime version and per-suite exit codes. This is a local verifier, not another PR gate or service; Node/Windows and physical Android acceptance are still UNRUN until executed.
+
+## Current source-check record
+
+At `952834db330142ded0e08657c7eb22a4639cf491` (2026-11-13), source-level V8 execution of the checked-in test callbacks and the corresponding pure JS implementation returned **33/33 PWA UI + 9/9 VEC + 10/10 Build = 52/52 PASS**. This is **not** the Node test runner, real HTTP stack, Windows launch, or Android phone. It does not prove PWA release acceptance. Main also includes Direct media library paging (25 items per page), full-catalog matched-file resolution, stream close on World tab exit, private Control/history redaction and abort-safe opening.
+
+GitHub Actions run for this work is still `startup_failure` with no jobs. The next operational step is to run `node integration/scripts/pwa-run-now.mjs` in the real Windows ARBOR checkout and exercise a paired Android browser over Tailscale Direct. Do not claim device acceptance from the source checks.

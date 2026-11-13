@@ -198,5 +198,33 @@
         "PWA-11"
       ]
     }
-  ]
+  ],
+  "executionEvidence": {
+    "assessedMainSha": "952834db330142ded0e08657c7eb22a4639cf491",
+    "mode": "source-level V8 execution of checked-in test callbacks and production pure JS modules",
+    "modules": [
+      {
+        "name": "PWA Today/World/Me UX, Control lifecycle, media navigation",
+        "passed": 33,
+        "failed": 0
+      },
+      {
+        "name": "VEC deterministic UI compiler",
+        "passed": 9,
+        "failed": 0
+      },
+      {
+        "name": "Build request routing and composer",
+        "passed": 10,
+        "failed": 0
+      }
+    ],
+    "totalSourceChecksPass": 52,
+    "node24TestSuites": "UNRUN",
+    "windowsHostAcceptance": "UNRUN",
+    "androidDirectTailscaleAcceptance": "UNRUN",
+    "githubActions": "startup_failure before jobs",
+    "releaseAcceptance": "NOT_CLAIMED",
+    "localExecutableCommand": "node integration/scripts/pwa-run-now.mjs"
+  }
 }
