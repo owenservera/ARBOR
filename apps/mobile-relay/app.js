@@ -10,6 +10,11 @@ import { renderToday, renderWorld, renderMe } from './ux/render.mjs';
 import { createControlChat } from './control-chat.mjs';
 const $ = id => document.getElementById(id);
 const api = transport.request;
+// Only the loopback Host wrapper may display a read-only, unpaired desktop
+// preview. An HTTPS phone, cloud relay or arbitrary public origin never can.
+const HOST_PREVIEW = new URLSearchParams(location.search).get('host-preview') === '1'
+  && ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname)
+  && location.pathname.startsWith('/mobile/');
 // This action exists only inside the signed VIVIM Android shell. The online surface
 // remains the single Host-operated phone; Pocket holds local raw evidence only.
 const pocketButton = document.getElementById('pocket-native');
@@ -280,7 +285,9 @@ function renderComposer() {
     $('clip').hidden = true; $('files').hidden = true;
     $('text').placeholder = 'Ask VIVIM: show status, or describe a change…';
     $('text').maxLength = 1000;
-    $('composer-note').textContent = 'PC-authoritative · previews first · approval required for changes';
+    $('composer-note').textContent = HOST_PREVIEW
+      ? 'Phone preview only · open Host menu to pair and connect'
+      : 'PC-authoritative · previews first · approval required for changes';
     updateSend(); return;
   }
   $('composer-note').textContent = N.target === 'phone'
@@ -317,6 +324,7 @@ function renderComposer() {
   updateSend();
 }
 function updateSend() {
+  if (HOST_PREVIEW) { $('send').disabled = true; return; }
   $('send').disabled = N.target === 'vivim'
     ? !transport.direct || vivimChat.busy() || !$('text').value.trim() || $('text').value.trim().length > 1000
     : N.target === 'phone'
@@ -433,6 +441,76 @@ function closeDrawer() { $('drawer').classList.remove('open'); $('scrim').hidden
 function openDebug() { $('dbg').hidden = false; $('connection-resolved').hidden = !transport.pending(); renderDebug(); }
 function closeDebug() { $('dbg').hidden = true; }
 
+// Host utilities are deliberately separate from the phone's normal navigation.
+// We reuse the existing phone UI, not the old desktop dashboard or its scripts.
+function installHostMenu() {
+  const section = el('section', 'host-preview-menu');
+  section.id = 'host-preview-menu';
+  section.hidden = true;
+  section.setAttribute('aria-label', 'Host utilities');
+  const heading = el('h2', '', 'Your VIVIM Host');
+  const description = el('p', 'muted', 'The phone app is your starting point. Administrative tools open only when you choose them.');
+  const items = el('nav', 'host-preview-links');
+  for (const [label, href] of [
+    ['Pair a phone', '/onboarding'],
+    ['Connections & permissions', '/host/control'],
+    ['Host Control', '/host/control'],
+    ['Host diagnostics', '/api/host/status']
+  ]) {
+    const anchor = el('a', '', label);
+    anchor.href = href;
+    anchor.target = '_top';
+    items.append(anchor);
+  }
+  const personalize = el('button', '', 'Appearance');
+  personalize.type = 'button';
+  personalize.addEventListener('click', () => {
+    section.hidden = true;
+    $('theme-toggle').click();
+  });
+  items.append(personalize);
+  const close = el('button', 'btn sm', 'Close menu');
+  close.type = 'button';
+  close.addEventListener('click', () => { section.hidden = true; $('gear').setAttribute('aria-expanded', 'false'); });
+  section.append(heading, description, items, close);
+  document.querySelector('main').append(section);
+  $('gear').setAttribute('aria-label', 'Host menu');
+  $('gear').setAttribute('aria-controls', section.id);
+  $('gear').setAttribute('aria-expanded', 'false');
+}
+function toggleHostMenu() {
+  const menu = $('host-preview-menu');
+  if (!menu) return;
+  menu.hidden = !menu.hidden;
+  $('gear').setAttribute('aria-expanded', String(!menu.hidden));
+}
+async function startHostPreview() {
+  // The native desktop process passes only a single-use code, not its owner
+  // capability. Exchange it once for an HttpOnly browser session; erase hash.
+  const fragment = location.hash;
+  if (fragment.startsWith('#control-session=')) {
+    history.replaceState(null, '', location.pathname + location.search);
+    const match = /^#control-session=([a-f0-9]{64})$/.exec(fragment);
+    if (match) {
+      try {
+        await fetch('/api/host/control/ui-exchange', {
+          method: 'POST', cache: 'no-store', credentials: 'same-origin',
+          headers: { 'content-type': 'application/json', 'x-vivim-control': '1' },
+          body: JSON.stringify({ code: match[1] })
+        });
+      } catch { /* Control stays locked; no bearer token is retained. */ }
+    }
+  }
+  document.body.classList.add('paired', 'host-preview');
+  $('pairbox').hidden = true;
+  $('app').hidden = false;
+  S.paired = false;
+  S.cmds = []; S.convs = []; S.active = null;
+  S.device = { status: 'preview', scopes: [] };
+  setConn('Desktop preview · phone not paired', true);
+  renderAll(true);
+}
+
 /* Existing PC sessions only; transcript reads never create or fork sessions. */
 function renderNative() {
   const box = $('msgs'), session = N.sessions.find(s => s.id === N.session);
@@ -507,6 +585,10 @@ async function nativeSend() {
 
 /* ---------- send ---------- */
 async function send() {
+  if (HOST_PREVIEW) {
+    toast('This is your phone preview. Pair a phone or open Host Control to perform actions.');
+    return;
+  }
   if (N.target === 'vivim') {
     const field = $('text'), body = field.value.trim();
     if (!body || body.length > 1000 || vivimChat.busy()) return;
@@ -639,6 +721,7 @@ function showAppHandoff(token) {
 }
 
 document.addEventListener('visibilitychange', () => {
+  if (HOST_PREVIEW) return;
   if(document.visibilityState==='visible' && S.paired && transport.direct)renderMsgs(true);
   // A pending approval can complete while Android is backgrounded. On return,
   // refresh once; no enrollment token is redeemed and no command is resent.
@@ -781,7 +864,7 @@ $('text').addEventListener('keydown', e => {
   if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && matchMedia('(pointer:fine)').matches) { e.preventDefault(); send(); }
 });
 $('send').addEventListener('click', send);
-$('gear').addEventListener('click', openDebug);
+$('gear').addEventListener('click', HOST_PREVIEW ? toggleHostMenu : openDebug);
 $('connection-mode').value = transport.mode();
 $('connection-address').value = transport.directAddress();
 $('connection-resolved').addEventListener('click', () => {
@@ -803,7 +886,7 @@ $('connection-apply').addEventListener('click', () => {
 });
 $('dbgclose').addEventListener('click', closeDebug);
 $('dbg').addEventListener('click', e => { if (e.target === $('dbg')) closeDebug(); });
-document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeDebug(); closeDrawer(); } });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeDebug(); closeDrawer(); if (HOST_PREVIEW) { $('host-preview-menu').hidden = true; $('gear').setAttribute('aria-expanded', 'false'); } } });
 $('dbgsend').addEventListener('click', async () => {
   const text = $('dbgtext').value.trim(); if (!text) return;
   try { await api('commands', { method: 'POST', body: JSON.stringify({ text, kind: $('kind').value, consumer: $('consumer').value }) }); $('dbgtext').value = ''; refresh(); }
@@ -812,7 +895,7 @@ $('dbgsend').addEventListener('click', async () => {
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { if (N.target === 'phone') nativeRefresh(); else refresh(); } });
 window.addEventListener('vivim:bootstrap-refresh', () => { S.statusAt = 0; if (S.paired) refresh(); });
 
-if ('serviceWorker' in navigator) navigator.serviceWorker.register(transport.direct ? '/mobile/sw.js' : '/sw.js').catch(() => {});
+if (!HOST_PREVIEW && 'serviceWorker' in navigator) navigator.serviceWorker.register(transport.direct ? '/mobile/sw.js' : '/sw.js').catch(() => {});
 $('native-session').hidden = N.target !== 'phone';
 $('native-status').hidden = N.target !== 'phone';
 $('drawer').hidden = N.target !== 'harness';
@@ -820,5 +903,6 @@ $('menu').hidden = N.target !== 'harness';
 $('newchat').textContent = N.target === 'vivim' ? 'Clear chat' : 'New chat';
 renderTabs();
 renderComposer();
-if (N.target === 'vivim') { vivimChat.render(); void vivimChat.loadSuggestions(); }
-start();
+if (HOST_PREVIEW) installHostMenu();
+if (N.target === 'vivim') { vivimChat.render(); if (!HOST_PREVIEW) void vivimChat.loadSuggestions(); }
+if (HOST_PREVIEW) void startHostPreview(); else start();

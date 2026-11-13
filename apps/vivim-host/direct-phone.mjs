@@ -60,6 +60,35 @@ const assets = new Map(Object.entries({
   'manifest.webmanifest': ['manifest.webmanifest', 'application/manifest+json'],
   'icon.svg': ['icon.svg', 'image/svg+xml'],
 }));
+// Desktop preview serves only static PWA assets on local loopback. All phone APIs
+// remain behind the independently authorized Direct/Tailscale phone handler.
+export async function serveLoopbackPhoneAsset(req, res, pathname) {
+  if (!pathname.startsWith('/mobile/')) return false;
+  if (req.method !== 'GET' && req.method !== 'HEAD') {
+    res.setHeader('allow', 'GET, HEAD'); res.writeHead(405); res.end(); return true;
+  }
+  const relative = pathname.slice('/mobile/'.length);
+  if (!relative && new URL(req.url || '/', 'http://localhost').searchParams.get('host-preview') !== '1') {
+    res.writeHead(404); res.end('Use the authorized Direct phone URL'); return true;
+  }
+  const asset = assets.get(relative);
+  if (!asset) { res.writeHead(404); res.end('Not found'); return true; }
+  // The existing phone document contains inline styles; scripts still load only from self.
+  // Unlike the remote phone endpoint, this static preview permits same-origin framing
+  // by the new loopback Host presentation shell only.
+  res.setHeader('x-frame-options', 'SAMEORIGIN');
+  res.setHeader('content-security-policy',
+    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; frame-src 'none'; object-src 'none'; frame-ancestors 'self'; base-uri 'none'; form-action 'none'");
+  try {
+    const content = await readFile(path.join(root, asset[0]));
+    res.setHeader('content-type', asset[1]);
+    res.writeHead(200); res.end(req.method === 'HEAD' ? undefined : content);
+  } catch {
+    res.writeHead(503); res.end('Phone PWA asset unavailable');
+  }
+  return true;
+}
+
 const json = (res, status, body) => { res.setHeader('content-type', 'application/json; charset=utf-8'); res.writeHead(status); res.end(JSON.stringify(body)); };
 const failure = (status, message) => Object.assign(new Error(message), { status });
 // The VIVIM phone session route. The VIVIM-native path is `sessions*`; the
