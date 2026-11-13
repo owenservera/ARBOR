@@ -121,7 +121,7 @@ async function readBody(req) {
   try { return JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}'); } catch { throw failure(400, 'Invalid JSON'); }
 }
 
-export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'world-local', projection, control = null, apkRegistry = null, pairingStore = null, onPhoneSeen = () => {}, primary = () => null, webMemory = null, mediaPlayback = null }) {
+export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'world-local', projection, control = null, apkRegistry = null, pairingStore = null, onPhoneSeen = () => {}, primary = () => null, webMemory = null, mediaPlayback = null, chatContext = null }) {
   let url;
   try { url = new URL(origin); } catch { throw new TypeError('Direct phone origin must be an HTTPS origin'); }
   if (url.protocol !== 'https:' || url.origin !== origin || url.username || url.password || !user || typeof user !== 'string' || user.trim() !== user) throw new TypeError('Direct phone requires an exact HTTPS origin and user');
@@ -241,6 +241,28 @@ export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'wo
         const status=/_(?:INVALID|FIELDS_INVALID|ID_INVALID)$/.test(code)?400:
           /(?:STALE|CONFLICT|NOT_VERIFIED)/.test(code)?409:error.status??503;
         json(res,status,{code,error:status===503?'Phone acknowledgment unavailable':code});
+      }
+      return;
+    }
+    if (route === 'api/chat/context') {
+      // Read-only context projection: Tailscale identity and a live approved
+      // control:read grant are both required. The phone supplies only a fixed
+      // surface name; the Host selects the Rust binary, journal and graph seed.
+      if (req.method !== 'GET') { json(res,405,{code:'METHOD'});return; }
+      try {
+        authorizeDevice(req,'control:read');
+        const query = [...new URL(req.url,origin).searchParams.entries()];
+        if (query.length!==1 || query[0][0]!=='focus' ||
+          !['today','talk','build','world','me','control'].includes(query[0][1]))
+          throw failure(400,'CHAT_FOCUS_INVALID');
+        const result=chatContext
+          ? await chatContext(query[0][1])
+          : {schema:'vivim.hqkg-chat-context/1',state:'unavailable',reason:'RUST_CORE_NOT_CONFIGURED',items:[]};
+        res.setHeader('cache-control','private, no-store');
+        json(res,200,result);
+      }catch(error){
+        json(res,error.status||503,{schema:'vivim.hqkg-chat-context/1',
+          state:'unavailable',reason:error.status?error.message:'CHAT_CONTEXT_UNAVAILABLE',items:[]});
       }
       return;
     }

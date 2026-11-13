@@ -199,3 +199,17 @@ test('direct phone authenticates proxy, bounds routes and uses the shared queue'
   assert.equal((await call('/mobile/api/media/library')).status,403);
   assert.equal(trustedPhonePresence,seenBeforeRevokedRequest);
 });
+
+
+test('chat context is a strictly bounded read-only Host-owned native projection',()=>{
+  const source=readFileSync(new URL('../direct-phone.mjs',import.meta.url),'utf8');
+  const host=readFileSync(new URL('../server.mjs',import.meta.url),'utf8');
+  assert.match(source,/if \(route === 'api\/chat\/context'\)/);
+  assert.match(source,/authorizeDevice\(req,'control:read'\)/);
+  assert.match(source,/req\.method !== 'GET'/);
+  assert.match(source,/CHAT_FOCUS_INVALID/);
+  assert.match(source,/chatContext\(query\[0\]\[1\]\)/);
+  assert.match(source,/cache-control','private, no-store'/);
+  assert.match(host,/createRustChatContext\(\)/);
+  assert.match(host,/chatContext: createRustChatContext\(\)/);
+});

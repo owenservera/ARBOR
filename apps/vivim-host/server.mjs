@@ -20,6 +20,7 @@ import { createBootstrapCommandWorker } from './bootstrap/command-worker.mjs';
 import { createWorkerSupervisor } from './bootstrap/worker-supervisor.mjs';
 import { loadOwnerToken, verifyOwnerToken } from './bootstrap/owner-auth.mjs';
 import { createDirectPhoneHandler, serveLoopbackPhoneAsset } from './direct-phone.mjs';
+import { createRustChatContext } from './chat/rust-context.mjs';
 import { createEnrollment } from './apk/enrollment.mjs';
 import { createApkRegistry } from './apk/registry.mjs';
 import { createPairingStore } from './apk/pairing.mjs';
@@ -228,7 +229,15 @@ export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path
     apk, pairing
   });
   if (autoPump) onboardingService.start();
-  const direct = directPhone ? createDirectPhoneHandler({ ...directPhone, dataRoot, worldId: runtimeFor().worldId, projection: () => runtimeFor().projection(), webMemory: opts => runtimeFor().webMemory(opts), control: controlFor, apkRegistry: apk, pairingStore: pairing, onPhoneSeen: () => onboardingService.phoneSeen(), primary: () => onboardingService.primary() }) : null;
+  const direct = directPhone ? createDirectPhoneHandler({
+    ...directPhone, dataRoot, worldId: runtimeFor().worldId,
+    projection: () => runtimeFor().projection(),
+    webMemory: opts => runtimeFor().webMemory(opts),
+    chatContext: createRustChatContext(),
+    control: controlFor, apkRegistry: apk, pairingStore: pairing,
+    onPhoneSeen: () => onboardingService.phoneSeen(),
+    primary: () => onboardingService.primary()
+  }) : null;
   const enrollment = createEnrollment({ dataRoot, origin: null, user: null });
   const server = http.createServer(async (req, res) => {
     for (const [k, v] of Object.entries(SECURITY)) res.setHeader(k, v);
