@@ -1,27 +1,25 @@
-# HVI production activation and first real comparison — Local Agent Mission
+# HVI native, Git-free production activation — local agent mission
 
-**Owner decision (2026-11-13):** The installation/design phase is over. Activate the already-merged ARBOR HQ Version Intelligence (HVI) system for ordinary, authorized REAL Git repositories on the owner's machine and USE IT. No more artificial synthetic-only product mode, no repeat Z1/G1/H/U/Z2/G2/R planning process, no beta-release paperwork as a prerequisite to local read-only analysis.
+**Corrected product requirement (2026-11-13):** VIVIM/HQ is a **source-agnostic comparison and intelligence engine**. An end customer must never be required to install Git, Git CLI, GitHub CLI, a Git library, a development checkout or developer credentials merely to use the product. Git-specific source handling is an **optional developer connector**. The original PR's requirement to create a mandatory real-git-adapter was a design error and is withdrawn.
 
-**Critical distinction:** Delete/disable production demo data, synthetic-only restrictions and synthetic fallback paths from user-facing flows. Preserve isolated synthetic/invented fixtures *under tests* when needed for regression, security, reproducibility or CI. Do not replace real comparisons with fixture data. This decision does not grant unrestricted local filesystem/network access, nor authorize changes to actual source repositories.
+## Mission
+Activate the already merged HVI N-way comparison system, make it callable through the existing agent/Host interfaces, and exercise it on **real, explicitly authorized sources** accessible to the local agent. For ARBOR's first developer-use comparison, prefer already available/authorized versioned repository records. Do not silently clone/download unapproved sources, fabricate history or synthesize real findings.
 
-## Actual product goal
-When the owner tells the local agent “Compare these repos with ARBOR, show me what's landed where,” the agent discovers/uses the installed HVI engine and delivers a source-linked migration intelligence report. The owner must not teach it internal module names, launch multiple workers or prepare manifests by hand. All inputs are pinned to immutable commit SHAs, and every finding is sourced and labeled by evidence strength.
+The first run must tell the owner **what landed in ARBOR from repos-hq, vivim-web-harness, tierflow and vivim-labs**, distinguishing source-file presence from capability equivalence and runtime proof. If exact historical revisions cannot be obtained with the supported source connectors, compare available immutable captured snapshots and report revision fidelity. A snapshot of a loose folder is NOT a Git commit.
 
-**Operator instruction:** [EXECUTE-LOCAL-MISSION.md](EXECUTE-LOCAL-MISSION.md). Machine-readable seed candidates: [SOURCE-SET.json](SOURCE-SET.json); output shape: [REPORT-CONTRACT.md](REPORT-CONTRACT.md); starter: [LOCAL-AGENT-STARTER.md](LOCAL-AGENT-STARTER.md).
+## User-facing product invariants
+1. **No Git prerequisite:** no Git installation/download prompt, no shelling out to `git` in core product, no `.git` directory requirement, no `simple-git` or `isomorphic-git` as a mandatory runtime dependency.
+2. **One normalized source snapshot protocol:** readers supply immutable `sourceId, snapshotId, versionType, contentDigest, completeness, entries[], provenance` and optional `commitSha, rootTreeSha` only when VERIFIED by the reader. The existing HVI manifest/pin types need a compatibility layer, not invented Git SHAs.
+3. **Multiple acquisition choices:** local files/folders through approved native file access; user-selected archives/exports; cached/saved VIVIM source snapshots; authorized signed-in web/project sources when supported; optional Git object provider only for developer commit-history semantics.
+4. **No false equivalence:** generic file snapshots support content/version comparisons but cannot claim exact Git commit ancestry, Git blob hashes or cross-commit history unless verifiable.
+5. **Existing security:** Host is owner of actor/session permissions and source grants; read-only comparison, bounded reads, symlink/path/secret exclusions, revocation and proof receipts. Never auto-merge, delete or migrate code.
+6. **Agent-native discovery:** the user expresses a comparison in everyday language; the agent chooses available supported sources and reports unavailable data explicitly, without teaching a Git procedure.
 
-## Scope
-- Target: current `owenservera/ARBOR` HEAD, pinned at run start.
-- Candidate original repos: `owenservera/repos-hq`, `owenservera/vivim-web-harness`, `owenservera/tierflow`, `owenservera/vivim-labs`; include only currently present/approved local or GitHub sources. Optionally inspect approved research branches later.
-- Runtime: the existing local ARBOR checkout, Node24/Bun as appropriate, HVI library and existing Host/MCP/capability adapters; no new graph, planner, scheduler, browser sender or second Host dispatcher.
-- Outputs: one executive report, complete deterministic machine inventories, explicit completeness, capability lineage, evidence index, prioritized *proposed* improvements. No automatic migration, retire/delete, merge or pushes of donor source.
-- **Execute real analysis only when the local operator requests this run**, with existing owner identity and independently authorized source roots. At rest, no scheduled scans or hidden fetches.
+## Documents
+- [Execute local mission](EXECUTE-LOCAL-MISSION.md)
+- [Source-neutral architecture contract](SOURCE-CONNECTOR-CONTRACT.md)
+- [Candidate developer source set](SOURCE-SET.json) — names are NOT credentials or access grants
+- [Report contract](REPORT-CONTRACT.md)
+- [Agent starter](LOCAL-AGENT-STARTER.md)
 
-## What is NOT an acceptable completed mission
-- “The system has passed synthetic tests” with no actual repo comparisons.
-- “Use `--synthetic-stdin`” or rename real repos to `synthetic/...` to evade a restriction.
-- Returning a fixture result, a source-only README, an invented completion percentage or a missing-path-as-missing-capability claim.
-- Calling a remote source grant “approved” just because a user typed a repository name.
-- Stopping to write yet another wave/plan when an actionable local source/runtime fix can be implemented and tested.
-
-## Truthful completion
-`OPERATIONAL_REAL_COMPARISON_COMPLETE` only if the native path executed on at least two *real* authorized pinned source revisions/repositories, produced validated artifacts and recorded observed commands/exits, with no source mutation. `PARTIAL_REAL_COMPARISON` if source scope or analysis is incomplete. `BLOCKED_REAL_SOURCE_AUTHORIZATION` or `BLOCKED_RUNTIME` if real execution is not permitted/possible: fix what is locally fixable, then report exactly what is needed rather than fabricating success.
+**Do not run another strategic planning wave:** implement the minimal native source reader/bridge, run tests and authorized actual comparison, and produce the specified outputs. Preserve synthetic fixtures only under tests; never display synthetic results as real.
