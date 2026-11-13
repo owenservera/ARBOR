@@ -18,7 +18,7 @@ import { readMemoryParams } from './bootstrap/web-memory.mjs';
 import { createBootstrapCommandWorker } from './bootstrap/command-worker.mjs';
 import { createWorkerSupervisor } from './bootstrap/worker-supervisor.mjs';
 import { loadOwnerToken, verifyOwnerToken } from './bootstrap/owner-auth.mjs';
-import { createDirectPhoneHandler } from './direct-phone.mjs';
+import { createDirectPhoneHandler, serveLoopbackPhoneAsset } from './direct-phone.mjs';
 import { createEnrollment } from './apk/enrollment.mjs';
 import { createApkRegistry } from './apk/registry.mjs';
 import { createPairingStore } from './apk/pairing.mjs';
@@ -43,6 +43,9 @@ const SECURITY = {
 };
 const MIME = {
   '/': 'text/html; charset=utf-8',
+  '/host/control': 'text/html; charset=utf-8',
+  '/mobile-first.css': 'text/css; charset=utf-8',
+  '/mobile-first.js': 'text/javascript; charset=utf-8',
   '/onboarding': 'text/html; charset=utf-8',
   '/host.css': 'text/css; charset=utf-8',
   '/host.js': 'text/javascript; charset=utf-8',
@@ -55,7 +58,10 @@ const MIME = {
   '/fonts/jetbrains-mono-latin-wght-normal.woff2': 'font/woff2',
 };
 const ASSETS = {
-  '/': 'index.html',
+  '/': 'mobile-first.html',
+  '/host/control': 'index.html',
+  '/mobile-first.css': 'mobile-first.css',
+  '/mobile-first.js': 'mobile-first.js',
   '/onboarding': 'onboarding.html',
   '/host.css': 'host.css',
   '/host.js': 'host.js',
@@ -230,6 +236,12 @@ export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path
     const host = String(req.headers.host || '').toLowerCase();
     if (!/^(127\.0\.0\.1|localhost)(:\d{1,5})?$/.test(host) || req.headers['x-forwarded-proto'] || req.headers['tailscale-user-login']) { res.writeHead(403); res.end('Forbidden'); return; }
     const pathname = new URL(req.url || '/', 'http://localhost').pathname;
+    // Loopback-only presentation of the *same* PWA source served to paired phones.
+    // The embedded host-preview cannot obtain a phone device grant or send commands.
+    if (pathname === '/mobile') {
+      res.writeHead(308, { location: '/mobile/?host-preview=1' }); res.end(); return;
+    }
+    if (await serveLoopbackPhoneAsset(req, res, pathname)) return;
     if (pathname.startsWith('/api/host/bootstrap')) {
       await handleBootstrap(req, res, pathname, host, runtimeFor(), tokenFor);
       return;
@@ -288,8 +300,7 @@ export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path
       res.writeHead(200); res.end(req.method === 'HEAD' ? undefined : JSON.stringify(hostSnapshot({ dataRoot, bootstrap: runtimeFor() }))); return;
     }
     let asset = ASSETS[pathname];
-    // First run: no complete workspace manifest -> serve the onboarding wizard instead of Host Control.
-    if (pathname === '/' && !manifestComplete()) asset = 'onboarding.html';
+    // First run remains phone-first. Explicit setup is available at /onboarding.
     if (!asset) { res.writeHead(404); res.end('Not found'); return; }
     try {
       const body = await readFile(path.join(staticRoot, asset));
