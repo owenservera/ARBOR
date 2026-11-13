@@ -26,7 +26,7 @@ export function capabilityCatalog(context={}) {
   const rows = CATALOG.map(([id,title,detail,tab,requires])=>{
     let available = requires==='any' || requires==='phone' && !preview
       || requires==='paired' && paired || requires==='direct' && paired && mode==='direct';
-    if(id==='theme' && preview) available=true; // Local appearance preview only.
+    // Host preview is inspection-only. Appearance changes remain in Host's owner tools.
     if(id==='install') available=!preview && context.installOffered===true &&
       context.installed!==true;
     if(['talk','control','media','memory'].includes(id) && context.controlRead!==true)

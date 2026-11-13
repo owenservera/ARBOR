@@ -202,7 +202,7 @@ function surfaceContext() {
     readiness: deriveReadiness({
       mode: HOST_PREVIEW ? 'desktop-preview' : transport.direct ? 'direct' : 'cloud',
       online: navigator.onLine !== false,
-      paired: S.paired,
+      paired: S.paired && (!transport.direct || !!transport.deviceHeaders?.()),
       secureContext: window.isSecureContext === true,
       hostReported: !!S.statusObj?.snapshot,
       scopes: S.device.scopes,
@@ -775,6 +775,7 @@ async function refreshHostPreview() {
       throw new Error('Invalid Host projection');
     if (sequence !== previewReadSequence) return;
     S.statusObj = { at: data.observedAt, snapshot: data.snapshot };
+    S.manifest = data.snapshot.manifest ?? null;
     S.media = data.media?.schema === 'vivim.media-library-summary/1'
       ? data.media : { state: 'unavailable' };
     setConn(data.state === 'source-backed' ? 'Owner view · read only' : 'Source unavailable',
@@ -786,6 +787,7 @@ async function refreshHostPreview() {
     if (sequence !== previewReadSequence) return;
     // Never keep a private stale snapshot visible after session expiry.
     S.statusObj = null;
+    S.manifest = null;
     S.media = { state: 'unavailable' };
     if (build) build.clear();
     setConn(error.message, true);
@@ -1019,9 +1021,11 @@ if (!HOST_PREVIEW) {
 }
 function launcherContext() {
   return {mode:HOST_PREVIEW?'desktop-preview':transport.direct?'direct':'cloud',
-    paired:S.paired,online:navigator.onLine!==false,
-    mediaVisible:transport.direct&&S.paired,
-    controlRead:Array.isArray(S.device.scopes)&&S.device.scopes.includes('control:read'),
+    paired:S.paired&&(!transport.direct||!!transport.deviceHeaders?.()),
+    online:navigator.onLine!==false,
+    mediaVisible:transport.direct&&S.paired&&!!transport.deviceHeaders?.(),
+    controlRead:!!transport.deviceHeaders?.()&&
+      Array.isArray(S.device.scopes)&&S.device.scopes.includes('control:read'),
     installOffered:!!deferredInstallPrompt,
     installed:!!window.matchMedia?.('(display-mode: standalone)')?.matches ||
       navigator.standalone===true};

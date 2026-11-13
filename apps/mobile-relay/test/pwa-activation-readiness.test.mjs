@@ -86,3 +86,15 @@ test('Direct controls and install prompts require reported authority and browser
   assert.equal(capabilityCatalog({mode:'direct',paired:true,installed:true,installOffered:true})
     .rows.find(x=>x.id==='install').available,false);
 });
+
+test('Host preview has no phone actions, and stale session headers never count as grant',()=>{
+  const preview=capabilityCatalog({mode:'desktop-preview',online:true,paired:false,
+    controlRead:false});
+  for(const id of ['notes','theme','control','talk','memory','install'])
+    assert.equal(preview.rows.find(x=>x.id===id).available,false,id);
+  const app=readFileSync(new URL('../app.js',import.meta.url),'utf8');
+  assert.match(app,/paired: S\.paired && \(!transport\.direct \|\| !!transport\.deviceHeaders\?\.\(\)\)/);
+  assert.match(app,/controlRead:!!transport\.deviceHeaders\?\.\(\)/);
+  assert.match(app,/S\.manifest = data\.snapshot\.manifest \?\? null/);
+  assert.match(app,/S\.manifest = null;\s*S\.media = \{ state: 'unavailable' \}/);
+});
