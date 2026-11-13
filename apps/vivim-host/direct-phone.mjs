@@ -15,6 +15,7 @@ import { createEnrollment } from './apk/enrollment.mjs';
 import { createPairingStore } from './apk/pairing.mjs';
 import { readMemoryParams } from './bootstrap/web-memory.mjs';
 import { createMediaPlaybackService, parseMediaRange } from './media/playback.mjs';
+import { createMediaStreamGrantGuard } from './media/stream-guard.mjs';
 import { controlErrorStatus } from './control/http-status.mjs';
 
 const root = fileURLToPath(new URL('../mobile-relay/', import.meta.url));
@@ -359,8 +360,14 @@ export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'wo
         const reader = info.handle.createReadStream({
           start:bytes.start,end:bytes.end,autoClose:true
         });
+        // Check the same Host grant again during long-running streams. A
+        // revocation closes the pipeline even after initial headers were sent.
+        const guard = createMediaStreamGrantGuard({
+          validateGrant: args => enrollment.validateGrant(args),
+          grantId: record.grantId, sessionId: record.sessionId
+        });
         // pipeline handles backpressure and aborts both ends on disconnect.
-        await pipeline(reader,res);
+        await pipeline(reader,guard,res);
       } catch (cause) {
         try { await info?.handle.close(); } catch {}
         if (res.headersSent) { res.destroy(); return; }

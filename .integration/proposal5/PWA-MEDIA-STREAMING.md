@@ -19,3 +19,7 @@ Device pairing, launch, the actual browser media codecs and Windows acceptance a
 ## Catalog pagination
 
 The Direct mobile catalog uses read-only `GET /mobile/api/media/library?offset=N`, with a bounded integer offset (0 to 100000), a 25-item page size and an exact total. Previous/Next on World re-read metadata only. `POST /mobile/api/media/open` still resolves an opaque ID against the full HQ catalog, so a legitimately mapped movie beyond page one is playable. Cloud and desktop preview never inherit a phone stream grant.
+
+## Revocation during playback
+
+The active stream is rechecked against the same Host grant/session at initial read, after at most 256 KiB of unchecked bytes (or 200 ms of elapsed streaming), and on stream completion. Revoking a device terminates a long-running stream at the next validation boundary, not just on the next HTTP range request. This uses the existing enrollment authority and Node backpressure stream, not a new token store or authorizer. Synthetic Node tests are committed; Windows and Android runtime checks remain UNRUN.

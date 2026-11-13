@@ -25,6 +25,7 @@ const suites = [
   ['HQ media mapping, streaming and revocation', [
     'apps/vivim-host/test/media-library-summary.test.mjs',
     'apps/vivim-host/test/media-playback.test.mjs',
+    'apps/vivim-host/test/media-stream-guard.test.mjs',
     'apps/vivim-host/test/media-stream-http.test.mjs'
   ]]
 ];
@@ -32,6 +33,7 @@ const sources = [
   'apps/vivim-host/server.mjs',
   'apps/vivim-host/direct-phone.mjs',
   'apps/vivim-host/media/playback.mjs',
+  'apps/vivim-host/media/stream-guard.mjs',
   'apps/vivim-host/media/library-summary.mjs',
   'apps/mobile-relay/app.js',
   'apps/mobile-relay/ux/render.mjs',
