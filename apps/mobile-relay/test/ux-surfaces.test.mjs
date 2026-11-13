@@ -469,3 +469,9 @@ test('World catalog pagination is read-only, bounded and does not request playba
   assert.deepEqual(nav,[0,50]);
   assert.equal(findAll(host,n=>n.tag==='button'&&n.textContent==='Play').length,0);
 });
+
+
+test('leaving World aborts active media instead of leaving a hidden stream open',()=>{
+  assert.match(app,/if \(S\.tab === 'world' && tab !== 'world' && playerActive\) stopMediaPlayer\(\)/);
+  assert.match(app,/if \(S\.tab !== 'world' \|\| HOST_PREVIEW \|\| !S\.paired \|\| !transport\.direct \|\|/);
+});

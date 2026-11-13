@@ -198,6 +198,9 @@ function surfaceContext() {
 }
 function goTab(tab) {
   if (!tab || !TABS.includes(tab)) return;
+  // Leaving World stops an in-flight media open or current native playback.
+  // The Host has to release temporary stream access, not just hide the video.
+  if (S.tab === 'world' && tab !== 'world' && playerActive) stopMediaPlayer();
   S.tab = tab; closeDrawer(); renderTabs(); renderSurfaces();
   document.getElementById('tab-' + tab)?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   if (HOST_PREVIEW) void refreshHostPreview();
@@ -293,7 +296,7 @@ function ensureMediaPlayer() {
   document.body.append(sheet);
 }
 async function openMediaPlayer(mediaId, title) {
-  if (HOST_PREVIEW || !S.paired || !transport.direct ||
+  if (S.tab !== 'world' || HOST_PREVIEW || !S.paired || !transport.direct ||
       !/^[a-f0-9]{32}$/.test(mediaId || '')) return;
   const device = transport.deviceHeaders?.();
   if (!device || playerActive) return;
