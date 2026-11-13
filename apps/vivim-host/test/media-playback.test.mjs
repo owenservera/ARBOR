@@ -61,3 +61,32 @@ test('unconfigured media never infers playback from a completed download',async 
   assert.equal(r.playback,'not-configured');
   assert.equal(r.items[0].playable,false);
 });
+
+
+test('a mapped playable file beyond the first catalog page is still authorized',async t=>{
+  const dir=await mkdtemp(path.join(os.tmpdir(),'vivim-media-paged-'));
+  t.after(()=>rm(dir,{recursive:true,force:true}));
+  const store=path.join(dir,'store'),files=path.join(dir,'files');
+  await Promise.all([mkdir(store),mkdir(files)]);
+  await writeFile(path.join(files,'last.mp4'),Buffer.from('0123456789'));
+  await writeFile(path.join(store,'library.json'),JSON.stringify({version:1,
+    entries:Array.from({length:29},(_,i)=>({
+      id:'movie-'+i,title:'Movie '+String(i).padStart(2,'0'),
+      kind:'movie',state:'complete'
+    }))}));
+  await writeFile(path.join(store,'playback.json'),JSON.stringify({version:1,entries:[
+    {libraryId:'movie-28',relativePath:'last.mp4'}
+  ]}));
+  const service=createMediaPlaybackService({storeDir:store,filesRoot:files});
+  const first=await service.list();
+  assert.equal(first.total,29);
+  assert.equal(first.shown,25);
+  assert.equal(first.playback,'none-mapped');
+  const second=await service.list({offset:25});
+  assert.equal(second.shown,4);
+  assert.equal(second.playback,'available');
+  assert.equal(second.items[3].playable,true);
+  const opened=await service.resolve(second.items[3].mediaId);
+  assert.equal(opened.size,10);
+  await opened.handle.close();
+});

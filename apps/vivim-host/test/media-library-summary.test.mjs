@@ -66,3 +66,24 @@ test('a long store is capped to 25 visible rows with truthful total count', asyn
   assert.equal(result.hasMore, true);
   assert.equal(result.items.length, 25);
 });
+
+
+test('a media page beyond the first is available without revealing the HQ row ID',async t=>{
+  const dir=await store(t);
+  await save(dir,'library',Array.from({length:60},(_,i)=>({
+    id:'private-hq-id-'+i,title:'Film '+String(i).padStart(3,'0'),
+    kind:'movie',state:'complete'
+  })));
+  const second=await readMediaLibrarySummary({storeDir:dir,offset:25});
+  assert.equal(second.total,60);
+  assert.equal(second.offset,25);
+  assert.equal(second.pageSize,25);
+  assert.equal(second.shown,25);
+  assert.equal(second.hasMore,true);
+  assert.equal(second.items[0].title,'Film 025');
+  const last=await readMediaLibrarySummary({storeDir:dir,offset:50});
+  assert.equal(last.shown,10);
+  assert.equal(last.hasMore,false);
+  assert.doesNotMatch(JSON.stringify(second),/private-hq-id/);
+  assert.equal((await readMediaLibrarySummary({storeDir:dir,offset:-1})).reason,'MEDIA_OFFSET_INVALID');
+});

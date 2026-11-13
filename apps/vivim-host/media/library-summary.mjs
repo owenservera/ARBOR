@@ -10,6 +10,8 @@ export const mediaIdFor = id => typeof id === 'string' && id.length > 0 && id.le
   ? createHash('sha256').update('vivim.media/1:' + id).digest('hex').slice(0, 32) : null;
 const MAX_BYTES = 1024 * 1024;
 const MAX_ITEMS = 25;
+export const MEDIA_PAGE_SIZE = MAX_ITEMS;
+export const MAX_MEDIA_OFFSET = 100000;
 const VALID_STATES = new Set(['dispatched', 'folder-detected', 'complete', 'seeded']);
 const VALID_KINDS = new Set(['movie', 'show']);
 const noStore = reason => ({
@@ -43,8 +45,11 @@ async function collection(dir, file, required = false) {
  */
 export async function readMediaLibrarySummary({
   storeDir = process.env.VIVIM_MEDIA_STORE_DIR ||
-    (process.platform === 'win32' ? 'C:/VIVIM/channel/vivim/torrent-store' : null)
+    (process.platform === 'win32' ? 'C:/VIVIM/channel/vivim/torrent-store' : null),
+  offset = 0
 } = {}) {
+  if (!Number.isSafeInteger(offset) || offset < 0 || offset > MAX_MEDIA_OFFSET)
+    return noStore('MEDIA_OFFSET_INVALID');
   if (typeof storeDir !== 'string' || !path.isAbsolute(storeDir) || storeDir.includes('\u0000'))
     return noStore('MEDIA_STORE_NOT_CONFIGURED');
   try {
@@ -65,14 +70,36 @@ export async function readMediaLibrarySummary({
     }));
     normalized.sort((a, b) => Number(b.favorite) - Number(a.favorite) ||
       a.title.localeCompare(b.title) || a.kind.localeCompare(b.kind));
-    const items = normalized.slice(0, MAX_ITEMS);
+    const items = normalized.slice(offset, offset + MAX_ITEMS);
     return {
       schema: MEDIA_SUMMARY_SCHEMA, state: 'ready', reason: null,
-      total: rows.length, shown: items.length, hasMore: rows.length > items.length,
+      total: rows.length, offset, pageSize: MAX_ITEMS, shown: items.length,
+      hasMore: rows.length > offset + items.length,
       favorites: normalized.filter(row => row.favorite).length,
       items, playback: 'not-integrated'
     };
   } catch (error) {
     return noStore(error.code === 'ENOENT' ? 'MEDIA_STORE_MISSING' : 'MEDIA_STORE_UNREADABLE');
   }
+}
+
+
+// A stream resolves an opaque media ID against the *full* bounded HQ catalog.
+// Listing is paged, but the first page is never an authorization boundary.
+// Return only a sanitized row; never a torrent source, magnet, info hash or path.
+export async function findPlayableMediaEntry({storeDir, mediaId} = {}) {
+  if (typeof mediaId !== 'string' || !/^[a-f0-9]{32}$/.test(mediaId) ||
+      typeof storeDir !== 'string' || !path.isAbsolute(storeDir) || storeDir.includes('\0'))
+    return null;
+  try {
+    const root = await lstat(storeDir);
+    if (!root.isDirectory() || root.isSymbolicLink()) return null;
+    const library = await collection(storeDir, 'library.json', true);
+    const found = library.entries.filter(row => row && VALID_KINDS.has(row.kind) &&
+      row.state === 'complete' && bounded(row.title, 160) &&
+      mediaIdFor(row.id) === mediaId);
+    if (found.length !== 1) return null; // duplicate IDs are ambiguous, never stream
+    const row = found[0];
+    return {mediaId, title: bounded(row.title,160), kind: row.kind, state:'complete'};
+  } catch { return null; }
 }

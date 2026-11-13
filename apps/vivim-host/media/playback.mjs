@@ -5,7 +5,7 @@ import { constants } from 'node:fs';
 import { readFile, lstat, open } from 'node:fs/promises';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
-import { readMediaLibrarySummary, mediaIdFor } from './library-summary.mjs';
+import { readMediaLibrarySummary, findPlayableMediaEntry, mediaIdFor } from './library-summary.mjs';
 
 export const PLAYBACK_SCHEMA = 'vivim.media-playback/1';
 const DEFAULT_STORE = process.platform === 'win32' ? 'C:/VIVIM/channel/vivim/torrent-store' : null;
@@ -110,19 +110,17 @@ export function createMediaPlaybackService({
   async function resolve(mediaId, wantedFingerprint = null) {
     if (typeof mediaId !== 'string' || !/^[a-f0-9]{32}$/.test(mediaId))
       throw error('MEDIA_ID_INVALID', 400);
-    const index = await readMediaLibrarySummary({ storeDir });
-    if (index.state !== 'ready') throw error('MEDIA_STORE_UNAVAILABLE', 409);
-    // Only the bounded, displayed HQ catalog is addressable. Its 'complete'
-    // status alone never makes media playable: a second owner mapping is required.
-    const item = index.items.find(row => row.mediaId === mediaId);
-    if (!item || item.state !== 'complete') throw error('MEDIA_NOT_PLAYABLE', 404);
+    // Check the entire bounded HQ source, not merely the current visual page.
+    // A complete download still requires a second, explicit owner mapping.
+    const item = await findPlayableMediaEntry({storeDir, mediaId});
+    if (!item) throw error('MEDIA_NOT_PLAYABLE', 404);
     const map = await mapping();
     const parts = map.get(mediaId);
     if (!parts) throw error('MEDIA_NOT_MAPPED', 404);
     return safeFile(parts, mediaId, wantedFingerprint);
   }
-  async function list() {
-    const index = await readMediaLibrarySummary({ storeDir });
+  async function list({offset = 0} = {}) {
+    const index = await readMediaLibrarySummary({ storeDir, offset });
     if (index.state !== 'ready') return index;
     // One catalog and mapping read per refresh. Previously both were reloaded
     // for each of the 25 visible items; these are owner local disk reads.
