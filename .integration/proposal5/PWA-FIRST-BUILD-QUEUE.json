@@ -1,0 +1,202 @@
+{
+  "schema": "arbor.proposal5.pwa-first-build-queue/1",
+  "ownerPolicy": "direct-main-only",
+  "source": {
+    "repo": "owenservera/ARBOR",
+    "pr29": "https://github.com/owenservera/ARBOR/pull/29",
+    "cutoverCommit": "931d08bf1d4f6af051c06cc2f293b8fcf51c115c",
+    "canonicalPwa": "apps/mobile-relay/",
+    "canonicalHost": "apps/vivim-host/",
+    "docs": [
+      ".integration/proposal5/foundations/PWA-FIRST-DELIVERY.md",
+      ".integration/proposal5/vec-pwa/README.md"
+    ]
+  },
+  "policy": {
+    "noBranches": true,
+    "noPRs": true,
+    "oneHostEffectOwner": true,
+    "noProviderApis": true,
+    "apkDeferred": true,
+    "testsNotRunAreNotPass": true
+  },
+  "next": "PWA-03",
+  "items": [
+    {
+      "id": "PWA-01",
+      "title": "Host root opens canonical PWA",
+      "status": "committed_unverified",
+      "owner": "Host/PWA",
+      "paths": [
+        "apps/vivim-host/server.mjs",
+        "apps/vivim-host/direct-phone.mjs",
+        "apps/mobile-relay/app.js"
+      ],
+      "proof": "root / PWA preview; legacy admin explicit; Direct routing isolated",
+      "dependsOn": []
+    },
+    {
+      "id": "PWA-02",
+      "title": "Protect Direct phone and preview routing",
+      "status": "source_tests_added_unrun",
+      "owner": "Host",
+      "paths": [
+        "apps/vivim-host/test/mobile-first-entry.test.mjs"
+      ],
+      "proof": "paired and preview HTTP contract; negative POST; CI Node24 and physical phone still required",
+      "dependsOn": [
+        "PWA-01"
+      ]
+    },
+    {
+      "id": "PWA-03",
+      "title": "Surface inventory and real visual navigation",
+      "status": "next",
+      "owner": "PWA",
+      "paths": [
+        "apps/mobile-relay/index.html",
+        "apps/mobile-relay/app.js",
+        "apps/mobile-relay/ux"
+      ],
+      "proof": "Today/Talk/Build/Control/World/Me visible at 390px, 420px and narrow; no stale stub; menu works",
+      "dependsOn": [
+        "PWA-01"
+      ]
+    },
+    {
+      "id": "PWA-04",
+      "title": "Authenticated read-only Host projection on desktop",
+      "status": "queued",
+      "owner": "Host/PWA",
+      "paths": [
+        "apps/vivim-host/control",
+        "apps/mobile-relay/ux"
+      ],
+      "proof": "current state/receipts only with Host session; empty/offline and denied truthful; no phone grant impersonation",
+      "dependsOn": [
+        "PWA-02",
+        "PWA-03"
+      ]
+    },
+    {
+      "id": "PWA-05",
+      "title": "Phone pairing and reconnect UX",
+      "status": "queued",
+      "owner": "Host/PWA",
+      "paths": [
+        "apps/vivim-host/onboarding",
+        "apps/mobile-relay/device-enrollment.mjs"
+      ],
+      "proof": "trusted HTTPS, browser P-256 key, approvals, revoke, lost-key, reconnect; no APK requirement",
+      "dependsOn": [
+        "PWA-02"
+      ]
+    },
+    {
+      "id": "PWA-06",
+      "title": "Universal text command preview in PWA",
+      "status": "queued",
+      "owner": "Host/PWA",
+      "paths": [
+        "apps/mobile-relay/control-chat.mjs",
+        "apps/vivim-host/control"
+      ],
+      "proof": "plan, permission, approve/deny and receipt through one Host executor; no silent send",
+      "dependsOn": [
+        "PWA-04",
+        "PWA-05"
+      ]
+    },
+    {
+      "id": "PWA-07",
+      "title": "Build canvas visual proposal and activation",
+      "status": "queued",
+      "owner": "PWA/TierFlow",
+      "paths": [
+        "apps/mobile-relay/build-canvas.mjs",
+        "apps/mobile-relay/generative-ui"
+      ],
+      "proof": "preview and safe activate/undo against Host revision; stale edits rejected",
+      "dependsOn": [
+        "PWA-05"
+      ]
+    },
+    {
+      "id": "PWA-08",
+      "title": "VEC deterministic UI edits and compiler contract",
+      "status": "queued",
+      "owner": "VEC",
+      "paths": [
+        ".integration/proposal5/vec-pwa",
+        "apps/mobile-relay/vec"
+      ],
+      "proof": "known text edits compile locally and safely; unsupported requests use existing optional model flow; tests run",
+      "dependsOn": [
+        "PWA-07"
+      ]
+    },
+    {
+      "id": "PWA-09",
+      "title": "Mobile media library and playback entry",
+      "status": "queued",
+      "owner": "Host/PWA",
+      "paths": [
+        "apps/vivim-host/media",
+        "apps/mobile-relay/ux"
+      ],
+      "proof": "authorized library cards and streamed playback with range/cache/abort proofs",
+      "dependsOn": [
+        "PWA-05"
+      ]
+    },
+    {
+      "id": "PWA-10",
+      "title": "Offline shell, drafts and installability",
+      "status": "queued",
+      "owner": "PWA",
+      "paths": [
+        "apps/mobile-relay/sw.js",
+        "apps/mobile-relay/manifest.webmanifest"
+      ],
+      "proof": "offline read-only shell, clear stale state, no API caching/replayed mutations, valid PWA icons",
+      "dependsOn": [
+        "PWA-03"
+      ]
+    },
+    {
+      "id": "PWA-11",
+      "title": "Adaptive UI, accessibility and one-thumb polish",
+      "status": "queued",
+      "owner": "PWA/TierFlow",
+      "paths": [
+        "apps/mobile-relay/index.html",
+        "packages/tierflow"
+      ],
+      "proof": "Android Chrome, keyboard, safe areas, reduced motion, screen reader; device validation",
+      "dependsOn": [
+        "PWA-03"
+      ]
+    },
+    {
+      "id": "PWA-12",
+      "title": "Windows+paired Android operational acceptance",
+      "status": "queued",
+      "owner": "Integration",
+      "paths": [
+        "src-tauri",
+        "apps/vivim-host/test",
+        "apps/mobile-relay/test"
+      ],
+      "proof": "Node24/Bun/Cargo plus real Windows+Android Tailscale pairing, grants, restarts and offline; no external donor runtimes",
+      "dependsOn": [
+        "PWA-04",
+        "PWA-05",
+        "PWA-06",
+        "PWA-07",
+        "PWA-09",
+        "PWA-10",
+        "PWA-11"
+      ]
+    }
+  ]
+}
