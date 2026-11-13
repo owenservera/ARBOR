@@ -433,7 +433,7 @@ test('Control and Ask VIVIM redact private plans and ignore late Host reads afte
   assert.match(control,/let historyEpoch = 0/);
   assert.match(control,/if \(epoch !== historyEpoch\) return;\s*if \(!r\.ok\)/);
   assert.match(control,/historyEpoch\+\+;\s*items\.replaceChildren\(\)/);
-  assert.match(chat,/function redact\(\) \{\s*messages = \[\];\s*suggestions = \[\];\s*redraw\(\)/);
+  assert.match(chat,/function redact\(\) \{\s*suggestionEpoch\+\+;\s*messages = \[\];\s*suggestions = \[\];\s*redraw\(\)/);
   assert.match(chat,/send, render, clear, redact, loadSuggestions/);
 });
 
