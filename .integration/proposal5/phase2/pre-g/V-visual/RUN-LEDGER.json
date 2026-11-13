@@ -1,0 +1,84 @@
+{
+  "schema": "arbor.p5.visual-run-ledger/1",
+  "disposition": "PREPARED_NOT_PROMOTED",
+  "at": "2026-11-12",
+  "branch": "work/p5-preg-visual-language-r001",
+  "baseSha": "8b23c73bf450738a76b256bf0fa17ecbf86db591",
+  "prototypeCommitSha": "929961891414d279d1fe2b931d9eddb0f4c2a51d",
+  "executed": [
+    {
+      "id": "V8-SYNTHETIC-REACTIVE-PROJECTION-39",
+      "runner": "CodeMode isolated V8 Javascript execution, actual function bodies used to serialize PROTOTYPE/projection.mjs",
+      "result": "PASS",
+      "checks": 39,
+      "failed": 0,
+      "categories": [
+        "independent producer preservation",
+        "out-of-order and duplicate revision fences",
+        "source/catalog/policy/graph mismatch",
+        "denied/revoked/unknown coverage",
+        "UTF-16 and UTF-8 and surrogate guard",
+        "multiclause quote/negation retained",
+        "ambiguous entity alternatives",
+        "permission/risk non-authorization",
+        "Quiet/Assisted/VIEW ALL semantic identity",
+        "accessibility text parity",
+        "explicit Tab selection/undo stale fence",
+        "IME local",
+        "no automatic Submit"
+      ],
+      "artifacts": [
+        "PROTOTYPE/projection.mjs",
+        "PROTOTYPE/fixtures.mjs"
+      ],
+      "limitation": "V8 direct behavioral tests, not node --test; not a Rust, DOM, network, browser or security claim"
+    }
+  ],
+  "unrun": [
+    {
+      "test": "node --test .integration/proposal5/phase2/pre-g/V-visual/PROTOTYPE/projection.test.mjs",
+      "reason": "Committed runnable suite but no Node execution in GitHub connector runtime"
+    },
+    {
+      "test": "R005 donor node --test tests/*.test.mjs and semantic-bench.mjs",
+      "reason": "Inspected source and R005 recorded historical 28/28 and 100/100 only; not executed by V"
+    },
+    {
+      "test": "JSON Schema Draft 2020-12 validator on schema and fixtures",
+      "reason": "No validator execution; schema is declarative, cross-field checks live in prototype"
+    },
+    {
+      "test": "Rust cargo test and Tauri IPC",
+      "reason": "Native crate not imported or executed in isolated V branch"
+    },
+    {
+      "test": "Host planner/dispatcher and HQ live integration",
+      "reason": "Pre-G isolated branches not combined; permissions never assessed"
+    },
+    {
+      "test": "Real browser/Windows visual acceptance",
+      "reason": "No browser or actual UI mounted"
+    },
+    {
+      "test": "Android/PWA/mobile visual acceptance",
+      "reason": "No physical/mobile visual test"
+    },
+    {
+      "test": "IME/caret screen-reader accessibility device acceptance",
+      "reason": "Only pure synthetic guards and text-equivalence checks executed"
+    },
+    {
+      "test": "Provider actions and personal conversations",
+      "reason": "Intentionally forbidden; no real data or effects"
+    }
+  ],
+  "runtimeClaims": {
+    "nodeTestsPassed": null,
+    "rustTestsPassed": null,
+    "realBrowserAccepted": false,
+    "realMobileAccepted": false,
+    "hostPermissionsAssessed": false,
+    "productPromoted": false
+  },
+  "filesChangedScope": ".integration/proposal5/phase2/pre-g/V-visual/"
+}
