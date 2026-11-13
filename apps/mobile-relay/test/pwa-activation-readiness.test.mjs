@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import {deriveReadiness,safeReadinessReport} from '../ux/readiness.mjs';
 import {capabilityCatalog,searchCapabilities} from '../ux/launcher.mjs';
 
@@ -48,4 +49,26 @@ test('capability finder searches locally, bounds input, never returns an effect 
     assert.equal(Object.hasOwn(hit,'exec'),false);
     assert.equal(Object.hasOwn(hit,'handler'),false);
   }
+});
+
+test('pre-local features are wired to the one PWA entry and offline safe shell',()=>{
+  const app=readFileSync(new URL('../app.js',import.meta.url),'utf8');
+  const direct=readFileSync(new URL('../../vivim-host/direct-phone.mjs',import.meta.url),'utf8');
+  const sw=readFileSync(new URL('../sw.js',import.meta.url),'utf8');
+  const renderer=readFileSync(new URL('../ux/render.mjs',import.meta.url),'utf8');
+  const model=readFileSync(new URL('../ux/model.mjs',import.meta.url),'utf8');
+  for(const asset of ['ux/readiness.mjs','ux/launcher.mjs','ux/launcher-ui.mjs',
+    'ux/local-notes.mjs','ux/local-notes-ui.mjs']){
+    assert.ok(direct.includes("'"+asset+"'"),'missing Direct asset '+asset);
+    assert.ok(sw.includes("'"+asset+"'"),'missing SW asset '+asset);
+  }
+  assert.match(app,/mountCapabilityLauncher\(/);
+  assert.match(app,/mountLocalNotes\(/);
+  assert.match(app,/safeReadinessReport\(/);
+  assert.match(app,/onCheckReadiness:/);
+  assert.match(app,/ctrlKey \|\| e\.metaKey/);
+  assert.match(renderer,/Device readiness/);
+  assert.match(renderer,/Quick capture · works offline/);
+  assert.match(model,/readiness: ctx\.readiness\?\.schema/);
+  assert.match(sw,/var CACHE = 'vivim-relay-shell-v7'/);
 });

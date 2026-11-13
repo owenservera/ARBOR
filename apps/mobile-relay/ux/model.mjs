@@ -285,6 +285,7 @@ export function meModel(status, commands, ctx = {}) {
     permissions,
     activity,
     webMemoryNavigation: ctx.mode === 'direct',
+    readiness: ctx.readiness?.schema === 'vivim.pwa-readiness/1' ? ctx.readiness : null,
     gaps,
     sources: ['snapshot.personalAgent', 'snapshot.bootstrap.worldId', 'snapshot.manifest', 'commands', 'device grant scopes']
   };

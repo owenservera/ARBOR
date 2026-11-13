@@ -8,6 +8,9 @@ import { prepareDeviceSigner, enrollWithChallenge, resumeDeviceSession } from '.
 import { worldModel, meModel, todayModel, LIVE_STATE_LABELS, TABS } from './ux/model.mjs';
 import { renderToday, renderWorld, renderMe } from './ux/render.mjs';
 import { createControlChat } from './control-chat.mjs';
+import { deriveReadiness, safeReadinessReport } from './ux/readiness.mjs';
+import { mountCapabilityLauncher } from './ux/launcher-ui.mjs';
+import { mountLocalNotes } from './ux/local-notes-ui.mjs';
 const $ = id => document.getElementById(id);
 const api = transport.request;
 // Only the loopback Host wrapper may display a read-only, unpaired desktop
@@ -87,6 +90,8 @@ const vivimChat = createControlChat({
 });
 let build = null, buildTimer = 0, buildKey = '';
 let welcome = null;
+let capabilityLauncher = null;
+let localNotes = null;
 let approvalPoll = null;
 let starting = null;
 try { N.pending = JSON.parse(sessionStorage.getItem('vivim.phone.pending.v1') || 'null'); } catch {}
@@ -193,7 +198,24 @@ function surfaceContext() {
     pendingSend: transport.pending(),
     deviceStatus: S.device.status,
     scopes: S.device.scopes,
-    nativePocket: !!pocketButton && !pocketButton.hidden
+    nativePocket: !!pocketButton && !pocketButton.hidden,
+    readiness: deriveReadiness({
+      mode: HOST_PREVIEW ? 'desktop-preview' : transport.direct ? 'direct' : 'cloud',
+      online: navigator.onLine !== false,
+      paired: S.paired,
+      secureContext: window.isSecureContext === true,
+      hostReported: !!S.statusObj?.snapshot,
+      scopes: S.device.scopes,
+      providersSignedIn: Array.isArray(S.manifest?.providers)
+        ? S.manifest.providers.filter(p=>p?.signedIn===true).length : null,
+      serviceWorkerSupported: 'serviceWorker' in navigator,
+      serviceWorkerControlled: !!navigator.serviceWorker?.controller,
+      pendingSend: transport.pending(),
+      mediaState: S.media?.state,
+      installed: !!window.matchMedia?.('(display-mode: standalone)')?.matches ||
+        navigator.standalone === true,
+      installOffered: !!deferredInstallPrompt
+    })
   };
 }
 function goTab(tab) {
@@ -453,7 +475,23 @@ function renderSurfaces() {
   const sig = S.tab + '|' + JSON.stringify(model);
   if (S.sigs.ux === sig) return;
   S.sigs.ux = sig;
-  const options = { onNavigate: goTab, onRefresh: () => HOST_PREVIEW ? refreshHostPreview() : refresh(),
+  const options = { onNavigate: goTab,
+    onExplore: () => capabilityLauncher?.open(),
+    onCapture: !HOST_PREVIEW ? () => localNotes?.open() : undefined,
+    onCheckReadiness: () => {
+      if (navigator.onLine === false) { toast('Offline. Check again when your PC is reachable.'); return; }
+      if (HOST_PREVIEW) void refreshHostPreview();
+      else void start(); // Rechecks pairing and source, never repeats a command.
+    },
+    onCopyReadiness: async () => {
+      const report = safeReadinessReport(surfaceContext().readiness);
+      try {
+        if (!navigator.clipboard?.writeText) throw new Error('Clipboard unavailable');
+        await navigator.clipboard.writeText(report);
+        toast('Device-safe readiness report copied. No Host data included.');
+      } catch { toast('Clipboard unavailable in this browser.'); }
+    },
+    onRefresh: () => HOST_PREVIEW ? refreshHostPreview() : refresh(),
     onAskVivim: transport.direct && !HOST_PREVIEW ? openVivimDraft : undefined,
     onRefreshMedia: HOST_PREVIEW ? () => { void refreshHostPreview(); }
       : S.paired && transport.direct ? () => { void refreshMedia(true); } : undefined,
@@ -973,6 +1011,33 @@ function mountCompose() {
 }
 // The welcome tour stays; the old "Start Here" page is replaced by the Today surface.
 welcome = mountWelcome({ host: $('welcome') });
+
+// Local-only tools share this one PWA UI; neither bypasses Host authority.
+if (!HOST_PREVIEW) {
+  try { localNotes = mountLocalNotes({ host: document.body, storage: window.localStorage }); }
+  catch { /* Browser storage may be blocked; Today still works without notes. */ }
+}
+function launcherContext() {
+  return {mode:HOST_PREVIEW?'desktop-preview':transport.direct?'direct':'cloud',
+    paired:S.paired,online:navigator.onLine!==false,
+    mediaVisible:transport.direct&&S.paired};
+}
+function launcherActivate(item) {
+  if (item.id === 'notes') { localNotes?.open(); return; }
+  if (item.id === 'theme') { $('theme-toggle').click(); return; }
+  if (item.id === 'tour') { welcome?.open(); return; }
+  goTab(item.tab);
+  const target = item.id === 'ai' ? 'harness'
+    : item.id === 'sessions' ? 'phone'
+    : item.id === 'talk' ? 'vivim' : null;
+  if (target && N.target !== target) {
+    $('talk-target').value = target;
+    $('talk-target').dispatchEvent(new Event('change'));
+  }
+}
+capabilityLauncher = mountCapabilityLauncher({
+  host:document.body,context:launcherContext,onActivate:launcherActivate
+});
 function scheduleBuild(delay = 6000) {
   if (!build || !S.paired || S.tab !== 'build' || buildTimer) return;
   buildTimer = setTimeout(pollBuild, delay);
@@ -1248,6 +1313,18 @@ $('connection-apply').addEventListener('click', () => {
 });
 $('dbgclose').addEventListener('click', closeDebug);
 $('dbg').addEventListener('click', e => { if (e.target === $('dbg')) closeDebug(); });
+document.addEventListener('keydown', e => {
+  const typing = ['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName) ||
+    document.activeElement?.isContentEditable === true;
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k' && !$('app').hidden) {
+    e.preventDefault(); capabilityLauncher?.open(); return;
+  }
+  if (e.key === '/' && !typing && !e.altKey && !e.ctrlKey && !e.metaKey &&
+      !$('app').hidden && !capabilityLauncher?.isOpen()) {
+    e.preventDefault(); capabilityLauncher?.open(); return;
+  }
+  if (e.key === 'Escape') { if (capabilityLauncher?.isOpen()) { capabilityLauncher.close(); return; } }
+});
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { if (playerActive) stopMediaPlayer(); closeDebug(); closeDrawer(); if (HOST_PREVIEW) { $('host-preview-menu').hidden = true; $('gear').setAttribute('aria-expanded', 'false'); } } });
 $('dbgsend').addEventListener('click', async () => {
   const text = $('dbgtext').value.trim(); if (!text) return;
@@ -1257,7 +1334,13 @@ $('dbgsend').addEventListener('click', async () => {
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { if (HOST_PREVIEW) void refreshHostPreview(); else if (N.target === 'phone') nativeRefresh(); else refresh(); } });
 window.addEventListener('vivim:bootstrap-refresh', () => { S.statusAt = 0; if (S.paired) refresh(); });
 
-if (!HOST_PREVIEW && 'serviceWorker' in navigator) navigator.serviceWorker.register(transport.direct ? '/mobile/sw.js' : '/sw.js').catch(() => {});
+if (!HOST_PREVIEW && 'serviceWorker' in navigator) {
+  navigator.serviceWorker.register(transport.direct ? '/mobile/sw.js' : '/sw.js').catch(() => {});
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    S.sigs.ux = null;
+    if (S.tab === 'me') renderSurfaces();
+  });
+}
 $('native-session').hidden = N.target !== 'phone';
 $('native-status').hidden = N.target !== 'phone';
 $('drawer').hidden = N.target !== 'harness';

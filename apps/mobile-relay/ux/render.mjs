@@ -108,6 +108,18 @@ export function renderToday(host, model, options = {}) {
       shortcuts.append(button);
     }
     explore.append(shortcuts);
+    if (typeof options.onExplore === 'function') {
+      const search = make(doc, 'button', 'btn sm ux-secondary', 'Find any feature');
+      search.type = 'button';
+      search.addEventListener('click', () => options.onExplore());
+      explore.append(search);
+    }
+    if (typeof options.onCapture === 'function') {
+      const capture = make(doc, 'button', 'btn sm ux-secondary', 'Quick capture · works offline');
+      capture.type = 'button';
+      capture.addEventListener('click', () => options.onCapture());
+      explore.append(capture);
+    }
     scroll.append(explore);
   }
 
@@ -379,6 +391,44 @@ export function renderMe(host, model, options = {}) {
     action.addEventListener('click', () => options.onInstall());
     install.append(action);
     scroll.append(install);
+  }
+
+  if (m.readiness?.schema === 'vivim.pwa-readiness/1') {
+    const state = card(doc, 'Device readiness');
+    state.append(make(doc,'p','ux-note',
+      m.readiness.ready + ' of ' + m.readiness.checks.length +
+      ' checks ready · ' + m.readiness.actionable + ' need attention. No Host effects run here.'));
+    const urgent = m.readiness.checks.filter(c=>c.state==='blocked'||c.state==='attention');
+    if (urgent.length) {
+      const urgentList = make(doc,'ul','ux-list');
+      for(const c of urgent.slice(0,4)){
+        const line = make(doc,'li','ux-item');
+        line.append(make(doc,'strong','ux-item-title',c.label),
+          make(doc,'span','ux-item-detail',c.detail));
+        urgentList.append(line);
+      }
+      state.append(urgentList);
+    }
+    const all = make(doc,'details','ux-details');
+    all.append(make(doc,'summary','','All ' + m.readiness.checks.length + ' checks'));
+    for(const c of m.readiness.checks){
+      const line = make(doc,'p','ux-note',c.label+' · '+c.state+' — '+c.detail);
+      all.append(line);
+    }
+    state.append(all);
+    const tools = make(doc,'div','readiness-actions');
+    if(typeof options.onCheckReadiness==='function'){
+      const check = make(doc,'button','btn sm ux-secondary','Check connection');
+      check.type='button';check.addEventListener('click',()=>options.onCheckReadiness());
+      tools.append(check);
+    }
+    if(typeof options.onCopyReadiness==='function'){
+      const copy = make(doc,'button','btn sm ux-secondary','Copy safe report');
+      copy.type='button';copy.addEventListener('click',()=>options.onCopyReadiness());
+      tools.append(copy);
+    }
+    state.append(tools);
+    scroll.append(state);
   }
 
   const activity = card(doc, 'Activity Record');
