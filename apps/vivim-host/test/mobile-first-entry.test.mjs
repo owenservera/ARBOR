@@ -216,6 +216,15 @@ test('Build VEC modules are served through the PWA shell and Direct Host', () =>
   assert.equal(manifest.start_url, './');
   assert.equal(manifest.scope, './');
   assert.equal(manifest.icons[0].src, './icon.svg');
+  assert.deepEqual(manifest.icons.slice(1).map(icon => [icon.src,icon.sizes,icon.purpose]), [
+    ['./icon-192.png','192x192','any'],
+    ['./icon-512.png','512x512','any'],
+    ['./icon-maskable-512.png','512x512','maskable']
+  ]);
+  for (const filename of ['icon-192.png','icon-512.png','icon-maskable-512.png']) {
+    assert.match(direct,new RegExp("'"+filename.replace('.','\\.')+"'\\s*:\\s*\\['"));
+    assert.ok(sw.includes("'"+filename+"'"));
+  }
 });
 
 test('owner desktop PWA uses the same read-only HQ media summary and clears private state', () => {

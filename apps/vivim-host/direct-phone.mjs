@@ -64,6 +64,9 @@ const assets = new Map(Object.entries({
   'fonts/jetbrains-mono-latin-wght-normal.woff2': ['fonts/jetbrains-mono-latin-wght-normal.woff2', 'font/woff2'],
   'manifest.webmanifest': ['manifest.webmanifest', 'application/manifest+json'],
   'icon.svg': ['icon.svg', 'image/svg+xml'],
+  'icon-192.png': ['icon-192.png', 'image/png'],
+  'icon-512.png': ['icon-512.png', 'image/png'],
+  'icon-maskable-512.png': ['icon-maskable-512.png', 'image/png'],
 }));
 // Desktop preview serves only static PWA assets on local loopback. All phone APIs
 // remain behind the independently authorized Direct/Tailscale phone handler.
