@@ -965,7 +965,8 @@ function showOfflineShell() {
   clearPrivatePhoneState();
   $('pairbox').hidden = true; $('app').hidden = false;
   document.body.classList.add('offline-shell');
-  S.tab = 'today'; N.target = 'vivim'; $('talk-target').value = 'vivim';
+  S.tab = 'today'; N.target = transport.direct ? 'vivim' : 'harness';
+  $('talk-target').value = N.target;
   S.device = { status: 'offline', scopes: [] };
   setConn('Offline · local PWA shell only', true);
   renderAll(true);
