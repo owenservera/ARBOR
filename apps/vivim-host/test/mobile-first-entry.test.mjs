@@ -217,3 +217,14 @@ test('Build VEC modules are served through the PWA shell and Direct Host', () =>
   assert.equal(manifest.scope, './');
   assert.equal(manifest.icons[0].src, './icon.svg');
 });
+
+test('owner desktop PWA uses the same read-only HQ media summary and clears private state', () => {
+  const server = source('../server.mjs');
+  const app = source('../../mobile-relay/app.js');
+  assert.match(server, /const media = await createMediaPlaybackService\(\)\.list\(\)/);
+  assert.match(server, /schema: 'vivim.host-pwa-view\/1', observedAt: new Date\(\)\.toISOString\(\),\s*media,/);
+  assert.match(app, /function clearPrivatePhoneState\(\)/);
+  assert.match(app, /if \(device\.status !== 'active'\) \{\s*clearPrivatePhoneState\(\)/);
+  assert.match(app, /Device session changed while opening the stream/);
+  assert.match(app, /S\.media = data\.media\?\.schema === 'vivim.media-library-summary\/1'/);
+});

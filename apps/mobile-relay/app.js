@@ -197,6 +197,18 @@ function goTab(tab) {
   else if (tab === 'world') void refreshMedia(false);
 }
 
+// A lost grant must clear *all* private phone projections, not just hide tabs.
+// Session restoration must start from new device proof; no offline replay.
+function clearPrivatePhoneState() {
+  stopMediaPlayer();
+  S.paired = false; S.cmds = []; S.statusObj = null; S.manifest = null;
+  S.media = { state: 'not-authorized' }; S.mediaAt = 0; S.mediaLoading = false;
+  S.sigs.ux = null; S.sigs.msgs = null; S.sigs.list = null;
+  $('app').hidden = true; $('pairbox').hidden = false;
+  document.body.classList.remove('paired');
+  if (build) build.clear();
+  window.dispatchEvent(new CustomEvent('vivim:paired', { detail: { paired: false } }));
+}
 // Native media playback is an explicit user action. All bytes stay on the Host
 // and flow through one grant-bound, HttpOnly-cookie ticket. No blob URLs, model
 // outputs, browser storage, provider API or cloud fallback.
@@ -256,6 +268,9 @@ async function openMediaPlayer(mediaId, title) {
       body: JSON.stringify({ mediaId })
     });
     const payload = await response.json().catch(() => ({}));
+    if (!S.paired || !transport.deviceHeaders?.() ||
+        transport.deviceHeaders()['x-vivim-device-session'] !== device['x-vivim-device-session'])
+      throw new Error('Device session changed while opening the stream');
     if (!response.ok || payload.schema !== 'vivim.media-playback-ticket/1' ||
         payload.url !== '/mobile/api/media/stream/' + mediaId)
       throw new Error(payload.code || 'Host did not authorize this playable file');
@@ -601,6 +616,8 @@ async function refreshHostPreview() {
       throw new Error('Invalid Host projection');
     if (sequence !== previewReadSequence) return;
     S.statusObj = { at: data.observedAt, snapshot: data.snapshot };
+    S.media = data.media?.schema === 'vivim.media-library-summary/1'
+      ? data.media : { state: 'unavailable' };
     setConn(data.state === 'source-backed' ? 'Owner view · read only' : 'Source unavailable',
       data.state !== 'source-backed');
     renderAll(true);
@@ -610,6 +627,7 @@ async function refreshHostPreview() {
     if (sequence !== previewReadSequence) return;
     // Never keep a private stale snapshot visible after session expiry.
     S.statusObj = null;
+    S.media = { state: 'unavailable' };
     if (build) build.clear();
     setConn(error.message, true);
     renderAll(true);
@@ -776,7 +794,11 @@ async function refresh() {
     // Status authority is unavailable: do not leave a previously private Build
     // revision visible or clickable after a grant loss/disconnect.
     if (build) { build.clear(); buildKey = ''; }
-    if (e.status === 401) { S.busy = false; return start(); }
+    if (e.status === 401) {
+      S.busy = false;
+      if (transport.direct) clearPrivatePhoneState();
+      return start();
+    }
     setConn('Relay error: ' + e.message, true); ensureActive(); renderAll();
   }
   S.busy = false; schedule();
@@ -946,6 +968,7 @@ async function runStart() {
       // The Me surface reports the phone's own grant honestly: status and scopes, never more.
       S.device = { status: device.status, scopes: Array.isArray(device.scopes) ? device.scopes : null };
       if (device.status !== 'active') {
+        clearPrivatePhoneState();
         showPairingState(device.status);
         setConn(device.status === 'pending' ? 'PC approval required' :
           device.status === 'revoked' ? 'Device grant revoked' : 'Device not paired', true);
@@ -956,6 +979,7 @@ async function runStart() {
         return;
       }
     } catch (error) {
+      clearPrivatePhoneState();
       showPairingState('error',
         'Current device proof cannot be resumed (' + String(error.code || error.message).slice(0, 90) +
         '). If your browser key is lost, revoke the old grant on the PC and create a fresh pairing link.');
@@ -966,11 +990,14 @@ async function runStart() {
   }
   if (approvalPoll) { clearTimeout(approvalPoll); approvalPoll = null; }
   clearTimeout(S.timer);
-  let paired; try { ({ paired } = await api('session')); } catch (e) { setConn(e.message, true); return; }
+  let paired; try { ({ paired } = await api('session')); } catch (e) {
+    clearPrivatePhoneState(); setConn(e.message, true); return;
+  }
   $('pairbox').hidden = paired; $('app').hidden = !paired;
   document.body.classList.toggle('paired', paired);
   setConn(paired ? 'Paired' : 'Not paired', !paired);
-  S.paired = paired; if (!paired) stopMediaPlayer(); clearTimeout(S.timer); S.busy = false;
+  if (!paired) clearPrivatePhoneState();
+  S.paired = paired; clearTimeout(S.timer); S.busy = false;
   window.dispatchEvent(new CustomEvent('vivim:paired', { detail: { paired } }));
   if (paired) { renderAll(true); refresh(); }
 }

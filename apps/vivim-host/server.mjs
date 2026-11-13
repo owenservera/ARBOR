@@ -15,6 +15,7 @@ import { MANIFEST_FILE, MANIFEST_SCHEMA, MANIFEST_VERSION } from '../../studio/s
 import { diagnoseHost } from './insights.mjs';
 import { createBootstrapRuntime } from './bootstrap/runtime.mjs';
 import { readMemoryParams } from './bootstrap/web-memory.mjs';
+import { createMediaPlaybackService } from './media/playback.mjs';
 import { createBootstrapCommandWorker } from './bootstrap/command-worker.mjs';
 import { createWorkerSupervisor } from './bootstrap/worker-supervisor.mjs';
 import { loadOwnerToken, verifyOwnerToken } from './bootstrap/owner-auth.mjs';
@@ -632,8 +633,12 @@ async function handleControl(req, res, pathname, host, controlFor, tokenFor, uiS
         state: r.state, createdAt: r.createdAt, source: r.source
       }));
       const grants = enrollment.listGrants();
+      // Owner-authenticated read-only PWA can display the same HQ catalog.
+      // Desktop preview never gains a phone stream grant or file path.
+      const media = await createMediaPlaybackService().list();
       sendJson(res, 200, {
         schema: 'vivim.host-pwa-view/1', observedAt: new Date().toISOString(),
+        media,
         state: projected.state === 'ready' ? 'source-backed' : 'unavailable',
         snapshot: {
           bootstrap: { ...phoneSafe, cards: Array.isArray(cards) ? cards.slice(0, 3).map(c => ({
