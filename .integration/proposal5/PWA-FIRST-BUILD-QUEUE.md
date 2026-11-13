@@ -55,3 +55,7 @@ GitHub Actions run for this work is still `startup_failure` with no jobs. The ne
 ## Android PWA install assets (2026-11-13)
 
 The manifest now includes SVG-any, PNG 192×192, PNG 512×512, and a full-bleed maskable PNG 512×512. All three raster files are committed to the canonical PWA, served by the existing Direct Host allowlist and listed in service-worker shell v6. A committed Node test checks the binary PNG signatures, IHDR dimensions, bit depth, color type, and manifest roles. **Actual install on Android Chrome and this Node binary test remain UNRUN**.
+
+## Latest main-bound source checks
+
+Source checked at `7b9987884cb8aca1e1d568bac7da42135fa06c71` on 2026-11-13: **34/34 UI**, **9/9 VEC**, **10/10 Build**, and **3/3 media-stream-grant source checks**, for **56/56 passing source-level checks**. These use V8 test callbacks and Node/browser API shims as needed, not the actual Node or Android runtime. New source includes 52-item SW v6 install shell with SVG/PNG/maskable icons; install action appears only when the browser offers it; media pager, remote read-only authorization and active-stream grant reevaluation remain Host-owned. **Node24, actual HTTP sessions, Windows Host, Tailscale phone, Android installation and media codecs are all UNRUN.** Keep PWA-12 open until actual results exist.

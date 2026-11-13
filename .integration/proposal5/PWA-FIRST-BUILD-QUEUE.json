@@ -144,7 +144,7 @@
         "apps/vivim-host/media",
         "apps/mobile-relay/ux"
       ],
-      "proof": "Direct-only playback with HQ catalog mapping, session-bound ticket, 200/206/416, backpressure; 10 range checks and World rendering checks executed; HTTP/Android UNRUN",
+      "proof": "HQ media pagination and full-catalog lookup; owner mapping; ticketed 200/206/416, abort/backpressure and mid-stream grant checks; HTTP/Windows/Android UNRUN",
       "dependsOn": [
         "PWA-05"
       ]
@@ -158,7 +158,7 @@
         "apps/mobile-relay/sw.js",
         "apps/mobile-relay/manifest.webmanifest"
       ],
-      "proof": "Offline public shell, safe no-replay SW v6 52 assets, explicit SVG/PNG 192/512 and maskable 512, Android install and Node binary tests UNRUN",
+      "proof": "Offline no-replay PWA shell, SW v6 with 52 assets, SVG+PNG 192/512/maskable icons and browser-triggered Install in Me; Android install and Node binary test UNRUN",
       "dependsOn": [
         "PWA-03"
       ]
@@ -200,12 +200,12 @@
     }
   ],
   "executionEvidence": {
-    "assessedMainSha": "952834db330142ded0e08657c7eb22a4639cf491",
-    "mode": "source-level V8 execution of checked-in test callbacks and production pure JS modules",
+    "assessedMainSha": "7b9987884cb8aca1e1d568bac7da42135fa06c71",
+    "mode": "execution of real checked-in source-level test callbacks and production pure modules in V8, with Node/browser API shims where specified",
     "modules": [
       {
-        "name": "PWA Today/World/Me UX, Control lifecycle, media navigation",
-        "passed": 33,
+        "name": "PWA UI, Control, World, media paging and browser install affordance",
+        "passed": 34,
         "failed": 0
       },
       {
@@ -214,15 +214,21 @@
         "failed": 0
       },
       {
-        "name": "Build request routing and composer",
+        "name": "Build request routing, composer and service-worker v6 reference",
         "passed": 10,
+        "failed": 0
+      },
+      {
+        "name": "active-media stream grant guard, checked against source with a stream shim",
+        "passed": 3,
         "failed": 0
       }
     ],
-    "totalSourceChecksPass": 52,
+    "totalSourceChecksPass": 56,
     "node24TestSuites": "UNRUN",
     "windowsHostAcceptance": "UNRUN",
     "androidDirectTailscaleAcceptance": "UNRUN",
+    "androidPwaInstallation": "UNRUN",
     "githubActions": "startup_failure before jobs",
     "releaseAcceptance": "NOT_CLAIMED",
     "localExecutableCommand": "node integration/scripts/pwa-run-now.mjs"
