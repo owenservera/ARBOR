@@ -29,7 +29,7 @@ test('unknown root fields, getters, cycles and invalid token paths refuse',()=>{
   assert.equal(resolveUiTokenPackage(pkg(evil)).code,'INVALID_TOKEN_PACKAGE');
   const cyclic={};cyclic.foo=cyclic;
   assert.equal(resolveUiTokenPackage(pkg(cyclic)).code,'INVALID_TOKEN_PACKAGE');
-  assert.equal(resolveUiTokenPackage(pkg({'__proto__':{$type:'color',$value:'#123456'}})).outcome,'resolved'); // JS literal changes prototype, no own token
+  assert.equal(resolveUiTokenPackage(pkg({'__proto__':{$type:'color',$value:'#123456'}})).code,'INVALID_TOKEN_PACKAGE'); // polluted prototype fails closed
 });
 test('resolved token refs do not install runtime values',()=>{
   const x=resolveUiTokenPackage(pkg({a:{$type:'color',$value:'#112233'}}));

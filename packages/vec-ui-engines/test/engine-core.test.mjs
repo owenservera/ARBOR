@@ -72,7 +72,7 @@ test('unsafe objects, accessors and code-bearing values reject rather than execu
   assert.equal(validateUiValue('map',malicious).ok,false);
   const cyclic={};cyclic.self=cyclic;
   assert.equal(validateUiValue('map',cyclic).ok,false);
-  assert.equal(validateUiValue('map',{__proto__:{}}).ok,true); // standard JS literal changes prototype; no own poisoned key
+  assert.equal(validateUiValue('map',{__proto__:{}}).ok,false); // JS literal changes object prototype; fail closed
   assert.equal(validateUiValue('map',Object.assign(Object.create(null),{'constructor':'danger'})).ok,false);
   assert.equal(validateUiValue('boolean','true').ok,false);
 });
