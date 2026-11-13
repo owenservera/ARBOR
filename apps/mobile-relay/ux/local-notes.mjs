@@ -16,11 +16,17 @@ function read(storage,key){
   if(raw==null)return [];
   try{
     const parsed=JSON.parse(raw);
-    if(parsed?.schema!==NOTES_SCHEMA||!Array.isArray(parsed.notes))return [];
-    return parsed.notes.filter(n=>n&&validId(n.id)&&safeText(n.text)===n.text&&
-      Number.isSafeInteger(n.createdAt)&&n.createdAt>0).slice(0,MAX_NOTES)
-      .map(n=>({id:n.id,text:n.text,createdAt:n.createdAt}));
-  }catch{return []}
+    if(parsed?.schema!==NOTES_SCHEMA||!Array.isArray(parsed.notes)||
+       parsed.notes.length>MAX_NOTES)throw new Error('LOCAL_NOTES_CORRUPT');
+    const ids=new Set();
+    return parsed.notes.map(n=>{
+      if(!n||!validId(n.id)||ids.has(n.id)||safeText(n.text)!==n.text||
+          !Number.isSafeInteger(n.createdAt)||n.createdAt<=0)
+        throw new Error('LOCAL_NOTES_CORRUPT');
+      ids.add(n.id);
+      return {id:n.id,text:n.text,createdAt:n.createdAt};
+    });
+  }catch{throw new Error('LOCAL_NOTES_CORRUPT');}
 }
 export function createLocalNotebook({storage,key=NOTES_KEY,now=Date.now,makeId}={}){
   if(!storage||typeof storage.getItem!=='function'||typeof storage.setItem!=='function')

@@ -32,7 +32,10 @@ test('notes are bounded, treat markup as text and reject malformed storage',()=>
   assert.throws(()=>book.save('Note 12'),/LOCAL_NOTES_FULL/);
   assert.equal(book.exportAll(),fullBefore,'no earlier note is silently discarded');
   storage.setItem(NOTES_KEY,'{"schema":"wrong","notes":[{"text":"private"}]}');
-  assert.deepEqual(book.list(),[]);
+  const original=storage.getItem(NOTES_KEY);
+  assert.throws(()=>book.list(),/LOCAL_NOTES_CORRUPT/);
+  assert.throws(()=>book.save('new note'),/LOCAL_NOTES_CORRUPT/);
+  assert.equal(storage.getItem(NOTES_KEY),original,'corrupt data cannot be silently overwritten');
 });
 test('unavailable storage fails visibly without making any Host request',()=>{
   const storage={getItem(){throw Error('denied')},setItem(){throw Error('denied')}};

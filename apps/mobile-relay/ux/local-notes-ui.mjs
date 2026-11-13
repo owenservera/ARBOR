@@ -55,7 +55,7 @@ export function mountLocalNotes({host,storage,copyText,saveFile,now,makeId}={}){
   function render(){
     items.replaceChildren();
     let notes=[];
-    try{notes=notebook.list()}catch{status.textContent='Browser storage unavailable; copying still works.'}
+    try{notes=notebook.list()}catch{status.textContent='Saved notes could not be read. Existing storage was not overwritten; copying a new draft still works.'}
     count.textContent='Saved on this browser ('+notes.length+'/12)';
     if(!notes.length)items.append(make('p','ux-empty','No notes saved on this browser.'));
     for(const note of notes){
