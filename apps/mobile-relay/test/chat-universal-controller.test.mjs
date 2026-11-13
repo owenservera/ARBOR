@@ -57,3 +57,10 @@ test('combined inbox is source-backed aggregation only, never implicit multi-sen
  assert.match(app,/combinedInbox=false/);
  assert.doesNotMatch(app,/Promise\.all\(providers\(\)\.map/);
 });
+
+test('revoking a device immediately invalidates Rust context and browser checks',()=>{
+  assert.match(app,/isInvalidDeviceSession\(data\?\.reason\|\|data\?\.code\)/);
+  assert.match(app,/isInvalidDeviceSession\(result\?\.reason\|\|result\?\.code\)/);
+  assert.match(app,/clearPrivatePhoneState\(\)/);
+  assert.match(app,/transport\.setDeviceSession\(null\)/);
+});

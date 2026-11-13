@@ -223,7 +223,16 @@ async function readGraphContext() {
       method:'GET',credentials:'same-origin',cache:'no-store',headers:device
     });
     const data=await response.json();
-    if(epoch!==chatContextEpoch||!S.paired||!transport.deviceHeaders?.()||
+    if(epoch!==chatContextEpoch||!S.paired)return;
+    if((response.status===401||response.status===403)&&
+       isInvalidDeviceSession(data?.reason||data?.code)){
+      transport.setDeviceSession(null);
+      clearPrivatePhoneState();
+      showPairingState('error','Your PC has revoked this session. Reconnect your phone.');
+      setConn('PC device authorization expired or revoked',true);
+      return;
+    }
+    if(!transport.deviceHeaders?.()||
        transport.deviceHeaders()['x-vivim-device-session']!==device['x-vivim-device-session'])return;
     if(!response.ok||data?.schema!=='vivim.hqkg-chat-context/1'){
       chatContext={state:'unavailable',reason:'Host context read unavailable'};
@@ -1525,6 +1534,12 @@ $('dock-provider-refresh').addEventListener('click', async () => {
     const result=await response.json();
     if(!S.paired||transport.deviceHeaders?.()?.['x-vivim-device-session']!==
       headers['x-vivim-device-session'])return;
+    if((response.status===401||response.status===403)&&
+       isInvalidDeviceSession(result?.reason||result?.code)){
+      transport.setDeviceSession(null);clearPrivatePhoneState();
+      showPairingState('error','PC session expired. Reconnect to check your AIs.');
+      return;
+    }
     if(!response.ok||result.schema!=='vivim.chat-provider-projection/1'){
       toast('Signed-in AI checks unavailable. Nothing was sent.');return;
     }
