@@ -85,6 +85,32 @@ export function renderToday(host, model, options = {}) {
   }
   scroll.append(connection);
 
+  // These are the five already-shipped phone sections, not duplicate pages or
+  // claimed live capabilities. Navigation stays local; Host effects remain gated.
+  if (typeof options.onNavigate === 'function') {
+    const explore = card(doc, 'Explore your VIVIM');
+    explore.append(make(doc, 'p', 'ux-note',
+      'The same phone interface is available here. Connect your PC to use protected actions.'));
+    const shortcuts = make(doc, 'div', 'ux-surface-tiles');
+    const routes = [
+      ['talk', 'Talk', 'AI conversations and requests'],
+      ['build', 'Build', 'Design and preview interfaces'],
+      ['world', 'World', 'Things you have built'],
+      ['me', 'Me', 'Your device and preferences'],
+      ['control', 'Control', 'Review PC changes']
+    ];
+    for (const [tab, title, description] of routes) {
+      const button = make(doc, 'button', 'ux-surface-tile');
+      button.type = 'button';
+      button.setAttribute('aria-label', 'Open ' + title);
+      button.append(make(doc, 'strong', '', title), make(doc, 'small', '', description));
+      button.addEventListener('click', () => options.onNavigate(tab));
+      shortcuts.append(button);
+    }
+    explore.append(shortcuts);
+    scroll.append(explore);
+  }
+
   // Lane M: one small, truthful mission card over facts already sent by the Host.
   // Details are optional, and no control here can approve or re-execute anything.
   if (m.mission?.schema === 'vivim.mission-card/1') {

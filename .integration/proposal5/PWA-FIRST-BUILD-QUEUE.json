@@ -20,7 +20,7 @@
     "apkDeferred": true,
     "testsNotRunAreNotPass": true
   },
-  "next": "PWA-03",
+  "next": "PWA-04",
   "items": [
     {
       "id": "PWA-01",
@@ -51,7 +51,7 @@
     {
       "id": "PWA-03",
       "title": "Surface inventory and real visual navigation",
-      "status": "next",
+      "status": "source_implemented_tests_unrun",
       "owner": "PWA",
       "paths": [
         "apps/mobile-relay/index.html",

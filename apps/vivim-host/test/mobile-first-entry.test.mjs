@@ -95,3 +95,20 @@ test('desktop preview and trusted Direct phone remain separate when both are con
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+
+test('the phone shell exposes all canonical sections and Today launches existing surfaces', () => {
+  const html = source('../../mobile-relay/index.html');
+  const render = source('../../mobile-relay/ux/render.mjs');
+  const model = source('../../mobile-relay/ux/model.mjs');
+  for (const tab of ['today', 'talk', 'build', 'world', 'me', 'control']) {
+    assert.ok(html.includes('data-tab="' + tab + '"'), 'navigation for ' + tab);
+    assert.ok(model.includes("'" + tab + "'"), 'canonical tab ' + tab);
+  }
+  for (const tab of ['talk', 'build', 'world', 'me', 'control']) {
+    assert.ok(render.includes("['" + tab + "'"), 'Today shortcut for ' + tab);
+  }
+  assert.match(render, /options\.onNavigate\(tab\)/);
+  assert.match(html, /\.ux-surface-tiles/);
+  assert.match(html, /id="v-soon" hidden aria-hidden="true"/);
+});
