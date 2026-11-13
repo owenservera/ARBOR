@@ -371,3 +371,11 @@ test('offline shell exposes navigation but never private content',()=>{
   assert.match(app,/document\.body\.classList\.remove\('paired', 'offline-shell'\)/);
   assert.match(app,/if \(paired\) document\.body\.classList\.remove\('offline-shell'\)/);
 });
+
+
+test('PWA starts on Today consistently in the desktop preview and the paired phone',()=>{
+  assert.match(app,/tab: 'today', manifest: null/);
+  assert.match(app,/S\.tab = 'today'; N\.target = 'vivim'/);
+  assert.match(html,/id="tab-today" class="tab on"/);
+  assert.match(html,/id="tab-talk" class="tab"/);
+});

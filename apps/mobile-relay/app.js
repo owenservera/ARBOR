@@ -72,7 +72,7 @@ function md(src) {
 const FALLBACK = [['chatgpt', 'ChatGPT'], ['claude', 'Claude'], ['qwen', 'Qwen'], ['zai', 'Z.ai']]
   .map(([id, label]) => ({ id, label, signedIn: false, models: [], thinkingLevels: [], newChat: true, attachments: false }));
 const S = {
-  tab: 'talk', manifest: null, convs: lsGet('relay.convs.v1', []), active: lsGet('relay.active.v1', null),
+  tab: 'today', manifest: null, convs: lsGet('relay.convs.v1', []), active: lsGet('relay.active.v1', null),
   hidden: new Set(lsGet('relay.hidden.v1', [])), cmds: [], files: [], sending: false, paired: false,
   statusAt: 0, statusObj: null, timer: 0, busy: false, sigs: {}, shownConv: null,
   conn: { label: '', tone: 'ok' }, device: { status: null, scopes: null },
