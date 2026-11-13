@@ -292,6 +292,27 @@ export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'wo
       }
       return;
     }
+    if (route === 'api/media/close') {
+      if (req.method !== 'POST') { res.setHeader('allow','POST'); json(res,405,{code:'METHOD'}); return; }
+      try {
+        authorizeDevice(req, 'control:read');
+        if (req.headers.origin !== origin || req.headers['x-vivim-media'] !== '1')
+          throw failure(403,'ORIGIN_OR_CSRF');
+        // Discard only this device session's ephemeral stream capabilities;
+        // this does not mutate the HQ library, grants or any Host effect.
+        for (const [id, record] of mediaTickets) {
+          if (record.grantId === req.headers['x-vivim-grant-id'] &&
+              record.sessionId === req.headers['x-vivim-device-session']) mediaTickets.delete(id);
+        }
+        res.setHeader('set-cookie', MEDIA_COOKIE +
+          '=; Secure; HttpOnly; SameSite=Strict; Path=/mobile/api/media/stream/; Max-Age=0');
+        res.setHeader('cache-control','private, no-store');
+        json(res,200,{schema:'vivim.media-playback-closed/1',closed:true});
+      } catch (cause) {
+        json(res,cause.status || 503,{code:cause.status ? cause.message : 'MEDIA_CLOSE_UNAVAILABLE'});
+      }
+      return;
+    }
     const streamId = /^api\/media\/stream\/([a-f0-9]{32})$/.exec(route);
     if (streamId) {
       if (req.method !== 'GET' && req.method !== 'HEAD') {

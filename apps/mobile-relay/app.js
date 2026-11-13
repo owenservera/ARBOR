@@ -231,10 +231,26 @@ function clearPrivatePhoneState() {
 // outputs, browser storage, provider API or cloud fallback.
 let playerActive = false;
 let priorMediaFocus = null;
+let playerOpen = null;
+let playerEpoch = 0;
 function stopMediaPlayer() {
+  const wasOpeningOrPlaying = playerActive;
+  playerEpoch++;
+  playerOpen?.abort();
+  playerOpen = null;
+  playerActive = false;
+  const current = transport.deviceHeaders?.();
+  if (wasOpeningOrPlaying && !HOST_PREVIEW && S.paired && transport.direct && current) {
+    // A one-way, owner-authorized cleanup of ephemeral media tickets; never
+    // a replayable Host command, a provider call or a persisted effect.
+    void fetch('/mobile/api/media/close', {
+      method: 'POST', credentials: 'same-origin', cache: 'no-store',
+      headers: { ...current, origin: location.origin, 'x-vivim-media': '1' }
+    }).catch(() => {});
+  }
   const sheet = $('media-player-sheet');
   const video = $('media-player-video');
-  if (!sheet || !video) return;
+  if (!sheet || !video) { priorMediaFocus = null; return; }
   video.pause();
   video.removeAttribute('src');
   video.load(); // abort outstanding native range requests
@@ -281,14 +297,19 @@ async function openMediaPlayer(mediaId, title) {
   const device = transport.deviceHeaders?.();
   if (!device || playerActive) return;
   playerActive = true;
+  const epoch = ++playerEpoch;
+  const controller = new AbortController();
+  playerOpen = controller;
   try {
     const response = await fetch('/mobile/api/media/open', {
       method: 'POST', credentials: 'same-origin', cache: 'no-store',
+      signal: controller.signal,
       headers: { ...device, origin: location.origin,
         'x-vivim-media': '1', 'content-type': 'application/json' },
       body: JSON.stringify({ mediaId })
     });
     const payload = await response.json().catch(() => ({}));
+    if (epoch !== playerEpoch || controller.signal.aborted) return;
     if (isInvalidDeviceSession(payload?.code)) {
       transport.setDeviceSession(null);
       clearPrivatePhoneState();
@@ -311,11 +332,16 @@ async function openMediaPlayer(mediaId, title) {
     $('media-player-video').src = payload.url;
     $('media-player-video').load();
     $('media-player-video').play().catch(() => {
-      $('media-player-state').textContent = 'Ready. Press Play to start streaming from your PC.';
+      if (epoch === playerEpoch)
+        $('media-player-state').textContent = 'Ready. Press Play to start streaming from your PC.';
     });
   } catch (cause) {
-    playerActive = false;
-    toast('Playback unavailable: ' + String(cause?.message || 'Host denied stream').slice(0, 120));
+    if (epoch === playerEpoch && !controller.signal.aborted) {
+      playerActive = false;
+      toast('Playback unavailable: ' + String(cause?.message || 'Host denied stream').slice(0, 120));
+    }
+  } finally {
+    if (playerOpen === controller) playerOpen = null;
   }
 }
 

@@ -112,6 +112,17 @@ test('stream uses a paired owner ticket, exact file and 200/206/416 semantics', 
   assert.notEqual(currentCookie,cookie);
   assert.equal((await call(route,{headers:{cookie}})).status,401);
   assert.equal((await call(route,{headers:{cookie:currentCookie}})).status,200);
+  assert.equal((await call('/mobile/api/media/close',{method:'POST',headers:{
+    origin:'https://evil.invalid','x-vivim-media':'1'}})).status,403);
+  const closed=await call('/mobile/api/media/close',{method:'POST',headers:{
+    origin,'x-vivim-media':'1'}});
+  assert.equal(closed.status,200);
+  assert.match(closed.headers['set-cookie'][0],/Max-Age=0/);
+  assert.equal((await call(route,{headers:{cookie:currentCookie}})).status,401);
+  const last=await call('/mobile/api/media/open',{method:'POST',headers:{
+    origin,'x-vivim-media':'1','content-type':'application/json'},body});
+  assert.equal(last.status,200);
+  const lastCookie=last.headers['set-cookie'][0].split(';')[0];
   owner.revokeGrant({grantId:grant.grantId,revokedBy:'desktop-owner'});
-  assert.ok([401,403].includes((await call(route,{headers:{cookie:currentCookie}})).status));
+  assert.ok([401,403].includes((await call(route,{headers:{cookie:lastCookie}})).status));
 });

@@ -402,3 +402,14 @@ test('media session expiry clears sensitive views but scope denial keeps unrelat
   assert.match(app,/transport\.deviceHeaders\?\.\(\)\?\.\['x-vivim-device-session'\]/);
   assert.match(app,/if \(generation === mediaGeneration\) \{\s*S\.mediaAt = Date\.now\(\);\s*S\.mediaLoading = false/);
 });
+
+
+test('closing the player aborts pending media open and revokes the ephemeral Host ticket',()=>{
+  assert.match(app,/let playerOpen = null/);
+  assert.match(app,/let playerEpoch = 0/);
+  assert.match(app,/playerOpen\?\.abort\(\)/);
+  assert.match(app,/signal: controller\.signal/);
+  assert.match(app,/epoch !== playerEpoch \|\| controller\.signal\.aborted/);
+  assert.match(app,/fetch\('\/mobile\/api\/media\/close'/);
+  assert.match(app,/if \(playerOpen === controller\) playerOpen = null/);
+});
