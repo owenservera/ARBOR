@@ -1,0 +1,18 @@
+{
+  "name": "@arbor/vec-ui-engines",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "VEC cross-runtime UI configuration engine contracts and pure compilation; no runtime effect authority",
+  "exports": {
+    ".": "./src/index.mjs",
+    "./catalog": "./src/catalog.mjs",
+    "./tokens": "./src/tokens.mjs"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.mjs"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}
