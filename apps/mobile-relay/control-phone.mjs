@@ -113,6 +113,62 @@ function preview() {
   if (text && text.length <= 1000) submit({ text });
 }
 btn?.addEventListener('click', preview);
+// Control's existing Host plans are visible as source-linked read-only decisions.
+// No command is inferred from this list, and no receipt is treated as a new send.
+const activity = byId('control-activity');
+const ownerPreview = new URLSearchParams(location.search).get('host-preview') === '1'
+  && ['127.0.0.1', 'localhost', '[::1]'].includes(location.hostname);
+async function refreshControlActivity() {
+  if (!activity || ownerPreview) return;
+  activity.hidden = false;
+  activity.replaceChildren(el('h3', { class: 'ux-card-title' }, 'Recent Host decisions'));
+  try {
+    if (!await directReady()) {
+      activity.append(el('p', { class: 'muted' }, 'Connect to your approved PC to view control receipts.'));
+      return;
+    }
+    const response = await call('recent');
+    const entries = Array.isArray(response.items) ? response.items.slice(0, 12) : [];
+    if (!entries.length) {
+      activity.append(el('p', { class: 'muted' }, 'No recorded Host control decisions yet.'));
+      return;
+    }
+    const list = el('ul', { class: 'ux-list' });
+    for (const record of entries) {
+      if (!record || typeof record.actionId !== 'string') continue;
+      const line = el('li', { class: 'ux-item' });
+      line.append(el('strong', { class: 'ux-item-title' }, record.actionId),
+        el('span', { class: 'ux-item-detail' },
+          String(record.state || 'unknown') + (record.createdAt ? ' · ' + record.createdAt : '')));
+      list.append(line);
+    }
+    activity.append(list);
+  } catch {
+    activity.append(el('p', { class: 'muted' },
+      'Recent receipts unavailable. Approval, execution and recovery remain on your PC.'));
+  }
+}
+byId('tabs')?.addEventListener('click', event => {
+  if (event.target.closest('[data-tab="control"]') && !ownerPreview) {
+    void loadPack();
+    void refreshControlActivity();
+  }
+});
+window.addEventListener('vivim:paired', event => {
+  if (ownerPreview) return;
+  if (!event.detail?.paired) {
+    if (activity) {
+      activity.replaceChildren(el('p', { class: 'muted' }, 'Device is no longer paired.'));
+      activity.hidden = false;
+    }
+    return;
+  }
+  if (document.querySelector('[data-tab="control"].on')) {
+    void loadPack();
+    void refreshControlActivity();
+  }
+});
+
 input?.addEventListener('input', () => { loadPack().then(renderLive); });
 input?.addEventListener('keydown', e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); preview(); } });
 

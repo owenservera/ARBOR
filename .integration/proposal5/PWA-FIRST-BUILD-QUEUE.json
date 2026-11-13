@@ -20,7 +20,7 @@
     "apkDeferred": true,
     "testsNotRunAreNotPass": true
   },
-  "next": "PWA-06",
+  "next": "PWA-09",
   "items": [
     {
       "id": "PWA-01",
@@ -95,7 +95,7 @@
     {
       "id": "PWA-06",
       "title": "Universal text command preview in PWA",
-      "status": "queued",
+      "status": "paired_host_plan_approval_and_receipt_visualized_tests_unrun",
       "owner": "Host/PWA",
       "paths": [
         "apps/mobile-relay/control-chat.mjs",

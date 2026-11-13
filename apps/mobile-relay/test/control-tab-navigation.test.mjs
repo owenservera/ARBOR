@@ -12,3 +12,13 @@ test('phone Control is an actual reachable tab with a panel',()=>{
  assert.match(app,/\$\('v-control'\)\.hidden\s*=\s*S\.tab\s*!==\s*'control'/);
  assert.match(app,/\$\('v-soon'\)\.hidden\s*=\s*\[[^\]]*'control'[^\]]*\]\.includes\(S\.tab\)/);
 });
+
+
+test('Control shows the existing Host command catalog and private read-only receipts',()=>{
+  const control=readFileSync(new URL('../control-phone.mjs',import.meta.url),'utf8');
+  assert.match(html,/id="control-activity"/);
+  assert.match(control,/void loadPack\(\)/);
+  assert.match(control,/call\('recent'\)/);
+  assert.match(control,/ownerPreview/);
+  assert.doesNotMatch(control,/refreshControlActivity\(\)[\s\S]{0,250}execute\(/);
+});
