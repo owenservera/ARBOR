@@ -419,3 +419,20 @@ test('World refresh is live in desktop owner view and hidden in the offline unpa
   assert.match(app,/onRefreshMedia: HOST_PREVIEW \? \(\) => \{ void refreshHostPreview\(\); \}/);
   assert.match(app,/: S\.paired && transport\.direct \? \(\) => \{ void refreshMedia\(true\); \} : undefined/);
 });
+
+
+test('Control and Ask VIVIM redact private plans and ignore late Host reads after unpair',()=>{
+  assert.match(app,/vivimChat\.redact\(\)/);
+  const control = readFileSync(new URL('../control-phone.mjs', import.meta.url),'utf8');
+  const chat = readFileSync(new URL('../control-chat.mjs', import.meta.url),'utf8');
+  assert.match(control,/let viewEpoch = 0/);
+  assert.match(control,/viewEpoch\+\+;\s*pack = null/);
+  assert.match(control,/if \(epoch === viewEpoch\) renderResult\(plan\)/);
+  assert.match(control,/if \(epoch === viewEpoch\) renderReceipt\(receipt\)/);
+  assert.match(control,/if \(epoch !== viewEpoch\) return;\s*const entries/);
+  assert.match(control,/let historyEpoch = 0/);
+  assert.match(control,/if \(epoch !== historyEpoch\) return;\s*if \(!r\.ok\)/);
+  assert.match(control,/historyEpoch\+\+;\s*items\.replaceChildren\(\)/);
+  assert.match(chat,/function redact\(\) \{\s*messages = \[\];\s*suggestions = \[\];\s*redraw\(\)/);
+  assert.match(chat,/send, render, clear, redact, loadSuggestions/);
+});

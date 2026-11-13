@@ -10,6 +10,7 @@ import { createControlClient } from './control-client.mjs';
 const byId = id => document.getElementById(id);
 const btn = byId('control-preview'), input = byId('control-text'), output = byId('control-result');
 let pack = null;
+let viewEpoch = 0;
 const control = createControlClient({ transport });
 let applying = false;
 
@@ -33,8 +34,14 @@ const directReady = () => control.directReady();
 const call = (path, body) => control.call(path, body);
 
 async function loadPack() {
-  if (pack || !(await directReady())) return pack;
-  try { pack = await call('language'); } catch { pack = null; }
+  const epoch = viewEpoch;
+  if (pack || !(await directReady()) || epoch !== viewEpoch) return pack;
+  try {
+    const result = await call('language');
+    if (epoch !== viewEpoch) return null;
+    pack = result;
+  } catch { if (epoch === viewEpoch) pack = null; }
+  if (epoch !== viewEpoch) return null;
   if (pack?.catalog?.actions && output && !input?.value.trim()) {
     const actions = pack.catalog.actions.filter(a => ['source_wired','verified'].includes(a.readiness) && a.examples?.length).slice(0, 8);
     if (actions.length) show(el('div', {}, 'Available commands · '+
@@ -93,20 +100,34 @@ function renderReceipt(r) {
 }
 async function approve(plan) {
   if (applying) return;
+  const epoch = viewEpoch;
   applying = true;
   show('Applying on your PC…');
-  try { renderReceipt(await control.execute(plan)); }
-  catch (e) { show((e.code === 'CONTROL_UNCERTAIN' ? 'Outcome uncertain — it will not be retried automatically. Check on the PC.' : String(e.message ?? e)) + '\n'); }
-  finally { applying = false; }
+  try {
+    const receipt = await control.execute(plan);
+    if (epoch === viewEpoch) renderReceipt(receipt);
+  } catch (e) {
+    if (epoch === viewEpoch)
+      show((e.code === 'CONTROL_UNCERTAIN' ? 'Outcome uncertain — it will not be retried automatically. Check on the PC.' : String(e.message ?? e)) + '\n');
+  } finally { applying = false; }
 }
 async function submit(body) {
   if (!btn) return;
+  const epoch = viewEpoch;
   btn.disabled = true; show('Checking direct PC connection…');
   try {
-    if (!(await directReady())) { show('Control is available only over your authenticated Direct PC connection. Nothing was sent.'); return; }
-    renderResult(await call('plan', body));
-  } catch (e) { show(String(e.message ?? e) + '\nNo setting was changed.'); }
-  finally { btn.disabled = false; }
+    if (!(await directReady())) {
+      if (epoch === viewEpoch) show('Control is available only over your authenticated Direct PC connection. Nothing was sent.');
+      return;
+    }
+    if (epoch !== viewEpoch) return;
+    const plan = await call('plan', body);
+    if (epoch === viewEpoch) renderResult(plan);
+  } catch (e) {
+    if (epoch === viewEpoch) show(String(e.message ?? e) + '\nNo setting was changed.');
+  } finally {
+    if (epoch === viewEpoch) btn.disabled = false;
+  }
 }
 function preview() {
   const text = input?.value.trim() ?? '';
@@ -120,14 +141,17 @@ const ownerPreview = new URLSearchParams(location.search).get('host-preview') ==
   && ['127.0.0.1', 'localhost', '[::1]'].includes(location.hostname);
 async function refreshControlActivity() {
   if (!activity || ownerPreview) return;
+  const epoch = viewEpoch;
   activity.hidden = false;
   activity.replaceChildren(el('h3', { class: 'ux-card-title' }, 'Recent Host decisions'));
   try {
     if (!await directReady()) {
+      if (epoch !== viewEpoch) return;
       activity.append(el('p', { class: 'muted' }, 'Connect to your approved PC to view control receipts.'));
       return;
     }
     const response = await call('recent');
+    if (epoch !== viewEpoch) return;
     const entries = Array.isArray(response.items) ? response.items.slice(0, 12) : [];
     if (!entries.length) {
       activity.append(el('p', { class: 'muted' }, 'No recorded Host control decisions yet.'));
@@ -144,7 +168,7 @@ async function refreshControlActivity() {
     }
     activity.append(list);
   } catch {
-    activity.append(el('p', { class: 'muted' },
+    if (epoch === viewEpoch) activity.append(el('p', { class: 'muted' },
       'Recent receipts unavailable. Approval, execution and recovery remain on your PC.'));
   }
 }
@@ -157,12 +181,19 @@ byId('tabs')?.addEventListener('click', event => {
 window.addEventListener('vivim:paired', event => {
   if (ownerPreview) return;
   if (!event.detail?.paired) {
+    viewEpoch++;
+    pack = null;
+    input.value = '';
+    live.replaceChildren();
+    btn.disabled = true;
+    show('PC authorization ended. Reconnect to plan or approve another action.');
     if (activity) {
       activity.replaceChildren(el('p', { class: 'muted' }, 'Device is no longer paired.'));
       activity.hidden = false;
     }
     return;
   }
+  btn.disabled = false;
   if (document.querySelector('[data-tab="control"].on')) {
     void loadPack();
     void refreshControlActivity();
@@ -186,17 +217,21 @@ if (memoryRoot) {
   const older = action('Older visits', () => { if (nextCursor) refreshVisits(true); });
   older.hidden = true;
   let nextCursor = null;
+  let historyEpoch = 0;
   section.append(heading, explanation, site, refreshButton, status, items, older);
   memoryRoot.append(section);
   site.addEventListener('keydown', event => {
     if (event.key === 'Enter') { event.preventDefault(); refreshVisits(); }
   });
   async function refreshVisits(append = false) {
+    const epoch = historyEpoch;
     if (!append) { nextCursor = null; items.replaceChildren(); }
     if (!transport?.direct || !(await directReady())) {
+      if (epoch !== historyEpoch) return;
       status.textContent = 'Web memory is available only when connected directly to your PC.';
       older.hidden = true; return;
     }
+    if (epoch !== historyEpoch) return;
     const device = transport.deviceHeaders?.();
     if (!device) {
       status.textContent = 'Approve a device-scoped session on your PC before viewing history.';
@@ -210,6 +245,7 @@ if (memoryRoot) {
       const r = await fetch('api/memory/recent?' + params, { credentials: 'same-origin',
         cache: 'no-store', headers: device });
       const data = await r.json().catch(() => ({}));
+      if (epoch !== historyEpoch) return;
       if (!r.ok) throw new Error(data.code || data.error || 'Host declined memory read (HTTP ' + r.status + ')');
       status.textContent = data.state + ' · ' + data.coverage + ' · ' +
         (data.lastRefreshAt || 'not refreshed') + '. ' + data.note;
@@ -226,6 +262,7 @@ if (memoryRoot) {
       nextCursor = data.nextCursor || null;
       older.hidden = !nextCursor;
     } catch (error) {
+      if (epoch !== historyEpoch) return;
       items.replaceChildren();
       status.textContent = 'Host offline, permission expired, or memory unavailable: ' + error.message;
       older.hidden = true;
@@ -233,6 +270,7 @@ if (memoryRoot) {
   }
   window.addEventListener('vivim:paired', event => {
     if (!event.detail?.paired) {
+      historyEpoch++;
       items.replaceChildren();
       nextCursor = null;
       status.textContent = 'Phone not paired; private history is unavailable.';

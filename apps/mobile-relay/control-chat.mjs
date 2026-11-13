@@ -287,6 +287,14 @@ export function createControlChat({
     finally { loadingSuggestions = false; if (!messages.length) redraw(); }
   }
 
+  // Session-loss redaction never cancels an already claimed Host effect or
+  // retries an uncertain action. It only drops private local presentation.
+  function redact() {
+    messages = [];
+    suggestions = [];
+    redraw();
+  }
+
   function clear() {
     if (busy || messages.some(msg => msg.status === 'uncertain')) return false;
     messages = [];
@@ -294,7 +302,7 @@ export function createControlChat({
     return true;
   }
   return Object.freeze({
-    send, render, clear, loadSuggestions, busy: () => busy,
+    send, render, clear, redact, loadSuggestions, busy: () => busy,
     hasPendingApproval: () => messages.some(msg => msg.status === 'approval')
   });
 }

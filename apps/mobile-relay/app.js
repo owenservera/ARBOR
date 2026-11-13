@@ -217,6 +217,7 @@ function clearPrivatePhoneState() {
   mediaGeneration++;
   stopMediaPlayer();
   S.paired = false; S.cmds = []; S.statusObj = null; S.manifest = null;
+  vivimChat.redact();
   S.files = []; N.messages = []; N.sessions = []; N.session = '';
   $('text').value = ''; $('dbg').hidden = true;
   S.media = { state: 'not-authorized' }; S.mediaAt = 0; S.mediaLoading = false;
