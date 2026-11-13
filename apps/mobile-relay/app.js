@@ -105,7 +105,7 @@ const stripPrefix = t => String(t || '').replace(PFX, '');
 const targetLabel = m => { const t = m.target || {}; const s = (t.provider || '') + (t.model ? ':' + t.model : ''); return s || m.consumer || 'assistant'; };
 let toastT;
 function toast(msg) { const t = $('toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { t.hidden = true; }, 4000); }
-function setConn(text, bad) { S.conn = { label: text, tone: bad ? 'bad' : 'ok' }; text = (transport.direct ? 'Direct' : 'Cloud') + ' · ' + text; $('conn').textContent = text; $('dot').classList.toggle('bad', !!bad); $('dot').title = text; $('connection-status').textContent = text + (transport.pending() ? ' · A send may be pending here; check before switching.' : ''); $('connection-resolved').hidden = !transport.pending(); }
+function setConn(text, bad) { S.conn = { label: text, tone: bad ? 'bad' : 'ok' }; text = (HOST_PREVIEW ? 'Host' : transport.direct ? 'Direct' : 'Cloud') + ' · ' + text; $('conn').textContent = text; $('dot').classList.toggle('bad', !!bad); $('dot').title = text; $('connection-status').textContent = text + (transport.pending() ? ' · A send may be pending here; check before switching.' : ''); $('connection-resolved').hidden = !transport.pending(); }
 
 /* ---------- conversations ---------- */
 function normalizeConv() {
@@ -181,7 +181,7 @@ function renderTabs() {
 function surfaceContext() {
   return {
     paired: S.paired === true,
-    mode: transport.direct ? 'direct' : 'cloud',
+    mode: HOST_PREVIEW ? 'desktop-preview' : transport.direct ? 'direct' : 'cloud',
     connection: S.conn.label,
     connectionTone: S.conn.tone,
     pendingSend: transport.pending(),
@@ -193,7 +193,8 @@ function surfaceContext() {
 function goTab(tab) {
   if (!tab || !TABS.includes(tab)) return;
   S.tab = tab; closeDrawer(); renderTabs(); renderSurfaces();
-  if (tab === 'world') void refreshMedia(false);
+  if (HOST_PREVIEW) void refreshHostPreview();
+  else if (tab === 'world') void refreshMedia(false);
 }
 
 // Owner media metadata travels over a separate Direct-only, device-scoped read.
@@ -255,8 +256,8 @@ function renderSurfaces() {
   const sig = S.tab + '|' + JSON.stringify(model);
   if (S.sigs.ux === sig) return;
   S.sigs.ux = sig;
-  const options = { onNavigate: goTab, onRefresh: () => refresh(),
-    onAskVivim: transport.direct ? openVivimDraft : undefined,
+  const options = { onNavigate: goTab, onRefresh: () => HOST_PREVIEW ? refreshHostPreview() : refresh(),
+    onAskVivim: transport.direct && !HOST_PREVIEW ? openVivimDraft : undefined,
     onRefreshMedia: () => { void refreshMedia(true); },
     onOpenPocket: () => { if (pocketButton && !pocketButton.hidden) pocketButton.click(); },
     onReplay: () => { if (welcome) welcome.open(); } };
@@ -484,6 +485,59 @@ function toggleHostMenu() {
   menu.hidden = !menu.hidden;
   $('gear').setAttribute('aria-expanded', String(!menu.hidden));
 }
+let previewReadSequence = 0;
+function renderHostPreviewActivity() {
+  let section = $('host-preview-activity');
+  if (!section) {
+    section = el('section', 'ux-card');
+    section.id = 'host-preview-activity';
+    $('v-control').append(section);
+  }
+  const recent = S.statusObj?.snapshot?.control?.recent;
+  section.replaceChildren(el('h2', 'ux-card-title', 'Recent Host decisions'));
+  if (!Array.isArray(recent) || recent.length === 0) {
+    section.append(el('p', 'muted', 'No Host decisions reported in the current owner view.'));
+    return;
+  }
+  const list = el('ul', 'ux-list');
+  for (const record of recent.slice(0, 12)) {
+    const item = el('li', 'ux-item');
+    item.append(el('strong', 'ux-item-title', record.actionId || 'Host decision'),
+      el('span', 'ux-item-detail',
+        (record.state || 'unknown') + (record.createdAt ? ' · ' + record.createdAt : '')));
+    list.append(item);
+  }
+  section.append(list);
+}
+async function refreshHostPreview() {
+  if (!HOST_PREVIEW) return;
+  const sequence = ++previewReadSequence;
+  try {
+    const response = await fetch('/api/host/control/pwa-view', {
+      method: 'GET', credentials: 'same-origin', cache: 'no-store'
+    });
+    if (!response.ok) throw new Error(response.status === 401 ? 'Owner session required' : 'Host source unavailable');
+    const data = await response.json();
+    if (data.schema !== 'vivim.host-pwa-view/1' || !data.snapshot ||
+        data.snapshot.control?.schema !== 'vivim.control-recent/1')
+      throw new Error('Invalid Host projection');
+    if (sequence !== previewReadSequence) return;
+    S.statusObj = { at: data.observedAt, snapshot: data.snapshot };
+    setConn(data.state === 'source-backed' ? 'Owner view · read only' : 'Source unavailable',
+      data.state !== 'source-backed');
+    renderAll(true);
+    if (build) build.setSurface(data.snapshot.bootstrap?.uiRevision ?? null);
+    renderHostPreviewActivity();
+  } catch (error) {
+    if (sequence !== previewReadSequence) return;
+    // Never keep a private stale snapshot visible after session expiry.
+    S.statusObj = null;
+    if (build) build.clear();
+    setConn(error.message, true);
+    renderAll(true);
+    renderHostPreviewActivity();
+  }
+}
 async function startHostPreview() {
   // The native desktop process passes only a single-use code, not its owner
   // capability. Exchange it once for an HttpOnly browser session; erase hash.
@@ -505,10 +559,16 @@ async function startHostPreview() {
   $('pairbox').hidden = true;
   $('app').hidden = false;
   S.paired = false;
-  S.cmds = []; S.convs = []; S.active = null;
+  S.cmds = []; S.convs = []; S.active = null; S.statusObj = null;
+  S.tab = 'today'; N.target = 'vivim'; N.pending = null;
+  $('talk-target').value = 'vivim';
   S.device = { status: 'preview', scopes: [] };
-  setConn('Desktop preview · phone not paired', true);
+  $('control-text').disabled = true;
+  $('control-preview').disabled = true;
+  $('control-result').textContent = 'This desktop view can inspect real Host decisions, but cannot execute them. Open Host Control for authenticated changes.';
+  setConn('Desktop preview · owner authorization required', true);
   renderAll(true);
+  await refreshHostPreview();
 }
 
 /* Existing PC sessions only; transcript reads never create or fork sessions. */
@@ -648,8 +708,17 @@ async function refresh() {
 function mountBuild() {
   if (build) return;
   const host = $('build-surface'); if (!host) return;
-  try { build = mountBuildSurface(host, { onCommit: () => { buildKey = ''; scheduleBuild(0); } }); }
+  try { build = mountBuildSurface(host, {
+    readOnly: HOST_PREVIEW,
+    onCommit: () => { buildKey = ''; scheduleBuild(0); }
+  }); }
   catch (e) { setConn('Build surface unavailable: ' + e.message, true); }
+  if (HOST_PREVIEW) {
+    $('build-compose').replaceChildren(el('p', 'muted pad',
+      'Committed Host interface · read only. Pair a phone or use Host Control to make changes.'));
+    if (build) build.setSurface(S.statusObj?.snapshot?.bootstrap?.uiRevision ?? null);
+    return;
+  }
   mountCompose();
 }
 // The Build request screen. Requests ride the normal send path (one send, never repeated) in a hidden
@@ -892,7 +961,7 @@ $('dbgsend').addEventListener('click', async () => {
   try { await api('commands', { method: 'POST', body: JSON.stringify({ text, kind: $('kind').value, consumer: $('consumer').value }) }); $('dbgtext').value = ''; refresh(); }
   catch (e) { toast('Send failed: ' + e.message); }
 });
-document.addEventListener('visibilitychange', () => { if (!document.hidden) { if (N.target === 'phone') nativeRefresh(); else refresh(); } });
+document.addEventListener('visibilitychange', () => { if (!document.hidden) { if (HOST_PREVIEW) void refreshHostPreview(); else if (N.target === 'phone') nativeRefresh(); else refresh(); } });
 window.addEventListener('vivim:bootstrap-refresh', () => { S.statusAt = 0; if (S.paired) refresh(); });
 
 if (!HOST_PREVIEW && 'serviceWorker' in navigator) navigator.serviceWorker.register(transport.direct ? '/mobile/sw.js' : '/sw.js').catch(() => {});

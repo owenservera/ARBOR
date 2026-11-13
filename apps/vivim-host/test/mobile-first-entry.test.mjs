@@ -168,3 +168,18 @@ test('PWA Host view is scoped to the owner browser session and never exposes dev
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+
+test('desktop PWA reads Host owner view without granting any phone or Build effect', () => {
+  const app = source('../../mobile-relay/app.js');
+  const surface = source('../../mobile-relay/generative-ui/phone-surface.mjs');
+  const model = source('../../mobile-relay/ux/model.mjs');
+  assert.match(app, /fetch\('\/api\/host\/control\/pwa-view'/);
+  assert.match(app, /credentials: 'same-origin', cache: 'no-store'/);
+  assert.match(app, /if \(build\) build\.clear\(\)/);
+  assert.match(app, /S\.tab = 'today'; N\.target = 'vivim'; N\.pending = null/);
+  assert.match(app, /readOnly: HOST_PREVIEW/);
+  assert.match(app, /\$\('control-preview'\)\.disabled = true/);
+  assert.match(surface, /if \(readOnly \|\| pending \|\| !surface/);
+  assert.match(model, /Local Host owner view/);
+});

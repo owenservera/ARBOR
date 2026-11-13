@@ -20,7 +20,7 @@
     "apkDeferred": true,
     "testsNotRunAreNotPass": true
   },
-  "next": "PWA-04",
+  "next": "PWA-05",
   "items": [
     {
       "id": "PWA-01",
@@ -66,7 +66,7 @@
     {
       "id": "PWA-04",
       "title": "Authenticated read-only Host projection on desktop",
-      "status": "queued",
+      "status": "source_implemented_tests_unrun",
       "owner": "Host/PWA",
       "paths": [
         "apps/vivim-host/control",

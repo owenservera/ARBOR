@@ -79,7 +79,7 @@ async function repaint() {
   } catch { clearBuildSurface(); /* offline or unauthorized projections must not remain actionable */ }
 }
 
-export function mountBuildSurface(mount, { onCommit = () => {}, semantic = null } = {}) {
+export function mountBuildSurface(mount, { onCommit = () => {}, semantic = null, readOnly = false } = {}) {
   if (mounted) throw new Error('Build surface already mounted');
   mounted = true;
   const revisionGuard = createHostRevisionGuard();
@@ -97,7 +97,7 @@ export function mountBuildSurface(mount, { onCommit = () => {}, semantic = null 
       audience: 'phone',
       approvedRefs: [],
       onIntent: async (intent) => {
-        if (pending || !surface || intent.revision !== surface.revision || intent.surfaceId !== surface.surfaceId) return;
+        if (readOnly || pending || !surface || intent.revision !== surface.revision || intent.surfaceId !== surface.surfaceId) return;
         const op = intentToOp(intent, surface);
         if (!op) return;
         const meaning = meaningOf(intent, semantic);

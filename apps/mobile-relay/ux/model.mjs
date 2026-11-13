@@ -249,8 +249,8 @@ export function meModel(status, commands, ctx = {}) {
   if (bootstrap && str(bootstrap.worldId)) identity.push({ label: 'World', value: clip(bootstrap.worldId, 60) });
 
   const devices = [];
-  devices.push({ label: 'This phone', value: ctx.paired === true ? 'Paired' : 'Not paired' });
-  devices.push({ label: 'Connection', value: ctx.mode === 'direct' ? 'Direct to your PC' : ctx.mode === 'cloud' ? 'Cloud relay' : 'Not known yet' });
+  devices.push({ label: ctx.mode === 'desktop-preview' ? 'This desktop' : 'This phone', value: ctx.mode === 'desktop-preview' ? 'Host preview (not a paired phone)' : ctx.paired === true ? 'Paired' : 'Not paired' });
+  devices.push({ label: 'Connection', value: ctx.mode === 'desktop-preview' ? 'Local Host owner view' : ctx.mode === 'direct' ? 'Direct to your PC' : ctx.mode === 'cloud' ? 'Cloud relay' : 'Not known yet' });
   devices.push({ label: 'Device grant', value: ctx.deviceStatus ? clip(ctx.deviceStatus, 40) : 'Not available yet — no device grant was reported.' });
   devices.push({ label: 'Other devices', value: 'Not available yet — the Host does not send a device list to the phone.' });
   if (ctx.pendingSend === true) {
