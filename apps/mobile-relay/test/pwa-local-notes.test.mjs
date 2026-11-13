@@ -26,8 +26,11 @@ test('notes are bounded, treat markup as text and reject malformed storage',()=>
   assert.throws(()=>book.save('x'.repeat(MAX_NOTE_LENGTH+1)),/LOCAL_NOTE_EMPTY_OR_TOO_LONG/);
   book.save('<script>never run</script>');
   assert.equal(book.list()[0].text,'<script>never run</script>');
-  for(let n=0;n<18;n++)book.save('Note '+n);
+  for(let n=0;n<11;n++)book.save('Note '+n);
   assert.equal(book.list().length,12);
+  const fullBefore=book.exportAll();
+  assert.throws(()=>book.save('Note 12'),/LOCAL_NOTES_FULL/);
+  assert.equal(book.exportAll(),fullBefore,'no earlier note is silently discarded');
   storage.setItem(NOTES_KEY,'{"schema":"wrong","notes":[{"text":"private"}]}');
   assert.deepEqual(book.list(),[]);
 });
@@ -36,4 +39,15 @@ test('unavailable storage fails visibly without making any Host request',()=>{
   const book=createLocalNotebook({storage,makeId:()=> 'safe-note-45',now:()=>1700000000000});
   assert.throws(()=>book.list(),/LOCAL_NOTES_UNAVAILABLE/);
   assert.throws(()=>book.save('hello'),/LOCAL_NOTES_UNAVAILABLE/);
+});
+
+test('export is explicit, portable JSON and does not mutate local records',()=>{
+  const storage=memory(),book=createLocalNotebook({storage,
+    makeId:()=> 'safe-id-123456',now:()=>1700000000000});
+  book.save('Local text and my own data');
+  const exported=JSON.parse(book.exportAll());
+  assert.equal(exported.schema,'vivim.pwa-local-notes/1');
+  assert.equal(exported.notes.length,1);
+  assert.equal(exported.notes[0].text,'Local text and my own data');
+  assert.equal(book.list().length,1);
 });

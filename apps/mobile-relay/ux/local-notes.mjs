@@ -38,9 +38,11 @@ export function createLocalNotebook({storage,key=NOTES_KEY,now=Date.now,makeId}=
     if(!text)throw new Error('LOCAL_NOTE_EMPTY_OR_TOO_LONG');
     const id=idFactory();
     if(!validId(id))throw new Error('LOCAL_NOTE_ID_INVALID');
+    const previous=list();
+    if(previous.length>=MAX_NOTES)throw new Error('LOCAL_NOTES_FULL');
+    if(previous.some(n=>n.id===id))throw new Error('LOCAL_NOTE_ID_COLLISION');
     const note={id,text,createdAt:now()};
-    const entries=[note,...list()].slice(0,MAX_NOTES);
-    write(entries);
+    write([note,...previous]);
     return {id:note.id,createdAt:note.createdAt};
   }
   function remove(id){
@@ -51,5 +53,6 @@ export function createLocalNotebook({storage,key=NOTES_KEY,now=Date.now,makeId}=
     return true;
   }
   function clear(){write([]);}
-  return Object.freeze({list,save,remove,clear});
+  function exportAll(){return JSON.stringify({schema:NOTES_SCHEMA,notes:list()},null,2);}
+  return Object.freeze({list,save,remove,clear,exportAll});
 }

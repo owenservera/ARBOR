@@ -2,7 +2,7 @@ import {createLocalNotebook,MAX_NOTE_LENGTH} from './local-notes.mjs';
 
 // Local-only notes drawer: the user explicitly saves each note and can export
 // or delete it. No implicit replay or migration when phone pairing resumes.
-export function mountLocalNotes({host,storage,copyText,now,makeId}={}){
+export function mountLocalNotes({host,storage,copyText,saveFile,now,makeId}={}){
   if(!host?.ownerDocument)throw new TypeError('LOCAL_NOTES_HOST_REQUIRED');
   const notebook=createLocalNotebook({storage,now,makeId});
   const doc=host.ownerDocument;
@@ -29,11 +29,23 @@ export function mountLocalNotes({host,storage,copyText,now,makeId}={}){
   const status=make('p','muted');status.setAttribute('role','status');
   const count=make('h3','','Saved on this browser');
   const items=make('div','notes-list');
+  const exportActions=make('div','notes-actions');
+  const copyAll=make('button','btn sm','Copy all saved notes');copyAll.type='button';
+  const download=make('button','btn sm','Download JSON');download.type='button';
+  exportActions.append(copyAll,download);
   const clear=make('button','btn sm','Delete all saved notes');clear.type='button';
-  dialog.append(bar,notice,input,controls,status,count,items,clear);
+  dialog.append(bar,notice,input,controls,status,count,items,exportActions,clear);
   host.append(dialog);
   let previous=null,confirmClear=false;
   const copyFn=copyText??(value=>globalThis.navigator?.clipboard?.writeText(value));
+  const saveFn=saveFile??((filename,contents)=>{
+    const content=new Blob([contents],{type:'application/json'});
+    const url=URL.createObjectURL(content);
+    const anchor=doc.createElement('a');
+    anchor.href=url;anchor.download=filename;
+    host.append(anchor);anchor.click();anchor.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),30000);
+  });
   async function copyValue(value){
     try{
       if(typeof copyFn!=='function')throw new Error('Unavailable');
@@ -90,10 +102,23 @@ export function mountLocalNotes({host,storage,copyText,now,makeId}={}){
     }catch(error){
       status.textContent=error?.message==='LOCAL_NOTE_EMPTY_OR_TOO_LONG'
         ? 'Write 1–'+MAX_NOTE_LENGTH+' characters before saving.'
+        :error?.message==='LOCAL_NOTES_FULL'
+        ? '12 notes are saved here. Export or delete one before saving more.'
         :'Could not save this note in browser storage.';
     }
   });
   copy.addEventListener('click',()=>void copyValue(input.value));
+  copyAll.addEventListener('click',()=>{
+    try{void copyValue(notebook.exportAll());}
+    catch{status.textContent='Could not read browser-local notes for copying.'}
+  });
+  download.addEventListener('click',()=>{
+    try{
+      const contents=notebook.exportAll();
+      saveFn('vivim-quick-notes.json',contents);
+      status.textContent='Export started in this browser. No Host or AI received your notes.';
+    }catch{status.textContent='Could not export notes in this browser.'}
+  });
   clear.addEventListener('click',()=>{
     if(!confirmClear){confirmClear=true;clear.textContent='Confirm: delete all saved notes';return}
     try{notebook.clear();confirmClear=false;clear.textContent='Delete all saved notes';

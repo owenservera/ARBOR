@@ -83,10 +83,12 @@ test('capability launcher works with only local navigation and restores prior fo
 test('offline notes save only on explicit click, copy text and delete all after confirmation',async()=>{
   const document=fake(),storage=memory(),copied=[];
   let seq=0;
+  const files=[];
   const notes=mountLocalNotes({
     host:document.body,storage,
     makeId:()=> 'note-id-'+(++seq),now:()=>1700000000000,
-    copyText:async text=>{copied.push(text)}
+    copyText:async text=>{copied.push(text)},
+    saveFile:(name,contents)=>files.push({name,contents})
   });
   assert.equal(storage.map.has(NOTES_KEY),false);
   notes.open();
@@ -102,6 +104,13 @@ test('offline notes save only on explicit click, copy text and delete all after 
   const copy=find(dialog,x=>x.textContent==='Copy')[0];
   await copy.listeners.click();
   assert.deepEqual(copied,['An offline idea']);
+  const download=find(dialog,x=>x.textContent==='Download JSON')[0];
+  download.listeners.click();
+  assert.equal(files[0].name,'vivim-quick-notes.json');
+  assert.equal(JSON.parse(files[0].contents).notes[0].text,'An offline idea');
+  const copyAll=find(dialog,x=>x.textContent==='Copy all saved notes')[0];
+  copyAll.listeners.click();
+  assert.equal(JSON.parse(copied.at(-1)).notes[0].text,'An offline idea');
   const clear=find(dialog,x=>x.textContent==='Delete all saved notes')[0];
   clear.listeners.click();
   assert.equal(notes.list().length,1,'one click must not delete all');
