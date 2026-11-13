@@ -55,3 +55,9 @@ test('engine family dependency matrix includes every family and is acyclic',()=>
   for(const id of ids)walk(id);
   assert.equal(visited.size,37);
 });
+
+test('closed enum option lists cannot be widened at runtime',()=>{
+  const first=Object.keys(ENGINE_ENUM_CHOICES)[0];
+  assert.equal(Object.isFrozen(ENGINE_ENUM_CHOICES[first]),true);
+  assert.throws(()=>{ENGINE_ENUM_CHOICES[first].push('eval');},TypeError);
+});

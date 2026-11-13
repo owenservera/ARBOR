@@ -127,3 +127,17 @@ test('unreviewed engine contributions remain inert',()=>{
   assert.equal(inspectEngineExtension({...valid,name:'background'}).outcome,'refused');
   assert.equal(inspectEngineExtension({...valid,code:'eval(1)'}).outcome,'refused');
 });
+
+test('canonical engine descriptors cannot be mutated through exported catalog objects',()=>{
+  const c=ENGINE_CAPABILITIES[0];
+  assert.equal(Object.isFrozen(c),true);
+  assert.equal(Object.isFrozen(c.valueSchema),true);
+  assert.equal(Object.isFrozen(c.rendererBindings),true);
+  assert.throws(()=>{c.valueSchema.type='ref';},TypeError);
+  assert.throws(()=>{c.rendererBindings.push({schema:'fake',nativeType:'button'});},TypeError);
+});
+test('engine refs are identities only, not URI schemes',()=>{
+  assert.equal(validateUiValue('ref','source.project_12').ok,true);
+  assert.equal(validateUiValue('ref','javascript:alert').ok,false);
+  assert.equal(validateUiValue('ref','https://evil').ok,false);
+});

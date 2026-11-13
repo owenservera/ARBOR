@@ -3,7 +3,7 @@
 export const VALUE_SCHEMA = 'vivim.ui-engine-value/1';
 const TYPE_SET = new Set(['color','color-alpha','gradient','shadow','length','number',
   'integer','duration','vector2','vector3','transform','range','boolean','enum','token','ref','map']);
-const ID = /^[A-Za-z][A-Za-z0-9._:-]{0,127}$/;
+const ID = /^[a-z][a-z0-9_-]*(?:\.[a-z][a-z0-9_-]*){0,15}$/; // no URI scheme / arbitrary URL
 const REF = /^[a-z][a-z0-9_-]*(?:\.[a-z][a-z0-9_-]*){0,15}$/;
 const BAD_KEYS=new Set(['__proto__','prototype','constructor']);
 export const plain = v => v!==null && typeof v==='object' && !Array.isArray(v) &&
