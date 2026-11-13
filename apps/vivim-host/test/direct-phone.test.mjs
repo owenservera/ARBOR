@@ -39,6 +39,7 @@ test('direct phone authenticates proxy, bounds routes and uses the shared queue'
   assert.equal((await call('/mobile/api/relay?path=host%2Fpending')).status, 401);
   assert.equal((await call('/mobile/api/relay?path=session')).status, 401);
   assert.equal((await call('/mobile/api/media/library')).status, 401);
+  assert.equal((await call('/mobile/api/chat/context?focus=talk')).status,401);
   assert.equal(trustedPhonePresence,0);
   const { publicKey, privateKey } = generateKeyPairSync('ec', { namedCurve: 'prime256v1' });
   const publicKeyPem = publicKey.export({ type: 'spki', format: 'pem' });
@@ -73,6 +74,16 @@ test('direct phone authenticates proxy, bounds routes and uses the shared queue'
     method:'POST',headers:{origin,'x-vivim-ack':'1','content-type':'application/json'},
     body:JSON.stringify(falseAck)})).status,401);
   deviceHeaders={'x-vivim-grant-id':grant.grantId,'x-vivim-device-session':session.sessionId};
+  const graphRead=await call('/mobile/api/chat/context?focus=talk');
+  assert.equal(graphRead.status,200);
+  const graphBody=JSON.parse(graphRead.body);
+  assert.equal(graphBody.schema,'vivim.hqkg-chat-context/1');
+  assert.ok(['unavailable','source-backed'].includes(graphBody.state));
+  assert.equal(graphBody.items instanceof Array,true);
+  assert.equal(JSON.stringify(graphBody).includes('planDigest'),false);
+  assert.equal((await call('/mobile/api/chat/context?focus=../secret')).status,400);
+  assert.equal((await call('/mobile/api/chat/context?focus=talk&focus=world')).status,400);
+  assert.equal((await call('/mobile/api/chat/context?focus=talk',{method:'POST'})).status,405);
   assert.equal(JSON.parse((await call('/mobile/api/relay?path=session')).body).paired,true);
   const mediaRead = await call('/mobile/api/media/library');
   assert.equal(mediaRead.status, 200);
@@ -197,6 +208,7 @@ test('direct phone authenticates proxy, bounds routes and uses the shared queue'
   const seenBeforeRevokedRequest=trustedPhonePresence;
   assert.equal((await call('/mobile/api/relay?path=session')).status,403);
   assert.equal((await call('/mobile/api/media/library')).status,403);
+  assert.equal((await call('/mobile/api/chat/context?focus=talk')).status,403);
   assert.equal(trustedPhonePresence,seenBeforeRevokedRequest);
 });
 
