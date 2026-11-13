@@ -413,3 +413,9 @@ test('closing the player aborts pending media open and revokes the ephemeral Hos
   assert.match(app,/fetch\('\/mobile\/api\/media\/close'/);
   assert.match(app,/if \(playerOpen === controller\) playerOpen = null/);
 });
+
+
+test('World refresh is live in desktop owner view and hidden in the offline unpaired shell',()=>{
+  assert.match(app,/onRefreshMedia: HOST_PREVIEW \? \(\) => \{ void refreshHostPreview\(\); \}/);
+  assert.match(app,/: S\.paired && transport\.direct \? \(\) => \{ void refreshMedia\(true\); \} : undefined/);
+});

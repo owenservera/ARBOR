@@ -420,7 +420,8 @@ function renderSurfaces() {
   S.sigs.ux = sig;
   const options = { onNavigate: goTab, onRefresh: () => HOST_PREVIEW ? refreshHostPreview() : refresh(),
     onAskVivim: transport.direct && !HOST_PREVIEW ? openVivimDraft : undefined,
-    onRefreshMedia: () => { void refreshMedia(true); },
+    onRefreshMedia: HOST_PREVIEW ? () => { void refreshHostPreview(); }
+      : S.paired && transport.direct ? () => { void refreshMedia(true); } : undefined,
     onPlayMedia: transport.direct && S.paired && !HOST_PREVIEW ? openMediaPlayer : undefined,
     onOpenPocket: () => { if (pocketButton && !pocketButton.hidden) pocketButton.click(); },
     onReplay: () => { if (welcome) welcome.open(); } };
