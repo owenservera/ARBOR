@@ -22,7 +22,7 @@
 ## ERA 3 — Polish and ship
 
 - **PWA-10 · Offline shell, drafts and installability** — manifest_and_offline_shell_source_updated_tests_unrun. offline read-only shell, clear stale state, no API caching/replayed mutations, valid PWA icons.
-- **PWA-11 · Adaptive UI, accessibility and one-thumb polish** — queued. Android Chrome, keyboard, safe areas, reduced motion, screen reader; device validation.
+- **PWA-11 · Adaptive UI, accessibility and one-thumb polish** — mobile_accessibility_source_updated_tests_unrun. Android Chrome, keyboard, safe areas, reduced motion, screen reader; device validation.
 - **PWA-12 · Windows+paired Android operational acceptance** — queued. Node24/Bun/Cargo plus real Windows+Android Tailscale pairing, grants, restarts and offline; no external donor runtimes.
 
 ## Working rules

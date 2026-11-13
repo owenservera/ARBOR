@@ -105,7 +105,7 @@ const stripPrefix = t => String(t || '').replace(PFX, '');
 const targetLabel = m => { const t = m.target || {}; const s = (t.provider || '') + (t.model ? ':' + t.model : ''); return s || m.consumer || 'assistant'; };
 let toastT;
 function toast(msg) { const t = $('toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { t.hidden = true; }, 4000); }
-function setConn(text, bad) { S.conn = { label: text, tone: bad ? 'bad' : 'ok' }; text = (HOST_PREVIEW ? 'Host' : transport.direct ? 'Direct' : 'Cloud') + ' · ' + text; $('conn').textContent = text; $('dot').classList.toggle('bad', !!bad); $('dot').title = text; $('connection-status').textContent = text + (transport.pending() ? ' · A send may be pending here; check before switching.' : ''); $('connection-resolved').hidden = !transport.pending(); }
+function setConn(text, bad) { S.conn = { label: text, tone: bad ? 'bad' : 'ok' }; text = (HOST_PREVIEW ? 'Host' : transport.direct ? 'Direct' : 'Cloud') + ' · ' + text; $('conn').textContent = text; $('connection-announcer').textContent = text; $('dot').classList.toggle('bad', !!bad); $('dot').title = text; $('connection-status').textContent = text + (transport.pending() ? ' · A send may be pending here; check before switching.' : ''); $('connection-resolved').hidden = !transport.pending(); }
 
 /* ---------- conversations ---------- */
 function normalizeConv() {

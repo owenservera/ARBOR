@@ -166,7 +166,7 @@
     {
       "id": "PWA-11",
       "title": "Adaptive UI, accessibility and one-thumb polish",
-      "status": "queued",
+      "status": "mobile_accessibility_source_updated_tests_unrun",
       "owner": "PWA/TierFlow",
       "paths": [
         "apps/mobile-relay/index.html",

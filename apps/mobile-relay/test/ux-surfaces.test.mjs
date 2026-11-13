@@ -291,3 +291,13 @@ test('a malformed status payload never turns into invented rows', () => {
   assert.deepEqual(model.built, []);
   assert.equal(model.empty, true);
 });
+
+
+test('connection status stays accessible and motion respects user settings', () => {
+  assert.match(html, /id="connection-announcer"[^>]*role="status"[^>]*aria-live="polite"/);
+  assert.match(app, /\$\('connection-announcer'\)\.textContent = text/);
+  assert.match(html, /aria-hidden="true"><\/span><span id="conn"/);
+  assert.match(html, /prefers-reduced-motion:reduce/);
+  assert.match(html, /transition-duration:0s!important/);
+  assert.match(html, /prefers-contrast:more/);
+});
