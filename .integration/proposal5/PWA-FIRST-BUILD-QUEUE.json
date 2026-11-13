@@ -20,7 +20,7 @@
     "apkDeferred": true,
     "testsNotRunAreNotPass": true
   },
-  "next": "PWA-09",
+  "next": "PWA-11",
   "items": [
     {
       "id": "PWA-01",
@@ -138,13 +138,13 @@
     {
       "id": "PWA-09",
       "title": "Mobile media library and playback entry",
-      "status": "queued",
+      "status": "source_implemented_http_tests_unrun_device_unrun",
       "owner": "Host/PWA",
       "paths": [
         "apps/vivim-host/media",
         "apps/mobile-relay/ux"
       ],
-      "proof": "authorized library cards and streamed playback with range/cache/abort proofs",
+      "proof": "Direct-only playback with HQ catalog mapping, session-bound ticket, 200/206/416, backpressure; 10 range checks and World rendering checks executed; HTTP/Android UNRUN",
       "dependsOn": [
         "PWA-05"
       ]
@@ -152,13 +152,13 @@
     {
       "id": "PWA-10",
       "title": "Offline shell, drafts and installability",
-      "status": "manifest_and_offline_shell_source_updated_tests_unrun",
+      "status": "offline_shell_source_implemented_tests_unrun",
       "owner": "PWA",
       "paths": [
         "apps/mobile-relay/sw.js",
         "apps/mobile-relay/manifest.webmanifest"
       ],
-      "proof": "offline read-only shell, clear stale state, no API caching/replayed mutations, valid PWA icons",
+      "proof": "public offline PWA shell, no private cached projections, no sends, revoked/changed sessions cleared; SW excludes API/media/auth and unrelated navigations; device UNRUN",
       "dependsOn": [
         "PWA-03"
       ]

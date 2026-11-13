@@ -38,10 +38,15 @@ jobs:
           node --check apps/mobile-relay/vec/compiler.mjs
           node --check apps/mobile-relay/vec/ui-adapter.mjs
           node --check apps/mobile-relay/sw.js
+          node --check apps/vivim-host/media/playback.mjs
+          node --check apps/vivim-host/media/library-summary.mjs
           node --input-type=module -e "import fs from 'node:fs'; const m=JSON.parse(fs.readFileSync('apps/mobile-relay/manifest.webmanifest','utf8')); if(m.start_url!=='./'||m.scope!=='./')process.exit(1)"
       - name: PWA UI, VEC and offline shell unit tests
         run: |
-          node --test apps/mobile-relay/test/ux-surfaces.test.mjs apps/mobile-relay/test/vec-ui-compiler.test.mjs apps/mobile-relay/test/build-vec-routing.test.mjs apps/mobile-relay/test/build-composer.test.mjs apps/mobile-relay/test/service-worker.test.mjs apps/mobile-relay/test/host-static-allowlist-contract.test.mjs
+          node --test apps/mobile-relay/test/ux-surfaces.test.mjs apps/mobile-relay/test/vec-ui-compiler.test.mjs apps/mobile-relay/test/build-vec-routing.test.mjs apps/mobile-relay/test/build-composer.test.mjs apps/mobile-relay/test/service-worker.test.mjs apps/mobile-relay/test/control-tab-navigation.test.mjs apps/mobile-relay/test/browser-enrollment-flow.test.mjs apps/mobile-relay/test/host-static-allowlist-contract.test.mjs
       - name: Host PWA/auth routing and desktop session contracts
         run: |
           node --test apps/vivim-host/test/mobile-first-entry.test.mjs apps/vivim-host/test/control-browser-session.test.mjs apps/vivim-host/test/control-http.test.mjs
+      - name: Host media safety, streaming and revocation (synthetic local files)
+        run: |
+          node --test apps/vivim-host/test/media-library-summary.test.mjs apps/vivim-host/test/media-playback.test.mjs apps/vivim-host/test/media-stream-http.test.mjs apps/vivim-host/test/direct-phone.test.mjs

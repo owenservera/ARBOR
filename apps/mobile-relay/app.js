@@ -204,6 +204,7 @@ function goTab(tab) {
 // A lost grant must clear *all* private phone projections, not just hide tabs.
 // Session restoration must start from new device proof; no offline replay.
 function clearPrivatePhoneState() {
+  mediaGeneration++;
   stopMediaPlayer();
   S.paired = false; S.cmds = []; S.statusObj = null; S.manifest = null;
   S.media = { state: 'not-authorized' }; S.mediaAt = 0; S.mediaLoading = false;
@@ -295,6 +296,7 @@ async function openMediaPlayer(mediaId, title) {
 
 // Owner media metadata travels over a separate Direct-only, device-scoped read.
 // It never uses the cloud relay, reveals local file paths, or starts playback.
+let mediaGeneration = 0;
 async function refreshMedia(force = false) {
   if (!S.paired || S.mediaLoading) return;
   if (!transport.direct) {
@@ -309,6 +311,7 @@ async function refreshMedia(force = false) {
     if (S.tab === 'world') renderSurfaces();
     return;
   }
+  const generation = mediaGeneration;
   S.mediaLoading = true;
   S.media = { state: 'loading' };
   if (S.tab === 'world') renderSurfaces();
@@ -317,6 +320,7 @@ async function refreshMedia(force = false) {
       credentials: 'same-origin', cache: 'no-store', headers
     });
     const result = await response.json();
+    if (generation !== mediaGeneration || !S.paired) return;
     if (response.status === 401 || response.status === 403) {
       S.media = { state: 'not-authorized' };
     } else if (!response.ok || result?.schema !== 'vivim.media-library-summary/1') {
@@ -325,9 +329,9 @@ async function refreshMedia(force = false) {
       S.media = result;
     }
   } catch {
-    S.media = { state: 'unavailable', reason: 'PC_CONNECTION_UNAVAILABLE' };
+    if (generation === mediaGeneration) S.media = { state: 'unavailable', reason: 'PC_CONNECTION_UNAVAILABLE' };
   } finally {
-    S.mediaAt = Date.now();
+    if (generation === mediaGeneration) S.mediaAt = Date.now();
     S.mediaLoading = false;
     if (S.tab === 'world') renderSurfaces();
   }
