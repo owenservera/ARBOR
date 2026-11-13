@@ -183,3 +183,17 @@ test('desktop PWA reads Host owner view without granting any phone or Build effe
   assert.match(surface, /if \(readOnly \|\| pending \|\| !surface/);
   assert.match(model, /Local Host owner view/);
 });
+
+test('PWA-first pairing keeps one-use QR in browser and exposes approval/revocation states', () => {
+  const app = source('../../mobile-relay/app.js');
+  const html = source('../../mobile-relay/index.html');
+  assert.match(app, /function showBrowserPairHelp\(problem\)/);
+  assert.doesNotMatch(app, /vivim:\/\/pair\?pairUrl=/);
+  assert.match(app, /No pairing code has been consumed/);
+  assert.match(app, /showPairingState\('pending'\)/);
+  assert.match(app, /showPairingState\(device\.status\)/);
+  assert.match(app, /showPairingState\('error'/);
+  assert.match(app, /if \(transport\.direct\) \$\('pair-legacy'\)\.hidden = true/);
+  assert.match(html, /id="pair-check"/);
+  assert.match(html, /id="pair-legacy"/);
+});

@@ -20,7 +20,7 @@
     "apkDeferred": true,
     "testsNotRunAreNotPass": true
   },
-  "next": "PWA-05",
+  "next": "PWA-06",
   "items": [
     {
       "id": "PWA-01",
@@ -81,7 +81,7 @@
     {
       "id": "PWA-05",
       "title": "Phone pairing and reconnect UX",
-      "status": "queued",
+      "status": "source_implemented_tests_unrun",
       "owner": "Host/PWA",
       "paths": [
         "apps/vivim-host/onboarding",

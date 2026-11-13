@@ -13,7 +13,7 @@
 
 ## ERA 2 — Make existing features live
 
-- **PWA-05 · Phone pairing and reconnect UX** — queued. trusted HTTPS, browser P-256 key, approvals, revoke, lost-key, reconnect; no APK requirement.
+- **PWA-05 · Phone pairing and reconnect UX** — source_implemented_tests_unrun. trusted HTTPS, browser P-256 key, approvals, revoke, lost-key, reconnect; no APK requirement.
 - **PWA-06 · Universal text command preview in PWA** — queued. plan, permission, approve/deny and receipt through one Host executor; no silent send.
 - **PWA-07 · Build canvas visual proposal and activation** — queued. preview and safe activate/undo against Host revision; stale edits rejected.
 - **PWA-08 · VEC deterministic UI edits and compiler contract** — queued. known text edits compile locally and safely; unsupported requests use existing optional model flow; tests run.
@@ -27,7 +27,7 @@
 
 ## Working rules
 
-- **Queue pointer:** PWA-05. For each item: inspect current `main`, implement the smallest source slice, exercise relevant executable tests when a runner is available, commit to `main` with an expected-head check, update JSON and advance.
+- **Queue pointer:** PWA-06. For each item: inspect current `main`, implement the smallest source slice, exercise relevant executable tests when a runner is available, commit to `main` with an expected-head check, update JSON and advance.
 - A recorded static inspection is not an executable test. Never mark unexecuted test suites or real devices as PASS.
 - Keep Windows Host as the sole identity, approval, effect, receipt and recovery writer. Browser preview cannot impersonate a paired device; no provider APIs, duplicate registries, new cloud backend or APK dependency.
 - Preserve working Today, Talk, Build, Control, World, Me, phone pairing, command planning, media and TierFlow module surfaces. Correct unsupported or unconnected states visibly instead of inventing data.

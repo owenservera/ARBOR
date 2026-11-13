@@ -768,25 +768,45 @@ async function pollBuild() {
 }
 
 /* ---------- pairing / startup ---------- */
-function showAppHandoff(token) {
+function showBrowserPairHelp(problem) {
+  // PWA-first: a browser QR never redirects into an APK. Secure-key preflight
+  // occurs before one-use redemption; the URL fragment stays available to retry.
   const existing = document.getElementById('vivim-device-handoff');
   if (existing) existing.remove();
   const panel = el('section', 'pair-handoff');
   panel.id = 'vivim-device-handoff';
   panel.setAttribute('role', 'region');
-  panel.setAttribute('aria-label', 'Finish pairing VIVIM');
-  const title = el('h2', '', 'Finish pairing in the VIVIM app');
-  const detail = el('p', 'muted', 'If you installed VIVIM, open it to finish pairing this phone. The one-use code stays private.');
-  const appUrl = 'vivim://pair?pairUrl=' + encodeURIComponent(location.origin + location.pathname + '#' + token);
-  const open = el('a', 'btn pri', 'Open VIVIM app');
-  open.href = appUrl;
-  open.style.display = 'inline-flex'; open.style.alignItems = 'center'; open.style.justifyContent = 'center';
-  // Fallback only when secure WebCrypto/IndexedDB is unavailable; QR is not consumed.
-  panel.append(title, detail, open);
+  panel.setAttribute('aria-label', 'Secure browser pairing needs attention');
+  const title = el('h2', '', 'Pair directly in your browser');
+  const detail = el('p', 'muted',
+    'VIVIM needs private HTTPS, browser cryptography and site storage. ' +
+    'Use Chrome with the trusted PC address and allow site storage. No pairing code has been consumed.');
+  const reason = el('p', 'muted',
+    'Browser check: ' + String(problem?.code || problem?.message || 'unavailable').slice(0, 100));
+  const retry = el('button', 'btn pri', 'Try browser pairing again');
+  retry.type = 'button';
+  retry.addEventListener('click', () => { panel.remove(); void start(); });
+  panel.append(title, detail, reason, retry);
   document.body.append(panel);
-  // The normal Talk session must not claim pairing was complete before enrollment.
-  document.getElementById('app').hidden = true;
-  document.getElementById('pairbox').hidden = true;
+  $('app').hidden = true; $('pairbox').hidden = true;
+}
+function showPairingState(status, message = '') {
+  if (!transport.direct) return;
+  $('pair-legacy').hidden = true;
+  const titles = {
+    pending: 'Approval needed on your PC',
+    revoked: 'This device was revoked',
+    unpaired: 'Pair this browser',
+    error: 'Secure pairing needs attention'
+  };
+  $('pair-title').textContent = titles[status] || 'Pair this browser';
+  $('pair-help').textContent = message || (
+    status === 'pending'
+      ? 'Open Host Control on your PC to approve this device, then check again.'
+      : status === 'revoked'
+        ? 'This grant no longer works. Start a fresh one-use pairing link on your PC.'
+        : 'Open VIVIM Host on your PC, choose Pair a phone, then scan its secure QR link here.'
+  );
 }
 
 document.addEventListener('visibilitychange', () => {
@@ -811,6 +831,7 @@ async function start() {
 }
 async function runStart() {
   const fragment = parsePairFragment(location.hash);
+  if (transport.direct) $('pair-legacy').hidden = true;
   if (fragment.type === 'device') {
     // Secure browser PWA and native Android use the same Host challenge/grant contract.
     // Preflight before consuming a one-use QR token; never downgrade broken native signing.
@@ -823,7 +844,7 @@ async function runStart() {
       signer = await prepareDeviceSigner();
     } catch (error) {
       setConn('Secure device pairing unavailable: ' + error.message, true);
-      if (!String(navigator.userAgent || '').includes('VIVIM/')) showAppHandoff(fragment.token);
+      if (!String(navigator.userAgent || '').includes('VIVIM/')) showBrowserPairHelp(error);
       return;
     }
     history.replaceState(null, '', location.pathname + location.search);
@@ -831,6 +852,7 @@ async function runStart() {
       const challenge = await redeemDevicePairToken(fragment.token, { direct: transport.direct, fetchImpl: fetch });
       await enrollWithChallenge(challenge, { signer });
       setConn('Approval requested on PC; return here once approved', true);
+      showPairingState('pending');
       document.getElementById('app').hidden = true;
       document.getElementById('pairbox').hidden = false;
       return;
@@ -846,7 +868,9 @@ async function runStart() {
       // The Me surface reports the phone's own grant honestly: status and scopes, never more.
       S.device = { status: device.status, scopes: Array.isArray(device.scopes) ? device.scopes : null };
       if (device.status !== 'active') {
-        setConn('Device ' + device.status + ' — awaiting PC approval', true);
+        showPairingState(device.status);
+        setConn(device.status === 'pending' ? 'PC approval required' :
+          device.status === 'revoked' ? 'Device grant revoked' : 'Device not paired', true);
         $('pairbox').hidden = false; $('app').hidden = true;
         if (device.status === 'pending' && !approvalPoll) {
           approvalPoll = setTimeout(() => { approvalPoll = null; start(); }, 5000);
@@ -854,7 +878,10 @@ async function runStart() {
         return;
       }
     } catch (error) {
-      setConn('Secure phone session: ' + error.message, true);
+      showPairingState('error',
+        'Current device proof cannot be resumed (' + String(error.code || error.message).slice(0, 90) +
+        '). If your browser key is lost, revoke the old grant on the PC and create a fresh pairing link.');
+      setConn('Secure phone session unavailable', true);
       $('pairbox').hidden = false; $('app').hidden = true;
       return;
     }
@@ -869,6 +896,7 @@ async function runStart() {
   window.dispatchEvent(new CustomEvent('vivim:paired', { detail: { paired } }));
   if (paired) { renderAll(true); refresh(); }
 }
+$('pair-check').onclick = () => { if (transport.direct) void start(); };
 $('pairbtn').onclick = async () => { try { localStorage.removeItem('vivim.bootstrap.projection.v1'); } catch {} window.dispatchEvent(new Event('vivim:clear-bootstrap-cache')); try { await pair($('secret').value.trim()); $('secret').value = ''; start(); } catch (e) { setConn('Pairing failed', true); } };
 
 /* ---------- events ---------- */
