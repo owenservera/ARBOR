@@ -65,6 +65,7 @@ const assets = new Map(Object.entries({
   'generative-ui/semantic-projection.mjs': ['generative-ui/semantic-projection.mjs', 'text/javascript; charset=utf-8'],
   'generative-ui/portable-digest.mjs': ['generative-ui/portable-digest.mjs', 'text/javascript; charset=utf-8'],
   'generative-ui/phone-surface.mjs': ['generative-ui/phone-surface.mjs', 'text/javascript; charset=utf-8'],
+  'generative-ui/host-revision-guard.mjs': ['generative-ui/host-revision-guard.mjs', 'text/javascript; charset=utf-8'],
   'fonts/space-grotesk-latin-wght-normal.woff2': ['fonts/space-grotesk-latin-wght-normal.woff2', 'font/woff2'],
   'fonts/geist-latin-wght-normal.woff2': ['fonts/geist-latin-wght-normal.woff2', 'font/woff2'],
   'fonts/jetbrains-mono-latin-wght-normal.woff2': ['fonts/jetbrains-mono-latin-wght-normal.woff2', 'font/woff2'],

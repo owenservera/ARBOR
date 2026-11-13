@@ -46,6 +46,7 @@ const SHELL_FILES = [
   'generative-ui/compiler.mjs',
   'generative-ui/design-composer.mjs',
   'generative-ui/phone-surface.mjs',
+  'generative-ui/host-revision-guard.mjs',
   'generative-ui/portable-digest.mjs',
   'generative-ui/renderer.mjs',
   'generative-ui/semantic-projection.mjs',
@@ -207,7 +208,7 @@ test('install precaches every shell asset from the network with cache reload', a
   const keys = new Set(await cache.keys());
   const expected = expectedKeys(ROOT);
   assert.equal(SHELL_FILES.length, expected.size, 'shell list has no duplicate entries');
-  assert.equal(SHELL_FILES.length, 57);
+  assert.equal(SHELL_FILES.length, 58);
   assert.deepEqual(SHELL_FILES, SW_SHELL_PATHS, 'the suite shell list must mirror sw.js SHELL_PATHS');
   expected.delete(failure);
   assert.deepEqual(keys, expected);

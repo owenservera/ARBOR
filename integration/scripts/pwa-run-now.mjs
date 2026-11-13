@@ -14,7 +14,11 @@ const suites = [
     'apps/mobile-relay/test/build-composer.test.mjs',
     'apps/mobile-relay/test/browser-enrollment-flow.test.mjs',
     'apps/mobile-relay/test/service-worker.test.mjs',
-    'apps/mobile-relay/test/host-static-allowlist-contract.test.mjs'
+    'apps/mobile-relay/test/host-static-allowlist-contract.test.mjs',
+    'apps/mobile-relay/test/pwa-activation-readiness.test.mjs',
+    'apps/mobile-relay/test/pwa-local-notes.test.mjs',
+    'apps/mobile-relay/test/pwa-preflight-ui.test.mjs',
+    'apps/mobile-relay/test/pwa-asset-graph.test.mjs'
   ]],
   ['Host entry, authorization and Direct phone HTTP', [
     'apps/vivim-host/test/mobile-first-entry.test.mjs',
@@ -37,6 +41,12 @@ const sources = [
   'apps/vivim-host/media/library-summary.mjs',
   'apps/mobile-relay/app.js',
   'apps/mobile-relay/ux/render.mjs',
+  'apps/mobile-relay/ux/readiness.mjs',
+  'apps/mobile-relay/ux/launcher.mjs',
+  'apps/mobile-relay/ux/launcher-ui.mjs',
+  'apps/mobile-relay/ux/local-notes.mjs',
+  'apps/mobile-relay/ux/local-notes-ui.mjs',
+  'apps/mobile-relay/generative-ui/host-revision-guard.mjs',
   'apps/mobile-relay/sw.js',
   'apps/mobile-relay/vec/compiler.mjs',
   'apps/mobile-relay/vec/ui-adapter.mjs'
