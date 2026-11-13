@@ -1,0 +1,46 @@
+{
+  "schema": "arbor.hvi.operator-real-source-set/1",
+  "authoredAt": "2026-11-13",
+  "role": "selection_candidates_not_grants",
+  "target": {
+    "repo": "owenservera/ARBOR",
+    "ref": "main",
+    "resolveAtInvocation": true
+  },
+  "donors": [
+    {
+      "repo": "owenservera/repos-hq",
+      "ref": "main"
+    },
+    {
+      "repo": "owenservera/vivim-web-harness",
+      "ref": "main"
+    },
+    {
+      "repo": "owenservera/tierflow",
+      "ref": "main"
+    },
+    {
+      "repo": "owenservera/vivim-labs",
+      "ref": "main"
+    }
+  ],
+  "optionalBranches": {
+    "include": false,
+    "reason": "first run prioritizes operational baseline; require separate selection/grants"
+  },
+  "selectionRules": {
+    "minRealPins": 2,
+    "preferAllAvailableAuthorized": true,
+    "allowPartial": true,
+    "requireOwnerApprovalForPreviouslyUnapprovedRoots": true,
+    "defaultReadOnly": true,
+    "allowSourceMutation": false,
+    "allowUnpromptedClone": false,
+    "allowBackgroundJobs": false,
+    "allowAutomaticMigration": false
+  },
+  "sensitiveContent": "Exclude credentials, personal corpora, browser profiles and private data. No source code payload in public reports.",
+  "pinning": "40-hex immutable commit SHA plus root tree SHA for every selected revision; reproducible digests",
+  "status": "AWAITING_LOCAL_AGENT_RUNTIME_EXECUTION"
+}
