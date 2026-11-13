@@ -123,7 +123,8 @@ async function readBody(req) {
   try { return JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}'); } catch { throw failure(400, 'Invalid JSON'); }
 }
 
-export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'world-local', projection, control = null, apkRegistry = null, pairingStore = null, onPhoneSeen = () => {}, primary = () => null, providerSnapshot = () => [], webMemory = null, mediaPlayback = null, chatContext = null }) {
+export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'world-local', projection, control = null, apkRegistry = null, pairingStore = null, onPhoneSeen = () => {}, primary = () => null, providerSnapshot = () => [], providerRefresh = null,
+  webMemory = null, mediaPlayback = null, chatContext = null }) {
   let url;
   try { url = new URL(origin); } catch { throw new TypeError('Direct phone origin must be an HTTPS origin'); }
   if (url.protocol !== 'https:' || url.origin !== origin || url.username || url.password || !user || typeof user !== 'string' || user.trim() !== user) throw new TypeError('Direct phone requires an exact HTTPS origin and user');
@@ -248,6 +249,24 @@ export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'wo
         const status=/_(?:INVALID|FIELDS_INVALID|ID_INVALID)$/.test(code)?400:
           /(?:STALE|CONFLICT|NOT_VERIFIED)/.test(code)?409:error.status??503;
         json(res,status,{code,error:status===503?'Phone acknowledgment unavailable':code});
+      }
+      return;
+    }
+    if (route === 'api/chat/providers/refresh') {
+      // Explicit owner gesture. Studio performs existing read-only account
+      // checks using its browser owner. No model is asked and nothing is sent.
+      if (req.method !== 'POST') {json(res,405,{code:'METHOD'});return}
+      try {
+        authorizeDevice(req,'control:read');
+        if(req.headers.origin!==origin||req.headers['x-vivim-providers']!=='1')
+          throw failure(403,'ORIGIN_OR_CSRF');
+        if(typeof providerRefresh!=='function')throw failure(503,'STUDIO_PROVIDER_CHECK_UNAVAILABLE');
+        const result=await providerRefresh();
+        res.setHeader('cache-control','private, no-store');
+        json(res,200,projectChatProviders(result));
+      }catch(error){
+        json(res,error.status||503,{schema:'vivim.chat-provider-projection/1',
+          state:'unavailable',reason:error.status?error.message:'PROVIDER_CHECK_UNAVAILABLE',providers:[]});
       }
       return;
     }

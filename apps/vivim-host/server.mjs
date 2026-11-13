@@ -235,6 +235,14 @@ export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path
     webMemory: opts => runtimeFor().webMemory(opts),
     chatContext: createRustChatContext(),
     providerSnapshot: () => onboardingService.providerSnapshot(),
+    providerRefresh: async () => {
+      // Only explicit phone request; existing Studio owner owns the browser.
+      // Exactly six known providers, sequential to avoid parallel tab pressure.
+      for(const id of ['chatgpt','claude','gemini','qwen','zai','deepseek']){
+        try {await onboardingService.check(id)}catch{ /* failed check never becomes signed-in */ }
+      }
+      return onboardingService.providerSnapshot();
+    },
     control: controlFor, apkRegistry: apk, pairingStore: pairing,
     onPhoneSeen: () => onboardingService.phoneSeen(),
     primary: () => onboardingService.primary()

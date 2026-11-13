@@ -225,3 +225,18 @@ test('chat context is a strictly bounded read-only Host-owned native projection'
   assert.match(host,/createRustChatContext\(\)/);
   assert.match(host,/chatContext: createRustChatContext\(\)/);
 });
+
+
+test('manual provider discovery is explicit, owner-scoped and never a provider send',()=>{
+  const direct=readFileSync(new URL('../direct-phone.mjs',import.meta.url),'utf8');
+  const host=readFileSync(new URL('../server.mjs',import.meta.url),'utf8');
+  const app=readFileSync(new URL('../../mobile-relay/app.js',import.meta.url),'utf8');
+  assert.match(direct,/route === 'api\/chat\/providers\/refresh'/);
+  assert.match(direct,/authorizeDevice\(req,'control:read'\)/);
+  assert.match(direct,/req\.headers\.origin!==origin/);
+  assert.match(direct,/x-vivim-providers/);
+  assert.match(host,/onboardingService\.check\(id\)/);
+  assert.match(app,/dock-provider-refresh/);
+  assert.match(app,/method:'POST',cache:'no-store',credentials:'same-origin'/);
+  assert.doesNotMatch(host,/providerRefresh:[\s\S]{0,500}sendOnce\(/);
+});

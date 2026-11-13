@@ -83,6 +83,7 @@ const S = {
   media: { state: 'idle' }, mediaAt: 0, mediaOffset: 0, mediaLoading: false
 };
 let combinedInbox = true; // UI-only inbox aggregation; never fan-out or a provider target.
+let providerRefreshBusy = false;
 const N = { target: transport.direct ? 'vivim' : 'harness', session: '', sessions: [], messages: [], timer: 0, generation: 0, sending: false, note: '', pending: null };
 const vivimChat = createControlChat({
   host: $('msgs'), transport,
@@ -707,6 +708,9 @@ function renderList() {
 }
 function fmtSize(n) { return n < 1024 ? n + ' B' : n < 1048576 ? (n / 1024).toFixed(0) + ' KB' : (n / 1048576).toFixed(1) + ' MB'; }
 function renderComposer() {
+  $('dock-provider-refresh').hidden = N.target !== 'harness' ||
+    HOST_PREVIEW || !transport.direct || !S.paired;
+  $('dock-provider-refresh').disabled = providerRefreshBusy;
   if (N.target === 'vivim') {
     $('chips').hidden = true; $('modelwrap').hidden = true; $('effortwrap').hidden = true;
     $('clip').hidden = true; $('files').hidden = true;
@@ -1505,6 +1509,33 @@ $('text').addEventListener('input', () => { autogrow(); updateSend(); });
 $('text').addEventListener('keydown', e => {
   if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && matchMedia('(pointer:fine)').matches) {
     e.preventDefault();if(S.tab!=='talk')goTab('talk');void send();
+  }
+});
+$('dock-provider-refresh').addEventListener('click', async () => {
+  if(providerRefreshBusy||HOST_PREVIEW||!transport.direct||!S.paired)return;
+  const headers=transport.deviceHeaders?.();
+  if(!headers){toast('Approve this phone on your PC first.');return}
+  providerRefreshBusy=true;$('dock-provider-refresh').disabled=true;
+  $('dock-provider-refresh').textContent='Checking browser accounts…';
+  try{
+    const response=await fetch('/mobile/api/chat/providers/refresh',{
+      method:'POST',cache:'no-store',credentials:'same-origin',
+      headers:{...headers,origin:location.origin,'x-vivim-providers':'1'}
+    });
+    const result=await response.json();
+    if(!S.paired||transport.deviceHeaders?.()?.['x-vivim-device-session']!==
+      headers['x-vivim-device-session'])return;
+    if(!response.ok||result.schema!=='vivim.chat-provider-projection/1'){
+      toast('Signed-in AI checks unavailable. Nothing was sent.');return;
+    }
+    S.manifest=result;S.sigs.comp=null;renderAll(true);
+    const count=result.providers.filter(p=>p.signedIn===true).length;
+    toast(count?count+' signed-in AIs verified by your PC.':'No AI login verified. Check your PC browser.');
+  }catch{toast('Provider check unavailable. Nothing was sent.')}
+  finally{
+    providerRefreshBusy=false;
+    $('dock-provider-refresh').disabled=false;
+    $('dock-provider-refresh').textContent='Check my signed-in AIs';
   }
 });
 $('send').addEventListener('click', () => {
