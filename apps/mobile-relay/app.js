@@ -112,6 +112,163 @@ let toastT;
 function toast(msg) { const t = $('toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { t.hidden = true; }, 4000); }
 function setConn(text, bad) { S.conn = { label: text, tone: bad ? 'bad' : 'ok' }; text = (HOST_PREVIEW ? 'Host' : transport.direct ? 'Direct' : 'Cloud') + ' · ' + text; $('conn').textContent = text; $('connection-announcer').textContent = text; $('dot').classList.toggle('bad', !!bad); $('dot').title = text; $('connection-status').textContent = text + (transport.pending() ? ' · A send may be pending here; check before switching.' : ''); $('connection-resolved').hidden = !transport.pending(); }
 
+// One universal composer, one transport and one send path. The original
+// Talk composer is moved (not cloned) to the shell root and remains focusable
+// from every tab. Context and Workspaces here are local read-only projections.
+let dockExpanded = false;
+let chatContextEpoch = 0;
+let chatContext = null;
+let focusReturn = null;
+const CHAT_FOCUS = Object.freeze(['today','talk','build','world','me','control']);
+function updateDock() {
+  const composer = $('chat-composer');
+  if (!composer) return;
+  const expanded = S.tab === 'talk' || dockExpanded;
+  composer.hidden = HOST_PREVIEW;
+  composer.classList.toggle('is-collapsed',!expanded);
+  $('dock-preview').hidden = expanded;
+  $('dock-preview-title').textContent = 'Ask ' +
+    (N.target==='harness'?'my AIs':N.target==='phone'?'my PC':'VIVIM') +
+    ' · '+S.tab.charAt(0).toUpperCase()+S.tab.slice(1);
+  $('dock-surface-label').textContent = S.tab +
+    (chatContext?.state==='source-backed' ? ' · Rust context' : ' · Host context');
+  for(const button of document.querySelectorAll('[data-chat-target]')){
+    button.setAttribute('aria-pressed',String(button.dataset.chatTarget===N.target));
+    button.disabled = !S.paired || HOST_PREVIEW ||
+      (button.dataset.chatTarget==='phone'&&!transport.direct);
+  }
+  document.body.classList.toggle('dock-expanded',expanded);
+  if(!$('chat-context-panel').hidden) renderFocusPanel();
+}
+function expandDock() {
+  if(HOST_PREVIEW || !S.paired) return;
+  dockExpanded=true;
+  updateDock();
+  $('text').focus();
+}
+function switchChatTarget(next) {
+  if(!S.paired || HOST_PREVIEW || !['vivim','harness','phone'].includes(next) ||
+    (next==='phone'&&!transport.direct)) return;
+  if(N.target!==next){
+    $('talk-target').value=next;
+    $('talk-target').dispatchEvent(new Event('change'));
+  }
+  dockExpanded=true;
+  updateDock();$('text').focus();
+}
+function focusPreview(text,details) {
+  const item=el('div','chat-context-evidence');
+  item.append(el('strong','',text));
+  if(details)item.append(el('small','',details));
+  return item;
+}
+function renderFocusPanel() {
+  const panel=$('chat-context-panel');
+  if(panel.hidden)return;
+  const focus=$('chat-focus-views');
+  focus.replaceChildren();
+  for(const tab of CHAT_FOCUS){
+    const b=el('button','',tab.charAt(0).toUpperCase()+tab.slice(1));
+    b.type='button';
+    if(S.tab===tab)b.setAttribute('aria-current','page');
+    b.addEventListener('click',()=>{goTab(tab);renderFocusPanel();});
+    focus.append(b);
+  }
+  const rust=$('chat-rust-items');rust.replaceChildren();
+  const available=chatContext?.state==='source-backed' && chatContext.focus===S.tab;
+  $('chat-rust-state').textContent = !transport.direct || HOST_PREVIEW
+    ? 'Native graph context is Direct-phone only.'
+    : !S.paired || !transport.deviceHeaders?.()
+      ? 'Approve this phone to read source-backed context.'
+      : !chatContext ? 'Not loaded. Read verified context from the Host.'
+      : available
+        ? 'HQKG epoch '+chatContext.epoch+' · '+chatContext.tokensUsed+' / '+
+          chatContext.budgetTokens+' estimated tokens · read only'
+        : chatContext?.state==='loading'?'Reading existing Rust graph…'
+        : chatContext?.reason || 'Native context unavailable or not configured.';
+  if(available){
+    for(const item of chatContext.items.slice(0,8)){
+      rust.append(focusPreview(item.title,'Depth '+item.depth+
+        ' · revision '+item.revision+' · '+item.sourceCount+' provenance sources'));
+    }
+    if(!chatContext.items.length)rust.append(focusPreview('No graph items selected','This is not proof that personal context exists.'));
+    if(chatContext.budgetExhausted)rust.append(focusPreview('Context budget reached','Some nodes were not included.'));
+  }
+  const activity=$('chat-focus-activity');activity.replaceChildren();
+  const current=todayModel(S.statusObj,S.cmds,surfaceContext());
+  const entries=[...(current.attention||[]),...(current.running||[])].slice(0,6);
+  if(!entries.length)activity.append(focusPreview('No reported activity','No other activity is inferred.'));
+  else for(const item of entries)activity.append(focusPreview(item.title||item.label||'Activity',
+    item.detail||'Source-backed Host status'));
+}
+async function readGraphContext() {
+  const focus=S.tab;
+  const device=transport.deviceHeaders?.();
+  if(HOST_PREVIEW||!transport.direct||!S.paired||!device){
+    chatContext=null;renderFocusPanel();return;
+  }
+  const epoch=++chatContextEpoch;
+  chatContext={state:'loading'};renderFocusPanel();
+  try{
+    const response=await fetch('/mobile/api/chat/context?focus='+encodeURIComponent(focus),{
+      method:'GET',credentials:'same-origin',cache:'no-store',headers:device
+    });
+    const data=await response.json();
+    if(epoch!==chatContextEpoch||!S.paired||!transport.deviceHeaders?.()||
+       transport.deviceHeaders()['x-vivim-device-session']!==device['x-vivim-device-session'])return;
+    if(!response.ok||data?.schema!=='vivim.hqkg-chat-context/1'){
+      chatContext={state:'unavailable',reason:'Host context read unavailable'};
+    }else if(data.state==='source-backed'&&data.authority==='read-only'&&
+      data.focus===focus&&Array.isArray(data.items)&&data.items.length<=8){
+      chatContext={schema:data.schema,state:data.state,focus,epoch:data.epoch,
+        tokensUsed:data.tokensUsed,budgetTokens:data.budgetTokens,
+        budgetExhausted:data.budgetExhausted,items:data.items};
+    }else{
+      chatContext={state:'unavailable',reason:data.reason||'Native context unavailable'};
+    }
+  }catch{
+    if(epoch===chatContextEpoch)chatContext={state:'unavailable',reason:'Host or native Rust context unavailable'};
+  }
+  if(epoch===chatContextEpoch)renderFocusPanel();
+}
+function openFocusPanel() {
+  const panel=$('chat-context-panel');
+  if(panel.hidden){
+    focusReturn=document.activeElement;
+    panel.hidden=false;renderFocusPanel();
+    $('chat-context-close').focus();
+  }else closeFocusPanel();
+}
+function closeFocusPanel() {
+  $('chat-context-panel').hidden=true;
+  if(focusReturn?.isConnected&&typeof focusReturn.focus==='function')focusReturn.focus();
+  focusReturn=null;
+}
+function mountUniversalDock() {
+  // The original Talk input, provider chips, files, send button and statuses
+  // remain the same nodes, with the same listeners and send-once fence.
+  $('app').append($('chat-composer'));
+  $('dock-preview').addEventListener('click',expandDock);
+  document.querySelectorAll('[data-chat-target]').forEach(b=>
+    b.addEventListener('click',()=>switchChatTarget(b.dataset.chatTarget)));
+  $('dock-home').addEventListener('click',()=>goTab('talk'));
+  $('dock-recents').addEventListener('click',()=>{
+    if(!S.paired)return;
+    if(N.target!=='harness'){
+      $('talk-target').value='harness';
+      $('talk-target').dispatchEvent(new Event('change'));
+    }
+    goTab('talk');
+    if(!$('drawer').hidden){
+      $('drawer').classList.add('open');$('scrim').hidden=false;
+    }
+  });
+  $('dock-focus').addEventListener('click',openFocusPanel);
+  $('chat-context-close').addEventListener('click',closeFocusPanel);
+  $('chat-rust-refresh').addEventListener('click',()=>void readGraphContext());
+  updateDock();
+}
+
 /* ---------- conversations ---------- */
 function normalizeConv() {
   const c = curConv(); if (!c) return;
@@ -176,6 +333,7 @@ function renderTabs() {
     if (selected) b.setAttribute('aria-current', 'page');
     else b.removeAttribute('aria-current');
   }
+  updateDock();
   // The retired stub panel is hidden for every tab in the strip, so no surface can fall back to it.
   $('v-talk').hidden = S.tab !== 'talk'; $('v-control').hidden = S.tab !== 'control'; $('v-soon').hidden = ['talk', 'build', 'today', 'world', 'me', 'control'].includes(S.tab); $('v-today').hidden = S.tab !== 'today'; $('v-build').hidden = S.tab !== 'build'; $('v-world').hidden = S.tab !== 'world'; $('v-me').hidden = S.tab !== 'me';
   if (S.tab === 'build' && !S.paired && !HOST_PREVIEW) {
@@ -223,7 +381,11 @@ function goTab(tab) {
   // Leaving World stops an in-flight media open or current native playback.
   // The Host has to release temporary stream access, not just hide the video.
   if (S.tab === 'world' && tab !== 'world' && playerActive) stopMediaPlayer();
-  S.tab = tab; closeDrawer(); renderTabs(); renderSurfaces();
+  S.tab = tab;
+  dockExpanded=false;
+  chatContextEpoch++;
+  chatContext=null;
+  closeDrawer(); renderTabs(); renderSurfaces();
   document.getElementById('tab-' + tab)?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   if (HOST_PREVIEW) void refreshHostPreview();
   else if (tab === 'world') void refreshMedia(false);
@@ -240,6 +402,8 @@ function isInvalidDeviceSession(code) {
 // Session restoration must start from new device proof; no offline replay.
 function clearPrivatePhoneState() {
   mediaGeneration++;
+  chatContextEpoch++;
+  chatContext=null;closeFocusPanel();dockExpanded=false;
   stopMediaPlayer();
   S.paired = false; S.cmds = []; S.statusObj = null; S.manifest = null;
   vivimChat.redact();
@@ -1254,6 +1418,7 @@ $('talk-target').addEventListener('change', () => {
     if (controller) void vivimChat.loadSuggestions();
     refresh();
   }
+  updateDock();
 });
 $('msgs').addEventListener('vivim:control-example', event => {
   if (N.target !== 'vivim' || typeof event.detail?.text !== 'string') return;
@@ -1296,9 +1461,14 @@ $('file').addEventListener('change', e => { for (const f of e.target.files) if (
 $('files').addEventListener('click', e => { const b = e.target.closest('[data-i]'); if (b) { S.files.splice(+b.dataset.i, 1); renderComposer(); } });
 $('text').addEventListener('input', () => { autogrow(); updateSend(); });
 $('text').addEventListener('keydown', e => {
-  if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && matchMedia('(pointer:fine)').matches) { e.preventDefault(); send(); }
+  if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && matchMedia('(pointer:fine)').matches) {
+    e.preventDefault();if(S.tab!=='talk')goTab('talk');void send();
+  }
 });
-$('send').addEventListener('click', send);
+$('send').addEventListener('click', () => {
+  if(S.tab!=='talk')goTab('talk');
+  void send();
+});
 $('gear').addEventListener('click', HOST_PREVIEW ? toggleHostMenu : openDebug);
 $('connection-mode').value = transport.mode();
 $('connection-address').value = transport.directAddress();
@@ -1333,7 +1503,9 @@ document.addEventListener('keydown', e => {
   }
   if (e.key === 'Escape') { if (capabilityLauncher?.isOpen()) { capabilityLauncher.close(); return; } }
 });
-document.addEventListener('keydown', e => { if (e.key === 'Escape') { if (playerActive) stopMediaPlayer(); closeDebug(); closeDrawer(); if (HOST_PREVIEW) { $('host-preview-menu').hidden = true; $('gear').setAttribute('aria-expanded', 'false'); } } });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') {
+  if(!$('chat-context-panel').hidden){closeFocusPanel();return}
+  if (playerActive) stopMediaPlayer(); closeDebug(); closeDrawer(); if (HOST_PREVIEW) { $('host-preview-menu').hidden = true; $('gear').setAttribute('aria-expanded', 'false'); } } });
 $('dbgsend').addEventListener('click', async () => {
   const text = $('dbgtext').value.trim(); if (!text) return;
   try { await api('commands', { method: 'POST', body: JSON.stringify({ text, kind: $('kind').value, consumer: $('consumer').value }) }); $('dbgtext').value = ''; refresh(); }
@@ -1349,6 +1521,7 @@ if (!HOST_PREVIEW && 'serviceWorker' in navigator) {
     if (S.tab === 'me') renderSurfaces();
   });
 }
+mountUniversalDock();
 $('native-session').hidden = N.target !== 'phone';
 $('native-status').hidden = N.target !== 'phone';
 $('drawer').hidden = N.target !== 'harness';
