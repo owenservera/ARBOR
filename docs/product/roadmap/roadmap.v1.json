@@ -1521,7 +1521,7 @@
         ],
         "verification": "UNRUN",
         "ownerAcceptance": "PENDING",
-        "execution": "SOURCE_LANDED_TESTS_UNRUN",
+        "execution": "SOURCE_CONVERGED_ON_INTEGRATION_RUNTIME_UNRUN",
         "releaseClaim": false,
         "sourceEvidence": [
           "scripts/batch-evidence/WIKI-BASELINE.mjs",
@@ -1567,7 +1567,7 @@
         ],
         "verification": "UNRUN",
         "ownerAcceptance": "PENDING",
-        "execution": "SOURCE_LANDED_TESTS_UNRUN",
+        "execution": "SOURCE_CONVERGED_ON_INTEGRATION_RUNTIME_UNRUN",
         "releaseClaim": false,
         "sourceEvidence": [
           "scripts/acceleration/live-host-check.mjs",
@@ -1610,7 +1610,7 @@
         ],
         "verification": "UNRUN",
         "ownerAcceptance": "PENDING",
-        "execution": "SOURCE_LANDED_TESTS_UNRUN",
+        "execution": "SOURCE_CONVERGED_ON_INTEGRATION_RUNTIME_UNRUN",
         "releaseClaim": false,
         "sourceEvidence": [
           "apps/vivim-host/chat/product-journal.mjs",
@@ -1660,8 +1660,13 @@
         ],
         "verification": "UNRUN",
         "ownerAcceptance": "PENDING",
-        "execution": "NOT_STARTED",
-        "releaseClaim": false
+        "execution": "SOURCE_PREPARED_DEPENDENCY_BLOCKED_A00",
+        "releaseClaim": false,
+        "integrationEvidence": [
+          "scripts/feedback-loop/compiler.mjs",
+          "scripts/feedback-loop/compile.mjs",
+          "scripts/feedback-loop/compiler.test.mjs"
+        ]
       },
       {
         "id": "A04",
@@ -1704,8 +1709,12 @@
         ],
         "verification": "UNRUN",
         "ownerAcceptance": "PENDING",
-        "execution": "NOT_STARTED",
-        "releaseClaim": false
+        "execution": "VISUAL_PROJECTION_SOURCE_PREPARED_A02_UNACCEPTED",
+        "releaseClaim": false,
+        "integrationEvidence": [
+          "apps/vivim-host/public/pages/wiki.js",
+          "apps/vivim-host/test/wiki-visual-contract.test.mjs"
+        ]
       },
       {
         "id": "A05",
@@ -1885,7 +1894,7 @@
       "accelerationScore": 89,
       "verification": "UNRUN",
       "ownerAcceptance": "PENDING",
-      "note": "Truth and queue repair — source landed, runtime tests UNRUN; independent acceptance pending"
+      "note": "Truth and queue repair — all W1 lane source integrated; independent Node24/Host/browser verification UNRUN."
     },
     {
       "itemId": "A01",
@@ -1897,7 +1906,7 @@
       "accelerationScore": 95,
       "verification": "UNRUN",
       "ownerAcceptance": "PENDING",
-      "note": "One-command live Host and acceptance runner — source landed, runtime tests UNRUN; independent acceptance pending"
+      "note": "One-command live Host and acceptance runner — all W1 lane source integrated; independent Node24/Host/browser verification UNRUN."
     },
     {
       "itemId": "A02",
@@ -1909,7 +1918,7 @@
       "accelerationScore": 96,
       "verification": "UNRUN",
       "ownerAcceptance": "PENDING",
-      "note": "Canonical stateful chat-to-Wiki projection — source landed, runtime tests UNRUN; independent acceptance pending"
+      "note": "Canonical stateful chat-to-Wiki projection — all W1 lane source integrated; independent Node24/Host/browser verification UNRUN."
     },
     {
       "itemId": "A03",
@@ -1923,7 +1932,7 @@
       "accelerationScore": 96,
       "verification": "UNRUN",
       "ownerAcceptance": "PENDING",
-      "note": "Demo feedback-to-work-order compiler — Compile failed evidence, user visual feedback and demo verdicts into a source-pinned, acceptance-linked, minimum-scope work order in the existing product roadmap."
+      "note": "Demo feedback-to-work-order compiler — preparatory source integrated only, activation blocked by A00 independent acceptance."
     },
     {
       "itemId": "A04",
@@ -1937,7 +1946,7 @@
       "accelerationScore": 91,
       "verification": "UNRUN",
       "ownerAcceptance": "PENDING",
-      "note": "Narrow realtime NL to VLang/VEC visual compiler — Compile three bounded natural language intents through the existing NLCL and VLang/VEC surfaces into typed, guarded visual updates to the second-screen Wiki; no new interpreter or graph store."
+      "note": "Narrow realtime NL to VLang/VEC visual compiler — preparatory source integrated only, activation blocked by A02 independent acceptance."
     },
     {
       "itemId": "A05",
@@ -2092,12 +2101,16 @@
     "nextMilestone": "Three real intents, persistent two-screen state, and executed demo-to-work-order verification. No synthetic acceptance claims.",
     "evidencePolicy": "State status/execution/verification/ownerAcceptance separately. A queued item is not ready to execute real effects; successful tests alone are not owner acceptance.",
     "executionProgress": {
-      "asOf": "2026-11-14",
-      "phase": "SOURCE_LANDED_WITH_UNRUN_RUNTIME",
+      "asOf": "2026-11-15",
+      "phase": "W1_FIVE_LANES_SOURCE_CONVERGED_GATES_UNRUN",
       "active": [
         "A00",
         "A01",
         "A02"
+      ],
+      "dependentSourcePrepared": [
+        "A03",
+        "A04"
       ],
       "downstreamBlocked": [
         "A03",
@@ -2107,14 +2120,23 @@
         "A07",
         "A08"
       ],
-      "staticChecks": "Source parse and isolated V8 logic checks observed; not an operating-system test process.",
+      "sourceUnion": "docs/acceleration/w1/INTEGRATION.md",
+      "sourceMergeCommit": "af94a34e0d4b914bd612ac16242fb0a68acc6e91",
+      "testManifest": "scripts/test-manifest.json",
+      "observedValidation": "Source syntax and connector-comparison only. Historical local Node22 results are per-lane, not combined Node24 acceptance.",
+      "independentNode24": "UNRUN",
+      "realBrowser": "UNRUN",
+      "windowsAndAndroid": "UNRUN",
+      "ownerAcceptance": "PENDING",
+      "nextFrontierRule": "Only accepted A00/A01/A02 unlock effectful A03/A04/A06. Source merge does not change task acceptance or release state.",
       "requiredLocalCommands": [
         "node scripts/roadmap/acceleration-queue.mjs --check",
         "node scripts/roadmap/evidence-truth.mjs --check",
         "node --test apps/vivim-host/test/product-journal.test.mjs apps/vivim-host/test/product-routes.test.mjs apps/vivim-host/test/chat-box-baseline.test.mjs",
-        "node --test scripts/roadmap/acceleration-queue.test.mjs scripts/roadmap/evidence-truth.test.mjs scripts/acceleration/live-host-check.test.mjs"
-      ],
-      "nextFrontierRule": "A03 remains blocked until A00 independently accepted; A04 until A02; A06 until A01+A02; do not infer pass from committed source."
+        "node --test apps/vivim-host/test/wiki-visual-contract.test.mjs scripts/batch-evidence/wiki-evidence-regression.test.mjs scripts/roadmap/evidence-truth.test.mjs scripts/feedback-loop/compiler.test.mjs scripts/acceleration/w1-integration-contract.test.mjs",
+        "node scripts/acceleration/live-host-check.mjs",
+        "node --test scripts/acceleration/live-host-check.test.mjs"
+      ]
     }
   }
 }
