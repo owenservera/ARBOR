@@ -139,6 +139,9 @@ export async function runHostLoopCheck({ command = 'node scripts/acceleration/li
     return JSON.parse(r.text);
   };
   try {
+    check('Node 24 runtime required for acceptance', () => {
+      assert.equal(Number(process.versions.node.split('.')[0]), 24, 'Observed ' + process.version + '; Node24 required');
+    });
     check('real checked-out Git commit is pinned', () => {
       assert.equal(git.exitCode, 0, git.stderrExcerpt);
       assert.match(receipt.sha || '', /^[0-9a-f]{40}$/);
