@@ -7,22 +7,71 @@
 <link rel="stylesheet" href="/wiki.css">
 </head>
 <body>
-<header>
-  <h1>VIVIM realtime wiki</h1>
-  <a href="/chat">chat</a>
-  <a href="/demo">dev panel</a>
-  <span class="rev" id="rev"></span>
-</header>
-<main id="content"></main>
-<form id="edit" class="edit" hidden>
-  <h3>Edit <span id="edit-target"></span></h3>
-  <textarea id="edit-content"></textarea>
-  <div class="actions">
-    <button id="edit-save">save</button>
-    <button type="button" id="edit-cancel" class="ghost">cancel</button>
+<header class="topbar">
+  <div class="brand">
+    <p class="eyebrow">ARBOR · HOST / SCREEN TWO</p>
+    <h1>VIVIM realtime wiki</h1>
+    <p class="subtitle">Source-backed projection, not an independent publisher</p>
   </div>
-  <div id="edit-status"></div>
-</form>
+  <nav aria-label="Product pages">
+    <a href="/chat">Chat <span aria-hidden="true">↗</span></a>
+    <a href="/demo">Dev panel <span aria-hidden="true">↗</span></a>
+    <button type="button" id="refresh-now">Refresh sources</button>
+  </nav>
+</header>
+<div class="signal" aria-label="Source synchronization">
+  <span class="signal-pill" id="rev">Wiki revision: loading</span>
+  <span class="signal-pill" id="state-rev">Chat state: loading</span>
+  <span class="signal-pill" id="source-mode">Awaiting Host sources</span>
+  <span class="signal-pill subtle" id="vec-mode" data-vec-schema="vivim.vec-compile/0.1" data-vec-domain="wiki" data-vec-product="wiki-projection" data-vec-outcome="unsupported">VEC/0.1 · read-only projection (compiler not connected)</span>
+  <span class="signal-status" id="sync-status" role="status" aria-live="polite">Connecting to Host…</span>
+</div>
+<main id="content" class="dashboard">
+  <section class="block wiki-panel" aria-labelledby="wiki-heading">
+    <div class="section-heading"><div><p class="eyebrow">01 / LIVE WORKSPACE</p><h2 id="wiki-heading">Intelligent Wiki</h2></div><a href="/api/wiki">Host Wiki source</a></div>
+    <p class="source-meta" id="wiki-source">/api/wiki · waiting for first read</p>
+    <div id="wiki-view" class="stack"><p class="empty">Loading Wiki sections…</p></div>
+  </section>
+  <section class="block roadmap-panel" aria-labelledby="roadmap-heading">
+    <div class="section-heading"><div><p class="eyebrow">02 / SOURCE OF TRUTH</p><h2 id="roadmap-heading">Acceleration roadmap</h2></div><a href="/api/roadmap">Host roadmap read-through</a></div>
+    <p class="source-meta" id="roadmap-source">docs/product/roadmap/roadmap.v1.json · /api/roadmap · waiting</p>
+    <div id="roadmap-view"><p class="empty">Loading queue…</p></div>
+  </section>
+  <section class="block surface-panel" aria-labelledby="surface-heading">
+    <div class="section-heading"><div><p class="eyebrow">03 / GENERATED SOURCE INDEX</p><h2 id="surface-heading">VLang file surfaces</h2></div><a href="/api/file-surface">Host file-surface source</a></div>
+    <p class="source-meta" id="surface-source">vivim.file-surface/1 · stage-A registry (not live code execution)</p>
+    <div id="surface-view"><p class="empty">Loading indexed file surfaces…</p></div>
+  </section>
+  <section class="block journal-panel" aria-labelledby="journal-heading">
+    <div class="section-heading"><div><p class="eyebrow">04 / APPEND-ONLY HISTORY</p><h2 id="journal-heading">Host journal</h2></div><a href="/api/journal">Host journal source</a></div>
+    <p class="source-meta" id="journal-source">/api/journal · waiting</p>
+    <div id="journal-view"><p class="empty">Loading recent entries…</p></div>
+  </section>
+</main>
+<section class="editor-shell" id="edit-shell" hidden aria-label="Wiki section editor">
+  <form id="edit" class="edit" aria-labelledby="editor-heading">
+    <div class="editor-heading"><div><p class="eyebrow">HUMAN REVIEW · HOST-OWNED MUTATION</p><h2 id="editor-heading">Edit <span id="edit-target"></span></h2></div><span id="edit-rev" class="signal-pill"></span></div>
+    <label for="edit-content">Proposed section content</label>
+    <textarea id="edit-content" rows="7" spellcheck="true" maxlength="3000"></textarea>
+    <div id="edit-preview" class="preview" hidden>
+      <h3>Review before sending to Host</h3>
+      <p id="edit-preview-meta"></p>
+      <div class="diff-grid">
+        <div><h4>Current (Host baseline)</h4><pre id="edit-before"></pre></div>
+        <div><h4>Proposed change</h4><pre id="edit-after"></pre></div>
+      </div>
+      <h4>Line diff (removed − / added +)</h4>
+      <pre id="edit-diff" class="line-diff"></pre>
+    </div>
+    <div class="actions">
+      <button type="button" id="edit-review">Review change</button>
+      <button type="submit" id="edit-save" hidden>Confirm via Host</button>
+      <button type="button" id="edit-rebase" class="ghost" hidden>Load latest baseline (keep draft)</button>
+      <button type="button" id="edit-cancel" class="ghost">Close editor</button>
+    </div>
+    <p id="edit-status" role="status" aria-live="polite"></p>
+  </form>
+</section>
 <script type="module" src="/wiki.js"></script>
 </body>
 </html>

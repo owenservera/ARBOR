@@ -364,84 +364,82 @@ export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path
       await handleOnboarding(req, res, pathname, apk, pairing, onboardingService, enrollment, host, tokenFor, dataRoot);
       return;
     }
-    // Demo harness: the sole writable surface. POST /demo/feedback and POST /demo/mutate
-    // append ONE JSON line per entry to public/demo/journal.jsonl (append-only; entries
-    // <4KB; no read-modify-write anywhere) and return the stored entry, mirroring
-    // demo/ui-demo/serve.mjs:27-62. Envelope kinds: chat-send | wiki-edit | gate-decision |
-    // feedback rounds {round, approveAll, verdicts}. GET /demo/feedback/inbox.json serves
-    // the legacy snapshot as a static asset; GET /demo/journal.jsonl serves the live journal.
-    // POST /api/mutate is the product-route name for the SAME handler (one handler,
-    // two route names — oracle ack2 batch-1 route set).
+    // One dataRoot-private Host journal for product and demo observations.
+    // A declared actor / loopback Origin is NOT an owner capability.
     if ((pathname === '/demo/feedback' || pathname === '/demo/mutate' || pathname === '/api/mutate') && req.method === 'POST') {
-      // The same Host-owned journal is read by /api/state, /api/wiki and /api/journal.
-      let body = '';
-      req.on('data', chunk => { body += chunk; });
-      req.on('end', async () => {
-        if (Buffer.byteLength(body, 'utf8') > 4096) { res.writeHead(413); res.end('Entry exceeds 4KB'); return; }
-        let payload;
-        try {
-          payload = JSON.parse(body || '{}');
-        } catch {
-          res.writeHead(400); res.end('Invalid feedback JSON'); return;
+      let payload;
+      try { payload = await readJsonBody(req, 4096); }
+      catch (error) { sendJson(res, error.status ?? 400, { code: 'MUTATION_BODY', error: error.message }); return; }
+      if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+        sendJson(res, 400, { code: 'MUTATION_ENVELOPE' }); return;
+      }
+      if (req.headers.origin && String(req.headers.origin).toLowerCase() !== 'http://' + host) {
+        sendJson(res, 403, { code: 'ORIGIN', error: 'Cross-origin mutation refused' }); return;
+      }
+      let entry;
+      if (Object.hasOwn(payload, 'kind')) {
+        // Journal module validates a strict schema/actor/field allowlist for every kind.
+        if (!['chat-send', 'wiki-edit', 'gate-decision', 'feedback-round'].includes(payload.kind)) {
+          sendJson(res, 400, { code: 'MUTATION_KIND' }); return;
         }
-        let entry;
-        if (payload.kind != null) {
-          if (payload.kind !== 'chat-send' && payload.kind !== 'wiki-edit' && payload.kind !== 'gate-decision') {
-            res.writeHead(400); res.end('Unknown mutate kind'); return;
+        if (Object.hasOwn(payload, 'receivedAt') || Object.hasOwn(payload, 'entryId') ||
+            Object.hasOwn(payload, 'sequence')) {
+          sendJson(res, 400, { code: 'MUTATION_SERVER_FIELDS' }); return;
+        }
+        entry = payload;
+        if (entry.kind === 'chat-send') {
+          // Call the canonical in-process, PURE interpreter only after rejecting
+          // caller-provided IR. This never plans or executes a Host effect.
+          if (Object.hasOwn(entry, 'intent') || typeof entry.text !== 'string' ||
+              !entry.text.trim() || entry.text.length > 1000 ||
+              entry.schemaVersion !== 1 ||
+              !['human', 'ai', 'owner-browser', 'loop-agent'].includes(entry.actor) ||
+              Object.keys(entry).some(k => !['kind', 'actor', 'schemaVersion', 'text'].includes(k))) {
+            sendJson(res, 400, { code: 'CHAT_ENVELOPE' }); return;
           }
-          // Canonical product writes require a typed actor + version. These
-          // workbench writes journal intent; they never execute Host effects.
-          if ((payload.kind === 'chat-send' || payload.kind === 'wiki-edit') &&
-              (payload.schemaVersion !== 1 ||
-               !['human', 'ai', 'owner-browser', 'loop-agent'].includes(payload.actor))) {
-            res.writeHead(400); res.end('Invalid product mutation envelope'); return;
+          try { entry = { ...entry, intent: controlFor().interpret(entry.text) }; }
+          catch (error) {
+            sendJson(res, controlErrorStatus(error?.code ?? 'CONTROL_INVALID'),
+              { code: error?.code ?? 'CONTROL_INVALID', error: 'Chat interpretation failed' }); return;
           }
-          entry = { ...payload, receivedAt: new Date().toISOString() };
-          // D1 binding (adopted ruling): chat-send reaches the SAME Host control runtime the
-          // authenticated /api/host/control/interpret route calls — controlFor().interpret(),
-          // the exact function behind handleControl's interpret branch — in-process, never an
-          // HTTP self-call and never a demo-side interpreter. interpret is pure: it plans no
-          // journal record and executes nothing, so the intent IR can ride on the stored
-          // entry for chat chips while plan/execute keep their owner-authenticated routes.
-          if (payload.kind === 'chat-send') {
-            if (typeof payload.text !== 'string' || payload.text.length > 1000) {
-              res.writeHead(400); res.end('chat-send requires text up to 1000 chars'); return;
-            }
-            try {
-              entry.intent = controlFor().interpret(payload.text);
-            } catch (error) {
-              res.writeHead(controlErrorStatus(error?.code ?? 'CONTROL_INVALID'));
-              res.end('chat-send interpretation failed: ' + String(error?.code ?? 'CONTROL_INVALID')); return;
-            }
-          }
-        } else {
-          entry = {
-            round: payload.round != null ? payload.round : String(Date.now()),
-            approveAll: !!payload.approveAll,
-            verdicts: Array.isArray(payload.verdicts) ? payload.verdicts : [],
-            receivedAt: new Date().toISOString()
-          };
         }
-        // Wiki edits are an explicit same-origin owner-browser action in this loopback
-        // workbench. They do NOT publish code or bypass the privileged Host dispatcher.
-        // A cross-origin page must never mutate the local journal through browser CSRF.
-        if (req.headers.origin && String(req.headers.origin).toLowerCase() !== 'http://' + host) {
-          res.writeHead(403); res.end('Cross-origin mutation refused'); return;
+      } else if (pathname === '/demo/feedback' &&
+          Object.keys(payload).every(k => ['round','approveAll','verdicts'].includes(k))) {
+        // Legacy demo feedback remains a typed, bounded, non-executing observation.
+        entry = { kind: 'feedback-round', schemaVersion: 1, actor: 'loop-agent',
+          round: payload.round === undefined ? String(Date.now()) : payload.round,
+          approveAll: payload.approveAll === true, verdicts: payload.verdicts ?? [] };
+      } else {
+        sendJson(res, 400, { code: 'MUTATION_ENVELOPE' }); return;
+      }
+      const claimedApproval = entry.kind === 'feedback-round' &&
+        (entry.approveAll === true || (Array.isArray(entry.verdicts) && entry.verdicts.some(v =>
+          ['approve', 'pass'].includes(v?.verdict ?? v?.decision))));
+      if (entry.kind === 'wiki-edit' || entry.kind === 'gate-decision' || claimedApproval) {
+        // Both browser CSRF and the Host's EXISTING owner capability are required.
+        // For an owner-browser session, the HttpOnly cookie + x-vivim-ui-csrf
+        // must match the same session minted by /api/host/control/ui-exchange.
+        // An actor string or x-vivim-control header alone grants NOTHING.
+        if (String(req.headers.origin || '').toLowerCase() !== 'http://' + host ||
+            req.headers['x-vivim-control'] !== '1') {
+          sendJson(res, 403, { code: 'ORIGIN_OR_CSRF' }); return;
         }
-        if (entry.kind === 'wiki-edit' &&
-            (String(req.headers.origin || '').toLowerCase() !== 'http://' + host ||
-             String(req.headers['x-vivim-control'] || '') !== '1')) {
-          res.writeHead(403); res.end('Wiki edit requires same-origin explicit action'); return;
+        let owner;
+        try { owner = tokenFor(); }
+        catch { sendJson(res, 503, { code: 'OWNER_TOKEN_UNAVAILABLE' }); return; }
+        if (!verifyOwnerToken(req.headers.authorization, owner) &&
+            !uiSessions.authorized(req, { mutate: true })) {
+          sendJson(res, 401, { code: 'OWNER_AUTH' }); return;
         }
-        try {
-          const stored = await productJournal.append(entry);
-          res.setHeader('content-type', 'application/json; charset=utf-8');
-          res.writeHead(200); res.end(JSON.stringify(stored));
-        } catch (error) {
-          sendJson(res, Number.isInteger(error?.status) ? error.status : 500,
-            { error: String(error?.message || 'Product journal append failed') });
-        }
-      });
+      }
+      try {
+        const stored = await productJournal.append(entry);
+        sendJson(res, 200, stored);
+      } catch (error) {
+        sendJson(res, Number.isInteger(error?.status) ? error.status : 500,
+          { code: error?.status === 409 ? 'REVISION_CONFLICT' : 'PRODUCT_JOURNAL_REFUSED',
+            error: String(error?.message || 'Product journal append failed') });
+      }
       return;
     }
     if (req.method !== 'GET' && req.method !== 'HEAD') { res.setHeader('allow', 'GET, HEAD'); res.writeHead(405); res.end(); return; }
@@ -793,7 +791,7 @@ async function handleControl(req, res, pathname, host, controlFor, tokenFor, uiS
       }
       const session = uiSessions.exchange(body.code);
       res.setHeader('set-cookie', UI_COOKIE + '=' + session.sessionId +
-        '; HttpOnly; SameSite=Strict; Path=/api/host/control; Max-Age=' + session.maxAge);
+        '; HttpOnly; SameSite=Strict; Path=/api; Max-Age=' + session.maxAge);
       sendJson(res, 200, { schema: 'vivim.control-ui-session/1', csrf: session.csrf, expiresAt: session.expiresAt });
     } catch (e) { sendJson(res, e.status || 400, { code: e.code || 'CONTROL_UI_INVALID' }); }
     return;
@@ -888,7 +886,7 @@ async function handleControl(req, res, pathname, host, controlFor, tokenFor, uiS
     if (req.method !== 'POST') { sendJson(res, 405, { code: 'METHOD' }); return; }
     if (!sameOrigin || req.headers['x-vivim-control'] !== '1') { sendJson(res, 403, { code: 'ORIGIN_OR_CSRF' }); return; }
     uiSessions.revoke(req);
-    res.setHeader('set-cookie', UI_COOKIE + '=; HttpOnly; SameSite=Strict; Path=/api/host/control; Max-Age=0');
+    res.setHeader('set-cookie', UI_COOKIE + '=; HttpOnly; SameSite=Strict; Path=/api; Max-Age=0');
     sendJson(res, 200, { revoked: true });
     return;
   }
