@@ -11,7 +11,8 @@
     },
     "Roadmap": {
       "sections": {
-        "BuildQueue": "Mirrored live from docs/product/roadmap/roadmap.v1.json via GET /api/roadmap. Item 1 of the build queue is CHAT-BOX-BASELINE (batch 1)."
+        "BuildQueue": "R002 acceleration active queue is read through from docs/product/roadmap/roadmap.v1.json via GET /api/roadmap. The initial ready frontier is A00, A01 and A02; queued does not imply executed, verified or owner-accepted. This seed section is descriptive only, not a second queue.",
+        "Acceleration": "Screen 2 projects roadmap, journal and verified source state; edits are receipts through the canonical Host. See docs/product/roadmap/ACCELERATION-R002.md for A00–A08 definitions and dependency rules. This is seeded demo content; live execution is not yet accepted."
       }
     }
   }
