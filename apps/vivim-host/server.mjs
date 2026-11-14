@@ -73,6 +73,10 @@ const MIME = {
   '/demo/journal.jsonl': 'application/jsonl; charset=utf-8',
   '/chat': 'text/html; charset=utf-8',
   '/wiki': 'text/html; charset=utf-8',
+  '/chat.js': 'text/javascript; charset=utf-8',
+  '/wiki.js': 'text/javascript; charset=utf-8',
+  '/chat.css': 'text/css; charset=utf-8',
+  '/wiki.css': 'text/css; charset=utf-8',
 };
 const ASSETS = {
   '/': 'mobile-first.html',
@@ -103,6 +107,10 @@ const ASSETS = {
   '/demo/journal.jsonl': 'demo/journal.jsonl',
   '/chat': 'pages/chat.html',
   '/wiki': 'pages/wiki.html',
+  '/chat.js': 'pages/chat.js',
+  '/wiki.js': 'pages/wiki.js',
+  '/chat.css': 'pages/chat.css',
+  '/wiki.css': 'pages/wiki.css',
 };
 const STATES = ['queued', 'claimed', 'done', 'failed'];
 
