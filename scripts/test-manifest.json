@@ -1666,5 +1666,17 @@
     "root": "scripts/roadmap",
     "runtime": "node24-ajv",
     "gate": "roadmap-acceleration"
+  },
+  {
+    "path": "apps/vivim-host/test/product-journal.test.mjs",
+    "root": "apps/vivim-host/test",
+    "runtime": "node24-ajv",
+    "gate": "host-suite"
+  },
+  {
+    "path": "scripts/acceleration/live-host-check.test.mjs",
+    "root": "scripts/acceleration",
+    "runtime": "node24-ajv",
+    "gate": "roadmap-acceleration"
   }
 ]
