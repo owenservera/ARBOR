@@ -20,7 +20,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(HERE, '..', '..');
 const ITEM = 'WIKI-BASELINE';
-const BASE_URL = 'http://127.0.0.1:43187';
+const BASE_URL = process.env.ARBOR_WIKI_EVIDENCE_BASE_URL || 'http://127.0.0.1:43187';
 const WIKI_ACTIONS = ['wiki.page.create', 'wiki.section.edit', 'wiki.page.move', 'wiki.pages.link', 'wiki.section.read', 'wiki.pages.list', 'wiki.page.delete'];
 const BASELINE_CAPS = ['send-message', 'read-state', 'execute-intent', 'read-journal', 'get-capabilities'];
 
@@ -42,6 +42,15 @@ function fail(msg) {
   process.stderr.write(`${ITEM}: ${msg}\n`);
   process.exit(2);
 }
+if (live) {
+  const url = new URL(BASE_URL);
+  if (process.env.ARBOR_WIKI_EVIDENCE_ISOLATED !== '1' ||
+      !process.env.ARBOR_WIKI_EVIDENCE_BASE_URL ||
+      url.protocol !== 'http:' ||
+      !['127.0.0.1', 'localhost', '[::1]'].includes(url.hostname)) {
+    fail('--live writes a Wiki test entry; run only against an explicitly isolated Host with ARBOR_WIKI_EVIDENCE_ISOLATED=1 and ARBOR_WIKI_EVIDENCE_BASE_URL=http://127.0.0.1:<port>');
+  }
+}
 function check(name, pass, detail) {
   checks.push({ name, pass: Boolean(pass), detail: String(detail) });
 }
@@ -53,7 +62,7 @@ async function get(path) {
   return { status: res.status, type: res.headers.get('content-type') || '', body: await res.text() };
 }
 async function post(path, body) {
-  const res = await fetch(BASE_URL + path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+  const res = await fetch(BASE_URL + path, { method: 'POST', headers: { 'content-type': 'application/json', 'origin': BASE_URL, 'x-vivim-control': '1' }, body: JSON.stringify(body) });
   return { status: res.status, type: res.headers.get('content-type') || '', body: await res.text() };
 }
 async function attempt(name, fn) {
@@ -100,16 +109,24 @@ if (live) {
   // never assumed to be one JSONL entry per line.
 
   const page = await attempt('page', () => get('/wiki'));
-  // HTML is a client-rendered shell: the asynchronous roadmap item cannot appear
-  // in static response HTML. Check the source/API contract here, not DOM rendering.
+  const browserSource = await attempt('wiki-js', () => get('/wiki.js'));
+  const browserCss = await attempt('wiki-css', () => get('/wiki.css'));
+  // Strict CSP loads client JS and CSS as same-origin external assets. HTML is
+  // a shell; verify external renderer source and actual API, not a DOM illusion.
   const sourceContract = page.ok && page.status === 200 &&
     /text\/html/.test(page.type) &&
-    /renderRoadmap\(/.test(page.body) &&
-    /renderFileSurface\(/.test(page.body) &&
-    /\/api\/roadmap/.test(page.body) &&
+    /src="\/wiki\.js"/.test(page.body) &&
+    /href="\/wiki\.css"/.test(page.body) &&
+    browserSource.ok && browserSource.status === 200 &&
+    /renderRoadmap\(/.test(browserSource.body) &&
+    /renderFileSurface\(/.test(browserSource.body) &&
+    /\/api\/roadmap/.test(browserSource.body) &&
+    browserCss.ok && browserCss.status === 200 &&
     Boolean(roadmapJson && Array.isArray(roadmapJson.buildQueue));
-  check('wiki-html-and-roadmap-source-contract', sourceContract,
+  check('wiki-external-renderer-and-roadmap-contract', sourceContract,
     'html=' + (page.ok ? page.status : 'unreachable') +
+    ' js=' + (browserSource.ok ? browserSource.status : 'unreachable') +
+    ' css=' + (browserCss.ok ? browserCss.status : 'unreachable') +
     ' roadmapQueue=' + (roadmapJson?.buildQueue?.length ?? 'unavailable') +
     ' browserDom=UNRUN');
 
@@ -117,6 +134,7 @@ if (live) {
   // Match the actual product Wiki editor envelope (nested edit object).
   const edit = {
     kind: 'wiki-edit', actor: 'ai', schemaVersion: 1,
+    expectedRevision: (() => { try { return JSON.parse(before.body).revision; } catch { return null; } })(),
     edit: { page: 'Main', section: 'HowTo', action: 'set-section',
       content: 'oracle verify probe ' + ITEM }
   };
@@ -135,12 +153,20 @@ if (live) {
     'journal tail contains nested wiki-edit envelope: ' + recorded +
     ' (does NOT prove Wiki state was mutated)');
   const wikiAfter = await attempt('wiki-after', () => get('/api/wiki'));
-  check('wiki-source-unchanged', before.ok && wikiAfter.ok && before.body === wikiAfter.body,
-    `read-through source of truth unchanged by journal-only edit (before==after body)=${before.ok && wikiAfter.ok && before.body === wikiAfter.body}`);
+  const beforeWiki = before.ok ? (() => { try { return JSON.parse(before.body); } catch { return null; } })() : null;
+  const afterWiki = wikiAfter.ok ? (() => { try { return JSON.parse(wikiAfter.body); } catch { return null; } })() : null;
+  check('wiki-projection-applies-edit', !!(beforeWiki && afterWiki) &&
+    afterWiki.revision === beforeWiki.revision + 1 &&
+    afterWiki.pages?.Main?.sections?.HowTo === edit.edit.content,
+    'newWikiRevision=' + (afterWiki?.revision ?? 'unavailable') +
+    ' expected=' + ((beforeWiki?.revision ?? 0) + 1));
+  const seedSource = JSON.parse(readFileSync(resolve(REPO_ROOT, 'apps/vivim-host/data/demo-baseline/wiki.json'), 'utf8'));
+  check('wiki-seed-is-not-mutated', seedSource.pages?.Main?.sections?.HowTo !== edit.edit.content,
+    'read-only committed seed preserved; mutations replay through data-root journal');
 }
 
 // ---------------- verdict ----------------
 const ok = checks.every(c => c.pass);
-const verdict = { ok, item: ITEM, scope: live ? 'SOURCE_AND_API_ONLY' : 'SOURCE_ONLY', browserDom: 'UNRUN', durableWikiProjection: 'UNRUN', independentKeeperAcceptance: 'UNRUN', checks, digest: digestOf({ item: ITEM, checks }) };
+const verdict = { ok, item: ITEM, scope: live ? 'SOURCE_AND_API_ONLY' : 'SOURCE_ONLY', browserDom: 'UNRUN', durableWikiProjection: live ? 'API_REPLAY_CHECKED' : 'UNRUN', independentKeeperAcceptance: 'UNRUN', checks, digest: digestOf({ item: ITEM, checks }) };
 process.stdout.write(JSON.stringify(verdict, null, 2) + '\n');
 process.exit(ok ? 0 : 1);
