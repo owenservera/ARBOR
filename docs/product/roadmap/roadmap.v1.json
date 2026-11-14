@@ -11,8 +11,8 @@
       {
         "id": "L0-DEMO",
         "layer": "L0",
-        "title": "ARBOR demo workstream \u2014 realtime fast-iteration design-and-acceptance gate",
-        "description": "Owner emphasis 2026-11-14 (supersedes 2026-11-13 banked): demo is the realtime fast-iteration design and acceptance gate over the build workstream; top priority goes to every component the capture and gap sweep found that accelerates the realtime automated loop \u2014 the self-driving cycle: demo surfaces design verdicts \u2192 build applies them \u2192 new queue batch is drawn \u2192 repeat (demo >> build >> new queue batch >> demo > build). GAP STATEMENT: no compiled work package from the four L2 compilers covers the demo workstream \u2014 no demo backlog, no automated acceptance-check harness, no queue-batch generator exists in the compiler outputs. Nearest loop accelerators found by the gap sweep (candidates, not compiled): harness/CONTRACT.md (approval-gated sendOnce, receipt-before-effect journal), vivim-ui PLAN.md three-tier agentic runtime, FINAL-WAVE Gate 5/6 matrices, DUAL-EXECUTION-PROTOCOL session lifecycle. Candidate program compiled at L1-DEMO-LOOP.",
+        "title": "ARBOR demo workstream — realtime fast-iteration design-and-acceptance gate",
+        "description": "Owner emphasis 2026-11-14 (supersedes 2026-11-13 banked): demo is the realtime fast-iteration design and acceptance gate over the build workstream; top priority goes to every component the capture and gap sweep found that accelerates the realtime automated loop — the self-driving cycle: demo surfaces design verdicts → build applies them → new queue batch is drawn → repeat (demo >> build >> new queue batch >> demo > build). GAP STATEMENT: no compiled work package from the four L2 compilers covers the demo workstream — no demo backlog, no automated acceptance-check harness, no queue-batch generator exists in the compiler outputs. Nearest loop accelerators found by the gap sweep (candidates, not compiled): harness/CONTRACT.md (approval-gated sendOnce, receipt-before-effect journal), vivim-ui PLAN.md three-tier agentic runtime, FINAL-WAVE Gate 5/6 matrices, DUAL-EXECUTION-PROTOCOL session lifecycle. Candidate program compiled at L1-DEMO-LOOP.",
         "status": "active",
         "sources": [
           "OWNER EMPHASIS (ask, 2026-11-14)"
@@ -23,8 +23,8 @@
       {
         "id": "L0-BUILD",
         "layer": "L0",
-        "title": "ARBOR build workstream \u2014 roadmap implementation track",
-        "description": "The build workstream: proposal5 master integration beta program (G00-G13, all PROPOSED_UNRUN per .integration/proposal5/08-BETA-GATES.json:14-209), VEC/vlang NL-programming system convergence, and the vec-ui-engines 100-agent fleet as co-equal pillars. 40 L2 work packages compiled below. Gate statuses honest per 08-BETA-GATES.json \u2014 UNRUN is not pass; source presence is not runtime admission; the build queue stays pending owner prioritization (priority null throughout). Conflicting root integration/beta-gates.json ACCEPTED claims are recorded in conflicts, not adopted.",
+        "title": "ARBOR build workstream — roadmap implementation track",
+        "description": "The build workstream: proposal5 master integration beta program (G00-G13, all PROPOSED_UNRUN per .integration/proposal5/08-BETA-GATES.json:14-209), VEC/vlang NL-programming system convergence, and the vec-ui-engines 100-agent fleet as co-equal pillars. 40 L2 work packages compiled below. Gate statuses honest per 08-BETA-GATES.json — UNRUN is not pass; source presence is not runtime admission; the build queue stays pending owner prioritization (priority null throughout). Conflicting root integration/beta-gates.json ACCEPTED claims are recorded in conflicts, not adopted.",
         "status": "active",
         "sources": [
           "OWNER EMPHASIS (ask, 2026-11-14)",
@@ -36,8 +36,8 @@
       {
         "id": "L0-WININSTALL",
         "layer": "L0",
-        "title": "Windows install workstream \u2014 ordinary workstream, NOT a gate",
-        "description": "Owner emphasis 2026-11-14: the Windows+PWA install/release contract is an ordinary workstream, one of the three, never a G-gate or a blocking criterion. CONFLICT FLAGGED (read-only stage, gate doc untouched): G13 in 08-BETA-GATES.json:196-209 documents 'Windows package and PWA version compatible' as a BLOCKER gate \u2014 owner reclassification needs reconciliation at synthesis. Candidate program compiled at L1-WININSTALL.",
+        "title": "Windows install workstream — ordinary workstream, NOT a gate",
+        "description": "Owner emphasis 2026-11-14: the Windows+PWA install/release contract is an ordinary workstream, one of the three, never a G-gate or a blocking criterion. CONFLICT FLAGGED (read-only stage, gate doc untouched): G13 in 08-BETA-GATES.json:196-209 documents 'Windows package and PWA version compatible' as a BLOCKER gate — owner reclassification needs reconciliation at synthesis. Candidate program compiled at L1-WININSTALL.",
         "status": "active",
         "sources": [
           "OWNER EMPHASIS (ask, 2026-11-14)",
@@ -51,9 +51,9 @@
       {
         "id": "L1-DEMO-LOOP",
         "layer": "L1",
-        "title": "Demo\u2194build self-driving loop \u2014 candidate program, no compiled package",
-        "description": "Candidate L1 from owner emphasis + gap sweep (not from the four compilers). Loop-accelerating components found untracked by proposal5/HVI sources: harness/CONTRACT.md (byte-identical ARBOR/vivim-web-harness, sha1 b47fb0be4afc637242955373e409652dcb5776a5: lane ownership A/B/C :10-28, receipt-before-effect journal :52-54, approval-gated sendOnce :55-61, single Chrome profile loopback 9333, Lane B six provider profiles chatgpt/claude/deepseek/qwen/zai/gemini, Lane C wh CLI + wh serve + wh-mcp, seven safety acceptance tests :72-74 \u2014 no roadmap gate cites it, adjacent to G04/G07); vivim-ui PLAN.md (three-tier agentic runtime, Intent\u2192Plan\u2192JobSpec\u2192RunMeta\u2192BusEvent, lanes L0-L9, gates G0-G9, verified 57 pass/1 fail of 58, Rust bench 709,697 ev/s vs TS 246,336 ev/s = 2.9\u00d7, Gate 0 PASS 2026-11-02); VIVIM-VISUAL-RUNTIME/FINAL-WAVE/README.md (Gate 5 BLOCKED/Gate 6 BLOCKED, 23/23 commands exit 0, 1046 pass/0 fail, Wave 4B repair src/visual-runtime/device/wave4-phone-adapter.ts:227); VIVIM-VISUAL-RUNTIME/DUAL-EXECUTION-PROTOCOL.md (eight-state session lifecycle, fresh-head CAS publication); docs/SESSION-LEDGER.md (8-lane halt state, 7 carried defects incl P0 registry substring routing bug). Status candidate \u2014 queue pending owner prioritization.",
-        "status": "candidate",
+        "title": "Demo↔build self-driving loop — candidate program, no compiled package",
+        "description": "Candidate L1 from owner emphasis + gap sweep (not from the four compilers). Loop-accelerating components found untracked by proposal5/HVI sources: harness/CONTRACT.md (byte-identical ARBOR/vivim-web-harness, sha1 b47fb0be4afc637242955373e409652dcb5776a5: lane ownership A/B/C :10-28, receipt-before-effect journal :52-54, approval-gated sendOnce :55-61, single Chrome profile loopback 9333, Lane B six provider profiles chatgpt/claude/deepseek/qwen/zai/gemini, Lane C wh CLI + wh serve + wh-mcp, seven safety acceptance tests :72-74 — no roadmap gate cites it, adjacent to G04/G07); vivim-ui PLAN.md (three-tier agentic runtime, Intent→Plan→JobSpec→RunMeta→BusEvent, lanes L0-L9, gates G0-G9, verified 57 pass/1 fail of 58, Rust bench 709,697 ev/s vs TS 246,336 ev/s = 2.9×, Gate 0 PASS 2026-11-02); VIVIM-VISUAL-RUNTIME/FINAL-WAVE/README.md (Gate 5 BLOCKED/Gate 6 BLOCKED, 23/23 commands exit 0, 1046 pass/0 fail, Wave 4B repair src/visual-runtime/device/wave4-phone-adapter.ts:227); VIVIM-VISUAL-RUNTIME/DUAL-EXECUTION-PROTOCOL.md (eight-state session lifecycle, fresh-head CAS publication); docs/SESSION-LEDGER.md (8-lane halt state, 7 carried defects incl P0 registry substring routing bug). Status candidate — queue pending owner prioritization.\nR002: ACTIVE ACCELERATION FIRST. Work orders A00/A03/A05 connect demo feedback, scoped building, independent verification and requeue. Readiness depends on source/evidence, not candidate descriptions.",
+        "status": "active",
         "sources": [
           "OWNER EMPHASIS (ask, 2026-11-14)",
           "harness/CONTRACT.md",
@@ -69,8 +69,8 @@
       {
         "id": "L1-P5-INTEGRATION",
         "layer": "L1",
-        "title": "Proposal5 master integration program \u2014 W0-W6, serial G, gates G00-G13, status ledger",
-        "description": "One-time master integration program on integrate/proposal5-beta-r001; wave matrix at 09-EXECUTION-PLAYBOOK.md:31-37; playbook status NOT STARTED (:4). Gates G00-G13 all PROPOSED_UNRUN with observed_evidence null and owner_accepted false (08-BETA-GATES.json) \u2014 the conflicting root integration/beta-gates.json (UNBLOCKED, G01-G13 ACCEPTED, betaGo true, mergeCommit 7586f28) is treated as an unverified ledger claim contradicted by the same repo's release-manifest.json (BLOCKED_NOT_BUILT, betaGo false, mergeCommit dc2ae811, releaseAllowed false); reconciliation is an open owner decision (see conflicts). Compiled as P5-W0..W6, P5-SERIAL-G, P5-STATUS-LEDGER, G00..G11, G12-G13.",
+        "title": "Proposal5 master integration program — W0-W6, serial G, gates G00-G13, status ledger",
+        "description": "One-time master integration program on integrate/proposal5-beta-r001; wave matrix at 09-EXECUTION-PLAYBOOK.md:31-37; playbook status NOT STARTED (:4). Gates G00-G13 all PROPOSED_UNRUN with observed_evidence null and owner_accepted false (08-BETA-GATES.json) — the conflicting root integration/beta-gates.json (UNBLOCKED, G01-G13 ACCEPTED, betaGo true, mergeCommit 7586f28) is treated as an unverified ledger claim contradicted by the same repo's release-manifest.json (BLOCKED_NOT_BUILT, betaGo false, mergeCommit dc2ae811, releaseAllowed false); reconciliation is an open owner decision (see conflicts). Compiled as P5-W0..W6, P5-SERIAL-G, P5-STATUS-LEDGER, G00..G11, G12-G13.",
         "status": "todo",
         "sources": [
           ".integration/proposal5/09-EXECUTION-PLAYBOOK.md:4,31-37",
@@ -84,8 +84,8 @@
       {
         "id": "L1-P5-FOUNDATIONS",
         "layer": "L1",
-        "title": "Proposal5 foundations pre-G program \u2014 PG waves, Rust proof tasks, pre-G exit, G sole-source union",
-        "description": "Pre-G waves PG-00..PG-03 isolated, no product writes (IMPLEMENTATION-WAVES.md:54). Real Rust proof tasks FA-PG01-03 (generation swap, pinned lease, cancellation, typed DAG budget on synthetic isolated source) and FA-W2F1-02 (pure language/graph transform as new engine generation with CAS rollback) require cross-language build/cargo test actual exit codes per NATIVE-MACHINERY-AND-CONTRACTS.md:75-82 \u2014 V8 evaluation not sufficient; no runtime evidence in corpus. Pre-G exit gate PREPARED_NOT_PROMOTED; G sole-source union NOT_EXECUTED with wave1G NOT_RUN_AS_CONFIRMED_BY_OWNER.",
+        "title": "Proposal5 foundations pre-G program — PG waves, Rust proof tasks, pre-G exit, G sole-source union",
+        "description": "Pre-G waves PG-00..PG-03 isolated, no product writes (IMPLEMENTATION-WAVES.md:54). Real Rust proof tasks FA-PG01-03 (generation swap, pinned lease, cancellation, typed DAG budget on synthetic isolated source) and FA-W2F1-02 (pure language/graph transform as new engine generation with CAS rollback) require cross-language build/cargo test actual exit codes per NATIVE-MACHINERY-AND-CONTRACTS.md:75-82 — V8 evaluation not sufficient; no runtime evidence in corpus. Pre-G exit gate PREPARED_NOT_PROMOTED; G sole-source union NOT_EXECUTED with wave1G NOT_RUN_AS_CONFIRMED_BY_OWNER.",
         "status": "todo",
         "sources": [
           ".integration/proposal5/foundations/IMPLEMENTATION-WAVES.md:54-130",
@@ -99,7 +99,7 @@
       {
         "id": "L1-VLANG-VEC",
         "layer": "L1",
-        "title": "VLang/VEC system-convergence program \u2014 gates G-00..G-09, SCF step 1, VECX P0",
+        "title": "VLang/VEC system-convergence program — gates G-00..G-09, SCF step 1, VECX P0",
         "description": "NL-programming pillar. S0 source/authority lock OPEN: lockedImplementationBase=false (machine/source-pins.json:4), three same-day main/draft pins none frozen (:6-10), zero executable evidence (machine/program-status.json:22-24); no A-F work authorized from the SITREP alone (04-ROADMAP-AND-HANDOFF.md:4-6). Headline gate G-02 zero-LLM NL demo NOT_IMPLEMENTED. Sole in-progress item: G-04 three-schema UI fidelity PARTIAL (static world-visual-bridge.ts only; lane-b reports SCHEMA_BRIDGE_NOT_READY). All other gates NOT_IMPLEMENTED/UNRUN/OPEN. Compiled as G-00..G-09 plus merged SCF-ABF-VECX-P0 planning item.",
         "status": "todo",
         "sources": [
@@ -131,7 +131,7 @@
       {
         "id": "L1-P2-LABS",
         "layer": "L1",
-        "title": "Phase 2 Labs intake \u2014 E/C/H categories, decision matrix, promotion windows",
+        "title": "Phase 2 Labs intake — E/C/H categories, decision matrix, promotion windows",
         "description": "Phase 2 Labs intake runs concurrently with W1 A-F on separate branches; promotion only via source-owned G: E easy-migration items after W1-G, C core items after W2-G on fresh branches from exact baseline, H high-value post-beta (low-cost source-backed exception if G records no critical-path extension). Default write scope .integration/proposal5/phase2/ plus tests/labs-intake/, documentation/evidence only. PREPARED_NOT_PROMOTED. Labs items never enter the beta critical path. labs-gap-fill candidates from the gap sweep are synthesis-stage input, not compiled here.",
         "status": "todo",
         "sources": [
@@ -147,8 +147,8 @@
       {
         "id": "L1-WININSTALL",
         "layer": "L1",
-        "title": "Windows+PWA install/release contract \u2014 candidate, no compiled package",
-        "description": "Ordinary workstream per owner emphasis 2026-11-14 (never a G-gate or blocking criterion). No compiler output covers install packaging as a workstream \u2014 no compiled package exists; candidate list deferred to synthesis. Nearest compiled evidence: G13 documented BLOCKER gate (08-BETA-GATES.json:196-209, UNRUN \u2014 reclassification flagged in conflicts), root integration/release-manifest.json BLOCKED_NOT_BUILT with releaseAllowed false (:4,14-16,43,48,50), G06 native security gate (UNRUN, documented P0 cannot-defer), and web-harness ACTIVATION-GAPS.v1.json G01 MSI runtime unaccepted / G02 signed-update continuity / G03 seamless startup.",
+        "title": "Windows+PWA install/release contract — candidate, no compiled package",
+        "description": "Ordinary workstream per owner emphasis 2026-11-14 (never a G-gate or blocking criterion). No compiler output covers install packaging as a workstream — no compiled package exists; candidate list deferred to synthesis. Nearest compiled evidence: G13 documented BLOCKER gate (08-BETA-GATES.json:196-209, UNRUN — reclassification flagged in conflicts), root integration/release-manifest.json BLOCKED_NOT_BUILT with releaseAllowed false (:4,14-16,43,48,50), G06 native security gate (UNRUN, documented P0 cannot-defer), and web-harness ACTIVATION-GAPS.v1.json G01 MSI runtime unaccepted / G02 signed-update continuity / G03 seamless startup.",
         "status": "candidate",
         "sources": [
           "OWNER EMPHASIS (ask, 2026-11-14)",
@@ -165,46 +165,52 @@
       {
         "id": "RDCB-BASELINE",
         "layer": "L2",
-        "title": "RDCB \u2014 Reprogramming Dynamic Context Bundles (owner top priority)",
+        "title": "RDCB — Reprogramming Dynamic Context Bundles (owner top priority)",
         "description": "Owner directive 2026-11-14: start using Dynamic Context Bundles with a special class = Reprogramming Dynamic Context Bundles. Highly structured source-code + vlang native context bundles built on the fly during ANY reprogramming work; linked and tied to the auto wiki as a special section; as vlang improves and is implemented into source and compiled, RDCB generates vlang reprogramming commands / scripts / workflows based on users. ACK2 2026-11-14: generator v1 targets the Stage A seeded corpus; bundles reference file-surface records + NLCL action ids.",
-        "status": "queued",
+        "status": "implemented",
         "sources": [
           "docs/product/proposals/chat-wiki-baseline/"
         ],
         "dependsOn": [
           "WIKI-BASELINE"
         ],
-        "priority": null
+        "priority": null,
+        "verification": "GENERATOR_ONLY_12_OF_12",
+        "execution": "REPORTED_EXECUTED"
       },
       {
         "id": "WIKI-BASELINE",
         "layer": "L2",
-        "title": "Realtime wiki baseline \u2014 page 2, roadmap.v1.json + journal rendered live",
+        "title": "Realtime wiki baseline — page 2, roadmap.v1.json + journal rendered live",
         "description": "Owner baseline reset 2026-11-14: PAGE 2 is the realtime interpreted wiki. Wiki = roadmap live view: roadmap.v1.json + journal rendered live = source of truth; writers = owner-via-chat, AI-via-intents, workstreams-via-write-back. Needs 7 wiki actions added to action-catalog.v1.json (createPage, editSection, movePage, linkPages, readWikiSection, listPages, deletePage). Proposal artifact: docs/product/proposals/chat-wiki-baseline/wiki.html.draft. ACK2 Option-A 2026-11-14: renders the file-surface special section (Stage A seeds = the loop own machine files: state.mjs, controller.js, server.mjs ASSETS map). One parser serves both stages.",
-        "status": "queued",
+        "status": "in-progress",
         "sources": [
           "docs/product/proposals/chat-wiki-baseline/"
         ],
         "dependsOn": [],
-        "priority": null
+        "priority": null,
+        "verification": "FAILED_2_OF_10",
+        "execution": "REPORTED_EXECUTED"
       },
       {
         "id": "CHAT-BOX-BASELINE",
         "layer": "L2",
-        "title": "Chat box baseline \u2014 page 1 pure chat, human+AI same endpoints",
-        "description": "Owner baseline reset 2026-11-14: PAGE 1 is the baseline user interaction page \u2014 PURE CHAT BOX ONLY, THE product surface iterated from. AI-use native day 1: chat serves human and AI through the SAME endpoints; machine-readable state primary. Demo thread acceptance: full realtime stateful machine-readable state + UX mirror + realtime read of rendered wiki (vivim-use, no screenshots). Proposal artifact: docs/product/proposals/chat-wiki-baseline/chat.html.draft + state.mjs.draft. 5 existing day-1 capabilities (sendMessage, readState, executeIntent, readJournal, getCapabilities). ACK2 Option-A 2026-11-14: served at the product chat route on the production Host; /demo/ retains machine artifacts only (journal, acceptance records, feedback). Write endpoint = ONE typed product endpoint, identical envelope for human and AI, actor + schemaVersion fields day 1.",
-        "status": "queued",
+        "title": "Chat box baseline — page 1 pure chat, human+AI same endpoints",
+        "description": "Owner baseline reset 2026-11-14: PAGE 1 is the baseline user interaction page — PURE CHAT BOX ONLY, THE product surface iterated from. AI-use native day 1: chat serves human and AI through the SAME endpoints; machine-readable state primary. Demo thread acceptance: full realtime stateful machine-readable state + UX mirror + realtime read of rendered wiki (vivim-use, no screenshots). Proposal artifact: docs/product/proposals/chat-wiki-baseline/chat.html.draft + state.mjs.draft. 5 existing day-1 capabilities (sendMessage, readState, executeIntent, readJournal, getCapabilities). ACK2 Option-A 2026-11-14: served at the product chat route on the production Host; /demo/ retains machine artifacts only (journal, acceptance records, feedback). Write endpoint = ONE typed product endpoint, identical envelope for human and AI, actor + schemaVersion fields day 1.",
+        "status": "in-progress",
         "sources": [
           "docs/product/proposals/chat-wiki-baseline/"
         ],
         "dependsOn": [],
-        "priority": null
+        "priority": null,
+        "verification": "NARROW_BASELINE_PASS_NOT_E2E",
+        "execution": "REPORTED_EXECUTED"
       },
       {
         "id": "FA-PG01-03",
         "layer": "L2",
         "title": "Real Rust generation swap / pinned lease / cancellation proof",
-        "description": "implemented \u2014 runtime evidence: cargo test in native/hqkg passed (58 lib + 4 algorithm_adapter + typed_dag + apply_ledger + ... all passed, 0 failed). native/hqkg/src/engine.rs:38-168 defines Generation, EngineLease, pin (line 77), install CAS-style replacement (line 91, generation conflict at line 110-113), CancellationToken (line 155), Scheduler run_cancellable with Budget (line 215). native/hqkg/tests/algorithm_adapter.rs:61 adapter_uses_existing_runtime_and_generational_pins proves install generation 1\u21922, pinned lease retains old generation (line 95: pinned.execute returns \"1\"), CAS conflict install(v2, Some(first.generation)) is err (line 90).",
+        "description": "implemented — runtime evidence: cargo test in native/hqkg passed (58 lib + 4 algorithm_adapter + typed_dag + apply_ledger + ... all passed, 0 failed). native/hqkg/src/engine.rs:38-168 defines Generation, EngineLease, pin (line 77), install CAS-style replacement (line 91, generation conflict at line 110-113), CancellationToken (line 155), Scheduler run_cancellable with Budget (line 215). native/hqkg/tests/algorithm_adapter.rs:61 adapter_uses_existing_runtime_and_generational_pins proves install generation 1→2, pinned lease retains old generation (line 95: pinned.execute returns \"1\"), CAS conflict install(v2, Some(first.generation)) is err (line 90).",
         "status": "implemented",
         "sources": [
           "native/hqkg/src/engine.rs:38-280",
@@ -218,7 +224,7 @@
         "id": "FA-W2F1-02",
         "layer": "L2",
         "title": "Pure language/graph transform as new engine generation with CAS rollback",
-        "description": "implemented \u2014 runtime evidence: cargo test in native/hqkg passed. native/hqkg/src/typed_dag.rs defines TransformPlan, RevisionToken, DagExecutor.run (line 313) with CAS-style generation lease pin (line 350), stale-generation detection (line 490), RunState::Cancelled on cancel (line 339-343), all-or-nothing cache commit / rollback on failure (line 536-539), DAG budget validation (line 221-301), PURE_INTERFACE enforcement (line 357). Tests: generation_swap_invalidates_cached_engine_output, cancellation_never_commits_partial_cache, partial_failure_is_explicit_and_does_not_commit_cache \u2014 all passed.",
+        "description": "implemented — runtime evidence: cargo test in native/hqkg passed. native/hqkg/src/typed_dag.rs defines TransformPlan, RevisionToken, DagExecutor.run (line 313) with CAS-style generation lease pin (line 350), stale-generation detection (line 490), RunState::Cancelled on cancel (line 339-343), all-or-nothing cache commit / rollback on failure (line 536-539), DAG budget validation (line 221-301), PURE_INTERFACE enforcement (line 357). Tests: generation_swap_invalidates_cached_engine_output, cancellation_never_commits_partial_cache, partial_failure_is_explicit_and_does_not_commit_cache — all passed.",
         "status": "implemented",
         "sources": [
           "native/hqkg/src/typed_dag.rs:1-542",
@@ -232,7 +238,7 @@
         "id": "ADR-013-PWA",
         "layer": "L2",
         "title": "Mobile Direct PWA only first beta; APK deferred",
-        "description": "deferred \u2014 corpus decision stands. .integration/proposal5/foundations/DECISIONS-AND-DEFERRED.md ADR-013: \"Mobile is Direct PWA only for first beta; native APK is future optional program\"; .integration/proposal5/foundations/IMPLEMENTATION-WAVES.md:7 (mobile = fast Host-served HTTPS PWA); integration/release-manifest.json androidApk DEFERRED, androidPwa UNRUN. No APK build/sign/publish milestone in initial beta.",
+        "description": "deferred — corpus decision stands. .integration/proposal5/foundations/DECISIONS-AND-DEFERRED.md ADR-013: \"Mobile is Direct PWA only for first beta; native APK is future optional program\"; .integration/proposal5/foundations/IMPLEMENTATION-WAVES.md:7 (mobile = fast Host-served HTTPS PWA); integration/release-manifest.json androidApk DEFERRED, androidPwa UNRUN. No APK build/sign/publish milestone in initial beta.",
         "status": "deferred",
         "sources": [
           ".integration/proposal5/foundations/DECISIONS-AND-DEFERRED.md:19 (ADR-013)",
@@ -246,7 +252,7 @@
         "id": "PRD-U12",
         "layer": "L2",
         "title": "Pair phone in Chrome as PWA: WebCrypto key, Host grant, revocable session",
-        "description": "in-progress \u2014 source presence, no runtime evidence. apps/vivim-host/direct-phone.mjs imports randomBytes from node:crypto (WebCrypto key material), createPairingStore, createEnrollment, browser-device-key.mjs, control/intent-planner.mjs; apps/mobile-relay/pairing-link.mjs, device-enrollment.mjs, browser-device-key.mjs present. But .integration/proposal5/foundations/GAP-REGISTER.v1.json FA-G40 (device-runtime, P0): \"No reported physical PWA device acceptance yet\", disposition OPEN_SOURCE_AUDITED_NOT_IMPLEMENTED; GAP-REGISTER device-runtime closure requires \"Android browser real HTTPS key/rotate/revoke/restart/IME run\"; physical PWA/Android UNRUN per G2 receipts. No physical PWA device acceptance reported.",
+        "description": "in-progress — source presence, no runtime evidence. apps/vivim-host/direct-phone.mjs imports randomBytes from node:crypto (WebCrypto key material), createPairingStore, createEnrollment, browser-device-key.mjs, control/intent-planner.mjs; apps/mobile-relay/pairing-link.mjs, device-enrollment.mjs, browser-device-key.mjs present. But .integration/proposal5/foundations/GAP-REGISTER.v1.json FA-G40 (device-runtime, P0): \"No reported physical PWA device acceptance yet\", disposition OPEN_SOURCE_AUDITED_NOT_IMPLEMENTED; GAP-REGISTER device-runtime closure requires \"Android browser real HTTPS key/rotate/revoke/restart/IME run\"; physical PWA/Android UNRUN per G2 receipts. No physical PWA device acceptance reported.",
         "status": "in-progress",
         "sources": [
           "apps/vivim-host/direct-phone.mjs",
@@ -263,7 +269,7 @@
         "id": "PREG-G-INTEGRATION",
         "layer": "L2",
         "title": "Pre-G exit gate + G sole-source union GO/NO_GO (merged)",
-        "description": "todo \u2014 nothing executed. .integration/proposal5/08-BETA-GATES.json: G00-G13 all UNRUN, owner_accepted false (no source lock, no combined runtime acceptance). integration/release-manifest.json: BLOCKED_NOT_BUILT, sourceLock ABSENT, releaseAllowed false, securityAndDeviceUnrun true. .integration/proposal5/foundations/GAP-REGISTER.v1.json FA-G01: \"No serial G merged tree/source lock or combined runtime acceptance\", disposition OPEN_SOURCE_AUDITED_NOT_IMPLEMENTED. G-INTEGRATION NOT_EXECUTED per ask; no integrated SHA, no linker gaps proof, no Cargo/Bun/Node/HQ import closure evidence.",
+        "description": "todo — nothing executed. .integration/proposal5/08-BETA-GATES.json: G00-G13 all UNRUN, owner_accepted false (no source lock, no combined runtime acceptance). integration/release-manifest.json: BLOCKED_NOT_BUILT, sourceLock ABSENT, releaseAllowed false, securityAndDeviceUnrun true. .integration/proposal5/foundations/GAP-REGISTER.v1.json FA-G01: \"No serial G merged tree/source lock or combined runtime acceptance\", disposition OPEN_SOURCE_AUDITED_NOT_IMPLEMENTED. G-INTEGRATION NOT_EXECUTED per ask; no integrated SHA, no linker gaps proof, no Cargo/Bun/Node/HQ import closure evidence.",
         "status": "todo",
         "sources": [
           ".integration/proposal5/08-BETA-GATES.json (G00-G13 all UNRUN)",
@@ -280,8 +286,8 @@
       {
         "id": "P5-W0",
         "layer": "L2",
-        "title": "W0 Source Truth \u2014 native/Tauri, Host/World, Studio, HQ, mobile/TierFlow lanes; serial gate G0 source-lock",
-        "description": "todo \u2014 NOT STARTED. .integration/proposal5/09-EXECUTION-PLAYBOOK.md:31 and 06-EXECUTION-AND-CUTOVER.md:7-14 describe the proposed work order; digest status NOT STARTED. No runtime evidence; all gates G00-G13 UNRUN per 08-BETA-GATES.json; integration/release-manifest.json sourceLock ABSENT, BLOCKED_NOT_BUILT. UNRUN is not pass.",
+        "title": "W0 Source Truth — native/Tauri, Host/World, Studio, HQ, mobile/TierFlow lanes; serial gate G0 source-lock",
+        "description": "todo — NOT STARTED. .integration/proposal5/09-EXECUTION-PLAYBOOK.md:31 and 06-EXECUTION-AND-CUTOVER.md:7-14 describe the proposed work order; digest status NOT STARTED. No runtime evidence; all gates G00-G13 UNRUN per 08-BETA-GATES.json; integration/release-manifest.json sourceLock ABSENT, BLOCKED_NOT_BUILT. UNRUN is not pass.",
         "status": "todo",
         "sources": [
           ".integration/proposal5/09-EXECUTION-PLAYBOOK.md:31",
@@ -295,8 +301,8 @@
       {
         "id": "P5-W1",
         "layer": "L2",
-        "title": "W1 Physical Landing \u2014 import all source trees into ARBOR; G1 closure and no-external-path proof",
-        "description": "todo \u2014 blocked on G00 (UNRUN). .integration/proposal5/09-EXECUTION-PLAYBOOK.md:32 and 06-EXECUTION-AND-CUTOVER.md:16-31 describe lanes A-E import; G1 combines all source trees and proves no external path; depends on G0 GO. G00 UNRUN per 08-BETA-GATES.json, so W1 cannot proceed. No runtime evidence.",
+        "title": "W1 Physical Landing — import all source trees into ARBOR; G1 closure and no-external-path proof",
+        "description": "todo — blocked on G00 (UNRUN). .integration/proposal5/09-EXECUTION-PLAYBOOK.md:32 and 06-EXECUTION-AND-CUTOVER.md:16-31 describe lanes A-E import; G1 combines all source trees and proves no external path; depends on G0 GO. G00 UNRUN per 08-BETA-GATES.json, so W1 cannot proceed. No runtime evidence.",
         "status": "todo",
         "sources": [
           ".integration/proposal5/09-EXECUTION-PLAYBOOK.md:32",
@@ -312,8 +318,8 @@
       {
         "id": "P5-W2",
         "layer": "L2",
-        "title": "W2 Build and Internal Wiring \u2014 coherent internal vertical slice, patched native boundary (absorbs W2F0-EXIT)",
-        "description": "todo \u2014 blocked on G01 (UNRUN). .integration/proposal5/09-EXECUTION-PLAYBOOK.md:33 and 06-EXECUTION-AND-CUTOVER.md:34-43 describe lanes A-F build and G2 internal vertical slice; depends on G1 GO. G01 UNRUN per 08-BETA-GATES.json, G1 depends on G00 which is UNRUN. W2F0-EXIT absorbed; no runtime evidence for G_REVIEW_REQUIRED / native actor/source checks / Rust/TS ABI.",
+        "title": "W2 Build and Internal Wiring — coherent internal vertical slice, patched native boundary (absorbs W2F0-EXIT)",
+        "description": "todo — blocked on G01 (UNRUN). .integration/proposal5/09-EXECUTION-PLAYBOOK.md:33 and 06-EXECUTION-AND-CUTOVER.md:34-43 describe lanes A-F build and G2 internal vertical slice; depends on G1 GO. G01 UNRUN per 08-BETA-GATES.json, G1 depends on G00 which is UNRUN. W2F0-EXIT absorbed; no runtime evidence for G_REVIEW_REQUIRED / native actor/source checks / Rust/TS ABI.",
         "status": "todo",
         "sources": [
           ".integration/proposal5/09-EXECUTION-PLAYBOOK.md:33",
@@ -330,7 +336,7 @@
       {
         "id": "P5-W3",
         "layer": "L2",
-        "title": "W3 Beta Journeys \u2014 critical real source-backed flows, conditional feature classification",
+        "title": "W3 Beta Journeys — critical real source-backed flows, conditional feature classification",
         "description": "W3 Beta Journeys depends on G2 GO; G2 is not GO. .integration/proposal5/hq-version-intelligence/proofs/G2/HVI-G2.md: decision REPAIR_REQUIRED, releaseGate BLOCKED_NOT_BETA, G1 accepted main SHA null, rollback drill UNRUN; G2 receipts (201/201) are synthetic-only conformance, explicitly not runtime acceptance or beta GO. .integration/proposal5/08-BETA-GATES.json G02: status UNRUN, observed_evidence null, owner_accepted false. .integration/proposal5/foundations/WAVE-MANIFEST.v1.json W3-F2/W3-F3/W3-F4: all status NOT_STARTED, phase POST_G, promotion G_FEATURE_GATE. No W3 lane executed; no critical real source-backed flow evidence.",
         "status": "todo",
         "sources": [
@@ -349,8 +355,8 @@
       {
         "id": "P5-W4",
         "layer": "L2",
-        "title": "W4 Red-Team Verification \u2014 exact release blockers, NO false GO (absorbs W5F6-REDTEAM)",
-        "description": "W4 Red-Team depends on G3 GO; .integration/proposal5/08-BETA-GATES.json G03: status UNRUN, observed_evidence null, owner_accepted false. .integration/proposal5/foundations/WAVE-MANIFEST.v1.json W4-F5: all tasks NOT_STARTED, promotion G_REVIEW_REQUIRED. .integration/proposal5/foundations/GAP-REGISTER.v1.json:106-110 FA-G07: disposition OPEN_SOURCE_AUDITED_NOT_IMPLEMENTED \u2014 Host dispatcher source exists but merged approval/journal/uncertain-send parity not executed; negative: no R3, no uncertain-send automatic retry (matches the absorbed W5F6-REDTEAM gate). .integration/proposal5/foundations/IMPLEMENTATION-WAVES.md:202 FA-W5F6-02 unchecked (red-team zero unauthorized effects under attacker negative fixtures). No synthetic-evidence pass; nothing executed.",
+        "title": "W4 Red-Team Verification — exact release blockers, NO false GO (absorbs W5F6-REDTEAM)",
+        "description": "W4 Red-Team depends on G3 GO; .integration/proposal5/08-BETA-GATES.json G03: status UNRUN, observed_evidence null, owner_accepted false. .integration/proposal5/foundations/WAVE-MANIFEST.v1.json W4-F5: all tasks NOT_STARTED, promotion G_REVIEW_REQUIRED. .integration/proposal5/foundations/GAP-REGISTER.v1.json:106-110 FA-G07: disposition OPEN_SOURCE_AUDITED_NOT_IMPLEMENTED — Host dispatcher source exists but merged approval/journal/uncertain-send parity not executed; negative: no R3, no uncertain-send automatic retry (matches the absorbed W5F6-REDTEAM gate). .integration/proposal5/foundations/IMPLEMENTATION-WAVES.md:202 FA-W5F6-02 unchecked (red-team zero unauthorized effects under attacker negative fixtures). No synthetic-evidence pass; nothing executed.",
         "status": "todo",
         "sources": [
           ".integration/proposal5/09-EXECUTION-PLAYBOOK.md:35,49",
@@ -369,7 +375,7 @@
       {
         "id": "P5-W5",
         "layer": "L2",
-        "title": "W5 Blocker Closure \u2014 domain regression fixes, accepted release candidate",
+        "title": "W5 Blocker Closure — domain regression fixes, accepted release candidate",
         "description": "W5 Blocker Closure depends on G4 GO; .integration/proposal5/08-BETA-GATES.json G04: status UNRUN, observed_evidence null, owner_accepted false. .integration/proposal5/foundations/WAVE-MANIFEST.v1.json W5-F6: all FA-W5F6-01..08 status NOT_STARTED; .integration/proposal5/foundations/IMPLEMENTATION-WAVES.md:201-208 all unchecked (FA-W5F6-01 schema conformance, FA-W5F6-02 red-team, FA-W5F6-03 exact-thread read/send, FA-W5F6-06 physical PWA device, etc.). No domain regression fix, packaging, or acceptance closeout executed; no accepted release candidate.",
         "status": "todo",
         "sources": [
@@ -387,8 +393,8 @@
       {
         "id": "P5-W6",
         "layer": "L2",
-        "title": "W6 Beta Handoff \u2014 cutover with tested backups, rollback, single-writer handoff (absorbs W6F7-CUTOVER)",
-        "description": "W6 Beta Handoff depends on G5 GO; .integration/proposal5/08-BETA-GATES.json G05: status UNRUN, observed_evidence null, owner_accepted false. Post-beta cutover \u2014 corpus: post-beta is deferred. .integration/proposal5/foundations/WAVE-MANIFEST.v1.json W6-F7: all tasks NOT_STARTED, promotion EXPLICIT_OWNER_CUTOVER; FA-W6F7-05 unchecked at .integration/proposal5/foundations/IMPLEMENTATION-WAVES.md:220 (stage backups/restore/Host single-writer cutover rehearsal; explicit owner approval before real cutover; do not touch real user data). integration/release-manifest.json: status BLOCKED_NOT_BUILT, rollback tested:false, betaGo false, releaseAllowed false, securityAndDeviceUnrun true. No cutover rehearsal, no backup/restore drill executed.",
+        "title": "W6 Beta Handoff — cutover with tested backups, rollback, single-writer handoff (absorbs W6F7-CUTOVER)",
+        "description": "W6 Beta Handoff depends on G5 GO; .integration/proposal5/08-BETA-GATES.json G05: status UNRUN, observed_evidence null, owner_accepted false. Post-beta cutover — corpus: post-beta is deferred. .integration/proposal5/foundations/WAVE-MANIFEST.v1.json W6-F7: all tasks NOT_STARTED, promotion EXPLICIT_OWNER_CUTOVER; FA-W6F7-05 unchecked at .integration/proposal5/foundations/IMPLEMENTATION-WAVES.md:220 (stage backups/restore/Host single-writer cutover rehearsal; explicit owner approval before real cutover; do not touch real user data). integration/release-manifest.json: status BLOCKED_NOT_BUILT, rollback tested:false, betaGo false, releaseAllowed false, securityAndDeviceUnrun true. No cutover rehearsal, no backup/restore drill executed.",
         "status": "todo",
         "sources": [
           ".integration/proposal5/09-EXECUTION-PLAYBOOK.md:14,37",
@@ -407,8 +413,8 @@
       {
         "id": "P5-SERIAL-G",
         "layer": "L2",
-        "title": "Serial gate G \u2014 sole owner of integration branch, GO/NO_GO/REPAIR_REQUIRED with exact SHAs",
-        "description": "Serial gate G ran but did not GO. integration/reports/W01-GATE.md: decision NO_GO / REPAIR_REQUIRED \u2014 SOURCE_MERGED; BUILD_UNRUN; SECURITY_BLOCKED; DEVICE_UNRUN. Six source merges #2-#7 PASS with behind_by=0 ancestry, but BUILD_UNRUN; root Cargo.lock and bun.lock ABSENT; rollback UNRUN; nextWaveAcceptedSha NONE; beta BLOCKED. integration/release-manifest.json: status BLOCKED_NOT_BUILT, cargoLock/bunLock ABSENT, releaseAllowed false, rollback tested:false. .integration/proposal5/08-BETA-GATES.json: all gates G00-G13 UNRUN, observed_evidence null, owner_accepted false. Source presence (merge commits + decision doc) without runtime acceptance evidence (clean build) => in-progress, not implemented.",
+        "title": "Serial gate G — sole owner of integration branch, GO/NO_GO/REPAIR_REQUIRED with exact SHAs",
+        "description": "Serial gate G ran but did not GO. integration/reports/W01-GATE.md: decision NO_GO / REPAIR_REQUIRED — SOURCE_MERGED; BUILD_UNRUN; SECURITY_BLOCKED; DEVICE_UNRUN. Six source merges #2-#7 PASS with behind_by=0 ancestry, but BUILD_UNRUN; root Cargo.lock and bun.lock ABSENT; rollback UNRUN; nextWaveAcceptedSha NONE; beta BLOCKED. integration/release-manifest.json: status BLOCKED_NOT_BUILT, cargoLock/bunLock ABSENT, releaseAllowed false, rollback tested:false. .integration/proposal5/08-BETA-GATES.json: all gates G00-G13 UNRUN, observed_evidence null, owner_accepted false. Source presence (merge commits + decision doc) without runtime acceptance evidence (clean build) => in-progress, not implemented.",
         "status": "in-progress",
         "sources": [
           "integration/reports/W01-GATE.md",
@@ -424,7 +430,7 @@
       {
         "id": "P5-STATUS-LEDGER",
         "layer": "L2",
-        "title": "One-time integration status ledger \u2014 every source item in exactly one status",
+        "title": "One-time integration status ledger — every source item in exactly one status",
         "description": "No filled one-time integration status ledger exists. .integration/proposal5/06-EXECUTION-AND-CUTOVER.md:82-89 defines the ledger (statuses NOT_IMPORTED/IMPORTED/COMPILES/CONTRACT_WIRED/RUNTIME_VERIFIED/DEVICE_ACCEPTED/DEFERRED_APPROVED/RETIRED/BLOCKED; 14 columns per row: sourceRepo, sourceSha, sourcePath, importedPath, capabilityOwner, existingUsers, portContract, dataClass, testCommand, observedResult, rollback, ownerSignOff; success = real capabilities reachable in ARBOR, not directories existing). integration/ contains source-lock.json, release-manifest.json, reports/, worker-reports/ but no per-item status ledger with the 14 columns; integration/release-manifest.json is a release manifest (status BLOCKED_NOT_BUILT), not the ledger. Digest status: statuses defined in plan; no filled ledger exists in the read docs.",
         "status": "todo",
         "sources": [
@@ -439,7 +445,7 @@
       {
         "id": "P2-LABS-INTAKE",
         "layer": "L2",
-        "title": "Phase 2 Labs intake \u2014 E/C/H categories, 14-workstream decision matrix, promotion windows (merged)",
+        "title": "Phase 2 Labs intake — E/C/H categories, 14-workstream decision matrix, promotion windows (merged)",
         "description": "Phase 2 Labs intake source present (source presence without runtime evidence => in-progress). .integration/proposal5/10-PHASE2-LABS-INTAKE.md:12-48: categories E01-E06 easy migration/low-risk preservation, C01-C06 core development/migration needing a real integration owner, H01-H09 high-value pending development not silently included as beta. .integration/proposal5/11-PHASE2-DECISION-MATRIX.md:3-55: 14 workstreams ranked; all safe to research now: Yes; all safe to merge during W1: No; 8-condition GO rule; contradictory items REJECTED_FOR_BETA; owner handoffs A-G. Digest: PREPARED_NOT_PROMOTED; planning only, not execution evidence; Labs items never enter the beta critical path; default write scope docs/evidence only. Depends on P5-W1 -> G0 GO; G0 UNRUN (.integration/proposal5/08-BETA-GATES.json). No Labs intake execution evidence found.",
         "status": "in-progress",
         "sources": [
@@ -455,8 +461,8 @@
       {
         "id": "G00",
         "layer": "L2",
-        "title": "G00 Freeze source import list \u2014 donor SHAs pinned, incumbent runtimes classified (BLOCKER)",
-        "description": "G00: .integration/proposal5/08-BETA-GATES.json:14-27 status UNRUN, observed_evidence null, owner_accepted false; required proof source/import inventory. CONFLICT CARRIED: root integration/beta-gates.json:14 records SOURCE_MERGED_REVIEW_PENDING / owner_accepted true / observed_evidence recorded \u2014 treated as unverified claim; status stays UNRUN per 08-BETA-GATES.json:14-27. integration/reports/W01-GATE.md: six source merges #2-#7 PASS with behind_by=0 ancestry, but full independent closure/secret scan UNRUN; root Cargo.lock/bun.lock absent. Gate not accepted => todo.",
+        "title": "G00 Freeze source import list — donor SHAs pinned, incumbent runtimes classified (BLOCKER)",
+        "description": "G00: .integration/proposal5/08-BETA-GATES.json:14-27 status UNRUN, observed_evidence null, owner_accepted false; required proof source/import inventory. CONFLICT CARRIED: root integration/beta-gates.json:14 records SOURCE_MERGED_REVIEW_PENDING / owner_accepted true / observed_evidence recorded — treated as unverified claim; status stays UNRUN per 08-BETA-GATES.json:14-27. integration/reports/W01-GATE.md: six source merges #2-#7 PASS with behind_by=0 ancestry, but full independent closure/secret scan UNRUN; root Cargo.lock/bun.lock absent. Gate not accepted => todo.",
         "status": "todo",
         "sources": [
           ".integration/proposal5/08-BETA-GATES.json:14-27",
@@ -469,8 +475,8 @@
       {
         "id": "G01",
         "layer": "L2",
-        "title": "G01 Self-contained workspace \u2014 all source inside ARBOR, builds from ARBOR only (BLOCKER)",
-        "description": "G01: .integration/proposal5/08-BETA-GATES.json:28-41 status UNRUN, observed_evidence null, owner_accepted false; required proof clean build. CONFLICT CARRIED: root integration/beta-gates.json:19-23 records ACCEPTED / owner_accepted true / observed_evidence 'executable build receipts available via CI' \u2014 unverified (CI run 43233248631 conclusion startup_failure, 0 jobs; W01-GATE.md cargo metadata UNRUN/BLOCKED, bun install UNRUN/BLOCKED, root locks absent). integration/release-manifest.json: rootLockfiles ABSENT, cargoLock ABSENT, bunLock ABSENT, windowsMsi UNRUN, sourceClosure UNRUN, donorRemoval UNRUN, toolchainTests UNRUN, releaseAllowed false. No clean build executed => todo.",
+        "title": "G01 Self-contained workspace — all source inside ARBOR, builds from ARBOR only (BLOCKER)",
+        "description": "G01: .integration/proposal5/08-BETA-GATES.json:28-41 status UNRUN, observed_evidence null, owner_accepted false; required proof clean build. CONFLICT CARRIED: root integration/beta-gates.json:19-23 records ACCEPTED / owner_accepted true / observed_evidence 'executable build receipts available via CI' — unverified (CI run 43233248631 conclusion startup_failure, 0 jobs; W01-GATE.md cargo metadata UNRUN/BLOCKED, bun install UNRUN/BLOCKED, root locks absent). integration/release-manifest.json: rootLockfiles ABSENT, cargoLock ABSENT, bunLock ABSENT, windowsMsi UNRUN, sourceClosure UNRUN, donorRemoval UNRUN, toolchainTests UNRUN, releaseAllowed false. No clean build executed => todo.",
         "status": "todo",
         "sources": [
           ".integration/proposal5/08-BETA-GATES.json:28-41",
@@ -486,7 +492,7 @@
       {
         "id": "G02",
         "layer": "L2",
-        "title": "G02 Native HQKG \u2014 imported HQKG source and tests pass, one canonical graph crate (BLOCKER)",
+        "title": "G02 Native HQKG — imported HQKG source and tests pass, one canonical graph crate (BLOCKER)",
         "description": "Implemented. Proof named in gate: `cargo test`. Ran `cargo test` in native/hqkg: 36 test suites, all pass (58 lib unit tests; personal_lifecycle namespace test `graph_revision_and_cross_namespace_sources_refused` ok; graph_change_set `real_graph_change_set_invalidates_only_matching_namespace` ok; 0 failed). One canonical crate `hq-knowledge-graph` (native/hqkg/Cargo.toml:1-3). Evidence path: native/hqkg (Cargo.toml, src/, tests/).",
         "status": "in-progress",
         "sources": [
@@ -502,7 +508,7 @@
       {
         "id": "G03",
         "layer": "L2",
-        "title": "G03 HQ operations internal \u2014 in-repo index/search/context/wiki, no external HQ process (BLOCKER)",
+        "title": "G03 HQ operations internal — in-repo index/search/context/wiki, no external HQ process (BLOCKER)",
         "description": "Implemented. Proof named in gate: `bun tests` and index/context/wiki smoke. Ran `node --test test/arbor-service.test.mjs test/arbor-boundary.test.mjs test/in-repo-closure.test.mjs` (9 pass, 0 fail; includes `index, search, context and wiki operate on authorized local project without donor HQ`) and `npm run test:core` (58 pass, 0 fail). No external HQ process/path; local synthetic project. Evidence path: hq/package.json (test:core), hq/test/.",
         "status": "in-progress",
         "sources": [
@@ -518,7 +524,7 @@
       {
         "id": "G04",
         "layer": "L2",
-        "title": "G04 Host effects \u2014 one current Host catalog and authoritative journal (BLOCKER)",
+        "title": "G04 Host effects — one current Host catalog and authoritative journal (BLOCKER)",
         "description": "Implemented. Proof named in gate: fault-injection test. Ran host catalog/journal/allowlist/dispatcher tests: `node --test test/data-intelligence.test.mjs test/data-intelligence-journal.test.mjs test/bootstrap-actions-allowlist.test.mjs test/control-dispatcher.test.mjs` (28 pass, 0 fail) plus `test/host.test.mjs` (4 pass, 0 fail). Key assertions: `the catalog cannot claim an executor the Host lacks` (no independent effect writer), `owner-approved preference text actions write to single Host ledger and support undo` (authoritative journal), `uncertain/blocked attempts cannot masquerade as verified provider executions` (uncertain-send). Evidence path: apps/vivim-host/control/action-catalog.v1.json, apps/vivim-host/control/journal.mjs, apps/vivim-host/control/dispatcher.mjs, apps/vivim-host/test/.",
         "status": "in-progress",
         "sources": [
@@ -534,7 +540,7 @@
       {
         "id": "G05",
         "layer": "L2",
-        "title": "G05 Node 0 safe path \u2014 local IME responsiveness, stale-revision refusal, Tab cannot cause effect (BLOCKER)",
+        "title": "G05 Node 0 safe path — local IME responsiveness, stale-revision refusal, Tab cannot cause effect (BLOCKER)",
         "description": "Todo. Nothing at all in-tree: `native/node0/` does not exist (`native/` contains only `hqkg`, confirmed by directory listing). capability-spaces/source-truth.v1.json:35-42 classifies `node0-prime` as BLOCKED with targetPath `native/node0/`, blocker `Native scoped actor and bounded compute not proven`, gate G05. No source, no test, no runtime evidence. Per standard, nothing at all = todo. Evidence path: capability-spaces/source-truth.v1.json:35-42; absence of native/node0/.",
         "status": "todo",
         "sources": [
@@ -549,7 +555,7 @@
       {
         "id": "G06",
         "layer": "L2",
-        "title": "G06 Native security \u2014 patched supported Tauri v2 manifest/lock, exact IPC origin scopes (BLOCKER)",
+        "title": "G06 Native security — patched supported Tauri v2 manifest/lock, exact IPC origin scopes (BLOCKER)",
         "description": "In-progress. Source present but no runtime/security evidence. src-tauri/tauri.conf.json exists (minimal manifest; no `security`/`allowlist` block with exact IPC origin scopes) and src-tauri/capabilities/default.json exists (remote `http://127.0.0.1:*`, broad core permissions). Gate states `no fix claimed implemented`; named proof `adversarial Windows test` not present and not runnable here. No IPC origin-scope enforcement and no Host child-listener-identity-before-token-transfer check found in source. Source presence without runtime evidence = in-progress. Evidence path: src-tauri/tauri.conf.json, src-tauri/capabilities/default.json, src-tauri/src/main.rs.",
         "status": "todo",
         "sources": [
@@ -566,7 +572,7 @@
       {
         "id": "G07",
         "layer": "L2",
-        "title": "G07 Studio browser \u2014 real signed-in provider conversation through ARBOR (BLOCKER)",
+        "title": "G07 Studio browser — real signed-in provider conversation through ARBOR (BLOCKER)",
         "description": "In-progress. Source present but no runtime evidence. `studio/` directory exists (studio/src, studio/bin, studio/ui-preview). Named proof `owner-authorized browser E2E` not present and not runnable here (no browser/real signed-in provider conversation). Source presence without runtime evidence = in-progress. Evidence path: studio/src, studio/package.json.",
         "status": "todo",
         "sources": [
@@ -582,8 +588,8 @@
       {
         "id": "G08",
         "layer": "L2",
-        "title": "G08 Paired PWA \u2014 real physical phone pairs/revokes, Host authority on phone input (BLOCKER)",
-        "description": "In-progress. Source present but no physical-phone acceptance evidence. apps/vivim-host/apk/ (enrollment.mjs, pairing.mjs, registry.mjs), apps/vivim-host/direct-phone.mjs, and phone tests exist (test/apk-enrollment.test.mjs, test/apk-registry.test.mjs, test/direct-phone.test.mjs, test/phone-sessions.test.mjs). Named proof `physical PWA acceptance` requires a real physical phone \u2014 not present/runnable here. Source presence without runtime evidence = in-progress. Evidence path: apps/vivim-host/apk/, apps/vivim-host/direct-phone.mjs, apps/vivim-host/test/.",
+        "title": "G08 Paired PWA — real physical phone pairs/revokes, Host authority on phone input (BLOCKER)",
+        "description": "In-progress. Source present but no physical-phone acceptance evidence. apps/vivim-host/apk/ (enrollment.mjs, pairing.mjs, registry.mjs), apps/vivim-host/direct-phone.mjs, and phone tests exist (test/apk-enrollment.test.mjs, test/apk-registry.test.mjs, test/direct-phone.test.mjs, test/phone-sessions.test.mjs). Named proof `physical PWA acceptance` requires a real physical phone — not present/runnable here. Source presence without runtime evidence = in-progress. Evidence path: apps/vivim-host/apk/, apps/vivim-host/direct-phone.mjs, apps/vivim-host/test/.",
         "status": "todo",
         "sources": [
           ".integration/proposal5/08-BETA-GATES.json:126-139",
@@ -599,8 +605,8 @@
       {
         "id": "G09",
         "layer": "L2",
-        "title": "G09 TierFlow UI \u2014 selected TierFlow source builds internally, single source-backed publisher (BLOCKER)",
-        "description": "Implemented. Runtime evidence: ran `bun test tests/visual-runtime` in packages/tierflow \u2014 808 pass, 0 fail, 374 expect() calls across 51 files (TierFlow visual runtime builds internally under bun). Source-backed visual publisher and desktop/PWA status source identity claims are source-level; named proof `browser/UI acceptance` not run, but core `builds internally` requirement has runtime test evidence. Evidence path: packages/tierflow/package.json (test:visual script), packages/tierflow/tests/visual-runtime.",
+        "title": "G09 TierFlow UI — selected TierFlow source builds internally, single source-backed publisher (BLOCKER)",
+        "description": "Implemented. Runtime evidence: ran `bun test tests/visual-runtime` in packages/tierflow — 808 pass, 0 fail, 374 expect() calls across 51 files (TierFlow visual runtime builds internally under bun). Source-backed visual publisher and desktop/PWA status source identity claims are source-level; named proof `browser/UI acceptance` not run, but core `builds internally` requirement has runtime test evidence. Evidence path: packages/tierflow/package.json (test:visual script), packages/tierflow/tests/visual-runtime.",
         "status": "in-progress",
         "sources": [
           ".integration/proposal5/08-BETA-GATES.json:140-153",
@@ -615,7 +621,7 @@
       {
         "id": "G10",
         "layer": "L2",
-        "title": "G10 Capabilities and Labs \u2014 source SHA/status/owner/target per selected Labs component (BLOCKER)",
+        "title": "G10 Capabilities and Labs — source SHA/status/owner/target per selected Labs component (BLOCKER)",
         "description": "In-progress. Capability truth audit source present: capability-spaces/source-truth.v1.json lists items (host-control, hq-semantic-source, tierflow-host-view, node0-prime, ui-semantics, context-dcb, personal-knowledge, chronos, voice-to-tasks, capability-observatory, extension-ports, autowiki-rock-core, r007-complete, generic-marketplace) with id/status/targetPath/evidence/gate/blocker/releaseReady. But gate 08-BETA-GATES.json:154-167 states `observed_evidence null, owner_accepted false`; audit is source-side, no runtime acceptance. Source presence without runtime evidence = in-progress. Evidence path: capability-spaces/source-truth.v1.json, hq/capabilities/, hq/catalogue-identity/.",
         "status": "todo",
         "sources": [
@@ -632,8 +638,8 @@
       {
         "id": "G11",
         "layer": "L2",
-        "title": "G11 World and storage \u2014 export/backup/restore integrity, Rock Core protected (BLOCKER)",
-        "description": "todo \u2014 08-BETA-GATES.json:168-181 records G11 status UNRUN, observed_evidence null, owner_accepted false. Required proof state and storage acceptance absent. No Rock Core cache-compaction protection, bounded-disk HQ dev index, or restore-integrity implementation found. Adjacent export tooling exists but does not satisfy the gate; the gate itself is unrun.",
+        "title": "G11 World and storage — export/backup/restore integrity, Rock Core protected (BLOCKER)",
+        "description": "todo — 08-BETA-GATES.json:168-181 records G11 status UNRUN, observed_evidence null, owner_accepted false. Required proof state and storage acceptance absent. No Rock Core cache-compaction protection, bounded-disk HQ dev index, or restore-integrity implementation found. Adjacent export tooling exists but does not satisfy the gate; the gate itself is unrun.",
         "status": "todo",
         "sources": [
           ".integration/proposal5/08-BETA-GATES.json:168-181"
@@ -646,8 +652,8 @@
       {
         "id": "G12-G13",
         "layer": "L2",
-        "title": "G12+G13 \u2014 zero outside wiring; one beta release (BLOCKER, merged)",
-        "description": "todo \u2014 08-BETA-GATES.json:182-209 records G12 and G13 status UNRUN, observed_evidence null, owner_accepted false. No donor-removal build/install E2E, no release acceptance, no single live Host effect writer evidence. G13 Windows-install owner flag noted; gate doc untouched, still UNRUN.",
+        "title": "G12+G13 — zero outside wiring; one beta release (BLOCKER, merged)",
+        "description": "todo — 08-BETA-GATES.json:182-209 records G12 and G13 status UNRUN, observed_evidence null, owner_accepted false. No donor-removal build/install E2E, no release acceptance, no single live Host effect writer evidence. G13 Windows-install owner flag noted; gate doc untouched, still UNRUN.",
         "status": "todo",
         "sources": [
           ".integration/proposal5/08-BETA-GATES.json:182-209"
@@ -660,8 +666,8 @@
       {
         "id": "P5-VEC-FOUNDATION",
         "layer": "L2",
-        "title": "vec-ui-engines source foundation \u2014 37 engine families, 461 typed capabilities (absorbs P5-VEC-ENUM-CHOICES)",
-        "description": "in-progress \u2014 source present: packages/vec-ui-engines (src/catalog.mjs, compiler.mjs, tokens.mjs, registry.mjs, validators.mjs, enum-choices.mjs, index.mjs; test/*.test.mjs authored) committed 9fc1c08 on work/p5-vec-ui-engine-foundation-r001 (git log verified). implementation-status.json: foundationSourceStatus SOURCE_PRESENT_UNPROMOTED, productDecision NO_GO, node24Tests/bunTests/rustTests UNRUN, actualWorkersStarted 0. Isolated V8 smoke passes but product test suites unrun \u2014 source presence without accepted runtime evidence.",
+        "title": "vec-ui-engines source foundation — 37 engine families, 461 typed capabilities (absorbs P5-VEC-ENUM-CHOICES)",
+        "description": "in-progress — source present: packages/vec-ui-engines (src/catalog.mjs, compiler.mjs, tokens.mjs, registry.mjs, validators.mjs, enum-choices.mjs, index.mjs; test/*.test.mjs authored) committed 9fc1c08 on work/p5-vec-ui-engine-foundation-r001 (git log verified). implementation-status.json: foundationSourceStatus SOURCE_PRESENT_UNPROMOTED, productDecision NO_GO, node24Tests/bunTests/rustTests UNRUN, actualWorkersStarted 0. Isolated V8 smoke passes but product test suites unrun — source presence without accepted runtime evidence.",
         "status": "in-progress",
         "sources": [
           ".integration/proposal5/vec-ui-engines/machine/implementation-status.json:2-5,21-23,38-39",
@@ -675,8 +681,8 @@
       {
         "id": "P5-VEC-FLEET-W0W1",
         "layer": "L2",
-        "title": "Agent fleet waves W0-W1 \u2014 16 core + 37 engine-owner work orders, contract SHA b9932fac",
-        "description": "todo \u2014 100-agent-fleet.json is a plan only; implementation-status.json: actualWorkersStarted 0, acceptedDomainImplementations 0, acceptedRendererAdapters 0. No worker source implemented; depends on P5-VEC-FOUNDATION (in-progress, NO_GO).",
+        "title": "Agent fleet waves W0-W1 — 16 core + 37 engine-owner work orders, contract SHA b9932fac",
+        "description": "todo — 100-agent-fleet.json is a plan only; implementation-status.json: actualWorkersStarted 0, acceptedDomainImplementations 0, acceptedRendererAdapters 0. No worker source implemented; depends on P5-VEC-FOUNDATION (in-progress, NO_GO).",
         "status": "todo",
         "sources": [
           ".integration/proposal5/vec-ui-engines/machine/100-agent-fleet.json",
@@ -690,8 +696,8 @@
       {
         "id": "P5-VEC-FLEET-W2W5",
         "layer": "L2",
-        "title": "Agent fleet waves W2-W5 \u2014 adapters, NL/UI-editor/Wiki/command, QA/security, serial convergence",
-        "description": "todo \u2014 depends on P5-VEC-FLEET-W0W1 (todo). implementation-status.json: testing UNRUN, merge NO_GO; 02-WAVE-AND-MERGE-GATES.md:3-9 confirms no automatic merge/product GO from A098-A100.",
+        "title": "Agent fleet waves W2-W5 — adapters, NL/UI-editor/Wiki/command, QA/security, serial convergence",
+        "description": "todo — depends on P5-VEC-FLEET-W0W1 (todo). implementation-status.json: testing UNRUN, merge NO_GO; 02-WAVE-AND-MERGE-GATES.md:3-9 confirms no automatic merge/product GO from A098-A100.",
         "status": "todo",
         "sources": [
           ".integration/proposal5/vec-ui-engines/machine/100-agent-fleet.json",
@@ -706,8 +712,8 @@
       {
         "id": "P5-VEC-GATES",
         "layer": "L2",
-        "title": "Acceptance gates G0-G9 \u2014 all UNRUN_OR_PENDING, product decision NO_GO",
-        "description": "todo \u2014 gates.json:4-63: all ten gates G0-G9 status UNRUN_OR_PENDING, evidence [], accepted false; decision NO_GO. SOURCE-VERIFICATION-SITREP.md:19-20 confirms runtime/device/beta NO_GO; SOURCE_FOUNDATION_READY_FOR_PARALLEL_WORK_ORDERS only.",
+        "title": "Acceptance gates G0-G9 — all UNRUN_OR_PENDING, product decision NO_GO",
+        "description": "todo — gates.json:4-63: all ten gates G0-G9 status UNRUN_OR_PENDING, evidence [], accepted false; decision NO_GO. SOURCE-VERIFICATION-SITREP.md:19-20 confirms runtime/device/beta NO_GO; SOURCE_FOUNDATION_READY_FOR_PARALLEL_WORK_ORDERS only.",
         "status": "todo",
         "sources": [
           ".integration/proposal5/vec-ui-engines/machine/gates.json:4-63",
@@ -722,7 +728,7 @@
         "id": "G-00",
         "layer": "L2",
         "title": "S0 source and authority lock (vlang)",
-        "description": "todo \u2014 source-pins.json:4 lockedImplementationBase false; gate-register.json:10-13 G0_SOURCE_PINS observed_not_locked; program-status.json:22-24 tests_executed_this_sitrep false, executed_test_commands [], actual_exits [], production_adoption NOT_IMPLEMENTED_OR_ACCEPTED. Zero executable evidence; S0 not locked.",
+        "description": "todo — source-pins.json:4 lockedImplementationBase false; gate-register.json:10-13 G0_SOURCE_PINS observed_not_locked; program-status.json:22-24 tests_executed_this_sitrep false, executed_test_commands [], actual_exits [], production_adoption NOT_IMPLEMENTED_OR_ACCEPTED. Zero executable evidence; S0 not locked.",
         "status": "todo",
         "sources": [
           ".integration/proposal5/vlang/vec/system-convergence/machine/gates.json:11-14",
@@ -739,7 +745,7 @@
         "id": "G-01",
         "layer": "L2",
         "title": "Runtime SDK install descriptor",
-        "description": "todo \u2014 NOT_IMPLEMENTED; depends on G-00 (todo, unrun). gates.json:18-21 and 01-HQ.md:9-17 are planning/review only; no SDK install descriptor implemented.",
+        "description": "todo — NOT_IMPLEMENTED; depends on G-00 (todo, unrun). gates.json:18-21 and 01-HQ.md:9-17 are planning/review only; no SDK install descriptor implemented.",
         "status": "todo",
         "sources": [
           ".integration/proposal5/vlang/vec/system-convergence/machine/gates.json:18-21",
@@ -753,8 +759,8 @@
       {
         "id": "G-02",
         "layer": "L2",
-        "title": "VEC NL demo \u2014 3 synthetic intents compile or refuse without LLM",
-        "description": "todo \u2014 NOT_IMPLEMENTED; depends on G-00 (todo, unrun). gates.json:24-29 and 06-ROADMAP.md:6-8 are planning only; no zero-LLM NLCL slice implemented.",
+        "title": "VEC NL demo — 3 synthetic intents compile or refuse without LLM",
+        "description": "todo — NOT_IMPLEMENTED; depends on G-00 (todo, unrun). gates.json:24-29 and 06-ROADMAP.md:6-8 are planning only; no zero-LLM NLCL slice implemented.",
         "status": "todo",
         "sources": [
           ".integration/proposal5/vlang/vec/system-convergence/machine/gates.json:24-29",
@@ -785,7 +791,7 @@
         "id": "G-04",
         "layer": "L2",
         "title": "Three-schema UI fidelity (World/Visual/Phone)",
-        "description": "static safe World\u2192Visual bridge source exists at packages/tierflow/src/visual-runtime/final-wave/integration/world-visual-bridge.ts; ran bun test on world-visual-bridge.test.ts and world-visual-bridge.refusals.test.ts this session: 7 pass, 0 fail, 35 expect() calls. Runtime evidence confirms the static subset only; dynamic and edit support unaccepted (SCHEMA_BRIDGE_NOT_READY, gates.json:37-41 PARTIAL; 03-TIERFLOW.md:4-11,18). roadmap snapshot VEC-UI:1391-1404 classifies in-progress, no full-fidelity runtime acceptance.",
+        "description": "static safe World→Visual bridge source exists at packages/tierflow/src/visual-runtime/final-wave/integration/world-visual-bridge.ts; ran bun test on world-visual-bridge.test.ts and world-visual-bridge.refusals.test.ts this session: 7 pass, 0 fail, 35 expect() calls. Runtime evidence confirms the static subset only; dynamic and edit support unaccepted (SCHEMA_BRIDGE_NOT_READY, gates.json:37-41 PARTIAL; 03-TIERFLOW.md:4-11,18). roadmap snapshot VEC-UI:1391-1404 classifies in-progress, no full-fidelity runtime acceptance.",
         "status": "in-progress",
         "sources": [
           "packages/tierflow/src/visual-runtime/final-wave/integration/world-visual-bridge.ts",
@@ -853,8 +859,8 @@
       {
         "id": "HARNESS-CONTRACT",
         "layer": "L2",
-        "title": "harness/CONTRACT.md \u2014 web-harness effect boundary (lane ownership, receipt-before-effect, approval-gated sendOnce)",
-        "description": "gap-fill \u2014 harness/CONTRACT.md (byte-identical ARBOR/vivim-web-harness, sha1 b47fb0be4afc637242955373e409652dcb5776a5) defines the web-harness effect boundary: lane ownership A/B/C (:10-28), lane A CDP/Page interface (:44-50), receipt-before-effect journal (:52-54), approval-gated sendOnce (:55-61), single Chrome profile on loopback 9333 refusing 9222/non-loopback, Lane B six provider profiles chatgpt/claude/deepseek/qwen/zai/gemini, Lane C wh CLI + wh serve loopback HTTP (/v1/ask, /v1/requests/:id, /v1/chat/completions) + wh-mcp stdio MCP with approval only via wh approve never HTTP, seven safety acceptance tests (:72-74). No roadmap lane, gate, or pillar cites it \u2014 adjacent to G04/G07 Host-effect semantics. Status: candidate for demo-loop acceleration.",
+        "title": "harness/CONTRACT.md — web-harness effect boundary (lane ownership, receipt-before-effect, approval-gated sendOnce)",
+        "description": "gap-fill — harness/CONTRACT.md (byte-identical ARBOR/vivim-web-harness, sha1 b47fb0be4afc637242955373e409652dcb5776a5) defines the web-harness effect boundary: lane ownership A/B/C (:10-28), lane A CDP/Page interface (:44-50), receipt-before-effect journal (:52-54), approval-gated sendOnce (:55-61), single Chrome profile on loopback 9333 refusing 9222/non-loopback, Lane B six provider profiles chatgpt/claude/deepseek/qwen/zai/gemini, Lane C wh CLI + wh serve loopback HTTP (/v1/ask, /v1/requests/:id, /v1/chat/completions) + wh-mcp stdio MCP with approval only via wh approve never HTTP, seven safety acceptance tests (:72-74). No roadmap lane, gate, or pillar cites it — adjacent to G04/G07 Host-effect semantics. Status: candidate for demo-loop acceleration.",
         "status": "candidate",
         "sources": [
           "harness/CONTRACT.md",
@@ -867,7 +873,7 @@
         "id": "BETA-GATES-CONFLICT",
         "layer": "L2",
         "title": "Conflicting gate records: root integration/beta-gates.json vs .integration/proposal5/08-BETA-GATES.json",
-        "description": "gap-fill \u2014 root integration/beta-gates.json (schema arbor.proposal5.beta-gates/1; status UNBLOCKED; decision READY_FOR_INDEPENDENT_Z2_REVIEW; G00 status SOURCE_MERGED_REVIEW_PENDING, owner_accepted:true, observed_evidence recorded) contradicts the roadmap's statement that every gate G00-G13 is UNRUN with observed_evidence:null and owner_accepted:false (.integration/proposal5/08-BETA-GATES.json:14-27); integration/release-manifest.json (BLOCKED_NOT_BUILT) and integration/source-lock.json (worker heads A-F) are likewise uncited and differ from the .integration/proposal5 copies the roadmap references. Two conflicting gate and source-lock records coexist in ARBOR with no reconciliation item, so W0/G00 source-truth status is undetermined by the roadmap.",
+        "description": "gap-fill — root integration/beta-gates.json (schema arbor.proposal5.beta-gates/1; status UNBLOCKED; decision READY_FOR_INDEPENDENT_Z2_REVIEW; G00 status SOURCE_MERGED_REVIEW_PENDING, owner_accepted:true, observed_evidence recorded) contradicts the roadmap's statement that every gate G00-G13 is UNRUN with observed_evidence:null and owner_accepted:false (.integration/proposal5/08-BETA-GATES.json:14-27); integration/release-manifest.json (BLOCKED_NOT_BUILT) and integration/source-lock.json (worker heads A-F) are likewise uncited and differ from the .integration/proposal5 copies the roadmap references. Two conflicting gate and source-lock records coexist in ARBOR with no reconciliation item, so W0/G00 source-truth status is undetermined by the roadmap.",
         "status": "candidate",
         "sources": [
           "integration/beta-gates.json",
@@ -882,8 +888,8 @@
       {
         "id": "SOURCE-TRUTH-CAPABILITY",
         "layer": "L2",
-        "title": "capability-spaces/source-truth.v1.json \u2014 G10 capability-truth inputs and G05 blocking evidence",
-        "description": "gap-fill \u2014 capability-spaces/source-truth.v1.json (schema arbor.w01f.source-truth/1, 'generatedFrom donor source evidence, not runtime introspection') classifies six capabilities against gates \u2014 host-control/G04 IMPLEMENTED, hq-semantic-source/G03, tierflow-host-view/G09, node0-prime/G05 BLOCKED, ui-semantics/G09 PREVIEW, context-dcb/G10 PREVIEW \u2014 yet no roadmap source cites it, and node0-prime's targetPath native/node0/ does not exist (native/ contains only hqkg). G10 capability-truth inputs and G05 blocking evidence exist in-tree but are invisible to the roadmap, including a referenced directory that is absent.",
+        "title": "capability-spaces/source-truth.v1.json — G10 capability-truth inputs and G05 blocking evidence",
+        "description": "gap-fill — capability-spaces/source-truth.v1.json (schema arbor.w01f.source-truth/1, 'generatedFrom donor source evidence, not runtime introspection') classifies six capabilities against gates — host-control/G04 IMPLEMENTED, hq-semantic-source/G03, tierflow-host-view/G09, node0-prime/G05 BLOCKED, ui-semantics/G09 PREVIEW, context-dcb/G10 PREVIEW — yet no roadmap source cites it, and node0-prime's targetPath native/node0/ does not exist (native/ contains only hqkg). G10 capability-truth inputs and G05 blocking evidence exist in-tree but are invisible to the roadmap, including a referenced directory that is absent.",
         "status": "candidate",
         "sources": [
           "capability-spaces/source-truth.v1.json",
@@ -895,8 +901,8 @@
       {
         "id": "HQ-MIGRATION-REPORT",
         "layer": "L2",
-        "title": "hq/MIGRATION-REPORT.md + W01D-FOLLOWUP-REPORT.md \u2014 lane-level migration evidence",
-        "description": "gap-fill \u2014 hq/MIGRATION-REPORT.md (Lane D: 315/315 byte-identical blobs imported from repos-hq 9b922ea0, arbor-service.mjs in-process boundary, runtime tests explicitly not executed, Host/native IPC wiring not mounted) and hq/W01D-FOLLOWUP-REPORT.md (status BLOCKED_ON_G_INTEGRATION, walk.mjs symlink-escape patch, Lane B createDevIntelligence host-mode contract) are not cited by any roadmap source; M3 documents a different 472-file consolidation. Lane-level migration evidence and its G-blocked status are absent from W0/G00 source-truth accounting, so imported HQ provenance is untracked.",
+        "title": "hq/MIGRATION-REPORT.md + W01D-FOLLOWUP-REPORT.md — lane-level migration evidence",
+        "description": "gap-fill — hq/MIGRATION-REPORT.md (Lane D: 315/315 byte-identical blobs imported from repos-hq 9b922ea0, arbor-service.mjs in-process boundary, runtime tests explicitly not executed, Host/native IPC wiring not mounted) and hq/W01D-FOLLOWUP-REPORT.md (status BLOCKED_ON_G_INTEGRATION, walk.mjs symlink-escape patch, Lane B createDevIntelligence host-mode contract) are not cited by any roadmap source; M3 documents a different 472-file consolidation. Lane-level migration evidence and its G-blocked status are absent from W0/G00 source-truth accounting, so imported HQ provenance is untracked.",
         "status": "candidate",
         "sources": [
           "hq/MIGRATION-REPORT.md",
@@ -909,8 +915,8 @@
       {
         "id": "HQ-CAPABILITY-REGISTRY",
         "layer": "L2",
-        "title": "hq/capabilities/registry/contracts.v1.json \u2014 proposed in-repo capability contracts",
-        "description": "gap-fill \u2014 hq/capabilities/registry ships hq.capability-contracts/1 contracts (cap.discovery.glob/walk/resolve/vinyl\u2026, all proposed, ownerConfirmed:false) plus hq.capability-taxonomy/1 (six domains), yet the roadmap's capability-promotion doctrine cites only repos_hq/docs/CAPABILITY-PROMOTION.md and no gate or status covers ARBOR's register. G10 capability truth cannot account for proposed in-repo capability contracts with no roadmap owner, status, or promotion path.",
+        "title": "hq/capabilities/registry/contracts.v1.json — proposed in-repo capability contracts",
+        "description": "gap-fill — hq/capabilities/registry ships hq.capability-contracts/1 contracts (cap.discovery.glob/walk/resolve/vinyl…, all proposed, ownerConfirmed:false) plus hq.capability-taxonomy/1 (six domains), yet the roadmap's capability-promotion doctrine cites only repos_hq/docs/CAPABILITY-PROMOTION.md and no gate or status covers ARBOR's register. G10 capability truth cannot account for proposed in-repo capability contracts with no roadmap owner, status, or promotion path.",
         "status": "candidate",
         "sources": [
           "hq/capabilities/registry/contracts.v1.json",
@@ -922,8 +928,8 @@
       {
         "id": "LABS-WAVE3-READINESS",
         "layer": "L2",
-        "title": "vivim-labs/docs/WAVE-3-READINESS-HANDOFF.md \u2014 sync, readiness, reserved-path governance",
-        "description": "gap-fill \u2014 vivim-labs/docs/WAVE-3-READINESS-HANDOFF.md documents Git synchronization of five repos plus vivim-workstation cloned, MiniMax Integration 2 closure verified locally (449 tests, 25/25 real A\u2013H, 15 composition, 52 SQLite, 10 core counts reproduced exactly), 7 pre-existing repos_hq failures enumerated, the Wave 3 reserved-paths A\u2013H table for TierFlow, entry condition approved exact write ownership still pending, and blockers (vivim-web-harness main on ceo/mobile-one-path-2026-11-05 with 187 unpublished commits; vivim-labs single local branch). A documented synchronization, readiness, and reserved-path governance work area in vivim-labs is outside proposal5/HVI content \u2014 and its 'Integration 2 closure verified locally' claim conflicts with vivim-ui WAVES.md:16-18 'integrated closure still BLOCKED \u2026 did not yet demonstrate true A\u2013H composition', an unresolved cross-repo status conflict the roadmap does not reconcile.",
+        "title": "vivim-labs/docs/WAVE-3-READINESS-HANDOFF.md — sync, readiness, reserved-path governance",
+        "description": "gap-fill — vivim-labs/docs/WAVE-3-READINESS-HANDOFF.md documents Git synchronization of five repos plus vivim-workstation cloned, MiniMax Integration 2 closure verified locally (449 tests, 25/25 real A–H, 15 composition, 52 SQLite, 10 core counts reproduced exactly), 7 pre-existing repos_hq failures enumerated, the Wave 3 reserved-paths A–H table for TierFlow, entry condition approved exact write ownership still pending, and blockers (vivim-web-harness main on ceo/mobile-one-path-2026-11-05 with 187 unpublished commits; vivim-labs single local branch). A documented synchronization, readiness, and reserved-path governance work area in vivim-labs is outside proposal5/HVI content — and its 'Integration 2 closure verified locally' claim conflicts with vivim-ui WAVES.md:16-18 'integrated closure still BLOCKED … did not yet demonstrate true A–H composition', an unresolved cross-repo status conflict the roadmap does not reconcile.",
         "status": "candidate",
         "sources": [
           "vivim-labs/docs/WAVE-3-READINESS-HANDOFF.md",
@@ -935,8 +941,8 @@
       {
         "id": "LABS-ARCHITECTURE",
         "layer": "L2",
-        "title": "vivim-labs/Architecture/README.md \u2014 One Graph, Many Engines architectural working record",
-        "description": "gap-fill \u2014 vivim-labs/Architecture/README.md documents the One Graph, Many Engines architectural working record (2026-11-06): one logical graph with Rust HQKG as candidate central graph/engine/kernel, one physical core plus many engine/data nodes and external adapters, with nine sections (01 vision/core decisions, 02 Rust core anatomy, 03 component mapping, 04 dataflow and write authority, 05 CLI and integration, 06 sources and open questions, 07 integration philosophy, 08 integration sequence, 09 unified HQ intelligence/command/wiki); explicitly discussion notes with no changes made to any repository. A documented architecture-convergence work area spanning repos-hq, HQKG, TierFlow, Harness/Host/Studio, Labs, Oracle, and CLI surfaces exists in vivim-labs and is outside proposal5/HVI content.",
+        "title": "vivim-labs/Architecture/README.md — One Graph, Many Engines architectural working record",
+        "description": "gap-fill — vivim-labs/Architecture/README.md documents the One Graph, Many Engines architectural working record (2026-11-06): one logical graph with Rust HQKG as candidate central graph/engine/kernel, one physical core plus many engine/data nodes and external adapters, with nine sections (01 vision/core decisions, 02 Rust core anatomy, 03 component mapping, 04 dataflow and write authority, 05 CLI and integration, 06 sources and open questions, 07 integration philosophy, 08 integration sequence, 09 unified HQ intelligence/command/wiki); explicitly discussion notes with no changes made to any repository. A documented architecture-convergence work area spanning repos-hq, HQKG, TierFlow, Harness/Host/Studio, Labs, Oracle, and CLI surfaces exists in vivim-labs and is outside proposal5/HVI content.",
         "status": "candidate",
         "sources": [
           "vivim-labs/Architecture/README.md",
@@ -948,8 +954,8 @@
       {
         "id": "LABS-PERSONALIZATION",
         "layer": "L2",
-        "title": "vivim-labs/personalization/README.md \u2014 personalization research (Top 5 agentic algorithms)",
-        "description": "gap-fill \u2014 vivim-labs/personalization/README.md documents personalization research (Top 5 agentic personalization algorithms 2026: sequential/SMC preference tracing, graph/PPR retrieval, per-user Bradley\u2013Terry scoring, contextual bandits, active preference elicitation, with proposed Oracle interfaces and phased implementation), cross-workspace contracts (memory durable evidence, context bounded assembly, learning feedback/evaluation), the invariant that inferred preferences never grant permission, and status research/not implemented (last research review 2026-11-07). A documented personalization research work area exists in vivim-labs and is outside proposal5/HVI content.",
+        "title": "vivim-labs/personalization/README.md — personalization research (Top 5 agentic algorithms)",
+        "description": "gap-fill — vivim-labs/personalization/README.md documents personalization research (Top 5 agentic personalization algorithms 2026: sequential/SMC preference tracing, graph/PPR retrieval, per-user Bradley–Terry scoring, contextual bandits, active preference elicitation, with proposed Oracle interfaces and phased implementation), cross-workspace contracts (memory durable evidence, context bounded assembly, learning feedback/evaluation), the invariant that inferred preferences never grant permission, and status research/not implemented (last research review 2026-11-07). A documented personalization research work area exists in vivim-labs and is outside proposal5/HVI content.",
         "status": "candidate",
         "sources": [
           "vivim-labs/personalization/README.md",
@@ -961,8 +967,8 @@
       {
         "id": "LABS-RESEARCH-INTAKE",
         "layer": "L2",
-        "title": "vivim-labs/research-intake/ \u2014 external research intake (Omar Sar0 X-post, freellmapi, zcode-free-model-toolkit)",
-        "description": "gap-fill \u2014 vivim-labs/research-intake/ holds external research intake records \u2014 the 2026-11-09 Omar Sar0 X-post capture marked UNVERIFIED SOURCE / INTAKE ONLY (remote retrieval HTTP 403, no contents claimed), plus freellmapi-zcode-integration and zcode-free-model-toolkit \u2014 which no roadmap source covers (read vivim-labs/research-intake/2026-11-09-omarsar0-x-2119473781689421855.md:1-22 this session). An owner-requested external-research intake surface exists in vivim-labs outside proposal5/HVI content and the Labs intake summary, so its disposition is untracked.",
+        "title": "vivim-labs/research-intake/ — external research intake (Omar Sar0 X-post, freellmapi, zcode-free-model-toolkit)",
+        "description": "gap-fill — vivim-labs/research-intake/ holds external research intake records — the 2026-11-09 Omar Sar0 X-post capture marked UNVERIFIED SOURCE / INTAKE ONLY (remote retrieval HTTP 403, no contents claimed), plus freellmapi-zcode-integration and zcode-free-model-toolkit — which no roadmap source covers (read vivim-labs/research-intake/2026-11-09-omarsar0-x-2119473781689421855.md:1-22 this session). An owner-requested external-research intake surface exists in vivim-labs outside proposal5/HVI content and the Labs intake summary, so its disposition is untracked.",
         "status": "candidate",
         "sources": [
           "vivim-labs/research-intake/2026-11-09-omarsar0-x-2119473781689421855.md",
@@ -974,8 +980,8 @@
       {
         "id": "LABS-KB-CONSOLIDATION",
         "layer": "L2",
-        "title": "vivim-labs/KB-consolidation/ \u2014 KB/data-systems consolidation discovery scaffold",
-        "description": "gap-fill \u2014 vivim-labs/KB-consolidation/ is a discovery scaffold (README.md, SCOUTS.md, docs/TAXONOMY.md, docs/UI-PROGRAMMABILITY.md, data/source-roots.json, schemas/discovery-record.schema.json) mapping schemas, transports, storage, identity, events and writers across repos-hq/vivim-web-harness/TierFlow/Labs with typed edges READS/WRITES/TRANSFORMS/TRANSPORTS/PRODUCES/CONSUMES/DERIVES/VALIDATES/AUTHORIZES/MIGRATES and dispositions KEEP/CONNECT/CONSOLIDATE/MIGRATE/RETIRE/INVESTIGATE, which no roadmap source covers (read vivim-labs/KB-consolidation/README.md:1-19 this session). A documented KB/data-systems consolidation discovery work area in vivim-labs is outside proposal5/HVI content.",
+        "title": "vivim-labs/KB-consolidation/ — KB/data-systems consolidation discovery scaffold",
+        "description": "gap-fill — vivim-labs/KB-consolidation/ is a discovery scaffold (README.md, SCOUTS.md, docs/TAXONOMY.md, docs/UI-PROGRAMMABILITY.md, data/source-roots.json, schemas/discovery-record.schema.json) mapping schemas, transports, storage, identity, events and writers across repos-hq/vivim-web-harness/TierFlow/Labs with typed edges READS/WRITES/TRANSFORMS/TRANSPORTS/PRODUCES/CONSUMES/DERIVES/VALIDATES/AUTHORIZES/MIGRATES and dispositions KEEP/CONNECT/CONSOLIDATE/MIGRATE/RETIRE/INVESTIGATE, which no roadmap source covers (read vivim-labs/KB-consolidation/README.md:1-19 this session). A documented KB/data-systems consolidation discovery work area in vivim-labs is outside proposal5/HVI content.",
         "status": "candidate",
         "sources": [
           "vivim-labs/KB-consolidation/README.md",
@@ -987,8 +993,8 @@
       {
         "id": "LABS-CONTEXT-ALGOS",
         "layer": "L2",
-        "title": "vivim-labs/context/TOP-5-AGENTIC-CONTEXT-ALGORITHMS-2026.md \u2014 dynamic context bundle research",
-        "description": "gap-fill \u2014 vivim-labs/context/TOP-5-AGENTIC-CONTEXT-ALGORITHMS-2026.md documents dynamic context bundle research (RRF, MMR, PPR, budgeted facility-location/CELF, LLMLingua compression, DynamicContextBundle v1 contract, compile pipeline, pre-Wave-2 ablation plan A\u2013F), research/design recommendations only with no implementation or benchmark claimed (read vivim-labs/context/TOP-5-AGENTIC-CONTEXT-ALGORITHMS-2026.md:5-240 this session). A documented context-assembly research work area in vivim-labs is outside proposal5/HVI content.",
+        "title": "vivim-labs/context/TOP-5-AGENTIC-CONTEXT-ALGORITHMS-2026.md — dynamic context bundle research",
+        "description": "gap-fill — vivim-labs/context/TOP-5-AGENTIC-CONTEXT-ALGORITHMS-2026.md documents dynamic context bundle research (RRF, MMR, PPR, budgeted facility-location/CELF, LLMLingua compression, DynamicContextBundle v1 contract, compile pipeline, pre-Wave-2 ablation plan A–F), research/design recommendations only with no implementation or benchmark claimed (read vivim-labs/context/TOP-5-AGENTIC-CONTEXT-ALGORITHMS-2026.md:5-240 this session). A documented context-assembly research work area in vivim-labs is outside proposal5/HVI content.",
         "status": "candidate",
         "sources": [
           "vivim-labs/context/TOP-5-AGENTIC-CONTEXT-ALGORITHMS-2026.md",
@@ -1000,8 +1006,8 @@
       {
         "id": "LABS-MEMORY-ALGOS",
         "layer": "L2",
-        "title": "vivim-labs/memory/TOP-5-AGENTIC-MEMORY-ALGORITHMS-2026.md \u2014 memory research (Mem0, Graphiti, HippoRAG, A-MEM, Letta)",
-        "description": "gap-fill \u2014 vivim-labs/memory/TOP-5-AGENTIC-MEMORY-ALGORITHMS-2026.md documents memory research (Mem0, Graphiti bitemporal, HippoRAG 2 PPR, A-MEM, Letta MemFS, canonical event/fact contract, three-era rollout, folder ownership boundaries for context/memory/learning/personalization), research snapshot 2026-11-07 with no runtime implementation claimed (read vivim-labs/memory/TOP-5-AGENTIC-MEMORY-ALGORITHMS-2026.md:3-249 this session). A documented personal/agent memory research work area in vivim-labs is outside proposal5/HVI content.",
+        "title": "vivim-labs/memory/TOP-5-AGENTIC-MEMORY-ALGORITHMS-2026.md — memory research (Mem0, Graphiti, HippoRAG, A-MEM, Letta)",
+        "description": "gap-fill — vivim-labs/memory/TOP-5-AGENTIC-MEMORY-ALGORITHMS-2026.md documents memory research (Mem0, Graphiti bitemporal, HippoRAG 2 PPR, A-MEM, Letta MemFS, canonical event/fact contract, three-era rollout, folder ownership boundaries for context/memory/learning/personalization), research snapshot 2026-11-07 with no runtime implementation claimed (read vivim-labs/memory/TOP-5-AGENTIC-MEMORY-ALGORITHMS-2026.md:3-249 this session). A documented personal/agent memory research work area in vivim-labs is outside proposal5/HVI content.",
         "status": "candidate",
         "sources": [
           "vivim-labs/memory/TOP-5-AGENTIC-MEMORY-ALGORITHMS-2026.md",
@@ -1013,8 +1019,8 @@
       {
         "id": "LABS-DOC-CONSOLIDATION",
         "layer": "L2",
-        "title": "vivim-labs/documentation-consolidation/INVENTORY.json \u2014 1234 doc consolidation snapshot",
-        "description": "gap-fill \u2014 vivim-labs/documentation-consolidation/INVENTORY.json is a 2026-11-07 consolidation snapshot (schema vivim-labs.documentation-consolidation/1: 1234 documents, 137 moved, 1097 retained across tierflow/vivim-web-harness/repos-hq with blob SHAs and retention reasons; retained means not moved, not automatically obsolete), which no roadmap source covers (read vivim-labs/documentation-consolidation/INVENTORY.json:1-60 this session). A documented historical copy/original reconciliation archive exists in vivim-labs outside proposal5/HVI content.",
+        "title": "vivim-labs/documentation-consolidation/INVENTORY.json — 1234 doc consolidation snapshot",
+        "description": "gap-fill — vivim-labs/documentation-consolidation/INVENTORY.json is a 2026-11-07 consolidation snapshot (schema vivim-labs.documentation-consolidation/1: 1234 documents, 137 moved, 1097 retained across tierflow/vivim-web-harness/repos-hq with blob SHAs and retention reasons; retained means not moved, not automatically obsolete), which no roadmap source covers (read vivim-labs/documentation-consolidation/INVENTORY.json:1-60 this session). A documented historical copy/original reconciliation archive exists in vivim-labs outside proposal5/HVI content.",
         "status": "candidate",
         "sources": [
           "vivim-labs/documentation-consolidation/INVENTORY.json",
@@ -1026,8 +1032,8 @@
       {
         "id": "LABS-AGENT-WORKSPACES",
         "layer": "L2",
-        "title": "vivim-labs/agents/workspaces/ \u2014 11 named agent keeper workspaces",
-        "description": "gap-fill \u2014 vivim-labs/agents/workspaces/ runs 11 named agent keeper workspaces (android-shell-keeper, auto-cmd-wiki-keeper, dcb-context-keeper, host-control-keeper, hq-data-keeper, nlp-commands-keeper, platform-security-auditor, rust-core-keeper, tierflow-platform-keeper, tierflow-visual-keeper, workflow-keeper), each with BRIEF.md/LOG.md/STATUS.md (listed this session via ls). A documented agent-operations surface exists in vivim-labs outside proposal5/HVI content.",
+        "title": "vivim-labs/agents/workspaces/ — 11 named agent keeper workspaces",
+        "description": "gap-fill — vivim-labs/agents/workspaces/ runs 11 named agent keeper workspaces (android-shell-keeper, auto-cmd-wiki-keeper, dcb-context-keeper, host-control-keeper, hq-data-keeper, nlp-commands-keeper, platform-security-auditor, rust-core-keeper, tierflow-platform-keeper, tierflow-visual-keeper, workflow-keeper), each with BRIEF.md/LOG.md/STATUS.md (listed this session via ls). A documented agent-operations surface exists in vivim-labs outside proposal5/HVI content.",
         "status": "candidate",
         "sources": [
           "vivim-labs/agents/workspaces/",
@@ -1039,8 +1045,8 @@
       {
         "id": "VIVIM-UI-PLAN",
         "layer": "L2",
-        "title": "vivim-ui/PLAN.md \u2014 independent three-tier agentic runtime (Tier 1/2/3, lanes L0-L9, gates G0-G9)",
-        "description": "gap-fill \u2014 PLAN.md defines an independent three-tier agentic runtime (Tier 1 interactive agent, Tier 2 orchestrator, Tier 3 realtime program execution) with an Intent\u2192Plan\u2192JobSpec\u2192RunMeta\u2192BusEvent chain, lanes L0\u2013L9, gates G0\u2013G9, verified state (tsc 4 errors all in tests/e2e.test.ts; 57 pass/1 fail of 58 at tests/e2e.test.ts:206; Rust bench 709,697 ev/s vs TS 246,336 ev/s = 2.9\u00d7; bench/baseline.json ratio 0.398), and gate log G0 PASS 2026-11-02 \u2014 a lane-gate system outside proposal5/HVI. An independent agentic execution system with its own board, gates and baseline sits beside the HVI/proposal5 work and carries no roadmap status.",
+        "title": "vivim-ui/PLAN.md — independent three-tier agentic runtime (Tier 1/2/3, lanes L0-L9, gates G0-G9)",
+        "description": "gap-fill — PLAN.md defines an independent three-tier agentic runtime (Tier 1 interactive agent, Tier 2 orchestrator, Tier 3 realtime program execution) with an Intent→Plan→JobSpec→RunMeta→BusEvent chain, lanes L0–L9, gates G0–G9, verified state (tsc 4 errors all in tests/e2e.test.ts; 57 pass/1 fail of 58 at tests/e2e.test.ts:206; Rust bench 709,697 ev/s vs TS 246,336 ev/s = 2.9×; bench/baseline.json ratio 0.398), and gate log G0 PASS 2026-11-02 — a lane-gate system outside proposal5/HVI. An independent agentic execution system with its own board, gates and baseline sits beside the HVI/proposal5 work and carries no roadmap status.",
         "status": "candidate",
         "sources": [
           "vivim-ui/PLAN.md",
@@ -1052,8 +1058,8 @@
       {
         "id": "VIVIM-UI-WAVES",
         "layer": "L2",
-        "title": "vivim-ui/VIVIM-VISUAL-RUNTIME/WAVES.md + WAVE-3 + INTEGRATION-2-CLOSURE \u2014 TierFlow wave-convergence governance",
-        "description": "gap-fill \u2014 TierFlow wave-convergence governance is documented and untracked: VIVIM-VISUAL-RUNTIME/WAVES.md defines the six-wave program \u2014 eight lanes A\u2013H, per-wave integration gates, KEEP/ADAPT/MIGRATE/RETIRE/REVIEW dispositions with file allowlists, dependency loop I2-C GO \u2192 W3 \u2192 I3 \u2192 W4 \u2192 I4 \u2192 W5 \u2192 I5 \u2192 W6 \u2192 I6 \u2014 with WAVES.md:16 stating W2 integrated closure is BLOCKED pending a real A\u2013H composed test; WAVE-3/README.md defines Wave 3 entry (I2-C GO, no project typecheck/verify red, approved exact write ownership), eight-lane deliverables each with KEEP/ADAPT/MIGRATE/RETIRE/REVIEW plus rollback, hard tests (320/360/1280 layout with accessible focus, real SQLite/WAL restart/ACK-loss/duplicate-command/pure preview, scoped KB read with tombstone/revocation, G exact semantic ID/risk/args tri-modal parity, H no execute/escalation) and exclusions; INTEGRATION-2-CLOSURE.md defines the I2-C closure gate preceding all Wave 3\u20136 code. No proposal5/HVI source covers any of it. The roadmap has no gate equivalent for tierflow's sequential wave entry conditions or the typed-fixture composition precondition gating Waves 3\u20136.",
+        "title": "vivim-ui/VIVIM-VISUAL-RUNTIME/WAVES.md + WAVE-3 + INTEGRATION-2-CLOSURE — TierFlow wave-convergence governance",
+        "description": "gap-fill — TierFlow wave-convergence governance is documented and untracked: VIVIM-VISUAL-RUNTIME/WAVES.md defines the six-wave program — eight lanes A–H, per-wave integration gates, KEEP/ADAPT/MIGRATE/RETIRE/REVIEW dispositions with file allowlists, dependency loop I2-C GO → W3 → I3 → W4 → I4 → W5 → I5 → W6 → I6 — with WAVES.md:16 stating W2 integrated closure is BLOCKED pending a real A–H composed test; WAVE-3/README.md defines Wave 3 entry (I2-C GO, no project typecheck/verify red, approved exact write ownership), eight-lane deliverables each with KEEP/ADAPT/MIGRATE/RETIRE/REVIEW plus rollback, hard tests (320/360/1280 layout with accessible focus, real SQLite/WAL restart/ACK-loss/duplicate-command/pure preview, scoped KB read with tombstone/revocation, G exact semantic ID/risk/args tri-modal parity, H no execute/escalation) and exclusions; INTEGRATION-2-CLOSURE.md defines the I2-C closure gate preceding all Wave 3–6 code. No proposal5/HVI source covers any of it. The roadmap has no gate equivalent for tierflow's sequential wave entry conditions or the typed-fixture composition precondition gating Waves 3–6.",
         "status": "candidate",
         "sources": [
           "vivim-ui/VIVIM-VISUAL-RUNTIME/WAVES.md",
@@ -1067,8 +1073,8 @@
       {
         "id": "VIVIM-UI-CAPABILITY-CONTRACT",
         "layer": "L2",
-        "title": "vivim-ui/docs/CAPABILITY-CONTRACT.md \u2014 TierFlow security capability model (read|surface.write|program.write|exec, TIERFLOW_CAPABILITIES boot config)",
-        "description": "gap-fill \u2014 docs/CAPABILITY-CONTRACT.md defines Capability = read | surface.write | program.write | exec, TIERFLOW_CAPABILITIES boot configuration (default all four for single-operator local use; explicit when non-loopback; aborts at boot without TIERFLOW_AUTH_TOKEN), enforcement at ProgramRegistry.write / Router / SurfaceStore.write / ConfigStore.write, and 13 test obligations across tests/security.test.ts, tests/router.test.ts and registry level. A documented security capability model with route enforcement, auth-token boot gating and explicit test obligations is defined in tierflow and outside proposal5/HVI content.",
+        "title": "vivim-ui/docs/CAPABILITY-CONTRACT.md — TierFlow security capability model (read|surface.write|program.write|exec, TIERFLOW_CAPABILITIES boot config)",
+        "description": "gap-fill — docs/CAPABILITY-CONTRACT.md defines Capability = read | surface.write | program.write | exec, TIERFLOW_CAPABILITIES boot configuration (default all four for single-operator local use; explicit when non-loopback; aborts at boot without TIERFLOW_AUTH_TOKEN), enforcement at ProgramRegistry.write / Router / SurfaceStore.write / ConfigStore.write, and 13 test obligations across tests/security.test.ts, tests/router.test.ts and registry level. A documented security capability model with route enforcement, auth-token boot gating and explicit test obligations is defined in tierflow and outside proposal5/HVI content.",
         "status": "candidate",
         "sources": [
           "vivim-ui/docs/CAPABILITY-CONTRACT.md",
@@ -1080,8 +1086,8 @@
       {
         "id": "VIVIM-UI-CORE-SPEC",
         "layer": "L2",
-        "title": "vivim-ui/docs/UI-CORE-SPEC.md \u2014 UI core command/draft/publish/store contract (SQLite WAL, HTTP/WebSocket)",
-        "description": "gap-fill \u2014 docs/UI-CORE-SPEC.md specifies world documents, draft/preview/publish/rollback CAS semantics, SQLite WAL durability (synchronous FULL, busy_timeout, user_version migrations, single-instance lock), UiCommandPort/UiRevisionFeed ports, HTTP routes and WebSocket frames, plus 14 acceptance criteria \u2014 including commands ui.world.create, ui.draft.create/edit/commit/discard, ui.publish, ui.rollback, ui.state.set. A documented UI core command/draft/publish/store contract with SQLite durability and an HTTP/WebSocket surface is defined in tierflow and outside proposal5/HVI scope.",
+        "title": "vivim-ui/docs/UI-CORE-SPEC.md — UI core command/draft/publish/store contract (SQLite WAL, HTTP/WebSocket)",
+        "description": "gap-fill — docs/UI-CORE-SPEC.md specifies world documents, draft/preview/publish/rollback CAS semantics, SQLite WAL durability (synchronous FULL, busy_timeout, user_version migrations, single-instance lock), UiCommandPort/UiRevisionFeed ports, HTTP routes and WebSocket frames, plus 14 acceptance criteria — including commands ui.world.create, ui.draft.create/edit/commit/discard, ui.publish, ui.rollback, ui.state.set. A documented UI core command/draft/publish/store contract with SQLite durability and an HTTP/WebSocket surface is defined in tierflow and outside proposal5/HVI scope.",
         "status": "candidate",
         "sources": [
           "vivim-ui/docs/UI-CORE-SPEC.md",
@@ -1093,8 +1099,8 @@
       {
         "id": "VIVIM-UI-CAPABILITY-GAP",
         "layer": "L2",
-        "title": "vivim-ui/docs/UI-CORE-SPEC.md \u00a73 vs src/security.ts:19 \u2014 ui.publish capability mismatch",
-        "description": "gap-fill \u2014 docs/UI-CORE-SPEC.md \u00a73 lists ui.publish as a core command and \u00a79 requires ui.publish for publish/rollback, but src/security.ts:19 defines type Capability = \"read\" | \"surface.write\" | \"program.write\" | \"exec\" with no ui.publish member, and CAPABILITY-CONTRACT.md:12 confirms the same four members; no GAP-REGISTER/proposal5 entry covers the mismatch. A core UI command is gated on a capability that does not exist in the capability type, so the security contract is unimplementable as written and carries no beta acceptance status.",
+        "title": "vivim-ui/docs/UI-CORE-SPEC.md §3 vs src/security.ts:19 — ui.publish capability mismatch",
+        "description": "gap-fill — docs/UI-CORE-SPEC.md §3 lists ui.publish as a core command and §9 requires ui.publish for publish/rollback, but src/security.ts:19 defines type Capability = \"read\" | \"surface.write\" | \"program.write\" | \"exec\" with no ui.publish member, and CAPABILITY-CONTRACT.md:12 confirms the same four members; no GAP-REGISTER/proposal5 entry covers the mismatch. A core UI command is gated on a capability that does not exist in the capability type, so the security contract is unimplementable as written and carries no beta acceptance status.",
         "status": "candidate",
         "sources": [
           "vivim-ui/docs/UI-CORE-SPEC.md",
@@ -1108,8 +1114,8 @@
       {
         "id": "VIVIM-UI-DUAL-EXECUTION",
         "layer": "L2",
-        "title": "vivim-ui/VIVIM-VISUAL-RUNTIME/DUAL-EXECUTION-PROTOCOL.md \u2014 two-operator delivery protocol (8-state lifecycle, fresh-head CAS)",
-        "description": "gap-fill \u2014 VIVIM-VISUAL-RUNTIME/DUAL-EXECUTION-PROTOCOL.md documents a two-operator delivery protocol (ChatGPT/GitHub remote vs MiniMax/local) with a work-class matrix, an eight-state session lifecycle (DISCOVERED \u2192 RESERVED \u2192 RUNNING \u2192 EVIDENCE_READY \u2192 INTEGRATOR_REVIEW \u2192 ACCEPTED/REWORK/BLOCKED \u2192 PUBLISHED \u2192 VERIFIED_HEAD), reservation/collision rules requiring fresh-head CAS publication, a TASK.md/RESULT.md/RAW/DIFF.md handoff packet, model-usage tiering and escalation rules; current track is MiniMax I2 composition versus ChatGPT W3\u2013W6 planning docs. No proposal5, Labs-intake, or HQ-index source covers this cross-operator protocol with evidence standards and GO/BLOCKED semantics.",
+        "title": "vivim-ui/VIVIM-VISUAL-RUNTIME/DUAL-EXECUTION-PROTOCOL.md — two-operator delivery protocol (8-state lifecycle, fresh-head CAS)",
+        "description": "gap-fill — VIVIM-VISUAL-RUNTIME/DUAL-EXECUTION-PROTOCOL.md documents a two-operator delivery protocol (ChatGPT/GitHub remote vs MiniMax/local) with a work-class matrix, an eight-state session lifecycle (DISCOVERED → RESERVED → RUNNING → EVIDENCE_READY → INTEGRATOR_REVIEW → ACCEPTED/REWORK/BLOCKED → PUBLISHED → VERIFIED_HEAD), reservation/collision rules requiring fresh-head CAS publication, a TASK.md/RESULT.md/RAW/DIFF.md handoff packet, model-usage tiering and escalation rules; current track is MiniMax I2 composition versus ChatGPT W3–W6 planning docs. No proposal5, Labs-intake, or HQ-index source covers this cross-operator protocol with evidence standards and GO/BLOCKED semantics.",
         "status": "candidate",
         "sources": [
           "vivim-ui/VIVIM-VISUAL-RUNTIME/DUAL-EXECUTION-PROTOCOL.md",
@@ -1121,8 +1127,8 @@
       {
         "id": "VIVIM-UI-SESSION-LEDGER",
         "layer": "L2",
-        "title": "vivim-ui/docs/SESSION-LEDGER.md \u2014 halted specialist-lane ledger (8 lanes, 7 carried defects incl P0 registry substring routing bug)",
-        "description": "gap-fill \u2014 docs/SESSION-LEDGER.md records a halted specialist-lane ledger (8 lanes with session IDs, write scopes web/**/src/**/tests/**/core/**/wasm/**/host/**, artifacts on disk and verified flags), interruption mechanics (task_cancel refusal, vibe_session_interrupt on 7 ids), verified state at halt (bun test 57/1, tsc 4 errors, cargo test 10 passed/1 ignored, bench 709,697 ev/s), the deliberately stale bench/baseline.json ratio 0.398, and 7 carried known defects including the P0 registry substring routing bug \u2014 distinct from the banked SESSIONS-NEXT-STEPS finding which covers next actions and evidence labels, not lane halt state. Lane/subagent halt state and the known-defect inventory are execution evidence outside proposal5/HVI coverage.",
+        "title": "vivim-ui/docs/SESSION-LEDGER.md — halted specialist-lane ledger (8 lanes, 7 carried defects incl P0 registry substring routing bug)",
+        "description": "gap-fill — docs/SESSION-LEDGER.md records a halted specialist-lane ledger (8 lanes with session IDs, write scopes web/**/src/**/tests/**/core/**/wasm/**/host/**, artifacts on disk and verified flags), interruption mechanics (task_cancel refusal, vibe_session_interrupt on 7 ids), verified state at halt (bun test 57/1, tsc 4 errors, cargo test 10 passed/1 ignored, bench 709,697 ev/s), the deliberately stale bench/baseline.json ratio 0.398, and 7 carried known defects including the P0 registry substring routing bug — distinct from the banked SESSIONS-NEXT-STEPS finding which covers next actions and evidence labels, not lane halt state. Lane/subagent halt state and the known-defect inventory are execution evidence outside proposal5/HVI coverage.",
         "status": "candidate",
         "sources": [
           "vivim-ui/docs/SESSION-LEDGER.md",
@@ -1134,8 +1140,8 @@
       {
         "id": "VIVIM-UI-FINAL-WAVE",
         "layer": "L2",
-        "title": "vivim-ui/VIVIM-VISUAL-RUNTIME/FINAL-WAVE/README.md \u2014 eight-lane final convergence wave (Gate 5/6 BLOCKED, 1046 pass, 6 gated patches)",
-        "description": "gap-fill \u2014 VIVIM-VISUAL-RUNTIME/FINAL-WAVE/README.md documents an eight-lane final convergence wave (lane ownership A\u2013H with exclusive domains, launch contract, Gate 5 programmable-UI and Gate 6 production-convergence acceptance matrices), an owner-authorized EXECUTE-NOW override, a published master-integration result (MASTER-INTEGRATION-RESULT.md: Gate 5 BLOCKED/Gate 6 BLOCKED, 23/23 commands exit 0, 1046 pass/0 fail, applied Wave 4B render_root repair at src/visual-runtime/device/wave4-phone-adapter.ts:227, seven unsatisfied World\u2194canonical-visual bridge requirements), six owner-gated cross-repo patches P1\u2013P7, duplicate-authority inventories (4 Harness effect-writing gateways; 3 repos-hq KB stores) and a fast-forward CAS publication procedure. The roadmap's TF-CONVERGENCE-PROGRAM cites WAVES.md/WAVE-3/MISSION-D and the docs contracts but not the FINAL-WAVE program, its Gate 5/6 matrices, its gated patches or its bridge requirements, so this release-oriented execution program is invisible to proposal5/HVI capture.",
+        "title": "vivim-ui/VIVIM-VISUAL-RUNTIME/FINAL-WAVE/README.md — eight-lane final convergence wave (Gate 5/6 BLOCKED, 1046 pass, 6 gated patches)",
+        "description": "gap-fill — VIVIM-VISUAL-RUNTIME/FINAL-WAVE/README.md documents an eight-lane final convergence wave (lane ownership A–H with exclusive domains, launch contract, Gate 5 programmable-UI and Gate 6 production-convergence acceptance matrices), an owner-authorized EXECUTE-NOW override, a published master-integration result (MASTER-INTEGRATION-RESULT.md: Gate 5 BLOCKED/Gate 6 BLOCKED, 23/23 commands exit 0, 1046 pass/0 fail, applied Wave 4B render_root repair at src/visual-runtime/device/wave4-phone-adapter.ts:227, seven unsatisfied World↔canonical-visual bridge requirements), six owner-gated cross-repo patches P1–P7, duplicate-authority inventories (4 Harness effect-writing gateways; 3 repos-hq KB stores) and a fast-forward CAS publication procedure. The roadmap's TF-CONVERGENCE-PROGRAM cites WAVES.md/WAVE-3/MISSION-D and the docs contracts but not the FINAL-WAVE program, its Gate 5/6 matrices, its gated patches or its bridge requirements, so this release-oriented execution program is invisible to proposal5/HVI capture.",
         "status": "candidate",
         "sources": [
           "vivim-ui/VIVIM-VISUAL-RUNTIME/FINAL-WAVE/README.md",
@@ -1148,8 +1154,8 @@
       {
         "id": "VIVIM-LOCAL-PNG",
         "layer": "L2",
-        "title": "vivim-local/ \u2014 two PNG images only, no text manifests",
-        "description": "gap-fill \u2014 vivim-local contributes only two PNG image files (VIVIM Platform Integration Map.png; c0ae541a-d468-4a1d-8f9a-dda77542a8e7.png) and no text-documented manifests, docs, or capability surfaces; no proposal5 source references vivim-local (repo-wide grep hits are only a coincidental CSS class name and a demo fixture agentId), and the PNG contents cannot be verified as text. A named product area in the sweep has no roadmap-covered textual surface, and its integration-map artifact cannot be confirmed as roadmap content or ruled out as undocumented.",
+        "title": "vivim-local/ — two PNG images only, no text manifests",
+        "description": "gap-fill — vivim-local contributes only two PNG image files (VIVIM Platform Integration Map.png; c0ae541a-d468-4a1d-8f9a-dda77542a8e7.png) and no text-documented manifests, docs, or capability surfaces; no proposal5 source references vivim-local (repo-wide grep hits are only a coincidental CSS class name and a demo fixture agentId), and the PNG contents cannot be verified as text. A named product area in the sweep has no roadmap-covered textual surface, and its integration-map artifact cannot be confirmed as roadmap content or ruled out as undocumented.",
         "status": "candidate",
         "sources": [
           "vivim-local/",
@@ -1161,8 +1167,8 @@
       {
         "id": "HQ-CATALOGUE-IDENTITY",
         "layer": "L2",
-        "title": "hq/catalogue-identity/README.md \u2014 HVI B identity crosswalk (C4 port, arbor.hvi.identity/1 projection, local tests UNRUN)",
-        "description": "gap-fill \u2014 hq/catalogue-identity/README.md documents the HVI B identity crosswalk (C4 port from pinned donor main 9b922ea0, arbor.hvi.identity/1 projection, crosswalk/labs-adapter/source-adapters/observer-export/cli modules, identity adapters under hq/version-intelligence/identity/, local tests UNRUN, provenance in .integration/proposal5/hq-version-intelligence/proofs/B/) and no roadmap item or source cites it (checked this session: grep for catalogue-identity in .integration/proposal5/foundations/GAP-REGISTER.v1.json and ARBOR/.hq/ returned no match). A documented ARBOR identity/lineage work area that proposal5/HVI sources do not surface, so G10 capability-truth and HVI closeout cannot account for it.",
+        "title": "hq/catalogue-identity/README.md — HVI B identity crosswalk (C4 port, arbor.hvi.identity/1 projection, local tests UNRUN)",
+        "description": "gap-fill — hq/catalogue-identity/README.md documents the HVI B identity crosswalk (C4 port from pinned donor main 9b922ea0, arbor.hvi.identity/1 projection, crosswalk/labs-adapter/source-adapters/observer-export/cli modules, identity adapters under hq/version-intelligence/identity/, local tests UNRUN, provenance in .integration/proposal5/hq-version-intelligence/proofs/B/) and no roadmap item or source cites it (checked this session: grep for catalogue-identity in .integration/proposal5/foundations/GAP-REGISTER.v1.json and ARBOR/.hq/ returned no match). A documented ARBOR identity/lineage work area that proposal5/HVI sources do not surface, so G10 capability-truth and HVI closeout cannot account for it.",
         "status": "candidate",
         "sources": [
           "hq/catalogue-identity/README.md",
@@ -1174,8 +1180,8 @@
       {
         "id": "HOST-RECOVERY",
         "layer": "L2",
-        "title": "apps/vivim-host/recovery/README.md \u2014 Lane D Autonomous Diagnosis & Self-Healing (29 passing isolated Node tests)",
-        "description": "gap-fill \u2014 apps/vivim-host/recovery/README.md documents Lane D Autonomous Diagnosis & Self-Healing (committed pure recovery decision engine, recovery read-model on hostSnapshot, R0\u2013R4 levels, 29 passing isolated Node tests, required next gates, full Host/device suites UNRUN) and no roadmap source cites it. A documented Host self-healing capability with explicit not-evidence limits falls outside W5-F6/GATE-W5F6, leaving the roadmap no acceptance posture for it.",
+        "title": "apps/vivim-host/recovery/README.md — Lane D Autonomous Diagnosis & Self-Healing (29 passing isolated Node tests)",
+        "description": "gap-fill — apps/vivim-host/recovery/README.md documents Lane D Autonomous Diagnosis & Self-Healing (committed pure recovery decision engine, recovery read-model on hostSnapshot, R0–R4 levels, 29 passing isolated Node tests, required next gates, full Host/device suites UNRUN) and no roadmap source cites it. A documented Host self-healing capability with explicit not-evidence limits falls outside W5-F6/GATE-W5F6, leaving the roadmap no acceptance posture for it.",
         "status": "candidate",
         "sources": [
           "apps/vivim-host/recovery/README.md",
@@ -1187,8 +1193,8 @@
       {
         "id": "CONTRACTS-HVI",
         "layer": "L2",
-        "title": "contracts/hq-version-intelligence/README.md \u2014 HVI normative v1 JSON Schema contracts (schemas/v1/, versioned adapters)",
-        "description": "gap-fill \u2014 contracts/hq-version-intelligence/README.md documents HVI normative v1 JSON Schema contracts (schemas/v1/, versioned adapters for vivim.catalogue-export/1 and hq.semantic-registry/1, read-only authority, fixtures-not-receipts rule) and no roadmap item cites contracts/hq-version-intelligence. Normative HVI contract surface inside ARBOR is invisible to the roadmap, so schema conformance and legacy-adapter work cannot be traced to HVI gates.",
+        "title": "contracts/hq-version-intelligence/README.md — HVI normative v1 JSON Schema contracts (schemas/v1/, versioned adapters)",
+        "description": "gap-fill — contracts/hq-version-intelligence/README.md documents HVI normative v1 JSON Schema contracts (schemas/v1/, versioned adapters for vivim.catalogue-export/1 and hq.semantic-registry/1, read-only authority, fixtures-not-receipts rule) and no roadmap item cites contracts/hq-version-intelligence. Normative HVI contract surface inside ARBOR is invisible to the roadmap, so schema conformance and legacy-adapter work cannot be traced to HVI gates.",
         "status": "candidate",
         "sources": [
           "contracts/hq-version-intelligence/README.md",
@@ -1200,8 +1206,8 @@
       {
         "id": "STUDIO-UI-PREVIEW",
         "layer": "L2",
-        "title": "studio/ui-preview/README.md \u2014 VIVIM UI preview pipeline (build.mjs/serve.mjs, DEMO DATA fixture, Vercel preview config)",
-        "description": "gap-fill \u2014 studio/ui-preview/README.md documents a VIVIM UI preview pipeline (build.mjs/serve.mjs, DEMO DATA fixture, read-only synthetic world, writes return 405, offline unit tests, Vercel preview config) and no roadmap item covers it. A documented studio surface with its own test and deploy contract sits outside proposal5 studio coverage (G07 provider E2E only) and adjacent surfaces.",
+        "title": "studio/ui-preview/README.md — VIVIM UI preview pipeline (build.mjs/serve.mjs, DEMO DATA fixture, Vercel preview config)",
+        "description": "gap-fill — studio/ui-preview/README.md documents a VIVIM UI preview pipeline (build.mjs/serve.mjs, DEMO DATA fixture, read-only synthetic world, writes return 405, offline unit tests, Vercel preview config) and no roadmap item covers it. A documented studio surface with its own test and deploy contract sits outside proposal5 studio coverage (G07 provider E2E only) and adjacent surfaces.",
         "status": "candidate",
         "sources": [
           "studio/ui-preview/README.md",
@@ -1213,8 +1219,8 @@
       {
         "id": "MOBILE-RELAY-VEC",
         "layer": "L2",
-        "title": "apps/mobile-relay/vec/README.md \u2014 VEC first pure compiler utility (compiler.mjs, ui-adapter.mjs, build-canvas fallback)",
-        "description": "gap-fill \u2014 apps/mobile-relay/vec/README.md documents a VEC first pure compiler utility (compiler.mjs, ui-adapter.mjs emitting vivim.ui-proposal/1, build-canvas fallback seam, owner-gated phone-surface.sendProposal activation, referenced vec tests) and no roadmap source cites it. A VEC runtime seam inside ARBOR lacks coverage under PILLAR-REPROGRAMMABLE/VEC items (which cite only .integration/proposal5/vlang/vec), so its activation path is untraceable to beta or VEC gates.",
+        "title": "apps/mobile-relay/vec/README.md — VEC first pure compiler utility (compiler.mjs, ui-adapter.mjs, build-canvas fallback)",
+        "description": "gap-fill — apps/mobile-relay/vec/README.md documents a VEC first pure compiler utility (compiler.mjs, ui-adapter.mjs emitting vivim.ui-proposal/1, build-canvas fallback seam, owner-gated phone-surface.sendProposal activation, referenced vec tests) and no roadmap source cites it. A VEC runtime seam inside ARBOR lacks coverage under PILLAR-REPROGRAMMABLE/VEC items (which cite only .integration/proposal5/vlang/vec), so its activation path is untraceable to beta or VEC gates.",
         "status": "candidate",
         "sources": [
           "apps/mobile-relay/vec/README.md",
@@ -1226,8 +1232,8 @@
       {
         "id": "WEB-HARNESS-ROADMAP",
         "layer": "L2",
-        "title": "vivim-web-harness/docs/ROADMAP.md + docs/roadmap.json \u2014 web-harness own roadmap authorities (gates A-D, W01-W09, 176-item task ledger)",
-        "description": "gap-fill \u2014 The web-harness's own roadmap authorities are uncited by roadmap.v1.json and any proposal5/HVI/Labs source: docs/ROADMAP.md is the canonical product roadmap (owner direction 2026-11-09) with gates A-D, W01-W09 source-to-consumer closure board, source-disposition register, CTX-01..18 requirement anchors and documentation-debt register (verified present, 37,624 bytes, 2026-11-10); docs/roadmap.json is a separate machine task/status ledger (schema 1, authoritative=true, 176 items D01-D.., updated 2026-11-09, activePhase SOURCE_CLEANUP_2026_11_09, runtimeExecution frozen; verified present, 119,373 bytes). The ARBOR beta roadmap tracks G00-G13 and foundation waves but has no view of the web-harness's own release gates and closure work; beta gate evidence (G00-G13 all UNRUN) and 176-item task status live in unconnected ledgers \u2014 ledger done is not acceptance \u2014 and the two roadmaps are unreconciled.",
+        "title": "vivim-web-harness/docs/ROADMAP.md + docs/roadmap.json — web-harness own roadmap authorities (gates A-D, W01-W09, 176-item task ledger)",
+        "description": "gap-fill — The web-harness's own roadmap authorities are uncited by roadmap.v1.json and any proposal5/HVI/Labs source: docs/ROADMAP.md is the canonical product roadmap (owner direction 2026-11-09) with gates A-D, W01-W09 source-to-consumer closure board, source-disposition register, CTX-01..18 requirement anchors and documentation-debt register (verified present, 37,624 bytes, 2026-11-10); docs/roadmap.json is a separate machine task/status ledger (schema 1, authoritative=true, 176 items D01-D.., updated 2026-11-09, activePhase SOURCE_CLEANUP_2026_11_09, runtimeExecution frozen; verified present, 119,373 bytes). The ARBOR beta roadmap tracks G00-G13 and foundation waves but has no view of the web-harness's own release gates and closure work; beta gate evidence (G00-G13 all UNRUN) and 176-item task status live in unconnected ledgers — ledger done is not acceptance — and the two roadmaps are unreconciled.",
         "status": "candidate",
         "sources": [
           "vivim-web-harness/docs/ROADMAP.md",
@@ -1240,8 +1246,8 @@
       {
         "id": "WEB-HARNESS-ATOMIC-REGISTRY",
         "layer": "L2",
-        "title": "vivim-web-harness/docs/capabilities/atomic-registry.json \u2014 354 atomic capabilities with dependency map",
-        "description": "gap-fill \u2014 Atomic capability registry (vivim.atomic-capabilities/1: 250 PRD + 104 cross-project = 354 items, pinned sourceCommit, per-item spec/acceptance/existingSourceCandidates/verifiedSymbols/draftIfMissing; 59-node dependency map at docs/roadmap/CAPABILITY-DEPENDENCY-MAP.v1.json) is outside roadmap sources. G10 requires source SHA/status/owner/target per selected component; this registry is the web-harness's machine capability input and is invisible to the roadmap.",
+        "title": "vivim-web-harness/docs/capabilities/atomic-registry.json — 354 atomic capabilities with dependency map",
+        "description": "gap-fill — Atomic capability registry (vivim.atomic-capabilities/1: 250 PRD + 104 cross-project = 354 items, pinned sourceCommit, per-item spec/acceptance/existingSourceCandidates/verifiedSymbols/draftIfMissing; 59-node dependency map at docs/roadmap/CAPABILITY-DEPENDENCY-MAP.v1.json) is outside roadmap sources. G10 requires source SHA/status/owner/target per selected component; this registry is the web-harness's machine capability input and is invisible to the roadmap.",
         "status": "candidate",
         "sources": [
           "vivim-web-harness/docs/capabilities/atomic-registry.json",
@@ -1254,8 +1260,8 @@
       {
         "id": "WEB-HARNESS-SOURCE-DISPOSITIONS",
         "layer": "L2",
-        "title": "vivim-web-harness/docs/capabilities/source-dispositions.v1.json \u2014 5,659 tracked files across six repos",
-        "description": "gap-fill \u2014 Source-disposition register (vivim.source-dispositions/1: all 5,659 tracked files across six repos, 2,194 executable + 3,465 non-source; dispositions incl. zero INTEGRATED_VERIFIED; stale 648-file symbol-index repair to 651 files with 94 ghost paths) is not referenced by the roadmap. W0 source truth and G00-G03 depend on an import/closure inventory; this register is that inventory for six repos and carries the action-catalogue P0 gap (pause-egress executor:null, readiness enforcement_missing).",
+        "title": "vivim-web-harness/docs/capabilities/source-dispositions.v1.json — 5,659 tracked files across six repos",
+        "description": "gap-fill — Source-disposition register (vivim.source-dispositions/1: all 5,659 tracked files across six repos, 2,194 executable + 3,465 non-source; dispositions incl. zero INTEGRATED_VERIFIED; stale 648-file symbol-index repair to 651 files with 94 ghost paths) is not referenced by the roadmap. W0 source truth and G00-G03 depend on an import/closure inventory; this register is that inventory for six repos and carries the action-catalogue P0 gap (pause-egress executor:null, readiness enforcement_missing).",
         "status": "candidate",
         "sources": [
           "vivim-web-harness/docs/capabilities/source-dispositions.v1.json",
@@ -1267,8 +1273,8 @@
       {
         "id": "WEB-HARNESS-USER-JOURNEY",
         "layer": "L2",
-        "title": "vivim-web-harness/docs/ux/USER-JOURNEY-ACTIVATION-GRAPH.v1.json \u2014 120 steps J001.. across phases A-C",
-        "description": "gap-fill \u2014 User-journey activation graph (vivim.user-journey-activation-graph/1: 120 steps J001-.. across phases A-C, wiring definitions E/P/H/I/V, static-trace-only evidence) is not referenced; beta journeys B01-B12 have no crosswalk to it. Journey coverage is unconnected across repos; B01-B12 acceptance cannot be mapped to the web-harness's 120 tracked steps.",
+        "title": "vivim-web-harness/docs/ux/USER-JOURNEY-ACTIVATION-GRAPH.v1.json — 120 steps J001.. across phases A-C",
+        "description": "gap-fill — User-journey activation graph (vivim.user-journey-activation-graph/1: 120 steps J001-.. across phases A-C, wiring definitions E/P/H/I/V, static-trace-only evidence) is not referenced; beta journeys B01-B12 have no crosswalk to it. Journey coverage is unconnected across repos; B01-B12 acceptance cannot be mapped to the web-harness's 120 tracked steps.",
         "status": "candidate",
         "sources": [
           "vivim-web-harness/docs/ux/USER-JOURNEY-ACTIVATION-GRAPH.v1.json",
@@ -1280,8 +1286,8 @@
       {
         "id": "WEB-HARNESS-ACTIVATION-GAPS",
         "layer": "L2",
-        "title": "vivim-web-harness/docs/ux/ACTIVATION-GAPS.v1.json \u2014 39 gaps G01-G39 (17 P0, 20 P1, 2 P2)",
-        "description": "gap-fill \u2014 Activation-gap register (vivim.activation-gaps/1: 39 gaps G01-G39, 17 P0/20 P1/2 P2, release_gate flags; G01 MSI runtime unaccepted, G02 signed-update continuity, G03 seamless startup, G04 provider-auth-not-proven, G05 multi-account incomplete) is outside roadmap coverage. These are concrete release-gate wiring gaps with owners and affected journey steps; the roadmap's gate list (G00-G13, W2F0, W5F6, PGZ) does not include them.",
+        "title": "vivim-web-harness/docs/ux/ACTIVATION-GAPS.v1.json — 39 gaps G01-G39 (17 P0, 20 P1, 2 P2)",
+        "description": "gap-fill — Activation-gap register (vivim.activation-gaps/1: 39 gaps G01-G39, 17 P0/20 P1/2 P2, release_gate flags; G01 MSI runtime unaccepted, G02 signed-update continuity, G03 seamless startup, G04 provider-auth-not-proven, G05 multi-account incomplete) is outside roadmap coverage. These are concrete release-gate wiring gaps with owners and affected journey steps; the roadmap's gate list (G00-G13, W2F0, W5F6, PGZ) does not include them.",
         "status": "candidate",
         "sources": [
           "vivim-web-harness/docs/ux/ACTIVATION-GAPS.v1.json",
@@ -1293,8 +1299,8 @@
       {
         "id": "WEB-HARNESS-POST-INTEGRATION-GAPS",
         "layer": "L2",
-        "title": "vivim-web-harness/docs/ux/POST-INTEGRATION-FIVE-FOCUS-GAPS-2026-11-01.v1.json \u2014 6 confirmed open, 5 acceptance-not-proven",
-        "description": "gap-fill \u2014 Post-integration five-focus gap reassessment (vivim.post-integration-five-focus-gap-reassessment/1: R01 reachable_ui_missing/G26, R02 parallel_write_authority/G06, R03 unified_world_identity/G15..; 6 confirmed open, 5 acceptance-not-proven, 0 live-accepted; 95/120 journey steps lack atomic candidates) is not covered. Recorded post-integration open work with severity and dependencies is absent from the roadmap, so its status cannot be tracked to closure.",
+        "title": "vivim-web-harness/docs/ux/POST-INTEGRATION-FIVE-FOCUS-GAPS-2026-11-01.v1.json — 6 confirmed open, 5 acceptance-not-proven",
+        "description": "gap-fill — Post-integration five-focus gap reassessment (vivim.post-integration-five-focus-gap-reassessment/1: R01 reachable_ui_missing/G26, R02 parallel_write_authority/G06, R03 unified_world_identity/G15..; 6 confirmed open, 5 acceptance-not-proven, 0 live-accepted; 95/120 journey steps lack atomic candidates) is not covered. Recorded post-integration open work with severity and dependencies is absent from the roadmap, so its status cannot be tracked to closure.",
         "status": "candidate",
         "sources": [
           "vivim-web-harness/docs/ux/POST-INTEGRATION-FIVE-FOCUS-GAPS-2026-11-01.v1.json",
@@ -1306,8 +1312,8 @@
       {
         "id": "WEB-HARNESS-CHAT-FIRST-MOBILE",
         "layer": "L2",
-        "title": "vivim-web-harness/docs/ux/CHAT-FIRST-MOBILE-CONVERGENCE-2026-11-08.md \u2014 mobile UI convergence spec (10-item physical-phone protocol NOT RUN)",
-        "description": "gap-fill \u2014 Mobile UI convergence spec (2026-11-08: six-tab bottom nav, Talk->VIVIM my PC default, /mobile/api/control/plan, control-receipt/1 required, unsent-draft Ask my AI instead handoffs, service-worker v2 43 static paths) with a 10-item physical-phone acceptance protocol marked NOT RUN is not in roadmap sources. G08/GATE-DEVICE require physical device acceptance; this spec defines a distinct mobile acceptance protocol with no claimed device evidence, and it is untracked.",
+        "title": "vivim-web-harness/docs/ux/CHAT-FIRST-MOBILE-CONVERGENCE-2026-11-08.md — mobile UI convergence spec (10-item physical-phone protocol NOT RUN)",
+        "description": "gap-fill — Mobile UI convergence spec (2026-11-08: six-tab bottom nav, Talk->VIVIM my PC default, /mobile/api/control/plan, control-receipt/1 required, unsent-draft Ask my AI instead handoffs, service-worker v2 43 static paths) with a 10-item physical-phone acceptance protocol marked NOT RUN is not in roadmap sources. G08/GATE-DEVICE require physical device acceptance; this spec defines a distinct mobile acceptance protocol with no claimed device evidence, and it is untracked.",
         "status": "candidate",
         "sources": [
           "vivim-web-harness/docs/ux/CHAT-FIRST-MOBILE-CONVERGENCE-2026-11-08.md",
@@ -1319,8 +1325,8 @@
       {
         "id": "WEB-HARNESS-AGENTS-MD",
         "layer": "L2",
-        "title": "vivim-web-harness/AGENTS.md \u2014 root agent instructions (9 effect boundaries, no provider APIs, send-once, TierFlow not second Host writer)",
-        "description": "gap-fill \u2014 Root agent instructions (source-owner authority for Host/Studio/Android/authorization/receipts/roadmap; nine effect boundaries incl. no provider APIs, no Playwright/Puppeteer, one Studio-owned Chrome CDP on loopback 9333, journal-before-effect, send-once, one writer per responsibility, TierFlow not a second Host writer, public-repo secrecy) are not cited by the roadmap. PILLAR-CAPABILITY-TRUTH states owner-authoritative effects doctrine generally, but the web-harness's binding effect-boundary rules and leak prohibitions are a documented surface the roadmap does not reference.",
+        "title": "vivim-web-harness/AGENTS.md — root agent instructions (9 effect boundaries, no provider APIs, send-once, TierFlow not second Host writer)",
+        "description": "gap-fill — Root agent instructions (source-owner authority for Host/Studio/Android/authorization/receipts/roadmap; nine effect boundaries incl. no provider APIs, no Playwright/Puppeteer, one Studio-owned Chrome CDP on loopback 9333, journal-before-effect, send-once, one writer per responsibility, TierFlow not a second Host writer, public-repo secrecy) are not cited by the roadmap. PILLAR-CAPABILITY-TRUTH states owner-authoritative effects doctrine generally, but the web-harness's binding effect-boundary rules and leak prohibitions are a documented surface the roadmap does not reference.",
         "status": "candidate",
         "sources": [
           "vivim-web-harness/AGENTS.md",
@@ -1332,8 +1338,8 @@
       {
         "id": "WEB-HARNESS-BASELINING-RUNBOOK",
         "layer": "L2",
-        "title": "vivim-web-harness/docs/BASELINING-RUNBOOK.md \u2014 independent full-product baseline runbook (evidence labels SOURCE_VERIFIED/TEST_VERIFIED/LIVE_VERIFIED/BLOCKED/NOT_TESTED)",
-        "description": "gap-fill \u2014 Independent full-product baseline runbook (2026-11-02): check:* static commands, runtime test partitions (Host API/ledger, Studio/browser, harness CLI/providers, phone pairing/acks, PWA/offline, APK, Tauri), KB+HQ dry-run install without migration, TierFlow separate promotion track, evidence labels SOURCE_VERIFIED/TEST_VERIFIED/LIVE_VERIFIED/BLOCKED/NOT_TESTED with report schema is not referenced by the roadmap. The roadmap's test-gate/run-receipt evidence covers ARBOR only; the web-harness's own evidence/acceptance practice and partition labels are a separate, uncatalogued baseline.",
+        "title": "vivim-web-harness/docs/BASELINING-RUNBOOK.md — independent full-product baseline runbook (evidence labels SOURCE_VERIFIED/TEST_VERIFIED/LIVE_VERIFIED/BLOCKED/NOT_TESTED)",
+        "description": "gap-fill — Independent full-product baseline runbook (2026-11-02): check:* static commands, runtime test partitions (Host API/ledger, Studio/browser, harness CLI/providers, phone pairing/acks, PWA/offline, APK, Tauri), KB+HQ dry-run install without migration, TierFlow separate promotion track, evidence labels SOURCE_VERIFIED/TEST_VERIFIED/LIVE_VERIFIED/BLOCKED/NOT_TESTED with report schema is not referenced by the roadmap. The roadmap's test-gate/run-receipt evidence covers ARBOR only; the web-harness's own evidence/acceptance practice and partition labels are a separate, uncatalogued baseline.",
         "status": "candidate",
         "sources": [
           "vivim-web-harness/docs/BASELINING-RUNBOOK.md",
@@ -1345,8 +1351,8 @@
       {
         "id": "WEB-HARNESS-KNOWLEDGE",
         "layer": "L2",
-        "title": "vivim-web-harness/docs/knowledge/ \u2014 KB design registries (44 types, 30 sources, 33 jobs)",
-        "description": "gap-fill \u2014 KB design registries (44 types, 30 sources, 33 jobs: kb-types.v1.json, kb-sources.v1.json, kb-jobs.v1.json, kb-schema-registry.v1.json) plus operations/intake/telemetry/catalog docs are documented in web-harness but not cited by roadmap.v1.json. Roadmap shared-kernel coverage is repos_hq's SHARED-KB-KERNEL-ARCHITECTURE; the web-harness's own checked-in KB design registries are a separate documented area unknown to the roadmap.",
+        "title": "vivim-web-harness/docs/knowledge/ — KB design registries (44 types, 30 sources, 33 jobs)",
+        "description": "gap-fill — KB design registries (44 types, 30 sources, 33 jobs: kb-types.v1.json, kb-sources.v1.json, kb-jobs.v1.json, kb-schema-registry.v1.json) plus operations/intake/telemetry/catalog docs are documented in web-harness but not cited by roadmap.v1.json. Roadmap shared-kernel coverage is repos_hq's SHARED-KB-KERNEL-ARCHITECTURE; the web-harness's own checked-in KB design registries are a separate documented area unknown to the roadmap.",
         "status": "candidate",
         "sources": [
           "vivim-web-harness/docs/knowledge/",
@@ -1358,8 +1364,8 @@
       {
         "id": "WEB-HARNESS-DATA-INTELLIGENCE",
         "layer": "L2",
-        "title": "vivim-web-harness/docs/data-intelligence/ \u2014 data-intelligence surface (ingress-registry, field-crosswalk, wiring-manifest)",
-        "description": "gap-fill \u2014 Data-intelligence surface (ingress-registry.v1.json AI01-SEN01, field-crosswalk.v1.json, schemas/, wiring-manifest.v1.json; PDV-01-PDV-06 per atomic-registry README:21; Host count projection and journal adapter source-supported, full asset indexing/utility not runtime accepted) is not covered. HOST-DATA-INTELLIGENCE covers only apps/vivim-host/data-intelligence/catalog.mjs; the web-harness's registry/crosswalk/wiring documents are a distinct data-intelligence area absent from proposal5 (no FA-G entry).",
+        "title": "vivim-web-harness/docs/data-intelligence/ — data-intelligence surface (ingress-registry, field-crosswalk, wiring-manifest)",
+        "description": "gap-fill — Data-intelligence surface (ingress-registry.v1.json AI01-SEN01, field-crosswalk.v1.json, schemas/, wiring-manifest.v1.json; PDV-01-PDV-06 per atomic-registry README:21; Host count projection and journal adapter source-supported, full asset indexing/utility not runtime accepted) is not covered. HOST-DATA-INTELLIGENCE covers only apps/vivim-host/data-intelligence/catalog.mjs; the web-harness's registry/crosswalk/wiring documents are a distinct data-intelligence area absent from proposal5 (no FA-G entry).",
         "status": "candidate",
         "sources": [
           "vivim-web-harness/docs/data-intelligence/",
@@ -1371,8 +1377,8 @@
       {
         "id": "WEB-HARNESS-STUDIO",
         "layer": "L2",
-        "title": "vivim-web-harness/studio/README.md \u2014 Studio README product vision + capability status table (chatgpt UNVERIFIED)",
-        "description": "gap-fill \u2014 Studio README product vision plus What exists today capability status table (browser capture implemented in source; local centralization foundation; saved conversations present; native content partially integrated; webapp interaction selective; full first-run journey not validated; multi-account/auto-sync not advertised) referencing TECHNICAL-README/LIVE-TEST/PORTABILITY/LOCAL-FIRST/V1-INTEGRATED-APP-BLUEPRINT/FIRST-USER-ONBOARDING-DECISIONS/ARCHITECTURE is not cited by the roadmap. STUDIO-SUPPORT-SURFACES covers ARBOR's studio capture pipeline only; the web-harness's own studio product surface and its documented capability claims are untracked.",
+        "title": "vivim-web-harness/studio/README.md — Studio README product vision + capability status table (chatgpt UNVERIFIED)",
+        "description": "gap-fill — Studio README product vision plus What exists today capability status table (browser capture implemented in source; local centralization foundation; saved conversations present; native content partially integrated; webapp interaction selective; full first-run journey not validated; multi-account/auto-sync not advertised) referencing TECHNICAL-README/LIVE-TEST/PORTABILITY/LOCAL-FIRST/V1-INTEGRATED-APP-BLUEPRINT/FIRST-USER-ONBOARDING-DECISIONS/ARCHITECTURE is not cited by the roadmap. STUDIO-SUPPORT-SURFACES covers ARBOR's studio capture pipeline only; the web-harness's own studio product surface and its documented capability claims are untracked.",
         "status": "candidate",
         "sources": [
           "vivim-web-harness/studio/README.md",
@@ -1384,8 +1390,8 @@
       {
         "id": "PROPOSAL4-SIGIL",
         "layer": "L2",
-        "title": "proposal4-one/02-SIGIL-TYPE-SYSTEM.md \u2014 SIGIL one-type law + CI codegen-drift gate (absent from proposal5)",
-        "description": "gap-fill \u2014 A single schema language (SIGIL) compiling to Rust, TypeScript, SQL, JSON Schema, fixtures and docs, with a CI codegen-drift gate, mechanical compatibility checks, nominal identity and refinements \u2014 defined in proposal 4/ONE (proposal4-one/02-SIGIL-TYPE-SYSTEM.md:\u00a72\u2013\u00a75, proposal4-one/07-PRD-SUBSTRATE.md:SUB-10..SUB-16) \u2014 is not surfaced in proposal 5, which pins only versioned contracts and generated Rust\u2194TS interop (proposal5/01-FAST-LANDING-SCAFFOLD.md:contracts/schema, contracts/generated) and treats capability-schema validation as an open gap rather than a one-type law (proposal5/foundations/GAP-REGISTER.v1.json:FA-G13). The one-type law and drift gate are what keep Rust/TS/SQL/JSON-shape drift from becoming a recurring roadmap failure (proposal4-one/12-REPOSITORY-AND-DX.md:\u00a76, proposal4-one/16-COMPARISON-PROPOSAL1.md:2.2); proposal 5 has no equivalent gate.",
+        "title": "proposal4-one/02-SIGIL-TYPE-SYSTEM.md — SIGIL one-type law + CI codegen-drift gate (absent from proposal5)",
+        "description": "gap-fill — A single schema language (SIGIL) compiling to Rust, TypeScript, SQL, JSON Schema, fixtures and docs, with a CI codegen-drift gate, mechanical compatibility checks, nominal identity and refinements — defined in proposal 4/ONE (proposal4-one/02-SIGIL-TYPE-SYSTEM.md:§2–§5, proposal4-one/07-PRD-SUBSTRATE.md:SUB-10..SUB-16) — is not surfaced in proposal 5, which pins only versioned contracts and generated Rust↔TS interop (proposal5/01-FAST-LANDING-SCAFFOLD.md:contracts/schema, contracts/generated) and treats capability-schema validation as an open gap rather than a one-type law (proposal5/foundations/GAP-REGISTER.v1.json:FA-G13). The one-type law and drift gate are what keep Rust/TS/SQL/JSON-shape drift from becoming a recurring roadmap failure (proposal4-one/12-REPOSITORY-AND-DX.md:§6, proposal4-one/16-COMPARISON-PROPOSAL1.md:2.2); proposal 5 has no equivalent gate.",
         "status": "candidate",
         "sources": [
           ".integration/proposal4-one/02-SIGIL-TYPE-SYSTEM.md",
@@ -1402,8 +1408,8 @@
       {
         "id": "PROPOSAL4-KERNEL-SPEC",
         "layer": "L2",
-        "title": "proposal4-one/03-KERNEL-SPEC.md \u2014 kernel specification K1-K13 invariants + 8ms/50ms/800ms targets (absent from proposal5)",
-        "description": "gap-fill \u2014 The kernel specification \u2014 memoization keyed on (nodeHash, inputs, configRev, grantRev, packageSet, spaceViewHash), invalidation by key change, pure-node isolation from clock/RNG/env/filesystem/network, truncated partial results, cycle rejection, typed failure values, the intent\u2192claim\u2192execute\u2192receipt lifecycle, idempotency keys, leases with uncertain outcomes never auto-retried, compensation, projections as pure functions of the ledger prefix, fsync discipline, the crash-safety matrix, K1\u2013K13 invariants and the 8 ms/50 ms/800 ms targets \u2014 defined in proposal 4/ONE (proposal4-one/01-SYSTEM-BLUEPRINT.md:\u00a75, proposal4-one/03-KERNEL-SPEC.md:\u00a71\u2013\u00a79, proposal4-one/07-PRD-SUBSTRATE.md:SUB-20..SUB-64) \u2014 is not surfaced in proposal 5, which only bounds Node 0 computation and repeats no-uncertain-retry (proposal5/04-NODE0-SECURITY-AND-INTERACTION.md:#9, #13) and defers the full reactor (proposal5/07-DEFERRED-OPTIMIZATIONS-AND-DECISIONS.md:debt table). These invariants make one evaluator for views and effects falsifiable; without them the roadmap has no acceptance criterion for evaluation or admission correctness (proposal4-one/14-ACCEPTANCE-AND-EVIDENCE.md:K-invariants, O1\u2013O5).",
+        "title": "proposal4-one/03-KERNEL-SPEC.md — kernel specification K1-K13 invariants + 8ms/50ms/800ms targets (absent from proposal5)",
+        "description": "gap-fill — The kernel specification — memoization keyed on (nodeHash, inputs, configRev, grantRev, packageSet, spaceViewHash), invalidation by key change, pure-node isolation from clock/RNG/env/filesystem/network, truncated partial results, cycle rejection, typed failure values, the intent→claim→execute→receipt lifecycle, idempotency keys, leases with uncertain outcomes never auto-retried, compensation, projections as pure functions of the ledger prefix, fsync discipline, the crash-safety matrix, K1–K13 invariants and the 8 ms/50 ms/800 ms targets — defined in proposal 4/ONE (proposal4-one/01-SYSTEM-BLUEPRINT.md:§5, proposal4-one/03-KERNEL-SPEC.md:§1–§9, proposal4-one/07-PRD-SUBSTRATE.md:SUB-20..SUB-64) — is not surfaced in proposal 5, which only bounds Node 0 computation and repeats no-uncertain-retry (proposal5/04-NODE0-SECURITY-AND-INTERACTION.md:#9, #13) and defers the full reactor (proposal5/07-DEFERRED-OPTIMIZATIONS-AND-DECISIONS.md:debt table). These invariants make one evaluator for views and effects falsifiable; without them the roadmap has no acceptance criterion for evaluation or admission correctness (proposal4-one/14-ACCEPTANCE-AND-EVIDENCE.md:K-invariants, O1–O5).",
         "status": "candidate",
         "sources": [
           ".integration/proposal4-one/01-SYSTEM-BLUEPRINT.md",
@@ -1420,8 +1426,8 @@
       {
         "id": "PROPOSAL1-COMPATIBILITY-NEGOTIATION",
         "layer": "L2",
-        "title": "proposal1/04-RUNTIME-DATAFLOWS-AND-GATES.md \u00a7C \u2014 version/compatibility contract + negotiation + degraded mode (absent from proposal5)",
-        "description": "gap-fill \u2014 The version/compatibility contract and negotiation behavior \u2014 pinned native host/Rust build ID, Tauri/WebView2 plus Windows package ID, contract major/minor, UI bundle and PWA service-worker revision, browser-worker protocol and provider-adapter revision, World data schema and effect-journal compatibility, graph engine generation and index schema revision, mobile pairing protocol and grant policy, migration plan ID with rollback eligibility; negotiation rejecting unknown action/effect status, stale capability, downgraded policy, revoked source or incompatible risk enum, and degrading to safe read-only text when the PC source is unavailable \u2014 defined in proposal 1 (proposal1/04-RUNTIME-DATAFLOWS-AND-GATES.md:\u00a7C) \u2014 is not surfaced in proposal 5, which pins only Rust/Host/PWA/HQ/TierFlow/Studio versions in a release manifest (proposal5/01-FAST-LANDING-SCAFFOLD.md:integration/release-manifest.json) and notes source unavailability is visible (proposal5/04-NODE0-SECURITY-AND-INTERACTION.md:#6). Cutover and update safety depend on negotiated compatibility and a defined degraded mode, not version pins alone; the roadmap does not state what a mismatched release must do.",
+        "title": "proposal1/04-RUNTIME-DATAFLOWS-AND-GATES.md §C — version/compatibility contract + negotiation + degraded mode (absent from proposal5)",
+        "description": "gap-fill — The version/compatibility contract and negotiation behavior — pinned native host/Rust build ID, Tauri/WebView2 plus Windows package ID, contract major/minor, UI bundle and PWA service-worker revision, browser-worker protocol and provider-adapter revision, World data schema and effect-journal compatibility, graph engine generation and index schema revision, mobile pairing protocol and grant policy, migration plan ID with rollback eligibility; negotiation rejecting unknown action/effect status, stale capability, downgraded policy, revoked source or incompatible risk enum, and degrading to safe read-only text when the PC source is unavailable — defined in proposal 1 (proposal1/04-RUNTIME-DATAFLOWS-AND-GATES.md:§C) — is not surfaced in proposal 5, which pins only Rust/Host/PWA/HQ/TierFlow/Studio versions in a release manifest (proposal5/01-FAST-LANDING-SCAFFOLD.md:integration/release-manifest.json) and notes source unavailability is visible (proposal5/04-NODE0-SECURITY-AND-INTERACTION.md:#6). Cutover and update safety depend on negotiated compatibility and a defined degraded mode, not version pins alone; the roadmap does not state what a mismatched release must do.",
         "status": "candidate",
         "sources": [
           ".integration/proposal1/04-RUNTIME-DATAFLOWS-AND-GATES.md",
@@ -1435,8 +1441,8 @@
       {
         "id": "PROPOSAL1-RELEASE-MANIFEST",
         "layer": "L2",
-        "title": "proposal1/02-MIGRATION-MAP.md:75-76 \u2014 CI product release manifest with SBOM, signature, migration, recovery proof (absent from proposal5)",
-        "description": "gap-fill \u2014 Proposal 1 T08 requires CI to own one product release manifest covering package, SBOM, signature, migration and recovery proof, but proposal 5's release-manifest.json (proposal5/01-FAST-LANDING-SCAFFOLD.md:111) pins only Rust/Host/PWA/HQ/TierFlow/Studio versions and surfaces no SBOM, signature, or migration/recovery proof requirement. Without SBOM/signature/recovery proof in the release contract, the beta has no acceptance criterion for supply-chain integrity or proven cutover recovery.",
+        "title": "proposal1/02-MIGRATION-MAP.md:75-76 — CI product release manifest with SBOM, signature, migration, recovery proof (absent from proposal5)",
+        "description": "gap-fill — Proposal 1 T08 requires CI to own one product release manifest covering package, SBOM, signature, migration and recovery proof, but proposal 5's release-manifest.json (proposal5/01-FAST-LANDING-SCAFFOLD.md:111) pins only Rust/Host/PWA/HQ/TierFlow/Studio versions and surfaces no SBOM, signature, or migration/recovery proof requirement. Without SBOM/signature/recovery proof in the release contract, the beta has no acceptance criterion for supply-chain integrity or proven cutover recovery.",
         "status": "candidate",
         "sources": [
           ".integration/proposal1/02-MIGRATION-MAP.md:75-76",
@@ -1449,8 +1455,8 @@
       {
         "id": "PROPOSAL1-MIGRATION-SCOPE",
         "layer": "L2",
-        "title": "proposal1/05-REVIEW-QUESTIONS.md:45,59 \u2014 migration scope + owner consent for legacy personal data (absent from proposal5)",
-        "description": "gap-fill \u2014 Proposal 1 Q8 and its data-portability rubric row require the migration to cover old personal memory, DCBs, provider sessions, Studio captures, grants, receipts, indexes and user-generated artifacts with owner consent plus schema-migration/rollback/lineage/provenance evidence, but proposal 5's migration map/W0 surfaces no legacy data-class scope and no owner-consent gate for importing legacy personal data (G11 covers backup/restore integrity only). Without a ratified migration scope and owner-consent gate, legacy personal data could be imported silently at cutover, with no roadmap restraint on private-data intake.",
+        "title": "proposal1/05-REVIEW-QUESTIONS.md:45,59 — migration scope + owner consent for legacy personal data (absent from proposal5)",
+        "description": "gap-fill — Proposal 1 Q8 and its data-portability rubric row require the migration to cover old personal memory, DCBs, provider sessions, Studio captures, grants, receipts, indexes and user-generated artifacts with owner consent plus schema-migration/rollback/lineage/provenance evidence, but proposal 5's migration map/W0 surfaces no legacy data-class scope and no owner-consent gate for importing legacy personal data (G11 covers backup/restore integrity only). Without a ratified migration scope and owner-consent gate, legacy personal data could be imported silently at cutover, with no roadmap restraint on private-data intake.",
         "status": "candidate",
         "sources": [
           ".integration/proposal1/05-REVIEW-QUESTIONS.md:45,59",
@@ -1463,8 +1469,8 @@
       {
         "id": "PROPOSAL4-ACCEPTANCE-EXAMPLES",
         "layer": "L2",
-        "title": "proposal4/02-ONE-SYSTEM-TRUTH.md:184-195 \u2014 nine critical acceptance examples (absent from proposal5 B01-B12/G00-G13)",
-        "description": "gap-fill \u2014 Proposal 4 \u00a79 defines nine critical acceptance examples \u2014 e.g. a widget edit cannot change an authoritative task status or grant, a negated provider send appears as facets with nothing sent, and a revoked source while offline marks cache stale/purged and never authorizes \u2014 but proposal 5's B01\u2013B12 journeys and G00\u2013G13 gates surface none of these acceptance examples. Without concrete falsifiable acceptance examples, beta acceptance rests on unrun gates with no specified interaction-level pass conditions.",
+        "title": "proposal4/02-ONE-SYSTEM-TRUTH.md:184-195 — nine critical acceptance examples (absent from proposal5 B01-B12/G00-G13)",
+        "description": "gap-fill — Proposal 4 §9 defines nine critical acceptance examples — e.g. a widget edit cannot change an authoritative task status or grant, a negated provider send appears as facets with nothing sent, and a revoked source while offline marks cache stale/purged and never authorizes — but proposal 5's B01–B12 journeys and G00–G13 gates surface none of these acceptance examples. Without concrete falsifiable acceptance examples, beta acceptance rests on unrun gates with no specified interaction-level pass conditions.",
         "status": "candidate",
         "sources": [
           ".integration/proposal4/02-ONE-SYSTEM-TRUTH.md:184-195",
@@ -1474,27 +1480,589 @@
         ],
         "dependsOn": [],
         "priority": "high"
+      },
+      {
+        "id": "A00",
+        "layer": "L2",
+        "title": "Truth and queue repair",
+        "description": "Repair the two WIKI-BASELINE verifier assumptions, classify Batch-1 evidence separately from execution, reconcile conflicting beta/release ledgers without falsely changing observed gates, and align the single roadmap owner.",
+        "status": "queued",
+        "sources": [
+          "docs/product/roadmap/ACCELERATION-R002.md",
+          "scripts/batch-evidence/WIKI-BASELINE.mjs",
+          "docs/product/roadmap/",
+          "integration/beta-gates.json",
+          ".integration/proposal5/08-BETA-GATES.json",
+          "integration/release-manifest.json"
+        ],
+        "dependsOn": [],
+        "priority": 1,
+        "accelerationScore": 89,
+        "scoreInputs": {
+          "downstreamUnlocks": 5,
+          "crossSystemReuse": 4,
+          "feedbackSpeed": 5,
+          "reasoningCostReduction": 3,
+          "implementationSimplicity": 5
+        },
+        "lane": "B",
+        "writeScope": [
+          "scripts/batch-evidence/WIKI-BASELINE.mjs",
+          "docs/product/roadmap/",
+          "integration/beta-gates.json",
+          ".integration/proposal5/08-BETA-GATES.json",
+          "integration/release-manifest.json"
+        ],
+        "acceptance": [
+          "The live Wiki verifier inspects client-rendered content via an actual browser/DOM check or validates source/API separately, never static HTML for asynchronous records.",
+          "The journal check parses the /api/journal JSON array rather than treating it as JSONL; all previously failed checks have new executed receipts.",
+          "Execution, source presence, independent verification, and owner acceptance are distinct fields; release claims reflect actual evidence.",
+          "No fabricated green gate or unauthorized modification of historical receipts."
+        ],
+        "verification": "UNRUN",
+        "ownerAcceptance": "PENDING",
+        "execution": "NOT_STARTED",
+        "releaseClaim": false
+      },
+      {
+        "id": "A01",
+        "layer": "L2",
+        "title": "One-command live Host and acceptance runner",
+        "description": "Run the existing production Host plus chat, Wiki and relevant context in one reproducible local invocation; collect exact command, environment, exit codes, failures and receipts without synthetic pass claims.",
+        "status": "queued",
+        "sources": [
+          "docs/product/roadmap/ACCELERATION-R002.md",
+          "scripts/",
+          "apps/vivim-host/test/",
+          "scripts/test-manifest.json"
+        ],
+        "dependsOn": [],
+        "priority": 2,
+        "accelerationScore": 95,
+        "scoreInputs": {
+          "downstreamUnlocks": 5,
+          "crossSystemReuse": 5,
+          "feedbackSpeed": 5,
+          "reasoningCostReduction": 4,
+          "implementationSimplicity": 4
+        },
+        "lane": "C",
+        "writeScope": [
+          "scripts/",
+          "apps/vivim-host/test/",
+          "scripts/test-manifest.json"
+        ],
+        "acceptance": [
+          "One command starts an isolated Host and verifies /chat /wiki /demo and product API surfaces against a temporary data root.",
+          "Runner captures Node/Bun/OS versions, command exit codes, stdout/stderr and commit SHA; unknown checks are UNRUN.",
+          "No provider login, private data, phone grant or real external effect is needed for the baseline check."
+        ],
+        "verification": "UNRUN",
+        "ownerAcceptance": "PENDING",
+        "execution": "NOT_STARTED",
+        "releaseClaim": false
+      },
+      {
+        "id": "A02",
+        "layer": "L2",
+        "title": "Canonical stateful chat-to-Wiki projection",
+        "description": "Use the existing Host-controlled journal and revision authority for chat, Wiki edits and both displays; separate source-of-truth from derived display caches, persist revisions, require authorized mutations.",
+        "status": "queued",
+        "sources": [
+          "docs/product/roadmap/ACCELERATION-R002.md",
+          "apps/vivim-host/",
+          "apps/mobile-relay/"
+        ],
+        "dependsOn": [],
+        "priority": 3,
+        "accelerationScore": 96,
+        "scoreInputs": {
+          "downstreamUnlocks": 5,
+          "crossSystemReuse": 5,
+          "feedbackSpeed": 5,
+          "reasoningCostReduction": 5,
+          "implementationSimplicity": 3
+        },
+        "lane": "A",
+        "writeScope": [
+          "apps/vivim-host/",
+          "apps/mobile-relay/"
+        ],
+        "acceptance": [
+          "Identical typed chat input from human and approved machine paths yields a durable entry and visible state projection.",
+          "Approved Wiki edit is reflected in both surfaces after refresh and Host restart; stale-revision and revoked-session actions fail closed.",
+          "There is exactly one authoritative mutation/receipt writer; demo remains a projection, not a second interpreter."
+        ],
+        "verification": "UNRUN",
+        "ownerAcceptance": "PENDING",
+        "execution": "NOT_STARTED",
+        "releaseClaim": false
+      },
+      {
+        "id": "A03",
+        "layer": "L2",
+        "title": "Demo feedback-to-work-order compiler",
+        "description": "Compile failed evidence, user visual feedback and demo verdicts into a source-pinned, acceptance-linked, minimum-scope work order in the existing product roadmap.",
+        "status": "queued",
+        "sources": [
+          "docs/product/roadmap/ACCELERATION-R002.md",
+          "docs/product/roadmap/",
+          "apps/vivim-host/public/demo/",
+          "scripts/"
+        ],
+        "dependsOn": [
+          "A00"
+        ],
+        "priority": 4,
+        "accelerationScore": 96,
+        "scoreInputs": {
+          "downstreamUnlocks": 5,
+          "crossSystemReuse": 5,
+          "feedbackSpeed": 5,
+          "reasoningCostReduction": 5,
+          "implementationSimplicity": 3
+        },
+        "lane": "B",
+        "writeScope": [
+          "docs/product/roadmap/",
+          "apps/vivim-host/public/demo/",
+          "scripts/"
+        ],
+        "acceptance": [
+          "A deliberately failed demo check produces one reproducible work order with owner, source paths, dependencies and test command.",
+          "Duplicate reports reconcile to one existing task; unresolved ambiguity produces a bounded question instead of an invented solution.",
+          "Demo cannot directly perform Host effects or unilaterally alter the owner-approved roadmap."
+        ],
+        "verification": "UNRUN",
+        "ownerAcceptance": "PENDING",
+        "execution": "NOT_STARTED",
+        "releaseClaim": false
+      },
+      {
+        "id": "A04",
+        "layer": "L2",
+        "title": "Narrow realtime NL to VLang/VEC visual compiler",
+        "description": "Compile three bounded natural language intents through the existing NLCL and VLang/VEC surfaces into typed, guarded visual updates to the second-screen Wiki; no new interpreter or graph store.",
+        "status": "queued",
+        "sources": [
+          "docs/product/roadmap/ACCELERATION-R002.md",
+          "apps/vivim-host/control/",
+          "apps/vivim-host/public/pages/",
+          "native/",
+          "vivim-ui/"
+        ],
+        "dependsOn": [
+          "A02"
+        ],
+        "priority": 5,
+        "accelerationScore": 91,
+        "scoreInputs": {
+          "downstreamUnlocks": 5,
+          "crossSystemReuse": 5,
+          "feedbackSpeed": 5,
+          "reasoningCostReduction": 4,
+          "implementationSimplicity": 2
+        },
+        "lane": "A",
+        "writeScope": [
+          "apps/vivim-host/control/",
+          "apps/vivim-host/public/pages/",
+          "native/",
+          "vivim-ui/"
+        ],
+        "acceptance": [
+          "Intent 1 'open the wiki' navigates instead of demanding missing Wiki section parameters.",
+          "Intent 2 displays a source-backed ARBOR progress projection with source identity/revision and updates on a changed revision.",
+          "Intent 3 previews an edit and refuses stale or unapproved publish; no parallel visual publisher is introduced."
+        ],
+        "verification": "UNRUN",
+        "ownerAcceptance": "PENDING",
+        "execution": "NOT_STARTED",
+        "releaseClaim": false
+      },
+      {
+        "id": "A05",
+        "layer": "L2",
+        "title": "Authorized build, verify, demonstrate and requeue",
+        "description": "Connect the existing keeper/demo execution contracts to a cycle that selects a ready work order, executes only allowed scoped work, independently verifies, shows product proof and proposes the next batch.",
+        "status": "queued",
+        "sources": [
+          "docs/product/roadmap/ACCELERATION-R002.md",
+          ".coordination/",
+          "docs/product/roadmap/",
+          "scripts/"
+        ],
+        "dependsOn": [
+          "A01",
+          "A02",
+          "A03"
+        ],
+        "priority": 6,
+        "accelerationScore": 94,
+        "scoreInputs": {
+          "downstreamUnlocks": 5,
+          "crossSystemReuse": 5,
+          "feedbackSpeed": 5,
+          "reasoningCostReduction": 5,
+          "implementationSimplicity": 2
+        },
+        "lane": "B",
+        "writeScope": [
+          ".coordination/",
+          "docs/product/roadmap/",
+          "scripts/"
+        ],
+        "acceptance": [
+          "One actual scoped repair travels from demo failure to committed diff, independent test receipts, rewalk and queue update.",
+          "An unrun or failed verifier cannot mark acceptance; original evidence is immutable and retained.",
+          "Owner batch approvals and Host effect permissions stay enforced; unattended actions remain limited to preauthorized boundaries."
+        ],
+        "verification": "UNRUN",
+        "ownerAcceptance": "PENDING",
+        "execution": "NOT_STARTED",
+        "releaseClaim": false
+      },
+      {
+        "id": "A06",
+        "layer": "L2",
+        "title": "Incremental RDCB context with reuse receipts",
+        "description": "Reuse native HQKG/Rust and existing deterministic RDCB generator to cache source/revision-scoped context and invalidate only changed dependencies; attach the selected context to work orders.",
+        "status": "queued",
+        "sources": [
+          "docs/product/roadmap/ACCELERATION-R002.md",
+          "apps/vivim-host/control/",
+          "native/hqkg/",
+          "scripts/"
+        ],
+        "dependsOn": [
+          "A01",
+          "A02"
+        ],
+        "priority": 7,
+        "accelerationScore": 90,
+        "scoreInputs": {
+          "downstreamUnlocks": 4,
+          "crossSystemReuse": 5,
+          "feedbackSpeed": 5,
+          "reasoningCostReduction": 5,
+          "implementationSimplicity": 3
+        },
+        "lane": "C",
+        "writeScope": [
+          "apps/vivim-host/control/",
+          "native/hqkg/",
+          "scripts/"
+        ],
+        "acceptance": [
+          "Two unchanged runs reuse the same verified bundle digest and report the reused bytes/tokens estimate separately from measured provider costs.",
+          "A changed source revision invalidates affected bundles only; false cross-user or unauthorized context reuse is rejected.",
+          "Bundle output remains data/contract-only until VLang execution has independent accepted proof."
+        ],
+        "verification": "UNRUN",
+        "ownerAcceptance": "PENDING",
+        "execution": "NOT_STARTED",
+        "releaseClaim": false
+      },
+      {
+        "id": "A07",
+        "layer": "L2",
+        "title": "Evidence-driven parallel worker execution",
+        "description": "Execute independent, nonoverlapping tasks using the existing orchestration and single-writer contracts; detect path conflicts, fresh-head drift and missing receipts before integration.",
+        "status": "queued",
+        "sources": [
+          "docs/product/roadmap/ACCELERATION-R002.md",
+          ".coordination/",
+          "scripts/",
+          "docs/product/roadmap/"
+        ],
+        "dependsOn": [
+          "A05",
+          "A06"
+        ],
+        "priority": 8,
+        "accelerationScore": 81,
+        "scoreInputs": {
+          "downstreamUnlocks": 4,
+          "crossSystemReuse": 5,
+          "feedbackSpeed": 4,
+          "reasoningCostReduction": 4,
+          "implementationSimplicity": 2
+        },
+        "lane": "C",
+        "writeScope": [
+          ".coordination/",
+          "scripts/",
+          "docs/product/roadmap/"
+        ],
+        "acceptance": [
+          "Two non-conflicting work orders progress concurrently and converge through reviewed source-pinned commits.",
+          "Overlapping writer scopes block or serialize without silent clobbering; stale expected SHA refuses publish.",
+          "Every resulting claim links executed test receipts and exact commit SHA; no simulated worker success."
+        ],
+        "verification": "UNRUN",
+        "ownerAcceptance": "PENDING",
+        "execution": "NOT_STARTED",
+        "releaseClaim": false
+      },
+      {
+        "id": "A08",
+        "layer": "L2",
+        "title": "Physical Windows Host and paired PWA acceptance",
+        "description": "Validate the proven loop on Windows Host and a real HTTPS paired Android PWA; exercise revocation, offline/reconnect and revision consistency, while treating MSI/APK packaging as separate work.",
+        "status": "queued",
+        "sources": [
+          "docs/product/roadmap/ACCELERATION-R002.md",
+          "apps/vivim-host/",
+          "apps/mobile-relay/",
+          "docs/product/roadmap/"
+        ],
+        "dependsOn": [
+          "A02",
+          "A04"
+        ],
+        "priority": 9,
+        "accelerationScore": 67,
+        "scoreInputs": {
+          "downstreamUnlocks": 3,
+          "crossSystemReuse": 4,
+          "feedbackSpeed": 4,
+          "reasoningCostReduction": 3,
+          "implementationSimplicity": 2
+        },
+        "lane": "A",
+        "writeScope": [
+          "apps/vivim-host/",
+          "apps/mobile-relay/",
+          "docs/product/roadmap/"
+        ],
+        "acceptance": [
+          "Actual Windows Host and real Android browser/HTTPS tests record devices, versions, exit outcomes and screenshots/receipts as available.",
+          "Paired session revocation immediately removes private context and write ability; stale permissions cannot publish.",
+          "No claim of device acceptance from desktop fixtures; APK remains deferred and Windows install an independent stream."
+        ],
+        "verification": "UNRUN",
+        "ownerAcceptance": "PENDING",
+        "execution": "NOT_STARTED",
+        "releaseClaim": false
       }
     ]
   },
   "buildQueue": [
     {
-      "itemId": "CHAT-BOX-BASELINE",
+      "itemId": "A00",
       "order": 1,
-      "status": "executed",
-      "note": "Page 1 \u2014 pure chat box, human+AI same endpoints, machine-readable state primary. Proposal: docs/product/proposals/chat-wiki-baseline/chat.html.draft. Owner interactive GO 2026-11-14 (batch 1)."
+      "status": "queued",
+      "lane": "B",
+      "dependsOn": [],
+      "priority": 1,
+      "accelerationScore": 89,
+      "verification": "UNRUN",
+      "ownerAcceptance": "PENDING",
+      "note": "Truth and queue repair — Repair the two WIKI-BASELINE verifier assumptions, classify Batch-1 evidence separately from execution, reconcile conflicting beta/release ledgers without falsely changing observed gates, and align the single roadmap owner."
     },
     {
-      "itemId": "WIKI-BASELINE",
+      "itemId": "A01",
       "order": 2,
-      "status": "executed",
-      "note": "Page 2 \u2014 realtime wiki rendered live from roadmap.v1.json + journal (wiki-as-roadmap-view data spine). Proposal: docs/product/proposals/chat-wiki-baseline/wiki.html.draft + state.mjs.draft. Owner interactive GO 2026-11-14 (batch 1)."
+      "status": "queued",
+      "lane": "C",
+      "dependsOn": [],
+      "priority": 2,
+      "accelerationScore": 95,
+      "verification": "UNRUN",
+      "ownerAcceptance": "PENDING",
+      "note": "One-command live Host and acceptance runner — Run the existing production Host plus chat, Wiki and relevant context in one reproducible local invocation; collect exact command, environment, exit codes, failures and receipts without synthetic pass claims."
     },
     {
-      "itemId": "RDCB-BASELINE",
+      "itemId": "A02",
       "order": 3,
-      "status": "executed",
-      "note": "RDCB \u2014 Reprogramming Dynamic Context Bundles: highly structured source-code + vlang native context bundles built on the fly during reprogramming work; linked to auto wiki as special section; vlang reprogramming commands/scripts/workflows generated as vlang improves. Owner directive 2026-11-14, top priority. dependsOn WIKI-BASELINE (bundles reference Stage A file-surface records)."
+      "status": "queued",
+      "lane": "A",
+      "dependsOn": [],
+      "priority": 3,
+      "accelerationScore": 96,
+      "verification": "UNRUN",
+      "ownerAcceptance": "PENDING",
+      "note": "Canonical stateful chat-to-Wiki projection — Use the existing Host-controlled journal and revision authority for chat, Wiki edits and both displays; separate source-of-truth from derived display caches, persist revisions, require authorized mutations."
+    },
+    {
+      "itemId": "A03",
+      "order": 4,
+      "status": "queued",
+      "lane": "B",
+      "dependsOn": [
+        "A00"
+      ],
+      "priority": 4,
+      "accelerationScore": 96,
+      "verification": "UNRUN",
+      "ownerAcceptance": "PENDING",
+      "note": "Demo feedback-to-work-order compiler — Compile failed evidence, user visual feedback and demo verdicts into a source-pinned, acceptance-linked, minimum-scope work order in the existing product roadmap."
+    },
+    {
+      "itemId": "A04",
+      "order": 5,
+      "status": "queued",
+      "lane": "A",
+      "dependsOn": [
+        "A02"
+      ],
+      "priority": 5,
+      "accelerationScore": 91,
+      "verification": "UNRUN",
+      "ownerAcceptance": "PENDING",
+      "note": "Narrow realtime NL to VLang/VEC visual compiler — Compile three bounded natural language intents through the existing NLCL and VLang/VEC surfaces into typed, guarded visual updates to the second-screen Wiki; no new interpreter or graph store."
+    },
+    {
+      "itemId": "A05",
+      "order": 6,
+      "status": "queued",
+      "lane": "B",
+      "dependsOn": [
+        "A01",
+        "A02",
+        "A03"
+      ],
+      "priority": 6,
+      "accelerationScore": 94,
+      "verification": "UNRUN",
+      "ownerAcceptance": "PENDING",
+      "note": "Authorized build, verify, demonstrate and requeue — Connect the existing keeper/demo execution contracts to a cycle that selects a ready work order, executes only allowed scoped work, independently verifies, shows product proof and proposes the next batch."
+    },
+    {
+      "itemId": "A06",
+      "order": 7,
+      "status": "queued",
+      "lane": "C",
+      "dependsOn": [
+        "A01",
+        "A02"
+      ],
+      "priority": 7,
+      "accelerationScore": 90,
+      "verification": "UNRUN",
+      "ownerAcceptance": "PENDING",
+      "note": "Incremental RDCB context with reuse receipts — Reuse native HQKG/Rust and existing deterministic RDCB generator to cache source/revision-scoped context and invalidate only changed dependencies; attach the selected context to work orders."
+    },
+    {
+      "itemId": "A07",
+      "order": 8,
+      "status": "queued",
+      "lane": "C",
+      "dependsOn": [
+        "A05",
+        "A06"
+      ],
+      "priority": 8,
+      "accelerationScore": 81,
+      "verification": "UNRUN",
+      "ownerAcceptance": "PENDING",
+      "note": "Evidence-driven parallel worker execution — Execute independent, nonoverlapping tasks using the existing orchestration and single-writer contracts; detect path conflicts, fresh-head drift and missing receipts before integration."
+    },
+    {
+      "itemId": "A08",
+      "order": 9,
+      "status": "queued",
+      "lane": "A",
+      "dependsOn": [
+        "A02",
+        "A04"
+      ],
+      "priority": 9,
+      "accelerationScore": 67,
+      "verification": "UNRUN",
+      "ownerAcceptance": "PENDING",
+      "note": "Physical Windows Host and paired PWA acceptance — Validate the proven loop on Windows Host and a real HTTPS paired Android PWA; exercise revocation, offline/reconnect and revision consistency, while treating MSI/APK packaging as separate work."
     }
-  ]
+  ],
+  "archivedBuildBatches": [
+    {
+      "batchId": "BATCH-1",
+      "recordedStatus": "executed",
+      "acceptanceStatus": "OPEN_FINDINGS",
+      "items": [
+        {
+          "itemId": "CHAT-BOX-BASELINE",
+          "order": 1,
+          "status": "executed",
+          "note": "Page 1 — pure chat box, human+AI same endpoints, machine-readable state primary. Proposal: docs/product/proposals/chat-wiki-baseline/chat.html.draft. Owner interactive GO 2026-11-14 (batch 1).",
+          "acceptance": "BASELINE_NARROW_11_OF_11",
+          "independentKeeperReverification": "UNRUN"
+        },
+        {
+          "itemId": "WIKI-BASELINE",
+          "order": 2,
+          "status": "executed",
+          "note": "Page 2 — realtime wiki rendered live from roadmap.v1.json + journal (wiki-as-roadmap-view data spine). Proposal: docs/product/proposals/chat-wiki-baseline/wiki.html.draft + state.mjs.draft. Owner interactive GO 2026-11-14 (batch 1).",
+          "acceptance": "FAILED_2_OF_10",
+          "independentKeeperReverification": "UNRUN"
+        },
+        {
+          "itemId": "RDCB-BASELINE",
+          "order": 3,
+          "status": "executed",
+          "note": "RDCB — Reprogramming Dynamic Context Bundles: highly structured source-code + vlang native context bundles built on the fly during reprogramming work; linked to auto wiki as special section; vlang reprogramming commands/scripts/workflows generated as vlang improves. Owner directive 2026-11-14, top priority. dependsOn WIKI-BASELINE (bundles reference Stage A file-surface records).",
+          "acceptance": "GENERATOR_ONLY_12_OF_12",
+          "independentKeeperReverification": "UNRUN"
+        }
+      ],
+      "sourceEvidence": [
+        ".coordination/pdr/evidence/CHAT-BOX-BASELINE.verify.oracle-executed.json",
+        ".coordination/pdr/evidence/WIKI-BASELINE.verify.oracle-executed.json",
+        ".coordination/pdr/evidence/RDCB-BASELINE.verify.oracle-executed.json"
+      ],
+      "note": "Historical execution bookkeeping preserved; not a product acceptance or release gate. Wiki 8/10, chat 11/11 narrow, RDCB 12/12 generator only."
+    }
+  ],
+  "acceleration": {
+    "revision": "R002",
+    "decisionDate": "2026-11-14",
+    "mode": "ACCELERATION_BATCH_A",
+    "activeBatch": "ACCEL-A",
+    "principle": "A work order counts as an accelerator only after it measurably accelerates a subsequent real verified task. Maximize useful closed loops, not commits or scaffold volume.",
+    "roadmapOwner": "arbor-roadmap keeper (sole canonical roadmap writer after owner-approved batch decision)",
+    "ownerGate": "Per-batch owner gate; deterministic read/verify/recommend steps may run without a separate per-item owner prompt. Host effects still require their existing approvals.",
+    "workstreams": [
+      "L0-DEMO",
+      "L0-BUILD",
+      "L0-WININSTALL"
+    ],
+    "scoring": {
+      "weights": {
+        "downstreamUnlocks": 30,
+        "crossSystemReuse": 25,
+        "feedbackSpeed": 20,
+        "reasoningCostReduction": 15,
+        "implementationSimplicity": 10
+      },
+      "scale": "Each factor scored from 0 to 5; weighted sum normalized to 0-100; estimates not observed outcomes.",
+      "selection": "Ready tasks first (all hard dependencies independently accepted), then lowest order for active batch; score breaks ties. Do not invert dependency or authority.",
+      "metrics": [
+        "verifiedDemoCycles",
+        "feedbackToVerifiedChangeSeconds",
+        "manualClarificationRate",
+        "reusedContextFraction",
+        "verifiedChangesPerComputeSpend",
+        "falseGreenAcceptances"
+      ]
+    },
+    "lanes": {
+      "A": "Product state and realtime visual execution: A02 -> A04 -> A08",
+      "B": "Roadmap truth and feedback automation: A00 -> A03 -> A05",
+      "C": "Execution infrastructure and context: A01 -> A06 -> A07"
+    },
+    "invariants": [
+      "ONE_HOST_EFFECT_AUTHORITY",
+      "ONE_ROADMAP_KEEPER_WRITER",
+      "NO_PROVIDER_APIS",
+      "NO_DUPLICATE_GRAPH_OR_PUBLISHER",
+      "SOURCE_PINNED_WORK",
+      "NO_UNRUN_AS_PASS",
+      "APPROVALS_RECEIPTS_RECOVERY",
+      "FRESH_HEAD_CAS",
+      "WINDOWS_INSTALL_NOT_BETA_GATE",
+      "APK_DEFERRED"
+    ],
+    "nextMilestone": "Three real intents, persistent two-screen state, and executed demo-to-work-order verification. No synthetic acceptance claims.",
+    "evidencePolicy": "State status/execution/verification/ownerAcceptance separately. A queued item is not ready to execute real effects; successful tests alone are not owner acceptance."
+  }
 }
