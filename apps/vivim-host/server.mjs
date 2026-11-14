@@ -389,6 +389,13 @@ export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path
           if (payload.kind !== 'chat-send' && payload.kind !== 'wiki-edit' && payload.kind !== 'gate-decision') {
             res.writeHead(400); res.end('Unknown mutate kind'); return;
           }
+          // Canonical product writes require a typed actor + version. These
+          // workbench writes journal intent; they never execute Host effects.
+          if ((payload.kind === 'chat-send' || payload.kind === 'wiki-edit') &&
+              (payload.schemaVersion !== 1 ||
+               !['human', 'ai', 'owner-browser', 'loop-agent'].includes(payload.actor))) {
+            res.writeHead(400); res.end('Invalid product mutation envelope'); return;
+          }
           entry = { ...payload, receivedAt: new Date().toISOString() };
           // D1 binding (adopted ruling): chat-send reaches the SAME Host control runtime the
           // authenticated /api/host/control/interpret route calls — controlFor().interpret(),
