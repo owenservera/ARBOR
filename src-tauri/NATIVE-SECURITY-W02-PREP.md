@@ -88,3 +88,13 @@ Run native origin rejection, fake-port, forged-health, wrong-child, restart/repl
 **Blocking G prerequisites:** (1) integrate Wave 1A and other worker branches under serial G gate, (2) publish exact `integrate/proposal5-beta-r001` HEAD and workspace/lock ownership, (3) schedule B authenticated Host handshake implementation, (4) select PWA-first package/optional APK policy, (5) provide runnable Windows MSVC/Cargo environment and security test harness.
 
 **Execution trigger:** only after G incorporation, create `work/p5-w02-a-native` from G exact HEAD. Implement B1–B4 in native-owned files, coordinate B's Host implementation, and report actual tests. Never merge or rebase onto concurrent work from this preparatory branch.
+
+## Build resource decision
+
+**Date:** 2026-11-13
+
+**Decision:** Removed missing `bundle.resources` mapping `"resources/runtime/": "runtime/"` from `src-tauri/tauri.conf.json` (no real runtime artifact exists under `src-tauri/resources/runtime/`). Bundled only real existing resource: `"resources/vivim-release.manifest.json": "vivim-release.manifest.json"`. Honest: runtime is **not** bundled; `src-tauri/src/main.rs` continues to fall back to repo-relative `node`/server when bundled runtime is absent.
+
+**Commands (repo root, `CARGO_TARGET_DIR=$env:TEMP\arbor-cargo-target-check`):**
+- `cargo check --workspace` — exit 0
+- `cargo test --workspace --no-run` — exit 0

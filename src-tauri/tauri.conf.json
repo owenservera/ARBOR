@@ -28,7 +28,7 @@
       "icons/icon.ico"
     ],
     "resources": {
-      "resources/runtime/": "runtime/"
+      "resources/vivim-release.manifest.json": "vivim-release.manifest.json"
     }
   }
 }
