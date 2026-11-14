@@ -28,7 +28,7 @@ Safety, privacy, explicit approvals, source pinning, independent test receipts a
 | A07 | C | 81 | Parallel worker convergence | A05,A06 | Two nonoverlapping tasks converge; same-path/stale-head writes are refused |
 | A08 | A | 67 | Windows Host and physical paired PWA proof | A02,A04 | Physical HTTPS pairing, revocation, restart, revision-consistency evidence |
 
-These nine are queued with `execution=NOT_STARTED`, `verification=UNRUN`, `ownerAcceptance=PENDING` in the machine file. Every record supplies write scopes, acceptance checks, source references, dependency IDs and an estimated score breakdown. Dependencies are satisfied by independently accepted results, never merely the words "implemented", "executed" or "source-wired".
+A00–A02 are now `in-progress` with `execution=SOURCE_LANDED_TESTS_UNRUN`; A03–A08 remain `queued`. All nine retain `verification=UNRUN` and `ownerAcceptance=PENDING` until actual independent results. Every record supplies write scopes, acceptance checks, source references, dependency IDs and an estimated score breakdown. Dependencies are satisfied by independently accepted results, never merely the words "implemented", "executed" or "source-wired".
 
 ### Three lanes start in parallel
 
@@ -69,3 +69,16 @@ This CLI validates and selects; it does **not** create agents, change the roadma
 Do not promote Provider Hub branches into main, launch the 100-agent UI engine fleet, rerun unapproved donor comparisons, merge HVI draft source without its synthetic Node24/security receipts, claim live provider integration, or package an APK. Keep these programs in the inventory and activate only on verified dependency/use-case need.
 
 **Milestone 1:** PC chat changes an accurate, durable source-backed second-screen Wiki through the existing Host authority. **Milestone 2:** ARBOR finds a defect in that experience, creates the smallest repair, executes within approvals, independently verifies, and demonstrates the correction. This is the first truly compounding ARBOR flywheel.
+
+## 8. Execution checkpoint (2026-11-14)
+
+Source changes for A00 (evidence verifier, release-conflict projection, corrected canonical Host tests), A01 (one-command isolated Host test runner), and A02 (persistent data-root journal, chat/Wiki projection, revision guard, external CSP-compliant JS/CSS) have landed on `main`. Source parse and isolated V8 logic checks were performed; **actual Node24/Windows/Android/browser tests are UNRUN** here. The next action is to run and inspect:
+
+```
+node scripts/roadmap/acceleration-queue.mjs --check
+node scripts/roadmap/evidence-truth.mjs --check
+node --test apps/vivim-host/test/product-journal.test.mjs apps/vivim-host/test/product-routes.test.mjs apps/vivim-host/test/chat-box-baseline.test.mjs
+node --test scripts/roadmap/acceleration-queue.test.mjs scripts/roadmap/evidence-truth.test.mjs scripts/acceleration/live-host-check.test.mjs
+```
+
+The isolated Host runner additionally invokes the repaired Wiki evidence runner with an explicit ephemeral base URL. It cannot be aimed at a live user's Host without the isolated-run flag. This checkpoint is **not** independent acceptance of A00–A02 and does not unlock dependent work.
