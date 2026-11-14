@@ -1,0 +1,46 @@
+:root { color-scheme: dark; }
+  body { margin: 0; background: var(--bg-primary, #0d0f12); color: var(--text-primary, #e8eaed);
+         font-family: var(--font-body, system-ui, sans-serif); height: 100vh; display: flex; flex-direction: column; }
+  header { padding: 12px 16px; border-bottom: 1px solid var(--border-subtle, #23262b); display: flex; gap: 12px; align-items: baseline; }
+  header h1 { font-size: 15px; margin: 0; font-weight: 600; }
+  header a { color: var(--accent, #7aa2f7); font-size: 12px; text-decoration: none; }
+  header .rev { font-size: 11px; opacity: .6; margin-left: auto; }
+  main { flex: 1; overflow-y: auto; padding: 20px 28px; max-width: 900px; margin: 0 auto; width: 100%; box-sizing: border-box; }
+  .block { margin-bottom: 26px; }
+  .block > h2 { font-size: 18px; margin: 0 0 12px; border-bottom: 1px solid var(--border-subtle, #23262b); padding-bottom: 6px; }
+  .page { margin-bottom: 22px; border: 1px solid var(--border-subtle, #23262b); border-radius: 10px; padding: 14px 16px; background: var(--bg-secondary, #14161a); }
+  .page > h2 { font-size: 16px; margin: 0 0 10px; border-bottom: none; padding-bottom: 0; }
+  .section { margin-bottom: 12px; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-subtle, #23262b); background: var(--bg-tertiary, #0f1115); cursor: pointer; }
+  .section:hover { border-color: var(--accent, #7aa2f7); }
+  .section h3 { font-size: 13px; margin: 0 0 6px; text-transform: uppercase; letter-spacing: .06em; opacity: .75; }
+  .section .body { font-size: 14px; line-height: 1.6; white-space: pre-wrap; }
+  .section .meta { font-size: 11px; opacity: .6; margin-top: 6px; font-family: var(--font-mono, monospace); }
+  .empty { opacity: .5; font-size: 13px; }
+  .record { margin-bottom: 10px; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border-subtle, #23262b); background: var(--bg-secondary, #14161a); }
+  .record .path { font-family: var(--font-mono, monospace); font-size: 12px; opacity: .8; margin-bottom: 4px; word-break: break-all; }
+  .record .surface { font-size: 13px; margin-bottom: 4px; }
+  .record .tags { font-size: 11px; opacity: .7; font-family: var(--font-mono, monospace); }
+  .tag { display: inline-block; margin: 1px 6px 1px 0; padding: 1px 6px; border-radius: 10px; border: 1px solid var(--border-subtle, #23262b); font-size: 10px; font-family: var(--font-mono, monospace); }
+  .roadmap table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .roadmap th { text-align: left; font-size: 11px; text-transform: uppercase; opacity: .7; padding: 6px 8px; border-bottom: 1px solid var(--border-subtle, #23262b); }
+  .roadmap td { padding: 6px 8px; border-bottom: 1px solid var(--border-subtle, #23262b); vertical-align: top; }
+  .roadmap .id { font-family: var(--font-mono, monospace); width: 140px; }
+  .status { font-size: 10px; padding: 1px 6px; border-radius: 6px; border: 1px solid var(--border-subtle, #23262b); font-family: var(--font-mono, monospace); }
+  .status.queued { background: #1a2a3a; color: #93c5fd; }
+  .status.active { background: #14301c; color: #7ee2a8; }
+  .status.todo { background: #2a2a1a; color: #fde047; }
+  .status.in-progress { background: #3a2a1a; color: #fb923c; }
+  .status.candidate { background: #14301c; color: #7ee2a8; }
+  .status.implemented { background: #1a2d4a; color: #93c5fd; }
+  .journal table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .journal th { text-align: left; font-size: 10px; text-transform: uppercase; opacity: .7; padding: 5px 8px; border-bottom: 1px solid var(--border-subtle, #23262b); }
+  .journal td { padding: 5px 8px; border-bottom: 1px solid var(--border-subtle, #23262b); vertical-align: top; }
+  .journal .when { font-family: var(--font-mono, monospace); width: 170px; opacity: .8; }
+  form.edit { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; border: 1px solid var(--border-subtle, #23262b); padding: 12px 16px; border-radius: 10px; background: var(--bg-secondary, #14161a); }
+  form.edit h3 { margin: 0 0 6px; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; opacity: .75; }
+  form.edit textarea { flex: 1; min-height: 120px; background: var(--bg-secondary, #14161a); border: 1px solid var(--border-subtle, #23262b); color: inherit; border-radius: 8px; padding: 8px 10px; font-size: 13px; font-family: inherit; }
+  form.edit .actions { display: flex; gap: 8px; }
+  form.edit button { background: var(--accent, #7aa2f7); border: 0; border-radius: 8px; padding: 8px 14px; font-size: 13px; cursor: pointer; }
+  form.edit button.ghost { background: transparent; border: 1px solid var(--border-subtle, #23262b); color: inherit; }
+  form.edit button:disabled { opacity: .5; cursor: not-allowed; }
+  #edit-status { font-size: 12px; margin-top: 6px; min-height: 18px; }
