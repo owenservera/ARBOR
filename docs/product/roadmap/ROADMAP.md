@@ -1,10 +1,10 @@
 # ARBOR Product Roadmap
 
-*Schema `arbor.product-roadmap/1` — generated 2026-11-14. Machine truth for synthesis stage.*
+*Schema `arbor.product-roadmap/1` — synthesized inventory 2026-11-14; active acceleration queue R002. Machine truth is `roadmap.v1.json`.*
 
 ## Executive summary
 
-The roadmap documents ARBOR across three workstreams: Build, Demo, and Windows Install. Top priority goes to loop-accelerating components. Build queue pending owner prioritization.
+The roadmap documents ARBOR across three workstreams: Build, Demo, and Windows Install. **R002 priority:** verified, compounding demo→build→verify→requeue acceleration. Nine new queued work orders A00–A08 have explicit dependencies and acceptance requirements; owner authorization of actual effects remains separate.
 
 ## Product pillars (L0)
 
@@ -34,11 +34,11 @@ Sources: OWNER EMPHASIS (ask, 2026-11-14) ; .integration/proposal5/08-BETA-GATES
 
 ## Programs (L1)
 
-### L1-DEMO-LOOP — Demo↔build self-driving loop — candidate program, no compiled package
+### L1-DEMO-LOOP — Demo↔build self-driving loop — active acceleration program, implementation pending
 
-Status: **candidate**
+Status: **active**
 
-Candidate L1 from owner emphasis + gap sweep (not from the four compilers). Loop-accelerating components found untracked by proposal5/HVI sources: harness/CONTRACT.md (byte-identical ARBOR/vivim-web-harness, sha1 b47fb0be4afc637242955373e409652dcb5776a5: lane ownership A/B/C :10-28, receipt-before-effect journal :52-54, approval-gated sendOnce :55-61, single Chrome profile loopback 9333, Lane B six provider profiles chatgpt/claude/deepseek/qwen/zai/gemini, Lane C wh CLI + wh serve + wh-mcp, seven safety acceptance tests :72-74 — no roadmap gate cites it, adjacent to G04/G07); vivim-ui PLAN.md (three-tier agentic runtime, Intent→Plan→JobSpec→RunMeta→BusEvent, lanes L0-L9, gates G0-G9, verified 57 pass/1 fail of 58, Rust bench 709,697 ev/s vs TS 246,336 ev/s = 2.9×, Gate 0 PASS 2026-11-02); VIVIM-VISUAL-RUNTIME/FINAL-WAVE/README.md (Gate 5 BLOCKED/Gate 6 BLOCKED, 23/23 commands exit 0, 1046 pass/0 fail, Wave 4B repair src/visual-runtime/device/wave4-phone-adapter.ts:227); VIVIM-VISUAL-RUNTIME/DUAL-EXECUTION-PROTOCOL.md (eight-state session lifecycle, fresh-head CAS publication); docs/SESSION-LEDGER.md (8-lane halt state, 7 carried defects incl P0 registry substring routing bug). Status candidate — queue pending owner prioritization.
+Activated R002 from owner emphasis + gap sweep (not from the four compilers). Loop-accelerating components found untracked by proposal5/HVI sources: harness/CONTRACT.md (byte-identical ARBOR/vivim-web-harness, sha1 b47fb0be4afc637242955373e409652dcb5776a5: lane ownership A/B/C :10-28, receipt-before-effect journal :52-54, approval-gated sendOnce :55-61, single Chrome profile loopback 9333, Lane B six provider profiles chatgpt/claude/deepseek/qwen/zai/gemini, Lane C wh CLI + wh serve + wh-mcp, seven safety acceptance tests :72-74 — no roadmap gate cites it, adjacent to G04/G07); vivim-ui PLAN.md (three-tier agentic runtime, Intent→Plan→JobSpec→RunMeta→BusEvent, lanes L0-L9, gates G0-G9, verified 57 pass/1 fail of 58, Rust bench 709,697 ev/s vs TS 246,336 ev/s = 2.9×, Gate 0 PASS 2026-11-02); VIVIM-VISUAL-RUNTIME/FINAL-WAVE/README.md (Gate 5 BLOCKED/Gate 6 BLOCKED, 23/23 commands exit 0, 1046 pass/0 fail, Wave 4B repair src/visual-runtime/device/wave4-phone-adapter.ts:227); VIVIM-VISUAL-RUNTIME/DUAL-EXECUTION-PROTOCOL.md (eight-state session lifecycle, fresh-head CAS publication); docs/SESSION-LEDGER.md (8-lane halt state, 7 carried defects incl P0 registry substring routing bug). Status ACTIVE for planning and queued execution; A00/A03/A05 now carry concrete acceptance. Implementation and independent verification are UNRUN.
 
 Sources: OWNER EMPHASIS (ask, 2026-11-14) ; harness/CONTRACT.md ; vivim-ui/PLAN.md ; vivim-ui/VIVIM-VISUAL-RUNTIME/FINAL-WAVE/README.md ; vivim-ui/VIVIM-VISUAL-RUNTIME/DUAL-EXECUTION-PROTOCOL.md ; vivim-ui/docs/SESSION-LEDGER.md
 
@@ -181,12 +181,40 @@ Sources: OWNER EMPHASIS (ask, 2026-11-14) ; integration/release-manifest.json:4,
 | PROPOSAL1-MIGRATION-SCOPE | proposal1/05-REVIEW-QUESTIONS.md:45,59 — migration scope + owner consent for legacy personal data (absent from proposal5) | candidate | — |
 | PROPOSAL4-ACCEPTANCE-EXAMPLES | proposal4/02-ONE-SYSTEM-TRUTH.md:184-195 — nine critical acceptance examples (absent from proposal5 B01-B12/G00-G13) | candidate | — |
 
-## Build queue (owner-approved batch 1, 2026-11-14)
 
-| # | Item | Scope | Status |
+| ID | Title | Status | Depends on |
 |---|---|---|---|
-| 1 | Chat box baseline | Page 1 — pure chat box, human+AI same endpoints, machine-readable state primary; proposal: docs/product/proposals/chat-wiki-baseline/chat.html.draft | queued |
-| 2 | Realtime wiki baseline | Page 2 — roadmap.v1.json + journal rendered live (wiki-as-roadmap-view data spine); 7 wiki actions for action-catalog; proposal: docs/product/proposals/chat-wiki-baseline/wiki.html.draft + state.mjs.draft | queued |
-| 3 | RDCB | Reprogramming Dynamic Context Bundles — structured source-code + vlang context bundles built on the fly during reprogramming; tied to auto wiki as special section; vlang reprogramming commands/scripts/workflows | queued |
+| A00 | Truth and queue repair | queued | — |
+| A01 | One-command live Host and acceptance runner | queued | — |
+| A02 | Canonical stateful chat-to-Wiki projection | queued | — |
+| A03 | Demo feedback-to-work-order compiler | queued | A00 |
+| A04 | Narrow realtime NL to VLang/VEC visual compiler | queued | A02 |
+| A05 | Authorized build, verify, demonstrate and requeue | queued | A01, A02, A03 |
+| A06 | Incremental RDCB context with reuse receipts | queued | A01, A02 |
+| A07 | Evidence-driven parallel worker execution | queued | A05, A06 |
+| A08 | Physical Windows Host and paired PWA acceptance | queued | A02, A04 |
 
-Remaining items: priority=null, batch 2+ pending next prioritization round.
+## Active build queue — Acceleration Batch A (R002)
+
+**Owner-selected focus:** maximize future verified output, not standalone features. [Execution and acceptance contract](ACCELERATION-R002.md). Machine truth: `roadmap.v1.json`; this document is a projection. **All nine items are queued, with verification UNRUN and owner acceptance PENDING.** Historical Batch-1 `executed` bookkeeping is not a release or end-to-end acceptance.
+
+| Order | Item | Lane | Estimated acceleration | Hard dependencies | State |
+|---:|---|:---:|---:|---|---|
+| 1 | A00 — Truth and queue repair | B | 89/100 | — | queued / UNRUN |
+| 2 | A01 — One-command live Host and acceptance runner | C | 95/100 | — | queued / UNRUN |
+| 3 | A02 — Canonical stateful chat-to-Wiki projection | A | 96/100 | — | queued / UNRUN |
+| 4 | A03 — Demo feedback-to-work-order compiler | B | 96/100 | A00 | queued / UNRUN |
+| 5 | A04 — Narrow realtime NL to VLang/VEC visual compiler | A | 91/100 | A02 | queued / UNRUN |
+| 6 | A05 — Authorized build, verify, demonstrate and requeue | B | 94/100 | A01, A02, A03 | queued / UNRUN |
+| 7 | A06 — Incremental RDCB context with reuse receipts | C | 90/100 | A01, A02 | queued / UNRUN |
+| 8 | A07 — Evidence-driven parallel worker execution | C | 81/100 | A05, A06 | queued / UNRUN |
+| 9 | A08 — Physical Windows Host and paired PWA acceptance | A | 67/100 | A02, A04 | queued / UNRUN |
+
+**Initial independently ready frontier:** A00 (truth/verification), A01 (one-command Host runner), A02 (stateful chat↔Wiki). All remaining work orders follow their hard dependencies. The roadmap's acceleration scoring formula is 30% downstream unlocks, 25% reuse, 20% feedback speed, 15% saved recurring reasoning and 10% simplicity; estimates do not substitute for receipts.
+
+**Batch-1 history retained:** `archivedBuildBatches[0]` in the machine roadmap retains CHAT-BOX-BASELINE (11/11 narrow), WIKI-BASELINE (8/10, two failures), and RDCB-BASELINE (12/12 generator-only). Independent keeper acceptance remains UNRUN; the current Wiki and chat are not a proven stateful two-screen product.
+
+**Release ledger conflict remains open:** `integration/beta-gates.json` reports UNBLOCKED; `.integration/proposal5/08-BETA-GATES.json` reports PROPOSED_UNRUN; `integration/release-manifest.json` is BLOCKED_NOT_BUILT. A00 will resolve claims against executed receipts, not rewrite their history. Windows installation remains an ordinary parallel workstream; APK deferred.
+
+Read-only operator checks: `node scripts/roadmap/acceleration-queue.mjs --check` and `node scripts/roadmap/acceleration-queue.mjs --ready`. They do not run workers or perform effects.
+
