@@ -35,7 +35,7 @@
 <body>
 <header>
   <h1>VIVIM chat</h1>
-  <a href="/pages/wiki">wiki</a>
+  <a href="/wiki">wiki</a>
   <a href="/demo">dev panel</a>
   <span class="rev" id="rev"></span>
 </header>
@@ -99,7 +99,7 @@
   async function refresh() {
     try {
       const s = await fetchJson(STATE_URL);
-      rev.textContent = 'state rev ' + (s.wikiRevision ?? 0);
+      rev.textContent = 'state rev ' + (s.revision ?? 0) + ' · wiki rev ' + (s.wikiRevision ?? 0);
       const chat = Array.isArray(s.chat) ? s.chat : [];
       if (!chat.length) { log.replaceChildren(document.createElement('div')).className = 'empty'; log.firstChild.textContent = 'chat is empty — send a message'; return; }
       log.replaceChildren(...chat.map(renderMsg));
@@ -122,12 +122,12 @@
     input.value = '';
     sendBtn.disabled = true;
     try {
-      const ir = await fetchJson(MUTATE_URL, {
+      await fetchJson(MUTATE_URL, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ schemaVersion: 1, actor: ACTOR, kind: 'chat-send', text })
       });
-      log.appendChild(renderIntentChip(ir));
+      // The refreshed Host state is the only rendered record; no invented optimistic chip.
     } catch (err) {
       log.appendChild(renderMsg({ who: 'system', text: 'send failed: ' + String(err), at: new Date().toISOString() }));
     } finally {
