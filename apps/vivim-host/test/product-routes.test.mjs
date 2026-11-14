@@ -61,7 +61,8 @@ function makeStaticRoot() {
 test('batch-1 product routes: pages, baseline JSON, read-throughs, mutate append, 404 tail', async () => {
   const dataRoot = mkdtempSync(path.join(os.tmpdir(), 'vivim-product-routes-data-'));
   const staticRoot = makeStaticRoot();
-  const server = createHostServer({ dataRoot, staticRoot });
+  const token = 'lane-a-test-owner-token-value-12345678901234567890';
+  const server = createHostServer({ dataRoot, staticRoot, ownerToken: token });
   try {
     await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
     const base = 'http://127.0.0.1:' + server.address().port;
@@ -139,31 +140,81 @@ test('batch-1 product routes: pages, baseline JSON, read-throughs, mutate append
       expectedRevision: beforeEdit.revision,
       edit: { action: 'set-section', page: 'Main', section: 'HowTo', content: 'edited through Host' }
     };
-    const edit = await httpFetch(base, '/api/mutate', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', origin: base, 'x-vivim-control': '1' },
-      body: JSON.stringify(editor)
+    const mutationHeaders = { 'content-type': 'application/json', origin: base, 'x-vivim-control': '1' };
+    const sendEdit = (payload, headers = mutationHeaders) => httpFetch(base, '/api/mutate', {
+      method: 'POST', headers, body: JSON.stringify(payload)
     });
-    assert.equal(edit.status, 200, 'same-origin Wiki edit accepted');
+
+    // Self-declared actors, Origin and a custom header are NOT owner grants.
+    assert.equal((await sendEdit(editor)).status, 401, 'actor/header spoof alone refused');
+    assert.equal((await sendEdit(editor, { ...mutationHeaders, authorization: 'Bearer incorrect' })).status, 401);
+    assert.equal((await sendEdit(editor, { ...mutationHeaders, origin: 'http://evil.invalid',
+      authorization: 'Bearer ' + token })).status, 403);
+    assert.equal((await sendEdit({ ...editor, path: '../escape' },
+      { ...mutationHeaders, authorization: 'Bearer ' + token })).status, 400);
+    assert.equal((await sendEdit(editor, { ...mutationHeaders,
+      authorization: 'Bearer ' + token })).status, 200, 'owner token permits bounded Wiki edit');
+    assert.equal((await sendEdit(editor, { ...mutationHeaders,
+      authorization: 'Bearer ' + token })).status, 409, 'stale Wiki revision rejected');
     const afterEdit = await (await httpFetch(base, '/api/wiki')).json();
     assert.equal(afterEdit.pages.Main.sections.HowTo, editor.edit.content);
     assert.equal(afterEdit.revision, beforeEdit.revision + 1);
-    const stale = await httpFetch(base, '/api/mutate', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', origin: base, 'x-vivim-control': '1' },
-      body: JSON.stringify(editor)
-    });
-    assert.equal(stale.status, 409, 'stale Wiki edit rejected');
 
-    // One handler, two route names: the demo alias hits the SAME append path.
-    const alias = await httpFetch(base, '/demo/mutate', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ schemaVersion: 1, actor: 'keeper', kind: 'gate-decision', itemId: 'CHAT-BOX-BASELINE', decision: 'approve' })
+    // The existing one-time Host control session can authenticate /api/mutate.
+    // Its HttpOnly cookie is scoped to /api, not only /api/host/control.
+    const issued = await httpFetch(base, '/api/host/control/ui-session', {
+      method: 'POST', headers: { ...mutationHeaders, authorization: 'Bearer ' + token }
     });
-    assert.equal(alias.status, 200);
-    const journalFinal = await httpFetch(base, '/api/journal');
-    assert.equal((await journalFinal.json()).length, 3);
+    assert.equal(issued.status, 201);
+    const code = (await issued.json()).code;
+    const exchanged = await httpFetch(base, '/api/host/control/ui-exchange', {
+      method: 'POST', headers: mutationHeaders, body: JSON.stringify({ code })
+    });
+    assert.equal(exchanged.status, 200);
+    assert.match(String(exchanged.headers.get('set-cookie')), /HttpOnly; SameSite=Strict; Path=\/api;/);
+    const session = await exchanged.json();
+    const cookie = String(exchanged.headers.get('set-cookie')).split(';')[0];
+    const next = { ...editor, expectedRevision: afterEdit.revision,
+      edit: { ...editor.edit, content: 'owner browser session update' } };
+    assert.equal((await sendEdit(next, { ...mutationHeaders, cookie })).status, 401, 'missing session CSRF');
+    assert.equal((await sendEdit(next, { ...mutationHeaders, cookie, 'x-vivim-ui-csrf': 'incorrect' })).status, 401);
+    assert.equal((await sendEdit(next, { ...mutationHeaders, cookie,
+      'x-vivim-ui-csrf': session.csrf })).status, 200);
+    const loggedOut = await httpFetch(base, '/api/host/control/ui-logout', {
+      method: 'POST', headers: { ...mutationHeaders, cookie, 'x-vivim-ui-csrf': session.csrf }
+    });
+    assert.equal(loggedOut.status, 200);
+    const revoked = { ...next, expectedRevision: afterEdit.revision + 1 };
+    assert.equal((await sendEdit(revoked, { ...mutationHeaders, cookie,
+      'x-vivim-ui-csrf': session.csrf })).status, 401, 'revoked browser session refused');
+
+    // Gate observations are not privileged execution receipts and cannot be forged.
+    const gate = { schemaVersion: 1, actor: 'keeper', kind: 'gate-decision',
+      itemId: 'CHAT-BOX-BASELINE', decision: 'approve' };
+    assert.equal((await httpFetch(base, '/demo/mutate', {
+      method: 'POST', headers: mutationHeaders, body: JSON.stringify(gate)
+    })).status, 401);
+    assert.equal((await httpFetch(base, '/demo/mutate', {
+      method: 'POST', headers: { ...mutationHeaders, authorization: 'Bearer ' + token },
+      body: JSON.stringify(gate)
+    })).status, 200);
+    const journalFinal = await (await httpFetch(base, '/api/journal')).json();
+    const rawFinal = await (await httpFetch(base, '/demo/journal.jsonl')).text();
+    assert.equal(journalFinal.length, 4);
+    assert.deepEqual(rawFinal.split('\n').filter(Boolean).map(JSON.parse), journalFinal);
+    const stateFinal = await (await httpFetch(base, '/api/state')).json();
+    const wikiFinal = await (await httpFetch(base, '/api/wiki')).json();
+    assert.equal(stateFinal.wikiRevision, wikiFinal.revision);
+    assert.equal(stateFinal.revision, 3, 'only chat and Wiki mutations increment product revision');
+    assert.equal(wikiFinal.pages.Main.sections.HowTo, 'owner browser session update');
+
+    // Same-revision concurrent HTTP editors: one success, one conflict.
+    const parallelEdit = { ...editor, expectedRevision: wikiFinal.revision };
+    const race = await Promise.all([sendEdit(parallelEdit, { ...mutationHeaders,
+      authorization: 'Bearer ' + token }), sendEdit(parallelEdit, { ...mutationHeaders,
+      authorization: 'Bearer ' + token })]);
+    assert.deepEqual(race.map(r => r.status).sort(), [200,409]);
+    assert.equal((await (await httpFetch(base, '/api/journal')).json()).length, 5);
 
     // Exact-string dispatch only: unknown /api/* paths still 404 (no catch-all).
     assert.equal((await httpFetch(base, '/api/definitely-not-a-route')).status, 404);
