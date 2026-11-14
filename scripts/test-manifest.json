@@ -1678,5 +1678,11 @@
     "root": "scripts/acceleration",
     "runtime": "node24-ajv",
     "gate": "roadmap-acceleration"
+  },
+  {
+    "path": "scripts/roadmap/evidence-truth.test.mjs",
+    "root": "scripts/roadmap",
+    "runtime": "node24-ajv",
+    "gate": "roadmap-acceleration"
   }
 ]
