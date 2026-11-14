@@ -82,3 +82,7 @@ node --test scripts/roadmap/acceleration-queue.test.mjs scripts/roadmap/evidence
 ```
 
 The isolated Host runner additionally invokes the repaired Wiki evidence runner with an explicit ephemeral base URL. It cannot be aimed at a live user's Host without the isolated-run flag. This checkpoint is **not** independent acceptance of A00–A02 and does not unlock dependent work.
+
+## W1 five-lane merge and execution fence (15 November 2026)
+
+All five W1 source branches A through E were combined with their parent histories into the keeper's integration branch and underwent cross-lane authorization corrections. The final main promotion is a GitHub fresh-head compare-and-swap operation, not independent product acceptance. Lane A's strengthened owner authority is **preserved**: Lane C now requests an actual short-lived Host control browser session and sends its CSRF proof; Lane B creates an ephemeral isolated owner token for real HTTP tests; Lane D requires that grant for live Wiki evidence. A03 feedback compiler is review-only while A00 acceptance is pending; A04 still requires trusted NLCL/VEC binding after A02 acceptance. See [W1 integration report](../../acceleration/w1/INTEGRATION.md) for exact SHAs and local Node24 commands. The current live UI, device and CI proof remain **UNRUN**.
