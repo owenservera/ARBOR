@@ -21,7 +21,7 @@ export default {
     ]
   },
   "send": {
-    "strategy": "enter",
+    "strategy": "button",
     "buttonSelectors": [
       "button[data-testid=\"send-button\"]",
       "form button[aria-label=\"Send\"]",

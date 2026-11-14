@@ -17,7 +17,10 @@ export default {
     kind: 'auto',
   },
   send: {
-    strategy: 'enter',
+    // Live 2026-11-14: ChatGPT's Lexical composer no longer submits on the synthesized Enter shape
+    // (typing verified, Enter did not submit). Submit via the send button instead; it is disabled
+    // until the composer holds text, so this fails closed (not-attempted) rather than double-sending.
+    strategy: 'button',
     buttonSelectors: [
       'button[data-testid="send-button"]',
       '#composer-submit-button',
