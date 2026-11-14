@@ -1647,6 +1647,7 @@
         "sources": [
           "docs/product/roadmap/ACCELERATION-R002.md",
           "apps/vivim-host/control/",
+          "apps/mobile-relay/vec/",
           "apps/vivim-host/public/pages/",
           "native/",
           "vivim-ui/"
@@ -1666,6 +1667,7 @@
         "lane": "A",
         "writeScope": [
           "apps/vivim-host/control/",
+          "apps/mobile-relay/vec/",
           "apps/vivim-host/public/pages/",
           "native/",
           "vivim-ui/"
