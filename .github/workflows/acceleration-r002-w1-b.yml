@@ -3,10 +3,16 @@ name: ARBOR R002 W1-B isolated Host Node24 acceptance
 on:
   push:
     branches:
+      - main
+      - work/accel-r002-w1-integration-keeper
       - work/accel-r002-w1-b-runtime-proof
     paths:
-      - scripts/acceleration/live-host-check.mjs
-      - scripts/acceleration/live-host-check.test.mjs
+      - apps/vivim-host/**
+      - scripts/acceleration/**
+      - scripts/batch-evidence/**
+      - scripts/roadmap/**
+      - scripts/feedback-loop/**
+      - docs/product/roadmap/**
       - .github/workflows/acceleration-r002-w1-b.yml
   workflow_dispatch:
 
@@ -90,6 +96,18 @@ jobs:
           cat "$RUNNER_TEMP/b-product.stdout"
           cat "$RUNNER_TEMP/b-product.stderr" >&2
           printf 'HOST_PRODUCT_EXIT=%s\n' "$status"
+          exit "$status"
+      - name: Run merged visual, truth, feedback and integration checks
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          node --test apps/vivim-host/test/wiki-visual-contract.test.mjs scripts/batch-evidence/wiki-evidence-regression.test.mjs scripts/roadmap/evidence-truth.test.mjs scripts/feedback-loop/compiler.test.mjs scripts/acceleration/w1-integration-contract.test.mjs > "$RUNNER_TEMP/b-merged.stdout" 2> "$RUNNER_TEMP/b-merged.stderr"
+          status=$?
+          printf '%s\n' "$status" > "$RUNNER_TEMP/b-merged.exit"
+          cat "$RUNNER_TEMP/b-merged.stdout"
+          cat "$RUNNER_TEMP/b-merged.stderr" >&2
+          printf 'W1_MERGED_EXIT=%s\n' "$status"
           exit "$status"
       - name: Retain raw outputs and literal exits for independent review
         if: always()
