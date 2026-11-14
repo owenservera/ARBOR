@@ -3,7 +3,7 @@
 Owner instruction: five independent ChatGPT GitHub-connected execution chats, one lane each. This folder is work-order source, NOT a competing roadmap or authority. Canonical machine queue: docs/product/roadmap/roadmap.v1.json. Baseline before this handoff: main 60510e4868dde794bcca6e24baaa998cae78b8fc (2026-11-14); A00/A01/A02 source landed but Node24/real-browser/physical-device tests UNRUN. A03/A04/A06 dependencies must NOT be called accepted until their prerequisites are independently verified.
 
 ## Mandatory read order for every worker
-1. This README plus the worker's own W1/{A,B,C,D,E}.md.
+1. This README plus the worker's assigned A.md, B.md, C.md, D.md or E.md in this folder.
 2. docs/product/roadmap/ACCELERATION-R002.md and roadmap.v1.json (items A00–A08, owner acceptance and hard dependencies).
 3. .coordination/pdr/ACCELERATION-R002-HANDOFF.md, .coordination/pdr/PDR-batch1-exit.md.
 4. Source files listed in the specific work order; inspect real code before editing.
