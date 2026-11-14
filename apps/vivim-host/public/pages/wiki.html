@@ -56,7 +56,7 @@
 <body>
 <header>
   <h1>VIVIM realtime wiki</h1>
-  <a href="/pages/chat">chat</a>
+  <a href="/chat">chat</a>
   <a href="/demo">dev panel</a>
   <span class="rev" id="rev"></span>
 </header>
@@ -90,6 +90,8 @@
   const editStatus = document.getElementById('edit-status');
   let editPage = null;
   let editSection = null;
+  let currentWikiRevision = 0;
+  let editRevision = null;
   let pollTimer = null;
 
   function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
@@ -110,6 +112,7 @@
 
   function openEdit(page, section, body) {
     editPage = page; editSection = section;
+    editRevision = currentWikiRevision;
     editTarget.textContent = page + '/' + section;
     editContent.value = body ?? '';
     editStatus.textContent = '';
@@ -122,12 +125,17 @@
     if (editPage == null || editSection == null) return;
     editSave.disabled = true;
     try {
-      await fetch(MUTATE_URL, {
+      const result = await fetch(MUTATE_URL, {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ schemaVersion: 1, actor: ACTOR, kind: 'wiki-edit', edit: { page: editPage, section: editSection, action: 'set-section', content: editContent.value } })
+        headers: { 'content-type': 'application/json', 'x-vivim-control': '1' },
+        body: JSON.stringify({ schemaVersion: 1, actor: ACTOR, kind: 'wiki-edit', expectedRevision: editRevision, edit: { page: editPage, section: editSection, action: 'set-section', content: editContent.value } })
       });
-      editStatus.textContent = 'saved';
+      if (!result.ok) {
+        const failure = await result.text();
+        throw new Error('HTTP ' + result.status + ': ' + failure);
+      }
+      const acknowledged = await result.json();
+      editStatus.textContent = 'saved at Wiki revision ' + acknowledged.wikiRevision;
       editForm.style.display = 'none';
       editPage = null; editSection = null;
       await refresh();
@@ -247,7 +255,8 @@
       const [wiki, surface, roadmap, journal] = await Promise.all([
         fetchJson(WIKI_URL), fetchJson(SURFACE_URL), fetchJson(ROADMAP_URL), fetchJson(JOURNAL_URL)
       ]);
-      rev.textContent = 'wiki rev ' + (wiki && wiki.revision !== undefined ? wiki.revision : 0);
+      currentWikiRevision = Number.isSafeInteger(wiki?.revision) ? wiki.revision : 0;
+      rev.textContent = 'wiki rev ' + currentWikiRevision;
       content.replaceChildren(
         renderWiki(wiki),
         renderFileSurface(surface),
