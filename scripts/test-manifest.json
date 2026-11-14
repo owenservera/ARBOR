@@ -1660,5 +1660,11 @@
     "root": "tests/privacy",
     "runtime": "node24-ajv",
     "gate": "interop"
+  },
+  {
+    "path": "scripts/roadmap/acceleration-queue.test.mjs",
+    "root": "scripts/roadmap",
+    "runtime": "node24-ajv",
+    "gate": "roadmap-acceleration"
   }
 ]
