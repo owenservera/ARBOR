@@ -1696,5 +1696,29 @@
     "root": "apps/vivim-host/test",
     "runtime": "node24-ajv",
     "gate": "host-suite"
+  },
+  {
+    "path": "apps/vivim-host/test/wiki-visual-contract.test.mjs",
+    "root": "apps/vivim-host/test",
+    "runtime": "node24-ajv",
+    "gate": "host-suite"
+  },
+  {
+    "path": "scripts/batch-evidence/wiki-evidence-regression.test.mjs",
+    "root": "scripts/batch-evidence",
+    "runtime": "node24-ajv",
+    "gate": "roadmap-acceleration"
+  },
+  {
+    "path": "scripts/feedback-loop/compiler.test.mjs",
+    "root": "scripts/feedback-loop",
+    "runtime": "node24-ajv",
+    "gate": "roadmap-acceleration"
+  },
+  {
+    "path": "scripts/acceleration/w1-integration-contract.test.mjs",
+    "root": "scripts/acceleration",
+    "runtime": "node24-ajv",
+    "gate": "roadmap-acceleration"
   }
 ]
