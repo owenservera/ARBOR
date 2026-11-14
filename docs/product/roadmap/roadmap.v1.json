@@ -1486,7 +1486,7 @@
         "layer": "L2",
         "title": "Truth and queue repair",
         "description": "Repair the two WIKI-BASELINE verifier assumptions, classify Batch-1 evidence separately from execution, reconcile conflicting beta/release ledgers without falsely changing observed gates, and align the single roadmap owner.",
-        "status": "queued",
+        "status": "in-progress",
         "sources": [
           "docs/product/roadmap/ACCELERATION-R002.md",
           "scripts/batch-evidence/WIKI-BASELINE.mjs",
@@ -1521,15 +1521,23 @@
         ],
         "verification": "UNRUN",
         "ownerAcceptance": "PENDING",
-        "execution": "NOT_STARTED",
-        "releaseClaim": false
+        "execution": "SOURCE_LANDED_TESTS_UNRUN",
+        "releaseClaim": false,
+        "sourceEvidence": [
+          "scripts/batch-evidence/WIKI-BASELINE.mjs",
+          "scripts/roadmap/evidence-truth.mjs",
+          "scripts/roadmap/evidence-truth.test.mjs",
+          "apps/vivim-host/test/chat-box-baseline.test.mjs"
+        ],
+        "runtimeTests": "UNRUN",
+        "note": "Source implementation committed. Node24/Bun/real-browser tests were not executed in this GitHub-only session; no independent acceptance claim."
       },
       {
         "id": "A01",
         "layer": "L2",
         "title": "One-command live Host and acceptance runner",
         "description": "Run the existing production Host plus chat, Wiki and relevant context in one reproducible local invocation; collect exact command, environment, exit codes, failures and receipts without synthetic pass claims.",
-        "status": "queued",
+        "status": "in-progress",
         "sources": [
           "docs/product/roadmap/ACCELERATION-R002.md",
           "scripts/",
@@ -1559,15 +1567,22 @@
         ],
         "verification": "UNRUN",
         "ownerAcceptance": "PENDING",
-        "execution": "NOT_STARTED",
-        "releaseClaim": false
+        "execution": "SOURCE_LANDED_TESTS_UNRUN",
+        "releaseClaim": false,
+        "sourceEvidence": [
+          "scripts/acceleration/live-host-check.mjs",
+          "scripts/acceleration/live-host-check.test.mjs",
+          "scripts/test-manifest.json"
+        ],
+        "runtimeTests": "UNRUN",
+        "note": "Source implementation committed. Node24/Bun/real-browser tests were not executed in this GitHub-only session; no independent acceptance claim."
       },
       {
         "id": "A02",
         "layer": "L2",
         "title": "Canonical stateful chat-to-Wiki projection",
         "description": "Use the existing Host-controlled journal and revision authority for chat, Wiki edits and both displays; separate source-of-truth from derived display caches, persist revisions, require authorized mutations.",
-        "status": "queued",
+        "status": "in-progress",
         "sources": [
           "docs/product/roadmap/ACCELERATION-R002.md",
           "apps/vivim-host/",
@@ -1595,8 +1610,18 @@
         ],
         "verification": "UNRUN",
         "ownerAcceptance": "PENDING",
-        "execution": "NOT_STARTED",
-        "releaseClaim": false
+        "execution": "SOURCE_LANDED_TESTS_UNRUN",
+        "releaseClaim": false,
+        "sourceEvidence": [
+          "apps/vivim-host/chat/product-journal.mjs",
+          "apps/vivim-host/server.mjs",
+          "apps/vivim-host/public/pages/chat.js",
+          "apps/vivim-host/public/pages/wiki.js",
+          "apps/vivim-host/test/product-journal.test.mjs",
+          "apps/vivim-host/test/product-routes.test.mjs"
+        ],
+        "runtimeTests": "UNRUN",
+        "note": "Source implementation committed. Node24/Bun/real-browser tests were not executed in this GitHub-only session; no independent acceptance claim."
       },
       {
         "id": "A03",
@@ -1853,38 +1878,38 @@
     {
       "itemId": "A00",
       "order": 1,
-      "status": "queued",
+      "status": "in-progress",
       "lane": "B",
       "dependsOn": [],
       "priority": 1,
       "accelerationScore": 89,
       "verification": "UNRUN",
       "ownerAcceptance": "PENDING",
-      "note": "Truth and queue repair — Repair the two WIKI-BASELINE verifier assumptions, classify Batch-1 evidence separately from execution, reconcile conflicting beta/release ledgers without falsely changing observed gates, and align the single roadmap owner."
+      "note": "Truth and queue repair — source landed, runtime tests UNRUN; independent acceptance pending"
     },
     {
       "itemId": "A01",
       "order": 2,
-      "status": "queued",
+      "status": "in-progress",
       "lane": "C",
       "dependsOn": [],
       "priority": 2,
       "accelerationScore": 95,
       "verification": "UNRUN",
       "ownerAcceptance": "PENDING",
-      "note": "One-command live Host and acceptance runner — Run the existing production Host plus chat, Wiki and relevant context in one reproducible local invocation; collect exact command, environment, exit codes, failures and receipts without synthetic pass claims."
+      "note": "One-command live Host and acceptance runner — source landed, runtime tests UNRUN; independent acceptance pending"
     },
     {
       "itemId": "A02",
       "order": 3,
-      "status": "queued",
+      "status": "in-progress",
       "lane": "A",
       "dependsOn": [],
       "priority": 3,
       "accelerationScore": 96,
       "verification": "UNRUN",
       "ownerAcceptance": "PENDING",
-      "note": "Canonical stateful chat-to-Wiki projection — Use the existing Host-controlled journal and revision authority for chat, Wiki edits and both displays; separate source-of-truth from derived display caches, persist revisions, require authorized mutations."
+      "note": "Canonical stateful chat-to-Wiki projection — source landed, runtime tests UNRUN; independent acceptance pending"
     },
     {
       "itemId": "A03",
@@ -2065,6 +2090,31 @@
       "APK_DEFERRED"
     ],
     "nextMilestone": "Three real intents, persistent two-screen state, and executed demo-to-work-order verification. No synthetic acceptance claims.",
-    "evidencePolicy": "State status/execution/verification/ownerAcceptance separately. A queued item is not ready to execute real effects; successful tests alone are not owner acceptance."
+    "evidencePolicy": "State status/execution/verification/ownerAcceptance separately. A queued item is not ready to execute real effects; successful tests alone are not owner acceptance.",
+    "executionProgress": {
+      "asOf": "2026-11-14",
+      "phase": "SOURCE_LANDED_WITH_UNRUN_RUNTIME",
+      "active": [
+        "A00",
+        "A01",
+        "A02"
+      ],
+      "downstreamBlocked": [
+        "A03",
+        "A04",
+        "A05",
+        "A06",
+        "A07",
+        "A08"
+      ],
+      "staticChecks": "Source parse and isolated V8 logic checks observed; not an operating-system test process.",
+      "requiredLocalCommands": [
+        "node scripts/roadmap/acceleration-queue.mjs --check",
+        "node scripts/roadmap/evidence-truth.mjs --check",
+        "node --test apps/vivim-host/test/product-journal.test.mjs apps/vivim-host/test/product-routes.test.mjs apps/vivim-host/test/chat-box-baseline.test.mjs",
+        "node --test scripts/roadmap/acceleration-queue.test.mjs scripts/roadmap/evidence-truth.test.mjs scripts/acceleration/live-host-check.test.mjs"
+      ],
+      "nextFrontierRule": "A03 remains blocked until A00 independently accepted; A04 until A02; A06 until A01+A02; do not infer pass from committed source."
+    }
   }
 }
