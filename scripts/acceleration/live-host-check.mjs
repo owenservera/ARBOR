@@ -3,7 +3,7 @@
 // One command: node scripts/acceleration/live-host-check.mjs
 // An ephemeral Host dataRoot is mandatory; no operator data directory is ever accepted.
 import assert from 'node:assert/strict';
-import { createHash } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { execFile as execFileCallback, spawnSync } from 'node:child_process';
 import { existsSync, lstatSync, mkdtempSync, readFileSync, realpathSync, rmSync } from 'node:fs';
 import os from 'node:os';
@@ -24,7 +24,7 @@ function processProbe(file, args) {
     stdoutExcerpt: excerpt(p.stdout), stderrExcerpt: excerpt(p.stderr || p.error?.message), timedOut: p.error?.code === 'ETIMEDOUT' };
 }
 
-async function evidenceSubprocess(base) {
+async function evidenceSubprocess(base, isolatedOwnerToken) {
   const args = [EVIDENCE_PATH, '--live'];
   const started = Date.now();
   const result = { command: [process.execPath, ...args].join(' '),
@@ -34,7 +34,8 @@ async function evidenceSubprocess(base) {
     const output = await execFile(process.execPath, args, {
       cwd: ROOT, timeout: result.timeoutMs, maxBuffer: 2 * 1024 * 1024,
       env: { ...process.env, ARBOR_WIKI_EVIDENCE_ISOLATED: '1',
-        ARBOR_WIKI_EVIDENCE_BASE_URL: base }
+        ARBOR_WIKI_EVIDENCE_BASE_URL: base,
+        ARBOR_WIKI_EVIDENCE_OWNER_TOKEN: isolatedOwnerToken }
     });
     stdout = output.stdout;
     result.exitCode = 0;
@@ -67,6 +68,8 @@ export async function runHostLoopCheck({ command = 'node scripts/acceleration/li
   const tempParent = realpathSync(os.tmpdir());
   const actualDataRoot = realpathSync(dataRoot);
   const privateJournal = path.join(actualDataRoot, 'product-state', 'journal.jsonl');
+  // Ephemeral capability exists only in process memory for this isolated temp Host.
+  const isolatedOwnerToken = randomBytes(32).toString('hex');
   const demoJournalBefore = existsSync(PUBLIC_DEMO_JOURNAL)
     ? digest(readFileSync(PUBLIC_DEMO_JOURNAL)) : null;
   const checks = [];
@@ -107,7 +110,8 @@ export async function runHostLoopCheck({ command = 'node scripts/acceleration/li
     }
   };
   const start = async createHostServer => {
-    server = createHostServer({ dataRoot: actualDataRoot, autoPump: false });
+    server = createHostServer({ dataRoot: actualDataRoot, autoPump: false,
+      ownerToken: isolatedOwnerToken });
     await new Promise((resolve, reject) => {
       server.once('error', reject);
       server.listen(0, '127.0.0.1', resolve);
@@ -204,13 +208,16 @@ export async function runHostLoopCheck({ command = 'node scripts/acceleration/li
     const edit = { kind: 'wiki-edit', schemaVersion: 1, actor: 'owner-browser',
       expectedRevision: before.revision, edit: { action: 'set-section', page: 'Main',
         section: 'HowTo', content: 'R002 W1-B isolated revision checkpoint' } };
-    const headers = { origin: base, 'x-vivim-control': '1' };
+    const headers = { origin: base, 'x-vivim-control': '1',
+      authorization: 'Bearer ' + isolatedOwnerToken };
     const unauthorized = await post(edit);
     check('Wiki edit without origin/control refused', () => assert.equal(unauthorized.status, 403));
     const missingControl = await post(edit, { origin: base });
     check('Wiki edit without CSRF control refused', () => assert.equal(missingControl.status, 403));
     const forged = await post(edit, { ...headers, origin: 'https://untrusted.invalid' });
     check('cross-origin Wiki edit refused', () => assert.equal(forged.status, 403));
+    const actorOnly = await post(edit, { origin: base, 'x-vivim-control': '1' });
+    check('actor and Origin header are not an owner grant', () => assert.equal(actorOnly.status, 401));
     const saved = await post(edit, headers);
     check('same-origin bounded Wiki edit acknowledged', () => {
       assert.equal(saved.status, 200, saved.text);
@@ -258,7 +265,7 @@ export async function runHostLoopCheck({ command = 'node scripts/acceleration/li
       assert.equal(replayState.wikiRevision, wiki.revision);
       assert.equal(readFileSync(privateJournal, 'utf8'), raw.text);
     }, { sameJournalSha256: digest(readFileSync(privateJournal)) });
-    const evidence = await evidenceSubprocess(base);
+    const evidence = await evidenceSubprocess(base, isolatedOwnerToken);
     receipt.subprocesses.push(evidence);
     receipt.wikiEvidence = { scope: evidence.verdict?.scope ?? null,
       passedChecks: evidence.verdict?.checks?.filter(x => x.pass).length ?? 0,
