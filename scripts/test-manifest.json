@@ -1684,5 +1684,17 @@
     "root": "scripts/roadmap",
     "runtime": "node24-ajv",
     "gate": "roadmap-acceleration"
+  },
+  {
+    "path": "apps/vivim-host/test/chat-box-baseline.test.mjs",
+    "root": "apps/vivim-host/test",
+    "runtime": "node24-ajv",
+    "gate": "host-suite"
+  },
+  {
+    "path": "apps/vivim-host/test/product-routes.test.mjs",
+    "root": "apps/vivim-host/test",
+    "runtime": "node24-ajv",
+    "gate": "host-suite"
   }
 ]
