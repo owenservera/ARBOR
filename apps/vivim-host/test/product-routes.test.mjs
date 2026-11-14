@@ -52,6 +52,9 @@ function makeStaticRoot() {
   mkdirSync(path.join(root, 'demo'), { recursive: true });
   copyFileSync(path.join(realPagesDir, 'chat.html'), path.join(root, 'pages', 'chat.html'));
   copyFileSync(path.join(realPagesDir, 'wiki.html'), path.join(root, 'pages', 'wiki.html'));
+  for (const name of ['chat.js', 'wiki.js', 'chat.css', 'wiki.css']) {
+    copyFileSync(path.join(realPagesDir, name), path.join(root, 'pages', name));
+  }
   return root;
 }
 
@@ -72,6 +75,10 @@ test('batch-1 product routes: pages, baseline JSON, read-throughs, mutate append
     assert.equal(wiki.status, 200);
     assert.match(wiki.headers.get('content-type') || '', /text\/html/);
     assert.match(await wiki.text(), /<h1>VIVIM realtime wiki<\/h1>/);
+    for (const name of ['chat.js', 'wiki.js', 'chat.css', 'wiki.css']) {
+      const res = await httpFetch(base, '/' + name);
+      assert.equal(res.status, 200, name + ' external CSP asset');
+    }
 
     // Baseline seeds: state = chat state projection shape (state.mjs.draft loadState),
     // wiki = {revision, pages{name:{sections}}} with a few sections.
@@ -124,6 +131,29 @@ test('batch-1 product routes: pages, baseline JSON, read-throughs, mutate append
     assert.equal(entries.length, 1);
     assert.equal(entries[0].kind, 'chat-send');
     assert.equal(entries[0].text, 'product-routes test line');
+    const stateAfter = await (await httpFetch(base, '/api/state')).json();
+    assert.ok(stateAfter.chat.some(m => m.text === 'product-routes test line'), 'journal projected into chat');
+    const beforeEdit = await (await httpFetch(base, '/api/wiki')).json();
+    const editor = {
+      schemaVersion: 1, actor: 'owner-browser', kind: 'wiki-edit',
+      expectedRevision: beforeEdit.revision,
+      edit: { action: 'set-section', page: 'Main', section: 'HowTo', content: 'edited through Host' }
+    };
+    const edit = await httpFetch(base, '/api/mutate', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', origin: base, 'x-vivim-control': '1' },
+      body: JSON.stringify(editor)
+    });
+    assert.equal(edit.status, 200, 'same-origin Wiki edit accepted');
+    const afterEdit = await (await httpFetch(base, '/api/wiki')).json();
+    assert.equal(afterEdit.pages.Main.sections.HowTo, editor.edit.content);
+    assert.equal(afterEdit.revision, beforeEdit.revision + 1);
+    const stale = await httpFetch(base, '/api/mutate', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', origin: base, 'x-vivim-control': '1' },
+      body: JSON.stringify(editor)
+    });
+    assert.equal(stale.status, 409, 'stale Wiki edit rejected');
 
     // One handler, two route names: the demo alias hits the SAME append path.
     const alias = await httpFetch(base, '/demo/mutate', {
@@ -133,7 +163,7 @@ test('batch-1 product routes: pages, baseline JSON, read-throughs, mutate append
     });
     assert.equal(alias.status, 200);
     const journalFinal = await httpFetch(base, '/api/journal');
-    assert.equal((await journalFinal.json()).length, 2);
+    assert.equal((await journalFinal.json()).length, 3);
 
     // Exact-string dispatch only: unknown /api/* paths still 404 (no catch-all).
     assert.equal((await httpFetch(base, '/api/definitely-not-a-route')).status, 404);
