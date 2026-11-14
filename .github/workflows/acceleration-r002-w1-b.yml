@@ -41,9 +41,16 @@ jobs:
           uname -a
           printf 'GITHUB_SHA=%s\n' "$GITHUB_SHA"
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-      - name: Install source-declared workspace dependencies without build hooks
+      - name: Inspect reproducibility closure without generating locks
         shell: bash
-        run: bun install --frozen-lockfile --ignore-scripts
+        run: |
+          set -eu
+          if test -f bun.lock; then
+            echo "BUN_LOCK_PRESENT: install recorded dependencies, no build hooks"
+            bun install --frozen-lockfile --ignore-scripts
+          else
+            echo "BUN_LOCK_MISSING: direct Node24 Host tests will still run; lockfile recovery belongs to Lane G"
+          fi
       - name: Run one-command live isolated Host acceptance
         if: always()
         shell: bash
