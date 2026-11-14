@@ -184,9 +184,9 @@ Sources: OWNER EMPHASIS (ask, 2026-11-14) ; integration/release-manifest.json:4,
 
 | ID | Title | Status | Depends on |
 |---|---|---|---|
-| A00 | Truth and queue repair | queued | — |
-| A01 | One-command live Host and acceptance runner | queued | — |
-| A02 | Canonical stateful chat-to-Wiki projection | queued | — |
+| A00 | Truth and queue repair | in-progress | — |
+| A01 | One-command live Host and acceptance runner | in-progress | — |
+| A02 | Canonical stateful chat-to-Wiki projection | in-progress | — |
 | A03 | Demo feedback-to-work-order compiler | queued | A00 |
 | A04 | Narrow realtime NL to VLang/VEC visual compiler | queued | A02 |
 | A05 | Authorized build, verify, demonstrate and requeue | queued | A01, A02, A03 |
@@ -196,13 +196,13 @@ Sources: OWNER EMPHASIS (ask, 2026-11-14) ; integration/release-manifest.json:4,
 
 ## Active build queue — Acceleration Batch A (R002)
 
-**Owner-selected focus:** maximize future verified output, not standalone features. [Execution and acceptance contract](ACCELERATION-R002.md). Machine truth: `roadmap.v1.json`; this document is a projection. **All nine items are queued, with verification UNRUN and owner acceptance PENDING.** Historical Batch-1 `executed` bookkeeping is not a release or end-to-end acceptance.
+**Owner-selected focus:** maximize future verified output, not standalone features. [Execution and acceptance contract](ACCELERATION-R002.md). Machine truth: `roadmap.v1.json`; this document is a projection. **A00–A02 are in-progress with source landed but Node/Windows/browser tests UNRUN. A03–A08 remain queued. Independent acceptance PENDING for all nine.** Historical Batch-1 `executed` bookkeeping is not a release or end-to-end acceptance.
 
 | Order | Item | Lane | Estimated acceleration | Hard dependencies | State |
 |---:|---|:---:|---:|---|---|
-| 1 | A00 — Truth and queue repair | B | 89/100 | — | queued / UNRUN |
-| 2 | A01 — One-command live Host and acceptance runner | C | 95/100 | — | queued / UNRUN |
-| 3 | A02 — Canonical stateful chat-to-Wiki projection | A | 96/100 | — | queued / UNRUN |
+| 1 | A00 — Truth and queue repair | B | 89/100 | — | in-progress / UNRUN |
+| 2 | A01 — One-command live Host and acceptance runner | C | 95/100 | — | in-progress / UNRUN |
+| 3 | A02 — Canonical stateful chat-to-Wiki projection | A | 96/100 | — | in-progress / UNRUN |
 | 4 | A03 — Demo feedback-to-work-order compiler | B | 96/100 | A00 | queued / UNRUN |
 | 5 | A04 — Narrow realtime NL to VLang/VEC visual compiler | A | 91/100 | A02 | queued / UNRUN |
 | 6 | A05 — Authorized build, verify, demonstrate and requeue | B | 94/100 | A01, A02, A03 | queued / UNRUN |
@@ -218,3 +218,7 @@ Sources: OWNER EMPHASIS (ask, 2026-11-14) ; integration/release-manifest.json:4,
 
 Read-only operator checks: `node scripts/roadmap/acceleration-queue.mjs --check` and `node scripts/roadmap/acceleration-queue.mjs --ready`. They do not run workers or perform effects.
 
+
+### Execution checkpoint — 14 November 2026
+
+A00, A01 and A02 source has landed on `main`. The V8 source/logic checks are not Node process exits. Run the real test commands in [`ACCELERATION-R002.md`](ACCELERATION-R002.md), obtain independent keeper evidence, and only then unlock A03/A04/A06. No Release/Beta gate was changed.
