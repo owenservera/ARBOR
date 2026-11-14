@@ -7,10 +7,12 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { spawnSync } from 'node:child_process';
+import { spawnSync, execFile as execFileCallback } from 'node:child_process';
+import { promisify } from 'node:util';
 import { createHostServer } from '../../apps/vivim-host/server.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+const execFile = promisify(execFileCallback);
 
 export async function runHostLoopCheck() {
   const dataRoot = mkdtempSync(path.join(os.tmpdir(), 'arbor-acceleration-A01-'));
@@ -58,6 +60,8 @@ export async function runHostLoopCheck() {
     await start();
     for (const [url, type] of [
       ['/chat', /text\/html/], ['/wiki', /text\/html/], ['/demo', /text\/html/],
+      ['/chat.js', /javascript/], ['/wiki.js', /javascript/],
+      ['/chat.css', /text\/css/], ['/wiki.css', /text\/css/],
       ['/api/state', /application\/json/], ['/api/wiki', /application\/json/],
       ['/api/journal', /application\/json/], ['/api/roadmap', /application\/json/],
       ['/api/file-surface', /application\/json/]
@@ -125,6 +129,25 @@ export async function runHostLoopCheck() {
       assert.ok(afterChat.chat.some(m => m.text === 'open the wiki'));
       assert.equal(afterChat.wikiRevision, after.revision);
     });
+    // Run the independent-format Wiki evidence script against this isolated
+    // ephemeral Host. It must never touch a developer's real data directory.
+    const evidence = await execFile(process.execPath,
+      [path.join(ROOT, 'scripts', 'batch-evidence', 'WIKI-BASELINE.mjs'), '--live'], {
+        cwd: ROOT, timeout: 20000, maxBuffer: 1024 * 1024,
+        env: {
+          ...process.env,
+          ARBOR_WIKI_EVIDENCE_ISOLATED: '1',
+          ARBOR_WIKI_EVIDENCE_BASE_URL: base
+        }
+      });
+    const wikiReceipt = JSON.parse(evidence.stdout);
+    check('A00 Wiki source/API evidence on isolated Host', () => {
+      assert.equal(wikiReceipt.ok, true, JSON.stringify(wikiReceipt.checks?.filter(x => !x.pass)));
+      assert.equal(wikiReceipt.browserDom, 'UNRUN');
+    });
+    receipt.wikiEvidence = { scope: wikiReceipt.scope, passedChecks: wikiReceipt.checks.length,
+      independentKeeperAcceptance: wikiReceipt.independentKeeperAcceptance,
+      exitCode: 0 };
     receipt.ok = true;
     receipt.exitCode = 0;
   } catch (error) {
