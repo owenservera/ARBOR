@@ -17,6 +17,7 @@ const snapshots = Object.create(null);
 let editSession = null;
 let refreshing = false;
 let busy = false;
+let ownerCsrf = null; // memory-only proof of a native Host-issued short-lived session
 
 function element(tag, className, text) {
   const result = document.createElement(tag);
@@ -359,6 +360,35 @@ async function review() {
   } catch (error) { invalidatePreview(`Cannot review without fresh Host Wiki: ${error}. Draft preserved.`); }
   finally { busy = false; }
 }
+// Reuse the existing Host control UI session; no actor string, Origin claim or
+// x-vivim-control marker on its own can authorize a Wiki mutation.
+async function ownerEditCsrf() {
+  if (ownerCsrf) return ownerCsrf;
+  const fragment = typeof window !== 'undefined' ? String(window.location?.hash || '') : '';
+  let response;
+  if (fragment.startsWith('#control-session=')) {
+    const match = fragment.match(/^#control-session=([a-f0-9]{64})$/);
+    // A launch code must not survive in navigation history.
+    window.history.replaceState(null, '', window.location.pathname + window.location.search);
+    if (!match) throw new Error('Invalid Host launch code');
+    response = await fetch('/api/host/control/ui-exchange', {
+      method: 'POST', cache: 'no-store', credentials: 'same-origin',
+      headers: { 'content-type': 'application/json', 'x-vivim-control': '1' },
+      body: JSON.stringify({ code: match[1] }), signal: AbortSignal.timeout(5000)
+    });
+  } else {
+    response = await fetch('/api/host/control/ui-state', {
+      method: 'GET', cache: 'no-store', credentials: 'same-origin',
+      signal: AbortSignal.timeout(5000)
+    });
+  }
+  if (!response.ok) throw new Error('Owner session required. Unlock Host Control on this PC before editing.');
+  const data = await response.json().catch(() => ({}));
+  if (data.schema !== 'vivim.control-ui-session/1' || !/^[a-f0-9]{64}$/.test(data.csrf || ''))
+    throw new Error('Host owner-session proof unavailable; no edit sent.');
+  ownerCsrf = data.csrf;
+  return ownerCsrf;
+}
 async function submitEdit(event) {
   event.preventDefault();
   const session = editSession;
@@ -380,12 +410,15 @@ async function submitEdit(event) {
     }
     const payload = mutationEnvelope(session, reviewed.revision, reviewed.after);
     if (bytesOf(payload) > MAX_ENTRY_BYTES) { invalidatePreview('Entry exceeds 4KB; nothing sent.'); return; }
+    const csrf = await ownerEditCsrf();
     requestSent = true;
     const result = await fetch('/api/mutate', {
-      method: 'POST', headers: { 'content-type': 'application/json', 'x-vivim-control': '1' },
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'content-type': 'application/json', 'x-vivim-control': '1', 'x-vivim-ui-csrf': csrf },
       body: JSON.stringify(payload), cache: 'no-store', signal: AbortSignal.timeout(5000)
     });
     if (!result.ok) {
+      if (result.status === 401) ownerCsrf = null;
       const detail = (await result.text()).slice(0, 240);
       if (result.status === 409) { markStale(fresh.revision); }
       setEditorStatus(`Host refused HTTP ${result.status}: ${detail}. Draft preserved; no save claimed.`);
@@ -416,7 +449,7 @@ async function submitEdit(event) {
     }
     setEditorStatus(requestSent
       ? `Network/receipt uncertainty: ${error}. Check live Wiki/journal before considering another edit; draft preserved.`
-      : `Fresh revision check failed before any POST: ${error}. Draft preserved; retry review.`);
+      : `Authorization or revision check failed before POST: ${error}. Draft preserved; unlock Host and retry.`);
   } finally { busy = false; $('edit-save').disabled = false; renderSync(); }
 }
 
