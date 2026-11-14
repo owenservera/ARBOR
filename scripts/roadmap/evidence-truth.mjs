@@ -33,8 +33,11 @@ export function deriveReleaseTruth({ promoted, proposal, release }) {
   return {
     schema: 'arbor.release-truth-projection/1',
     nature: 'READ_ONLY_CONFLICT_PROJECTION',
-    releaseReady: blockers.length === 0,
-    disposition: blockers.length ? 'BLOCKED_UNVERIFIED' : 'REVIEW_REQUIRED',
+    // Source ledgers alone never confer release permission; an independent
+    // runtime/security/device acceptance is required outside this projection.
+    releaseReady: false,
+    sourceClaimsSatisfied: blockers.length === 0,
+    disposition: blockers.length ? 'BLOCKED_UNVERIFIED' : 'EVIDENCE_REVIEW_REQUIRED',
     claims, conflictingClaims, blockers,
     evidenceIsNotReleasePermission: true,
     note: 'Status is derived from existing ledgers, never an independent acceptance or permission to deploy'
@@ -59,7 +62,7 @@ function main() {
     process.stdout.write(JSON.stringify(result, null, 2) + '\n');
     // A blocked release is an accurate outcome, not an execution error.
     // Exit failure only when source truth cannot be read/validated.
-    if (!['BLOCKED_UNVERIFIED', 'REVIEW_REQUIRED'].includes(result.disposition)) process.exitCode = 1;
+    if (!['BLOCKED_UNVERIFIED', 'EVIDENCE_REVIEW_REQUIRED'].includes(result.disposition)) process.exitCode = 1;
   } catch (e) {
     process.stderr.write('Release truth unavailable: ' + String(e.stack || e) + '\n');
     process.exitCode = 1;
