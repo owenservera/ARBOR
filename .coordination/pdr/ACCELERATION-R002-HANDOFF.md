@@ -25,3 +25,7 @@ Next ready work is unlocked only by accepted dependencies, not by unreviewed sou
 For each item: exact commit, changed paths and owning lane; actual test exits vs UNRUN; independent receipt; live product behavior demonstrated; residual blockers; next ready frontier; and time/cost saved on the *next* task or NOT_YET_MEASURED. All changes must use Host effect permissions and fresh-head safeguards. No provider APIs, no live provider claim from mock source, no 100-agent fleet and no APK milestone.
 
 The default target is not a new design doc: **make one typed instruction change an accurate, durable second-screen intelligent Wiki and turn a subsequent failure into a verified repair.**
+
+## Execution status refresh — 2026-11-14
+
+A00/A01/A02 are now `in-progress` in canonical `roadmap.v1.json` with source landed. Verification and owner acceptance remain UNRUN/PENDING; A03–A08 remain blocked/queued. The immediate local commands are in `docs/product/roadmap/ACCELERATION-R002.md` §8. No stopped workflow was automatically resumed, no other branch was merged, and no Host/private source effects were performed by this GitHub update.
