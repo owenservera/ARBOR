@@ -222,3 +222,7 @@ Read-only operator checks: `node scripts/roadmap/acceleration-queue.mjs --check`
 ### Execution checkpoint — 14 November 2026
 
 A00, A01 and A02 source has landed on `main`. The V8 source/logic checks are not Node process exits. Run the real test commands in [`ACCELERATION-R002.md`](ACCELERATION-R002.md), obtain independent keeper evidence, and only then unlock A03/A04/A06. No Release/Beta gate was changed.
+
+### W1 five-lane source integration (15 November 2026)
+
+Source branches A/B/C/D/E have been converged through the keeper integration tree preserving all five Git parent histories. A00/A01/A02 remain **in-progress, independent verification UNRUN**; A03 and A04 now have preparatory compiler/Wiki frontend source but remain **queued, dependency-blocked**. The authenticated Wiki editor uses the existing Host control session (`ui-state`/`ui-exchange`/CSRF), not an actor string or Origin as a bearer grant. The isolated Host runner passes a temporary owner grant to the independent Wiki evidence subprocess. See [integration truth](../../acceleration/w1/INTEGRATION.md). Node24, live Host, browser, Windows and Android acceptance remain UNRUN. No release ledger promoted.
