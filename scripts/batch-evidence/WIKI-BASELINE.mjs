@@ -69,9 +69,13 @@ function makeTransport(baseUrl, fetchImpl) {
 
 export async function runWikiEvidence({
   root = ROOT, live = false, isolated = false, baseUrl = '',
-  transport = null, fetchImpl = globalThis.fetch
+  transport = null, ownerToken = null, fetchImpl = globalThis.fetch
 } = {}) {
   if (live) assertIsolatedLive(baseUrl, isolated);
+  // A live editor requires an actual Host owner grant. Mock transport tests
+  // inject their own trust fixture and never touch a real server.
+  if (live && !transport && (typeof ownerToken !== 'string' || !/^[a-f0-9]{64}$/.test(ownerToken)))
+    throw new Error('Isolated live edit requires an ephemeral Host owner capability');
   const checks = [];
   const check = (name, pass, detail) => checks.push({ name, pass: Boolean(pass), detail: String(detail) });
   const safe = async (name, fn) => {
@@ -140,7 +144,8 @@ export async function runWikiEvidence({
         expectedRevision: wikiBefore.revision, edit: { action: 'set-section', page: 'Main',
           section: 'HowTo', content: 'A00 isolated check rev ' + wikiBefore.revision + ' ' +
           hash(seedBytes).slice(0, 12) } };
-      const trusted = { origin: baseUrl, 'x-vivim-control': '1' };
+      const trusted = { origin: baseUrl, 'x-vivim-control': '1',
+        ...(ownerToken ? { authorization: 'Bearer ' + ownerToken } : {}) };
       const negatives = [
         ['forged-origin-refused', edit, { ...trusted, origin: 'https://forged.invalid' }, 403],
         ['missing-explicit-control-refused', edit, { origin: baseUrl }, 403],
@@ -205,7 +210,8 @@ export async function runWikiEvidence({
     schema: 'arbor.wiki-evidence/2', ok, item: 'WIKI-BASELINE',
     scope: live ? 'SOURCE_AND_API_ONLY' : 'SOURCE_ONLY',
     browserDom: 'UNRUN', physicalDevice: 'UNRUN',
-    sessionBoundAuthorization: 'UNVERIFIED',
+    sessionBoundAuthorization: live && ok && ownerToken
+      ? 'ISOLATED_OWNER_BEARER_VERIFIED_BROWSER_SESSION_UNRUN' : 'UNVERIFIED',
     durableWikiProjection: live && ok ? 'API_JOURNAL_PROJECTION_ONLY_RESTART_UNRUN' : 'UNRUN',
     independentKeeperAcceptance: 'UNRUN',
     checks, digest: hash(JSON.stringify(checks))
@@ -225,7 +231,8 @@ async function main() {
     const live = args.includes('--live');
     const result = await runWikiEvidence({ live,
       isolated: process.env.ARBOR_WIKI_EVIDENCE_ISOLATED === '1',
-      baseUrl: process.env.ARBOR_WIKI_EVIDENCE_BASE_URL || '' });
+      baseUrl: process.env.ARBOR_WIKI_EVIDENCE_BASE_URL || '',
+      ownerToken: process.env.ARBOR_WIKI_EVIDENCE_OWNER_TOKEN || null });
     process.stdout.write(JSON.stringify(result, null, 2) + '\n');
     if (!result.ok) process.exitCode = 1;
   } catch (error) {
