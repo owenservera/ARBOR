@@ -43,10 +43,10 @@
     editTarget.textContent = page + '/' + section;
     editContent.value = body ?? '';
     editStatus.textContent = '';
-    editForm.style.display = '';
+    editForm.hidden = false;
   }
 
-  editCancel.addEventListener('click', () => { editForm.style.display = 'none'; editPage = null; editSection = null; });
+  editCancel.addEventListener('click', () => { editForm.hidden = true; editPage = null; editSection = null; });
   editForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     if (editPage == null || editSection == null) return;
@@ -63,7 +63,7 @@
       }
       const acknowledged = await result.json();
       editStatus.textContent = 'saved at Wiki revision ' + acknowledged.wikiRevision;
-      editForm.style.display = 'none';
+      editForm.hidden = true;
       editPage = null; editSection = null;
       await refresh();
     } catch (err) {
