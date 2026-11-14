@@ -80,6 +80,7 @@ function validateEnvelope(entry, { stored = false } = {}) {
   requireShape(byteSize(entry) <= MAX_ENTRY_BYTES, 'Entry exceeds 4KB', stored ? 503 : 413);
 }
 function normalizeLegacy(record) {
+  if (!record || typeof record !== 'object' || Array.isArray(record)) return record;
   // Older demo feedback writes had no kind; preserve their bytes and read-only semantics.
   if (!Object.hasOwn(record, 'kind') && ownKeys(record, ['round','approveAll','verdicts','receivedAt'])) {
     return { ...record, kind: 'feedback-round', actor: 'loop-agent', schemaVersion: 1 };

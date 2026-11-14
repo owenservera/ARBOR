@@ -413,8 +413,8 @@ export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path
         sendJson(res, 400, { code: 'MUTATION_ENVELOPE' }); return;
       }
       const claimedApproval = entry.kind === 'feedback-round' &&
-        (entry.approveAll || entry.verdicts.some(v =>
-          ['approve', 'pass'].includes(v?.verdict ?? v?.decision)));
+        (entry.approveAll === true || (Array.isArray(entry.verdicts) && entry.verdicts.some(v =>
+          ['approve', 'pass'].includes(v?.verdict ?? v?.decision))));
       if (entry.kind === 'wiki-edit' || entry.kind === 'gate-decision' || claimedApproval) {
         // Both browser CSRF and the Host's EXISTING owner capability are required.
         // For an owner-browser session, the HttpOnly cookie + x-vivim-ui-csrf
