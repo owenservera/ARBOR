@@ -1,0 +1,226 @@
+{
+  "schema": "arbor.p5.phase2.preg.z.exact-source-lock/1",
+  "capturedAt": "2026-11-14",
+  "disposition": "PREPARED_NOT_PROMOTED",
+  "origin": {
+    "repo": "owenservera/ARBOR",
+    "branch": "work/p5-pre-g-convergence-r001",
+    "head": "8b23c73bf450738a76b256bf0fa17ecbf86db591"
+  },
+  "target": {
+    "repo": "owenservera/ARBOR",
+    "branch": "work/p5-preg-intelligence-convergence-r001",
+    "writePrefix": ".integration/proposal5/phase2/pre-g/Z-convergence/",
+    "createdFrom": "8b23c73bf450738a76b256bf0fa17ecbf86db591",
+    "merged": false
+  },
+  "requiredSpecialists": [
+    {
+      "id": "N0",
+      "branch": "work/p5-preg-n0-io-r001",
+      "head": "cde3b6e5521d5b17215ab10088cb8090f8b87e6f",
+      "relativeToOrigin": {
+        "ahead": 3,
+        "behind": 0
+      },
+      "primary": "N0-io/IO-CONTRACT.json",
+      "primaryBlob": "5089373f8106061c341a6b525a60a650db48b57a",
+      "handoff": "N0-io/W2-NATIVE-HANDOFF.md",
+      "handoffBlob": "6356c48263d9660c1f2f411b8b4d6f1ae0dc3fd6",
+      "ledger": "N0-io/RUN-LEDGER.json",
+      "ledgerBlob": "6ddb5916f9e8d26f570b7d41d2911022988aa92f",
+      "repo": "owenservera/ARBOR",
+      "scopePrefix": ".integration/proposal5/phase2/pre-g/"
+    },
+    {
+      "id": "S",
+      "branch": "work/p5-preg-semantic-wiki-r001",
+      "head": "d7e59a389a6ec5278595e317dfa904a801783c5b",
+      "relativeToOrigin": {
+        "ahead": 5,
+        "behind": 0
+      },
+      "primary": "S-semantic/COMMAND-WIKI-CROSSWALK.md",
+      "primaryBlob": "bac10b5dda9230907066aae7ce498b027f979038",
+      "handoff": "S-semantic/OWNER-HANDOFF.md",
+      "handoffBlob": "0be405456d574bb0aa996f1fcbac6da25bf1f8e9",
+      "ledger": "S-semantic/RUN-LEDGER.json",
+      "ledgerBlob": "2feb3a73fc57cd12e554ce7f3c05f81a3152850e",
+      "repo": "owenservera/ARBOR",
+      "scopePrefix": ".integration/proposal5/phase2/pre-g/"
+    },
+    {
+      "id": "V",
+      "branch": "work/p5-preg-visual-language-r001",
+      "head": "7ad5b3c49aefdf1fdd8b212e5b7eea0e7b92338e",
+      "relativeToOrigin": {
+        "ahead": 2,
+        "behind": 0
+      },
+      "primary": "V-visual/NATIVE-UI-BOUNDARY.md",
+      "primaryBlob": "cdb653f0ab40536b99a4bea99270b7c68080b807",
+      "handoff": "V-visual/OWNER-HANDOFF.md",
+      "handoffBlob": "9094289b2e9bdae9e520e8bf16c7b3f262e0199f",
+      "ledger": "V-visual/RUN-LEDGER.json",
+      "ledgerBlob": "3f7793812346723a87e72a30fa1abdaf7003ac63",
+      "repo": "owenservera/ARBOR",
+      "scopePrefix": ".integration/proposal5/phase2/pre-g/"
+    },
+    {
+      "id": "W",
+      "branch": "work/p5-preg-autowiki-r001",
+      "head": "827d21d1c33aa8597c600b45179452abc35c7af9",
+      "relativeToOrigin": {
+        "ahead": 6,
+        "behind": 0
+      },
+      "primary": "W-autowiki/CONTRACTS.md",
+      "primaryBlob": "5e9738d7c289ba7b77c752e84430f73f88212ec2",
+      "handoff": "W-autowiki/W2-OWNER-HANDOFF.md",
+      "handoffBlob": "67ccff3d2eed754eacfe1a39f8fb0f5cb4c7c290",
+      "ledger": "W-autowiki/RUN-LEDGER.json",
+      "ledgerBlob": "51417b827fb4396659a9b3a24b9e75435ababf54",
+      "sourceMapBlob": "b037a4b739613dcf884a7c50109eac824202b653",
+      "filesPresent": 9,
+      "repo": "owenservera/ARBOR",
+      "scopePrefix": ".integration/proposal5/phase2/pre-g/"
+    }
+  ],
+  "phase2ReadOnly": [
+    {
+      "id": "P2-T",
+      "branch": "work/p5-p2-preg-tests-r001",
+      "head": "c807010e52b4a9f82ea9578a979befd38f74cb31",
+      "status": "PREPARED_NOT_PROMOTED",
+      "relativeToOrigin": {
+        "ahead": 6,
+        "behind": 0
+      },
+      "handoffBlob": "fbc7b864833e640dbe15cef62e6387c1ae6ba455"
+    },
+    {
+      "id": "P2-K",
+      "branch": "work/p5-p2-preg-knowledge-r001",
+      "head": "4db9e0c2068be36ab42663a76186422c8f9813a1",
+      "status": "PREPARED_NOT_PROMOTED",
+      "relativeToOrigin": {
+        "ahead": 8,
+        "behind": 0
+      },
+      "handoffBlob": "f1152493178f78130521b3fd7a520d6a7432f9ac"
+    },
+    {
+      "id": "P2-C",
+      "branch": "work/p5-p2-preg-interop-r001",
+      "head": "73b1ea769de6023dfff857d7e9c4003731f3b112",
+      "status": "PREPARED_NOT_PROMOTED",
+      "relativeToOrigin": {
+        "ahead": 7,
+        "behind": 0
+      },
+      "handoffBlob": "8ea5213f5406498953cf0f19b29e9907d85b533f"
+    },
+    {
+      "id": "P2-H1",
+      "branch": "work/p5-p2-highvalue-labs",
+      "head": "3e6954d21bd70eeccc6e00a310bcb337c3164f50",
+      "status": "PREPARED_NOT_PROMOTED",
+      "relativeToOrigin": {
+        "ahead": 1,
+        "behind": 31
+      },
+      "handoffBlob": "87971c4599a1d02b39d827f1224ecb8f3ee4a66f",
+      "note": "DIVERGED; older source pin baseline 6ab7e6976c02cac2ee71f030deda3f6541f8102f, advisory priorities only"
+    }
+  ],
+  "w1FrozenReadOnly": [
+    {
+      "id": "A",
+      "repo": "owenservera/ARBOR",
+      "branch": "work/p5-w01-a-native",
+      "head": "dda546a11294920d6521a0f64ab7ee62ec993c70",
+      "mutableByZ": false
+    },
+    {
+      "id": "B",
+      "repo": "owenservera/ARBOR",
+      "branch": "work/p5-w01-b-host",
+      "head": "78a5105a9c1f1880d658f350e130b1e2632d3532",
+      "mutableByZ": false
+    },
+    {
+      "id": "C",
+      "repo": "owenservera/ARBOR",
+      "branch": "work/p5-w01-c-studio",
+      "head": "f950b91685927f37b48d020433aa8d2d3c271419",
+      "mutableByZ": false
+    },
+    {
+      "id": "D",
+      "repo": "owenservera/ARBOR",
+      "branch": "work/p5-w01-d-hq",
+      "head": "ad55fe28c2c331841675f308f9199ee4c2add86a",
+      "mutableByZ": false
+    },
+    {
+      "id": "E",
+      "repo": "owenservera/ARBOR",
+      "branch": "work/p5-w01-e-ui",
+      "head": "1a5cf26ce14ebce4e31d9a4373060ace61852645",
+      "mutableByZ": false
+    },
+    {
+      "id": "F",
+      "repo": "owenservera/ARBOR",
+      "branch": "work/p5-w01-f-verify",
+      "head": "be458f3c4cdb7eb38d47b1de2a00d441b7cdc704",
+      "mutableByZ": false
+    }
+  ],
+  "reusedPinnedDonorSources": [
+    {
+      "repo": "owenservera/repos-hq",
+      "ref": "research/autowiki-screen-mirror-20261112",
+      "sha": "61507b5f9bafd0211d0a556280b367574e676ce1",
+      "via": "W/SOURCE-MAP.md"
+    },
+    {
+      "repo": "owenservera/repos-hq",
+      "ref": "research/rock-core-storage-bounds-20261112",
+      "sha": "0a3c11a6df72434b46931f90b25bf1f93da09f92",
+      "via": "W/SOURCE-MAP.md"
+    },
+    {
+      "repo": "owenservera/repos-hq",
+      "ref": "research/semantic-wiki-compiler-20261112",
+      "sha": "7cb2fadd88c5a08c0ec7e084410e150a5b6e0f3d",
+      "via": "S/RUN-LEDGER.json"
+    },
+    {
+      "repo": "owenservera/vivim-labs",
+      "ref": "lab/nlp-visual-command-ui-20261111",
+      "sha": "67e76c5b730dcc2cd3ab3919c3ba273a6c260db8",
+      "via": "V/SOURCE-PINS.json"
+    },
+    {
+      "repo": "owenservera/vivim-labs",
+      "ref": "lab/user-io-rust-core-20261112",
+      "sha": "61d9fc15c55144c4f0b79afa248981c2b0ca9bd6",
+      "via": "N0/RUN-LEDGER.json"
+    },
+    {
+      "repo": "owenservera/vivim-web-harness",
+      "ref": "work/native-user-io-r001-20261112",
+      "sha": "fa6dea9576c83496d95562b98b7a815fda4aec88",
+      "via": "N0/RUN-LEDGER.json"
+    }
+  ],
+  "interpretation": {
+    "shaFormat": "40-digit Git commit or Git blob SHA; never conflate with SHA-256 source digest",
+    "refereeFact": "All four specialists committed and ahead of the same immutable PRE-G origin, but their changes are isolated and not combined in this branch",
+    "zCreatesRuntime": false,
+    "zAuthorizesMerge": false,
+    "promotion": "No runtime activation or root lock change; G alone may integrate owner-approved selected material after exact new source pin verification",
+    "testing": "Fresh Z source inspections and commit diff comparison only; zero Node/Cargo/device tests executed in Z"
+  }
+}
