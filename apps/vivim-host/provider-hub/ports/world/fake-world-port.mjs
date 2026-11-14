@@ -13,12 +13,13 @@ export function createFakeWorldPort({ grants, clock } = {}) {
     fixtures.set(grant.grantRef, grant);
     const key = [grant.worldId, grant.principalRef, grant.providerId].join('\0');
     const binding = grant.accountRef + '\0' + grant.accountEpoch;
-    if (accountBindings.has(key) && accountBindings.get(key) !== binding) throw worldPortError('WORLD_ACCOUNT_FIXTURE_CONFLICT');
+    // The final seeded account is the initially active synthetic browser account.
     accountBindings.set(key, binding);
   }
   const snapshot = () => { const t = clock(); if (typeof t !== 'string' || !Number.isFinite(Date.parse(t))) throw worldPortError('WORLD_FAKE_CLOCK'); return Date.parse(t); };
   const worldKey = c => c.worldId + '\0' + c.principalRef;
   const keyFor = c => c.worldId + '\0' + c.principalRef + '\0' + c.providerId;
+  const receiptKey = (c, id) => [c.providerId, c.accountRef, c.accountEpoch, id].join('\0');
   function state(c) {
     const key = worldKey(c);
     if (!worlds.has(key)) worlds.set(key, { revision: 0, evidence: new Map(), receipts: new Map() });
@@ -54,7 +55,7 @@ export function createFakeWorldPort({ grants, clock } = {}) {
     const s = state(c);
     const evidenceKey = [c.providerId, c.accountRef, c.accountEpoch, e.sourceRef, e.sourceRevision].join('\0');
     const intent = JSON.stringify({ c, e });
-    const prior = s.receipts.get(idempotencyKey);
+    const prior = s.receipts.get(receiptKey(c, idempotencyKey));
     if (prior) return prior.intent === intent ? Object.freeze({ ...prior.value, replayed: true })
       : receipt(c, idempotencyKey, 'DENIED', 'IDEMPOTENCY_CONFLICT', s.revision);
     if (s.revision !== expectedRevision) return receipt(c, idempotencyKey, 'DENIED', 'REVISION_CONFLICT', s.revision);
@@ -66,14 +67,14 @@ export function createFakeWorldPort({ grants, clock } = {}) {
     if (fault === 'UNCERTAIN_AFTER_CLAIM') {
       // Effect fence is consumed; exactly this receipt is returned on replay. No retry.
       const result = receipt(c, idempotencyKey, 'UNCERTAIN', 'CLAIMED_WITHOUT_EVIDENCE', s.revision);
-      s.receipts.set(idempotencyKey, { intent, value: result });
+      s.receipts.set(receiptKey(c, idempotencyKey), { intent, value: result });
       return result;
     }
     if (!existing) { s.evidence.set(evidenceKey, e); s.revision++; }
     const result = receipt(c, idempotencyKey, e.coverage === 'PARTIAL' ? 'PARTIAL' : 'MOCK_APPLIED',
       existing ? 'DUPLICATE_EVIDENCE' : null, s.revision,
       { evidenceRef: e.sourceRef, coverage: e.coverage, gaps: e.gapCodes, deduplicated: Boolean(existing) });
-    s.receipts.set(idempotencyKey, { intent, value: result });
+    s.receipts.set(receiptKey(c, idempotencyKey), { intent, value: result });
     return result;
   }
   function readEvidence({ context, cursor = 0, limit = 20 }) {
@@ -81,7 +82,8 @@ export function createFakeWorldPort({ grants, clock } = {}) {
     if (!Number.isSafeInteger(cursor) || cursor < 0 || !Number.isSafeInteger(limit) || limit < 1 || limit > 100) throw worldPortError('WORLD_PAGE_INVALID');
     const auth = checkGrant({ context: c, capability: 'stream.read' });
     if (auth.decision === 'DENIED') return Object.freeze({ schema: WORLD_PORT_SCHEMA, mode: MOCK_MODE, status: 'DENIED', code: auth.reason, items: Object.freeze([]), nextCursor: null });
-    const s = state(c); const all = [...s.evidence.values()];
+    const s = state(c); const prefix = [c.providerId, c.accountRef, c.accountEpoch].join('\0') + '\0';
+    const all = [...s.evidence.entries()].filter(([key]) => key.startsWith(prefix)).map(([, value]) => value);
     return Object.freeze({ schema: WORLD_PORT_SCHEMA, mode: MOCK_MODE, status: 'MOCK_ONLY', revision: s.revision,
       items: Object.freeze(all.slice(cursor, cursor + limit)), nextCursor: cursor + limit < all.length ? cursor + limit : null });
   }
@@ -90,7 +92,7 @@ export function createFakeWorldPort({ grants, clock } = {}) {
     if (typeof idempotencyKey !== 'string' || !/^synthetic:\/\/intent\/[a-zA-Z0-9._~/-]{1,100}$/.test(idempotencyKey)) throw worldPortError('WORLD_RECEIPT_REF_INVALID');
     const auth = checkGrant({ context: c, capability: 'evidence.commit' });
     if (auth.decision === 'DENIED') return receipt(c, idempotencyKey, 'DENIED', auth.reason, null);
-    const found = state(c).receipts.get(idempotencyKey);
+    const found = state(c).receipts.get(receiptKey(c, idempotencyKey));
     return found ? found.value : receipt(c, idempotencyKey, 'NOT_FOUND', 'NO_MOCK_RECEIPT', null);
   }
   const port = Object.freeze({ schema: WORLD_PORT_SCHEMA, mode: MOCK_MODE, checkGrant, commitEvidence, readEvidence, readReceipt });
