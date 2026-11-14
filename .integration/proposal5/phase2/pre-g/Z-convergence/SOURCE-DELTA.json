@@ -1,0 +1,198 @@
+{
+  "schema": "arbor.p5.phase2.preg.z.source-delta/1",
+  "basis": "GitHub compare of each listed specialist and P2 branch against origin 8b23c73bf450738a76b256bf0fa17ecbf86db591",
+  "date": "2026-11-14",
+  "compareTruth": [
+    {
+      "lane": "N0",
+      "ahead": 3,
+      "behind": 0,
+      "changedFiles": 9,
+      "base": "8b23c73bf450738a76b256bf0fa17ecbf86db591",
+      "head": "cde3b6e5521d5b17215ab10088cb8090f8b87e6f",
+      "prefix": "N0-io/",
+      "sourceTypes": [
+        "json schema",
+        "type references",
+        "synthetic contract test",
+        "source analysis",
+        "handoff"
+      ],
+      "classification": "INERT_CONTRACT_SOURCE_TESTABLE",
+      "runtimeImported": false
+    },
+    {
+      "lane": "S",
+      "ahead": 5,
+      "behind": 0,
+      "changedFiles": 15,
+      "base": "8b23c73bf450738a76b256bf0fa17ecbf86db591",
+      "head": "d7e59a389a6ec5278595e317dfa904a801783c5b",
+      "prefix": "S-semantic/",
+      "sourceTypes": [
+        "copied immutable HQ parser/research compiler",
+        "semantic IR fixture and schema",
+        "negative-only adapter and tests",
+        "handoff"
+      ],
+      "classification": "PORTABLE_RESEARCH_INERT_NOT_PRODUCT",
+      "runtimeImported": false
+    },
+    {
+      "lane": "V",
+      "ahead": 2,
+      "behind": 0,
+      "changedFiles": 10,
+      "base": "8b23c73bf450738a76b256bf0fa17ecbf86db591",
+      "head": "7ad5b3c49aefdf1fdd8b212e5b7eea0e7b92338e",
+      "prefix": "V-visual/",
+      "sourceTypes": [
+        "read-only projection schema",
+        "prototype",
+        "fixtures and test",
+        "boundaries and handoff"
+      ],
+      "classification": "PROTOTYPE_PROJECTION_NOT_UI",
+      "runtimeImported": false
+    },
+    {
+      "lane": "W",
+      "ahead": 6,
+      "behind": 0,
+      "changedFiles": 9,
+      "base": "8b23c73bf450738a76b256bf0fa17ecbf86db591",
+      "head": "827d21d1c33aa8597c600b45179452abc35c7af9",
+      "prefix": "W-autowiki/",
+      "sourceTypes": [
+        "bounded mirror module",
+        "negative suite",
+        "contracts",
+        "storage guardrails",
+        "handoff"
+      ],
+      "classification": "EPHEMERAL_MIRROR_SOURCE_TESTABLE_NOT_WIRED",
+      "runtimeImported": false
+    },
+    {
+      "lane": "P2-T",
+      "ahead": 6,
+      "behind": 0,
+      "changedFiles": 6,
+      "head": "c807010e52b4a9f82ea9578a979befd38f74cb31",
+      "classification": "TEST_FIXTURES_ONLY"
+    },
+    {
+      "lane": "P2-K",
+      "ahead": 8,
+      "behind": 0,
+      "changedFiles": 8,
+      "head": "4db9e0c2068be36ab42663a76186422c8f9813a1",
+      "classification": "KNOWLEDGE_SOURCE_GATED_NO_PERSONAL_IMPORT"
+    },
+    {
+      "lane": "P2-C",
+      "ahead": 7,
+      "behind": 0,
+      "changedFiles": 7,
+      "head": "73b1ea769de6023dfff857d7e9c4003731f3b112",
+      "classification": "CHRONOS_INTEROP_READ_GATED_NO_SCHEDULER"
+    },
+    {
+      "lane": "P2-H1",
+      "ahead": 1,
+      "behind": 31,
+      "changedFiles": 4,
+      "head": "3e6954d21bd70eeccc6e00a310bcb337c3164f50",
+      "classification": "PRIORITIZATION_ONLY_DIVERGED"
+    }
+  ],
+  "contractCollisions": [
+    {
+      "id": "D01",
+      "severity": "P0",
+      "topic": "Authoritative actor and grant",
+      "observed": "N0 draft fields and V candidate UI do not authenticate actors; W ScreenContext.scope is comparison metadata",
+      "decision": "B verifies session/device/World and issues readScope; A accepts actor only out-of-band; UI never mints permission",
+      "owner": "B+A+F"
+    },
+    {
+      "id": "D02",
+      "severity": "P0",
+      "topic": "SourceRef wire identity",
+      "observed": "N0/F SourceRef uses numeric revision and id max 96; W HQ doc IDs can be 191 characters with slash/# and source.nativeRef; S uses Git commit/blob/span",
+      "decision": "Do not truncate/remint; canonical sourceRef plus separate nativeRef and sourceRevision/commit provenance; F owner-authored explicit crosswalk",
+      "owner": "D+F"
+    },
+    {
+      "id": "D03",
+      "severity": "P1",
+      "topic": "Span coordinate units",
+      "observed": "N0 proposed textSpan unit unicode_scalar; V read model requires UTF-16 and UTF-8; S parser reports line numbers",
+      "decision": "Use explicit source-native coordinate space + versioned span conversion and reject ambiguous mappings; no silent index arithmetic",
+      "owner": "A+E+F"
+    },
+    {
+      "id": "D04",
+      "severity": "P0",
+      "topic": "Revision fencing",
+      "observed": "N0 input/interaction/graph/policy; V per-producer/catalog/world; W screen/context/projection and scope; S catalog/source digest",
+      "decision": "Require coherent snapshot vector and generation CAS; stale or revoked async results drop; resnapshot after gap",
+      "owner": "A+B+D+E+F"
+    },
+    {
+      "id": "D05",
+      "severity": "P0",
+      "topic": "Read authority versus effect",
+      "observed": "S annotations/IR, V lexical hints, N0 candidates, W wiki source cards are evidence only; Host B catalog/dispatcher/journal own effects",
+      "decision": "Only B reinterprets original text and owns plan digest, approval, exclusive claim and durable receipt; uncertain send HOLD no automatic retry",
+      "owner": "B+F"
+    },
+    {
+      "id": "D06",
+      "severity": "P1",
+      "topic": "HQ development versus personal World",
+      "observed": "D HQ wiki/index are dev-scoped; W personal source reads need B grants; K proposes consented archive ingestion separately",
+      "decision": "Never join or ingest personal corpus into HQ dev; consent/scope/erasure and real receipts required for any personal source",
+      "owner": "B+D+F"
+    },
+    {
+      "id": "D07",
+      "severity": "P1",
+      "topic": "Producer coverage and partial history",
+      "observed": "C captured browser history may be incomplete; V producer 'complete' applies to its declared facets; W page must reflect partial/unavailable",
+      "decision": "Expose coverage/omissions and per-producer/source status; no claimed full-context, full-history or available-now from missing sources",
+      "owner": "C+D+E+F"
+    },
+    {
+      "id": "D08",
+      "severity": "P0",
+      "topic": "Storage/Rock protected bytes",
+      "observed": "W is memory-only; HQ Rock storage-policy and membership are pure plans; H1 identifies B12/G11 as hard beta baseline",
+      "decision": "Protected originals/grants/receipts/World never evicted; no compactor or destructive action in Z; measured physical bytes and recovery tests after G",
+      "owner": "B+A+D+F"
+    },
+    {
+      "id": "D09",
+      "severity": "P1",
+      "topic": "Duplicated computation and renderer",
+      "observed": "R001 thread-per-edit/global mutex are not safe high-frequency architecture; E already owns TierFlow publisher; D already owns wiki",
+      "decision": "A existing HQKG EngineRegistry and bounded dispatch only; E existing single renderer; D existing wiki read model, no second graph/registry/scheduler/writer",
+      "owner": "A+D+E"
+    },
+    {
+      "id": "D10",
+      "severity": "P0",
+      "topic": "Integration source closure",
+      "observed": "A-F specialist heads and P2 extras exist only on isolated branches; no combined import tested by Z",
+      "decision": "G first verifies A-F actual combined tree, root locks/import closure/security; Z is not a merge source or build certification",
+      "owner": "G+F"
+    }
+  ],
+  "noClaim": [
+    "Specialist branches ahead of common baseline do not imply product integration",
+    "P2-H1 diverged; rank ordering is advisory, not a merge plan",
+    "No Node, Rust, browser, Windows, phone, real-auth, low-storage, personal data or provider actions were executed by Z",
+    "No source body, archive, client secret, private user material or root manifest was changed",
+    "Only Z files are authorized for this branch"
+  ]
+}
