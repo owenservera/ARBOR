@@ -21,6 +21,7 @@ import { createWorkerSupervisor } from './bootstrap/worker-supervisor.mjs';
 import { loadOwnerToken, verifyOwnerToken } from './bootstrap/owner-auth.mjs';
 import { createDirectPhoneHandler, serveLoopbackPhoneAsset } from './direct-phone.mjs';
 import { createRustChatContext } from './chat/rust-context.mjs';
+import { createProductJournal } from './chat/product-journal.mjs';
 import { createEnrollment } from './apk/enrollment.mjs';
 import { createApkRegistry } from './apk/registry.mjs';
 import { createPairingStore } from './apk/pairing.mjs';
@@ -198,6 +199,13 @@ export function hostSnapshot({ dataRoot, now = () => new Date().toISOString(), j
 }
 
 export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path.join(here, 'public'), bootstrap = null, ownerToken = null, directPhone = null, worker = null, studioUrl = null, studioToken = null, onboarding = null, autoPump = false } = {}) {
+  // Product mutations live in the Host data directory, never in committed public/demo assets.
+  // The original seed documents are read-only; one bounded append journal projects chat and Wiki.
+  const productJournal = createProductJournal({
+    dataRoot,
+    seedState: JSON.parse(readFileSync(path.join(here, 'data', 'demo-baseline', 'state.json'), 'utf8')),
+    seedWiki: JSON.parse(readFileSync(path.join(here, 'data', 'demo-baseline', 'wiki.json'), 'utf8'))
+  });
   let runtime = bootstrap;
   let token = ownerToken;
   const runtimeFor = () => {
@@ -357,7 +365,7 @@ export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path
     // POST /api/mutate is the product-route name for the SAME handler (one handler,
     // two route names — oracle ack2 batch-1 route set).
     if ((pathname === '/demo/feedback' || pathname === '/demo/mutate' || pathname === '/api/mutate') && req.method === 'POST') {
-      const journalPath = path.join(staticRoot, 'demo', 'journal.jsonl');
+      // The same Host-owned journal is read by /api/state, /api/wiki and /api/journal.
       let body = '';
       req.on('data', chunk => { body += chunk; });
       req.on('end', async () => {
@@ -399,14 +407,25 @@ export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path
             receivedAt: new Date().toISOString()
           };
         }
-        try {
-          mkdirSync(path.dirname(journalPath), { recursive: true });
-          await appendFile(journalPath, JSON.stringify(entry) + '\n', 'utf8');
-        } catch {
-          res.writeHead(500); res.end('Journal append failed'); return;
+        // Wiki edits are an explicit same-origin owner-browser action in this loopback
+        // workbench. They do NOT publish code or bypass the privileged Host dispatcher.
+        // A cross-origin page must never mutate the local journal through browser CSRF.
+        if (req.headers.origin && String(req.headers.origin).toLowerCase() !== 'http://' + host) {
+          res.writeHead(403); res.end('Cross-origin mutation refused'); return;
         }
-        res.setHeader('content-type', 'application/json; charset=utf-8');
-        res.writeHead(200); res.end(JSON.stringify(entry));
+        if (entry.kind === 'wiki-edit' &&
+            (String(req.headers.origin || '').toLowerCase() !== 'http://' + host ||
+             String(req.headers['x-vivim-control'] || '') !== '1')) {
+          res.writeHead(403); res.end('Wiki edit requires same-origin explicit action'); return;
+        }
+        try {
+          const stored = await productJournal.append(entry);
+          res.setHeader('content-type', 'application/json; charset=utf-8');
+          res.writeHead(200); res.end(JSON.stringify(stored));
+        } catch (error) {
+          sendJson(res, Number.isInteger(error?.status) ? error.status : 500,
+            { error: String(error?.message || 'Product journal append failed') });
+        }
       });
       return;
     }
@@ -415,48 +434,59 @@ export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path
       res.setHeader('content-type', 'application/json; charset=utf-8');
       res.writeHead(200); res.end(req.method === 'HEAD' ? undefined : JSON.stringify(hostSnapshot({ dataRoot, bootstrap: runtimeFor() }))); return;
     }
-    // Batch-1 product routes (oracle ack2, exact-string only — no catch-all):
-    // state/wiki/file-surface read the demo-baseline seeds on disk; roadmap and
-    // journal are READ-THROUGHS of their single sources (never copies): roadmap.v1.json
-    // is the owner's single source of truth, journal.jsonl is what /api/mutate appends to.
-    if (pathname === '/api/state' || pathname === '/api/wiki' || pathname === '/api/file-surface') {
-      const seed = pathname === '/api/state' ? 'state.json' : pathname === '/api/wiki' ? 'wiki.json' : 'file-surface.v1.json';
+    // Product state is projected deterministically from one durable Host journal.
+    if (pathname === '/api/state' || pathname === '/api/wiki') {
       try {
-        const body = await readFile(path.join(here, 'data', 'demo-baseline', seed), 'utf8');
-        JSON.parse(body); // a corrupt seed must fail the request, not ship a broken page
+        const projected = await productJournal.readProjection();
         res.setHeader('content-type', 'application/json; charset=utf-8');
-        res.writeHead(200); res.end(req.method === 'HEAD' ? undefined : body); return;
+        res.writeHead(200);
+        res.end(req.method === 'HEAD' ? undefined :
+          JSON.stringify(pathname === '/api/state' ? projected.state : projected.wiki));
       } catch (error) {
-        sendJson(res, error && error.code === 'ENOENT' ? 404 : 502,
-          { error: error && error.code === 'ENOENT' ? 'No baseline document: ' + seed : 'Baseline document invalid JSON: ' + seed });
-        return;
+        sendJson(res, Number.isInteger(error?.status) ? error.status : 500,
+          { error: 'Product projection unavailable' });
       }
+      return;
     }
+    // File surfaces remain generated source-backed data; they are not mutable state.
+    if (pathname === '/api/file-surface') {
+      try {
+        const body = await readFile(path.join(here, 'data', 'demo-baseline', 'file-surface.v1.json'), 'utf8');
+        JSON.parse(body);
+        res.setHeader('content-type', 'application/json; charset=utf-8');
+        res.writeHead(200); res.end(req.method === 'HEAD' ? undefined : body);
+      } catch (error) {
+        sendJson(res, error?.code === 'ENOENT' ? 404 : 502, { error: 'File surface unavailable' });
+      }
+      return;
+    }
+    // Roadmap is a read-through; only the existing keeper edits the machine roadmap.
     if (pathname === '/api/roadmap') {
       try {
         const body = await readFile(path.join(REPO_ROOT, 'docs', 'product', 'roadmap', 'roadmap.v1.json'), 'utf8');
         JSON.parse(body);
         res.setHeader('content-type', 'application/json; charset=utf-8');
-        res.writeHead(200); res.end(req.method === 'HEAD' ? undefined : body); return;
+        res.writeHead(200); res.end(req.method === 'HEAD' ? undefined : body);
       } catch (error) {
-        sendJson(res, error && error.code === 'ENOENT' ? 404 : 502, { error: 'Roadmap read-through failed' });
-        return;
+        sendJson(res, error?.code === 'ENOENT' ? 404 : 502, { error: 'Roadmap read-through failed' });
       }
+      return;
     }
-    if (pathname === '/api/journal') {
-      // Per-line JSONL parse: skip blank and corrupt lines (append-only file — a
-      // torn last line under a crash must not take the whole journal down).
-      const entries = [];
+    // Human and machine reads share exactly the journal that POST /api/mutate appends.
+    if (pathname === '/api/journal' || pathname === '/demo/journal.jsonl') {
       try {
-        const text = await readFile(path.join(staticRoot, 'demo', 'journal.jsonl'), 'utf8');
-        for (const line of text.split('\n')) {
-          const t = line.trim();
-          if (!t) continue;
-          try { entries.push(JSON.parse(t)); } catch { /* corrupt line: skip, keep the rest */ }
-        }
-      } catch { /* no journal yet: an empty array is the honest state */ }
-      res.setHeader('content-type', 'application/json; charset=utf-8');
-      res.writeHead(200); res.end(req.method === 'HEAD' ? undefined : JSON.stringify(entries)); return;
+        const body = pathname === '/api/journal'
+          ? JSON.stringify(await productJournal.readRecords())
+          : await productJournal.rawJournal();
+        res.setHeader('content-type', pathname === '/api/journal'
+          ? 'application/json; charset=utf-8'
+          : 'application/jsonl; charset=utf-8');
+        res.writeHead(200); res.end(req.method === 'HEAD' ? undefined : body);
+      } catch (error) {
+        sendJson(res, Number.isInteger(error?.status) ? error.status : 500,
+          { error: 'Journal unavailable' });
+      }
+      return;
     }
     let asset = ASSETS[pathname];
     // First run remains phone-first. Explicit setup is available at /onboarding.
