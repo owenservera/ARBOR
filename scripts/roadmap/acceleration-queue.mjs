@@ -132,10 +132,11 @@ export function readyFrontier(roadmap) {
   if (!result.ok) throw new Error('Invalid roadmap: ' + result.errors.join('; '));
   const byId = new Map(roadmap.layers.L2.map(item => [item.id, item]));
   return roadmap.buildQueue
-    .filter(row => row.status === 'queued' &&
+    .filter(row => ['queued', 'in-progress'].includes(row.status) &&
       row.dependsOn.every(id => isIndependentlyAccepted(byId.get(id))))
     .map(row => ({
       itemId: row.itemId,
+      status: row.status,
       priority: row.priority,
       lane: row.lane,
       accelerationScore: row.accelerationScore,
