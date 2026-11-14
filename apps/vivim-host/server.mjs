@@ -2,8 +2,8 @@
 import http from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
-import { createReadStream, existsSync, readFileSync, statSync } from 'node:fs';
-import { readFile } from 'node:fs/promises';
+import { createReadStream, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { appendFile, readFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { execFile as execFileCb } from 'node:child_process';
@@ -58,6 +58,20 @@ const MIME = {
   '/fonts/space-grotesk-latin-wght-normal.woff2': 'font/woff2',
   '/fonts/geist-latin-wght-normal.woff2': 'font/woff2',
   '/fonts/jetbrains-mono-latin-wght-normal.woff2': 'font/woff2',
+  '/demo': 'text/html; charset=utf-8',
+  '/demo/controller.js': 'text/javascript; charset=utf-8',
+  '/demo/demo.css': 'text/css; charset=utf-8',
+  '/demo/fixture/index.json': 'application/json; charset=utf-8',
+  '/demo/fixture/tab-today.json': 'application/json; charset=utf-8',
+  '/demo/fixture/tab-talk.json': 'application/json; charset=utf-8',
+  '/demo/fixture/tab-build.json': 'application/json; charset=utf-8',
+  '/demo/fixture/tab-world.json': 'application/json; charset=utf-8',
+  '/demo/fixture/tab-me.json': 'application/json; charset=utf-8',
+  '/demo/fixture/tab-control.json': 'application/json; charset=utf-8',
+  '/demo/feedback/inbox.json': 'application/json; charset=utf-8',
+  '/demo/journal.jsonl': 'application/jsonl; charset=utf-8',
+  '/chat': 'text/html; charset=utf-8',
+  '/wiki': 'text/html; charset=utf-8',
 };
 const ASSETS = {
   '/': 'mobile-first.html',
@@ -74,6 +88,20 @@ const ASSETS = {
   '/fonts/space-grotesk-latin-wght-normal.woff2': 'space-grotesk-latin-wght-normal.woff2',
   '/fonts/geist-latin-wght-normal.woff2': 'geist-latin-wght-normal.woff2',
   '/fonts/jetbrains-mono-latin-wght-normal.woff2': 'jetbrains-mono-latin-wght-normal.woff2',
+  '/demo': 'demo/demo.html',
+  '/demo/controller.js': 'demo/controller.js',
+  '/demo/demo.css': 'demo/demo.css',
+  '/demo/fixture/index.json': 'demo/fixture/index.json',
+  '/demo/fixture/tab-today.json': 'demo/fixture/tab-today.json',
+  '/demo/fixture/tab-talk.json': 'demo/fixture/tab-talk.json',
+  '/demo/fixture/tab-build.json': 'demo/fixture/tab-build.json',
+  '/demo/fixture/tab-world.json': 'demo/fixture/tab-world.json',
+  '/demo/fixture/tab-me.json': 'demo/fixture/tab-me.json',
+  '/demo/fixture/tab-control.json': 'demo/fixture/tab-control.json',
+  '/demo/feedback/inbox.json': 'demo/feedback/inbox.json',
+  '/demo/journal.jsonl': 'demo/journal.jsonl',
+  '/chat': 'pages/chat.html',
+  '/wiki': 'pages/wiki.html',
 };
 const STATES = ['queued', 'claimed', 'done', 'failed'];
 
@@ -317,13 +345,118 @@ export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path
     }
     // First-run onboarding API: state -> setup -> start -> verify (doctor).
     if (pathname.startsWith('/api/onboarding/')) {
-      await handleOnboarding(req, res, pathname, apk, pairing, onboardingService, enrollment);
+      await handleOnboarding(req, res, pathname, apk, pairing, onboardingService, enrollment, host, tokenFor, dataRoot);
+      return;
+    }
+    // Demo harness: the sole writable surface. POST /demo/feedback and POST /demo/mutate
+    // append ONE JSON line per entry to public/demo/journal.jsonl (append-only; entries
+    // <4KB; no read-modify-write anywhere) and return the stored entry, mirroring
+    // demo/ui-demo/serve.mjs:27-62. Envelope kinds: chat-send | wiki-edit | gate-decision |
+    // feedback rounds {round, approveAll, verdicts}. GET /demo/feedback/inbox.json serves
+    // the legacy snapshot as a static asset; GET /demo/journal.jsonl serves the live journal.
+    // POST /api/mutate is the product-route name for the SAME handler (one handler,
+    // two route names — oracle ack2 batch-1 route set).
+    if ((pathname === '/demo/feedback' || pathname === '/demo/mutate' || pathname === '/api/mutate') && req.method === 'POST') {
+      const journalPath = path.join(staticRoot, 'demo', 'journal.jsonl');
+      let body = '';
+      req.on('data', chunk => { body += chunk; });
+      req.on('end', async () => {
+        if (Buffer.byteLength(body, 'utf8') > 4096) { res.writeHead(413); res.end('Entry exceeds 4KB'); return; }
+        let payload;
+        try {
+          payload = JSON.parse(body || '{}');
+        } catch {
+          res.writeHead(400); res.end('Invalid feedback JSON'); return;
+        }
+        let entry;
+        if (payload.kind != null) {
+          if (payload.kind !== 'chat-send' && payload.kind !== 'wiki-edit' && payload.kind !== 'gate-decision') {
+            res.writeHead(400); res.end('Unknown mutate kind'); return;
+          }
+          entry = { ...payload, receivedAt: new Date().toISOString() };
+          // D1 binding (adopted ruling): chat-send reaches the SAME Host control runtime the
+          // authenticated /api/host/control/interpret route calls — controlFor().interpret(),
+          // the exact function behind handleControl's interpret branch — in-process, never an
+          // HTTP self-call and never a demo-side interpreter. interpret is pure: it plans no
+          // journal record and executes nothing, so the intent IR can ride on the stored
+          // entry for chat chips while plan/execute keep their owner-authenticated routes.
+          if (payload.kind === 'chat-send') {
+            if (typeof payload.text !== 'string' || payload.text.length > 1000) {
+              res.writeHead(400); res.end('chat-send requires text up to 1000 chars'); return;
+            }
+            try {
+              entry.intent = controlFor().interpret(payload.text);
+            } catch (error) {
+              res.writeHead(controlErrorStatus(error?.code ?? 'CONTROL_INVALID'));
+              res.end('chat-send interpretation failed: ' + String(error?.code ?? 'CONTROL_INVALID')); return;
+            }
+          }
+        } else {
+          entry = {
+            round: payload.round != null ? payload.round : String(Date.now()),
+            approveAll: !!payload.approveAll,
+            verdicts: Array.isArray(payload.verdicts) ? payload.verdicts : [],
+            receivedAt: new Date().toISOString()
+          };
+        }
+        try {
+          mkdirSync(path.dirname(journalPath), { recursive: true });
+          await appendFile(journalPath, JSON.stringify(entry) + '\n', 'utf8');
+        } catch {
+          res.writeHead(500); res.end('Journal append failed'); return;
+        }
+        res.setHeader('content-type', 'application/json; charset=utf-8');
+        res.writeHead(200); res.end(JSON.stringify(entry));
+      });
       return;
     }
     if (req.method !== 'GET' && req.method !== 'HEAD') { res.setHeader('allow', 'GET, HEAD'); res.writeHead(405); res.end(); return; }
     if (pathname === '/api/host/status') {
       res.setHeader('content-type', 'application/json; charset=utf-8');
       res.writeHead(200); res.end(req.method === 'HEAD' ? undefined : JSON.stringify(hostSnapshot({ dataRoot, bootstrap: runtimeFor() }))); return;
+    }
+    // Batch-1 product routes (oracle ack2, exact-string only — no catch-all):
+    // state/wiki/file-surface read the demo-baseline seeds on disk; roadmap and
+    // journal are READ-THROUGHS of their single sources (never copies): roadmap.v1.json
+    // is the owner's single source of truth, journal.jsonl is what /api/mutate appends to.
+    if (pathname === '/api/state' || pathname === '/api/wiki' || pathname === '/api/file-surface') {
+      const seed = pathname === '/api/state' ? 'state.json' : pathname === '/api/wiki' ? 'wiki.json' : 'file-surface.v1.json';
+      try {
+        const body = await readFile(path.join(here, 'data', 'demo-baseline', seed), 'utf8');
+        JSON.parse(body); // a corrupt seed must fail the request, not ship a broken page
+        res.setHeader('content-type', 'application/json; charset=utf-8');
+        res.writeHead(200); res.end(req.method === 'HEAD' ? undefined : body); return;
+      } catch (error) {
+        sendJson(res, error && error.code === 'ENOENT' ? 404 : 502,
+          { error: error && error.code === 'ENOENT' ? 'No baseline document: ' + seed : 'Baseline document invalid JSON: ' + seed });
+        return;
+      }
+    }
+    if (pathname === '/api/roadmap') {
+      try {
+        const body = await readFile(path.join(REPO_ROOT, 'docs', 'product', 'roadmap', 'roadmap.v1.json'), 'utf8');
+        JSON.parse(body);
+        res.setHeader('content-type', 'application/json; charset=utf-8');
+        res.writeHead(200); res.end(req.method === 'HEAD' ? undefined : body); return;
+      } catch (error) {
+        sendJson(res, error && error.code === 'ENOENT' ? 404 : 502, { error: 'Roadmap read-through failed' });
+        return;
+      }
+    }
+    if (pathname === '/api/journal') {
+      // Per-line JSONL parse: skip blank and corrupt lines (append-only file — a
+      // torn last line under a crash must not take the whole journal down).
+      const entries = [];
+      try {
+        const text = await readFile(path.join(staticRoot, 'demo', 'journal.jsonl'), 'utf8');
+        for (const line of text.split('\n')) {
+          const t = line.trim();
+          if (!t) continue;
+          try { entries.push(JSON.parse(t)); } catch { /* corrupt line: skip, keep the rest */ }
+        }
+      } catch { /* no journal yet: an empty array is the honest state */ }
+      res.setHeader('content-type', 'application/json; charset=utf-8');
+      res.writeHead(200); res.end(req.method === 'HEAD' ? undefined : JSON.stringify(entries)); return;
     }
     let asset = ASSETS[pathname];
     // First run remains phone-first. Explicit setup is available at /onboarding.
@@ -744,10 +877,29 @@ async function handleControl(req, res, pathname, host, controlFor, tokenFor, uiS
 
 // First-run onboarding: state (prereqs + manifest), setup (studio setup), start (vivim start),
 // verify (doctor). All run on this PC against the owner's installed Chrome profile.
-async function handleOnboarding(req, res, pathname, apk, pairing, onboarding, enrollment) {
+async function handleOnboarding(req, res, pathname, apk, pairing, onboarding, enrollment, host, tokenFor, dataRoot) {
   const studioCli = STUDIO_CLI;
   const send = (status, body) => sendJson(res, status, body);
   const fail = (status, message, code = 'INVALID') => send(status, { ok: false, error: message, code });
+  const sameOrigin = () => String(req.headers.origin || '').toLowerCase() === 'http://' + host;
+  const isInside = (root, target) => {
+    const r = path.resolve(root);
+    const t = path.resolve(target);
+    return t === r || t.startsWith(r + path.sep);
+  };
+  const requireOwnerMutation = () => {
+    if (!sameOrigin() || String(req.headers['x-vivim-control'] || '') !== '1') {
+      send(403, { ok: false, error: 'Cross-origin request refused', code: 'ORIGIN_OR_CSRF' }); return false;
+    }
+    return ownerAuthorized(req, res, tokenFor);
+  };
+  const privilegedPost = new Set([
+    '/api/onboarding/setup', '/api/onboarding/start', '/api/onboarding/doctor',
+    '/api/onboarding/apk/register', '/api/onboarding/pair/register',
+    '/api/onboarding/provider/open', '/api/onboarding/provider/check',
+    '/api/onboarding/primary', '/api/onboarding/personalize/review', '/api/onboarding/personalize/approve'
+  ]);
+  if (privilegedPost.has(pathname) && req.method === 'POST' && !requireOwnerMutation()) return;
 
   if (pathname === '/api/onboarding/state') {
     if (req.method !== 'GET' && req.method !== 'HEAD') { res.setHeader('allow', 'GET'); return fail(405, 'GET only', 'METHOD'); }
@@ -796,10 +948,8 @@ async function handleOnboarding(req, res, pathname, apk, pairing, onboarding, en
     return send(200, { ok: out.ok, report });
   }
 
-  // Unauthenticated DEV onboarding route (consistent with setup/start/doctor): register
-  // the built APK so the paired phone can download it. No bearer token — the wizard runs
-  // as the owner on this PC. Shares the same <dataRoot>/apk-artifacts registry as
-  // /api/host/apk/register, so a release registered here is immediately downloadable.
+  // Owner-authorized onboarding route (P0 PWA host exposure): register a built APK so
+  // the paired phone can download it. Shares <dataRoot>/apk-artifacts with /api/host/apk/register.
   if (pathname === '/api/onboarding/apk/register') {
     if (req.method !== 'POST') { res.setHeader('allow', 'POST'); return fail(405, 'POST only', 'METHOD'); }
     let body;
@@ -807,6 +957,10 @@ async function handleOnboarding(req, res, pathname, apk, pairing, onboarding, en
     const rawPath = typeof body.apkPath === 'string' ? body.apkPath.trim() : '';
     if (!rawPath) return fail(400, 'apkPath required', 'APK_PATH_REQUIRED');
     const apkPath = path.resolve(rawPath);
+    const allowedRoots = [path.join(dataRoot, 'apk-artifacts'), REPO_ROOT];
+    if (!allowedRoots.some(root => isInside(root, apkPath)) || path.extname(apkPath).toLowerCase() !== '.apk') {
+      return fail(403, 'APK path not allowed', 'APK_PATH_NOT_ALLOWED');
+    }
     if (!existsSync(apkPath) || !statSync(apkPath).isFile()) return fail(404, 'APK artifact not found', 'APK_NOT_FOUND');
     let sha;
     try { sha = createHash('sha256').update(await readFile(apkPath)).digest('hex'); }

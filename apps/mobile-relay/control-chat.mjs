@@ -29,10 +29,23 @@ export function resolveLocalDestination(input) {
   const normalized = input.trim().toLowerCase().replace(/\s+/g, ' ');
   return Object.hasOwn(LOCAL_NAVIGATION, normalized) ? LOCAL_NAVIGATION[normalized] : null;
 }
+// Each mounted screen must be able to state what can be asked from it.
+// These prompts only fill the shared composer; none of them sends or executes.
+const SURFACE_EXAMPLES = Object.freeze({
+  today: ['show status', 'open World', 'what can I say?'],
+  talk: ['show status', 'open Build', 'what can I say?'],
+  build: ['show status', 'open World', 'what can I say?'],
+  world: ['open media library', 'show status', 'what can I say?'],
+  me: ['show status', 'open Control', 'what can I say?'],
+  control: ['show status', 'open Today', 'what can I say?']
+});
+export function examplesForSurface(surface) {
+  return SURFACE_EXAMPLES[surface] || CONTROL_CHAT_EXAMPLES;
+}
 
 export function createControlChat({
   host, transport, fetchImpl, onChange = () => {},
-  onNavigate = null, onOpenPocket = null
+  onNavigate = null, onOpenPocket = null, getSurface = null
 } = {}) {
   if (!host || typeof host.replaceChildren !== 'function')
     throw new TypeError('Chat transcript root required');
@@ -80,6 +93,67 @@ export function createControlChat({
     }
   };
 
+  // A refused or expired Host answer is its own outcome, not a generic error.
+  function fail(reply, error) {
+    const code = error?.code;
+    reply.status = code === 'CONTROL_PLAN_EXPIRED' ? 'expired'
+      : code === 'CONTROL_REFUSED' ? 'denied' : 'error';
+    reply.text = (code === 'CONTROL_PLAN_EXPIRED'
+      ? 'This plan expired before approval. Nothing was applied. Ask again for a fresh preview.'
+      : code === 'CONTROL_REFUSED'
+        ? 'Your PC refused this action. Nothing changed.'
+        : String(error?.message || 'The PC could not preview this command. No action was approved.')
+    ).slice(0, 500);
+  }
+
+  function settle(reply, plan, requestText = null) {
+    if (!plan || !KNOWN_OUTCOMES.has(plan.outcome)) {
+      reply.text = 'The PC returned an unrecognized control response. Nothing changed.';
+      reply.status = 'error';
+      return;
+    }
+    if (plan.outcome === 'approval_required') {
+      // Throws on a malformed or expired plan; the caller renders the refusal.
+      client.validatePlan(plan);
+      reply.text = planText(plan);
+      reply.status = 'approval';
+      reply.plan = plan;
+      return;
+    }
+    reply.text = planText(plan);
+    reply.status = plan.outcome === 'done' ? 'done'
+      : plan.outcome === 'interpretation_required' ? 'unrecognized'
+        : plan.outcome === 'clarification_required' || plan.outcome === 'incomplete' ? 'clarify'
+          : 'info';
+    if (reply.status === 'unrecognized') reply.requestText = requestText;
+    reply.choices = Array.isArray(plan.choiceDetails)
+      ? plan.choiceDetails.filter(choice => choice && typeof choice.actionId === 'string' &&
+        choice.actionId && (choice.readiness === undefined ||
+          ['source_wired', 'verified'].includes(choice.readiness))).slice(0, 6)
+      : [];
+    if (!reply.choices.length) reply.choices = null;
+  }
+
+  // A Host-supplied follow-up (clarification choice or receipt undo) becomes a
+  // fresh preview. It never executes: the new plan still needs its own approval.
+  async function requestAction(source, action, label, once) {
+    if (busy || !action || typeof action.actionId !== 'string' || !action.actionId) return;
+    const args = action.args && typeof action.args === 'object' && !Array.isArray(action.args)
+      ? action.args : {};
+    if (once) source[once] = true;
+    busy = true;
+    const reply = note(label, 'waiting');
+    redraw();
+    try {
+      settle(reply, await client.call('plan', { actionId: action.actionId, args }), source.requestText || null);
+    } catch (error) {
+      fail(reply, error);
+    } finally {
+      busy = false;
+      redraw();
+    }
+  }
+
   async function send(raw) {
     const text = String(raw || '').trim();
     if (busy || !text || text.length > MAX_TEXT) return false;
@@ -107,24 +181,9 @@ export function createControlChat({
     busy = true;
     redraw();
     try {
-      const plan = await client.preview(text);
-      if (!plan || !KNOWN_OUTCOMES.has(plan.outcome)) {
-        reply.text = 'The PC returned an unrecognized control response. Nothing changed.';
-        reply.status = 'error';
-      } else if (plan.outcome === 'approval_required') {
-        client.validatePlan(plan);
-        reply.text = planText(plan);
-        reply.status = 'approval';
-        reply.plan = plan;
-      } else {
-        reply.text = planText(plan);
-        reply.status = plan.outcome === 'done' ? 'done'
-          : plan.outcome === 'interpretation_required' ? 'unrecognized' : 'info';
-        if (reply.status === 'unrecognized') reply.requestText = text;
-      }
+      settle(reply, await client.preview(text), text);
     } catch (error) {
-      reply.status = 'error';
-      reply.text = String(error?.message || 'The PC could not preview this command. No action was approved.').slice(0, 500);
+      fail(reply, error);
     } finally {
       busy = false;
       redraw();
@@ -153,10 +212,16 @@ export function createControlChat({
         error: receipt?.error?.code ?? null
       }) + '\nNo automatic retry was performed.';
     } catch (error) {
-      reply.status = error?.code === 'CONTROL_UNCERTAIN' ? 'uncertain' : 'error';
+      reply.status = error?.code === 'CONTROL_UNCERTAIN' ? 'uncertain'
+        : error?.code === 'CONTROL_PLAN_EXPIRED' ? 'expired'
+          : error?.code === 'CONTROL_REFUSED' ? 'denied' : 'error';
       reply.text = (reply.status === 'uncertain'
         ? 'Outcome uncertain. Check the Host receipt before issuing another action. VIVIM has not retried.'
-        : String(error?.message || 'The PC refused this action.')) + '\nNo automatic retry was performed.';
+        : reply.status === 'expired'
+          ? 'This plan expired before it was applied. Nothing changed. Ask again for a fresh preview.'
+          : reply.status === 'denied'
+            ? 'Your PC refused this action. Nothing changed.'
+            : String(error?.message || 'The PC refused this action.')) + '\nNo automatic retry was performed.';
     } finally {
       reply.plan = null;
       busy = false;
@@ -205,24 +270,48 @@ export function createControlChat({
     redraw();
   }
 
+  function exampleChip(text) {
+    const button = elem('button', 'chip', text);
+    button.type = 'button';
+    button.addEventListener('click', () => {
+      // Examples fill the shared composer: never auto-send a command.
+      host.dispatchEvent(new CustomEvent('vivim:control-example', { bubbles: true, detail: { text } }));
+    });
+    return button;
+  }
+
+  function receiptCard(msg) {
+    const receipt = msg.receipt;
+    const card = elem('div', 'vivim-receipt');
+    if (receipt.replayed) card.append(elem('p', 'ux-meta', 'This receipt was already applied; nothing ran twice.'));
+    if (receipt.result !== undefined) card.append(elem('pre', 'ux-note', describe(receipt.result)));
+    const undo = receipt.undo;
+    if (!msg.undoRequested && undo && typeof undo.actionId === 'string' && undo.actionId) {
+      const button = elem('button', 'btn sm ux-secondary', 'Undo this change');
+      button.type = 'button';
+      button.addEventListener('click', () => {
+        void requestAction(msg, undo, 'Preparing the undo plan…', 'undoRequested');
+      });
+      card.append(button);
+    }
+    return card.children.length ? card : null;
+  }
+
   function render() {
     const fragment = doc.createDocumentFragment();
+    // The mounted screen names what can be asked from here; prompts only fill
+    // the shared composer and never send, approve or execute.
+    const surface = typeof getSurface === 'function' ? getSurface() : null;
+    const prompts = suggestions.length ? suggestions : examplesForSurface(surface);
     if (!messages.length) {
       const empty = elem('div', 'vivim-intro');
       empty.append(elem('span', 'tour-eyebrow', 'YOUR MACHINE · YOUR AI'),
         elem('h3', '', 'Ask VIVIM'),
         elem('p', 'muted', 'Ask what is happening on your PC or describe a change. VIVIM previews an available action and asks you to approve before applying it.'),
-        elem('p', 'ux-meta', transport.direct ? 'Direct Host · owner-controlled actions' : 'Connect to your PC directly to use controls'));
+        elem('p', 'ux-meta', transport.direct ? 'Direct Host · owner-controlled actions' : 'Connect to your PC directly to use controls'),
+        elem('p', 'ux-meta', 'What can I ask here'));
       const examples = elem('div', 'vivim-examples');
-      for (const text of suggestions.length ? suggestions : CONTROL_CHAT_EXAMPLES) {
-        const button = elem('button', 'chip', text);
-        button.type = 'button';
-        button.addEventListener('click', () => {
-          // Examples fill the shared composer: never auto-send a command.
-          host.dispatchEvent(new CustomEvent('vivim:control-example', { bubbles: true, detail: { text } }));
-        });
-        examples.append(button);
-      }
+      for (const text of prompts) examples.append(exampleChip(text));
       empty.append(examples);
       fragment.append(empty);
     }
@@ -231,11 +320,17 @@ export function createControlChat({
       if (msg.role !== 'owner') row.append(elem('div', 'badge', 'VIVIM · HOST'));
       const bubble = elem('div', 'bub', msg.text);
       bubble.style.whiteSpace = 'pre-wrap';
-      if (msg.status === 'error' || msg.status === 'uncertain') row.classList.add('err');
+      if (['error', 'uncertain', 'denied', 'expired'].includes(msg.status)) row.classList.add('err');
       row.append(bubble);
       if (msg.status === 'waiting' || msg.status === 'applying' || msg.status === 'reviewing')
         row.append(elem('div', 'ux-meta', msg.status === 'applying' ? 'Applying once · waiting for receipt…' :
           msg.status === 'reviewing' ? 'Reading the Host receipt · no second execution' : 'Previewing · no action executed'));
+      if (msg.receipt) {
+        const card = receiptCard(msg);
+        if (card) row.append(card);
+      }
+      if (msg.status === 'denied' || msg.status === 'expired')
+        row.append(elem('div', 'ux-meta', 'No effect was applied. Nothing was retried.'));
       if (msg.status === 'uncertain' && msg.planId) {
         const check = elem('button', 'btn sm ux-secondary', 'Check PC receipt');
         check.type = 'button';
@@ -253,12 +348,26 @@ export function createControlChat({
         });
         row.append(redirect);
       }
+      if (msg.status === 'clarify' && Array.isArray(msg.choices) && !msg.choiceUsed) {
+        const choices = elem('div', 'vivim-choices');
+        for (const choice of msg.choices) {
+          const button = elem('button', 'chip', choice.title || choice.actionId);
+          button.type = 'button';
+          button.addEventListener('click', () => {
+            void requestAction(msg, { actionId: choice.actionId, args: {} },
+              'Checking that choice with your PC…', 'choiceUsed');
+          });
+          choices.append(button);
+        }
+        row.append(choices);
+      }
       if (msg.status === 'approval' && msg.plan) {
         const plan = msg.plan;
         const card = elem('div', 'vivim-plan');
         card.append(elem('p', 'ux-meta',
           'Risk ' + String(plan.risk || 'unknown') + ' · Expires ' + new Date(plan.expiresAt).toLocaleTimeString() +
-          (plan.liveAcceptance !== 'verified' ? ' · Not live-verified' : '')));
+          (plan.liveAcceptance !== 'verified' ? ' · Not live-verified' : '') +
+          (typeof plan.planDigest === 'string' ? ' · Plan ' + plan.planDigest.slice(0, 12) : '')));
         const args = plan.args && typeof plan.args === 'object' ? Object.entries(plan.args).slice(0, 12) : [];
         if (args.length) card.append(elem('p', 'ux-note', args.map(([k,v])=>k + ': ' + describe(v)).join(' · ')));
         const actions = elem('div', 'vivim-plan-actions');
@@ -269,6 +378,16 @@ export function createControlChat({
         actions.append(yes, no); card.append(actions); row.append(card);
       }
       fragment.append(row);
+    }
+    // After a settled turn the command box still states what it accepts.
+    // Hidden while a plan is armed or an outcome is unresolved.
+    const settled = messages.length && !busy &&
+      !messages.some(msg => ['approval', 'uncertain', 'applying', 'reviewing'].includes(msg.status));
+    if (settled) {
+      const next = elem('div', 'vivim-examples');
+      next.append(elem('span', 'ux-meta', 'What can I ask here'));
+      for (const text of prompts) next.append(exampleChip(text));
+      fragment.append(next);
     }
     host.replaceChildren(fragment);
     host.scrollTop = host.scrollHeight;

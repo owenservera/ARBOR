@@ -59,7 +59,12 @@ export function verifyIntakeReceipt(receipt, key) {
   const expected = createHmac('sha256', key).update(stable(unsigned)).digest();
   return timingSafeEqual(expected, Buffer.from(signature.slice('hmac-sha256:'.length),'hex'));
 }
-async function syncDir(dir) { const h = await fs.open(dir, constants.O_RDONLY); try { await h.sync(); } finally { await h.close(); } }
+async function syncDir(dir) {
+  const h = await fs.open(dir, constants.O_RDONLY);
+  try { await h.sync(); }
+  catch (error) { if (error?.code !== 'EPERM' && error?.code !== 'EINVAL' && error?.code !== 'ENOTSUP') throw error; }
+  finally { await h.close(); }
+}
 async function writeOnce(file, bytes) {
   const h = await fs.open(file, constants.O_CREAT | constants.O_EXCL | constants.O_WRONLY | (constants.O_NOFOLLOW || 0), 0o600);
   try { await h.writeFile(bytes); await h.sync(); } finally { await h.close(); }

@@ -1,0 +1,18 @@
+{
+  "revision": 1,
+  "at": "2026-11-14T00:00:00.000Z",
+  "pages": {
+    "Main": {
+      "sections": {
+        "About": "VIVIM realtime wiki — the reprogrammable product surface. Every section is editable; every edit appends one journal line via POST /api/mutate.",
+        "HowTo": "Click a section to edit it. Chat (at /chat) sends natural language; this wiki mirrors the resulting state. Both pages poll the same /api/* routes — machine-readable is primary.",
+        "Sources": "Wiki + chat state: apps/vivim-host/data/demo-baseline/. File surface: data/demo-baseline/file-surface.v1.json. Roadmap: read-through of docs/product/roadmap/roadmap.v1.json — single source of truth, never a copy."
+      }
+    },
+    "Roadmap": {
+      "sections": {
+        "BuildQueue": "Mirrored live from docs/product/roadmap/roadmap.v1.json via GET /api/roadmap. Item 1 of the build queue is CHAT-BOX-BASELINE (batch 1)."
+      }
+    }
+  }
+}

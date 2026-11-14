@@ -1,0 +1,18 @@
+{
+  "type": "object",
+  "properties": {
+    "schema": { "const": "vivim.data-utility-assessment/1" }
+  },
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": { "properties": { "status": { "const": "measured" } } },
+      "then": {
+        "properties": {
+          "method": { "const": "paired-ablation" },
+          "evaluation": { "type": "object" }
+        }
+      }
+    }
+  ]
+}

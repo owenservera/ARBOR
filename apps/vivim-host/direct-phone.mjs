@@ -77,6 +77,8 @@ const assets = new Map(Object.entries({
   'icon-512.png': ['icon-512.png', 'image/png'],
   'icon-maskable-512.png': ['icon-maskable-512.png', 'image/png'],
 }));
+// Exposed so tests can assert the loopback preview asset allowlist stays complete.
+export const PHONE_ASSETS = assets;
 // Desktop preview serves only static PWA assets on local loopback. All phone APIs
 // remain behind the independently authorized Direct/Tailscale phone handler.
 export async function serveLoopbackPhoneAsset(req, res, pathname) {

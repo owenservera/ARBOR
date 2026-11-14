@@ -1,0 +1,83 @@
+{
+  "schema": "vivim.rdcb/1",
+  "protocol": "hq.dcb-protocol/1",
+  "inherits": "hq.context-bundle/1",
+  "trigger": "edit.pre",
+  "task": "RDCB v1 — reprogramming context for apps/vivim-host/public/demo/poll-round.mjs",
+  "audience": "agent",
+  "project": "arbor",
+  "generatedAt": "2026-11-14T00:00:00.000Z",
+  "status": "fresh",
+  "budget": {
+    "maxTokens": 5000,
+    "reserved": 800,
+    "capacity": 4120,
+    "used": 319,
+    "estimator": "utf8-bytes/3"
+  },
+  "reprogramming": {
+    "corpusScope": "vlang-surface-headers",
+    "vlangExecution": false,
+    "fileSurfaceRegistry": {
+      "ref": "apps/vivim-host/data/demo-baseline/file-surface.v1.json",
+      "schema": "vivim.file-surface/1",
+      "generatorVersion": "file-surface-gen/1 stage-a",
+      "recordCount": 3
+    },
+    "nlclCatalog": {
+      "ref": "apps/vivim-host/control/action-catalog.v1.json",
+      "schema": "vivim.control-action-catalog/1",
+      "version": 8
+    },
+    "surfaceDrift": []
+  },
+  "sources": [
+    {
+      "ref": "arbor:apps/vivim-host/public/demo/poll-round.mjs",
+      "project": "arbor",
+      "path": "apps/vivim-host/public/demo/poll-round.mjs",
+      "kind": "code",
+      "lang": "javascript",
+      "sha256": "2c5ecff7a6c2f20742a843c76960291d5d236feec46b65fc2cb226fb45997c8f",
+      "lines": [
+        1,
+        12
+      ],
+      "estimatedTokens": 319,
+      "score": 1,
+      "reason": "rdcb|file-surface|vlang-surface-header",
+      "authority": "project_observed",
+      "excerpt": {
+        "kind": "vlang-surface-header",
+        "lines": [
+          1,
+          12
+        ],
+        "text": "/* @vlang:surface apps/vivim-host/public/demo/poll-round.mjs\n   @vlang:surface-desc: One-shot CLI poll of the demo feedback inbox — the reprogrammable\n   @vlang:surface-desc: surface is the CLI contract only: filter flags (--last, --since) and\n   @vlang:surface-desc: their semantics, stdout JSON formatting, and validation/exit messages.\n   @vlang:surface-desc: NL-driven change accepts none of: network fetch (disk read only, C9),\n   @vlang:surface-desc: drift of the {round, approveAll, verdicts, receivedAt} entry schema\n   @vlang:surface-desc: shared with POST /demo/feedback, or watcher/daemon modes (one-shot by\n   @vlang:surface-desc: design). node:fs only; no other imports.\n   @vlang:surface-desc: NLCL linkage: no action in control/action-catalog.v1.json v7 targets\n   @vlang:surface-desc: this file yet — actionIds stays empty until one is catalogued.\n   @vlang:id: arg-parser round-entry-schema output-format exit-codes\n   @vlang:action: */"
+      },
+      "fileSurface": {
+        "ref": "apps/vivim-host/data/demo-baseline/file-surface.v1.json",
+        "surface": "One-shot CLI poll of the demo feedback inbox — the reprogrammable\nsurface is the CLI contract only: filter flags (--last, --since) and\ntheir semantics, stdout JSON formatting, and validation/exit messages.\nNL-driven change accepts none of: network fetch (disk read only, C9),\ndrift of the {round, approveAll, verdicts, receivedAt} entry schema\nshared with POST /demo/feedback, or watcher/daemon modes (one-shot by\ndesign). node:fs only; no other imports.\nNLCL linkage: no action in control/action-catalog.v1.json v7 targets\nthis file yet — actionIds stays empty until one is catalogued.",
+        "commentIds": [
+          "arg-parser",
+          "round-entry-schema",
+          "output-format",
+          "exit-codes"
+        ]
+      },
+      "nlclActionIds": [],
+      "digest": "77d53ceff3a24872a20c72a1834825d1cbcfb601d0bc27ab4da0d06e1bb18a93"
+    }
+  ],
+  "omissions": [],
+  "symbols": [],
+  "decisions": [],
+  "canon": [],
+  "sessions": [],
+  "labels": {
+    "aperture": "Reprogram",
+    "evidence": "file-surface.v1 + action-catalog.v1"
+  },
+  "authority": "read_only_projection",
+  "digest": "589685986bccee2ec24ecd5227e1dca1f9933f1017da295f407d546eb8d1aaa2"
+}

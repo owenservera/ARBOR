@@ -1,0 +1,12 @@
+{
+  "schema": "vivim.demo-steps/1",
+  "demoTitle": "ARBOR baseline — VIVIM Direct PWA as shipped",
+  "steps": [
+    { "itemId": "tab-today", "screen": "Today", "file": "tab-today.json" },
+    { "itemId": "tab-talk", "screen": "Talk", "file": "tab-talk.json" },
+    { "itemId": "tab-build", "screen": "Build", "file": "tab-build.json" },
+    { "itemId": "tab-world", "screen": "World", "file": "tab-world.json" },
+    { "itemId": "tab-me", "screen": "Me", "file": "tab-me.json" },
+    { "itemId": "tab-control", "screen": "Control", "file": "tab-control.json" }
+  ]
+}

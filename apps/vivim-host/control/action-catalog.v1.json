@@ -1,7 +1,7 @@
 {
   "schema": "vivim.control-action-catalog/1",
-  "version": 7,
-  "asOf": "2026-11-12",
+  "version": 9,
+  "asOf": "2026-11-14",
   "policy": {
     "allUserFacingActionsRequireTextPath": true,
     "uiSharesTypedExecutor": true,
@@ -936,6 +936,652 @@
           }
         }
       }
+    },
+    {
+      "id": "send-message",
+      "title": "Send a chat message",
+      "category": "chat",
+      "owner": "host-chat",
+      "executor": null,
+      "readiness": "adapter_pending",
+      "risk": "R1",
+      "target": "local-host",
+      "args": {
+        "text": {
+          "type": "string",
+          "min": 1,
+          "max": 4000
+        },
+        "actor": {
+          "type": "enum",
+          "values": [
+            "human",
+            "ai"
+          ]
+        },
+        "schema_version": {
+          "type": "enum",
+          "values": [
+            "1"
+          ]
+        }
+      },
+      "examples": [
+        "Hi VIVIM",
+        "ping"
+      ],
+      "surfaces": [
+        "text",
+        "desktop",
+        "mobile",
+        "visual"
+      ],
+      "reversible": false,
+      "privacy": "pc-only",
+      "language": {
+        "verbs": [
+          "send",
+          "say",
+          "write",
+          "message",
+          "post"
+        ],
+        "family": "+",
+        "reading": "Send a chat message: {text}",
+        "objects": [
+          "message",
+          "chat"
+        ],
+        "scope": [
+          "chat",
+          "messages"
+        ],
+        "scopeQuestion": "Which message? Try: send a chat message."
+      },
+      "subject": "chat",
+      "priority": "P1"
+    },
+    {
+      "id": "read-state",
+      "title": "Read chat state",
+      "category": "chat",
+      "owner": "host-chat",
+      "executor": null,
+      "readiness": "adapter_pending",
+      "risk": "R0",
+      "target": "local-host",
+      "args": {},
+      "examples": [
+        "read state",
+        "show chat state"
+      ],
+      "surfaces": [
+        "text",
+        "desktop",
+        "mobile",
+        "visual"
+      ],
+      "reversible": true,
+      "privacy": "pc-only",
+      "language": {
+        "verbs": [
+          "read",
+          "show"
+        ],
+        "family": "?",
+        "reading": "Show chat and wiki state",
+        "objects": [
+          "chat",
+          "wiki",
+          "state"
+        ],
+        "scope": [
+          "chat",
+          "state",
+          "messages"
+        ],
+        "scopeQuestion": "Show what? Try: read chat state."
+      },
+      "subject": "state",
+      "priority": "P1"
+    },
+    {
+      "id": "execute-intent",
+      "title": "Execute a natural-language intent",
+      "category": "chat",
+      "owner": "host-chat",
+      "executor": null,
+      "readiness": "adapter_pending",
+      "risk": "R1",
+      "target": "local-host",
+      "args": {
+        "text": {
+          "type": "string",
+          "min": 1,
+          "max": 1000
+        }
+      },
+      "examples": [
+        "execute intent show my theme",
+        "run set my theme to dusk"
+      ],
+      "surfaces": [
+        "text",
+        "desktop",
+        "mobile",
+        "visual"
+      ],
+      "reversible": false,
+      "privacy": "pc-only",
+      "language": {
+        "verbs": [
+          "execute",
+          "run"
+        ],
+        "family": "!",
+        "reading": "Execute owner intent: {text}",
+        "scope": [
+          "intent",
+          "command"
+        ],
+        "scopeQuestion": "Which intent? Try: execute intent show my theme."
+      },
+      "subject": "intent",
+      "priority": "P1"
+    },
+    {
+      "id": "read-journal",
+      "title": "Read control journal",
+      "category": "chat",
+      "owner": "host-chat",
+      "executor": null,
+      "readiness": "adapter_pending",
+      "risk": "R0",
+      "target": "local-host",
+      "args": {},
+      "examples": [
+        "read journal",
+        "show control journal"
+      ],
+      "surfaces": [
+        "text",
+        "desktop",
+        "mobile",
+        "visual"
+      ],
+      "reversible": true,
+      "privacy": "pc-only",
+      "language": {
+        "verbs": [
+          "read",
+          "show"
+        ],
+        "family": "?",
+        "reading": "Show the control journal",
+        "objects": [
+          "journal",
+          "plans"
+        ],
+        "scope": [
+          "journal",
+          "control"
+        ],
+        "scopeQuestion": "Show what? Try: read the control journal."
+      },
+      "subject": "journal",
+      "priority": "P1"
+    },
+    {
+      "id": "get-capabilities",
+      "title": "List capabilities",
+      "category": "chat",
+      "owner": "host-chat",
+      "executor": null,
+      "readiness": "adapter_pending",
+      "risk": "R0",
+      "target": "local-host",
+      "args": {},
+      "examples": [
+        "what can you do",
+        "list capabilities"
+      ],
+      "surfaces": [
+        "text",
+        "desktop",
+        "mobile",
+        "visual"
+      ],
+      "reversible": true,
+      "privacy": "pc-only",
+      "language": {
+        "verbs": [
+          "list",
+          "show"
+        ],
+        "family": "?",
+        "reading": "List day-1 chat capabilities",
+        "scope": [
+          "capabilities",
+          "actions"
+        ],
+        "scopeQuestion": "Show what? Try: list capabilities."
+      },
+      "subject": "capabilities",
+      "priority": "P1"
+    },
+    {
+      "id": "wiki.page.create",
+      "title": "Create a wiki page",
+      "category": "wiki",
+      "owner": "host-wiki",
+      "executor": null,
+      "readiness": "adapter_pending",
+      "risk": "R1",
+      "target": "local-host",
+      "args": {
+        "page": {
+          "type": "string",
+          "min": 1,
+          "max": 80
+        }
+      },
+      "examples": [
+        "create wiki page sprint-notes",
+        "create wiki page roadmap"
+      ],
+      "surfaces": [
+        "text",
+        "desktop",
+        "mobile",
+        "visual"
+      ],
+      "reversible": false,
+      "privacy": "pc-only",
+      "language": {
+        "verbs": [
+          "create",
+          "new",
+          "add"
+        ],
+        "family": "+",
+        "reading": "Create wiki page {page}",
+        "objects": [
+          "wiki",
+          "page"
+        ],
+        "scope": [
+          "wiki",
+          "page",
+          "pages"
+        ],
+        "slots": {
+          "page": {
+            "match": "(?<=page\\s)[a-z0-9][a-z0-9-]{0,62}"
+          }
+        },
+        "scopeQuestion": "Which wiki page? Try: create wiki page sprint-notes."
+      },
+      "subject": "wiki",
+      "priority": "P1"
+    },
+    {
+      "id": "wiki.section.edit",
+      "title": "Edit a wiki page section",
+      "category": "wiki",
+      "owner": "host-wiki",
+      "executor": null,
+      "readiness": "adapter_pending",
+      "risk": "R1",
+      "target": "local-host",
+      "args": {
+        "target": {
+          "type": "string",
+          "min": 3,
+          "max": 161
+        },
+        "content": {
+          "type": "string",
+          "min": 1,
+          "max": 4000
+        }
+      },
+      "examples": [
+        "edit wiki section sprint-notes/specs saying all green",
+        "edit wiki section roadmap/scope saying rewrite stage 5"
+      ],
+      "surfaces": [
+        "text",
+        "desktop",
+        "mobile",
+        "visual"
+      ],
+      "reversible": false,
+      "privacy": "pc-only",
+      "language": {
+        "verbs": [
+          "edit",
+          "update",
+          "revise"
+        ],
+        "family": "∆",
+        "reading": "Edit wiki section {target} saying {content}",
+        "objects": [
+          "wiki",
+          "section",
+          "page"
+        ],
+        "scope": [
+          "wiki",
+          "section",
+          "sections"
+        ],
+        "slots": {
+          "target": {
+            "match": "[a-z0-9][a-z0-9_-]{0,78}/[a-z0-9][a-z0-9_-]{0,78}"
+          },
+          "content": {
+            "preps": [
+              "saying"
+            ]
+          }
+        },
+        "scopeQuestion": "Which wiki page and section? Try: edit wiki section sprint-notes/specs saying all green."
+      },
+      "subject": "wiki",
+      "priority": "P1"
+    },
+    {
+      "id": "wiki.page.move",
+      "title": "Move a wiki page in the page order",
+      "category": "wiki",
+      "owner": "host-wiki",
+      "executor": null,
+      "readiness": "adapter_pending",
+      "risk": "R1",
+      "target": "local-host",
+      "args": {
+        "page": {
+          "type": "string",
+          "min": 1,
+          "max": 80
+        },
+        "position": {
+          "type": "enum",
+          "values": [
+            "top",
+            "bottom",
+            "up",
+            "down"
+          ]
+        }
+      },
+      "examples": [
+        "move wiki page roadmap-notes to top",
+        "move wiki page journal to bottom"
+      ],
+      "surfaces": [
+        "text",
+        "desktop",
+        "mobile",
+        "visual"
+      ],
+      "reversible": false,
+      "privacy": "pc-only",
+      "language": {
+        "verbs": [
+          "move",
+          "reorder"
+        ],
+        "family": "∆",
+        "reading": "Move wiki page {page} to {position}",
+        "objects": [
+          "wiki",
+          "page"
+        ],
+        "scope": [
+          "wiki",
+          "page",
+          "pages"
+        ],
+        "slots": {
+          "page": {
+            "match": "(?<=page\\s)[a-z0-9][a-z0-9-]{0,62}"
+          },
+          "position": {
+            "preps": [
+              "to"
+            ]
+          }
+        },
+        "scopeQuestion": "Which wiki page and position? Try: move wiki page roadmap-notes to top."
+      },
+      "subject": "wiki",
+      "priority": "P1"
+    },
+    {
+      "id": "wiki.pages.link",
+      "title": "Link two wiki pages",
+      "category": "wiki",
+      "owner": "host-wiki",
+      "executor": null,
+      "readiness": "adapter_pending",
+      "risk": "R1",
+      "target": "local-host",
+      "args": {
+        "from": {
+          "type": "string",
+          "min": 1,
+          "max": 80
+        },
+        "to": {
+          "type": "string",
+          "min": 1,
+          "max": 80
+        }
+      },
+      "examples": [
+        "link wiki pages from sprint-notes to roadmap"
+      ],
+      "surfaces": [
+        "text",
+        "desktop",
+        "mobile",
+        "visual"
+      ],
+      "reversible": false,
+      "privacy": "pc-only",
+      "language": {
+        "verbs": [
+          "link",
+          "connect"
+        ],
+        "family": "+",
+        "reading": "Link wiki page {from} to {to}",
+        "objects": [
+          "wiki",
+          "pages"
+        ],
+        "scope": [
+          "wiki",
+          "pages",
+          "link"
+        ],
+        "slots": {
+          "from": {
+            "match": "(?<=from\\s)[a-z0-9][a-z0-9-]{0,62}"
+          },
+          "to": {
+            "preps": [
+              "to"
+            ]
+          }
+        },
+        "scopeQuestion": "Which two wiki pages? Try: link wiki pages from sprint-notes to roadmap."
+      },
+      "subject": "wiki",
+      "priority": "P1"
+    },
+    {
+      "id": "wiki.section.read",
+      "title": "Read a wiki page section",
+      "category": "wiki",
+      "owner": "host-wiki",
+      "executor": null,
+      "readiness": "adapter_pending",
+      "risk": "R0",
+      "target": "local-host",
+      "args": {
+        "page": {
+          "type": "string",
+          "min": 1,
+          "max": 80
+        },
+        "section": {
+          "type": "string",
+          "min": 1,
+          "max": 80
+        }
+      },
+      "examples": [
+        "read wiki page sprint-notes in section specs"
+      ],
+      "surfaces": [
+        "text",
+        "desktop",
+        "mobile",
+        "visual"
+      ],
+      "reversible": true,
+      "privacy": "pc-only",
+      "language": {
+        "verbs": [
+          "read",
+          "open"
+        ],
+        "family": "?",
+        "reading": "Read wiki page {page} section {section}",
+        "objects": [
+          "wiki",
+          "section",
+          "page"
+        ],
+        "scope": [
+          "wiki",
+          "page",
+          "pages",
+          "section",
+          "sections"
+        ],
+        "slots": {
+          "page": {
+            "match": "(?<=page\\s)[a-z0-9][a-z0-9-]{0,62}"
+          },
+          "section": {
+            "preps": [
+              "section"
+            ]
+          }
+        },
+        "scopeQuestion": "Which wiki page and section? Try: read wiki page sprint-notes in section specs."
+      },
+      "subject": "wiki",
+      "priority": "P1"
+    },
+    {
+      "id": "wiki.pages.list",
+      "title": "List wiki pages",
+      "category": "wiki",
+      "owner": "host-wiki",
+      "executor": null,
+      "readiness": "adapter_pending",
+      "risk": "R0",
+      "target": "local-host",
+      "args": {},
+      "examples": [
+        "list wiki pages",
+        "show wiki pages"
+      ],
+      "surfaces": [
+        "text",
+        "desktop",
+        "mobile",
+        "visual"
+      ],
+      "reversible": true,
+      "privacy": "pc-only",
+      "language": {
+        "verbs": [
+          "list",
+          "show"
+        ],
+        "family": "?",
+        "reading": "List the wiki pages",
+        "objects": [
+          "wiki",
+          "pages"
+        ],
+        "scope": [
+          "wiki",
+          "pages"
+        ],
+        "scopeQuestion": "List what? Try: list wiki pages."
+      },
+      "subject": "wiki",
+      "priority": "P1"
+    },
+    {
+      "id": "wiki.page.delete",
+      "title": "Soft-delete a wiki page",
+      "category": "wiki",
+      "owner": "host-wiki",
+      "executor": null,
+      "readiness": "adapter_pending",
+      "risk": "R1",
+      "target": "local-host",
+      "args": {
+        "page": {
+          "type": "string",
+          "min": 1,
+          "max": 80
+        }
+      },
+      "examples": [
+        "delete wiki page sprint-notes"
+      ],
+      "surfaces": [
+        "text",
+        "desktop",
+        "mobile",
+        "visual"
+      ],
+      "reversible": true,
+      "privacy": "pc-only",
+      "language": {
+        "verbs": [
+          "delete",
+          "drop",
+          "retire"
+        ],
+        "family": "-",
+        "reading": "Soft-delete wiki page {page} (recoverable)",
+        "objects": [
+          "wiki",
+          "page"
+        ],
+        "scope": [
+          "wiki",
+          "page",
+          "pages"
+        ],
+        "slots": {
+          "page": {
+            "match": "(?<=page\\s)[a-z0-9][a-z0-9-]{0,62}"
+          }
+        },
+        "scopeQuestion": "Which wiki page? Try: delete wiki page sprint-notes."
+      },
+      "subject": "wiki",
+      "priority": "P1"
     }
   ],
   "readinessStates": {

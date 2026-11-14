@@ -1,0 +1,18 @@
+{
+  "schema": "vivim.ingress-registry/1",
+  "items": [
+    { "id": "AI01", "kind": "ai", "captureEnabled": false, "contentPolicy": "reference_existing_authority", "defaultCollection": "off", "utilityStatus": "untested", "rightsStatus": "review_required" },
+    { "id": "AI02", "kind": "ai", "captureEnabled": false, "contentPolicy": "reference_existing_authority", "defaultCollection": "off", "utilityStatus": "untested", "rightsStatus": "review_required" },
+    { "id": "AI03", "kind": "ai", "captureEnabled": false, "contentPolicy": "reference_existing_authority", "defaultCollection": "off", "utilityStatus": "untested", "rightsStatus": "review_required" },
+    { "id": "AI04", "kind": "ai", "captureEnabled": false, "contentPolicy": "reference_existing_authority", "defaultCollection": "off", "utilityStatus": "untested", "rightsStatus": "review_required" },
+    { "id": "AI05", "kind": "ai", "captureEnabled": false, "contentPolicy": "reference_existing_authority", "defaultCollection": "off", "utilityStatus": "untested", "rightsStatus": "review_required" },
+    { "id": "AI06", "kind": "ai", "captureEnabled": false, "contentPolicy": "reference_existing_authority", "defaultCollection": "off", "utilityStatus": "untested", "rightsStatus": "review_required" },
+    { "id": "CT01", "kind": "content", "captureEnabled": false, "contentPolicy": "reference_existing_authority", "defaultCollection": "off", "utilityStatus": "untested", "rightsStatus": "review_required" },
+    { "id": "FS01", "kind": "filesystem", "captureEnabled": false, "contentPolicy": "reference_existing_authority", "defaultCollection": "off", "utilityStatus": "untested", "rightsStatus": "review_required" },
+    { "id": "EXT01", "kind": "extension", "captureEnabled": false, "contentPolicy": "reference_existing_authority", "defaultCollection": "off", "utilityStatus": "untested", "rightsStatus": "review_required" },
+    { "id": "TEL01", "kind": "telemetry", "captureEnabled": false, "contentPolicy": "reference_existing_authority", "defaultCollection": "off", "utilityStatus": "untested", "rightsStatus": "review_required" },
+    { "id": "TEL02", "kind": "telemetry", "captureEnabled": false, "contentPolicy": "reference_existing_authority", "defaultCollection": "off_opt_in", "utilityStatus": "untested", "rightsStatus": "review_required" },
+    { "id": "TEL03", "kind": "telemetry", "captureEnabled": false, "contentPolicy": "reference_existing_authority", "defaultCollection": "off", "utilityStatus": "untested", "rightsStatus": "review_required" },
+    { "id": "SEN01", "kind": "sensitive", "captureEnabled": false, "contentPolicy": "reference_existing_authority", "defaultCollection": "restricted_never_auto", "utilityStatus": "untested", "rightsStatus": "review_required" }
+  ]
+}

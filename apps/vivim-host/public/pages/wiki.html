@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VIVIM — realtime wiki</title>
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; background: var(--bg-primary, #0d0f12); color: var(--text-primary, #e8eaed);
+         font-family: var(--font-body, system-ui, sans-serif); height: 100vh; display: flex; flex-direction: column; }
+  header { padding: 12px 16px; border-bottom: 1px solid var(--border-subtle, #23262b); display: flex; gap: 12px; align-items: baseline; }
+  header h1 { font-size: 15px; margin: 0; font-weight: 600; }
+  header a { color: var(--accent, #7aa2f7); font-size: 12px; text-decoration: none; }
+  header .rev { font-size: 11px; opacity: .6; margin-left: auto; }
+  main { flex: 1; overflow-y: auto; padding: 20px 28px; max-width: 900px; margin: 0 auto; width: 100%; box-sizing: border-box; }
+  .block { margin-bottom: 26px; }
+  .block > h2 { font-size: 18px; margin: 0 0 12px; border-bottom: 1px solid var(--border-subtle, #23262b); padding-bottom: 6px; }
+  .page { margin-bottom: 22px; border: 1px solid var(--border-subtle, #23262b); border-radius: 10px; padding: 14px 16px; background: var(--bg-secondary, #14161a); }
+  .page > h2 { font-size: 16px; margin: 0 0 10px; border-bottom: none; padding-bottom: 0; }
+  .section { margin-bottom: 12px; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-subtle, #23262b); background: var(--bg-tertiary, #0f1115); cursor: pointer; }
+  .section:hover { border-color: var(--accent, #7aa2f7); }
+  .section h3 { font-size: 13px; margin: 0 0 6px; text-transform: uppercase; letter-spacing: .06em; opacity: .75; }
+  .section .body { font-size: 14px; line-height: 1.6; white-space: pre-wrap; }
+  .section .meta { font-size: 11px; opacity: .6; margin-top: 6px; font-family: var(--font-mono, monospace); }
+  .empty { opacity: .5; font-size: 13px; }
+  .record { margin-bottom: 10px; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border-subtle, #23262b); background: var(--bg-secondary, #14161a); }
+  .record .path { font-family: var(--font-mono, monospace); font-size: 12px; opacity: .8; margin-bottom: 4px; word-break: break-all; }
+  .record .surface { font-size: 13px; margin-bottom: 4px; }
+  .record .tags { font-size: 11px; opacity: .7; font-family: var(--font-mono, monospace); }
+  .tag { display: inline-block; margin: 1px 6px 1px 0; padding: 1px 6px; border-radius: 10px; border: 1px solid var(--border-subtle, #23262b); font-size: 10px; font-family: var(--font-mono, monospace); }
+  .roadmap table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .roadmap th { text-align: left; font-size: 11px; text-transform: uppercase; opacity: .7; padding: 6px 8px; border-bottom: 1px solid var(--border-subtle, #23262b); }
+  .roadmap td { padding: 6px 8px; border-bottom: 1px solid var(--border-subtle, #23262b); vertical-align: top; }
+  .roadmap .id { font-family: var(--font-mono, monospace); width: 140px; }
+  .status { font-size: 10px; padding: 1px 6px; border-radius: 6px; border: 1px solid var(--border-subtle, #23262b); font-family: var(--font-mono, monospace); }
+  .status.queued { background: #1a2a3a; color: #93c5fd; }
+  .status.active { background: #14301c; color: #7ee2a8; }
+  .status.todo { background: #2a2a1a; color: #fde047; }
+  .status.in-progress { background: #3a2a1a; color: #fb923c; }
+  .status.candidate { background: #14301c; color: #7ee2a8; }
+  .status.implemented { background: #1a2d4a; color: #93c5fd; }
+  .journal table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .journal th { text-align: left; font-size: 10px; text-transform: uppercase; opacity: .7; padding: 5px 8px; border-bottom: 1px solid var(--border-subtle, #23262b); }
+  .journal td { padding: 5px 8px; border-bottom: 1px solid var(--border-subtle, #23262b); vertical-align: top; }
+  .journal .when { font-family: var(--font-mono, monospace); width: 170px; opacity: .8; }
+  form.edit { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; border: 1px solid var(--border-subtle, #23262b); padding: 12px 16px; border-radius: 10px; background: var(--bg-secondary, #14161a); }
+  form.edit h3 { margin: 0 0 6px; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; opacity: .75; }
+  form.edit textarea { flex: 1; min-height: 120px; background: var(--bg-secondary, #14161a); border: 1px solid var(--border-subtle, #23262b); color: inherit; border-radius: 8px; padding: 8px 10px; font-size: 13px; font-family: inherit; }
+  form.edit .actions { display: flex; gap: 8px; }
+  form.edit button { background: var(--accent, #7aa2f7); border: 0; border-radius: 8px; padding: 8px 14px; font-size: 13px; cursor: pointer; }
+  form.edit button.ghost { background: transparent; border: 1px solid var(--border-subtle, #23262b); color: inherit; }
+  form.edit button:disabled { opacity: .5; cursor: not-allowed; }
+  #edit-status { font-size: 12px; margin-top: 6px; min-height: 18px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>VIVIM realtime wiki</h1>
+  <a href="/pages/chat">chat</a>
+  <a href="/demo">dev panel</a>
+  <span class="rev" id="rev"></span>
+</header>
+<main id="content"></main>
+<form id="edit" class="edit" style="display:none;">
+  <h3>Edit <span id="edit-target"></span></h3>
+  <textarea id="edit-content"></textarea>
+  <div class="actions">
+    <button id="edit-save">save</button>
+    <button type="button" id="edit-cancel" class="ghost">cancel</button>
+  </div>
+  <div id="edit-status"></div>
+</form>
+<script type="module">
+  // Contract (converged ledger): same-origin relative fetches only.
+  const WIKI_URL = '/api/wiki';
+  const SURFACE_URL = '/api/file-surface';
+  const ROADMAP_URL = '/api/roadmap';
+  const JOURNAL_URL = '/api/journal';
+  const MUTATE_URL = '/api/mutate';
+  const ACTOR = 'owner-browser';
+  const POLL_MS = 1000;
+
+  const content = document.getElementById('content');
+  const rev = document.getElementById('rev');
+  const editForm = document.getElementById('edit');
+  const editTarget = document.getElementById('edit-target');
+  const editContent = document.getElementById('edit-content');
+  const editSave = document.getElementById('edit-save');
+  const editCancel = document.getElementById('edit-cancel');
+  const editStatus = document.getElementById('edit-status');
+  let editPage = null;
+  let editSection = null;
+  let pollTimer = null;
+
+  function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+  function el(tag) { return document.createElement(tag); }
+
+  function sectionEl(page, section, body) {
+    const node = el('div');
+    node.className = 'section';
+    node.dataset.wikiId = page + '/' + section;
+    const h = el('h3'); h.textContent = section;
+    const b = el('div'); b.className = 'body'; b.textContent = body ?? '';
+    const meta = el('div'); meta.className = 'meta'; meta.textContent = 'data-wiki-id=' + node.dataset.wikiId + ' · click to edit';
+    node.appendChild(h); node.appendChild(b); node.appendChild(meta);
+    node.addEventListener('click', () => openEdit(page, section, body));
+    return node;
+  }
+
+  function openEdit(page, section, body) {
+    editPage = page; editSection = section;
+    editTarget.textContent = page + '/' + section;
+    editContent.value = body ?? '';
+    editStatus.textContent = '';
+    editForm.style.display = '';
+  }
+
+  editCancel.addEventListener('click', () => { editForm.style.display = 'none'; editPage = null; editSection = null; });
+  editForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (editPage == null || editSection == null) return;
+    editSave.disabled = true;
+    try {
+      await fetch(MUTATE_URL, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ schemaVersion: 1, actor: ACTOR, kind: 'wiki-edit', edit: { page: editPage, section: editSection, action: 'set-section', content: editContent.value } })
+      });
+      editStatus.textContent = 'saved';
+      editForm.style.display = 'none';
+      editPage = null; editSection = null;
+      await refresh();
+    } catch (err) {
+      editStatus.textContent = 'save failed: ' + String(err);
+    } finally {
+      editSave.disabled = false;
+    }
+  });
+
+  async function fetchJson(url) {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('HTTP ' + res.status + ' ' + url);
+    return res.json();
+  }
+
+  function statusChip(status) {
+    const span = el('span');
+    span.className = 'status ' + String(status ?? '').replace(/[^a-z0-9]/gi, '-');
+    span.textContent = status ?? '—';
+    return span;
+  }
+
+  function renderRoadmap(roadmap) {
+    const block = el('div'); block.className = 'block roadmap';
+    const h = el('h2'); h.textContent = 'roadmap'; block.appendChild(h);
+    let items = [];
+    if (roadmap && Array.isArray(roadmap.buildQueue)) items = roadmap.buildQueue;
+    else if (roadmap && roadmap.layers) {
+      for (const layer of Object.values(roadmap.layers)) {
+        if (Array.isArray(layer)) items = items.concat(layer);
+      }
+    }
+    if (!items.length) { block.appendChild(el('div')).className = 'empty'; block.lastChild.textContent = 'roadmap empty'; return block; }
+    const table = el('table');
+    const thead = el('thead'); const trh = el('tr');
+    ['id', 'status', 'note / title'].forEach((t, i) => { const th = el('th'); th.textContent = t; trh.appendChild(th); });
+    thead.appendChild(trh); table.appendChild(thead);
+    const tbody = el('tbody');
+    for (const it of items) {
+      const tr = el('tr');
+      const tdId = el('td'); tdId.className = 'id'; tdId.textContent = it.itemId || it.id || '—';
+      const tdSt = el('td'); tdSt.appendChild(statusChip(it.status));
+      const tdNo = el('td'); tdNo.textContent = it.note || it.title || '';
+      tr.appendChild(tdId); tr.appendChild(tdSt); tr.appendChild(tdNo);
+      tbody.appendChild(tr);
+    }
+    table.appendChild(tbody); block.appendChild(table);
+    return block;
+  }
+
+  function renderFileSurface(surface) {
+    const block = el('div'); block.className = 'block';
+    const h = el('h2'); h.textContent = 'file surface (reprogrammable)'; block.appendChild(h);
+    const records = Array.isArray(surface) ? surface : surface && Array.isArray(surface.records) ? surface.records : [];
+    if (!records.length) { block.appendChild(el('div')).className = 'empty'; block.lastChild.textContent = 'file surface empty'; return block; }
+    for (const rec of records) {
+      const r = el('div'); r.className = 'record';
+      const path = el('div'); path.className = 'path'; path.textContent = rec.path ?? '—';
+      const surfaceName = el('div'); surfaceName.className = 'surface'; surfaceName.textContent = 'surface: ' + esc(rec.surface ?? '—');
+      const tags = el('div'); tags.className = 'tags';
+      const commentIds = Array.isArray(rec.commentIds) ? rec.commentIds : rec.comments && Array.isArray(rec.comments) ? rec.comments.map(c => c.id) : [];
+      const actionIds = Array.isArray(rec.actionIds) ? rec.actionIds : rec.actions && Array.isArray(rec.actions) ? rec.actions.map(a => a.id) : [];
+      if (commentIds.length) { const t = el('span'); t.className = 'tag'; t.textContent = 'comments:' + commentIds.join(','); tags.appendChild(t); }
+      if (actionIds.length) { const t = el('span'); t.className = 'tag'; t.textContent = 'nlcl:' + actionIds.join(','); tags.appendChild(t); }
+      r.appendChild(path); r.appendChild(surfaceName); r.appendChild(tags);
+      block.appendChild(r);
+    }
+    return block;
+  }
+
+  function renderJournal(journal) {
+    const block = el('div'); block.className = 'block journal';
+    const h = el('h2'); h.textContent = 'journal (live)'; block.appendChild(h);
+    const entries = Array.isArray(journal) ? journal : journal && Array.isArray(journal.entries) ? journal.entries : [];
+    if (!entries.length) { block.appendChild(el('div')).className = 'empty'; block.lastChild.textContent = 'journal empty'; return block; }
+    const table = el('table');
+    const thead = el('thead'); const trh = el('tr');
+    ['receivedAt', 'round', 'verdicts'].forEach((t) => { const th = el('th'); th.textContent = t; trh.appendChild(th); });
+    thead.appendChild(trh); table.appendChild(thead);
+    const tbody = el('tbody');
+    for (const e of entries.slice(-20)) {
+      const tr = el('tr');
+      const tdWhen = el('td'); tdWhen.className = 'when'; tdWhen.textContent = e.receivedAt ?? '—';
+      const tdRound = el('td'); tdRound.textContent = e.round ?? '—';
+      const tdV = el('td');
+      const vs = Array.isArray(e.verdicts) ? e.verdicts : [];
+      tdV.textContent = vs.length ? vs.map(v => (v.id || v.itemId) + '=' + (v.verdict ?? v.decision ?? '?')).join(', ') : '—';
+      tr.appendChild(tdWhen); tr.appendChild(tdRound); tr.appendChild(tdV);
+      tbody.appendChild(tr);
+    }
+    table.appendChild(tbody); block.appendChild(table);
+    return block;
+  }
+
+  function renderWiki(wiki) {
+    const pages = wiki && wiki.pages ? wiki.pages : {};
+    const names = Object.keys(pages);
+    if (!names.length) { const e = el('div'); e.className = 'empty'; e.textContent = 'wiki is empty — edit it from chat'; return e; }
+    const block = el('div'); block.className = 'block';
+    const h = el('h2'); h.textContent = 'wiki'; block.appendChild(h);
+    for (const name of names) {
+      const page = el('div'); page.className = 'page';
+      const ph = el('h2'); ph.textContent = name;
+      const secs = pages[name]?.sections ?? {};
+      const secNames = Object.keys(secs);
+      if (!secNames.length) { page.appendChild(ph); const e = el('div'); e.className = 'empty'; e.textContent = 'no sections'; page.appendChild(e); block.appendChild(page); continue; }
+      page.appendChild(ph);
+      for (const s of secNames) page.appendChild(sectionEl(name, s, secs[s]));
+      block.appendChild(page);
+    }
+    return block;
+  }
+
+  async function refresh() {
+    try {
+      const [wiki, surface, roadmap, journal] = await Promise.all([
+        fetchJson(WIKI_URL), fetchJson(SURFACE_URL), fetchJson(ROADMAP_URL), fetchJson(JOURNAL_URL)
+      ]);
+      rev.textContent = 'wiki rev ' + (wiki && wiki.revision !== undefined ? wiki.revision : 0);
+      content.replaceChildren(
+        renderWiki(wiki),
+        renderFileSurface(surface),
+        renderRoadmap(roadmap),
+        renderJournal(journal)
+      );
+    } catch (err) {
+      rev.textContent = 'api error';
+      content.replaceChildren(document.createElement('div')).className = 'empty';
+      content.firstChild.textContent = 'wiki surface unavailable: ' + String(err);
+    }
+  }
+
+  function startPoll() {
+    if (pollTimer) return;
+    refresh();
+    pollTimer = setInterval(refresh, POLL_MS);
+  }
+
+  startPoll();
+</script>
+</body>
+</html>

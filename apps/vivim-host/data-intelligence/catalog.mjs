@@ -7,7 +7,14 @@ export const INVENTORY_SCHEMA = 'vivim.data-inventory/1';
 const REGISTRY_URL = new URL('../../../docs/data-intelligence/ingress-registry.v1.json', import.meta.url);
 
 export function readIngressRegistry({ read = readFileSync } = {}) {
-  const registry = JSON.parse(read(REGISTRY_URL, 'utf8'));
+  let raw;
+  try {
+    raw = read(REGISTRY_URL, 'utf8');
+  } catch (err) {
+    if (err && err.code === 'ENOENT') throw new Error('DATA_INGRESS_REGISTRY_UNAVAILABLE');
+    throw err;
+  }
+  const registry = JSON.parse(raw);
   if (registry?.schema !== 'vivim.ingress-registry/1' || !Array.isArray(registry.items)) {
     throw new Error('DATA_INGRESS_REGISTRY_INVALID');
   }

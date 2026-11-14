@@ -192,3 +192,105 @@ test('Shared control transport refuses ungranted operations even on Direct',asyn
     async()=>response({direct:true,directOnly:true,cloudEnabled:false})});
   await assert.rejects(client.preview('show status'),{code:'DEVICE_GRANT_REQUIRED'});
 });
+
+test('A refused command is shown as denied, not as a generic error',async()=>{
+  const {host}=fixture();
+  let executed=0;
+  const chat=createControlChat({host,transport:grant,fetchImpl:async path=>{
+    if(path==='/mobile/connection.json')return response({direct:true,directOnly:true,cloudEnabled:false});
+    if(path.endsWith('/plan'))return response({code:'CONTROL_REFUSED'},403);
+    executed++;return response({});
+  }});
+  assert.equal(await chat.send('set my theme to dusk'),true);
+  assert.match(displayed(host),/Your PC refused this action/);
+  assert.match(displayed(host),/Nothing was retried/);
+  assert.equal(executed,0);
+  assert.equal(buttons(host).some(x=>x.textContent==='Approve & apply'),false);
+});
+
+test('An expired preview is shown as expired with no approval offered',async()=>{
+  const {host}=fixture();
+  let executed=0;
+  const chat=createControlChat({host,transport:grant,fetchImpl:async path=>{
+    if(path==='/mobile/connection.json')return response({direct:true,directOnly:true,cloudEnabled:false});
+    if(path.endsWith('/plan'))return response({...plan,expiresAt:'2000-01-01T00:00:00.000Z'});
+    executed++;return response({});
+  }});
+  await chat.send('set my theme to dusk');
+  assert.match(displayed(host),/expired before approval/);
+  assert.match(displayed(host),/Nothing was retried/);
+  assert.equal(executed,0);
+  assert.equal(buttons(host).some(x=>x.textContent==='Approve & apply'),false);
+});
+
+test('A Host clarification choice becomes a fresh preview, never an execution',async()=>{
+  const {host}=fixture();
+  const posts=[];
+  const second={...plan,planId:'ctl-'+'3'.repeat(16),planDigest:'4'.repeat(64)};
+  const chat=createControlChat({host,transport:grant,fetchImpl:async(path,options)=>{
+    if(path==='/mobile/connection.json')return response({direct:true,directOnly:true,cloudEnabled:false});
+    if(path.endsWith('/plan')){
+      posts.push(['plan',JSON.parse(options.body)]);
+      return response(posts.length===1?{outcome:'clarification_required',question:'Which theme?',
+        choiceDetails:[{actionId:'ui.theme.set_preset',title:'Set theme to dusk',readiness:'verified'}]}:second);
+    }
+    if(path.endsWith('/execute')){posts.push(['execute']);return response({});}
+    throw Error('Unexpected route');
+  }});
+  await chat.send('theme');
+  assert.match(displayed(host),/Which theme/);
+  const choice=buttons(host).find(x=>x.textContent==='Set theme to dusk');
+  assert.ok(choice);
+  choice.events.click();
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.deepEqual(posts[1],['plan',{actionId:'ui.theme.set_preset',args:{}}]);
+  assert.equal(posts.some(x=>x[0]==='execute'),false);
+  assert.ok(buttons(host).find(x=>x.textContent==='Approve & apply'));
+});
+
+test('A receipt Undo requests a fresh preview through /plan and never executes directly',async()=>{
+  const {host}=fixture();
+  const posts=[];
+  const undo={actionId:'ui.theme.set_preset',args:{preset:'day'}};
+  const second={...plan,planId:'ctl-'+'5'.repeat(16),planDigest:'6'.repeat(64),title:'Undo theme'};
+  const chat=createControlChat({host,transport:grant,fetchImpl:async(path,options)=>{
+    if(path==='/mobile/connection.json')return response({direct:true,directOnly:true,cloudEnabled:false});
+    if(path.endsWith('/plan')){posts.push(['plan',JSON.parse(options.body)]);return response(posts.length===1?plan:second);}
+    if(path.endsWith('/execute')){
+      posts.push(['execute',JSON.parse(options.body)]);
+      return response({schema:'vivim.control-receipt/1',planId:plan.planId,planDigest:plan.planDigest,
+        actionId:plan.actionId,status:'applied',result:{preset:'dusk'},undo});
+    }
+    throw Error('Unexpected route');
+  }});
+  await chat.send('set my theme to dusk');
+  buttons(host).find(x=>x.textContent==='Approve & apply').events.click();
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.match(displayed(host),/Host receipt/);
+  const undoBtn=buttons(host).find(x=>x.textContent==='Undo this change');
+  assert.ok(undoBtn);
+  undoBtn.events.click();
+  await new Promise(resolve=>setImmediate(resolve));
+  const planCalls=posts.filter(x=>x[0]==='plan');
+  assert.equal(planCalls.length,2);
+  assert.deepEqual(planCalls[1][1],undo);
+  assert.equal(posts.filter(x=>x[0]==='execute').length,1);
+  assert.ok(buttons(host).find(x=>x.textContent==='Approve & apply'));
+});
+
+test('The mounted screen states what can be asked here',async()=>{
+  const {host}=fixture();
+  let surface='today';
+  const chat=createControlChat({host,transport:grant,getSurface:()=>surface,
+    fetchImpl:async path=>{
+      if(path==='/mobile/connection.json')return response({direct:true,directOnly:true,cloudEnabled:false});
+      throw Error('Unexpected route');
+    }});
+  chat.render();
+  assert.match(displayed(host),/What can I ask here/);
+  assert.ok(buttons(host).some(x=>x.textContent==='open World'));
+  surface='world';
+  chat.render();
+  assert.ok(buttons(host).some(x=>x.textContent==='open media library'));
+  assert.equal(buttons(host).some(x=>x.textContent==='open World'),false);
+});

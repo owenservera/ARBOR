@@ -85,9 +85,17 @@ const S = {
 let combinedInbox = true; // UI-only inbox aggregation; never fan-out or a provider target.
 let providerRefreshBusy = false;
 const N = { target: transport.direct ? 'vivim' : 'harness', session: '', sessions: [], messages: [], timer: 0, generation: 0, sending: false, note: '', pending: null };
+// The dock rail states one fact: whether a previewed plan is still waiting.
+// It is derived from the chat, never a second source of approval.
+let chatHasApproval = false;
 const vivimChat = createControlChat({
   host: $('msgs'), transport,
-  onChange: () => updateSend(),
+  getSurface: () => S.tab,
+  onChange: () => {
+    chatHasApproval = vivimChat.hasPendingApproval();
+    updateSend();
+    updateDock();
+  },
   onNavigate: tab => goTab(tab),
   onOpenPocket: pocketButton && !pocketButton.hidden ? () => pocketButton.click() : null
 });
@@ -131,9 +139,11 @@ function updateDock() {
   composer.hidden = HOST_PREVIEW;
   composer.classList.toggle('is-collapsed',!expanded);
   $('dock-preview').hidden = expanded;
-  $('dock-preview-title').textContent = 'Ask ' +
-    (N.target==='harness'?'my AIs':N.target==='phone'?'my PC':'VIVIM') +
-    ' · '+S.tab.charAt(0).toUpperCase()+S.tab.slice(1);
+  $('dock-preview-title').textContent = chatHasApproval
+    ? 'Approval waiting · review plan'
+    : 'Ask ' +
+      (N.target==='harness'?'my AIs':N.target==='phone'?'my PC':'VIVIM') +
+      ' · '+S.tab.charAt(0).toUpperCase()+S.tab.slice(1);
   $('dock-surface-label').textContent = S.tab +
     (chatContext?.state==='source-backed' ? ' · Rust context' : ' · Host context');
   for(const button of document.querySelectorAll('[data-chat-target]')){

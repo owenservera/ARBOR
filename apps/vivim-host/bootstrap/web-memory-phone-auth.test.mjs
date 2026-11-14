@@ -21,17 +21,25 @@ test('Direct phone web memory never exposes owner history without a device grant
   server.listen(0, '127.0.0.1');
   await once(server, 'listening');
   t.after(async () => { await new Promise(resolve => server.close(resolve)); });
-  const url = 'http://127.0.0.1:' + server.address().port + '/mobile/api/memory/recent';
+  const url = new URL('http://127.0.0.1:' + server.address().port + '/mobile/api/memory/recent');
   const trustedProxy = { host: 'pc.example.ts.net', 'x-forwarded-proto': 'https',
     'tailscale-user-login': user };
+  const request = (headers = {}) => new Promise((resolve, reject) => {
+    const req = http.request({ hostname: url.hostname, port: url.port, path: url.pathname + url.search, headers }, res => {
+      res.resume();
+      res.on('end', () => resolve(res));
+    });
+    req.on('error', reject);
+    req.end();
+  });
 
   // Arbitrary LAN caller is rejected before any history read.
-  let result = await fetch(url);
-  assert.equal(result.status, 403);
+  let result = await request();
+  assert.equal(result.statusCode, 403);
   assert.equal(sourceReads, 0);
 
   // Even a trusted Tailscale identity has no device-read privilege by itself.
-  result = await fetch(url, { headers: trustedProxy });
-  assert.equal(result.status, 401);
+  result = await request(trustedProxy);
+  assert.equal(result.statusCode, 401);
   assert.equal(sourceReads, 0);
 });

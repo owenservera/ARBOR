@@ -180,14 +180,15 @@ test('a proxy heartbeat does not mark an unapproved phone as connected', async (
   } finally { f.dispose(); }
 });
 
-test('onboarding HTTP: same-origin JSON only, and state includes the guided read model', async () => {
+test('onboarding HTTP: state/pair-status read-only; privileged POSTs require owner proof, same-origin and control header', async () => {
   const dataRoot = mkdtempSync(path.join(os.tmpdir(), 'vivim-onb-http-'));
+  const ownerToken = 'test-owner-token-onboarding-0123456789';
   const calls = [];
   const svc = {
     status: async () => ({ schema: 'vivim.onboarding/1', primary: null }),
     setPrimary: id => { calls.push(id); return id; }, pump: () => {}, start: () => {}, phoneSeen: () => {}
   };
-  const server = createHostServer({ dataRoot, onboarding: svc });
+  const server = createHostServer({ dataRoot, onboarding: svc, ownerToken });
   await new Promise(r => server.listen(0, '127.0.0.1', r));
   const port = server.address().port, host = `127.0.0.1:${port}`;
   const call = (method, route, { headers = {}, body } = {}) => new Promise((resolve, reject) => {
@@ -200,10 +201,31 @@ test('onboarding HTTP: same-origin JSON only, and state includes the guided read
     const state = await call('GET', '/api/onboarding/state');
     assert.equal(state.status, 200); assert.equal(state.body.onboarding.schema, 'vivim.onboarding/1');
     assert.equal(typeof state.body.defaultWorkspaceRoot, 'string');
+    const pair = await call('GET', '/api/onboarding/pair-status');
+    assert.equal(pair.status, 200); assert.equal(pair.body.ok, true);
+    assert.equal(typeof pair.body.paired, 'boolean');
+
     const json = { 'content-type': 'application/json' };
-    const cross = await call('POST', '/api/onboarding/primary', { headers: { ...json, origin: 'https://evil.example' }, body: '{"provider":"chatgpt"}' });
-    assert.equal(cross.status, 403); assert.deepEqual(calls, []);
-    const ok = await call('POST', '/api/onboarding/primary', { headers: { ...json, origin: `http://${host}` }, body: '{"provider":"chatgpt"}' });
+    const auth = { authorization: `Bearer ${ownerToken}` };
+    const okHeaders = { ...json, ...auth, origin: `http://${host}`, 'x-vivim-control': '1' };
+    const affected = [
+      ['/api/onboarding/setup', '{"workspaceRoot":"w","chromeExe":"c","chromeProfile":"p"}'],
+      ['/api/onboarding/start', '{}'],
+      ['/api/onboarding/doctor', '{}'],
+      ['/api/onboarding/apk/register', '{"apkPath":"C:\\\\nope\\\\x.apk"}'],
+      ['/api/onboarding/pair/register', '{}'],
+      ['/api/onboarding/primary', '{"provider":"chatgpt"}']
+    ];
+    for (const [route, body] of affected) {
+      const unauth = await call('POST', route, { headers: { ...json, origin: `http://${host}`, 'x-vivim-control': '1' }, body });
+      assert.equal(unauth.status, 401, `${route} unauthenticated must be 401`);
+      const cross = await call('POST', route, { headers: { ...json, ...auth, origin: 'https://evil.example', 'x-vivim-control': '1' }, body });
+      assert.equal(cross.status, 403, `${route} cross-origin must be 403`);
+      const noCsrf = await call('POST', route, { headers: { ...json, ...auth, origin: `http://${host}` }, body });
+      assert.equal(noCsrf.status, 403, `${route} missing csrf must be 403`);
+    }
+
+    const ok = await call('POST', '/api/onboarding/primary', { headers: okHeaders, body: '{"provider":"chatgpt"}' });
     assert.equal(ok.status, 200); assert.deepEqual(calls, ['chatgpt']);
     assert.equal((await call('GET', '/api/onboarding/primary')).status, 405);
   } finally { await new Promise(r => server.close(r)); try { rmTolerant(dataRoot); } catch { /* leftover temp on Windows */ } }

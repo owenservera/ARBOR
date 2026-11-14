@@ -336,6 +336,30 @@
     "gate": "host-suite"
   },
   {
+    "path": "apps/vivim-host/test/demo-fixtures.test.mjs",
+    "root": "apps/vivim-host/test",
+    "runtime": "node24-ajv",
+    "gate": "host-suite"
+  },
+  {
+    "path": "apps/vivim-host/test/demo-iframe-smoke.test.mjs",
+    "root": "apps/vivim-host/test",
+    "runtime": "node24-ajv",
+    "gate": "host-suite"
+  },
+  {
+    "path": "apps/vivim-host/test/demo-shell-assets.test.mjs",
+    "root": "apps/vivim-host/test",
+    "runtime": "node24-ajv",
+    "gate": "host-suite"
+  },
+  {
+    "path": "apps/vivim-host/test/demo-shell-tokens.test.mjs",
+    "root": "apps/vivim-host/test",
+    "runtime": "node24-ajv",
+    "gate": "host-suite"
+  },
+  {
     "path": "apps/vivim-host/test/device-ui-wiring.test.mjs",
     "root": "apps/vivim-host/test",
     "runtime": "node24-ajv",
@@ -418,6 +442,18 @@
     "root": "apps/vivim-host/test",
     "runtime": "node24-ajv",
     "gate": "host-suite"
+  },
+  {
+    "path": "apps/vivim-host/test/mobile-first-entry.test.mjs",
+    "root": "apps/vivim-host/test",
+    "runtime": "node24-ajv",
+    "gate": "pwa-loop"
+  },
+  {
+    "path": "apps/vivim-host/test/host-preview.test.mjs",
+    "root": "apps/vivim-host/test",
+    "runtime": "node24-ajv",
+    "gate": "pwa-loop"
   },
   {
     "path": "apps/vivim-host/test/owner-auth.test.mjs",

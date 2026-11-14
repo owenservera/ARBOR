@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VIVIM — chat</title>
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; background: var(--bg-primary, #0d0f12); color: var(--text-primary, #e8eaed);
+         font-family: var(--font-body, system-ui, sans-serif); display: flex; flex-direction: column; height: 100vh; }
+  header { padding: 12px 16px; border-bottom: 1px solid var(--border-subtle, #23262b); display: flex; gap: 12px; align-items: baseline; }
+  header h1 { font-size: 15px; margin: 0; font-weight: 600; }
+  header a { color: var(--accent, #7aa2f7); font-size: 12px; text-decoration: none; }
+  header .rev { font-size: 11px; opacity: .6; }
+  #log { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+  .msg { max-width: 760px; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--border-subtle, #23262b); background: var(--bg-secondary, #14161a); }
+  .msg.user { align-self: flex-end; background: var(--accent-dim, #1a2333); }
+  .msg .who { font-size: 10px; text-transform: uppercase; letter-spacing: .08em; opacity: .55; margin-bottom: 3px; }
+  .msg .text { font-size: 14px; white-space: pre-wrap; }
+  .intent { margin-top: 6px; font-size: 11px; font-family: var(--font-mono, monospace); opacity: .8; border-top: 1px dashed var(--border-subtle, #23262b); padding-top: 5px; }
+  .intent .outcome { padding: 1px 6px; border-radius: 6px; font-size: 10px; }
+  .intent .outcome.candidate { background: #14301c; color: #7ee2a8; }
+  .intent .outcome.refused { background: #3a1616; color: #ff9d9d; }
+  .intent .outcome.accepted { background: #1a2d4a; color: #93c5fd; }
+  .intent .canonical { color: var(--accent, #7aa2f7); }
+  .chip { display: inline-block; margin: 2px 4px 2px 0; padding: 2px 8px; border-radius: 10px; border: 1px solid var(--border-subtle, #23262b); font-size: 11px; font-family: var(--font-mono, monospace); opacity: .9; }
+  form { display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--border-subtle, #23262b); }
+  input { flex: 1; background: var(--bg-secondary, #14161a); border: 1px solid var(--border-subtle, #23262b);
+          color: inherit; border-radius: 8px; padding: 10px 12px; font-size: 14px; }
+  button { background: var(--accent, #7aa2f7); border: 0; border-radius: 8px; padding: 10px 16px; font-size: 14px; cursor: pointer; }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  .empty { opacity: .5; font-size: 13px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>VIVIM chat</h1>
+  <a href="/pages/wiki">wiki</a>
+  <a href="/demo">dev panel</a>
+  <span class="rev" id="rev"></span>
+</header>
+<div id="log"></div>
+<form id="f">
+  <input id="t" autocomplete="off" placeholder="Type to VIVIM — natural language in, deterministic command out">
+  <button id="send">send</button>
+</form>
+<script type="module">
+  // Contract (converged ledger): same-origin relative fetches only.
+  const STATE_URL = '/api/state';
+  const MUTATE_URL = '/api/mutate';
+  const ACTOR = 'owner-browser';
+  const POLL_MS = 1500;
+
+  const log = document.getElementById('log');
+  const rev = document.getElementById('rev');
+  const form = document.getElementById('f');
+  const input = document.getElementById('t');
+  const sendBtn = document.getElementById('send');
+  let pollTimer = null;
+
+  function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+  function outcomeClass(o) { return String(o ?? 'none').replace(/[^a-z0-9]/gi, '-'); }
+
+  function renderIntent(ir) {
+    const chips = document.createElement('div');
+    chips.className = 'intent';
+    const o = document.createElement('span');
+    o.className = 'outcome ' + outcomeClass(ir && ir.outcome);
+    o.textContent = esc(String(ir && ir.outcome !== undefined ? ir.outcome : 'none'));
+    chips.appendChild(o);
+    if (ir && ir.canonical) { const c = document.createElement('span'); c.className = 'canonical'; c.textContent = esc(ir.canonical); chips.appendChild(c); }
+    if (ir && ir.refusal) { const r = document.createElement('span'); r.textContent = esc(ir.refusal.message ?? ''); chips.appendChild(r); }
+    return chips;
+  }
+
+  function renderMsg(m) {
+    const el = document.createElement('div');
+    el.className = 'msg ' + (m.who === 'user' ? 'user' : 'system');
+    let intentHtml = '';
+    if (m.intent) intentHtml = renderIntent(m.intent).outerHTML;
+    el.innerHTML = '<div class="who">' + esc(m.who) + (m.at ? ' · ' + esc(m.at) : '') + '</div><div class="text">' + esc(m.text) + '</div>' + intentHtml;
+    return el;
+  }
+
+  function renderIntentChip(ir) {
+    const el = document.createElement('div');
+    el.className = 'msg system';
+    el.innerHTML = '<div class="who">intent · ' + esc(new Date().toISOString()) + '</div><div class="text">returned intent IR</div>' + renderIntent(ir).outerHTML;
+    return el;
+  }
+
+  async function fetchJson(url, init) {
+    const res = await fetch(url, init);
+    if (!res.ok) throw new Error('HTTP ' + res.status + ' ' + url);
+    return res.json();
+  }
+
+  async function refresh() {
+    try {
+      const s = await fetchJson(STATE_URL);
+      rev.textContent = 'state rev ' + (s.wikiRevision ?? 0);
+      const chat = Array.isArray(s.chat) ? s.chat : [];
+      if (!chat.length) { log.replaceChildren(document.createElement('div')).className = 'empty'; log.firstChild.textContent = 'chat is empty — send a message'; return; }
+      log.replaceChildren(...chat.map(renderMsg));
+    } catch (err) {
+      rev.textContent = 'state error';
+    }
+    log.scrollTop = log.scrollHeight;
+  }
+
+  function startPoll() {
+    if (pollTimer) return;
+    refresh();
+    pollTimer = setInterval(refresh, POLL_MS);
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = '';
+    sendBtn.disabled = true;
+    try {
+      const ir = await fetchJson(MUTATE_URL, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ schemaVersion: 1, actor: ACTOR, kind: 'chat-send', text })
+      });
+      log.appendChild(renderIntentChip(ir));
+    } catch (err) {
+      log.appendChild(renderMsg({ who: 'system', text: 'send failed: ' + String(err), at: new Date().toISOString() }));
+    } finally {
+      sendBtn.disabled = false;
+      input.focus();
+      await refresh();
+    }
+  });
+
+  startPoll();
+</script>
+</body>
+</html>

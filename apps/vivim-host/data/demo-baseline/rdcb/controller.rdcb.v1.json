@@ -1,0 +1,88 @@
+{
+  "schema": "vivim.rdcb/1",
+  "protocol": "hq.dcb-protocol/1",
+  "inherits": "hq.context-bundle/1",
+  "trigger": "edit.pre",
+  "task": "RDCB v1 — reprogramming context for apps/vivim-host/public/demo/controller.js",
+  "audience": "agent",
+  "project": "arbor",
+  "generatedAt": "2026-11-14T00:00:00.000Z",
+  "status": "fresh",
+  "budget": {
+    "maxTokens": 5000,
+    "reserved": 800,
+    "capacity": 4120,
+    "used": 391,
+    "estimator": "utf8-bytes/3"
+  },
+  "reprogramming": {
+    "corpusScope": "vlang-surface-headers",
+    "vlangExecution": false,
+    "fileSurfaceRegistry": {
+      "ref": "apps/vivim-host/data/demo-baseline/file-surface.v1.json",
+      "schema": "vivim.file-surface/1",
+      "generatorVersion": "file-surface-gen/1 stage-a",
+      "recordCount": 3
+    },
+    "nlclCatalog": {
+      "ref": "apps/vivim-host/control/action-catalog.v1.json",
+      "schema": "vivim.control-action-catalog/1",
+      "version": 8
+    },
+    "surfaceDrift": []
+  },
+  "sources": [
+    {
+      "ref": "arbor:apps/vivim-host/public/demo/controller.js",
+      "project": "arbor",
+      "path": "apps/vivim-host/public/demo/controller.js",
+      "kind": "code",
+      "lang": "javascript",
+      "sha256": "71cf01ca3af911d05865ab10bc0af38ac2f685346c5890cf875f9ff89b49d530",
+      "lines": [
+        1,
+        14
+      ],
+      "estimatedTokens": 391,
+      "score": 1,
+      "reason": "rdcb|file-surface|vlang-surface-header",
+      "authority": "project_observed",
+      "excerpt": {
+        "kind": "vlang-surface-header",
+        "lines": [
+          1,
+          14
+        ],
+        "text": "/* @vlang:surface apps/vivim-host/public/demo/controller.js\n   @vlang:surface-desc: Walkthrough controller for the ARBOR baseline demo — the reprogrammable\n   @vlang:surface-desc: surface is presentation and verdict wording only: live message state\n   @vlang:surface-desc: labels (LIVE_STATE_LABELS), the honest gap string (NOT_AVAILABLE), the\n   @vlang:surface-desc: tag vocabulary (TAGS), fixture validation messages, and per-step\n   @vlang:surface-desc: render wording. NL-driven change accepts none of: new fetch targets\n   @vlang:surface-desc: (C4 same-origin /demo/* only), DOM scope beyond #demo-* elements (C7),\n   @vlang:surface-desc: inline script/style (C4), or verdict payload keys beyond the C8\n   @vlang:surface-desc: {round, approveAll, verdicts} shape read by POST /demo/feedback.\n   @vlang:surface-desc: NLCL linkage: no action in control/action-catalog.v1.json v7 targets\n   @vlang:surface-desc: this file yet — actionIds stays empty until one is catalogued.\n   @vlang:id: tag-vocabulary storage-key live-state-labels not-available-gap\n   @vlang:id: fixture-validation mock-data-views walkthrough-state verdict-payload dom-anchors\n   @vlang:action: */"
+      },
+      "fileSurface": {
+        "ref": "apps/vivim-host/data/demo-baseline/file-surface.v1.json",
+        "surface": "Walkthrough controller for the ARBOR baseline demo — the reprogrammable\nsurface is presentation and verdict wording only: live message state\nlabels (LIVE_STATE_LABELS), the honest gap string (NOT_AVAILABLE), the\ntag vocabulary (TAGS), fixture validation messages, and per-step\nrender wording. NL-driven change accepts none of: new fetch targets\n(C4 same-origin /demo/* only), DOM scope beyond #demo-* elements (C7),\ninline script/style (C4), or verdict payload keys beyond the C8\n{round, approveAll, verdicts} shape read by POST /demo/feedback.\nNLCL linkage: no action in control/action-catalog.v1.json v7 targets\nthis file yet — actionIds stays empty until one is catalogued.",
+        "commentIds": [
+          "tag-vocabulary",
+          "storage-key",
+          "live-state-labels",
+          "not-available-gap",
+          "fixture-validation",
+          "mock-data-views",
+          "walkthrough-state",
+          "verdict-payload",
+          "dom-anchors"
+        ]
+      },
+      "nlclActionIds": [],
+      "digest": "a6c0aeaac9cf5b0f6e6d1620989d1ce6a98b552312554da72e56e1f7dad0293c"
+    }
+  ],
+  "omissions": [],
+  "symbols": [],
+  "decisions": [],
+  "canon": [],
+  "sessions": [],
+  "labels": {
+    "aperture": "Reprogram",
+    "evidence": "file-surface.v1 + action-catalog.v1"
+  },
+  "authority": "read_only_projection",
+  "digest": "d82f0b9142f216eb6c8164afcf7805c47af551d1eea81b727cf0b24612eb8175"
+}

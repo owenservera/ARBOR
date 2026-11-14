@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, mkdtempSync, rmSync } from 'node:fs';
+import http from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
 import { createHostServer } from '../server.mjs';
@@ -72,22 +73,32 @@ test('desktop preview and trusted Direct phone remain separate when both are con
       body: '{}'
     })).status, 405);
 
-    const phone = await fetch(base + '/mobile/', {
-      headers: {
-        host: 'vivim.test.ts.net',
-        'x-forwarded-proto': 'https',
-        'tailscale-user-login': 'owner@example.com'
-      }
+    // fetch() treats Host as a forbidden header, but the Direct handler routes on it.
+    const directGet = (headers) => new Promise((resolve, reject) => {
+      const req = http.request({
+        host: '127.0.0.1', port: server.address().port, path: '/mobile/', method: 'GET', headers
+      }, res => {
+        let body = '';
+        res.setEncoding('utf8');
+        res.on('data', chunk => { body += chunk; });
+        res.on('end', () => resolve({ status: res.statusCode, text: body }));
+      });
+      req.on('error', reject);
+      req.end();
+    });
+
+    const phone = await directGet({
+      host: 'vivim.test.ts.net',
+      'x-forwarded-proto': 'https',
+      'tailscale-user-login': 'owner@example.com'
     });
     assert.equal(phone.status, 200);
-    assert.match(await phone.text(), /id="v-talk"/);
+    assert.match(phone.text, /id="v-talk"/);
 
-    const wrongUser = await fetch(base + '/mobile/', {
-      headers: {
-        host: 'vivim.test.ts.net',
-        'x-forwarded-proto': 'https',
-        'tailscale-user-login': 'not-owner@example.com'
-      }
+    const wrongUser = await directGet({
+      host: 'vivim.test.ts.net',
+      'x-forwarded-proto': 'https',
+      'tailscale-user-login': 'not-owner@example.com'
     });
     assert.equal(wrongUser.status, 403);
   } finally {
@@ -116,7 +127,7 @@ test('the phone shell exposes all canonical sections and Today launches existing
 
 test('PWA Host view is scoped to the owner browser session and never exposes device credentials', async () => {
   const root = mkdtempSync(path.join(os.tmpdir(), 'vivim-pwa-owner-view-'));
-  const ownerToken = 'owner-unit-test-token-for-pwa';
+  const ownerToken = 'owner-unit-test-token-for-pwa-0001';
   const server = createHostServer({ dataRoot: root, ownerToken });
   try {
     await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));

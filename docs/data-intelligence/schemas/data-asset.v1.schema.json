@@ -1,0 +1,17 @@
+{
+  "type": "object",
+  "properties": {
+    "schema": { "const": "vivim.data-asset/1" },
+    "model": {
+      "properties": {
+        "observedState": { "enum": ["verified", "unverified", "unavailable"] }
+      }
+    },
+    "content": {
+      "properties": {
+        "authorityRef": { "type": ["string", "null"] }
+      }
+    }
+  },
+  "additionalProperties": false
+}
