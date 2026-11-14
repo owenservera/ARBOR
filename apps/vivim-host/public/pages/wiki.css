@@ -1,3 +1,4 @@
+[hidden] { display: none !important; }
 :root { color-scheme: dark; }
   body { margin: 0; background: var(--bg-primary, #0d0f12); color: var(--text-primary, #e8eaed);
          font-family: var(--font-body, system-ui, sans-serif); height: 100vh; display: flex; flex-direction: column; }
