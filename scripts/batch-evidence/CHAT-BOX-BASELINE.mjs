@@ -148,23 +148,35 @@ if (live) {
     chat.ok ? `status=${chat.status} type=${chat.type} bodyLen=${chat.body.length}` : `unreachable: ${chat.error}`);
 
   // (a) machine-readable state endpoint: typed JSON with chat messages + wiki revision
-  const state = await attempt('state-endpoint', () => get('/state').then(r => r.status === 404 ? get('/demo/state') : r));
+  const state = await attempt('state-endpoint', () => get('/api/state'));
   const stateJson = state.ok ? (() => { try { return JSON.parse(state.body); } catch { return null; } })() : null;
   check('state-endpoint-typed-json', state.ok && state.status === 200 && /application\/json/.test(state.type)
     && stateJson && Array.isArray(stateJson.chat) && typeof stateJson.wikiRevision === 'number',
     state.ok ? `status=${state.status} chatLen=${stateJson && stateJson.chat.length} wikiRevision=${stateJson && stateJson.wikiRevision}` : `unreachable: ${state.error}`);
 
   // (c) same-envelope parity: one typed write endpoint, identical envelope {actor, schemaVersion,...} for human and AI
-  const writePath = '/chat';
-  const baseEnvelope = { schemaVersion: '1', text: 'parity check message' };
+  const writePath = '/api/mutate';
+  const baseEnvelope = { kind: 'chat-send', schemaVersion: '1', text: 'parity check message' };
   const envHuman = { ...baseEnvelope, actor: 'human' };
   const envAi = { ...baseEnvelope, actor: 'ai' };
-  const before = await attempt('state-before', () => get('/state').catch(() => get('/demo/state')));
+  const jBefore = await attempt('journal-before', () => get('/demo/journal.jsonl'));
+  const before = await attempt('state-before', () => get('/api/state'));
   const postHuman = await attempt('post-human', () => post(writePath, envHuman));
   const postAi = await attempt('post-ai', () => post(writePath, envAi));
-  const after = await attempt('state-after', () => get('/state').catch(() => get('/demo/state')));
+  const after = await attempt('state-after', () => get('/api/state'));
+  const jAfter = await attempt('journal-after', () => get('/demo/journal.jsonl'));
   const sameStatus = postHuman.ok && postAi.ok && postHuman.status === 200 && postAi.status === 200;
-  const sameMutation = sameStatus && before.ok && after.ok && before.body === after.body; // no-op parity when endpoint absent: both rejected identically
+  // keeper §2c rule in ratified design terms: chat-send appends ONE journal line per actor.
+  // identical mutation = journal +2 lines (one per actor, kind=chat-send, intent present), state unchanged.
+  let sameMutation = false;
+  try {
+    const bLines = jBefore.ok ? jBefore.body.trim().split(/\r?\n/).filter(Boolean) : [];
+    const aLines = jAfter.ok ? jAfter.body.trim().split(/\r?\n/).filter(Boolean) : [];
+    const tail2 = aLines.slice(-2).map(l => { try { return JSON.parse(l); } catch { return {}; } });
+    const stateUnchanged = before.ok && after.ok && before.body === after.body;
+    sameMutation = sameStatus && jBefore.ok && jAfter.ok && aLines.length === bLines.length + 2 &&
+      tail2.every(e => e.kind === 'chat-send' && e.actor != null && e.intent != null) && stateUnchanged;
+  } catch { sameMutation = false; }
   const parityDigest = digestOf({ human: postHuman, ai: postAi, before: before.body, after: after.body });
   check('write-endpoint-parity', sameStatus && sameMutation,
     `human status=${postHuman.ok ? postHuman.status : postHuman.error} ai status=${postAi.ok ? postAi.status : postAi.error} parityDigest=${parityDigest} stateUnchanged=${sameMutation}`);

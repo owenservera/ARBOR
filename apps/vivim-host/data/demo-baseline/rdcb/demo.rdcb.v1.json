@@ -27,7 +27,7 @@
     "nlclCatalog": {
       "ref": "apps/vivim-host/control/action-catalog.v1.json",
       "schema": "vivim.control-action-catalog/1",
-      "version": 8
+      "version": 9
     },
     "surfaceDrift": []
   },
@@ -93,5 +93,5 @@
     "evidence": "file-surface.v1 + action-catalog.v1"
   },
   "authority": "read_only_projection",
-  "digest": "3a430a6274182c01958c880154c8b9a095afba382767754ff17c88727942d5c9"
+  "digest": "ca96b8af9580ccb000853db16a76fe175b8df38dae52b99662ef98bb6fbc8417"
 }
