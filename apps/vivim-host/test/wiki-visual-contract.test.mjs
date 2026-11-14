@@ -44,12 +44,20 @@ function setup() {
     '/api/file-surface': clone(baseSurface),
     '/api/journal': []
   };
-  let postStatus = 200, postThrows = false, getFailure = null;
+  let postStatus = 200, postThrows = false, getFailure = null, ownerSession = true;
   const posts = [];
   let interval = null;
   const fetch = async (url, options = {}) => {
+    if (url === '/api/host/control/ui-state') {
+      assert.equal(options.credentials, 'same-origin');
+      return ownerSession
+        ? { ok: true, status: 200, json: async () => ({ schema: 'vivim.control-ui-session/1', csrf: 'a'.repeat(64) }) }
+        : { ok: false, status: 401, json: async () => ({ code: 'OWNER_AUTH' }) };
+    }
     if (url === '/api/mutate') {
       const body = JSON.parse(options.body);
+      assert.equal(options.credentials, 'same-origin');
+      assert.equal(options.headers['x-vivim-ui-csrf'], 'a'.repeat(64), 'Host-issued session CSRF is mandatory');
       posts.push({ url, body, options });
       if (postThrows) throw new Error('socket disconnected');
       if (postStatus !== 200) return { ok: false, status: postStatus, text: async () => 'refused by Host' };
@@ -75,7 +83,8 @@ function setup() {
   const el = id => elements.get(id);
   return { elements, docs, posts, el, context, tick: () => interval(),
     setPostStatus: value => { postStatus = value; }, setPostThrows: value => { postThrows = value; },
-    setGetFailure: value => { getFailure = value; } };
+    setGetFailure: value => { getFailure = value; },
+    setOwnerSession: value => { ownerSession = value; } };
 }
 async function settle() { for (let i = 0; i < 8; i++) await new Promise(resolve => setImmediate(resolve)); }
 
@@ -159,6 +168,7 @@ test('fresh revision diff, explicit Host POST receipt, readback and stale refusa
   assert.equal(ui.posts[1].body.expectedRevision, 2);
   assert.equal(ui.posts[1].body.actor, 'owner-browser');
   assert.equal(ui.posts[1].options.headers['x-vivim-control'], '1');
+  assert.equal(ui.posts[1].options.headers['x-vivim-ui-csrf'], 'a'.repeat(64));
   assert.equal(ui.docs['/api/wiki'].revision, 3);
   assert.equal(ui.el('edit-content').disabled, true);
   assert.match(ui.el('edit-status').textContent, /fresh GET \/api\/wiki confirms/);
@@ -191,4 +201,17 @@ test('uncertain network POST outcome is not retried blindly', async () => {
   assert.equal(ui.el('edit-save').hidden, true);
   ui.el('edit').fire('submit'); await settle();
   assert.equal(ui.posts.length, 1, 'retry blocked until readback');
+});
+
+test('no owner browser session refuses Wiki save without posting or losing draft', async () => {
+  const ui = setup(); await settle();
+  ui.setOwnerSession(false);
+  const edit = allChildren(ui.el('wiki-view')).find(n => n.tagName === 'button' && /Main\/HowTo/.test(n.attributes['aria-label']));
+  edit.fire('click');
+  ui.el('edit-content').value = 'private draft';
+  ui.el('edit-review').fire('click'); await settle();
+  ui.el('edit').fire('submit'); await settle();
+  assert.equal(ui.posts.length, 0);
+  assert.equal(ui.el('edit-content').value, 'private draft');
+  assert.match(ui.el('edit-status').textContent, /Owner session required|Unlock Host Control/);
 });
