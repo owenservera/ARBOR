@@ -14,7 +14,8 @@
 // Demo feedback inbox poll — one-shot CLI, disk read only (C9).
 // Usage: bun apps/vivim-host/public/demo/poll-round.mjs [--last N | --since ROUND]
 // Reads apps/vivim-host/public/demo/journal.jsonl from disk (never fetches),
-// validates it is lines of {round, approveAll, verdicts, receivedAt},
+// selects the {round, approveAll, verdicts, receivedAt} feedback entries and
+// ignores the other typed records that share that product journal,
 // prints matching rounds as JSON to stdout.
 //   --last N   print the last N rounds (after --since filter, if given)
 //   --since ROUND print rounds with round >= ROUND (inclusive)
@@ -64,11 +65,16 @@ try { raw = readFileSync(journalPath, 'utf8'); } catch (err) { fail('Missing or 
 const lines = raw.split(/\r?\n/).filter(line => line.trim().length > 0);
 let arr;
 try { arr = lines.map(line => JSON.parse(line)); } catch (err) { fail('Journal line is not JSON: ' + journalPath); }
-if (arr.some(v => !isRoundEntry(v))) {
-  fail('Journal is not lines of {round, approveAll, verdicts, receivedAt}: ' + journalPath);
+// The demo journal is the SHARED product journal: it also carries chat-send,
+// wiki-edit, gate-decision and gate-execution records. This is a feedback-inbox
+// poller, so it selects the round entries it understands instead of rejecting a
+// journal that also holds other typed records.
+let out = arr.filter(isRoundEntry);
+if (out.length !== arr.length) {
+  process.stderr.write('poll-round: ignored ' + (arr.length - out.length) +
+    ' non-feedback journal record(s)\n');
 }
 
-let out = arr;
 if (since !== null) out = out.filter(v => String(v.round) >= String(since));
 if (last !== null) out = out.slice(Math.max(0, out.length - last));
 
