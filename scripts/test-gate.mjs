@@ -204,10 +204,17 @@ function runTest(test, coverage) {
   const result = spawnSync(bin, rest, { cwd: REPO_ROOT, encoding: 'utf8' });
   const finishedAt = new Date().toISOString();
   const exitCode = typeof result.status === 'number' ? result.status : -1;
+  // bun writes its reporter summary to STDERR, not stdout. Parsing stdout alone
+  // reported 0 pass / 0 fail for every bun-runtime test while the exit code still
+  // passed, so receipts silently undercounted the bun gates. Node writes to stdout;
+  // for bun we read both and let the parser take what it needs.
+  const output = test.runtime === 'bun'
+    ? `${result.stdout ?? ''}\n${result.stderr ?? ''}`
+    : (result.stdout ?? '');
   return {
     command: args.join(' '),
     exitCode,
-    totals: parseTotals(result.stdout ?? '', test.runtime),
+    totals: parseTotals(output, test.runtime),
     durationMs: Date.now() - startMs,
     startedAt,
     finishedAt,
