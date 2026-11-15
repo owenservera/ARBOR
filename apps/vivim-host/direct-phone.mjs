@@ -448,7 +448,10 @@ export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'wo
         json(res, error.status || 503, { schema: 'vivim.media-library-summary/1',
           state: 'unavailable', reason: error.status ? error.message : 'MEDIA_READ_UNAVAILABLE',
           total: 0, shown: 0, hasMore: false, favorites: 0, items: [],
-          playback: 'not-integrated' });
+          // The read failed, so no playback state is knowable. The success path
+          // reports not-configured / none-mapped / available; 'not-integrated'
+          // would describe the feature rather than this failure.
+          playback: 'unavailable' });
       }
       return;
     }
