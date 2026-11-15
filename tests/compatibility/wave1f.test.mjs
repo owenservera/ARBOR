@@ -54,6 +54,14 @@ test('Host ID/risk/readiness continuity after lane B import',t=>{
  const path=fileURLToPath(new URL('../../apps/vivim-host/control/action-catalog.v1.json',import.meta.url));
  if(!existsSync(path))return t.skip('Lane B Host not imported on this isolated worker branch');
  const catalog=JSON.parse(readFileSync(path,'utf8')),baseline=load('host-actions.baseline.v1.json');
- assert.equal(catalog.version,baseline.catalogVersion);
- assert.deepEqual(catalog.actions.map(a=>({id:a.id,risk:a.risk,readiness:a.readiness})),baseline.actions);
+ // Continuity, not equality: the catalog legitimately grows, so extra actions are
+ // reported, never failed. The guarantee is that no baselined action lost or changed
+ // its id/risk/readiness. (Same rule as the oracle's binding §2 catalog ruling.)
+ assert.ok(Number.isInteger(catalog.version)&&catalog.version>=baseline.catalogVersion,
+  'catalog version must not regress below the compatibility baseline');
+ const now=new Map(catalog.actions.map(a=>[a.id,{id:a.id,risk:a.risk,readiness:a.readiness}]));
+ const regressed=baseline.actions.filter(b=>!now.has(b.id)||now.get(b.id).risk!==b.risk||now.get(b.id).readiness!==b.readiness);
+ assert.deepEqual(regressed,[],'baselined Host actions must keep their id/risk/readiness');
+ const added=catalog.actions.filter(a=>!baseline.actions.some(b=>b.id===a.id)).map(a=>a.id);
+ if(added.length)process.stdout.write('wave1f: catalog added '+added.length+' action(s): '+added.join(', ')+'\n');
 });
