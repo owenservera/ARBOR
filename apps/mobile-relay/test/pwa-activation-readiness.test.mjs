@@ -71,7 +71,11 @@ test('pre-local features are wired to the one PWA entry and offline safe shell',
   assert.match(renderer,/Device readiness/);
   assert.match(renderer,/Quick capture · works offline/);
   assert.match(model,/readiness: ctx\.readiness\?\.schema/);
-  assert.match(sw,/var CACHE = 'vivim-relay-shell-v8'/);
+  // The worker must carry a single generation-marked shell cache. Pin the invariant
+  // (one CACHE constant, prefix-derived), not a version number that every shell
+  // release bumps; build-vec-routing.test.mjs owns the exact generation.
+  assert.match(sw,/var CACHE = 'vivim-relay-shell-v\d+'/);
+  assert.match(sw,/var CACHE_PREFIX = 'vivim-relay-shell-'/);
 });
 
 test('Direct controls and install prompts require reported authority and browser state',()=>{

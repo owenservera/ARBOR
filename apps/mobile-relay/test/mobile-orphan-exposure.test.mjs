@@ -7,10 +7,17 @@ class FakeNode {
   constructor(tag, doc) {
     this.tag = tag; this.ownerDocument = doc; this.children = [];
     this.className = ''; this.textContent = ''; this.events = {}; this.type = '';
+    // The renderer sets attributes (aria-label, hidden, …) directly on elements.
+    // A fake DOM that omits them fails on the renderer, not on product code.
+    this.attrs = new Map();
   }
   append(...children) { this.children.push(...children); }
   replaceChildren(...children) { this.children = children; }
   addEventListener(name, callback) { this.events[name] = callback; }
+  setAttribute(name, value) { this.attrs.set(name, String(value)); }
+  getAttribute(name) { return this.attrs.has(name) ? this.attrs.get(name) : null; }
+  removeAttribute(name) { this.attrs.delete(name); }
+  hasAttribute(name) { return this.attrs.has(name); }
 }
 function fakeHost() {
   const doc = { createElement(tag) { return new FakeNode(tag, doc); } };
@@ -61,7 +68,9 @@ test('World renders only bounded Host-returned media titles as plain text and ne
   assert.match(shown(host), /My Media Library/);
   assert.match(shown(host), /A Film/);
   assert.match(shown(host), /B Show/);
-  assert.match(shown(host), /not verified playable media/);
+  // The renderer's canonical wording (also asserted by ux-surfaces.test.mjs):
+  // a complete file with no verified playable mapping is never presented as playable.
+  assert.match(shown(host), /No verified playable file mapped/);
   button(host, 'Refresh library').events.click();
   assert.equal(refreshed, 1);
   renderWorld(host, worldModel(null, [], {media:{state:'direct-only'}}), {});

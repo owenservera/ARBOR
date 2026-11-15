@@ -3,12 +3,13 @@ import assert from 'node:assert/strict';
 import http from 'node:http';
 import { generateKeyPairSync, sign, randomBytes } from 'node:crypto';
 import { createEnrollment } from '../apk/enrollment.mjs';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { createHostServer } from '../server.mjs';
 import { createBootstrapRuntime } from '../bootstrap/runtime.mjs';
+import { createMediaPlaybackService } from '../media/playback.mjs';
 import { createBridgeStore } from '../../../studio/src/studio/bridge-commands.mjs';
 import { createBootstrapCommandWorker } from '../bootstrap/command-worker.mjs';
 
@@ -19,9 +20,18 @@ test('direct phone authenticates proxy, bounds routes and uses the shared queue'
   assert.equal(runtime.state, 'ready');
   let trustedPhonePresence = 0;
   const onboarding = { phoneSeen: () => { trustedPhonePresence++; }, primary: () => null };
-  const server = createHostServer({ dataRoot: root, bootstrap: runtime, onboarding, directPhone: { origin, user: 'owner@example.com' } });
+  // Pin an EMPTY media store. Without this the test reads the developer machine's
+  // real store (C:/VIVIM/channel/vivim/torrent-store) and its assertions stop being
+  // about the route contract at all.
+  const emptyStore = mkdtempSync(path.join(os.tmpdir(), 'direct-phone-media-'));
+  const mediaPlayback = createMediaPlaybackService({ storeDir: emptyStore, filesRoot: emptyStore });
+  // mediaPlayback is spread from the directPhone options (server.mjs spreads
+  // ...directPhone into createDirectPhoneHandler), so it belongs there.
+  const server = createHostServer({ dataRoot: root, bootstrap: runtime, onboarding,
+    directPhone: { origin, user: 'owner@example.com', mediaPlayback } });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
-  t.after(async () => { await new Promise(resolve => server.close(resolve)); runtime.close(); rmSync(root, { recursive: true, force: true }); });
+  t.after(async () => { await new Promise(resolve => server.close(resolve)); runtime.close();
+    rmSync(root, { recursive: true, force: true }); rmSync(emptyStore, { recursive: true, force: true }); });
   const headers = { host: 'phone.example.ts.net', 'x-forwarded-proto': 'https', 'tailscale-user-login': 'owner@example.com' };
   let deviceHeaders = {};
   const call = (url, { method = 'GET', headers: extra = {}, body } = {}) => new Promise((resolve, reject) => {
@@ -89,8 +99,15 @@ test('direct phone authenticates proxy, bounds routes and uses the shared queue'
   assert.equal(mediaRead.status, 200);
   const mediaView = JSON.parse(mediaRead.body);
   assert.equal(mediaView.schema, 'vivim.media-library-summary/1');
-  assert.equal(mediaView.playback, 'not-integrated');
+  // This Host has an EMPTY pinned store, so the library summary is unavailable.
+  // The route must report that honestly and hand back no items — the exact
+  // vocabulary depends on why the store is unavailable (see media-library-summary
+  // and media-playback suites), but it must never claim a ready, playable library.
+  assert.equal(mediaView.state, 'unavailable');
   assert.ok(Array.isArray(mediaView.items));
+  assert.equal(mediaView.items.length, 0);
+  assert.equal(mediaView.total, 0);
+  assert.notEqual(mediaView.playback, 'available');
   assert.equal((await call('/mobile/api/media/library?foreign=1')).status, 400);
   assert.equal((await call('/mobile/api/media/library?offset=0')).status, 200);
   assert.equal((await call('/mobile/api/media/library?offset=not-a-number')).status, 400);

@@ -29,7 +29,10 @@ test('phone QR and Direct transport do not unlock until device grant approval', 
   assert.match(direct, /pairing\.consume\(token\)/);
   assert.doesNotMatch(direct, /pairing\.activate\(token/);
   assert.match(direct, /authorizeDevice\(req, req\.method/);
-  assert.match(app, /enrollWithChallenge\(challenge\)/);
+  // The phone must redeem the challenge and enroll before any device unlock. The
+  // call takes an explicit signer now, so match on the challenge argument rather
+  // than requiring it to be the only one.
+  assert.match(app, /enrollWithChallenge\(challenge\b/);
   assert.match(app, /resumeDeviceSession\(transport\)/);
   assert.match(transport, /x-vivim-device-session/);
   assert.match(transport, /setDeviceSession/);
