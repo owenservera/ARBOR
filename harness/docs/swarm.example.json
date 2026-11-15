@@ -1,0 +1,7 @@
+{
+  "task": "Summarize the release notes into three bullets",
+  "pattern": "parallel",
+  "members": ["chatgpt:gpt-6", "gemini:gemini-3-pro", "claude:opus-5.5"],
+  "judge": "qwen:qwen-max",
+  "budget": { "maxSends": 6 }
+}

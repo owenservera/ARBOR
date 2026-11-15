@@ -1,0 +1,9 @@
+{
+  "name": "harness-core",
+  "agents": [
+    { "name": "lead-1", "role": "orchestrator" },
+    { "name": "builder-1", "role": "coder" },
+    { "name": "critic-1", "role": "reviewer" },
+    { "name": "verifier-1", "role": "verifier" }
+  ]
+}
