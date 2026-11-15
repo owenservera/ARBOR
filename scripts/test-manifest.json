@@ -1720,5 +1720,95 @@
     "root": "scripts/acceleration",
     "runtime": "node24-ajv",
     "gate": "roadmap-acceleration"
+  },
+  {
+    "path": "apps/vivim-host/test/chat-provider-projection.test.mjs",
+    "root": "apps/vivim-host/test",
+    "runtime": "node24-ajv",
+    "gate": "host-suite"
+  },
+  {
+    "path": "apps/vivim-host/test/chat-rust-context.test.mjs",
+    "root": "apps/vivim-host/test",
+    "runtime": "node24-ajv",
+    "gate": "host-suite"
+  },
+  {
+    "path": "apps/vivim-host/test/media-playback.test.mjs",
+    "root": "apps/vivim-host/test",
+    "runtime": "node24-ajv",
+    "gate": "host-suite"
+  },
+  {
+    "path": "apps/vivim-host/test/media-stream-guard.test.mjs",
+    "root": "apps/vivim-host/test",
+    "runtime": "node24-ajv",
+    "gate": "host-suite"
+  },
+  {
+    "path": "apps/vivim-host/test/media-stream-http.test.mjs",
+    "root": "apps/vivim-host/test",
+    "runtime": "node24-ajv",
+    "gate": "host-suite"
+  },
+  {
+    "path": "apps/mobile-relay/test/build-vec-routing.test.mjs",
+    "root": "apps/mobile-relay/test",
+    "runtime": "node24-ajv",
+    "gate": "interop"
+  },
+  {
+    "path": "apps/mobile-relay/test/chat-universal-controller.test.mjs",
+    "root": "apps/mobile-relay/test",
+    "runtime": "node24-ajv",
+    "gate": "interop"
+  },
+  {
+    "path": "apps/mobile-relay/test/host-preview-mode.test.mjs",
+    "root": "apps/mobile-relay/test",
+    "runtime": "node24-ajv",
+    "gate": "interop"
+  },
+  {
+    "path": "apps/mobile-relay/test/pwa-activation-readiness.test.mjs",
+    "root": "apps/mobile-relay/test",
+    "runtime": "node24-ajv",
+    "gate": "interop"
+  },
+  {
+    "path": "apps/mobile-relay/test/pwa-asset-graph.test.mjs",
+    "root": "apps/mobile-relay/test",
+    "runtime": "node24-ajv",
+    "gate": "interop"
+  },
+  {
+    "path": "apps/mobile-relay/test/pwa-local-notes.test.mjs",
+    "root": "apps/mobile-relay/test",
+    "runtime": "node24-ajv",
+    "gate": "interop"
+  },
+  {
+    "path": "apps/mobile-relay/test/pwa-preflight-ui.test.mjs",
+    "root": "apps/mobile-relay/test",
+    "runtime": "node24-ajv",
+    "gate": "interop"
+  },
+  {
+    "path": "apps/mobile-relay/test/pwa-voice-capture.test.mjs",
+    "root": "apps/mobile-relay/test",
+    "runtime": "node24-ajv",
+    "gate": "interop"
+  },
+  {
+    "path": "apps/mobile-relay/test/vec-ui-compiler.test.mjs",
+    "root": "apps/mobile-relay/test",
+    "runtime": "node24-ajv",
+    "gate": "interop"
+  },
+  {
+    "path": "apps/mobile-relay/test/vec-ui-taxonomy.test.mjs",
+    "root": "apps/mobile-relay/test",
+    "runtime": "node24-ajv",
+    "gate": "interop"
   }
 ]
