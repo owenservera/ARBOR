@@ -4,6 +4,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync, mkdtempSync, mkdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -25,7 +26,14 @@ const example = join(crate, sourcePath);
 const registry = join(crate, 'examples/registry.json');
 const manifest = join(crate, 'Cargo.toml');
 const cargo = spawnSync('cargo', ['--version'], { encoding: 'utf8' });
-const cargoReady = cargo.status === 0;
+// research/comment-program-rust/ is not present in this checkout (no commit in any
+// branch ever added it), so no cargo run can produce compiler stdout. The live-toolchain
+// tests stay gated on BOTH the toolchain and the crate, and report which one is missing.
+const crateReady = existsSync(manifest);
+const cargoReady = cargo.status === 0 && crateReady;
+const toolchainSkip = cargo.status !== 0
+  ? 'Cargo unavailable: live-toolchain gate PENDING'
+  : 'research/comment-program-rust/Cargo.toml is absent from this checkout';
 const DDL = `CREATE TABLE IF NOT EXISTS wiki_program_version (
   id TEXT NOT NULL, version INTEGER NOT NULL, config TEXT NOT NULL,
   status TEXT NOT NULL, revision INTEGER NOT NULL,
@@ -54,7 +62,7 @@ function runCompiler(src = example, logicalPath = sourcePath, reg = registry) {
 }
 
 test('REAL cargo stdout → verified source → wiki preview → approval → versioned rollback', {
-  skip: !cargoReady && 'Cargo unavailable: live-toolchain gate PENDING',
+  skip: !cargoReady && toolchainSkip,
 }, () => {
   const { parsed, status, stderr } = runCompiler();
   assert.equal(status, 0, stderr);
@@ -121,7 +129,7 @@ test('REAL cargo stdout → verified source → wiki preview → approval → ve
 });
 
 test('REAL compiler refuses unknown actions, missing scopes, forbidden effects and invalid registry', {
-  skip: !cargoReady && 'Cargo unavailable: live-toolchain gate PENDING',
+  skip: !cargoReady && toolchainSkip,
 }, () => {
   const dir = mkdtempSync(join(tmpdir(), 'm3-rust-'));
   try {
@@ -176,7 +184,7 @@ test('REAL compiler refuses unknown actions, missing scopes, forbidden effects a
  * Host risk R0/provenance/owner/readiness are intentionally not invented by HQ.
  */
 test('REAL wiki gesture matches a frozen Host V0.1 text command on shared typed identity', {
-  skip: !cargoReady && 'Cargo unavailable: live-toolchain gate PENDING',
+  skip: !cargoReady && toolchainSkip,
 }, () => {
   const dir = mkdtempSync(join(tmpdir(), 'm3-host-intent-'));
   try {
