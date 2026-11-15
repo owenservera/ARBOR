@@ -217,12 +217,34 @@ export function openLedger({ file = ':memory:' } = {}) {
   }
 
   const db = new DatabaseSync(file);
-  db.exec('PRAGMA journal_mode = WAL');
+  // Two Host processes may open the same ledger at once. `PRAGMA journal_mode = WAL`
+  // and `BEGIN IMMEDIATE` both need an exclusive lock, and neither honours
+  // busy_timeout — SQLite answers SQLITE_BUSY immediately instead of waiting. Retry
+  // only that transient contention; every other error must surface unchanged.
+  const lockContention = error => /locked|busy/i.test(String(error?.message ?? error?.code ?? error));
+  const sleepSync = ms => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+  // Retry only transient lock contention, and only until a WALL-CLOCK budget expires.
+  // busy_timeout makes each failed attempt block for its own timeout, so counting
+  // attempts would multiply that into an unbounded wait on the caller's thread.
+  const execLocked = (sql, { budgetMs = 4000, delayMs = 20 } = {}) => {
+    const deadline = Date.now() + budgetMs;
+    let last;
+    for (;;) {
+      try { db.exec(sql); return; }
+      catch (error) {
+        if (!lockContention(error)) throw error;
+        last = error;
+        if (Date.now() >= deadline) throw last;
+        sleepSync(delayMs);
+      }
+    }
+  };
+  execLocked('PRAGMA journal_mode = WAL');
   db.exec('PRAGMA foreign_keys = ON');
   db.exec('PRAGMA busy_timeout = 4000');
   const version = Number(db.prepare('PRAGMA user_version').get().user_version);
   if (version < MIGRATIONS.length) {
-    db.exec('BEGIN IMMEDIATE');
+    execLocked('BEGIN IMMEDIATE');
     try {
       for (let i = version; i < MIGRATIONS.length; i++) db.exec(MIGRATIONS[i]);
       db.exec(`PRAGMA user_version = ${MIGRATIONS.length}`);
@@ -240,7 +262,9 @@ export function openLedger({ file = ':memory:' } = {}) {
   };
 
   function transaction(fn) {
-    db.exec('BEGIN IMMEDIATE');
+    // Every write path (service, scheduler, web-memory) enters here, so this is
+    // the BEGIN IMMEDIATE that actually meets concurrent writers.
+    execLocked('BEGIN IMMEDIATE');
     try { const out = fn(); db.exec('COMMIT'); return out; }
     catch (error) { db.exec('ROLLBACK'); throw error; }
   }
