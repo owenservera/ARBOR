@@ -5,6 +5,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { request as httpRequest } from 'node:http';
 import { mkdtempSync, rmSync } from 'node:fs';
+import { randomBytes } from 'node:crypto';
 import os from 'node:os';
 import path from 'node:path';
 import { createHostServer } from '../server.mjs';
@@ -32,10 +33,15 @@ async function request(base, route, opts = {}) {
 }
 async function withHost(fn) {
   const dataRoot = mkdtempSync(path.join(os.tmpdir(), 'arbor-chat-baseline-'));
-  const server = createHostServer({ dataRoot, autoPump: false });
+  // Owner-gated mutations (wiki-edit, gate-decision, any claimed approval) need
+  // BOTH the browser CSRF header and the Host owner capability. Tests that
+  // exercise a gated write take the minted token; tests that assert a gate is
+  // closed simply take no token.
+  const ownerToken = randomBytes(32).toString('hex');
+  const server = createHostServer({ dataRoot, autoPump: false, ownerToken });
   try {
     await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
-    await fn('http://127.0.0.1:' + server.address().port);
+    await fn('http://127.0.0.1:' + server.address().port, { ownerToken });
   } finally {
     await new Promise(resolve => server.close(resolve));
     rmSync(dataRoot, { recursive: true, force: true });
@@ -106,16 +112,24 @@ test('invalid chat envelopes fail closed without touching state', async () =>
     assert.deepEqual((await request(base, '/api/journal')).json(), []);
   }));
 
-test('Wiki edit needs explicit local-origin action and a fresh revision', async () =>
-  withHost(async base => {
+test('Wiki edit needs explicit local-origin action, owner capability and a fresh revision', async () =>
+  withHost(async (base, { ownerToken }) => {
     const wiki = (await request(base, '/api/wiki')).json();
     const edit = { kind: 'wiki-edit', actor: 'owner-browser', schemaVersion: 1,
       expectedRevision: wiki.revision,
       edit: { action: 'set-section', page: 'Main', section: 'HowTo', content: 'hello, wiki' } };
+    // CSRF is necessary but not sufficient: each refusal below is a distinct
+    // missing capability, and the Host answers them in a fixed order.
     assert.equal((await post(base, edit, { origin: 'https://evil.invalid', 'x-vivim-control': '1' })).status, 403);
     assert.equal((await post(base, edit)).status, 403);
-    assert.equal((await post(base, edit, { origin: base, 'x-vivim-control': '1' })).status, 200);
-    assert.equal((await post(base, edit, { origin: base, 'x-vivim-control': '1' })).status, 409);
+    // Correct origin + CSRF but no owner capability -> 401 OWNER_AUTH.
+    assert.equal((await post(base, edit, { origin: base, 'x-vivim-control': '1' })).status, 401);
+    // Correct origin + CSRF + owner capability -> the write commits.
+    assert.equal((await post(base, edit, { origin: base, 'x-vivim-control': '1',
+      authorization: 'Bearer ' + ownerToken })).status, 200);
+    // Same revision again -> 409 REVISION_CONFLICT.
+    assert.equal((await post(base, edit, { origin: base, 'x-vivim-control': '1',
+      authorization: 'Bearer ' + ownerToken })).status, 409);
     const projected = (await request(base, '/api/wiki')).json();
     assert.equal(projected.revision, wiki.revision + 1);
     assert.equal(projected.pages.Main.sections.HowTo, 'hello, wiki');
@@ -134,16 +148,28 @@ test('catalog enumeration is source-backed; unavailable actions are not called e
 });
 
 test('demo feedback and product journaling use one append path without executing gates', async () =>
-  withHost(async base => {
+  withHost(async (base, { ownerToken }) => {
+    // approveAll claims an approval, so the Host requires the owner capability
+    // even for the legacy demo-feedback envelope. It is still observed, never
+    // executed: no gate decision is derived from it.
     const sent = await request(base, '/demo/feedback', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST',
+      headers: { 'content-type': 'application/json', origin: base, 'x-vivim-control': '1',
+        authorization: 'Bearer ' + ownerToken },
       body: { round: 'isolated-baseline', approveAll: true, verdicts: [] }
     });
     assert.equal(sent.status, 200);
     assert.equal(sent.json().round, 'isolated-baseline');
+    // Without the owner capability the same claimed approval is refused.
+    const refused = await request(base, '/demo/feedback', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', origin: base, 'x-vivim-control': '1' },
+      body: { round: 'unauthorized', approveAll: true, verdicts: [] }
+    });
+    assert.equal(refused.status, 401);
     const journal = (await request(base, '/api/journal')).json();
     assert.equal(journal.length, 1);
-    assert.ok(!journal[0].kind);
+    assert.equal(journal[0].kind, 'feedback-round');
     assert.equal((await request(base, '/demo/journal.jsonl')).text.trim().split('\n').length, 1);
     assert.equal((await request(base, '/api/no-such-route')).status, 404);
   }));

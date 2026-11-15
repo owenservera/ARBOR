@@ -11,6 +11,7 @@ import assert from 'node:assert/strict';
 // Raw HTTP over node:http — immune to globalThis.fetch being replaced by
 // another test file's fixture stub (the demo suite runs in one bun process).
 import { request as httpRequest } from 'node:http';
+import { randomBytes } from 'node:crypto';
 function httpFetch(base, route, opts = {}) {
   return new Promise((resolve, reject) => {
     const url = new URL(base + route);
@@ -36,7 +37,7 @@ function httpFetch(base, route, opts = {}) {
   });
 }
 
-import { cpSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -76,11 +77,14 @@ function demoStaticRoot() {
 async function withServer(run) {
   const staticRoot = demoStaticRoot();
   const dataRoot = mkdtempSync(path.join(os.tmpdir(), 'vivim-demo-data-'));
-  const server = createHostServer({ dataRoot, staticRoot });
+  // approveAll claims an approval, so the Host requires the owner capability for
+  // POST /demo/feedback. The test mints one and passes it through to callers.
+  const ownerToken = randomBytes(32).toString('hex');
+  const server = createHostServer({ dataRoot, staticRoot, ownerToken });
   try {
     await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
     const base = 'http://127.0.0.1:' + server.address().port;
-    await run(base, staticRoot);
+    await run(base, staticRoot, { ownerToken, dataRoot });
   } finally {
     await new Promise(resolve => server.close(resolve));
     rmSync(staticRoot, { recursive: true, force: true });
@@ -149,15 +153,21 @@ test('every demo write except POST /demo/feedback and POST /demo/mutate is rejec
 });
 
 test('POST /demo/feedback and POST /demo/mutate append one journal line and return the entry', async () => {
-  await withServer(async (base, staticRoot) => {
-    const journalPath = path.join(staticRoot, 'demo', 'journal.jsonl');
+  await withServer(async (base, staticRoot, { ownerToken, dataRoot }) => {
+    // The committed demo journal is READ-ONLY seed data: writes go to the Host's
+    // private product journal, and /demo/journal.jsonl is a read-through of it.
+    const demoJournalPath = path.join(staticRoot, 'demo', 'journal.jsonl');
     const inboxPath = path.join(staticRoot, 'demo', 'feedback', 'inbox.json');
+    const privateJournalPath = path.join(dataRoot, 'product-state', 'journal.jsonl');
     const journalLines = raw => raw.split(/\r?\n/).filter(line => line.trim().length > 0);
-    const before = journalLines(readFileSync(journalPath, 'utf8')).length;
+    const demoBefore = readFileSync(demoJournalPath, 'utf8');
+    const privateBefore = existsSync(privateJournalPath)
+      ? journalLines(readFileSync(privateJournalPath, 'utf8')).length : 0;
     const inboxBefore = JSON.parse(readFileSync(inboxPath, 'utf8')).length;
     const res = await httpFetch(base, '/demo/feedback', {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
+      headers: { 'content-type': 'application/json', origin: base, 'x-vivim-control': '1',
+        authorization: 'Bearer ' + ownerToken },
       body: JSON.stringify({ round: 'r-acceptance-1', approveAll: false, verdicts: [{ itemId: 'tab-today', verdict: 'approve' }] })
     });
     assert.equal(res.status, 200);
@@ -167,9 +177,9 @@ test('POST /demo/feedback and POST /demo/mutate append one journal line and retu
     assert.equal(Array.isArray(round.verdicts), true);
     assert.equal(typeof round.receivedAt, 'string');
 
-    // The journal grew by exactly one line; the stored entry matches the echo.
-    const lines = journalLines(readFileSync(journalPath, 'utf8'));
-    assert.equal(lines.length, before + 1);
+    // The private journal grew by exactly one line; the stored entry matches the echo.
+    const lines = journalLines(readFileSync(privateJournalPath, 'utf8'));
+    assert.equal(lines.length, privateBefore + 1);
     const stored = JSON.parse(lines.at(-1));
     assert.equal(stored.round, 'r-acceptance-1');
     assert.equal(stored.approveAll, false);
@@ -186,15 +196,18 @@ test('POST /demo/feedback and POST /demo/mutate append one journal line and retu
     const entry = await mutate.json();
     assert.equal(entry.kind, 'chat-send');
     assert.equal(typeof entry.receivedAt, 'string');
-    const linesAfterMutate = journalLines(readFileSync(journalPath, 'utf8'));
-    assert.equal(linesAfterMutate.length, before + 2);
+    const linesAfterMutate = journalLines(readFileSync(privateJournalPath, 'utf8'));
+    assert.equal(linesAfterMutate.length, privateBefore + 2);
     assert.equal(JSON.parse(linesAfterMutate.at(-1)).text, 'acceptance probe');
 
-    // The journal is readable back as a static asset (server.mjs ASSETS/MIME).
+    // The committed demo journal is never written by the Host: it stays the seed it was.
+    assert.equal(readFileSync(demoJournalPath, 'utf8'), demoBefore);
+
+    // The journal is readable back as a read-through static asset (server.mjs ASSETS/MIME).
     const readback = await httpFetch(base, '/demo/journal.jsonl');
     assert.equal(readback.status, 200);
     assert.match(readback.headers.get('content-type') || '', /application\/jsonl/);
-    assert.equal(journalLines(await readback.text()).length, before + 2);
+    assert.equal(journalLines(await readback.text()).length, privateBefore + 2);
 
     // The legacy inbox snapshot is still served as a static asset, frozen (no RMW writes).
     const legacy = await httpFetch(base, '/demo/feedback/inbox.json');
@@ -210,6 +223,8 @@ test('POST /demo/feedback and POST /demo/mutate append one journal line and retu
       body: 'not json'
     });
     assert.equal(bad.status, 400);
-    assert.equal(journalLines(readFileSync(journalPath, 'utf8')).length, before + 2);
+    assert.equal(journalLines(readFileSync(privateJournalPath, 'utf8')).length, privateBefore + 2);
+    // ...and the committed seed is still byte-identical after the rejected write.
+    assert.equal(readFileSync(demoJournalPath, 'utf8'), demoBefore);
   });
 });

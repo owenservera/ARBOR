@@ -14,8 +14,11 @@ import { createEnrollment } from '../apk/enrollment.mjs';
 test('an installed phone redeems a single-use Direct token and the PC observes the same device', async () => {
   const dataRoot = mkdtempSync(path.join(os.tmpdir(), 'vivim-first-phone-'));
   const directOrigin = 'https://pc.tailnet.ts.net';
+  // Pair registration is a privileged owner POST: it needs the Host owner
+  // capability as well as the Direct identity. Mint one for this run.
+  const ownerToken = randomBytes(32).toString('hex');
   const server = createHostServer({
-    dataRoot, directPhone: { origin: directOrigin, user: 'owner@example.com' }
+    dataRoot, ownerToken, directPhone: { origin: directOrigin, user: 'owner@example.com' }
   });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const port = server.address().port;
@@ -46,7 +49,11 @@ test('an installed phone redeems a single-use Direct token and the PC observes t
     assert.equal(before.status, 200);
     assert.equal(before.body.paired, false);
 
-    const issued = await call('POST', '/api/onboarding/pair/register', { body: {platform:'android',app:'vivim-mobile'} });
+    const issued = await call('POST', '/api/onboarding/pair/register', {
+      body: {platform:'android',app:'vivim-mobile'},
+      headers: { origin: 'http://127.0.0.1:' + port, 'x-vivim-control': '1',
+        authorization: 'Bearer ' + ownerToken }
+    });
     assert.equal(issued.status, 201);
     assert.match(issued.body.token, /^[a-f0-9]{64}$/);
     assert.ok(issued.body.expiresAt > Date.now());
