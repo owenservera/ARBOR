@@ -282,7 +282,11 @@ export async function runHostLoopCheck({ command = 'node scripts/acceleration/li
       assert.equal(evidenceJournal.length, journal.length + 1);
       assert.deepEqual(evidenceJournal.slice(0, journal.length), journal);
       assert.equal(evidenceJournal.at(-1).kind, 'wiki-edit');
-      assert.equal(evidenceJournal.at(-1).actor, 'ai');
+      // Owner-browser is the ONLY actor the Host accepts for wiki-edit
+      // (product-journal.mjs hard-requires it). The evidence writer mints an
+      // ephemeral owner grant and writes as owner-browser; asserting 'ai' would
+      // demand an actor the journal module refuses.
+      assert.equal(evidenceJournal.at(-1).actor, 'owner-browser');
     }, { entries: evidenceJournal.length });
     receipt.ok = true;
     receipt.exitCode = 0;
