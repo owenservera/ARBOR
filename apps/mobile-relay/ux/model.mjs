@@ -50,24 +50,36 @@ export function snapshotOf(status) {
 /* ---------------- shared readings ---------------- */
 
 // The Host-committed vivim.ui-surface/1 component tree, flattened into "things that exist".
-function surfaceItems(revision) {
+// `sources` are durable journal entries and approved Wiki revisions, flattened into built items
+// with title/detail alongside the Host-committed surface tree items.
+function surfaceItems(revision, sources = []) {
   const tree = plain(revision?.surface?.tree) ? revision.surface.tree
     : plain(revision?.tree) ? revision.tree : null;
-  if (!tree) return [];
   const out = [];
-  const walk = (node, depth) => {
-    if (!plain(node) || depth > 7 || out.length >= 64) return;
-    const type = str(node.type);
-    const props = plain(node.props) ? node.props : {};
-    const children = list(node.children);
-    if (type === 'stack' || type === 'grid') {
-      for (const child of children) walk(child, depth + 1);
-      return;
-    }
-    out.push({ id: str(node.id), kind: type, title: itemTitle(type, props), detail: itemDetail(type, props) });
-    // A card owns its children; do not list them twice.
-  };
-  walk(tree, 0);
+  if (tree) {
+    const walk = (node, depth) => {
+      if (!plain(node) || depth > 7 || out.length >= 64) return;
+      const type = str(node.type);
+      const props = plain(node.props) ? node.props : {};
+      const children = list(node.children);
+      if (type === 'stack' || type === 'grid') {
+        for (const child of children) walk(child, depth + 1);
+        return;
+      }
+      out.push({ id: str(node.id), kind: type, title: itemTitle(type, props), detail: itemDetail(type, props) });
+      // A card owns its children; do not list them twice.
+    };
+    walk(tree, 0);
+  }
+  for (const src of sources) {
+    if (!plain(src)) continue;
+    const title = clip(str(src.title), 90);
+    const detail = clip(str(src.detail), 160);
+    if (!title) continue;
+    const item = { title, detail };
+    if (src.jumpTarget) item.jumpTarget = src.jumpTarget;
+    out.push(item);
+  }
   return out;
 }
 function itemTitle(type, props) {
@@ -184,11 +196,12 @@ export function worldModel(status, commands, ctx = {}) {
   const bootstrap = pick(snap, 'bootstrap');
   const live = pick(snap, 'live');
   const bridge = pick(snap, 'bridge');
-  const sources = ['snapshot.bootstrap.uiRevision', 'snapshot.live.conversations', 'snapshot.bridge', 'commands'];
+  const modelSources = ['snapshot.bootstrap.uiRevision', 'snapshot.live.conversations', 'snapshot.bridge', 'commands'];
   const gaps = [];
+  const extraSources = plain(ctx) && Array.isArray(ctx.builtSources) ? ctx.builtSources : [];
 
   const revision = plain(bootstrap?.uiRevision) ? bootstrap.uiRevision : null;
-  const built = revision ? surfaceItems(revision) : [];
+  const built = surfaceItems(revision, extraSources);
   const running = live ? liveRunning(live) : [];
   const queue = bridgeCounts(bridge);
   if (!live) gaps.push('Not available yet — the Host did not publish a live conversation timeline to the phone.');
@@ -223,7 +236,7 @@ export function worldModel(status, commands, ctx = {}) {
     empty: built.length === 0 && running.length === 0 && inQueue.length === 0 && !queue,
     emptyMessage,
     gaps,
-    sources
+    sources: modelSources
   };
 }
 
@@ -296,7 +309,6 @@ export function meModel(status, commands, ctx = {}) {
 // What is running, what needs the owner, and the one next action to pick up.
 export function todayModel(status, commands, ctx = {}) {
   const snap = snapshotOf(status);
-  const bootstrap = pick(snap, 'bootstrap');
   const live = pick(snap, 'live');
   const world = worldModel(status, commands);
   const gaps = [];
@@ -329,7 +341,12 @@ export function todayModel(status, commands, ctx = {}) {
     });
   }
   const commandRows = receipts(commands);
-  for (const row of commandRows.filter(r => r.status === 'failed').slice(0, 3)) {
+  // Only receipts that genuinely need the owner surface as today items:
+  // queued/claimed commands awaiting the PC, and failed commands nothing retried.
+  // Done or otherwise unconfirmed receipts are history, not an open mission.
+  const actionableCommands = commandRows.filter(r =>
+    r.status === 'queued' || r.status === 'claimed' || r.status === 'failed');
+  for (const row of actionableCommands.filter(r => r.status === 'failed').slice(0, 3)) {
     attention.push({
       id: 'failed:' + row.id,
       kind: 'failed',
@@ -350,15 +367,11 @@ export function todayModel(status, commands, ctx = {}) {
   for (const row of world.queued.slice(0, 4)) {
     running.push({ id: 'cmd:' + row.id, label: row.label, detail: 'Waiting on your PC · ' + row.status });
   }
-  for (const pass of list(bootstrap?.progress?.passes)) {
-    if (!plain(pass) || str(pass.status) !== 'running') continue;
-    running.push({ id: 'pass:' + str(pass.pass), label: 'Learning your look · ' + str(pass.pass), detail: 'Running on your PC' });
-  }
 
-  const mission = selectTodayMission({ commands: commandRows, live: world.running,
+  const mission = selectTodayMission({ commands: actionableCommands, live: world.running,
     reviews: str(live?.state) === 'needs-review'
       ? [...reviewItems, { id: 'timeline', state: 'needs-review' }] : reviewItems });
-  const next = nextAction({ attention, running, world, snap, commandRows });
+  const next = nextAction({ attention, running, world, snap, commandRows: actionableCommands });
 
   return {
     hostReported: !!snap,
@@ -371,7 +384,7 @@ export function todayModel(status, commands, ctx = {}) {
     next,
     // Native Pocket owns local captures; this only opens the existing Activity view.
     pocketAvailable: ctx.nativePocket === true,
-    sources: ['snapshot.live.conversations', 'snapshot.bootstrap.progress.passes', 'commands']
+    sources: ['snapshot.live.conversations', 'commands']
   };
 }
 

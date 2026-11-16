@@ -1,0 +1,55 @@
+{
+  "schema": "arbor.item-receipt/1",
+  "itemId": "A03",
+  "authoredAt": "2026-11-16T13:00:00.000Z",
+  "status": "gated",
+  "gate": {
+    "command": "node scripts/feedback-loop/compile.mjs --receipt scripts/feedback-loop/fixtures/wiki-baseline.failed.json --source-sha <keeper-supplied-40-hex> --current-sha <keeper-supplied-40-hex> --revision R002 --current-revision R002 --condition wiki-page-renders",
+    "exit": 0,
+    "note": "A03 activation gated: BLOCKED_A00_INDEPENDENT_ACCEPTANCE_PENDING — A00 ownerAcceptance=PENDING verification=UNRUN (roadmap.v1.json:1661-1662); compiler emits CANDIDATE_REQUIRES_REVIEW / REVIEW_REQUIRED, no source effects, no roadmap writes"
+  },
+  "nlclReplay": {
+    "checks": [
+      {
+        "name": "compiler-source-parses",
+        "pass": true,
+        "detail": "scripts/feedback-loop/compiler.mjs source-only module; no filesystem/network/subprocess/Host effects (compiler.mjs:2-3)"
+      },
+      {
+        "name": "compile-cli-read-only",
+        "pass": true,
+        "detail": "compile.mjs CLI reads allowlisted paths only (compile.mjs:14-16); DRY_RUN_READ_ONLY mode (compiler.mjs:229)"
+      },
+      {
+        "name": "roadmap-a03-record-consistent",
+        "pass": true,
+        "detail": "roadmap.v1.json A03 layer L2 lane B ownerAcceptance PENDING verification UNRUN matches buildQueue A03 entry; L2 and buildQueue agree on lane/ownerAcceptance/verification (compiler.mjs:82-87)"
+      },
+      {
+        "name": "a00-dependency-unaccepted",
+        "pass": false,
+        "detail": "A00 ownerAcceptance=PENDING verification=UNRUN; A03 activation BLOCKED_A00_INDEPENDENT_ACCEPTANCE_PENDING (compiler.mjs:237)"
+      },
+      {
+        "name": "no-source-effects",
+        "pass": true,
+        "detail": "compiler.mjs:235-236 noSourceEffects/noRoadmapWrites true"
+      },
+      {
+        "name": "no-roadmap-writes",
+        "pass": true,
+        "detail": "Demo cannot directly perform Host effects or unilaterally alter the owner-approved roadmap"
+      }
+    ],
+    "digest": "d9506caea68e796987c8aad281f5ce722e6d857cea770919c1137613de40757b"
+  },
+  "demo": {
+    "verdict": "rewalk-pending",
+    "journalRef": ".coordination/artifacts/roadmap/gate-cards.jsonl"
+  },
+  "host": {
+    "served": "(verify)"
+  },
+  "itemStatus": "gated",
+  "emittedBy": "dwfrun-fa42e97a-3401-47ed-afac-71f64d21fbc9"
+}

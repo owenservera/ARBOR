@@ -1,0 +1,26 @@
+{
+  "schema": "vivim.work-order/1",
+  "source": {
+    "path": "apps/vivim-host/public/demo/demo.html",
+    "revision": "f3860f1216ad80d74a280866c2dce6e26bd8a5ee54722a4c05edfd98aec6a70e"
+  },
+  "selectedContext": {
+    "excerpt": {
+      "kind": "vlang-surface-header",
+      "lines": [
+        2,
+        17
+      ],
+      "text": "<!-- @vlang:surface apps/vivim-host/public/demo/demo.html\n     @vlang:surface-desc: Static shell of the ARBOR baseline demo walkthrough — the reprogrammable\n     @vlang:surface-desc: surface is static copy (eyebrows, headings, serve-info text), section\n     @vlang:surface-desc: structure inside .demo-* containers, and button labels. NL-driven\n     @vlang:surface-desc: change accepts none of: renaming #demo-* ids consumed by\n     @vlang:surface-desc: controller.js bindShell, script/style injection (CSP C4), or changing\n     @vlang:surface-desc: the /mobile/?host-preview=1 iframe target. The fixture feed and\n     @vlang:surface-desc: decision controls stay read-only shells; POST /demo/feedback remains\n     @vlang:surface-desc: the only writable surface of the whole /demo tree.\n     @vlang:surface-desc: NLCL linkage: no action in control/action-catalog.v1.json v7 targets\n     @vlang:surface-desc: this file yet — actionIds stays empty until one is catalogued.\n     @vlang:id: demo-shell demo-progress demo-strip demo-step-badge demo-phone\n     @vlang:id: demo-live-preview demo-acceptance demo-feed demo-notes demo-tags\n     @vlang:id: demo-btn-approve demo-btn-revise demo-decision-chip demo-journal\n     @vlang:id: demo-serve-info demo-status demo-submit demo-approve-all\n     @vlang:action: -->"
+    },
+    "bundleDigest": "ca96b8af9580ccb000853db16a76fe175b8df38dae52b99662ef98bb6fbc8417"
+  },
+  "bundle": {
+    "digest": "ca96b8af9580ccb000853db16a76fe175b8df38dae52b99662ef98bb6fbc8417",
+    "status": "fresh",
+    "servedFromCache": true
+  },
+  "reprogramming": {
+    "vlangExecution": false
+  }
+}

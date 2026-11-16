@@ -7,12 +7,12 @@
   "audience": "agent",
   "project": "arbor",
   "generatedAt": "2026-11-14T00:00:00.000Z",
-  "status": "fresh",
+  "status": "stale",
   "budget": {
     "maxTokens": 5000,
     "reserved": 800,
     "capacity": 4120,
-    "used": 319,
+    "used": 326,
     "estimator": "utf8-bytes/3"
   },
   "reprogramming": {
@@ -29,7 +29,9 @@
       "schema": "vivim.control-action-catalog/1",
       "version": 9
     },
-    "surfaceDrift": []
+    "surfaceDrift": [
+      "apps/vivim-host/public/demo/poll-round.mjs"
+    ]
   },
   "sources": [
     {
@@ -38,12 +40,12 @@
       "path": "apps/vivim-host/public/demo/poll-round.mjs",
       "kind": "code",
       "lang": "javascript",
-      "sha256": "2c5ecff7a6c2f20742a843c76960291d5d236feec46b65fc2cb226fb45997c8f",
+      "sha256": "affd34919bbf447b9f76ca80446f737de2bb1abd0845dae115d194381708c7ba",
       "lines": [
         1,
         12
       ],
-      "estimatedTokens": 319,
+      "estimatedTokens": 326,
       "score": 1,
       "reason": "rdcb|file-surface|vlang-surface-header",
       "authority": "project_observed",
@@ -53,7 +55,7 @@
           1,
           12
         ],
-        "text": "/* @vlang:surface apps/vivim-host/public/demo/poll-round.mjs\n   @vlang:surface-desc: One-shot CLI poll of the demo feedback inbox — the reprogrammable\n   @vlang:surface-desc: surface is the CLI contract only: filter flags (--last, --since) and\n   @vlang:surface-desc: their semantics, stdout JSON formatting, and validation/exit messages.\n   @vlang:surface-desc: NL-driven change accepts none of: network fetch (disk read only, C9),\n   @vlang:surface-desc: drift of the {round, approveAll, verdicts, receivedAt} entry schema\n   @vlang:surface-desc: shared with POST /demo/feedback, or watcher/daemon modes (one-shot by\n   @vlang:surface-desc: design). node:fs only; no other imports.\n   @vlang:surface-desc: NLCL linkage: no action in control/action-catalog.v1.json v7 targets\n   @vlang:surface-desc: this file yet — actionIds stays empty until one is catalogued.\n   @vlang:id: arg-parser round-entry-schema output-format exit-codes\n   @vlang:action: */"
+        "text": "/* @vlang:surface apps/vivim-host/public/demo/poll-round.mjs\r\n   @vlang:surface-desc: One-shot CLI poll of the demo feedback inbox — the reprogrammable\r\n   @vlang:surface-desc: surface is the CLI contract only: filter flags (--last, --since) and\r\n   @vlang:surface-desc: their semantics, stdout JSON formatting, and validation/exit messages.\r\n   @vlang:surface-desc: NL-driven change accepts none of: network fetch (disk read only, C9),\r\n   @vlang:surface-desc: drift of the {round, approveAll, verdicts, receivedAt} entry schema\r\n   @vlang:surface-desc: shared with POST /demo/feedback, or watcher/daemon modes (one-shot by\r\n   @vlang:surface-desc: design). node:fs/path/url only; no other imports.\r\n   @vlang:surface-desc: NLCL linkage: no action in control/action-catalog.v1.json v7 targets\r\n   @vlang:surface-desc: this file yet — actionIds stays empty until one is catalogued.\r\n   @vlang:id: arg-parser round-entry-schema output-format exit-codes\r\n   @vlang:action: */"
       },
       "fileSurface": {
         "ref": "apps/vivim-host/data/demo-baseline/file-surface.v1.json",
@@ -66,7 +68,7 @@
         ]
       },
       "nlclActionIds": [],
-      "digest": "77d53ceff3a24872a20c72a1834825d1cbcfb601d0bc27ab4da0d06e1bb18a93"
+      "digest": "807624011fcafffb1bef22de794e18aaaafd7ca0c1ee7935ca65b8e8ed72606b"
     }
   ],
   "omissions": [],
@@ -79,5 +81,5 @@
     "evidence": "file-surface.v1 + action-catalog.v1"
   },
   "authority": "read_only_projection",
-  "digest": "60139764065c07e17859872a1b7e79c55bdd192d2407009c85607c909fe5264a"
+  "digest": "a1d3a4a60d3f47e9dbe09b999f835330b128c76ff6d959468f96e092d40ebe97"
 }

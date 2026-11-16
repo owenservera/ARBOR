@@ -18,3 +18,8 @@ node_modules/
 .worktrees/
 *tmpfail-lines.txt
 write_test.txt
+
+# lane scratch repro scripts (2026-11-16)
+/repro-feedback*.mjs
+/repro*.mjs
+apps/vivim-host/data/demo-baseline/rdcb/.cache/

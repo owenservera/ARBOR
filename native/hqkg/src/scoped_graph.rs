@@ -215,3 +215,28 @@ pub fn apply_scoped(
     *ledger = pending;
     Ok(report)
 }
+
+/// Gate serving a cached context bundle to a caller.
+///
+/// Fail-closed: the caller namespace (explicit identity — namespaces do not
+/// authenticate), the provenance record {source, revision, digest}, and the
+/// revision token must all validate and agree. Any mismatch rejects the serve,
+/// so false, cross-user or unauthorized context reuse is never served. A valid
+/// gate returns Ok and the caller may proceed to serve the bundle.
+pub fn gate_serve(
+    caller: &Namespace,
+    provenance: &Provenance,
+    expected: &RevisionToken,
+) -> Result<()> {
+    caller.validate()?;
+    provenance.validate()?;
+    if provenance.revision == 0 {
+        return Err(Error::Conflict("provenance revision must be non-zero".into()));
+    }
+    if expected.namespace != *caller {
+        return Err(Error::Conflict(
+            "revision token namespace does not match caller identity".into(),
+        ));
+    }
+    Ok(())
+}

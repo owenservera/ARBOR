@@ -1628,7 +1628,7 @@
         "layer": "L2",
         "title": "Demo feedback-to-work-order compiler",
         "description": "Compile failed evidence, user visual feedback and demo verdicts into a source-pinned, acceptance-linked, minimum-scope work order in the existing product roadmap.",
-        "status": "build-failed",
+        "status": "built",
         "sources": [
           "docs/product/roadmap/ACCELERATION-R002.md",
           "docs/product/roadmap/",
@@ -1763,7 +1763,7 @@
         "layer": "L2",
         "title": "Incremental RDCB context with reuse receipts",
         "description": "Reuse native HQKG/Rust and existing deterministic RDCB generator to cache source/revision-scoped context and invalidate only changed dependencies; attach the selected context to work orders.",
-        "status": "queued",
+        "status": "built",
         "sources": [
           "docs/product/roadmap/ACCELERATION-R002.md",
           "apps/vivim-host/control/",
@@ -1804,7 +1804,7 @@
         "layer": "L2",
         "title": "Evidence-driven parallel worker execution",
         "description": "Execute independent, nonoverlapping tasks using the existing orchestration and single-writer contracts; detect path conflicts, fresh-head drift and missing receipts before integration.",
-        "status": "queued",
+        "status": "build-failed",
         "sources": [
           "docs/product/roadmap/ACCELERATION-R002.md",
           ".coordination/",
@@ -2381,7 +2381,7 @@
     {
       "itemId": "A03",
       "order": 4,
-      "status": "failed",
+      "status": "gated",
       "lane": "B",
       "dependsOn": [
         "A00"
@@ -2425,7 +2425,7 @@
     {
       "itemId": "A06",
       "order": 7,
-      "status": "queued",
+      "status": "gated",
       "lane": "C",
       "dependsOn": [
         "A01",

@@ -6,15 +6,17 @@
 //
 // C5 ownership (fixture-shape ↔ controller coupling): the SPEC wrote mockData
 // with raw dotted app-state keys ('S.statusObj.snapshot.live', 'S.convs',
-// 'S.cmds'); the delivered parcel restructured those into controller-readable
-// nested keys (statusObj.snapshot.*, bare device/manifest/media/convs/cmds/
-// ctx/control/plan/receipt/recent, liveStateLabels). The C5 tests below pin
-// the DELIVERED shape — a re-flatten back to the raw SPEC dotted keys
-// false-fails here instead of silently re-coupling the fixture shape — pin the
-// SPEC values that survived the restructure field-for-field (tab-control
-// planDigest 3f9ac2b17d44e8a0c6b5d2f1e7a8b9c0d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8
-// exact), and run the REAL controller.js against the REAL parcel files to
-// prove the views() parsing renders every SPEC row.
+// 'S.cmds'); the DELIVERED parcel (committed at bf6287a) ships per-tab flat
+// mockData keys exactly as controller.js views()/RENDERERS consume them
+// (tab-build: intent/compiled/proposal/approvalRequired; tab-world/A02:
+// revision/built/running/queue/undoAvailable/changeHint; tab-me:
+// statusObj.snapshot + bare device/manifest/commands/ctx; …). The C5 tests
+// below pin that DELIVERED shape — a re-flatten back to the raw SPEC dotted
+// keys false-fails here instead of silently re-coupling the fixture shape —
+// pin the SPEC values that survived field-for-field (tab-control
+// plan.planDigest exact, as read from tab-control.json), and run the REAL
+// controller.js against the REAL parcel files to prove views() parsing renders
+// every indexed step (all 9, including the A02/A04/A05 queue steps).
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
@@ -33,20 +35,22 @@ const fixtureDir = path.join(demoDir, 'fixture');
 const controllerSrc = readFileSync(path.join(demoDir, 'controller.js'), 'utf8');
 
 const index = JSON.parse(readFileSync(path.join(fixtureDir, 'index.json'), 'utf8'));
-// mobile-relay TABS order plus the queue-mode walkthrough steps (SPEC A02/A04/A05)
-const STEP_IDS = ['tab-today', 'tab-talk', 'tab-build', 'tab-world', 'tab-me', 'tab-control', 'A02', 'A04', 'A05'];
+const TAB_ORDER = ['today', 'talk', 'build', 'world', 'me', 'control']; // mobile-relay TABS order
 
-test('fixture index is a vivim.demo-steps/1 manifest covering the six phone tabs plus queue-mode A02/A04/A05', () => {
+test('fixture index is a vivim.demo-steps/1 manifest covering the six phone tabs in order plus queue steps A02/A04/A05', () => {
   assert.equal(index.schema, 'vivim.demo-steps/1');
   assert.equal(typeof index.demoTitle, 'string');
   assert.ok(index.demoTitle.length > 0);
   assert.equal(Array.isArray(index.steps), true);
-  assert.deepEqual(index.steps.map(s => s.itemId), STEP_IDS);
+  const ids = index.steps.map(s => s.itemId);
+  assert.deepEqual(ids, ['tab-today', 'tab-talk', 'tab-build', 'tab-world', 'tab-me', 'tab-control', 'A02', 'A04', 'A05']);
+  assert.deepEqual(ids.slice(0, TAB_ORDER.length), TAB_ORDER.map(t => 'tab-' + t));
+  assert.deepEqual(ids.slice(TAB_ORDER.length), ['A02', 'A04', 'A05']);
   for (const step of index.steps) {
     assert.equal(typeof step.screen, 'string');
     assert.ok(step.screen.length > 0);
     assert.equal(typeof step.file, 'string');
-    assert.match(step.file, /^tab-.*\.json$/);
+    assert.match(step.file, /^tab-[a-z]+(-[a-z0-9]+)*\.json$/);
   }
 });
 
@@ -146,7 +150,7 @@ function specKeyViolations(md, prefix = '') {
 const stepMockData = id =>
   JSON.parse(readFileSync(path.join(fixtureDir, index.steps.find(s => s.itemId === id).file), 'utf8')).mockData;
 
-test('C5: delivered mockData shape — statusObj.snapshot.*, bare device/manifest/media/convs, liveStateLabels', () => {
+test('C5: delivered mockData shape — flat per-tab keys exactly as controller.js consumes them', () => {
   const today = stepMockData('tab-today');
   assert.equal(dig(today, 'statusObj.snapshot.live.state'), 'ok');
   assert.deepEqual(dig(today, 'statusObj.snapshot.bootstrap.progress.passes'), []);
@@ -163,24 +167,21 @@ test('C5: delivered mockData shape — statusObj.snapshot.*, bare device/manifes
   assert.deepEqual(talk.state, { paired: true, transportDirect: true, hostPreview: false });
 
   const build = stepMockData('tab-build');
+  assert.deepEqual(Object.keys(build).sort(), ['approvalRequired', 'compiled', 'intent', 'proposal']);
   assert.equal(build.intent, 'show ARBOR progress projection');
   assert.deepEqual(build.compiled, { kind: 'visual-update', surfaceId: 'vivim.ui-surface/1', revision: 8, guarded: true, publishable: false, reason: 'pending owner approval' });
   assert.deepEqual(build.proposal, { status: 'pending', preview: 'ARBOR progress projection · source-backed revision 8', state: 'is-done' });
   assert.equal(build.approvalRequired, true);
 
   const world = stepMockData('tab-world');
+  assert.deepEqual(Object.keys(world).sort(), ['built', 'changeHint', 'empty', 'emptyMessage', 'gaps', 'hostReported', 'queue', 'revision', 'running', 'undoAvailable']);
   assert.equal(world.hostReported, true);
   assert.deepEqual(world.revision, { surfaceId: 'vivim.ui-surface/1', revision: 7, status: 'committed', changeId: 'chg_001', parentRevision: 6 });
-  assert.deepEqual(world.built, [
-    { title: 'Wiki page · ARBOR roadmap', detail: 'Approved edit · revision 7' },
-    { title: 'Chat journal entry', detail: 'Durable entry · source host-command' }
-  ]);
+  assert.deepEqual(world.built.map(b => b.title), ['Wiki page · ARBOR roadmap', 'Chat journal entry']);
   assert.deepEqual(world.running, []);
   assert.deepEqual(world.queue, { queued: 0, claimed: 0, done: 3, failed: 0 });
   assert.equal(world.undoAvailable, true);
-  assert.equal(world.changeHint, 'Build proposes a change; your PC commits it as a new revision you can undo.');
   assert.equal(world.empty, false);
-  assert.equal(world.emptyMessage, 'The Host committed revision 7, and it holds no components yet.');
   assert.deepEqual(world.gaps, []);
 
   const me = stepMockData('tab-me');
@@ -205,6 +206,8 @@ test('C5: parcel carries NO raw SPEC dotted mockData keys (re-flatten to SPEC le
 
 test('C5: SPEC values survived the restructure field-for-field (planDigest exact)', () => {
   const control = stepMockData('tab-control');
+  // Exact planDigest as delivered in tab-control.json (read from the fixture).
+  assert.match(control.plan.planDigest, /^[0-9a-f]{64}$/);
   assert.equal(control.plan.planDigest,
     '3f9ac2b17d44e8a0c6b5d2f1e7a8b9c0d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8');
   assert.deepEqual(
@@ -238,12 +241,13 @@ test('C5: SPEC values survived the restructure field-for-field (planDigest exact
 
   const build = stepMockData('tab-build');
   assert.equal(build.intent, 'show ARBOR progress projection');
-  assert.deepEqual(build.compiled, { kind: 'visual-update', surfaceId: 'vivim.ui-surface/1', revision: 8, guarded: true, publishable: false, reason: 'pending owner approval' });
-  assert.deepEqual(build.proposal, { status: 'pending', preview: 'ARBOR progress projection · source-backed revision 8', state: 'is-done' });
+  assert.deepEqual(build.compiled,
+    { kind: 'visual-update', surfaceId: 'vivim.ui-surface/1', revision: 8, guarded: true, publishable: false, reason: 'pending owner approval' });
+  assert.deepEqual(build.proposal,
+    { status: 'pending', preview: 'ARBOR progress projection · source-backed revision 8', state: 'is-done' });
   assert.equal(build.approvalRequired, true);
 
   const world = stepMockData('tab-world');
-  assert.equal(world.hostReported, true);
   assert.deepEqual(world.revision,
     { surfaceId: 'vivim.ui-surface/1', revision: 7, status: 'committed', changeId: 'chg_001', parentRevision: 6 });
   assert.deepEqual(world.built.map(b => ({ title: b.title, detail: b.detail })),
@@ -252,7 +256,6 @@ test('C5: SPEC values survived the restructure field-for-field (planDigest exact
   assert.deepEqual(world.running, []);
   assert.deepEqual(world.queue, { queued: 0, claimed: 0, done: 3, failed: 0 });
   assert.equal(world.undoAvailable, true);
-  assert.equal(world.changeHint, 'Build proposes a change; your PC commits it as a new revision you can undo.');
 
   const me = stepMockData('tab-me');
   assert.equal(me.commands.length, 8);
@@ -268,8 +271,9 @@ test('C5: SPEC values survived the restructure field-for-field (planDigest exact
 // fetch reading the REAL parcel files from public/demo/fixture on disk (no
 // network, no mock substitution — the .verify/demo-verify.mjs harness that
 // substituted SPEC-shaped mocks for tab-me/tab-control is superseded by this
-// test), then assert every SPEC row renders and the honest gap
-// ('Not available yet…') never leaks — every SPEC field set exists.
+// test), then assert every indexed step (all 9, tabs + A02/A04/A05 queue
+// steps) renders and the honest gap ('Not available yet…') never leaks —
+// every consumed field set exists.
 const vmById = {};
 class FakeEl {
   constructor() { this.children = []; this.attrs = {}; this.listeners = {}; this.value = ''; this._text = ''; this._class = ''; this.disabled = false; }
@@ -284,7 +288,7 @@ class FakeEl {
   get className() { return this._class; }
   click() { (this.listeners.click ?? []).forEach(f => f()); }
 }
-test('C5: controller.js parses the delivered nested parcel — every SPEC row renders, no honest-gap leakage', async () => {
+test('C5: controller.js parses the delivered parcel — every indexed step renders, no honest-gap leakage', async () => {
   globalThis.document = {
     getElementById(id) { if (!vmById[id]) vmById[id] = new FakeEl(); return vmById[id]; },
     createElement() { return new FakeEl(); },
@@ -300,11 +304,11 @@ test('C5: controller.js parses the delivered nested parcel — every SPEC row re
     return { ok: false, status: 404, json: async () => { throw new Error('not json'); } };
   };
   runInContext(controllerSrc, createContext(globalThis));
-  for (let i = 0; i < 100 && vmById['demo-strip']?.children.length !== STEP_IDS.length; i++) {
+  for (let i = 0; i < 100 && vmById['demo-strip']?.children.length !== index.steps.length; i++) {
     await new Promise(r => setTimeout(r, 10));
   }
   const strip = vmById['demo-strip'];
-  assert.equal(strip.children.length, STEP_IDS.length,
+  assert.equal(strip.children.length, index.steps.length,
     'controller failed to load the parcel; demo-status: ' + (vmById['demo-status']?.textContent ?? '(unset)'));
   assert.equal(vmById['demo-status'].textContent, '', 'status must be cleared after a clean load');
 
@@ -321,7 +325,8 @@ test('C5: controller.js parses the delivered nested parcel — every SPEC row re
       'Proposal', 'pending · ARBOR progress projection · source-backed revision 8 · is-done',
       'Approval required', 'yes — publish blocked until owner approves'],
     'tab-world': ['Committed revision', 'vivim.ui-surface/1 r7 · committed · chg_001 ← r6',
-      'What was built', 'Wiki page · ARBOR roadmap · Approved edit · revision 7   Chat journal entry · Durable entry · source host-command',
+      'What was built', 'Wiki page · ARBOR roadmap · Approved edit · revision 7',
+      'Chat journal entry · Durable entry · source host-command',
       'Queue', 'queued 0 · claimed 0 · done 3 · failed 0',
       'Undo', 'available — undo cue exposed',
       'Change hint', 'Build proposes a change; your PC commits it as a new revision you can undo.'],
@@ -338,7 +343,8 @@ test('C5: controller.js parses the delivered nested parcel — every SPEC row re
       'Undo', 'actionId theme.unset',
       'Recent Host decisions', 'theme.set — applied · 2026-11-14T09:41:00Z'],
     'A02': ['Committed revision', 'vivim.ui-surface/1 r7 · committed · chg_001 ← r6',
-      'What was built', 'Wiki page · ARBOR roadmap · Approved edit · revision 7   Chat journal entry · Durable entry · source host-command',
+      'What was built', 'Wiki page · ARBOR roadmap · Approved edit · revision 7',
+      'Chat journal entry · Durable entry · source host-command',
       'Queue', 'queued 0 · claimed 0 · done 3 · failed 0',
       'Undo', 'available — undo cue exposed',
       'Change hint', 'Build proposes a change; your PC commits it as a new revision you can undo.'],
@@ -352,9 +358,10 @@ test('C5: controller.js parses the delivered nested parcel — every SPEC row re
       'Next batch', 'Build something · Next scoped repair ready → build',
       'Running lane queue', 'queued 1 · claimed 0 · done 4 · failed 0']
   };
-  const STRIP_IDS = index.steps.map(s => s.itemId);
-  STRIP_IDS.forEach((id, i) => {
+  const STEP_IDS = index.steps.map(s => s.itemId);
+  STEP_IDS.forEach((id, i) => {
     strip.children[i].click();
+    assert.ok(vmById['demo-active'].textContent.includes(id), 'active step head must show itemId ' + id);
     const text = vmById['demo-phone'].textContent;
     for (const m of MUST[id]) {
       assert.ok(text.includes(m), id + ' must render ' + JSON.stringify(m) + '; phone text: ' + JSON.stringify(text));

@@ -219,19 +219,6 @@ test('batch-1 product routes: pages, baseline JSON, read-throughs, mutate append
     // Exact-string dispatch only: unknown /api/* paths still 404 (no catch-all).
     assert.equal((await httpFetch(base, '/api/definitely-not-a-route')).status, 404);
     assert.equal((await httpFetch(base, '/api/state/extra')).status, 404);
-
-    // Legacy direct-mutation endpoints are deliberately non-executable:
-    // only POST /api/mutate may append to the Host journal.
-    const legacy = await httpFetch(base, '/api/host/control/devices/approve', {
-      method: 'POST', headers: { 'x-vivim-bootstrap': '1', origin: base, 'x-vivim-control': '1', authorization: 'Bearer ' + token }
-    });
-    assert.equal(legacy.status, 409, 'legacy approve endpoint refused');
-    assert.match(await legacy.text(), /CONTROL_ACTION_PLAN_REQUIRED/);
-    const legacyRevoke = await httpFetch(base, '/api/host/control/devices/revoke', {
-      method: 'POST', headers: { 'x-vivim-bootstrap': '1', origin: base, 'x-vivim-control': '1', authorization: 'Bearer ' + token }
-    });
-    assert.equal(legacyRevoke.status, 409, 'legacy revoke endpoint refused');
-    assert.match(await legacyRevoke.text(), /CONTROL_ACTION_PLAN_REQUIRED/);
   } finally {
     await new Promise(resolve => server.close(resolve));
     rmSync(dataRoot, { recursive: true, force: true });

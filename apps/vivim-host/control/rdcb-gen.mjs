@@ -65,6 +65,7 @@ import { createHash } from 'node:crypto';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { cacheDirFor, cacheHit, invalidateEntry, storeBundle, reuseReceipt } from './rdcb-cache.mjs';
 
 const GENERATOR_VERSION = 'rdcb-gen/1 stage-b';
 const BUNDLE_SCHEMA = 'vivim.rdcb/1';
@@ -85,6 +86,7 @@ const PINNED_NOW = '2026-11-14T00:00:00.000Z';
 const FILE_SURFACE_REL = 'apps/vivim-host/data/demo-baseline/file-surface.v1.json';
 const ACTION_CATALOG_REL = 'apps/vivim-host/control/action-catalog.v1.json';
 const RDCB_DIR_REL = 'apps/vivim-host/data/demo-baseline/rdcb';
+const WORK_ORDER_DIR_REL = 'apps/vivim-host/data/demo-baseline/work-orders';
 
 // Same seeded corpus as file-surface-gen.mjs stage-a (ledger P2): ordered,
 // explicit, extended only when new @vlang:surface files land.
@@ -319,23 +321,69 @@ function main() {
   const catalog = loadActionCatalog();
 
   const outDir = join(repoRoot, ...RDCB_DIR_REL.split('/'));
+  const cacheDir = cacheDirFor(outDir);
+  const workOrderDir = join(repoRoot, ...WORK_ORDER_DIR_REL.split('/'));
   mkdirSync(outDir, { recursive: true });
+  mkdirSync(workOrderDir, { recursive: true });
 
   let written = 0;
+  let reused = 0;
   for (const relPath of SEED_FILES) {
     const bytes = readRepoFile(relPath);
-    const bundle = composeBundle({ relPath, bytes, now, registry, registryDoc: registry.doc, catalog, catalogDoc: catalog.doc });
+    const currentDigest = sha256Hex(bytes);
+    const hit = cacheHit(cacheDir, relPath, currentDigest);
+
+    let bundle;
+    let receipt;
+    if (hit) {
+      // Unchanged inputs: serve the cached bundle verbatim. Digest excludes
+      // generatedAt (rdcb-gen.mjs:299-302) so the cached bundle stays
+      // byte-identical across unchanged runs.
+      bundle = hit.bundle;
+      receipt = { ...reuseReceipt(bundle, bytes), servedFromCache: true };
+      reused += 1;
+    } else {
+      // Changed source revision or cold cache: drop only this affected entry,
+      // then compose + store a fresh bundle keyed to the new revision.
+      invalidateEntry(cacheDir, relPath);
+      bundle = composeBundle({ relPath, bytes, now, registry, registryDoc: registry.doc, catalog, catalogDoc: catalog.doc });
+      storeBundle(cacheDir, relPath, currentDigest, bundle);
+      receipt = { ...reuseReceipt(bundle, bytes), servedFromCache: false };
+    }
+
     const base = relPath.slice(relPath.lastIndexOf('/') + 1).replace(/\.[^.]+$/, '');
     const outPath = join(outDir, base + '.rdcb.v1.json');
     writeFileSync(outPath, JSON.stringify(bundle, null, 2) + '\n');
+
+    // Reuse receipt emitted next to each bundle (kept in the cache dir so the
+    // baseline's top-level .json scan of OUT_DIR only sees bundles). Reused
+    // bytes/tokens estimate reported separately from measured provider costs.
+    const receiptPath = join(cacheDir, base + '.receipt.json');
+    writeFileSync(receiptPath, JSON.stringify(receipt, null, 2) + '\n');
+
+    // Attach selected context (source excerpt + bundle digest) to a work order.
+    const workOrder = {
+      schema: 'vivim.work-order/1',
+      source: { path: relPath, revision: bundle.sources?.[0]?.sha256 ?? currentDigest },
+      selectedContext: {
+        excerpt: bundle.sources?.[0]?.excerpt ?? null,
+        bundleDigest: bundle.digest
+      },
+      bundle: { digest: bundle.digest, status: bundle.status, servedFromCache: receipt.servedFromCache },
+      reprogramming: { vlangExecution: false }
+    };
+    writeFileSync(join(workOrderDir, base + '.work-order.json'), JSON.stringify(workOrder, null, 2) + '\n');
+
     process.stdout.write(
       'wrote ' + outPath + ' status=' + bundle.status +
       ' used=' + bundle.budget.used + '/' + bundle.budget.capacity +
-      ' digest=' + bundle.digest + '\n'
+      ' digest=' + bundle.digest +
+      ' reused=' + receipt.servedFromCache + '\n'
     );
     written++;
   }
-  process.stdout.write('rdcb-gen: wrote ' + written + ' bundle(s) to ' + outDir + '\n');
+  process.stdout.write('rdcb-gen: wrote ' + written + ' bundle(s) to ' + outDir +
+    ' (reused=' + reused + ')\n');
 }
 
 main();

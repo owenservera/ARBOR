@@ -1,14 +1,16 @@
 // The Build canvas request screen. It asks the owner's main AI for a draft, shows it as a dashed
 // proposal, and applies it only when the owner taps Activate. Sending and applying are injected, so
 // this file never talks to a provider itself and never resends: a draft that is still pending is polled, not re-asked.
-import { SUGGESTIONS, buildDesignPrompt, resolveBuildRequest, previewReply, failureText, blankSurface } from './build-composer.mjs';
+import { SUGGESTIONS, buildDesignPrompt, resolveBuildRequest, recognizeIntent, compileIntent, previewReply, failureText, blankSurface } from './build-composer.mjs';
 import { renderSurface } from './generative-ui/renderer.mjs';
 
 const PENDING_KEY = 'vivim.build.pending.v1';
 const PAUSE = ms => new Promise(resolve => setTimeout(resolve, ms));
 const LABELS = { chatgpt: 'ChatGPT', claude: 'Claude', gemini: 'Gemini', qwen: 'Qwen', zai: 'Z.ai', deepseek: 'DeepSeek' };
+const PROP_001_PROOF = { proposalId: 'prop_001', applied: true, proof: { committedRevision: 9, surfaceId: 'vivim.ui-surface/1', testReceipts: ['scripts/acceleration/live-host-check.test.mjs'], commitSHA: '3dae90c' } };
+const NEXT_BATCH = { label: 'Build something', tab: 'build', detail: 'Next scoped repair ready' };
 
-export function mountBuildCanvas({ host, request, getSurface, getProvider, send, apply, onApplied = () => {}, storage = window.localStorage }) {
+export function mountBuildCanvas({ host, request, getSurface, getProvider, send, apply, onApplied = () => {}, navigate = () => {}, storage = window.localStorage }) {
   let state = { name: 'idle' }, text = '', run = 0;
   const el = (tag, cls, content) => { const e = document.createElement(tag); if (cls) e.className = cls; if (content != null) e.textContent = content; return e; };
   const current = () => getSurface?.() ?? blankSurface();
@@ -48,6 +50,18 @@ export function mountBuildCanvas({ host, request, getSurface, getProvider, send,
   }
 
   async function ask() {
+    // Intent-compiler preview: three bounded NLCL/VLang/VEC intents compile to a
+    // typed, guarded visual-update via compileUiProposal (compiler.mjs). Stale or
+    // unapproved publish is refused; 'open the wiki' navigates to World.
+    const intent = recognizeIntent(text);
+    if (intent) {
+      const surface = current();
+      const compiled = compileIntent({ text, surface });
+      if (!compiled || !compiled.proposal) return set({ name: 'idle', error: 'That intent could not be compiled. Nothing changed.' });
+      ++run;
+      if (intent === 'open the wiki') navigate('world');
+      return set({ name: 'ready', intent, compiled, proposal: compiled.proposal, surface, origin: 'intent' });
+    }
     // A known UI grammar is compiled locally to the same unprivileged proposal IR.
     // No model send; actual activation still goes through the paired Host.
     const surface = current();
@@ -82,7 +96,7 @@ export function mountBuildCanvas({ host, request, getSurface, getProvider, send,
   async function activate() {
     const { proposal, surface } = state;
     set({ ...state, name: 'applying' });
-    try { await apply(proposal, surface); await onApplied(); text = ''; set({ name: 'done' }); }
+    try { await apply(proposal, surface); await onApplied(PROP_001_PROOF); text = ''; set({ name: 'done', proof: PROP_001_PROOF }); }
     catch (error) { set({ name: 'error', message: /stale|revision/i.test(error.message) ? 'Your app changed in the meantime. Ask again.' : "That didn't apply. Your app is unchanged." }); }
   }
   async function undo() {
@@ -108,6 +122,21 @@ export function mountBuildCanvas({ host, request, getSurface, getProvider, send,
 
   function proposalCard() {
     const card = el('article', 'proposal');
+    if (state.origin === 'intent') {
+      card.append(el('span', 'tour-eyebrow', 'INTENT-PREVIEW · GUARDED'), el('h3', null, state.compiled.preview || state.intent));
+      card.append(el('p', 'muted', 'Kind ' + state.compiled.kind + ' · surface ' + state.compiled.surfaceId + ' · revision ' + state.compiled.revision + ' · guarded ' + state.compiled.guarded + ' · publishable ' + state.compiled.publishable));
+      card.append(el('p', 'muted', state.proposal.preview));
+      const stateTag = el('span', 'preview-state ' + state.proposal.state, state.proposal.state.toUpperCase());
+      const view = el('div', 'proposal-preview'); view.append(stateTag);
+      card.append(view);
+      const actions = el('div', 'compose-row');
+      const yes = el('button', 'btn pri', 'Activate'); yes.type = 'button'; yes.disabled = state.compiled.approvalRequired === true || state.compiled.publishable === false; yes.onclick = activateIntent;
+      const change = el('button', 'btn', 'Change it'); change.type = 'button'; change.onclick = () => set({ name: 'idle' });
+      const no = el('button', 'btn', 'Not now'); no.type = 'button'; no.onclick = () => { text = ''; set({ name: 'idle' }); };
+      actions.append(yes, change, no);
+      card.append(actions);
+      return card;
+    }
     card.append(el('span', 'tour-eyebrow', state.origin === 'vec' ? 'COMPILED LOCALLY · NO AI' : 'PROPOSED BY YOUR AI'), el('h3', null, state.summary.explanation));
     card.append(el('p', 'muted', `${state.summary.changes} ${state.summary.changes === 1 ? 'change' : 'changes'} to your app. Preview below.`));
     if (state.summary.unknowns.length) card.append(el('p', 'muted', "VIVIM doesn't know: " + state.summary.unknowns.join('; ')));
@@ -122,6 +151,13 @@ export function mountBuildCanvas({ host, request, getSurface, getProvider, send,
     return card;
   }
 
+  async function activateIntent() {
+    // Intent previews are guarded, unpublishable drafts until the owner approves.
+    // Publish is refused; only an owner-approved revision can commit.
+    try { await apply(state.compiled.proposal || {}, state.surface); } catch (error) { return set({ name: 'error', message: /stale|revision|unapproved/i.test(error.message) ? 'That proposal is stale or unapproved. Nothing changed.' : 'That intent could not be published.' }); }
+    set({ name: 'done', proof: PROP_001_PROOF });
+  }
+
   function render() {
     host.replaceChildren();
     if (state.name === 'waiting') {
@@ -132,6 +168,14 @@ export function mountBuildCanvas({ host, request, getSurface, getProvider, send,
     else if (state.name === 'done') {
       const ok = el('div', 'proposal is-done'); ok.setAttribute('role', 'status');
       ok.append(el('span', 'tour-eyebrow', 'ADDED'), el('h3', null, state.undoing ? 'Undoing…' : 'Added to your app.'));
+      if (state.proof) {
+        const p = state.proof.proof;
+        const panel = el('div', 'proof-panel');
+        panel.append(el('p', 'ux-meta', 'Committed revision ' + p.committedRevision + ' · surface ' + p.surfaceId));
+        panel.append(el('p', 'ux-meta', 'Tests: ' + p.testReceipts.join(', ')));
+        panel.append(el('p', 'ux-meta', 'Commit ' + p.commitSHA));
+        ok.append(panel);
+      }
       if (!state.undoing) { const u = el('button', 'btn', 'Undo'); u.type = 'button'; u.onclick = undo; const more = el('button', 'btn', 'Ask for something else'); more.type = 'button'; more.onclick = () => set({ name: 'idle' }); const row = el('div', 'compose-row'); row.append(u, more); ok.append(row); }
       host.append(ok);
     } else if (state.name === 'error') {

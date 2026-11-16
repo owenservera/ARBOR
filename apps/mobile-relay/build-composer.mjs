@@ -83,3 +83,61 @@ export function failureText(result) {
   };
   return (code && known[code]) || 'That did not go through. Your app is unchanged.';
 }
+
+// Intent-compiler preview: three bounded NLCL/VLang/VEC intents compile to a typed,
+// guarded visual-update preview. compileUiProposal (compiler.mjs) is the single
+// guarded preview boundary — no second visual publisher is introduced.
+const INTENT_VISUAL_UPDATE = Object.freeze([
+  'open the wiki',
+  'show ARBOR progress projection',
+  'preview an edit'
+]);
+
+const INTENT_SET = new Set(INTENT_VISUAL_UPDATE.map(i => i.toLowerCase()));
+export function recognizeIntent(text) {
+  const t = String(text ?? '').trim().replace(/\s+/g, ' ').toLowerCase();
+  return INTENT_SET.has(t) ? t : null;
+}
+
+function intentSlug(intent) { return intent.replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); }
+
+function uiProposalForIntent(intent, surface) {
+  const component = {
+    id: 'vec.intent.' + intentSlug(intent),
+    type: 'card',
+    props: { title: intent.charAt(0).toUpperCase() + intent.slice(1), description: 'Guided preview · owner approval required to publish.' },
+    children: []
+  };
+  return {
+    schema: PROPOSAL_SCHEMA, surfaceId: surface.surfaceId, baseRevision: surface.revision,
+    operations: [{ opId: 'vec.intent.1', type: 'insert', parentId: 'root', component }],
+    explanation: 'Preview ' + intent + '.', assumptions: [], unknowns: []
+  };
+}
+
+export function compileIntent({ text, surface = blankSurface() } = {}) {
+  const intent = recognizeIntent(text);
+  if (!intent) return null;
+  const compiled = {
+    kind: 'visual-update',
+    surfaceId: surface.surfaceId,
+    revision: surface.revision,
+    guarded: true,
+    publishable: false,
+    reason: 'pending owner approval'
+  };
+  let proposal;
+  try {
+    // Single guarded preview boundary: stale or unmatched revision, or any
+    // unapproved claim, throws here — nothing is previewed or published.
+    compileUiProposal({ proposal: uiProposalForIntent(intent, surface), surface, approvedRefs: [], audience: 'phone' });
+    proposal = {
+      status: 'pending',
+      preview: intent + ' · source-backed revision ' + surface.revision,
+      state: 'is-done'
+    };
+  } catch {
+    proposal = { status: 'rejected', preview: 'This proposal is stale or unapproved and cannot be previewed.', state: 'is-error' };
+  }
+  return { intent, compiled, proposal, approvalRequired: true };
+}

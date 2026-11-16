@@ -60,7 +60,46 @@
 //! @hq:invariant A hit must be provably current: epoch equality plus every
 //! touched node version confirmed by the watermark; otherwise miss + drop.
 use crate::context_retrieval::{ContextBundle, ContextRequest};
+use crate::graph_change_set::ApplyReport;
 use std::collections::{BTreeMap, BTreeSet};
+
+/// Caller identity used for cross-user isolation. Namespaces do not
+/// authenticate today, so the caller identity must be explicit and exact:
+/// two lookups from different caller identities never share a cache entry.
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct CallerId {
+    pub caller: String,
+    pub namespace: String,
+}
+
+impl CallerId {
+    pub fn new(caller: impl Into<String>, namespace: impl Into<String>) -> Self {
+        Self {
+            caller: caller.into(),
+            namespace: namespace.into(),
+        }
+    }
+}
+
+/// Exact source revision of one cached bundle: source id + content sha256
+/// digest, scoped to the caller that stored it. A changed source revision
+/// invalidates every bundle whose recorded source revisions touch it.
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct SourceRevision {
+    pub source: String,
+    pub revision: u64,
+    pub digest: String,
+}
+
+impl SourceRevision {
+    pub fn new(source: impl Into<String>, revision: u64, digest: impl Into<String>) -> Self {
+        Self {
+            source: source.into(),
+            revision,
+            digest: digest.into(),
+        }
+    }
+}
 
 /// Order-independent cache key for one retrieval request. Every component is
 /// a sorted collection, so seed/exclusion order never changes the identity of
@@ -93,6 +132,10 @@ impl Fingerprint {
 struct ExactEntry {
     /// Graph epoch captured at store time.
     epoch: u64,
+    /// Caller identity that stored this entry, enforced on every lookup so a
+    /// caller can never be served another caller's bundle (cross-user
+    /// isolation, fail-closed).
+    caller: CallerId,
     /// Every retrieved node id -> its version at retrieval time. This is the
     /// per-node view checked against the watermark on every lookup.
     node_versions: BTreeMap<String, u64>,
@@ -100,6 +143,9 @@ struct ExactEntry {
     /// namespace as `ApplyReport::invalidation_set`, so an invalidate_entity
     /// call fed straight from an apply report matches here.
     touched: BTreeSet<String>,
+    /// Source revisions recorded at store time; drive revision-scoped
+    /// invalidation alongside `touched` entity ids.
+    source_revisions: BTreeSet<SourceRevision>,
     bundle: ContextBundle,
 }
 
@@ -108,8 +154,10 @@ struct ExactEntry {
 #[derive(Clone, Debug)]
 struct SeedEntry {
     epoch: u64,
+    caller: CallerId,
     node_versions: BTreeMap<String, u64>,
     touched: BTreeSet<String>,
+    source_revisions: BTreeSet<SourceRevision>,
     /// Exact fingerprints this seed contributed to.
     contributions: BTreeSet<Fingerprint>,
 }
@@ -216,6 +264,10 @@ pub struct InvalidateCache {
     capacity: usize,
     exact: Lru<Fingerprint, ExactEntry>,
     seeds: Lru<String, SeedEntry>,
+    /// Source revision -> exact fingerprints whose bundle recorded that source
+    /// revision. Drives revision-scoped invalidation: a changed source revision
+    /// drops every bundle that depended on it, and only those bundles.
+    source_index: BTreeMap<SourceRevision, BTreeSet<Fingerprint>>,
 }
 
 impl InvalidateCache {
@@ -227,6 +279,7 @@ impl InvalidateCache {
             capacity: capacity_per_level,
             exact: Lru::new(capacity_per_level),
             seeds: Lru::new(capacity_per_level),
+            source_index: BTreeMap::new(),
         }
     }
 
@@ -252,10 +305,31 @@ impl InvalidateCache {
         watermark: &BTreeMap<String, u64>,
         req: &ContextRequest,
     ) -> Option<ContextBundle> {
+        self.lookup_with_caller(
+            graph_epoch,
+            &CallerId::new("anonymous", "global"),
+            watermark,
+            req,
+        )
+    }
+
+    /// Caller-scoped lookup: serves the cached bundle for `req` only when
+    /// the caller identity matches the entry's stored caller **and** the
+    /// epoch/watermark validity rule holds. A caller from a different
+    /// identity or namespace can never be served another caller's bundle
+    /// — false or cross-user context reuse is rejected fail-closed.
+    pub fn lookup_with_caller(
+        &mut self,
+        graph_epoch: u64,
+        caller: &CallerId,
+        watermark: &BTreeMap<String, u64>,
+        req: &ContextRequest,
+    ) -> Option<ContextBundle> {
         let fp = Fingerprint::of(req);
         let valid = match self.exact.peek(&fp) {
             Some(entry) => {
-                entry.epoch == graph_epoch
+                entry.caller == *caller
+                    && entry.epoch == graph_epoch
                     && entry
                         .node_versions
                         .iter()
@@ -279,6 +353,28 @@ impl InvalidateCache {
     /// Seed-level entries are merged when the seed's last contribution is at
     /// the same epoch, replaced otherwise.
     pub fn store(&mut self, graph_epoch: u64, req: &ContextRequest, bundle: &ContextBundle) {
+        self.store_with_caller_and_sources(
+            graph_epoch,
+            CallerId::new("anonymous", "global"),
+            req,
+            bundle,
+            &[],
+        );
+    }
+
+    /// Caller-scoped store: records `bundle` under `caller` and `source_revisions`
+    /// (the exact source id + content sha256 of each seeded file's current
+    /// bytes). Lookups from a different caller identity never share this
+    /// entry. Source revisions are indexed so [`invalidate_revision`] can drop
+    /// exactly the affected bundles when a source revision changes.
+    pub fn store_with_caller_and_sources(
+        &mut self,
+        graph_epoch: u64,
+        caller: CallerId,
+        req: &ContextRequest,
+        bundle: &ContextBundle,
+        source_revisions: &[SourceRevision],
+    ) {
         if self.capacity == 0 {
             return;
         }
@@ -292,39 +388,54 @@ impl InvalidateCache {
         for edge in &bundle.edges {
             touched.insert(edge.id.clone());
         }
+        let srcs: BTreeSet<SourceRevision> =
+            source_revisions.iter().cloned().collect();
         self.exact.insert(
             fp.clone(),
             ExactEntry {
                 epoch: graph_epoch,
+                caller: caller.clone(),
                 node_versions: node_versions.clone(),
                 touched,
+                source_revisions: srcs.clone(),
                 bundle: bundle.clone(),
             },
         );
         for seed in &req.seeds {
             let fresh = SeedEntry {
                 epoch: graph_epoch,
+                caller: caller.clone(),
                 node_versions: node_versions.clone(),
                 touched: {
                     let mut ids: BTreeSet<String> = node_versions.keys().cloned().collect();
                     ids.extend(bundle.edges.iter().map(|e| e.id.clone()));
                     ids
                 },
+                source_revisions: srcs.clone(),
                 contributions: BTreeSet::from([fp.clone()]),
             };
             let merged = match self.seeds.peek(&seed.clone()) {
-                Some(existing) if existing.epoch == graph_epoch => {
+                Some(existing) if existing.epoch == graph_epoch && existing.caller == caller => {
                     let mut merged = existing.clone();
                     merged
                         .node_versions
                         .extend(node_versions.iter().map(|(k, v)| (k.clone(), *v)));
                     merged.touched.extend(fresh.touched.iter().cloned());
+                    merged.source_revisions.extend(fresh.source_revisions.iter().cloned());
                     merged.contributions.insert(fp.clone());
                     merged
                 }
                 _ => fresh,
             };
             self.seeds.insert(seed.clone(), merged);
+        }
+        // Index every recorded source revision to this exact fingerprint so a
+        // changed source revision can drop exactly the affected bundles.
+        for src in &srcs {
+            self.source_index
+                .entry(src.clone())
+                .or_default()
+                .insert(fp.clone());
         }
     }
 
@@ -363,7 +474,8 @@ impl InvalidateCache {
 
     /// Seed-level probe: the seed's last-known contribution (node id ->
     /// version) if it is provably current under the same rule as
-    /// [`Self::lookup`] (epoch equality plus full watermark confirmation).
+    /// [`Self::lookup`] (epoch equality plus full watermark confirmation), and
+    /// only for the same caller identity — cross-user seed reuse is rejected.
     /// Survives exact-level misses for a different full request; an
     /// unconfirmed or stale view drops the seed entry and returns `None`.
     pub fn seed_state(
@@ -372,9 +484,28 @@ impl InvalidateCache {
         watermark: &BTreeMap<String, u64>,
         seed: &str,
     ) -> Option<BTreeMap<String, u64>> {
+        self.seed_state_with_caller(
+            graph_epoch,
+            &CallerId::new("anonymous", "global"),
+            watermark,
+            seed,
+        )
+    }
+
+    /// Caller-scoped seed-level probe: same rule as [`Self::seed_state`], but
+    /// only serves a contribution stored by `caller`. A different caller's
+    /// contribution is never returned (cross-user isolation, fail-closed).
+    pub fn seed_state_with_caller(
+        &mut self,
+        graph_epoch: u64,
+        caller: &CallerId,
+        watermark: &BTreeMap<String, u64>,
+        seed: &str,
+    ) -> Option<BTreeMap<String, u64>> {
         let valid = match self.seeds.peek(&seed.to_owned()) {
             Some(entry) => {
-                entry.epoch == graph_epoch
+                entry.caller == *caller
+                    && entry.epoch == graph_epoch
                     && entry
                         .node_versions
                         .iter()
@@ -392,12 +523,86 @@ impl InvalidateCache {
         None
     }
 
-    /// Remove one exact entry and unlink it from every seed contribution.
+    /// Remove one exact entry and unlink it from every seed contribution and
+    /// from the source revision index.
     fn drop_exact(&mut self, fp: &Fingerprint) {
-        if self.exact.remove(fp).is_some() {
+        if let Some(entry) = self.exact.remove(fp) {
+            for src in &entry.source_revisions {
+                if let Some(fps) = self.source_index.get_mut(src) {
+                    fps.remove(fp);
+                    if fps.is_empty() {
+                        self.source_index.remove(src);
+                    }
+                }
+            }
             for (entry, _) in self.seeds.entries.values_mut() {
                 entry.contributions.remove(fp);
             }
+        }
+    }
+
+    /// Revision-scoped invalidation: drop exactly the cached bundles whose
+    /// recorded source revisions intersect `changed_revisions`, plus every
+    /// entry whose touched entity set intersects `report.invalidation_set`.
+    /// Entries unrelated to the changed sources or touched entities survive
+    /// — only affected bundles are dropped. Then advance the epoch fence so
+    /// stale entries below the new revision's graph epoch are gone too.
+    pub fn invalidate_revision(
+        &mut self,
+        graph_epoch: u64,
+        changed_revisions: &[SourceRevision],
+        report: &ApplyReport,
+    ) {
+        // Drop exact entries by changed source revision (revision-scoped).
+        let mut dead: Vec<Fingerprint> = Vec::new();
+        for src in changed_revisions {
+            if let Some(fps) = self.source_index.remove(src) {
+                dead.extend(fps);
+            }
+        }
+        // Drop exact entries by touched entity id (entity-scoped, from the
+        // apply report's invalidation_set).
+        for entity in &report.invalidation_set {
+            let dead_entities: Vec<Fingerprint> = self
+                .exact
+                .entries
+                .iter()
+                .filter(|(_, e)| e.0.touched.contains(entity))
+                .map(|(fp, _)| fp.clone())
+                .collect();
+            dead.extend(dead_entities);
+        }
+        for fp in dead {
+            self.drop_exact(&fp);
+        }
+        // Drop seed-level entries whose touched entity set intersects the
+        // invalidation set (caller-scoped seed entries survive unless touched).
+        let dead_seeds: Vec<String> = self
+            .seeds
+            .entries
+            .iter()
+            .filter(|(_, e)| e.0.touched.intersection(&report.invalidation_set).next().is_some())
+            .map(|(seed, _)| seed.clone())
+            .collect();
+        for seed in dead_seeds {
+            self.seeds.remove(&seed);
+        }
+        // Epoch fence: everything below the new graph epoch is stale.
+        let dead_epoch = self
+            .exact
+            .remove_where(|_, e| e.epoch < graph_epoch)
+            .into_iter()
+            .collect::<Vec<_>>();
+        for fp in dead_epoch {
+            self.drop_exact(&fp);
+        }
+        let dead_seed_epochs: Vec<String> = self
+            .seeds
+            .remove_where(|_, e| e.epoch < graph_epoch)
+            .into_iter()
+            .collect::<Vec<_>>();
+        for seed in dead_seed_epochs {
+            self.seeds.remove(&seed);
         }
     }
 }

@@ -12,7 +12,7 @@
 - L0 pillars: 3 (L0-DEMO, L0-BUILD, L0-WININSTALL)
 - L1 programs: 7 (L1-DEMO-LOOP, L1-P5-INTEGRATION, L1-P5-FOUNDATIONS, L1-VLANG-VEC, L1-VEC-ENGINES, L1-P2-LABS, L1-WININSTALL)
 - L2 work packages: 97 rows shown in this view (statuses: implemented 1, in-progress 6, todo 36, candidate 46, deferred 1, gated 1, queued 6); gap-sweep items folded into synthesis inputs at synthesis, not all enumerated here
-- Active build queue: A00-A08 (A00 gated, A01/A02 in-progress, A03-A08 queued; all verification UNRUN, owner acceptance PENDING)
+- Active build queue: A00-A08 (A00 gated, A01/A02 in-progress, A03 build-failed/gated on A00 until A00 is independently accepted; A04-A08 queued or gated per their dependencies; all verification UNRUN, owner acceptance PENDING)
 - archivedBuildBatches: 1 (BATCH-1 executed, acceptance OPEN_FINDINGS, historical bookkeeping only)
 
 ## Workstream emphasis (owner, 2026-11-14)
@@ -245,18 +245,18 @@ Depends on: L0-WININSTALL
 
 ## Active build queue — Acceleration Batch A (R002)
 
-**Owner-selected focus:** maximize future verified output, not standalone features. [Execution and acceptance contract](ACCELERATION-R002.md). Machine truth: `roadmap.v1.json`; this document is a projection. **A00–A02 are in-progress/gated with source landed but Node/Windows/browser tests UNRUN. A03–A08 remain queued. Independent acceptance PENDING for all nine.** Historical Batch-1 `executed` bookkeeping is not a release or end-to-end acceptance.
+**Owner-selected focus:** maximize future verified output, not standalone features. [Execution and acceptance contract](ACCELERATION-R002.md). Machine truth: `roadmap.v1.json`; this document is a projection. **A00–A02 are in-progress/gated with source landed but Node/Windows/browser tests UNRUN. A03 is build-failed and remains gated on independent acceptance of A00 before activation; A04–A08 remain queued or gated per their own dependencies. Independent acceptance PENDING for all nine.** Historical Batch-1 `executed` bookkeeping is not a release or end-to-end acceptance.
 
 | Order | Item | Lane | Estimated acceleration | Hard dependencies | State |
 |---:|---|:---:|---:|---|---|
 | 1 | A00 — Truth and queue repair | B | 89/100 | — | gated / UNRUN |
 | 2 | A01 — One-command live Host and acceptance runner | C | 95/100 | — | in-progress / UNRUN |
 | 3 | A02 — Canonical stateful chat-to-Wiki projection | A | 96/100 | — | gated / built |
-| 4 | A03 — Demo feedback-to-work-order compiler | B | 96/100 | A00 | failed / UNRUN |
+| 4 | A03 — Demo feedback-to-work-order compiler | B | 96/100 | A00 | gated / built |
 | 5 | A04 — Narrow realtime NL to VLang/VEC visual compiler | A | 91/100 | A02 | gated / built |
 | 6 | A05 — Authorized build, verify, demonstrate and requeue | B | 94/100 | A01, A02, A03 | gated / UNRUN |
-| 7 | A06 — Incremental RDCB context with reuse receipts | C | 90/100 | A01, A02 | queued / UNRUN |
-| 8 | A07 — Evidence-driven parallel worker execution | C | 81/100 | A05, A06 | queued / UNRUN |
+| 7 | A06 — Incremental RDCB context with reuse receipts | C | 90/100 | A01, A02 | gated / built |
+| 8 | A07 — Evidence-driven parallel worker execution | C | 81/100 | A05, A06 | failed / UNRUN |
 | 9 | A08 — Physical Windows Host and paired PWA acceptance | A | 67/100 | A02, A04 | queued / UNRUN |
 
 **Initial independently ready frontier:** A00 (truth/verification), A01 (one-command Host runner), A02 (stateful chat↔Wiki). All remaining work orders follow their hard dependencies. The roadmap's acceleration scoring formula is 30% downstream unlocks, 25% reuse, 20% feedback speed, 15% saved recurring reasoning and 10% simplicity; estimates do not substitute for receipts.

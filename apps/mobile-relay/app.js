@@ -80,7 +80,7 @@ const S = {
   hidden: new Set(lsGet('relay.hidden.v1', [])), cmds: [], files: [], sending: false, paired: false,
   statusAt: 0, statusObj: null, timer: 0, busy: false, sigs: {}, shownConv: null,
   conn: { label: '', tone: 'ok' }, device: { status: null, scopes: null },
-  media: { state: 'idle' }, mediaAt: 0, mediaOffset: 0, mediaLoading: false
+  media: { state: 'idle' }, mediaAt: 0, mediaOffset: 0, mediaLoading: false, nextBatch: null
 };
 let combinedInbox = true; // UI-only inbox aggregation; never fan-out or a provider target.
 let providerRefreshBusy = false;
@@ -673,6 +673,7 @@ function renderSurfaces() {
   if (S.sigs.ux === sig) return;
   S.sigs.ux = sig;
   const options = { onNavigate: goTab,
+    nextBatch: S.nextBatch,
     onExplore: () => capabilityLauncher?.open(),
     onCapture: !HOST_PREVIEW ? () => localNotes?.open() : undefined,
     onRecordVoice: !HOST_PREVIEW && localVoice?.available
@@ -843,8 +844,11 @@ function renderMsgs(force) {
     if(document.visibilityState==='visible'&&S.paired&&transport.direct) {
       for(const m of list) {
         const state=lifeByCommand.get(m.id);
+        // reply_observed means delivery is explicitly unconfirmed: acking it
+        // would claim delivery the Host never verified. Only acknowledge
+        // messages the Host marked delivered.
         if(m.status==='done'&&String(m.result||'').trim()&&
-           state?.state==='reply_observed'&&state.replyDisplayVerified===true&&
+           state?.state==='delivered'&&state.replyDisplayVerified===true&&
            Number.isSafeInteger(state.revision)&&
            state.commandId===m.id&&state.messageId&&c?.id)
           queueMicrotask(()=>acknowledgeRenderedReply({commandId:m.id,
@@ -880,7 +884,7 @@ function renderMsgs(force) {
     if (pend) b.append(dots(m.status));
     a.append(b); frag.append(a);
     if(transport.direct && m.status==='done' && res.trim() &&
-        observed?.state==='reply_observed' && observed.replyDisplayVerified===true &&
+        observed?.state==='delivered' && observed.replyDisplayVerified===true &&
         Number.isSafeInteger(observed.revision) && observed.revision>0 &&
         observed.commandId===m.id && observed.messageId && c?.id) {
       renderAcks.push({commandId:m.id,messageId:observed.messageId,
@@ -1212,7 +1216,7 @@ function mountCompose() {
   if (compose) return;
   const host = $('build-compose'); if (!host) return;
   compose = mountBuildCanvas({
-    host, request: api,
+    host, request: api, navigate: goTab,
     getSurface: () => (build && build.surface && build.surface()) || null,
     getProvider: () => S.statusObj?.snapshot?.onboarding?.primary || 'chatgpt',
     send: async (prompt, provider) => {
@@ -1223,7 +1227,7 @@ function mountCompose() {
       return created.id;
     },
     apply: (proposal, surface) => sendProposal(proposal, surface),
-    onApplied: async () => { buildKey = ''; await refresh(); scheduleBuild(0); }
+    onApplied: async (proof) => { S.nextBatch = NEXT_BATCH; buildKey = ''; await refresh(); scheduleBuild(0); renderSurfaces(); }
   });
 }
 // The welcome tour stays; the old "Start Here" page is replaced by the Today surface.

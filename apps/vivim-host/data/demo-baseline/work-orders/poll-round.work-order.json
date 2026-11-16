@@ -1,0 +1,26 @@
+{
+  "schema": "vivim.work-order/1",
+  "source": {
+    "path": "apps/vivim-host/public/demo/poll-round.mjs",
+    "revision": "affd34919bbf447b9f76ca80446f737de2bb1abd0845dae115d194381708c7ba"
+  },
+  "selectedContext": {
+    "excerpt": {
+      "kind": "vlang-surface-header",
+      "lines": [
+        1,
+        12
+      ],
+      "text": "/* @vlang:surface apps/vivim-host/public/demo/poll-round.mjs\r\n   @vlang:surface-desc: One-shot CLI poll of the demo feedback inbox — the reprogrammable\r\n   @vlang:surface-desc: surface is the CLI contract only: filter flags (--last, --since) and\r\n   @vlang:surface-desc: their semantics, stdout JSON formatting, and validation/exit messages.\r\n   @vlang:surface-desc: NL-driven change accepts none of: network fetch (disk read only, C9),\r\n   @vlang:surface-desc: drift of the {round, approveAll, verdicts, receivedAt} entry schema\r\n   @vlang:surface-desc: shared with POST /demo/feedback, or watcher/daemon modes (one-shot by\r\n   @vlang:surface-desc: design). node:fs/path/url only; no other imports.\r\n   @vlang:surface-desc: NLCL linkage: no action in control/action-catalog.v1.json v7 targets\r\n   @vlang:surface-desc: this file yet — actionIds stays empty until one is catalogued.\r\n   @vlang:id: arg-parser round-entry-schema output-format exit-codes\r\n   @vlang:action: */"
+    },
+    "bundleDigest": "a1d3a4a60d3f47e9dbe09b999f835330b128c76ff6d959468f96e092d40ebe97"
+  },
+  "bundle": {
+    "digest": "a1d3a4a60d3f47e9dbe09b999f835330b128c76ff6d959468f96e092d40ebe97",
+    "status": "stale",
+    "servedFromCache": true
+  },
+  "reprogramming": {
+    "vlangExecution": false
+  }
+}

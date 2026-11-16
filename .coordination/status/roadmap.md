@@ -20,6 +20,13 @@
 3. ✅ Engine authored, saved, and launched — then **corrected**: build path superseded by demo lane's build; my lane re-pointed at verify.
 4. ⏳ Verify launch — waits for demo's exit gate (or an earlier dry run on your word).
 
+## A07 — Evidence-driven parallel worker execution (lane C) — blocked
+- status=queued, verification=UNRUN, execution=NOT_STARTED, ownerAcceptance=PENDING (roadmap.v1.json:1807, :1838-1841)
+- Blocked gate: deps A05+A06 not independently accepted (A05 blocked@gate-cards.jsonl:5; A06 UNRUN/PENDING roadmap.v1.json:1766-1799); readyFrontier requires EXECUTED/INDEPENDENT_PASS/ACCEPTED deps — A07 cannot be gated ready/run until deps accepted (acceleration-queue.mjs:32-37)
+- Artifact: `.coordination/artifacts/roadmap/A07-r2.jsonl` (item-gate blocked, checks=0, emittedBy A07-partition-5)
+- Reuse constraint: no new orchestration runtime or second queue; reuses sole-writer/fresh-head CAS contract (ACCELERATION-R002.md:65-66, §41)
+- Lane C owns only its subtree; no cross-lane writes (.coordination/README.md:19)
+
 ## Live findings
 - **`§2` gate-evidence rule is wrong as an equality.** Real catalog: 25 actions, 17 executable, 8 unavailable; the named 12 are a subset. Proposed amendment (input only): "enumerates the 12 named day-1 capabilities — superset allowed, extra actions reported not failed." Without it, an honest runner fails a correct build.
 - Runner CLI convention: **no flag = static, `--live` = live** (my engine had passed `--static`; fixed).

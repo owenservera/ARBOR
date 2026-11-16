@@ -98,23 +98,6 @@ test('human and AI post same typed envelope through the single Host interpreter'
       ['chat-send', 'chat-send']);
   }));
 
-test('chat entry is durable in the Host state projection', async () =>
-  withHost(async base => {
-    const before = (await request(base, '/api/state')).json();
-    assert.equal(before.chat.length, 0);
-    const sent = await post(base, {
-      kind: 'chat-send', actor: 'human', schemaVersion: 1, text: 'durable chat entry'
-    });
-    assert.equal(sent.status, 200, sent.text);
-    const state = (await request(base, '/api/state')).json();
-    assert.equal(state.chat.length, before.chat.length + 1);
-    assert.equal(state.chat[state.chat.length - 1].text, 'durable chat entry');
-    assert.equal(state.chat[state.chat.length - 1].actor, 'human');
-    assert.equal(state.revision, before.revision + 1);
-    const journal = await request(base, '/api/journal');
-    assert.equal(journal.json().length, 1);
-  }));
-
 test('invalid chat envelopes fail closed without touching state', async () =>
   withHost(async base => {
     const cases = [

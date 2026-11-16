@@ -426,7 +426,7 @@ export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path
           }
         }
       } else if (pathname === '/demo/feedback' &&
-          Object.keys(payload).every(k => ['round','approveAll','verdicts'].includes(k))) {
+          Object.keys(payload).every(k => ['round','approveAll','verdicts','receivedAt'].includes(k))) {
         // Legacy demo feedback remains a typed, bounded, non-executing observation.
         entry = { kind: 'feedback-round', schemaVersion: 1, actor: 'loop-agent',
           round: payload.round === undefined ? String(Date.now()) : payload.round,

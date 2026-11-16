@@ -42,6 +42,12 @@ function items(doc, entries, options = {}) {
       open.addEventListener('click', () => options.onNavigate(entry.action.tab));
       row.append(open);
     }
+    if (entry.jumpTarget && typeof options.onNavigate === 'function') {
+      const jump = make(doc, 'button', 'btn sm ux-secondary', 'Jump');
+      jump.type = 'button';
+      jump.addEventListener('click', () => options.onNavigate('world'));
+      row.append(jump);
+    }
     list.append(row);
   }
   return list;
@@ -196,7 +202,7 @@ export function renderToday(host, model, options = {}) {
     scroll.append(replay);
   }
 
-  const next = m.next || { label: 'Build something', tab: 'build' };
+  const next = options.nextBatch || m.next || { label: 'Build something', tab: 'build' };
   wrap.append(foot(doc, {
     label: next.label,
     detail: next.detail,
@@ -222,7 +228,7 @@ export function renderWorld(host, model, options = {}) {
     built.append(make(doc, 'p', 'ux-meta', parts.join(' · ')));
   }
   if ((m.built || []).length) {
-    built.append(items(doc, m.built.map(b => ({ title: b.title, detail: b.detail }))));
+    built.append(items(doc, m.built.map(b => ({ title: b.title, detail: b.detail, jumpTarget: b.jumpTarget }))));
   } else {
     built.append(make(doc, 'p', 'ux-empty', m.emptyMessage || 'Nothing here yet — build something in Build.'));
   }

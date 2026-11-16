@@ -7,12 +7,12 @@
   "audience": "agent",
   "project": "arbor",
   "generatedAt": "2026-11-14T00:00:00.000Z",
-  "status": "fresh",
+  "status": "stale",
   "budget": {
     "maxTokens": 5000,
     "reserved": 800,
     "capacity": 4120,
-    "used": 391,
+    "used": 396,
     "estimator": "utf8-bytes/3"
   },
   "reprogramming": {
@@ -29,7 +29,9 @@
       "schema": "vivim.control-action-catalog/1",
       "version": 9
     },
-    "surfaceDrift": []
+    "surfaceDrift": [
+      "apps/vivim-host/public/demo/controller.js"
+    ]
   },
   "sources": [
     {
@@ -38,12 +40,12 @@
       "path": "apps/vivim-host/public/demo/controller.js",
       "kind": "code",
       "lang": "javascript",
-      "sha256": "71cf01ca3af911d05865ab10bc0af38ac2f685346c5890cf875f9ff89b49d530",
+      "sha256": "5c1ee464115b71edc4a30160a752b7c1a672be235d0c6c2d254c977ac461b006",
       "lines": [
         1,
         14
       ],
-      "estimatedTokens": 391,
+      "estimatedTokens": 396,
       "score": 1,
       "reason": "rdcb|file-surface|vlang-surface-header",
       "authority": "project_observed",
@@ -53,7 +55,7 @@
           1,
           14
         ],
-        "text": "/* @vlang:surface apps/vivim-host/public/demo/controller.js\n   @vlang:surface-desc: Walkthrough controller for the ARBOR baseline demo — the reprogrammable\n   @vlang:surface-desc: surface is presentation and verdict wording only: live message state\n   @vlang:surface-desc: labels (LIVE_STATE_LABELS), the honest gap string (NOT_AVAILABLE), the\n   @vlang:surface-desc: tag vocabulary (TAGS), fixture validation messages, and per-step\n   @vlang:surface-desc: render wording. NL-driven change accepts none of: new fetch targets\n   @vlang:surface-desc: (C4 same-origin /demo/* only), DOM scope beyond #demo-* elements (C7),\n   @vlang:surface-desc: inline script/style (C4), or verdict payload keys beyond the C8\n   @vlang:surface-desc: {round, approveAll, verdicts} shape read by POST /demo/feedback.\n   @vlang:surface-desc: NLCL linkage: no action in control/action-catalog.v1.json v7 targets\n   @vlang:surface-desc: this file yet — actionIds stays empty until one is catalogued.\n   @vlang:id: tag-vocabulary storage-key live-state-labels not-available-gap\n   @vlang:id: fixture-validation mock-data-views walkthrough-state verdict-payload dom-anchors\n   @vlang:action: */"
+        "text": "/* @vlang:surface apps/vivim-host/public/demo/controller.js\r\n   @vlang:surface-desc: Walkthrough controller for the ARBOR baseline demo — the reprogrammable\r\n   @vlang:surface-desc: surface is presentation and verdict wording only: live message state\r\n   @vlang:surface-desc: labels (LIVE_STATE_LABELS), the honest gap string (NOT_AVAILABLE), the\r\n   @vlang:surface-desc: tag vocabulary (TAGS), fixture validation messages, and per-step\r\n   @vlang:surface-desc: render wording. NL-driven change accepts none of: new fetch targets\r\n   @vlang:surface-desc: (C4 same-origin /demo/* only), DOM scope beyond #demo-* elements (C7),\r\n   @vlang:surface-desc: inline script/style (C4), or verdict payload keys beyond the C8\r\n   @vlang:surface-desc: {round, approveAll, verdicts} shape read by POST /demo/feedback.\r\n   @vlang:surface-desc: NLCL linkage: no action in control/action-catalog.v1.json v7 targets\r\n   @vlang:surface-desc: this file yet — actionIds stays empty until one is catalogued.\r\n   @vlang:id: tag-vocabulary storage-key live-state-labels not-available-gap\r\n   @vlang:id: fixture-validation mock-data-views walkthrough-state verdict-payload dom-anchors\r\n   @vlang:action: */"
       },
       "fileSurface": {
         "ref": "apps/vivim-host/data/demo-baseline/file-surface.v1.json",
@@ -71,7 +73,7 @@
         ]
       },
       "nlclActionIds": [],
-      "digest": "a6c0aeaac9cf5b0f6e6d1620989d1ce6a98b552312554da72e56e1f7dad0293c"
+      "digest": "22fdce03a546d19c0f2fba926e83cae9aed6b9cf51edf5c68c63a40feb104acc"
     }
   ],
   "omissions": [],
@@ -84,5 +86,5 @@
     "evidence": "file-surface.v1 + action-catalog.v1"
   },
   "authority": "read_only_projection",
-  "digest": "2001dfb7a14fe959917e2299d9989ac4dab73475295e70bb127e555894bf0482"
+  "digest": "e24ff46c30a174f8260292e4f95c5059811cb0cb6645a0cd31f7bf3f1453a3e6"
 }
