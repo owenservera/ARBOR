@@ -1,0 +1,10 @@
+{
+  "type": "context7-query-docs",
+  "libraryId": "/websites/poolside_ai",
+  "query": "Poolside Laguna models for coding: laguna-xs-2.1 and larger laguna models — parameter counts, context window, license, benchmarks, API model ids, availability as NVIDIA NIM on build.nvidia.com (poolside/laguna-xs-2.1), HuggingFace repo poolside/laguna-xs-2.1",
+  "language": "python",
+  "pulledAt": "2026-11-16T13:35:00Z",
+  "response": "### Laguna XS 2.1\nSource: https://docs.poolside.ai/release-notes/models\nLaguna XS 2.1 is a 33B parameter Mixture-of-Experts model featuring 3B activated parameters per token. It is optimized for local execution on hardware like Macs with 36 GB of RAM and supports a 256K token context window. Key enhancements include native reasoning support with interleaved thinking, improved multilingual coding performance, and optimized memory usage through FP8 KV cache quantization.\n\n### Laguna S 2.1\nSource: https://docs.poolside.ai/release-notes/models and /release-notes/overview\n118B parameter MoE, 8B activated per token; designed for agentic coding and long-horizon tasks; 1M token context window; native reasoning with thinking modes; released under the OpenMDW-1.1 license; quantizations BF16, FP8, INT4, NVFP4, GGUF, MLX.\n\n### Laguna M.1\nSource: https://docs.poolside.ai/release-notes/overview\nOptimized for multi-step agentic coding workflows that involve tool use and validation; 256K context window; improved benchmark results.",
+  "sourceUrls": ["https://docs.poolside.ai/release-notes/models", "https://docs.poolside.ai/release-notes/overview"],
+  "note": "Laguna XS 2.1: 33B total / 3B active MoE, 256K context, local/edge-optimized, interleaved thinking [official-doc]. NIM id poolside/laguna-xs-2.1 confirmed by local provider_config (new-provider personalModelIds). No benchmark table surfaced -> [unverified]. Zero rows in local model_usage."
+}

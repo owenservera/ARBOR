@@ -1,0 +1,159 @@
+{
+  "schema": "arbor.item-receipt/1",
+  "itemId": "A02",
+  "authoredAt": "2026-11-16T12:20:15.019Z",
+  "status": "gated",
+  "gate": {
+    "command": "bun scripts/batch-evidence/A02.mjs --static && --live; bun scripts/test-gate.mjs",
+    "exit": 0
+  },
+  "nlclReplay": {
+    "checks": [
+      {
+        "name": "projection-module-exists",
+        "pass": true,
+        "detail": "apps/vivim-host/chat/product-journal.mjs exports createProductJournal/replayProductJournal/validateProductEdit"
+      },
+      {
+        "name": "host-wiring-journal-projection",
+        "pass": true,
+        "detail": "apps/vivim-host/server.mjs:24 import createProductJournal, :228 createProductJournal({dataRoot, seedState, seedWiki}), :385 POST /api/mutate, :452 productJournal.append, :467 /api/state+/api/wiki, :469 readProjection, :505 /api/journal+/demo/journal.jsonl"
+      },
+      {
+        "name": "page-surfaces-wired",
+        "pass": true,
+        "detail": "apps/vivim-host/public/pages/chat.js:2 /api/state, :3 /api/mutate; apps/vivim-host/public/pages/wiki.js:6 /api/wiki, :7 /api/state, :10 /api/journal"
+      },
+      {
+        "name": "projection-replay-deterministic",
+        "pass": true,
+        "detail": "replayProductJournal(seed,seed,[chat-send]) x2 identical; chat+1 revision=1 wikiRevision unchanged=1"
+      },
+      {
+        "name": "projection-module-exists",
+        "pass": true,
+        "detail": "apps/vivim-host/chat/product-journal.mjs exports createProductJournal/replayProductJournal/validateProductEdit"
+      },
+      {
+        "name": "host-wiring-journal-projection",
+        "pass": true,
+        "detail": "apps/vivim-host/server.mjs:24 import createProductJournal, :228 createProductJournal({dataRoot, seedState, seedWiki}), :385 POST /api/mutate, :452 productJournal.append, :467 /api/state+/api/wiki, :469 readProjection, :505 /api/journal+/demo/journal.jsonl"
+      },
+      {
+        "name": "page-surfaces-wired",
+        "pass": true,
+        "detail": "apps/vivim-host/public/pages/chat.js:2 /api/state, :3 /api/mutate; apps/vivim-host/public/pages/wiki.js:6 /api/wiki, :7 /api/state, :10 /api/journal"
+      },
+      {
+        "name": "projection-replay-deterministic",
+        "pass": true,
+        "detail": "replayProductJournal(seed,seed,[chat-send]) x2 identical; chat+1 revision=1 wikiRevision unchanged=1"
+      },
+      {
+        "name": "isolated-boot-guard",
+        "pass": true,
+        "detail": "scratch port 38707 (!= 43187), flagged temp data root C:\\Users\\VIVIM.inc\\AppData\\Local\\Temp\\arbor-a02-isolated-2bStq2"
+      },
+      {
+        "name": "isolated-host-ready",
+        "pass": true,
+        "detail": "validated"
+      },
+      {
+        "name": "state-before",
+        "pass": true,
+        "detail": "validated"
+      },
+      {
+        "name": "wiki-before",
+        "pass": true,
+        "detail": "validated"
+      },
+      {
+        "name": "journal-before",
+        "pass": true,
+        "detail": "validated"
+      },
+      {
+        "name": "raw-journal-before",
+        "pass": true,
+        "detail": "validated"
+      },
+      {
+        "name": "chat-post-machine",
+        "pass": true,
+        "detail": "validated"
+      },
+      {
+        "name": "chat-post-owner-browser",
+        "pass": true,
+        "detail": "validated"
+      },
+      {
+        "name": "journal-after",
+        "pass": true,
+        "detail": "validated"
+      },
+      {
+        "name": "raw-journal-after",
+        "pass": true,
+        "detail": "validated"
+      },
+      {
+        "name": "state-after",
+        "pass": true,
+        "detail": "validated"
+      },
+      {
+        "name": "wiki-after",
+        "pass": true,
+        "detail": "validated"
+      },
+      {
+        "name": "journal-records-two-deterministic-mutations",
+        "pass": true,
+        "detail": "journal 0 -> 2 appended=loop-agent#1,owner-browser#2"
+      },
+      {
+        "name": "journal-api-raw-parity",
+        "pass": true,
+        "detail": "/api/journal array === /demo/journal.jsonl entries before and after"
+      },
+      {
+        "name": "state-projection-records-mutation",
+        "pass": true,
+        "detail": "chat +2, revision 0->2, wikiRevision unchanged=1"
+      },
+      {
+        "name": "wiki-projection-consistent",
+        "pass": true,
+        "detail": "/api/wiki revision 1 unchanged by chat-send and === /api/state.wikiRevision; journal is the single writer behind both projections"
+      },
+      {
+        "name": "same-envelope-parity",
+        "pass": true,
+        "detail": "machine loop-agent POST and owner-browser send, identical envelope {kind,schemaVersion,text}; normalized mutation identical, intent identical; parityDigest=727c562745a547c385df0054ce4ee17a425eb0a9b33802fa43e0d731868e28fb"
+      },
+      {
+        "name": "isolated-root-only",
+        "pass": true,
+        "detail": "journal written only under flagged temp root C:\\Users\\VIVIM.inc\\AppData\\Local\\Temp\\arbor-a02-isolated-2bStq2/product-state/journal.jsonl; no request to port 43187"
+      },
+      {
+        "name": "isolated-host-shutdown",
+        "pass": true,
+        "detail": "scratch Host stopped (exit=SIGTERM)"
+      }
+    ],
+    "digest": "ecc62d13ce0a7a20e499ad339d90da28e9c282cde589afc8a732da9bff3f11bc"
+  },
+  "demo": {
+    "verdict": "rewalk-pending",
+    "journalRef": ".coordination/artifacts/roadmap/gate-cards.jsonl"
+  },
+  "host": {
+    "served": "(verify)"
+  },
+  "itemStatus": "gated",
+  "emittedBy": "dwfrun-fa42e97a-3401-47ed-afac-71f64d21fbc9"
+}

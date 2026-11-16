@@ -1,0 +1,17 @@
+{
+  "type": "context7-query-docs",
+  "libraryId": "/nvidia-nemo/nemotron",
+  "query": "Published benchmark results for Nemotron 3 Ultra 550B-A55B and Nemotron 3.5 Super-VL 120B-A12B and Nano Omni 30B-A3B: benchmark tables with scores on MMLU-Pro, GPQA-Diamond, AIME, SWE-bench Verified, BFCL, MMMU, Video-MME, OCRBench, MMlongbench-Doc; comparison vs Llama, Qwen, Mistral, GPT",
+  "language": "python",
+  "pulledAt": "2026-11-16T13:31:00Z",
+  "response": "### NVIDIA Nemotron 3 Ultra — Base Model > Benchmark Results\nSource: https://github.com/nvidia-nemo/nemotron/blob/main/usage-cookbook/Nemotron-3-Ultra-Base/README.md\nMeasured on NVIDIA GB200 NVL72 vs GLM-4.5-355B-A32B and Kimi-K2-1026B-A33B, Nemotron 3 Ultra base delivers up to 5x higher TPS at max throughput and leading accuracy for agentic tasks:\n| Benchmark | Ultra 550B-A55B | GLM-4.5-355B-A32B | Kimi-K2-1026B-A33B |\n| MMLU Pro | 79.0 | 65.6 | 69.3 |\n| MMLU | 89.1 | 86.3 | 88.0 |\n| Code | 85.3 | 76.2 | 75.3 |\n| Math | 85.4 | 72.1 | 79.5 |\n| Common Sense | 81.0 | 81.3 | 81.6 |\n| Multilingual | 89.0 | 83.3 | 84.2 |\n| Peak Throughput | 5x vs GLM | 1x | ~2.5x |\n\n### Benchmark snapshot (Nemotron 3 Super, post-trained BF16, official model card)\nSource: https://github.com/nvidia-nemo/nemotron/blob/main/skills/nemotron-super3/model-card.md and paper/evaluation.md\n| Benchmark | Nemotron 3 Super |\n| MMLU-Pro | 83.73 |\n| AIME25 (no tools) | 90.21 |\n| HMMT Feb25 (with tools) | 94.73 |\n| GPQA (with tools) | 82.70 |\n| LiveCodeBench v5 | 81.19 |\n| SWE-Bench (OpenHands) | 60.47 |\n| SWE-Bench Multilingual | 45.78 |\n| BIRD Bench | 41.80 |\n| RULER @ 1M | 91.75 |\n| MMLU-ProX (avg) | 79.36 |\n| WMT24++ (en->xx) | 86.67 |\nComparator notes: MMLU-Pro below Qwen3.5-122B-A10B, above GPT-OSS-120B; AIME25 close to frontier open reasoning models; SWE-Bench strong SWE-agent result; RULER@1M strong long-context retention.\n\n### Nemotron 3 Ultra with agentic coding tools (PinchBench, OpenClaw agent brain)\nSource: https://github.com/nvidia-nemo/nemotron/blob/main/usage-cookbook/Nemotron-3-Ultra/OpenScaffoldingResources/README.md\n| Model | Best | Average | Median |\n| nvidia/nemotron-3-ultra-550b-a55b | 90.6% | 89.9% | 90.0% | (PinchBench: https://pinchbench.com/model/nvidia/nvidia/nemotron-3-ultra-550b-a55b)\n\n### Nemotron 3 Nano Omni\nSource: https://github.com/nvidia-nemo/nemotron/blob/main/README.md\n30B total / 3B active A3B MoE; text/image/video/audio; C-RADIOv4-H + Parakeet audio; 3D conv + EVS video; context 16K->49K->262K; best-in-class MMlongbench-Doc, OCRBenchV2; leading WorldSense, DailyOmni, VoiceBench; ~9.2x video-reasoning system capacity, ~7.4x multi-document vs comparable open omni models; license NVIDIA Nemotron Open Model License.",
+  "sourceUrls": [
+    "https://github.com/nvidia-nemo/nemotron/blob/main/usage-cookbook/Nemotron-3-Ultra-Base/README.md",
+    "https://github.com/nvidia-nemo/nemotron/blob/main/skills/nemotron-super3/model-card.md",
+    "https://github.com/nvidia-nemo/nemotron/blob/main/skills/nemotron-super3/paper/evaluation.md",
+    "https://github.com/nvidia-nemo/nemotron/blob/main/usage-cookbook/Nemotron-3-Ultra/OpenScaffoldingResources/README.md",
+    "https://pinchbench.com/model/nvidia/nvidia/nemotron-3-ultra-550b-a55b",
+    "https://github.com/nvidia-nemo/nemotron/blob/main/README.md"
+  ],
+  "tiers": "model-card (NVIDIA official repo) / benchmark"
+}

@@ -33,19 +33,20 @@ const fixtureDir = path.join(demoDir, 'fixture');
 const controllerSrc = readFileSync(path.join(demoDir, 'controller.js'), 'utf8');
 
 const index = JSON.parse(readFileSync(path.join(fixtureDir, 'index.json'), 'utf8'));
-const TAB_ORDER = ['today', 'talk', 'build', 'world', 'me', 'control']; // mobile-relay TABS order
+// mobile-relay TABS order plus the queue-mode walkthrough steps (SPEC A02/A04/A05)
+const STEP_IDS = ['tab-today', 'tab-talk', 'tab-build', 'tab-world', 'tab-me', 'tab-control', 'A02', 'A04', 'A05'];
 
-test('fixture index is a vivim.demo-steps/1 manifest covering the six phone tabs in order', () => {
+test('fixture index is a vivim.demo-steps/1 manifest covering the six phone tabs plus queue-mode A02/A04/A05', () => {
   assert.equal(index.schema, 'vivim.demo-steps/1');
   assert.equal(typeof index.demoTitle, 'string');
   assert.ok(index.demoTitle.length > 0);
   assert.equal(Array.isArray(index.steps), true);
-  assert.deepEqual(index.steps.map(s => s.itemId), TAB_ORDER.map(t => 'tab-' + t));
+  assert.deepEqual(index.steps.map(s => s.itemId), STEP_IDS);
   for (const step of index.steps) {
     assert.equal(typeof step.screen, 'string');
     assert.ok(step.screen.length > 0);
     assert.equal(typeof step.file, 'string');
-    assert.match(step.file, /^tab-[a-z]+\.json$/);
+    assert.match(step.file, /^tab-.*\.json$/);
   }
 });
 
@@ -162,17 +163,25 @@ test('C5: delivered mockData shape — statusObj.snapshot.*, bare device/manifes
   assert.deepEqual(talk.state, { paired: true, transportDirect: true, hostPreview: false });
 
   const build = stepMockData('tab-build');
-  assert.equal(dig(build, 'statusObj.snapshot.bootstrap.uiRevision.revision'), 3);
-  assert.equal(dig(build, 'statusObj.snapshot.bootstrap.undo.available'), true);
-  assert.ok(dig(build, 'statusObj.snapshot.bootstrap.surface.tree'));
+  assert.equal(build.intent, 'show ARBOR progress projection');
+  assert.deepEqual(build.compiled, { kind: 'visual-update', surfaceId: 'vivim.ui-surface/1', revision: 8, guarded: true, publishable: false, reason: 'pending owner approval' });
+  assert.deepEqual(build.proposal, { status: 'pending', preview: 'ARBOR progress projection · source-backed revision 8', state: 'is-done' });
+  assert.equal(build.approvalRequired, true);
 
   const world = stepMockData('tab-world');
-  assert.deepEqual(dig(world, 'statusObj.snapshot.bridge'), { queued: 2, claimed: 1, done: 7, failed: 0 });
-  assert.equal(dig(world, 'statusObj.snapshot.live.conversations.0.messages.0.state'), 'claimed');
-  assert.equal(world.media.state, 'ready');
-  assert.equal(world.media.total, 42);
-  assert.equal(world.media.favorites, 3);
-  assert.deepEqual(world.liveStateLabels, { 'claimed': 'Claimed by worker — not sent' });
+  assert.equal(world.hostReported, true);
+  assert.deepEqual(world.revision, { surfaceId: 'vivim.ui-surface/1', revision: 7, status: 'committed', changeId: 'chg_001', parentRevision: 6 });
+  assert.deepEqual(world.built, [
+    { title: 'Wiki page · ARBOR roadmap', detail: 'Approved edit · revision 7' },
+    { title: 'Chat journal entry', detail: 'Durable entry · source host-command' }
+  ]);
+  assert.deepEqual(world.running, []);
+  assert.deepEqual(world.queue, { queued: 0, claimed: 0, done: 3, failed: 0 });
+  assert.equal(world.undoAvailable, true);
+  assert.equal(world.changeHint, 'Build proposes a change; your PC commits it as a new revision you can undo.');
+  assert.equal(world.empty, false);
+  assert.equal(world.emptyMessage, 'The Host committed revision 7, and it holds no components yet.');
+  assert.deepEqual(world.gaps, []);
 
   const me = stepMockData('tab-me');
   assert.equal(dig(me, 'statusObj.snapshot.personalAgent.agentId'), 'owen-local');
@@ -228,16 +237,22 @@ test('C5: SPEC values survived the restructure field-for-field (planDigest exact
   assert.equal(dig(today, 'statusObj.snapshot.live.conversations.0.provider'), 'chatgpt');
 
   const build = stepMockData('tab-build');
-  assert.deepEqual(dig(build, 'statusObj.snapshot.bootstrap.uiRevision'),
-    { surfaceId: 'my-space', revision: 3, status: 'committed', changeId: 'ch-1', parentRevision: 2 });
-  assert.deepEqual(build.commands[0], { id: 'cmd-12', status: 'done', result: { applied: true } });
+  assert.equal(build.intent, 'show ARBOR progress projection');
+  assert.deepEqual(build.compiled, { kind: 'visual-update', surfaceId: 'vivim.ui-surface/1', revision: 8, guarded: true, publishable: false, reason: 'pending owner approval' });
+  assert.deepEqual(build.proposal, { status: 'pending', preview: 'ARBOR progress projection · source-backed revision 8', state: 'is-done' });
+  assert.equal(build.approvalRequired, true);
 
   const world = stepMockData('tab-world');
-  assert.deepEqual(world.media.items.map(m => ({ title: m.title, kind: m.kind, playable: m.playable, favorite: m.favorite })),
-    [{ title: 'Demo clip', kind: 'video', playable: true, favorite: true },
-     { title: 'Field recording', kind: 'audio', playable: true, favorite: false }]);
-  assert.deepEqual(dig(world, 'statusObj.snapshot.bootstrap.uiRevision'),
-    { surfaceId: 'my-space', revision: 3, status: 'committed', changeId: 'ch-1', parentRevision: 2 });
+  assert.equal(world.hostReported, true);
+  assert.deepEqual(world.revision,
+    { surfaceId: 'vivim.ui-surface/1', revision: 7, status: 'committed', changeId: 'chg_001', parentRevision: 6 });
+  assert.deepEqual(world.built.map(b => ({ title: b.title, detail: b.detail })),
+    [{ title: 'Wiki page · ARBOR roadmap', detail: 'Approved edit · revision 7' },
+     { title: 'Chat journal entry', detail: 'Durable entry · source host-command' }]);
+  assert.deepEqual(world.running, []);
+  assert.deepEqual(world.queue, { queued: 0, claimed: 0, done: 3, failed: 0 });
+  assert.equal(world.undoAvailable, true);
+  assert.equal(world.changeHint, 'Build proposes a change; your PC commits it as a new revision you can undo.');
 
   const me = stepMockData('tab-me');
   assert.equal(me.commands.length, 8);
@@ -285,11 +300,11 @@ test('C5: controller.js parses the delivered nested parcel — every SPEC row re
     return { ok: false, status: 404, json: async () => { throw new Error('not json'); } };
   };
   runInContext(controllerSrc, createContext(globalThis));
-  for (let i = 0; i < 100 && vmById['demo-strip']?.children.length !== 6; i++) {
+  for (let i = 0; i < 100 && vmById['demo-strip']?.children.length !== STEP_IDS.length; i++) {
     await new Promise(r => setTimeout(r, 10));
   }
   const strip = vmById['demo-strip'];
-  assert.equal(strip.children.length, 6,
+  assert.equal(strip.children.length, STEP_IDS.length,
     'controller failed to load the parcel; demo-status: ' + (vmById['demo-status']?.textContent ?? '(unset)'));
   assert.equal(vmById['demo-status'].textContent, '', 'status must be cleared after a clean load');
 
@@ -301,15 +316,15 @@ test('C5: controller.js parses the delivered nested parcel — every SPEC row re
       'Your message', 'Set my theme to dusk · chatgpt · c-1',
       'Reply state', 'Send observed — awaiting reply',
       'Providers', 'ChatGPT signed in · Claude not signed in'],
-    'tab-build': ['Committed revision', 'my-space r3 ← r2 · ch-1 · committed',
-      'Committed surface', 'card "Morning brief"', 'text "3 items waiting for you."',
-      'Undo', 'available', 'Proposal receipt', 'cmd-12 — done · applied'],
-    'tab-world': ['What was built', 'card "Morning brief"',
-      'What is running', 'Chat · chatgpt · Claimed by worker — not sent',
-      'Bridge', 'queued 2 · claimed 1 · done 7 · failed 0',
-      'Command queue', 'cmd-1 Set my theme to dusk — queued',
-      'My Media Library', 'ready · 42 tracked · 3 favorites',
-      'Media', 'Demo clip · video · playable · favorite', 'Field recording · audio · playable'],
+    'tab-build': ['Intent', 'show ARBOR progress projection',
+      'Compiled', 'visual-update · vivim.ui-surface/1 r8 · guarded true · publishable false · pending owner approval',
+      'Proposal', 'pending · ARBOR progress projection · source-backed revision 8 · is-done',
+      'Approval required', 'yes — publish blocked until owner approves'],
+    'tab-world': ['Committed revision', 'vivim.ui-surface/1 r7 · committed · chg_001 ← r6',
+      'What was built', 'Wiki page · ARBOR roadmap · Approved edit · revision 7   Chat journal entry · Durable entry · source host-command',
+      'Queue', 'queued 0 · claimed 0 · done 3 · failed 0',
+      'Undo', 'available — undo cue exposed',
+      'Change hint', 'Build proposes a change; your PC commits it as a new revision you can undo.'],
     'tab-me': ['Personal agent', 'owen-local · scope owner · device-bound · initialized Yes',
       'World', 'home-main',
       'Phone connection', 'active · scopes control:read · chat:send · mode direct',
@@ -321,10 +336,24 @@ test('C5: controller.js parses the delivered nested parcel — every SPEC row re
       'Approval card', 'Set theme to dusk · theme=dusk · risk low · Exact plan 3f9ac2b1… · expires 2026-11-14T09:45:00Z',
       'Execute receipt', 'applied · theme.set · plan p-1 · at 2026-11-14T09:41:00Z · theme=dusk',
       'Undo', 'actionId theme.unset',
-      'Recent Host decisions', 'theme.set — applied · 2026-11-14T09:41:00Z']
+      'Recent Host decisions', 'theme.set — applied · 2026-11-14T09:41:00Z'],
+    'A02': ['Committed revision', 'vivim.ui-surface/1 r7 · committed · chg_001 ← r6',
+      'What was built', 'Wiki page · ARBOR roadmap · Approved edit · revision 7   Chat journal entry · Durable entry · source host-command',
+      'Queue', 'queued 0 · claimed 0 · done 3 · failed 0',
+      'Undo', 'available — undo cue exposed',
+      'Change hint', 'Build proposes a change; your PC commits it as a new revision you can undo.'],
+    'A04': ['Intent', 'show ARBOR progress projection',
+      'Compiled', 'visual-update · vivim.ui-surface/1 r8 · guarded true · publishable false · pending owner approval',
+      'Proposal', 'pending · ARBOR progress projection · source-backed revision 8 · is-done',
+      'Approval required', 'yes — publish blocked until owner approves'],
+    'A05': ['Proposal', 'prop_001 · applied yes',
+      'Committed revision', 'vivim.ui-surface/1 r9 · commit 3dae90c',
+      'Test receipts', 'scripts/acceleration/live-host-check.test.mjs',
+      'Next batch', 'Build something · Next scoped repair ready → build',
+      'Running lane queue', 'queued 1 · claimed 0 · done 4 · failed 0']
   };
-  const STEP_IDS = index.steps.map(s => s.itemId);
-  STEP_IDS.forEach((id, i) => {
+  const STRIP_IDS = index.steps.map(s => s.itemId);
+  STRIP_IDS.forEach((id, i) => {
     strip.children[i].click();
     const text = vmById['demo-phone'].textContent;
     for (const m of MUST[id]) {

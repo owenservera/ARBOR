@@ -1,6 +1,17 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { execSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { deriveReleaseTruth, loadReleaseSources } from './evidence-truth.mjs';
+
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+const LEDGERS = [
+  'integration/beta-gates.json',
+  '.integration/proposal5/08-BETA-GATES.json',
+  'integration/release-manifest.json'
+];
 
 function gates(status = 'UNRUN', owner = false, observed = null) {
   return ['G00','G01','G12'].map(id => ({
@@ -92,4 +103,20 @@ test('missing gates, malformed sources and duplicate IDs fail closed', () => {
   assert.throws(()=>deriveReleaseTruth({...input,proposal:{status:'UNRUN'}}),/gates array/);
   input.proposal.gates.push({...input.proposal.gates[0]});
   assert.throws(()=>deriveReleaseTruth(input),/duplicate proposal gate/);
+});
+
+test('release ledgers stay contradictory claims, never green gates, and are unmodified', () => {
+  const dirty = execSync('git status --porcelain -- ' + LEDGERS.join(' '), { cwd: ROOT, encoding: 'utf8' }).trim();
+  assert.equal(dirty, '', 'ledgers must carry no uncommitted change: ' + dirty);
+  const promoted = JSON.parse(readFileSync(path.join(ROOT, LEDGERS[0]), 'utf8'));
+  const proposal = JSON.parse(readFileSync(path.join(ROOT, LEDGERS[1]), 'utf8'));
+  const release = JSON.parse(readFileSync(path.join(ROOT, LEDGERS[2]), 'utf8'));
+  assert.equal(promoted.status, 'UNBLOCKED');
+  assert.equal(proposal.status, 'PROPOSED_UNRUN');
+  assert.equal(release.status, 'BLOCKED_NOT_BUILT');
+  const view = deriveReleaseTruth(loadReleaseSources());
+  assert.equal(view.releaseReady, false);
+  assert.equal(view.disposition, 'BLOCKED_UNVERIFIED');
+  assert.equal(view.conflictingClaims, true);
+  assert.equal(view.historicalReceiptsPreserved, true);
 });

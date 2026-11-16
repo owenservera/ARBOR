@@ -1,0 +1,10 @@
+{
+  "type": "context7-query-docs",
+  "libraryId": "/websites/api_nvidia_nim",
+  "query": "Tool calling / function calling support on NVIDIA NIM chat completions: tools parameter, tool_choice, parallel tool calls; structured output via response_format json_schema (guided_json / guided_decoding); known limitations or bugs with response_format and tool call arguments on NIM endpoints",
+  "language": "python",
+  "pulledAt": "2026-11-16T13:23:00Z",
+  "response": "### POST /v1/chat/completions\n\nSource: https://docs.api.nvidia.com/nim/docs/models\n\nThe primary endpoint for interacting with LLM models to generate chat completions.\n\n## POST /v1/chat/completions\n### Description\nThis endpoint provides access to top-tier LLM models for natural language tasks including chat, instruction following, question answering, summarization, creative text generation, and code generation.\n### Method\nPOST\n### Endpoint\nhttps://integrate.api.nvidia.com/v1/chat/completions",
+  "sourceUrls": ["https://docs.api.nvidia.com/nim/docs/models"],
+  "note": "PARTIAL / weak match: this small library (64 snippets) only returned the generic endpoint stub, no tool-calling/structured-output detail. The load-bearing tool-calling + known-issues content came from /websites/nvidia_nim — see 20261116T132500Z. Recorded per canon (dead ends are evidence too)."
+}

@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import vm from 'node:vm';
+import { createVecCompiler, VEC_COMPILE_SCHEMA } from '../../mobile-relay/vec/compiler.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const pages = path.resolve(here, '../public/pages');
@@ -211,7 +212,89 @@ test('no owner browser session refuses Wiki save without posting or losing draft
   ui.el('edit-content').value = 'private draft';
   ui.el('edit-review').fire('click'); await settle();
   ui.el('edit').fire('submit'); await settle();
+	assert.equal(ui.posts.length, 0);
+	assert.equal(ui.el('edit-content').value, 'private draft');
+	assert.match(ui.el('edit-status').textContent, /Owner session required|Unlock Host Control/);
+});
+
+// --- A04 acceptance: three bounded intents through existing NLCL/VEC surfaces ---
+
+test('Intent 1: VEC wiki domain stays a read-only projection; open-the-wiki navigates instead of demanding missing Wiki section parameters', () => {
+  const c = createVecCompiler();
+  // wiki and command keep incumbent owners until source parity is independently established.
+  // No guarded edit is ever produced; the domain is unsupported, not a parameter-demand.
+  const wikiResult = c.compile({ domain: 'wiki', text: 'open the wiki', context: {} });
+  assert.equal(wikiResult.outcome, 'unsupported');
+  assert.equal(wikiResult.code, 'LEGACY_OWNER_NOT_MIGRATED');
+  assert.equal(wikiResult.schema, VEC_COMPILE_SCHEMA);
+  assert.equal(wikiResult.authorization, 'none');
+  assert.equal(wikiResult.executed, false);
+  assert.equal(wikiResult.persisted, false);
+  assert.equal(wikiResult.product, 'wiki-projection');
+  assert.equal(wikiResult.legacyOwner, 'hq.wiki-program/1');
+  // command keeps its incumbent owner too (read-only, no execution).
+  assert.equal(c.compile({ domain: 'command', text: 'open the wiki', context: {} }).code,
+    'LEGACY_OWNER_NOT_MIGRATED');
+  assert.equal(c.compile({ domain: 'command', text: 'open the wiki', context: {} }).product,
+    'command-plan');
+  // unknown domain is refused, not silently executed.
+  assert.equal(c.compile({ domain: 'unknown', text: 'open the wiki' }).code, 'UNKNOWN_DOMAIN');
+  // A caller cannot forge authorization/execution/persistence out of an adapter result.
+  const forged = createVecCompiler({ adapters: {
+    wiki: () => ({ outcome: 'candidate', authorization: 'yes', persisted: true, executed: true, code: 'DEMO' })
+  } });
+  const out = forged.compile({ domain: 'wiki', text: 'open the wiki' });
+  assert.equal(out.outcome, 'candidate');
+  assert.equal(out.authorization, 'none');
+  assert.equal(out.executed, false);
+  assert.equal(out.persisted, false);
+});
+
+test('Intent 2: source-backed ARBOR progress projection shows source identity/revision and repaints on changed revision', async () => {
+  const ui = setup(); await settle();
+  // Source identity/revision surface: roadmap = keeper-owned roadmap.v1.json via /api/roadmap.
+  assert.match(ui.el('roadmap-source').textContent, /roadmap\.v1\.json/);
+  assert.match(ui.el('roadmap-source').textContent, /\/api\/roadmap/);
+  const roadmapNodes = allChildren(ui.el('roadmap-view'));
+  assert.ok(roadmapNodes.some(n => n.textContent === 'A04'), 'A04 present in source-backed queue');
+  assert.ok(roadmapNodes.some(n => n.textContent.includes('needs A02')), 'dependency shown');
+  assert.ok(roadmapNodes.some(n => n.textContent === 'UNRUN / PENDING'), 'honest UNRUN / PENDING status');
+
+  // Chat state shows the Wiki revision as source identity/revision.
+  assert.match(ui.el('state-rev').textContent, /Chat state: 0 · Wiki 1/);
+
+  // Source revision change: mutating the source snapshot triggers a repaint (projection updates on changed revision).
+  const before = ui.el('roadmap-view').repaints;
+  ui.docs['/api/roadmap'].buildQueue[0].status = 'in-progress';
+  ui.docs['/api/roadmap'].acceleration.activeBatch = 'ACCEL-B';
+  ui.tick(); await settle();
+  assert.notEqual(ui.el('roadmap-view').repaints, before, 'changed source revision repaints the projection');
+  assert.match(ui.el('roadmap-source').textContent, /ACCEL-B/, 'updated source revision visible');
+});
+
+test('Intent 3: preview refuses stale revision and unapproved publish; no parallel visual publisher introduced', async () => {
+  const ui = setup(); await settle();
+  const edit = allChildren(ui.el('wiki-view')).find(n => n.tagName === 'button' && /Main\/HowTo/.test(n.attributes['aria-label']));
+  edit.fire('click');
+  ui.el('edit-content').value = 'New first line\nSecond';
+  ui.el('edit-review').fire('click'); await settle();
+  assert.equal(ui.el('edit-save').hidden, false);
+  assert.match(ui.el('edit-preview-meta').textContent, /expectedRevision=1/);
+  assert.equal(ui.posts.length, 0, 'preview never writes');
+
+  // Stale revision between review and submit: refused without POST; draft preserved; no save claimed.
+  ui.docs['/api/wiki'].revision = 2;
+  ui.el('edit').fire('submit'); await settle();
   assert.equal(ui.posts.length, 0);
-  assert.equal(ui.el('edit-content').value, 'private draft');
-  assert.match(ui.el('edit-status').textContent, /Owner session required|Unlock Host Control/);
+  assert.equal(ui.el('edit-content').value, 'New first line\nSecond');
+  assert.equal(ui.el('edit-save').hidden, true);
+  assert.equal(ui.el('edit-rebase').hidden, false);
+  assert.match(ui.el('edit-status').textContent, /Revision or draft changed after preview|Stale revision/);
+
+  // No parallel visual publisher: wiki.js installs no VEC compiler and never calls compile/
+  // publish for the wiki domain; the VEC seam stays read-only (unsupported / LEGACY_OWNER_NOT_MIGRATED).
+  assert.doesNotMatch(script, /createVecCompiler\s*\(|\/api\/compile|\/api\/publish/);
+  assert.match(script, /authorization:'none', executed:false, persisted:false/);
+  const c = createVecCompiler();
+  assert.equal(c.compile({ domain: 'wiki', text: 'open the wiki', context: {} }).code, 'LEGACY_OWNER_NOT_MIGRATED');
 });

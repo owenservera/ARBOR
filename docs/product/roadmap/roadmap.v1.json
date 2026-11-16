@@ -1486,7 +1486,7 @@
         "layer": "L2",
         "title": "Truth and queue repair",
         "description": "Repair the two WIKI-BASELINE verifier assumptions, classify Batch-1 evidence separately from execution, reconcile conflicting beta/release ledgers without falsely changing observed gates, and align the single roadmap owner.",
-        "status": "in-progress",
+        "status": "gated",
         "sources": [
           "docs/product/roadmap/ACCELERATION-R002.md",
           "scripts/batch-evidence/WIKI-BASELINE.mjs",
@@ -1537,7 +1537,7 @@
         "layer": "L2",
         "title": "One-command live Host and acceptance runner",
         "description": "Run the existing production Host plus chat, Wiki and relevant context in one reproducible local invocation; collect exact command, environment, exit codes, failures and receipts without synthetic pass claims.",
-        "status": "in-progress",
+        "status": "built",
         "sources": [
           "docs/product/roadmap/ACCELERATION-R002.md",
           "scripts/",
@@ -1582,7 +1582,7 @@
         "layer": "L2",
         "title": "Canonical stateful chat-to-Wiki projection",
         "description": "Use the existing Host-controlled journal and revision authority for chat, Wiki edits and both displays; separate source-of-truth from derived display caches, persist revisions, require authorized mutations.",
-        "status": "in-progress",
+        "status": "built",
         "sources": [
           "docs/product/roadmap/ACCELERATION-R002.md",
           "apps/vivim-host/",
@@ -1628,7 +1628,7 @@
         "layer": "L2",
         "title": "Demo feedback-to-work-order compiler",
         "description": "Compile failed evidence, user visual feedback and demo verdicts into a source-pinned, acceptance-linked, minimum-scope work order in the existing product roadmap.",
-        "status": "queued",
+        "status": "build-failed",
         "sources": [
           "docs/product/roadmap/ACCELERATION-R002.md",
           "docs/product/roadmap/",
@@ -1673,7 +1673,7 @@
         "layer": "L2",
         "title": "Narrow realtime NL to VLang/VEC visual compiler",
         "description": "Compile three bounded natural language intents through the existing NLCL and VLang/VEC surfaces into typed, guarded visual updates to the second-screen Wiki; no new interpreter or graph store.",
-        "status": "queued",
+        "status": "built",
         "sources": [
           "docs/product/roadmap/ACCELERATION-R002.md",
           "apps/vivim-host/control/",
@@ -1721,7 +1721,7 @@
         "layer": "L2",
         "title": "Authorized build, verify, demonstrate and requeue",
         "description": "Connect the existing keeper/demo execution contracts to a cycle that selects a ready work order, executes only allowed scoped work, independently verifies, shows product proof and proposes the next batch.",
-        "status": "queued",
+        "status": "built",
         "sources": [
           "docs/product/roadmap/ACCELERATION-R002.md",
           ".coordination/",
@@ -1880,6 +1880,461 @@
         "ownerAcceptance": "PENDING",
         "execution": "NOT_STARTED",
         "releaseClaim": false
+      },
+      {
+        "id": "HQKG-CONTROL-PLANE",
+        "layer": "L2",
+        "title": "hqkg integrated control plane + engine_network attachment — documented, referenced artifacts absent",
+        "description": "native/hqkg/README.md:204-247 documents an integrated hqkg-control control plane (operator CLI: doctor, config show/propose/apply, verified repair-tail), derived BTreeSet incoming/outgoing adjacency indexes rebuilt after journal deserialization, and references ../graph-kernel-integration/ plus CORE-RUNTIME-PROTOCOL.md (:214-215); :227-237 documents the accepted Qwen engine_network attachment via UtilityCompute (src/utility_adapter.rs: echo/upper/sum/script) with ATTACHMENT-VALUE-ADD-2026-11-03.md. native/ contains only hqkg (verified by listing), so graph-kernel-integration/, CORE-RUNTIME-PROTOCOL.md and ATTACHMENT-VALUE-ADD-2026-11-03.md do not exist in-tree; roadmap.v1.json graph-kernel coverage 0 and ATTACHMENT-VALUE coverage 0. G02 covers imported HQKG source/tests only.",
+        "status": "candidate",
+        "sources": [
+          "native/hqkg/README.md:204-247",
+          "native/hqkg/src/utility_adapter.rs (referenced)",
+          "native/ directory listing (only hqkg present)"
+        ],
+        "dependsOn": [],
+        "priority": null,
+        "gapFill": true,
+        "gapKind": "gap-fill"
+      },
+      {
+        "id": "STUDIO-DEVELOPER-PREVIEW",
+        "layer": "L2",
+        "title": "Studio developer-preview docs suite + aion-capture-studio CLI surface — referenced, mostly absent",
+        "description": "studio/README.md:98-122 cites a developer-preview docs suite (TECHNICAL-README, LIVE-TEST, PORTABILITY, LOCAL-FIRST, FIRST-USER-ONBOARDING-DECISIONS-2026-10-27, V1-INTEGRATED-APP-BLUEPRINT, ARCHITECTURE.md, AGENTS.md) and the aion-capture-studio CLI surface (bin/studio.mjs start/help verbs; gate/local-verify/platform-smoke/chrome-cdp.ps1). studio/ lacks ARCHITECTURE.md and AGENTS.md (verified absent); studio/docs/ holds only VIVIM-TAGLINES-AND-MESSAGING.md. roadmap.v1.json has no developer-preview or capture-studio CLI coverage; G07 covers provider E2E only.",
+        "status": "candidate",
+        "sources": [
+          "studio/README.md:98-122",
+          "studio/bin/studio.mjs",
+          "studio/ listing (ARCHITECTURE.md, AGENTS.md absent)",
+          "studio/docs/ (VIVIM-TAGLINES-AND-MESSAGING.md only)"
+        ],
+        "dependsOn": [],
+        "priority": null,
+        "gapFill": true,
+        "gapKind": "gap-fill"
+      },
+      {
+        "id": "HOST-DATA-INTELLIGENCE-ARBOR",
+        "layer": "L2",
+        "title": "ARBOR Host data-intelligence surface (catalog + journal-adapter) — implemented locally, crosswalk artifact absent",
+        "description": "apps/vivim-host/data-intelligence/catalog.mjs and journal-adapter.mjs implement an owner-authenticated, localhost-only, read-only data-intelligence API: GET /api/host/data-intelligence/registry (13 ingress types AI01-SEN01, captureEnabled=false) and /summary (vivim.data-inventory/1 projection), per apps/vivim-host/README.md:31-39. README.md:37 claims field-crosswalk.v1.json is included, but apps/vivim-host/docs/ does not exist and no field-crosswalk.v1.json or ingress-registry.v1.json was found under apps/vivim-host/ (verified by listing). No FA-G entry; G04 covers catalog/journal/allowlist/dispatcher only. Docs-side data-intelligence is tracked separately under WEB-HARNESS-DATA-INTELLIGENCE (vivim-web-harness/docs/data-intelligence/).",
+        "status": "candidate",
+        "sources": [
+          "apps/vivim-host/README.md:31-39",
+          "apps/vivim-host/data-intelligence/catalog.mjs",
+          "apps/vivim-host/data-intelligence/journal-adapter.mjs",
+          "apps/vivim-host/data-intelligence/ listing (catalog.mjs, journal-adapter.mjs only)",
+          "apps/vivim-host/docs/ absent"
+        ],
+        "dependsOn": [],
+        "priority": null,
+        "gapFill": true,
+        "gapKind": "gap-fill"
+      },
+      {
+        "id": "HQ-DEV-INTELLIGENCE",
+        "layer": "L2",
+        "title": "hq dev-intelligence package (arbor-hq CLI, SHA256 source-root contracts, FTS5 store) — staged, unexecuted",
+        "description": "hq/README.md documents the ARBOR-internal dev-intelligence package: createDevIntelligence host mode imported from ./lib/arbor-service.mjs (:10-20), arbor-hq register/index/search diagnostic CLI (:27-33), SHA256 source-root contracts and sourceEvidence staleness (:38-46), SQLite FTS5 store under %LOCALAPPDATA%/ARBOR/development-intelligence (:50-55), eight staged tests not executed in the GitHub connector (:60-69), Windows ACL/junction/low-disk blocked per W01D-FOLLOWUP-REPORT.md (:69-70). roadmap.v1.json: dev-intelligence 0, arbor-hq 0, source-provenance 0; no source cites hq/README. Adjacent to HQ-MIGRATION-REPORT (Lane D migration evidence), which covers a different surface.",
+        "status": "candidate",
+        "sources": [
+          "hq/README.md:1-70",
+          "hq/W01D-FOLLOWUP-REPORT.md"
+        ],
+        "dependsOn": [],
+        "priority": null,
+        "gapFill": true,
+        "gapKind": "gap-fill"
+      },
+      {
+        "id": "CORE-PROGRAMMABILITY-SPIKE",
+        "layer": "L2",
+        "title": "core/programmability bounded Rust native programmability spike — shipping gates undefined",
+        "description": "core/programmability/README.md documents vivim-programmability-core: an in-process Rust library (typed sources + transformation steps + policy version caps → deterministic inert DAG), serde/serde_json/sha2, zero extra dependencies, no Host effects, owned by vivim-web-harness on branch work/native-programmability-core-spike-20261110 (:1-7). PolicyLimits is caller-supplied, not authenticated (:16-17). Shipping gates: canonical product native ABI/UniFFI plan for Windows and Android, trusted serialization/validation adapter, JS/Rust output comparison, benchmark, Windows Host + physical Android acceptance; until then no effect path calls the module (:14). cargo test authored but not runnable here (no Rust toolchain) (:7). core/programmability/Cargo.toml present.",
+        "status": "candidate",
+        "sources": [
+          "core/programmability/README.md:1-20",
+          "core/programmability/Cargo.toml"
+        ],
+        "dependsOn": [],
+        "priority": null,
+        "gapFill": true,
+        "gapKind": "gap-fill"
+      },
+      {
+        "id": "CONTRACTS-INTEROP-V1",
+        "layer": "L2",
+        "title": "contracts/interop/v1 Wave 1F READ/PROJECTION contract — no gate or cost covers it",
+        "description": "contracts/interop/v1/README.md documents Wave 1F READ/PROJECTION contract: protocol.schema.json declarative reference shape (:4); types.ts/types.rs minimal Rust/TS mirrors unwired until Lane A/G (:5-6); validate.mjs fail-closed read/projection helpers (:6-7); Host action IDs/risk labels live only in apps/vivim-host/control/action-catalog.v1.json once Lane B lands (:7); donor ledger fixture tests/migration/W01-F-ledger.v1.json (:11). roadmap.v1.json interop coverage appears only inside a proposal4-one URL; no gate, cost, or item covers this contract surface; action-catalog.v1.json and tests/migration/W01-F-ledger.v1.json are absent from contracts/interop/v1/ (verified by listing).",
+        "status": "candidate",
+        "sources": [
+          "contracts/interop/v1/README.md:1-11",
+          "contracts/interop/v1/protocol.schema.json",
+          "contracts/interop/v1/types.ts",
+          "contracts/interop/v1/types.rs",
+          "contracts/interop/v1/validate.mjs",
+          "contracts/interop/v1/ listing (action-catalog.v1.json, tests/migration/W01-F-ledger.v1.json absent)"
+        ],
+        "dependsOn": [],
+        "priority": null,
+        "gapFill": true,
+        "gapKind": "gap-fill"
+      },
+      {
+        "id": "NATIVE-SECURITY-W02-PREP",
+        "layer": "L2",
+        "title": "src-tauri NATIVE-SECURITY-W02-PREP.md — Lane A W02 security/build prep outside G06 scope",
+        "description": "src-tauri/NATIVE-SECURITY-W02-PREP.md documents Lane A W02 security/build prep (read-only; no W02 branch until G): Tauri 2.0.0→2.12.3 patch floor with GHSA-w28w-mhc8-qvjv fixed at ≥2.11.6 (:11-13); capabilities/default.json broad remote http://127.0.0.1:* (:14); main.rs owner-token-over-HTTP forge risk (:15); required adversarial synthetic tests before GO (:50-54); unrun verification commands (:66-82). G06 (.integration/proposal5/08-BETA-GATES.json:98-111) cites tauri.conf.json/capabilities/default.json/main.rs but not this prep doc, the patch floor, or the adversarial tests.",
+        "status": "candidate",
+        "sources": [
+          "src-tauri/NATIVE-SECURITY-W02-PREP.md:1-100",
+          "src-tauri/tauri.conf.json",
+          "src-tauri/capabilities/default.json",
+          "src-tauri/src/main.rs",
+          ".integration/proposal5/08-BETA-GATES.json:98-111"
+        ],
+        "dependsOn": [],
+        "priority": null,
+        "gapFill": true,
+        "gapKind": "gap-fill"
+      },
+      {
+        "id": "STUDIO-CAPTURE-FAMILIES",
+        "layer": "L2",
+        "title": "studio/families detection schemas + studio/profiles capture profiles — unverified, untracked",
+        "description": "studio/families/ holds 10 capture-configuration detection schemas (ai-chat, article, content-feed, data-table, form-flow, media-stream, notification-feed, realtime-collab, rpc-api, search-results) with signal weights and entity/field maps; studio/profiles/ holds chatgpt/claude/generic provider capture profiles, chatgpt.json:4 self-describing UNVERIFIED against the live site until a Windows receipt exists. roadmap.v1.json studio coverage (G07 provider E2E, harness/CONTRACT lanes) cites neither families nor profiles.",
+        "status": "candidate",
+        "sources": [
+          "studio/families/ (10 schemas: ai-chat, article, content-feed, data-table, form-flow, media-stream, notification-feed, realtime-collab, rpc-api, search-results)",
+          "studio/profiles/chatgpt.json:4",
+          "studio/profiles/claude.json",
+          "studio/profiles/generic.json"
+        ],
+        "dependsOn": [],
+        "priority": null,
+        "gapFill": true,
+        "gapKind": "gap-fill"
+      },
+      {
+        "id": "HVI-F-TEST-MATRIX",
+        "layer": "L2",
+        "title": "tests/hq-version-intelligence HVI F suite (T01-T24) — acceptance-test-matrix artifact absent",
+        "description": "tests/hq-version-intelligence/README.md documents the HVI F source-only conformance/adversarial suite covering T01-T24 from 05-ACCEPTANCE-TEST-MATRIX.md (:3-5), requiring Node 24 and a reference-oracle fixture; G1/G2 device checks UNRUN (:9-10). The 05-ACCEPTANCE-TEST-MATRIX.md matrix is absent from ARBOR/tests/ (subdirs compatibility, fixtures, hq-version-intelligence, migration, privacy). roadmap.v1.json acceptance-test-matrix coverage: 0.",
+        "status": "candidate",
+        "sources": [
+          "tests/hq-version-intelligence/README.md:1-14"
+        ],
+        "dependsOn": [],
+        "priority": null,
+        "gapFill": true,
+        "gapKind": "gap-fill"
+      },
+      {
+        "id": "TIERFLOW-MISSION-D-AUDIT",
+        "layer": "L2",
+        "title": "packages/tierflow TierFlow/VIVIM Mission D convergence audit — referenced directory absent",
+        "description": "packages/tierflow/README.md:40 references the TierFlow/VIVIM Mission D convergence audit at VIVIM-VISUAL-RUNTIME/MISSION-D-TIERFLOW-CONVERGENCE-AUDIT-2026-11-10.md, but packages/tierflow/ contains only README.md, lab, package.json, runtime, scripts, src, tests, tsconfig.json, web — no VIVIM-VISUAL-RUNTIME directory and no audit artifact (verified by listing). roadmap.v1.json covers packages/tierflow only via G09; MISSION-D-TIERFLOW-CONVERGENCE-AUDIT coverage: 0.",
+        "status": "candidate",
+        "sources": [
+          "packages/tierflow/README.md:36-40",
+          "packages/tierflow/ listing (no VIVIM-VISUAL-RUNTIME)"
+        ],
+        "dependsOn": [],
+        "priority": null,
+        "gapFill": true,
+        "gapKind": "gap-fill"
+      },
+      {
+        "id": "LABS-TECH-STACK-OBSERVATORY",
+        "layer": "L2",
+        "title": "vivim-labs Tech Stack Observatory — pinned research overlay, BLOCKED_NOT_BUILT",
+        "description": "vivim-labs/tech-stack/README.md documents a pinned ARBOR Tech Stack Observatory research overlay: catalog/current-stack.json with 21 components all NOT_ASSESSED (production_verified false, resolved_version null); source-pins.json reporting root Cargo.lock and bun.lock ABSENT_AT_PIN with release_status BLOCKED_NOT_BUILT and live_sync NOT_CONFIGURED; docs/forward-roadmap.md Phases 0-5 six-item acceptance checklist all unchecked; tools/reconcile.mjs and tools/validate.mjs (:1-38). Release-readiness accounting (root locks, SBOM, advisories, sync, HVI view, device gates) has no roadmap owner or gate, so the BLOCKED_NOT_BUILT stack state is invisible to proposal5/HVI capture. Labs item: supporting context only; never enters the beta critical path (owner emphasis 2026-11-14).",
+        "status": "candidate",
+        "sources": [
+          "vivim-labs/tech-stack/README.md"
+        ],
+        "dependsOn": [],
+        "priority": null,
+        "gapFill": true,
+        "gapKind": "labs-gap-fill"
+      },
+      {
+        "id": "LABS-CAPABILITY-OBSERVATORY",
+        "layer": "L2",
+        "title": "vivim-labs capability-observatory seed tracker — ledgers and blocked HQ export",
+        "description": "vivim-labs/capability-observatory/README.md documents a seed tracker: data/dev-preprod.json (design/prototype→release-candidate) and data/production.json (shipped facts) ledgers; data/capabilities.json defining 10 capabilities with owner_repo, wave lanes A-H, baseline_evidence and source_refs into TierFlow VIVIM-VISUAL-RUNTIME; data/source-catalog.json; schemas/*.schema.json; scripts/validate.mjs; docs/AGREED-END-STATE.md; lane-d/HANDOFF.md pinning the seed at 10 capabilities (dev 10, prod 0, sources 5 with 1 unlocated); 7/7 local observatory tests pass, HQ connection BLOCKED pending a compatible pinned export (:1-38). G10 capability truth and final-wave lane planning cannot account for the Labs-tracked capability ledgers or their blocked HQ export path. Labs item: supporting context only; never enters the beta critical path (owner emphasis 2026-11-14).",
+        "status": "candidate",
+        "sources": [
+          "vivim-labs/capability-observatory/README.md"
+        ],
+        "dependsOn": [],
+        "priority": null,
+        "gapFill": true,
+        "gapKind": "labs-gap-fill"
+      },
+      {
+        "id": "LABS-EVIDENCE-FACTORY",
+        "layer": "L2",
+        "title": "vivim-labs ENGINEERING-EVIDENCE-FACTORY.md — 12 evidence factories, program intent only",
+        "description": "vivim-labs/docs/ENGINEERING-EVIDENCE-FACTORY.md documents 12 high-volume evidence factories (P0-P2: 100k+ NL utterances, 1k+ integration candidates, 1k+ assets, 10k+ adversarial scenarios, critical-interface lab, production scaffold, knowledge/context lab, provider observatory, state/failure simulation, UX/accessibility, performance lab, documentation factory), a six-step maturity ladder (Discovered→Specified→Unit verified→Integrated→Environment verified→Production verified), a 3×8 worker cell allocation and first-campaign targets — explicit program intent, not current inventory (:14-103). No proposal5/HVI/Labs-intake item covers this evidence-factory program, so its proposed volumes, maturity stages, and worker allocation carry no roadmap status or owner. Labs item: supporting context only; never enters the beta critical path (owner emphasis 2026-11-14).",
+        "status": "candidate",
+        "sources": [
+          "vivim-labs/docs/ENGINEERING-EVIDENCE-FACTORY.md:14-103"
+        ],
+        "dependsOn": [],
+        "priority": null,
+        "gapFill": true,
+        "gapKind": "labs-gap-fill"
+      },
+      {
+        "id": "LABS-WAVE-BOOSTERS",
+        "layer": "L2",
+        "title": "vivim-labs WAVE-BOOSTERS.md — per-wave boosters W1-W9 tied to product gates",
+        "description": "vivim-labs/docs/WAVE-BOOSTERS.md documents per-wave Labs boosters W1-W9 mapped to product gates (W1 audit/catalogue/duplicate-authority map, W2 I2-C repeatability 449 tests, W3 core-convergence boosters 01/02/03/04/05/07/09/12, W4-W9 device/pairing/cutover/onboarding/ecosystem/oracle) plus eight always-on responsibilities (Git/process operations, test operations, catalogue federation, asset inventory, agentic excellence, security/privacy, evidence graph, production preparedness) (:9-41). A wave-aligned Labs work plan tied to Integration gates W1-W9 is outside proposal5/HVI content and has no roadmap item, so booster acceptance evidence cannot be tracked to closure. Labs item: supporting context only; never enters the beta critical path (owner emphasis 2026-11-14).",
+        "status": "candidate",
+        "sources": [
+          "vivim-labs/docs/WAVE-BOOSTERS.md:9-41"
+        ],
+        "dependsOn": [],
+        "priority": null,
+        "gapFill": true,
+        "gapKind": "labs-gap-fill"
+      },
+      {
+        "id": "LABS-MOBILE-EXTENSIONS",
+        "layer": "L2",
+        "title": "vivim-labs MOBILE-EXTENSIONS/Android browser extension research — hold gates, untracked",
+        "description": "vivim-labs/docs/MOBILE-EXTENSIONS/README.md documents an Android browser extension research scaffold: Android browser support (Vivaldi Android 8.3 P0, Firefox, Quetta, Edge, Yandex, Lemur, Mises, Helium, Chrome negative control), WebExtension APIs, Host-to-phone parity, Android bridges (APK/foreground service/share intents/Accessibility/notification listener/VPN/companion browser protocol), five research tracks, deliverables BROWSER-MATRIX.md/PARITY-MATRIX.md/EXPERIMENTS.md/evidence/, WAVE-PROGRAM-ALIGNMENT.md with six waves and four lab-only lanes M1-M4, explicit HOLD: no TierFlow W4/Harness/native implementation before I3 GO (:1-70). Mobile extension parity research with explicit hold gates is outside proposal5/HVI scope, so its device-acceptance criteria and browser shortlist have no roadmap coverage. Labs item: supporting context only; never enters the beta critical path (owner emphasis 2026-11-14).",
+        "status": "candidate",
+        "sources": [
+          "vivim-labs/docs/MOBILE-EXTENSIONS/README.md:1-70"
+        ],
+        "dependsOn": [],
+        "priority": null,
+        "gapFill": true,
+        "gapKind": "labs-gap-fill"
+      },
+      {
+        "id": "LABS-PERSONAL-KNOWLEDGE-LIFECYCLE",
+        "layer": "L2",
+        "title": "vivim-labs personal-knowledge-lifecycle — DCB/intake scaffold with Labs runtime",
+        "description": "vivim-labs/personal-knowledge-lifecycle/README.md documents a design scaffold (2026-11-11, eight invariants incl. Host owns personal authority, HQ owns dev-intelligence, TierFlow read-only knowledge, Labs synthetic-only fixtures, no signed-in provider APIs) plus a real Labs-stage runtime (T=0 profile intake, ZIP32/ZIP64 streaming, JSON normalization, resumable Host-journal batch processing, scoped Rust graph proposals, 28 synthetic Node tests passed) with LIFECYCLE.md/SOURCE-ATLAS.md/PIPELINE-CONTRACTS.md/IMPLEMENTATION-ROADMAP.md and a user acceptance scenario (:1-44). Personal-knowledge import/DCB work with enforced invariants and a Labs runtime exists outside proposal5/HVI, so DCB/personal-data intake scope and owner-consent gating carry no roadmap acceptance posture. Labs item: supporting context only; never enters the beta critical path (owner emphasis 2026-11-14).",
+        "status": "candidate",
+        "sources": [
+          "vivim-labs/personal-knowledge-lifecycle/README.md:1-44"
+        ],
+        "dependsOn": [],
+        "priority": null,
+        "gapFill": true,
+        "gapKind": "labs-gap-fill"
+      },
+      {
+        "id": "LABS-ZAI",
+        "layer": "L2",
+        "title": "vivim-labs zai four-repo convergence campaign — rounds, bundles, pinned SHAs",
+        "description": "vivim-labs/zai/README.md documents a four-repository convergence campaign workspace: CAMPAIGN-CHARTER.md, governance/DECISIONS.md and OPEN-ITEMS.md, DECISION-PROTOCOL.md, STRETCH-GOALS.md, ROUND-TEMPLATE.md, BUNDLE-PROTOCOL.md (four checkpoint bundles plus manifest), round lifecycle (clone four repos at pinned SHAs, ask HQ first, implement bounded improvements, re-index, deliver code+bundles+manifest+deltas, compounding efficiency by Round 4) (:1-43). A cross-repo campaign/handoff work area with pinned SHAs and a bundle protocol is outside proposal5/HVI content and the Labs intake summary, so its round evidence and decisions are untracked by the roadmap. Labs item: supporting context only; never enters the beta critical path (owner emphasis 2026-11-14).",
+        "status": "candidate",
+        "sources": [
+          "vivim-labs/zai/README.md:1-43"
+        ],
+        "dependsOn": [],
+        "priority": null,
+        "gapFill": true,
+        "gapKind": "labs-gap-fill"
+      },
+      {
+        "id": "LABS-PAST-ORPHANED-WORK",
+        "layer": "L2",
+        "title": "vivim-labs past-orphaned-work recovery index — migration candidates need acceptance proof",
+        "description": "vivim-labs/past-orphaned-work/README.md documents an orphaned-work recovery index (2026-11-07): two shelves (past-implemented, past-researched) across 10 domains, initial source set vivim-platform/vivim-final/code-intelligence-platform plus repos-hq/tierflow/vivim-web-harness (cap-store uninspected); DCB implemented in repos-hq hq/lib/context.mjs with session-to-DCB and cross-product consolidation gaps recorded; promotion rule requiring acceptance proof with dispositions KEEP/ADAPT/ALREADY MIGRATED/BENCHMARK/RETIRE/UNKNOWN (:1-43). A documented migration-candidate inventory with acceptance-proof requirements is outside proposal5/HVI content, so orphaned-value disposition carries no roadmap status. Labs item: supporting context only; never enters the beta critical path (owner emphasis 2026-11-14).",
+        "status": "candidate",
+        "sources": [
+          "vivim-labs/past-orphaned-work/README.md:1-43"
+        ],
+        "dependsOn": [],
+        "priority": null,
+        "gapFill": true,
+        "gapKind": "labs-gap-fill"
+      },
+      {
+        "id": "VIVIM-UI-WORLD-MODEL",
+        "layer": "L2",
+        "title": "vivim-ui WORLD-MODEL-SPEC.md — world data model + command/draft/publish/store contract",
+        "description": "vivim-ui/docs/WORLD-MODEL-SPEC.md documents the world data model (infinite 3D canvas, five canonical layers, six closed shapes, contains/links/drives/mirrors relationships, data flows, ui.* commands, SQLite WAL durability, UiCommandPort/UiRevisionFeed ports, 13 acceptance criteria); verified present this session by full read. No roadmap.v1.json item covers this model or its ui.command/draft/publish/store contract.",
+        "status": "candidate",
+        "sources": [
+          "vivim-ui/docs/WORLD-MODEL-SPEC.md"
+        ],
+        "dependsOn": [],
+        "priority": null,
+        "gapFill": true,
+        "gapKind": "gap-fill"
+      },
+      {
+        "id": "REPOS-HQ-SYNC-BUS",
+        "layer": "L2",
+        "title": "repos_hq SYNC-BUS — agent coordination ledger, cursors, receipts",
+        "description": "repos_hq/docs/SYNC-BUS.md documents the HQ sync bus (append-only JSONL ledger, spaces registry, per-agent cursors, receipt ledger, schema hq.sync-bus/2, normative SYNC-BUS-CONTRACT.md) operated via repos_hq/scripts/sync.mjs; verified present in-tree (repos_hq/scripts/sync.mjs, repos_hq/hq/bin/hq.mjs present). No roadmap.v1.json source cites it; agent coordination state, cursors, and receipt evidence live outside the roadmap, so cross-repo execution tracking has no roadmap status.",
+        "status": "candidate",
+        "sources": [
+          "repos_hq/docs/SYNC-BUS.md",
+          "repos_hq/scripts/sync.mjs",
+          "repos_hq/hq/bin/hq.mjs"
+        ],
+        "dependsOn": [],
+        "priority": null,
+        "gapFill": true,
+        "gapKind": "gap-fill"
+      },
+      {
+        "id": "WEB-HARNESS-PRODUCT-BOUNDARY",
+        "layer": "L2",
+        "title": "vivim-web-harness README product scope + source-topology table — ownership untraced",
+        "description": "vivim-web-harness/README.md declares product scope (Windows Host, signed-in AI web apps, browser/provider effects, approvals and receipts, UI proposals, selected Android app at apps/mobile-relay), states the repo is a product/source owner not cross-repo HQ, and publishes a source-topology table (apps/vivim-host, apps/mobile-relay, studio, harness, src-tauri; docs/capabilities and docs/ux pending HQ view parity). The web-harness own product boundary and responsibility matrix are uncited by the roadmap, so ownership of Host/studio/harness surfaces cannot be traced to gates.",
+        "status": "candidate",
+        "sources": [
+          "vivim-web-harness/README.md"
+        ],
+        "dependsOn": [],
+        "priority": null,
+        "gapFill": true,
+        "gapKind": "gap-fill"
+      },
+      {
+        "id": "WEB-HARNESS-HOST-M1",
+        "layer": "L2",
+        "title": "vivim-web-harness Host README — M1 diagnostics, PDV01-PDV03 data-intelligence, UTC read-only slice",
+        "description": "vivim-web-harness/apps/vivim-host/README.md documents M1 read-only local Host diagnostics (node apps/vivim-host/server.mjs on 127.0.0.1:43187, /api/host/status GET/HEAD-only metadata), PDV01-PDV03 owner-authenticated localhost-only data-intelligence API (/api/host/data-intelligence/registry and /summary, ingress registry plus field crosswalk), read-only journal-adapter normalizer, and Universal Text Control read-only slice (/api/host/control/catalog, /api/host/control/plan with Bearer cap and X-VIVIM-Control, no execute route, Tailscale Direct mobile proxy) (:31-49). HOST-DATA-INTELLIGENCE covers only apps/vivim-host/data-intelligence/catalog.mjs; this Host README surface (M1 readiness semantics, no-execute UTC slice, direct-phone) has no roadmap status or gate.",
+        "status": "candidate",
+        "sources": [
+          "vivim-web-harness/apps/vivim-host/README.md:31-49"
+        ],
+        "dependsOn": [],
+        "priority": null,
+        "gapFill": true,
+        "gapKind": "gap-fill"
+      },
+      {
+        "id": "WEB-HARNESS-UTC-V1",
+        "layer": "L2",
+        "title": "vivim-web-harness UNIVERSAL-TEXT-CONTROL-V1.md — text-driven control invariant, not live-accepted",
+        "description": "vivim-web-harness/docs/design/UNIVERSAL-TEXT-CONTROL-V1.md documents UTC V1 (status DECIDED 2026-10-31, authority roadmap tasks UTC01-UTC07): product invariant that every user-facing capability is discoverable, inspectable, previewable, and executable through text on desktop and paired mobile; processing contract text→authenticated control ingress→typed plan→exclusive Host effect→durable journal/receipt/Undo; risk classes R0-R3; acceptance gates (coverage, parity, determinism, authority, durability, reality incl. Windows Host and real-phone acceptance, connectivity); slices UTC01-UTC07; source-wired and tested offline but not live-accepted (pause_egress enforcement_missing, machine.network.disable_all unsupported, no Windows Host or real-phone run). Referenced by vivim-web-harness/apps/vivim-host/README.md:43; no roadmap item covers the UTC invariant, its gates, or its not-live-accepted status.",
+        "status": "candidate",
+        "sources": [
+          "vivim-web-harness/docs/design/UNIVERSAL-TEXT-CONTROL-V1.md",
+          "vivim-web-harness/apps/vivim-host/README.md:43"
+        ],
+        "dependsOn": [],
+        "priority": null,
+        "gapFill": true,
+        "gapKind": "gap-fill"
+      },
+      {
+        "id": "WEB-HARNESS-STUDIO-ARCHITECTURE",
+        "layer": "L2",
+        "title": "vivim-web-harness studio ARCHITECTURE.md — Capture Studio governing vision + evidence boundary",
+        "description": "vivim-web-harness/studio/ARCHITECTURE.md (updated 2026-10-23) is the only governing vision for Capture Studio: model sessions are real AI-webapp conversations via loopback Chrome CDP (no Playwright/Puppeteer, uncertain sends never retried), capture deferred not removed, next phase one Studio UI for all AI webapps using vivim-final chat shell as reference (provider rail, transcript, composer shell layout), evidence boundary (source vs offline tests vs live browser connectivity vs authenticated harness acceptance; no authenticated create/send/follow-up accepted yet), principles incl. zero-dependency Node >= 22 and Windows/Linux platform parity as a release gate. Roadmap studio coverage is limited to studio/README.md (WEB-HARNESS-STUDIO) and G07 provider E2E; this governing vision with its evidence boundary and parity gate is uncited.",
+        "status": "candidate",
+        "sources": [
+          "vivim-web-harness/studio/ARCHITECTURE.md"
+        ],
+        "dependsOn": [],
+        "priority": null,
+        "gapFill": true,
+        "gapKind": "gap-fill"
+      },
+      {
+        "id": "WEB-HARNESS-AGENT-OPERATING-PROTOCOL",
+        "layer": "L2",
+        "title": "vivim-web-harness docs/agents OPERATING-PROTOCOL.md — agent claim/execute/communicate protocol",
+        "description": "vivim-web-harness/docs/agents/OPERATING-PROTOCOL.md (updated 2026-10-31) is a policy document: ERA 1 pickup/own (skill drift check, claim state queued until real execution, in_progress only while active, PICKUP message format) and ERA 2 execute/communicate/check (smallest complete slices: inspect, patch, verify, reconcile, advance; accuracy guardrails: no provider API access, single Chrome/CDP lease, never resend uncertain sends without journal reconciliation, no blind merges; communication events PICKUP/BLOCKED/CHECKPOINT/HANDOFF/DONE); names docs/roadmap.json as the only authoritative task-status ledger. A documented agent operating protocol with claim-state and evidence rules sits outside proposal5/HVI/Labs coverage; no roadmap source references it.",
+        "status": "candidate",
+        "sources": [
+          "vivim-web-harness/docs/agents/OPERATING-PROTOCOL.md"
+        ],
+        "dependsOn": [],
+        "priority": null,
+        "gapFill": true,
+        "gapKind": "gap-fill"
+      },
+      {
+        "id": "PROPOSAL4-ONE-DONOR-GRADUATION",
+        "layer": "L2",
+        "title": "proposal4-one donor-graduation protocol (behavior graduates, code does not) — absent from proposal5",
+        "description": ".integration/proposal4-one/13-ROADMAP-AND-DONOR-GRADUATION.md documents the donor-graduation protocol: four-step differential test (fixture in donor format → converted to ONE ledger/package → equivalent outcome/hash → differential test in CI), mapped ≠ implemented ≠ accepted, five migration safety rules (no donor repo modified; no donor deletion until green differential test + owner acceptance; no shared database; no dual-write; rollback path), five owner decision points (after Phase 0 accept substrate or fall back to proposal 1; before Phase 1 accept Tauri v2 + WASM; before Phase 2 accept programs-as-data; before donor deletion accept differential evidence; before Phase 4 accept external distribution), falsifiers F1/F2/F5, Phase 0 exit gates G0.1-G0.7. proposal5 mentions graduation only in passing (07-DEFERRED-OPTIMIZATIONS.md:53, 02-RUST-CORE-AND-HQ-WIRING.md:20, 01-FAST-LANDING-SCAFFOLD.md:104); W0-W6/G00-G13 and release-manifest donorRemoval UNRUN contain no graduation protocol, safety rules, owner decision points, falsifiers, or Phase 0 gates.",
+        "status": "candidate",
+        "sources": [
+          ".integration/proposal4-one/13-ROADMAP-AND-DONOR-GRADUATION.md (§1-§6)",
+          ".integration/proposal5/07-DEFERRED-OPTIMIZATIONS-AND-DECISIONS.md:53",
+          ".integration/proposal5/02-RUST-CORE-AND-HQ-WIRING.md:20",
+          ".integration/proposal5/01-FAST-LANDING-SCAFFOLD.md:104"
+        ],
+        "dependsOn": [],
+        "priority": null,
+        "gapFill": true,
+        "gapKind": "gap-fill"
+      },
+      {
+        "id": "PROPOSAL1-LABS-GRADUATION",
+        "layer": "L2",
+        "title": "proposal1 Labs graduation design — invariants, dispositions, ledger statuses — absent from proposal5",
+        "description": ".integration/proposal1/03-LABS-GRADUATION.md documents Labs graduation design: ten ratified architectural invariants (§3: Node 0 Prime first, no central semantic router, shared Rust foundation, NL-first, no provider APIs, Host effects authoritative, one paired PWA-first mobile, DCBs, zero-management mission UX, VIEW ALL transparency), feature/component disposition rules (§4), migration-ledger statuses OWNER_DIRECTION…RETAIN_LAB (§5), what stays in Labs / does NOT get transplanted crosswalk (§1), seven open Labs questions (§5). proposal5 Phase 2 Labs intake (10-PHASE2-LABS-INTAKE.md:12-48, 11-PHASE2-DECISION-MATRIX.md:3-55, item ledger lab_ref…regressionProof :58) covers E/C/H categorization and a ledger but none of the invariants, disposition rules, or statuses — Labs intake has no ratified-graduation standard.",
+        "status": "candidate",
+        "sources": [
+          ".integration/proposal1/03-LABS-GRADUATION.md",
+          ".integration/proposal5/10-PHASE2-LABS-INTAKE.md:12-48",
+          ".integration/proposal5/11-PHASE2-DECISION-MATRIX.md:3-55"
+        ],
+        "dependsOn": [],
+        "priority": null,
+        "gapFill": true,
+        "gapKind": "gap-fill"
+      },
+      {
+        "id": "PROPOSAL4-INTEGRATION-WAVES",
+        "layer": "L2",
+        "title": "proposal4 integration phases P0-P6 with gates A-K and per-gate evidence — absent from proposal5",
+        "description": ".integration/proposal4/05-INTEGRATION-WAVES-AND-ACCEPTANCE.md documents one-time integration phases P0-P6 with completion gates A-K and mandatory per-gate evidence output: P0 gate (no runtime-owner/effect-journal replacement before complete writer census and exact rollback plan); P1 typed identity/port/trace protocol (IdentityRef, SourceBinding, CapabilityDescriptor, OperationIR, ProgramIR, ViewProjection, Signal, EffectStatus, ReceiptRef); P2 reuse existing HQKG typed DAG with generation leases and reactor subscriptions; P3 bridge (not copy) existing subsystems as capability modules; P4 unify UX as projections; P5 extension substrate; P6 cutover (patched Tauri v2 + exact IPC origin scopes, Host process instance authentication, actor/device/session isolation, phone stale/revoked grant denial, 500-edit/stale/IME/Unicode test, Host JS effects claim/receipt parity + crash recovery before/after claim and external send, Windows MSI clean install+upgrade+rollback, physical paired PWA journey, source-owned data backups, modest Windows laptop CPU/RAM/disk evaluation, cutover single writer + rollback). Gate outputs A-K require exact repo/branch/SHA, path, prior owner, adapter version, test command, environment, status, observed result, input/source data class, risk, actor/policy proof, rollback, approving owner.",
+        "status": "candidate",
+        "sources": [
+          ".integration/proposal4/05-INTEGRATION-WAVES-AND-ACCEPTANCE.md",
+          ".integration/proposal5/05-FULL-BETA-RELEASE-CONTRACT.md"
+        ],
+        "dependsOn": [],
+        "priority": null,
+        "gapFill": true,
+        "gapKind": "gap-fill"
+      },
+      {
+        "id": "PROPOSAL4-ONE-PRD-LEDGER",
+        "layer": "L2",
+        "title": "proposal4-one PRD ledger/evidence contract (Truth/Materialized/Proof, LED-01-LED-53) — absent from proposal5",
+        "description": ".integration/proposal4-one/10-PRD-LEDGER-AND-EVIDENCE.md documents the ledger/evidence PRD: Truth = append-only hash-chained ledger of typed events; Materialized = content-addressed artifacts + declared projections; Proof = derivation receipts; four questions every store must answer (which ledger offset range; which node hash/config revision/package set; output hash; fresh|stale|invalid — a store that cannot answer is a forbidden second truth); evidence classes Observation/Receipt/Verdict/Derivation/Inference never conflated; requirements LED-01-LED-53 (append/integrity LED-01-LED-08 incl. fsync-durable claim/receipt append LED-03, replay equivalence LED-06, secret-shaped payload refusal LED-05; projections LED-20-LED-24; retention LED-30-LED-34 tombstones, per-space retention, export-before-destructive LED-33; export/portability LED-40-LED-44); retention defaults per space; user stories US-1-US-4; acceptance A-L1-A-L8; one verify names the failed K1-K13 invariant. proposal5 GAP-REGISTER covers only rock-core bounds/compaction gates (FA-G25/FA-G26), source epochs (FA-G10), source locks (FA-G43); grep found no LED-*, no four-question store test, no per-space retention.",
+        "status": "candidate",
+        "sources": [
+          ".integration/proposal4-one/10-PRD-LEDGER-AND-EVIDENCE.md (§1-§7)",
+          ".integration/proposal5/foundations/GAP-REGISTER.v1.json (FA-G25, FA-G26, FA-G10, FA-G43)"
+        ],
+        "dependsOn": [],
+        "priority": null,
+        "gapFill": true,
+        "gapKind": "gap-fill"
+      },
+      {
+        "id": "PROPOSAL4-ONE-ACCEPTANCE-EVIDENCE",
+        "layer": "L2",
+        "title": "proposal4-one acceptance/evidence contract O1-O10 + independent review — absent from proposal5",
+        "description": ".integration/proposal4-one/14-ACCEPTANCE-AND-EVIDENCE.md documents the acceptance/evidence contract: ten scenarios O1-O10 with exact proof commands and pass conditions; evidence rules (skipped test is not a pass; mocked external is not an external test — O8 requires a real worker session; screenshots are not proof; clean profile; donor behavior preserved only via differential test); traceability matrix; done-cannot-mean table; Phase 0 acceptance record template (gates G0.1-G0.7 with command/exit/diff/hashes, falsifiers F1/F2/F5, verdict PASS|FAIL|BLOCKED, any unmeasured field = BLOCKED); independent review protocol (reviewer who did not write the kernel runs every gate from a clean checkout, tries three adversarial cases — memo key collision, projection rebuild divergence, forged receipt — and the report of the reviewer who ran the gates is acceptance). proposal5 B01-B12 journeys and G00-G13 gates are UNRUN (observed_evidence null, owner_accepted false); no proof-command protocol, evidence matrix, done-cannot-mean table, or independent-review requirement exists in the roadmap or proposal5.",
+        "status": "candidate",
+        "sources": [
+          ".integration/proposal4-one/14-ACCEPTANCE-AND-EVIDENCE.md (§1-§7)",
+          ".integration/proposal5/08-BETA-GATES.json (G00-G13 all UNRUN)"
+        ],
+        "dependsOn": [],
+        "priority": null,
+        "gapFill": true,
+        "gapKind": "gap-fill"
       }
     ]
   },
@@ -1887,43 +2342,46 @@
     {
       "itemId": "A00",
       "order": 1,
-      "status": "in-progress",
+      "status": "gated",
       "lane": "B",
       "dependsOn": [],
       "priority": 1,
       "accelerationScore": 89,
       "verification": "UNRUN",
       "ownerAcceptance": "PENDING",
-      "note": "Truth and queue repair — all W1 lane source integrated; independent Node24/Host/browser verification UNRUN."
+      "note": "Truth and queue repair — all W1 lane source integrated; independent Node24/Host/browser verification UNRUN.",
+      "rewalk": "pending"
     },
     {
       "itemId": "A01",
       "order": 2,
-      "status": "in-progress",
+      "status": "gated",
       "lane": "C",
       "dependsOn": [],
       "priority": 2,
       "accelerationScore": 95,
       "verification": "UNRUN",
       "ownerAcceptance": "PENDING",
-      "note": "One-command live Host and acceptance runner — all W1 lane source integrated; independent Node24/Host/browser verification UNRUN."
+      "note": "One-command live Host and acceptance runner — all W1 lane source integrated; independent Node24/Host/browser verification UNRUN.",
+      "rewalk": "pending"
     },
     {
       "itemId": "A02",
       "order": 3,
-      "status": "in-progress",
+      "status": "gated",
       "lane": "A",
       "dependsOn": [],
       "priority": 3,
       "accelerationScore": 96,
       "verification": "UNRUN",
       "ownerAcceptance": "PENDING",
-      "note": "Canonical stateful chat-to-Wiki projection — all W1 lane source integrated; independent Node24/Host/browser verification UNRUN."
+      "note": "Canonical stateful chat-to-Wiki projection — all W1 lane source integrated; independent Node24/Host/browser verification UNRUN.",
+      "rewalk": "pending"
     },
     {
       "itemId": "A03",
       "order": 4,
-      "status": "queued",
+      "status": "failed",
       "lane": "B",
       "dependsOn": [
         "A00"
@@ -1937,7 +2395,7 @@
     {
       "itemId": "A04",
       "order": 5,
-      "status": "queued",
+      "status": "gated",
       "lane": "A",
       "dependsOn": [
         "A02"
@@ -1951,7 +2409,7 @@
     {
       "itemId": "A05",
       "order": 6,
-      "status": "queued",
+      "status": "gated",
       "lane": "B",
       "dependsOn": [
         "A01",

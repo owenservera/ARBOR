@@ -13,3 +13,8 @@ node_modules/
 
 # Deepwork resume state (local only)
 .slim/deepwork/
+
+# Git worktree metadata and stray scratch files (never committed)
+.worktrees/
+*tmpfail-lines.txt
+write_test.txt

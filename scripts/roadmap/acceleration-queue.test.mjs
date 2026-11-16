@@ -83,3 +83,46 @@ test('acceleration score is deterministic and rejects invalid factors', () => {
   assert.equal(accelerationScore(item.scoreInputs), 96);
   assert.throws(() => accelerationScore({ downstreamUnlocks: 8 }), /downstreamUnlocks/);
 });
+
+test('A00 is keeper-owned machine truth: B lane, priority 1, fixed write scope, no per-item owner field', () => {
+  const data = loadRoadmap();
+  const a00 = data.layers.L2.find(x => x.id === 'A00');
+  const row = data.buildQueue.find(x => x.itemId === 'A00');
+  assert.ok(a00 && row, 'A00 present in L2 and queue');
+  assert.equal(a00.lane, 'B');
+  assert.equal(a00.priority, 1);
+  assert.equal(row.lane, 'B');
+  assert.equal(row.priority, 1);
+  assert.equal(row.order, 1);
+  assert.deepEqual(a00.dependsOn, []);
+  assert.deepEqual(row.dependsOn, []);
+  assert.equal(a00.owner, undefined, 'roadmap item schema has no owner field');
+  assert.deepEqual(a00.writeScope, [
+    'scripts/batch-evidence/WIKI-BASELINE.mjs',
+    'docs/product/roadmap/',
+    'integration/beta-gates.json',
+    '.integration/proposal5/08-BETA-GATES.json',
+    'integration/release-manifest.json'
+  ]);
+  assert.equal(data.acceleration.roadmapOwner, 'arbor-roadmap keeper (sole canonical roadmap writer after owner-approved batch decision)');
+});
+
+test('Batch-1 evidence stays classified separately from A00 execution', () => {
+  const data = loadRoadmap();
+  const batch = data.archivedBuildBatches.find(b => b.batchId === 'BATCH-1');
+  assert.ok(batch, 'BATCH-1 archived evidence retained');
+  assert.equal(batch.recordedStatus, 'executed');
+  assert.equal(batch.acceptanceStatus, 'OPEN_FINDINGS');
+  const byId = new Map(batch.items.map(i => [i.itemId, i]));
+  const chat = byId.get('CHAT-BOX-BASELINE');
+  const wiki = byId.get('WIKI-BASELINE');
+  const rdcb = byId.get('RDCB-BASELINE');
+  assert.ok(chat && wiki && rdcb, 'all three Batch-1 baselines present');
+  assert.equal(chat.acceptance, 'BASELINE_NARROW_11_OF_11');
+  assert.equal(chat.independentKeeperReverification, 'UNRUN');
+  assert.equal(wiki.acceptance, 'FAILED_2_OF_10');
+  assert.equal(wiki.independentKeeperReverification, 'UNRUN');
+  assert.equal(rdcb.acceptance, 'GENERATOR_ONLY_12_OF_12');
+  assert.equal(rdcb.independentKeeperReverification, 'UNRUN');
+  assert.equal(batch.items.every(i => i.independentKeeperReverification === 'UNRUN'), true);
+});

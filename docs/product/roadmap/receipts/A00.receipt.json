@@ -1,0 +1,134 @@
+{
+  "schema": "arbor.item-receipt/1",
+  "itemId": "A00",
+  "authoredAt": "2026-11-16T12:18:28.420Z",
+  "status": "gated",
+  "gate": {
+    "command": "bun scripts/batch-evidence/A00.mjs --static && --live; bun scripts/test-gate.mjs",
+    "exit": 0
+  },
+  "nlclReplay": {
+    "checks": [
+      {
+        "name": "roadmap-parses",
+        "pass": true,
+        "detail": "validated"
+      },
+      {
+        "name": "unique-item-ids",
+        "pass": true,
+        "detail": "items=138 duplicates="
+      },
+      {
+        "name": "depends-on-references-existing-ids",
+        "pass": true,
+        "detail": "unresolved refs=0"
+      },
+      {
+        "name": "statuses-in-lane-truth-vocabulary",
+        "pass": true,
+        "detail": "vocab=[todo,candidate,active,in-progress,implemented,deferred,gated,executed,built,queued,approved,briefed,awaiting-routes,blocked] violations="
+      },
+      {
+        "name": "no-verified-claim-without-receipt",
+        "pass": true,
+        "detail": "verifiedClaims=0 receiptsDir=absent no bare pass claim lacks docs/product/roadmap/receipts/<id>.receipt.json"
+      },
+      {
+        "name": "roadmap-self-consistent",
+        "pass": true,
+        "detail": "items=138 queue=9"
+      },
+      {
+        "name": "evidence-truth-derives-clean",
+        "pass": true,
+        "detail": "validated"
+      },
+      {
+        "name": "evidence-truth-projection-shape",
+        "pass": true,
+        "detail": "disposition=BLOCKED_UNVERIFIED blockers=4 conflicts=6 releaseReady=false (truthful blocked projection is a clean read, never acceptance)"
+      },
+      {
+        "name": "roadmap-parses",
+        "pass": true,
+        "detail": "validated"
+      },
+      {
+        "name": "unique-item-ids",
+        "pass": true,
+        "detail": "items=138 duplicates="
+      },
+      {
+        "name": "depends-on-references-existing-ids",
+        "pass": true,
+        "detail": "unresolved refs=0"
+      },
+      {
+        "name": "statuses-in-lane-truth-vocabulary",
+        "pass": true,
+        "detail": "vocab=[todo,candidate,active,in-progress,implemented,deferred,gated,executed,built,queued,approved,briefed,awaiting-routes,blocked] violations="
+      },
+      {
+        "name": "no-verified-claim-without-receipt",
+        "pass": true,
+        "detail": "verifiedClaims=0 receiptsDir=absent no bare pass claim lacks docs/product/roadmap/receipts/<id>.receipt.json"
+      },
+      {
+        "name": "roadmap-self-consistent",
+        "pass": true,
+        "detail": "items=138 queue=9"
+      },
+      {
+        "name": "evidence-truth-derives-clean",
+        "pass": true,
+        "detail": "validated"
+      },
+      {
+        "name": "evidence-truth-projection-shape",
+        "pass": true,
+        "detail": "disposition=BLOCKED_UNVERIFIED blockers=4 conflicts=6 releaseReady=false (truthful blocked projection is a clean read, never acceptance)"
+      },
+      {
+        "name": "live-state-api-200",
+        "pass": true,
+        "detail": "validated"
+      },
+      {
+        "name": "live-queue-projection-200",
+        "pass": true,
+        "detail": "validated"
+      },
+      {
+        "name": "live-queue-exposes-batch-items",
+        "pass": true,
+        "detail": "buildQueue=A00:gated A01:gated A02:in-progress A03:queued A04:queued A05:queued A06:queued A07:queued A08:queued (base=http://127.0.0.1:43187 GET-only, no mutation)"
+      },
+      {
+        "name": "live-queue-matches-committed-roadmap",
+        "pass": true,
+        "detail": "live /api/roadmap queue projection deep-equals docs/product/roadmap/roadmap.v1.json buildQueue"
+      },
+      {
+        "name": "live-journal-read-consistency",
+        "pass": true,
+        "detail": "validated"
+      },
+      {
+        "name": "live-reads-are-read-only",
+        "pass": true,
+        "detail": "GET /api/state + /api/roadmap + /api/journal + /demo/journal.jsonl only; no POST issued; port-43187 data untouched by this runner"
+      }
+    ],
+    "digest": "cb2495f814201afd331e1b843e93043203da94f42be9a8bed4de6ad80c8dd62c"
+  },
+  "demo": {
+    "verdict": "rewalk-pending",
+    "journalRef": ".coordination/artifacts/roadmap/gate-cards.jsonl"
+  },
+  "host": {
+    "served": "(verify)"
+  },
+  "itemStatus": "gated",
+  "emittedBy": "dwfrun-fa42e97a-3401-47ed-afac-71f64d21fbc9"
+}

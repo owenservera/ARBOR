@@ -258,61 +258,57 @@
 
     'tab-build': (md, v) => {
       const rows = [];
-      // Committed revision: snapshot.bootstrap.uiRevision → surfaceId/revision/parentRevision/changeId/status
-      const rev = at(v.bootstrap ?? {}, 'uiRevision');
-      rows.push(plain(rev)
-        ? ['Committed revision', clip(rev.surfaceId ?? '', 30) + ' r' + rev.revision + (rev.parentRevision != null ? ' ← r' + rev.parentRevision : '') + (rev.changeId ? ' · ' + clip(rev.changeId, 20) : '') + ' · ' + clip(rev.status ?? '', 20)]
-        : ['Committed revision', NOT_AVAILABLE]);
-      // Committed surface: snapshot.bootstrap.surface.tree → flattened card/text fragments
-      const tree = at(v.bootstrap ?? {}, 'surface.tree');
-      const flat = tree ? flattenTree(tree) : [];
-      rows.push(flat.length ? ['Committed surface', flat.join(' · ')] : ['Committed surface', NOT_AVAILABLE]);
-      // Undo: snapshot.bootstrap.undo.available
-      const undo = at(v.bootstrap ?? {}, 'undo');
-      rows.push(plain(undo) ? ['Undo', undo.available ? 'available' : 'not available'] : ['Undo', NOT_AVAILABLE]);
-      // Proposal receipt: commands[] (proposal polling receipt) → id/status/result.applied
-      rows.push(Array.isArray(v.commands) && v.commands.length
-        ? ['Proposal receipt', v.commands.map(c => cmdText(c) + (plain(c) && plain(c.result) && c.result.applied ? ' · applied' : '')).join('   ')]
-        : ['Proposal receipt', NOT_AVAILABLE]);
+      // Intent: md.intent → intent string (SPEC A04 mockData shape)
+      rows.push(typeof md.intent === 'string' && md.intent.trim()
+        ? ['Intent', clip(md.intent, 80)]
+        : ['Intent', NOT_AVAILABLE]);
+      // Compiled: md.compiled → kind/surfaceId/revision/guarded/publishable/reason
+      const compiled = plain(md.compiled) ? md.compiled : null;
+      rows.push(compiled
+        ? ['Compiled', clip(compiled.kind ?? '', 20) + ' · ' + clip(compiled.surfaceId ?? '', 30) + ' r' + compiled.revision + ' · guarded ' + compiled.guarded + ' · publishable ' + compiled.publishable + (compiled.reason ? ' · ' + clip(compiled.reason, 40) : '')]
+        : ['Compiled', NOT_AVAILABLE]);
+      // Proposal: md.proposal → status/preview/state
+      const proposal = plain(md.proposal) ? md.proposal : null;
+      rows.push(proposal
+        ? ['Proposal', clip(proposal.status ?? '', 20) + ' · ' + clip(proposal.preview ?? '', 60) + ' · ' + clip(proposal.state ?? '', 16)]
+        : ['Proposal', NOT_AVAILABLE]);
+      // Approval required: md.approvalRequired
+      rows.push(['Approval required', md.approvalRequired === true ? 'yes — publish blocked until owner approves' : 'no']);
       return rows;
     },
 
-    'tab-world': (md, v) => {
+    // Queue-mode step tab-world (World): durable journal entries + approved Wiki
+    // revisions under "What was built", undoAvailable as undo cue. Reads md directly
+    // (this mockData shape is top-level revision/built/running/queue/undoAvailable/
+    // changeHint/empty/emptyMessage/gaps, not statusObj.snapshot.bootstrap).
+    'tab-world': (md) => {
       const rows = [];
-      // Built items: snapshot.bootstrap.surface.tree (committed revision) → flattened fragments
-      const tree = at(v.bootstrap ?? {}, 'surface.tree');
-      const flat = tree ? flattenTree(tree) : [];
-      rows.push(flat.length ? ['What was built', flat.join(' · ')] : ['What was built', NOT_AVAILABLE]);
-      // Running: snapshot.live.conversations[] → provider + LIVE_STATE_LABELS
-      if (plain(v.live) && Array.isArray(v.live.conversations) && v.live.conversations.length) {
-        v.live.conversations.forEach(c => {
-          const msg = Array.isArray(c.messages) ? c.messages[0] : null;
-          rows.push(['What is running', 'Chat · ' + clip(c.provider ?? '', 30) + (c.model ? ' · ' + clip(c.model, 30) : '') + ' · ' + liveLabel(msg)]);
-        });
+      const rev = plain(md.revision) ? md.revision : null;
+      rows.push(rev
+        ? ['Committed revision', clip(rev.surfaceId ?? '', 30) + ' r' + rev.revision + ' · ' + clip(rev.status ?? '', 20) + (rev.changeId ? ' · ' + clip(rev.changeId, 20) : '') + (rev.parentRevision != null ? ' ← r' + rev.parentRevision : '')]
+        : ['Committed revision', NOT_AVAILABLE]);
+      // What was built: built[] = durable journal entries + approved Wiki revisions
+      if (Array.isArray(md.built) && md.built.length) {
+        rows.push(['What was built', md.built.map(b => clip(plain(b) ? b.title ?? '' : '', 40) + ' · ' + clip(plain(b) ? b.detail ?? '' : '', 60)).join('   ')]);
+      } else {
+        rows.push(['What was built', NOT_AVAILABLE]);
+      }
+      // What is running: running[] (empty array = field present, nothing in flight; not an honest gap)
+      if (Array.isArray(md.running)) {
+        rows.push(['What is running', md.running.length ? md.running.map(r => clip(String(r), 60)).join('   ') : '']);
       } else {
         rows.push(['What is running', NOT_AVAILABLE]);
       }
-      // Bridge counts: snapshot.bridge → queued/claimed/done/failed
-      rows.push(bridgeText(v.bridge) ? ['Bridge', bridgeText(v.bridge)] : ['Bridge', NOT_AVAILABLE]);
-      // Queued commands: commands[] with status queued/failed → id + text + status
-      if (Array.isArray(v.commands)) {
-        const open = v.commands.filter(c => plain(c) && (c.status === 'queued' || c.status === 'failed'));
-        if (open.length) rows.push(['Command queue', open.map(cmdText).join('   ')]);
-      } else {
-        rows.push(['Command queue', NOT_AVAILABLE]);
-      }
-      // Undo: snapshot.bootstrap.undo.available
-      const undo = at(v.bootstrap ?? {}, 'undo');
-      if (plain(undo)) rows.push(['Undo', undo.available ? 'available' : 'not available']);
-      // Media library: S.media → state/total/favorites summary + items[] (title/kind/playable/favorite)
-      if (plain(v.media)) {
-        rows.push(['My Media Library', clip(v.media.state ?? '', 20) + ' · ' + v.media.total + ' tracked · ' + v.media.favorites + ' favorites']);
-        if (Array.isArray(v.media.items)) {
-          v.media.items.forEach(m => rows.push(['Media', clip(plain(m) ? m.title ?? '' : '', 40) + ' · ' + clip(plain(m) ? m.kind ?? '' : '', 20) + (plain(m) && m.playable ? ' · playable' : '') + (plain(m) && m.favorite ? ' · favorite' : '')]));
-        }
-      } else {
-        rows.push(['My Media Library', NOT_AVAILABLE]);
-      }
+      // Queue counts: queue.queued/claimed/done/failed
+      const q = plain(md.queue) ? md.queue : null;
+      rows.push(q ? ['Queue', 'queued ' + q.queued + ' · claimed ' + q.claimed + ' · done ' + q.done + ' · failed ' + q.failed] : ['Queue', NOT_AVAILABLE]);
+      // Undo cue: undoAvailable
+      rows.push(['Undo', md.undoAvailable === true ? 'available — undo cue exposed' : 'not available']);
+      // Change hint
+      rows.push(['Change hint', typeof md.changeHint === 'string' && md.changeHint.trim() ? md.changeHint : NOT_AVAILABLE]);
+      // Empty state + gaps
+      if (md.empty === true && typeof md.emptyMessage === 'string') rows.push(['Empty', clip(md.emptyMessage, 80)]);
+      if (Array.isArray(md.gaps) && md.gaps.length) rows.push(['Gaps', md.gaps.map(g => clip(String(g), 60)).join('   ')]);
       return rows;
     },
 
@@ -370,6 +366,80 @@
       rows.push(plain(v.recent) && Array.isArray(v.recent.items) && v.recent.items.length
         ? ['Recent Host decisions', v.recent.items.map(i => clip(plain(i) ? i.actionId ?? '' : '', 20) + ' — ' + clip(plain(i) ? i.state ?? '' : '', 16) + ' · ' + clip(plain(i) ? i.createdAt ?? '' : '', 30)).join('   ')]
         : ['Recent Host decisions', NOT_AVAILABLE]);
+      return rows;
+    },
+
+    // Queue-mode step A02 (World): durable journal entries + approved Wiki revisions
+    // under "What was built", undoAvailable as undo cue. Reads md directly (this
+    // mockData shape is top-level revision/built/running/queue/undoAvailable, not
+    // statusObj.snapshot.bootstrap). Every row traces to a mockData field; absent
+    // data renders NOT_AVAILABLE, never invented (C6).
+    'A02': (md) => {
+      const rows = [];
+      const rev = plain(md.revision) ? md.revision : null;
+      rows.push(rev
+        ? ['Committed revision', clip(rev.surfaceId ?? '', 30) + ' r' + rev.revision + ' · ' + clip(rev.status ?? '', 20) + (rev.changeId ? ' · ' + clip(rev.changeId, 20) : '') + (rev.parentRevision != null ? ' ← r' + rev.parentRevision : '')]
+        : ['Committed revision', NOT_AVAILABLE]);
+      // What was built: built[] = durable journal entries + approved Wiki revisions
+      if (Array.isArray(md.built) && md.built.length) {
+        rows.push(['What was built', md.built.map(b => clip(plain(b) ? b.title ?? '' : '', 40) + ' · ' + clip(plain(b) ? b.detail ?? '' : '', 60)).join('   ')]);
+      } else {
+        rows.push(['What was built', NOT_AVAILABLE]);
+      }
+      // What is running: running[] (empty array = field present, nothing in flight; not an honest gap)
+      if (Array.isArray(md.running)) {
+        rows.push(['What is running', md.running.length ? md.running.map(r => clip(String(r), 60)).join('   ') : '']);
+      } else {
+        rows.push(['What is running', NOT_AVAILABLE]);
+      }
+      // Queue counts: queue.queued/claimed/done/failed
+      const q = plain(md.queue) ? md.queue : null;
+      rows.push(q ? ['Queue', 'queued ' + q.queued + ' · claimed ' + q.claimed + ' · done ' + q.done + ' · failed ' + q.failed] : ['Queue', NOT_AVAILABLE]);
+      // Undo cue: undoAvailable
+      rows.push(['Undo', md.undoAvailable === true ? 'available — undo cue exposed' : 'not available']);
+      // Change hint
+      rows.push(['Change hint', typeof md.changeHint === 'string' && md.changeHint.trim() ? md.changeHint : NOT_AVAILABLE]);
+      // Empty state + gaps
+      if (md.empty === true && typeof md.emptyMessage === 'string') rows.push(['Empty', clip(md.emptyMessage, 80)]);
+      if (Array.isArray(md.gaps) && md.gaps.length) rows.push(['Gaps', md.gaps.map(g => clip(String(g), 60)).join('   ')]);
+      return rows;
+    },
+
+    // Queue-mode step A04 (Build): intent-compiler preview pane for three bounded
+    // intents rendered as proposal-preview with is-done/is-error, guarded publish
+    // that refuses stale/unapproved publish. Reads md directly.
+    'A04': (md) => {
+      const rows = [];
+      const compiled = plain(md.compiled) ? md.compiled : null;
+      const proposal = plain(md.proposal) ? md.proposal : null;
+      rows.push(['Intent', typeof md.intent === 'string' && md.intent.trim() ? md.intent : NOT_AVAILABLE]);
+      rows.push(compiled
+        ? ['Compiled', clip(compiled.kind ?? '', 20) + ' · ' + clip(compiled.surfaceId ?? '', 30) + ' r' + compiled.revision + ' · guarded ' + compiled.guarded + ' · publishable ' + compiled.publishable + (compiled.reason ? ' · ' + clip(compiled.reason, 40) : '')]
+        : ['Compiled', NOT_AVAILABLE]);
+      rows.push(proposal
+        ? ['Proposal', clip(proposal.status ?? '', 20) + ' · ' + clip(proposal.preview ?? '', 60) + ' · ' + clip(proposal.state ?? '', 16)]
+        : ['Proposal', NOT_AVAILABLE]);
+      rows.push(['Approval required', md.approvalRequired === true ? 'yes — publish blocked until owner approves' : 'no']);
+      return rows;
+    },
+
+    // Queue-mode step A05 (Build): verify/demonstrate product proof after a scoped
+    // repair (committed revision + test receipts + commit SHA), next batch via
+    // footer next action, Running lane queue counts. Reads md directly.
+    'A05': (md) => {
+      const rows = [];
+      const proof = plain(md.proof) ? md.proof : null;
+      const next = plain(md.nextBatch) ? md.nextBatch : null;
+      const q = plain(md.queue) ? md.queue : null;
+      rows.push(['Proposal', clip(md.proposalId ?? '', 24) + ' · applied ' + (md.applied === true ? 'yes' : 'no')]);
+      rows.push(proof
+        ? ['Committed revision', clip(proof.surfaceId ?? '', 30) + ' r' + proof.committedRevision + ' · commit ' + clip(proof.commitSHA ?? '', 12)]
+        : ['Committed revision', NOT_AVAILABLE]);
+      rows.push(proof && Array.isArray(proof.testReceipts) && proof.testReceipts.length
+        ? ['Test receipts', proof.testReceipts.map(r => clip(r, 50)).join('   ')]
+        : ['Test receipts', NOT_AVAILABLE]);
+      rows.push(['Next batch', next ? clip(next.label ?? '', 30) + ' · ' + clip(next.detail ?? '', 60) + ' → ' + clip(next.tab ?? '', 20) : NOT_AVAILABLE]);
+      rows.push(q ? ['Running lane queue', 'queued ' + q.queued + ' · claimed ' + q.claimed + ' · done ' + q.done + ' · failed ' + q.failed] : ['Running lane queue', NOT_AVAILABLE]);
       return rows;
     }
   };
@@ -595,13 +665,11 @@
   }
 
   function verdicts() {
-    return steps.map((step, i) => ({
-      itemId: step.itemId,
-      screen: step.screen,
-      decision: state[i].decision,
-      notes: state[i].notes,
-      tags: state[i].tags.slice()
-    }));
+    return steps.map((step, i) => {
+      const d = state[i].decision;
+      const verdict = d === 'approve' ? 'pass' : d === 'revise' ? 'fail' : 'defer';
+      return { itemId: step.itemId, verdict };
+    });
   }
 
   async function submitRound(approveAll) {

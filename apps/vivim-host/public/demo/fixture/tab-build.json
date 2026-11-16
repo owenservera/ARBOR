@@ -2,23 +2,24 @@
   "schema": "vivim.demo-step/1",
   "itemId": "tab-build",
   "screen": "Build",
-  "currentState": "Paired Direct Build: suggestion chips ('Set up everything for me', 'I need help researching', 'Make a simple AI workspace') sit above the compose canvas, with the Host-committed vivim.ui-revision/1 surface — a committed card 'Morning brief' with a text child — rendered read-only-into-proposal below from revision 3.",
+  "currentState": "Queue-mode Build: intent-compiler preview pane rendered as proposal-preview with is-done/is-error, guarded publish that refuses stale or unapproved publish. Reads md directly.",
   "proposedUpgrade": "baseline — current view, no upgrade proposed",
-  "acceptanceQuestion": "Can you tell at a glance what the Host has already committed versus what is still only a proposal you have not activated?",
+  "acceptanceQuestion": "Does Build render the intent as a guarded proposal (is-done/is-error), refuse to publish when stale or unapproved, without introducing a second visual publisher?",
   "mockData": {
-    "statusObj": {
-      "snapshot": {
-        "bootstrap": {
-          "uiRevision": { "surfaceId": "my-space", "revision": 3, "status": "committed", "changeId": "ch-1", "parentRevision": 2 },
-          "surface": { "tree": { "type": "stack", "children": [ { "type": "card", "id": "b-1", "props": { "title": "Morning brief", "description": "What your PC prepared overnight." }, "children": [ { "type": "text", "id": "b-2", "props": { "value": "3 items waiting for you." } } ] } ] } },
-          "undo": { "available": true }
-        }
-      }
+    "intent": "show ARBOR progress projection",
+    "compiled": {
+      "kind": "visual-update",
+      "surfaceId": "vivim.ui-surface/1",
+      "revision": 8,
+      "guarded": true,
+      "publishable": false,
+      "reason": "pending owner approval"
     },
-    "commands": [
-      { "id": "cmd-12", "status": "done", "result": { "applied": true } }
-    ],
-    "manifest": { "providers": [ { "id": "chatgpt", "signedIn": true } ] },
-    "buildPendingCleared": true
+    "proposal": {
+      "status": "pending",
+      "preview": "ARBOR progress projection · source-backed revision 8",
+      "state": "is-done"
+    },
+    "approvalRequired": true
   }
 }

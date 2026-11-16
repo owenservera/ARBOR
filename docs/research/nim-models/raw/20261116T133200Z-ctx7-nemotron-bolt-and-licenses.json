@@ -1,0 +1,20 @@
+{
+  "type": "context7-query-docs",
+  "libraryId": "/nvidia-nemo/nemotron",
+  "query": "Find any file mentioning 'Bolt' or 'E4B' in the nemotron repo ... HuggingFace collection nvidia-nemotron-v3 listing all Nemotron 3 / 3.5 checkpoints including Bolt-E4B and Ultra-550B | and Nemotron-3.5-Bolt-E4B model card specs",
+  "language": "python",
+  "pulledAt": "2026-11-16T13:32:00Z",
+  "response": "PARTIAL — no Bolt-E4B-specific file surfaced in these pulls. What did surface:\n\n### License (Lightning)\nSource: https://github.com/nvidia-nemo/nemotron/blob/main/usage-cookbook/Nemotron-3.5-Lightning/OpenScaffoldingResources/README.md\nThe model weights are governed by the OpenMDW License Agreement, version 1.1 (https://openmdw.ai/license/1-1/). The scripts and documentation in this repository are Apache-2.0 licensed.\n\n### Nemotron 3.5 Lightning resources\nSource: https://github.com/nvidia-nemo/nemotron/blob/main/docs/nemotron/lightning35/README.md\nRelease blog: https://developer.nvidia.com/blog/nvidia-nemotron-3-5-lightning-delivers-fast-accurate-specialized-task-execution-for-long-running-agents/ — 'There is no separate technical report — the release blog, the model cards (https://huggingface.co/collections/nvidia/nvidia-nemotron-v3), and the recipe configs in this repository are the authoritative references.' HF weights: nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-Base-BF16 / -BF16 / -NVFP4.\n\n### README top-level context length summary (Ultra + Nano)\nSource: https://github.com/nvidia-nemo/nemotron/blob/main/README.md\n550B total / 55B active (MoE); Hybrid Mamba-Attention with LatentMoE + two shared-weight MTP layers; 20T pretraining tokens NVFP4; up to 1M (1,048,576) context length.\n\n### License (Nano Omni)\nSource: https://github.com/nvidia-nemo/nemotron/blob/main/docs/nemotron/omni3/architecture.md\nReleased under the NVIDIA Nemotron Open Model License (enterprise use incl. on-prem and commercial). License text on model card https://huggingface.co/nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-BF16.\n\n### Super-VL HF id\nSource: https://github.com/nvidia-nemo/nemotron/blob/main/src/nemotron/recipes/super35/stage2_rl/stage3_mopd/config/phase1.yaml\npost-trained model HF id: nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-BF16.",
+  "sourceUrls": [
+    "https://github.com/nvidia-nemo/nemotron/blob/main/usage-cookbook/Nemotron-3.5-Lightning/OpenScaffoldingResources/README.md",
+    "https://openmdw.ai/license/1-1/",
+    "https://github.com/nvidia-nemo/nemotron/blob/main/docs/nemotron/lightning35/README.md",
+    "https://developer.nvidia.com/blog/nvidia-nemotron-3-5-lightning-delivers-fast-accurate-specialized-task-execution-for-long-running-agents/",
+    "https://huggingface.co/collections/nvidia/nvidia-nemotron-v3",
+    "https://github.com/nvidia-nemo/nemotron/blob/main/README.md",
+    "https://github.com/nvidia-nemo/nemotron/blob/main/docs/nemotron/omni3/architecture.md",
+    "https://huggingface.co/nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-BF16",
+    "https://github.com/nvidia-nemo/nemotron/blob/main/src/nemotron/recipes/super35/stage2_rl/stage3_mopd/config/phase1.yaml"
+  ],
+  "note": "Bolt-E4B specs NOT found in NVIDIA sources pulled -> guidebook marks bolt-e4b card details [unverified]; only the NIM id pattern (E4B ~ 4B active) and zero local usage rows."
+}

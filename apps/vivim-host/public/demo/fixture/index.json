@@ -7,6 +7,9 @@
     { "itemId": "tab-build", "screen": "Build", "file": "tab-build.json" },
     { "itemId": "tab-world", "screen": "World", "file": "tab-world.json" },
     { "itemId": "tab-me", "screen": "Me", "file": "tab-me.json" },
-    { "itemId": "tab-control", "screen": "Control", "file": "tab-control.json" }
+    { "itemId": "tab-control", "screen": "Control", "file": "tab-control.json" },
+    { "itemId": "A02", "screen": "World", "file": "tab-world-a02.json" },
+    { "itemId": "A04", "screen": "Build", "file": "tab-build-a04.json" },
+    { "itemId": "A05", "screen": "Build", "file": "tab-build-verify.json" }
   ]
 }

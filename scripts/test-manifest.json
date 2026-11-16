@@ -1686,6 +1686,12 @@
     "gate": "roadmap-acceleration"
   },
   {
+    "path": "scripts/roadmap/a05-cycle.test.mjs",
+    "root": "scripts/roadmap",
+    "runtime": "node24-ajv",
+    "gate": "roadmap-acceleration"
+  },
+  {
     "path": "apps/vivim-host/test/chat-box-baseline.test.mjs",
     "root": "apps/vivim-host/test",
     "runtime": "node24-ajv",
@@ -1807,6 +1813,12 @@
   },
   {
     "path": "apps/mobile-relay/test/vec-ui-taxonomy.test.mjs",
+    "root": "apps/mobile-relay/test",
+    "runtime": "node24-ajv",
+    "gate": "interop"
+  },
+  {
+    "path": "apps/mobile-relay/test/a02-verify-no-change.test.mjs",
     "root": "apps/mobile-relay/test",
     "runtime": "node24-ajv",
     "gate": "interop"

@@ -118,3 +118,39 @@ test('legacy feedback and gate records remain read-only and replayable', () => r
   await j.append(chat('after legacy'));
   assert.equal((await j.readRecords()).length, 3);
 }));
+
+// Wiki edit durability across Host restart: a fresh journal instance over the
+// same dataRoot rehydrates both chat state and wiki projections from the
+// append-only journal, and they agree on revision.
+test('wiki edit survives journal reopen; state and wiki projections agree', () => rootTest(async root => {
+  const j = journal(root);
+  await j.append(chat('hello'));
+  await j.append(edit(1, 'first revision'));
+  const first = await j.readProjection();
+  assert.equal(first.state.chat[0].text, 'hello');
+  assert.equal(first.wiki.pages.Main.sections.HowTo, 'first revision');
+  assert.equal(first.wiki.revision, 2);
+  assert.equal(first.state.wikiRevision, first.wiki.revision);
+
+  // Simulate Host restart: drop the in-process journal and reopen on the same path.
+  const restarted = journal(root);
+  const again = await restarted.readProjection();
+  assert.equal(again.state.chat[0].text, 'hello');
+  assert.equal(again.wiki.pages.Main.sections.HowTo, 'first revision');
+  assert.equal(again.wiki.revision, 2);
+  assert.equal(again.state.wikiRevision, again.wiki.revision);
+  assert.equal((await restarted.readRecords()).length, 2);
+}));
+
+// Wiki edit requires fresh revision: a stale expectedRevision is refused by
+// validateProductEdit and no append is made.
+test('stale wiki edit revision is refused without mutation', () => rootTest(async root => {
+  const j = journal(root);
+  await j.append(edit(1, 'first'));
+  // Try same revision again -> CAS 409.
+  await assert.rejects(j.append(edit(1, 'stale')), e => e.status === 409);
+  assert.equal((await j.readRecords()).length, 1);
+  const projection = await j.readProjection();
+  assert.equal(projection.wiki.pages.Main.sections.HowTo, 'first');
+  assert.equal(projection.wiki.revision, 2);
+}));
