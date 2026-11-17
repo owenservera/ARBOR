@@ -30,6 +30,8 @@ Safety, privacy, explicit approvals, source pinning, independent test receipts a
 
 A00–A02 are now `in-progress` with `execution=SOURCE_LANDED_TESTS_UNRUN`; A03–A08 remain `queued`. All nine retain `verification=UNRUN` and `ownerAcceptance=PENDING` until actual independent results. Every record supplies write scopes, acceptance checks, source references, dependency IDs and an estimated score breakdown. Dependencies are satisfied by independently accepted results, never merely the words "implemented", "executed" or "source-wired".
 
+Deterministic pick round 3 (2026-11-17): **A07** picked — `status=queued`, `verification=UNRUN`, `ownerAcceptance=PENDING`. Note: Evidence-driven parallel worker execution — Execute independent, nonoverlapping tasks using the existing orchestration a
+
 ### Three lanes start in parallel
 
 **Lane A — Product state/visual runtime:** A02 → A04 → A08. Own the canonical Host projection and tightly scoped VLang/VEC compile targets. Prove "open the wiki" navigation; "show ARBOR progress and blockers" source-backed visual rendering; and "change this section" approved typed diff, stale-revision refusal and persistence.

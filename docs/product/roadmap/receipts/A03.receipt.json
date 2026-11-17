@@ -4,9 +4,9 @@
   "authoredAt": "2026-11-16T13:00:00.000Z",
   "status": "gated",
   "gate": {
-    "command": "node scripts/feedback-loop/compile.mjs --receipt scripts/feedback-loop/fixtures/wiki-baseline.failed.json --source-sha <keeper-supplied-40-hex> --current-sha <keeper-supplied-40-hex> --revision R002 --current-revision R002 --condition wiki-page-renders",
+    "command": "node scripts/feedback-loop/compile.mjs --receipt scripts/feedback-loop/fixtures/wiki-baseline.failed.json --source-sha 9947bf32828f2cea2442748529e6595221128250 --current-sha 9947bf32828f2cea2442748529e6595221128250 --revision R002 --current-revision R002 --condition wiki-page-renders",
     "exit": 0,
-    "note": "A03 activation gated: BLOCKED_A00_INDEPENDENT_ACCEPTANCE_PENDING — A00 ownerAcceptance=PENDING verification=UNRUN (roadmap.v1.json:1661-1662); compiler emits CANDIDATE_REQUIRES_REVIEW / REVIEW_REQUIRED, no source effects, no roadmap writes"
+    "note": "A03 activation gated: BLOCKED_A00_INDEPENDENT_ACCEPTANCE_PENDING — compiler.mjs:237 still hard-codes the block; compiler.mjs:215 still emits activationGate A03_BLOCKED_UNTIL_A00_INDEPENDENTLY_ACCEPTED. A00 execution SOURCE_CONVERGED_ON_INTEGRATION_RUNTIME_UNRUN / verification UNRUN / ownerAcceptance PENDING in roadmap.v1.json L2 (isIndependentlyAccepted acceleration-queue.mjs:32-37 requires EXECUTED/INDEPENDENT_PASS/ACCEPTED); only the keeper one-writer flip clears A03. Compiler emits decision CANDIDATE_REQUIRES_REVIEW, mode DRY_RUN_READ_ONLY, noSourceEffects true, noRoadmapWrites true."
   },
   "nlclReplay": {
     "checks": [
@@ -23,12 +23,12 @@
       {
         "name": "roadmap-a03-record-consistent",
         "pass": true,
-        "detail": "roadmap.v1.json A03 layer L2 lane B ownerAcceptance PENDING verification UNRUN matches buildQueue A03 entry; L2 and buildQueue agree on lane/ownerAcceptance/verification (compiler.mjs:82-87)"
+        "detail": "roadmap.v1.json:1627-1669 (L2 A03 lane B verification UNRUN ownerAcceptance PENDING execution SOURCE_PREPARED_DEPENDENCY_BLOCKED_A00) and :2382-2394 (buildQueue A03 gated lane B verification UNRUN ownerAcceptance PENDING) agree on lane B / UNRUN / PENDING"
       },
       {
         "name": "a00-dependency-unaccepted",
         "pass": false,
-        "detail": "A00 ownerAcceptance=PENDING verification=UNRUN; A03 activation BLOCKED_A00_INDEPENDENT_ACCEPTANCE_PENDING (compiler.mjs:237)"
+        "detail": "A00 execution/verification/ownerAcceptance still UNRUN/UNRUN/PENDING for the machine rule; A03 activation BLOCKED_A00_INDEPENDENT_ACCEPTANCE_PENDING (compiler.mjs:237)"
       },
       {
         "name": "no-source-effects",
@@ -43,6 +43,33 @@
     ],
     "digest": "d9506caea68e796987c8aad281f5ce722e6d857cea770919c1137613de40757b"
   },
+  "verificationRun": {
+    "kind": "verify",
+    "ranAt": "2026-11-17T12:21Z",
+    "commands": [
+      {
+        "command": "node --test scripts/feedback-loop/compiler.test.mjs",
+        "exit": 0,
+        "result": "18 pass / 0 fail"
+      },
+      {
+        "command": "node scripts/feedback-loop/compile.mjs --receipt scripts/feedback-loop/fixtures/wiki-baseline.failed.json --source-sha 9947bf32828f2cea2442748529e6595221128250 --current-sha 9947bf32828f2cea2442748529e6595221128250 --revision R002 --current-revision R002 --condition wiki-page-renders",
+        "exit": 0,
+        "result": "decision CANDIDATE_REQUIRES_REVIEW, mode DRY_RUN_READ_ONLY, noSourceEffects true, noRoadmapWrites true, candidate.kind REVIEW_ONLY_NOT_EXECUTABLE, candidate.activationGate A03_BLOCKED_UNTIL_A00_INDEPENDENTLY_ACCEPTED, a03Activation BLOCKED_A00_INDEPENDENT_ACCEPTANCE_PENDING"
+      },
+      {
+        "command": "node scripts/feedback-loop/compile.mjs --receipt .coordination/pdr/evidence/WIKI-BASELINE.verify.oracle-executed.json --source-sha 9947bf32828f2cea2442748529e6595221128250 --current-sha 9947bf32828f2cea2442748529e6595221128250 --revision R002 --current-revision R002 --condition wiki-page-renders",
+        "exit": 0,
+        "result": "decision CANDIDATE_REQUIRES_REVIEW; candidate.existingRoadmapItemId A00; candidate.narrowPaths ['scripts/batch-evidence/WIKI-BASELINE.mjs']; kind REVIEW_ONLY_NOT_EXECUTABLE; a03Activation BLOCKED_A00_INDEPENDENT_ACCEPTANCE_PENDING"
+      }
+    ],
+    "evidenceRunner": "none — scripts/batch-evidence/ has A00, A01, A02, A07 only (no A03.mjs / A03.test.mjs); evidence = scripts/feedback-loop/compiler.mjs + compile.mjs + compiler.test.mjs",
+    "journey": {
+      "status": "UNRUN_JOURNEY_ABSENT",
+      "reason": "A03 receipt carries no journey record (journey undefined in this receipt at verification time); no journey invented or synthesized"
+    },
+    "activationBlocker": "BLOCKED_A00_INDEPENDENT_ACCEPTANCE_PENDING — compiler.mjs:215/237 hard-coded; A00 settled verified receipt (docs/product/roadmap/receipts/A00.receipt.json:5 status verified) does not satisfy isIndependentlyAccepted (acceleration-queue.mjs:32-37); only keeper one-writer flip clears"
+  },
   "demo": {
     "verdict": "rewalk-pending",
     "journalRef": ".coordination/artifacts/roadmap/gate-cards.jsonl"
@@ -51,5 +78,6 @@
     "served": "(verify)"
   },
   "itemStatus": "gated",
-  "emittedBy": "dwfrun-fa42e97a-3401-47ed-afac-71f64d21fbc9"
+  "emittedBy": "dwfrun-fa42e97a-3401-47ed-afac-71f64d21fbc9",
+  "lastVerify": "2026-11-17 — evidence re-run only; status stays gated"
 }

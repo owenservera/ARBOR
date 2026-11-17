@@ -337,6 +337,111 @@ async function main() {
   process.exit(ok ? 0 : 1);
 }
 
+// Programmatic driver contract (A07.test.mjs partition-2 acceptance):
+//   runA07Evidence({ root = REPO_ROOT, workOrders = [{ id, writeScope, command, expectedSha?, linkReceipt? }] })
+//   -> { schema: 'arbor.item-receipt/1', item: 'A07', ok, checks: [{ name, pass, detail }], receipts: [...] }
+// Workers are real subprocesses run concurrently; publish is refused on stale
+// expected SHA (before any worker runs), overlapping write scopes, missing
+// executed receipt (linkReceipt: false), or any nonzero worker exit code.
+export async function runA07Evidence({ root = REPO_ROOT, workOrders = [] } = {}) {
+  const checks = [];
+  const receipts = [];
+  const check = (name, pass, detail) => checks.push({ name, pass: Boolean(pass), detail: String(detail) });
+
+  const headSha = commitSha();
+  check('git-head-readable', headSha !== null, `HEAD=${headSha ?? 'unreadable'}`);
+
+  // Dependency gate (same contract as acceleration-queue.mjs:32-37). Recorded
+  // on every run; an empty queue refuses here, explicit work orders still run
+  // so evidence is produced (main() records the same gate without blocking).
+  let roadmap = null;
+  try { roadmap = loadRoadmap(); } catch { roadmap = null; }
+  const depsAccepted = DEP_IDS.every((id) => isIndependentlyAccepted(roadmap ? findItem(roadmap, id) : null));
+  if (workOrders.length === 0) {
+    check('dep-ready-gate', false, depsAccepted
+      ? 'ready frontier empty: no work orders queued'
+      : `deps not independently accepted: ${DEP_IDS.join('+')}`);
+    return { schema: 'arbor.item-receipt/1', item: ITEM, ok: false, checks, receipts };
+  }
+  check('dep-acceptance', depsAccepted,
+    `${DEP_IDS.join('+')}: ${depsAccepted ? 'independently accepted' : 'not independently accepted (recorded, non-blocking for explicit work orders)'}`);
+
+  // Fresh-head drift: expected SHA must equal git rev-parse HEAD. Refuse BEFORE
+  // any worker executes so a stale-SHA publish writes nothing.
+  const drifted = workOrders.filter((wo) => wo.expectedSha && wo.expectedSha !== headSha);
+  const headDrift = headSha === null || drifted.length > 0;
+  check('stale-expected-sha-drift', !headDrift,
+    headDrift
+      ? `DRIFT_REFUSED: expected=${drifted.map((w) => w.expectedSha).join(',')} actual=${headSha}`
+      : `expected matches HEAD=${headSha}`);
+  if (headDrift) {
+    return { schema: 'arbor.item-receipt/1', item: ITEM, ok: false, checks, receipts };
+  }
+
+  // Path-conflict detection across every work-order pair: overlapping writer
+  // scopes serialize with a refusal — no silent clobber.
+  let conflict = null;
+  for (let i = 0; i < workOrders.length && !conflict; i += 1) {
+    for (let j = i + 1; j < workOrders.length && !conflict; j += 1) {
+      conflict = pathConflicts(workOrders[i], workOrders[j]);
+    }
+  }
+  check('path-conflict-serialize', conflict === null,
+    conflict
+      ? `CONFLICT: ${conflict.woA} [${conflict.pathA}] overlaps ${conflict.woB} [${conflict.pathB}] — publish refused`
+      : 'all write scopes disjoint');
+
+  // Run every worker concurrently as a real subprocess (no simulated success).
+  const workers = await Promise.all(workOrders.map((wo) => runWorker({
+    command: wo.command[0],
+    args: wo.command.slice(1),
+    runtimeName: wo.command[0] === 'bun' ? 'bun' : 'node',
+  })));
+
+  const proofsDir = join(root, '.integration', 'proposal5', 'hq-version-intelligence', 'proofs', 'G2');
+  workOrders.forEach((wo, i) => {
+    const wr = workers[i];
+    check(`worker-${wo.id}-exit-zero`, wr.exitCode === 0,
+      `${wo.id}: ${wr.command} exitCode=${wr.exitCode} runtime=${wr.runtime} version=${wr.version} durationMs=${wr.durationMs}`);
+    if (wo.linkReceipt === false) {
+      check(`receipt-linked-${wo.id}`, false, `${wo.id}: linkReceipt=false — missing executed receipt REFUSED`);
+      return;
+    }
+    const receipt = {
+      schema: 'arbor.item-receipt/1',
+      item: ITEM,
+      claim: wo.id,
+      commitSha: headSha,
+      check: 'worker-execution',
+      ok: wr.exitCode === 0 && conflict === null,
+      detail: `${wo.id}: writeScope=${JSON.stringify(wo.writeScope)} exitCode=${wr.exitCode} runtime=${wr.version}`,
+      command: wr.command,
+      exitCode: wr.exitCode,
+      runtime: wr.runtime,
+      binary: wr.binary,
+      version: wr.version,
+      durationMs: wr.durationMs,
+      startedAt: wr.startedAt,
+      finishedAt: wr.finishedAt,
+      signal: wr.signal,
+      os: platform(),
+      osRelease: release(),
+      osArch: arch(),
+      writtenAt: isoNow(),
+    };
+    mkdirSync(proofsDir, { recursive: true });
+    writeFileSync(join(proofsDir, `${ITEM}-${wo.id}-receipt-${headSha ?? 'unknown'}.json`),
+      JSON.stringify(receipt, null, 2) + '\n');
+    receipts.push(receipt);
+    check(`receipt-linked-${wo.id}`, true, `${wo.id} keyed by commitSha=${headSha}`);
+  });
+
+  const allWorkersOk = workers.every((w) => w.exitCode === 0);
+  const allLinked = workOrders.every((wo) => wo.linkReceipt !== false);
+  const ok = !headDrift && conflict === null && allWorkersOk && allLinked && headSha !== null;
+  return { schema: 'arbor.item-receipt/1', item: ITEM, ok, checks, receipts };
+}
+
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   main().catch((error) => {
     process.stderr.write(`${ITEM}: fatal: ${String(error?.message || error)}\n`);
