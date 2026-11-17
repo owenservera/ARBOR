@@ -10,7 +10,10 @@
 //   bun scripts/life/scratch-host.mjs journey --chat "<text>" [--chat "<text2>"...] [--nlcl '<json>']
 //     -> boots scratch Host, POSTs each payload to /api/mutate, verifies /api/state projection,
 //        ALWAYS stops + removes the data root, prints ONE JSON {scratch, posts, verified, stopped}
-//   bun scripts/life/scratch-host.mjs start [--parent-pid <ppid>] -> ONE JSON line {baseUrl, dataRoot, port, pid}
+//   bun scripts/life/scratch-host.mjs session -> ONE JSON line {baseUrl, dataRoot, port, pid}
+//     (persistent scratch Host for multi-step walks: GETs, wiki edits, browser; the watchdog
+//      reaps it if your shell dies; ALWAYS pair with stop)
+//   bun scripts/life/scratch-host.mjs start [--parent-pid <ppid>] -> same as session + explicit watchdog
 //   bun scripts/life/scratch-host.mjs stop --port <port> [--data-root <dir>]
 //   bun scripts/life/scratch-host.mjs run -- <command...>   (env injected, cwd = repo root)
 //
@@ -185,7 +188,7 @@ async function journey(args) {
 }
 
 const [cmd, ...rest] = process.argv.slice(2);
-if (cmd === 'start') {
+if (cmd === 'start' || cmd === 'session') {
   const pIdx = rest.indexOf('--parent-pid');
   const parentPid = pIdx >= 0 ? Number(rest[pIdx + 1]) : 0;
   if (pIdx >= 0) rest.splice(pIdx, 2);
@@ -197,6 +200,6 @@ if (cmd === 'start') {
 } else if (cmd === 'journey') {
   journey(rest).catch((e) => { console.error(String(e && e.message || e)); process.exit(1); });
 } else {
-  console.error('usage: scratch-host.mjs start [--parent-pid <ppid>] | journey --chat "<text>"... [--nlcl <json>]... | stop --port <port> [--data-root <dir>] | run -- <command...>');
+  console.error('usage: scratch-host.mjs session [--parent-pid <ppid>] | journey --chat "<text>"... [--nlcl <json>]... | stop --port <port> [--data-root <dir>] | run -- <command...>');
   process.exit(1);
 }
