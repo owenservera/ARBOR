@@ -6,14 +6,19 @@
 // evidence contract boots an isolated Host instead; this helper makes that pattern turnkey for
 // journey subagents.
 //
-// Usage:
-//   bun scripts/life/scratch-host.mjs start   -> prints ONE JSON line {baseUrl, dataRoot, port}
+// Usage (journeys: prefer `journey` — one call, self-cleaning, no caller-side steps):
+//   bun scripts/life/scratch-host.mjs journey --chat "<text>" [--chat "<text2>"...] [--nlcl '<json>']
+//     -> boots scratch Host, POSTs each payload to /api/mutate, verifies /api/state projection,
+//        ALWAYS stops + removes the data root, prints ONE JSON {scratch, posts, verified, stopped}
+//   bun scripts/life/scratch-host.mjs start [--parent-pid <ppid>] -> ONE JSON line {baseUrl, dataRoot, port, pid}
 //   bun scripts/life/scratch-host.mjs stop --port <port> [--data-root <dir>]
 //   bun scripts/life/scratch-host.mjs run -- <command...>   (env injected, cwd = repo root)
 //
 // Guarantees: scratch port != 43187 (ephemeral, race-checked); data root is a flagged mkdtemp
 // dir (arbor-life-scratch-*) beneath the OS temp dir; the real port-43187 data root is never
 // read or written; stop removes the data root. run/stop exit 1 with a message on any violation.
+// Detached by design (survives the caller): pass --parent-pid <ppid> (typically $$) and a
+// watchdog kills this scratch Host if the parent dies — prevents orphaned Hosts after crashes.
 import { spawn, spawnSync } from 'node:child_process';
 import { existsSync, mkdtempSync, readFileSync, realpathSync, rmSync, lstatSync, writeFileSync } from 'node:fs';
 import net from 'node:net';
@@ -25,6 +30,16 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const SERVER = 'apps/vivim-host/server.mjs';
 const REAL_PORT = 43187;
 const ISO_MARKER = 'arbor-life-scratch-';
+
+// Watchdog: exit (and take the scratch Host with us, via the stop path) once `ppid` is gone.
+function watchdog(ppid) {
+  const timer = setInterval(() => {
+    let alive = true;
+    try { process.kill(ppid, 0); } catch { alive = false; }
+    if (!alive) { clearInterval(timer); try { process.kill(process.ppid, 'SIGKILL'); } catch { /* parent already gone */ } process.exit(0); }
+  }, 5000);
+  timer.unref?.();
+}
 
 function freePort() {
   return new Promise((res, rej) => {
@@ -43,11 +58,8 @@ function flaggedRoot(dataRoot) {
   return real.startsWith(realpathSync(os.tmpdir()) + sep) && lstatSync(real).isDirectory() && real.includes(ISO_MARKER);
 }
 
-async function start() {
-  const trace = (m) => { try { writeFileSync(join(os.tmpdir(), 'arbor-life-scratch-trace.log'), m + '\n', { flag: 'a' }); } catch { /* tracing is best-effort */ } };
-  trace('start: begin');
+async function start(parentPid) {
   const port = await freePort();
-  trace('start: port ' + port);
   if (port === REAL_PORT) throw new Error('refuse: scratch port equals real port 43187');
   const dataRoot = realpathSync(mkdtempSync(join(os.tmpdir(), ISO_MARKER)));
   const child = spawn('bun', [SERVER], {
@@ -59,15 +71,13 @@ async function start() {
   // Hold the pipes open: on Windows an unread child pipe can block the child on a full buffer.
   child.stdout?.on('data', () => {});
   child.stderr?.on('data', () => {});
-  trace('start: spawned pid ' + String(child.pid));
   const baseUrl = `http://127.0.0.1:${port}`;
   let up = false;
   for (let i = 0; i < 60 && !up; i++) {
-    if (child.exitCode !== null) { trace('start: child exited ' + String(child.exitCode)); break; }
+    if (child.exitCode !== null) break;
     try { const r = await fetch(baseUrl + '/api/state'); up = r.ok; } catch { /* not up yet */ }
     if (!up) await new Promise((r) => setTimeout(r, 500));
   }
-  trace('start: probe done up=' + String(up));
   child.unref(); // release the parent-side handle only after the probe loop
   if (!up) {
     try { child.kill(); } catch { /* already gone */ }
@@ -76,7 +86,7 @@ async function start() {
   }
   // PID sidecar for deterministic stop (avoids shell process matching).
   writeFileSync(join(os.tmpdir(), `arbor-life-scratch-${port}.pid`), String(child.pid));
-  trace('start: ready');
+  if (parentPid) watchdog(parentPid);
   console.log(JSON.stringify({ baseUrl, dataRoot, port, pid: child.pid }));
 }
 
@@ -109,14 +119,84 @@ function run(args) {
   process.exit(r.status ?? 1);
 }
 
+// journey — ONE self-sufficient call: boot the scratch Host, POST each --chat payload (or
+// --nlcl payload) to /api/mutate, verify the projection via /api/state, ALWAYS stop the Host
+// and remove its data root, then print ONE JSON report. No caller-side post-start steps, no
+// orphan risk: the Host never outlives this command.
+async function journey(args) {
+  const chats = [];
+  const nlc = [];
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === '--chat') chats.push(args[++i]);
+    else if (args[i] === '--nlcl') nlc.push(args[++i]);
+  }
+  if (chats.length === 0 && nlc.length === 0) { console.error('journey: pass at least one --chat "<text>" or --nlcl "<text>"'); process.exit(1); }
+  const port = await freePort();
+  if (port === REAL_PORT) throw new Error('refuse: scratch port equals real port 43187');
+  const dataRoot = realpathSync(mkdtempSync(join(os.tmpdir(), ISO_MARKER)));
+  const child = spawn('bun', [SERVER], {
+    cwd: ROOT,
+    env: { ...process.env, VIVIM_HOST_PORT: String(port), VIVIM_HOST_DATA_DIR: dataRoot },
+    stdio: ['ignore', 'pipe', 'pipe'],
+    detached: true,
+  });
+  child.stdout?.on('data', () => {});
+  child.stderr?.on('data', () => {});
+  const baseUrl = `http://127.0.0.1:${port}`;
+  let up = false;
+  for (let i = 0; i < 60 && !up; i++) {
+    if (child.exitCode !== null) break;
+    try { const r = await fetch(baseUrl + '/api/state'); up = r.ok; } catch { /* not up yet */ }
+    if (!up) await new Promise((r) => setTimeout(r, 500));
+  }
+  const report = { scratch: { baseUrl, dataRoot, port, pid: child.pid, up }, posts: [], verified: null, stopped: false };
+  if (up) {
+    for (const text of [...chats, ...nlc]) {
+      const isChat = chats.includes(text);
+      const payload = isChat
+        ? { kind: 'chat-send', actor: 'human', schemaVersion: 1, text }
+        : text; // --nlcl payload is a full JSON envelope the caller built
+      let status = 0; let body = '';
+      try {
+        const res = await fetch(baseUrl + '/api/mutate', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) });
+        status = res.status; body = (await res.text()).slice(0, 200);
+      } catch (e) { status = 0; body = String(e && e.message || e); }
+      report.posts.push({ kind: payload.kind, text: String(payload.text ?? '').slice(0, 60), status, body });
+    }
+    try {
+      const res = await fetch(baseUrl + '/api/state');
+      const state = await res.json();
+      report.verified = { status: res.status, revision: state.revision ?? null, chatLen: Array.isArray(state.chat) ? state.chat.length : null };
+    } catch (e) { report.verified = { error: String(e && e.message || e) }; }
+  }
+  // ALWAYS stop + clean, even on failures. Windows: the child may still hold file locks for
+  // a moment after kill — force-kill the tree, then retry the removal a few times.
+  try { spawnSync('taskkill', ['/PID', String(child.pid), '/T', '/F'], { encoding: 'utf8' }); } catch { /* best-effort */ }
+  try { child.kill(); } catch { /* already gone */ }
+  try { if (existsSync(join(os.tmpdir(), `arbor-life-scratch-${port}.pid`))) rmSync(join(os.tmpdir(), `arbor-life-scratch-${port}.pid`), { force: true }); } catch { /* best-effort */ }
+  if (existsSync(dataRoot) && flaggedRoot(dataRoot)) {
+    for (let i = 0; i < 5; i++) {
+      try { rmSync(dataRoot, { recursive: true, force: true, maxRetries: 3, retryDelay: 400 }); report.stopped = true; break; }
+      catch { await new Promise((r) => setTimeout(r, 600)); }
+    }
+  }
+  console.log(JSON.stringify(report));
+  process.exit(0);
+}
+
 const [cmd, ...rest] = process.argv.slice(2);
 if (cmd === 'start') {
-  start().catch((e) => { console.error(String(e && e.message || e)); process.exit(1); });
+  const pIdx = rest.indexOf('--parent-pid');
+  const parentPid = pIdx >= 0 ? Number(rest[pIdx + 1]) : 0;
+  if (pIdx >= 0) rest.splice(pIdx, 2);
+  start(parentPid).catch((e) => { console.error(String(e && e.message || e)); process.exit(1); });
 } else if (cmd === 'stop') {
   stop(rest);
 } else if (cmd === 'run') {
   run(rest);
+} else if (cmd === 'journey') {
+  journey(rest).catch((e) => { console.error(String(e && e.message || e)); process.exit(1); });
 } else {
-  console.error('usage: scratch-host.mjs start | stop --port <port> [--data-root <dir>] | run -- <command...>');
+  console.error('usage: scratch-host.mjs start [--parent-pid <ppid>] | journey --chat "<text>"... [--nlcl <json>]... | stop --port <port> [--data-root <dir>] | run -- <command...>');
   process.exit(1);
 }
