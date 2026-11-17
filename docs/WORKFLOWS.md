@@ -44,8 +44,9 @@ Standing owner principles:
 | 4 | `arbor-batch-engine` | Lane-autonomous batch runner: `mode=build` runs an approved batch; `mode=verify` independently verifies (receipts + one-writer flip only). Owner batch-exit hole is the only gate | `batchLabel`, `items` (json), `mode` | Batch 2+; verify mode when independent evidence is owed against the live Host |
 | 5 | `arbor-chatgpt-bridge` | Strategic ChatGPT input via studio.mjs single transport; owner-gated, entry via oracle only (lane → oracle → manager → bridge → ChatGPT) | — | Never a direct lane transport; receipts + requestId dedup |
 | 6 | `arbor-batch1` | **HISTORICAL** — batch-1 3-page baseline that ran as `dwfrun-e163906c` (completed, owner-approved 2026-11-14) | — | Never launch; reference for per-stage gate design |
+| 7 | `arbor-life` | Autonomous continuous development (owner mandate 2026-11-16): USE → OBSERVE → DIAGNOSE → FIX → VERIFY → EVOLVE. Feeds the next eligible item (build or verify-kind), runs real browser journeys (control-browser tools in-subagent), fixes confirmed defects scoped, gates + evidence + fresh-eyes replay, writes `arbor.item-receipt/1` receipts, hands off to the keeper. GLM-5.3-Flash leads (≤2 in flight), ernie-5.5 fallback tier, NIM workhorses. Never edits roadmap.v1.json — keeper flips | `mode` = `life` (default) / `audit`, `maxRounds` (default 6), `item` | Continuous improvement loop; supersedes per-item arbor-build launches only after 3 consecutive green cycles |
 
-Registry state 2026-11-16: **6 valid, 0 invalid** (batch1's missing frontmatter repaired this date; CRLF in def frontmatter normalized — it was surfacing as a `"build\r"` default arg).
+Registry state 2026-11-16: **7 valid, 0 invalid** (batch1's missing frontmatter repaired this date; CRLF in def frontmatter normalized — it was surfacing as a `"build\r"` default arg; arbor-life added this date).
 
 ## 3. Expectations — operating rules every lane follows
 

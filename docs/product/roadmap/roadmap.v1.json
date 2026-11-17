@@ -1804,7 +1804,7 @@
         "layer": "L2",
         "title": "Evidence-driven parallel worker execution",
         "description": "Execute independent, nonoverlapping tasks using the existing orchestration and single-writer contracts; detect path conflicts, fresh-head drift and missing receipts before integration.",
-        "status": "build-failed",
+        "status": "queued",
         "sources": [
           "docs/product/roadmap/ACCELERATION-R002.md",
           ".coordination/",
@@ -2373,9 +2373,9 @@
       "dependsOn": [],
       "priority": 3,
       "accelerationScore": 96,
-      "verification": "UNRUN",
+      "verification": "STATIC_LIVE_PASS_EXIT0",
       "ownerAcceptance": "PENDING",
-      "note": "Canonical stateful chat-to-Wiki projection — all W1 lane source integrated; independent Node24/Host/browser verification UNRUN.",
+      "note": "Canonical stateful chat-to-Wiki projection — all W1 lane source integrated; round-3 verify 2026-11-17: bun scripts/batch-evidence/A02.mjs --static exit 0 (4/4, digest eb2f13a282a4dc0120034f558749a85c7e28c06cf518bcd8d592a01dae2020d9), --live exit 0 isolated scratch Host 21/21 (parityDigest d810c51b708d8346150079070111dcdacc250708d086612cefad6eff3fb882b1, live digest bb8afa2a8a556a64d9e641dac0fa42e9e253fc1ba55fcf55c875852cedb9ef32, no request to port 43187); GET http://127.0.0.1:43187/api/wiki HTTP 200 revision 1; browserDom/physicalDevice UNRUN; receipt docs/product/roadmap/receipts/A02.receipt.json still gated (rewrite outside this lane paths).",
       "rewalk": "pending"
     },
     {

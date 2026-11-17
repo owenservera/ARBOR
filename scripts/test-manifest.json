@@ -1835,10 +1835,28 @@
     "runtime": "bun",
     "gate": "roadmap-acceleration"
   },
-  {
-    "path": "native/hqkg/tests/invalidate-revision.test.mjs",
-    "root": "native/hqkg/tests",
-    "runtime": "node24-ajv",
-    "gate": "roadmap-acceleration"
-  }
+{
+  "path": "native/hqkg/tests/invalidate-revision.test.mjs",
+  "root": "native/hqkg/tests",
+  "runtime": "node24-ajv",
+  "gate": "roadmap-acceleration"
+},
+{
+  "path": "scripts/batch-evidence/A00.test.mjs",
+  "root": "scripts/batch-evidence",
+  "runtime": "node24-ajv",
+  "gate": "roadmap-acceleration"
+},
+{
+  "path": "scripts/batch-evidence/A01.test.mjs",
+  "root": "scripts/batch-evidence",
+  "runtime": "node24-ajv",
+  "gate": "roadmap-acceleration"
+},
+{
+  "path": "scripts/batch-evidence/A02.test.mjs",
+  "root": "scripts/batch-evidence",
+  "runtime": "node24-ajv",
+  "gate": "roadmap-acceleration"
+}
 ]
