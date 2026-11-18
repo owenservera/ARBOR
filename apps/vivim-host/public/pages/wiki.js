@@ -1,5 +1,6 @@
 import { resolveDesktopDestination, resolveProductRoute } from '/mobile/control-language.mjs';
 import { mountComposerAssist } from '/mobile/composer-assist.mjs';
+import { sourceCards, sameSourceCard, matchesSourceContext, exactSourceContextUrl, reconcileSourceCards } from '/mobile/wiki-source-view.mjs';
 // Host read-model and reviewed Wiki drafts. NL interpretation belongs to Host;
 // only the existing owner-confirmed mutation endpoint writes Wiki content.
 // VEC/0.1 typed display seam: {schema:'vivim.vec-compile/0.1', domain:'wiki',
@@ -30,6 +31,7 @@ let surfaceContextEpoch = 0;
 let surfaceContextSelection = null;
 let autoContextPending = false;
 let indexingSources = false;
+let sourceCardHost=null;
 
 function element(tag, className, text) {
   const result = document.createElement(tag);
@@ -252,27 +254,30 @@ function renderFileSurface(surface) {
   const root = element('div');
   const records = fileRecords(surface);
   root.appendChild(element('p', 'queue-summary', `${records.length} indexed files · ${present(surface?.generatorVersion)}${surface?.truncated ? ' · bounded results' : ''} · read only, not execution authority`));
-  if (!records.length) { root.appendChild(element('p', 'empty', 'No matching indexed executable source. Register an approved project and refresh its index.')); return root; }
+  if (!records.length) { sourceCardHost=null;root.appendChild(element('p', 'empty', 'No matching indexed executable source. Register an approved project and refresh its index.')); return root; }
+  const cards=sourceCards(surface);
   for (const record of records.slice(0, 16)) {
     const details = element('details', 'record');
     details.appendChild(element('summary', '', present(record.path)));
     details.appendChild(element('p', 'body', present(record.surface, 'No description.')));
     details.appendChild(element('p', 'record-meta',
       `sourceDigest=${present(record.sourceDigest, 'unprovided')} · ${present(record.freshness, 'unverified')} · project=${present(record.project)}`));
-    for (const annotation of record.annotations || []) details.appendChild(element('p', 'record-meta',
-      annotation.kind + ' · ' + annotation.semanticId + ' · line ' + annotation.line + ' · ' + annotation.resolution));
     for (const relation of record.relationships || []) details.appendChild(element('p', 'record-meta',
       relation.kind + ' → ' + (relation.semanticId || relation.ref) + ' · line ' + relation.line));
-    if (record.freshness === 'indexed' && record.project && record.path) {
-      const button = element('button', '', 'Read verified source context');
-      button.type = 'button';
-      button.addEventListener('click', () => { void readSurfaceContext(record); });
-      details.appendChild(button);
-    } else if (record.freshness === 'stale') {
-      details.appendChild(element('p', 'empty', 'Source changed; refresh the index before requesting context.'));
-    }
+    if (record.freshness === 'stale') details.appendChild(element('p','empty','Source changed; refresh the index before requesting context.'));
+    if(!cards.some(c=>c.sourceId===record.sourceId))
+      details.appendChild(element('p','empty','No validated semantic anchor available.'));
     root.appendChild(details);
   }
+  root.appendChild(element('h3','','Live semantic anchors · source evidence only'));
+  root.appendChild(element('p','meta','Derived and inferred claims are read only. Edit personal Wiki sections using their own journal editor. No source writer is authorized here.'));
+  if(!sourceCardHost)sourceCardHost=element('div','stack');
+  reconcileSourceCards(sourceCardHost,cards,{createElement:tag=>element(tag,'record'),onRead:card=>{
+    const record=fileRecords(sourceRecord('surface')).find(f=>f.sourceId===card.sourceId);
+    if(record)void readSurfaceContext({...record,sourceCard:card});
+  }});
+  root.appendChild(sourceCardHost);
+  if(cards.length>256)root.appendChild(element('p','empty','Showing the first 256 semantic anchors.'));
   if (records.length > 16) root.appendChild(element('p', 'empty', `Showing 16/${records.length} source records.`));
   return root;
 }
@@ -282,8 +287,7 @@ function clearSurfaceContext(message = 'Search annotated source or select a curr
   $('surface-context-view').replaceChildren(element('p', 'empty', message));
 }
 function currentSurfaceRecord(record) {
-  return fileRecords(sourceRecord('surface')).some(file => file.sourceId === record.sourceId &&
-    file.sourceDigest === record.sourceDigest && file.freshness === 'indexed');
+  return !!record.sourceCard&&sourceCards(sourceRecord('surface')).some(card=>sameSourceCard(card,record.sourceCard));
 }
 async function readSurfaceContext(record) {
   if (!currentSurfaceRecord(record)) {
@@ -294,15 +298,19 @@ async function readSurfaceContext(record) {
   surfaceContextSelection = record;
   $('surface-context-view').replaceChildren(element('p', 'empty', 'Composing verified HQ context…'));
   try {
-    const response = await fetch('/api/file-surface/context?project=' + encodeURIComponent(record.project) +
-      '&path=' + encodeURIComponent(record.path) + '&task=' + encodeURIComponent(surfaceQuery),
+    const response = await fetch(exactSourceContextUrl(record.sourceCard),
       { credentials: 'same-origin', cache: 'no-store', signal: AbortSignal.timeout(15000) });
     if (epoch !== surfaceContextEpoch) return;
+    if([401,403].includes(response.status)){
+      sourceCardHost=null;snapshots.surface={data:null,signature:null,error:'Source access denied'};
+      $('surface-view').replaceChildren(element('p','empty','Source index locked. No cached source displayed.'));
+      clearSurfaceContext('Source access denied. No cached context displayed.');return;
+    }
     if (!response.ok) throw new Error('Source context refused');
     const result = await response.json();
     if (epoch !== surfaceContextEpoch) return;
     const bundle = result?.context;
-    if (!currentSurfaceRecord(record) || result?.schema !== 'vivim.source-context/1' ||
+    if (!currentSurfaceRecord(record) || !matchesSourceContext(record.sourceCard,result) || result?.schema !== 'vivim.source-context/1' ||
         result.status !== 'indexed' || result.sourceId !== record.sourceId ||
         result.sourceDigest !== record.sourceDigest || bundle?.schema !== 'hq.context-bundle/1' ||
         !Array.isArray(bundle.sources) || bundle.sources.length > 16 ||
@@ -314,6 +322,7 @@ async function readSurfaceContext(record) {
     }
     const root = element('section', 'record');
     root.appendChild(element('h3', '', 'Verified context · ' + result.sourceId));
+    root.appendChild(element('p','meta','Exact anchor '+result.anchor.anchorId+' · line '+result.anchor.line+' · annotation occurrence only; not execution authority.'));
     root.appendChild(element('p', 'record-meta', 'Digest ' + bundle.digest +
       ' · verified at read; source changes require a fresh context'));
     for (const source of bundle.sources)
@@ -328,9 +337,9 @@ async function readSurfaceContext(record) {
 }
 function autoSurfaceContext(data) {
   if (!surfaceQuery) return;
-  const matches = fileRecords(data).filter(file => file.freshness === 'indexed');
-  if (matches.length === 1) void readSurfaceContext(matches[0]);
-  else clearSurfaceContext(matches.length ?
+  const matches=sourceCards(data).filter(card=>card.readable&&card.semanticId===surfaceQuery);
+  if(matches.length===1){const record=fileRecords(data).find(f=>f.sourceId===matches[0].sourceId);void readSurfaceContext({...record,sourceCard:matches[0]});}
+  else clearSurfaceContext(sourceCards(data).some(card=>card.readable) ?
     'Choose a matching file to generate verified context.' :
     'No current annotated source matches. Reindex if source changed.');
 }
@@ -597,7 +606,7 @@ async function refresh() {
               ? 'Owner context locked. Unlock Host Control to see user observations.'
               : 'Owner context temporarily unavailable. No cached private content displayed.'));
         } else if (key === 'surface') {
-          autoContextPending = false;
+          autoContextPending = false;sourceCardHost=null;
           clearSurfaceContext('Authorized HQ source unavailable. No cached context displayed.');
           snapshots[key] = { data: null, signature: null, error: message };
           $('surface-view').replaceChildren(element('p', 'empty', message.includes('HTTP 401')
@@ -860,7 +869,7 @@ $('surface-search').addEventListener('submit', event => {
   surfaceQueryEpoch++;
   autoContextPending = true;
   clearSurfaceContext('Reading matching annotated source…');
-  snapshots.surface = { data: null, error: null };
+  snapshots.surface = { data: null, error: null };sourceCardHost=null;
   $('surface-view').replaceChildren(element('p', 'empty', 'Searching authorized source…'));
   updateSourceMeta('surface');
   // If a poll is active, its obsolete query result is ignored; the next poll
@@ -889,7 +898,7 @@ $('surface-reindex').addEventListener('click', async () => {
     const currentSurface = await getJson('surface');
     if (epoch === surfaceQueryEpoch) { autoContextPending = true; ingest('surface', currentSurface); }
   } catch {
-    snapshots.surface = { data: null, error: 'Index refresh not confirmed' };
+    snapshots.surface = { data: null, error: 'Index refresh not confirmed' };sourceCardHost=null;
     $('surface-view').replaceChildren(element('p', 'empty', 'Index refresh not confirmed. Refresh sources to inspect the result.'));
     $('surface-reindex-status').textContent = 'Refresh unavailable or unconfirmed. No automatic retry.';
     updateSourceMeta('surface');

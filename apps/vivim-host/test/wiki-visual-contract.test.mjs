@@ -6,6 +6,7 @@ import path from 'node:path';
 import vm from 'node:vm';
 import { resolveDesktopDestination, resolveProductRoute } from '../../mobile-relay/control-language.mjs';
 import { mountComposerAssist } from '../../mobile-relay/composer-assist.mjs';
+import { sourceCards, sameSourceCard, matchesSourceContext, exactSourceContextUrl, reconcileSourceCards } from '../../mobile-relay/wiki-source-view.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const pages = path.resolve(here, '../public/pages');
@@ -30,8 +31,9 @@ class MockNode {
 }
 const clone = x => JSON.parse(JSON.stringify(x));
 const baseWiki = { revision: 1, pages: { Main: { sections: { About: '<img src=x onerror=alert(1)>', HowTo: 'First\nSecond' } } } };
-const baseSurface = { schema: 'vivim.file-surface/1', generatorVersion: 'hq.source-index/1', status: 'indexed', files: [
-  { project: 'arbor', sourceId: 'arbor:apps/vivim-host/public/pages/wiki.js', path: 'apps/vivim-host/public/pages/wiki.js', surface: '<script>not executable</script>', commentIds: ['vivim.example@1'], actionIds: [], sourceDigest: 'example-digest', freshness: 'indexed', annotations: [{ semanticId: 'vivim.example@1', kind: 'consumes', line: 12, resolution: 'unknown' }], relationships: [] }
+const anchorId='hq:file-anchor:'+'b'.repeat(64), fingerprint='c'.repeat(64),sourceDigest='d'.repeat(64);
+const baseSurface = { authority:'read_only_projection',schema: 'vivim.file-surface/1', generatorVersion: 'hq.source-index/1', status: 'indexed', files: [
+  { project: 'arbor', sourceId: 'arbor:apps/vivim-host/public/pages/wiki.js', path: 'apps/vivim-host/public/pages/wiki.js', surface: '<script>not executable</script>', commentIds: ['vivim.example@1'], actionIds: [], sourceDigest,currentDigest:sourceDigest, freshness: 'indexed', annotations: [{ semanticId: 'vivim.example@1', kind: 'consumes', line: 12, resolution: 'unknown',semanticAnchor:{anchorId,fingerprint,semanticId:'vivim.example@1',annotationKind:'consumes',contentHash:sourceDigest,lines:[12],state:'indexed'},evidence:{origin:'extracted',assurance:'verified',claim:'annotation-occurrence',conflict:false} }], relationships: [] }
 ] };
 function allChildren(node) { return [node, ...node.children.flatMap(allChildren)]; }
 function setup() {
@@ -69,8 +71,9 @@ function setup() {
       return { ok: true, status: 200, json: async () => ({
         schema: 'vivim.source-context/1', status: 'indexed',
         sourceId: record.sourceId, sourceDigest: record.sourceDigest,
-        context: { schema: 'hq.context-bundle/1', digest: 'verified-context-digest',
-          sources: [{ ref: record.sourceId, lines: [12, 16] }],
+        anchor:{anchorId,fingerprint,line:12,semanticId:'vivim.example@1',resolution:'unknown',authority:'read_only_projection'},
+        context: { schema: 'hq.context-bundle/1', authority:'read_only_projection',digest: 'e'.repeat(64),
+          sources: [{ ref: record.sourceId, contentHash:sourceDigest,lines: [12, 16],semanticReferences:[{line:12,semanticAnchor:{anchorId,fingerprint}}] }],
           fragment: '<script>literal source, not executable HTML</script>' }
       }) };
     }
@@ -113,8 +116,8 @@ function setup() {
     return elements.get(id);
   }, createElement: name => new MockNode(name), addEventListener() {}, hidden: false };
   for(const node of elements.values())node.ownerDocument=document;
-  const context = vm.createContext({ resolveDesktopDestination, resolveProductRoute, mountComposerAssist, document, fetch, setInterval: fn => { interval = fn; return 1; }, AbortSignal, TextEncoder, Date, console });
-  vm.runInContext(script.replace("import { resolveDesktopDestination, resolveProductRoute } from '/mobile/control-language.mjs';",'').replace("import { mountComposerAssist } from '/mobile/composer-assist.mjs';",''), context, { filename: 'wiki.js' });
+  const context = vm.createContext({ resolveDesktopDestination, resolveProductRoute, mountComposerAssist, sourceCards,sameSourceCard,matchesSourceContext,exactSourceContextUrl,reconcileSourceCards, document, fetch, setInterval: fn => { interval = fn; return 1; }, AbortSignal, TextEncoder, Date, console });
+  vm.runInContext(script.replace("import { resolveDesktopDestination, resolveProductRoute } from '/mobile/control-language.mjs';",'').replace("import { mountComposerAssist } from '/mobile/composer-assist.mjs';",'').replace("import { sourceCards, sameSourceCard, matchesSourceContext, exactSourceContextUrl, reconcileSourceCards } from '/mobile/wiki-source-view.mjs';",''), context, { filename: 'wiki.js' });
   const el = id => elements.get(id);
   return { elements, docs, posts, interpretCalls, el, context, tick: () => interval(),
     setPostStatus: value => { postStatus = value; }, setPostThrows: value => { postThrows = value; },
@@ -158,8 +161,9 @@ test('Host source projection: revisions, seed truth, actual files[] schema and u
   const surfaceNodes = allChildren(ui.el('surface-view'));
   assert.ok(surfaceNodes.some(n => n.textContent === 'apps/vivim-host/public/pages/wiki.js'));
   assert.ok(surfaceNodes.some(n => n.textContent === '<script>not executable</script>'));
-  assert.ok(surfaceNodes.some(n => n.textContent === 'consumes · vivim.example@1 · line 12 · unknown'));
+  assert.ok(surfaceNodes.some(n => n.textContent === 'vivim.example@1 · verified-occurrence'));
   assert.ok(surfaceNodes.some(n => n.tagName === 'button' && n.textContent === 'Read verified source context'));
+  assert.ok(surfaceNodes.some(n => n.textContent.includes('Anchor '+anchorId)));
   const repaints = ['wiki', 'surface', 'journal'].map(k => ui.el(k + '-view').repaints);
   ui.tick(); await settle();
   assert.deepEqual(['wiki', 'surface', 'journal'].map(k => ui.el(k + '-view').repaints), repaints);

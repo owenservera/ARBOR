@@ -94,7 +94,10 @@ test('actual ARBOR registration and HQ source index feed real Host route and sou
     assert.equal(wiki.status, 200);
     assert.match(wiki.data, /id="surface-search"/);
     const script = await request(server, '/wiki.js', { authenticated: false });
-    assert.match(script.data, /Read verified source context/);
+    assert.match(script.data, /wiki-source-view\.mjs/);
+    const module=await request(server,'/mobile/wiki-source-view.mjs',{authenticated:false});
+    assert.equal(module.status,200);
+    assert.match(module.data,/Read verified source context/);
     assert.match(wiki.data, /id="surface-context-view"/);
     assert.doesNotMatch(script.data, /data\/demo-baseline\/file-surface/);
   } finally { if (server.listening) await close(server); rmSync(tmp, { recursive: true, force: true }); }
@@ -124,6 +127,20 @@ test('real annotated implementation copy: stale refusal, incremental reindex, ch
     assert.equal(initial.status, 200);
     assert.deepEqual(initial.data.files.map(f => f.path), ['intent-planner.mjs']);
     const contextUrl = '/api/file-surface/context?project=copy&path=intent-planner.mjs';
+    const annotation=initial.data.files[0].annotations.find(a=>a.semanticId===id&&a.kind==='consumes');
+    assert.equal(annotation.evidence.assurance,'verified');
+    const selected=annotation.semanticAnchor;
+    const exactUrl=contextUrl+'&anchor='+encodeURIComponent(selected.anchorId)+'&fingerprint='+selected.fingerprint;
+    const personalBefore=(await request(server,'/api/wiki')).data;
+    const exact=(await request(server,exactUrl)).data;
+    assert.equal(exact.status,'indexed');
+    assert.equal(exact.anchor.anchorId,selected.anchorId);
+    assert.equal(exact.anchor.fingerprint,selected.fingerprint);
+    assert.equal(exact.context.sources.length,1);
+    assert.equal(exact.anchor.authority,'read_only_projection');
+    assert.equal((await request(server,exactUrl,{authenticated:false})).status,401);
+    assert.notEqual((await request(server,contextUrl+'&anchor=invalid')).status,200);
+    assert.equal((await request(server,exactUrl,{method:'POST'})).status,405);
     const before = (await request(server, contextUrl)).data;
     checkContext(before, 'copy', 'intent-planner.mjs', id);
     const command = await request(server,'/api/host/control/plan',{
@@ -174,6 +191,7 @@ test('real annotated implementation copy: stale refusal, incremental reindex, ch
     const noContext = (await request(server, contextUrl)).data;
     assert.equal(noContext.status, 'stale');
     assert.equal(noContext.context, null);
+    assert.equal((await request(server,exactUrl)).data.context,null);
     assert.equal(hq.verifyContext(before.context).valid, false);
     const changed = await request(server,'/api/host/control/plan',{
       method:'POST',body:{text:'list wiki pages'}
@@ -196,6 +214,12 @@ test('real annotated implementation copy: stale refusal, incremental reindex, ch
     checkContext(updated, 'copy', 'intent-planner.mjs', changedId);
     assert.equal(hq.verifyContext(updated.context).valid, true);
     assert.notEqual(updated.context.digest, before.context.digest);
+    assert.equal((await request(server,exactUrl)).data.context,null,'removed anchor cannot be read using old identity');
+    const replacement=after.files[0].annotations.find(a=>a.semanticId===changedId&&a.kind==='consumes').semanticAnchor;
+    const replaced=(await request(server,contextUrl+'&anchor='+encodeURIComponent(replacement.anchorId)+'&fingerprint='+replacement.fingerprint)).data;
+    assert.equal(replaced.status,'indexed');
+    assert.equal(replaced.anchor.anchorId,replacement.anchorId);
+    assert.deepEqual((await request(server,'/api/wiki')).data,personalBefore,'HQ reads and reindex never mutate personal Wiki');
     const forbidden = await request(server, '/api/file-surface/context?project=copy&path=private%2Fintent-planner.mjs');
     assert.equal(forbidden.data.context, null);
     const escaped = await request(server, '/api/file-surface/context?project=copy&path=..%2Foutside.mjs');

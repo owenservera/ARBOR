@@ -457,13 +457,17 @@ export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path
         const query = params.get('q') ?? '';
         const sourcePath = params.get('path') ?? undefined;
         const task = params.get('task') ?? '';
+        const anchorId=params.get('anchor')??undefined, fingerprint=params.get('fingerprint')??undefined;
         if (query.length > 240 || task.length > 1000 || (project?.length ?? 0) > 128 ||
-            (sourcePath?.length ?? 0) > 512 || (context && (!project || !sourcePath))) {
+            (sourcePath?.length ?? 0) > 512 || (context && (!project || !sourcePath)) ||
+            ((anchorId!==undefined||fingerprint!==undefined)&&(!context||!/^hq:file-anchor:[a-f0-9]{64}$/.test(anchorId||'')||! /^[a-f0-9]{64}$/.test(fingerprint||'')))) {
           sendJson(res, 400, { code: 'HQ_SOURCE_QUERY_INVALID' }); return;
         }
         const value = indexing ? surface.refresh()
-          : context ? surface.context({ project, path: sourcePath, task })
+          : context ? surface.context({ project, path: sourcePath, task,anchorId,fingerprint })
           : surface.read({ project, query, path: sourcePath, limit: params.get('limit') ?? undefined });
+        if(!bearer&&!uiSessions.authorized(req,{mutate:indexing})){sendJson(res,401,{code:'OWNER_AUTH'});return;}
+        res.setHeader('cache-control','private, no-store');
         sendJson(res, 200, value);
       } catch {
         // No credentials, local paths, exception text or old source content in failure responses.

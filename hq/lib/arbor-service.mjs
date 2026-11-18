@@ -438,35 +438,51 @@ export function createDevIntelligence({
   function fileSurface(options = {}) {
     return withDatabase((db, records) => projectSurfaces(db, records, options));
   }
-  function fileSurfaceContext({ project, path, task = '' } = {}) {
+  function fileSurfaceContext({ project, path, task = '', anchorId, fingerprint } = {}) {
     ensureName(project);
-    if (!path || typeof task !== 'string' || task.length > 1000) throw new Error('HQ_SOURCE_QUERY_INVALID');
+    const exact=anchorId!==undefined||fingerprint!==undefined;
+    if (!path || typeof task !== 'string' || task.length > 1000 ||
+        (exact&&(!/^hq:file-anchor:[a-f0-9]{64}$/.test(anchorId||'')||! /^[a-f0-9]{64}$/.test(fingerprint||''))))
+      throw new Error('HQ_SOURCE_QUERY_INVALID');
     return withDatabase((db, records) => {
       const selected = projectSurfaces(db, records, { project, path, limit: 1 }).files[0];
       if (!selected || selected.freshness !== 'indexed')
         return { schema: 'vivim.source-context/1', status: selected ? 'stale' : 'empty', context: null };
-      const ids = selected.commentIds.slice(0,12);
-      const related = projectSurfaces(db, records, { project, ids, limit: 16 }).files
+      const exactAnchor=exact?selected.annotations.find(a=>a.semanticAnchor?.anchorId===anchorId&&
+        a.semanticAnchor.fingerprint===fingerprint&&a.semanticAnchor.state==='indexed'&&
+        a.evidence?.assurance==='verified'&&!a.evidence.conflict&&!['invalid_kind','deprecated'].includes(a.resolution)):null;
+      if(exact&&!exactAnchor)return {schema:'vivim.source-context/1',status:'stale',context:null};
+      const ids = exact?[exactAnchor.semanticId]:selected.commentIds.slice(0,12);
+      const related = (exact?[]:projectSurfaces(db, records, { project, ids, limit: 16 }).files)
         .filter(file => file.freshness === 'indexed');
       const observed = new Map([...related, selected].map(file => [file.sourceId, file]));
       const allowedSourceRefs = new Set(observed.keys());
-      const anchor = selected.annotations.find(a => ['emits','consumes','action','capability'].includes(a.kind) && ids.includes(a.semanticId))
+      const anchor = exactAnchor??selected.annotations.find(a => ['emits','consumes','action','capability'].includes(a.kind) && ids.includes(a.semanticId))
         ?? selected.annotations.find(a => ids.includes(a.semanticId));
       const preferredSemanticAnchor = { ref: selected.sourceId, line: anchor.line, semanticId: anchor.semanticId };
       const bundle = composeContext(db, { task: task.trim() || 'Explain ' + selected.path,
-        project, sourceSemanticIds: ids, allowedSourceRefs, preferredSemanticAnchor, budgetTokens: 5000, maxFiles: 16 });
+        project, sourceSemanticIds: ids, allowedSourceRefs, preferredSemanticAnchor, budgetTokens: 5000, maxFiles: exact?1:16 });
       // Reject ranked free-text fallback or a changed source. Every returned
       // excerpt must be grounded in the same verified indexed bytes.
       if (!bundle.sources.some(source => source.ref === selected.sourceId &&
-            source.semanticReferences?.some(ref => ref.line === anchor.line && ref.semanticId === anchor.semanticId)) ||
+            source.semanticReferences?.some(ref => ref.line === anchor.line && ref.semanticId === anchor.semanticId&&
+              (!exact||(ref.semanticAnchor?.anchorId===anchorId&&ref.semanticAnchor.fingerprint===fingerprint)))) ||
           bundle.sources.some(source => source.contentHash !== observed.get(source.ref)?.sourceDigest ||
             !source.contentHash) || !verifyIndexedDependencies(db,bundle).valid)
         return { schema: 'vivim.source-context/1', status: 'unavailable', context: null };
+      // Re-read the exact anchor after context construction, including registry lifecycle.
+      if(exact){const head=projectSurfaces(db,records,{project,path,limit:1}).files[0];
+        if(!head||head.freshness!=='indexed'||head.sourceDigest!==selected.sourceDigest||
+          !head.annotations.some(a=>a.semanticAnchor?.anchorId===anchorId&&a.semanticAnchor.fingerprint===fingerprint&&
+            a.resolution===anchor.resolution&&a.evidence?.assurance==='verified'&&!a.evidence.conflict))
+          return {schema:'vivim.source-context/1',status:'stale',context:null};
+      }
       // Machine-local absolute paths are not part of the context digest.
       const sources = bundle.sources.map(({ absPath, ...source }) => source);
       const { vivim, ...publicBundle } = bundle;
       return { schema: 'vivim.source-context/1', status: 'indexed',
         sourceId: selected.sourceId, sourceDigest: selected.sourceDigest,
+        ...(exact?{anchor:{anchorId,fingerprint,line:anchor.line,semanticId:anchor.semanticId,resolution:anchor.resolution,authority:'read_only_projection'}}:{}),
         context: { ...publicBundle, sources } };
     }, 'source.context');
   }

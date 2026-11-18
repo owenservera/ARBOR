@@ -10,6 +10,7 @@ import { worldModel, meModel, todayModel, LIVE_STATE_LABELS, TABS } from './ux/m
 import { renderToday, renderWorld, renderMe } from './ux/render.mjs';
 import { createControlChat } from './control-chat.mjs';
 import { mountComposerAssist } from './composer-assist.mjs';
+import { sourceCards, sameSourceCard, matchesSourceContext, exactSourceContextUrl, reconcileSourceCards } from './wiki-source-view.mjs';
 import { deriveReadiness, safeReadinessReport } from './ux/readiness.mjs';
 import { mountCapabilityLauncher } from './ux/launcher-ui.mjs';
 import { mountLocalNotes } from './ux/local-notes-ui.mjs';
@@ -455,6 +456,7 @@ function goTab(tab) {
   // The Host has to release temporary stream access, not just hide the video.
   if (S.tab === 'world' && tab !== 'world' && playerActive) stopMediaPlayer();
   dockAssist?.reset();compose?.resetAssist?.();
+  if(S.tab==='wiki'&&tab!=='wiki')clearWikiSources();
   S.tab = tab;
   dockExpanded=false;
   chatContextEpoch++;
@@ -471,8 +473,48 @@ function goTab(tab) {
 
 // The Host journal owns Wiki state; this view is strictly read-only.
 let wikiReadSequence = 0;
+let wikiSourceSurface=null,wikiSourcePanel=null,wikiSourceList=null,wikiSourceExcerpt=null,wikiSourceSelection=null,wikiSourceEpoch=0,wikiSourceStatus='Source index not loaded';
+function clearWikiSources(reason='Source index not loaded'){
+  wikiSourceEpoch++;wikiSourceSurface=null;wikiSourceSelection=null;wikiSourceStatus=reason;
+  wikiSourceList?.replaceChildren();wikiSourceExcerpt?.replaceChildren();wikiSourcePanel=null;wikiSourceList=null;wikiSourceExcerpt=null;
+}
+function ingestWikiSources(surface){
+  wikiSourceSurface=surface;
+  if(wikiSourceSelection&&!sourceCards(surface).some(c=>sameSourceCard(c,wikiSourceSelection))){
+    wikiSourceEpoch++;wikiSourceSelection=null;wikiSourceExcerpt?.replaceChildren(el('p','ux-note','Anchor changed or unavailable. Select fresh evidence.'));
+  }
+  wikiSourceStatus=surface?'Owner-authorized development source · read only':'Source index unavailable. No cached source displayed.';
+}
+async function readWikiSource(card){
+  if(!HOST_PREVIEW||S.tab!=='wiki'||!S.statusObj||!sourceCards(wikiSourceSurface).some(c=>sameSourceCard(c,card)))return;
+  const epoch=++wikiSourceEpoch;wikiSourceSelection=card;
+  wikiSourceExcerpt?.replaceChildren(el('p','ux-note','Reading current anchor…'));
+  try{
+    const response=await fetch(exactSourceContextUrl(card),{credentials:'same-origin',cache:'no-store',signal:AbortSignal.timeout(15000)});
+    const data=response.ok?await response.json():null;
+    if(epoch!==wikiSourceEpoch||S.tab!=='wiki'||!S.statusObj)return;
+    if([401,403].includes(response.status)){clearWikiSources('Owner source access denied');renderWiki();return;}
+    if(!matchesSourceContext(card,data)||!sourceCards(wikiSourceSurface).some(c=>sameSourceCard(c,card)))throw Error('Anchor changed');
+    wikiSourceExcerpt?.replaceChildren(el('p','ux-note','Exact source occurrence · '+card.path+':'+card.line+' · read only'),el('pre','ux-note',data.context.fragment));
+  }catch{
+    if(epoch===wikiSourceEpoch){wikiSourceSelection=null;wikiSourceExcerpt?.replaceChildren(el('p','ux-note','Verified source unavailable. No cached context displayed.'));}
+  }
+}
+function renderWikiSources(){
+  if(!wikiSourcePanel){
+    wikiSourcePanel=el('section','ux-card');
+    wikiSourcePanel.append(el('h3','ux-card-title','Development source · semantic anchors'));
+    wikiSourcePanel.append(el('p','ux-note','Source-derived claims are read only. Personal Wiki pages use their own journal.'));
+    wikiSourceList=el('div','ux-item');wikiSourceExcerpt=el('div','ux-item');
+    wikiSourcePanel.append(wikiSourceList,wikiSourceExcerpt);
+  }
+  const cards=sourceCards(wikiSourceSurface);
+  reconcileSourceCards(wikiSourceList,cards,{createElement:tag=>el(tag,'ux-note'),onRead:card=>void readWikiSource(card)});
+  if(!cards.length){wikiSourceList.replaceChildren(el('p','ux-note',wikiSourceStatus));}
+  return wikiSourcePanel;
+}
 function clearWiki(reason = 'Wiki unavailable') {
-  wikiReadSequence++; S.wiki = null; S.wikiError = reason;
+  wikiReadSequence++;clearWikiSources(reason); S.wiki = null; S.wikiError = reason;
   S.wikiContext = null; S.wikiContextError = reason;
   if (S.tab === 'wiki') renderWiki();
 }
@@ -657,7 +699,7 @@ function renderWiki() {
       scroll.append(card);
     }
     if (!Object.keys(S.wiki.pages).length) scroll.append(el('p', 'ux-empty', 'No Wiki pages yet.'));
-    if (HOST_PREVIEW) scroll.append(renderWikiContext());
+    if (HOST_PREVIEW) scroll.append(renderWikiContext(),renderWikiSources());
     else {
       const changes = S.wiki.autoWiki;
       const card = el('section', 'ux-card');
@@ -720,7 +762,7 @@ async function refreshWiki() {
           typeof page.sections !== 'object' || Array.isArray(page.sections) ||
           Object.values(page.sections).some(value => typeof value !== 'string')))
       throw new Error('Invalid Host Wiki projection');
-    let context = null, contextError = '';
+    let context = null, contextError = '',sourceSurface=null;
     if (HOST_PREVIEW) {
       try {
         const privateRead = await fetch('/api/host/control/wiki-context', {
@@ -731,14 +773,20 @@ async function refreshWiki() {
         if (!validWikiContext(data, wiki)) throw new Error('AutoWiki revision mismatch or invalid context; rechecking.');
         context = data;
       } catch (error) { contextError = error?.message || 'Owner context unavailable.'; }
+      // Development source is a separate private owner read, never part of the phone grant.
+      if(context){try{
+        const sourceResponse=await fetch('/api/file-surface?limit=16',{credentials:'same-origin',cache:'no-store',signal:AbortSignal.timeout(5000)});
+        if(sourceResponse.ok)sourceSurface=await sourceResponse.json();
+      }catch{/* clear private evidence below */}}
     }
     if (sequence !== wikiReadSequence || S.tab !== 'wiki') return;
     if (!HOST_PREVIEW && transport.deviceHeaders?.()?.['x-vivim-device-session'] !==
         session['x-vivim-device-session']) return;
     if (S.wiki && wiki.revision < S.wiki.revision) {
-      S.wikiContext = null; S.wikiContextError = 'Wiki revision regressed; private context cleared.';
+      clearWikiSources('Wiki revision regressed');S.wikiContext = null; S.wikiContextError = 'Wiki revision regressed; private context cleared.';
       renderWiki(); return;
     }
+    if(HOST_PREVIEW)ingestWikiSources(sourceSurface);
     S.wiki = wiki; S.wikiError = ''; S.wikiContext = context; S.wikiContextError = contextError; renderWiki();
   } catch (error) {
     if (sequence === wikiReadSequence && S.tab === 'wiki')

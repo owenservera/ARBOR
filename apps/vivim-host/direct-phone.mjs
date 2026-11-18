@@ -45,6 +45,7 @@ const assets = new Map(Object.entries({
   'control-chat.mjs': ['control-chat.mjs', 'text/javascript; charset=utf-8'],
   'control-language.mjs': ['control-language.mjs', 'text/javascript; charset=utf-8'],
   'composer-assist.mjs': ['composer-assist.mjs', 'text/javascript; charset=utf-8'],
+  'wiki-source-view.mjs': ['wiki-source-view.mjs', 'text/javascript; charset=utf-8'],
   ...Object.fromEntries(['frames','grammar','ground','index','interpret','lexer','project','recognize','symbols','text','types']
     .map(n => [`nlcl/${n}.mjs`, [`nlcl/${n}.mjs`, 'text/javascript; charset=utf-8']])),
   'grokbot.html': ['grokbot.html', 'text/html; charset=utf-8'],

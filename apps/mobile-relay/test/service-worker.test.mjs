@@ -30,6 +30,7 @@ const SHELL_FILES = [
   'control-chat.mjs',
   'control-language.mjs',
   'composer-assist.mjs',
+  'wiki-source-view.mjs',
   'ux/model.mjs',
   'ux/mission-experience.mjs',
   'ux/render.mjs',
