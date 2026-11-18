@@ -241,13 +241,15 @@ test('test-manifest registers scripts/roadmap/a05-cycle.test.mjs (roadmap-accele
   assert.equal(testCoversFile(mine, 'scripts/lib/test-manifest.mjs'), true);
 });
 
-test('scripts/roadmap/a05-cycle.mjs is not covered by any manifest test (fail-closed gap)', () => {
+test('scripts/roadmap/a05-cycle.mjs is covered by a manifest test (fail-closed gap closed by A05.test.mjs)', () => {
   const tests = discoverTests();
   const coveredBy = tests.filter(t => testCoversFile(t, 'scripts/roadmap/a05-cycle.mjs'));
-  assert.equal(coveredBy.length, 0,
-    'no manifest test covers scripts/roadmap/a05-cycle.mjs; the orchestrator must be ' +
-    'registered in test-manifest.json and covered by a test before A05\'s gate can pass, ' +
-    'otherwise the fail-closed rule selects ALL tests');
+  assert.ok(coveredBy.length >= 1,
+    'the orchestrator scripts/roadmap/a05-cycle.mjs must be registered in test-manifest.json ' +
+    'and covered by a test before A05\'s gate can pass; got 0 covering tests — the fail-closed ' +
+    'rule would select ALL tests');
+  assert.ok(coveredBy.some(t => t.path === 'scripts/batch-evidence/A05.test.mjs'),
+    'scripts/batch-evidence/A05.test.mjs must cover the cycle driver');
 });
 
 test('A05 performs no Host effect and no roadmap mutation; owner gate is the sole release path', () => {

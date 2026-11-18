@@ -1,0 +1,87 @@
+{
+  "schema": "arbor.item-receipt/1",
+  "itemId": "A05",
+  "cycle": "build-verify-demo-requeue",
+  "status": "blocked",
+  "verification": "INDEPENDENT_REFUSED",
+  "note": "Authorized build, verify, demonstrate and requeue — cycle connected; acceptance stays with the independent verifier and owner gate",
+  "commitSha": "a59f587f65b4d38a5ab03af47f44fb9ef065155b",
+  "committedRevision": "a59f587f65b4d38a5ab03af47f44fb9ef065155b",
+  "gate": {
+    "command": "bun scripts/roadmap/a05-cycle.mjs",
+    "exit": 1,
+    "note": "fail-closed when keeper gate blocks"
+  },
+  "evidence": {
+    "kind": "build",
+    "changedPaths": [
+      "scripts/roadmap/a05-cycle.mjs"
+    ],
+    "confirmedDefects": [],
+    "independentVerification": "NOT_RUN",
+    "ownerAcceptance": "PENDING",
+    "acceptanceEvidenceClaimed": false
+  },
+  "checks": [
+    {
+      "stage": "select",
+      "ok": false,
+      "reason": "Invalid roadmap: Status mismatch for A01; Status mismatch for A02; Status mismatch for A03; Status mismatch for A04; Status mismatch for A05; Verification mismatch A05; Status mismatch for A06; Verification mismatch A07; Verification mismatch A08",
+      "at": "2026-11-18T10:41:24.778Z"
+    },
+    {
+      "stage": "execute",
+      "ok": false,
+      "skipped": true,
+      "reason": "Invalid roadmap: Status mismatch for A01; Status mismatch for A02; Status mismatch for A03; Status mismatch for A04; Status mismatch for A05; Verification mismatch A05; Status mismatch for A06; Verification mismatch A07; Verification mismatch A08",
+      "at": "2026-11-18T10:41:24.778Z"
+    },
+    {
+      "stage": "verify",
+      "ok": false,
+      "reason": "independent verifier refuses acceptance: BLOCKED_UNVERIFIED",
+      "at": "2026-11-18T10:41:24.780Z"
+    },
+    {
+      "stage": "demo",
+      "ok": false,
+      "skipped": true,
+      "at": "2026-11-18T10:41:24.780Z"
+    },
+    {
+      "stage": "requeue",
+      "ok": true,
+      "at": "2026-11-18T10:41:24.781Z"
+    }
+  ],
+  "execution": {
+    "skipped": true
+  },
+  "demo": {
+    "mode": "none",
+    "skipped": true,
+    "reason": "Invalid roadmap: Status mismatch for A01; Status mismatch for A02; Status mismatch for A03; Status mismatch for A04; Status mismatch for A05; Verification mismatch A05; Status mismatch for A06; Verification mismatch A07; Verification mismatch A08"
+  },
+  "requeue": {
+    "nextBatch": null,
+    "reason": "Invalid roadmap: Status mismatch for A01; Status mismatch for A02; Status mismatch for A03; Status mismatch for A04; Status mismatch for A05; Verification mismatch A05; Status mismatch for A06; Verification mismatch A07; Verification mismatch A08"
+  },
+  "truth": {
+    "releaseReady": false,
+    "disposition": "BLOCKED_UNVERIFIED",
+    "blockers": [
+      "PROPOSAL_GATES_UNRUN",
+      "RELEASE_NOT_ACCEPTED",
+      "CI_STARTUP_FAILURE_ZERO_JOBS",
+      "PHYSICAL_DEVICE_EVIDENCE_UNRUN"
+    ]
+  },
+  "runtime": {
+    "gate": "bun 1.4.2",
+    "node": "v24.22.1"
+  },
+  "durationMs": 234,
+  "startedAt": "2026-11-18T10:41:24.682Z",
+  "finishedAt": "2026-11-18T10:41:24.916Z",
+  "emittedBy": "Fixer r1-3"
+}
