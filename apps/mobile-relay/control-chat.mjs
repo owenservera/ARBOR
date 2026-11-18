@@ -152,6 +152,7 @@ export function createControlChat({
           ['source_wired', 'verified'].includes(choice.readiness))).slice(0, 6)
       : [];
     if (!reply.choices.length) reply.choices = null;
+    if (reply.status === 'clarify' && requestText) reply.requestText = requestText;
   }
 
   // A Host-supplied follow-up (clarification choice or receipt undo) becomes a
@@ -397,12 +398,28 @@ export function createControlChat({
         });
         row.append(redirect);
       }
+      if (msg.status === 'clarify' && msg.requestText) {
+        const revise = elem('button', 'btn sm ux-secondary', 'Edit original request');
+        revise.type = 'button';
+        revise.addEventListener('click', () => host.dispatchEvent(new CustomEvent('vivim:control-example', {
+          bubbles: true, detail: { text: msg.requestText }
+        })));
+        row.append(revise);
+      }
       if (msg.status === 'clarify' && Array.isArray(msg.choices) && !msg.choiceUsed) {
         const choices = elem('div', 'vivim-choices');
         for (const choice of msg.choices) {
-          const button = elem('button', 'chip', choice.title || choice.actionId);
+          const button = elem('button', 'chip', (choice.title || choice.actionId) +
+            (choice.requiredArgs?.length ? ' · needs ' + choice.requiredArgs.join(', ') : ''));
           button.type = 'button';
           button.addEventListener('click', () => {
+            // A choice names an action, not its missing arguments. Never fabricate them.
+            if (choice.requiredArgs?.length) {
+              if (msg.requestText) host.dispatchEvent(new CustomEvent('vivim:control-example', {
+                bubbles: true, detail: { text: msg.requestText }
+              }));
+              return;
+            }
             void requestAction(msg, { actionId: choice.actionId, args: {} },
               'Checking that choice with your PC…', 'choiceUsed');
           });
@@ -486,7 +503,7 @@ export function createControlChat({
     return true;
   }
   return Object.freeze({
-    send, render, clear, redact, loadSuggestions, busy: () => busy,
+    send, render, clear, redact, loadSuggestions, interpret: text => client.interpret(text), busy: () => busy,
     hasPendingApproval: () => messages.some(msg => msg.status === 'approval')
   });
 }

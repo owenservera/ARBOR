@@ -253,7 +253,7 @@ export function createControlPlanner({ catalog = loadControlCatalog(), lexicon =
         missing: meaning.missing };
       const ranked = (meaning.alternatives ?? []).map(choice => actions.get(choice.actionId)).filter(Boolean);
       return { ...base, outcome: 'clarification_required', question: meaning.question,
-        choices: ranked.map(a => a.id), choiceDetails: ranked.map(a => ({ actionId: a.id, title: a.title, risk: a.risk, readiness: a.readiness })),
+        choices: ranked.map(a => a.id), choiceDetails: ranked.map(a => ({ actionId: a.id, title: a.title, risk: a.risk, readiness: a.readiness, requiredArgs: Object.keys(a.args) })),
         risk: ranked.reduce((m, a) => RISKS.indexOf(a.risk) > RISKS.indexOf(m) ? a.risk : m, 'R0') };
     }
     if (compiled.outcome === 'unsupported' && meaning.outcome === 'interpretation_required')

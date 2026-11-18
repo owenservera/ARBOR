@@ -105,7 +105,7 @@ export function buildUndoProposal({ original, before, committed, live }) {
   } catch { return null; }
 }
 
-export function mountBuildCanvas({ host, request, getSurface, getProvider, send, apply, onApplied = () => {}, navigate = () => {}, openControlDraft = null, storage = window.localStorage }) {
+export function mountBuildCanvas({ host, request, getSurface, getProvider, send, apply, onApplied = () => {}, navigate = () => {}, openControlDraft = null, interpretControl = null, storage = window.localStorage }) {
   let state = { name: 'idle' }, text = '', run = 0;
   const el = (tag, cls, content) => { const e = document.createElement(tag); if (cls) e.className = cls; if (content != null) e.textContent = content; return e; };
   const current = () => getSurface?.() ?? null;
@@ -165,8 +165,31 @@ export function mountBuildCanvas({ host, request, getSurface, getProvider, send,
       return set({ name: 'idle', error: 'Request one change at a time. Nothing changed.' });
     if (['UNSUPPORTED_UI_GRAMMAR', 'MOVE_NESTED_NOT_SUPPORTED', 'UI_COMPONENT_ADAPTER_NOT_INSTALLED'].includes(local.code))
       return set({ name: 'idle', error: 'That visual operation is not supported. Nothing changed.' });
-    // Unknown design request: preserve the existing explicitly bounded model
-    // proposal path. It still cannot apply a change until the owner taps Activate.
+    // Before sending an unknown design to a signed-in AI, ask the existing Host
+    // interpreter. This endpoint is meaning-only: no plan, approval or execution.
+    if (typeof interpretControl === 'function') {
+      const checkedText = text;
+      const checkRun = ++run;
+      set({ name: 'checking' });
+      let reading;
+      try { reading = await interpretControl(checkedText); }
+      catch { return set({ name: 'idle', error: 'Host interpretation unavailable. Nothing was sent to your AI.' }); }
+      if (run !== checkRun) return;
+      // A null reading means the existing cloud-only Build surface, not a failed Direct request.
+      if (reading !== null) {
+        if (reading?.outcome === 'refused') return set({ name: 'idle', error:
+          reading.refusal?.message || 'Host refused this request. Nothing was sent.' });
+        if (['candidate', 'incomplete', 'clarification_required'].includes(reading?.outcome)) {
+          set({ name: 'idle', note: 'This is a Host command. Continue in Talk for its typed preview.' });
+          if (typeof openControlDraft === 'function') openControlDraft(checkedText);
+          return;
+        }
+        if (reading?.outcome !== 'interpretation_required') return set({ name: 'idle', error:
+          'Host interpretation unavailable. Nothing was sent to your AI.' });
+      }
+    }
+    // Unmatched design request: retain the existing bounded model proposal path.
+    // It still cannot apply a change until the owner taps Activate.
     const provider = getProvider();
     let prompt;
     try { prompt = buildDesignPrompt({ request: text, surface }); }
@@ -294,7 +317,11 @@ export function mountBuildCanvas({ host, request, getSurface, getProvider, send,
 
   function render() {
     host.replaceChildren();
-    if (state.name === 'waiting') {
+    if (state.name === 'checking') {
+      const wait = el('div', 'proposal is-wait'); wait.setAttribute('role', 'status');
+      wait.append(el('p', 'muted', 'Checking Host meaning. Nothing has been sent to your AI.'));
+      host.append(wait);
+    } else if (state.name === 'waiting') {
       const wait = el('div', 'proposal is-wait'); wait.setAttribute('role', 'status');
       wait.append(el('span', 'tour-eyebrow', 'WORKING'), el('h3', null, state.note), el('p', 'muted', 'Your PC sends this once and waits for the answer. You can leave this screen; it keeps going.'));
       host.append(wait);

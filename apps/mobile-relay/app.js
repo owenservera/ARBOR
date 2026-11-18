@@ -1538,6 +1538,7 @@ function mountCompose() {
   const host = $('build-compose'); if (!host) return;
   compose = mountBuildCanvas({
     host, request: api, navigate: goTab,
+    interpretControl: text => transport.direct ? vivimChat.interpret(text) : null,
     openControlDraft: transport.direct ? text => {
       goTab('talk');
       $('talk-target').value = 'vivim';

@@ -526,7 +526,7 @@ export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'wo
         if (sub === 'interpret' || (sub === 'plan' && !c)) {
           if (Object.keys(body).some(k => k !== 'text')) throw failure(400, 'Invalid control body');
           const planner = c ?? createControlPlanner();
-          json(res, 200, sub === 'interpret' ? (c ? c.interpret(body.text) : planner.interpretText(body.text)) : planner.planText(body.text, { source: 'mobile' })); return;
+          json(res, 200, sub === 'interpret' ? (c ? c.interpret(body.text, { source: 'mobile' }) : planner.interpretText(body.text, { source: 'mobile' })) : planner.planText(body.text, { source: 'mobile' })); return;
         }
         if (!c) { json(res, 404, { code: 'CONTROL_DISPATCH_UNAVAILABLE' }); return; }
         if (sub === 'plan') { json(res, 200, await c.plan(body, { source: 'mobile', actor: device.deviceId })); return; }

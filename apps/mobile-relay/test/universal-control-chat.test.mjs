@@ -328,3 +328,32 @@ test('R4 a refused Host interpretation never falls through to UI compilation or 
   assert.match(displayed(host),/Negated action refused/);
   assert.equal(buttons(host).some(b=>['Review in Build','Ask my AI instead','Approve & apply'].includes(b.textContent)),false);
 });
+
+
+test('R4 interpretation uses the existing authenticated meaning-only route', async () => {
+  const posts=[];
+  const client=createControlClient({transport:grant,fetchImpl:async(path,options)=>{
+    if(path==='/mobile/connection.json')return response({direct:true,directOnly:true,cloudEnabled:false});
+    posts.push([path,options.method,JSON.parse(options.body)]);
+    return response({outcome:'candidate',candidate:{actionId:'wiki.pages.list',args:{}}});
+  }});
+  const meaning=await client.interpret('list wiki pages');
+  assert.equal(meaning.outcome,'candidate');
+  assert.deepEqual(posts,[['/mobile/api/control/interpret','POST',{text:'list wiki pages'}]]);
+});
+
+test('R4 clarification choice with required args preserves original owner request, not an empty typed plan', async () => {
+  const {host}=fixture(); const posts=[];
+  host.dispatchEvent=event=>{host.lastEvent=event; return true;};
+  const chat=createControlChat({host,transport:grant,fetchImpl:async(path,options)=>{
+    if(path==='/mobile/connection.json')return response({direct:true,directOnly:true,cloudEnabled:false});
+    posts.push(JSON.parse(options.body));
+    return response({outcome:'clarification_required',question:'Which change?',choiceDetails:[{
+      actionId:'wiki.section.edit',title:'Edit wiki',readiness:'source_wired',requiredArgs:['page','section','content']
+    }]});
+  }});
+  await chat.send('edit wiki about');
+  buttons(host).find(b=>b.textContent==='Edit wiki · needs page, section, content').events.click();
+  assert.deepEqual(posts,[{text:'edit wiki about'}]);
+  assert.equal(host.lastEvent.detail.text,'edit wiki about');
+});

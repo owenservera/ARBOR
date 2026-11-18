@@ -996,7 +996,7 @@ async function handleControl(req, res, pathname, host, controlFor, tokenFor, uiS
     const c = controlFor();
     if (route === 'interpret') {
       if (Object.keys(body).some(k => k !== 'text')) throw Object.assign(new Error('Invalid body'), { code: 'CONTROL_INPUT_INVALID' });
-      sendJson(res, 200, c.interpret(body.text)); return;
+      sendJson(res, 200, c.interpret(body.text, { source: 'desktop' })); return;
     }
     if (route === 'plan') { sendJson(res, 200, await c.plan(body, { source: 'desktop', actor: 'desktop-owner' })); return; }
     if (Object.keys(body).some(k => !['planId', 'planDigest'].includes(k))) throw Object.assign(new Error('Invalid body'), { code: 'CONTROL_INPUT_INVALID' });

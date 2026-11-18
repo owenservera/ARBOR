@@ -393,7 +393,7 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
     describe: () => planner.describe(),
     world: () => planner.world(),
     languagePack: () => planner.languagePack(),
-    interpret: text => planner.interpretText(text),
+    interpret: (text, { source = 'text' } = {}) => planner.interpretText(text, { source }),
     lexicon: () => ({ version: lexicon.version(), entries: lexicon.entries() }),
     personalSemantics: () => { const {version, digest: stateDigest, entries} = personalSemantics.snapshot();
       return {schema:'vivim.personal-semantic-projection/1',version,digest:stateDigest,

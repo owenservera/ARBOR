@@ -28,11 +28,11 @@ export function createControlClient({ transport, fetchImpl = (...args) => fetch(
       new Error('Approve this phone on the PC before using private control.'),
       { code: 'DEVICE_GRANT_REQUIRED' });
     const writing = body !== undefined;
-    if (!['catalog', 'language', 'world', 'lexicon', 'recent', 'plan', 'execute'].includes(path) &&
+    if (!['catalog', 'language', 'world', 'lexicon', 'recent', 'interpret', 'plan', 'execute'].includes(path) &&
         !/^plans\/ctl-[a-f0-9]{16}$/.test(path))
       throw new TypeError('Unknown control operation');
-    if (writing && !['plan', 'execute'].includes(path)) throw new TypeError('Invalid control method');
-    if (!writing && ['plan', 'execute'].includes(path)) throw new TypeError('Control body required');
+    if (writing && !['interpret', 'plan', 'execute'].includes(path)) throw new TypeError('Invalid control method');
+    if (!writing && ['interpret', 'plan', 'execute'].includes(path)) throw new TypeError('Control body required');
 
     // For a mutating operation a lost response is UNCERTAIN, never safe to re-issue.
     let response;
@@ -85,6 +85,7 @@ export function createControlClient({ transport, fetchImpl = (...args) => fetch(
   return Object.freeze({
     directReady,
     call,
+    interpret: text => call('interpret', { text }),
     preview: text => call('plan', { text }),
     async execute(plan) {
       const target = validatePlan(plan);
