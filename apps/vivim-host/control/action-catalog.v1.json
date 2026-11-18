@@ -1694,6 +1694,38 @@
       "subject": "wiki",
       "priority": "P1",
       "precondition": "Explicit reviewed capture through the typed Host interface."
+    },
+    {
+      "id": "program.validate",
+      "title": "Validate native transformation program",
+      "category": "program",
+      "owner": "host-native-program",
+      "executor": "apps/vivim-host/control/dispatcher.mjs:createExecutors",
+      "readiness": "source_wired",
+      "risk": "R0",
+      "target": "local-host",
+      "args": {
+        "program": {
+          "type": "string",
+          "min": 2,
+          "max": 8000
+        }
+      },
+      "examples": [
+        "Validate an explicit typed native program from the desktop owner control"
+      ],
+      "surfaces": [
+        "text",
+        "desktop",
+        "mobile",
+        "visual"
+      ],
+      "reversible": false,
+      "privacy": "pc-only",
+      "aiCandidate": false,
+      "subject": "program",
+      "priority": "P1",
+      "precondition": "Desktop owner; local read-only validation, never execution."
     }
   ],
   "readinessStates": {

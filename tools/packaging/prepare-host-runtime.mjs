@@ -68,9 +68,10 @@ if(mode==='--lock'){
   // discovers these exact bundled executables without Cargo or environment at runtime.
   run('cargo',['build','--release','-p','hq-knowledge-graph','--features','importer',
     '--bin','hqkg-personal','--bin','hqkg-chat-context','--bin','hqkg-web-feed','--target-dir',path.join(root,'target')],root);
-  const nativeDir=path.join(stage,'native','bin');
+  run('cargo',['build','--release','-p','vivim-programmability-core','--bin','vivim-program-validate','--target-dir',path.join(root,'target')],root);
+ const nativeDir=path.join(stage,'native','bin');
   mkdirSync(nativeDir,{recursive:true});
-  for(const name of ['hqkg-personal.exe','hqkg-chat-context.exe','hqkg-web-feed.exe'])
+  for(const name of ['hqkg-personal.exe','hqkg-chat-context.exe','hqkg-web-feed.exe','vivim-program-validate.exe'])
     copyFileSync(path.join(root,'target','release',name),path.join(nativeDir,name));
   run('bun',['install','--production','--frozen-lockfile','--ignore-scripts'],stage);
   run(path.join(stage,'node.exe'),['--check',path.join(stage,'apps/vivim-host/server.mjs')],stage);

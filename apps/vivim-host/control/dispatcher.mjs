@@ -18,6 +18,7 @@ import { PERSONAL_RULE_SCHEMA, validatePersonalRule, TEMPLATE_SCHEMA, templateAl
 import { interpretControl, resolveLocalDestination, resolveDesktopDestination } from '../../mobile-relay/control-language.mjs';
 import { previewWikiStructure, previewWikiCapture } from '../chat/product-journal.mjs';
 import { wikiApprovalSentence } from './command-intent.mjs';
+import { createNativeProgramValidator } from './native-program.mjs';
 
 export const DISPATCHER_SCHEMA = 'vivim.control-dispatcher/1';
 export const RECEIPT_SCHEMA = 'vivim.control-receipt/1';
@@ -37,6 +38,7 @@ const LEARNABLE = new Set(['wiki.pages.list','wiki.section.read','wiki.page.crea
   'vivim.status.show']);
 const WIKI_ACTION = 'wiki.section.edit';
 const CAPTURE_ACTION='wiki.capture.save';
+const NATIVE_PROGRAM_ACTION='program.validate';
 // A typed VEC document is not an NL action or a string argument. Keep the existing
 // language catalog stable (including accepted learned rules); the visual contract
 // has its own version and uses the very same control plan journal and claim.
@@ -98,7 +100,7 @@ const VALIDATION_ERROR_CODES = new Set([
 ]);
 
 /** Fixed executors keyed by catalog action id. Each returns a bounded, phone-safe summary. */
-function createExecutors({ runtime, planner, lexicon, devices, productJournal, personalSemantics }) {
+function createExecutors({ runtime, planner, lexicon, devices, productJournal, personalSemantics, nativeProgram }) {
   const ownerExclusions = () => (runtime.status().preferences ?? [])
     .filter(p => p.hard && p.polarity === 'avoid' && p.source === 'owner')
     .slice(0, 50).map(p => ({ id: p.id, value: short(p.value, 120) }));
@@ -238,6 +240,7 @@ function createExecutors({ runtime, planner, lexicon, devices, productJournal, p
         wikiRevision: found.expectedRevision, content: found.before,
         ...(relatedPages(wiki,found.page).length ? {relatedPages:relatedPages(wiki,found.page)} : {}) };
     },
+    [NATIVE_PROGRAM_ACTION]:args=>nativeProgram(args),
     [CAPTURE_ACTION]: async ({content},ctx)=>{
       const b=ctx.wikiBinding;if(!productJournal||!b?.edit)throw fail('CONTROL_WIKI_NOT_READY');
       const entry=await productJournal.append({kind:'wiki-edit',actor:'owner-browser',schemaVersion:1,expectedRevision:b.expectedRevision,edit:b.edit});
@@ -270,6 +273,7 @@ function createExecutors({ runtime, planner, lexicon, devices, productJournal, p
 
 export function createControlDispatcher({ dataRoot, runtime, devices = null, productJournal = null, catalog = loadControlCatalog(),
   commandScope = () => ({}),
+  nativeProgram=createNativeProgramValidator({productJournal}),
   now = () => Date.now(), ttlMs = 10 * 60_000, freshMs = 2 * 60_000 } = {}) {
   if (!runtime || typeof runtime.status !== 'function') throw fail('CONTROL_RUNTIME_REQUIRED');
   const iso = () => new Date(now()).toISOString();
@@ -290,7 +294,7 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
   const planner = createControlPlanner({ catalog,
     lexicon: () => lexicon.entries(), personalRules: () => personalSemantics.accepted(),
     commandScope });
-  const executors = createExecutors({ runtime, planner, lexicon, devices, productJournal, personalSemantics });
+  const executors = createExecutors({ runtime, planner, lexicon, devices, productJournal, personalSemantics,nativeProgram });
   // The catalog may not claim an executor the Host does not have, nor hide one it does.
   for (const a of catalog.actions) {
     const runnable = ['source_wired', 'verified'].includes(a.readiness);
@@ -468,6 +472,8 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
 
   function runRead(plan) {
     const complete = result => ({ ...plan, outcome: 'done', executionPerformed: true, effect: 'read', result });
+    if(plan.actionId===NATIVE_PROGRAM_ACTION)return Promise.resolve(executors[plan.actionId](plan.args)).then(result=>
+      result.outcome==='compiled'?complete(result):{...plan,outcome:result.outcome,executionPerformed:false,result,refusal:{code:result.reasonCode,message:'Native program '+result.outcome+': '+result.reasonCode}});
     if (WIKI_READS.has(plan.actionId)) {
       if (typeof productJournal?.readPhoneWiki !== 'function')
         return { ...plan, outcome: 'unavailable', executionPerformed: false, precondition: 'Host Wiki journal unavailable.' };
@@ -493,6 +499,7 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
     else throw fail('CONTROL_INPUT_INVALID');
     if(RULE_ACTIONS.has(p.actionId)&&(source!=='desktop'||actor!=='desktop-owner'))
       return {...p,outcome:'unavailable',executionPerformed:false,precondition:'Learning requires the authenticated desktop owner.'};
+    if(p.actionId===NATIVE_PROGRAM_ACTION&&(source!=='desktop'||actor!=='desktop-owner'||p.origin!=='typed'))return {...p,outcome:'unavailable',executionPerformed:false,precondition:'Native program validation requires authenticated desktop owner and an explicit typed program.'};
     if (p.outcome === 'ready') return runRead(p);
     if (p.outcome !== 'approval_required') return p;
     // Sensitive R2 actions are still discoverable from mobile, but cannot be
