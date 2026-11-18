@@ -210,9 +210,7 @@ test('real Host HTTP: NL plan -> explicit approval -> single persisted Wiki edit
   assert.equal(repeat.data.replayed, true);
   assert.equal((await call('/api/wiki')).data.revision, before.data.revision + 1);
   await new Promise(resolve => server.close(resolve));
-  const reopened = createProductJournal({ dataRoot,
-    seedState: JSON.parse(readFileSync(new URL('../data/demo-baseline/state.json', import.meta.url), 'utf8')),
-    seedWiki: JSON.parse(readFileSync(new URL('../data/demo-baseline/wiki.json', import.meta.url), 'utf8')) });
+  const reopened = createProductJournal({ dataRoot });
   const persisted = await reopened.readProjection();
   assert.equal(persisted.wiki.pages.Main.sections.About, 'Updated from VIVIM');
 });
