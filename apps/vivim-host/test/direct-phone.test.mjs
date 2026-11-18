@@ -211,18 +211,18 @@ test('direct phone authenticates proxy, bounds routes and uses the shared queue'
   assert.equal(worker.tick()[0].status, 'done');
   assert.equal(worker.tick().length, 0, 'claimed proposal is never automatically repeated');
   const completed = JSON.parse((await call('/mobile/api/relay?path=commands%2F' + designId)).body);
-  const proof = committedUiRevision(completed, beforeSurface);
+  const designCommitProof = committedUiRevision(completed, beforeSurface);
   const committed = JSON.parse((await call('/mobile/api/relay?path=status')).body).snapshot.bootstrap.uiRevision;
   assert.equal(committed.revision, 1);
   assert.equal(committed.surface.tree.children[0].id, 'vec.card.research');
   assert.equal(committed.surface.tree.children[0].props.title, 'Research');
-  assert.equal(matchesCommittedUiReadback(proof, design.preview.surface, committed.surface), true);
+  assert.equal(matchesCommittedUiReadback(designCommitProof, design.preview.surface, committed.surface), true);
   // Reopen the actual persistent ledger; no synthetic browser projection.
   const reopened = createBootstrapRuntime({ dataRoot: root });
   try { assert.deepEqual(reopened.uiRevision(), committed.surface); }
   finally { reopened.close(); }
 
-  const undo = buildUndoProposal({ original: design, before: beforeSurface, committed: proof, live: committed.surface });
+  const undo = buildUndoProposal({ original: design, before: beforeSurface, committed: designCommitProof, live: committed.surface });
   assert.ok(undo);
   const undoQueued = await postDesign(undo);
   assert.equal(undoQueued.status, 201);
