@@ -7,7 +7,7 @@ import { selectTodayMission } from './mission-experience.mjs';
 // knows) produced it. When the Host returned nothing, the surface says so plainly instead of
 // inventing a row. Nothing here sends, approves or claims that an effect happened.
 
-export const TABS = Object.freeze(['today', 'talk', 'build', 'world', 'me', 'control']);
+export const TABS = Object.freeze(['today', 'talk', 'build', 'world', 'wiki', 'me', 'control']);
 
 // The honest empty states. They name the missing thing instead of filling the screen.
 export const WORLD_EMPTY = 'Nothing here yet — build something in Build.';
