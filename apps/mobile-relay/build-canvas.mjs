@@ -29,7 +29,7 @@ export function committedUiRevision(command, surface) {
 
 export function buildRequestRoute(text) {
   const command = String(text ?? '').trim().replace(/\s+/g, ' ').toLowerCase();
-  if (command === 'open the wiki') return { kind: 'navigate', tab: 'wiki' };
+  if (['open the wiki', 'open wiki', 'go to wiki', 'show wiki'].includes(command)) return { kind: 'navigate', tab: 'wiki' };
   if (command === 'show arbor progress projection' || command === 'preview an edit')
     return { kind: 'unsupported' };
   return { kind: 'design' };
@@ -60,6 +60,49 @@ export function matchesCommittedUiReadback(proof, expected, live) {
   } catch { return false; }
 }
 
+// An undo is a compensating UI proposal on the verified current head, not
+// a numerical rollback. The existing Host publisher creates the next revision.
+// Only offer Undo when the existing compiler proves the exact prior document.
+export function buildUndoProposal({ original, before, committed, live }) {
+  if (!original || !before || !committed || !live ||
+      !matchesCommittedUiReadback(committed, original.preview.surface, live)) return null;
+  if (original.proposal.operations.length !== 1) return null;
+  const op = original.proposal.operations[0];
+  const find = (node, id, parent = null) => {
+    if (node.id === id) return { node, parent };
+    for (const child of node.children) {
+      const found = find(child, id, node);
+      if (found) return found;
+    }
+    return null;
+  };
+  let inverse;
+  if (op.type === 'insert') inverse = { type: 'remove', componentId: op.component.id };
+  else if (op.type === 'set-theme') inverse = { type: 'set-theme', theme: before.theme };
+  else {
+    const prior = find(before.tree, op.componentId);
+    if (!prior) return null;
+    if (op.type === 'replace-props') inverse = { type: 'replace-props',
+      componentId: op.componentId, props: prior.node.props };
+    else if (op.type === 'remove' && prior.parent) inverse = { type: 'insert',
+      parentId: prior.parent.id, index: prior.parent.children.findIndex(n => n.id === op.componentId),
+      component: prior.node };
+    else if (op.type === 'move' && prior.parent) inverse = { type: 'move',
+      componentId: op.componentId, parentId: prior.parent.id,
+      index: prior.parent.children.findIndex(n => n.id === op.componentId) };
+    else return null;
+  }
+  try {
+    const proposal = { schema: 'vivim.ui-proposal/1', surfaceId: live.surfaceId,
+      baseRevision: live.revision, operations: [{ opId: 'vec.undo.1', ...inverse }],
+      explanation: 'Undo the previous Build change.', assumptions: [], unknowns: [] };
+    const preview = compileUiProposal({ proposal, surface: live, approvedRefs: [], audience: 'phone' });
+    const restored = validateSurface({ ...before, revision: live.revision }, { refs: new Set() });
+    if (JSON.stringify(preview.surface) !== JSON.stringify(restored)) return null;
+    return { proposal, preview, surface: live };
+  } catch { return null; }
+}
+
 export function mountBuildCanvas({ host, request, getSurface, getProvider, send, apply, onApplied = () => {}, navigate = () => {}, storage = window.localStorage }) {
   let state = { name: 'idle' }, text = '', run = 0;
   const el = (tag, cls, content) => { const e = document.createElement(tag); if (cls) e.className = cls; if (content != null) e.textContent = content; return e; };
@@ -68,18 +111,6 @@ export function mountBuildCanvas({ host, request, getSurface, getProvider, send,
   const saved = () => { try { return JSON.parse(storage.getItem(PENDING_KEY) || 'null'); } catch { return null; } };
   const keep = value => { try { value ? storage.setItem(PENDING_KEY, JSON.stringify(value)) : storage.removeItem(PENDING_KEY); } catch { /* the pending note is a convenience */ } };
   const set = next => { state = next; render(); };
-
-  async function command(body) {
-    const created = await request('commands', { method: 'POST', body: JSON.stringify(body) });
-    if (!created?.id) throw new Error('not acknowledged');
-    for (let i = 0; i < 25; i++) {
-      await PAUSE(1200);
-      const record = await request('commands/' + created.id);
-      if (record?.status === 'done') return record;
-      if (record?.status === 'failed') throw new Error(String(record.result || 'failed').slice(0, 160));
-    }
-    throw new Error('pending');
-  }
 
   async function watch(id, token) {
     const started = Date.now();
@@ -130,6 +161,8 @@ export function mountBuildCanvas({ host, request, getSurface, getProvider, send,
     }
     if (local.code === 'COMPLEX_REQUEST')
       return set({ name: 'idle', error: 'Request one change at a time. Nothing changed.' });
+    if (['UNSUPPORTED_UI_GRAMMAR', 'MOVE_NESTED_NOT_SUPPORTED', 'UI_COMPONENT_ADAPTER_NOT_INSTALLED'].includes(local.code))
+      return set({ name: 'idle', error: 'That visual operation is not supported. Nothing changed.' });
     // Unknown design request: preserve the existing explicitly bounded model
     // proposal path. It still cannot apply a change until the owner taps Activate.
     const provider = getProvider();
@@ -178,12 +211,26 @@ export function mountBuildCanvas({ host, request, getSurface, getProvider, send,
     const confirmed = await waitForReadback(proof, submitted.preview.surface);
     text = '';
     set({ name: confirmed ? 'done' : 'awaiting-readback',
-      proof, expected: submitted.preview.surface });
+      proof, expected: submitted.preview.surface, original: submitted, before: submitted.surface });
   }
   async function undo() {
-    set({ name: 'done', undoing: true });
-    try { await command({ text: 'undo-ui-revision', kind: 'command', consumer: 'bootstrap', mode: 'bootstrap', action: 'undo-ui-revision' }); await onApplied(); set({ name: 'idle', note: 'Host responded to undo. Check the live screen for its current state.' }); }
-    catch { set({ name: 'error', message: "Couldn't undo from here. Open History on your PC." }); }
+    if (state.name !== 'done' || state.undoing || state.restored) return;
+    const prior = state;
+    const draft = buildUndoProposal({ original: prior.original, before: prior.before,
+      committed: prior.proof, live: current() });
+    if (!draft) return set({ name: 'error', message: 'The current Host screen cannot safely undo this change. Nothing was submitted.' });
+    set({ ...prior, undoing: true });
+    let proof;
+    try {
+      assertBuildPreviewCurrent(draft, current());
+      proof = committedUiRevision(await apply(draft.proposal, draft.surface), draft.surface);
+    } catch {
+      return set({ name: 'uncertain', message: 'Undo was not confirmed. Check the live screen before another change. VIVIM did not resend.' });
+    }
+    await refreshCommittedScreen(proof);
+    const confirmed = await waitForReadback(proof, draft.preview.surface);
+    set({ name: confirmed ? 'done' : 'awaiting-readback', proof,
+      expected: draft.preview.surface, restored: true });
   }
 
   function composer() {
@@ -247,12 +294,17 @@ export function mountBuildCanvas({ host, request, getSurface, getProvider, send,
       const ok = el('div', 'proposal is-done'); ok.setAttribute('role', 'status');
       ok.append(el('span', 'tour-eyebrow', confirmed ? 'HOST + LIVE SCREEN VERIFIED' : 'HOST SAVED · SCREEN PENDING'),
         el('h3', null, state.undoing ? 'Undoing…' :
-          confirmed ? 'Your app is updated.' : 'Host saved the change; waiting for screen readback.'));
+          confirmed ? (state.restored ? 'Previous screen restored.' : 'Your app is updated.') : 'Host saved the change; waiting for screen readback.'));
       if (state.proof) {
         const p = state.proof;
         const panel = el('div', 'proof-panel');
         panel.append(el('p', 'ux-meta', 'Host committed revision ' + p.committedRevision + ' · previous ' + p.parentRevision));
         panel.append(el('p', 'ux-meta', 'Surface ' + p.surfaceId));
+        if (confirmed && state.original) {
+          const ids = state.original.proposal.operations.map(op => op.component?.id ?? op.componentId ??
+            (op.type === 'set-theme' ? 'root' : null)).filter(Boolean);
+          if (ids.length) panel.append(el('p', 'ux-meta', 'Changed component: ' + ids.join(', ')));
+        }
         ok.append(panel);
       }
       if (!state.undoing) {
@@ -270,7 +322,11 @@ export function mountBuildCanvas({ host, request, getSurface, getProvider, send,
         undoButton.type = 'button'; undoButton.onclick = undo;
         const more = el('button', 'btn', 'Ask for something else');
         more.type = 'button'; more.onclick = () => set({ name: 'idle' });
-        if (confirmed) row.append(undoButton, more);
+        if (confirmed) {
+          if (!state.restored && buildUndoProposal({ original: state.original, before: state.before,
+            committed: state.proof, live: current() })) row.append(undoButton);
+          row.append(more);
+        }
         ok.append(row);
       }
       host.append(ok);
