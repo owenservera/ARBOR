@@ -96,7 +96,7 @@ export function createControlChat({
     ).slice(0, 500);
   }
 
-  function settle(reply, plan, requestText = null) {
+  async function settle(reply, plan, requestText = null) {
     if (!plan || !KNOWN_OUTCOMES.has(plan.outcome)) {
       reply.text = 'The PC returned an unrecognized control response. Nothing changed.';
       reply.status = 'error';
@@ -118,8 +118,13 @@ export function createControlChat({
           : 'info';
     if (reply.status === 'unrecognized') {
       reply.requestText = requestText;
+      let reading=null;
+      if(requestText&&typeof onBuildDraft==='function'&&typeof classifyBuild==='function'){
+        try{reading=await classifyBuild(requestText);}
+        catch{reply.status='denied';reply.text='Host UI revision unavailable. Nothing changed.';return;}
+      }
       const route=resolveProductRoute(requestText,{hostMeaning:plan,
-        compileUi:typeof onBuildDraft==='function'?classifyBuild:null});
+        compileUi:reading?()=>reading:null});
       if(route.kind==='ui'){
         reply.status='build';
         reply.text=route.reading.outcome==='candidate'
@@ -150,7 +155,7 @@ export function createControlChat({
     const reply = note(label, 'waiting');
     redraw();
     try {
-      settle(reply, await client.call('plan', { actionId: action.actionId, args }), source.requestText || null);
+      await settle(reply, await client.call('plan', { actionId: action.actionId, args }), source.requestText || null);
     } catch (error) {
       fail(reply, error);
     } finally {
@@ -186,7 +191,7 @@ export function createControlChat({
     busy = true;
     redraw();
     try {
-      settle(reply, await client.preview(text), text);
+      await settle(reply, await client.preview(text), text);
     } catch (error) {
       fail(reply, error);
     } finally {

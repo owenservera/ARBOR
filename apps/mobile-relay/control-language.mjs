@@ -21,6 +21,7 @@ const LOCAL_NAVIGATION = Object.freeze({
   'open world': 'world', 'go to world': 'world', 'show media library': 'world',
   'open media library': 'world', 'open my media library': 'world',
   'open build': 'build', 'go to build': 'build',
+  'open talk': 'talk', 'go to talk': 'talk', 'open chat': 'talk', 'go to chat': 'talk',
   'open control': 'control', 'go to control': 'control',
   'open me': 'me', 'open my profile': 'me',
   'open pocket': 'pocket', 'capture a note': 'pocket'

@@ -2,7 +2,8 @@
 import { transport } from './transport.mjs';
 import { mountBuildSurface, sendProposal } from './generative-ui/phone-surface.mjs';
 import { mountBuildCanvas } from './build-canvas.mjs';
-import { resolveBuildRequest } from './build-composer.mjs';
+import { resolveBuildRequest, blankSurface } from './build-composer.mjs';
+import { committedHostSurface } from './generative-ui/host-revision-guard.mjs';
 import { mountWelcome } from './welcome.mjs';
 import { parsePairFragment, redeemDevicePairToken } from './pairing-link.mjs';
 import { prepareDeviceSigner, enrollWithChallenge, resumeDeviceSession } from './device-enrollment.mjs';
@@ -99,10 +100,23 @@ const vivimChat = createControlChat({
     updateDock();
   },
   onNavigate: tab => goTab(tab),
-  classifyBuild: request => {
-    const surface = build?.surface() ?? build?.draftSurface() ?? null;
-    if (!S.paired || HOST_PREVIEW || !surface) return null;
-    return resolveBuildRequest({ request, surface });
+  classifyBuild: async request => {
+    if (!S.paired || HOST_PREVIEW || !transport.direct) return null;
+    // Do not depend on Build having been opened or on a cached status envelope.
+    // Read the existing authenticated status and respect a mounted revision guard.
+    const status=await api('status');
+    const bootstrap=status?.snapshot?.bootstrap;
+    if(!S.paired || !bootstrap || bootstrap.schema!=='vivim.bootstrap-phone/1' ||
+       bootstrap.state!=='ready' || !Object.hasOwn(bootstrap,'uiRevision')) return null;
+    let surface;
+    if(build){
+      build.setSurface(bootstrap.uiRevision,bootstrap);
+      surface=build.surface()??build.draftSurface();
+    }else{
+      surface=bootstrap.uiRevision===null?blankSurface():committedHostSurface(bootstrap.uiRevision);
+    }
+    if(!surface)return null;
+    return resolveBuildRequest({request,surface});
   },
   onBuildDraft: text => {
     if (!S.paired || HOST_PREVIEW) return;
