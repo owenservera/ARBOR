@@ -623,6 +623,8 @@ function renderWiki() {
     for (const [name, page] of Object.entries(S.wiki.pages)) {
       const card = el('section', 'ux-card');
       card.append(el('h3', 'ux-card-title', name));
+      const links=Array.isArray(page.links)?page.links.filter(p=>typeof p==='string'&&Object.hasOwn(S.wiki.pages,p)):[];
+      if(links.length)card.append(el('p','ux-note','Links to: '+links.join(', ')));
       for (const [section, content] of Object.entries(page.sections)) {
         const item = el('div', 'ux-item');
         item.append(el('strong', 'ux-item-title', section), el('p', 'ux-note', content));

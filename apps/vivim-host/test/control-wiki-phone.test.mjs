@@ -146,6 +146,33 @@ test('paired Direct phone: NL Wiki preview -> device approval -> durable Host st
   assert.deepEqual(nlReadback.body.result, readback.body.result);
   assert.deepEqual(readback.body.result, { page: 'Main', section: 'About',
     wikiRevision: after.body.revision, content: 'Updated from Phone' });
+  const create=await readCommand({text:'create wiki page sprint-notes'});
+  assert.equal(create.body.outcome,'approval_required',JSON.stringify(create.body));
+  assert.equal(create.body.actionId,'wiki.page.create');
+  assert.equal(create.body.preview.expectedRevision,after.body.revision);
+  const approveStructure=p=>call('/mobile/api/control/execute',{
+    method:'POST',extra:{origin,'x-vivim-control':'1','content-type':'application/json'},
+    body:{planId:p.planId,planDigest:p.planDigest}
+  });
+  assert.equal(Object.hasOwn((await call('/mobile/api/wiki')).body.pages,'sprint-notes'),false);
+  assert.equal((await approveStructure(create.body)).body.status,'applied');
+  assert.equal((await approveStructure(create.body)).body.replayed,true);
+  const linked=await readCommand({actionId:'wiki.pages.link',args:{from:'main',to:'sprint-notes'}});
+  const move=await readCommand({actionId:'wiki.page.move',args:{page:'sprint-notes',position:'top'}});
+  assert.equal(linked.body.outcome,'approval_required');
+  assert.equal(move.body.outcome,'approval_required');
+  assert.equal((await approveStructure(linked.body)).body.status,'applied');
+  assert.notEqual((await approveStructure(move.body)).body.status,'applied');
+  const freshMove=await readCommand({actionId:'wiki.page.move',args:{page:'sprint-notes',position:'top'}});
+  assert.equal((await approveStructure(freshMove.body)).body.status,'applied');
+  const structured=(await call('/mobile/api/wiki')).body;
+  assert.equal(Object.keys(structured.pages)[0],'sprint-notes');
+  assert.deepEqual(structured.pages.Main.links,['sprint-notes']);
+  assert.equal(structured.pages.Main.sections.About,'Updated from Phone');
+  assert.equal(structured.pages['sprint-notes'].sections.About,'');
+  assert.equal(structured.revision,after.body.revision+3);
+  const related=await readCommand({actionId:'wiki.section.read',args:{page:'sprint-notes',section:'About'}});
+  assert.deepEqual(related.body.result.relatedPages,['Main']);
   owner.revokeGrant({ grantId: grant.grantId, revokedBy: 'desktop-owner' });
   assert.equal((await readCommand({ actionId: 'wiki.pages.list', args: {} })).status, 403);
   assert.equal((await call('/mobile/api/wiki')).status, 403);

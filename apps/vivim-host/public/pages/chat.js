@@ -254,7 +254,7 @@ import { resolveDesktopDestination, resolveProductRoute } from '/mobile/control-
       node.append(element('pre', '', meaning.canonical));
     node.append(element('pre', '', JSON.stringify(plan.args, null, 2)));
     if (plan.preview) {
-      node.append(element('p', '', 'Wiki section: ' + plan.preview.target +
+      node.append(element('p', '', 'Wiki target: ' + plan.preview.target +
         ' · expected revision ' + plan.preview.expectedRevision));
       node.append(element('strong', '', 'Before'));
       node.append(element('pre', '', plan.preview.before));

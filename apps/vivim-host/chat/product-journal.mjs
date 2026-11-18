@@ -33,6 +33,7 @@ function validateEnvelope(entry, { stored = false } = {}) {
   const allowed = {
     'chat-send': [...base, 'text', 'intent', ...meta],
     'wiki-edit': [...base, 'expectedRevision', 'edit', ...meta],
+    'wiki-structure': [...base, 'expectedRevision', 'edit', ...meta],
     'gate-decision': [...base, 'itemId', 'decision', ...meta],
     'feedback-round': [...base, 'round', 'approveAll', 'verdicts', ...meta]
   };
@@ -41,7 +42,7 @@ function validateEnvelope(entry, { stored = false } = {}) {
   const legacyGate = stored && entry.kind === 'gate-decision' && entry.schemaVersion === undefined && entry.actor === undefined;
   requireShape(entry.schemaVersion === 1 || legacyGate, 'Invalid journal schema version', fault);
   if (!legacyGate) {
-    const actorOK = entry.kind === 'wiki-edit' ? entry.actor === 'owner-browser' :
+    const actorOK = ['wiki-edit','wiki-structure'].includes(entry.kind) ? entry.actor === 'owner-browser' :
       entry.kind === 'gate-decision' ? entry.actor === 'keeper' :
       entry.kind === 'feedback-round' ? entry.actor === 'loop-agent' : ACTORS.has(entry.actor);
     requireShape(actorOK, 'Invalid mutation actor scope', fault);
@@ -61,6 +62,10 @@ function validateEnvelope(entry, { stored = false } = {}) {
       'Invalid bounded Wiki set-section edit', fault);
     requireShape(Number.isSafeInteger(entry.expectedRevision) && entry.expectedRevision >= 0,
       'Wiki edit requires expectedRevision', stored ? 503 : 428);
+  } else if (entry.kind === 'wiki-structure') {
+    validateStructure(entry.edit, fault);
+    requireShape(Number.isSafeInteger(entry.expectedRevision) && entry.expectedRevision >= 0,
+      'Wiki structure requires expectedRevision', stored ? 503 : 428);
   } else if (entry.kind === 'gate-decision') {
     requireShape(typeof entry.itemId === 'string' && SAFE_ID.test(entry.itemId) &&
       ['approve','reject','defer'].includes(entry.decision), 'Invalid gate-decision record', fault);
@@ -92,6 +97,67 @@ function normalizeLegacy(record) {
   return record;
 }
 
+// Structure records share the existing journal/revision authority, but are not
+// section-content edits. Existing section provenance and native consumers stay intact.
+const PAGE_SLUG = /^[A-Za-z][A-Za-z0-9-]{0,62}$/;
+const reservedPage = name => ['__proto__','constructor','prototype'].includes(name.toLowerCase());
+const validName = name => typeof name === 'string' && SAFE_NAME.test(name);
+function validateStructure(edit, fault = 400) {
+  const valid = edit?.action === 'create-page'
+    ? ownKeys(edit, ['action','page']) && typeof edit.page === 'string' &&
+      PAGE_SLUG.test(edit.page) && !reservedPage(edit.page)
+    : edit?.action === 'move-page'
+      ? ownKeys(edit, ['action','page','position']) && validName(edit.page) &&
+        ['top','bottom','up','down'].includes(edit.position)
+      : edit?.action === 'link-pages' && ownKeys(edit, ['action','from','to']) &&
+        validName(edit.from) && validName(edit.to);
+  requireShape(valid, 'Invalid Wiki structure edit', fault);
+}
+function canonicalPage(wiki, name, fault) {
+  const matches = Object.keys(wiki.pages).filter(p => p.toLowerCase() === name.toLowerCase());
+  requireShape(matches.length === 1, 'Wiki page does not exist or is ambiguous', fault);
+  return matches[0];
+}
+function applyWikiStructure(wiki, requested, fault = 409) {
+  validateStructure(requested, fault);
+  const order = Object.keys(wiki.pages);
+  if (requested.action === 'create-page') {
+    requireShape(!order.some(p => p.toLowerCase() === requested.page.toLowerCase()), 'Wiki page already exists', fault);
+    requireShape(order.length < 256, 'Wiki page capacity reached', fault);
+    const page = requested.page;
+    Object.defineProperty(wiki.pages, page, {value:{sections:{About:''}}, enumerable:true, writable:true, configurable:true});
+    return {edit:{action:'create-page',page},target:page,before:'Page does not exist',
+      after:'Create page '+page+' with an empty About section at position '+(order.length+1)};
+  }
+  if (requested.action === 'move-page') {
+    const page = canonicalPage(wiki, requested.page, fault), from = order.indexOf(page);
+    const to = ({top:0,bottom:order.length-1,up:Math.max(0,from-1),down:Math.min(order.length-1,from+1)})[requested.position];
+    requireShape(from !== to, 'Wiki page already at requested position', fault);
+    const after = [...order]; after.splice(from,1); after.splice(to,0,page);
+    wiki.pages = Object.fromEntries(after.map(p=>[p,wiki.pages[p]]));
+    return {edit:{action:'move-page',page,position:requested.position},target:page,
+      before:order.map((p,i)=>(i+1)+'. '+p).join('\n'),
+      after:after.map((p,i)=>(i+1)+'. '+p).join('\n')};
+  }
+  const from = canonicalPage(wiki,requested.from,fault), to = canonicalPage(wiki,requested.to,fault);
+  requireShape(from !== to,'Cannot link a Wiki page to itself',fault);
+  const links = wiki.pages[from].links ?? [];
+  requireShape(Array.isArray(links) && links.length < 128 && !links.includes(to),
+    'Wiki link already exists or link capacity reached',fault);
+  wiki.pages[from].links = [...links,to];
+  return {edit:{action:'link-pages',from,to},target:from+' → '+to,
+    before:links.length ? links.join('\n') : '(No outgoing links)',
+    after:wiki.pages[from].links.join('\n')};
+}
+// Inert, exact revision-bound preview. The Host dispatcher remains sole effect authority.
+export function previewWikiStructure(wiki, edit) {
+  requireShape(Number.isSafeInteger(wiki?.revision) && wiki.pages && typeof wiki.pages === 'object',
+    'Wiki structure unavailable',503);
+  const next=copy(wiki), preview=applyWikiStructure(next,edit);
+  return {...preview,expectedRevision:wiki.revision,
+    pagesDigest:createHash('sha256').update(JSON.stringify(next.pages)).digest('hex')};
+}
+
 export function replayProductJournal(seedState, seedWiki, records) {
   const wiki = copy(seedWiki);
   const chat = copy(seedState.chat || []);
@@ -118,6 +184,13 @@ export function replayProductJournal(seedState, seedWiki, records) {
       wiki.revision++;
       productRevision++;
       lastAt = e.receivedAt;
+    } else if (e.kind === 'wiki-structure') {
+      requireShape(e.expectedRevision === wiki.revision,'Invalid or stale journal Wiki structure',503);
+      const applied=applyWikiStructure(wiki,e.edit,503);
+      requireShape(Object.keys(e.edit).every(k=>e.edit[k]===applied.edit[k]),'Noncanonical Wiki structure record',503);
+      wiki.revision++;
+      productRevision++;
+      lastAt=e.receivedAt;
     }
   }
   wiki.at = lastAt;
@@ -306,6 +379,11 @@ export function createProductJournal({ dataRoot, seedState, seedWiki }) {
       requireShape(!current.tornTail, 'Torn journal tail requires explicit owner repair', 503);
       const projected = replayProductJournal(seedState, seedWiki, current.records);
       if (payload.kind === 'wiki-edit') validateProductEdit(payload, projected.wiki);
+      if (payload.kind === 'wiki-structure') {
+        requireShape(payload.expectedRevision === projected.wiki.revision,'Stale Wiki revision',409);
+        const checked=previewWikiStructure(projected.wiki,payload.edit);
+        requireShape(Object.keys(payload.edit).every(k=>payload.edit[k]===checked.edit[k]),'Noncanonical Wiki structure record',400);
+      }
       const entry = { ...copy(payload), receivedAt: new Date().toISOString(), entryId: randomUUID(),
         sequence: current.records.length + 1 };
       validateEnvelope(entry, { stored: true });

@@ -69,11 +69,12 @@ export function createControlChat({
         const result = plan.result;
         if (plan.actionId === 'wiki.section.read' && typeof result?.content === 'string')
           return result.page + '/' + result.section + ' · Wiki revision ' + result.wikiRevision +
-            '\n' + (result.content || '(Empty section)');
+            '\n' + (result.content || '(Empty section)') + (result.relatedPages?.length ? '\nRelated Wiki pages: '+result.relatedPages.join(', ') : '');
         if (plan.actionId === 'wiki.pages.list' && Array.isArray(result?.pages))
           return 'Wiki · revision ' + result.wikiRevision + '\n' +
             (result.pages.map(p => p.page + ': ' + (p.sections.join(', ') || '(no sections)') +
-              (p.omittedSections ? ' (+' + p.omittedSections + ' more)' : '')).join('\n') || '(No pages)') +
+              (p.omittedSections ? ' (+' + p.omittedSections + ' more)' : '') +
+              (p.relatedPages?.length ? ' · related: '+p.relatedPages.join(', ') : '')).join('\n') || '(No pages)') +
             (result.omitted ? '\n' + result.omitted + ' more pages not shown.' : '');
         return (plan.title || 'Done') + (result === undefined ? '' : '\n' + describe(result));
       }
@@ -214,7 +215,7 @@ export function createControlChat({
   // Tell the existing PWA Wiki tab to re-read Host state only after a
   // verified applied Wiki receipt. This event carries no mutation authority.
   function notifyWikiCommitted(receipt) {
-    if (receipt?.status === 'applied' && receipt.actionId === 'wiki.section.edit' &&
+    if (receipt?.status === 'applied' && ['wiki.section.edit','wiki.page.create','wiki.page.move','wiki.pages.link'].includes(receipt.actionId) &&
         Number.isSafeInteger(receipt.result?.wikiRevision)) {
       host.dispatchEvent(new CustomEvent('vivim:wiki-committed', {
         bubbles: true, detail: { revision: receipt.result.wikiRevision }
@@ -318,7 +319,7 @@ export function createControlChat({
     const card = elem('div', 'vivim-receipt');
     if (receipt.replayed) card.append(elem('p', 'ux-meta', 'This receipt was already applied; nothing ran twice.'));
     if (receipt.result !== undefined) card.append(elem('pre', 'ux-note', describe(receipt.result)));
-    if (receipt.status === 'applied' && receipt.actionId === 'wiki.section.edit' &&
+    if (receipt.status === 'applied' && ['wiki.section.edit','wiki.page.create','wiki.page.move','wiki.pages.link'].includes(receipt.actionId) &&
         typeof onNavigate === 'function') {
       const open = elem('button', 'btn sm ux-secondary', 'View updated Wiki');
       open.type = 'button';
@@ -435,13 +436,13 @@ export function createControlChat({
           (typeof plan.planDigest === 'string' ? ' · Plan ' + plan.planDigest.slice(0, 12) : '')));
         const args = plan.args && typeof plan.args === 'object' ? Object.entries(plan.args).slice(0, 12) : [];
         if (args.length) card.append(elem('pre', 'ux-note', JSON.stringify(plan.args, null, 2)));
-        if (plan.actionId === 'wiki.section.edit' && plan.preview) {
+        if (['wiki.section.edit','wiki.page.create','wiki.page.move','wiki.pages.link'].includes(plan.actionId) && plan.preview) {
           // Host-resolved target and bound revision, not caller-supplied display data.
           card.append(elem('strong', '', 'Wiki · ' + plan.preview.target),
-            elem('p', 'ux-meta', 'Revision ' + plan.preview.expectedRevision + ' · Exact replacement'));
-          card.append(elem('strong', '', 'Current section'),
+            elem('p', 'ux-meta', 'Revision ' + plan.preview.expectedRevision + ' · Exact change'));
+          card.append(elem('strong', '', 'Before'),
             elem('pre', 'ux-note', plan.preview.before));
-          card.append(elem('strong', '', 'Proposed section'),
+          card.append(elem('strong', '', 'After'),
             elem('pre', 'ux-note', plan.preview.after));
         }
         const actions = elem('div', 'vivim-plan-actions');

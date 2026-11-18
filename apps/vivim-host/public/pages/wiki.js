@@ -79,6 +79,8 @@ function renderWiki(wiki) {
   for (const [name, page] of pages) {
     const card = element('section', 'page');
     card.appendChild(element('h3', '', name));
+    const links=Array.isArray(page?.links)?page.links.filter(p=>typeof p==='string'&&Object.hasOwn(wiki.pages,p)):[];
+    if(links.length)card.appendChild(element('p','meta','Links to: '+links.join(', ')));
     const sections = Object.entries(page?.sections || {});
     if (!sections.length) card.appendChild(element('p', 'empty', 'No sections.'));
     for (const [section, body] of sections) card.appendChild(sectionEl(name, section, present(body, ''), wiki.revision));

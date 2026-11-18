@@ -1,6 +1,6 @@
 {
   "schema": "vivim.control-action-catalog/1",
-  "version": 11,
+  "version": 12,
   "asOf": "2026-11-18",
   "policy": {
     "allUserFacingActionsRequireTextPath": true,
@@ -1174,8 +1174,8 @@
       "title": "Create a wiki page",
       "category": "wiki",
       "owner": "host-wiki",
-      "executor": null,
-      "readiness": "adapter_pending",
+      "executor": "apps/vivim-host/control/dispatcher.mjs:createExecutors",
+      "readiness": "source_wired",
       "risk": "R1",
       "target": "local-host",
       "args": {
@@ -1296,8 +1296,8 @@
       "title": "Move a wiki page in the page order",
       "category": "wiki",
       "owner": "host-wiki",
-      "executor": null,
-      "readiness": "adapter_pending",
+      "executor": "apps/vivim-host/control/dispatcher.mjs:createExecutors",
+      "readiness": "source_wired",
       "risk": "R1",
       "target": "local-host",
       "args": {
@@ -1364,8 +1364,8 @@
       "title": "Link two wiki pages",
       "category": "wiki",
       "owner": "host-wiki",
-      "executor": null,
-      "readiness": "adapter_pending",
+      "executor": "apps/vivim-host/control/dispatcher.mjs:createExecutors",
+      "readiness": "source_wired",
       "risk": "R1",
       "target": "local-host",
       "args": {
