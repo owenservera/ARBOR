@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { resolveBuildRequest, blankSurface } from '../build-composer.mjs';
-import { assertBuildPreviewCurrent, committedUiRevision, matchesCommittedUiReadback, buildRequestRoute } from '../build-canvas.mjs';
+import { assertBuildPreviewCurrent, committedUiRevision, matchesCommittedUiReadback, buildRequestRoute, buildUndoProposal } from '../build-canvas.mjs';
 
 const compile = (surface, request) => ({ ...resolveBuildRequest({ request, surface }), surface });
 
@@ -44,4 +44,23 @@ test('readback predicate requires exact successor revision, identity and propose
     rename.preview.surface, { ...rename.preview.surface, revision: 9 }), true);
   assert.throws(() => committedUiRevision({ status: 'claimed' }, surface));
   assert.throws(() => committedUiRevision({ status: 'done', result: '{}' }, surface));
+});
+
+test('Undo compiles exact previous screen as a new Host revision, never an unproved rollback', () => {
+  const before = { ...blankSurface(), revision: 7 };
+  const original = compile(before, 'Add a card called Research');
+  const committed = { surfaceId: before.surfaceId, parentRevision: 7, committedRevision: 8 };
+  const live = { ...original.preview.surface, revision: 8 };
+  const undo = buildUndoProposal({ original, before, committed, live });
+  assert.ok(undo);
+  assert.equal(undo.proposal.baseRevision, 8);
+  assert.deepEqual(undo.proposal.operations, [{ opId: 'vec.undo.1', type: 'remove', componentId: 'vec.card.research' }]);
+  assert.deepEqual(undo.preview.surface, { ...before, revision: 8 });
+  assert.equal(undo.preview.persisted, false);
+  assert.doesNotThrow(() => assertBuildPreviewCurrent(undo, live));
+  assert.equal(matchesCommittedUiReadback({ surfaceId: before.surfaceId, parentRevision: 8, committedRevision: 9 },
+    undo.preview.surface, { ...before, revision: 9 }), true);
+  for (const stale of [null, before, { ...live, revision: 9 }, { ...before, revision: 8 }]) {
+    assert.equal(buildUndoProposal({ original, before, committed, live: stale }), null);
+  }
 });
