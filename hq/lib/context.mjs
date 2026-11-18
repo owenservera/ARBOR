@@ -762,7 +762,13 @@ export function composeContext(db, options = {}) {
   };
   if (!task || project.missing) return emptyBundle(base);
 
-  const candidates = collectCandidates(db, { task, projectName: project.name, sourceSemanticIds });
+  // An authorized caller may narrow this same compiler to a previously
+  // verified set of indexed source references. A filter never grants read access.
+  const allowedSourceRefs = options.allowedSourceRefs;
+  if (allowedSourceRefs !== undefined && !(allowedSourceRefs instanceof Set))
+    throw new TypeError('HQ_INVALID_SOURCE_SCOPE');
+  const candidates = collectCandidates(db, { task, projectName: project.name, sourceSemanticIds })
+    .filter(candidate => allowedSourceRefs === undefined || allowedSourceRefs.has(candidate.ref));
   prepareCandidates(db, candidates, { task, projectName: project.name, nowMs });
 
   const readable = candidates.filter((candidate) => !candidate.unreadable);
