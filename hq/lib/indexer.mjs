@@ -66,11 +66,11 @@ function countLines(text) {
 
 function readGitInfo(absPath, useGit) {
   const info = { kind: 'dir', remote: null, branch: null, head: null };
+  if (useGit === false) return info;
   let isGit = false;
   try { isGit = isGitRepoHere(absPath); } catch { isGit = false; }
   if (!isGit) return info;
   info.kind = 'git';
-  if (useGit === false) return info;
   try { info.remote = gitRemote(absPath); } catch { info.remote = null; }
   try { info.branch = gitBranch(absPath); } catch { info.branch = null; }
   try { info.head = gitHead(absPath); } catch { info.head = null; }

@@ -23,6 +23,9 @@ let ownerCsrf = null; // memory-only proof of a native Host-issued short-lived s
 let interpreting = false;
 let surfaceQuery = '';
 let surfaceQueryEpoch = 0;
+let surfaceContextEpoch = 0;
+let surfaceContextSelection = null;
+let autoContextPending = false;
 let indexingSources = false;
 
 function element(tag, className, text) {
@@ -153,12 +156,10 @@ function renderFileSurface(surface) {
     for (const relation of record.relationships || []) details.appendChild(element('p', 'record-meta',
       relation.kind + ' → ' + (relation.semanticId || relation.ref) + ' · line ' + relation.line));
     if (record.freshness === 'indexed' && record.project && record.path) {
-      const link = element('a', '', 'Generate verified source context');
-      link.href = '/api/file-surface/context?project=' + encodeURIComponent(record.project) +
-        '&path=' + encodeURIComponent(record.path);
-      link.target = '_blank';
-      link.rel = 'noopener';
-      details.appendChild(link);
+      const button = element('button', '', 'Read verified source context');
+      button.type = 'button';
+      button.addEventListener('click', () => { void readSurfaceContext(record); });
+      details.appendChild(button);
     } else if (record.freshness === 'stale') {
       details.appendChild(element('p', 'empty', 'Source changed; refresh the index before requesting context.'));
     }
@@ -166,6 +167,64 @@ function renderFileSurface(surface) {
   }
   if (records.length > 16) root.appendChild(element('p', 'empty', `Showing 16/${records.length} source records.`));
   return root;
+}
+function clearSurfaceContext(message = 'Search annotated source or select a current file to read its verified context.') {
+  surfaceContextEpoch++;
+  surfaceContextSelection = null;
+  $('surface-context-view').replaceChildren(element('p', 'empty', message));
+}
+function currentSurfaceRecord(record) {
+  return fileRecords(sourceRecord('surface')).some(file => file.sourceId === record.sourceId &&
+    file.sourceDigest === record.sourceDigest && file.freshness === 'indexed');
+}
+async function readSurfaceContext(record) {
+  if (!currentSurfaceRecord(record)) {
+    clearSurfaceContext('Source is not current. Refresh the index before reading context.');
+    return;
+  }
+  const epoch = ++surfaceContextEpoch;
+  surfaceContextSelection = record;
+  $('surface-context-view').replaceChildren(element('p', 'empty', 'Composing verified HQ context…'));
+  try {
+    const response = await fetch('/api/file-surface/context?project=' + encodeURIComponent(record.project) +
+      '&path=' + encodeURIComponent(record.path) + '&task=' + encodeURIComponent(surfaceQuery),
+      { credentials: 'same-origin', cache: 'no-store', signal: AbortSignal.timeout(15000) });
+    if (epoch !== surfaceContextEpoch) return;
+    if (!response.ok) throw new Error('Source context refused');
+    const result = await response.json();
+    if (epoch !== surfaceContextEpoch) return;
+    const bundle = result?.context;
+    if (!currentSurfaceRecord(record) || result?.schema !== 'vivim.source-context/1' ||
+        result.status !== 'indexed' || result.sourceId !== record.sourceId ||
+        result.sourceDigest !== record.sourceDigest || bundle?.schema !== 'hq.context-bundle/1' ||
+        !Array.isArray(bundle.sources) || bundle.sources.length > 16 ||
+        !bundle.sources.some(source => source.ref === record.sourceId) ||
+        typeof bundle.fragment !== 'string' || bundle.fragment.length > 64000 ||
+        typeof bundle.digest !== 'string') {
+      clearSurfaceContext('No current verified source context. Reindex the authorized source and try again.');
+      return;
+    }
+    const root = element('section', 'record');
+    root.appendChild(element('h3', '', 'Verified context · ' + result.sourceId));
+    root.appendChild(element('p', 'record-meta', 'Digest ' + bundle.digest +
+      ' · verified at read; source changes require a fresh context'));
+    for (const source of bundle.sources)
+      root.appendChild(element('p', 'record-meta', source.ref + ' · lines ' +
+        (Array.isArray(source.lines) ? source.lines.join('–') : 'unavailable')));
+    root.appendChild(element('pre', 'body', bundle.fragment));
+    $('surface-context-view').replaceChildren(root);
+  } catch {
+    if (epoch === surfaceContextEpoch)
+      clearSurfaceContext('Verified HQ context unavailable. No cached source text displayed.');
+  }
+}
+function autoSurfaceContext(data) {
+  if (!surfaceQuery) return;
+  const matches = fileRecords(data).filter(file => file.freshness === 'indexed');
+  if (matches.length === 1) void readSurfaceContext(matches[0]);
+  else clearSurfaceContext(matches.length ?
+    'Choose a matching file to generate verified context.' :
+    'No current annotated source matches. Reindex if source changed.');
 }
 function renderJournal(journal) {
   const root = element('div');
@@ -295,7 +354,7 @@ async function getJson(key) {
         item.status !== 'user-statement-unverified')))
     throw new Error('Invalid Host Wiki-context projection');
   if (key === 'roadmap' && !Array.isArray(data?.buildQueue)) throw new Error('Invalid canonical roadmap queue');
-  if (key === 'surface' && (data?.schema !== 'vivim.file-surface/1' || data.generatorVersion !== 'hq.source-index/1' || !Array.isArray(data.files))) throw new Error('Invalid live file-surface projection');
+  if (key === 'surface' && (data?.schema !== 'vivim.file-surface/1' || data.generatorVersion !== 'hq.source-index/1' || !Array.isArray(data.files) || data.files.length > 48)) throw new Error('Invalid live file-surface projection');
   if (key === 'journal' && !Array.isArray(data) && !Array.isArray(data?.entries)) throw new Error('Invalid journal records');
   return data;
 }
@@ -320,6 +379,12 @@ function ingest(key, data) {
   const previous = snapshots[key];
   const changed = !previous || previous.signature !== signature;
   snapshots[key] = { data, signature, error: null, observedAt: new Date().toISOString() };
+  if (key === 'surface' && surfaceContextSelection && !currentSurfaceRecord(surfaceContextSelection))
+    clearSurfaceContext('Indexed source changed or authorization was lost. Read current context again.');
+  if (key === 'surface' && autoContextPending) {
+    autoContextPending = false;
+    autoSurfaceContext(data);
+  }
   updateSourceMeta(key);
   if (changed) {
     if (key === 'wiki') $('wiki-view').replaceChildren(renderWiki(data));
@@ -390,6 +455,8 @@ async function refresh() {
               ? 'Owner context locked. Unlock Host Control to see user observations.'
               : 'Owner context temporarily unavailable. No cached private content displayed.'));
         } else if (key === 'surface') {
+          autoContextPending = false;
+          clearSurfaceContext('Authorized HQ source unavailable. No cached context displayed.');
           snapshots[key] = { data: null, signature: null, error: message };
           $('surface-view').replaceChildren(element('p', 'empty', message.includes('HTTP 401')
             ? 'Source index locked. Unlock Host Control to inspect development source.'
@@ -618,6 +685,8 @@ $('surface-search').addEventListener('submit', event => {
   event.preventDefault();
   surfaceQuery = $('surface-query').value.trim().slice(0,240);
   surfaceQueryEpoch++;
+  autoContextPending = true;
+  clearSurfaceContext('Reading matching annotated source…');
   snapshots.surface = { data: null, error: null };
   $('surface-view').replaceChildren(element('p', 'empty', 'Searching authorized source…'));
   updateSourceMeta('surface');
@@ -628,6 +697,8 @@ $('surface-search').addEventListener('submit', event => {
 $('surface-reindex').addEventListener('click', async () => {
   if (indexingSources) return;
   indexingSources = true;
+  autoContextPending = false;
+  clearSurfaceContext('Refreshing source index. Context will be read from the new index.');
   $('surface-reindex').disabled = true;
   $('surface-reindex-status').textContent = 'Refreshing the approved source index…';
   try {
@@ -643,7 +714,7 @@ $('surface-reindex').addEventListener('click', async () => {
       ? 'Index refreshed. Reading current source…' : 'Index partially refreshed; some sources could not be read.';
     const epoch = surfaceQueryEpoch;
     const currentSurface = await getJson('surface');
-    if (epoch === surfaceQueryEpoch) ingest('surface', currentSurface);
+    if (epoch === surfaceQueryEpoch) { autoContextPending = true; ingest('surface', currentSurface); }
   } catch {
     snapshots.surface = { data: null, error: 'Index refresh not confirmed' };
     $('surface-view').replaceChildren(element('p', 'empty', 'Index refresh not confirmed. Refresh sources to inspect the result.'));

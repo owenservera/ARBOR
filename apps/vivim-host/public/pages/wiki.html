@@ -56,11 +56,12 @@
     <form id="surface-search" class="wiki-command-form">
       <label for="surface-query">Find a path, symbol, or semantic ID</label>
       <input id="surface-query" type="search" maxlength="240" placeholder="vivim.command-intent@0.1">
-      <button type="submit">Search source</button>
+      <button type="submit">Search source and context</button>
     </form>
     <button id="surface-reindex" type="button">Refresh approved source index</button>
     <p id="surface-reindex-status" class="source-meta" role="status" aria-live="polite"></p>
     <div id="surface-view"><p class="empty">Loading indexed file surfaces…</p></div>
+    <div id="surface-context-view" aria-live="polite"><p class="empty">Search annotated source or select a file to read verified context.</p></div>
   </section>
   <section class="block journal-panel" aria-labelledby="journal-heading">
     <div class="section-heading"><div><p class="eyebrow">05 / APPEND-ONLY HISTORY</p><h2 id="journal-heading">Host journal</h2></div><a href="/api/journal">Host journal source</a></div>

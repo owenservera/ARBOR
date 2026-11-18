@@ -16,6 +16,7 @@ export function isSensitiveSourcePath(path) {
   return toPosix(path).split('/').some(part => {
     const name = part.trim().toLowerCase();
     return name.startsWith('.env') || name.endsWith('.env') ||
+      ['.private', 'private', 'secrets', 'credentials', 'session-dumps', 'chat-exports'].includes(name) ||
       /\.(?:keystore|pem|p12)$/.test(name) ||
       ['session.json', 'storage-state.json', 'release-profile.json', 'cookies', 'login data'].includes(name);
   });

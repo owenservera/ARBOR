@@ -9,7 +9,7 @@ export async function createLiveSourceSurface({ approvedRoots, dataDir, actorId,
     context: params => hq.fileSurfaceContext(params),
     // Same existing incremental index, never a source edit. Git is optional.
     refresh: () => {
-      const result = hq.index();
+      const result = hq.index({ useGit: false });
       return { status: result.errors.length ? 'partial' : result.projects.length ? 'indexed' : 'empty',
         totals: result.totals, errorCount: result.errors.length };
     }

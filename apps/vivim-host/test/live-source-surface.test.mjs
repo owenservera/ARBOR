@@ -9,7 +9,7 @@ import { createDevIntelligence } from '../../../hq/lib/arbor-service.mjs';
 import { createHostServer } from '../server.mjs';
 
 const arbor = realpathSync(fileURLToPath(new URL('../../../', import.meta.url)));
-const commandPath = 'apps/vivim-host/control/command-intent.mjs';
+const commandPath = 'apps/vivim-host/control/intent-planner.mjs';
 const id = 'vivim.command-intent@0.1';
 const ownerToken = 'real-source-surface-owner-test-12345678901234567890';
 const open = server => new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
@@ -44,8 +44,8 @@ function checkContext(out, project, path, semanticId) {
   const source = out.context.sources.find(s => s.ref === out.sourceId);
   assert.ok(source, 'selected genuine source must be included');
   assert.equal(source.contentHash, out.sourceDigest);
-  assert.ok(source.semanticReferences.some(a => a.semanticId === semanticId && a.annotationKind === 'emits'));
-  assert.match(out.context.fragment, /export function toCommandIntent\(/);
+  assert.ok(source.semanticReferences.some(a => a.semanticId === semanticId && a.annotationKind === 'consumes'));
+  assert.match(out.context.fragment, /function planText\(/);
   assert.equal(out.context.authority, 'read_only_projection');
   assert.ok(out.context.sources.every(s => !Object.hasOwn(s, 'absPath')));
   return source;
@@ -66,15 +66,15 @@ test('actual ARBOR registration and HQ source index feed real Host route and sou
   try {
     const hq = hqAt(arbor, indexRoot);
     hq.registerSource({ name: 'arbor', path: arbor });
-    const indexed = hq.index();
+    const indexed = hq.index({ useGit: false });
     assert.equal(indexed.errors.length, 0, JSON.stringify(indexed.errors.slice(0,3)));
     assert.ok(indexed.totals.files > 3);
-    const result = hq.fileSurface({ project: 'arbor', query: 'toCommandIntent' });
+    const result = hq.fileSurface({ project: 'arbor', query: 'planText' });
     assert.equal(result.generatorVersion, 'hq.source-index/1');
     const record = result.files.find(f => f.path === commandPath);
     assert.ok(record, 'real command intent implementation must be indexed');
     assert.equal(record.freshness, 'indexed');
-    assert.ok(record.annotations.some(a => a.semanticId === id && a.kind === 'emits'));
+    assert.ok(record.annotations.some(a => a.semanticId === id && a.kind === 'consumes'));
     assert.equal(record.currentDigest, record.sourceDigest);
     const direct = hq.fileSurfaceContext({ project: 'arbor', path: commandPath });
     checkContext(direct, 'arbor', commandPath, id);
@@ -83,7 +83,7 @@ test('actual ARBOR registration and HQ source index feed real Host route and sou
     await open(server);
     assert.equal((await request(server, '/api/file-surface', { authenticated: false })).status, 401);
     assert.equal((await request(server, '/api/file-surface', { origin: 'http://evil.invalid' })).status, 403);
-    const live = await request(server, '/api/file-surface?project=arbor&q=toCommandIntent');
+    const live = await request(server, '/api/file-surface?project=arbor&q=planText');
     assert.equal(live.status, 200);
     assert.deepEqual(live.data, result);
     const context = await request(server, '/api/file-surface/context?project=arbor&path=' + encodeURIComponent(commandPath));
@@ -94,7 +94,8 @@ test('actual ARBOR registration and HQ source index feed real Host route and sou
     assert.equal(wiki.status, 200);
     assert.match(wiki.data, /id="surface-search"/);
     const script = await request(server, '/wiki.js', { authenticated: false });
-    assert.match(script.data, /Generate verified source context/);
+    assert.match(script.data, /Read verified source context/);
+    assert.match(wiki.data, /id="surface-context-view"/);
     assert.doesNotMatch(script.data, /data\/demo-baseline\/file-surface/);
   } finally { if (server.listening) await close(server); rmSync(tmp, { recursive: true, force: true }); }
 });
@@ -105,10 +106,10 @@ test('real annotated implementation copy: stale refusal, incremental reindex, ch
   mkdirSync(source);
   mkdirSync(join(source, 'private'));
   mkdirSync(join(source, 'demo'));
-  const file = join(source, 'command-intent.mjs');
+  const file = join(source, 'intent-planner.mjs');
   copyFileSync(join(arbor, commandPath), file);
-  copyFileSync(file, join(source, 'private', 'command-intent.mjs'));
-  copyFileSync(file, join(source, 'demo', 'command-intent.mjs'));
+  copyFileSync(file, join(source, 'private', 'intent-planner.mjs'));
+  copyFileSync(file, join(source, 'demo', 'intent-planner.mjs'));
   const server = createTestHost(source, data, join(tmp, 'host'));
   try {
     const hq = hqAt(source, data);
@@ -121,17 +122,17 @@ test('real annotated implementation copy: stale refusal, incremental reindex, ch
     assert.equal(index.errors.length, 0);
     const initial = await request(server, '/api/file-surface?project=copy&q=' + encodeURIComponent(id));
     assert.equal(initial.status, 200);
-    assert.deepEqual(initial.data.files.map(f => f.path), ['command-intent.mjs']);
-    const contextUrl = '/api/file-surface/context?project=copy&path=command-intent.mjs';
+    assert.deepEqual(initial.data.files.map(f => f.path), ['intent-planner.mjs']);
+    const contextUrl = '/api/file-surface/context?project=copy&path=intent-planner.mjs';
     const before = (await request(server, contextUrl)).data;
-    checkContext(before, 'copy', 'command-intent.mjs', id);
+    checkContext(before, 'copy', 'intent-planner.mjs', id);
     const newer = 'vivim.command-intent@0.2';
     const code = readFileSync(file, 'utf8');
-    const edited = code.replace('// @hq:emits ' + id, '// @hq:emits ' + newer + '0');
+    const edited = code.replace('// @hq:consumes ' + id, '// @hq:consumes ' + newer + '0');
     assert.notEqual(code, edited);
     const changedId = newer + '0'; // length change exercises ordinary incremental detection
     writeFileSync(file, edited);
-    const stale = (await request(server, '/api/file-surface?project=copy&path=command-intent.mjs')).data;
+    const stale = (await request(server, '/api/file-surface?project=copy&path=intent-planner.mjs')).data;
     assert.equal(stale.files[0].freshness, 'stale');
     const noContext = (await request(server, contextUrl)).data;
     assert.equal(noContext.status, 'stale');
@@ -147,12 +148,12 @@ test('real annotated implementation copy: stale refusal, incremental reindex, ch
     assert.equal(after.files.length, 1);
     assert.equal(after.files[0].freshness, 'indexed');
     assert.notEqual(after.files[0].sourceDigest, initial.data.files[0].sourceDigest);
-    assert.ok(after.files[0].annotations.some(a => a.semanticId === changedId && a.kind === 'emits'));
+    assert.ok(after.files[0].annotations.some(a => a.semanticId === changedId && a.kind === 'consumes'));
     const updated = (await request(server, contextUrl)).data;
-    checkContext(updated, 'copy', 'command-intent.mjs', changedId);
+    checkContext(updated, 'copy', 'intent-planner.mjs', changedId);
     assert.equal(hq.verifyContext(updated.context).valid, true);
     assert.notEqual(updated.context.digest, before.context.digest);
-    const forbidden = await request(server, '/api/file-surface/context?project=copy&path=private%2Fcommand-intent.mjs');
+    const forbidden = await request(server, '/api/file-surface/context?project=copy&path=private%2Fintent-planner.mjs');
     assert.equal(forbidden.data.context, null);
     const escaped = await request(server, '/api/file-surface/context?project=copy&path=..%2Foutside.mjs');
     assert.notEqual(escaped.status, 200);
