@@ -1723,6 +1723,11 @@ $('dbgsend').addEventListener('click', async () => {
   catch (e) { toast('Send failed: ' + e.message); }
 });
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { if (HOST_PREVIEW) void refreshHostPreview(); else if (N.target === 'phone') nativeRefresh(); else refresh(); if (S.tab === 'wiki') void refreshWiki(); } });
+// An approved Wiki edit from the shared Talk composer updates the mounted Wiki
+// without a tab switch, mutation retry, or private state in a second store.
+document.addEventListener('vivim:wiki-committed', () => {
+  if (S.tab === 'wiki') void refreshWiki();
+});
 window.addEventListener('vivim:bootstrap-refresh', () => { S.statusAt = 0; if (S.paired) refresh(); });
 
 if (!HOST_PREVIEW && 'serviceWorker' in navigator) {
