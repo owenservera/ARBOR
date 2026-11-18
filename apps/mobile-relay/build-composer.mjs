@@ -14,7 +14,7 @@ const { compileUiConfiguration } = await import(
   typeof process !== 'undefined' && process.versions?.node
     ? '../../packages/vec-ui-engines/src/compiler.mjs'
     : './vec-engines/compiler.mjs'
-);
+).catch(() => ({ compileUiConfiguration: null }));
 
 export const SUGGESTIONS = Object.freeze(['Set up everything for me', 'I need help researching', 'Make a simple AI workspace']);
 export const BUILD_COMPONENTS = Object.freeze(['stack', 'grid', 'text', 'card', 'button', 'collection', 'timeline', 'chart']);
@@ -43,6 +43,7 @@ export function compileVecThemeRequest({ text, surface } = {}) {
   if (!capabilityId) return refuse('UNSUPPORTED_THEME_PROPERTY');
   const value = matched[2].trim();
   if (!COLOR.test(value)) return refuse('INVALID_THEME_COLOR');
+  if (typeof compileUiConfiguration !== 'function') return refuse('VEC_ENGINE_UNAVAILABLE');
   let current;
   try { current = validateSurface(surface, { refs: new Set() }); }
   catch { return refuse('INVALID_OR_UNAVAILABLE_SURFACE'); }
