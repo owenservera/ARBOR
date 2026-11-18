@@ -469,15 +469,44 @@ function renderWikiContext() {
     card.append(row);
   }
   if (context.wikiChanges.omitted) card.append(el('p', 'ux-note', context.wikiChanges.omitted + ' older changes omitted.'));
-  card.append(el('p', 'ux-note', 'Other application effects and project relationships are not available in this projection.'));
+  card.append(el('h3', 'ux-card-title', 'Executed application effects · historical receipts'));
+  const effects = context.applicationEffects;
+  if (effects?.state !== 'source-backed') card.append(el('p', 'ux-note', 'Control receipt context unavailable.'));
+  else {
+    card.append(el('p', 'ux-note', 'Scanned ' + effects.scannedPlans + ' recent plans (limit ' + effects.scanLimit +
+      ') · not current-state verification'));
+    if (!effects.items.length) card.append(el('p', 'ux-note', 'No applied effects in the scanned plans.'));
+    for (const item of effects.items) {
+      const row = el('div', 'ux-item');
+      row.append(el('strong', 'ux-item-title', item.actionId),
+        el('p', 'ux-note', 'Historical applied receipt · ' + item.planId + ' · source revision ' +
+          (item.sourceRevision ?? 'not recorded') + ' · ' + item.receivedAt));
+      card.append(row);
+    }
+    if (effects.omitted) card.append(el('p', 'ux-note', effects.omitted + ' additional applied effects omitted.'));
+  }
+  card.append(el('p', 'ux-note', 'Project and task relationships or native graph context are not asserted by this projection.'));
   return card;
+}
+function validAppliedEffects(effects) {
+  if (effects === undefined) return true;
+  if (effects?.state === 'unavailable') return Array.isArray(effects.items) && effects.items.length === 0;
+  return effects?.state === 'source-backed' && effects.scanLimit === 100 &&
+    Number.isSafeInteger(effects.scannedPlans) && effects.scannedPlans >= 0 && effects.scannedPlans <= effects.scanLimit &&
+    Number.isSafeInteger(effects.omitted) && effects.omitted >= 0 && Array.isArray(effects.items) &&
+    effects.items.length <= 24 && effects.items.length + effects.omitted <= effects.scannedPlans &&
+    effects.items.every(item => item?.source === 'host-control-receipt' && item.kind === 'executed-effect' &&
+      item.status === 'historical-applied-receipt' && typeof item.planId === 'string' &&
+      typeof item.actionId === 'string' && typeof item.receivedAt === 'string' &&
+      typeof item.planDigest === 'string' && /^[a-f0-9]{64}$/.test(item.planDigest) &&
+      (item.sourceRevision === null || (Number.isSafeInteger(item.sourceRevision) && item.sourceRevision >= 0)));
 }
 function validWikiContext(context, wiki) {
   const validEntry = item => item?.source === 'host-product-journal' && typeof item.entryId === 'string' &&
     Number.isSafeInteger(item.sequence) && item.sequence >= 1 && item.sequence <= context.revision;
   return context?.schema === 'vivim.wiki-context/1' && context.state === 'source-backed' &&
     Number.isSafeInteger(context.revision) && context.revision >= 0 && context.wikiRevision === wiki.revision &&
-    Array.isArray(context.items) && context.items.length <= 24 &&
+    validAppliedEffects(context.applicationEffects) && Array.isArray(context.items) && context.items.length <= 24 &&
     Number.isSafeInteger(context.omitted) && context.omitted >= 0 &&
     context.items.every(item => validEntry(item) && item.status === 'user-statement-unverified' && typeof item.text === 'string') &&
     Array.isArray(context.wikiChanges?.items) && context.wikiChanges.items.length <= 24 &&
