@@ -8,7 +8,7 @@ const SOURCES = Object.freeze({
   state: { url: '/api/state', path: 'Host product journal → chat state projection' },
   context: { url: '/api/host/control/wiki-context', path: 'Owner-private journal → user observations' },
   roadmap: { url: '/api/roadmap', path: 'docs/product/roadmap/roadmap.v1.json (keeper-owned)' },
-  surface: { url: '/api/file-surface', path: 'data/demo-baseline/file-surface.v1.json (stage A)' },
+  surface: { url: '/api/file-surface', path: 'Owner-authorized HQ executable source index' },
   journal: { url: '/api/journal', path: 'Host data-root/product-state/journal.jsonl' }
 });
 const ACTOR = 'owner-browser';
@@ -21,6 +21,8 @@ let refreshing = false;
 let busy = false;
 let ownerCsrf = null; // memory-only proof of a native Host-issued short-lived session
 let interpreting = false;
+let surfaceQuery = '';
+let indexingSources = false;
 
 function element(tag, className, text) {
   const result = document.createElement(tag);
@@ -42,7 +44,7 @@ function entriesOf(journal) {
   return Array.isArray(journal) ? journal : Array.isArray(journal?.entries) ? journal.entries : [];
 }
 function fileRecords(surface) {
-  // The committed vivim.file-surface/1 Stage-A registry uses `files`, not `records`.
+  // Live HQ projection keeps the existing vivim.file-surface/1 files contract.
   return Array.isArray(surface?.files) ? surface.files :
     Array.isArray(surface?.records) ? surface.records : Array.isArray(surface) ? surface : [];
 }
@@ -137,14 +139,28 @@ function renderRoadmap(roadmap) {
 function renderFileSurface(surface) {
   const root = element('div');
   const records = fileRecords(surface);
-  root.appendChild(element('p', 'queue-summary', `${records.length} indexed files · ${present(surface?.generatorVersion, 'generator not identified')} · generated registry, not executable capability`));
-  if (!records.length) { root.appendChild(element('p', 'empty', 'No source-index records returned.')); return root; }
+  root.appendChild(element('p', 'queue-summary', `${records.length} indexed files · ${present(surface?.generatorVersion)}${surface?.truncated ? ' · bounded results' : ''} · read only, not execution authority`));
+  if (!records.length) { root.appendChild(element('p', 'empty', 'No matching indexed executable source. Register an approved project and refresh its index.')); return root; }
   for (const record of records.slice(0, 16)) {
     const details = element('details', 'record');
     details.appendChild(element('summary', '', present(record.path)));
     details.appendChild(element('p', 'body', present(record.surface, 'No description.')));
     details.appendChild(element('p', 'record-meta',
-      `sourceDigest=${present(record.sourceDigest, 'unprovided')} · comments=${(record.commentIds || []).length} · actions=${(record.actionIds || []).length}`));
+      `sourceDigest=${present(record.sourceDigest, 'unprovided')} · ${present(record.freshness, 'unverified')} · project=${present(record.project)}`));
+    for (const annotation of record.annotations || []) details.appendChild(element('p', 'record-meta',
+      annotation.kind + ' · ' + annotation.semanticId + ' · line ' + annotation.line + ' · ' + annotation.resolution));
+    for (const relation of record.relationships || []) details.appendChild(element('p', 'record-meta',
+      relation.kind + ' → ' + (relation.semanticId || relation.ref) + ' · line ' + relation.line));
+    if (record.freshness === 'indexed' && record.project && record.path) {
+      const link = element('a', '', 'Generate verified source context');
+      link.href = '/api/file-surface/context?project=' + encodeURIComponent(record.project) +
+        '&path=' + encodeURIComponent(record.path);
+      link.target = '_blank';
+      link.rel = 'noopener';
+      details.appendChild(link);
+    } else if (record.freshness === 'stale') {
+      details.appendChild(element('p', 'empty', 'Source changed; refresh the index before requesting context.'));
+    }
     root.appendChild(details);
   }
   if (records.length > 16) root.appendChild(element('p', 'empty', `Showing 16/${records.length} source records.`));
@@ -259,8 +275,9 @@ function checkEditorRevision() {
 }
 async function getJson(key) {
   if (key === 'context') await ownerEditCsrf(); // exchange native launch code when provided
-  const response = await fetch(SOURCES[key].url, { cache: 'no-store',
-    ...(key === 'context' ? { credentials: 'same-origin' } : {}), signal: AbortSignal.timeout(5000) });
+  const url = SOURCES[key].url + (key === 'surface' && surfaceQuery ? '?q=' + encodeURIComponent(surfaceQuery) : '');
+  const response = await fetch(url, { cache: 'no-store',
+    ...(['context','surface'].includes(key) ? { credentials: 'same-origin' } : {}), signal: AbortSignal.timeout(5000) });
   if (!response.ok) {
     if (key === 'context' && response.status === 401) ownerCsrf = null;
     throw new Error('HTTP ' + response.status + ' ' + SOURCES[key].url);
@@ -277,7 +294,7 @@ async function getJson(key) {
         item.status !== 'user-statement-unverified')))
     throw new Error('Invalid Host Wiki-context projection');
   if (key === 'roadmap' && !Array.isArray(data?.buildQueue)) throw new Error('Invalid canonical roadmap queue');
-  if (key === 'surface' && !Array.isArray(data?.files) && !Array.isArray(data?.records) && !Array.isArray(data)) throw new Error('Invalid file-surface registry');
+  if (key === 'surface' && (data?.schema !== 'vivim.file-surface/1' || data.generatorVersion !== 'hq.source-index/1' || !Array.isArray(data.files))) throw new Error('Invalid live file-surface projection');
   if (key === 'journal' && !Array.isArray(data) && !Array.isArray(data?.entries)) throw new Error('Invalid journal records');
   return data;
 }
@@ -286,7 +303,7 @@ function revisionLabel(key, data) {
   if (key === 'state') return `state rev ${data.revision} / Wiki rev ${present(data.wikiRevision)}`;
   if (key === 'context') return `source sequence ${data.revision} · ${data.totalObserved} observed`;
   if (key === 'roadmap') return `batch ${present(data.acceleration?.activeBatch)} · ${data.buildQueue.length} rows · no content rev`;
-  if (key === 'surface') return `${fileRecords(data).length} indexed files · ${present(data.generatorVersion)} · generated seed`;
+  if (key === 'surface') return `${fileRecords(data).length} indexed files · ${present(data.generatorVersion)} · ${present(data.status)}`;
   return `${entriesOf(data).length} entries · count is not a revision`;
 }
 function updateSourceMeta(key) {
@@ -335,7 +352,7 @@ function checkReadback(wiki) {
   }
 }
 function renderSync() {
-  const keys = Object.keys(SOURCES).filter(key => key !== 'context'); // private source may be locked
+  const keys = Object.keys(SOURCES).filter(key => !['context','surface'].includes(key)); // private sources may be locked
   const seen = keys.filter(key => !!snapshots[key]?.data).length;
   const failures = keys.filter(key => !!snapshots[key]?.error);
   const wiki = sourceRecord('wiki');
@@ -369,6 +386,11 @@ async function refresh() {
             message.includes('Owner session') || message.includes('HTTP 401')
               ? 'Owner context locked. Unlock Host Control to see user observations.'
               : 'Owner context temporarily unavailable. No cached private content displayed.'));
+        } else if (key === 'surface') {
+          snapshots[key] = { data: null, signature: null, error: message };
+          $('surface-view').replaceChildren(element('p', 'empty', message.includes('HTTP 401')
+            ? 'Source index locked. Unlock Host Control to inspect development source.'
+            : 'Authorized HQ source index unavailable. No cached or demo source displayed.'));
         } else snapshots[key] = { ...snapshots[key], error: message };
         updateSourceMeta(key);
       }
@@ -589,6 +611,39 @@ async function submitEdit(event) {
 }
 
 $('refresh-now').addEventListener('click', () => { void refresh(); });
+$('surface-search').addEventListener('submit', async event => {
+  event.preventDefault();
+  surfaceQuery = $('surface-query').value.trim().slice(0,240);
+  // Do not render an old search after the owner changes the query.
+  try { ingest('surface', await getJson('surface')); }
+  catch { snapshots.surface = { data: null, error: 'Source search unavailable' };
+    $('surface-view').replaceChildren(element('p', 'empty', 'Source search unavailable. No cached source displayed.'));
+    updateSourceMeta('surface'); }
+});
+$('surface-reindex').addEventListener('click', async () => {
+  if (indexingSources) return;
+  indexingSources = true;
+  $('surface-reindex').disabled = true;
+  $('surface-reindex-status').textContent = 'Refreshing the approved source index…';
+  try {
+    const csrf = await ownerEditCsrf({ fresh: true });
+    const response = await fetch('/api/file-surface/index', {
+      method: 'POST', credentials: 'same-origin', cache: 'no-store',
+      headers: { 'x-vivim-control': '1', 'x-vivim-ui-csrf': csrf },
+      signal: AbortSignal.timeout(60000)
+    });
+    if (!response.ok) throw new Error('HTTP ' + response.status);
+    const result = await response.json();
+    $('surface-reindex-status').textContent = result.status === 'indexed'
+      ? 'Index refreshed. Reading current source…' : 'Index partially refreshed; some sources could not be read.';
+    ingest('surface', await getJson('surface'));
+  } catch {
+    snapshots.surface = { data: null, error: 'Index refresh not confirmed' };
+    $('surface-view').replaceChildren(element('p', 'empty', 'Index refresh not confirmed. Refresh sources to inspect the result.'));
+    $('surface-reindex-status').textContent = 'Refresh unavailable or unconfirmed. No automatic retry.';
+    updateSourceMeta('surface');
+  } finally { indexingSources = false; $('surface-reindex').disabled = false; }
+});
 $('wiki-command-form').addEventListener('submit', event => { void interpretWikiCommand(event); });
 $('edit-content').addEventListener('input', () => invalidatePreview());
 $('edit-review').addEventListener('click', () => { void review(); });
