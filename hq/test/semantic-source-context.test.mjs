@@ -80,9 +80,21 @@ test('real approved source -> HQ index -> semantic search -> verified context', 
     assert.equal(db.prepare('SELECT count(*) AS n FROM semantic_link').get().n, 0);
     db.close(); db = null;
     assert.equal(hq.index().projects[0].annotations, 0);
-    const changed = source.replace(annotation, '// removed annotation').replace('// @hq:contract ' + id, '// removed contract');
-    writeFileSync(file, changed);
+    // Simulate opening a pre-v2 index: unchanged source is backfilled once.
+    db = open();
+    db.exec("DELETE FROM annotations WHERE kind LIKE 'v2:%'; DELETE FROM meta WHERE key LIKE 'annotation_v2:%'");
+    db.close(); db = null;
+    assert.equal(hq.index().projects[0].changed, 2);
+    assert.equal(hq.search({ query: id, project: 'actual-hq' }).results[0].semanticReferences[0].contentHash, sha256(source));
+    assert.equal(hq.index().projects[0].changed, 0);
+    // A change outside the selected excerpt invalidates full-file evidence.
+    const edited = source + '\nexport const revision = 2;\n';
+    writeFileSync(file, edited);
     assert.equal(hq.verifyContext(bundle).valid, false);
+    assert.equal(hq.index().errors.length, 0);
+    assert.equal(hq.search({ query: id, project: 'actual-hq' }).results[0].semanticReferences[0].contentHash, sha256(edited));
+    const changed = edited.replace(annotation, '// removed annotation').replace('// @hq:contract ' + id, '// removed contract');
+    writeFileSync(file, changed);
     hq.index();
     assert.equal(hq.search({ query: id, project: 'actual-hq' }).results.some(hit => hit.semanticReferences?.length), false);
     unlinkSync(file);

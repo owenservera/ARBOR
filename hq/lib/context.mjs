@@ -21,8 +21,7 @@ import {
 const BUNDLE_SCHEMA = 'hq.context-bundle/1';
 const ESTIMATOR = 'utf8-bytes/3';
 
-// Hard read cap per file. Symbol windows and doc windows are both clipped to
-// this many bytes, so a bundle can never inspect more of one file than this.
+// Excerpt byte cap; ordinary symbol/doc candidates also retain this read cap.
 const MAX_FILE_BYTES = 24 * 1024;
 // Verification needs at least the bytes composeContext was allowed to read.
 const VERIFY_BYTES = 64 * 1024;
@@ -613,7 +612,13 @@ function prepareCandidates(db, candidates, { task, projectName, nowMs }) {
     candidate.text = window.text;
     candidate.lines = window.lines;
     candidate.sha256 = sha256(window.text);
-    candidate.estimatedTokens = estimateTokens(window.text);
+    // Charge the semantic evidence header against the same knapsack budget.
+    candidate.estimatedTokens = candidate.contentHash
+      ? estimateTokens('SOURCE ' + JSON.stringify({
+        ref: candidate.ref, lines: candidate.lines, sha256: candidate.sha256,
+        contentHash: candidate.contentHash, semanticReferences: candidate.semanticReferences,
+      }) + '\n' + window.text + '\n\n')
+      : estimateTokens(window.text);
     candidate.reason = reasonLabel(candidate.reasons);
     const rawScore = 1
       + 3.6 * coverage
