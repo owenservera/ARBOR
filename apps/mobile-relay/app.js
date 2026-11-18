@@ -81,7 +81,7 @@ const S = {
   statusAt: 0, statusObj: null, timer: 0, busy: false, sigs: {}, shownConv: null,
   conn: { label: '', tone: 'ok' }, device: { status: null, scopes: null },
   media: { state: 'idle' }, mediaAt: 0, mediaOffset: 0, mediaLoading: false, nextBatch: null,
-  roadmap: null, roadmapError: ''
+  roadmap: null, roadmapError: '', wiki: null, wikiError: 'Wiki not loaded'
 };
 let combinedInbox = true; // UI-only inbox aggregation; never fan-out or a provider target.
 let providerRefreshBusy = false;
@@ -374,7 +374,7 @@ function renderTabs() {
   }
   updateDock();
   // The retired stub panel is hidden for every tab in the strip, so no surface can fall back to it.
-  $('v-talk').hidden = S.tab !== 'talk'; $('v-control').hidden = S.tab !== 'control'; $('v-soon').hidden = ['talk', 'build', 'today', 'world', 'me', 'control'].includes(S.tab); $('v-today').hidden = S.tab !== 'today'; $('v-build').hidden = S.tab !== 'build'; $('v-world').hidden = S.tab !== 'world'; $('v-me').hidden = S.tab !== 'me';
+  $('v-talk').hidden = S.tab !== 'talk'; $('v-control').hidden = S.tab !== 'control'; $('v-soon').hidden = true; $('v-today').hidden = S.tab !== 'today'; $('v-build').hidden = S.tab !== 'build'; $('v-world').hidden = S.tab !== 'world'; $('v-wiki').hidden = S.tab !== 'wiki'; $('v-me').hidden = S.tab !== 'me';
   if (S.tab === 'build' && !S.paired && !HOST_PREVIEW) {
     $('build-compose').replaceChildren(el('p', 'muted pad',
       'Offline or unpaired · Build is view-only until the PC confirms your device.'));
@@ -416,13 +416,6 @@ function surfaceContext() {
   };
 }
 function goTab(tab) {
-  // Wiki is not a local panel: the real wiki page lives on the host at /wiki,
-  // so the rail tab opens it at top level in a new browser tab instead of
-  // switching a local surface. /wiki itself is unframable (X-Frame-Options:
-  // DENY + CSP frame-ancestors 'none'), so it can never render inside the
-  // phone shell, and a same-window navigation would tear the PWA document
-  // away; a new tab keeps the phone session alive.
-  if (tab === 'wiki') { openWiki(); return; }
   if (!tab || !TABS.includes(tab)) return;
   // Leaving World stops an in-flight media open or current native playback.
   // The Host has to release temporary stream access, not just hide the video.
@@ -435,51 +428,80 @@ function goTab(tab) {
   document.getElementById('tab-' + tab)?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   if (HOST_PREVIEW) void refreshHostPreview();
   else if (tab === 'world') void refreshMedia(false);
+  if (tab === 'wiki') void refreshWiki();
 }
 
-// The Wiki tab cannot render the wiki in-phone (/wiki sends X-Frame-Options:
-// DENY, so a framed load dies as a blank blocked frame — the exact defect that
-// killed the old location.assign path) and it must not navigate the whole
-// phone document away either. Same escape hatch as the Host menu's
-// "ARBOR progress (live roadmap)" link (installHostMenu, target="_top"):
-// let the browser render the real wiki page at top level, in its own tab so
-// the phone session stays open behind it. Toast feedback tells the user where
-// the wiki went, because the new tab can take focus on desktop.
-function openWiki() {
-  let opened = null;
-  try { opened = window.open('/wiki', '_blank', 'noopener'); }
-  catch { /* popup creation refused; fall through to the blocked-path toast */ }
-  if (opened) { toast('Wiki opened in a new browser tab. This phone stays right here.'); return; }
-  // Popup blocked. We are embedded with no allow-popups (a sandboxed in-app
-  // preview iframe, or a host page that declines the new tab): we cannot open a
-  // tab, cannot frame /wiki (X-Frame-Options: DENY), and top-level
-  // self-navigation would tear the phone document away. Render an inline
-  // same-window link instead — a real anchor the user can tap/click to leave for
-  // the wiki on their own terms. Sandboxed embeds without allow-top-navigation
-  // still won't navigate, but the link is visible, focusable, and the message
-  // says why nothing happened, rather than only telling them to find the gear.
-  toast('Popups blocked here. Tap the “Wiki” link below to open the live roadmap.');
-  let link = $('wiki-fallback-link');
-  if (!link) {
-    link = document.createElement('a');
-    link.id = 'wiki-fallback-link';
-    link.href = '/wiki';
-    link.target = '_top';
-    link.rel = 'noopener noreferrer';
-    link.className = 'wiki-fallback-link';
-    // Inline styles on purpose: the phone shell is a fixed 100dvh flex column
-    // (index.html:28, body{overflow:hidden}), so an unstyled anchor appended to
-    // <body> collapses to a zero-height flex item and is never on screen. This
-    // anchor is the only affordance a popup-blocked embed gets, so it must be
-    // visibly fixed above the toast.
-    link.style.cssText = 'position:fixed;left:50%;bottom:calc(64px + var(--safe-b));'
-      + 'transform:translateX(-50%);z-index:61;max-width:90vw;padding:10px 14px;'
-      + 'background:var(--s2);border:1px solid var(--bd);border-radius:var(--r-md);'
-      + 'color:var(--tx);font-size:14px;text-decoration:none;box-shadow:0 12px 32px #0008';
-    link.textContent = 'Wiki — live ARBOR roadmap ↗';
-    ($('toast') || document.body).after(link);
+// The Host journal owns Wiki state; this view is strictly read-only.
+let wikiReadSequence = 0;
+function clearWiki(reason = 'Wiki unavailable') {
+  wikiReadSequence++; S.wiki = null; S.wikiError = reason;
+  if (S.tab === 'wiki') renderWiki();
+}
+function renderWiki() {
+  const host = $('v-wiki'); if (!host) return;
+  const scroll = el('div', 'ux-scroll');
+  const head = el('section', 'ux-card');
+  head.append(el('h2', 'ux-card-title', 'Host Wiki'),
+    el('p', 'ux-note', Number.isSafeInteger(S.wiki?.revision) ? 'Revision ' + S.wiki.revision : 'Not available'));
+  const refresh = el('button', 'btn sm', 'Refresh Wiki');
+  refresh.type = 'button'; refresh.addEventListener('click', () => { void refreshWiki(); });
+  head.append(refresh); scroll.append(head);
+  if (!S.wiki) scroll.append(el('p', 'ux-empty', S.wikiError));
+  else {
+    for (const [name, page] of Object.entries(S.wiki.pages)) {
+      const card = el('section', 'ux-card');
+      card.append(el('h3', 'ux-card-title', name));
+      for (const [section, content] of Object.entries(page.sections)) {
+        const item = el('div', 'ux-item');
+        item.append(el('strong', 'ux-item-title', section), el('p', 'ux-note', content));
+        card.append(item);
+      }
+      scroll.append(card);
+    }
+    if (!Object.keys(S.wiki.pages).length) scroll.append(el('p', 'ux-empty', 'No Wiki pages yet.'));
   }
-  link.hidden = false;
+  host.replaceChildren(scroll);
+}
+async function refreshWiki() {
+  if (S.tab !== 'wiki') return;
+  const sequence = ++wikiReadSequence;
+  if (!HOST_PREVIEW && (!transport.direct || !S.paired ||
+      !S.device.scopes?.includes('control:read') || !transport.deviceHeaders?.())) {
+    clearWiki('Connect an authorized Direct phone with Wiki read access.'); return;
+  }
+  if (HOST_PREVIEW && !S.statusObj) {
+    clearWiki('Owner session required to read the Host Wiki.'); return;
+  }
+  const session = HOST_PREVIEW ? null : transport.deviceHeaders();
+  try {
+    const response = await fetch(HOST_PREVIEW ? '/api/wiki' : '/mobile/api/wiki', {
+      method: 'GET', credentials: 'same-origin', cache: 'no-store', headers: session || {}
+    });
+    if (!response.ok) {
+      if (!HOST_PREVIEW && [401, 403].includes(response.status)) {
+        const denied = await response.json().catch(() => ({}));
+        if (isInvalidDeviceSession(denied.code || denied.error)) {
+          clearPrivatePhoneState(); return;
+        }
+      }
+      throw new Error('Wiki read refused (HTTP ' + response.status + ')');
+    }
+    const wiki = await response.json();
+    if (!wiki || !Number.isSafeInteger(wiki.revision) || wiki.revision < 0 ||
+        !wiki.pages || typeof wiki.pages !== 'object' || Array.isArray(wiki.pages) ||
+        Object.values(wiki.pages).some(page => !page || !page.sections ||
+          typeof page.sections !== 'object' || Array.isArray(page.sections) ||
+          Object.values(page.sections).some(value => typeof value !== 'string')))
+      throw new Error('Invalid Host Wiki projection');
+    if (sequence !== wikiReadSequence || S.tab !== 'wiki') return;
+    if (!HOST_PREVIEW && transport.deviceHeaders?.()?.['x-vivim-device-session'] !==
+        session['x-vivim-device-session']) return;
+    if (S.wiki && wiki.revision < S.wiki.revision) return;
+    S.wiki = wiki; S.wikiError = ''; renderWiki();
+  } catch (error) {
+    if (sequence === wikiReadSequence && S.tab === 'wiki')
+      clearWiki(error?.message || 'Wiki unavailable');
+  }
 }
 
 // Media authorization failures have two different meanings. Missing control:read
@@ -496,6 +518,7 @@ function clearPrivatePhoneState() {
   chatContextEpoch++;
   chatContext=null;closeFocusPanel();dockExpanded=false;
   stopMediaPlayer();
+  clearWiki('Device authorization expired');
   S.paired = false; S.cmds = []; S.statusObj = null; S.manifest = null;
   vivimChat.redact();
   S.files = []; N.messages = []; N.sessions = []; N.session = '';
@@ -722,6 +745,7 @@ function openVivimDraft(text) {
 function renderSurfaces() {
   const ctx = surfaceContext();
   let host = null, model = null;
+  if (S.tab === 'wiki') { renderWiki(); return; }
   if (S.tab === 'today') { host = $('v-today'); model = todayModel(S.statusObj, S.cmds, ctx); }
   else if (S.tab === 'world') { host = $('v-world'); model = worldModel(S.statusObj, S.cmds, { media: S.media }); }
   else if (S.tab === 'me') { host = $('v-me'); model = meModel(S.statusObj, S.cmds, ctx); }
@@ -1076,10 +1100,12 @@ async function refreshHostPreview() {
     renderAll(true);
     if (build) build.setSurface(data.snapshot.bootstrap?.uiRevision ?? null);
     renderHostPreviewActivity();
+    if (S.tab === 'wiki') void refreshWiki();
   } catch (error) {
     if (sequence !== previewReadSequence) return;
     // Never keep a private stale snapshot visible after session expiry.
     S.statusObj = null;
+    clearWiki('Owner session expired or Host unavailable');
     S.manifest = null;
     S.media = { state: 'unavailable' };
     if (build) build.clear();
@@ -1688,7 +1714,7 @@ $('dbgsend').addEventListener('click', async () => {
   try { await api('commands', { method: 'POST', body: JSON.stringify({ text, kind: $('kind').value, consumer: $('consumer').value }) }); $('dbgtext').value = ''; refresh(); }
   catch (e) { toast('Send failed: ' + e.message); }
 });
-document.addEventListener('visibilitychange', () => { if (!document.hidden) { if (HOST_PREVIEW) void refreshHostPreview(); else if (N.target === 'phone') nativeRefresh(); else refresh(); } });
+document.addEventListener('visibilitychange', () => { if (!document.hidden) { if (HOST_PREVIEW) void refreshHostPreview(); else if (N.target === 'phone') nativeRefresh(); else refresh(); if (S.tab === 'wiki') void refreshWiki(); } });
 window.addEventListener('vivim:bootstrap-refresh', () => { S.statusAt = 0; if (S.paired) refresh(); });
 
 if (!HOST_PREVIEW && 'serviceWorker' in navigator) {
