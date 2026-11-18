@@ -3,7 +3,7 @@
 // Nothing here sends, applies or trusts a reply: a proposal is a draft until the owner taps Activate.
 import { composeDesignContext } from './generative-ui/design-composer.mjs';
 import { compileUiProposal } from './generative-ui/compiler.mjs';
-import { createSurface, PROPOSAL_SCHEMA, validateSurface, COMPONENT_PRESENTATION_BINDINGS, validateComponentPresentation } from './generative-ui/catalog.mjs';
+import { createSurface, PROPOSAL_SCHEMA, validateSurface, COMPONENT_PRESENTATION_BINDINGS, validateComponentPresentation, LIVE_UI_BINDINGS } from './generative-ui/catalog.mjs';
 import { committedHostSurface } from './generative-ui/host-revision-guard.mjs';
 import { createVecCompiler } from './vec/compiler.mjs';
 import { compileVecUiRequest } from './vec/ui-adapter.mjs';
@@ -155,6 +155,18 @@ export function compileVecComponentRequest({text,surface}={}){
   let presentation=null,detail=null,explanation='Reset component '+target.id+' appearance.';
   if(set){
     const property=set[3].toLowerCase();
+    if(property==='data-source'){
+      const raw=set[4].trim().toLowerCase(),binding=raw==='none'?null:raw;
+      if(!['collection','timeline'].includes(target.type)||target.props.items?.length!==0||
+          (binding!==null&&(!Object.hasOwn(LIVE_UI_BINDINGS,binding)||LIVE_UI_BINDINGS[binding]!==target.type)))return refuse('UNSUPPORTED_LIVE_BINDING');
+      if((target.liveBinding??null)===binding)return refuse('LIVE_BINDING_UNCHANGED');
+      const explanation='Set read-only data source of '+target.id+' from '+(target.liveBinding??'none')+' to '+(binding??'none')+'. Source access is unchanged; no records are copied into the design.';
+      const proposal={schema:PROPOSAL_SCHEMA,surfaceId:current.surfaceId,baseRevision:current.revision,
+        operations:[{opId:'vec.binding.1',type:'set-live-binding',componentId:target.id,liveBinding:binding}],explanation,assumptions:[],unknowns:[]};
+      try{const preview=compileUiProposal({proposal,surface:current,approvedRefs:[],audience:'phone'});
+        return {outcome:'candidate',code:'VEC_LIVE_BINDING_PREVIEW',proposal,preview,detail:{scope:'component',componentId:target.id,liveBinding:binding},summary:{explanation,changes:preview.operations,unknowns:[]}};
+      }catch{return refuse('LIVE_BINDING_PREVIEW_REJECTED');}
+    }
     const binding=Object.hasOwn(COMPONENT_PRESENTATION_BINDINGS,property)?COMPONENT_PRESENTATION_BINDINGS[property]:null;
     if(!binding||!binding.kinds.includes(target.type))return refuse('UNSUPPORTED_COMPONENT_PROPERTY');
     const raw=set[4].trim();

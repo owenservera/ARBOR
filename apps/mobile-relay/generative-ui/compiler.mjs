@@ -1,10 +1,10 @@
 // GUI01: complete-reply-only UI proposal validation + pure preview compiler. Never persists or executes effects.
 import {digestJson} from './portable-digest.mjs';
-import {CATALOG_VERSION,MAX,PROPOSAL_SCHEMA,PREVIEW_SCHEMA,invalid,keys,plain,id,str,int,validateProps,validateTheme,validateSurface,validateTree,validateComponentPresentation} from './catalog.mjs';
+import {CATALOG_VERSION,MAX,PROPOSAL_SCHEMA,PREVIEW_SCHEMA,invalid,keys,plain,id,str,int,validateProps,validateTheme,validateSurface,validateTree,validateComponentPresentation,LIVE_UI_BINDINGS} from './catalog.mjs';
 const ROOT_FIELDS=['schema','surfaceId','baseRevision','operations','explanation','assumptions','unknowns'];
 const OP_FIELDS={insert:['opId','type','parentId','index','component'],remove:['opId','type','componentId'],move:['opId','type','componentId','parentId','index'],
   'replace-props':['opId','type','componentId','props'],'set-theme':['opId','type','theme'],
-  'set-presentation':['opId','type','componentId','presentation']};
+  'set-presentation':['opId','type','componentId','presentation'], 'set-live-binding':['opId','type','componentId','liveBinding']};
 function safeInput(source){
   if(typeof source==='string') {
     if(new TextEncoder().encode(source).byteLength>MAX.bytes)invalid('proposal too large');
@@ -19,10 +19,11 @@ function normalizeOp(op){
   if(!plain(op)||!Object.hasOwn(OP_FIELDS,op.type))invalid('unsupported operation');
   keys(op,OP_FIELDS[op.type],'operation');id(op.opId);
   if(op.type==='insert'){id(op.parentId);if(op.index!==undefined)int(op.index,0,MAX.children);if(!plain(op.component))invalid('invalid inserted component');}
-  if(op.type==='remove'||op.type==='move'||op.type==='replace-props'||op.type==='set-presentation')id(op.componentId);
+  if(op.type==='remove'||op.type==='move'||op.type==='replace-props'||op.type==='set-presentation'||op.type==='set-live-binding')id(op.componentId);
   if(op.type==='move'){id(op.parentId);if(op.index!==undefined)int(op.index,0,MAX.children);}
   if(op.type==='replace-props'&&!plain(op.props))invalid('invalid changed props');
   if(op.type==='set-presentation'&&op.presentation!==null&&!plain(op.presentation))invalid('invalid changed presentation');
+  if(op.type==='set-live-binding'&&op.liveBinding!==null&&(typeof op.liveBinding!=='string'||!Object.hasOwn(LIVE_UI_BINDINGS,op.liveBinding)))invalid('unsupported live UI binding');
   return op;
 }
 // @hq:consumes vivim.ui-proposal@1
@@ -59,6 +60,13 @@ export function compileUiProposal({proposal,surface,approvedRefs=[],audience='pc
       const entry=locate(next.tree,op.componentId);if(!entry)invalid('unknown component');
       if(op.presentation===null)delete entry.node.presentation;
       else entry.node.presentation=validateComponentPresentation(entry.node.type,op.presentation);
+    } else if(op.type==='set-live-binding'){
+      const entry=locate(next.tree,op.componentId);if(!entry)invalid('unknown component');
+      const node=entry.node;
+      // Binding names are inert, finite source selectors. Never clear static values or install authority.
+      if(!['collection','timeline'].includes(node.type)||node.props.items?.length!==0)invalid('live UI binding requires an empty structured component');
+      if(op.liveBinding===null)delete node.liveBinding;
+      else{if(LIVE_UI_BINDINGS[op.liveBinding]!==node.type)invalid('unsupported live UI binding');node.liveBinding=op.liveBinding;}
     } else if(op.type==='move'){
       if(op.componentId==='root')invalid('root is protected');
       const entry=locate(next.tree,op.componentId),dest=locate(next.tree,op.parentId);

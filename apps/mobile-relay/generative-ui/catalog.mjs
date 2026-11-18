@@ -1,7 +1,7 @@
 // GUI01: closed declarative component vocabulary; provider output is data, never executable UI.
 export const CATALOG_VERSION = 1;
 // Read-only source selectors, not user-provided URLs, IDs or credentials.
-export const LIVE_UI_BINDINGS=Object.freeze({'personal.open-tasks':'collection','studio.recent-outcomes':'timeline'});
+export const LIVE_UI_BINDINGS=Object.freeze({'personal.open-tasks':'collection','personal.recent-notes':'collection','studio.recent-outcomes':'timeline'});
 export const SURFACE_SCHEMA = 'vivim.ui-surface/1';
 export const PROPOSAL_SCHEMA = 'vivim.ui-proposal/1';
 export const PREVIEW_SCHEMA = 'vivim.ui-preview/1';

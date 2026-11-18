@@ -45,8 +45,21 @@ export function projectStudioActivity(outcomes){
  }
  return {state:'source-backed',revision:outcomes.revision,total:outcomes.total,items:rows};
 }
+export function projectRecentNotes(wiki){
+ // Reuse the same revision, authority and source-record validation as the task projection.
+ if(projectOpenTasks(wiki).state!=='source-backed')return unavailable();
+ const rows=[];
+ for(const row of wiki.personalCaptures.items){
+   if(row.kind!=='note')continue;
+   const sections=wiki.pages[row.page]?.sections;
+   if(!/^note-[a-f0-9]{32}$/.test(row.page)||row.section!=='Note'||typeof sections?.Note!=='string')return unavailable();
+   rows.push({label:text(sections.Note,80)||'Captured note',detail:'Committed note · '+row.page+' · created rev '+row.createdRevision,sourceRef:row.entryId,createdRevision:row.createdRevision});
+ }
+ rows.sort((a,b)=>b.createdRevision-a.createdRevision);
+ return {state:'source-backed',revision:wiki.revision,total:rows.length,items:rows.slice(0,16).map(({createdRevision,...row})=>row)};
+}
 export function workspaceBindingData({wiki=null,outcomes=null}={}){
- return {'personal.open-tasks':projectOpenTasks(wiki),'studio.recent-outcomes':projectStudioActivity(outcomes)};
+ return {'personal.open-tasks':projectOpenTasks(wiki),'personal.recent-notes':projectRecentNotes(wiki),'studio.recent-outcomes':projectStudioActivity(outcomes)};
 }
 export function hasWorkspaceBinding(surface){
  const walk=n=>!!n&&(!!n.liveBinding||Array.isArray(n.children)&&n.children.some(walk));

@@ -102,6 +102,7 @@ export function buildUndoProposal({ original, before, committed, live }) {
     if (op.type === 'replace-props') inverse = { type: 'replace-props',
       componentId: op.componentId, props: prior.node.props };
     else if(op.type==='set-presentation')inverse={type:'set-presentation',componentId:op.componentId,presentation:prior.node.presentation??null};
+    else if(op.type==='set-live-binding')inverse={type:'set-live-binding',componentId:op.componentId,liveBinding:prior.node.liveBinding??null};
     else if (op.type === 'remove' && prior.parent) inverse = { type: 'insert',
       parentId: prior.parent.id, index: prior.parent.children.findIndex(n => n.id === op.componentId),
       component: prior.node };
@@ -336,6 +337,12 @@ export function mountBuildCanvas({ host, request, getSurface, getProvider, send,
       const note=el('section','proposal-details');note.append(el('strong',null,'Exact component appearance changes'));
       for(const op of componentStyles){const before=find(state.surface.tree,op.componentId)?.presentation??{},after=find(state.preview.surface.tree,op.componentId)?.presentation??{};
         note.append(el('p',null,op.componentId));for(const k of new Set([...Object.keys(before),...Object.keys(after)]))if(before[k]!==after[k])note.append(el('p','muted',k+': '+(before[k]??'Default')+' → '+(after[k]??'Default')));}
+      card.append(note);
+    }
+    const bindingChanges=state.proposal.operations.filter(op=>op.type==='set-live-binding');
+    if(bindingChanges.length){const find=(n,id)=>n.id===id?n:n.children.map(c=>find(c,id)).find(Boolean);
+      const note=el('section','proposal-details');note.append(el('strong',null,'Exact read-only data source changes'),el('p','muted','No additional source permissions, data copies or automatic effects. Live rows appear only with a current authorized source.'));
+      for(const op of bindingChanges)note.append(el('p',null,op.componentId+': '+(find(state.surface.tree,op.componentId)?.liveBinding??'none')+' → '+(find(state.preview.surface.tree,op.componentId)?.liveBinding??'none')));
       card.append(note);
     }
     const oldShell=state.surface.theme.shell??{},newShell=state.preview.surface.theme.shell??{};

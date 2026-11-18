@@ -24,3 +24,14 @@ test('unknown and stale templates reject; bindings cannot contain static injecte
  const changed=structuredClone(r.preview.surface);changed.tree.children[0].children[1].props.items=[{label:'Fake task'}];
  assert.throws(()=>validateSurface(changed),/live UI binding/);
 });
+
+test('live sources bind and unbind an existing empty collection at an exact revision, not via copied rows',()=>{
+ const base=createSurface();base.revision=7;base.tree.children.push({id:'notes',type:'collection',props:{title:'Notes',items:[]},children:[]});
+ const draft=resolveBuildRequest({request:'set component notes at revision 7 data-source to personal.recent-notes',surface:base});
+ assert.equal(draft.outcome,'candidate');assert.equal(draft.preview.persisted,false);assert.equal(draft.proposal.operations[0].type,'set-live-binding');
+ assert.equal(draft.preview.surface.tree.children[0].liveBinding,'personal.recent-notes');assert.deepEqual(draft.preview.surface.tree.children[0].props.items,[]);
+ assert.equal(base.tree.children[0].liveBinding,undefined);assert.equal(planTierflowSurface(draft.preview.surface).plan.status,'ok');
+ const remove=resolveBuildRequest({request:'set component notes at revision 7 data-source to none',surface:draft.preview.surface});assert.equal(remove.outcome,'candidate');assert.equal(remove.preview.surface.tree.children[0].liveBinding,undefined);
+ for(const request of ['set component notes at revision 6 data-source to personal.open-tasks','set component notes data-source to studio.recent-outcomes','set component notes data-source to arbitrary.url'])assert.equal(resolveBuildRequest({request,surface:base}).outcome,'refused');
+ base.tree.children[0].props.items=[{label:'Existing content'}];assert.equal(resolveBuildRequest({request:'set component notes data-source to personal.recent-notes',surface:base}).outcome,'refused');
+});

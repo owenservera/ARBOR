@@ -136,6 +136,8 @@ export function renderSurface(mount,surface,{audience='phone',approvedRefs=[],on
       const settings=Object.fromEntries(Object.entries(p).filter(([k])=>['direction','gap','columns','variant'].includes(k)));
       Object.assign(settings,n.presentation??{});
       if(n.liveBinding)settings.liveBinding=n.liveBinding;
+      // Expose only the count, never the actual private source rows, to the inspector.
+      if(['collection','timeline'].includes(n.type))settings.staticItemCount=n.props.items.length;
       instances.push({element:el,instanceId:n.id,parentId,type:n.type,componentId:projected.identities.get(n.id),
         surfaceId:s.surfaceId,revision:s.revision,settings,configurableProperties:componentPresentationBindings(n.type).map(([property])=>property)});
     }

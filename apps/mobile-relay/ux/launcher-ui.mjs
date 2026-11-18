@@ -1,7 +1,7 @@
 import {searchCapabilities} from './launcher.mjs';
 import {listUiComponents,UI_TAXONOMY_COUNTS} from '../vec/ui-taxonomy/registry.mjs';
 import {THEME_BINDINGS,listWorkspaceTemplates} from '../build-composer.mjs';
-import {COMPONENT_PRESENTATION_BINDINGS} from '../generative-ui/catalog.mjs';
+import {COMPONENT_PRESENTATION_BINDINGS,LIVE_UI_BINDINGS} from '../generative-ui/catalog.mjs';
 // The same reviewed engine registry used by Build. Missing relay assets are explicit unavailable.
 const engineRegistry=()=>import(typeof process!=='undefined'&&process.versions?.node
   ? '../../../packages/vec-ui-engines/src/registry.mjs' : '../vec-engines/registry.mjs');
@@ -103,6 +103,16 @@ export function mountCapabilityLauncher({host,context,onActivate,onInspect=()=>f
             details.append(property,value,draft);
             if(row.configurableProperties.some(key=>Object.hasOwn(row.settings??{},COMPONENT_PRESENTATION_BINDINGS[key].field))){const reset=make('button','btn sm','Draft appearance reset');reset.type='button';reset.addEventListener('click',()=>{if(isCurrent()&&onDraft('reset component '+row.instanceId+' at revision '+row.revision+' appearance'))closeDialog();});details.append(reset);}
             list.append(details);
+          }
+          if(snapshot.visualDraftAllowed&&row.scope!=='shell'&&row.settings?.staticItemCount===0&&['collection','timeline'].includes(row.type)){
+            const details=make('details','launcher-row');details.append(make('summary','', 'Connect data source · '+row.instanceId));
+            const source=make('select','launcher-search');source.setAttribute('aria-label','Read-only data source');
+            for(const id of ['none',...Object.keys(LIVE_UI_BINDINGS).filter(id=>LIVE_UI_BINDINGS[id]===row.type)]){const option=make('option','',id);option.value=id;source.append(option);}
+            source.value=row.settings.liveBinding??'none';
+            const draft=make('button','btn sm','Draft data-source change');draft.type='button';
+            draft.addEventListener('click',()=>{const live=context();if(!live.visualDraftAllowed||!liveRows(live,'').some(x=>x.instanceId===row.instanceId&&x.surfaceId===row.surfaceId&&x.revision===row.revision))return;
+              if(onDraft('set component '+row.instanceId+' at revision '+row.revision+' data-source to '+source.value))closeDialog();});
+            details.append(source,draft);list.append(details);
           }
         }
         list.append(make('h3','',definitions.length+' matching / '+UI_TAXONOMY_COUNTS.components+' declared types'));
