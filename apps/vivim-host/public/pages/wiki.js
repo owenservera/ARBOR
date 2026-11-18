@@ -115,6 +115,10 @@ function renderContext(context) {
     root.appendChild(element('p', 'empty', 'Committed change context unavailable from this Host.'));
     return root;
   }
+  if (!sourceRecord('wiki') || sourceRecord('wiki').revision !== context.wikiRevision) {
+    root.appendChild(element('p', 'empty', 'Wiki revision differs from AutoWiki snapshot; waiting for matching Host readback.'));
+    return root;
+  }
   root.appendChild(element('p', 'queue-summary', changes.total + ' journaled change(s) · Wiki rev ' +
     present(context.wikiRevision) + ' · read-only; not owner-authored content'));
   if (!changes.items.length) root.appendChild(element('p', 'empty', 'No source-identified committed Wiki changes.'));
@@ -143,6 +147,7 @@ function renderContext(context) {
       card.appendChild(element('p', 'body', item.actionId));
       card.appendChild(element('div', 'meta', 'Historical applied receipt · plan ' + item.planId +
         ' · source revision ' + present(item.sourceRevision, 'not recorded') + ' · ' + item.receivedAt));
+      if (item.wikiLink) card.appendChild(element('p', 'meta', 'Linked committed Wiki edit ' + item.wikiLink.entryId + ' · Wiki rev ' + item.wikiLink.wikiRevision));
       root.appendChild(card);
     }
     if (effects.omitted) root.appendChild(element('p', 'empty', effects.omitted + ' additional applied effects omitted.'));
@@ -456,7 +461,10 @@ function ingest(key, data) {
   }
   updateSourceMeta(key);
   if (changed) {
-    if (key === 'wiki') $('wiki-view').replaceChildren(renderWiki(data));
+    if (key === 'wiki') {
+      $('wiki-view').replaceChildren(renderWiki(data));
+      if (sourceRecord('context')) $('context-view').replaceChildren(renderContext(sourceRecord('context')));
+    }
     if (key === 'context') $('context-view').replaceChildren(renderContext(data));
     if (key === 'roadmap') $('roadmap-view').replaceChildren(renderRoadmap(data));
     if (key === 'surface') $('surface-view').replaceChildren(renderFileSurface(data));

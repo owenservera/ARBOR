@@ -481,6 +481,7 @@ function renderWikiContext() {
       row.append(el('strong', 'ux-item-title', item.actionId),
         el('p', 'ux-note', 'Historical applied receipt · ' + item.planId + ' · source revision ' +
           (item.sourceRevision ?? 'not recorded') + ' · ' + item.receivedAt));
+      if (item.wikiLink) row.append(el('p', 'ux-note', 'Linked committed edit ' + item.wikiLink.entryId + ' · Wiki rev ' + item.wikiLink.wikiRevision));
       card.append(row);
     }
     if (effects.omitted) card.append(el('p', 'ux-note', effects.omitted + ' additional applied effects omitted.'));
@@ -552,7 +553,26 @@ function renderWiki() {
     }
     if (!Object.keys(S.wiki.pages).length) scroll.append(el('p', 'ux-empty', 'No Wiki pages yet.'));
     if (HOST_PREVIEW) scroll.append(renderWikiContext());
-    else scroll.append(el('p', 'ux-note', 'Owner-private AutoWiki observations are not granted to this device.'));
+    else {
+      const changes = S.wiki.autoWiki;
+      const card = el('section', 'ux-card');
+      card.append(el('h3', 'ux-card-title', 'AutoWiki · committed Wiki changes'));
+      if (changes?.schema === 'vivim.autowiki-wiki-changes/1' && changes.scope === 'wiki-edits-only' &&
+          changes.wikiRevision === S.wiki.revision && Array.isArray(changes.items) && changes.items.length <= 24) {
+        card.append(el('p', 'ux-note', changes.total + ' committed edits · Wiki rev ' + changes.wikiRevision));
+        for (const entry of changes.items.slice().reverse()) {
+          if (entry.kind !== 'committed-wiki-edit' || !entry.relationship ||
+              !['current-section-revision','superseded-section-revision'].includes(entry.status)) continue;
+          card.append(el('strong', 'ux-item-title', entry.relationship.page + ' / ' + entry.relationship.section),
+            el('p', 'ux-note', 'Observed state · ' + entry.status + ' · rev ' +
+              entry.previousWikiRevision + ' → ' + entry.wikiRevision),
+            el('p', 'ux-note', 'Journal ' + entry.entryId + ' · ' + entry.receivedAt));
+        }
+        if (!changes.items.length) card.append(el('p', 'ux-note', 'No committed section edits yet.'));
+      } else card.append(el('p', 'ux-note', 'Source-linked changes unavailable.'));
+      card.append(el('p', 'ux-note', 'Owner-private AutoWiki observations are not granted to this device.'));
+      scroll.append(card);
+    }
   }
   host.replaceChildren(scroll);
 }

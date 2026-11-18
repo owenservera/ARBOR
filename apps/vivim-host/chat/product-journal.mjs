@@ -1,7 +1,7 @@
 // Host-local, append-only product journal. Never grants privileged control effects.
 import { constants } from 'node:fs';
 import { mkdir, readFile, lstat, open } from 'node:fs/promises';
-import { randomUUID } from 'node:crypto';
+import { randomUUID, createHash } from 'node:crypto';
 import path from 'node:path';
 
 const MAX_JOURNAL_BYTES = 8 * 1024 * 1024;
@@ -141,6 +141,7 @@ function projectWikiChanges(records) {
   const items = identified.slice(-24).map(e => ({
     source: 'host-product-journal', entryId: e.entryId, sequence: e.sequence,
     receivedAt: e.receivedAt, kind: 'committed-wiki-edit',
+    contentDigest: createHash('sha256').update(e.edit.content, 'utf8').digest('hex'),
     previousWikiRevision: e.expectedRevision, wikiRevision: e.expectedRevision + 1,
     status: latestBySection.get(JSON.stringify([e.edit.page, e.edit.section])) ===
       e.expectedRevision + 1 ? 'current-section-revision' : 'superseded-section-revision',
@@ -174,12 +175,12 @@ export function projectWikiContext(records, wikiRevision = null) {
   };
 }
 
-export function projectAppliedControlEffects(control) {
+export function projectAppliedControlEffects(control, wikiChanges = null) {
   // The existing dispatcher owns receipt reads. No new journal or graph writes.
   const recent = control.recent(100);
   const items = [];
   for (const summary of recent) {
-    if (summary.state !== 'applied' || summary.actionId === 'wiki.section.edit' ||
+    if (summary.state !== 'applied' || (summary.actionId === 'wiki.section.edit' && !wikiChanges) ||
         !['R1', 'R2'].includes(summary.risk)) continue;
     const detail = control.status(summary.planId);
     const receipt = detail?.receipt;
@@ -191,7 +192,21 @@ export function projectAppliedControlEffects(control) {
         !Number.isFinite(Date.parse(receipt.at)) ||
         !['desktop-owner-token', 'direct-phone'].includes(receipt.approvedVia))
       throw new Error('Invalid applied control receipt');
+    let wikiLink = null;
+    if (receipt.actionId === 'wiki.section.edit') {
+      const result = receipt.result;
+      const edit = wikiChanges?.items?.find(e => e.entryId === result?.entryId &&
+        e.sequence === result?.sequence && e.wikiRevision === result?.wikiRevision &&
+        e.previousWikiRevision === result?.previousRevision &&
+        e.relationship.page === result?.page && e.relationship.section === result?.section &&
+        typeof result?.content === 'string' &&
+        createHash('sha256').update(result.content, 'utf8').digest('hex') === e.contentDigest);
+      // No exact committed source relation: do not double-count or invent one.
+      if (!edit) continue;
+      wikiLink = { kind: 'committed-wiki-change', entryId: edit.entryId, wikiRevision: edit.wikiRevision };
+    }
     items.push({
+      ...(wikiLink ? { wikiLink } : {}),
       source: 'host-control-receipt', planId: receipt.planId, planDigest: receipt.planDigest,
       actionId: receipt.actionId, receivedAt: receipt.at, kind: 'executed-effect',
       status: 'historical-applied-receipt',
@@ -244,6 +259,17 @@ export function createProductJournal({ dataRoot, seedState, seedWiki }) {
     requireShape(!current.tornTail, 'Wiki context unavailable: torn journal tail', 503);
     return projectWikiContext(current.records, current.wikiRevision);
   }
+  async function readPhoneWiki() {
+    const current = await snapshot();
+    requireShape(!current.tornTail, 'Wiki context unavailable: torn journal tail', 503);
+    const { wiki } = replayProductJournal(seedState, seedWiki, current.records);
+    const changes = projectWikiChanges(current.records);
+    // Phone Wiki read permission does not grant access to private chat/effects.
+    // No global sequence or history content is disclosed through this overlay.
+    return { ...wiki, autoWiki: { schema: 'vivim.autowiki-wiki-changes/1',
+      wikiRevision: wiki.revision, scope: 'wiki-edits-only', total: changes.total, omitted: changes.omitted,
+      items: changes.items.map(({ sequence, ...entry }) => entry) } };
+  }
   function append(payload) {
     const run = async () => {
       validateEnvelope(payload);
@@ -282,5 +308,5 @@ export function createProductJournal({ dataRoot, seedState, seedWiki }) {
     return pending;
   }
   async function rawJournal() { return (await snapshot()).committed; }
-  return { journalPath, readRecords, readProjection, readWikiContext, append, rawJournal };
+  return { journalPath, readRecords, readProjection, readWikiContext, readPhoneWiki, append, rawJournal };
 }

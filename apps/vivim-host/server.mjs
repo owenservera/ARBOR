@@ -310,7 +310,7 @@ export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path
       }
       return onboardingService.providerSnapshot();
     },
-    control: controlFor, wikiProjection: async () => (await productJournal.readProjection()).wiki,
+    control: controlFor, wikiProjection: () => productJournal.readPhoneWiki(),
     apkRegistry: apk, pairingStore: pairing,
     onPhoneSeen: () => onboardingService.phoneSeen(),
     primary: () => onboardingService.primary()
@@ -886,7 +886,7 @@ async function handleControl(req, res, pathname, host, controlFor, tokenFor, uiS
     try {
       const context = await productJournal.readWikiContext();
       let applicationEffects;
-      try { applicationEffects = projectAppliedControlEffects(controlFor()); }
+      try { applicationEffects = projectAppliedControlEffects(controlFor(), context.wikiChanges); }
       catch { applicationEffects = { state: 'unavailable', code: 'CONTROL_RECEIPTS_UNAVAILABLE', items: [] }; }
       sendJson(res, 200, { ...context, applicationEffects });
     } catch { sendJson(res, 503, { schema: 'vivim.wiki-context/1', state: 'unavailable', code: 'WIKI_CONTEXT_UNAVAILABLE' }); }

@@ -175,3 +175,23 @@ test('D4 derives committed section relationships and preserves revision history 
   assert.equal(JSON.stringify(after.wikiChanges).includes('Rejected stale change'), false);
   assert.equal(JSON.stringify(after.wikiChanges).includes('Project goal'), false);
 }));
+
+test('paired Wiki projection exposes only committed section provenance, not private chat history', () => rootTest(async root => {
+  const j = journal(root);
+  await j.append(chat('Private project goal: voice notes to tasks'));
+  const changed = await j.append(edit(1, 'Persisted owner section'));
+  const restored = journal(root);
+  const phone = await restored.readPhoneWiki();
+  assert.equal(phone.revision, phone.autoWiki.wikiRevision);
+  assert.equal(phone.autoWiki.items[0].entryId, changed.entryId);
+  assert.equal(phone.autoWiki.items[0].contentDigest.length, 64);
+  assert.equal(Object.hasOwn(phone.autoWiki.items[0], 'sequence'), false);
+  assert.ok(!JSON.stringify(phone).includes('Private project goal'));
+  assert.equal(Object.hasOwn(phone, 'items'), false);
+  await restored.append(edit(2, 'New content'));
+  const next = await restored.readPhoneWiki();
+  assert.equal(next.autoWiki.items[0].status, 'superseded-section-revision');
+  assert.equal(next.autoWiki.items[1].status, 'current-section-revision');
+  appendFileSync(restored.journalPath, '{');
+  await assert.rejects(restored.readPhoneWiki(), e => e.status === 503);
+}));
