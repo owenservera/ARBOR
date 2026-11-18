@@ -62,7 +62,7 @@ test('batch-1 product routes: pages, baseline JSON, read-throughs, mutate append
   const dataRoot = mkdtempSync(path.join(os.tmpdir(), 'vivim-product-routes-data-'));
   const staticRoot = makeStaticRoot();
   const token = 'lane-a-test-owner-token-value-12345678901234567890';
-  const server = createHostServer({ dataRoot, staticRoot, ownerToken: token });
+  const server = createHostServer({ dataRoot, staticRoot, ownerToken: token, developmentSources: { approvedRoots: [] } });
   try {
     await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
     const base = 'http://127.0.0.1:' + server.address().port;
@@ -106,10 +106,15 @@ test('batch-1 product routes: pages, baseline JSON, read-throughs, mutate append
     const mainSections = wikiJson.pages && wikiJson.pages.Main && wikiJson.pages.Main.sections;
     assert.ok(mainSections && Object.keys(mainSections).length >= 3, 'wiki seed must carry a few sections');
 
-    // file-surface: the seed document ships in data/demo-baseline/, so 200.
-    const surface = await httpFetch(base, '/api/file-surface');
-    assert.equal(surface.status, 200);
+    // Development source is owner-private. A missing HQ configuration is
+    // unavailable, never the historic demo corpus.
+    assert.equal((await httpFetch(base, '/api/file-surface')).status, 401);
+    const surface = await httpFetch(base, '/api/file-surface', {
+      headers: { authorization: 'Bearer ' + token }
+    });
+    assert.equal(surface.status, 503);
     assert.match(surface.headers.get('content-type') || '', /application\/json/);
+    assert.deepEqual((await surface.json()).files, []);
 
     // Read-throughs: roadmap from docs/product/roadmap/roadmap.v1.json (single source).
     const roadmap = await httpFetch(base, '/api/roadmap');
