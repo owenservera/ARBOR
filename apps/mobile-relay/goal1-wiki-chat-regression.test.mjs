@@ -1,16 +1,15 @@
-// GOAL-1 regression — confirmed defects: Wiki rail tab dead end + /chat bare "state error".
-// Harness: node:vm slices of the two scope files (no browser, no Host boot).
+// Wiki now renders in the actual phone PWA. Preserve the chat error regressions below.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 
-const here = new URL('.', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1');
+const here = new URL('.', import.meta.url).pathname.replace(/^\\/([A-Za-z]:)/, '$1');
 const appSrc = readFileSync(here + 'app.js', 'utf8');
 const chatSrc = readFileSync(here + '../vivim-host/public/pages/chat.js', 'utf8');
 
 function extractFn(src, name) {
-  src = src.replace(/\r\n/g, '\n');
+  src = src.replace(/\\r\\n/g, '\\n');
   let start = src.indexOf('function ' + name + '(');
   assert.notEqual(start, -1, name + '() not found');
   if (src.slice(Math.max(0, start - 6), start) === 'async ') start -= 6;
@@ -22,88 +21,23 @@ function extractFn(src, name) {
   throw new Error('unbalanced braces in ' + name);
 }
 
-// ---- app.js harness: openWiki + goTab + renderTabs against a mock DOM ----
-function makeAppHarness({ popupResult = null, popupThrows = false } = {}) {
-  const body = {
-    tabButtons: ['talk', 'wiki'].map(t => ({ dataset: { tab: t }, setAttribute() { this.attrs ||= {}; this.attrs[String(arguments[0])] = String(arguments[1]); }, removeAttribute() {} })),
-    toasts: [],
-  };
-  let opened = null;
-  const window = {
-    open: (...a) => { if (popupThrows) throw new Error('refused'); opened = a; return popupResult; },
-    location: { search: '', hostname: 'localhost', pathname: '/mobile/', href: '' },
-    isSecureContext: false,
-  };
-  const doc = {
-    body: { classList: { toggle() {} }, after(node) { body.byId[node.id] = node; } },
-    querySelectorAll: () => body.tabButtons,
-    getElementById: id => body.byId[id],
-    createElement: tag => {
-      const node = { tag, id: '', href: '', target: '', rel: '', className: '', textContent: '', style: {},
-        setAttribute(k, v) { this[k] = v; } };
-      body.created.push(node);
-      return node;
-    },
-  };
-  body.created = []; body.byId = {};
+test('Wiki is selected in the actual phone tab and refreshed', () => {
+  const calls = [];
+  const tab = { scrollIntoView() { calls.push('scroll'); } };
   const sandbox = {
-    window, document: doc, location: window.location,
-    setTimeout: () => 0, clearTimeout: () => {},
-    navigator: { onLine: true }, console,
-    toast: msg => body.toasts.push(msg),
-    $: id => doc.getElementById(id),
-    TABS: ['talk', 'wiki'], HOST_PREVIEW: false,
-    S: { tab: 'talk' },
-    closeDrawer() {}, renderTabs() {}, renderSurfaces() {},
-    renderTabsReal: null,
-    playerActive: false, stopMediaPlayer() {}, chatContextEpoch: 0,
-    refreshHostPreview() {}, refreshMedia() {},
+    S: { tab: 'talk' }, TABS: ['talk', 'wiki'], HOST_PREVIEW: false,
+    dockExpanded: false, chatContextEpoch: 0, chatContext: null,
+    closeDrawer() {}, renderTabs() { calls.push('tabs'); },
+    renderSurfaces() { calls.push('surface'); },
+    refreshWiki() { calls.push('wiki'); },
+    refreshMedia() {}, playerActive: false, stopMediaPlayer() {},
+    document: { getElementById: () => tab }
   };
-  sandbox.globalThis = sandbox;
-  const src = extractFn(appSrc, 'openWiki') + '\n' + extractFn(appSrc, 'goTab');
   vm.createContext(sandbox);
-  vm.runInContext(src, sandbox, { filename: 'app-slice.js' });
-  return { sandbox, body, opened: () => opened };
-}
-
-test('GOAL-1 defect: goTab("wiki") popup-opened path toasts success and never touches local tab state', () => {
-  const h = makeAppHarness({ popupResult: {} });
-  h.sandbox.goTab('wiki');
-  assert.deepEqual(h.opened(), ['/wiki', '_blank', 'noopener']);
-  assert.equal(h.sandbox.S.tab, 'talk', 'S.tab must not be left mid-switch by the wiki branch');
-  assert.ok(h.body.toasts.some(t => /Wiki opened in a new browser tab/.test(t)), 'success toast present');
-});
-
-test('GOAL-1 defect: popup-blocked path — no top-level nav, no dead-end-only toast (fallback must be actionable)', () => {
-  const h = makeAppHarness({ popupResult: null }); // sandboxed preview: window.open returns null
-  h.sandbox.goTab('wiki');
-  assert.equal(h.sandbox.S.tab, 'talk');
-  const blocked = h.body.toasts.filter(t => /Popups blocked here/.test(t));
-  assert.equal(blocked.length, 1, 'one blocked toast');
-  // Regression contract: the blocked path must offer more than a dead-end toast —
-  // a rendered inline /wiki link (visible, focusable) or a real top-level
-  // navigation (location.assign/href). Toast-only is the defect.
-  const loc = h.sandbox.window.location;
-  const navigated = typeof loc.assign === 'function' || (typeof loc.href === 'string' && loc.href !== '');
-  const link = h.body.created.find(n => n.tag === 'a' && /\/wiki/.test(n.href || ''));
-  const rendered = !!link;
-  assert.ok(navigated || rendered,
-    'popup-blocked path must render an inline /wiki link or navigate; toast-only is the defect; toast was: ' + JSON.stringify(blocked[0]));
-});
-
-test('GOAL-1 defect: goTab returns before renderTabs so S.tab never set for wiki (aria-selected stays false) — wiki tab state contract', () => {
-  // renderTabs() is the only writer of aria-selected (app.js:370). goTab('wiki')
-  // returns at :425 before S.tab assignment. Assert the wiring: every tab the
-  // rail can select must land in renderTabs via S.tab, EXCEPT wiki which is
-  // exempt only while openWiki is a true handoff (new tab). If the fixer makes
-  // wiki a local surface, it must set S.tab and call renderTabs.
-  const h = makeAppHarness({ popupResult: {} });
-  h.sandbox.goTab('wiki');
-  // after the fix, either the phone stays on Talk with an explicit handoff
-  // (tab unchanged, handoff complete) OR wiki becomes selected in-tab.
-  const st = h.sandbox.S.tab;
-  assert.ok(st === 'talk' || st === 'wiki', 'S.tab valid after goTab("wiki")');
-  if (st === 'wiki') assert.ok(h.body.renderedWiki === true, 'wiki selection must render a surface');
+  vm.runInContext(extractFn(appSrc, 'goTab'), sandbox);
+  sandbox.goTab('wiki');
+  assert.equal(sandbox.S.tab, 'wiki');
+  assert.deepEqual(calls, ['tabs', 'surface', 'scroll', 'wiki']);
 });
 
 // ---- chat.js harness: refresh() against a mock DOM + failing /api/state ----
