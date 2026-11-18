@@ -1,8 +1,12 @@
 import {searchCapabilities} from './launcher.mjs';
+import {listUiComponents,UI_TAXONOMY_COUNTS} from '../vec/ui-taxonomy/registry.mjs';
+// The same reviewed engine registry used by Build. Missing relay assets are explicit unavailable.
+const engineRegistry=()=>import(typeof process!=='undefined'&&process.versions?.node
+  ? '../../../packages/vec-ui-engines/src/registry.mjs' : '../vec-engines/registry.mjs');
 
 // Local navigation dialog. No dynamic HTML, web search, command invocation or
 // external URLs; selections resolve again against *current* authorization.
-export function mountCapabilityLauncher({host,context,onActivate}={}){
+export function mountCapabilityLauncher({host,context,onActivate,onInspect=()=>false}={}){
   if (!host?.ownerDocument || typeof context!=='function' || typeof onActivate!=='function')
     throw new TypeError('Capability launcher needs a host and local callbacks');
   const doc=host.ownerDocument, make=(tag,cls,content)=>{
@@ -26,14 +30,75 @@ export function mountCapabilityLauncher({host,context,onActivate}={}){
   const info=make('p','muted launcher-info','Only existing app features. Nothing will be sent or executed.');
   const list=make('div','launcher-results');
   list.setAttribute('role','group');list.setAttribute('aria-label','Matching capabilities');
-  dialog.append(head,input,info,list);host.append(dialog);
-  let previous=null;
+  const modes=make('div','launcher-modes');
+  const buttons=['Features','VIEW ALL','Engines'].map(label=>{
+    const button=make('button','btn sm',label);button.type='button';modes.append(button);return button;
+  });
+  dialog.append(head,modes,input,info,list);host.append(dialog);
+  let previous=null,mode=0,generation=0,engines=null;
+  for(const [i,button] of buttons.entries())button.addEventListener('click',()=>{
+    mode=i;input.value='';render();input.focus();
+  });
+  function liveRows(snapshot,query){
+    const q=query.toLowerCase();
+    return (Array.isArray(snapshot.liveInstances)?snapshot.liveInstances:[]).filter(row=>
+      !q||[row.instanceId,row.type,row.componentId].some(v=>typeof v==='string'&&v.toLowerCase().includes(q)));
+  }
+  function libraryRow(title,detail,state){
+    const row=make('div','launcher-row');row.append(make('strong','',title),make('span','',detail),make('small','',state));return row;
+  }
   function available(){
     let snapshot;try{snapshot=context()}catch{snapshot={}}
     return searchCapabilities(input.value,snapshot);
   }
   function render(){
+    const epoch=++generation;
     list.replaceChildren();
+    buttons.forEach((button,i)=>button.setAttribute('aria-pressed',String(i===mode)));
+    input.placeholder=mode===0?'Search Talk, media, Build, controls…':mode===1?'Search live instances or component definitions…':'Search engine capabilities…';
+    if(mode!==0){
+      let snapshot;try{snapshot=context()}catch{snapshot={}}
+      const query=input.value.trim().slice(0,100);
+      if(mode===1){
+        info.textContent='Read-only inspection. Declared types are not installed components.';
+        const live=liveRows(snapshot,query),definitions=listUiComponents({search:query});
+        list.append(make('h3','',live.length+' live matching Build instances'));
+        for(const row of live){
+          const button=make('button','launcher-row');button.type='button';
+          button.append(make('strong','',row.instanceId+' · '+row.type),make('span','',row.componentId+' · revision '+row.revision),
+            make('small','',Object.entries(row.settings??{}).map(([k,v])=>k+': '+v).join(' · ')||'Select for inspection'));
+          button.addEventListener('click',()=>{
+            const current=liveRows(context(),'').find(x=>x.instanceId===row.instanceId&&x.surfaceId===row.surfaceId&&x.revision===row.revision);
+            if(!current||!onInspect(current))return;closeDialog();
+          });list.append(button);
+        }
+        list.append(make('h3','',definitions.length+' matching / '+UI_TAXONOMY_COUNTS.components+' declared types'));
+        for(const row of definitions.slice(0,100)){
+          const states=[...new Set(row.implementations.map(x=>x.status))].filter(Boolean);
+          list.append(libraryRow(row.label,row.id,states.join(' · ')||'Declared only'));
+        }
+        if(definitions.length>100)list.append(make('p','muted','Showing first 100; narrow search to inspect others.'));
+        return;
+      }
+      info.textContent='Canonical engine descriptions. Availability does not grant authority.';
+      if(!engines){
+        list.append(make('p','muted','Reading engine registry…'));
+        void engineRegistry().then(registry=>{
+          if(epoch!==generation)return;
+          engines=registry;render();
+        }).catch(()=>{if(epoch===generation)list.replaceChildren(make('p','muted','Engine registry unavailable on this connection.'));});
+        return;
+      }
+      const capabilities=engines.listEngineCapabilities({search:query});
+      list.append(make('h3','',capabilities.length+' matching / '+engines.ENGINE_COUNTS.capabilities+' declared capabilities'));
+      for(const cap of capabilities.slice(0,100)){
+        const bridge=['vivim.ui-engine.color.background@1','vivim.ui-engine.color.accent@1'].includes(cap.id);
+        list.append(libraryRow(cap.name,cap.id+' · '+cap.valueSchema.type,bridge?'Reviewed Build preview mapping; effect authority separate':'Described; installation not established'));
+      }
+      if(capabilities.length>100)list.append(make('p','muted','Showing first 100; narrow search to inspect others.'));
+      return;
+    }
+    info.textContent='Only existing app features. Nothing will be sent or executed.';
     const hits=available();
     if(!hits.length){list.append(make('p','ux-empty','No matching feature. Try another phrase.'));return}
     for(const hit of hits){
@@ -56,12 +121,13 @@ export function mountCapabilityLauncher({host,context,onActivate}={}){
   function open(){
     if(dialog.open)return;
     previous=doc.activeElement;
-    input.value='';render();
+    mode=0;input.value='';render();
     if(typeof dialog.showModal==='function')dialog.showModal();
     else dialog.setAttribute('open','');
     input.focus();
   }
   function closeDialog(){
+    generation++;list.replaceChildren();
     if(typeof dialog.close==='function'&&dialog.open)dialog.close();
     else dialog.removeAttribute('open');
     if(previous?.isConnected && typeof previous.focus==='function')previous.focus();
@@ -74,7 +140,7 @@ export function mountCapabilityLauncher({host,context,onActivate}={}){
     if(event.key==='ArrowDown'){event.preventDefault();
       list.querySelector('button:not([disabled])')?.focus();
     }
-    if(event.key==='Enter'){
+    if(event.key==='Enter'&&mode===0){
       const first=list.querySelector('button:not([disabled])');
       if(first){event.preventDefault();first.click();}
     }
@@ -88,6 +154,7 @@ export function mountCapabilityLauncher({host,context,onActivate}={}){
     all[(at+(event.key==='ArrowDown'?1:-1)+all.length)%all.length].focus();
   });
   dialog.addEventListener('close',()=>{
+    generation++;list.replaceChildren();
     if(previous?.isConnected&&typeof previous.focus==='function')previous.focus();
     previous=null;
   });

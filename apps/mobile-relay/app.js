@@ -1654,6 +1654,7 @@ function launcherContext() {
     mediaVisible:transport.direct&&S.paired&&!!transport.deviceHeaders?.(),
     controlRead:!!transport.deviceHeaders?.()&&
       Array.isArray(S.device.scopes)&&S.device.scopes.includes('control:read'),
+    liveInstances:S.tab==='build'&&S.paired&&S.statusObj&&navigator.onLine!==false?build?.listInstances?.()??[]:[],
     installOffered:!!deferredInstallPrompt,
     installed:!!window.matchMedia?.('(display-mode: standalone)')?.matches ||
       navigator.standalone===true};
@@ -1672,7 +1673,8 @@ function launcherActivate(item) {
   }
 }
 capabilityLauncher = mountCapabilityLauncher({
-  host:document.body,context:launcherContext,onActivate:launcherActivate
+  host:document.body,context:launcherContext,onActivate:launcherActivate,
+  onInspect:row=>S.tab==='build'&&S.paired&&!!S.statusObj&&!!build?.selectInstance?.(row.instanceId,row.revision)
 });
 function scheduleBuild(delay = 6000) {
   if (!build || !S.paired || S.tab !== 'build' || buildTimer) return;

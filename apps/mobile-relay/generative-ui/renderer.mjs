@@ -63,7 +63,7 @@ export function planTierflowSurface(surface, {audience='phone',approvedRefs=[],v
 }
 const FONT={system:'system-ui, sans-serif',humanist:'"Segoe UI", sans-serif',geometric:'"Century Gothic", sans-serif',editorial:'Georgia, serif',mono:'Consolas, monospace'};
 function ink(hex){const rgb=[1,3,5].map(i=>{const v=parseInt(hex.slice(i,i+2),16)/255;return v<=.04045?v/12.92:((v+.055)/1.055)**2.4;});const L=.2126*rgb[0]+.7152*rgb[1]+.0722*rgb[2];return (L+.05)/.05>=1.05/(L+.05)?'#000000':'#ffffff';}
-export function renderSurface(mount,surface,{audience='phone',approvedRefs=[],onIntent=()=>{},tierflow=false}={}){
+export function renderSurface(mount,surface,{audience='phone',approvedRefs=[],onIntent=()=>{},tierflow=false,onMounted=null}={}){
   if(!mount||typeof mount.replaceChildren!=='function'||!mount.ownerDocument)invalid('DOM mount required');
   if(typeof onIntent!=='function')invalid('intent handler required');
   const projected=tierflow?planTierflowSurface(surface,{audience,approvedRefs,viewportPx:tierflowViewport(mount)}):null;
@@ -74,7 +74,8 @@ export function renderSurface(mount,surface,{audience='phone',approvedRefs=[],on
   const container=element('section','surface');container.setAttribute('data-surface-id',s.surfaceId);
   Object.assign(container.style,{backgroundColor:t.background,color:ink(t.background),fontFamily:FONT[t.fontFamily],fontSize:t.fontSizePx+'px',borderRadius:t.radiusPx+'px'});
   if(projected){container.setAttribute('data-tierflow-document',projected.document.documentId);container.setAttribute('data-tierflow-revision',String(s.revision));container.setAttribute('data-tierflow-status',projected.plan.status);}
-  const render=(n,planNode=null)=>{
+  const instances=[];
+  const render=(n,planNode=null,parentId=null)=>{
     if(projected&&(!planNode||planNode.id!==n.id))invalid('TierFlow mounted node mismatch');
     const p=projected?projected.nodes.get(n.id).props:n.props;let el;
     switch(n.type){
@@ -99,6 +100,12 @@ export function renderSurface(mount,surface,{audience='phone',approvedRefs=[],on
       default:invalid('unknown component');
     }
     el.setAttribute('data-component-id',n.id);
+    if(projected){
+      // Register the actual mounted element, not a fabricated taxonomy example.
+      const settings=Object.fromEntries(Object.entries(p).filter(([k])=>['direction','gap','columns','variant'].includes(k)));
+      instances.push({element:el,instanceId:n.id,parentId,type:n.type,componentId:projected.identities.get(n.id),
+        surfaceId:s.surfaceId,revision:s.revision,settings});
+    }
     if(planNode){
       el.setAttribute('data-ui-component-id',projected.identities.get(n.id));
       for(const [name,value] of Object.entries(planNode.attributes)){
@@ -112,11 +119,13 @@ export function renderSurface(mount,surface,{audience='phone',approvedRefs=[],on
       for(const child of structuralChildren){
         const sourceChild=n.children.find(c=>c.id===child.id);
         if(!sourceChild)invalid('TierFlow child identity mismatch');
-        el.appendChild(render(sourceChild,child));
+        el.appendChild(render(sourceChild,child,n.id));
       }
     } else for(const child of n.children)el.appendChild(render(child));
     return el;
   };
   container.appendChild(render(s.tree,projected?.plan.root.children[0]??null));
-  mount.replaceChildren(container);return {surfaceId:s.surfaceId,revision:s.revision,rendered:true};
+  mount.replaceChildren(container);
+  if(typeof onMounted==='function')onMounted(instances);
+  return {surfaceId:s.surfaceId,revision:s.revision,rendered:true};
 }

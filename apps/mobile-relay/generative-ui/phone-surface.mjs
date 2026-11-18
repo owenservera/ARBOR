@@ -73,26 +73,28 @@ export function mountBuildSurface(mount, { onCommit = () => {}, semantic = null,
   if (mounted) throw new Error('Build surface already mounted');
   mounted = true;
   const revisionGuard = createHostRevisionGuard();
-  let initialDraft = null;
+  let initialDraft = null,instances=new Map(),highlighted=null;
 
   function clear() {
     revisionGuard.disconnect();
     surface = null;
-    initialDraft = null;
+    initialDraft = null;instances.clear();highlighted=null;
     if (mount?.replaceChildren) mount.replaceChildren();
   }
   clearBuildSurface = clear;
 
   function render(s) {
     if (!mount || !mount.replaceChildren || !mount.ownerDocument) return;
+    instances.clear();highlighted=null;
     renderSurface(mount, s, {
       audience: 'phone',
       tierflow: true,
       approvedRefs: [],
+      onMounted: rows=>{instances=new Map(rows.map(row=>[row.instanceId,row]));},
       onIntent: (intent) => {
         if (readOnly || pending || !surface || intent.revision !== surface.revision || intent.surfaceId !== surface.surfaceId) return;
         const component=locate(surface.tree,intent.targetId);
-        if(!component)return;
+        if(!component||!selectInstance(intent.targetId,intent.revision))return;
         const meaning=meaningOf(intent,semantic);
         let selected=mount.querySelector?.('[data-build-selection]');
         if(!selected){
@@ -102,7 +104,7 @@ export function mountBuildSurface(mount, { onCommit = () => {}, semantic = null,
           mount.appendChild(selected);
         }
         selected.textContent='Selected '+component.id+' · '+component.type+
-          (meaning?' · '+meaning.intent:'')+' · use Build to preview a change. Nothing changed.';
+          (meaning?' · semantic selection':'')+' · use Build to preview a change. Nothing changed.';
       }
     });
     surface = s; // only a successfully validated and painted Host snapshot is actionable
@@ -150,7 +152,15 @@ export function mountBuildSurface(mount, { onCommit = () => {}, semantic = null,
     catch { clear(); }
   });
 
-  return { render, setSurface, clear, surface: () => surface,
+  function listInstances(){return surface?Array.from(instances.values(),({element,...row})=>({...row,settings:{...row.settings}})):[];}
+  function selectInstance(id,revision){
+    const row=instances.get(id);
+    if(!surface||!row||row.revision!==revision||surface.revision!==revision||row.element.isConnected===false)return false;
+    highlighted?.removeAttribute?.('data-vivim-inspected');
+    highlighted=row.element;highlighted.setAttribute('data-vivim-inspected','true');
+    highlighted.scrollIntoView?.({block:'nearest'});return true;
+  }
+  return { render, setSurface, clear, listInstances, selectInstance, surface: () => surface,
     draftSurface: () => initialDraft, pending: () => pending,
     revisionState: () => revisionGuard.status() };
 }

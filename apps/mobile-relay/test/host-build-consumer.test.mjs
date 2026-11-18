@@ -39,6 +39,13 @@ test('actual phone Build consumer unwraps only applied Host head, refuses stale 
   assert.equal(first.state,'ready');
   assert.equal(build.surface().revision,5);
   assert.equal(mount.children.length,1,'actual renderer mounted the clean surface');
+  const instances=build.listInstances();
+  assert.equal(instances.length,1);
+  assert.equal(instances[0].instanceId,'root');
+  assert.equal(instances[0].revision,5);
+  assert.equal(Object.hasOwn(instances[0],'element'),false);
+  assert.equal(build.selectInstance('root',4),false);
+  assert.equal(build.selectInstance('root',5),true);
 
   const same=build.setSurface(host(5));
   assert.equal(same.changed,false);
@@ -48,6 +55,8 @@ test('actual phone Build consumer unwraps only applied Host head, refuses stale 
   assert.equal(regression.reason,'ROLLBACK_PROOF_REQUIRED');
   assert.equal(build.surface(),null);
   assert.equal(mount.children.length,0,'old private nodes must be removed');
+  assert.deepEqual(build.listInstances(),[]);
+  assert.equal(build.selectInstance('root',5),false);
 
   handlers.get('vivim:bootstrap-status')({detail:{snapshot:{bootstrap:{uiRevision:host(6)}}}});
   assert.equal(build.surface().revision,6,'status event uses the mounted consumer');
