@@ -314,7 +314,7 @@ function checkReadback(wiki) {
   }
 }
 function renderSync() {
-  const keys = Object.keys(SOURCES).filter(key => key !== 'context'; // private source may be locked
+  const keys = Object.keys(SOURCES).filter(key => key !== 'context'); // private source may be locked
   const seen = keys.filter(key => !!snapshots[key]?.data).length;
   const failures = keys.filter(key => !!snapshots[key]?.error);
   const wiki = sourceRecord('wiki');
