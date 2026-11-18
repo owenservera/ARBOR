@@ -93,7 +93,7 @@ function estimateTokens(text) {
   return Math.ceil(Buffer.byteLength(text, 'utf8') / TOKENS_PER_BYTE);
 }
 function readRepoFile(relPath) {
-  try { return readFileSync(join(REPO_ROOT, ...relPath.split('/'))); } catch (err) { fail(relPath + ': unreadable: ' + err.message); }
+  try { return readFileSync(join(REPO_ROOT, ...relPath.replace(/^apps\/vivim-host\/public\/demo\//, 'demo/host-legacy/').split('/'))); } catch (err) { fail(relPath + ': unreadable: ' + err.message); }
 }
 
 function loadCache() {
@@ -147,7 +147,7 @@ function main() {
   // then restored by the operator via git). Only the affected bundle is invalidated.
   if (changePath) {
     if (!SEED_FILES.includes(changePath)) fail('--change must name a seeded file: ' + SEED_FILES.join(', '));
-    const abs = join(REPO_ROOT, ...changePath.split('/'));
+    const abs = join(REPO_ROOT, ...changePath.replace(/^apps\/vivim-host\/public\/demo\//, 'demo/host-legacy/').split('/'));
     const cur = readFileSync(abs, 'utf8');
     writeFileSync(abs, cur.endsWith('\n') ? cur + '\n' : cur + '\n');
     check('source-revision-changed', true, changePath + ' appended newline (simulated revision change)');

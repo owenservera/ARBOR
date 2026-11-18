@@ -173,7 +173,7 @@ function parseHeader(relPath, text) {
 }
 
 function buildRecord(relPath) {
-  const abs = join(repoRoot, ...relPath.split('/'));
+  const abs = join(repoRoot, ...relPath.replace(/^apps\/vivim-host\/public\/demo\//, 'demo/host-legacy/').split('/'));
   let bytes;
   try {
     bytes = readFileSync(abs);

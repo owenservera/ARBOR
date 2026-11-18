@@ -59,7 +59,7 @@ const SEED_FILES = [
 ];
 
 function readRepoFile(relPath) {
-  return readFileSync(join(REPO_ROOT, ...relPath.split('/')));
+  return readFileSync(join(REPO_ROOT, ...relPath.replace(/^apps\/vivim-host\/public\/demo\//, 'demo/host-legacy/').split('/')));
 }
 
 function runGen() {

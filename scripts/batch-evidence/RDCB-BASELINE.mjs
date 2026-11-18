@@ -86,7 +86,7 @@ if (live) {
     const reg = b.d.reprogramming?.fileSurfaceRegistry?.ref;
     const cat = b.d.reprogramming?.nlclCatalog?.ref;
     const srcs = Array.isArray(b.d.sources) ? b.d.sources : [];
-    return [reg, cat, ...srcs.map(s => s.path)].every(p => !p || existsSync(resolve(REPO_ROOT, p)));
+    return [reg, cat, ...srcs.map(s => s.path)].every(p => !p || existsSync(resolve(REPO_ROOT, p.replace(/^apps\/vivim-host\/public\/demo\//, 'demo/host-legacy/'))));
   });
   check('references-resolve', refsOk,
     `fileSurfaceRegistry.ref + nlclCatalog.ref + sources[].path all exist on disk=${refsOk}`);

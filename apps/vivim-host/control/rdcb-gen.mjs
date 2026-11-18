@@ -153,7 +153,7 @@ function surfaceHeaderExcerpt(relPath, text) {
 
 function readRepoFile(relPath) {
   try {
-    return readFileSync(join(repoRoot, ...relPath.split('/')));
+    return readFileSync(join(repoRoot, ...relPath.replace(/^apps\/vivim-host\/public\/demo\//, 'demo/host-legacy/').split('/')));
   } catch (err) {
     die(relPath + ': unreadable: ' + err.message);
   }
