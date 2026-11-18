@@ -285,6 +285,13 @@ export function createControlChat({
     const card = elem('div', 'vivim-receipt');
     if (receipt.replayed) card.append(elem('p', 'ux-meta', 'This receipt was already applied; nothing ran twice.'));
     if (receipt.result !== undefined) card.append(elem('pre', 'ux-note', describe(receipt.result)));
+    if (receipt.status === 'applied' && receipt.actionId === 'wiki.section.edit' &&
+        typeof onNavigate === 'function') {
+      const open = elem('button', 'btn sm ux-secondary', 'View updated Wiki');
+      open.type = 'button';
+      open.addEventListener('click', () => onNavigate('wiki'));
+      card.append(open);
+    }
     const undo = receipt.undo;
     if (!msg.undoRequested && undo && typeof undo.actionId === 'string' && undo.actionId) {
       const button = elem('button', 'btn sm ux-secondary', 'Undo this change');
@@ -370,6 +377,15 @@ export function createControlChat({
           (typeof plan.planDigest === 'string' ? ' · Plan ' + plan.planDigest.slice(0, 12) : '')));
         const args = plan.args && typeof plan.args === 'object' ? Object.entries(plan.args).slice(0, 12) : [];
         if (args.length) card.append(elem('p', 'ux-note', args.map(([k,v])=>k + ': ' + describe(v)).join(' · ')));
+        if (plan.actionId === 'wiki.section.edit' && plan.preview) {
+          // Host-resolved target and bound revision, not caller-supplied display data.
+          card.append(elem('strong', '', 'Wiki · ' + plan.preview.target),
+            elem('p', 'ux-meta', 'Revision ' + plan.preview.expectedRevision + ' · Exact replacement'));
+          card.append(elem('strong', '', 'Current section'),
+            elem('pre', 'ux-note', plan.preview.before));
+          card.append(elem('strong', '', 'Proposed section'),
+            elem('pre', 'ux-note', plan.preview.after));
+        }
         const actions = elem('div', 'vivim-plan-actions');
         const yes = elem('button', 'btn pri', 'Approve & apply');
         yes.type = 'button'; yes.addEventListener('click', () => { void approve(msg); });
