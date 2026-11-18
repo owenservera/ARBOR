@@ -83,6 +83,7 @@ export function renderSurface(mount,surface,{audience='phone',approvedRefs=[],on
     if(p.background!==undefined){el.style.backgroundColor=p.background;el.style.color=ink(p.background);}
     if(p.borderColor!==undefined){el.style.borderColor=p.borderColor;el.style.borderStyle='solid';if(p.borderWidthPx===undefined)el.style.borderWidth='1px';}
     if(p.borderWidthPx!==undefined){el.style.borderWidth=p.borderWidthPx+'px';el.style.borderStyle='solid';if(p.borderColor===undefined)el.style.borderColor=t.accent;}
+    if(n.type==='card'&&p.gapPx!==undefined){el.style.display='flex';el.style.flexDirection='column';}
     for(const [k,css] of [['radiusPx','borderRadius'],['fontSizePx','fontSize'],['paddingPx','padding'],['gapPx','gap']])if(p[k]!==undefined)el.style[css]=p[k]+'px';
   }
   const render=(n,planNode=null,parentId=null)=>{
@@ -114,7 +115,7 @@ export function renderSurface(mount,surface,{audience='phone',approvedRefs=[],on
             const extent=range?Math.abs(item.value)/range*100:0;
             const track=element('span','chart-track');track.setAttribute('aria-hidden','true');
             const axis=element('span','chart-zero');axis.style.left=zero+'%';
-            const bar=element('span','chart-bar');bar.style.left=(item.value<0?zero-extent:zero)+'%';bar.style.width=extent+'%';bar.style.backgroundColor=t.accent;
+            const bar=element('span','chart-bar');bar.style.left=(item.value<0?zero-extent:zero)+'%';bar.style.width=extent+'%';bar.style.backgroundColor=n.presentation?.background?ink(n.presentation.background):t.accent;
             track.appendChild(axis);track.appendChild(bar);li.appendChild(track);
           }
           else if(item.detail)li.appendChild(element('span','detail',item.detail));list.appendChild(li);

@@ -80,16 +80,31 @@ export function projectSemanticsForAudience(projection,{audience='phone'}={}){
   return {...projection,objects,views,edges,unknowns:audience==='pc'?projection.unknowns:[],effects:'none',persisted:false};
 }
 export const VISUAL_INTENTS=Object.freeze(['select','preview-layout','preview-style','inspect-meaning']);
-export const INTENT_INPUTS=Object.freeze(['tap','language','glyph','gesture']);
+export const INTENT_INPUTS=Object.freeze(['tap','language','glyph','gesture','keyboard']);
+// Derive semantic identities from actual committed renderer mounts, not knowledge claims.
+export function projectMountedVisualSemantics({surfaceId,revision,instances}={}){
+  id(surfaceId);
+  if(!Number.isSafeInteger(revision)||revision<0||!Array.isArray(instances)||instances.length>64)invalid('invalid mounted revision');
+  const seen=new Set(),views=instances.map(row=>{
+    const componentId=id(row.instanceId);
+    if(seen.has(componentId)||row.surfaceId!==surfaceId||row.revision!==revision||
+       typeof row.componentId!=='string'||!/^vivim\.ui\.[a-z0-9.-]+@1$/.test(row.componentId))invalid('invalid mounted component identity');
+    seen.add(componentId);
+    return {componentId,canonicalId:row.componentId,viewKind:row.type,privacy:'phone',objectRefs:[]};
+  });
+  return {schema:SEMANTIC_SCHEMA,surfaceId,revision,views,objects:[],edges:[],unknowns:[],
+    authority:'derived-from-mounted-committed-ui',effects:'none',persisted:false};
+}
 export function projectVisualIntent({source,targetId,intent,layout=null,style=null,semantic}={}){
   if(!INTENT_INPUTS.includes(source)||!VISUAL_INTENTS.includes(intent))invalid('unsupported visual intent');
   if(!semantic||semantic.schema!==SEMANTIC_SCHEMA)invalid('semantic projection required');
   id(targetId);
-  if(!semantic.views.some(v=>v.componentId===targetId))invalid('unknown target');
+  const view=semantic.views.find(v=>v.componentId===targetId);if(!view)invalid('unknown target');
   if(intent==='preview-layout'&&!LAYOUT_INTENTS.includes(layout))invalid('unknown layout intention');
   if(intent!=='preview-layout'&&layout!==null)invalid('unexpected layout');
   if(style!==null&&(intent!=='preview-style'||typeof style!=='string'||!['compact','comfortable','spacious'].includes(style)))invalid('unsupported style');
   const meaning={schema:'vivim.visual-intent/1',surfaceId:semantic.surfaceId,targetId,intent,
+    ...(semantic.authority==='derived-from-mounted-committed-ui'?{revision:semantic.revision,canonicalId:view.canonicalId}:{}),
     ...(layout?{layout}:{}),...(style?{style}:{}),revisionAuthority:'Host-required',decision:'preview-only'};
   return {...meaning,source,meaningDigest:digestJson(meaning),effects:'none',
     authorization:'required-for-commit',parsedBy:'trusted-UI-or-upstream-interpreter'};

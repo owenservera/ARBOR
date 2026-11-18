@@ -25,7 +25,8 @@ const host = (revision, status='applied') => {
 
 test('actual phone Build consumer unwraps only applied Host head, refuses stale and clears disconnected paint', () => {
   const {mount,handlers}=mockDom();
-  const build=mountBuildSurface(mount);
+  let selected=null,instancesNow=[];
+  const build=mountBuildSurface(mount,{onSelection:row=>{selected=row},onInstances:rows=>{instancesNow=rows}});
   build.setSurface(null);
   assert.equal(build.draftSurface(),null,'unknown head is not an editable blank');
   const emptyHost={state:'ready',schema:'vivim.bootstrap-phone/1',uiRevision:null};
@@ -46,6 +47,14 @@ test('actual phone Build consumer unwraps only applied Host head, refuses stale 
   assert.equal(Object.hasOwn(instances[0],'element'),false);
   assert.equal(build.selectInstance('root',4),false);
   assert.equal(build.selectInstance('root',5),true);
+  assert.equal(selected.meaning.revision,5);
+  assert.equal(selected.meaning.effects,'none');
+  assert.equal(selected.meaning.canonicalId,instances[0].componentId);
+  assert.equal(build.selectInstance('root',5,'keyboard'),true);
+  const keyDigest=selected.meaning.meaningDigest;
+  assert.equal(build.selectInstance('root',5,'tap'),true);
+  assert.equal(selected.meaning.meaningDigest,keyDigest,'all local inputs select the same semantic identity');
+  assert.equal(instancesNow.length,1);
 
   const same=build.setSurface(host(5));
   assert.equal(same.changed,false);
@@ -56,6 +65,8 @@ test('actual phone Build consumer unwraps only applied Host head, refuses stale 
   assert.equal(build.surface(),null);
   assert.equal(mount.children.length,0,'old private nodes must be removed');
   assert.deepEqual(build.listInstances(),[]);
+  assert.equal(build.selectedInstance(),null);
+  assert.equal(selected,null);assert.deepEqual(instancesNow,[]);
   assert.equal(build.selectInstance('root',5),false);
 
   handlers.get('vivim:bootstrap-status')({detail:{snapshot:{bootstrap:{uiRevision:host(6)}}}});

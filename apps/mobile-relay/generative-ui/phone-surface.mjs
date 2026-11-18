@@ -4,7 +4,7 @@
 // A tap never sends a provider prompt and is never automatically resent while uncertain.
 import { renderSurface } from './renderer.mjs';
 import { createSurface } from './catalog.mjs';
-import { projectVisualIntent } from './semantic-projection.mjs';
+import { projectVisualIntent, projectMountedVisualSemantics } from './semantic-projection.mjs';
 import { transport } from '../transport.mjs';
 import { createHostRevisionGuard } from './host-revision-guard.mjs';
 
@@ -40,7 +40,7 @@ function meaningOf(intent, semantic) {
   const visual = MEANING_INTENT[intent.intent];
   if (!visual) return null;
   try {
-    return projectVisualIntent({ source: 'tap', targetId: intent.targetId, intent: visual, layout: null, style: null, semantic });
+    return projectVisualIntent({ source: intent.source??'tap', targetId: intent.targetId, intent: visual, layout: null, style: null, semantic });
   } catch { return null; }
 }
 
@@ -55,23 +55,26 @@ async function repaint() {
   } catch { clearBuildSurface(); /* offline or unauthorized projections must not remain actionable */ }
 }
 
-export function mountBuildSurface(mount, { onCommit = () => {}, semantic = null, readOnly = false } = {}) {
+export function mountBuildSurface(mount, { onCommit = () => {}, semantic = null, readOnly = false, onInstances=()=>{}, onSelection=()=>{} } = {}) {
   if (mounted) throw new Error('Build surface already mounted');
   mounted = true;
   const revisionGuard = createHostRevisionGuard();
-  let initialDraft = null,instances=new Map(),highlighted=null;
+  let initialDraft = null,instances=new Map(),highlighted=null,selected=null,mountedSemantic=null,inspecting=false;
 
   function clear() {
     revisionGuard.disconnect();
     surface = null;
-    initialDraft = null;instances.clear();highlighted=null;
+    initialDraft = null;instances.clear();highlighted=null;selected=null;mountedSemantic=null;inspecting=false;
+    mount?.removeAttribute?.('data-vivim-inspect-mode');
     if (mount?.replaceChildren) mount.replaceChildren();
+    onInstances([]);onSelection(null);
   }
   clearBuildSurface = clear;
 
   function render(s) {
     if (!mount || !mount.replaceChildren || !mount.ownerDocument) return;
-    instances.clear();highlighted=null;
+    const restore=selected?.revision===s.revision&&selected?.surfaceId===s.surfaceId?selected.instanceId:null;
+    instances.clear();highlighted=null;selected=null;mountedSemantic=null;
     renderSurface(mount, s, {
       audience: 'phone',
       tierflow: true,
@@ -81,20 +84,14 @@ export function mountBuildSurface(mount, { onCommit = () => {}, semantic = null,
       onIntent: (intent) => {
         if (readOnly || pending || !surface || intent.revision !== surface.revision || intent.surfaceId !== surface.surfaceId) return;
         const component=locate(surface.tree,intent.targetId);
-        if(!component||!selectInstance(intent.targetId,intent.revision))return;
-        const meaning=meaningOf(intent,semantic);
-        let selected=mount.querySelector?.('[data-build-selection]');
-        if(!selected){
-          selected=mount.ownerDocument.createElement('p');
-          selected.setAttribute('data-build-selection','');
-          selected.setAttribute('role','status');
-          mount.appendChild(selected);
-        }
-        selected.textContent='Selected '+component.id+' · '+component.type+
-          (meaning?' · semantic selection':'')+' · use Build to preview a change. Nothing changed.';
+        if(!component)return;
+        selectInstance(intent.targetId,intent.revision,'tap');
       }
     });
     surface = s; // only a successfully validated and painted Host snapshot is actionable
+    mountedSemantic=projectMountedVisualSemantics({surfaceId:s.surfaceId,revision:s.revision,instances:listInstances()});
+    onInstances(listInstances());
+    if(restore&&!selectInstance(restore,s.revision,'glyph'))onSelection(null);else if(!restore)onSelection(null);
   }
 
   // Read-only Host snapshot gate. A revision envelope is not a renderable document.
@@ -139,15 +136,38 @@ export function mountBuildSurface(mount, { onCommit = () => {}, semantic = null,
     catch { clear(); }
   });
 
-  function listInstances(){return surface?Array.from(instances.values(),({element,...row})=>({...row,settings:{...row.settings}})):[];}
-  function selectInstance(id,revision){
+  function publicRow({element,...row}){return {...row,settings:{...row.settings},configurableProperties:[...(row.configurableProperties??[])]};}
+  function listInstances(){return surface?Array.from(instances.values(),publicRow):[];}
+  function selectInstance(id,revision,source='glyph'){
     const row=instances.get(id);
-    if(!surface||!row||row.revision!==revision||surface.revision!==revision||row.element.isConnected===false)return false;
+    if(!surface||!row||row.revision!==revision||surface.revision!==revision||row.element.isConnected===false||!mountedSemantic)return false;
+    const meaning=meaningOf({targetId:id,intent:'select-component',source},mountedSemantic);
+    if(!meaning)return false;
     highlighted?.removeAttribute?.('data-vivim-inspected');
     highlighted=row.element;highlighted.setAttribute('data-vivim-inspected','true');
-    highlighted.scrollIntoView?.({block:'nearest'});return true;
+    highlighted.scrollIntoView?.({block:'nearest'});
+    selected={...publicRow(row),meaning};
+    onSelection(selectedInstance());return true;
   }
-  return { render, setSurface, clear, listInstances, selectInstance, surface: () => surface,
+  function selectedInstance(){
+    return selected&&surface&&selected.revision===surface.revision&&selected.surfaceId===surface.surfaceId?
+      {...selected,settings:{...selected.settings},configurableProperties:[...selected.configurableProperties],meaning:{...selected.meaning}}:null;
+  }
+  function setInspecting(enabled){
+    inspecting=enabled===true&&!!surface;
+    if(inspecting)mount.setAttribute?.('data-vivim-inspect-mode','true');else mount.removeAttribute?.('data-vivim-inspect-mode');
+    return inspecting;
+  }
+  mount.addEventListener?.('click',event=>{
+    if(!inspecting||!surface)return;
+    const hit=event.target?.closest?.('[data-component-id]');
+    if(!hit||!mount.contains?.(hit))return;
+    const target=hit.getAttribute('data-component-id');
+    if(!instances.has(target))return;
+    event.preventDefault();event.stopPropagation();
+    selectInstance(target,surface.revision,'tap');
+  },true);
+  return { render, setSurface, clear, listInstances, selectInstance, selectedInstance, setInspecting, surface: () => surface,
     draftSurface: () => initialDraft, pending: () => pending,
     revisionState: () => revisionGuard.status() };
 }

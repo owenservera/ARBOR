@@ -45,3 +45,14 @@ test('signed chart values produce bounded bars without changing labels or origin
  assert.equal(loss.children[0].textContent,'-5');assert.equal(gain.children[0].textContent,'10');
  assert.equal(loss.children[1].children[1].style.left,'0%');assert.ok(parseFloat(gain.children[1].children[1].style.width)>60);
 });
+
+test('appearance undo is a compensating exact Host proposal with the prior field state',()=>{
+ const before=fixture(),draft=request(before,'set component alpha radius to 12px');
+ assert.equal(draft.outcome,'candidate');
+ const committed={surfaceId:before.surfaceId,parentRevision:4,committedRevision:5};
+ const live={...draft.preview.surface,revision:5};
+ const undo=buildUndoProposal({original:draft,before,committed,live});
+ assert.ok(undo);assert.equal(undo.proposal.baseRevision,5);assert.equal(undo.proposal.operations[0].presentation,null);
+ assert.deepEqual(undo.preview.surface,{...before,revision:5});
+ assert.equal(buildUndoProposal({original:draft,before,committed,live:{...live,revision:6}}),null);
+});
