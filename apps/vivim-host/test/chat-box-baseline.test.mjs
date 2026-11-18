@@ -73,7 +73,7 @@ test('canonical chat and Wiki pages serve external CSP-compatible JS/CSS', async
     for (const ext of ['/chat.js', '/wiki.js', '/chat.css', '/wiki.css']) {
       assert.equal((await request(base, ext)).status, 200);
     }
-    assert.equal((await request(base, '/demo')).status, 200);
+    assert.equal((await request(base, '/demo')).status, 404);
     assert.equal((await request(base, '/demo/')).status, 404);
   }));
 
@@ -154,29 +154,18 @@ test('catalog enumeration is source-backed; unavailable actions are not called e
   assert.ok(catalog.actions.some(a => a.readiness === 'adapter_pending'));
 });
 
-test('demo feedback and product journaling use one append path without executing gates', async () =>
+test('retired demo and feedback writes cannot append records even with owner authority', async () =>
   withHost(async (base, { ownerToken }) => {
-    // approveAll claims an approval, so the Host requires the owner capability
-    // even for the legacy demo-feedback envelope. It is still observed, never
-    // executed: no gate decision is derived from it.
-    const sent = await request(base, '/demo/feedback', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', origin: base, 'x-vivim-control': '1',
-        authorization: 'Bearer ' + ownerToken },
-      body: { round: 'isolated-baseline', approveAll: true, verdicts: [] }
-    });
-    assert.equal(sent.status, 200);
-    assert.equal(sent.json().round, 'isolated-baseline');
-    // Without the owner capability the same claimed approval is refused.
-    const refused = await request(base, '/demo/feedback', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', origin: base, 'x-vivim-control': '1' },
-      body: { round: 'unauthorized', approveAll: true, verdicts: [] }
-    });
-    assert.equal(refused.status, 401);
-    const journal = (await request(base, '/api/journal')).json();
-    assert.equal(journal.length, 1);
-    assert.equal(journal[0].kind, 'feedback-round');
-    assert.equal((await request(base, '/demo/journal.jsonl')).text.trim().split('\n').length, 1);
-    assert.equal((await request(base, '/api/no-such-route')).status, 404);
+    const headers = { 'content-type': 'application/json', origin: base, 'x-vivim-control': '1',
+      authorization: 'Bearer ' + ownerToken };
+    const feedback = { kind: 'feedback-round', schemaVersion: 1, actor: 'loop-agent',
+      round: 'retired', approveAll: true, verdicts: [] };
+    for (const route of ['/demo/feedback', '/demo/mutate']) {
+      assert.equal((await request(base, route, { method: 'POST', headers, body: feedback })).status, 404);
+    }
+    assert.equal((await request(base, '/api/mutate', { method: 'POST', headers, body: feedback })).status, 410);
+    assert.equal((await request(base, '/api/roadmap')).status, 404);
+    assert.equal((await request(base, '/demo/journal.jsonl')).status, 404);
+    assert.deepEqual((await request(base, '/api/journal')).json(), []);
+    assert.equal((await request(base, '/api/journal?format=jsonl')).text, '');
   }));
