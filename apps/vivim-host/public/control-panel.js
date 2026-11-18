@@ -164,6 +164,15 @@
       ' · ' + (receipt.at || 'time unknown')));
     if (receipt.error) box.append(element('p', 'text-control-note warning', receipt.error.code + ': ' + receipt.error.message));
     if (receipt.result !== undefined) box.append(element('pre', 'text-control-data', JSON.stringify(receipt.result, null, 2)));
+    if (receipt.status === 'applied' && receipt.actionId === 'wiki.section.edit' &&
+        Number.isSafeInteger(receipt.result?.wikiRevision) &&
+        typeof receipt.result?.page === 'string' && typeof receipt.result?.section === 'string') {
+      const view = element('a', 'text-control-button', 'View updated Wiki');
+      view.href = '/wiki';
+      view.target = '_blank';
+      view.rel = 'noopener';
+      box.append(view);
+    }
     if (receipt.undo && receipt.status === 'applied') box.append(button('Review undo', () =>
       plan({ actionId: receipt.undo.actionId, args: receipt.undo.args })));
     box.append(element('small', 'text-control-note', 'Receipt: ' + receipt.planId +
