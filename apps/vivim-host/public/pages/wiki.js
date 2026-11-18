@@ -6,7 +6,7 @@
 const SOURCES = Object.freeze({
   wiki: { url: '/api/wiki', path: 'Host product journal → Wiki projection' },
   state: { url: '/api/state', path: 'Host product journal → chat state projection' },
-  context: { url: '/api/host/control/wiki-context', path: 'Owner-private journal → user observations' },
+  context: { url: '/api/host/control/wiki-context', path: 'Owner-private journal → observations and committed Wiki effects' },
   roadmap: { url: '/api/roadmap', path: 'docs/product/roadmap/roadmap.v1.json (keeper-owned)' },
   surface: { url: '/api/file-surface', path: 'Owner-authorized HQ executable source index' },
   journal: { url: '/api/journal', path: 'Host data-root/product-state/journal.jsonl' }
@@ -95,7 +95,6 @@ function renderContext(context) {
   root.appendChild(element('p', 'queue-summary', context.totalObserved + ' user-declared observation(s) · source sequence ' + context.revision + ' · not verified facts'));
   if (!context.items.length) {
     root.appendChild(element('p', 'empty', 'No source-identified user messages yet. Send a message in Chat to begin.'));
-    return root;
   }
   for (const item of context.items.slice().reverse()) {
     const card = element('article', 'section');
@@ -110,6 +109,27 @@ function renderContext(context) {
     root.appendChild(card);
   }
   if (context.omitted) root.appendChild(element('p', 'empty', context.omitted + ' older observations omitted from bounded view.'));
+  root.appendChild(element('h3', '', 'Automatically derived · committed Wiki changes'));
+  const changes = context.wikiChanges;
+  if (!changes) {
+    root.appendChild(element('p', 'empty', 'Committed change context unavailable from this Host.'));
+    return root;
+  }
+  root.appendChild(element('p', 'queue-summary', changes.total + ' journaled change(s) · Wiki rev ' +
+    present(context.wikiRevision) + ' · read-only; not owner-authored content'));
+  if (!changes.items.length) root.appendChild(element('p', 'empty', 'No source-identified committed Wiki changes.'));
+  for (const item of changes.items.slice().reverse()) {
+    const card = element('article', 'section');
+    card.dataset.entryId = item.entryId;
+    card.dataset.sequence = String(item.sequence);
+    card.appendChild(element('p', 'body', item.relationship.page + '/' + item.relationship.section));
+    card.appendChild(element('div', 'meta', 'Committed Wiki effect · ' + item.status +
+      ' · Wiki rev ' + item.previousWikiRevision + ' → ' + item.wikiRevision +
+      ' · journal ' + item.entryId + ' · sequence ' + item.sequence + ' · ' + item.receivedAt));
+    root.appendChild(card);
+  }
+  if (changes.omitted) root.appendChild(element('p', 'empty', changes.omitted + ' older changes omitted from bounded view.'));
+  root.appendChild(element('p', 'meta', 'Only journal-backed section relationships are shown. Other application effects and project relationships are not available in this projection.'));
   return root;
 }
 function renderRoadmap(roadmap) {
@@ -353,6 +373,22 @@ async function getJson(key) {
         !Number.isSafeInteger(item.sequence) || typeof item.text !== 'string' ||
         item.status !== 'user-statement-unverified')))
     throw new Error('Invalid Host Wiki-context projection');
+  if (key === 'context' && data.wikiChanges !== undefined) {
+    const changes = data.wikiChanges;
+    if (!changes || !Number.isSafeInteger(data.wikiRevision) || data.wikiRevision < 0 ||
+        !Number.isSafeInteger(changes.total) || !Number.isSafeInteger(changes.omitted) ||
+        !Array.isArray(changes.items) || changes.items.length > 24 || changes.omitted < 0 ||
+        changes.total !== changes.items.length + changes.omitted || changes.items.some(item =>
+          item?.kind !== 'committed-wiki-edit' || item.source !== 'host-product-journal' ||
+          typeof item.entryId !== 'string' || !Number.isSafeInteger(item.sequence) ||
+          item.sequence < 1 || item.sequence > data.revision || typeof item.receivedAt !== 'string' ||
+          !Number.isSafeInteger(item.previousWikiRevision) || item.previousWikiRevision < 0 ||
+          item.wikiRevision !== item.previousWikiRevision + 1 || item.wikiRevision > data.wikiRevision ||
+          !['current-section-revision', 'superseded-section-revision'].includes(item.status) ||
+          item.relationship?.kind !== 'mutated-section' || typeof item.relationship.page !== 'string' ||
+          typeof item.relationship.section !== 'string'))
+      throw new Error('Invalid committed Wiki change projection');
+  }
   if (key === 'roadmap' && !Array.isArray(data?.buildQueue)) throw new Error('Invalid canonical roadmap queue');
   if (key === 'surface' && (data?.schema !== 'vivim.file-surface/1' || data.generatorVersion !== 'hq.source-index/1' || !Array.isArray(data.files) || data.files.length > 48)) throw new Error('Invalid live file-surface projection');
   if (key === 'journal' && !Array.isArray(data) && !Array.isArray(data?.entries)) throw new Error('Invalid journal records');
@@ -428,7 +464,9 @@ function renderSync() {
   $('source-mode').textContent = seen === keys.length && failures.length === 0
     ? `Host live read-through · ${edits ? 'journal-backed edits observed' : 'seed/demo baseline'}`
     : `Host sources ${seen}/${keys.length} · ${failures.length ? 'partial / stale' : 'loading'}`;
-  const mismatch = wiki && state && wiki.revision !== state.wikiRevision;
+  const context = sourceRecord('context');
+  const mismatch = (wiki && state && wiki.revision !== state.wikiRevision) ||
+    (wiki && Number.isSafeInteger(context?.wikiRevision) && wiki.revision !== context.wikiRevision);
   $('sync-status').textContent = failures.length ? `Retry pending: ${failures.map(k => SOURCES[k].url).join(', ')}. Last good views retained.` :
     mismatch ? 'Cross-endpoint Wiki revisions differ in this polling cycle; rechecking.' :
       `Observed ${seen}/${keys.length} Host sources · source data is not independent verification`;
