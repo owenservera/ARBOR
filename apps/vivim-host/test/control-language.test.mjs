@@ -91,3 +91,20 @@ test('unrequested scopes and malformed IDs cannot be guessed by device text pars
       assert.notEqual(answer.candidate?.actionId,'devices.approve');
   }
 });
+
+test('Wiki natural-language text slot preserves exact capitalization, punctuation and matched quotes', () => {
+  const world = buildControlWorld(catalog);
+  const examples = [
+    ['edit wiki section main/about saying Updated from VIVIM', 'Updated from VIVIM'],
+    ['edit wiki section main/howto saying Alpha BETA!', 'Alpha BETA!'],
+    ['edit wiki section main/about saying "Keep THIS case."', 'Keep THIS case.'],
+    ['edit wiki section roadmap/acceleration saying Saying something', 'Saying something']
+  ];
+  for (const [input, content] of examples) {
+    const result = interpretControl(input, { catalog, world });
+    assert.equal(result.outcome, 'candidate', JSON.stringify(result));
+    assert.equal(result.candidate.actionId, 'wiki.section.edit');
+    assert.equal(result.candidate.args.content, content);
+    assert.equal(Object.hasOwn(result, 'authorized'), false);
+  }
+});
