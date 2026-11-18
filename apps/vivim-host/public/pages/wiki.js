@@ -129,7 +129,25 @@ function renderContext(context) {
     root.appendChild(card);
   }
   if (changes.omitted) root.appendChild(element('p', 'empty', changes.omitted + ' older changes omitted from bounded view.'));
-  root.appendChild(element('p', 'meta', 'Only journal-backed section relationships are shown. Other application effects and project relationships are not available in this projection.'));
+  root.appendChild(element('h3', '', 'Automatically derived · executed application effects'));
+  const effects = context.applicationEffects;
+  if (effects?.state !== 'source-backed') {
+    root.appendChild(element('p', 'empty', 'Control receipt context unavailable.'));
+  } else {
+    root.appendChild(element('p', 'queue-summary', 'Historical applied receipts · scanned ' + effects.scannedPlans +
+      ' recent plans (limit ' + effects.scanLimit + ') · not current-state verification'));
+    if (!effects.items.length) root.appendChild(element('p', 'empty', 'No applied application effects in the scanned plans.'));
+    for (const item of effects.items) {
+      const card = element('article', 'section');
+      card.dataset.planId = item.planId;
+      card.appendChild(element('p', 'body', item.actionId));
+      card.appendChild(element('div', 'meta', 'Historical applied receipt · plan ' + item.planId +
+        ' · source revision ' + present(item.sourceRevision, 'not recorded') + ' · ' + item.receivedAt));
+      root.appendChild(card);
+    }
+    if (effects.omitted) root.appendChild(element('p', 'empty', effects.omitted + ' additional applied effects omitted.'));
+  }
+  root.appendChild(element('p', 'meta', 'Project and task relationships or native graph context are not asserted by this projection.'));
   return root;
 }
 function renderRoadmap(roadmap) {
@@ -353,6 +371,19 @@ function checkEditorRevision() {
   const wiki = sourceRecord('wiki');
   if (isWikiDocument(wiki) && wiki.revision !== editSession.revision) markStale(wiki.revision);
 }
+function validAppliedEffects(effects) {
+  if (effects === undefined) return true;
+  if (effects?.state === 'unavailable') return Array.isArray(effects.items) && effects.items.length === 0;
+  return effects?.state === 'source-backed' && effects.scanLimit === 100 &&
+    Number.isSafeInteger(effects.scannedPlans) && effects.scannedPlans >= 0 && effects.scannedPlans <= effects.scanLimit &&
+    Number.isSafeInteger(effects.omitted) && effects.omitted >= 0 && Array.isArray(effects.items) &&
+    effects.items.length <= 24 && effects.items.length + effects.omitted <= effects.scannedPlans &&
+    effects.items.every(item => item?.source === 'host-control-receipt' && item.kind === 'executed-effect' &&
+      item.status === 'historical-applied-receipt' && typeof item.planId === 'string' &&
+      typeof item.actionId === 'string' && typeof item.receivedAt === 'string' &&
+      typeof item.planDigest === 'string' && /^[a-f0-9]{64}$/.test(item.planDigest) &&
+      (item.sourceRevision === null || (Number.isSafeInteger(item.sourceRevision) && item.sourceRevision >= 0)));
+}
 async function getJson(key) {
   if (key === 'context') await ownerEditCsrf(); // exchange native launch code when provided
   const url = SOURCES[key].url + (key === 'surface' && surfaceQuery ? '?q=' + encodeURIComponent(surfaceQuery) : '');
@@ -389,6 +420,8 @@ async function getJson(key) {
           typeof item.relationship.section !== 'string'))
       throw new Error('Invalid committed Wiki change projection');
   }
+  if (key === 'context' && !validAppliedEffects(data.applicationEffects))
+    throw new Error('Invalid control receipt projection');
   if (key === 'roadmap' && !Array.isArray(data?.buildQueue)) throw new Error('Invalid canonical roadmap queue');
   if (key === 'surface' && (data?.schema !== 'vivim.file-surface/1' || data.generatorVersion !== 'hq.source-index/1' || !Array.isArray(data.files) || data.files.length > 48)) throw new Error('Invalid live file-surface projection');
   if (key === 'journal' && !Array.isArray(data) && !Array.isArray(data?.entries)) throw new Error('Invalid journal records');
