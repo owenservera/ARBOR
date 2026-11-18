@@ -142,6 +142,24 @@ test('real annotated implementation copy: stale refusal, incremental reindex, ch
     assert.ok(automatic.sources.every(s=>s.semanticReferences.some(r=>
       automatic.sourceSemanticIds.includes(r.semanticId))));
     assert.ok(hq.verifyContext(automatic).valid);
+    assert.equal(automatic.semanticPacket.status,'complete');
+    assert.equal(automatic.semanticPacket.planningEligible,false);
+    assert.equal(automatic.semanticPacket.mandatoryConstraints.status,'incomplete');
+    assert.ok(automatic.sourceSemanticIds.every(id=>automatic.semanticPacket.dependencies.some(d=>d.semanticId===id)));
+    const again=hq.compiledContext({task:'list wiki pages',sourceSemanticIds:automatic.sourceSemanticIds});
+    assert.equal(again.context.digest,automatic.digest);
+    const tooSmall=hq.compiledContext({task:'list wiki pages',sourceSemanticIds:automatic.sourceSemanticIds,budgetTokens:100});
+    assert.equal(tooSmall.status,'budget_exceeded');
+    assert.equal(tooSmall.context,null);
+    const incomplete=hq.compiledContext({task:'list wiki pages',sourceSemanticIds:[...automatic.sourceSemanticIds,'missing.capability@1']});
+    assert.equal(incomplete.status,'incomplete');
+    assert.equal(incomplete.context,null);
+    assert.ok(incomplete.semanticPacket.missingSemanticIds.includes('missing.capability@1'));
+    writeFileSync(join(source,'unrelated.mjs'),'export const unrelated=1;');
+    hq.index({useGit:false});
+    assert.equal(hq.verifyContext(automatic).valid,true);
+    assert.equal(hq.compiledContext({task:'list wiki pages',sourceSemanticIds:automatic.sourceSemanticIds}).context.digest,automatic.digest);
+    assert.equal(hq.verifyContext({...automatic,fragment:automatic.fragment+'\nInjected prose'}).valid,false);
     assert.equal((await request(server,'/api/host/control/plan',{
       method:'POST',authenticated:false,body:{text:'list wiki pages'}
     })).status,401);

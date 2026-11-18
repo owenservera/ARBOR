@@ -472,23 +472,28 @@ export function createDevIntelligence({
   }
   // Compile only current, authorized, executable sources carrying an exact
   // contract identity. Free-text relevance ranks within that scope, never grants it.
-  function compiledContext({ task, sourceSemanticIds = [] } = {}) {
+  function compiledContext({ task, sourceSemanticIds = [], budgetTokens=2400 } = {}) {
     if (typeof task !== 'string' || !task.trim() || task.length > 1000 ||
         !Array.isArray(sourceSemanticIds) || sourceSemanticIds.length < 1 ||
         sourceSemanticIds.length > 12 || sourceSemanticIds.some(id =>
           typeof id !== 'string' || id.length > 160 || !isVersionedId(id)))
       throw new Error('HQ_SOURCE_QUERY_INVALID');
     const ids = [...new Set(sourceSemanticIds)].sort();
-    const none = status => ({ schema: 'vivim.source-context/1', status, context: null });
+    if(!Number.isSafeInteger(budgetTokens)||budgetTokens<0||budgetTokens>2400)throw new Error('HQ_SOURCE_QUERY_INVALID');
+    const none = (status,packet) => ({ schema: 'vivim.source-context/1', status, context: null,
+      ...(packet?{semanticPacket:packet}:{}) });
     return withDatabase((db, records) => {
-      const matches = projectSurfaces(db, records, { ids, limit: 16 }).files;
+      const surface=projectSurfaces(db, records, { ids, limit: 16 });
+      if(surface.truncated)return none('incomplete');
+      const matches=surface.files;
       const fresh = matches.filter(file => file.freshness === 'indexed');
-      if (!fresh.length) return none(matches.length ? 'stale' : 'empty');
+      if (!fresh.length) return none(matches.length ? 'stale' : 'incomplete');
       const observed = new Map(fresh.map(file => [file.sourceId, file]));
       const bundle = composeContext(db, { task, sourceSemanticIds: ids,
-        allowedSourceRefs: new Set(observed.keys()), budgetTokens: 2400,
-        reservedForOutput: 400, maxFiles: 3 });
-      if (!bundle.sources.length) return none('empty');
+        allowedSourceRefs: new Set(observed.keys()), budgetTokens,
+        reservedForOutput: Math.min(400,budgetTokens), maxFiles: 3, requireSemanticCoverage:true });
+      if(bundle.semanticPacket?.status!=='complete')return none(bundle.semanticPacket?.status??'incomplete',bundle.semanticPacket);
+      if (!bundle.sources.length) return none('incomplete');
       if (bundle.sources.some(source => !source.contentHash ||
           source.contentHash !== observed.get(source.ref)?.sourceDigest ||
           !source.semanticReferences?.some(ref => ids.includes(ref.semanticId))) ||
@@ -498,7 +503,10 @@ export function createDevIntelligence({
         const current = projectSurfaces(db, records, { project:source.project,
           path:source.path, limit:1 }).files[0];
         if (!current || current.freshness !== 'indexed' ||
-            current.sourceDigest !== source.contentHash) return none('stale');
+            current.sourceDigest !== source.contentHash || source.semanticReferences.some(r=>
+              !current.annotations.some(a=>a.semanticId===r.semanticId&&a.kind===r.annotationKind&&a.line===r.line&&
+                a.semanticAnchor?.fingerprint===r.semanticAnchor?.fingerprint&&a.evidence.assurance==='verified'&&
+                a.resolution===r.resolution))) return none('stale');
       }
       const { vivim, ...publicBundle } = bundle;
       return { schema:'vivim.source-context/1', status:'indexed',

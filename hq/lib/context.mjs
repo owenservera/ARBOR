@@ -226,6 +226,7 @@ function bundleDigest(bundle) {
     task: bundle?.task ?? '',
     ...(bundle?.sourceSemanticIds?.length ? { sourceSemanticIds: bundle.sourceSemanticIds } : {}),
     project: bundle?.project ?? null,
+    ...(bundle?.semanticPacket ? {semanticPacket:bundle.semanticPacket}:{}),
     budget: bundle?.budget ?? null,
     sources,
     omissions: bundle?.omissions ?? [],
@@ -430,16 +431,17 @@ function collectRecent(db, projectName, add) {
   }
 }
 
-function collectCandidates(db, { task, projectName, sourceSemanticIds = [] }) {
+function collectCandidates(db, { task, projectName, sourceSemanticIds = [], strict = false }) {
   const collector = createCollector(db);
   const tokens = tokenize(task).slice(0, TOKEN_QUERIES);
 
   // Compiled contract identities are exact source lookups, not free-text synonyms
   // or grants. Prioritize them before identities in the free-text task.
-  const semanticQuery = [...sourceSemanticIds, task].join(' ');
-  for (const hit of searchSemanticReferences(db, { query: semanticQuery, project: projectName, limit: CONTENT_HITS }).results) {
+  const semanticQuery = strict ? sourceSemanticIds.join(' ') : [...sourceSemanticIds, task].join(' ');
+  for (const hit of searchSemanticReferences(db, { query: semanticQuery, project: projectName, limit: strict?100:CONTENT_HITS }).results) {
     collector.add(hit, 'semantic', { semantic: hit });
   }
+  if(strict)return collector.candidates();
 
   try {
     for (const hit of searchContent(db, { query: task, project: projectName, limit: CONTENT_HITS }).results) collector.add(hit, 'fts');
@@ -551,7 +553,7 @@ function pathMatchBonus(path, gradeTokens) {
   return 0;
 }
 
-function prepareCandidates(db, candidates, { task, projectName, nowMs, preferredSemanticAnchor }) {
+function prepareCandidates(db, candidates, { task, projectName, nowMs, preferredSemanticAnchor, strict=false }) {
   const tokens = tokenize(task);
   // Grading and coverage run over content words: function words ("how does
   // the") appear in nearly every file and previously levelled the coverage
@@ -563,7 +565,8 @@ function prepareCandidates(db, candidates, { task, projectName, nowMs, preferred
   const commitDates = newestCommitDates(db, projectName);
 
   for (const candidate of candidates) {
-    const semantic = candidate.semanticReferences;
+    const semantic = strict?candidate.semanticReferences.filter(r=>r.semanticAnchor?.state==='indexed'&& !['invalid_kind','deprecated'].includes(r.resolution)):candidate.semanticReferences;
+    if(strict&&!semantic.length){candidate.unreadable=true;continue;}
     const raw = readPrefix(candidate.absPath, semantic.length ? SEMANTIC_VERIFY_BYTES : MAX_FILE_BYTES);
     if (semantic.length && (raw == null || sha256(raw) !== semantic[0].contentHash)) {
       candidate.unreadable = true;
@@ -587,18 +590,26 @@ function prepareCandidates(db, candidates, { task, projectName, nowMs, preferred
         ? semantic.find(hit => hit.line === preferredSemanticAnchor.line &&
           hit.semanticId === preferredSemanticAnchor.semanticId) : null;
       const line = (preferred ?? semantic[0]).line;
-      window = selectWindow(parts, { start: Math.max(1, line - 2), maxLines: 16 });
+      const first=strict?Math.min(...semantic.map(r=>r.line)):line;
+      const last=strict?Math.max(...semantic.map(r=>r.line)):line;
+      const start=Math.max(1,first-2);
+      window = selectWindow(parts, { start, maxLines: strict?Math.max(16,last-start+1):16 });
+      if(strict&&window.lines[1]<last){candidate.unreadable=true;continue;}
       if (line < window.lines[0] || line > window.lines[1] || Buffer.byteLength(window.text, 'utf8') > MAX_FILE_BYTES) {
         candidate.unreadable = true;
         continue;
       }
       candidate.contentHash = semantic[0].contentHash;
       candidate.semanticReferences = semantic.filter(hit => hit.line >= window.lines[0] && hit.line <= window.lines[1]);
+      if(strict)candidate.semanticReferences=candidate.semanticReferences.map(({fileId,projectId,...reference})=>reference);
     }
     else if (candidate.symbolRanges.length) window = selectSymbolWindow(parts, candidate.symbolRanges);
     else if (candidate.kind === 'doc') window = selectWindow(parts, { start: 1, maxLines: DOC_LINE_LIMIT });
     else window = selectWindow(parts, { start: 1 });
 
+    if (strict && /(?:-----BEGIN [A-Z ]*PRIVATE KEY-----|\b(?:api[_-]?key|access[_-]?token|client[_-]?secret|password)\s*[:=]\s*["'][^"'\r\n]{8,}["'])/i.test(window.text)) {
+      candidate.unreadable=true;continue;
+    }
     if (!window.text) {
       candidate.unreadable = true;
       continue;
@@ -639,7 +650,7 @@ function prepareCandidates(db, candidates, { task, projectName, nowMs, preferred
       + 0.5 * proximity
       + pathBonus
       + (semantic.length ? 12 : 0);
-    candidate.score = round6(candidate.isTest ? rawScore * TEST_SCORE_DEMOTE : rawScore);
+    candidate.score = strict?0:round6(candidate.isTest ? rawScore * TEST_SCORE_DEMOTE : rawScore);
     candidate.digest = sourceDigest(candidate);
   }
 
@@ -741,13 +752,64 @@ function buildSymbols(selected) {
  *          reservedForOutput?: number, maxFiles?: number, now?: string|Date|number|null}} options
  * @returns {object} hq.context-bundle/1
  */
+// Select a complete cover of exact requested IDs, not the highest scoring
+// partial set. Bounded by the authorized source surface (16 files) and limit.
+// Search budget and file budget failures are explicit, never partial safety facts.
+export function selectMandatorySources(candidates,ids,{capacity,maxFiles}){
+  const valid=candidates.filter(c=>!c.unreadable&&c.semanticReferences?.length)
+    .sort((a,b)=>cmp(a.ref,b.ref));
+  const wanted=new Set(ids);
+  const covers=c=>new Set(c.semanticReferences.filter(r=>wanted.has(r.semanticId)&&
+    r.semanticAnchor?.state==='indexed'&&!['invalid_kind','deprecated'].includes(r.resolution)).map(r=>r.semanticId));
+  const covered=new Set(valid.flatMap(c=>[...covers(c)]));
+  const missing=ids.filter(id=>!covered.has(id));
+  if(missing.length)return {status:'incomplete',missing,selected:[]};
+  // Strict source packets have at most 16 candidate files and 3 selected files.
+  // Do not silently truncate a search that cannot prove a complete cover.
+  if(valid.length>16||maxFiles>3)return {status:'incomplete',missing:[],selected:[]};
+  let best=null;
+  function visit(start,chosen,seen,cost){
+    if(seen.size===wanted.size){
+      const total=cost+estimateTokens(JSON.stringify(semanticPacketManifest(ids,chosen)));
+      if(total<=capacity&&(!best||total<best.cost||(total===best.cost&&
+          cmp(chosen.map(c=>c.ref).join('\u0000'),best.selected.map(c=>c.ref).join('\u0000'))<0)))
+        best={cost:total,selected:[...chosen]};
+      return;
+    }
+    if(chosen.length>=maxFiles)return;
+    for(let i=start;i<valid.length;i++){
+      const c=valid[i],next=new Set([...seen,...covers(c)]);
+      if(next.size===seen.size)continue;
+      visit(i+1,[...chosen,c],next,cost+c.estimatedTokens);
+    }
+  }
+  visit(0,[],new Set(),0);
+  return best?{status:'complete',missing:[],selected:best.selected}:
+    {status:'budget_exceeded',missing:[],selected:[]};
+}
+export function semanticPacketManifest(ids,sources,status='complete',missing=[]){
+  const dependencies=sources.flatMap(source=>(source.semanticReferences||[]).map(r=>({
+    ref:source.ref,semanticId:r.semanticId,annotationKind:r.annotationKind,line:r.line,
+    anchorId:r.semanticAnchor?.anchorId??null,fingerprint:r.semanticAnchor?.fingerprint??null,
+    contentHash:source.contentHash,resolution:r.resolution
+  }))).sort((a,b)=>cmp(JSON.stringify(a),JSON.stringify(b)));
+  return {schema:'hq.semantic-context-packet/1',trustMode:'source-evidence-only',
+    authority:'read_only_projection',planningEligible:false,
+    status,requiredSemanticIds:[...ids],missingSemanticIds:[...missing],dependencies,
+    mandatoryConstraints:{status:'incomplete',missing:['verified-action-contract','typed-argument-constraints','access-policy']},
+    sourceTextTreatment:'untrusted-data',estimator:ESTIMATOR};
+}
+
 export function composeContext(db, options = {}) {
   const supplied = options.sourceSemanticIds ?? [];
   if (!Array.isArray(supplied) || supplied.length > 12 ||
       supplied.some(id => typeof id !== 'string' || id.length > 160 || !isVersionedId(id)))
     throw new TypeError('HQ_INVALID_SOURCE_SEMANTIC_IDS');
   const sourceSemanticIds = [...new Set(supplied)].sort();
-  const task = String(options.task ?? '').trim();
+  const strict=options.requireSemanticCoverage===true;
+  const requestedTask=String(options.task ?? '').trim();
+  // Exact identity selection needs no private user prose in the persisted/digested packet.
+  const task=strict&&requestedTask?'Exact semantic source lookup':requestedTask;
   const project = resolveProject(db, options.project);
   const budgetTokens = toCount(options.budgetTokens, 6000, 0, 10_000_000);
   const reservedForOutput = toCount(options.reservedForOutput, 800, 0, budgetTokens);
@@ -765,20 +827,28 @@ export function composeContext(db, options = {}) {
     reservedForOutput,
     capacity,
   };
-  if (!task || project.missing) return emptyBundle(base);
+  const finishEmpty=(status,missing=sourceSemanticIds)=>{
+    const b=emptyBundle(base);
+    if(strict){b.semanticPacket=semanticPacketManifest(sourceSemanticIds,[],status,missing);b.digest=bundleDigest(b);}
+    return b;
+  };
+  if (!task || project.missing) return finishEmpty('incomplete');
 
   // An authorized caller may narrow this same compiler to a previously
   // verified set of indexed source references. A filter never grants read access.
   const allowedSourceRefs = options.allowedSourceRefs;
   if (allowedSourceRefs !== undefined && !(allowedSourceRefs instanceof Set))
     throw new TypeError('HQ_INVALID_SOURCE_SCOPE');
-  const candidates = collectCandidates(db, { task, projectName: project.name, sourceSemanticIds })
+  if(strict&&(!sourceSemanticIds.length||allowedSourceRefs===undefined||allowedSourceRefs.size>16||maxFiles>3))throw new TypeError('HQ_STRICT_CONTEXT_REQUIRES_SCOPE');
+  const candidates = collectCandidates(db, { task, projectName: project.name, sourceSemanticIds,strict })
     .filter(candidate => allowedSourceRefs === undefined || allowedSourceRefs.has(candidate.ref));
   prepareCandidates(db, candidates, { task, projectName: project.name, nowMs,
-    preferredSemanticAnchor: options.preferredSemanticAnchor });
+    preferredSemanticAnchor: options.preferredSemanticAnchor,strict });
 
   const readable = candidates.filter((candidate) => !candidate.unreadable);
-  const selected = knapsack(readable, capacity, maxFiles)
+  const mandatory=strict?selectMandatorySources(readable,sourceSemanticIds,{capacity,maxFiles}):null;
+  if(mandatory&&mandatory.status!=='complete')return finishEmpty(mandatory.status,mandatory.missing);
+  const selected = (mandatory?mandatory.selected:knapsack(readable, capacity, maxFiles))
     .sort((a, b) => b.score - a.score || cmp(a.ref, b.ref));
 
   const sources = [];
@@ -815,7 +885,7 @@ export function composeContext(db, options = {}) {
     fragments.push(`SOURCE ${header}\n${candidate.text}`);
   }
 
-  const omissions = candidates
+  const omissions = (strict?[]:candidates)
     .filter((candidate) => !chosen.has(candidate.ref))
     .map((candidate) => ({
       ref: candidate.ref,
@@ -840,7 +910,7 @@ export function composeContext(db, options = {}) {
     },
     sources,
     omissions,
-    symbols,
+    symbols:strict?[]:symbols,
     fragment: fragments.join('\n\n'),
     digest: '',
     authority: 'read_only_projection',
@@ -849,6 +919,14 @@ export function composeContext(db, options = {}) {
     // bundleDigest so `context --verify` keeps proving source bytes only.
     vivim: vivimBlockForTask(db, task),
   };
+  if(strict){
+    bundle.semanticPacket=semanticPacketManifest(sourceSemanticIds,sources);
+    // Charge actual serialized packet metadata in addition to the source
+    // excerpts. Estimates cover the semantic payload, not HTTP framing.
+    const mandatoryTokens=estimateTokens(JSON.stringify(bundle.semanticPacket));
+    bundle.budget.used+=mandatoryTokens;
+    if(bundle.budget.used>capacity)return finishEmpty('budget_exceeded',[]);
+  }
   bundle.digest = bundleDigest(bundle);
   return bundle;
 }
@@ -901,6 +979,8 @@ export function verifyContext(bundle) {
   const sources = Array.isArray(bundle?.sources) ? bundle.sources : [];
   const changed = [];
   const currentSources = [];
+  const currentFragments=[];
+  let currentPayloadTokens=0;
 
   for (const source of sources) {
     const absPath = resolveSourcePath(bundle, source);
@@ -921,6 +1001,15 @@ export function verifyContext(bundle) {
     const end = Math.max(start, Math.trunc(range[1]) || start);
     const text = parts.slice(start - 1, Math.min(parts.length, end)).join('\n');
     const currentSha = sha256(text);
+    if(bundle?.semanticPacket){
+      const header=JSON.stringify({ref:source.ref,lines:source.lines,sha256:currentSha,
+        contentHash:sha256(raw),semanticReferences:source.semanticReferences});
+      const fragment='SOURCE '+header+'\n'+text;
+      currentFragments.push(fragment);
+      const cost=estimateTokens(fragment+'\n\n');
+      currentPayloadTokens+=cost;
+      if(cost!==source.estimatedTokens)changed.push(String(source.ref));
+    }
     const currentDigest = sourceDigest({
       ref: source.ref,
       project: source.project,
@@ -944,6 +1033,13 @@ export function verifyContext(bundle) {
 
   const current = bundleDigest({ ...bundle, sources: currentSources });
   const expected = typeof bundle?.digest === 'string' && bundle.digest ? bundle.digest : null;
-  const valid = changed.length === 0 && expected !== null && expected === current;
+  const packet=bundle?.semanticPacket;
+  const packetValid=!packet||(packet.status==='complete'&&packet.planningEligible===false&&
+    digestOf(packet)===digestOf(semanticPacketManifest(bundle.sourceSemanticIds||[],sources))&&
+    (bundle.sourceSemanticIds||[]).every(id=>packet.dependencies.some(d=>d.semanticId===id&&d.anchorId&&d.fingerprint&&!['invalid_kind','deprecated'].includes(d.resolution)))&&
+    bundle.fragment===currentFragments.join('\n\n')&&
+    bundle.budget.used===currentPayloadTokens+estimateTokens(JSON.stringify(packet))&&
+    bundle.budget.used<=bundle.budget.capacity);
+  const valid = packetValid && changed.length === 0 && expected !== null && expected === current;
   return { valid, expected, current, changed };
 }

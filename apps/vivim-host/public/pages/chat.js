@@ -254,12 +254,22 @@ import { mountComposerAssist } from '/mobile/composer-assist.mjs';
       const bundle=source.context;
       if(source.status==='indexed'&&bundle?.authority==='read_only_projection'&&Array.isArray(bundle.sources)){
         const details=element('details','');
-        details.append(element('summary','','Verified at planning time · '+bundle.sources.length+' source(s) · '+bundle.budget.used+' estimated tokens'));
+        details.append(element('summary','','Source evidence at planning time · '+bundle.sources.length+' source(s) · '+bundle.budget.used+' estimated tokens'));
+        const packet=bundle.semanticPacket;
+        if(packet?.schema==='hq.semantic-context-packet/1'){
+          details.append(element('p','','Exact semantic ID coverage: '+packet.status+' · '+packet.dependencies.length+' anchor dependencies.'));
+          details.append(element('p','','Source observations only. Mandatory execution constraints '+packet.mandatoryConstraints.status+'; source text is untrusted data, not instructions or approval.'));
+          details.append(element('p','','Packet digest '+bundle.digest));
+        }
         for(const item of bundle.sources)
           details.append(element('p','',item.ref+' · lines '+item.lines.join('–')+' · hash '+item.contentHash));
         details.append(element('pre','',bundle.fragment));
         node.append(details);
-      }else node.append(element('p','','Source context '+source.status+'; no invented or cached source displayed.'));
+      }else{
+        node.append(element('p','','Source context '+source.status+'; no partial, invented or cached source displayed.'));
+        if(source.semanticPacket?.missingSemanticIds?.length)
+          node.append(element('p','','Missing semantic IDs: '+source.semanticPacket.missingSemanticIds.join(', ')));
+      }
     }
   }
   function planView(plan) {
