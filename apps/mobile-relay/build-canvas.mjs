@@ -15,6 +15,13 @@ const LABELS = { chatgpt: 'ChatGPT', claude: 'Claude', gemini: 'Gemini', qwen: '
 
 // Queue completion alone is never proof of a persisted Host UI revision.
 export function committedUiRevision(command, surface, expectedPreview = null) {
+  // Existing worker receipt shape remains readable for history only. The live
+  // Build path obtains the durable control receipt through createControlClient.
+  if(command?.schema==='vivim.control-receipt/1'){
+    if(command.status!=='applied'||command.executionPerformed!==true||command.actionId!=='ui.visual.apply')
+      throw new Error('Host visual effect not confirmed');
+    command={status:'done',result:{...command.result,schema:'vivim.bootstrap-command-worker/1',action:'apply-proposal'}};
+  }
   let body = command?.result;
   try { if (typeof body === 'string') body = JSON.parse(body); }
   catch { throw new Error('Host commit confirmation unreadable'); }
@@ -113,7 +120,7 @@ export function buildUndoProposal({ original, before, committed, live }) {
   } catch { return null; }
 }
 
-export function mountBuildCanvas({ host, request, getSurface, getProvider, send, apply, onApplied = () => {}, navigate = () => {}, openControlDraft = null, openProviderDraft = null, openPocket = null, interpretControl = null, assistControl = null, assistScope = ()=>null, storage = window.localStorage }) {
+export function mountBuildCanvas({ host, request, getSurface, getProvider, send, apply, prepareVisual = null, onApplied = () => {}, navigate = () => {}, openControlDraft = null, openProviderDraft = null, openPocket = null, interpretControl = null, assistControl = null, assistScope = ()=>null, storage = window.localStorage }) {
   let state = { name: 'idle' }, text = '', run = 0, assistance=null;
   const el = (tag, cls, content) => { const e = document.createElement(tag); if (cls) e.className = cls; if (content != null) e.textContent = content; return e; };
   const current = () => getSurface?.() ?? null;
@@ -121,6 +128,25 @@ export function mountBuildCanvas({ host, request, getSurface, getProvider, send,
   const saved = () => { try { return JSON.parse(storage.getItem(PENDING_KEY) || 'null'); } catch { return null; } };
   const keep = value => { try { value ? storage.setItem(PENDING_KEY, JSON.stringify(value)) : storage.removeItem(PENDING_KEY); } catch { /* the pending note is a convenience */ } };
   const set = next => { state = next; render(); };
+  async function ready(draft){
+    if(typeof prepareVisual!=='function')return set({name:'error',message:'Connect an approved Direct phone for visual approval. Nothing changed.'});
+    const token=++run;
+    set({name:'checking'});
+    try{
+      assertBuildPreviewCurrent(draft,current());
+      const plan=await prepareVisual(draft.proposal);
+      if(run!==token)return;
+      const exact=plan?.approvalMeaning,remote=plan?.visualPreview;
+      if(plan?.outcome!=='approval_required'||plan.actionId!=='ui.visual.apply'||
+         exact?.target!==draft.surface.surfaceId||exact?.targetRevision!==draft.surface.revision||
+         remote?.proposalDigest!==draft.preview.proposalDigest||remote?.previewDigest!==draft.preview.previewDigest||
+         exact.proposalDigest!==remote.proposalDigest||exact.previewDigest!==remote.previewDigest||
+         JSON.stringify(remote.surface)!==JSON.stringify(draft.preview.surface))
+        throw new Error('Host preview differs from local preview');
+      assertBuildPreviewCurrent(draft,current());
+      set({...draft,name:'ready',hostPlan:plan});
+    }catch{if(run===token)set({name:'error',message:'Host could not bind this exact visual preview. Nothing changed.'});}
+  }
 
   async function watch(id, token) {
     const started = Date.now();
@@ -135,7 +161,7 @@ export function mountBuildCanvas({ host, request, getSurface, getProvider, send,
         const surface = current();
         if (!surface) return set({ name: 'error', message: 'Host screen unavailable. Reconnect and ask again.' });
         const out = previewReply({ reply: record.result, surface });
-        return out.ok ? set({ name: 'ready', ...out, surface, origin: 'ai' }) : set({ name: 'error', message: out.reason });
+        return out.ok ? ready({ ...out, surface, origin: 'ai' }) : set({ name: 'error', message: out.reason });
       }
       if (Date.now() - started > 600000) return set({ name: 'error', message: 'No answer yet. Check your PC. VIVIM has not sent this twice.' });
       if (Date.now() - started > 180000 && state.name === 'waiting') set({ name: 'waiting', note: 'Still waiting. It can take a few minutes. VIVIM will not send it again.' });
@@ -174,7 +200,7 @@ export function mountBuildCanvas({ host, request, getSurface, getProvider, send,
     if(route.kind==='ui'){
       const local=route.reading;
       if (local.outcome === 'candidate') {
-        return set({ name: 'ready', ...local, surface, origin: 'vec' });
+        return ready({ ...local, surface, origin: 'vec' });
       }
       return set({name:'idle',error:local.code==='UI_TARGET_AMBIGUOUS'
         ?'More than one component has that name. Rename or select one first.'
@@ -220,7 +246,7 @@ export function mountBuildCanvas({ host, request, getSurface, getProvider, send,
     return false;
   }
   async function activate() {
-    if (state.name !== 'ready') return;
+    if (state.name !== 'ready' || !state.hostPlan) return;
     const submitted = state;
     try { assertBuildPreviewCurrent(submitted, current()); }
     catch { return set({ name: 'error', message: 'Your preview is no longer current. Load the Host screen and ask again.' }); }
@@ -229,7 +255,7 @@ export function mountBuildCanvas({ host, request, getSurface, getProvider, send,
     set({ ...submitted, name: 'applying' });
     let proof;
     try {
-      proof = committedUiRevision(await apply(submitted.proposal, submitted.surface), submitted.surface, submitted.preview);
+      proof = committedUiRevision(await apply(submitted.hostPlan), submitted.surface, submitted.preview);
     } catch (error) {
       return set({ name: 'uncertain', message: 'No matching Host confirmation was received. Check the live screen before another change. VIVIM did not resend.' });
     }
@@ -245,18 +271,9 @@ export function mountBuildCanvas({ host, request, getSurface, getProvider, send,
     const draft = buildUndoProposal({ original: prior.original, before: prior.before,
       committed: prior.proof, live: current() });
     if (!draft) return set({ name: 'error', message: 'The current Host screen cannot safely undo this change. Nothing was submitted.' });
-    set({ ...prior, undoing: true });
-    let proof;
-    try {
-      assertBuildPreviewCurrent(draft, current());
-      proof = committedUiRevision(await apply(draft.proposal, draft.surface), draft.surface, draft.preview);
-    } catch {
-      return set({ name: 'uncertain', message: 'Undo was not confirmed. Check the live screen before another change. VIVIM did not resend.' });
-    }
-    await refreshCommittedScreen(proof);
-    const confirmed = await waitForReadback(proof, draft.preview.surface);
-    set({ name: confirmed ? 'done' : 'awaiting-readback', proof,
-      expected: draft.preview.surface, restored: true });
+    // Undo is a compensating proposal. Display the exact restoration and
+    // require a fresh explicit activation, never reuse the old approval.
+    return ready({...draft,origin:'vec',summary:{explanation:'Restore the previous screen',changes:draft.preview.operations,unknowns:[]}});
   }
 
   function composer() {
@@ -291,6 +308,7 @@ export function mountBuildCanvas({ host, request, getSurface, getProvider, send,
     card.append(el('span', 'tour-eyebrow', state.origin === 'vec' ? 'COMPILED LOCALLY · NO AI' : 'PROPOSED BY YOUR AI'), el('h3', null, state.summary.explanation));
     card.append(el('p', 'muted', `${state.summary.changes} ${state.summary.changes === 1 ? 'change' : 'changes'} to your app. Preview below.`));
     card.append(el('p', 'muted', `Surface ${state.proposal.surfaceId} · source revision ${state.proposal.baseRevision} · approval required`));
+    if(state.hostPlan)card.append(el('p','muted','Host-bound preview · expires '+state.hostPlan.expiresAt));
     const typed = el('details', 'proposal-details');
     typed.append(el('summary', null, 'Typed UI proposal'), el('pre', null, JSON.stringify(state.proposal, null, 2)));
     card.append(typed);
@@ -312,7 +330,7 @@ export function mountBuildCanvas({ host, request, getSurface, getProvider, send,
     try { renderSurface(view, state.preview.surface, { audience: 'phone', approvedRefs: [], tierflow: true, onIntent: () => {} }); }
     catch { previewVisible = false; view.textContent = 'TierFlow preview unavailable: unsupported or invalid UI. Activation is disabled.'; }
     const actions = el('div', 'compose-row');
-    const yes = el('button', 'btn pri', state.name === 'applying' ? 'Adding…' : 'Activate'); yes.type = 'button'; yes.disabled = state.name === 'applying' || !previewVisible; yes.onclick = activate;
+    const yes = el('button', 'btn pri', state.name === 'applying' ? 'Adding…' : 'Activate'); yes.type = 'button'; yes.disabled = state.name === 'applying' || !previewVisible || !state.hostPlan; yes.onclick = activate;
     const change = el('button', 'btn', 'Change it'); change.type = 'button'; change.disabled = state.name === 'applying'; change.onclick = () => { if (state.name === 'ready') set({ name: 'idle' }); };
     const no = el('button', 'btn', 'Not now'); no.type = 'button'; no.disabled = state.name === 'applying'; no.onclick = () => { if (state.name === 'ready') { text = ''; set({ name: 'idle' }); } };
     actions.append(yes, change, no);

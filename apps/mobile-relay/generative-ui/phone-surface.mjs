@@ -3,7 +3,6 @@
 // uses the existing bootstrap command channel. Browser-only; no Node imports.
 // A tap never sends a provider prompt and is never automatically resent while uncertain.
 import { renderSurface } from './renderer.mjs';
-import { compileUiProposal } from './compiler.mjs';
 import { createSurface } from './catalog.mjs';
 import { projectVisualIntent } from './semantic-projection.mjs';
 import { transport } from '../transport.mjs';
@@ -45,21 +44,8 @@ function meaningOf(intent, semantic) {
   } catch { return null; }
 }
 
-export async function sendProposal(proposal, current) {
-  // Pre-validate locally so an invalid proposal is never queued as uncertain.
-  compileUiProposal({ proposal, surface: current, approvedRefs: [] });
-  const created = await transport.request('commands', {
-    method: 'POST',
-    body: JSON.stringify({ text: 'apply-proposal', kind: 'command', consumer: 'bootstrap', mode: 'bootstrap', action: 'apply-proposal', proposal })
-  });
-  if (!created?.id) throw new Error('Relay did not acknowledge command');
-  for (let i = 0; i < 25; i++) {
-    await PAUSE(1200);
-    const state = await transport.request('commands/' + created.id);
-    if (state?.status === 'done') return state;
-    if (state?.status === 'failed') throw new Error(String(state.result || 'Command failed').slice(0, 160));
-  }
-  throw new Error('Command pending or uncertain; not resent');
+export async function sendProposal() {
+  throw new Error('Visual changes require an approved Host control plan. Command pending or uncertain; not resent.');
 }
 
 async function repaint() {

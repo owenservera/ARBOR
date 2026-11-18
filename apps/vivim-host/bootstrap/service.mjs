@@ -6,6 +6,7 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { compileF02RenderPlan, parseF02Response } from '../../mobile-relay/bootstrap-f02.mjs';
 import { compileUiProposal } from '../../mobile-relay/generative-ui/compiler.mjs';
+import { createSurface } from '../../mobile-relay/generative-ui/catalog.mjs';
 import { compileF01Profile } from '../../mobile-relay/bootstrap-f01.mjs';
 import { compilePassOutput, DEEP_PASSES } from '../../mobile-relay/bootstrap-pass.mjs';
 import { compilePresetRenderPlan, compileProvisionalPlan, hasPreset, surfaceVariables } from '../../mobile-relay/theme-plan.mjs';
@@ -617,9 +618,19 @@ export function createBootstrapService({ ledger, worldId = WORLD_DEFAULT, now = 
     });
   }
 
+  // Read-only Host compilation; the caller cannot supply a baseline or grant.
+  function previewUiProposal(proposal) {
+    const grant=requireGrant('visual');
+    const surface=uiRevision()??createSurface({surfaceId:'my-space'});
+    const preview=compileUiProposal({proposal,surface,approvedRefs:[],audience:'phone'});
+    const projectionDigest=digestOf({audience:'phone',surfaceId:preview.surfaceId,catalogVersion:preview.catalogVersion,
+      theme:preview.surface.theme,tree:preview.surface.tree});
+    return {worldId,surface,preview,projectionDigest,grantDigest:digestOf(grant)};
+  }
+
   // GUI04: commit a validated ui-proposal preview as a Host-owned surface revision.
   // The compiler decides validity; this method only assigns the revision and records it.
-  function applyUiProposal({ proposal, surface, approvedRefs = [], requestId, worldId: targetWorld = worldId, now: at = null, actor = 'owner' } = {}) {
+  function applyUiProposal({ proposal, surface, approvedRefs = [], requestId, worldId: targetWorld = worldId, now: at = null, actor = 'owner', approvalBinding = null } = {}) {
     requireGrant('visual');
     idOk(requestId, 'requestId');
     idOk(targetWorld, 'worldId');
@@ -632,6 +643,15 @@ export function createBootstrapService({ ledger, worldId = WORLD_DEFAULT, now = 
     return ledger.transaction(() => {
       const parent = ledger.uiRevisions.active(targetWorld);
       const parentRevision = parent ? Number(parent.revision) : 0;
+      if(approvalBinding){
+        const actual=parent?readJson(parent,'surface_json',null):createSurface({surfaceId:'my-space'});
+        if(targetWorld!==worldId||digestOf(actual)!==approvalBinding.baseDigest||
+           digestOf(requireGrant('visual'))!==approvalBinding.grantDigest||
+           preview.proposalDigest!==approvalBinding.proposalDigest||
+           preview.previewDigest!==approvalBinding.previewDigest||
+           projectionDigest!==approvalBinding.projectionDigest)
+          throw coded('CONTROL_VISUAL_STALE','Visual approval no longer matches Host state');
+      }
       // Compare-and-swap: the proposal must be built on the revision the Host still holds.
       if (preview.baseRevision !== parentRevision) {
         throw coded('UI_REJECTED', 'stale base revision ' + preview.baseRevision + ', active revision is ' + parentRevision);
@@ -797,7 +817,7 @@ export function createBootstrapService({ ledger, worldId = WORLD_DEFAULT, now = 
     schema: BOOTSTRAP_SCHEMA, worldId,
     grantBootstrap, revokeGrant, requireGrant, requireGrantForSend, consumeGrantSend, grantState,
     ingestF02, choosePreset, undoTheme, ingestF01, ingestPass, setPassState,
-    setHardNo, clearHardNo, setOwnerPreference, clearOwnerPreference, applyUiProposal, undoUiRevision, uiRevision, uiRevisionStatus,
+    setHardNo, clearHardNo, setOwnerPreference, clearOwnerPreference, previewUiProposal, applyUiProposal, undoUiRevision, uiRevision, uiRevisionStatus,
     phase, cards, fullStatus, projection, activePlan,
     // exposed for tests and the CLI without reaching into the ledger directly
     ledger

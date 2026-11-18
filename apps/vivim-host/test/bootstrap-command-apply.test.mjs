@@ -1,4 +1,4 @@
-// Command worker apply-proposal: a phone tap becomes a Host CAS-committed vivim.ui-revision/1.
+// Legacy unbound relay visual commands must fail closed; Host control owns approval.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync } from 'node:fs';
@@ -50,7 +50,7 @@ function makeStore() {
   };
 }
 
-test('apply-proposal CAS-commits a new revision through the worker', () => {
+test('unbound apply-proposal cannot commit through the worker', () => {
   const env = runtime();
   try {
     const start = surface();
@@ -66,11 +66,10 @@ test('apply-proposal CAS-commits a new revision through the worker', () => {
     const worker = createBootstrapCommandWorker({ root: os.tmpdir(), runtime: env.host, store });
     const done = worker.tick();
     assert.equal(done.length, 1);
-    assert.equal(done[0].status, 'done');
-    assert.equal(done[0].revision, 1);
-    assert.equal(done[0].persisted, true);
-    assert.equal(env.host.uiRevision().revision, 1);
-    assert.equal(store.records.get(cmd.id).status, 'done');
+    assert.equal(done[0].status, 'failed');
+    assert.match(done[0].reason,/fresh Host control plan/);
+    assert.equal(env.host.uiRevision(),null);
+    assert.equal(store.records.get(cmd.id).status, 'failed');
     worker.close();
   } finally { env.close(); }
 });
@@ -100,7 +99,7 @@ test('apply-proposal rejects a stale base revision and does not advance', () => 
   } finally { env.close(); }
 });
 
-test('undo-ui-revision goes through the worker and restores the previous revision', () => {
+test('unbound undo cannot roll back committed state through the worker', () => {
   const env = runtime();
   try {
     const start = surface();
@@ -119,15 +118,10 @@ test('undo-ui-revision goes through the worker and restores the previous revisio
     const worker = createBootstrapCommandWorker({ root: os.tmpdir(), runtime: env.host, store });
     const done = worker.tick();
     assert.equal(done.length, 1);
-    assert.equal(done[0].status, 'done');
-    assert.equal(done[0].action, 'undo-ui-revision');
-    assert.equal(done[0].undone, 2);
-    assert.equal(done[0].active, 1);
-    assert.equal(done[0].persisted, true);
-    assert.equal(env.host.uiRevision().revision, 1);
-    const record = store.records.get(cmd.id);
-    assert.equal(record.status, 'done');
-    assert.match(String(record.result), /"undone":2/);
+    assert.equal(done[0].status,'failed');
+    assert.equal(env.host.uiRevision().revision,2);
+    assert.match(done[0].reason,/fresh Host control plan/);
+    assert.equal(store.records.get(cmd.id).status,'failed');
     worker.close();
   } finally { env.close(); }
 });
@@ -144,7 +138,7 @@ test('apply-proposal requires a proposal object', () => {
     const done = worker.tick();
     assert.equal(done.length, 1);
     assert.equal(done[0].status, 'failed');
-    assert.match(String(done[0].reason), /requires a proposal object/);
+    assert.match(String(done[0].reason), /fresh Host control plan/);
     worker.close();
   } finally { env.close(); }
 });

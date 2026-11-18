@@ -111,6 +111,7 @@ export function createBootstrapRuntime({ dataRoot, worldId = WORLD_DEFAULT, file
     ingestPass: args => requireService().ingestPass(args),
     choosePreset: args => requireService().choosePreset(args),
     undoTheme: args => requireService().undoTheme(args),
+    previewUiProposal: proposal => requireService().previewUiProposal(proposal),
     applyUiProposal: args => requireService().applyUiProposal(args),
     undoUiRevision: args => requireService().undoUiRevision(args),
     uiRevision: args => requireService().uiRevision(args),

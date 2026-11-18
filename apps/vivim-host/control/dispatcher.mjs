@@ -36,6 +36,12 @@ const LEARNABLE = new Set(['wiki.pages.list','wiki.section.read','wiki.page.crea
   'wiki.section.edit','wiki.page.move','wiki.pages.link','ui.theme.show','ui.theme.set_preset',
   'vivim.status.show']);
 const WIKI_ACTION = 'wiki.section.edit';
+// A typed VEC document is not an NL action or a string argument. Keep the existing
+// language catalog stable (including accepted learned rules); the visual contract
+// has its own version and uses the very same control plan journal and claim.
+const VISUAL_ACTION='ui.visual.apply';
+const VISUAL_CONTRACT=Object.freeze({id:VISUAL_ACTION,risk:'R1',readiness:'source_wired',
+  schema:'vivim.ui-proposal/1',revision:1});
 const WIKI_STRUCTURE = new Set(['wiki.page.create','wiki.page.move','wiki.pages.link']);
 const wikiMutation = id => id === WIKI_ACTION || WIKI_STRUCTURE.has(id);
 function structureEdit(id,args) {
@@ -281,7 +287,39 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
     const runnable = ['source_wired', 'verified'].includes(a.readiness);
     if (runnable !== Object.hasOwn(executors, a.id)) throw fail('CONTROL_EXECUTOR_MISMATCH', { actionId: a.id });
   }
-  const action = id => catalog.actions.find(a => a.id === id);
+  const action = id => id===VISUAL_ACTION?VISUAL_CONTRACT:catalog.actions.find(a => a.id === id);
+
+  function visualBinding(proposal,source,actor,grantId){
+    if(typeof runtime.previewUiProposal!=='function'||typeof runtime.applyUiProposal!=='function')
+      throw fail('CONTROL_VISUAL_NOT_READY');
+    const current=runtime.previewUiProposal(proposal);
+    const manifest={schema:'vivim.approval-meaning/1',templateRevision:VISUAL_CONTRACT.revision,
+      catalogRevision:catalog.version,worldRevision:planner.world().v,
+      contractDigest:digest(VISUAL_CONTRACT),actionId:VISUAL_ACTION,risk:'R1',readiness:'source_wired',
+      source,actor,deviceGrantId:grantId,worldId:current.worldId,target:current.preview.surfaceId,
+      targetRevision:current.preview.baseRevision,baseDigest:digest(current.surface),
+      proposalDigest:current.preview.proposalDigest,previewDigest:current.preview.previewDigest,
+      projectionDigest:current.projectionDigest,grantDigest:current.grantDigest,
+      effectDigest:digest({proposal,preview:current.preview.surface}),authority:'none'};
+    return {current,meaning:{...manifest,semanticDigest:digest(manifest)}};
+  }
+  function planVisual(proposal,{source,actor,grantId}){
+    if(source!=='mobile'||typeof actor!=='string'||!actor||typeof grantId!=='string'||!grantId)
+      throw fail('CONTROL_VISUAL_DEVICE_REQUIRED');
+    if(!proposal||typeof proposal!=='object'||Array.isArray(proposal))throw fail('CONTROL_INPUT_INVALID');
+    const {current,meaning}=visualBinding(proposal,source,actor,grantId);
+    const createdAt=iso(),body={schema:'vivim.control-plan-record/1',planId:newPlanId(),
+      actionId:VISUAL_ACTION,args:{surfaceId:meaning.target,proposalDigest:meaning.proposalDigest},
+      risk:'R1',source,origin:'typed-vec',actor,catalogVersion:catalog.version,createdAt,
+      expiresAt:new Date(now()+ttlMs).toISOString(),visualProposal:proposal,approvalMeaning:meaning};
+    const record={...body,planDigest:digest(body)};
+    journal.record(record);
+    return {schema:'vivim.control-plan/1',outcome:'approval_required',actionId:VISUAL_ACTION,
+      title:'Apply exact visual proposal',args:body.args,risk:'R1',executionPerformed:false,
+      requiresApproval:true,planId:record.planId,planDigest:record.planDigest,createdAt,
+      expiresAt:record.expiresAt,approvalMeaning:meaning,visualPreview:current.preview,
+      approval:{required:true,channels:['direct-phone']}};
+  }
 
   // Exact resolved values, not a client-rendered paraphrase.
   function approvalBinding(actionId,args,source,wikiBinding){
@@ -434,9 +472,10 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
     return complete(executors[plan.actionId](plan.args, { requestId: null, planId: null }));
   }
 
-  function plan(input, { source = 'text', actor = 'owner' } = {}) {
+  function plan(input, { source = 'text', actor = 'owner', grantId = null } = {}) {
     if (!input || typeof input !== 'object' || Array.isArray(input)) throw fail('CONTROL_INPUT_INVALID');
     const keys = Object.keys(input);
+    if(keys.length===1&&keys[0]==='visualProposal')return planVisual(input.visualProposal,{source,actor,grantId});
     let p;
     if (keys.length === 1 && keys[0] === 'text') p = planner.planText(input.text, { source });
     else if (keys.length === 1 && keys[0] === 'candidate') p = planner.planCandidate(input.candidate, { source });
@@ -518,6 +557,9 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
     const rec = journal.get(planId);
     if (!rec) throw fail('CONTROL_PLAN_UNKNOWN');
     if (typeof planDigest !== 'string' || planDigest !== rec.plan.planDigest) throw fail('CONTROL_PLAN_MISMATCH');
+    if(rec.plan.actionId===VISUAL_ACTION&&(rec.plan.source!=='mobile'||approval.channel!=='direct-phone'||
+       approval.actor!==rec.plan.actor||approval.grantId!==rec.plan.approvalMeaning?.deviceGrantId))
+      throw fail('CONTROL_VISUAL_DEVICE_REQUIRED');
     // Even receipt replay must respect the private desktop learning scope.
     if((RULE_ACTIONS.has(rec.plan.actionId)||(rec.plan.origin==='personal_rule'&&rec.plan.source==='desktop'))&&
        approval.channel!=='desktop-owner-token')throw fail('CONTROL_DESKTOP_APPROVAL_REQUIRED');
@@ -562,8 +604,14 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
       if(!rec.plan.ruleBinding||digest(prepareRuleBinding(rec.plan.actionId,rec.plan.args))!==digest(rec.plan.ruleBinding))
         throw fail('CONTROL_RULE_STALE');
     }
-    const fresh = planner.planTyped({ actionId: rec.plan.actionId, args: rec.plan.args, source: rec.plan.source, origin: rec.plan.origin });
-    if (fresh.outcome !== 'approval_required' || fresh.risk !== rec.plan.risk) throw fail('CONTROL_PLAN_STALE');
+    let approvedVisual=null;
+    if(rec.plan.actionId===VISUAL_ACTION){
+      approvedVisual=visualBinding(rec.plan.visualProposal,rec.plan.source,rec.plan.actor,approval.grantId);
+      if(digest(approvedVisual.meaning)!==digest(rec.plan.approvalMeaning))throw fail('CONTROL_VISUAL_STALE');
+    }else{
+      const fresh=planner.planTyped({actionId:rec.plan.actionId,args:rec.plan.args,source:rec.plan.source,origin:rec.plan.origin});
+      if(fresh.outcome!=='approval_required'||fresh.risk!==rec.plan.risk)throw fail('CONTROL_PLAN_STALE');
+    }
     if (rec.plan.risk === 'R3') throw fail('CONTROL_R3_REFUSED');
     if (rec.plan.risk === 'R2' && approval.channel !== 'desktop-owner-token' &&
         now() - Date.parse(rec.plan.createdAt) > freshMs) throw fail('CONTROL_FRESH_APPROVAL_REQUIRED');
@@ -612,9 +660,20 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
         let output;
         if(RULE_ACTIONS.has(rec.plan.actionId))activeRuleCommit=planId;
         try {
-          output = executors[rec.plan.actionId](rec.plan.args,
-            { requestId: 'utc-' + planId, planId, wikiBinding: rec.plan.wikiBinding,ruleBinding:rec.plan.ruleBinding });
+          output = approvedVisual
+            ? runtime.applyUiProposal({proposal:rec.plan.visualProposal,surface:approvedVisual.current.surface,
+                approvedRefs:[],requestId:'utc-'+planId,actor:rec.plan.actor,approvalBinding:approvedVisual.meaning})
+            : executors[rec.plan.actionId](rec.plan.args,
+                { requestId: 'utc-' + planId, planId, wikiBinding: rec.plan.wikiBinding,ruleBinding:rec.plan.ruleBinding });
         } finally {activeRuleCommit=null;}
+        if(approvedVisual){
+          const expected={...approvedVisual.current.preview.surface,revision:approvedVisual.meaning.targetRevision+1};
+          if(output?.persisted!==true||output.revision!==expected.revision||
+            output.previewDigest!==approvedVisual.meaning.previewDigest||
+            output.projectionDigest!==approvedVisual.meaning.projectionDigest||
+            digest(runtime.uiRevision())!==digest(expected))
+            throw fail('CONTROL_VISUAL_READBACK_MISMATCH');
+        }
         return output && typeof output.then === 'function'
           ? output.then(value => finishEffect(value), error => finishEffect(null, error))
           : finishEffect(output);
@@ -647,9 +706,10 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
     return claimAndRun();
   }
 
-  function status(planId,{source='desktop'}={}) {
+  function status(planId,{source='desktop',actor=null,grantId=null}={}) {
     const rec = journal.get(planId);
     if (!rec) throw fail('CONTROL_PLAN_UNKNOWN');
+    if(rec.plan.actionId===VISUAL_ACTION&&source==='mobile'&&(actor!==rec.plan.actor||grantId!==rec.plan.approvalMeaning?.deviceGrantId))throw fail('CONTROL_PLAN_UNKNOWN');
     if(source==='mobile'&&(RULE_ACTIONS.has(rec.plan.actionId)||(rec.plan.origin==='personal_rule'&&rec.plan.source==='desktop')))
       throw fail('CONTROL_PLAN_UNKNOWN');
     return { planId, state: rec.state, actionId: rec.plan.actionId, risk: rec.plan.risk, args: rec.plan.args,

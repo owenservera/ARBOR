@@ -519,7 +519,7 @@ export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'wo
           if (sub === 'world') { json(res, 200, planner.world()); return; }
           if (sub === 'language') { json(res, 200, planner.languagePack()); return; }
           if (!c) { json(res, 404, { code: 'CONTROL_DISPATCH_UNAVAILABLE' }); return; }
-          json(res, 200, planMatch ? c.status(planMatch[1],{source:'mobile'}) : sub === 'lexicon' ? c.lexicon() : { items: c.recent(20,{source:'mobile'}) }); return;
+          json(res, 200, planMatch ? c.status(planMatch[1],{source:'mobile',actor:device.deviceId,grantId:req.headers['x-vivim-grant-id']}) : sub === 'lexicon' ? c.lexicon() : { items: c.recent(20,{source:'mobile'}) }); return;
         }
         if (!['plan', 'interpret', 'execute'].includes(sub)) { json(res, 404, { code: 'NOT_FOUND' }); return; }
         if (req.method !== 'POST') { json(res, 405, { code: 'METHOD' }); return; }
@@ -545,7 +545,8 @@ export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'wo
         }
         if (!c) { json(res, 404, { code: 'CONTROL_DISPATCH_UNAVAILABLE' }); return; }
         if (sub === 'plan') {
-          const plan = await c.plan(body, { source: 'mobile', actor: device.deviceId });
+          if(Object.hasOwn(body,'visualProposal'))authorizeDevice(req,'control:execute');
+          const plan = await c.plan(body, { source: 'mobile', actor: device.deviceId,grantId:req.headers['x-vivim-grant-id'] });
           // Reuse the phone-safe Wiki projection; never open owner-private HQ
           // sources, native personal context, statements or effect history here.
           const result = await attachRequestContext(plan,{text:body.text,readWiki:wikiProjection});
@@ -555,7 +556,9 @@ export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'wo
           json(res, 200, result); return;
         }
         if (Object.keys(body).some(k => !['planId', 'planDigest'].includes(k))) throw failure(400, 'Invalid control body');
-        json(res, 200, await c.execute({ planId: body.planId, planDigest: body.planDigest, approval: { channel: 'direct-phone', actor: device.deviceId } }));
+        // Recheck after reading the request body; the same grant must remain live.
+        const currentDevice=authorizeDevice(req,'control:execute');
+        json(res, 200, await c.execute({ planId: body.planId, planDigest: body.planDigest, approval: { channel:'direct-phone',actor:currentDevice.deviceId,grantId:req.headers['x-vivim-grant-id'] } }));
       } catch (error) {
         json(res, error.status || controlErrorStatus(error.code), { code: error.code || 'CONTROL_INVALID', error: String(error.message ?? error).slice(0, 160) });
       }

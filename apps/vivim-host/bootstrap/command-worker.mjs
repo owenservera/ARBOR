@@ -2,7 +2,6 @@
 // The relay only validates the shape; this worker is the only place a phone command
 // can mutate personalization. Allowlist only: no text is interpreted, no shell, no SQL.
 import { randomBytes } from 'node:crypto';
-import { createSurface } from '../../mobile-relay/generative-ui/catalog.mjs';
 import { createBridgeStore } from '../../../studio/src/studio/bridge-commands.mjs';
 import { BOOTSTRAP_ACTIONS } from '../control/bootstrap-actions.mjs';
 
@@ -37,19 +36,8 @@ export function createBootstrapCommandWorker({ root, runtime, store = null, inte
       const out = runtime.undoTheme({ requestId: 'relay-' + command.id });
       return { action, undone: out.undone, active: out.active, provisional: out.provisional };
     }
-    if (action === 'undo-ui-revision') {
-      const out = runtime.undoUiRevision({ requestId: 'relay-' + command.id });
-      return { action, undone: out.undone, active: out.active, persisted: out.persisted };
-    }
-    if (action === 'apply-proposal') {
-      const proposal = command.proposal;
-      if (!proposal || typeof proposal !== 'object' || Array.isArray(proposal))
-        throw Object.assign(new Error('apply-proposal requires a proposal object'), { code: 'BOOTSTRAP_INVALID_PROPOSAL' });
-      const surface = runtime.uiRevision() ?? createSurface({ surfaceId: 'my-space' });
-      const out = runtime.applyUiProposal({ proposal, surface, approvedRefs: [], requestId: 'relay-' + command.id, actor: 'phone' });
-      return { action, revision: out.revision, parentRevision: out.parentRevision, persisted: out.persisted, surfaceId: out.surfaceId,
-        previewDigest: out.previewDigest, projectionDigest: out.projectionDigest, changeId: out.changeId };
-    }
+    if (action==='undo-ui-revision'||action==='apply-proposal')
+      throw Object.assign(new Error('Visual changes require a fresh Host control plan and explicit approval'),{code:'CONTROL_VISUAL_APPROVAL_REQUIRED'});
     throw Object.assign(new Error('Unsupported bootstrap action'), { code: 'BOOTSTRAP_ACTION_UNSUPPORTED' });
   }
 

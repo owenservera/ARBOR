@@ -1,7 +1,8 @@
 // grokbot-authored. Relay PWA shell: same-origin only, no secrets stored in JS-readable storage.
 import { transport } from './transport.mjs';
-import { mountBuildSurface, sendProposal } from './generative-ui/phone-surface.mjs';
+import { mountBuildSurface } from './generative-ui/phone-surface.mjs';
 import { mountBuildCanvas } from './build-canvas.mjs';
+import { createControlClient } from './control-client.mjs';
 import { resolveBuildRequest, buildSurfaceFromBootstrap } from './build-composer.mjs';
 import { mountWelcome } from './welcome.mjs';
 import { parsePairFragment, redeemDevicePairToken } from './pairing-link.mjs';
@@ -1628,7 +1629,8 @@ function mountCompose() {
       if (!created?.id) throw new Error('not acknowledged');
       return created.id;
     },
-    apply: (proposal, surface) => sendProposal(proposal, surface),
+    prepareVisual: transport.direct ? proposal=>createControlClient({transport}).call('plan',{visualProposal:proposal}) : null,
+    apply: plan=>createControlClient({transport}).execute(plan),
     onApplied: async (proof) => { S.nextBatch = NEXT_BATCH; buildKey = ''; await refresh(); scheduleBuild(0); renderSurfaces(); }
   });
 }

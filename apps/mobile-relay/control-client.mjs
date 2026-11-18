@@ -97,7 +97,9 @@ export function createControlClient({ transport, fetchImpl = (...args) => fetch(
       // establish what happened. Never offer automatic execution retry.
       if (!receipt || receipt.schema !== 'vivim.control-receipt/1' ||
           receipt.planId !== target.planId || receipt.planDigest !== target.planDigest ||
-          !['applied', 'failed', 'uncertain'].includes(receipt.status)) {
+          !['applied', 'failed', 'uncertain'].includes(receipt.status) ||
+          (plan.actionId==='ui.visual.apply'&&(receipt.actionId!==plan.actionId||
+           !plan.approvalMeaning?.semanticDigest||receipt.semanticDigest!==plan.approvalMeaning.semanticDigest))) {
         throw Object.assign(new Error('Host receipt could not be verified. Check the PC before another action.'), {
           code: 'CONTROL_UNCERTAIN'
         });

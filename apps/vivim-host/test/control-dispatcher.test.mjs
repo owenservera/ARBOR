@@ -6,6 +6,7 @@ import path from 'node:path';
 import { createBootstrapRuntime } from '../bootstrap/runtime.mjs';
 import { createControlDispatcher } from '../control/dispatcher.mjs';
 import { loadControlCatalog } from '../control/intent-planner.mjs';
+import {createSurface} from '../../mobile-relay/generative-ui/catalog.mjs';
 
 const DESKTOP = { channel: 'desktop-owner-token', actor: 'owner' };
 const PHONE = { channel: 'direct-phone', actor: 'owner@example.com' };
@@ -241,4 +242,36 @@ test('a held lexicon lock makes teach fail with CONTROL_LEXICON_BUSY, not uncert
   assert.equal(receipt.status, 'failed');
   assert.equal(receipt.error.code, 'CONTROL_LEXICON_BUSY');
   assert.equal(receipt.executionPerformed, false);
+});
+
+const visualInput=(surface=createSurface())=>({visualProposal:{schema:'vivim.ui-proposal/1',surfaceId:surface.surfaceId,baseRevision:surface.revision,
+  operations:[{opId:'change.color',type:'set-theme',theme:{...surface.theme,background:'#234567'}}],explanation:'Exact background',assumptions:[],unknowns:[]}});
+const visualDevice={source:'mobile',actor:'phone-A',grantId:'grant-A'};
+const visualApproval={channel:'direct-phone',actor:'phone-A',grantId:'grant-A'};
+test('visual control uses existing durable plan, exact grant/device and persisted preview proof',t=>{
+  const {control,runtime}=fixture(t);
+  const plan=control.plan(visualInput(),visualDevice);
+  assert.equal(plan.outcome,'approval_required');
+  assert.equal(runtime.uiRevision(),null);
+  const execute=(approval=visualApproval,planDigest=plan.planDigest)=>control.execute({planId:plan.planId,planDigest,approval});
+  assert.throws(()=>execute({...visualApproval,actor:'phone-B'}),/CONTROL_VISUAL_DEVICE_REQUIRED/);
+  assert.throws(()=>execute({...visualApproval,grantId:'grant-B'}),/CONTROL_VISUAL_DEVICE_REQUIRED/);
+  assert.throws(()=>execute(visualApproval,'a'.repeat(64)),/CONTROL_PLAN_MISMATCH/);
+  assert.throws(()=>control.status(plan.planId,{...visualDevice,actor:'phone-B'}),/CONTROL_PLAN_UNKNOWN/);
+  const receipt=execute();assert.equal(receipt.status,'applied');
+  assert.equal(receipt.semanticDigest,plan.approvalMeaning.semanticDigest);
+  assert.equal(receipt.result.previewDigest,plan.visualPreview.previewDigest);
+  assert.equal(runtime.uiRevision().theme.background,'#234567');
+  assert.equal(execute().replayed,true);
+  assert.equal(runtime.uiRevision().revision,1);
+});
+test('stale competing visual approvals never execute or overwrite a current revision',t=>{
+  const {control,runtime}=fixture(t);
+  const one=control.plan(visualInput(),visualDevice),two=control.plan(visualInput(),visualDevice);
+  const exec=plan=>control.execute({planId:plan.planId,planDigest:plan.planDigest,approval:visualApproval});
+  assert.equal(exec(one).status,'applied');assert.throws(()=>exec(two),/stale|revision|CONTROL_VISUAL_STALE/i);
+  assert.equal(runtime.uiRevision().revision,1);
+  const three=control.plan(visualInput(runtime.uiRevision()),visualDevice);
+  runtime.revokeGrant();
+  assert.throws(()=>exec(three));assert.equal(runtime.uiRevision().revision,1);
 });
