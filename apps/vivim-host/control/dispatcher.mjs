@@ -14,12 +14,12 @@ import { createControlPlanner, loadControlCatalog } from './intent-planner.mjs';
 import { createControlJournal, newPlanId } from './journal.mjs';
 import { createLexiconStore } from './lexicon.mjs';
 import { createPersonalRuleStore } from './personal-rule-store.mjs';
-import { PERSONAL_RULE_SCHEMA, validatePersonalRule, TEMPLATE_SCHEMA, templateAlias, templateDependencies, bindPersonalRule, currentTemplate } from './personal-semantics.mjs';
+import { PERSONAL_RULE_SCHEMA, validatePersonalRule, TEMPLATE_SCHEMA, templateAlias, templateDependencies, bindPersonalRule, currentTemplate, bindPersonalWriteProgram } from './personal-semantics.mjs';
 import { interpretControl, resolveLocalDestination, resolveDesktopDestination } from '../../mobile-relay/control-language.mjs';
 import { previewWikiStructure, previewWikiCapture, validateProductEdit, previewWikiPayload } from '../chat/product-journal.mjs';
 import { wikiApprovalSentence } from './command-intent.mjs';
 import { createNativeProgramValidator } from './native-program.mjs';
-import { runWikiReadProgram,compileWikiReadRecipe,validWikiRecipe } from './wiki-read-program.mjs';
+import { runWikiReadProgram,compileWikiReadRecipe,validWikiRecipe,compileWikiWriteRecipe } from './wiki-read-program.mjs';
 
 export const DISPATCHER_SCHEMA = 'vivim.control-dispatcher/1';
 export const RECEIPT_SCHEMA = 'vivim.control-receipt/1';
@@ -353,13 +353,14 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
   }
 
   // Exact resolved values, not a client-rendered paraphrase.
-  async function previewWriteSequence(commands,wiki){
+  async function previewWriteSequence(commands,wiki,typedSteps=null){
     const lines=String(commands).split(/\r?\n/).map(s=>s.trim());
     if(lines.length<2||lines.length>8||lines.some(s=>!s||s.length>240))throw fail('CONTROL_PROGRAM_INPUT_INVALID');
     let projected={revision:wiki.revision,pages:wiki.pages};const steps=[];
-    for(const line of lines){
-      const p=planner.planText(line,{source:'desktop'});
-      if(p.outcome!=='approval_required'||p.origin!=='deterministic'||p.risk!=='R1'||!(p.actionId===WIKI_ACTION||WIKI_STRUCTURE.has(p.actionId)))throw fail('CONTROL_PROGRAM_CHILD_REFUSED');
+    if(typedSteps&&typedSteps.length!==lines.length)throw fail('CONTROL_PROGRAM_CHILD_REFUSED');
+    for(const [index,line] of lines.entries()){
+      const p=typedSteps?planner.planTyped({...typedSteps[index],source:'desktop'}):planner.planText(line,{source:'desktop'});
+      if(p.outcome!=='approval_required'||p.origin!==(typedSteps?'typed':'deterministic')||p.risk!=='R1'||!(p.actionId===WIKI_ACTION||WIKI_STRUCTURE.has(p.actionId)))throw fail('CONTROL_PROGRAM_CHILD_REFUSED');
       let binding,payload;
       if(p.actionId===WIKI_ACTION){binding=resolveWikiTarget(projected,p.args.target);payload={kind:'wiki-edit',actor:'owner-browser',schemaVersion:1,expectedRevision:projected.revision,edit:{action:'set-section',page:binding.page,section:binding.section,content:p.args.content}};binding={...binding,target:binding.page+'/'+binding.section,after:p.args.content};}
       else {binding=previewWikiStructure(projected,structureEdit(p.actionId,p.args));payload={kind:'wiki-structure',actor:'owner-browser',schemaVersion:1,expectedRevision:projected.revision,edit:binding.edit};}
@@ -421,6 +422,8 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
       if(digest({...commandScope(),surface:record.source})!==bound.scopeDigest)
         throw fail('CONTROL_SEMANTIC_CONTEXT_STALE');
       const rule=snapshot.entries.find(r=>r.id===bound.ruleId);
+      if(rule?.writeProgram){const steps=bindPersonalWriteProgram(rule,bound.invocation,catalog);
+        if(!steps||digest(rule.writeProgram)!==bound.writeProgramDigest||digest(steps)!==bound.boundStepsDigest)throw fail('CONTROL_SEMANTIC_RULE_STALE');}
       if(rule?.template&&(!templateReceiptCurrent(rule)||!currentTemplate(rule,catalog)||digest(rule.template)!==bound.templateDigest||
         digest(bindPersonalRule(rule,bound.invocation,catalog))!==digest(record.args)))
         throw fail('CONTROL_SEMANTIC_RULE_STALE');
@@ -484,11 +487,18 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
       if(interpretControl(rule.phrase+' '+rule.args.page,{catalog,world:planner.world()}).outcome!=='interpretation_required')
         throw fail('CONTROL_RULE_PHRASE_NOT_FREE');
     }else{
-      const target=planner.planText(args.command,{source:'desktop'});
-      if(target.origin!=='deterministic'||(!LEARNABLE.has(target.actionId)&&target.actionId!==WIKI_READ_PROGRAM_ACTION)||
+      const parameter=/^parameterize page ([a-z][a-z0-9-]{0,62}):[ \t]*\r?\n([\s\S]+)$/.exec(args.command);
+      const target=planner.planText(parameter?parameter[2]:args.command,{source:'desktop'});
+      if(target.origin!=='deterministic'||(!LEARNABLE.has(target.actionId)&&![WIKI_READ_PROGRAM_ACTION,WIKI_WRITE_PROGRAM_ACTION].includes(target.actionId))||
          !['ready','approval_required'].includes(target.outcome)||!['R0','R1'].includes(target.risk))
         throw fail('CONTROL_RULE_TARGET_INVALID');
+      if(parameter&&(target.actionId!==WIKI_WRITE_PROGRAM_ACTION||!templateAlias(args.phrase)))throw fail('CONTROL_RULE_TARGET_INVALID');
       rule={phrase:args.phrase,actionId:target.actionId,args:target.args,scope};
+      if(target.actionId===WIKI_WRITE_PROGRAM_ACTION){
+        const recipe=compileWikiWriteRecipe(target.args.commands,text=>planner.planText(text,{source:'desktop'}),catalog,parameter?parameter[1]:null);
+        if(!recipe)throw fail('CONTROL_RULE_TARGET_INVALID');rule.writeProgram=recipe;
+        if(parameter&&interpretControl(args.phrase+' '+parameter[1],{catalog,world:planner.world()}).outcome!=='interpretation_required')throw fail('CONTROL_RULE_PHRASE_NOT_FREE');
+      }
       if(target.actionId===WIKI_READ_PROGRAM_ACTION){
         const recipe=compileWikiReadRecipe(target.args.commands,text=>planner.planText(text,{source:'desktop'}),catalog);
         if(!recipe)throw fail('CONTROL_RULE_TARGET_INVALID');rule.readProgram=recipe;
@@ -548,7 +558,7 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
     if(RULE_ACTIONS.has(p.actionId)&&(source!=='desktop'||actor!=='desktop-owner'))
       return {...p,outcome:'unavailable',executionPerformed:false,precondition:'Learning requires the authenticated desktop owner.'};
     if(p.actionId===WIKI_READ_PROGRAM_ACTION&&(source!=='desktop'||actor!=='desktop-owner'||!['typed','deterministic','personal_rule'].includes(p.origin)))return {...p,outcome:'unavailable',executionPerformed:false,precondition:'Wiki read sequences require authenticated desktop owner.'};
-    if(p.actionId===WIKI_WRITE_PROGRAM_ACTION&&(source!=='desktop'||actor!=='desktop-owner'||!['typed','deterministic'].includes(p.origin)))return {...p,outcome:'unavailable',executionPerformed:false,precondition:'Wiki change sequences require authenticated desktop owner.'};
+    if(p.actionId===WIKI_WRITE_PROGRAM_ACTION&&(source!=='desktop'||actor!=='desktop-owner'||!['typed','deterministic','personal_rule'].includes(p.origin)))return {...p,outcome:'unavailable',executionPerformed:false,precondition:'Wiki change sequences require authenticated desktop owner.'};
     if(p.actionId===NATIVE_PROGRAM_ACTION&&(source!=='desktop'||actor!=='desktop-owner'||p.origin!=='typed'))return {...p,outcome:'unavailable',executionPerformed:false,precondition:'Native program validation requires authenticated desktop owner and an explicit typed program.'};
     if(p.actionId===HVI_ACTION&&(source!=='desktop'||actor!=='desktop-owner'||p.origin!=='typed'||typeof readHvi!=='function'))return {...p,outcome:'unavailable',executionPerformed:false,precondition:'Explicit desktop owner source selection and current development grant required.'};
     if (p.outcome === 'ready') {
@@ -576,21 +586,22 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
     };
     // Bind a personalized reading to the exact accepted rule *and* complete store
     // snapshot. Any correction, revocation or concurrent activation makes it stale.
-    let semanticRuleBinding = null;
+    let semanticRuleBinding = null,writeSteps=null;
     if (p.origin === 'personal_rule') {
       const observed = p.language?.personalRule;
       const snapshot = personalSemantics.snapshot();
       const rule = snapshot.entries.find(r => r.id === observed?.ruleId && r.state === 'accepted' &&
         r.revision === observed.ruleRevision && r.actionId === p.actionId &&
-        digest(r.template?bindPersonalRule(r,input.text,catalog):r.args) === digest(p.args));
+        digest(r.template||r.writeProgram?bindPersonalRule(r,input.text,catalog):r.args) === digest(p.args));
       if (!rule||!templateReceiptCurrent(rule)) throw fail('CONTROL_SEMANTIC_RULE_STALE');
+      if(p.actionId===WIKI_WRITE_PROGRAM_ACTION){writeSteps=bindPersonalWriteProgram(rule,input.text,catalog);if(!writeSteps)throw fail('CONTROL_SEMANTIC_RULE_STALE');}
       // The context is owned by the Host callback, never by caller request fields.
       const activeScope = { ...commandScope(), surface: source };
       if (!observed.semanticScope || digest(activeScope) !== digest(observed.semanticScope))
         throw fail('CONTROL_SEMANTIC_CONTEXT_STALE');
       semanticRuleBinding = { ruleId: rule.id, ruleRevision: rule.revision,
         storeVersion: snapshot.version, storeDigest: snapshot.digest,
-        scopeDigest: digest(activeScope),...(rule.template?{invocation:input.text,templateDigest:digest(rule.template)}:{}) };
+        scopeDigest: digest(activeScope),...(rule.template?{invocation:input.text,templateDigest:digest(rule.template)}:{}),...(rule.writeProgram?{invocation:input.text,writeProgramDigest:digest(rule.writeProgram),boundStepsDigest:digest(writeSteps)}:{}) };
     }
     const ruleBinding=RULE_ACTIONS.has(p.actionId)?prepareRuleBinding(p.actionId,p.args):null;
     const savePlan = wikiBinding => {
@@ -617,7 +628,7 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
             : [...APPROVAL_CHANNELS] } };
     };
     if(p.actionId===WIKI_WRITE_PROGRAM_ACTION){
-      return productJournal.readPhoneWiki().then(wiki=>previewWriteSequence(p.args.commands,wiki)).then(savePlan);
+      return productJournal.readPhoneWiki().then(wiki=>previewWriteSequence(p.args.commands,wiki,writeSteps)).then(savePlan);
     }
     if(p.actionId===CAPTURE_ACTION){
       if(p.origin!=='typed'||(source==='mobile'&&(!grantId||!actor)))throw fail('CONTROL_INPUT_INVALID');
@@ -685,6 +696,8 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
       if (digest({ ...commandScope(), surface: rec.plan.source }) !== bound.scopeDigest)
         throw fail('CONTROL_SEMANTIC_CONTEXT_STALE');
       const rule=snapshot.entries.find(r=>r.id===bound.ruleId);
+      if(rule?.writeProgram){const steps=bindPersonalWriteProgram(rule,bound.invocation,catalog);
+        if(!steps||digest(rule.writeProgram)!==bound.writeProgramDigest||digest(steps)!==bound.boundStepsDigest)throw fail('CONTROL_SEMANTIC_RULE_STALE');}
       if(rule?.template&&(!templateReceiptCurrent(rule)||!currentTemplate(rule,catalog)||digest(rule.template)!==bound.templateDigest||
         digest(bindPersonalRule(rule,bound.invocation,catalog))!==digest(rec.plan.args)))
         throw fail('CONTROL_SEMANTIC_RULE_STALE');
@@ -773,7 +786,11 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
     }
     if(rec.plan.actionId===WIKI_WRITE_PROGRAM_ACTION){
       if(!productJournal||!rec.plan.wikiBinding)throw fail('CONTROL_WIKI_NOT_READY');
-      return productJournal.readPhoneWiki().then(wiki=>previewWriteSequence(rec.plan.args.commands,wiki)).then(current=>{
+      const bound=rec.plan.semanticRuleBinding;
+      const rule=bound?personalSemantics.snapshot().entries.find(r=>r.id===bound.ruleId):null;
+      const steps=bound?bindPersonalWriteProgram(rule,bound.invocation,catalog):null;
+      if(bound&&(!steps||digest(steps)!==bound.boundStepsDigest))throw fail('CONTROL_SEMANTIC_RULE_STALE');
+      return productJournal.readPhoneWiki().then(wiki=>previewWriteSequence(rec.plan.args.commands,wiki,steps)).then(current=>{
         if(digest(current)!==digest(rec.plan.wikiBinding))throw fail('CONTROL_WIKI_STALE');
         checkApprovalBinding(rec.plan,current);return claimAndRun();
       });

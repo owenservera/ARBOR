@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {runWikiReadProgram,compileWikiReadRecipe,validWikiRecipe} from '../control/wiki-read-program.mjs';
+import {runWikiReadProgram,compileWikiReadRecipe,validWikiRecipe,compileWikiWriteRecipe,validWikiWriteRecipe,bindWikiWriteRecipe} from '../control/wiki-read-program.mjs';
 import {createControlPlanner,loadControlCatalog} from '../control/intent-planner.mjs';
 const commands='list wiki pages\nread wiki page main in section about';
 const wiki={revision:3,pages:{main:{sections:{about:'Current text'}}}};
@@ -44,4 +44,13 @@ test('native wire contains exact committed section references and never invented
  const out=await runWikiReadProgram({commands,planCommand,readWiki:async()=>wiki,readEvidence,readAction,nativeProgram:async(args)=>{const p=JSON.parse(args.program);assert.deepEqual(p.steps[0].inputs,[]);assert.equal(p.steps[1].inputs[0].source_id,source.entryId);return {...await native(args),sourceReferencesVerified:1};}});
  assert.equal(out.outcome,'completed');assert.equal(out.steps[0].sourceEvidence.state,'snapshot-only');assert.equal(out.steps[1].sourceEvidence.state,'committed-section');
  const bad=await runWikiReadProgram({commands,planCommand,readWiki:async()=>wiki,readEvidence:async(...args)=>{const e=await readEvidence(...args);e.items[0].source.contentDigest='0'.repeat(64);return e;},readAction,nativeProgram:async()=>{throw Error('must not run')}});assert.equal(bad.reasonCode,'PROGRAM_SOURCE_UNAVAILABLE');
+});
+
+test('typed mutation recipes bind only page fields, never literal content or arbitrary commands',()=>{
+ const catalog=loadControlCatalog(),commands='create wiki page research\nedit wiki section research/About saying research stays literal';
+ const recipe=compileWikiWriteRecipe(commands,planCommand,catalog,'research');assert.ok(recipe);assert.equal(validWikiWriteRecipe(recipe,commands,catalog),true);
+ const bound=bindWikiWriteRecipe(recipe,commands,catalog,'new-project');assert.equal(bound[0].args.page,'new-project');assert.equal(bound[1].args.target,'new-project/About');assert.equal(bound[1].args.content,'research stays literal');
+ assert.equal(bindWikiWriteRecipe(recipe,commands,catalog,'a;delete'),null);assert.equal(bindWikiWriteRecipe(recipe,commands,catalog,'constructor'),null);
+ assert.equal(compileWikiWriteRecipe('create wiki page research\nlist wiki pages',planCommand,catalog,'research'),null);
+ const altered=structuredClone(catalog);altered.actions.find(a=>a.id==='wiki.section.edit').title='Changed';assert.equal(validWikiWriteRecipe(recipe,commands,altered),false);
 });

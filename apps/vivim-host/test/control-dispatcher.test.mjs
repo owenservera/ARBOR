@@ -327,3 +327,19 @@ test('approved Wiki sequence preflights dependent changes, writes actual records
  await productJournal.append({kind:'wiki-edit',actor:'owner-browser',schemaVersion:1,expectedRevision:2,edit:{action:'set-section',page:'main',section:'About',content:'Other change'}});
  await assert.rejects(control.execute({planId:stale.planId,planDigest:stale.planDigest,approval}),/CONTROL_WIKI_STALE/);assert.equal((await productJournal.readPhoneWiki()).pages.second,undefined);
 });
+
+test('owner-taught parameterized Wiki change recipe always requires fresh exact approval',async t=>{
+ const {runtime,dataRoot}=fixture(t);const {createProductJournal}=await import('../chat/product-journal.mjs');
+ const productJournal=createProductJournal({dataRoot,seedState:{chat:[]},seedWiki:{revision:0,pages:{main:{sections:{About:'Original'}}}}});
+ const control=createControlDispatcher({dataRoot,runtime,productJournal,nativeProgram:async({program})=>{const p=JSON.parse(program);return {outcome:'compiled',programId:p.id,programRevision:p.revision,orderedStepIds:p.steps.map(s=>s.id),programDigest:'a'.repeat(64),executionAuthorized:false,effectPerformed:false};}});
+ const owner={source:'desktop',actor:'desktop-owner'},approval={channel:'desktop-owner-token',actor:'desktop-owner'};
+ const command='parameterize page research:\nrun wiki change sequence:\ncreate wiki page research\nedit wiki section research/About saying Project notes';
+ const teach=await control.plan({actionId:'control.rule.remember',args:{phrase:'projectsetup',command}},owner);assert.equal(teach.outcome,'approval_required');
+ assert.equal((await control.execute({planId:teach.planId,planDigest:teach.planDigest,approval})).status,'applied');
+ assert.equal((await productJournal.readPhoneWiki()).revision,0);
+ const draft=await control.plan({text:'projectsetup alpha'},owner);assert.equal(draft.outcome,'approval_required');assert.equal((await productJournal.readPhoneWiki()).revision,0);
+ const receipt=await control.execute({planId:draft.planId,planDigest:draft.planDigest,approval});assert.equal(receipt.status,'applied');assert.equal((await productJournal.readPhoneWiki()).pages.alpha.sections.About,'Project notes');
+ const second=await control.plan({text:'projectsetup beta'},owner);assert.equal(second.outcome,'approval_required');
+ const rule=control.ownerRules().entries[0];const revoke=await control.plan({actionId:'control.rule.revoke',args:{rule_id:rule.id}},owner);await control.execute({planId:revoke.planId,planDigest:revoke.planDigest,approval});
+ await assert.rejects(async()=>control.execute({planId:second.planId,planDigest:second.planDigest,approval}),/CONTROL_SEMANTIC_RULE_STALE/);assert.equal((await productJournal.readPhoneWiki()).pages.beta,undefined);
+});

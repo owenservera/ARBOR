@@ -4,7 +4,7 @@
 import { NCLL_VERSION } from '../../mobile-relay/nlcl/frames.mjs';
 import { VEC_COMPILE_SCHEMA } from '../../mobile-relay/vec/compiler.mjs';
 import {sha256Hex} from '../../mobile-relay/generative-ui/portable-digest.mjs';
-import {validWikiRecipe} from './wiki-read-program.mjs';
+import {validWikiRecipe,validWikiWriteRecipe,bindWikiWriteRecipe,wikiProgramSlug} from './wiki-read-program.mjs';
 export const PERSONAL_RULE_SCHEMA = 'vivim.personal-semantic-rule/1';
 export const PERSONAL_RESOLUTION_SCHEMA = 'vivim.personal-resolution/1';
 const SCOPE_KEYS = ['workspaceId', 'activity', 'providerId', 'surface'];
@@ -65,6 +65,7 @@ export function currentTemplate(rule,catalog){
 // One deliberately narrow named invocation, not another natural-language parser.
 // Canonical NLCL/refusals always take precedence.
 export function bindPersonalRule(rule,text,catalog){
+  if(rule.writeProgram){return bindPersonalWriteProgram(rule,text,catalog)?{...rule.args}:null;}
   if(!rule.template)return normalize(rule.phrase)===normalize(text)?{...rule.args}:null;
   const parts=String(text).trim().split(/\s+/);
   if(parts.length!==2||normalize(parts[0])!==normalize(rule.phrase)||!slug(parts[1]))return null;
@@ -72,13 +73,21 @@ export function bindPersonalRule(rule,text,catalog){
   const spec=catalog.actions.find(a=>a.id===rule.actionId).args.page;
   return parts[1].length>=spec.min&&parts[1].length<=spec.max?{page:parts[1]}:null;
 }
+export function bindPersonalWriteProgram(rule,text,catalog){
+  if(!rule?.writeProgram)return null;
+  if(!compatibleRuleCatalog(rule,catalog))return null;
+  if(!rule.writeProgram.slot)return normalize(rule.phrase)===normalize(text)?bindWikiWriteRecipe(rule.writeProgram,rule.args.commands,catalog):null;
+  const parts=String(text).trim().split(/\s+/);
+  if(parts.length!==2||normalize(parts[0])!==normalize(rule.phrase)||!wikiProgramSlug(parts[1]))return null;
+  return bindWikiWriteRecipe(rule.writeProgram,rule.args.commands,catalog,parts[1]);
+}
 const decision = (outcome, extra = {}) => ({ schema: PERSONAL_RESOLUTION_SCHEMA, outcome,
   executionAuthorized: false, ...extra });
 
 /** The private learning state must never be serialized as a Host grant. */
 export function validatePersonalRule(rule, catalog) {
   if (!keysOnly(rule, ['schema', 'id', 'revision', 'phrase', 'actionId', 'args', 'scope',
-    'state', 'source', 'catalogVersion','template','readProgram']) || rule.schema !== PERSONAL_RULE_SCHEMA ||
+    'state', 'source', 'catalogVersion','template','readProgram','writeProgram']) || rule.schema !== PERSONAL_RULE_SCHEMA ||
     typeof rule.id !== 'string' || !/^rule:[a-z0-9][a-z0-9._-]{0,79}$/.test(rule.id) ||
     !Number.isSafeInteger(rule.revision) || rule.revision < 1 ||
     !phrase(rule.phrase) || typeof rule.actionId !== 'string' ||
@@ -93,6 +102,14 @@ export function validatePersonalRule(rule, catalog) {
     return { ok: false, reason: 'INVALID_RULE' };
   // Stale templates remain readable/revocable after catalog changes; only
   // matching current dependencies can activate them.
+  if(Object.hasOwn(rule,'writeProgram')){
+    const r=rule.writeProgram;
+    return !rule.template&&!rule.readProgram&&rule.actionId==='program.write_wiki'&&rule.scope.surface==='desktop'&&rule.source==='explicit-owner'&&
+      keysOnly(rule.args,['commands'])&&typeof rule.args.commands==='string'&&rule.args.commands.length<=950&&
+      r?.schema==='vivim.wiki-write-recipe/1'&&Array.isArray(r.steps)&&r.steps.length>=2&&r.steps.length<=8&&Array.isArray(r.dependencies)&&
+      (r.slot===null||r.slot?.type==='wiki-page-slug'&&templateAlias(rule.phrase)&&wikiProgramSlug(r.slot.example))
+      ?{ok:true}:{ok:false,reason:'INVALID_WRITE_RECIPE'};
+  }
   if(Object.hasOwn(rule,'readProgram')){
     // Stale recipes remain readable/revocable; current dependency validation is an invocation check.
     const r=rule.readProgram;
@@ -151,9 +168,10 @@ export function resolvePersonalSemantics({ text, baseline, rules, catalog, scope
   }
   const parts=text.trim().split(/\s+/);
   const matches = rules.filter(rule => rule.state === 'accepted' && scoped(rule,scope)&&
-    (rule.template?normalize(parts[0])===normalize(rule.phrase):normalize(rule.phrase)===normalize(text)));
+    (rule.template||rule.writeProgram?.slot?normalize(parts[0])===normalize(rule.phrase):normalize(rule.phrase)===normalize(text)));
   if (!matches.length) return decision('no_match', { reason: 'NO_ACCEPTED_MATCH' });
   if (matches.some(rule=>rule.template&&!currentTemplate(rule,catalog)))return decision('refused',{reason:'STALE_TEMPLATE_DEPENDENCY'});
+  if(matches.some(rule=>rule.writeProgram&&!validWikiWriteRecipe(rule.writeProgram,rule.args.commands,catalog)))return decision('refused',{reason:'STALE_WRITE_RECIPE'});
   if(matches.some(rule=>rule.readProgram&&!validWikiRecipe(rule.readProgram,rule.args.commands,catalog)))return decision('refused',{reason:'STALE_READ_RECIPE'});
   if (matches.some(rule => !compatibleRuleCatalog(rule,catalog)))
     return decision('refused', { reason: 'STALE_CATALOG_RULE' });
@@ -161,7 +179,7 @@ export function resolvePersonalSemantics({ text, baseline, rules, catalog, scope
   if(bound.some(x=>!x.args))return decision('clarification_required',{reason:'TEMPLATE_PARAMETER_REQUIRED',ruleIds:matches.map(r=>r.id).sort()});
   const highest = Math.max(...bound.map(x=>Object.keys(x.rule.scope).length));
   const mostSpecific=bound.filter(x=>Object.keys(x.rule.scope).length===highest);
-  const unique=new Set(mostSpecific.map(x=>signature(x.rule,x.args)));
+  const unique=new Set(mostSpecific.map(x=>x.rule.writeProgram?JSON.stringify(canonical(bindPersonalWriteProgram(x.rule,text,catalog))):signature(x.rule,x.args)));
   if (unique.size > 1) return decision('clarification_required', {
     reason: 'CONFLICTING_PERSONAL_RULES',
     ruleIds: mostSpecific.map(x=>x.rule.id).sort(),
@@ -172,6 +190,6 @@ export function resolvePersonalSemantics({ text, baseline, rules, catalog, scope
     candidate: { actionId: rule.actionId, args },
     provenance: { method: 'accepted-personal-rule', ruleId: rule.id,
       ruleRevision: rule.revision, catalogRevision: catalog.version,
-      semanticScope: { ...scope },...(rule.template?{reuse:'parameterized-template',templateSchema:TEMPLATE_SCHEMA,invocation:text}:{} ) },
+      semanticScope: { ...scope },...(rule.writeProgram?{reuse:'typed-write-recipe',invocation:text}:{}),...(rule.template?{reuse:'parameterized-template',templateSchema:TEMPLATE_SCHEMA,invocation:text}:{} ) },
   });
 }

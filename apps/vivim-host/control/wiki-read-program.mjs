@@ -83,3 +83,54 @@ export async function runWikiReadProgram({commands,planCommand,readWiki,nativePr
   return {schema:'vivim.wiki-read-program/1',outcome:'completed',programId:id,planDigest,nativeProgramDigest:validated.programDigest,
     wikiRevision:wiki.revision,snapshotDigest,steps:results,reusedRecipe:!!recipe,effectPerformed:false,mutationPerformed:false,authority:'read-only'};
 }
+
+// Reuse the same canonical contract fingerprinting for owner-reviewed mutation recipes.
+// Parameterization is over typed fields only; literal content is never interpolated.
+export const WIKI_WRITE_RECIPE_SCHEMA='vivim.wiki-write-recipe/1';
+const WRITES=new Set(['wiki.page.create','wiki.section.edit','wiki.page.move','wiki.pages.link']);
+export const wikiProgramSlug=v=>typeof v==='string'&&/^[a-z][a-z0-9-]{0,62}$/.test(v)&&!['constructor','prototype','__proto__'].includes(v);
+function writeDependencies(steps,catalog){
+  return [...new Set(['program.write_wiki',...steps.map(p=>p.actionId)])].sort().map(id=>({id,digest:hash(catalog.actions.find(a=>a.id===id)??null)}));
+}
+function writeArgsValid(step,catalog){
+  if(!step||Object.keys(step).sort().join(',')!=='actionId,args'||!WRITES.has(step.actionId)||!step.args||Array.isArray(step.args)||typeof step.args!=='object')return false;
+  const a=catalog.actions.find(a=>a.id===step.actionId);
+  return !!a&&a.risk==='R1'&&['source_wired','verified'].includes(a.readiness)&&Object.keys(a.args).length===Object.keys(step.args).length&&
+    Object.entries(a.args).every(([key,s])=>{const v=step.args[key];return typeof v==='string'&&v.length&&v===v.trim()&&(s.type==='enum'?s.values.includes(v):s.type==='string'&&v.length>=s.min&&v.length<=s.max);});
+}
+function hasPageSlot(steps,page){
+  return wikiProgramSlug(page)&&steps.filter(s=>s.actionId==='wiki.page.create'&&s.args.page===page).length===1&&
+    steps.filter(s=>s.actionId==='wiki.page.create').length===1;
+}
+export function compileWikiWriteRecipe(commands,planCommand,catalog,page=null){
+  if(typeof commands!=='string'||commands.length>950)return null;
+  const lines=commands.split(/\r?\n/).map(s=>s.trim());
+  if(lines.length<2||lines.length>8||lines.some(s=>!s||s.length>240))return null;
+  let plans;try{plans=lines.map(planCommand);}catch{return null;}
+  if(plans.some(p=>p?.outcome!=='approval_required'||p.origin!=='deterministic'||p.risk!=='R1'||!WRITES.has(p.actionId)))return null;
+  const steps=plans.map(p=>({actionId:p.actionId,args:p.args}));
+  if(!steps.every(s=>writeArgsValid(s,catalog))||(page!==null&&!hasPageSlot(steps,page)))return null;
+  return {schema:WIKI_WRITE_RECIPE_SCHEMA,steps,dependencies:writeDependencies(steps,catalog),commandDigest:hash(commands),
+    slot:page===null?null:{name:'page',type:'wiki-page-slug',example:page}};
+}
+export function validWikiWriteRecipe(recipe,commands,catalog){
+  return !!recipe&&recipe.schema===WIKI_WRITE_RECIPE_SCHEMA&&Object.keys(recipe).sort().join(',')==='commandDigest,dependencies,schema,slot,steps'&&
+    typeof commands==='string'&&commands.length<=950&&recipe.commandDigest===hash(commands)&&Array.isArray(recipe.steps)&&recipe.steps.length>=2&&recipe.steps.length<=8&&
+    recipe.steps.every(s=>writeArgsValid(s,catalog))&&Array.isArray(recipe.dependencies)&&hash(recipe.dependencies)===hash(writeDependencies(recipe.steps,catalog))&&
+    (recipe.slot===null||recipe.slot&&Object.keys(recipe.slot).sort().join(',')==='example,name,type'&&recipe.slot.name==='page'&&recipe.slot.type==='wiki-page-slug'&&hasPageSlot(recipe.steps,recipe.slot.example));
+}
+export function bindWikiWriteRecipe(recipe,commands,catalog,page=null){
+  if(!validWikiWriteRecipe(recipe,commands,catalog))return null;
+  if(recipe.slot===null)return page===null?recipe.steps.map(s=>({actionId:s.actionId,args:{...s.args}})):null;
+  if(!wikiProgramSlug(page))return null;
+  const example=recipe.slot.example,steps=recipe.steps.map(s=>{
+    const args={...s.args};
+    for(const key of ['page','from','to'])if(typeof args[key]==='string'&&args[key].toLowerCase()===example)args[key]=page;
+    if(s.actionId==='wiki.section.edit'&&typeof args.target==='string'){
+      const slash=args.target.indexOf('/');
+      if(slash>0&&args.target.slice(0,slash).toLowerCase()===example)args.target=page+args.target.slice(slash);
+    }
+    return {actionId:s.actionId,args};
+  });
+  return steps.every(s=>writeArgsValid(s,catalog))?steps:null;
+}
