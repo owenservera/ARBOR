@@ -45,9 +45,9 @@ export function assertIsolatedLive(baseUrl, isolated) {
 export function rendererSourceContract(html, js, css) {
   return /src=["']\/wiki\.js["']/.test(html) &&
     /href=["']\/wiki\.css["']/.test(html) &&
-    /function\s+renderRoadmap\s*\(/.test(js) &&
+    /function\s+renderWiki\s*\(/.test(js) &&
     /function\s+renderFileSurface\s*\(/.test(js) &&
-    /\/api\/roadmap/.test(js) &&
+    !/\/api\/roadmap/.test(js) &&
     /\/api\/wiki/.test(js) &&
     /\/api\/journal/.test(js) &&
     css.trim().length > 0;
@@ -113,11 +113,10 @@ export async function runWikiEvidence({
       return out.body;
     };
     const json = async route => JSON.parse(await response(route, /application\/json/i));
-    const roadmap = await safe('roadmap-api', async () => {
-      const value = await json('/api/roadmap');
-      if (!Array.isArray(value?.buildQueue) && !Array.isArray(value?.layers?.L2))
-        throw new Error('Roadmap queue missing');
-      return value;
+    const retired = await safe('historical-roadmap-retired', async () => {
+      const result = await io.get('/api/roadmap');
+      if (result.status !== 404) throw Error('Historical roadmap endpoint was not retired');
+      return true;
     });
     const wikiBefore = await safe('wiki-api-before', async () => {
       const value = await json('/api/wiki');
@@ -128,14 +127,14 @@ export async function runWikiEvidence({
     const journalBefore = await safe('journal-json-array-before', async () =>
       parseJournalResponse(await response('/api/journal', /application\/json/i)));
     const rawBefore = await safe('journal-jsonl-integrity-before', async () =>
-      parseRawJournal(await response('/demo/journal.jsonl', /application\/jsonl/i)));
+      parseRawJournal(await response('/api/journal?format=jsonl', /application\/jsonl/i)));
     check('journal-read-consistency-before', journalBefore !== null && rawBefore !== null &&
       JSON.stringify(journalBefore) === JSON.stringify(rawBefore), 'API array must match every raw JSONL entry; empty is valid');
     const html = await safe('wiki-html-shell', () => response('/wiki', /text\/html/i));
     const js = await safe('wiki-external-js', () => response('/wiki.js', /javascript/i));
     const css = await safe('wiki-external-css', () => response('/wiki.css', /text\/css/i));
     check('wiki-source-renderer-contract', html !== null && js !== null && css !== null &&
-      rendererSourceContract(html, js, css) && roadmap !== null,
+      rendererSourceContract(html, js, css) && retired === true,
       'external assets and API references only; browser DOM and rendered content UNRUN');
 
     // Fail closed: do not write to a damaged or misconfigured isolated host.
@@ -180,7 +179,7 @@ export async function runWikiEvidence({
         const journalAfter = await safe('journal-json-array-after', async () =>
           parseJournalResponse(await response('/api/journal', /application\/json/i)));
         const rawAfter = await safe('journal-jsonl-integrity-after', async () =>
-          parseRawJournal(await response('/demo/journal.jsonl', /application\/jsonl/i)));
+          parseRawJournal(await response('/api/journal?format=jsonl', /application\/jsonl/i)));
         const wikiAfter = await safe('wiki-api-after', () => json('/api/wiki'));
         const stateAfter = await safe('state-api-after', () => json('/api/state'));
         const appended = journalAfter?.[journalBefore.length];
