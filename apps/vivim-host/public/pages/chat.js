@@ -307,7 +307,14 @@ import { mountComposerAssist } from '/mobile/composer-assist.mjs';
     const node = card('Approve exactly this Host action?');
     node.append(element('p', '', plan.title + ' · ' + plan.actionId + ' · ' + plan.risk));
     const meaning = plan.language?.vec?.proposal;
-    if (meaning?.schema === 'vivim.command-intent/0.1' && meaning.canonical)
+    const binding=plan.approvalMeaning;
+    if(binding?.schema==='vivim.approval-meaning/1'){
+      node.append(element('strong','','Host-bound meaning'));
+      node.append(element('p','',binding.roundTrip==='verified'?'Round-trip checked by VLANG':'Exact typed preview only — sentence round-trip unavailable'));
+      if(binding.sentence)node.append(element('pre','',binding.sentence));
+      node.append(element('pre','',JSON.stringify(binding.resolvedArgs,null,2)));
+      node.append(element('p','','Semantic digest: '+binding.semanticDigest+' · catalog '+binding.catalogRevision+' · target revision '+binding.targetRevision));
+    }else if (meaning?.schema === 'vivim.command-intent/0.1' && meaning.canonical)
       node.append(element('pre', '', meaning.canonical));
     node.append(element('pre', '', JSON.stringify(plan.args, null, 2)));
     if(plan.learningPreview){

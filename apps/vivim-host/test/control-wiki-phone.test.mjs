@@ -115,6 +115,13 @@ test('paired Direct phone: NL Wiki preview -> device approval -> durable Host st
   assert.equal(preview.status, 200, JSON.stringify(preview.body));
   assert.equal(preview.body.outcome, 'approval_required');
   assert.deepEqual(preview.body.approval.channels, ['direct-phone']);
+  const binding=preview.body.approvalMeaning;
+  assert.equal(binding.schema,'vivim.approval-meaning/1');
+  assert.equal(binding.roundTrip,'verified');
+  assert.equal(binding.sentence,'edit wiki section Main/About saying "Updated from Phone"');
+  assert.deepEqual(binding.resolvedArgs,{target:'Main/About',content:'Updated from Phone'});
+  assert.equal(binding.targetRevision,before.body.revision);
+  assert.match(binding.semanticDigest,/^[a-f0-9]{64}$/);
   assert.deepEqual(preview.body.preview, {
     target: 'Main/About', before: before.body.pages.Main.sections.About,
     after: 'Updated from Phone', expectedRevision: before.body.revision
@@ -132,6 +139,7 @@ test('paired Direct phone: NL Wiki preview -> device approval -> durable Host st
   const receipt = await execute();
   assert.equal(receipt.status, 200, JSON.stringify(receipt.body));
   assert.equal(receipt.body.status, 'applied');
+  assert.equal(receipt.body.semanticDigest,binding.semanticDigest);
   assert.equal(receipt.body.result.wikiRevision, before.body.revision + 1);
   assert.equal(receipt.body.result.content, 'Updated from Phone');
   const after = await call('/mobile/api/wiki');
@@ -161,6 +169,8 @@ test('paired Direct phone: NL Wiki preview -> device approval -> durable Host st
   const move=await readCommand({text:'move wiki page sprint-notes to top'});
   assert.equal(linked.body.outcome,'approval_required',JSON.stringify(linked.body));
   assert.equal(linked.body.actionId,'wiki.pages.link');
+  assert.equal(linked.body.approvalMeaning.roundTrip,'verified');
+  assert.deepEqual(linked.body.approvalMeaning.resolvedArgs,{from:'Main',to:'sprint-notes'});
   assert.equal(move.body.outcome,'approval_required',JSON.stringify(move.body));
   assert.equal(move.body.actionId,'wiki.page.move');
   assert.equal((await approveStructure(linked.body)).body.status,'applied');

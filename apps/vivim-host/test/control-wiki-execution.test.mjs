@@ -5,6 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { createBootstrapRuntime } from '../bootstrap/runtime.mjs';
 import { createControlDispatcher } from '../control/dispatcher.mjs';
+import { loadControlCatalog } from '../control/intent-planner.mjs';
 import { createProductJournal } from '../chat/product-journal.mjs';
 import { createHostServer } from '../server.mjs';
 import { request as httpRequest } from 'node:http';
@@ -213,4 +214,77 @@ test('real Host HTTP: NL plan -> explicit approval -> single persisted Wiki edit
   const reopened = createProductJournal({ dataRoot });
   const persisted = await reopened.readProjection();
   assert.equal(persisted.wiki.pages.Main.sections.About, 'Updated from VIVIM');
+});
+
+test('Host binds exact resolved meaning, literal text, and structural effects before approval',async t=>{
+  const {dataRoot,control,productJournal}=fixture(t);
+  for(const content of ['Updated instructions','Café — 日本語','line one\nline two','He said "hello".','a "quoted" value and no change to its spelling']){
+    const plan=await control.plan(edit(content),{source:'desktop'});
+    const b=plan.approvalMeaning;
+    assert.equal(b.schema,'vivim.approval-meaning/1');
+    assert.deepEqual(b.resolvedArgs,{target:'Main/HowTo',content});
+    assert.equal(b.targetRevision,1);
+    assert.equal(b.authority,'none');
+    if(content==='Updated instructions')assert.equal(b.roundTrip,'verified');
+    if(b.roundTrip==='verified'){
+      const round=await control.plan({text:b.sentence},{source:'desktop'});
+      assert.deepEqual(round.approvalMeaning.resolvedArgs,b.resolvedArgs);
+    }else assert.equal(b.sentence,null);
+  }
+  const secret=await control.plan(edit('password=example-test-only'),{source:'desktop'});
+  assert.equal(secret.approvalMeaning.roundTrip,'unavailable');
+  assert.equal(secret.approvalMeaning.sentence,null);
+  const a=await control.plan(edit('One'),{source:'desktop'});
+  const b=await control.plan(edit('Two'),{source:'desktop'});
+  assert.notEqual(a.approvalMeaning.semanticDigest,b.approvalMeaning.semanticDigest);
+  assert.equal((await productJournal.readRecords()).length,0);
+  const file=path.join(dataRoot,'control','plans',a.planId+'.plan.json');
+  const record=JSON.parse(readFileSync(file,'utf8'));
+  record.approvalMeaning.sentence='edit wiki section Main/HowTo saying "Different"';
+  writeFileSync(file,JSON.stringify(record));
+  assert.throws(()=>apply(control,a),/CONTROL_PLAN_TAMPERED/);
+  assert.equal((await productJournal.readRecords()).length,0);
+  const receipt=await apply(control,b);
+  assert.equal(receipt.semanticDigest,b.approvalMeaning.semanticDigest);
+  assert.equal(receipt.status,'applied');
+  const create=await control.plan({text:'create wiki page project-notes'},{source:'desktop'});
+  assert.equal(create.approvalMeaning.roundTrip,'verified');
+  assert.equal((await apply(control,create)).status,'applied');
+  const link=await control.plan({text:'link wiki pages from main to project-notes'},{source:'desktop'});
+  assert.equal(link.approvalMeaning.roundTrip,'verified');
+  assert.deepEqual(link.approvalMeaning.resolvedArgs,{from:'Main',to:'project-notes'});
+  assert.equal((await apply(control,link)).status,'applied');
+  assert.deepEqual((await productJournal.readPhoneWiki()).pages.Main.links,['project-notes']);
+});
+
+test('catalog contract changes with unchanged catalog version invalidate pending semantic approval',async t=>{
+  const {dataRoot,runtime,control,productJournal}=fixture(t);
+  const plan=await control.plan(edit('Do not overwrite'),{source:'desktop'});
+  const catalog=loadControlCatalog();
+  catalog.actions.find(a=>a.id==='wiki.section.edit').title='Changed contract title';
+  const restarted=createControlDispatcher({dataRoot,runtime,productJournal,catalog});
+  await assert.rejects(apply(restarted,plan),/CONTROL_PLAN_STALE/);
+  assert.equal(restarted.status(plan.planId).state,'planned');
+  assert.equal((await productJournal.readRecords()).length,0);
+});
+
+test('Wiki expiry is checked again after reading the target; replay is device-bound',async t=>{
+  const {dataRoot,runtime,productJournal}=fixture(t);
+  let clock=Date.parse('2026-11-18T00:00:00Z'),reads=0;
+  const delayed={readProjection:async()=>{
+    const result=await productJournal.readProjection();
+    if(++reads===2)clock+=10001;
+    return result;
+  },append:e=>productJournal.append(e)};
+  const control=createControlDispatcher({dataRoot,runtime,productJournal:delayed,now:()=>clock,ttlMs:10000});
+  const expired=await control.plan(edit('Expired'),{source:'desktop'});
+  await assert.rejects(apply(control,expired),/CONTROL_PLAN_EXPIRED/);
+  assert.equal(control.status(expired.planId).state,'planned');
+  assert.equal((await productJournal.readRecords()).length,0);
+  const phone=await control.plan(edit('Applied by A'),{source:'mobile',actor:'device-a'});
+  const receipt=await apply(control,phone,{channel:'direct-phone',actor:'device-a'});
+  assert.equal(receipt.status,'applied');
+  assert.throws(()=>apply(control,phone,{channel:'direct-phone',actor:'device-b'}),/CONTROL_WIKI_DEVICE_MISMATCH/);
+  assert.equal((await apply(control,phone,{channel:'direct-phone',actor:'device-a'})).replayed,true);
+  assert.equal((await productJournal.readRecords()).length,1);
 });

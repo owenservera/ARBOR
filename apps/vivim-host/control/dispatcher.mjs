@@ -17,6 +17,7 @@ import { createPersonalRuleStore } from './personal-rule-store.mjs';
 import { PERSONAL_RULE_SCHEMA, validatePersonalRule } from './personal-semantics.mjs';
 import { interpretControl, resolveLocalDestination, resolveDesktopDestination } from '../../mobile-relay/control-language.mjs';
 import { previewWikiStructure } from '../chat/product-journal.mjs';
+import { wikiApprovalSentence } from './command-intent.mjs';
 
 export const DISPATCHER_SCHEMA = 'vivim.control-dispatcher/1';
 export const RECEIPT_SCHEMA = 'vivim.control-receipt/1';
@@ -282,6 +283,54 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
   }
   const action = id => catalog.actions.find(a => a.id === id);
 
+  // Exact resolved values, not a client-rendered paraphrase.
+  function approvalBinding(actionId,args,source,wikiBinding){
+    const a=action(actionId);
+    const resolved=actionId===WIKI_ACTION?{target:wikiBinding.page+'/'+wikiBinding.section,content:args.content}:
+      actionId==='wiki.pages.link'?{from:wikiBinding.edit.from,to:wikiBinding.edit.to}:
+      actionId==='wiki.page.move'?{page:wikiBinding.edit.page,position:wikiBinding.edit.position}:
+      {page:wikiBinding.edit.page};
+    const normalize=values=>Object.fromEntries(Object.entries(values).map(([key,value])=>
+      [key,['target','from','to','page'].includes(key)&&actionId!=='wiki.page.create'?
+        value.toLowerCase():value]));
+    const sentence=wikiApprovalSentence(actionId,resolved);
+    const worldRevision=planner.world().v;
+    let roundTrip=false,engineVersion=null;
+    if(sentence&&sentence.length<=1000){
+      try{
+        const parsed=planner.planText(sentence,{source});
+        roundTrip=parsed.outcome==='approval_required'&&parsed.origin==='deterministic'&&
+          parsed.actionId===actionId&&digest(normalize(parsed.args))===digest(normalize(resolved));
+        engineVersion=roundTrip?parsed.language?.vec?.proposal?.provenance?.engineVersion??null:null;
+      }catch{/* exact typed preview remains available; do not assert parser coverage */}
+    }
+    const manifest={schema:'vivim.approval-meaning/1',templateRevision:1,
+      catalogRevision:catalog.version,worldRevision,compilerRevision:engineVersion,
+      actionId,risk:a.risk,readiness:a.readiness,contractDigest:digest(a),
+      source,exactArgs:args,resolvedArgs:resolved,targetRevision:wikiBinding.expectedRevision,
+      target:wikiBinding.target??wikiBinding.page+'/'+wikiBinding.section,
+      effectDigest:digest(wikiBinding),requiredScopes:a.requiredScopes??[],
+      precondition:a.precondition??null,roundTrip:roundTrip?'verified':'unavailable',
+      sentence:roundTrip?sentence:null,authority:'none'};
+    return {...manifest,semanticDigest:digest(manifest)};
+  }
+  function checkApprovalBinding(record,wikiBinding){
+    if(!record.approvalMeaning)throw fail('CONTROL_PLAN_STALE');
+    if(digest(approvalBinding(record.actionId,record.args,record.source,wikiBinding))!==
+        digest(record.approvalMeaning))throw fail('CONTROL_PLAN_STALE');
+    // A scope may change independently of the vocabulary world while the
+    // asynchronous Wiki read is pending. Check learned-rule authority again.
+    if(record.origin==='personal_rule'){
+      const bound=record.semanticRuleBinding,snapshot=personalSemantics.snapshot();
+      if(!bound||snapshot.version!==bound.storeVersion||snapshot.digest!==bound.storeDigest||
+        !snapshot.entries.some(r=>r.id===bound.ruleId&&r.state==='accepted'&&r.revision===bound.ruleRevision))
+        throw fail('CONTROL_SEMANTIC_RULE_STALE');
+      if(digest({...commandScope(),surface:record.source})!==bound.scopeDigest)
+        throw fail('CONTROL_SEMANTIC_CONTEXT_STALE');
+    }
+    if(now()>=Date.parse(record.expiresAt))throw fail('CONTROL_PLAN_EXPIRED');
+  }
+
   function prepareRuleBinding(actionId,args) {
     const snapshot=personalSemantics.snapshot();
     if(actionId==='control.rule.revoke'){
@@ -380,15 +429,17 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
     const ruleBinding=RULE_ACTIONS.has(p.actionId)?prepareRuleBinding(p.actionId,p.args):null;
     const savePlan = wikiBinding => {
       const createdAt = iso();
+      const approvalMeaning=wikiBinding?approvalBinding(p.actionId,p.args,source,wikiBinding):null;
       const body = { schema: 'vivim.control-plan-record/1', planId: newPlanId(), actionId: p.actionId, args: p.args,
         risk: p.risk, source, origin: p.origin, actor: short(actor, 120), catalogVersion: catalog.version,
         createdAt, expiresAt: new Date(now() + ttlMs).toISOString(),
         ...(semanticRuleBinding ? { semanticRuleBinding } : {}),
         ...(ruleBinding?{ruleBinding}:{}),
-        ...(wikiBinding ? { wikiBinding } : {}) };
+        ...(wikiBinding ? { wikiBinding,approvalMeaning } : {}) };
       const record = { ...body, planDigest: digest(body) };
       journal.record(record);
       return { ...p, planId: record.planId, planDigest: record.planDigest, createdAt, expiresAt: record.expiresAt,
+        ...(approvalMeaning?{approvalMeaning}:{}),
         ...(wikiBinding ? { preview: { target: wikiBinding.target ?? wikiBinding.page + '/' + wikiBinding.section,
           before: wikiBinding.before, after: wikiBinding.edit ? wikiBinding.after : p.args.content,
           expectedRevision: wikiBinding.expectedRevision } } : {}),
@@ -423,6 +474,13 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
        approval.channel!=='desktop-owner-token')throw fail('CONTROL_DESKTOP_APPROVAL_REQUIRED');
     if(RULE_ACTIONS.has(rec.plan.actionId)&&approval.actor!=='desktop-owner')
       throw fail('CONTROL_DESKTOP_APPROVAL_REQUIRED');
+    // Receipt replay must respect the original Wiki channel and device.
+    if(wikiMutation(rec.plan.actionId)){
+      if(rec.plan.source==='mobile'&&(approval.channel!=='direct-phone'||approval.actor!==rec.plan.actor))
+        throw fail('CONTROL_WIKI_DEVICE_MISMATCH');
+      if(rec.plan.source!=='mobile'&&approval.channel!=='desktop-owner-token')
+        throw fail('CONTROL_DESKTOP_APPROVAL_REQUIRED');
+    }
     if (rec.receipt) return { ...rec.receipt, replayed: true };
     if (rec.claimed) throw fail('CONTROL_UNCERTAIN');
     const { planDigest: stored, ...body } = rec.plan;
@@ -487,6 +545,7 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
       const receipt = { schema: RECEIPT_SCHEMA, planId, planDigest: stored, actionId: rec.plan.actionId, args: rec.plan.args,
         risk: rec.plan.risk, source: rec.plan.source, origin: rec.plan.origin, approvedVia: approval.channel,
         status, at: iso(), executionPerformed: status === 'applied',
+        ...(rec.plan.approvalMeaning?{semanticDigest:rec.plan.approvalMeaning.semanticDigest}:{}),
         ...(result ? { result } : {}), ...(error ? { error } : {}),
         ...(status === 'applied' && undoFor(a, rec.plan.args, result) ? { undo: undoFor(a, rec.plan.args, result) } : {}),
         liveAcceptance: a.readiness === 'verified' ? 'verified' : 'pending' };
@@ -515,6 +574,7 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
         if(wiki.revision!==bound.expectedRevision)throw fail('CONTROL_WIKI_STALE');
         const current=previewWikiStructure(wiki,structureEdit(rec.plan.actionId,rec.plan.args));
         if(digest(current)!==digest(bound))throw fail('CONTROL_WIKI_STALE');
+        checkApprovalBinding(rec.plan,current);
         return claimAndRun();
       });
     }
@@ -527,6 +587,7 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
         if (current.page !== bound.page || current.section !== bound.section ||
             current.before !== bound.before || current.expectedRevision !== bound.expectedRevision)
           throw fail('CONTROL_WIKI_STALE');
+        checkApprovalBinding(rec.plan,current);
         return claimAndRun();
       });
     }

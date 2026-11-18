@@ -460,6 +460,14 @@ export function createControlChat({
           'Risk ' + String(plan.risk || 'unknown') + ' · Expires ' + new Date(plan.expiresAt).toLocaleTimeString() +
           (plan.liveAcceptance !== 'verified' ? ' · Not live-verified' : '') +
           (typeof plan.planDigest === 'string' ? ' · Plan ' + plan.planDigest.slice(0, 12) : '')));
+        const binding=plan.approvalMeaning;
+        if(binding?.schema==='vivim.approval-meaning/1'){
+          card.append(elem('strong','','Host-bound meaning'),
+            elem('p','ux-meta',binding.roundTrip==='verified'?'Round-trip checked by VLANG':'Exact typed preview only — sentence round-trip unavailable'));
+          if(binding.sentence)card.append(elem('pre','ux-note',binding.sentence));
+          card.append(elem('pre','ux-note',JSON.stringify(binding.resolvedArgs,null,2)),
+            elem('p','ux-meta','Semantic digest '+binding.semanticDigest+' · catalog '+binding.catalogRevision+' · target revision '+binding.targetRevision));
+        }
         const args = plan.args && typeof plan.args === 'object' ? Object.entries(plan.args).slice(0, 12) : [];
         if (args.length) card.append(elem('pre', 'ux-note', JSON.stringify(plan.args, null, 2)));
         if (['wiki.section.edit','wiki.page.create','wiki.page.move','wiki.pages.link'].includes(plan.actionId) && plan.preview) {

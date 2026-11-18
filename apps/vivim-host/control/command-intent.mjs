@@ -19,6 +19,26 @@ function refuse(input, code, message, extra = {}) {
 function canonical(actionId, args) {
   return '/' + actionId + Object.keys(args).sort().map(k => ' ' + k + '=' + JSON.stringify(args[k])).join('');
 }
+// Rendering only: this is not a parser. The Host must compile the returned
+// sentence and compare its resolved meaning before claiming round-trip proof.
+export function wikiApprovalSentence(actionId,args) {
+  const name=s=>typeof s==='string'&&/^[a-z0-9_-]+$/i.test(s);
+  if(actionId==='wiki.section.edit'){
+    const parts=typeof args.target==='string'?args.target.split('/'):[];
+    if(parts.length!==2||!parts.every(name)||typeof args.content!=='string')return null;
+    // The existing grammar strips one wrapping pair, not JSON escapes.
+    // Interior quotes may make the syntax ambiguous; try only an exact
+    // literal representation, and let the incumbent compiler decide.
+    if(/(?:-----BEGIN [A-Z ]*PRIVATE KEY-----|\b(?:password|api[_-]?key|access[_-]?token|client[_-]?secret)\s*[:=])/i.test(args.content))return null;
+    return 'edit wiki section '+args.target+' saying "'+args.content+'"';
+  }
+  if(actionId==='wiki.page.create'&&name(args.page))return 'create wiki page '+args.page;
+  if(actionId==='wiki.page.move'&&name(args.page)&&['top','bottom','up','down'].includes(args.position))
+    return 'move wiki page '+args.page+' to '+args.position;
+  if(actionId==='wiki.pages.link'&&name(args.from)&&name(args.to))
+    return 'link wiki pages from '+args.from+' to '+args.to;
+  return null;
+}
 function checkedArgs(action, args) {
   if (!isRecord(args) || Object.keys(args).some(k => !Object.hasOwn(action.args, k))) return null;
   const normalized = {};
