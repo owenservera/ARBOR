@@ -6,6 +6,8 @@ import path from 'node:path';
 import { createBootstrapRuntime } from '../bootstrap/runtime.mjs';
 import { createControlDispatcher } from '../control/dispatcher.mjs';
 import { createProductJournal } from '../chat/product-journal.mjs';
+import { createHostServer } from '../server.mjs';
+import { request as httpRequest } from 'node:http';
 
 const DESKTOP = { channel: 'desktop-owner-token', actor: 'owner' };
 const PHONE = { channel: 'direct-phone', actor: 'phone' };
@@ -112,4 +114,79 @@ test('claimed Wiki plan without receipt remains uncertain; no blind replay', asy
   writeFileSync(path.join(dataRoot, 'control', 'plans', plan.planId + '.claimed'), 'interrupted');
   assert.throws(() => apply(control, plan), /CONTROL_UNCERTAIN/);
   assert.equal((await productJournal.readRecords()).length, 0);
+});
+
+test('real Host HTTP: NL plan -> explicit approval -> single persisted Wiki edit -> readback', async t => {
+  const dataRoot = mkdtempSync(path.join(os.tmpdir(), 'arbor-control-wiki-http-'));
+  const secret = 'wiki-http-owner-secret-test-value';
+  const server = createHostServer({ dataRoot, ownerToken: secret });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  t.after(async () => {
+    if (server.listening) await new Promise(resolve => server.close(resolve));
+    rmSync(dataRoot, { recursive: true, force: true });
+  });
+  const port = server.address().port;
+  const origin = 'http://127.0.0.1:' + port;
+  const authorized = { authorization: 'Bearer ' + secret, origin, 'x-vivim-control': '1',
+    'content-type': 'application/json' };
+  const call = (route, { method = 'GET', body, headers = {} } = {}) =>
+    new Promise((resolve, reject) => {
+      const req = httpRequest({ hostname: '127.0.0.1', port, path: route, method,
+        headers }, res => {
+        let data = '';
+        res.on('data', chunk => { data += chunk; });
+        res.on('end', () => {
+          try { resolve({ status: res.statusCode, data: JSON.parse(data) }); }
+          catch { reject(new Error('Non-JSON HTTP response: ' + route)); }
+        });
+      });
+      req.on('error', reject);
+      req.end(body === undefined ? undefined : JSON.stringify(body));
+    });
+  const before = await call('/api/wiki');
+  assert.equal(before.status, 200);
+  assert.equal(before.data.pages.Main.sections.About.startsWith('VIVIM realtime wiki'), true);
+  assert.equal((await call('/api/host/control/plan', {
+    method: 'POST', headers: { origin, 'x-vivim-control': '1', 'content-type': 'application/json' },
+    body: { text: 'edit wiki section main/about saying Updated from VIVIM' }
+  })).status, 401, 'no owner capability: no plan');
+  assert.equal((await call('/api/host/control/plan', {
+    method: 'POST', headers: { ...authorized, origin: 'https://untrusted.invalid' },
+    body: { text: 'edit wiki section main/about saying Updated from VIVIM' }
+  })).status, 403, 'foreign origin cannot even preview a privileged plan');
+  const planned = await call('/api/host/control/plan', {
+    method: 'POST', headers: authorized,
+    body: { text: 'edit wiki section main/about saying Updated from VIVIM' }
+  });
+  assert.equal(planned.status, 200, JSON.stringify(planned.data));
+  assert.equal(planned.data.actionId, 'wiki.section.edit');
+  assert.equal(planned.data.outcome, 'approval_required');
+  assert.deepEqual(planned.data.preview, {
+    target: 'Main/About', before: before.data.pages.Main.sections.About,
+    after: 'Updated from VIVIM', expectedRevision: before.data.revision
+  });
+  assert.equal((await call('/api/wiki')).data.revision, before.data.revision, 'preview cannot mutate');
+  const executed = await call('/api/host/control/execute', {
+    method: 'POST', headers: authorized,
+    body: { planId: planned.data.planId, planDigest: planned.data.planDigest }
+  });
+  assert.equal(executed.status, 200, JSON.stringify(executed.data));
+  assert.equal(executed.data.status, 'applied');
+  assert.equal(executed.data.result.wikiRevision, before.data.revision + 1);
+  assert.equal(executed.data.result.content, 'Updated from VIVIM');
+  const after = await call('/api/wiki');
+  assert.equal(after.data.pages.Main.sections.About, 'Updated from VIVIM');
+  assert.equal(after.data.revision, before.data.revision + 1);
+  const repeat = await call('/api/host/control/execute', {
+    method: 'POST', headers: authorized,
+    body: { planId: planned.data.planId, planDigest: planned.data.planDigest }
+  });
+  assert.equal(repeat.data.replayed, true);
+  assert.equal((await call('/api/wiki')).data.revision, before.data.revision + 1);
+  await new Promise(resolve => server.close(resolve));
+  const reopened = createProductJournal({ dataRoot,
+    seedState: JSON.parse(readFileSync(new URL('../data/demo-baseline/state.json', import.meta.url), 'utf8')),
+    seedWiki: JSON.parse(readFileSync(new URL('../data/demo-baseline/wiki.json', import.meta.url), 'utf8')) });
+  const persisted = await reopened.readProjection();
+  assert.equal(persisted.wiki.pages.Main.sections.About, 'Updated from VIVIM');
 });
