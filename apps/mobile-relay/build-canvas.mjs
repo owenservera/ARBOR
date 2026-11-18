@@ -7,13 +7,14 @@ import { mountComposerAssist } from './composer-assist.mjs';
 import { renderSurface, planTierflowSurface, tierflowViewport } from './generative-ui/renderer.mjs';
 import { compileUiProposal } from './generative-ui/compiler.mjs';
 import { validateSurface } from './generative-ui/catalog.mjs';
+import { digestJson } from './generative-ui/portable-digest.mjs';
 
 const PENDING_KEY = 'vivim.build.pending.v1';
 const PAUSE = ms => new Promise(resolve => setTimeout(resolve, ms));
 const LABELS = { chatgpt: 'ChatGPT', claude: 'Claude', gemini: 'Gemini', qwen: 'Qwen', zai: 'Z.ai', deepseek: 'DeepSeek' };
 
 // Queue completion alone is never proof of a persisted Host UI revision.
-export function committedUiRevision(command, surface) {
+export function committedUiRevision(command, surface, expectedPreview = null) {
   let body = command?.result;
   try { if (typeof body === 'string') body = JSON.parse(body); }
   catch { throw new Error('Host commit confirmation unreadable'); }
@@ -25,6 +26,16 @@ export function committedUiRevision(command, surface) {
       body.parentRevision !== surface.revision ||
       body.surfaceId !== surface.surfaceId)
     throw new Error('Host did not confirm the expected persisted revision');
+  if(expectedPreview){
+    const stable=value=>Array.isArray(value)?value.map(stable):value&&typeof value==='object'?
+      Object.fromEntries(Object.keys(value).sort().map(k=>[k,stable(value[k])])):value;
+    const s=expectedPreview.surface;
+    const projection=digestJson(stable({audience:'phone',surfaceId:expectedPreview.surfaceId,
+      catalogVersion:expectedPreview.catalogVersion,theme:s.theme,tree:s.tree}));
+    if(body.previewDigest!==expectedPreview.previewDigest||body.projectionDigest!==projection||
+       typeof body.changeId!=='string'||!body.changeId.startsWith('chg-'))
+      throw new Error('Host proof does not match the approved preview');
+  }
   return { committedRevision: body.revision, parentRevision: body.parentRevision,
     surfaceId: body.surfaceId };
 }
@@ -218,7 +229,7 @@ export function mountBuildCanvas({ host, request, getSurface, getProvider, send,
     set({ ...submitted, name: 'applying' });
     let proof;
     try {
-      proof = committedUiRevision(await apply(submitted.proposal, submitted.surface), submitted.surface);
+      proof = committedUiRevision(await apply(submitted.proposal, submitted.surface), submitted.surface, submitted.preview);
     } catch (error) {
       return set({ name: 'uncertain', message: 'No matching Host confirmation was received. Check the live screen before another change. VIVIM did not resend.' });
     }
@@ -238,7 +249,7 @@ export function mountBuildCanvas({ host, request, getSurface, getProvider, send,
     let proof;
     try {
       assertBuildPreviewCurrent(draft, current());
-      proof = committedUiRevision(await apply(draft.proposal, draft.surface), draft.surface);
+      proof = committedUiRevision(await apply(draft.proposal, draft.surface), draft.surface, draft.preview);
     } catch {
       return set({ name: 'uncertain', message: 'Undo was not confirmed. Check the live screen before another change. VIVIM did not resend.' });
     }

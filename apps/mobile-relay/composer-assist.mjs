@@ -71,11 +71,50 @@ export function needsWikiDraftContext(text,meaning){
   ].some(prefix=>prefix.startsWith(value)||value.startsWith(prefix));
 }
 
+// Project the incumbent typed reading; no second grammar or action authority.
+export function semanticDraftSlots(text,meaning,action){
+  if(typeof text!=='string'||!action||!ready(action)||action.actionId!==meaning?.candidate?.actionId||
+    !['candidate','incomplete'].includes(meaning.outcome))return [];
+  const args=meaning.candidate.args??{},missing=new Set((meaning.missing??[]).map(x=>x.arg));
+  return Object.entries(action.args??{}).slice(0,32).map(([key,schema])=>{
+    const value=Object.hasOwn(args,key)&&typeof args[key]==='string'?args[key]:null;
+    let span=null;
+    // Only edit a uniquely occurring literal; validate the entire proposed reading again before insertion.
+    if(value&&value.length<=1000){
+      const start=text.indexOf(value);
+      if(start>=0&&text.indexOf(value,start+1)<0)span={start,end:start+value.length};
+    }
+    return {key,type:schema.type,state:value!==null?'interpreted':missing.has(key)?'missing':'unresolved',
+      value,span,...(schema.type==='enum'&&Array.isArray(schema.values)?{choices:schema.values.slice(0,32)}:{})};
+  });
+}
+export function correctedSlotDraft(text,slot,value){
+  if(typeof value!=='string'||!value.trim()||value!==value.trim()||value.length>1000||
+    /[\x00-\x1f\x7f]/.test(value)||!slot?.span||slot.state!=='interpreted')return null;
+  const {start,end}=slot.span;
+  if(!Number.isSafeInteger(start)||!Number.isSafeInteger(end)||start<0||end>text.length||
+    text.slice(start,end)!==slot.value||(slot.choices&&!slot.choices.includes(value)))return null;
+  const next=text.slice(0,start)+value+text.slice(end);
+  return next.length<=1000?next:null;
+}
+export function matchesSlotCorrection(before,after,key,value){
+  if(before?.outcome!=='candidate'||after?.outcome!=='candidate'||
+    before.candidate?.actionId!==after.candidate?.actionId)return false;
+  const a=before.candidate.args,b=after.candidate.args;
+  return !!(a&&b&&Object.hasOwn(a,key)&&Object.keys(a).length===Object.keys(b).length&&
+    Object.keys(a).every(k=>Object.hasOwn(b,k)&&b[k]===(k===key?value:a[k]))&&
+    before.composer?.catalogVersion===after.composer?.catalogVersion&&
+    before.composer?.wikiRevision===after.composer?.wikiRevision&&
+    before.feedback?.worldV===after.feedback?.worldV);
+}
+
 export function composerResponse(text,meaning,{catalog,wiki,interpret,source}={}){
   const actions=(catalog?.actions||[]).filter(a=>!source||!Array.isArray(a.surfaces)||a.surfaces.includes(source));
   const selected=actions.find(a=>a.actionId===meaning?.candidate?.actionId);
   return {...meaning,composer:{schema:COMPOSER_SCHEMA,authority:'none',
     ...(selected?{action:{id:selected.actionId,risk:selected.risk,readiness:selected.readiness}}:{}),
+    catalogVersion:catalog?.version??null,
+    slots:semanticDraftSlots(text,meaning,selected),
     wikiRevision:Number.isSafeInteger(wiki?.revision)?wiki.revision:null,
     suggestions:composeDraftHints(text,{meaning,catalog:{actions},wiki,interpret})}};
 }
@@ -134,12 +173,45 @@ export function mountComposerAssist({field,host,interpret,getScope,onDraft=()=>{
     if(!item)return;
     reset();field.value=item.text;field.focus();onDraft(item.text);schedule();
   }
+  async function correct(slot,value){
+    if(!validShown()||inFlight)return;
+    const previous=shown,job=previous.job,next=correctedSlotDraft(job.text,slot,value);
+    if(!next||next===job.text)return;
+    inFlight=true;
+    try{
+      const checked=await interpret(next);
+      if(!current(job)||!validShown()||shown!==previous)return;
+      if(checked?.schema!=='vivim.control-language/1'||checked.input!==next||
+        !matchesSlotCorrection(previous.meaning,checked,slot.key,value)){
+        const note=node('p','Correction could not be verified. Edit the draft text directly.');note.setAttribute('role','status');host.append(note);return;
+      }
+      reset();field.value=next;field.focus();onDraft(next);schedule();
+    }catch{if(current(job)&&shown===previous){const note=node('p','Correction unavailable. Original draft preserved.');note.setAttribute('role','status');host.append(note);}}
+    finally{inFlight=false;if(queued)void pump();}
+  }
   function render(){
     if(!validShown())return hide();
     const {description,suggestions}=shown;
     host.dataset.kind=description.kind||'unavailable';
     const status=node('p',description.label+' — '+description.detail);
     status.setAttribute('role','status');host.replaceChildren(status);
+    const envelope=shown.meaning?.composer;
+    if(envelope?.schema===COMPOSER_SCHEMA&&envelope.authority==='none'&&Array.isArray(envelope.slots)&&envelope.slots.length){
+      const slots=node('div');slots.className='semantic-draft-slots';
+      for(const slot of envelope.slots.slice(0,32)){
+        if(typeof slot?.key!=='string'||!['interpreted','missing','unresolved'].includes(slot.state))continue;
+        const row=node('div');row.dataset.state=slot.state;
+        const title=node('span',slot.key+' · '+slot.state+(typeof slot.value==='string'?' · '+slot.value:''));
+        row.append(title);
+        if(slot.state==='interpreted'&&slot.span&&shown.meaning.outcome==='candidate'){
+          const edit=node('input');edit.type='text';edit.value=slot.value;edit.maxLength=1000;
+          edit.setAttribute('aria-label','Correct '+slot.key);const use=node('button','Check correction');use.type='button';
+          use.addEventListener('click',()=>void correct(slot,edit.value));row.append(edit,use);
+        }else if(Array.isArray(slot.choices))row.append(node('small','Allowed: '+slot.choices.join(', ')));
+        slots.append(row);
+      }
+      host.append(slots);
+    }
     if(suggestions.length){
       const list=node('div');
       for(const [i,s] of suggestions.entries()){
@@ -167,7 +239,7 @@ export function mountComposerAssist({field,host,interpret,getScope,onDraft=()=>{
       if(!destination&&(meaning?.schema!=='vivim.control-language/1'||meaning.input!==job.text))throw Error('Invalid interpretation response');
       const desc=describeDraft(job.text,meaning,{compileUi,hostRequired});
       if(!desc)return;
-      shown={job,description:desc,suggestions:draftSuggestions(job.text,meaning),at:Date.now()};
+      shown={job,meaning,description:desc,suggestions:draftSuggestions(job.text,meaning),at:Date.now()};
       selected=-1;render();
       expiry=setTimeout(()=>{if(shown?.job===job)hide();},15000);
     }catch{

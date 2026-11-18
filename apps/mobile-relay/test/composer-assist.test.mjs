@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createControlPlanner } from '../../vivim-host/control/intent-planner.mjs';
 import { composeDraftHints, composerResponse, describeDraft, draftSuggestions,
-  mountComposerAssist } from '../composer-assist.mjs';
+  mountComposerAssist, semanticDraftSlots, correctedSlotDraft, matchesSlotCorrection } from '../composer-assist.mjs';
 
 const planner=createControlPlanner(),catalog=planner.describe();
 const interpret=text=>planner.interpretText(text,{source:'mobile'});
@@ -99,4 +99,21 @@ test('composition is inert and local navigation does not query the Host',async t
   assert.equal(calls,0);
   assert.equal(field.fire('keydown',{key:'Escape'}),true);
   assert.equal(host.hidden,true);
+});
+
+
+test('live typed slots preserve unrelated literals and cannot accept changed meaning',()=>{
+  const text='edit wiki section Main/About saying EXACT Literal';
+  const action={actionId:'wiki.section.edit',readiness:'source_wired',args:{page:{type:'string'},section:{type:'string'},content:{type:'string'}}};
+  const meaning={outcome:'candidate',candidate:{actionId:action.actionId,args:{page:'Main',section:'About',content:'EXACT Literal'}},feedback:{worldV:1},composer:{catalogVersion:1,wikiRevision:7}};
+  const slots=semanticDraftSlots(text,meaning,action);
+  assert.equal(slots.length,3);
+  assert.equal(correctedSlotDraft(text,slots[1],'Notes'),'edit wiki section Main/Notes saying EXACT Literal');
+  assert.equal(correctedSlotDraft(text,slots[1],'\n'),null);
+  const after=structuredClone(meaning);after.candidate.args.section='Notes';
+  assert.equal(matchesSlotCorrection(meaning,after,'section','Notes'),true);
+  after.candidate.args.content='changed';
+  assert.equal(matchesSlotCorrection(meaning,after,'section','Notes'),false);
+  const incomplete={outcome:'incomplete',candidate:{actionId:action.actionId,args:{}},missing:[{arg:'section'}]};
+  assert.equal(semanticDraftSlots(text,incomplete,action).find(s=>s.key==='section').state,'missing');
 });

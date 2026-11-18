@@ -47,7 +47,8 @@ export function createBootstrapCommandWorker({ root, runtime, store = null, inte
         throw Object.assign(new Error('apply-proposal requires a proposal object'), { code: 'BOOTSTRAP_INVALID_PROPOSAL' });
       const surface = runtime.uiRevision() ?? createSurface({ surfaceId: 'my-space' });
       const out = runtime.applyUiProposal({ proposal, surface, approvedRefs: [], requestId: 'relay-' + command.id, actor: 'phone' });
-      return { action, revision: out.revision, parentRevision: out.parentRevision, persisted: out.persisted, surfaceId: out.surfaceId };
+      return { action, revision: out.revision, parentRevision: out.parentRevision, persisted: out.persisted, surfaceId: out.surfaceId,
+        previewDigest: out.previewDigest, projectionDigest: out.projectionDigest, changeId: out.changeId };
     }
     throw Object.assign(new Error('Unsupported bootstrap action'), { code: 'BOOTSTRAP_ACTION_UNSUPPORTED' });
   }

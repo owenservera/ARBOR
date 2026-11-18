@@ -1,10 +1,10 @@
 // Phone-side Build surface: renders the Host-committed vivim.ui-revision/1 surface
-// and turns component taps into semantic intents that the Host commits as a new
-// revision through the guarded bootstrap command channel. Browser-only; no Node imports.
+// and exposes component taps as inert semantic inspection. Explicit Build activation
+// uses the existing bootstrap command channel. Browser-only; no Node imports.
 // A tap never sends a provider prompt and is never automatically resent while uncertain.
 import { renderSurface } from './renderer.mjs';
 import { compileUiProposal } from './compiler.mjs';
-import { PROPOSAL_SCHEMA, createSurface } from './catalog.mjs';
+import { createSurface } from './catalog.mjs';
 import { projectVisualIntent } from './semantic-projection.mjs';
 import { transport } from '../transport.mjs';
 import { createHostRevisionGuard } from './host-revision-guard.mjs';
@@ -23,16 +23,6 @@ function locate(node, id) {
     if (found) return found;
   }
   return null;
-}
-
-// A component tap is a semantic action on a stable component ID. It becomes one
-// replace-props operation against the revision the phone last rendered.
-function intentToOp(intent, current) {
-  const comp = locate(current.tree, intent.targetId);
-  if (!comp) return null;
-  const props = { ...comp.props };
-  if (intent.style === 'compact' || intent.style === 'comfortable' || intent.style === 'spacious') props.density = intent.style;
-  return { opId: 'tap.' + intent.targetId + '.' + Date.now(), type: 'replace-props', componentId: intent.targetId, props };
 }
 
 // Component intents are UI-local; the semantic projection names the same tap with a
@@ -99,27 +89,20 @@ export function mountBuildSurface(mount, { onCommit = () => {}, semantic = null,
       audience: 'phone',
       tierflow: true,
       approvedRefs: [],
-      onIntent: async (intent) => {
+      onIntent: (intent) => {
         if (readOnly || pending || !surface || intent.revision !== surface.revision || intent.surfaceId !== surface.surfaceId) return;
-        const op = intentToOp(intent, surface);
-        if (!op) return;
-        const meaning = meaningOf(intent, semantic);
-        const proposal = {
-          schema: PROPOSAL_SCHEMA,
-          surfaceId: surface.surfaceId,
-          baseRevision: surface.revision,
-          operations: [op],
-          explanation: 'User ' + intent.intent + ' on ' + intent.targetId + (meaning ? ' · meaning ' + meaning.meaningDigest : ''),
-          assumptions: [], unknowns: []
-        };
-        pending = true;
-        try {
-          await sendProposal(proposal, surface);
-          await repaint();
-          onCommit();
-        } finally {
-          pending = false;
+        const component=locate(surface.tree,intent.targetId);
+        if(!component)return;
+        const meaning=meaningOf(intent,semantic);
+        let selected=mount.querySelector?.('[data-build-selection]');
+        if(!selected){
+          selected=mount.ownerDocument.createElement('p');
+          selected.setAttribute('data-build-selection','');
+          selected.setAttribute('role','status');
+          mount.appendChild(selected);
         }
+        selected.textContent='Selected '+component.id+' · '+component.type+
+          (meaning?' · '+meaning.intent:'')+' · use Build to preview a change. Nothing changed.';
       }
     });
     surface = s; // only a successfully validated and painted Host snapshot is actionable
