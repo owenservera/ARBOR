@@ -529,7 +529,13 @@ export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'wo
           json(res, 200, sub === 'interpret' ? (c ? c.interpret(body.text, { source: 'mobile' }) : planner.interpretText(body.text, { source: 'mobile' })) : planner.planText(body.text, { source: 'mobile' })); return;
         }
         if (!c) { json(res, 404, { code: 'CONTROL_DISPATCH_UNAVAILABLE' }); return; }
-        if (sub === 'plan') { json(res, 200, await c.plan(body, { source: 'mobile', actor: device.deviceId })); return; }
+        if (sub === 'plan') {
+          const result = await c.plan(body, { source: 'mobile', actor: device.deviceId });
+          // A device grant may be revoked during an asynchronous Wiki read.
+          authorizeDevice(req, 'control:read');
+          res.setHeader('cache-control', 'private, no-store');
+          json(res, 200, result); return;
+        }
         if (Object.keys(body).some(k => !['planId', 'planDigest'].includes(k))) throw failure(400, 'Invalid control body');
         json(res, 200, await c.execute({ planId: body.planId, planDigest: body.planDigest, approval: { channel: 'direct-phone', actor: device.deviceId } }));
       } catch (error) {

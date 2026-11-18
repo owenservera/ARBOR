@@ -77,8 +77,25 @@ test('paired Direct phone: NL Wiki preview -> device approval -> durable Host st
   deviceHeaders = { 'x-vivim-grant-id': grant.grantId,
     'x-vivim-device-session': device.sessionId };
 
+  const readCommand = body => call('/mobile/api/control/plan', {
+    method: 'POST', extra: { origin, 'x-vivim-control': '1', 'content-type': 'application/json' }, body
+  });
   const before = await call('/mobile/api/wiki');
   assert.equal(before.status, 200);
+  const listed = await readCommand({ actionId: 'wiki.pages.list', args: {} });
+  assert.equal(listed.status, 200);
+  assert.equal(listed.body.outcome, 'done');
+  assert.equal(listed.body.effect, 'read');
+  assert.equal(listed.body.requiresApproval, false);
+  assert.equal(listed.body.planId, undefined);
+  assert.deepEqual(listed.body.result.pages.map(p => p.page), Object.keys(before.body.pages));
+  const initial = await readCommand({ actionId: 'wiki.section.read', args: { page: 'main', section: 'about' } });
+  assert.equal(initial.body.outcome, 'done');
+  assert.equal(initial.body.result.content, before.body.pages.Main.sections.About);
+  const missing = await readCommand({ actionId: 'wiki.section.read', args: { page: 'missing', section: 'about' } });
+  assert.equal(missing.body.outcome, 'refused');
+  assert.equal(missing.body.executionPerformed, false);
+  assert.equal((await call('/mobile/api/wiki')).body.revision, before.body.revision);
   const preview = await call('/mobile/api/control/plan', {
     method: 'POST', extra: { origin, 'x-vivim-control': '1', 'content-type': 'application/json' },
     body: { text: 'edit wiki section main/about saying Updated from Phone' }
@@ -110,7 +127,12 @@ test('paired Direct phone: NL Wiki preview -> device approval -> durable Host st
   assert.equal(after.body.revision, before.body.revision + 1);
   assert.equal((await execute()).body.replayed, true);
   assert.equal((await call('/mobile/api/wiki')).body.revision, after.body.revision);
+  const readback = await readCommand({ actionId: 'wiki.section.read', args: { page: 'MAIN', section: 'ABOUT' } });
+  assert.equal(readback.body.outcome, 'done');
+  assert.deepEqual(readback.body.result, { page: 'Main', section: 'About',
+    wikiRevision: after.body.revision, content: 'Updated from Phone' });
   owner.revokeGrant({ grantId: grant.grantId, revokedBy: 'desktop-owner' });
+  assert.equal((await readCommand({ actionId: 'wiki.pages.list', args: {} })).status, 403);
   assert.equal((await call('/mobile/api/wiki')).status, 403);
   assert.equal((await execute()).status, 403);
 });

@@ -936,7 +936,17 @@ async function handleControl(req, res, pathname, host, controlFor, tokenFor, uiS
       if (Object.keys(body).some(k => k !== 'text')) throw Object.assign(new Error('Invalid body'), { code: 'CONTROL_INPUT_INVALID' });
       sendJson(res, 200, c.interpret(body.text, { source: 'desktop' })); return;
     }
-    if (route === 'plan') { sendJson(res, 200, await c.plan(body, { source: 'desktop', actor: 'desktop-owner' })); return; }
+    if (route === 'plan') {
+      const result = await c.plan(body, { source: 'desktop', actor: 'desktop-owner' });
+      let currentOwner = null;
+      try { currentOwner = tokenFor(); } catch { /* fail closed */ }
+      if (!(currentOwner && verifyOwnerToken(req.headers.authorization, currentOwner)) &&
+          !uiSessions.authorized(req, { mutate: true })) {
+        sendJson(res, 401, { code: 'OWNER_AUTH' }); return;
+      }
+      res.setHeader('cache-control', 'private, no-store');
+      sendJson(res, 200, result); return;
+    }
     if (Object.keys(body).some(k => !['planId', 'planDigest'].includes(k))) throw Object.assign(new Error('Invalid body'), { code: 'CONTROL_INPUT_INVALID' });
     sendJson(res, 200, await c.execute({ planId: body.planId, planDigest: body.planDigest, approval: { channel: 'desktop-owner-token', actor: 'desktop-owner' } }));
   } catch (error) {

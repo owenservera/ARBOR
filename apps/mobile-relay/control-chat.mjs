@@ -65,8 +65,18 @@ export function createControlChat({
   };
   const planText = plan => {
     switch (plan.outcome) {
-      case 'done':
-        return (plan.title || 'Done') + (plan.result === undefined ? '' : '\n' + describe(plan.result));
+      case 'done': {
+        const result = plan.result;
+        if (plan.actionId === 'wiki.section.read' && typeof result?.content === 'string')
+          return result.page + '/' + result.section + ' · Wiki revision ' + result.wikiRevision +
+            '\n' + (result.content || '(Empty section)');
+        if (plan.actionId === 'wiki.pages.list' && Array.isArray(result?.pages))
+          return 'Wiki · revision ' + result.wikiRevision + '\n' +
+            (result.pages.map(p => p.page + ': ' + (p.sections.join(', ') || '(no sections)') +
+              (p.omittedSections ? ' (+' + p.omittedSections + ' more)' : '')).join('\n') || '(No pages)') +
+            (result.omitted ? '\n' + result.omitted + ' more pages not shown.' : '');
+        return (plan.title || 'Done') + (result === undefined ? '' : '\n' + describe(result));
+      }
       case 'approval_required':
         return (plan.title || 'Proposed change') + '\nReview the exact plan below. Nothing has changed yet.';
       case 'clarification_required':

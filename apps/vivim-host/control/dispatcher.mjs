@@ -24,6 +24,9 @@ const stable = v => Array.isArray(v) ? v.map(stable) : v && typeof v === 'object
 const digest = o => createHash('sha256').update(JSON.stringify(stable(o))).digest('hex');
 const short = (s, n) => String(s ?? '').slice(0, n);
 const WIKI_ACTION = 'wiki.section.edit';
+const WIKI_READS = new Set(['wiki.section.read', 'wiki.pages.list']);
+const MAX_WIKI_LIST_PAGES = 24;
+const MAX_WIKI_LIST_SECTIONS = 24;
 const MAX_WIKI_CONTENT_BYTES = 3072;
 
 // Only existing sections, resolved to their canonical names. A model cannot invent a Wiki target.
@@ -162,6 +165,23 @@ function createExecutors({ runtime, planner, lexicon, devices, productJournal })
     'privacy.hard_no.clear': ({ id }) => { const out = runtime.clearHardNo({ id }); return { id: out.id, value: short(out.value, 120) }; },
     'control.lexicon.teach': ({ word, action }, ctx) => lexicon.teach({ word, actionId: action, planId: ctx.planId }),
     'control.lexicon.forget': ({ word }, ctx) => lexicon.forget({ word, planId: ctx.planId }),
+    'wiki.pages.list': async () => {
+      const wiki = await productJournal.readPhoneWiki();
+      const pages = Object.entries(wiki.pages);
+      return { wikiRevision: wiki.revision, total: pages.length,
+        omitted: Math.max(0, pages.length - MAX_WIKI_LIST_PAGES),
+        pages: pages.slice(0, MAX_WIKI_LIST_PAGES).map(([page, value]) => {
+          const sections = Object.keys(value.sections);
+          return { page, sections: sections.slice(0, MAX_WIKI_LIST_SECTIONS),
+            omittedSections: Math.max(0, sections.length - MAX_WIKI_LIST_SECTIONS) };
+        }) };
+    },
+    'wiki.section.read': async ({ page, section }) => {
+      const wiki = await productJournal.readPhoneWiki();
+      const found = resolveWikiTarget(wiki, page + '/' + section);
+      return { page: found.page, section: found.section,
+        wikiRevision: found.expectedRevision, content: found.before };
+    },
     [WIKI_ACTION]: async ({ content }, ctx) => {
       if (!productJournal || !ctx.wikiBinding) throw fail('CONTROL_WIKI_NOT_READY');
       const { page, section, expectedRevision } = ctx.wikiBinding;
@@ -214,8 +234,19 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
   }
 
   function runRead(plan) {
-    const result = executors[plan.actionId](plan.args, { requestId: null, planId: null });
-    return { ...plan, outcome: 'done', executionPerformed: true, effect: 'read', result };
+    const complete = result => ({ ...plan, outcome: 'done', executionPerformed: true, effect: 'read', result });
+    if (WIKI_READS.has(plan.actionId)) {
+      if (typeof productJournal?.readPhoneWiki !== 'function')
+        return { ...plan, outcome: 'unavailable', executionPerformed: false, precondition: 'Host Wiki journal unavailable.' };
+      // Wiki reads share the committed, torn-tail-safe Wiki projection. Other
+      // existing R0 commands retain the synchronous return contract.
+      return executors[plan.actionId](plan.args).then(complete, error =>
+        error?.code === 'CONTROL_WIKI_TARGET_UNKNOWN'
+          ? { ...plan, outcome: 'refused', executionPerformed: false,
+              refusal: { code: error.code, message: 'No unique matching Wiki section. List Wiki pages to find an existing section.' } }
+          : { ...plan, outcome: 'unavailable', executionPerformed: false, precondition: 'Committed Wiki unavailable.' });
+    }
+    return complete(executors[plan.actionId](plan.args, { requestId: null, planId: null }));
   }
 
   function plan(input, { source = 'text', actor = 'owner' } = {}) {
