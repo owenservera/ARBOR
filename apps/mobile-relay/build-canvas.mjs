@@ -145,6 +145,15 @@ export function mountBuildCanvas({ host, request, getSurface, getProvider, send,
     } catch { set({ name: 'idle', error: "VIVIM couldn't confirm that went through, so it won't send it again on its own. Check Talk on your PC, then try again." }); }
   }
 
+  async function refreshCommittedScreen(proof) {
+    try { await onApplied(proof); }
+    catch {
+      // The existing phone surface owns the authenticated status read and repaint.
+      // If the shell callback fails, request that same read-only refresh, never a write.
+      window.dispatchEvent(new Event('vivim:bootstrap-refresh'));
+    }
+  }
+
   async function waitForReadback(proof, expected) {
     for (let i = 0; i < 12; i++) {
       const view = getSurface?.();
@@ -165,7 +174,7 @@ export function mountBuildCanvas({ host, request, getSurface, getProvider, send,
     } catch (error) {
       return set({ name: 'uncertain', message: 'No matching Host confirmation was received. Check the live screen before another change. VIVIM did not resend.' });
     }
-    try { await onApplied(proof); } catch { /* The commit can precede visible readback. */ }
+    await refreshCommittedScreen(proof);
     const confirmed = await waitForReadback(proof, submitted.preview.surface);
     text = '';
     set({ name: confirmed ? 'done' : 'awaiting-readback',
@@ -252,7 +261,7 @@ export function mountBuildCanvas({ host, request, getSurface, getProvider, send,
           const check = el('button', 'btn', 'Check live screen'); check.type = 'button';
           check.onclick = async () => {
             const view = state;
-            try { await onApplied(view.proof); } catch { /* Polling can still supply readback. */ }
+            await refreshCommittedScreen(view.proof);
             if (await waitForReadback(view.proof, view.expected) && state === view) set({ ...view, name: 'done' });
           };
           row.append(check);
@@ -269,7 +278,7 @@ export function mountBuildCanvas({ host, request, getSurface, getProvider, send,
       const bad = el('div', 'proposal is-error'); bad.setAttribute('role', 'alert');
       bad.append(el('span', 'tour-eyebrow', 'OUTCOME UNCONFIRMED'), el('p', null, state.message));
       const check = el('button', 'btn', 'Refresh live screen'); check.type = 'button';
-      check.onclick = async () => { try { await onApplied(); } catch { /* No write or resend. */ } };
+      check.onclick = () => refreshCommittedScreen();
       const reset = el('button', 'btn', 'Return to Build'); reset.type = 'button';
       reset.onclick = () => { text = ''; set({ name: 'idle' }); };
       bad.append(check, reset); host.append(bad);
