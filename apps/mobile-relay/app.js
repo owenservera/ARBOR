@@ -687,11 +687,41 @@ function renderWiki() {
   scroll.append(head);
   if (!S.wiki) scroll.append(el('p', 'ux-empty', S.wikiError));
   else {
-    const pageCards=new Map();
+    const pageCards=new Map(),captures=new Map();
+    const captureProjection=S.wiki.personalCaptures;
+    if(captureProjection?.schema==='vivim.personal-captures/1'&&captureProjection.authority==='committed-wiki-read-only'&&
+      captureProjection.wikiRevision===S.wiki.revision&&Array.isArray(captureProjection.items)&&captureProjection.items.length<=256){
+      for(const row of captureProjection.items){
+        if(!row||!['note','task'].includes(row.kind)||!Object.hasOwn(S.wiki.pages,row.page)||
+          typeof row.entryId!=='string'||!/^[a-f0-9-]{36}$/.test(row.entryId)||
+          !Number.isSafeInteger(row.createdRevision)||row.createdRevision>S.wiki.revision||row.createdRevision<1||
+          row.section!==(row.kind==='task'?'Task':'Note')||typeof S.wiki.pages[row.page]?.sections?.[row.section]!=='string')continue;
+        if(row.kind==='task'&&row.status!==S.wiki.pages[row.page].sections.Status)continue;
+        captures.set(row.page,row);
+      }
+      const summary=el('section','ux-card');summary.append(el('h3','ux-card-title','Personal captures'));
+      const tasks=[...captures.values()].filter(row=>row.kind==='task'),notes=[...captures.values()].filter(row=>row.kind==='note');
+      summary.append(el('p','ux-note',notes.length+' notes · '+tasks.filter(row=>row.status==='Open').length+' open tasks · '+tasks.filter(row=>row.status==='Done').length+' completed tasks'));
+      for(const row of captures.values()){
+        const content=S.wiki.pages[row.page].sections[row.section].replace(/\s+/g,' ').slice(0,90);
+        const open=el('button','btn sm ux-secondary',(row.kind==='task'?row.status+' task':'Note')+' · '+content);open.type='button';
+        open.addEventListener('click',()=>pageCards.get(row.page)?.scrollIntoView?.({block:'start'}));summary.append(open);
+      }
+      scroll.append(summary);
+    }
     for (const [name, page] of Object.entries(S.wiki.pages)) {
       const card = el('section', 'ux-card');
       pageCards.set(name,card);
-      card.append(el('h3', 'ux-card-title', name));
+      const capture=captures.get(name);
+      card.append(el('h3','ux-card-title',capture?(capture.kind==='task'?'Task · '+capture.status:'Personal note'):name));
+      if(capture){card.append(el('p','ux-note',name+' · captured at Wiki revision '+capture.createdRevision));
+        if(capture.kind==='task'&&['Open','Done'].includes(capture.status)&&!HOST_PREVIEW&&transport.direct&&S.paired&&S.device.scopes?.includes('control:execute')){
+          const revision=S.wiki.revision,status=capture.status==='Open'?'Done':'Open';
+          const action=el('button','btn sm ux-secondary',status==='Done'?'Review completion':'Review reopen');action.type='button';
+          action.addEventListener('click',()=>{if(S.wiki?.revision!==revision||!S.paired||!transport.deviceHeaders?.()||!S.device.scopes?.includes('control:execute'))return;
+            openVivimDraft('edit wiki section '+name+'/Status saying '+status);});card.append(action);
+        }
+      }
       const links=Array.isArray(page.links)?page.links.filter(p=>typeof p==='string'&&Object.hasOwn(S.wiki.pages,p)):[];
       if(links.length){
         card.append(el('p','ux-note','Links to:'));

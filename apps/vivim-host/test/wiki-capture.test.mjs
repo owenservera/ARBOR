@@ -16,12 +16,19 @@ test('reviewed capture is one durable Wiki append, native source record, and can
   const entry=await journal.append(payload),after=await journal.readPhoneWiki();
   assert.equal(after.revision,1);assert.equal(after.pages[draft.page].sections.Task,input.content);
   assert.equal(after.pages[draft.page].sections.Status,'Open');
+  assert.equal(after.personalCaptures.items[0].status,'Open');
   assert.equal(after.autoWiki.items[0].entryId,entry.entryId);
   const native=await journal.readNativeKnowledge({nativeOnly:true});
   assert.equal(native.changes.items[0].content,input.content);
   await assert.rejects(journal.append(payload),/Stale Wiki revision/);
   assert.throws(()=>previewWikiCapture(after,{...input,content:'Overwrite'}),/Capture already exists/);
   assert.equal((await journal.readRecords()).length,1);
+  const statusEdit={kind:'wiki-edit',actor:'owner-browser',schemaVersion:1,expectedRevision:1,edit:{action:'set-section',page:draft.page,section:'Status',content:'Done'}};
+  await assert.rejects(journal.append({...statusEdit,edit:{...statusEdit.edit,content:'Unknown'}}),/Task status/);
+  await journal.append(statusEdit);
+  const done=await journal.readPhoneWiki();assert.equal(done.personalCaptures.items[0].status,'Done');assert.equal(done.personalCaptures.items[0].entryId,entry.entryId);
+  await journal.append({...statusEdit,expectedRevision:2,edit:{...statusEdit.edit,content:'Open'}});
+  assert.equal((await journal.readPhoneWiki()).personalCaptures.items[0].status,'Open');
  }finally{await rm(root,{recursive:true,force:true});}
 });
 test('reject malformed ids, blank or oversized text before a plan is saved',()=>{

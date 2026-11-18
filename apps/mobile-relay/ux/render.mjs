@@ -102,7 +102,7 @@ export function renderToday(host, model, options = {}) {
       ['talk', 'Talk', 'AI conversations and requests'],
       ['build', 'Build', 'Design and preview interfaces'],
       ['world', 'World', 'Things you have built'],
-      ['wiki', 'Wiki', 'Shared notes and docs on the host'],
+      ['wiki', 'Wiki', 'Host notes, personal tasks and knowledge'],
       ['me', 'Me', 'Your device and preferences'],
       ['control', 'Control', 'Review PC changes']
     ];

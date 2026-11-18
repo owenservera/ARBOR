@@ -210,6 +210,10 @@ function validateWikiEditTarget(payload,wiki,fault=409){
   if(e.action==='set-section'){
     requireShape(Object.hasOwn(wiki.pages,e.page)&&wiki.pages[e.page]?.sections&&
       Object.hasOwn(wiki.pages[e.page].sections,e.section),'Wiki target does not exist',fault===503?503:404);
+    // Only our typed personal task pages carry the bounded two-state lifecycle.
+    // Ordinary handwritten Wiki sections retain their existing semantics.
+    if(/^task-[a-f0-9]{32}$/.test(e.page)&&e.section==='Status'&&Object.hasOwn(wiki.pages[e.page].sections,'Task'))
+      requireShape(['Open','Done'].includes(e.content),'Task status must be Open or Done',fault===503?503:400);
   }else{
     requireShape(!Object.keys(wiki.pages).some(p=>p.toLowerCase()===e.page.toLowerCase()),'Capture already exists; inspect Wiki before retrying',fault);
     requireShape(Object.keys(wiki.pages).length<256,'Wiki page capacity reached',fault===503?503:507);
@@ -228,6 +232,20 @@ export function previewWikiCapture(wiki,{capture_id,kind,content}={}){
   validateProductEdit(payload,wiki);
   return {page,section,expectedRevision:wiki.revision,target:page+'/'+section,before:'New capture (no existing page)',
     after:content+(kind==='task'?'\n\nTask status: Open':''),edit};
+}
+
+// The capture list is a read model of actual committed creation records, never inferred from page names.
+export function projectPersonalCaptures(records,wiki){
+  const items=[];
+  for(const e of records){
+    if(e.kind!=='wiki-edit'||!['capture-note','capture-task'].includes(e.edit.action)||typeof e.entryId!=='string')continue;
+    const page=wiki.pages[e.edit.page];if(!page||typeof page.sections[e.edit.section]!=='string')continue;
+    const kind=e.edit.action==='capture-task'?'task':'note';
+    items.push({kind,page:e.edit.page,section:e.edit.section,entryId:e.entryId,createdRevision:e.expectedRevision+1,
+      ...(kind==='task'?{status:['Open','Done'].includes(page.sections.Status)?page.sections.Status:'Unknown'}:{})});
+  }
+  return {schema:'vivim.personal-captures/1',authority:'committed-wiki-read-only',wikiRevision:wiki.revision,
+    total:items.length,items:items.slice().reverse()};
 }
 
 // Source-identified observations only: user statements are not verified Wiki facts.
@@ -445,7 +463,7 @@ export function createProductJournal({ dataRoot, seedState, seedWiki }) {
       pageSources:structure.pageSources.map(({page,role,event:{sequence,...event}})=>({page,role,event}))};
     // Phone Wiki read permission does not grant access to private chat/effects.
     // No global sequence or history content is disclosed through this overlay.
-    return { ...wiki, wikiStructure:phoneStructure, autoWiki: { schema: 'vivim.autowiki-wiki-changes/1',
+    return { ...wiki, personalCaptures:projectPersonalCaptures(current.records,wiki), wikiStructure:phoneStructure, autoWiki: { schema: 'vivim.autowiki-wiki-changes/1',
       wikiRevision: wiki.revision, scope: 'wiki-edits-only', total: changes.total, omitted: changes.omitted,
       items: changes.items.map(({ sequence, ...entry }) => entry) } };
   }

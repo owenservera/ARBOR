@@ -21,7 +21,7 @@ test('real Host adapter supplies fixed policy, never accepts a caller policy or 
 });
 test('current Wiki source references must match exact committed digest and revision',async()=>{
  const entryId='11111111-1111-1111-1111-111111111111',content='Reviewed note',digest=createHash('sha256').update(content).digest('hex');
- const productJournal={readNativeKnowledge:async()=>({changes:{items:[{entryId,content,contentDigest:digest,wikiRevision:2,kind:'committed-wiki-edit',status:'current-section-revision'}]}})};
+ const productJournal={readNativeKnowledge:async()=>({context:{wikiRevision:2},changes:{items:[{entryId,content,contentDigest:digest,wikiRevision:2,kind:'committed-wiki-edit',status:'current-section-revision'}]}})};
  const validate=createNativeProgramValidator({productJournal,resolveBinary:()=>'/trusted/native',run:async()=>JSON.stringify(compiled)});
  const input={source_id:entryId,revision:2,digest,data_class:'private'};
  assert.equal((await validate(arg({...draft,steps:[{...step,inputs:[input]}]}))).sourceReferencesVerified,1);

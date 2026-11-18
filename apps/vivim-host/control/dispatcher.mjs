@@ -16,7 +16,7 @@ import { createLexiconStore } from './lexicon.mjs';
 import { createPersonalRuleStore } from './personal-rule-store.mjs';
 import { PERSONAL_RULE_SCHEMA, validatePersonalRule, TEMPLATE_SCHEMA, templateAlias, templateDependencies, bindPersonalRule, currentTemplate } from './personal-semantics.mjs';
 import { interpretControl, resolveLocalDestination, resolveDesktopDestination } from '../../mobile-relay/control-language.mjs';
-import { previewWikiStructure, previewWikiCapture } from '../chat/product-journal.mjs';
+import { previewWikiStructure, previewWikiCapture, validateProductEdit } from '../chat/product-journal.mjs';
 import { wikiApprovalSentence } from './command-intent.mjs';
 import { createNativeProgramValidator } from './native-program.mjs';
 
@@ -563,8 +563,12 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
       if (Buffer.byteLength(p.args.content, 'utf8') > MAX_WIKI_CONTENT_BYTES)
         throw fail('CONTROL_WIKI_CONTENT_INVALID');
       // Existing synchronous commands retain their API. Wiki planning is asynchronous.
-      return productJournal.readProjection().then(({ wiki }) =>
-        savePlan(resolveWikiTarget(wiki, p.args.target)));
+      return productJournal.readProjection().then(({ wiki }) => {
+        const binding=resolveWikiTarget(wiki,p.args.target);
+        validateProductEdit({kind:'wiki-edit',actor:'owner-browser',schemaVersion:1,expectedRevision:binding.expectedRevision,
+          edit:{action:'set-section',page:binding.page,section:binding.section,content:p.args.content}},wiki);
+        return savePlan(binding);
+      });
     }
     if (WIKI_STRUCTURE.has(p.actionId)) {
       return productJournal.readPhoneWiki().then(wiki=>

@@ -51,16 +51,18 @@ export function createNativeProgramValidator({productJournal=null,resolveBinary=
     }
     // Only current committed Wiki source records may substantiate a referenced input.
     // No caller-asserted evidence, raw source data or unrelated graph records accepted.
+    let checkedWikiRevision=null;
     if(refs.length){
       let snapshot;try{snapshot=await productJournal?.readNativeKnowledge({nativeOnly:true});}catch{return fail('unavailable','PROGRAM_SOURCE_UNAVAILABLE');}
-      if(!Array.isArray(snapshot?.changes?.items))return fail('unavailable','PROGRAM_SOURCE_UNAVAILABLE');
+      if(!Array.isArray(snapshot?.changes?.items)||!Number.isSafeInteger(snapshot.context?.wikiRevision))return fail('unavailable','PROGRAM_SOURCE_UNAVAILABLE');
+      checkedWikiRevision=snapshot.context.wikiRevision;
       const current=new Map(snapshot.changes.items.filter(x=>x.status==='current-section-revision'&&
         x.kind==='committed-wiki-edit'&&typeof x.content==='string'&&
         createHash('sha256').update(x.content,'utf8').digest('hex')===x.contentDigest).map(x=>[x.entryId,x]));
       if(refs.some(ref=>{const source=current.get(ref.source_id);return !source||source.wikiRevision!==ref.revision||source.contentDigest!==ref.digest;}))
         return fail('refused','PROGRAM_SOURCE_STALE');
     }
-    const binary=resolveBinary();if(!binary)return fail('unavailable','NATIVE_PROGRAM_NOT_PACKAGED');
+    let binary;try{binary=resolveBinary();}catch{return fail('unavailable','NATIVE_PROGRAM_NOT_PACKAGED');}if(!binary)return fail('unavailable','NATIVE_PROGRAM_NOT_PACKAGED');
     const wire=JSON.stringify({schema:SCHEMA,program:{...draft,policy_id:POLICY.id,policy_revision:POLICY.revision},policy:POLICY});
     let result;
     try{const raw=await run(binary,wire);if(typeof raw!=='string'||Buffer.byteLength(raw,'utf8')>MAX_OUTPUT)throw Error('OUTPUT_LIMIT');result=JSON.parse(raw);}
@@ -74,8 +76,13 @@ export function createNativeProgramValidator({productJournal=null,resolveBinary=
       result.lineage?.schema!=='vivim.native-transform-lineage/1'||result.lineage.executionAuthorized!==false||result.lineage.effectPerformed!==false||
       !Array.isArray(result.lineage.nodes)||!Array.isArray(result.lineage.edges))
       return fail('unavailable','NATIVE_PROGRAM_CONTRACT_INVALID');
+    if(checkedWikiRevision!==null){
+      try{const latest=await productJournal.readNativeKnowledge({nativeOnly:true});if(latest.context?.wikiRevision!==checkedWikiRevision)return fail('refused','PROGRAM_SOURCE_STALE');}
+      catch{return fail('unavailable','PROGRAM_SOURCE_UNAVAILABLE');}
+    }
     return {schema:SCHEMA,outcome:'compiled',programId:draft.id,programRevision:draft.revision,policyRevision:POLICY.revision,
       orderedStepIds:ordered,sourceReferencesVerified:refs.length,sourceScope:refs.length?'current-committed-wiki':'no-source-references',
+      ...(checkedWikiRevision!==null?{wikiRevision:checkedWikiRevision}:{}),
       programDigest:createHash('sha256').update(wire,'utf8').digest('hex'),
       lineage:{schema:result.lineage.schema,nodes:result.lineage.nodes.length,edges:result.lineage.edges.length,authority:'read-only'},
       executionAuthorized:false,effectPerformed:false};
