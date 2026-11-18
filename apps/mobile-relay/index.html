@@ -316,6 +316,8 @@ body.host-preview #grokbot-direct-link{display:none!important}
 .launcher-modes{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 .launcher-modes [aria-pressed="true"]{outline:2px solid var(--ac);outline-offset:2px}
 .launcher-results h3{font:600 14px var(--font-sans);margin:8px 0}
+[data-vivim-inspect-mode="true"] [data-component-id]{cursor:crosshair}
+#build-inspector select{min-height:44px;max-width:100%}
 [data-vivim-inspected="true"],[data-vivim-shell-inspected="true"]{outline:2px solid var(--ac);outline-offset:3px}
 .launcher-results,.notes-list{display:grid;gap:8px;padding:8px 0}
 .launcher-row{display:flex;flex-direction:column;text-align:left;gap:3px;border:1px solid var(--bd);
@@ -536,6 +538,11 @@ body.host-preview #grokbot-direct-link{display:none!important}
     <section id="v-soon" hidden aria-hidden="true"></section>
     <section id="v-build" role="tabpanel" aria-labelledby="tab-build" hidden>
       <div id="build-compose"></div>
+      <section id="build-inspector" class="ux-card" aria-label="Inspect committed components" hidden>
+        <div class="compose-row"><button id="build-inspect-toggle" class="btn" type="button" aria-pressed="false">Inspect on screen</button><button id="build-inspect-configure" class="btn" type="button" disabled>Configure selected</button></div>
+        <label for="build-inspect-select">Committed component</label><select id="build-inspect-select"></select>
+        <p id="build-inspect-status" class="muted" role="status">Select a component to inspect its committed identity.</p>
+      </section>
       <div id="build-surface"></div>
     </section>
     <section id="v-today" role="tabpanel" aria-labelledby="tab-today" hidden aria-label="Today"></section>

@@ -15,6 +15,7 @@ const suites = [
     'apps/mobile-relay/test/component-presentation.test.mjs',
     'apps/mobile-relay/test/shell-presentation.test.mjs',
     'apps/mobile-relay/test/tierflow-build.test.mjs',
+    'apps/mobile-relay/test/host-build-consumer.test.mjs',
     'apps/mobile-relay/test/browser-enrollment-flow.test.mjs',
     'apps/mobile-relay/test/service-worker.test.mjs',
     'apps/mobile-relay/test/host-static-allowlist-contract.test.mjs',

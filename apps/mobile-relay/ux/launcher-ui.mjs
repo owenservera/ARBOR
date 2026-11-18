@@ -155,10 +155,10 @@ export function mountCapabilityLauncher({host,context,onActivate,onInspect=()=>f
       list.append(row);
     }
   }
-  function open(){
+  function open({mode:initialMode=0,query=''}={}){
     if(dialog.open)return;
     previous=doc.activeElement;
-    mode=0;input.value='';render();
+    mode=[0,1,2].includes(initialMode)?initialMode:0;input.value=typeof query==='string'?query.slice(0,100):'';render();
     if(typeof dialog.showModal==='function')dialog.showModal();
     else dialog.setAttribute('open','');
     input.focus();

@@ -464,6 +464,7 @@ function goTab(tab) {
   if (S.tab === 'world' && tab !== 'world' && playerActive) stopMediaPlayer();
   dockAssist?.reset();compose?.resetAssist?.();
   if(S.tab==='wiki'&&tab!=='wiki')clearWikiSources();
+  if(S.tab==='build'&&tab!=='build'){build?.setInspecting?.(false);$('build-inspect-toggle')?.setAttribute('aria-pressed','false');}
   S.tab = tab;
   dockExpanded=false;
   chatContextEpoch++;
@@ -1600,14 +1601,35 @@ async function refresh() {
 }
 
 /* ---------- Build tab: committed surface plus poll-driven repaint ---------- */
+function refreshBuildInspector(rows){
+  const bar=$('build-inspector'),select=$('build-inspect-select');if(!bar||!select)return;
+  select.replaceChildren();const empty=el('option',null,'Choose a component');empty.value='';select.append(empty);
+  for(const row of rows){const option=el('option',null,row.instanceId+' · '+row.type);option.value=row.instanceId;select.append(option);}
+  bar.hidden=!rows.length;
+  if(!rows.length)$('build-inspect-toggle').setAttribute('aria-pressed','false');
+}
+function updateBuildSelection(row){
+  const select=$('build-inspect-select'),status=$('build-inspect-status'),configure=$('build-inspect-configure');
+  if(!select||!status||!configure)return;
+  select.value=row?.instanceId??'';
+  status.textContent=row?'Selected '+row.instanceId+' · revision '+row.revision+' · nothing changed.':'Select a component to inspect its committed identity.';
+  configure.disabled=!row||HOST_PREVIEW||!launcherContext().visualDraftAllowed;
+}
 function mountBuild() {
   if (build) return;
   const host = $('build-surface'); if (!host) return;
   try { build = mountBuildSurface(host, {
     readOnly: HOST_PREVIEW,
+    onInstances:refreshBuildInspector,onSelection:updateBuildSelection,
     onCommit: () => { buildKey = ''; scheduleBuild(0); }
   }); }
   catch (e) { setConn('Build surface unavailable: ' + e.message, true); }
+  if(build){
+    const toggle=$('build-inspect-toggle'),select=$('build-inspect-select'),configure=$('build-inspect-configure');
+    toggle.addEventListener('click',()=>{const enabled=build.setInspecting(toggle.getAttribute('aria-pressed')!=='true');toggle.setAttribute('aria-pressed',String(enabled));});
+    select.addEventListener('change',()=>{const surface=build.surface();if(surface&&select.value)build.selectInstance(select.value,surface.revision,'glyph');});
+    configure.addEventListener('click',()=>{const row=build.selectedInstance();if(!row||!launcherContext().visualDraftAllowed)return;capabilityLauncher?.open({mode:1,query:row.instanceId});});
+  }
   if (HOST_PREVIEW) {
     $('build-compose').replaceChildren(el('p', 'muted pad',
       'Committed Host interface · read only. Pair a phone or use Host Control to make changes.'));

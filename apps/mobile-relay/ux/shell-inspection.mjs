@@ -20,7 +20,7 @@ const MOUNTS=Object.freeze([
   ['dock-rail','composer navigation'],['text','draft input'],['send','submit control'],
   ['dock-mic','voice capture'],['composer-assist','semantic assistance'],
   ['v-talk','Talk panel'],['msgs','conversation transcript'],
-  ['v-build','Build panel'],['build-compose','Build composer'],['build-surface','Build surface'],
+  ['v-build','Build panel'],['build-compose','Build composer'],['build-surface','Build surface'],['build-inspector','Build component inspector'],
   ['v-wiki','Wiki panel'],['v-today','Today panel'],['v-world','World panel'],
   ['v-me','Me panel'],['v-control','Control panel'],['control-preview','protected approval preview']
 ]);
