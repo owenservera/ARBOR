@@ -55,6 +55,7 @@ function makeProposal(surface, op, explanation) {
     explanation, assumptions: [], unknowns: []
   };
 }
+// @hq:emits vivim.ui-proposal@1
 export function compileVecUiRequest({ text, surface } = {}) {
   if (typeof text !== 'string' || !text.trim() || text.length > MAX_UI_REQUEST ||
       /[\u0000-\u001f\u007f]/.test(text))
