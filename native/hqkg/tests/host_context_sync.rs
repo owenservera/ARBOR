@@ -80,6 +80,9 @@ fn native_reconciles_sources_without_duplicate_frames_or_stale_links() {
     let graph=Journal::new(&file).load().unwrap();
     assert_eq!(graph.node_count(),2);
     assert_eq!(graph.edge_count(),0,"historical receipt cannot link to replacement");
+    let before_stale=fs::read(&file).unwrap();
+    assert!(!sync(&file,SCOPE,vec![wiki(ENTRY,2,"First committed text"),effect()]).0);
+    assert_eq!(fs::read(&file).unwrap(),before_stale,"stale source cannot regress current node");
     assert!(read(&file,&"b".repeat(64),next,"wiki").is_none());
     assert!(!sync(&file,&"b".repeat(64),vec![]).0);
     let (ok,removed)=sync(&file,SCOPE,vec![]);

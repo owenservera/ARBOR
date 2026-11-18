@@ -1086,11 +1086,14 @@ impl Journal {
         if bytes.len() > MAX_FRAME {
             return Err(Error::Invalid("graph exceeds 128 MiB per revision".into()));
         }
-        let mut file = OpenOptions::new()
-            .create(true)
-            .write(true)
-            .read(true)
-            .open(&self.path)?;
+        let mut options = OpenOptions::new();
+        options.create(true).write(true).read(true);
+        #[cfg(unix)]
+        if expected.is_some() {
+            use std::os::unix::fs::OpenOptionsExt;
+            options.mode(0o600);
+        }
+        let mut file = options.open(&self.path)?;
         file.set_len(end as u64)?;
         file.seek(SeekFrom::End(0))?;
         file.write_all(FRAME)?;

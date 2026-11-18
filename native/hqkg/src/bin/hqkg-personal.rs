@@ -104,6 +104,15 @@ fn sync_context(v: &Value, ns: &Namespace, journal: &Journal, g: &mut Graph,
             if old.properties.get("vivim.context.kind").map(String::as_str) != Some(kind) {
                 return Err("managed context identity conflict".into());
             }
+            let old_revision = old.properties.get("hqkg.provenance.revision")
+                .and_then(|v| v.parse::<u64>().ok()).ok_or("invalid prior source revision")?;
+            let old_digest = old.properties.get("hqkg.provenance.digest").map(String::as_str);
+            let old_ref = old.properties.get("vivim.context.sourceRef").map(String::as_str);
+            if (kind == "wiki" && (old_revision > revision ||
+                (old_revision == revision && (old_digest != Some(digest) || old_ref != Some(source_ref))))) ||
+                (kind == "effect" && (old_digest != Some(digest) || old_ref != Some(source_ref))) {
+                return Err("STALE_CONTEXT_SOURCE or immutable source conflict".into());
+            }
             if old.title == node.title && old.properties == node.properties &&
                 old.sources == node.sources { continue; }
         }
