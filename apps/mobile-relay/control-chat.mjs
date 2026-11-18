@@ -17,6 +17,7 @@ export const CONTROL_CHAT_EXAMPLES = Object.freeze([
 // deterministic phrases do not approve, schedule, send or mutate anything.
 const LOCAL_NAVIGATION = Object.freeze({
   'open today': 'today', 'go to today': 'today',
+  'open wiki': 'wiki', 'go to wiki': 'wiki', 'show wiki': 'wiki',
   'open world': 'world', 'go to world': 'world', 'show media library': 'world',
   'open media library': 'world', 'open my media library': 'world',
   'open build': 'build', 'go to build': 'build',
@@ -36,6 +37,7 @@ const SURFACE_EXAMPLES = Object.freeze({
   talk: ['show status', 'open Build', 'what can I say?'],
   build: ['show status', 'open World', 'what can I say?'],
   world: ['open media library', 'show status', 'what can I say?'],
+  wiki: ['open Wiki', 'show status', 'what can I say?'],
   me: ['show status', 'open Control', 'what can I say?'],
   control: ['show status', 'open Today', 'what can I say?']
 });
