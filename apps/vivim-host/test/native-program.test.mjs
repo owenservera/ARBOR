@@ -21,7 +21,7 @@ test('real Host adapter supplies fixed policy, never accepts a caller policy or 
 });
 test('current Wiki source references must match exact committed digest and revision',async()=>{
  const entryId='11111111-1111-1111-1111-111111111111',content='Reviewed note',digest=createHash('sha256').update(content).digest('hex');
- const productJournal={readNativeKnowledge:async()=>({context:{wikiRevision:2},changes:{items:[{entryId,content,contentDigest:digest,wikiRevision:2,kind:'committed-wiki-edit',status:'current-section-revision'}]}})};
+ const productJournal={readProgramSources:async ids=>{assert.deepEqual(ids,[entryId]);return {schema:'vivim.program-wiki-sources/1',authority:'host-product-journal',wikiRevision:30,items:[{entryId,contentDigest:digest,wikiRevision:2,kind:'committed-wiki-edit',status:'current-section-revision'}]};}};
  const validate=createNativeProgramValidator({productJournal,resolveBinary:()=>'/trusted/native',run:async()=>JSON.stringify(compiled)});
  const input={source_id:entryId,revision:2,digest,data_class:'private'};
  assert.equal((await validate(arg({...draft,steps:[{...step,inputs:[input]}]}))).sourceReferencesVerified,1);
@@ -31,4 +31,12 @@ test('current Wiki source references must match exact committed digest and revis
 test('missing native binary and forged authorization fail closed',async()=>{
  assert.equal((await createNativeProgramValidator({resolveBinary:()=>null})(arg(draft))).reasonCode,'NATIVE_PROGRAM_NOT_PACKAGED');
  assert.equal((await createNativeProgramValidator({resolveBinary:()=>'/trusted/native',run:async()=>JSON.stringify({...compiled,executionAuthorized:true})})(arg(draft))).reasonCode,'NATIVE_PROGRAM_CONTRACT_INVALID');
+});
+
+test('native validation rechecks exact journal evidence after native work and refuses changes',async()=>{
+ const entryId='22222222-2222-2222-2222-222222222222',digest='a'.repeat(64);let reads=0;
+ const productJournal={readProgramSources:async()=>({schema:'vivim.program-wiki-sources/1',authority:'host-product-journal',wikiRevision:30,items:++reads===1?[{entryId,contentDigest:digest,wikiRevision:1,kind:'committed-wiki-edit',status:'current-section-revision'}]:[]})};
+ const validate=createNativeProgramValidator({productJournal,resolveBinary:()=>'/trusted/native',run:async()=>JSON.stringify(compiled)});
+ const result=await validate(arg({...draft,steps:[{...step,inputs:[{source_id:entryId,revision:1,digest,data_class:'private'}]}]}));
+ assert.equal(result.reasonCode,'PROGRAM_SOURCE_STALE');assert.equal(reads,2);assert.equal(result.executionAuthorized,false);
 });

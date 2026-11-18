@@ -15,6 +15,7 @@ const fail=(outcome,reasonCode)=>({schema:SCHEMA,outcome,reasonCode,executionAut
 const record=x=>x!==null&&typeof x==='object'&&!Array.isArray(x)&&Object.getPrototypeOf(x)===Object.prototype;
 const keys=(x,allowed)=>record(x)&&Object.keys(x).every(k=>allowed.includes(k));
 const uuid=/^[0-9a-f-]{36}$/;
+const kinds=new Set(['normalize','select_context','interpret','compile','evaluate','project']);
 function runNative(binary,wire){
   return new Promise((resolve,reject)=>{
     const child=spawn(binary,[],{stdio:['pipe','pipe','pipe'],shell:false,windowsHide:true});
@@ -41,10 +42,11 @@ export function createNativeProgramValidator({productJournal=null,resolveBinary=
       if(!keys(step,['id','kind','dependencies','inputs','output_data_class','risk','destination'])||
         typeof step.id!=='string'||!ID.test(step.id)||!Array.isArray(step.dependencies)||step.dependencies.length>64||
         !Array.isArray(step.inputs)||step.inputs.length>24||step.destination!=null||
-        step.risk!=='R0'||step.kind==='effect_candidate')return fail('refused','PROGRAM_POLICY_REFUSED');
+        step.risk!=='R0'||!kinds.has(step.kind)||!['public','internal','private'].includes(step.output_data_class)||
+        step.dependencies.some(dep=>typeof dep!=='string'||!ID.test(dep)))return fail('refused','PROGRAM_POLICY_REFUSED');
       for(const input of step.inputs){
         if(!keys(input,['source_id','revision','digest','data_class'])||typeof input.source_id!=='string'||!uuid.test(input.source_id)||
-          !Number.isSafeInteger(input.revision)||!SHA.test(input.digest??'')||input.data_class!=='private')
+          !Number.isSafeInteger(input.revision)||input.revision<1||!SHA.test(input.digest??'')||input.data_class!=='private')
           return fail('refused','PROGRAM_SOURCE_INVALID');
         refs.push(input);
       }
@@ -52,15 +54,20 @@ export function createNativeProgramValidator({productJournal=null,resolveBinary=
     // Only current committed Wiki source records may substantiate a referenced input.
     // No caller-asserted evidence, raw source data or unrelated graph records accepted.
     let checkedWikiRevision=null;
+    const sourceIds=[...new Set(refs.map(ref=>ref.source_id))];
+    if(sourceIds.length>64)return fail('refused','PROGRAM_SOURCE_LIMIT');
+    async function checkedSources(){
+      const snapshot=await productJournal?.readProgramSources(sourceIds);
+      if(snapshot?.schema!=='vivim.program-wiki-sources/1'||snapshot.authority!=='host-product-journal'||!Array.isArray(snapshot.items)||
+          snapshot.items.length>sourceIds.length||!Number.isSafeInteger(snapshot.wikiRevision)||snapshot.wikiRevision<0)throw Error('PROGRAM_SOURCE_UNAVAILABLE');
+      const current=new Map();
+      for(const row of snapshot.items){if(!sourceIds.includes(row?.entryId)||current.has(row.entryId)||row.kind!=='committed-wiki-edit'||
+        row.status!=='current-section-revision'||!Number.isSafeInteger(row.wikiRevision)||row.wikiRevision<1||row.wikiRevision>snapshot.wikiRevision||!SHA.test(row.contentDigest??''))throw Error('PROGRAM_SOURCE_UNAVAILABLE');current.set(row.entryId,row);}
+      return {wikiRevision:snapshot.wikiRevision,matching:refs.every(ref=>{const row=current.get(ref.source_id);return row&&row.wikiRevision===ref.revision&&row.contentDigest===ref.digest;})};
+    }
     if(refs.length){
-      let snapshot;try{snapshot=await productJournal?.readNativeKnowledge({nativeOnly:true});}catch{return fail('unavailable','PROGRAM_SOURCE_UNAVAILABLE');}
-      if(!Array.isArray(snapshot?.changes?.items)||!Number.isSafeInteger(snapshot.context?.wikiRevision))return fail('unavailable','PROGRAM_SOURCE_UNAVAILABLE');
-      checkedWikiRevision=snapshot.context.wikiRevision;
-      const current=new Map(snapshot.changes.items.filter(x=>x.status==='current-section-revision'&&
-        x.kind==='committed-wiki-edit'&&typeof x.content==='string'&&
-        createHash('sha256').update(x.content,'utf8').digest('hex')===x.contentDigest).map(x=>[x.entryId,x]));
-      if(refs.some(ref=>{const source=current.get(ref.source_id);return !source||source.wikiRevision!==ref.revision||source.contentDigest!==ref.digest;}))
-        return fail('refused','PROGRAM_SOURCE_STALE');
+      let snapshot;try{snapshot=await checkedSources();}catch{return fail('unavailable','PROGRAM_SOURCE_UNAVAILABLE');}
+      if(!snapshot.matching)return fail('refused','PROGRAM_SOURCE_STALE');checkedWikiRevision=snapshot.wikiRevision;
     }
     let binary;try{binary=resolveBinary();}catch{return fail('unavailable','NATIVE_PROGRAM_NOT_PACKAGED');}if(!binary)return fail('unavailable','NATIVE_PROGRAM_NOT_PACKAGED');
     const wire=JSON.stringify({schema:SCHEMA,program:{...draft,policy_id:POLICY.id,policy_revision:POLICY.revision},policy:POLICY});
@@ -77,7 +84,7 @@ export function createNativeProgramValidator({productJournal=null,resolveBinary=
       !Array.isArray(result.lineage.nodes)||!Array.isArray(result.lineage.edges))
       return fail('unavailable','NATIVE_PROGRAM_CONTRACT_INVALID');
     if(checkedWikiRevision!==null){
-      try{const latest=await productJournal.readNativeKnowledge({nativeOnly:true});if(latest.context?.wikiRevision!==checkedWikiRevision)return fail('refused','PROGRAM_SOURCE_STALE');}
+      try{const latest=await checkedSources();if(!latest.matching||latest.wikiRevision!==checkedWikiRevision)return fail('refused','PROGRAM_SOURCE_STALE');}
       catch{return fail('unavailable','PROGRAM_SOURCE_UNAVAILABLE');}
     }
     return {schema:SCHEMA,outcome:'compiled',programId:draft.id,programRevision:draft.revision,policyRevision:POLICY.revision,

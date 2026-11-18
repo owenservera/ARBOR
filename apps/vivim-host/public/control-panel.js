@@ -277,7 +277,7 @@
         input = element((a.actionId==='program.validate'&&key==='program')||(a.actionId==='versions.compare.pinned'&&key==='selection')?'textarea':'input');
         if(a.actionId==='program.validate'&&key==='program'){
           input.rows=8;input.placeholder='JSON program: id, revision, steps (no policy or effect authorizations)';
-          detail.append(element('p','text-control-note','Local Rust validation only. Host fixes the policy to R0, no external destinations or effect candidates. Source references must match current Wiki evidence.'));
+          detail.append(element('p','text-control-note','Local Rust validation only. Host fixes the policy to R0, no external destinations or effect candidates. Source references must match current committed Wiki evidence, including older sections still current. Validation does not execute the steps.'));
         }else if(a.actionId==='versions.compare.pinned'&&key==='selection'){
           input.rows=8;input.placeholder='JSON selection: schema, sources [{repo, sha}], targetIndex';
           detail.append(element('p','text-control-note','Explicit pinned comparison only. Requires a configured source adapter and active repository grant.'));

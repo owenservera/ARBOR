@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {mkdtemp,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
-import {createProductJournal,previewWikiCapture,projectPersonalCaptures} from '../chat/product-journal.mjs';
+import {createProductJournal,previewWikiCapture,projectPersonalCaptures,projectProgramSources} from '../chat/product-journal.mjs';
 const input={capture_id:'capture-0001',kind:'task',content:'Call the supplier\nConfirm order'};
 test('reviewed capture is one durable Wiki append, native source record, and cannot overwrite existing page',async()=>{
  const root=await mkdtemp(path.join(tmpdir(),'vivim-capture-'));
@@ -46,4 +46,21 @@ test('large capture histories retain exact totals and prioritize open tasks and 
  const result=projectPersonalCaptures(records,{revision:400,pages});assert.equal(result.total,400);assert.equal(result.items.length,256);assert.equal(result.omitted,144);
  assert.deepEqual(result.counts,{notes:50,openTasks:49,doneTasks:301,unknownTasks:0});
  assert.equal(result.items.filter(r=>r.status==='Open').length,49);assert.equal(result.items.filter(r=>r.kind==='note').length,50);
+});
+
+test('exact program inputs resolve older current sections beyond the recent window, but refuse superseded content',async()=>{
+ const root=await mkdtemp(path.join(tmpdir(),'vivim-program-source-'));
+ try{
+  const journal=createProductJournal({dataRoot:root,seedState:{chat:[]},seedWiki:{revision:0,pages:{}}});
+  let first=null,page=null;
+  for(let i=0;i<26;i++){
+   const draft=previewWikiCapture(await journal.readPhoneWiki(),{capture_id:'program-source-'+i,kind:'note',content:'Note number '+i});
+   const entry=await journal.append({kind:'wiki-edit',actor:'owner-browser',schemaVersion:1,expectedRevision:i,edit:draft.edit});
+   if(i===0){first=entry;page=draft.page;}
+  }
+  const recent=await journal.readNativeKnowledge({nativeOnly:true});assert.equal(recent.changes.items.some(r=>r.entryId===first.entryId),false);
+  const exact=await journal.readProgramSources([first.entryId]);assert.equal(exact.wikiRevision,26);assert.equal(exact.items.length,1);assert.equal(exact.items[0].wikiRevision,1);assert.equal(Object.hasOwn(exact.items[0],'content'),false);
+  await journal.append({kind:'wiki-edit',actor:'owner-browser',schemaVersion:1,expectedRevision:26,edit:{action:'set-section',page,section:'Note',content:'Updated'}});
+  assert.deepEqual((await journal.readProgramSources([first.entryId])).items,[]);
+ }finally{await rm(root,{recursive:true,force:true});}
 });

@@ -256,6 +256,25 @@ export function projectPersonalCaptures(records,wiki){
     total:items.length,omitted:items.length-window.length,counts,items:window};
 }
 
+// Exact bounded program inputs resolve against all replay-validated section revisions,
+// not only the recent context window. No raw content leaves this read port.
+export function projectProgramSources(records,wiki,ids){
+  requireShape(Array.isArray(ids)&&ids.length>0&&ids.length<=64&&new Set(ids).size===ids.length&&ids.every(id=>typeof id==='string'&&/^[0-9a-f-]{36}$/.test(id)),'Invalid native program source selection',400);
+  const wanted=new Set(ids),latest=new Map(),selected=new Map();
+  for(const e of records){if(e.kind!=='wiki-edit')continue;
+    const key=JSON.stringify([e.edit.page,e.edit.section]);latest.set(key,e);
+    if(wanted.has(e.entryId))selected.set(e.entryId,{key,entry:e});
+  }
+  const items=[];
+  for(const id of ids){const hit=selected.get(id);if(!hit||latest.get(hit.key)!==hit.entry)continue;
+    const e=hit.entry,content=wiki.pages[e.edit.page]?.sections?.[e.edit.section];
+    // Replayed current text must still equal the selected commit; no seed/observation proof.
+    if(typeof content!=='string'||content!==e.edit.content||e.expectedRevision+1>wiki.revision)continue;
+    items.push({entryId:id,wikiRevision:e.expectedRevision+1,contentDigest:createHash('sha256').update(content,'utf8').digest('hex'),kind:'committed-wiki-edit',status:'current-section-revision'});
+  }
+  return {schema:'vivim.program-wiki-sources/1',authority:'host-product-journal',wikiRevision:wiki.revision,items};
+}
+
 // Source-identified observations only: user statements are not verified Wiki facts.
 function projectWikiChanges(records, { currentOnly = false } = {}) {
   const latestBySection = new Map();
@@ -438,6 +457,11 @@ export function createProductJournal({ dataRoot, seedState, seedWiki }) {
   }
   // Owner-local native input. Use the same validated committed snapshot and
   // D4 identities, never the demo seed, unverified chat or client-supplied facts.
+  async function readProgramSources(ids){
+    const current=await snapshot();
+    requireShape(!current.tornTail,'Native program sources unavailable: torn journal tail',503);
+    return projectProgramSources(current.records,current.wiki,ids);
+  }
   async function readNativeKnowledge({nativeOnly=false}={}) {
     const current = await snapshot();
     requireShape(!current.tornTail, 'Native context unavailable: torn journal tail', 503);
@@ -532,5 +556,5 @@ export function createProductJournal({ dataRoot, seedState, seedWiki }) {
     return pending;
   }
   async function rawJournal() { return (await snapshot()).committed; }
-  return { journalPath, readRecords, readProjection, readWikiContext, readNativeKnowledge, readPhoneWiki, append, rawJournal };
+  return { journalPath, readRecords, readProjection, readWikiContext, readNativeKnowledge, readProgramSources, readPhoneWiki, append, rawJournal };
 }
