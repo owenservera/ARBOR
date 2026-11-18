@@ -3,7 +3,7 @@
 // Static: roadmap.v1.json self-consistency + scripts/roadmap/evidence-truth.mjs
 // deriveReleaseTruth runs clean on the ledgers it names. Live: read-only GETs
 // against the live loopback Host (default http://127.0.0.1:43187) — /api/state
-// and the /api/roadmap queue projection answer 200 and expose the live queue.
+// answer 200; obsolete development routes must answer 404.
 // Live mode here performs NO mutations, so no isolated data root is needed;
 // the base URL is still guarded to loopback http by assertIsolatedLive.
 import { createHash } from 'node:crypto';
@@ -205,32 +205,27 @@ export async function runA00Evidence({
         throw new Error('Invalid /api/state shape: chat/wikiRevision/revision');
       return value;
     });
-    const queueRoute = await safe('live-queue-projection-200', async () => {
-      const out = await io.get('/api/roadmap');
-      if (out.status !== 200 || !/application\/json/i.test(out.type || ''))
-        throw new Error('/api/roadmap status=' + out.status + ' type=' + out.type);
-      const value = JSON.parse(out.body);
-      if (!Array.isArray(value.buildQueue) || value.buildQueue.length === 0)
-        throw new Error('Live queue projection has no buildQueue');
-      return value;
-    });
-    check('live-queue-exposes-batch-items', Boolean(queueRoute) &&
-      ['A00', 'A01', 'A02'].every(id => queueRoute.buildQueue.some(e => e.itemId === id && typeof e.status === 'string')),
-      'buildQueue=' + (queueRoute ? queueRoute.buildQueue.map(e => e.itemId + ':' + e.status).join(' ') : 'unavailable') +
-      ' (base=' + baseUrl + ' GET-only, no mutation)');
-    check('live-queue-matches-committed-roadmap', Boolean(queueRoute) && Boolean(roadmap) &&
-      JSON.stringify(queueRoute.buildQueue.map(e => ({ itemId: e.itemId, status: e.status, verification: e.verification }))) ===
-      JSON.stringify((roadmap.buildQueue || []).map(e => ({ itemId: e.itemId, status: e.status, verification: e.verification }))),
-      'live /api/roadmap queue projection deep-equals ' + ROADMAP + ' buildQueue');
+    const retired = [];
+    for (const [name, route] of [
+      ['live-roadmap-retired', '/api/roadmap'],
+      ['live-demo-retired', '/demo'],
+      ['live-demo-fixtures-retired', '/demo/fixture/index.json'],
+    ]) {
+      retired.push(await safe(name, async () => {
+      const out = await io.get(route);
+      if (out.status !== 404) throw new Error(route + ' status=' + out.status);
+      return true;
+      }));
+    }
     const journal = await safe('live-journal-read-consistency', async () => {
       const api = parseJournalResponse((await io.get('/api/journal')).body);
-      const raw = parseRawJournal((await io.get('/demo/journal.jsonl')).body);
+      const raw = parseRawJournal((await io.get('/api/journal?format=jsonl')).body);
       if (JSON.stringify(api) !== JSON.stringify(raw))
-        throw new Error('/api/journal array and /demo/journal.jsonl disagree');
+        throw new Error('/api/journal array and /api/journal?format=jsonl disagree');
       return api;
     });
-    check('live-reads-are-read-only', Boolean(state) && Boolean(queueRoute) && journal !== null,
-      'GET /api/state + /api/roadmap + /api/journal + /demo/journal.jsonl only; no POST issued; port-43187 data untouched by this runner');
+    check('live-reads-are-read-only', Boolean(state) && retired.every(x => x === true) && journal !== null,
+      'GET /api/state + /api/roadmap + /api/journal + /api/journal?format=jsonl only; no POST issued; port-43187 data untouched by this runner');
   }
 
   const ok = checks.every(c => c.pass);
