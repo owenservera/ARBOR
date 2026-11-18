@@ -181,7 +181,7 @@ pre.json{margin:0;background:var(--bg);border:1px solid var(--bd);border-radius:
 .tour-actions{display:flex;gap:8px;justify-content:flex-end}
 .tour-skip{position:absolute;right:12px;top:10px;min-height:44px;padding:0 10px;color:var(--mu);font:500 13px var(--font-mono)}
 @media(min-width:820px){#welcome{align-items:center}.tour-sheet{border-radius:var(--r-lg)}}
-#v-today,#v-world,#v-me{flex:1;min-height:0;display:flex;flex-direction:column}
+#v-today,#v-world,#v-wiki,#v-me{flex:1;min-height:0;display:flex;flex-direction:column}
 /* Today · World · Me: one thumb-reachable action per screen, content scrolls above it. */
 .ux{flex:1;min-height:0;display:flex;flex-direction:column}
 .ux-scroll{flex:1;min-height:0;overflow-y:auto;padding:18px 14px 8px;display:flex;flex-direction:column;gap:14px}
@@ -386,7 +386,7 @@ body.host-preview #grokbot-direct-link{display:none!important}
     <button id="tab-talk" class="tab on" type="button" role="tab" aria-selected="true" aria-controls="v-talk" tabindex="0" data-tab="talk">Talk</button>
     <button id="tab-build" class="tab" type="button" role="tab" aria-selected="false" aria-controls="v-build" tabindex="-1" data-tab="build">Build</button>
     <button id="tab-world" class="tab" type="button" role="tab" aria-selected="false" aria-controls="v-world" tabindex="-1" data-tab="world">World</button>
-    <button id="tab-wiki" class="tab" type="button" data-tab="wiki" aria-haspopup="page" title="Opens the Wiki (live ARBOR roadmap) at top level">Wiki ↗</button>
+    <button id="tab-wiki" class="tab" type="button" role="tab" aria-selected="false" aria-controls="v-wiki" tabindex="-1" data-tab="wiki">Wiki</button>
     <button id="tab-me" class="tab" type="button" role="tab" aria-selected="false" aria-controls="v-me" tabindex="-1" data-tab="me">Me</button>
     <button id="tab-control" class="tab" type="button" role="tab" aria-selected="false" aria-controls="v-control" tabindex="-1" data-tab="control">Control</button>
   </nav>
@@ -519,6 +519,7 @@ body.host-preview #grokbot-direct-link{display:none!important}
     </section>
     <section id="v-today" role="tabpanel" aria-labelledby="tab-today" hidden aria-label="Today"></section>
     <section id="v-world" role="tabpanel" aria-labelledby="tab-world" hidden aria-label="World"></section>
+     <section id="v-wiki" role="tabpanel" aria-labelledby="tab-wiki" hidden aria-label="Wiki"></section>
     <section id="v-me" role="tabpanel" aria-labelledby="tab-me" hidden aria-label="Me"></section>
   </div>
 </main>
