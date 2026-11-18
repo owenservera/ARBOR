@@ -1,5 +1,5 @@
 // C11 acceptance — demo fixture layer (backend-zero data reads).
-// Every demo data read comes from public/demo/fixture/* synthetic records
+// Every demo data read comes from demo/host-legacy/fixture/* synthetic records
 // (schema vivim.demo-steps/1 index + vivim.demo-step/1 per tab). The browser
 // controller's honest-gap strings must stay in lockstep with the phone PWA
 // wording (C6 truthfulness), and poll-round.mjs stays a disk-read-only CLI.
@@ -30,7 +30,7 @@ import { runInContext, createContext } from 'node:vm';
 const testDir = typeof __dirname === 'string'
   ? __dirname
   : path.dirname(fileURLToPath(import.meta.url));
-const demoDir = path.resolve(testDir, '..', 'public', 'demo');
+const demoDir = path.resolve(testDir, '..', '..', '..', 'demo', 'host-legacy');
 const fixtureDir = path.join(demoDir, 'fixture');
 const controllerSrc = readFileSync(path.join(demoDir, 'controller.js'), 'utf8');
 
@@ -268,7 +268,7 @@ test('C5: SPEC values survived the restructure field-for-field (planDigest exact
 });
 
 // Controller-parse coupling: run the real controller.js in a stub DOM with
-// fetch reading the REAL parcel files from public/demo/fixture on disk (no
+// fetch reading the REAL parcel files from demo/host-legacy/fixture on disk (no
 // network, no mock substitution — the .verify/demo-verify.mjs harness that
 // substituted SPEC-shaped mocks for tab-me/tab-control is superseded by this
 // test), then assert every indexed step (all 9, tabs + A02/A04/A05 queue
