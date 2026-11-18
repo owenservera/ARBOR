@@ -25,14 +25,26 @@ export function id(v) { if(typeof v!=='string'||!ID.test(v)||BAD_KEY.has(v)) inv
 export function en(v,list) { if(!list.includes(v)) invalid('unsupported enum'); return v; }
 export function int(v,a,b) { if(!Number.isSafeInteger(v)||v<a||v>b) invalid('integer outside bounds'); return v; }
 export function num(v,a,b) { if(typeof v!=='number'||!Number.isFinite(v)||v<a||v>b) invalid('number outside bounds'); return v; }
+export function validateShellTheme(shell){
+  keys(shell,['background','secondary','accent','fontSizePx','radiusPx','spacingScale'],'shell presentation');
+  if(!Object.keys(shell).length)invalid('empty shell presentation');
+  const out={};
+  for(const k of ['background','secondary','accent'])if(OWN(shell,k)){if(typeof shell[k]!=='string'||!HEX.test(shell[k]))invalid('invalid shell color');out[k]=shell[k].toLowerCase();}
+  if(OWN(shell,'fontSizePx'))out.fontSizePx=int(shell.fontSizePx,13,19);
+  if(OWN(shell,'radiusPx'))out.radiusPx=int(shell.radiusPx,6,24);
+  if(OWN(shell,'spacingScale'))out.spacingScale=num(shell.spacingScale,.85,1.2);
+  return out;
+}
 export function validateTheme(t) {
-  keys(t,['background','secondary','accent','appearance','texture','mood','density','motion','fontFamily','fontSizePx','headingSizePx','radiusPx','spacingScale'],'theme');
+  keys(t,['background','secondary','accent','appearance','texture','mood','density','motion','fontFamily','fontSizePx','headingSizePx','radiusPx','spacingScale','shell'],'theme');
   const out={};
   for(const k of ['background','secondary','accent']) {if(!HEX.test(t[k]??'')) invalid('invalid theme color');out[k]=t[k].toLowerCase();}
   const groups={appearance:['dark','light'],texture:['aurora','gradient','linen','geometry','solid'],mood:['serene','focused','warm','vibrant','cinematic','playful','minimal','understated'],density:['compact','comfortable','spacious'],motion:['still','slow'],fontFamily:['system','humanist','geometric','editorial','mono']};
   for(const [k,choices] of Object.entries(groups))out[k]=en(t[k],choices);
   out.fontSizePx=int(t.fontSizePx,13,19);out.headingSizePx=int(t.headingSizePx,20,38);out.radiusPx=int(t.radiusPx,6,24);
   out.spacingScale=num(t.spacingScale,.85,1.2);
+  // Optional only: older persisted surfaces retain their exact shape and digest.
+  if(OWN(t,'shell'))out.shell=validateShellTheme(t.shell);
   return out;
 }
 function allowedRef(v, refs) {id(v);if(!refs.has(v))invalid('unapproved data/evidence reference');return v;}

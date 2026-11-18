@@ -15,10 +15,12 @@ import { sourceCards, sameSourceCard, matchesSourceContext, exactSourceContextUr
 import { deriveReadiness, safeReadinessReport } from './ux/readiness.mjs';
 import { mountCapabilityLauncher } from './ux/launcher-ui.mjs';
 import { inspectShell, selectShell } from './ux/shell-inspection.mjs';
+import { createShellPresentation } from './ux/shell-presentation.mjs';
 import { mountLocalNotes } from './ux/local-notes-ui.mjs';
 import { mountVoiceCapture } from './ux/voice-capture.mjs';
 const $ = id => document.getElementById(id);
 const api = transport.request;
+const shellPresentation=createShellPresentation(document.body);
 // Only the loopback Host wrapper may display a read-only, unpaired desktop
 // preview. An HTTPS phone, cloud relay or arbitrary public origin never can.
 const HOST_PREVIEW = new URLSearchParams(location.search).get('host-preview') === '1'
@@ -811,6 +813,7 @@ function isInvalidDeviceSession(code) {
 // A lost grant must clear *all* private phone projections, not just hide tabs.
 // Session restoration must start from new device proof; no offline replay.
 function clearPrivatePhoneState() {
+  shellPresentation.clear();
   dockAssist?.reset();compose?.resetAssist?.();capabilityLauncher?.close();
   mediaGeneration++;
   chatContextEpoch++;
@@ -1375,6 +1378,7 @@ async function refreshHostPreview() {
       throw new Error('Invalid Host projection');
     if (sequence !== previewReadSequence) return;
     S.statusObj = { at: data.observedAt, snapshot: data.snapshot };
+    if(data.state==='source-backed')shellPresentation.observe(data.snapshot.bootstrap?.uiRevision??null);else shellPresentation.clear();
     S.manifest = data.snapshot.manifest ?? null;
     S.media = data.media?.schema === 'vivim.media-library-summary/1'
       ? data.media : { state: 'unavailable' };
@@ -1388,6 +1392,7 @@ async function refreshHostPreview() {
     if (sequence !== previewReadSequence) return;
     // Never keep a private stale snapshot visible after session expiry.
     S.statusObj = null;
+    shellPresentation.clear();
     clearWiki('Owner session expired or Host unavailable');
     S.manifest = null;
     S.media = { state: 'unavailable' };
@@ -1573,12 +1578,14 @@ async function refresh() {
     if (N.target === 'phone') { S.busy = false; return; }
     S.cmds = (cm && cm.commands) || [];
     if (st) { S.statusObj = st; S.statusAt = Date.now(); S.manifest = (st.snapshot && st.snapshot.manifest) || null; window.dispatchEvent(new CustomEvent('vivim:bootstrap-status', { detail: st })); }
+    else if(needStatus)shellPresentation.clear();
     mergeServerConvs(); ensureActive();
     setConn(transport.direct ? 'Connected to PC' : 'Paired · relay online');
     renderAll();
   } catch (e) {
     // Status authority is unavailable: do not leave a previously private Build
     // revision visible or clickable after a grant loss/disconnect.
+    shellPresentation.clear();
     if (build) { build.clear(); buildKey = ''; }
     if (e.status === 401) {
       S.busy = false;
@@ -1708,9 +1715,11 @@ async function pollBuild() {
     // Always inspect the Host full snapshot. Comparing just a numeric revision
     // would conceal same-revision conflicts and an unproved rollback.
     const observed = build.setSurface(rev, st?.snapshot?.bootstrap);
+    shellPresentation.observe(rev??null);
     buildKey = observed?.state === 'ready' ? String(rev.surfaceId) + ':' + String(rev.revision) : '';
   } catch (e) {
     if (build) build.clear();
+    shellPresentation.clear();
     buildKey = '';
     if (e && (e.status === 401 || e.status === 403)) return;
   }
@@ -1782,7 +1791,8 @@ function showOfflineShell() {
   setConn('Offline · local PWA shell only', true);
   renderAll(true);
 }
-window.addEventListener('offline', () => { if (!HOST_PREVIEW) showOfflineShell(); });
+window.addEventListener('offline', () => { shellPresentation.clear();if (!HOST_PREVIEW) showOfflineShell(); });
+window.addEventListener('vivim:bootstrap-status',e=>{if(!HOST_PREVIEW&&S.paired&&navigator.onLine!==false&&transport.direct&&transport.deviceHeaders?.())shellPresentation.observe(e.detail?.snapshot?.bootstrap?.uiRevision??null);else if(!HOST_PREVIEW)shellPresentation.clear();});
 window.addEventListener('online', () => { if (!HOST_PREVIEW) void start(); });
 async function start() {
   // Foreground resume and pending-approval polling can arrive together.

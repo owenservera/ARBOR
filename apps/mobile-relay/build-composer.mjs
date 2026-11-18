@@ -46,8 +46,8 @@ export const THEME_BINDINGS = Object.freeze({
   radius: Object.freeze({capabilityId:'vivim.ui-engine.corners.radius@1',field:'radiusPx',type:'length',min:6,max:24}),
   'spacing-scale': Object.freeze({capabilityId:'vivim.ui-engine.spacing.scale@1',field:'spacingScale',type:'number',min:0.85,max:1.2})
 });
-const THEME_START = /^set my app\b/i;
-const THEME_PATTERN = /^set my app ([a-z-]+) to (.+)$/i;
+const THEME_START = /^set my (?:app|shell)\b/i;
+const THEME_PATTERN = /^set my (app|shell) ([a-z-]+) to (.+)$/i;
 const COLOR = /^#[0-9a-fA-F]{6}$/;
 
 // Reviewed VEC capabilities map to the existing Host set-theme operation.
@@ -56,11 +56,12 @@ export function compileVecThemeRequest({ text, surface } = {}) {
   const refuse = code => ({ outcome: 'refused', code });
   const matched = THEME_PATTERN.exec(typeof text === 'string' ? text.trim().replace(/\s+/g, ' ') : '');
   if (!matched) return refuse('UNSUPPORTED_THEME_REQUEST');
-  const property = matched[1].toLowerCase();
+  const scope=matched[1].toLowerCase()==='shell'?'shell':'build';
+  const property = matched[2].toLowerCase();
   const binding=Object.hasOwn(THEME_BINDINGS,property)?THEME_BINDINGS[property]:null;
   if(!binding)return refuse('UNSUPPORTED_THEME_PROPERTY');
   const {capabilityId,field,type,min,max}=binding;
-  const raw=matched[2].trim();
+  const raw=matched[3].trim();
   let value=raw;
   if(type==='color'){
     if(!COLOR.test(raw))return refuse('INVALID_THEME_COLOR');
@@ -102,8 +103,8 @@ export function compileVecThemeRequest({ text, surface } = {}) {
   const proposal = {
     schema: PROPOSAL_SCHEMA, surfaceId: current.surfaceId, baseRevision: current.revision,
     operations: [{ opId: 'vec.theme.1', type: 'set-theme',
-      theme: { ...current.theme, [field]: setting } }],
-    explanation: 'Set app ' + property + ' to ' + display + '.',
+      theme: scope==='shell'?{...current.theme,shell:{...current.theme.shell,[field]:setting}}:{ ...current.theme, [field]: setting } }],
+    explanation: 'Set '+(scope==='shell'?'all application tabs (shell)':'Build app')+' ' + property + ' to ' + display + '.',
     assumptions: [], unknowns: []
   };
   try {
@@ -111,7 +112,7 @@ export function compileVecThemeRequest({ text, surface } = {}) {
     return { outcome: 'candidate', code: 'VEC_THEME_PREVIEW', proposal, preview,
       summary: { explanation: preview.notes.explanation, changes: preview.operations,
         unknowns: preview.notes.unknowns },
-      detail: { capabilityId, property, value: setting, valueType:type,
+      detail: { capabilityId, property, scope, value: setting, valueType:type,
         baseRevision: current.revision, targetRevision: current.revision + 1 } };
   } catch { return refuse('VEC_THEME_PREVIEW_REJECTED'); }
 }
@@ -124,7 +125,9 @@ export function themeDraftCandidates(surface){
     const value=surface.theme?.[binding.field];
     const raw=binding.type==='length'?value+'px':String(value);
     const text='set my app '+property+' to '+raw;
-    return compileVecThemeRequest({text,surface}).outcome==='candidate'?[text]:[];
+    const shellValue=surface.theme?.shell?.[binding.field]??value;
+    const shellText='set my shell '+property+' to '+(binding.type==='length'?shellValue+'px':String(shellValue));
+    return [text,shellText].filter(draft=>compileVecThemeRequest({text:draft,surface}).outcome==='candidate');
   });
 }
 

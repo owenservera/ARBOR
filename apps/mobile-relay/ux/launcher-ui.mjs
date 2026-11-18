@@ -94,7 +94,7 @@ export function mountCapabilityLauncher({host,context,onActivate,onInspect=()=>f
       list.append(make('h3','',capabilities.length+' matching / '+engines.ENGINE_COUNTS.capabilities+' declared capabilities'));
       for(const cap of capabilities.slice(0,100)){
         const mapped=Object.entries(THEME_BINDINGS).find(([,b])=>b.capabilityId===cap.id);
-        const row=libraryRow(cap.name,cap.id+' · '+cap.valueSchema.type,mapped?'Reviewed Build preview mapping; effect authority separate':'Described; installation not established');
+        const row=libraryRow(cap.name,cap.id+' · '+cap.valueSchema.type,mapped?'Reviewed Build and shell preview mapping; effect authority separate':'Described; installation not established');
         if(mapped&&snapshot.visualDraftAllowed){
           const [property,binding]=mapped;
           const value=make('input','launcher-search');value.type=binding.type==='color'?'color':'number';
@@ -102,12 +102,15 @@ export function mountCapabilityLauncher({host,context,onActivate,onInspect=()=>f
           value.value=String(existing??(binding.type==='color'?'#111722':binding.min));
           if(binding.type!=='color'){value.min=String(binding.min);value.max=String(binding.max);value.step=binding.type==='length'?'1':'0.01';}
           value.setAttribute('aria-label',property);
-          const draft=make('button','btn sm','Draft change');draft.type='button';
-          draft.addEventListener('click',()=>{
-            if(!context().visualDraftAllowed||!value.checkValidity())return;
-            const raw=binding.type==='length'?value.value+'px':value.value;
-            if(onDraft('set my app '+property+' to '+raw))closeDialog();
-          });row.append(value,draft);
+          row.append(value);
+          for(const [label,scope] of [['Draft Build change','app'],['Draft shell change','shell']]){
+            const draft=make('button','btn sm',label);draft.type='button';
+            draft.addEventListener('click',()=>{
+              if(!context().visualDraftAllowed||!value.checkValidity())return;
+              const raw=binding.type==='length'?value.value+'px':value.value;
+              if(onDraft('set my '+scope+' '+property+' to '+raw))closeDialog();
+            });row.append(draft);
+          }
         }
         list.append(row);
       }

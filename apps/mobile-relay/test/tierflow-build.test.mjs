@@ -101,3 +101,10 @@ test('sourced profile/project cards require approved references; local selection
   surface.tree.children.push({id:'select',type:'button',props:{label:'Select',intent:'select-component',targetId:'missing'},children:[]});
   assert.throws(()=>planTierflowSurface(surface,{approvedRefs:['source.one']}),/target unavailable/);
 });
+
+test('committed local-selection buttons remain inert in preview and emit no Host effect in live view',()=>{
+ const s=createSurface();s.tree.children.push({id:'select',type:'button',props:{label:'Select',intent:'select-component',targetId:'root'},children:[]});
+ const screen=mount(390),seen=[];const orig=screen.ownerDocument.createElement;screen.ownerDocument.createElement=function(tag){const node=orig(tag);node.addEventListener=(name,fn)=>{node[name]=fn;};return node;};
+ renderSurface(screen,s,{tierflow:true,onIntent:i=>seen.push(i)});let button=screen.children[0].children[0].children[0];assert.equal(button.disabled,true);assert.equal(button.click,undefined);
+ renderSurface(screen,s,{tierflow:true,interactiveLocal:true,onIntent:i=>seen.push(i)});button=screen.children[0].children[0].children[0];button.click();assert.deepEqual(seen,[{intent:'select-component',targetId:'root',componentId:'select',surfaceId:s.surfaceId,revision:s.revision}]);
+});

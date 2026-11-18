@@ -6,6 +6,7 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { compileF02RenderPlan, parseF02Response } from '../../mobile-relay/bootstrap-f02.mjs';
 import { compileUiProposal } from '../../mobile-relay/generative-ui/compiler.mjs';
+import { planTierflowSurface } from '../../mobile-relay/generative-ui/renderer.mjs';
 import { createSurface } from '../../mobile-relay/generative-ui/catalog.mjs';
 import { compileF01Profile } from '../../mobile-relay/bootstrap-f01.mjs';
 import { compilePassOutput, DEEP_PASSES } from '../../mobile-relay/bootstrap-pass.mjs';
@@ -623,6 +624,8 @@ export function createBootstrapService({ ledger, worldId = WORLD_DEFAULT, now = 
     const grant=requireGrant('visual');
     const surface=uiRevision()??createSurface({surfaceId:'my-space'});
     const preview=compileUiProposal({proposal,surface,approvedRefs:[],audience:'phone'});
+    // Refuse visually invalid proposals before producing an approval plan.
+    planTierflowSurface(preview.surface,{audience:'phone',approvedRefs:[]});
     const projectionDigest=digestOf({audience:'phone',surfaceId:preview.surfaceId,catalogVersion:preview.catalogVersion,
       theme:preview.surface.theme,tree:preview.surface.tree});
     return {worldId,surface,preview,projectionDigest,grantDigest:digestOf(grant)};

@@ -328,6 +328,18 @@ export function mountBuildCanvas({ host, request, getSurface, getProvider, send,
       card.append(el('p', 'muted', 'Proposed ' + d.property + ': ' + d.value), swatch);
       }
     }
+    // Explicit scope diff for all proposals, including provider proposals and Undo.
+    // A Build-only render must never conceal a change to the rest of the application.
+    const oldShell=state.surface.theme.shell??{},newShell=state.preview.surface.theme.shell??{};
+    const shellFields=['background','secondary','accent','fontSizePx','radiusPx','spacingScale'];
+    const shellChanges=shellFields.filter(k=>oldShell[k]!==newShell[k]);
+    if(shellChanges.length){
+      const note=el('section','proposal-details');
+      note.append(el('strong',null,'App-wide shell appearance · all tabs'),el('p','muted','This changes presentation only, not navigation, content, permissions or approval behavior.'));
+      for(const field of shellChanges){const value=v=>v===undefined?'Default Host theme':String(v)+(field.endsWith('Px')?'px':'');
+        note.append(el('p',null,field+': '+value(oldShell[field])+' → '+value(newShell[field])));}
+      card.append(note);
+    }
     const view = el('div', 'proposal-preview');
     let previewVisible = true;
     try { renderSurface(view, state.preview.surface, { audience: 'phone', approvedRefs: [], tierflow: true, onIntent: () => {} }); }

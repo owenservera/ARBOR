@@ -111,3 +111,18 @@ test('real typed theme mappings preserve other values and reject unsupported uni
   for(const phrase of ['set my app font-size to 50px','set my app radius to 2rem','set my app spacing-scale to 9'])
     assert.equal(request(phrase).outcome,'refused');
 });
+
+test('shell changes are separately scoped in the existing deterministic Host proposal',()=>{
+  const before=makeSurface();
+  const out=request('Set my shell background to #123456',before);
+  assert.equal(out.outcome,'candidate');
+  assert.equal(out.detail.scope,'shell');
+  assert.equal(out.preview.surface.theme.shell.background,'#123456');
+  assert.equal(out.preview.surface.theme.background,before.theme.background);
+  assert.deepEqual(out.preview.surface.tree,before.tree);
+  assert.equal(before.theme.shell,undefined);
+  assert.match(out.summary.explanation,/all application tabs/);
+  const next=request('Set my shell radius to 20px',out.preview.surface);
+  assert.deepEqual(next.preview.surface.theme.shell,{background:'#123456',radiusPx:20});
+  assert.equal(request('Set my shell radius to 999px',before).outcome,'refused');
+});
