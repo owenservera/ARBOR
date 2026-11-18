@@ -238,3 +238,50 @@ test('manifest entry for A07 is present and well-formed', () => {
   assert.equal(entry.runtime, 'node24-ajv');
   assert.equal(entry.gate, 'roadmap-acceleration');
 });
+
+test('empty work orders refuse even when deps would be accepted (empty ready frontier)', async t => {
+  const { driver, error } = await a07Driver();
+  if (!driver) { t.skip('A07 driver not implemented: ' + error); return; }
+  const root = mkdtempSync(join(os.tmpdir(), 'arbor-a07-empty-'));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const result = await driver({ root, workOrders: [] });
+  assert.equal(result.ok, false, 'empty queue must not report success');
+  assert.ok(result.checks.some(c => c.name === 'dep-ready-gate' && c.pass === false),
+    'must report dep-ready-gate failure, checks=' + JSON.stringify(result.checks));
+  assert.equal(result.receipts.length, 0, 'no receipts for zero work orders');
+});
+
+test('explicit work orders run even when A05/A06 deps unaccepted (dep gate non-blocking)', async t => {
+  const { driver, error } = await a07Driver();
+  if (!driver) { t.skip('A07 driver not implemented: ' + error); return; }
+  const head = headSha();
+  const root = mkdtempSync(join(os.tmpdir(), 'arbor-a07-deps-nonblock-'));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const out = join(root, 'wo-dep.out');
+  const result = await driver({
+    root,
+    workOrders: [{ id: 'WO-DEP', writeScope: [out], command: ['node', '-e', `import {writeFileSync} from 'node:fs'; writeFileSync(${JSON.stringify(out)},'D')`], expectedSha: head }],
+  });
+  const depCheck = result.checks.find(c => c.name === 'dep-acceptance');
+  assert.ok(depCheck, 'dep-acceptance check recorded, checks=' + JSON.stringify(result.checks));
+  assert.equal(depCheck.pass, false, 'A05/A06 still not independently accepted on real roadmap');
+  assert.equal(result.ok, true, 'explicit work orders execute despite unaccepted deps (gate recorded, non-blocking)');
+  assert.equal(result.receipts[0].exitCode, 0, 'real worker exit 0 recorded');
+});
+
+test('stale expected SHA writes no proof receipt files', async t => {
+  const { driver, error } = await a07Driver();
+  if (!driver) { t.skip('A07 driver not implemented: ' + error); return; }
+  const root = mkdtempSync(join(os.tmpdir(), 'arbor-a07-stale-receipts-'));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const stale = '0'.repeat(40);
+  const out = join(root, 'stale-out.txt');
+  const result = await driver({
+    root,
+    workOrders: [{ id: 'WO-STALE-R', writeScope: [out], command: ['node', '-e', `import {writeFileSync} from 'node:fs'; writeFileSync(${JSON.stringify(out)},'ok')`], expectedSha: stale }],
+  });
+  assert.equal(result.ok, false);
+  assert.equal(result.receipts.length, 0, 'stale-SHA refusal must emit zero receipts');
+  assert.equal(result.checks.some(c => c.name === 'stale-expected-sha-drift' && c.pass === false), true,
+    'stale-expected-sha-drift check must fail');
+});

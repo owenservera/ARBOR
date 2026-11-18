@@ -68,11 +68,13 @@ describe('GOAL-1 defect 4 — wiki intent/routes reach the real /wiki page (ux/r
     expect(routes).toMatch(/\[\s*['"]wiki['"]\s*,\s*['"]Wiki['"]/);
   });
   it('app.js maps the word wiki to a /wiki navigation, not the world tab', () => {
-    // post-fix: an explicit wiki → '/wiki' mapping (case, intent keyword, or data-tab wiring)
+    // post-fix: an explicit wiki → '/wiki' mapping (case, intent keyword, or
+    // data-tab wiring). The old location.assign('/wiki') alternative is gone —
+    // same-window navigation of the phone document is the confirmed defect.
     const mapping = app.match(/['"]wiki['"]\s*[:=]>\s*['"]\/wiki['"]/)
       || app.match(/case\s*['"]wiki['"][\s\S]{0,120}['"]\/wiki['"]/)
-      || app.match(/tab\s*===\s*['"]wiki['"][\s\S]{0,120}location\.assign\(\s*['"]\/wiki['"]/)
-      || app.match(/['"]\/wiki['"][\s\S]{0,80}data-tab="wiki"/);
+      || app.match(/tab\s*===\s*['"]wiki['"][\s\S]{0,60}openWiki\(\)/)
+      || app.match(/window\.open\(\s*['"]\/wiki['"]\s*,\s*['"]_blank['"]/);
     expect(mapping).toBeTruthy();
     // the chat intent for wiki must not resolve to the world tab
     expect(app).not.toMatch(/open the wiki[\s\S]{0,200}'world'/i);
@@ -98,9 +100,51 @@ describe('GOAL-1 confirmed defect — Wiki rail tab lacks aria-controls (index.h
       // If a fixer adds aria-controls, it must point at an element that exists.
       expect(html, `aria-controls target #${ac} missing from index.html`).toContain(`id="${ac}"`);
     } else {
-      // Intentional exemption: no local panel id to reference — the tab navigates.
-      expect(app).toContain("if (tab === 'wiki') { location.assign('/wiki'); return; }");
+      // Intentional exemption: no local panel id to reference — the tab opens
+      // /wiki at top level via openWiki() (regression: the old
+      // location.assign('/wiki') tore the whole phone document out of the shell).
+      expect(app).toContain("if (tab === 'wiki') { openWiki(); return; }");
       expect(app).toContain('Wiki is not a local panel');
     }
+  });
+});
+
+describe('GOAL-1 confirmed defect — Wiki rail/section tab navigated the whole phone document to /wiki (app.js:418-457)', () => {
+  // Defect: goTab('wiki') called location.assign('/wiki'), navigating the entire
+  // phone document out of the PWA shell. /wiki is unframable anywhere
+  // (X-Frame-Options: DENY + CSP frame-ancestors 'none'; only /mobile/* gets the
+  // SAMEORIGIN exception), so a framed load died as a blank blocked frame and the
+  // parent threw SecurityError 'cross-origin frame' while iframe src still read
+  // /mobile/?host-preview=1. Fix contract: open /wiki at top level in a new
+  // browser tab (window.open '/wiki','_blank','noopener' — same escape hatch as
+  // the Host-menu target="_top" link) with toast feedback, never navigate or
+  // frame the phone document.
+  it('goTab wiki branch hands off to openWiki() — no same-window navigation of the phone document', () => {
+    const goTab = app.match(/function goTab\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ?? '';
+    expect(goTab, 'goTab() found in app.js').toBeTruthy();
+    expect(goTab).toContain("if (tab === 'wiki') { openWiki(); return; }");
+    expect(goTab, 'goTab must not navigate the document (location.assign/href/replace)')
+      .not.toMatch(/location\.(?:assign|replace)\s*\(|location\.href\s*=/);
+  });
+  it('openWiki() opens /wiki top-level in a new tab with noopener, plus toast feedback', () => {
+    const openWiki = app.match(/function openWiki\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ?? '';
+    expect(openWiki, 'openWiki() found in app.js').toBeTruthy();
+    expect(openWiki).toMatch(/window\.open\(\s*['"]\/wiki['"]\s*,\s*['"]_blank['"]\s*,\s*['"]noopener['"]\s*\)/);
+    // user feedback: where the wiki went (both success and popup-blocked paths)
+    const toasts = openWiki.match(/toast\([^)]*\)/g) ?? [];
+    expect(toasts.length, 'openWiki toasts on success AND popup-blocked fallback').toBeGreaterThanOrEqual(2);
+    expect(toasts.join('\n')).toMatch(/[Ww]iki/);
+  });
+  it('no code path navigates or frames the phone document at /wiki (unframable: X-Frame-Options DENY)', () => {
+    for (const [name, src] of [['app.js', app], ['index.html', html]]) {
+      expect(src.match(/location\.(?:assign|replace)\s*\(\s*['"]\/wiki|location\.href\s*=\s*['"]\/wiki/),
+        `${name} navigates the phone document to /wiki`).toBeNull();
+      expect(src.match(/<iframe\b[^>]*src="[^"]*\/wiki/), `${name} frames /wiki`).toBeNull();
+    }
+  });
+  it('the Host-menu /wiki anchor keeps the top-level target="_top" escape hatch (app.js:936-946 pattern)', () => {
+    const menu = app.match(/function installHostMenu\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ?? '';
+    expect(menu).toContain("['ARBOR progress (live roadmap)', '/wiki']");
+    expect(menu).toMatch(/anchor\.target\s*=\s*['"]_top['"]/);
   });
 });

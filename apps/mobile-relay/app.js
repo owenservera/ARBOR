@@ -417,8 +417,12 @@ function surfaceContext() {
 }
 function goTab(tab) {
   // Wiki is not a local panel: the real wiki page lives on the host at /wiki,
-  // so the rail tab navigates there instead of switching a local surface.
-  if (tab === 'wiki') { location.assign('/wiki'); return; }
+  // so the rail tab opens it at top level in a new browser tab instead of
+  // switching a local surface. /wiki itself is unframable (X-Frame-Options:
+  // DENY + CSP frame-ancestors 'none'), so it can never render inside the
+  // phone shell, and a same-window navigation would tear the PWA document
+  // away; a new tab keeps the phone session alive.
+  if (tab === 'wiki') { openWiki(); return; }
   if (!tab || !TABS.includes(tab)) return;
   // Leaving World stops an in-flight media open or current native playback.
   // The Host has to release temporary stream access, not just hide the video.
@@ -431,6 +435,51 @@ function goTab(tab) {
   document.getElementById('tab-' + tab)?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   if (HOST_PREVIEW) void refreshHostPreview();
   else if (tab === 'world') void refreshMedia(false);
+}
+
+// The Wiki tab cannot render the wiki in-phone (/wiki sends X-Frame-Options:
+// DENY, so a framed load dies as a blank blocked frame — the exact defect that
+// killed the old location.assign path) and it must not navigate the whole
+// phone document away either. Same escape hatch as the Host menu's
+// "ARBOR progress (live roadmap)" link (installHostMenu, target="_top"):
+// let the browser render the real wiki page at top level, in its own tab so
+// the phone session stays open behind it. Toast feedback tells the user where
+// the wiki went, because the new tab can take focus on desktop.
+function openWiki() {
+  let opened = null;
+  try { opened = window.open('/wiki', '_blank', 'noopener'); }
+  catch { /* popup creation refused; fall through to the blocked-path toast */ }
+  if (opened) { toast('Wiki opened in a new browser tab. This phone stays right here.'); return; }
+  // Popup blocked. We are embedded with no allow-popups (a sandboxed in-app
+  // preview iframe, or a host page that declines the new tab): we cannot open a
+  // tab, cannot frame /wiki (X-Frame-Options: DENY), and top-level
+  // self-navigation would tear the phone document away. Render an inline
+  // same-window link instead — a real anchor the user can tap/click to leave for
+  // the wiki on their own terms. Sandboxed embeds without allow-top-navigation
+  // still won't navigate, but the link is visible, focusable, and the message
+  // says why nothing happened, rather than only telling them to find the gear.
+  toast('Popups blocked here. Tap the “Wiki” link below to open the live roadmap.');
+  let link = $('wiki-fallback-link');
+  if (!link) {
+    link = document.createElement('a');
+    link.id = 'wiki-fallback-link';
+    link.href = '/wiki';
+    link.target = '_top';
+    link.rel = 'noopener noreferrer';
+    link.className = 'wiki-fallback-link';
+    // Inline styles on purpose: the phone shell is a fixed 100dvh flex column
+    // (index.html:28, body{overflow:hidden}), so an unstyled anchor appended to
+    // <body> collapses to a zero-height flex item and is never on screen. This
+    // anchor is the only affordance a popup-blocked embed gets, so it must be
+    // visibly fixed above the toast.
+    link.style.cssText = 'position:fixed;left:50%;bottom:calc(64px + var(--safe-b));'
+      + 'transform:translateX(-50%);z-index:61;max-width:90vw;padding:10px 14px;'
+      + 'background:var(--s2);border:1px solid var(--bd);border-radius:var(--r-md);'
+      + 'color:var(--tx);font-size:14px;text-decoration:none;box-shadow:0 12px 32px #0008';
+    link.textContent = 'Wiki — live ARBOR roadmap ↗';
+    ($('toast') || document.body).after(link);
+  }
+  link.hidden = false;
 }
 
 // Media authorization failures have two different meanings. Missing control:read
@@ -747,7 +796,7 @@ function renderComposer() {
     $('text').placeholder = 'Ask VIVIM: show status, or describe a change…';
     $('text').maxLength = 1000;
     $('composer-note').textContent = HOST_PREVIEW
-      ? 'Phone preview only · open Host menu to pair and connect'
+      ? 'Local preview · pair with your PC to unlock live Host actions'
       : !S.paired ? 'Offline or unpaired · no sends or Host actions'
       : 'PC-authoritative · previews first · approval required for changes';
     updateSend(); return;

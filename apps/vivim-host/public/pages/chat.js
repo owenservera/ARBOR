@@ -57,7 +57,8 @@
       if (!chat.length) { log.replaceChildren(document.createElement('div')).className = 'empty'; log.firstChild.textContent = 'chat is empty — send a message'; return; }
       log.replaceChildren(...chat.map(renderMsg));
     } catch (err) {
-      rev.textContent = 'state error';
+      const detail = err instanceof Error ? err.message : String(err);
+      rev.textContent = 'state error — ' + detail + ' · retrying every ' + Math.round(POLL_MS / 1000) + 's';
     }
     log.scrollTop = log.scrollHeight;
   }

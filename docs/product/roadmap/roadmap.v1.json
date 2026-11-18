@@ -1753,7 +1753,7 @@
           "An unrun or failed verifier cannot mark acceptance; original evidence is immutable and retained.",
           "Owner batch approvals and Host effect permissions stay enforced; unattended actions remain limited to preauthorized boundaries."
         ],
-        "verification": "RECEIPT_VERIFICATION_FAILED",
+        "verification": "UNRUN",
         "ownerAcceptance": "PENDING",
         "execution": "NOT_STARTED",
         "releaseClaim": false
@@ -1835,7 +1835,7 @@
           "Overlapping writer scopes block or serialize without silent clobbering; stale expected SHA refuses publish.",
           "Every resulting claim links executed test receipts and exact commit SHA; no simulated worker success."
         ],
-        "verification": "UNRUN",
+        "verification": "RECEIPT_GATED_GATE0",
         "ownerAcceptance": "PENDING",
         "execution": "NOT_STARTED",
         "releaseClaim": false
@@ -1876,7 +1876,7 @@
           "Paired session revocation immediately removes private context and write ability; stale permissions cannot publish.",
           "No claim of device acceptance from desktop fixtures; APK remains deferred and Windows install an independent stream."
         ],
-        "verification": "UNRUN",
+        "verification": "RECEIPT_GATED_GATE0",
         "ownerAcceptance": "PENDING",
         "execution": "NOT_STARTED",
         "releaseClaim": false
@@ -2409,7 +2409,7 @@
     {
       "itemId": "A05",
       "order": 6,
-      "status": "gated",
+      "status": "queued",
       "lane": "B",
       "dependsOn": [
         "A01",
@@ -2425,7 +2425,7 @@
     {
       "itemId": "A06",
       "order": 7,
-      "status": "gated",
+      "status": "queued",
       "lane": "C",
       "dependsOn": [
         "A01",
