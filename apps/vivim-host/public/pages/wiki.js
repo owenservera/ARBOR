@@ -175,7 +175,7 @@ function renderContext(context) {
     root.appendChild(element('p', 'empty', 'Committed change context unavailable from this Host.'));
     return root;
   }
-  if (!sourceRecord('wiki') || sourceRecord('wiki').revision !== context.wikiRevision) {
+  if (!sourceRecord('wiki') || snapshots.wiki?.error || sourceRecord('wiki').revision !== context.wikiRevision) {
     root.appendChild(element('p', 'empty', 'Wiki revision differs from AutoWiki snapshot; waiting for matching Host readback.'));
     return root;
   }
@@ -530,7 +530,7 @@ function updateSourceMeta(key) {
 function ingest(key, data) {
   const signature = JSON.stringify(data);
   const previous = snapshots[key];
-  const changed = !previous || previous.signature !== signature;
+  const changed = !previous || previous.signature !== signature || Boolean(previous.error);
   snapshots[key] = { data, signature, error: null, observedAt: new Date().toISOString() };
   if (key === 'surface' && surfaceContextSelection && !currentSurfaceRecord(surfaceContextSelection))
     clearSurfaceContext('Indexed source changed or authorization was lost. Read current context again.');
@@ -619,7 +619,11 @@ async function refresh() {
           $('surface-view').replaceChildren(element('p', 'empty', message.includes('HTTP 401')
             ? 'Source index locked. Unlock Host Control to inspect development source.'
             : 'Authorized HQ source index unavailable. No cached or demo source displayed.'));
-        } else snapshots[key] = { ...snapshots[key], error: message };
+        } else {
+          snapshots[key] = { ...snapshots[key], error: message };
+          if (key === 'wiki' && sourceRecord('context'))
+            $('context-view').replaceChildren(renderContext(sourceRecord('context')));
+        }
         updateSourceMeta(key);
       }
     });

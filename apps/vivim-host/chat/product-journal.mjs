@@ -172,6 +172,7 @@ export function projectWikiContext(records, wikiRevision = null, wiki = null) {
       return {
         source: 'host-product-journal', entryId: e.entryId, sequence: e.sequence,
         receivedAt: e.receivedAt, actorDeclared: e.actor, text: e.text,
+        contentDigest: createHash('sha256').update(JSON.stringify([e.text, e.intent || null])).digest('hex'),
         status: 'user-statement-unverified',
         ...(outcome ? { interpretation: { outcome, ...(actionId ? { actionId } : {}), ...(target ? { target } : {}) } } : {})
       };

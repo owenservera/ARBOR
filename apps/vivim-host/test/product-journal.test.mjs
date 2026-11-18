@@ -247,3 +247,24 @@ test('R2 semantic target resolution refuses missing and ambiguous targets; sourc
   assert.equal(after.relationships.length, 0);
   assert.notEqual(after.digest, before.digest);
 }));
+
+test('R2 structural membership is stable, deduplicated and prefers committed evidence', () => rootTest(async root => {
+  const j = journal(root);
+  const candidate = { outcome: 'candidate', candidate: { actionId: 'wiki.section.edit', args: { target: 'main/howto', content: 'A' } } };
+  const first = await j.append({ ...chat('Edit section'), intent: candidate });
+  const one = (await j.readWikiContext()).semantics;
+  const oneMembership = one.relationships.find(r => r.kind === 'belongs-to-page');
+  assert.equal(oneMembership.classification, 'inferred-relationship');
+  const originalDigest = one.nodes.find(n => n.id === 'journal:' + first.entryId).source.digest;
+  await j.append({ ...chat('Edit section again'), intent: candidate });
+  const editRecord = await j.append(edit(1, 'Committed text'));
+  const two = (await j.readWikiContext()).semantics;
+  const memberships = two.relationships.filter(r => r.kind === 'belongs-to-page');
+  assert.equal(memberships.length, 1);
+  assert.equal(memberships[0].id, oneMembership.id);
+  assert.equal(memberships[0].classification, 'observed-state');
+  assert.equal(memberships[0].source.ref, editRecord.entryId);
+  assert.equal(two.nodes.find(n => n.id === 'journal:' + first.entryId).source.digest, originalDigest);
+  assert.equal(two.relationships.filter(r => r.kind === 'candidate-target').length, 2);
+  assert.ok(two.relationships.filter(r => r.kind === 'candidate-target').every(r => r.source.wikiRevision === 2));
+}));

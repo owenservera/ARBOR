@@ -31,13 +31,19 @@ export function projectWikiSemantics(context) {
     const id = 'relation:' + digest([from,kind,to,source.authority,source.ref]);
     relations.set(id, { id, from, kind, to, classification, source });
   }
-  function section(target, source) {
+  function section(target, source, classification) {
     const page = put({ id: pageId(target.page), kind: 'wiki-page', label: target.page,
       classification: 'observed-state' });
     const id = sectionId(target.page,target.section);
     if (!nodes.has(id)) put({ id, kind: 'wiki-section', label: target.page + '/' + target.section,
       page: target.page, section: target.section, classification: 'observed-state' });
-    link(id, 'belongs-to-page', page, 'observed-state', source);
+    // One structural relationship per canonical section, not one per mention.
+    // A committed edit is stronger evidence than an interpreted candidate.
+    const membershipId = 'relation:' + digest([id, 'belongs-to-page', page]);
+    const existing = relations.get(membershipId);
+    if (!existing || classification === 'observed-state')
+      relations.set(membershipId, { id: membershipId, from: id, kind: 'belongs-to-page',
+        to: page, classification, source });
     return id;
   }
   function action(id) {
@@ -57,7 +63,7 @@ export function projectWikiSemantics(context) {
     const source = { ...journalSource(item), wikiRevision: item.wikiRevision, digest: item.contentDigest };
     const id = put({ id: journalId(item.entryId), kind: 'wiki-change', label: 'Committed Wiki edit',
       classification: 'committed-change', freshness: item.status, source });
-    const target = section(item.relationship, source);
+    const target = section(item.relationship, source, 'observed-state');
     link(id, 'changed-section', target, 'committed-change', source);
     const previous = latest.get(target);
     if (previous && previous.wikiRevision < item.wikiRevision)
@@ -67,14 +73,17 @@ export function projectWikiSemantics(context) {
       Object.assign(nodes.get(target), { source, freshness: 'current-at-snapshot', contentDigest: item.contentDigest });
   }
   for (const item of observations) {
-    const source = { ...journalSource(item), digest: digest([item.text,item.interpretation || null]) };
+    const source = { ...journalSource(item), digest: item.contentDigest || digest([item.text,item.interpretation || null]) };
     const id = put({ id: journalId(item.entryId), kind: 'user-observation', label: 'User statement',
       classification: 'user-statement-unverified', freshness: 'historical-statement', source });
     const meaning = item.interpretation;
     if (meaning?.outcome === 'candidate' && validAction(meaning.actionId)) {
       link(id, 'interpreted-as', action(meaning.actionId), 'inferred-relationship', source);
-      if (meaning.actionId === 'wiki.section.edit' && meaning.target)
-        link(id, 'candidate-target', section(meaning.target, source), 'inferred-relationship', source);
+      if (meaning.actionId === 'wiki.section.edit' && meaning.target) {
+        const resolved = { ...source, wikiRevision: context.wikiRevision };
+        link(id, 'candidate-target', section(meaning.target, resolved, 'inferred-relationship'),
+          'inferred-relationship', resolved);
+      }
     }
   }
   for (const item of effects) {

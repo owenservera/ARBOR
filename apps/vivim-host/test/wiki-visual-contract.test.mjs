@@ -196,6 +196,8 @@ test('source search composes a unique current file context inline and removes st
 
 test('D4 committed Wiki provenance and receipt readback refresh and clear on auth loss', async () => {
   const ui = setup(); await settle();
+  ui.docs['/api/wiki'].revision = 2;
+  ui.docs['/api/state'].wikiRevision = 2;
   ui.docs['/api/host/control/wiki-context'] = {
     schema: 'vivim.wiki-context/1', state: 'source-backed', revision: 2,
     wikiRevision: 2, totalObserved: 0, omitted: 0, items: [],
@@ -217,6 +219,10 @@ test('D4 committed Wiki provenance and receipt readback refresh and clear on aut
   assert.ok(nodes.some(n => /Committed Wiki effect.*current-section-revision/.test(n.textContent)));
   assert.ok(nodes.some(n => n.textContent === 'ui.theme.set_preset'));
   assert.ok(nodes.some(n => /Historical applied receipt.*source revision 4/.test(n.textContent)));
+  ui.setGetFailure('/api/wiki'); ui.tick(); await settle();
+  assert.ok(!allChildren(ui.el('context-view')).some(n => /Committed Wiki effect|Historical applied receipt/.test(n.textContent)));
+  ui.setGetFailure(null); ui.tick(); await settle();
+  assert.ok(allChildren(ui.el('context-view')).some(n => /Committed Wiki effect/.test(n.textContent)));
   ui.setOwnerSession(false); ui.tick(); await settle();
   assert.ok(!allChildren(ui.el('context-view')).some(n =>
     /Main\/About|ui\.theme\.set_preset/.test(n.textContent)));
