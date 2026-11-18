@@ -357,7 +357,7 @@ export function indexProject({ root, db, project, options = {} }) {
       const prev = existing.get(entry.rel) || null;
 
       const refreshV2 = backfillV2 && supportsV2(entry);
-      if (!opts.force && !refreshV2 && prev && prev.size === entry.size && prev.mtime_ms === entry.mtimeMs) {
+      if (!opts.force && !refreshV2 && prev && !isSourceLang(entry.lang) && prev.size === entry.size && prev.mtime_ms === entry.mtimeMs) {
         result.unchanged++;
         continue;
       }

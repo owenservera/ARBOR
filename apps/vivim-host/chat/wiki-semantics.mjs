@@ -80,6 +80,31 @@ export function resolveSemanticWikiPages(wiki,intent) {
   }))];
 }
 
+// Assurance is narrow: a replayed commit proves its occurrence, not the
+// truth of user-authored text; an applied receipt is historical evidence,
+// not a verified action contract or a grant. No inference is promoted.
+export function wikiClaimEvidence(record,context){
+  const source=record.source;
+  const historical=record.classification==='committed-change'||record.freshness?.startsWith('historical')||record.freshness?.startsWith('superseded');
+  const fresh=historical?'historical':source?.authority==='host-product-journal'&&
+    Number.isSafeInteger(source.wikiRevision)&&source.wikiRevision>0&&Number.isSafeInteger(context.wikiRevision)&&source.wikiRevision<=context.wikiRevision
+    ?'current-at-snapshot':'unresolved';
+  const base={freshness:fresh,conflict:false,planningEligible:false};
+  if(record.classification==='user-statement-unverified')return {...base,origin:'declared',assurance:'attested',claim:'statement-occurrence',freshness:'historical'};
+  if(record.classification==='inferred-relationship')return {...base,origin:'inferred',assurance:'proposed',claim:'candidate-association'};
+  if(record.classification==='typed-identity')return {...base,origin:'extracted',assurance:'proposed',claim:'action-identity'};
+  if(record.classification==='executed-effect')return {...base,origin:'observed',
+    assurance:source?.authority==='host-control-receipt'&&typeof source.ref==='string'?'verified':'proposed',
+    claim:record.kind==='confirmed-change'?'receipt-to-commit-link':'applied-receipt-occurrence',freshness:'historical'};
+  if(['committed-change','observed-state'].includes(record.classification)){
+    const supported=source?.authority==='host-product-journal'&&typeof source.ref==='string'&&
+      Number.isSafeInteger(source.wikiRevision)&&source.wikiRevision>0&&Number.isSafeInteger(context.wikiRevision)&&source.wikiRevision<=context.wikiRevision;
+    return {...base,origin:'observed',assurance:supported?'verified':'proposed',
+      claim:record.classification==='committed-change'?'committed-event-occurrence':'journal-backed-structure'};
+  }
+  return {...base,origin:'derived',assurance:'proposed',claim:'unresolved'};
+}
+
 export function projectWikiSemantics(context) {
   const nodes = new Map(), relations = new Map();
   const put = node => { nodes.set(node.id, node); return node.id; };
@@ -163,7 +188,8 @@ export function projectWikiSemantics(context) {
     }
   }
   for (const item of observations) {
-    const source = { ...journalSource(item), digest: item.contentDigest || digest([item.text,item.interpretation || null]) };
+    // No raw statement hash in derived graph: short private text can be guessed.
+    const source = journalSource(item);
     const id = put({ id: journalId(item.entryId), kind: 'user-observation', label: 'User statement',
       classification: 'user-statement-unverified', freshness: 'historical-statement', source });
     const meaning = item.interpretation;
@@ -220,7 +246,8 @@ export function projectWikiSemantics(context) {
       effects: context.applicationEffects?.omitted || 0, structure:structure?.omitted||0,
       links:structure?.omittedLinks||0,nodes:nodes.size-boundedNodes.size,
       relationships:relations.size-boundedRelations.length },
-    nodes: [...boundedNodes.values()].sort(order), relationships: boundedRelations.sort(order)
+    nodes: [...boundedNodes.values()].sort(order).map(node=>({...node,evidence:wikiClaimEvidence(node,context)})),
+    relationships: boundedRelations.sort(order).map(relation=>({...relation,evidence:wikiClaimEvidence(relation,context)}))
   };
   return { ...result, digest: digest(result) };
 }

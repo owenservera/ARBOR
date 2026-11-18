@@ -29,6 +29,16 @@ test('committed page graph is reconstructed, source-linked and exposed to author
   assert.equal(relation.source.ref,committed.entryId);
   assert.equal(relation.source.wikiRevision,committed.wikiRevision);
   assert.equal(relation.classification,'observed-state');
+  assert.equal(relation.evidence.assurance,'verified');
+  assert.equal(relation.evidence.claim,'journal-backed-structure');
+  assert.equal(relation.evidence.planningEligible,false);
+  const statement=graph.nodes.find(n=>n.id==='journal:'+observed.entryId);
+  assert.equal(statement.evidence.origin,'declared');
+  assert.equal(statement.evidence.assurance,'attested');
+  assert.equal(Object.hasOwn(statement.source,'digest'),false);
+  const inferred=graph.relationships.find(r=>r.kind==='candidate-target');
+  assert.equal(inferred.evidence.assurance,'proposed');
+  assert.equal(inferred.evidence.planningEligible,false);
   assert.ok(graph.relationships.some(x=>x.kind==='moved-page'&&x.from==='journal:'+moved.entryId));
   assert.ok(graph.relationships.some(x=>x.kind==='candidate-target'&&x.from==='journal:'+observed.entryId&&x.classification==='inferred-relationship'));
   assert.ok(!graph.nodes.some(n=>n.kind==='project'||n.kind==='task'));
@@ -52,6 +62,13 @@ test('committed page graph is reconstructed, source-linked and exposed to author
   assert.equal(effects.items[0].structureLink.entryId,committed.entryId);
   assert.ok(projectWikiSemantics({...context,applicationEffects:effects}).relationships.some(r=>
     r.kind==='confirmed-change'&&r.to==='journal:'+committed.entryId));
+  const observedGraph=projectWikiSemantics({...context,applicationEffects:effects});
+  assert.equal(observedGraph.nodes.find(n=>n.kind==='applied-effect').evidence.claim,'applied-receipt-occurrence');
+  assert.equal(observedGraph.nodes.find(n=>n.kind==='control-action').evidence.assurance,'proposed');
+  assert.equal(projectAppliedControlEffects({...control,recent:()=>[
+    ...control.recent(),...control.recent(),{state:'uncertain',actionId:receipt.actionId,risk:'R1',planId:'uncertain'},
+    {state:'applied',actionId:'control.rule.remember',risk:'R2',planId:'private-rule'}
+  ]},context.wikiChanges,context.wikiStructure).items.length,1);
   const snapshot=await reopened.readNativeKnowledge();
   const rows=buildNativeKnowledge(snapshot,effects);
   const edges=buildNativeRelationships(snapshot,rows);

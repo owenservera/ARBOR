@@ -11,7 +11,7 @@ import { isVersionedId } from './annotation-v2.mjs';
 import { composeContext, verifyContext as verifyHqContext } from './context.mjs';
 import { deps, impact, projectGraph } from './graph.mjs';
 import { buildWiki } from './wiki.mjs';
-import { listSemanticIds, getSemanticId } from './semantic-registry.mjs';
+import { listSemanticIds, getSemanticId, indexedSemanticAnchors, indexedAnnotationEvidence, annotationResolution } from './semantic-registry.mjs';
 import { scanCapabilitySource, persistCapabilityScan, capabilityStatus } from './capabilities.mjs';
 import { head as gitHead } from './git.mjs';
 import { sha256 } from './util.mjs';
@@ -260,12 +260,33 @@ export function createDevIntelligence({
       const scoped = sources.map(source => {
         if (!source?.project || !source?.path) throw new Error('HQ_CONTEXT_SOURCE_REQUIRED');
         const path = relativeSourcePath(source.path);
-        const file = db.prepare('SELECT f.abs_path FROM files f JOIN projects p ON p.id=f.project_id WHERE p.name=? AND f.path=?').get(source.project, path);
+        const file = db.prepare('SELECT f.id,f.abs_path,f.hash FROM files f JOIN projects p ON p.id=f.project_id WHERE p.name=? AND f.path=?').get(source.project, path);
         if (!file) throw new Error('HQ_CONTEXT_SOURCE_NOT_INDEXED');
         return { ...source, absPath: authorizedFile(source.project, path, file.abs_path, registered) };
       });
-      return verifyHqContext({ ...bundle, sources: scoped });
+      return verifyIndexedDependencies(db,{ ...bundle, sources: scoped });
     }, 'source.context', true);
+  }
+  // Recheck registry lifecycle and anchor identity in the same authorized
+  // read as the source bytes. A retained bundle cannot attest to itself.
+  function verifyIndexedDependencies(db,bundle){
+    const proof=verifyHqContext(bundle);
+    const changed=new Set(proof.changed);
+    for(const source of bundle.sources||[]){
+      if(!source.contentHash)continue;
+      const row=db.prepare('SELECT f.id,f.hash FROM files f JOIN projects p ON p.id=f.project_id WHERE p.name=? AND f.path=?').get(source.project,source.path);
+      if(!row||row.hash!==source.contentHash){changed.add(source.ref);continue;}
+      const anchors=indexedSemanticAnchors(db,{fileId:row.id,project:source.project,path:source.path,hash:row.hash});
+      for(const reference of source.semanticReferences||[]){
+        const anchor=anchors.find(a=>a.semanticId===reference.semanticId&&a.annotationKind===reference.annotationKind&&a.lines.includes(reference.line));
+        const {resolution}=annotationResolution(db,reference.semanticId,reference.annotationKind);
+        if(!anchor||resolution!==reference.resolution||
+          (reference.semanticAnchor&&(reference.semanticAnchor.anchorId!==anchor.anchorId||
+            reference.semanticAnchor.fingerprint!==anchor.fingerprint||
+            reference.semanticAnchor.state!==anchor.state)))changed.add(source.ref);
+      }
+    }
+    return {...proof,valid:proof.valid&&changed.size===0,changed:[...changed].sort()};
   }
   function graph({ kind = 'projects', project, target, depth = 3 } = {}) {
     return withDatabase(db => {
@@ -382,12 +403,14 @@ export function createDevIntelligence({
       if (!currentHash) continue;
       const observations = tags.all(row.id, ...surfaceKinds)
         .filter(tag => isVersionedId(tag.ref) && tag.ref.length <= 160);
+      const anchors=indexedSemanticAnchors(db,{fileId:row.id,project:row.project,path:row.path,hash:row.hash});
       const annotations = observations.slice(0,64).map(tag => {
-        const entry = getSemanticId(db, tag.ref);
         const kind = tag.kind.slice(3);
-        const kinds = ['emits','consumes'].includes(kind) ? ['event','type','schema'] : [kind];
-        return { semanticId: tag.ref, kind, line: tag.line,
-          resolution: !entry ? 'unknown' : !kinds.includes(entry.kind) ? 'invalid_kind' : entry.status };
+        const {resolution}=annotationResolution(db,tag.ref,kind);
+        const anchor=anchors.find(a=>a.semanticId===tag.ref&&a.annotationKind===kind);
+        return { semanticId: tag.ref, kind, line: tag.line,resolution,
+          semanticAnchor:anchor??null,
+          evidence:indexedAnnotationEvidence(anchor,resolution,{live:true,stale:row.hash!==currentHash}) };
       });
       if (!annotations.length) continue;
       const semanticIds = [...new Set(annotations.map(a => a.semanticId))].sort();
@@ -437,7 +460,7 @@ export function createDevIntelligence({
       if (!bundle.sources.some(source => source.ref === selected.sourceId &&
             source.semanticReferences?.some(ref => ref.line === anchor.line && ref.semanticId === anchor.semanticId)) ||
           bundle.sources.some(source => source.contentHash !== observed.get(source.ref)?.sourceDigest ||
-            !source.contentHash) || !verifyHqContext(bundle).valid)
+            !source.contentHash) || !verifyIndexedDependencies(db,bundle).valid)
         return { schema: 'vivim.source-context/1', status: 'unavailable', context: null };
       // Machine-local absolute paths are not part of the context digest.
       const sources = bundle.sources.map(({ absPath, ...source }) => source);
@@ -469,7 +492,7 @@ export function createDevIntelligence({
       if (bundle.sources.some(source => !source.contentHash ||
           source.contentHash !== observed.get(source.ref)?.sourceDigest ||
           !source.semanticReferences?.some(ref => ids.includes(ref.semanticId))) ||
-          !verifyHqContext(bundle).valid) return none('unavailable');
+          !verifyIndexedDependencies(db,bundle).valid) return none('unavailable');
       // Verify full file identity, not merely the selected excerpt, once more.
       for (const source of bundle.sources) {
         const current = projectSurfaces(db, records, { project:source.project,

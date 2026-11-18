@@ -53,6 +53,20 @@ export function indexedSemanticAnchors(db,{fileId,project,path,hash}={}){
       contentHash:hash};
   }).sort((a,b)=>compare(a.anchorId,b.anchorId));
 }
+// Registration lifecycle is vocabulary governance, not evidence of behavior.
+export function indexedAnnotationEvidence(anchor,resolution,{live=false,stale=false}={}){
+  const conflict=anchor?.state==='ambiguous'||resolution==='invalid_kind';
+  const freshness=stale?'stale':live?'current-at-read':'indexed-not-live-checked';
+  return {origin:'extracted',assurance:conflict?'contradicted':live&&!stale&&anchor?.state==='indexed'?'verified':'proposed',
+    claim:'annotation-occurrence',freshness,conflict,
+    anchorId:anchor?.anchorId??null,fingerprint:anchor?.fingerprint??null,
+    resolution,planningEligible:false};
+}
+export function annotationResolution(db,id,kind){
+  const entry=getSemanticId(db,id);
+  const expected=['emits','consumes'].includes(kind)?['event','type','schema']:[kind];
+  return {entry,resolution:!entry?'unknown':!expected.includes(entry.kind)?'invalid_kind':entry.status};
+}
 export function semanticAnchorChanges(previous,current){
   const before=new Map(previous.map(a=>[a.anchorId,a]));
   const after=new Map(current.map(a=>[a.anchorId,a]));

@@ -131,6 +131,7 @@ function semanticRows(context) {
     const from = nodes.get(relation.from), to = nodes.get(relation.to);
     rows.push({ id: relation.id, label: from.label + ' → ' + labels[relation.kind] + ' → ' + to.label,
       classification: relation.classification,
+      evidence:relation.evidence,
       freshness: from.freshness || to.freshness || null,
       source: relation.source, priority: priority[relation.kind] });
   }
@@ -153,7 +154,7 @@ function renderSemanticKnowledge(root, context) {
     const card = element('article', 'section');
     card.dataset.relationshipId = row.id;
     card.appendChild(element('p', 'body', row.label));
-    card.appendChild(element('div', 'meta', row.classification + (row.freshness ? ' · ' + row.freshness : '') +
+    card.appendChild(element('div', 'meta', row.classification + (row.evidence ? ' · '+row.evidence.origin+' / '+row.evidence.assurance+' ('+row.evidence.claim+') · '+row.evidence.freshness : ' · assurance unavailable') + (row.freshness ? ' · ' + row.freshness : '') +
       ' · ' + row.source.authority + ' ' + row.source.ref +
       ' · source revision ' + present(row.source.revision, 'not recorded')));
     root.appendChild(card);

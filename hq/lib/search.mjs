@@ -5,7 +5,7 @@
 // match count plus a page of results, and every ordering is explicit so the
 // same index always produces the same output.
 import { globToRegExp, toPosix, sha256 } from './util.mjs';
-import { getSemanticId, indexedSemanticAnchors } from './semantic-registry.mjs';
+import { indexedSemanticAnchors, indexedAnnotationEvidence, annotationResolution } from './semantic-registry.mjs';
 import { isVersionedId } from './annotation-v2.mjs';
 
 const SEMANTIC_KINDS = ['type', 'capability', 'contract', 'emits', 'consumes', 'action'];
@@ -67,9 +67,7 @@ export function searchSemanticReferences(db, options = {}) {
     const annotationKind = row.annotation_kind.slice(3);
     const anchor=anchors.find(a=>a.annotationKind===annotationKind&&a.semanticId===row.semantic_id);
     if(!anchor)continue;
-    const entry = getSemanticId(db, row.semantic_id);
-    const expected = ['emits', 'consumes'].includes(annotationKind) ? ['event', 'type', 'schema'] : [annotationKind];
-    const resolution = !entry ? 'unknown' : !expected.includes(entry.kind) ? 'invalid_kind' : entry.status;
+    const {entry,resolution}=annotationResolution(db,row.semantic_id,annotationKind);
     const start = Math.max(1, row.line - 2);
     const end = Math.min(parts.length, row.line + 8);
     results.push({
@@ -77,7 +75,7 @@ export function searchSemanticReferences(db, options = {}) {
       fileId: row.file_id, projectId: row.project_id, line: row.line,
       semanticId: row.semantic_id, annotationKind, schemaVersion: '2',
       registryStatus: entry?.status ?? null, registryKind: entry?.kind ?? null, resolution,
-      contentHash: row.hash, snapshot: 'indexed', semanticAnchor:anchor, lines: [start, end],
+      contentHash: row.hash, snapshot: 'indexed', semanticAnchor:anchor, evidence:indexedAnnotationEvidence(anchor,resolution), lines: [start, end],
       snippet: parts.slice(start - 1, end).join('\n').slice(0, 4096),
     });
   }

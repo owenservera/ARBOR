@@ -509,6 +509,7 @@ function semanticRows(context) {
     const from = nodes.get(relation.from), to = nodes.get(relation.to);
     rows.push({ id: relation.id, label: from.label + ' → ' + labels[relation.kind] + ' → ' + to.label,
       classification: relation.classification,
+      evidence:relation.evidence,
       freshness: from.freshness || to.freshness || null,
       source: relation.source, priority: priority[relation.kind] });
   }
@@ -525,7 +526,7 @@ function renderSemanticKnowledge(card, context) {
   if (!knowledge.rows.length) card.append(el('p','ux-note','No source-supported relationships in the bounded snapshot.'));
   for (const row of knowledge.rows.slice(0,32)) {
     const item = el('div','ux-item');
-    item.append(el('strong','ux-item-title',row.label), el('p','ux-note',row.classification +
+    item.append(el('strong','ux-item-title',row.label), el('p','ux-note',row.classification + (row.evidence ? ' · '+row.evidence.origin+' / '+row.evidence.assurance+' ('+row.evidence.claim+') · '+row.evidence.freshness : ' · assurance unavailable') +
       (row.freshness ? ' · ' + row.freshness : '') + ' · ' + row.source.authority + ' ' + row.source.ref +
       ' · source revision ' + (row.source.revision ?? 'not recorded')));
     card.append(item);

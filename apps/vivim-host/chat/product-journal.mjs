@@ -262,10 +262,11 @@ export function projectWikiContext(records, wikiRevision = null, wiki = null) {
 export function projectAppliedControlEffects(control, wikiChanges = null, wikiStructure = null) {
   // The existing dispatcher owns receipt reads. No new journal or graph writes.
   const recent = control.recent(100);
-  const items = [];
+  const items = [], seenPlans=new Set();
   for (const summary of recent) {
     if (summary.state !== 'applied' || (summary.actionId === 'wiki.section.edit' && !wikiChanges) ||
         !['R1', 'R2'].includes(summary.risk)) continue;
+    if(seenPlans.has(summary.planId)||summary.actionId?.startsWith('control.rule.'))continue;
     const detail = control.status(summary.planId);
     const receipt = detail?.receipt;
     if (detail?.state !== 'applied' || receipt?.schema !== 'vivim.control-receipt/1' ||
@@ -303,6 +304,7 @@ export function projectAppliedControlEffects(control, wikiChanges = null, wikiSt
       if(!event)continue;
       structureLink={kind:'committed-wiki-structure',entryId:event.entryId,wikiRevision:event.wikiRevision};
     }
+    seenPlans.add(summary.planId);
     items.push({
       ...(wikiLink ? { wikiLink } : {}),
       ...(structureLink ? { structureLink } : {}),

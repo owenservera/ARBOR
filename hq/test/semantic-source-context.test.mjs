@@ -70,6 +70,19 @@ test('real approved source -> HQ index -> semantic search -> verified context', 
     assert.equal(bundle.sources[0].contentHash, sha256(source));
     assert.ok(bundle.fragment.includes('export function sha256'));
     assert.equal(hq.verifyContext(bundle).valid, true);
+    const reference=bundle.sources[0].semanticReferences.find(r=>r.semanticId===id&&r.annotationKind==='capability');
+    assert.equal(reference.evidence.claim,'annotation-occurrence');
+    assert.equal(reference.evidence.planningEligible,false);
+    assert.equal(reference.evidence.assurance,'proposed');
+    const surface=hq.fileSurface({project:'actual-hq',path:'util.mjs'}).files[0];
+    const live=surface.annotations.find(a=>a.semanticId===id&&a.kind==='capability');
+    assert.equal(live.semanticAnchor.anchorId,reference.semanticAnchor.anchorId);
+    assert.equal(live.evidence.assurance,'verified');
+    assert.equal(live.evidence.planningEligible,false);
+    db=open();
+    assert.equal(deprecateSemanticId(db,id,{ownerConfirmed:true}).ok,true);
+    db.close(); db=null;
+    assert.equal(hq.verifyContext(bundle).valid,false,'registry lifecycle change invalidates retained dependencies even with unchanged bytes');
     assert.equal(hq.context({ task: id, project: 'actual-hq', budgetTokens: 80 }).sources.length, 0);
     db = open();
     const query = query => searchSemanticReferences(db, { query, project: 'actual-hq' }).results;
@@ -81,7 +94,7 @@ test('real approved source -> HQ index -> semantic search -> verified context', 
     assert.equal(db.prepare("SELECT count(*) AS n FROM annotations WHERE kind='v2:capability' AND text='malformed'").get().n, 0);
     assert.equal(db.prepare("SELECT count(*) AS n FROM annotations WHERE kind='context' AND text='ordinary v1 tag'").get().n, 1);
     assert.equal(db.prepare("SELECT count(*) AS n FROM files WHERE path LIKE '.env-local/%'").get().n, 0);
-    assert.equal(getSemanticId(db, id).status, 'proposed');
+    assert.equal(getSemanticId(db, id).status, 'deprecated');
     assert.equal(getSemanticId(db, unknown), null);
     assert.equal(db.prepare('SELECT count(*) AS n FROM semantic_link').get().n, 0);
     db.close(); db = null;
