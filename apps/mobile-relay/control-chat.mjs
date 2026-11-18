@@ -193,6 +193,17 @@ export function createControlChat({
     return true;
   }
 
+  // Tell the existing PWA Wiki tab to re-read Host state only after a
+  // verified applied Wiki receipt. This event carries no mutation authority.
+  function notifyWikiCommitted(receipt) {
+    if (receipt?.status === 'applied' && receipt.actionId === 'wiki.section.edit' &&
+        Number.isSafeInteger(receipt.result?.wikiRevision)) {
+      host.dispatchEvent(new CustomEvent('vivim:wiki-committed', {
+        bubbles: true, detail: { revision: receipt.result.wikiRevision }
+      }));
+    }
+  }
+
   async function approve(reply) {
     if (busy || reply.status !== 'approval' || !reply.plan) return;
     const plan = reply.plan;
@@ -205,6 +216,7 @@ export function createControlChat({
     try {
       const receipt = await client.execute(plan);
       reply.receipt = receipt;
+      notifyWikiCommitted(receipt);
       reply.status = receipt?.status === 'applied' ? 'done' :
         receipt?.status === 'uncertain' ? 'uncertain' : 'error';
       reply.text = 'Host receipt: ' + describe({
@@ -246,6 +258,7 @@ export function createControlChat({
           receipt?.planDigest === reply.planDigest &&
           ['applied', 'failed', 'uncertain'].includes(receipt.status)) {
         reply.receipt = receipt;
+        notifyWikiCommitted(receipt);
         reply.status = receipt.status === 'applied' ? 'done'
           : receipt.status === 'failed' ? 'error' : 'uncertain';
         reply.text = 'Reconciled Host receipt: ' + describe({
