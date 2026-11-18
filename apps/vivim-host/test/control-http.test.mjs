@@ -53,6 +53,43 @@ test('desktop and Direct mobile share one dispatcher with separate real authenti
   assert.equal(receipt.json.approvedVia, 'desktop-owner-token');
   assert.equal((await call('/api/host/control/plans/' + plan.json.planId, { headers: bearer })).json.state, 'applied');
 
+  // --- Actual mounted HTTP → Host Control → product Wiki journal ---
+  // Host Wiki is mutated only after approved Control plan and remains projected from disk.
+  const wikiBefore = await call('/api/wiki');
+  assert.equal(wikiBefore.status, 200);
+  assert.equal(wikiBefore.json.revision, 1);
+  const nlWiki = await post('/api/host/control/plan', desk,
+    { text: 'Edit wiki section Main/HowTo saying Updated instructions' });
+  assert.equal(nlWiki.status, 200, JSON.stringify(nlWiki.json));
+  assert.equal(nlWiki.json.actionId, 'wiki.section.edit');
+  assert.equal(nlWiki.json.outcome, 'approval_required');
+  assert.deepEqual(nlWiki.json.preview, {
+    target: 'Main/HowTo', before: wikiBefore.json.pages.Main.sections.HowTo,
+    after: 'Updated instructions', expectedRevision: 1
+  });
+  assert.deepEqual((await call('/api/wiki')).json, wikiBefore.json, 'preview alone must never mutate');
+  const wikiReceipt = await post('/api/host/control/execute', desk,
+    { planId: nlWiki.json.planId, planDigest: nlWiki.json.planDigest });
+  assert.equal(wikiReceipt.status, 200, JSON.stringify(wikiReceipt.json));
+  assert.equal(wikiReceipt.json.status, 'applied');
+  assert.equal(wikiReceipt.json.result.wikiRevision, 2);
+  assert.equal((await call('/api/wiki')).json.pages.Main.sections.HowTo, 'Updated instructions');
+  const wikiReplay = await post('/api/host/control/execute', desk,
+    { planId: nlWiki.json.planId, planDigest: nlWiki.json.planDigest });
+  assert.equal(wikiReplay.json.replayed, true);
+  assert.equal((await call('/api/wiki')).json.revision, 2, 'replay must not append again');
+  const staleWiki = await post('/api/host/control/plan', desk,
+    { actionId: 'wiki.section.edit', args: { target: 'Main/HowTo', content: 'stale plan' } });
+  const newerWiki = await post('/api/host/control/plan', desk,
+    { actionId: 'wiki.section.edit', args: { target: 'Main/HowTo', content: 'newer content' } });
+  assert.equal(staleWiki.json.outcome, 'approval_required');
+  assert.equal(newerWiki.json.outcome, 'approval_required');
+  assert.equal((await post('/api/host/control/execute', desk,
+    { planId: newerWiki.json.planId, planDigest: newerWiki.json.planDigest })).json.status, 'applied');
+  assert.equal((await post('/api/host/control/execute', desk,
+    { planId: staleWiki.json.planId, planDigest: staleWiki.json.planDigest })).status, 409);
+  assert.equal((await call('/api/wiki')).json.pages.Main.sections.HowTo, 'newer content');
+
   // --- Direct mobile: Tailscale identity, same origin, explicit header ---
   // Privileged phone control additionally requires an approved device grant
   // (Tailscale authenticates the network user, not the installed phone).
