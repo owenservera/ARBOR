@@ -145,11 +145,11 @@ function makeTransport(baseUrl, fetchImpl) {
 // Static wiring projection: which server.mjs lines wire the journal modules in.
 export function projectionWiring(serverSrc) {
   return {
-    importLine: findLine(serverSrc, /import \{ createProductJournal \} from '\.\/chat\/product-journal\.mjs'/),
+    importLine: findLine(serverSrc, /import \{ createProductJournal(?:, [^}]+)? \} from '\.\/chat\/product-journal\.mjs'/),
     createLine: findLine(serverSrc, /createProductJournal\(\{/),
     stateRouteLine: findLine(serverSrc, /pathname === '\/api\/state' \|\| pathname === '\/api\/wiki'/),
     projectionLine: findLine(serverSrc, /productJournal\.readProjection\(\)/),
-    journalRouteLine: findLine(serverSrc, /pathname === '\/api\/journal' \|\| pathname === '\/demo\/journal\.jsonl'/),
+    journalRouteLine: findLine(serverSrc, /pathname === '\/api\/journal'/),
     mutateRouteLine: findLine(serverSrc, /pathname === '\/api\/mutate'.*req\.method === 'POST'/),
     appendLine: findLine(serverSrc, /productJournal\.append\(entry\)/)
   };
@@ -186,7 +186,7 @@ export async function runA02Evidence({
       ' createProductJournal({dataRoot, seedState, seedWiki}), :' + wiring.mutateRouteLine +
       ' POST /api/mutate, :' + wiring.appendLine + ' productJournal.append, :' +
       wiring.stateRouteLine + ' /api/state+/api/wiki, :' + wiring.projectionLine +
-      ' readProjection, :' + wiring.journalRouteLine + ' /api/journal+/demo/journal.jsonl';
+      ' readProjection, :' + wiring.journalRouteLine + ' /api/journal+/api/journal?format=jsonl';
   });
   await safe('page-surfaces-wired', () => {
     for (const page of [CHAT_PAGE_JS, WIKI_PAGE_JS]) {
@@ -250,7 +250,7 @@ export async function runA02Evidence({
       const journalBefore = await safe('journal-before', async () =>
         parseJournalResponse((await io.get('/api/journal')).body));
       const rawBefore = await safe('raw-journal-before', async () =>
-        parseRawJournal((await io.get('/demo/journal.jsonl')).body));
+        parseRawJournal((await io.get('/api/journal?format=jsonl')).body));
 
       const text = 'A02 parity probe ' + hash(baseUrl).slice(0, 12);
       const machinePost = await safe('chat-post-machine', async () => {
@@ -269,7 +269,7 @@ export async function runA02Evidence({
       const journalAfter = await safe('journal-after', async () =>
         parseJournalResponse((await io.get('/api/journal')).body));
       const rawAfter = await safe('raw-journal-after', async () =>
-        parseRawJournal((await io.get('/demo/journal.jsonl')).body));
+        parseRawJournal((await io.get('/api/journal?format=jsonl')).body));
       const stateAfter = await safe('state-after', () => json('/api/state'));
       const wikiAfter = await safe('wiki-after', () => json('/api/wiki'));
 
@@ -283,7 +283,7 @@ export async function runA02Evidence({
       check('journal-api-raw-parity', journalAfter !== null && rawAfter !== null &&
         JSON.stringify(journalAfter) === JSON.stringify(rawAfter) &&
         journalBefore !== null && rawBefore !== null && JSON.stringify(journalBefore) === JSON.stringify(rawBefore),
-        '/api/journal array === /demo/journal.jsonl entries before and after');
+        '/api/journal array === /api/journal?format=jsonl entries before and after');
       check('state-projection-records-mutation', stateAfter !== null && stateBefore !== null &&
         stateAfter.chat.length === stateBefore.chat.length + 2 &&
         stateAfter.revision === stateBefore.revision + 2 &&
