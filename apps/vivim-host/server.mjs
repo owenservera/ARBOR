@@ -21,7 +21,7 @@ import { createWorkerSupervisor } from './bootstrap/worker-supervisor.mjs';
 import { loadOwnerToken, verifyOwnerToken } from './bootstrap/owner-auth.mjs';
 import { createDirectPhoneHandler, serveLoopbackPhoneAsset } from './direct-phone.mjs';
 import { createRustChatContext } from './chat/rust-context.mjs';
-import { createProductJournal } from './chat/product-journal.mjs';
+import { createProductJournal, projectAppliedControlEffects } from './chat/product-journal.mjs';
 import { createEnrollment } from './apk/enrollment.mjs';
 import { createApkRegistry } from './apk/registry.mjs';
 import { createPairingStore } from './apk/pairing.mjs';
@@ -882,8 +882,14 @@ async function handleControl(req, res, pathname, host, controlFor, tokenFor, uiS
   if (route === 'wiki-context') {
     if (req.method !== 'GET') { res.setHeader('allow', 'GET'); sendJson(res, 405, { code: 'METHOD' }); return; }
     if (req.headers.origin !== undefined && !sameOrigin) { sendJson(res, 403, { code: 'ORIGIN' }); return; }
-    try { sendJson(res, 200, await productJournal.readWikiContext()); }
-    catch { sendJson(res, 503, { schema: 'vivim.wiki-context/1', state: 'unavailable', code: 'WIKI_CONTEXT_UNAVAILABLE' }); }
+    res.setHeader('cache-control', 'private, no-store');
+    try {
+      const context = await productJournal.readWikiContext();
+      let applicationEffects;
+      try { applicationEffects = projectAppliedControlEffects(controlFor()); }
+      catch { applicationEffects = { state: 'unavailable', code: 'CONTROL_RECEIPTS_UNAVAILABLE', items: [] }; }
+      sendJson(res, 200, { ...context, applicationEffects });
+    } catch { sendJson(res, 503, { schema: 'vivim.wiki-context/1', state: 'unavailable', code: 'WIKI_CONTEXT_UNAVAILABLE' }); }
     return;
   }
   // Desktop PWA reads the Host's existing phone-safe projection using ONLY the
