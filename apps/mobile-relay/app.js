@@ -1779,7 +1779,8 @@ async function refreshBuildBindings(snapshot){
  const seq=++buildBindingSequence,revision=surface.revision;
  const headers=HOST_PREVIEW?{}:transport.deviceHeaders?.();
  const authorized=()=>HOST_PREVIEW?!!S.statusObj:transport.direct&&S.paired&&navigator.onLine!==false&&
-   !!headers&&!!transport.deviceHeaders?.()&&transport.deviceHeaders?.()?.['x-vivim-device-session']===headers['x-vivim-device-session'];
+   !!headers&&!!transport.deviceHeaders?.()&&transport.deviceHeaders?.()?.['x-vivim-device-session']===headers['x-vivim-device-session']&&
+   transport.deviceHeaders?.()?.['x-vivim-grant-id']===headers['x-vivim-grant-id'];
  if(!authorized()){build.setLiveData(null,revision);return;}
  const outcomes=HOST_PREVIEW?snapshot?.studioOutcomes:
    snapshot?.live?.state==='source-backed'?snapshot.live.studioOutcomes:null;

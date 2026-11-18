@@ -70,3 +70,21 @@ test('unsupported microphone cannot start or request access',()=>{
  assert.equal(capture.available,false);
  assert.equal(capture.open(),false);
 });
+
+test('pending microphone permission cannot start recording after close, cancel or hidden page',async()=>{
+ for(const mode of ['close','cancel','hidden']){
+  const doc=fixture();let finish,requests=0,stops=0;
+  const capture=mountVoiceCapture({host:doc.body,Recorder,BlobCtor:Blob,devices:{getUserMedia(){requests++;return new Promise(r=>finish=r);}},urlApi:{createObjectURL:()=> 'blob:test',revokeObjectURL(){}}});
+  capture.open();const dialog=doc.body.children[0],click=dialog.find('Start recording').listeners.click;
+  click();click();assert.equal(requests,1,'one pending permission request');
+  if(mode==='close')capture.close();else if(mode==='cancel')dialog.listeners.cancel({preventDefault(){}});else{doc.hidden=true;doc.visibilitychange();}
+  finish({getTracks:()=>[{stop(){stops++;}}]});await Promise.resolve();await Promise.resolve();
+  assert.equal(stops,1,mode);assert.equal(capture.isRecording(),false,mode);
+ }
+});
+test('recorder error followed by final data never produces a downloadable clip',async()=>{
+ const doc=fixture();let active;class BrokenRecorder extends Recorder{constructor(stream){super(stream);active=this;}}
+ const capture=mountVoiceCapture({host:doc.body,Recorder:BrokenRecorder,BlobCtor:Blob,devices:{async getUserMedia(){return {getTracks:()=>[{stop(){}}]};}},urlApi:{createObjectURL:()=> 'blob:test',revokeObjectURL(){}}});
+ capture.open();const dialog=doc.body.children[0];dialog.find('Start recording').listeners.click();await Promise.resolve();await Promise.resolve();
+ active.onerror();assert.equal(capture.isRecording(),false);assert.equal(dialog.find('Download audio').hidden,true);
+});

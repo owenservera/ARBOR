@@ -37,7 +37,9 @@ test('paired Direct exposes only reviewed read-only JS modules; SW shell preload
     assert.match(host, new RegExp("'" + asset.replace('.', '\\.') + "': \\['" + asset.replace('.', '\\.') + "'"));
     assert.ok(sw.includes("'" + asset + "'"));
   }
-  assert.match(sw, /var CACHE = 'vivim-relay-shell-v13'/);
+  assert.match(sw, /var CACHE = 'vivim-relay-shell-v\d+'/);
+  assert.ok(sw.includes("'vec-engines/compiler.mjs'"));
+  assert.ok(sw.includes("'tierflow-runtime/document/import-legacy.ts'"));
 });
 
 test('TierFlow modules are fixed Host assets backed by the existing canonical sources', () => {

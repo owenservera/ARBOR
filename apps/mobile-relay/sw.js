@@ -5,7 +5,7 @@
 // on the next load; the cache is only the fallback. ES5 syntax on purpose: older Android WebViews
 // can run this file, and it deliberately avoids optional chaining, nullish coalescing, arrow
 // functions and top-level await.
-var CACHE = 'vivim-relay-shell-v25';
+var CACHE = 'vivim-relay-shell-v26';
 var CACHE_PREFIX = 'vivim-relay-shell-';
 // Paths are relative to the worker's scope, so the same file serves both the Direct Host mount
 // (scope /mobile/, files at /mobile/app.js) and the cloud deployment (scope /, files at /app.js).
@@ -36,6 +36,11 @@ var SHELL_PATHS = [
   'bootstrap-phone.mjs',
   'visual-theme.mjs',
   'build-composer.mjs',
+  'vec-engines/compiler.mjs',
+  'vec-engines/registry.mjs',
+  'vec-engines/catalog.mjs',
+  'vec-engines/validators.mjs',
+  'vec-engines/enum-choices.mjs',
   'generative-ui/bootstrap-adapters.mjs',
   'generative-ui/catalog.mjs',
   'generative-ui/compiler.mjs',
@@ -137,7 +142,8 @@ function handles(request) {
   if (url.pathname.indexOf('/api/') !== -1) return false;
   // A pairing link must reach the PC to redeem its token; an offline shell must never pretend it did.
   try { if (url.searchParams && url.searchParams.has('token')) return false; } catch (error) { return true; }
-  if (hasHeader(request, 'authorization') || hasHeader(request, 'range')) return false;
+  if (hasHeader(request, 'authorization') || hasHeader(request, 'range') ||
+      hasHeader(request, 'x-vivim-grant-id') || hasHeader(request, 'x-vivim-device-session')) return false;
   if (request.mode === 'navigate') {
     // Offline HTML fallback belongs only to the real PWA entrypoints. Never
     // return the phone shell for unrelated same-origin pages on Cloud.

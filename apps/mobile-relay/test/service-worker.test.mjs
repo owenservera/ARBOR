@@ -37,6 +37,8 @@ const SHELL_FILES = [
   'ux/readiness.mjs',
   'ux/launcher.mjs',
   'ux/launcher-ui.mjs',
+  'ux/shell-inspection.mjs',
+  'ux/shell-presentation.mjs',
   'ux/local-notes.mjs',
   'ux/local-notes-ui.mjs',
   'ux/voice-capture.mjs',
@@ -44,6 +46,11 @@ const SHELL_FILES = [
   'bootstrap-phone.mjs',
   'visual-theme.mjs',
   'build-composer.mjs',
+  'vec-engines/compiler.mjs',
+  'vec-engines/registry.mjs',
+  'vec-engines/catalog.mjs',
+  'vec-engines/validators.mjs',
+  'vec-engines/enum-choices.mjs',
   'generative-ui/bootstrap-adapters.mjs',
   'generative-ui/catalog.mjs',
   'generative-ui/compiler.mjs',
@@ -52,6 +59,13 @@ const SHELL_FILES = [
   'generative-ui/host-revision-guard.mjs',
   'generative-ui/portable-digest.mjs',
   'generative-ui/renderer.mjs',
+  'generative-ui/workspace-live-data.mjs',
+  'tierflow-runtime/document/schema.ts',
+  'tierflow-runtime/document/validate.ts',
+  'tierflow-runtime/document/import-legacy.ts',
+  'tierflow-runtime/render/dom.ts',
+  'tierflow-runtime/render/spatial-fallback.ts',
+  'tierflow-runtime/final-wave/lane-c/templates.ts',
   'generative-ui/semantic-projection.mjs',
   'nlcl/frames.mjs',
   'nlcl/grammar.mjs',
@@ -211,7 +225,7 @@ test('install precaches every shell asset from the network with cache reload', a
   const keys = new Set(await cache.keys());
   const expected = expectedKeys(ROOT);
   assert.equal(SHELL_FILES.length, expected.size, 'shell list has no duplicate entries');
-  assert.equal(SHELL_FILES.length, 59);
+  assert.equal(SHELL_FILES.length, 75);
   assert.deepEqual(SHELL_FILES, SW_SHELL_PATHS, 'the suite shell list must mirror sw.js SHELL_PATHS');
   expected.delete(failure);
   assert.deepEqual(keys, expected);
@@ -312,6 +326,8 @@ test('fetch never intercepts APIs, auth, mutations, ranges or cross-origin traff
     ['POST mutation', makeRequest('https://phone.example/mobile/api/relay?path=commands', { method: 'POST' })],
     ['POST to a shell path', makeRequest(new URL('app.js', ROOT).href, { method: 'POST' })],
     ['bearer request', makeRequest(new URL('app.js', ROOT).href, { headers: { authorization: 'Bearer secret' } })],
+    ['device grant request', makeRequest(new URL('app.js', ROOT).href, { headers: { 'x-vivim-grant-id': 'private-grant' } })],
+    ['device session request', makeRequest(new URL('app.js', ROOT).href, { headers: { 'x-vivim-device-session': 'private-session' } })],
     ['range request', makeRequest(new URL('app.js', ROOT).href, { headers: { range: 'bytes=0-99' } })],
     ['pairing token link', makeRequest('https://phone.example/pair?token=one-time', { mode: 'navigate' })]
   ];

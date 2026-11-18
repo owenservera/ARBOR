@@ -37,7 +37,7 @@ export function mountVoiceCapture({
   });}
   host.append(dialog);
   let stream=null,recorder=null,chunks=[],size=0,clip=null,clipUrl=null,downloaded=false,timer=null;
-  let previous=null,epoch=0;
+  let previous=null,epoch=0,requesting=false,stopping=false,failed=false;
   const stopTracks=()=>{for(const t of stream?.getTracks?.()||[])t.stop();stream=null};
   const clearTimer=()=>{if(timer!==null)clearTimeout(timer);timer=null};
   function clearClip(){
@@ -50,46 +50,48 @@ export function mountVoiceCapture({
   }
   function stopRecording(){
     clearTimer();
-    if(recorder?.state==='recording')recorder.stop();
-    else stopTracks();
+    if(requesting){epoch++;requesting=false;start.disabled=false;}
+    if(recorder?.state==='recording'){stopping=true;recorder.stop();}
+    else if(!stopping)stopTracks();
   }
   async function startRecording(){
-    if(!available||recorder?.state==='recording')return;
-    const token=++epoch;
+    if(!available||!dialog.open||doc.hidden||requesting||stopping||recorder?.state==='recording')return;
+    const token=++epoch;requesting=true;start.disabled=true;
     clearClip();status.textContent='Requesting browser microphone permission…';
     let opened;
     try{opened=await devices.getUserMedia({audio:true})}
-    catch{if(token===epoch)status.textContent='Microphone unavailable or permission denied. Nothing was recorded.';return}
-    if(token!==epoch || !dialog.open){
+    catch{if(token===epoch){requesting=false;start.disabled=false;status.textContent='Microphone unavailable or permission denied. Nothing was recorded.';}return}
+    if(token!==epoch || !dialog.open || doc.hidden){
+      if(token===epoch){requesting=false;start.disabled=false;}
       for(const t of opened.getTracks?.()||[])t.stop();return;
     }
-    stream=opened;chunks=[];size=0;downloaded=false;
+    requesting=false;start.disabled=false;failed=false;stream=opened;chunks=[];size=0;downloaded=false;
     try{
       const preferred=typeof Recorder.isTypeSupported==='function'&&
         Recorder.isTypeSupported('audio/webm;codecs=opus') ? {mimeType:'audio/webm;codecs=opus'}:undefined;
       recorder=new Recorder(stream,preferred);
       const current=recorder;
       current.ondataavailable=event=>{
-        if(current!==recorder)return;
+        if(current!==recorder||failed)return;
         const part=event?.data;
         if(!part||typeof part.size!=='number'||part.size<=0)return;
         size+=part.size;
         if(size>MAX_VOICE_BYTES){
-          chunks=[];status.textContent='Recording exceeded the 6 MB limit; audio discarded.';
+          failed=true;chunks=[];status.textContent='Recording exceeded the 6 MB limit; audio discarded.';
           stopRecording();return;
         }
         chunks.push(part);
       };
       current.onerror=()=>{
         if(current!==recorder)return;
-        chunks=[];status.textContent='Recording failed. No audio was saved.';
+        failed=true;chunks=[];status.textContent='Recording failed. No audio was saved.';
         stopRecording();
       };
       current.onstop=()=>{
         if(current!==recorder)return;
         clearTimer();stopTracks();controlsForRecording(false);
-        recorder=null;
-        if(!chunks.length||size>MAX_VOICE_BYTES){chunks=[];return}
+        recorder=null;stopping=false;
+        if(failed||!chunks.length||size>MAX_VOICE_BYTES){chunks=[];return}
         const type=current.mimeType||'audio/webm';
         clip=new BlobCtor(chunks,{type});chunks=[];
         if(clip.size>MAX_VOICE_BYTES){clearClip();status.textContent='Audio exceeded limit.';return}
@@ -133,6 +135,7 @@ export function mountVoiceCapture({
     start.focus();return true;
   }
   function closeDialog(){
+    if(stopping){status.textContent='Finishing recording. Review it before closing.';return;}
     if(recorder?.state==='recording'){
       stopRecording();status.textContent='Recording stopped. Review and download or discard before closing.';return;
     }
@@ -150,12 +153,12 @@ export function mountVoiceCapture({
   discard.addEventListener('click',discardClip);
   close.addEventListener('click',closeDialog);
   dialog.addEventListener('cancel',event=>{
-    if(recorder?.state==='recording'||(clip&&!downloaded)){
+    if(requesting||stopping||recorder?.state==='recording'||(clip&&!downloaded)){
       event.preventDefault();closeDialog();
     }
   });
   doc.addEventListener?.('visibilitychange',()=>{
-    if(doc.hidden&&recorder?.state==='recording')stopRecording();
+    if(doc.hidden&&(requesting||recorder?.state==='recording'))stopRecording();
   });
   return Object.freeze({available,open,stop:stopRecording,close:closeDialog,isRecording:()=>recorder?.state==='recording'});
 }
