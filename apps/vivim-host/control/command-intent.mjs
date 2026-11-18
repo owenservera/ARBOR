@@ -3,6 +3,7 @@
 import { interpretControl } from '../../mobile-relay/control-language.mjs';
 import { resolvePersonalSemantics } from './personal-semantics.mjs';
 
+// @hq:type vivim.command-intent@0.1
 export const COMMAND_INTENT_SCHEMA = 'vivim.command-intent/0.1';
 const isRecord = v => v !== null && typeof v === 'object' && !Array.isArray(v) &&
   (Object.getPrototypeOf(v) === Object.prototype || Object.getPrototypeOf(v) === null);
@@ -63,6 +64,7 @@ function actionShape(action, args) {
  * Input {text, worldRevision?, catalogRevision?, audience?, scope?}.
  * All outcomes are inert. Model suggestions use validateAiCommandCandidate separately.
  */
+// @hq:emits vivim.command-intent@0.1
 export function toCommandIntent(input, { catalog, world, personalRules = [], personalScope = null } = {}) {
   const check = context(input, catalog, world);
   if (check.refusal) return refuse(input ?? {}, check.refusal, 'Invalid or stale command context.');
