@@ -1,0 +1,21 @@
+{
+  "schema": "vivim.demo-step/1",
+  "itemId": "tab-today",
+  "screen": "Today",
+  "currentState": "Paired Direct phone: Connection card reads 'Direct to your PC', one live conversation renders under Running as 'Chat · chatgpt · Claimed by worker — not sent', a failed relay-chat command feeds a 'A command failed' Needs-you item, and the footer's single next action is 'Open Talk'.",
+  "proposedUpgrade": "baseline — current view, no upgrade proposed",
+  "acceptanceQuestion": "Does Today put the one thing that needs you (the failed send) above everything else, and can every card on this screen be traced to a Host field rather than invented?",
+  "mockData": {
+    "statusObj": {
+      "snapshot": {
+        "live": { "state": "ok", "conversations": [ { "id": "c-1", "provider": "chatgpt", "model": "gpt-5", "messages": [ { "state": "claimed" } ] } ] },
+        "bootstrap": { "progress": { "passes": [] } }
+      }
+    },
+    "commands": [
+      { "id": "cmd-9", "mode": "relay-chat", "kind": "command", "consumer": "harness", "target": { "provider": "vivim" }, "text": "Set my theme to dusk", "status": "failed", "updatedAt": "2026-11-14T09:12:00Z" }
+    ],
+    "ctx": { "paired": true, "mode": "direct", "connection": "Direct to your PC", "connectionTone": "ok", "pendingSend": false },
+    "liveStateLabels": { "claimed": "Claimed by worker — not sent" }
+  }
+}
