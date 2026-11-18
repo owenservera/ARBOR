@@ -225,6 +225,8 @@ export function createControlPlanner({ catalog = loadControlCatalog(), lexicon =
     } });
   }
 
+  // @hq:consumes vivim.command-intent@0.1
+  // @hq:consumes vivim.vec-compile@0.1
   function planText(text, { source = 'text', worldRevision, catalogRevision } = {}) {
     if (typeof text !== 'string' || !text.trim() || text.length > 1000) throw err('CONTROL_TEXT_INVALID');
     const compiled = compileCommand(text.trim(), { source, worldRevision, catalogRevision });
