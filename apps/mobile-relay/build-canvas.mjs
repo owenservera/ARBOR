@@ -7,8 +7,25 @@ import { renderSurface } from './generative-ui/renderer.mjs';
 const PENDING_KEY = 'vivim.build.pending.v1';
 const PAUSE = ms => new Promise(resolve => setTimeout(resolve, ms));
 const LABELS = { chatgpt: 'ChatGPT', claude: 'Claude', gemini: 'Gemini', qwen: 'Qwen', zai: 'Z.ai', deepseek: 'DeepSeek' };
-const PROP_001_PROOF = { proposalId: 'prop_001', applied: true, proof: { committedRevision: 9, surfaceId: 'vivim.ui-surface/1', testReceipts: ['scripts/acceleration/live-host-check.test.mjs'], commitSHA: '3dae90c' } };
+// A local preview is not proof of persistence.
 const NEXT_BATCH = { label: 'Build something', tab: 'build', detail: 'Next scoped repair ready' };
+
+// Queue completion alone is never proof of a persisted Host UI revision.
+export function committedUiRevision(command, surface) {
+  let body = command?.result;
+  try { if (typeof body === 'string') body = JSON.parse(body); }
+  catch { throw new Error('Host commit confirmation unreadable'); }
+  if (command?.status !== 'done' ||
+      body?.schema !== 'vivim.bootstrap-command-worker/1' ||
+      body.action !== 'apply-proposal' || body.persisted !== true ||
+      !Number.isSafeInteger(body.revision) ||
+      body.revision !== surface.revision + 1 ||
+      body.parentRevision !== surface.revision ||
+      body.surfaceId !== surface.surfaceId)
+    throw new Error('Host did not confirm the expected persisted revision');
+  return { committedRevision: body.revision, parentRevision: body.parentRevision,
+    surfaceId: body.surfaceId };
+}
 
 export function mountBuildCanvas({ host, request, getSurface, getProvider, send, apply, onApplied = () => {}, navigate = () => {}, storage = window.localStorage }) {
   let state = { name: 'idle' }, text = '', run = 0;
@@ -93,11 +110,39 @@ export function mountBuildCanvas({ host, request, getSurface, getProvider, send,
     } catch { set({ name: 'idle', error: "VIVIM couldn't confirm that went through, so it won't send it again on its own. Check Talk on your PC, then try again." }); }
   }
 
+  async function waitForReadback(proof, expected) {
+    for (let i = 0; i < 12; i++) {
+      const view = getSurface?.();
+      if (view?.surfaceId === proof.surfaceId &&
+          view.revision === proof.committedRevision &&
+          JSON.stringify(view.theme) === JSON.stringify(expected.theme) &&
+          JSON.stringify(view.tree) === JSON.stringify(expected.tree)) return true;
+      await PAUSE(750);
+    }
+    return false;
+  }
   async function activate() {
-    const { proposal, surface } = state;
-    set({ ...state, name: 'applying' });
-    try { await apply(proposal, surface); await onApplied(PROP_001_PROOF); text = ''; set({ name: 'done', proof: PROP_001_PROOF }); }
-    catch (error) { set({ name: 'error', message: /stale|revision/i.test(error.message) ? 'Your app changed in the meantime. Ask again.' : "That didn't apply. Your app is unchanged." }); }
+    if (state.name !== 'ready') return;
+    const submitted = state;
+    set({ ...submitted, name: 'applying' });
+    let proof;
+    try {
+      proof = committedUiRevision(await apply(submitted.proposal, submitted.surface), submitted.surface);
+    } catch (error) {
+      const reason = String(error?.message ?? error);
+      return set({ name: 'error', message: /stale|revision/i.test(reason)
+        ? 'Your app changed in the meantime. Ask again.'
+        : /pending|uncertain|acknowledge|confirm/i.test(reason)
+          ? 'Host confirmation is uncertain. Check your PC; nothing was resent.'
+          : /unauthori|forbidden|unpaired|grant|401|403/i.test(reason)
+            ? 'This phone is not authorized to change your app.'
+            : 'Host rejected the change. No successful revision was confirmed.' });
+    }
+    try { await onApplied(proof); } catch { /* The commit can precede visible readback. */ }
+    const confirmed = await waitForReadback(proof, submitted.preview.surface);
+    text = '';
+    set({ name: confirmed ? 'done' : 'awaiting-readback',
+      proof, expected: submitted.preview.surface });
   }
   async function undo() {
     set({ name: 'done', undoing: true });
@@ -140,6 +185,18 @@ export function mountBuildCanvas({ host, request, getSurface, getProvider, send,
     card.append(el('span', 'tour-eyebrow', state.origin === 'vec' ? 'COMPILED LOCALLY · NO AI' : 'PROPOSED BY YOUR AI'), el('h3', null, state.summary.explanation));
     card.append(el('p', 'muted', `${state.summary.changes} ${state.summary.changes === 1 ? 'change' : 'changes'} to your app. Preview below.`));
     if (state.summary.unknowns.length) card.append(el('p', 'muted', "VIVIM doesn't know: " + state.summary.unknowns.join('; ')));
+    if (state.origin === 'vec' && state.detail?.capabilityId) {
+      const d = state.detail;
+      card.append(el('p', 'muted', d.capabilityId + ' · revision ' + d.baseRevision + ' → ' + d.targetRevision));
+      const swatch = el('span', 'color-swatch');
+      swatch.setAttribute('role', 'img');
+      swatch.setAttribute('aria-label', 'Proposed ' + d.property + ' color ' + d.value);
+      swatch.style.backgroundColor = d.value;
+      swatch.style.display = 'inline-block';
+      swatch.style.width = '36px'; swatch.style.height = '36px';
+      swatch.style.border = '1px solid currentColor'; swatch.style.borderRadius = '6px';
+      card.append(el('p', 'muted', 'Proposed ' + d.property + ': ' + d.value), swatch);
+    }
     const view = el('div', 'proposal-preview');
     try { renderSurface(view, state.preview.surface, { audience: 'phone', approvedRefs: [], onIntent: () => {} }); } catch { view.textContent = 'Preview unavailable.'; }
     const actions = el('div', 'compose-row');
@@ -151,11 +208,8 @@ export function mountBuildCanvas({ host, request, getSurface, getProvider, send,
     return card;
   }
 
-  async function activateIntent() {
-    // Intent previews are guarded, unpublishable drafts until the owner approves.
-    // Publish is refused; only an owner-approved revision can commit.
-    try { await apply(state.compiled.proposal || {}, state.surface); } catch (error) { return set({ name: 'error', message: /stale|revision|unapproved/i.test(error.message) ? 'That proposal is stale or unapproved. Nothing changed.' : 'That intent could not be published.' }); }
-    set({ name: 'done', proof: PROP_001_PROOF });
+  function activateIntent() {
+    set({ name: 'error', message: 'This intent is preview-only. Nothing was sent to Host.' });
   }
 
   function render() {
@@ -165,18 +219,35 @@ export function mountBuildCanvas({ host, request, getSurface, getProvider, send,
       wait.append(el('span', 'tour-eyebrow', 'WORKING'), el('h3', null, state.note), el('p', 'muted', 'Your PC sends this once and waits for the answer. You can leave this screen; it keeps going.'));
       host.append(wait);
     } else if (state.name === 'ready' || state.name === 'applying') host.append(proposalCard());
-    else if (state.name === 'done') {
+    else if (state.name === 'done' || state.name === 'awaiting-readback') {
+      const confirmed = state.name === 'done';
       const ok = el('div', 'proposal is-done'); ok.setAttribute('role', 'status');
-      ok.append(el('span', 'tour-eyebrow', 'ADDED'), el('h3', null, state.undoing ? 'Undoing…' : 'Added to your app.'));
+      ok.append(el('span', 'tour-eyebrow', confirmed ? 'HOST + LIVE SCREEN VERIFIED' : 'HOST SAVED · SCREEN PENDING'),
+        el('h3', null, state.undoing ? 'Undoing…' :
+          confirmed ? 'Your app is updated.' : 'Host saved the change; waiting for screen readback.'));
       if (state.proof) {
-        const p = state.proof.proof;
+        const p = state.proof;
         const panel = el('div', 'proof-panel');
-        panel.append(el('p', 'ux-meta', 'Committed revision ' + p.committedRevision + ' · surface ' + p.surfaceId));
-        panel.append(el('p', 'ux-meta', 'Tests: ' + p.testReceipts.join(', ')));
-        panel.append(el('p', 'ux-meta', 'Commit ' + p.commitSHA));
+        panel.append(el('p', 'ux-meta', 'Host committed revision ' + p.committedRevision + ' · previous ' + p.parentRevision));
+        panel.append(el('p', 'ux-meta', 'Surface ' + p.surfaceId));
         ok.append(panel);
       }
-      if (!state.undoing) { const u = el('button', 'btn', 'Undo'); u.type = 'button'; u.onclick = undo; const more = el('button', 'btn', 'Ask for something else'); more.type = 'button'; more.onclick = () => set({ name: 'idle' }); const row = el('div', 'compose-row'); row.append(u, more); ok.append(row); }
+      if (!state.undoing) {
+        const row = el('div', 'compose-row');
+        if (!confirmed) {
+          const check = el('button', 'btn', 'Check live screen'); check.type = 'button';
+          check.onclick = async () => {
+            const view = state;
+            if (await waitForReadback(view.proof, view.expected)) set({ ...view, name: 'done' });
+          };
+          row.append(check);
+        }
+        const undoButton = el('button', 'btn', 'Undo');
+        undoButton.type = 'button'; undoButton.onclick = undo;
+        const more = el('button', 'btn', 'Ask for something else');
+        more.type = 'button'; more.onclick = () => set({ name: 'idle' });
+        row.append(undoButton, more); ok.append(row);
+      }
       host.append(ok);
     } else if (state.name === 'error') {
       const bad = el('div', 'proposal is-error'); bad.setAttribute('role', 'alert');
