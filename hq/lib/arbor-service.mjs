@@ -235,9 +235,9 @@ export function createDevIntelligence({
   function files({ query, project, limit = 50 } = {}) {
     return withDatabase(db => findFiles(db, { query, project, limit: Math.min(100, Math.max(0, Number(limit) || 0)) }));
   }
-  function context({ task, project, budgetTokens = 6000, maxFiles = 24 } = {}) {
+  function context({ task, project, budgetTokens = 6000, maxFiles = 24, sourceSemanticIds = [] } = {}) {
     return withDatabase(db => composeContext(db, {
-      task, project, budgetTokens: Math.min(MAX_CONTEXT_TOKENS, Math.max(0, Number(budgetTokens) || 0)),
+      task, project, sourceSemanticIds, budgetTokens: Math.min(MAX_CONTEXT_TOKENS, Math.max(0, Number(budgetTokens) || 0)),
       maxFiles: Math.min(100, Math.max(0, Number(maxFiles) || 0)),
     }), 'source.context', true);
   }
