@@ -242,7 +242,7 @@ test('chat.js and wiki.js page surfaces reference the projection APIs', () => {
   // wiki.js:6-10 SOURCES: wiki/state/roadmap/surface/journal
   assert.ok(findLine(wiki, /wiki: \{ url: '\/api\/wiki'/), 'wiki.js /api/wiki source');
   assert.ok(findLine(wiki, /state: \{ url: '\/api\/state'/), 'wiki.js /api/state source');
-  assert.ok(findLine(wiki, /roadmap: \{ url: '\/api\/roadmap'/), 'wiki.js /api/roadmap source');
+  assert.doesNotMatch(wiki, /\/api\/roadmap/, 'Wiki does not consume development roadmap');
   assert.ok(findLine(wiki, /surface: \{ url: '\/api\/file-surface'/), 'wiki.js /api/file-surface source');
   assert.ok(findLine(wiki, /journal: \{ url: '\/api\/journal'/), 'wiki.js /api/journal source');
 });
