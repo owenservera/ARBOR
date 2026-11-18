@@ -71,6 +71,7 @@ const assets = new Map(Object.entries({
   'tierflow-runtime/document/validate.ts': ['../../packages/tierflow/src/visual-runtime/document/validate.ts', 'text/javascript; charset=utf-8'],
   'tierflow-runtime/document/import-legacy.ts': ['../../packages/tierflow/src/visual-runtime/document/import-legacy.ts', 'text/javascript; charset=utf-8'],
   'tierflow-runtime/render/dom.ts': ['../../packages/tierflow/src/visual-runtime/render/dom.ts', 'text/javascript; charset=utf-8'],
+  'tierflow-runtime/final-wave/lane-c/templates.ts': ['../../packages/tierflow/src/visual-runtime/final-wave/lane-c/templates.ts','text/javascript; charset=utf-8'],
   'tierflow-runtime/render/spatial-fallback.ts': ['../../packages/tierflow/src/visual-runtime/render/spatial-fallback.ts', 'text/javascript; charset=utf-8'],
   'vec/ui-taxonomy/catalog.mjs': ['vec/ui-taxonomy/catalog.mjs', 'text/javascript; charset=utf-8'],
   'vec/ui-taxonomy/registry.mjs': ['vec/ui-taxonomy/registry.mjs', 'text/javascript; charset=utf-8'],

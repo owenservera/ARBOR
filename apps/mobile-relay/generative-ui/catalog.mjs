@@ -1,5 +1,7 @@
 // GUI01: closed declarative component vocabulary; provider output is data, never executable UI.
 export const CATALOG_VERSION = 1;
+// Read-only source selectors, not user-provided URLs, IDs or credentials.
+export const LIVE_UI_BINDINGS=Object.freeze({'personal.open-tasks':'collection','studio.recent-outcomes':'timeline'});
 export const SURFACE_SCHEMA = 'vivim.ui-surface/1';
 export const PROPOSAL_SCHEMA = 'vivim.ui-proposal/1';
 export const PREVIEW_SCHEMA = 'vivim.ui-preview/1';
@@ -116,17 +118,19 @@ export function validateTree(tree,{refs=new Set()}={}) {
   let count=0;const seen=new Set();
   const walk=(n,depth,parentId)=>{
     if(depth>MAX.depth||++count>MAX.nodes)invalid('component tree too large');
-    keys(n,['id','type','props','children','visibility','presentation'],'component');
+    keys(n,['id','type','props','children','visibility','presentation','liveBinding'],'component');
     const name=id(n.id);if(seen.has(name))invalid('duplicate component id');seen.add(name);
     en(n.type,TYPES);
     if(n.visibility!==undefined)en(n.visibility,['phone','pc-private']);
     const p=validateProps(n.type,n.props??{}, {refs});
+    if(OWN(n,'liveBinding')&&(!Object.hasOwn(LIVE_UI_BINDINGS,n.liveBinding)||LIVE_UI_BINDINGS[n.liveBinding]!==n.type||p.items?.length!==0||n.visibility==='pc-private'))invalid('unsupported live UI binding');
     const children=n.children??[];
     if(!Array.isArray(children)||children.length>MAX.children)invalid('invalid child list');
     if(children.length && !['stack','grid','card'].includes(n.type))invalid('component does not accept children');
     // All model-editable IDs and text live *inside* the root. Protected nav is outside it.
     return {id:name,type:n.type,props:p,visibility:n.visibility??'phone',children:children.map(c=>walk(c,depth+1,name)),
-      ...(OWN(n,'presentation')?{presentation:validateComponentPresentation(n.type,n.presentation)}:{})};
+      ...(OWN(n,'presentation')?{presentation:validateComponentPresentation(n.type,n.presentation)}:{}),
+      ...(OWN(n,'liveBinding')?{liveBinding:n.liveBinding}:{})};
   };
   const out=walk(tree,0,null);if(out.id!=='root'||out.type!=='stack'||out.visibility!=='phone')invalid('root must be stable public stack');return out;
 }

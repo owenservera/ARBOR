@@ -185,10 +185,60 @@ export function compileVecComponentRequest({text,surface}={}){
     return {outcome:'candidate',code:'VEC_COMPONENT_PREVIEW',proposal,preview,...(detail?{detail}:{}),summary:{explanation,changes:preview.operations,unknowns:[]}};
   }catch{return refuse('COMPONENT_PREVIEW_REJECTED');}
 }
+// Use the existing immutable TierFlow catalog and node recipe directly. No
+// synthetic owner or workspace credentials; only the Host's real proposal grants authority.
+const templateRuntime=await import(new URL(import.meta.url.startsWith('file:')
+  ? '../../packages/tierflow/src/visual-runtime/final-wave/lane-c/templates.ts'
+  : './tierflow-runtime/final-wave/lane-c/templates.ts',import.meta.url).href).catch(()=>null);
+const TEMPLATE_START=/^instantiate template\b/i;
+const TEMPLATE_REQUEST=/^instantiate template (FW\.[A-Z.]+)(?: at revision (\d{1,10}))?$/i;
+const LIVE_TEMPLATE=Object.freeze({'FW.TASKS.NEXT':'personal.open-tasks','FW.ACTIVITY.RECENT':'studio.recent-outcomes'});
+export function listWorkspaceTemplates(){
+  return (templateRuntime?.TEMPLATE_CATALOG??[]).map(({templateId,title,summary,source})=>({
+    templateId,title,summary,source,liveBinding:LIVE_TEMPLATE[templateId]??null}));
+}
+export function compileVecTemplateRequest({text,surface}={}){
+  const refuse=code=>({outcome:'refused',code});
+  if(typeof text!=='string'||text.length>MAX_REQUEST)return refuse('INVALID_TEMPLATE_REQUEST');
+  const match=TEMPLATE_REQUEST.exec(text.trim());if(!match)return refuse('INVALID_TEMPLATE_REQUEST');
+  if(!templateRuntime)return refuse('TEMPLATE_LIBRARY_UNAVAILABLE');
+  const spec=templateRuntime.findTemplate(match[1].toUpperCase());if(!spec)return refuse('UNKNOWN_TEMPLATE');
+  let current;try{current=validateSurface(surface,{refs:new Set()});}catch{return refuse('TEMPLATE_SURFACE_UNAVAILABLE');}
+  if(match[2]!==undefined&&Number(match[2])!==current.revision)return refuse('STALE_TEMPLATE_REVISION');
+  const instanceId='tpl-'+spec.templateId.toLowerCase().replace(/\./g,'-')+'-'+current.revision;
+  const nodes=templateRuntime.createTemplateNodes(spec.templateId,instanceId);if(!nodes)return refuse('TEMPLATE_RECIPE_INVALID');
+  const byId=new Map(nodes.map(n=>[n.id,n])),binding=LIVE_TEMPLATE[spec.templateId];
+  function adapt(node,idDepth=0){
+    if(!node||idDepth>2||!['grid','text','card','collection','timeline'].includes(node.type))throw Error('TEMPLATE_NODE_UNSUPPORTED');
+    const props={...node.props};
+    // Legacy surface has no breakpoint-specific fields. Use the recipe's actual phone layout.
+    if(node.type==='grid'&&node.layout?.phone){props.columns=node.layout.phone.columns;props.gap=node.layout.phone.gap;}
+    const liveBinding=node.id===instanceId+'.body'?binding:null;
+    if(liveBinding)props.title=spec.title+' · live source';
+    return {id:node.id,type:node.type,props,children:node.children.map(id=>adapt(byId.get(id),idDepth+1)),...(liveBinding?{liveBinding}:{})};
+  }
+  try{
+    const component=adapt(byId.get(instanceId+'.region'));
+    const explanation='Insert '+spec.title+' template'+(binding?' with read-only '+binding+' binding':'; no source data is assumed')+'.';
+    const proposal={schema:PROPOSAL_SCHEMA,surfaceId:current.surfaceId,baseRevision:current.revision,
+      operations:[{opId:'vec.template.1',type:'insert',parentId:'root',component}],explanation,
+      assumptions:[],unknowns:binding||spec.source==='none'?[]:['No authorized data binding is installed for this template.']};
+    const preview=compileUiProposal({proposal,surface:current,approvedRefs:[],audience:'phone'});
+    return {outcome:'candidate',code:'VEC_TEMPLATE_PREVIEW',proposal,preview,
+      detail:{templateId:spec.templateId,templateVersion:spec.version,catalogDigest:templateRuntime.TEMPLATE_CATALOG_DIGEST,liveBinding:binding??null},
+      summary:{explanation,changes:preview.operations,unknowns:proposal.unknowns}};
+  }catch{return refuse('TEMPLATE_PREVIEW_REJECTED');}
+}
+export function templateDraftCandidates(surface){
+  if(!surface)return [];
+  return listWorkspaceTemplates().filter(t=>t.liveBinding).map(t=>'instantiate template '+t.templateId+' at revision '+surface.revision)
+    .filter(text=>compileVecTemplateRequest({text,surface}).outcome==='candidate');
+}
 const vec = createVecCompiler({ adapters: {
   ui: args => THEME_START.test(String(args.text ?? '').trim())
     ? compileVecThemeRequest(args) : COMPONENT_START.test(String(args.text??'').trim())
-      ? compileVecComponentRequest(args) : compileVecUiRequest(args)
+      ? compileVecComponentRequest(args) : TEMPLATE_START.test(String(args.text??'').trim())
+        ? compileVecTemplateRequest(args) : compileVecUiRequest(args)
 } });
 export function resolveBuildRequest({ request, surface = blankSurface() } = {}) {
   return vec.compile({ domain: 'ui', text: request, context: { surface } });

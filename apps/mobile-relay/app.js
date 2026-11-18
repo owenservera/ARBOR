@@ -3,7 +3,7 @@ import { transport } from './transport.mjs';
 import { mountBuildSurface } from './generative-ui/phone-surface.mjs';
 import { mountBuildCanvas } from './build-canvas.mjs';
 import { createControlClient } from './control-client.mjs';
-import { resolveBuildRequest, buildSurfaceFromBootstrap, themeDraftCandidates } from './build-composer.mjs';
+import { resolveBuildRequest, buildSurfaceFromBootstrap, themeDraftCandidates, templateDraftCandidates } from './build-composer.mjs';
 import { mountWelcome } from './welcome.mjs';
 import { parsePairFragment, redeemDevicePairToken } from './pairing-link.mjs';
 import { prepareDeviceSigner, enrollWithChallenge, resumeDeviceSession } from './device-enrollment.mjs';
@@ -1679,7 +1679,7 @@ function mountCompose() {
     interpretControl: transport.direct ? text => vivimChat.interpret(text) : null,
     assistControl: transport.direct ? text=>vivimChat.assist(text) : null,
     assistScope: ()=>S.tab==='build'?composerScope():null,
-    getUiDraftCandidates:()=>themeDraftCandidates(build?.surface()??build?.draftSurface()),
+    getUiDraftCandidates:()=>{const s=build?.surface()??build?.draftSurface();return [...templateDraftCandidates(s),...themeDraftCandidates(s)];},
     openControlDraft: transport.direct ? openVivimDraft : null,
     openPocket: pocketButton && !pocketButton.hidden ? () => pocketButton.click() : null,
     openProviderDraft: text => {
@@ -1730,6 +1730,7 @@ function launcherContext() {
     liveInstances:[...inspectShell(document,S.tab),
       ...(S.tab==='build'&&S.paired&&S.statusObj&&navigator.onLine!==false?build?.listInstances?.()??[]:[])],
     visualDraftAllowed:!HOST_PREVIEW&&!!composerScope()&&S.device.scopes?.includes('control:execute')===true,
+    visualRevision:(build?.surface()??build?.draftSurface()??buildSurfaceFromBootstrap(S.statusObj?.snapshot?.bootstrap))?.revision,
     visualTheme:build?.surface()?.theme??build?.draftSurface()?.theme??buildSurfaceFromBootstrap(S.statusObj?.snapshot?.bootstrap)?.theme,
     installOffered:!!deferredInstallPrompt,
     installed:!!window.matchMedia?.('(display-mode: standalone)')?.matches ||

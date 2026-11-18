@@ -66,6 +66,25 @@ function ref(x:unknown): x is string {return typeof x==='string'&&REF.test(x)&&!
 function pin(x:unknown): x is string {return typeof x==='string'&&x.length>0&&x.length<=100&&!UNSAFE.test(x);}
 function denied(code:TemplateFailure):TemplatePlan {return {ok:false,code,draft:null,effectInvoked:false};}
 export function findTemplate(id:string):TemplateSpec|undefined {return TEMPLATE_CATALOG.find(x=>x.templateId===id);}
+/** Compile only the catalog's inert structure, never source data or grants.
+ * A live caller still needs its normal document/proposal validation and owner review. */
+export function createTemplateNodes(templateId:string,instanceId:string):UiDocumentNode[]|null {
+  const spec=findTemplate(templateId);
+  if(!spec||!ref(instanceId)||instanceId.length>60)return null;
+  const ids=spec.nodeKeys.map(k=>`${instanceId}.${k}`);
+  if(ids.some(id=>!ref(id)))return null;
+  const [region,heading,body]=ids as [string,string,string];
+  const nodes:UiDocumentNode[]=[
+    {id:region,type:'grid',props:{columns:2,gap:'md'},children:[heading,body],layout:{phone:{columns:1,gap:'sm'},desktop:{columns:2,gap:'md'}},a11y:{role:'region',name:spec.title,description:spec.summary}},
+    {id:heading,type:'text',props:{value:spec.title,variant:'heading'},children:[],a11y:{role:'heading',name:spec.title}},
+    ...(spec.bodyKind==='text'
+      ? [{id:body,type:'text' as const,props:{value:spec.unavailableCopy,variant:'body' as const},children:[],a11y:{role:'text' as const,name:spec.unavailableCopy}}]
+      : spec.bodyKind==='card'
+      ? [{id:body,type:'card' as const,props:{title:spec.unavailableCopy},children:[],a11y:{role:'group' as const,name:spec.unavailableCopy}}]
+      : [{id:body,type:spec.bodyKind,props:{title:spec.unavailableCopy,items:[]},children:[],a11y:{role:'list' as const,name:spec.unavailableCopy}}]),
+  ];
+  return nodes;
+}
 /** Previews only; caller MUST run the real canonical validator + mapper before displaying the result. */
 export function planTemplateCandidate(raw:unknown, base:UiDocument, trusted:TemplateTrustedScope):TemplatePlan {
   if (!plain(raw)||Object.keys(raw).length!==CANDIDATE_KEYS.length||Object.keys(raw).some(k=>!CANDIDATE_KEYS.includes(k))) return denied('BAD_CANDIDATE');
@@ -83,16 +102,9 @@ export function planTemplateCandidate(raw:unknown, base:UiDocument, trusted:Temp
   const ids=spec.nodeKeys.map(k=>`${raw.instanceId}.${k}`);
   if(ids.some(id=>!ref(id)||base.nodes.some(n=>n.id===id)))return denied('COLLISION');
   if(base.nodes.length+3>64)return denied('BUDGET');
-  const [region,heading,body]=ids as [string,string,string];
-  const nodes:UiDocumentNode[]=[
-    {id:region,type:'grid',props:{columns:2,gap:'md'},children:[heading,body],layout:{phone:{columns:1,gap:'sm'},desktop:{columns:2,gap:'md'}},a11y:{role:'region',name:spec.title,description:spec.summary}},
-    {id:heading,type:'text',props:{value:spec.title,variant:'heading'},children:[],a11y:{role:'heading',name:spec.title}},
-    ...(spec.bodyKind==='text'
-      ? [{id:body,type:'text' as const,props:{value:spec.unavailableCopy,variant:'body' as const},children:[],a11y:{role:'text' as const,name:spec.unavailableCopy}}]
-      : spec.bodyKind==='card'
-      ? [{id:body,type:'card' as const,props:{title:spec.unavailableCopy},children:[],a11y:{role:'group' as const,name:spec.unavailableCopy}}]
-      : [{id:body,type:spec.bodyKind,props:{title:spec.unavailableCopy,items:[]},children:[],a11y:{role:'list' as const,name:spec.unavailableCopy}}]),
-  ];
+  const nodes=createTemplateNodes(spec.templateId,String(raw.instanceId));
+  if(!nodes)return denied('BAD_CANDIDATE');
+  const region=ids[0];
   // JSON data-only copy, no prototype shortcuts, callbacks, KB values, actions or new writer.
   const draft:UiDocument={...base,nodes:base.nodes.map(n=>n.id===parent.id?{...n,children:[...n.children,region]}:n).concat(nodes)};
   return {ok:true,draft,templateId:spec.templateId,baseRevision:base.revision,publish:'owner-review-required',effectInvoked:false};

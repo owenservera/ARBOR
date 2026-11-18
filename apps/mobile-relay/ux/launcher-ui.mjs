@@ -1,6 +1,6 @@
 import {searchCapabilities} from './launcher.mjs';
 import {listUiComponents,UI_TAXONOMY_COUNTS} from '../vec/ui-taxonomy/registry.mjs';
-import {THEME_BINDINGS} from '../build-composer.mjs';
+import {THEME_BINDINGS,listWorkspaceTemplates} from '../build-composer.mjs';
 import {COMPONENT_PRESENTATION_BINDINGS} from '../generative-ui/catalog.mjs';
 // The same reviewed engine registry used by Build. Missing relay assets are explicit unavailable.
 const engineRegistry=()=>import(typeof process!=='undefined'&&process.versions?.node
@@ -33,7 +33,7 @@ export function mountCapabilityLauncher({host,context,onActivate,onInspect=()=>f
   const list=make('div','launcher-results');
   list.setAttribute('role','group');list.setAttribute('aria-label','Matching capabilities');
   const modes=make('div','launcher-modes');
-  const buttons=['Features','VIEW ALL','Engines'].map(label=>{
+  const buttons=['Features','VIEW ALL','Engines','Templates'].map(label=>{
     const button=make('button','btn sm',label);button.type='button';modes.append(button);return button;
   });
   dialog.append(head,modes,input,info,list);host.append(dialog);
@@ -57,10 +57,24 @@ export function mountCapabilityLauncher({host,context,onActivate,onInspect=()=>f
     const epoch=++generation;
     list.replaceChildren();
     buttons.forEach((button,i)=>button.setAttribute('aria-pressed',String(i===mode)));
-    input.placeholder=mode===0?'Search Talk, media, Build, controls…':mode===1?'Search live instances or component definitions…':'Search engine capabilities…';
+    input.placeholder=mode===0?'Search Talk, media, Build, controls…':mode===1?'Search live instances or component definitions…':mode===2?'Search engine capabilities…':'Search reusable workspace templates…';
     if(mode!==0){
       let snapshot;try{snapshot=context()}catch{snapshot={}}
       const query=input.value.trim().slice(0,100);
+      if(mode===3){
+        info.textContent='Existing TierFlow templates. Insertion is a normal Host-reviewed Build proposal, never an automatic write.';
+        const rows=listWorkspaceTemplates().filter(t=>!query||[t.title,t.summary,t.templateId].some(v=>v.toLowerCase().includes(query.toLowerCase())));
+        if(!rows.length)list.append(make('p','muted','No matching template or template library unavailable.'));
+        for(const t of rows){
+          const row=libraryRow(t.title,t.summary,t.liveBinding?'Live binding: '+t.liveBinding:'Layout only · source data not assumed');
+          if(snapshot.visualDraftAllowed&&Number.isSafeInteger(snapshot.visualRevision)){
+            const draft=make('button','btn sm','Draft template');draft.type='button';draft.addEventListener('click',()=>{
+              const latest=context();if(!latest.visualDraftAllowed||latest.visualRevision!==snapshot.visualRevision)return;
+              if(onDraft('instantiate template '+t.templateId+' at revision '+snapshot.visualRevision))closeDialog();
+            });row.append(draft);
+          }list.append(row);
+        }return;
+      }
       if(mode===1){
         info.textContent='Inspect live instances and canonical definitions. Shell identity does not grant edit authority.';
         const live=liveRows(snapshot,query),definitions=listUiComponents({search:query});
@@ -158,7 +172,7 @@ export function mountCapabilityLauncher({host,context,onActivate,onInspect=()=>f
   function open({mode:initialMode=0,query=''}={}){
     if(dialog.open)return;
     previous=doc.activeElement;
-    mode=[0,1,2].includes(initialMode)?initialMode:0;input.value=typeof query==='string'?query.slice(0,100):'';render();
+    mode=[0,1,2,3].includes(initialMode)?initialMode:0;input.value=typeof query==='string'?query.slice(0,100):'';render();
     if(typeof dialog.showModal==='function')dialog.showModal();
     else dialog.setAttribute('open','');
     input.focus();
