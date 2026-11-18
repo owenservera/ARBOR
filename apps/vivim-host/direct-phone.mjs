@@ -126,7 +126,7 @@ async function readBody(req) {
 }
 
 export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'world-local', projection, control = null, apkRegistry = null, pairingStore = null, onPhoneSeen = () => {}, primary = () => null, providerSnapshot = () => [], providerRefresh = null,
-  webMemory = null, mediaPlayback = null, chatContext = null }) {
+  webMemory = null, mediaPlayback = null, chatContext = null, wikiProjection = null }) {
   let url;
   try { url = new URL(origin); } catch { throw new TypeError('Direct phone origin must be an HTTPS origin'); }
   if (url.protocol !== 'https:' || url.origin !== origin || url.username || url.password || !user || typeof user !== 'string' || user.trim() !== user) throw new TypeError('Direct phone requires an exact HTTPS origin and user');
@@ -225,6 +225,28 @@ export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'wo
     if (rawPath === '/mobile') { res.writeHead(308, { location: '/mobile/' }); res.end(); return; }
     if (!rawPath.startsWith('/mobile/')) { json(res, 404, { error: 'Not found' }); return; }
     const route = rawPath.slice('/mobile/'.length);
+    // The existing Host journal is the only Wiki authority. Never expose it to
+    // an unpaired phone, cloud relay or a device without control:read.
+    if (route === 'api/wiki') {
+      if (req.method !== 'GET') {
+        res.setHeader('allow', 'GET');
+        json(res, 405, { code: 'METHOD' });
+        return;
+      }
+      try {
+        authorizeDevice(req, 'control:read');
+        if (typeof wikiProjection !== 'function') throw failure(503, 'WIKI_UNAVAILABLE');
+        const wiki = await wikiProjection();
+        res.setHeader('cache-control', 'private, no-store');
+        json(res, 200, wiki);
+      } catch (error) {
+        const status = error.status || 503;
+        res.setHeader('cache-control', 'private, no-store');
+        json(res, status, { code: status === 503 ? 'WIKI_UNAVAILABLE' : error.message,
+          error: status === 503 ? 'Wiki unavailable' : error.message });
+      }
+      return;
+    }
     if (route === 'api/live/ack') {
       // The phone reports an actually rendered verified reply, never a fetch
       // or bridge completion. Origin + CSRF + device-scoped grant required.
