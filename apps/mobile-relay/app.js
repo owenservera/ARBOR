@@ -1722,7 +1722,7 @@ if (!HOST_PREVIEW) {
     void vivimChat.previewCapture(capture);return true;
   }}); }
   catch { /* Browser storage may be blocked; Today still works without notes. */ }
-  try { localVoice = mountVoiceCapture({host:document.body,onReviewedText:text=>localNotes?.draft(text)}); }
+  try { localVoice = mountVoiceCapture({host:document.body,onReviewedText:text=>localNotes?.draft(text)??false}); }
   catch { /* No recording permission is requested until the owner taps Start. */ }
 }
 $('dock-mic').hidden = HOST_PREVIEW || !(localVoice?.available || (pocketButton&&!pocketButton.hidden));

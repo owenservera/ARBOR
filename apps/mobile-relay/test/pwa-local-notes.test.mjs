@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createLocalNotebook,NOTES_KEY,MAX_NOTE_LENGTH} from '../ux/local-notes.mjs';
+import {createLocalNotebook,NOTES_KEY,MAX_NOTE_LENGTH,extractReviewedTasks} from '../ux/local-notes.mjs';
 
 function memory(){
   const data=new Map();
@@ -53,4 +53,12 @@ test('export is explicit, portable JSON and does not mutate local records',()=>{
   assert.equal(exported.notes.length,1);
   assert.equal(exported.notes[0].text,'Local text and my own data');
   assert.equal(book.list().length,1);
+});
+
+test('reviewed checklist extraction is explicit and batch persistence is all or nothing',()=>{
+ const rows=extractReviewedTasks('A normal statement\nTODO: Call supplier\n- [ ] Check order\n- [x] Done\nTODO: Call supplier');assert.deepEqual(rows,['Call supplier','Check order']);
+ const storage=memory();let id=0;const book=createLocalNotebook({storage,makeId:()=> 'batch-'+(++id)+'-safe',now:()=>1700000000000});
+ book.saveBatch(rows);assert.deepEqual(book.list().map(n=>n.text),rows);
+ const before=book.exportAll();assert.throws(()=>book.saveBatch(['valid','']),/EMPTY_OR_TOO_LONG/);assert.equal(book.exportAll(),before);
+ assert.throws(()=>book.saveBatch(Array(11).fill('more')),/NOTES_FULL/);assert.equal(book.exportAll(),before);
 });

@@ -30,7 +30,8 @@ const suites = [
     'apps/mobile-relay/test/pwa-preflight-ui.test.mjs',
     'apps/mobile-relay/test/pwa-asset-graph.test.mjs',
     'apps/mobile-relay/test/chat-universal-controller.test.mjs',
-    'apps/mobile-relay/test/pwa-voice-capture.test.mjs'
+    'apps/mobile-relay/test/pwa-voice-capture.test.mjs',
+    'apps/mobile-relay/test/local-dictation.test.mjs'
   ]],
   ['Host entry, authorization and Direct phone HTTP', [
     'apps/vivim-host/test/mobile-first-entry.test.mjs',
@@ -64,6 +65,7 @@ const sources = [
   'apps/mobile-relay/ux/local-notes.mjs',
   'apps/mobile-relay/ux/local-notes-ui.mjs',
   'apps/mobile-relay/ux/voice-capture.mjs',
+  'apps/mobile-relay/ux/local-dictation.mjs',
   'apps/mobile-relay/generative-ui/host-revision-guard.mjs',
   'apps/mobile-relay/sw.js',
   'apps/mobile-relay/vec/compiler.mjs',

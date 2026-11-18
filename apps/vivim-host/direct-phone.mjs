@@ -39,6 +39,7 @@ const assets = new Map(Object.entries({
   'ux/local-notes.mjs': ['ux/local-notes.mjs', 'text/javascript; charset=utf-8'],
   'ux/local-notes-ui.mjs': ['ux/local-notes-ui.mjs', 'text/javascript; charset=utf-8'],
   'ux/voice-capture.mjs': ['ux/voice-capture.mjs', 'text/javascript; charset=utf-8'],
+  'ux/local-dictation.mjs': ['ux/local-dictation.mjs', 'text/javascript; charset=utf-8'],
   'pairing-link.mjs': ['pairing-link.mjs', 'text/javascript; charset=utf-8'],
   'device-enrollment.mjs': ['device-enrollment.mjs', 'text/javascript; charset=utf-8'],
   'browser-device-key.mjs': ['browser-device-key.mjs', 'text/javascript; charset=utf-8'],

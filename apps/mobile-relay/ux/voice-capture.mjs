@@ -1,23 +1,24 @@
-// Browser-local microphone capture. No speech recognition service, provider API,
+// Browser-local microphone capture and optional local-only dictation. No provider API,
 // background recording, automatic transcript/task creation or upload to Host.
+import {createLocalDictation} from './local-dictation.mjs';
 export const VOICE_CAPTURE_SCHEMA='vivim.local-voice/1';
 export const MAX_VOICE_MS=30_000;
 export const MAX_VOICE_BYTES=6*1024*1024;
 export function mountVoiceCapture({
   host,devices=globalThis.navigator?.mediaDevices,
   Recorder=globalThis.MediaRecorder,BlobCtor=globalThis.Blob,
-  urlApi=globalThis.URL,downloadFile,onReviewedText=null
+  urlApi=globalThis.URL,downloadFile,onReviewedText=null,Recognition=globalThis.SpeechRecognition??globalThis.webkitSpeechRecognition
 }={}){
   if(!host?.ownerDocument)throw new TypeError('VOICE_CAPTURE_HOST_REQUIRED');
   const doc=host.ownerDocument;
-  const available=!!devices?.getUserMedia&&typeof Recorder==='function'&&typeof BlobCtor==='function';
+  const recordingAvailable=!!devices?.getUserMedia&&typeof Recorder==='function'&&typeof BlobCtor==='function';
   const make=(tag,cls,label)=>{const n=doc.createElement(tag);
     if(cls)n.className=cls;if(label!==undefined)n.textContent=label;return n};
   const dialog=make('dialog','voice-note-sheet');dialog.id='voice-capture-sheet';
   dialog.setAttribute('aria-label','Local voice note');
   const title=make('h2','','Record a local voice note');
   const description=make('p','muted',
-    'Audio stays in this browser until you download or discard it. No speech recognition is installed; you may type reviewed text and save it as a separate local note.');
+    'Record audio locally or use supported on-device dictation. Dictation does not save a recording. Review the text before sending it to Quick capture; nothing is synced automatically.');
   const status=make('p','muted','Ready to record. Maximum 30 seconds.');status.setAttribute('role','status');
   const preview=make('audio','voice-preview');preview.controls=true;preview.hidden=true;
   const start=make('button','btn pri','Start recording');start.type='button';
@@ -30,10 +31,37 @@ export function mountVoiceCapture({
   dialog.append(title,description,status,preview,controls);
   const transcript=make('textarea','notes-input');transcript.maxLength=1200;transcript.rows=3;transcript.hidden=true;transcript.setAttribute('aria-label','Manually reviewed voice note text');transcript.placeholder='Type your own reviewed summary or transcript';
   const review=make('button','btn sm','Open reviewed text in Quick capture');review.type='button';review.hidden=true;
+  let dictated=false;
+  const dictationControls=make('div','voice-note-actions');
+  const language=make('select','notes-input');language.setAttribute('aria-label','Local dictation language');
+  for(const [code,label] of [['en-US','English'],['es-ES','Español'],['ca-ES','Català']]){const option=make('option','',label);option.value=code;language.append(option);}
+  language.value='en-US';
+  const checkSpeech=make('button','btn sm','Check local dictation');checkSpeech.type='button';
+  const speak=make('button','btn pri','Start local dictation');speak.type='button';speak.hidden=true;
+  const stopSpeech=make('button','btn','Stop dictation');stopSpeech.type='button';stopSpeech.hidden=true;
+  const discardSpeech=make('button','btn sm','Discard dictated text');discardSpeech.type='button';discardSpeech.hidden=true;
+  const dictation=createLocalDictation({Recognition,canListen:()=>dialog.open&&!doc.hidden&&!recorder&&!requesting&&!stopping,
+    onState:({state,detail})=>{const active=['checking','listening','stopping'].includes(state);checkSpeech.disabled=active;language.disabled=active;speak.hidden=state!=='ready';stopSpeech.hidden=state!=='listening';
+      start.disabled=active;close.disabled=state==='stopping';
+      if(state!=='idle')status.textContent=detail||({checking:'Checking installed local speech pack…',ready:'Local speech is available. Tap Start to dictate.',listening:'Listening locally (30 seconds maximum).',stopping:'Finishing local dictation…',review:'Review your dictated text. Nothing was sent.',unavailable:'On-device speech unavailable; no remote fallback.',error:'Local dictation failed.'})[state]||state;},
+    onText:text=>{dictated=true;transcript.value=text;transcript.hidden=false;review.hidden=false;discardSpeech.hidden=false;start.disabled=true;checkSpeech.disabled=true;language.disabled=true;}});
+  const available=recordingAvailable||(dictation.supported&&typeof onReviewedText==='function');
+  if(!recordingAvailable)start.hidden=true;
+  if(dictation.supported&&typeof onReviewedText==='function'){
+    dictationControls.append(language,checkSpeech,speak,stopSpeech,discardSpeech);dialog.append(dictationControls);
+    checkSpeech.addEventListener('click',()=>{if(!clip&&!dictated&&!recorder&&!requesting&&!stopping)void dictation.check(language.value);});
+    language.addEventListener('change',()=>dictation.cancel());
+    speak.addEventListener('click',()=>{if(!clip&&!dictated&&!recorder&&!requesting&&!stopping)dictation.start();});
+    stopSpeech.addEventListener('click',()=>dictation.stop());
+    discardSpeech.addEventListener('click',()=>{dictation.cancel();dictated=false;transcript.value='';transcript.hidden=true;review.hidden=true;discardSpeech.hidden=true;status.textContent='Dictated text discarded.';});
+  }
   if(typeof onReviewedText==='function'){dialog.append(transcript,review);review.addEventListener('click',()=>{
-    if(!clip||!transcript.value.trim()||transcript.value.length>1200)return;
-    if(!downloaded){status.textContent='Download the audio first, or copy your text before discarding. Audio will not be uploaded.';return;}
-    const text=transcript.value.trim();closeDialog();onReviewedText(text);
+    if((!clip&&!dictated)||!transcript.value.trim()||transcript.value.length>1200)return;
+    if(!dictated&&!downloaded){status.textContent='Download the audio first, or copy your text before discarding. Audio will not be uploaded.';return;}
+    const text=transcript.value.trim();
+    // Keep the reviewed text if the local notebook cannot accept the handoff.
+    if(onReviewedText(text)===false){status.textContent='Quick capture unavailable; keep or copy this text.';return;}
+    dictated=false;discardSpeech.hidden=true;closeDialog();
   });}
   host.append(dialog);
   let stream=null,recorder=null,chunks=[],size=0,clip=null,clipUrl=null,downloaded=false,timer=null;
@@ -46,7 +74,8 @@ export function mountVoiceCapture({
     save.hidden=true;discard.hidden=true;downloaded=false;transcript.hidden=true;transcript.value='';review.hidden=true;
   }
   function controlsForRecording(active){
-    start.hidden=active;stop.hidden=!active;
+    start.hidden=active||!recordingAvailable;stop.hidden=!active;
+    checkSpeech.disabled=active;language.disabled=active;
   }
   function stopRecording(){
     clearTimer();
@@ -55,12 +84,13 @@ export function mountVoiceCapture({
     else if(!stopping)stopTracks();
   }
   async function startRecording(){
-    if(!available||!dialog.open||doc.hidden||requesting||stopping||recorder?.state==='recording')return;
+    if(!recordingAvailable||!dialog.open||doc.hidden||requesting||stopping||dictated||clip&&!downloaded||['checking','listening','stopping'].includes(dictation.state())||recorder?.state==='recording')return;
+    dictation.cancel();checkSpeech.disabled=true;language.disabled=true;
     const token=++epoch;requesting=true;start.disabled=true;
     clearClip();status.textContent='Requesting browser microphone permission…';
     let opened;
     try{opened=await devices.getUserMedia({audio:true})}
-    catch{if(token===epoch){requesting=false;start.disabled=false;status.textContent='Microphone unavailable or permission denied. Nothing was recorded.';}return}
+    catch{if(token===epoch){requesting=false;start.disabled=false;checkSpeech.disabled=false;language.disabled=false;status.textContent='Microphone unavailable or permission denied. Nothing was recorded.';}return}
     if(token!==epoch || !dialog.open || doc.hidden){
       if(token===epoch){requesting=false;start.disabled=false;}
       for(const t of opened.getTracks?.()||[])t.stop();return;
@@ -132,9 +162,11 @@ export function mountVoiceCapture({
     if(dialog.open)return true;
     previous=doc.activeElement;status.textContent='Ready to record. Maximum 30 seconds.';
     if(typeof dialog.showModal==='function')dialog.showModal();else dialog.setAttribute('open','');
-    start.focus();return true;
+    (recordingAvailable?start:checkSpeech).focus();return true;
   }
   function closeDialog(){
+    if(dictated){status.textContent='Open the reviewed text in Quick capture or explicitly discard it before closing.';return;}
+    dictation.cancel();
     if(stopping){status.textContent='Finishing recording. Review it before closing.';return;}
     if(recorder?.state==='recording'){
       stopRecording();status.textContent='Recording stopped. Review and download or discard before closing.';return;
@@ -153,12 +185,12 @@ export function mountVoiceCapture({
   discard.addEventListener('click',discardClip);
   close.addEventListener('click',closeDialog);
   dialog.addEventListener('cancel',event=>{
-    if(requesting||stopping||recorder?.state==='recording'||(clip&&!downloaded)){
+    if(dictated||dictation.state()!=='idle'||requesting||stopping||recorder?.state==='recording'||(clip&&!downloaded)){
       event.preventDefault();closeDialog();
     }
   });
   doc.addEventListener?.('visibilitychange',()=>{
-    if(doc.hidden&&(requesting||recorder?.state==='recording'))stopRecording();
+    if(doc.hidden){if(requesting||recorder?.state==='recording')stopRecording();if(['checking','ready','listening','stopping'].includes(dictation.state()))dictation.cancel();}
   });
   return Object.freeze({available,open,stop:stopRecording,close:closeDialog,isRecording:()=>recorder?.state==='recording'});
 }
