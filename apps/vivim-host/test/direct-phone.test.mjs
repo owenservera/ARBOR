@@ -50,6 +50,7 @@ test('direct phone authenticates proxy, bounds routes and uses the shared queue'
   assert.equal((await call('/mobile/api/relay?path=session')).status, 401);
   assert.equal((await call('/mobile/api/media/library')).status, 401);
   assert.equal((await call('/mobile/api/chat/context?focus=talk')).status,401);
+  assert.equal((await call('/mobile/api/wiki')).status, 401);
   assert.equal(trustedPhonePresence,0);
   const { publicKey, privateKey } = generateKeyPairSync('ec', { namedCurve: 'prime256v1' });
   const publicKeyPem = publicKey.export({ type: 'spki', format: 'pem' });
@@ -84,6 +85,13 @@ test('direct phone authenticates proxy, bounds routes and uses the shared queue'
     method:'POST',headers:{origin,'x-vivim-ack':'1','content-type':'application/json'},
     body:JSON.stringify(falseAck)})).status,401);
   deviceHeaders={'x-vivim-grant-id':grant.grantId,'x-vivim-device-session':session.sessionId};
+  const wikiRead = await call('/mobile/api/wiki');
+  assert.equal(wikiRead.status, 200);
+  const wiki = JSON.parse(wikiRead.body);
+  assert.ok(Number.isSafeInteger(wiki.revision));
+  assert.ok(wiki.pages && typeof wiki.pages === 'object');
+  assert.equal((await call('/mobile/api/wiki', { method:'POST' })).status, 405);
+  assert.equal((await call('/mobile/api/wiki', { headers: { 'x-vivim-device-session': '0'.repeat(32) } })).status, 401);
   const graphRead=await call('/mobile/api/chat/context?focus=talk');
   assert.equal(graphRead.status,200);
   const graphBody=JSON.parse(graphRead.body);
