@@ -91,6 +91,23 @@ function rawSpan(text, interp, key, action) {
   return typeof value === 'string' && [...words(value)].every(w => have.has(w)) ? raw : null;
 }
 
+// Text slots with an explicit preposition are literal owner content. NLCL's
+// token projection is folded for interpretation, so slice the ORIGINAL sentence.
+function literalAfterPrep(text, preps) {
+  const folded = text.toLowerCase();
+  for (let i = 0; i < text.length; i++) {
+    if (i > 0 && !/\s/.test(text[i - 1])) continue;
+    for (const prep of preps) {
+      if (folded.startsWith(prep.toLowerCase(), i) &&
+          /\s/.test(text[i + prep.length] ?? '')) {
+        const rest = text.slice(i + prep.length).trimStart();
+        if (rest) return rest;
+      }
+    }
+  }
+  return null;
+}
+
 function argsFrom(action, interp, text) {
   const args = {}, missing = [], payload = interp.ir?.payload;
   for (const [key, type] of Object.entries(action.args)) {
@@ -98,18 +115,19 @@ function argsFrom(action, interp, text) {
     let v = payload?.[key];
     if (hint.match) { const m = String(text).match(new RegExp('(?:^|\\s)(' + hint.match + ')(?=$|\\s|[.!?])', 'i')); v = m ? m[1] : null; }
     else if (hint.kind === 'rest' || hint.kind === 'text') {
-      v = rawSpan(text, interp, key, action) ?? v;
-      // The vendored NLCL engine folds slot payloads for matching. Owner-authored
-      // free text must instead preserve the original bytes, without the slot's
-      // leading preposition ("saying", etc.) becoming part of the value.
-      if (typeof v === 'string' && Array.isArray(hint.preps)) {
-        const prep = hint.preps.find(p =>
-          v.slice(0, p.length).toLowerCase() === p.toLowerCase() &&
-          /^\\s/.test(v.slice(p.length)));
-        if (prep) v = v.slice(prep.length).trimStart();
-      }
+      v = hint.kind === 'text' && Array.isArray(hint.preps) && hint.preps.length
+        ? literalAfterPrep(text, hint.preps) ?? rawSpan(text, interp, key, action) ?? v
+        : rawSpan(text, interp, key, action) ?? v;
     }
-    if (typeof v === 'string') v = v.trim().replace(/^['"]|['"]$/g, '').replace(/[.!?]+$/, '').trim();
+    if (typeof v === 'string') {
+      v = v.trim();
+      if (hint.kind === 'text') {
+        // Remove only a matched wrapping quote pair; content punctuation/case
+        // are literal. Never strip the final period or fold owner-authored text.
+        if (v.length >= 2 && ((v[0] === '"' && v.at(-1) === '"') ||
+            (v[0] === "'" && v.at(-1) === "'"))) v = v.slice(1, -1);
+      } else v = v.replace(/^['"]|['"]$/g, '').replace(/[.!?]+$/, '').trim();
+    }
     if (validArg(type, v)) args[key] = v;
     else missing.push({ arg: key, ...(type.type === 'enum' ? { choices: [...type.values] } : { min: type.min, max: type.max }) });
   }
