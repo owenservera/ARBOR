@@ -91,6 +91,7 @@ const S = {
   media: { state: 'idle' }, mediaAt: 0, mediaOffset: 0, mediaLoading: false, nextBatch: null,
   wiki: null, wikiError: 'Wiki not loaded', wikiContext: null, wikiContextError: ''
 };
+let buildBindingSequence=0;
 let combinedInbox = true; // UI-only inbox aggregation; never fan-out or a provider target.
 let providerRefreshBusy = false;
 const N = { target: transport.direct ? 'vivim' : 'harness', session: '', sessions: [], messages: [], timer: 0, generation: 0, sending: false, note: '', pending: null };
@@ -1773,7 +1774,6 @@ function scheduleBuild(delay = 6000) {
   buildTimer = setTimeout(pollBuild, delay);
 }
 // Only while the committed Build view is open, under the same existing read grant.
-let buildBindingSequence=0;
 async function refreshBuildBindings(snapshot){
  const surface=build?.surface();if(S.tab!=='build'||!surface||!hasWorkspaceBinding(surface))return;
  const seq=++buildBindingSequence,revision=surface.revision;
@@ -1795,8 +1795,10 @@ async function refreshBuildBindings(snapshot){
      }
    }catch{/* source unavailable; do not retain old task values */}
  }
- if(seq!==buildBindingSequence||S.tab!=='build'||!authorized()||build?.surface()?.revision!==revision||
+ if(seq!==buildBindingSequence||S.tab!=='build'||build?.surface()?.revision!==revision||
     build?.surface()?.surfaceId!==surface.surfaceId)return;
+ if(!authorized()){build.setLiveData(null,revision);return;}
+ if(!HOST_PREVIEW&&!S.device.scopes?.includes('control:read'))wiki=null;
  build.setLiveData(workspaceBindingData({wiki,outcomes}),revision);
 }
 async function pollBuild() {

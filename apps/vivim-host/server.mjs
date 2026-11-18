@@ -899,6 +899,8 @@ async function handleControl(req, res, pathname, host, controlFor, tokenFor, uiS
       // Owner-authenticated read-only PWA can display the same HQ catalog.
       // Desktop preview never gains a phone stream grant or file path.
       const media = await createMediaPlaybackService().list();
+      if(!verifyOwnerToken(req.headers.authorization,owner)&&!uiSessions.authorized(req,{mutate:false})){sendJson(res,401,{code:'OWNER_AUTH'});return;}
+      res.setHeader('cache-control','private, no-store');
       sendJson(res, 200, {
         schema: 'vivim.host-pwa-view/1', observedAt: new Date().toISOString(),
         media,
