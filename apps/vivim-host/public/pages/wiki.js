@@ -1,4 +1,5 @@
-// Host read-model only. The Wiki UI does not interpret NL, compile VEC, or publish effects.
+// Host read-model and reviewed Wiki drafts. NL interpretation belongs to Host;
+// only the existing owner-confirmed mutation endpoint writes Wiki content.
 // VEC/0.1 typed display seam: {schema:'vivim.vec-compile/0.1', domain:'wiki',
 // product:'wiki-projection', outcome:'unsupported', code:'LEGACY_OWNER_NOT_MIGRATED',
 // authorization:'none', executed:false, persisted:false}. No adapter is installed here.
@@ -19,6 +20,7 @@ let editSession = null;
 let refreshing = false;
 let busy = false;
 let ownerCsrf = null; // memory-only proof of a native Host-issued short-lived session
+let interpreting = false;
 
 function element(tag, className, text) {
   const result = document.createElement(tag);
@@ -171,6 +173,23 @@ function renderJournal(journal) {
   table.appendChild(body); scroll.appendChild(table); root.appendChild(scroll);
   return root;
 }
+function resolveWikiTarget(wiki, target) {
+  if (typeof target !== 'string' || !/^[a-z0-9][a-z0-9_-]{0,78}\/[a-z0-9][a-z0-9_-]{0,78}$/i.test(target))
+    throw new Error('Invalid Wiki target. Use page/section.');
+  const [requestedPage, requestedSection] = target.toLowerCase().split('/');
+  const matches = [];
+  for (const [page, value] of Object.entries(wiki.pages)) {
+    if (page.toLowerCase() !== requestedPage || !value?.sections ||
+        typeof value.sections !== 'object' || Array.isArray(value.sections)) continue;
+    for (const [section, content] of Object.entries(value.sections))
+      if (section.toLowerCase() === requestedSection && typeof content === 'string')
+        matches.push({ page, section, content });
+  }
+  if (matches.length !== 1) throw new Error(matches.length
+    ? 'Ambiguous Wiki target; use one unique page/section.'
+    : 'Wiki page/section does not exist in the current Host projection.');
+  return matches[0];
+}
 function linesDiff(before, after) {
   const a = String(before).split('\n'), b = String(after).split('\n');
   let start = 0;
@@ -221,6 +240,8 @@ function openEdit(page, section, text, revision) {
   $('edit-save').hidden = true;
   $('edit-rebase').hidden = true;
   $('edit-shell').hidden = false;
+  $('edit-command-context').hidden = true;
+  $('edit-command-context').textContent = '';
   setEditorStatus('Edit a bounded existing section, then review against a fresh Host revision. No changes sent yet.');
   $('edit-content').focus();
 }
@@ -354,6 +375,73 @@ async function refresh() {
     });
     renderSync();
   } finally { refreshing = false; }
+}
+// A typed interpretation may open a draft; only explicit owner confirmation mutates Host.
+async function interpretWikiCommand(event) {
+  event.preventDefault();
+  if (interpreting || busy) return;
+  if (editSession) {
+    $('wiki-command-status').textContent = 'Close the current editor first. Your draft is preserved.';
+    return;
+  }
+  const sentence = $('wiki-command').value.trim();
+  if (!sentence || sentence.length > 1000) {
+    $('wiki-command-status').textContent = 'Enter one Wiki command (maximum 1000 characters).';
+    return;
+  }
+  interpreting = true;
+  $('wiki-command-run').disabled = true;
+  $('wiki-command-status').textContent = 'Interpreting with authenticated Host…';
+  try {
+    const csrf = await ownerEditCsrf();
+    const response = await fetch('/api/host/control/interpret', {
+      method: 'POST', credentials: 'same-origin', cache: 'no-store',
+      headers: { 'content-type': 'application/json', 'x-vivim-control': '1', 'x-vivim-ui-csrf': csrf },
+      body: JSON.stringify({ text: sentence }), signal: AbortSignal.timeout(5000)
+    });
+    if (!response.ok) {
+      if (response.status === 401) ownerCsrf = null;
+      throw new Error('Host interpretation refused HTTP ' + response.status);
+    }
+    const meaning = await response.json();
+    if (meaning?.schema !== 'vivim.control-language/1' || meaning.outcome !== 'candidate' ||
+        meaning.candidate?.actionId !== 'wiki.section.edit' ||
+        !meaning.candidate.args || meaning.executionPerformed === true) {
+      const explanation = typeof meaning?.question === 'string' ? meaning.question :
+        typeof meaning?.refusal?.message === 'string' ? meaning.refusal.message :
+        'Only an unambiguous typed wiki.section.edit candidate can open a draft.';
+      $('wiki-command-status').textContent = 'No Wiki edit (' +
+        String(meaning?.outcome ?? 'invalid').slice(0, 50) + '). ' + explanation;
+      return;
+    }
+    const { target, content } = meaning.candidate.args;
+    if (typeof content !== 'string' || !content.trim() || content.length > 3000 ||
+        new TextEncoder().encode(content).byteLength > 3072) {
+      $('wiki-command-status').textContent = 'Wiki content exceeds existing editor limits; no edit proposed.';
+      return;
+    }
+    const wiki = await getJson('wiki');
+    const canonical = resolveWikiTarget(wiki, target);
+    if (bytesOf(mutationEnvelope(canonical, wiki.revision, content)) > MAX_ENTRY_BYTES) {
+      $('wiki-command-status').textContent = 'Edit exceeds Host journal limit; no edit proposed.';
+      return;
+    }
+    ingest('wiki', wiki);
+    openEdit(canonical.page, canonical.section, canonical.content, wiki.revision);
+    $('edit-content').value = content;
+    $('edit-command-context').textContent = 'Typed wiki.section.edit from: "' + sentence +
+      '" · target ' + canonical.page + '/' + canonical.section + ' · nothing saved';
+    $('edit-command-context').hidden = false;
+    $('wiki-command-status').textContent = 'Typed edit prepared for ' +
+      canonical.page + '/' + canonical.section + '. Review and confirm to save.';
+    setEditorStatus('Typed command interpreted. Review the exact diff, then confirm explicitly.');
+  } catch (error) {
+    $('wiki-command-status').textContent = 'Command unavailable: ' +
+      String(error?.message || error) + '. No edit sent.';
+  } finally {
+    interpreting = false;
+    $('wiki-command-run').disabled = false;
+  }
 }
 async function rebase() {
   const session = editSession;
@@ -501,6 +589,7 @@ async function submitEdit(event) {
 }
 
 $('refresh-now').addEventListener('click', () => { void refresh(); });
+$('wiki-command-form').addEventListener('submit', event => { void interpretWikiCommand(event); });
 $('edit-content').addEventListener('input', () => invalidatePreview());
 $('edit-review').addEventListener('click', () => { void review(); });
 $('edit-rebase').addEventListener('click', () => { void rebase(); });

@@ -2,7 +2,7 @@
 :root { color-scheme: dark; --bg: #0b1017; --panel: #121b27; --border: #2b3b50; --text: #e9f0fa; --muted: #a5b7cc; --accent: #84d7e1; --warn: #ffd18a; --danger: #ff9f9f; }
 * { box-sizing: border-box; }
 body { margin: 0; min-height: 100vh; background: radial-gradient(ellipse at top left, #152a3c, var(--bg) 50%); color: var(--text); font: 14px/1.55 system-ui, sans-serif; }
-button, textarea { font: inherit; }
+button, textarea, input { font: inherit; }
 a { color: var(--accent); text-underline-offset: 3px; }
 button { cursor: pointer; border: 1px solid var(--accent); border-radius: 8px; padding: 8px 13px; background: #193443; color: #e4faff; font-weight: 650; }
 button:hover { background: #245061; }
@@ -21,6 +21,11 @@ nav a { white-space: nowrap; }
 .dashboard { display: grid; grid-template-columns: minmax(0, 1.18fr) minmax(0, 1fr); align-items: start; gap: 18px; max-width: 1440px; padding: 16px 20px 80px; margin: 0 auto; }
 .block { min-width: 0; padding: 20px; border: 1px solid var(--border); border-radius: 16px; background: var(--panel); box-shadow: 0 8px 35px #0002; }
 .wiki-panel { grid-row: span 2; }
+.wiki-command-form { display: grid; gap: 8px; margin: 0 0 18px; padding: 12px; border: 1px solid var(--border); border-radius: 10px; background: #0d1722; }
+.wiki-command-form label { font-size: 12px; font-weight: 650; color: var(--muted); }
+.wiki-command-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.wiki-command-row input { min-width: 0; flex: 1 1 220px; color: var(--text); background: #0b121b; border: 1px solid #557187; border-radius: 8px; padding: 9px 12px; }
+.wiki-command-form .source-meta { margin: 0; }
 .section-heading { display: flex; justify-content: space-between; align-items: start; gap: 12px; flex-wrap: wrap; }
 .section-heading h2 { margin: 3px 0; font-size: 19px; }
 .section-heading a { font-size: 11px; }

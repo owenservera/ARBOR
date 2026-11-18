@@ -30,6 +30,14 @@
   <section class="block wiki-panel" aria-labelledby="wiki-heading">
     <div class="section-heading"><div><p class="eyebrow">01 / LIVE WORKSPACE</p><h2 id="wiki-heading">Intelligent Wiki</h2></div><a href="/api/wiki">Host Wiki source</a></div>
     <p class="source-meta" id="wiki-source">/api/wiki · waiting for first read</p>
+    <form id="wiki-command-form" class="wiki-command-form" aria-label="Natural-language Wiki edit">
+      <label for="wiki-command">Edit an existing Wiki section using natural language</label>
+      <div class="wiki-command-row">
+        <input id="wiki-command" type="text" maxlength="1000" autocomplete="off" spellcheck="false" placeholder="edit wiki section main/about saying Voice notes are now our active priority">
+        <button id="wiki-command-run" type="submit">Interpret</button>
+      </div>
+      <p id="wiki-command-status" class="source-meta" role="status" aria-live="polite">Interpretation only. Review and owner confirmation are required before any edit.</p>
+    </form>
     <div id="wiki-view" class="stack"><p class="empty">Loading Wiki sections…</p></div>
   </section>
   <section class="block context-panel" aria-labelledby="context-heading">
@@ -56,6 +64,7 @@
 <section class="editor-shell" id="edit-shell" hidden aria-label="Wiki section editor">
   <form id="edit" class="edit" aria-labelledby="editor-heading">
     <div class="editor-heading"><div><p class="eyebrow">HUMAN REVIEW · HOST-OWNED MUTATION</p><h2 id="editor-heading">Edit <span id="edit-target"></span></h2></div><span id="edit-rev" class="signal-pill"></span></div>
+    <p id="edit-command-context" class="source-meta" hidden></p>
     <label for="edit-content">Proposed section content</label>
     <textarea id="edit-content" rows="7" spellcheck="true" maxlength="3000"></textarea>
     <div id="edit-preview" class="preview" hidden>
