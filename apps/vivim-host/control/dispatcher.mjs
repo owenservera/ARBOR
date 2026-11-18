@@ -169,8 +169,17 @@ function createExecutors({ runtime, planner, lexicon, devices, productJournal })
         kind: 'wiki-edit', actor: 'owner-browser', schemaVersion: 1, expectedRevision,
         edit: { action: 'set-section', page, section, content }
       });
+      // A durable append alone is not UI proof. Read back the same canonical
+      // journal projection before informing the owner the edit is applied.
+      // A failed/mismatched readback is uncertain, NEVER a reason to append again.
+      const { wiki } = await productJournal.readProjection();
+      if (wiki.revision !== expectedRevision + 1 ||
+          wiki.pages?.[page]?.sections?.[section] !== content ||
+          entry.wikiRevision !== wiki.revision)
+        throw fail('CONTROL_WIKI_READBACK_MISMATCH');
       return { page, section, previousRevision: expectedRevision,
-        wikiRevision: entry.wikiRevision, entryId: entry.entryId, sequence: entry.sequence };
+        wikiRevision: wiki.revision, content: wiki.pages[page].sections[section],
+        entryId: entry.entryId, sequence: entry.sequence };
     },
   };
 }
@@ -226,11 +235,6 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
       ...p, outcome: 'unavailable', executionPerformed: false,
       precondition: 'Use the authenticated PC owner control for privacy-sensitive changes until verified device-bound phone approval is available.'
     };
-    // A PC-only edit may be described to the phone but cannot become phone-authorizable.
-    if (p.actionId === WIKI_ACTION && source === 'mobile') return {
-      ...p, outcome: 'unavailable', executionPerformed: false,
-      precondition: 'Use the authenticated desktop Host Control to edit the Wiki.'
-    };
     if (p.actionId === WIKI_ACTION && !productJournal) return {
       ...p, outcome: 'unavailable', executionPerformed: false,
       precondition: 'Host Wiki journal unavailable.'
@@ -267,7 +271,9 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
           before: wikiBinding.before, after: p.args.content,
           expectedRevision: wikiBinding.expectedRevision } } : {}),
         approval: { required: true, freshOwner: p.risk === 'R2',
-          channels: p.actionId === WIKI_ACTION ? ['desktop-owner-token'] : [...APPROVAL_CHANNELS] } };
+          channels: p.actionId === WIKI_ACTION
+            ? [source === 'mobile' ? 'direct-phone' : 'desktop-owner-token']
+            : [...APPROVAL_CHANNELS] } };
     };
     if (p.actionId === WIKI_ACTION) {
       if (Buffer.byteLength(p.args.content, 'utf8') > MAX_WIKI_CONTENT_BYTES)
@@ -323,7 +329,11 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
       throw fail('CONTROL_APPROVAL_SOURCE_MISMATCH');
     if (rec.plan.source === 'desktop' && approval.channel !== 'desktop-owner-token')
       throw fail('CONTROL_APPROVAL_SOURCE_MISMATCH');
-    if (rec.plan.actionId === WIKI_ACTION && approval.channel !== 'desktop-owner-token')
+    if (rec.plan.actionId === WIKI_ACTION && rec.plan.source === 'mobile' &&
+        (approval.channel !== 'direct-phone' || approval.actor !== rec.plan.actor))
+      throw fail('CONTROL_WIKI_DEVICE_MISMATCH');
+    if (rec.plan.actionId === WIKI_ACTION && rec.plan.source !== 'mobile' &&
+        approval.channel !== 'desktop-owner-token')
       throw fail('CONTROL_DESKTOP_APPROVAL_REQUIRED');
 
     function finishEffect(result = null, cause = null) {
