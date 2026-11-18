@@ -6,7 +6,8 @@ import { isAbsolute, join, resolve, sep } from 'node:path';
 import { openDb } from './schema.mjs';
 import { loadProjects, projectsForIndex, registerProject, unregisterProject } from './registry.mjs';
 import { indexWorkspace } from './indexer.mjs';
-import { searchContent, searchSymbols, findFiles } from './search.mjs';
+import { searchContent, searchSymbols, findFiles, isSensitiveSourcePath } from './search.mjs';
+import { isVersionedId } from './annotation-v2.mjs';
 import { composeContext, verifyContext as verifyHqContext } from './context.mjs';
 import { deps, impact, projectGraph } from './graph.mjs';
 import { buildWiki } from './wiki.mjs';
@@ -21,6 +22,18 @@ export const DEV_SOURCE_EVIDENCE_CONTRACT = 'arbor.dev-source-evidence/1';
 const MAX_FILE_BYTES = 1_500_000;
 const MAX_CONTEXT_TOKENS = 10000;
 const MAX_WIKI_PAGES = 5000;
+const SURFACE_SCHEMA = 'vivim.file-surface/1';
+const SURFACE_GENERATOR = 'hq.source-index/1';
+// Only executable, non-fixture source can appear in this product projection.
+// The registered roots are the authority; a path or annotation never grants it.
+function surfacePath(path) {
+  return !isSensitiveSourcePath(path) &&
+    !String(path).split('/').some(part => part.startsWith('.') ||
+      /^(?:demo|demo-baseline|test|tests|__tests__|fixtures?|samples?|examples?|evidence|private|secrets?|credentials?|node_modules)$/i.test(part)) &&
+    /\.(?:mjs|cjs|js|mts|cts|ts|tsx|jsx|rs|py|go|java|kt|swift|c|cpp|h|hpp)$/i.test(path);
+}
+const surfaceKinds = ['v2:type','v2:capability','v2:contract','v2:emits','v2:consumes','v2:action'];
+
 
 export function defaultDevDataDir() {
   const base = process.platform === 'win32' && process.env.LOCALAPPDATA
@@ -220,10 +233,10 @@ export function createDevIntelligence({
     catch (error) { throw storageFailure(error); }
     return true;
   }
-  function index({ force = false } = {}) {
+  function index({ force = false, useGit = true } = {}) {
     return withDatabase(db => indexWorkspace({
       root, db, projects: projectsForIndex(root),
-      options: { force: Boolean(force), maxFileBytes: MAX_FILE_BYTES, useGit: true, ignores: [] },
+      options: { force: Boolean(force), maxFileBytes: MAX_FILE_BYTES, useGit: useGit !== false, ignores: [] },
     }), 'source.index');
   }
   function search({ query, project, limit = 20, offset = 0 } = {}) {
@@ -321,6 +334,111 @@ export function createDevIntelligence({
       };
     }, 'source.read');
   }
+  // Read the existing annotations/files/imports tables. No filesystem crawler,
+  // separate cache, or second registration store is introduced.
+  function projectSurfaces(db, records, { project, query = '', path, ids = [], limit = 24 } = {}) {
+    if (project != null) ensureName(project);
+    if (typeof query !== 'string' || query.length > 240 || ids.length > 12)
+      throw new Error('HQ_SOURCE_QUERY_INVALID');
+    const cap = Math.max(1, Math.min(48, Math.trunc(Number(limit)) || 24));
+    const exactPath = path == null ? null : relativeSourcePath(path);
+    const where = ["f.kind='source'", 'f.is_generated=0', 'f.is_test=0', 'f.size<=?',
+      `EXISTS (SELECT 1 FROM annotations a WHERE a.file_id=f.id AND a.ref IS NOT NULL
+        AND a.kind IN (${surfaceKinds.map(() => '?').join(',')}))`];
+    const args = [MAX_FILE_BYTES, ...surfaceKinds];
+    if (project) { where.push('p.name=?'); args.push(project); }
+    if (exactPath) { where.push('f.path=?'); args.push(exactPath); }
+    if (query.trim()) {
+      where.push(`(instr(lower(f.path),lower(?))>0
+        OR EXISTS (SELECT 1 FROM annotations a WHERE a.file_id=f.id AND a.ref=? AND a.kind LIKE 'v2:%')
+        OR EXISTS (SELECT 1 FROM symbols s WHERE s.file_id=f.id AND instr(lower(s.name),lower(?))>0))`);
+      args.push(query.trim(), query.trim(), query.trim());
+    }
+    if (ids.length) {
+      where.push(`EXISTS (SELECT 1 FROM annotations a WHERE a.file_id=f.id AND a.kind LIKE 'v2:%'
+        AND a.ref IN (${ids.map(() => '?').join(',')}))`);
+      args.push(...ids);
+    }
+    const rows = db.prepare(`SELECT f.*, p.name AS project, p.indexed_at AS watermark, p.head AS project_revision
+      FROM files f JOIN projects p ON p.id=f.project_id WHERE ${where.join(' AND ')}
+      ORDER BY p.name,f.path LIMIT 257`).all(...args);
+    const tags = db.prepare(`SELECT line,kind,ref FROM annotations WHERE file_id=?
+      AND kind IN (${surfaceKinds.map(() => '?').join(',')}) AND ref IS NOT NULL
+      ORDER BY line,kind,ref LIMIT 65`);
+    const imports = db.prepare(`SELECT i.line,f.path,p.name AS project FROM imports i
+      JOIN files f ON f.id=i.resolved_file_id JOIN projects p ON p.id=f.project_id
+      WHERE i.file_id=? AND f.kind='source' AND f.is_generated=0 AND f.is_test=0
+      ORDER BY p.name,f.path,i.line LIMIT 32`);
+    const files = [];
+    let omitted = false;
+    for (const row of rows.slice(0,256)) {
+      if (!surfacePath(row.path) || !row.hash) continue;
+      if (files.length >= cap) { omitted = true; break; }
+      let currentHash = null;
+      try {
+        const absolute = authorizedFile(row.project, row.path, row.abs_path, records);
+        if (statSync(absolute).size <= MAX_FILE_BYTES) currentHash = sha256(readFileSync(absolute));
+      } catch { /* missing or revoked path never serves source metadata */ continue; }
+      if (!currentHash) continue;
+      const observations = tags.all(row.id, ...surfaceKinds)
+        .filter(tag => isVersionedId(tag.ref) && tag.ref.length <= 160);
+      const annotations = observations.slice(0,64).map(tag => {
+        const entry = getSemanticId(db, tag.ref);
+        const kind = tag.kind.slice(3);
+        const kinds = ['emits','consumes'].includes(kind) ? ['event','type','schema'] : [kind];
+        return { semanticId: tag.ref, kind, line: tag.line,
+          resolution: !entry ? 'unknown' : !kinds.includes(entry.kind) ? 'invalid_kind' : entry.status };
+      });
+      if (!annotations.length) continue;
+      const semanticIds = [...new Set(annotations.map(a => a.semanticId))].sort();
+      const fresh = row.hash === currentHash;
+      const relationships = [
+        ...annotations.filter(a => ['emits','consumes'].includes(a.kind))
+          .map(a => ({ kind: a.kind, semanticId: a.semanticId, line: a.line })),
+        ...imports.all(row.id).filter(i => surfacePath(i.path))
+          .map(i => ({ kind: 'imports', ref: i.project + ':' + i.path, line: i.line })),
+      ];
+      files.push({
+        project: row.project, path: row.path, sourceId: row.project + ':' + row.path,
+        surface: 'Indexed executable source',
+        commentIds: semanticIds, actionIds: annotations.filter(a => a.kind === 'action').map(a => a.semanticId),
+        annotations, relationships, annotationTruncated: observations.length > 64,
+        generatorVersion: SURFACE_GENERATOR, sourceDigest: row.hash, currentDigest: currentHash,
+        freshness: fresh ? 'indexed' : 'stale', indexWatermark: row.watermark,
+        projectRevision: row.project_revision ?? null,
+      });
+    }
+    return { schema: SURFACE_SCHEMA, generatorVersion: SURFACE_GENERATOR,
+      status: files.length ? 'indexed' : 'empty', authority: 'read_only_projection',
+      truncated: omitted || rows.length > 256, files };
+  }
+  function fileSurface(options = {}) {
+    return withDatabase((db, records) => projectSurfaces(db, records, options));
+  }
+  function fileSurfaceContext({ project, path, task = '' } = {}) {
+    ensureName(project);
+    if (!path || typeof task !== 'string' || task.length > 1000) throw new Error('HQ_SOURCE_QUERY_INVALID');
+    return withDatabase((db, records) => {
+      const selected = projectSurfaces(db, records, { project, path, limit: 1 }).files[0];
+      if (!selected || selected.freshness !== 'indexed')
+        return { schema: 'vivim.source-context/1', status: selected ? 'stale' : 'empty', context: null };
+      const ids = selected.commentIds.slice(0,12);
+      const related = projectSurfaces(db, records, { project, ids, limit: 16 }).files
+        .filter(file => file.freshness === 'indexed');
+      const allowedSourceRefs = new Set([selected.sourceId, ...related.map(file => file.sourceId)]);
+      const bundle = composeContext(db, { task: task.trim() || 'Explain ' + selected.path,
+        project, sourceSemanticIds: ids, allowedSourceRefs, budgetTokens: 5000, maxFiles: 16 });
+      if (!bundle.sources.some(source => source.ref === selected.sourceId) ||
+          !verifyHqContext(bundle).valid)
+        return { schema: 'vivim.source-context/1', status: 'unavailable', context: null };
+      // Machine-local absolute paths are not part of the context digest.
+      const sources = bundle.sources.map(({ absPath, ...source }) => source);
+      const { vivim, ...publicBundle } = bundle;
+      return { schema: 'vivim.source-context/1', status: 'indexed',
+        sourceId: selected.sourceId, sourceDigest: selected.sourceDigest,
+        context: { ...publicBundle, sources } };
+    }, 'source.context');
+  }
   function semanticIds(options = {}) {
     return withDatabase(db => listSemanticIds(db, options));
   }
@@ -367,7 +485,7 @@ export function createDevIntelligence({
   return Object.freeze({
     contract: DEV_INTELLIGENCE_CONTRACT, domain: DEVELOPMENT_DOMAIN,
     registerSource, removeSource, index, search, symbols, files, context,
-    graph, wiki, indexWatermarks, sourceEvidence, semanticIds, semanticId, scanCapabilities, status,
+    graph, wiki, indexWatermarks, sourceEvidence, fileSurface, fileSurfaceContext, semanticIds, semanticId, scanCapabilities, status,
     verifyContext,
   });
 }
