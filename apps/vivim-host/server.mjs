@@ -31,6 +31,7 @@ import { createOnboardingService } from './onboarding/service.mjs';
 import { createStudioPort } from './onboarding/studio-port.mjs';
 import { detectEnvironment } from './onboarding/environment.mjs';
 import { controlErrorStatus } from './control/http-status.mjs';
+import { createLiveSourceSurface } from './control/live-source-surface.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(here, '..', '..');
@@ -228,7 +229,7 @@ export function hostSnapshot({ dataRoot, now = () => new Date().toISOString(), j
   return { ...snapshot, recovery: projectHostRecovery(snapshot) };
 }
 
-export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path.join(here, 'public'), bootstrap = null, ownerToken = null, directPhone = null, worker = null, studioUrl = null, studioToken = null, onboarding = null, autoPump = false } = {}) {
+export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path.join(here, 'public'), bootstrap = null, ownerToken = null, directPhone = null, worker = null, studioUrl = null, studioToken = null, onboarding = null, autoPump = false, developmentSources = null } = {}) {
   // Product mutations live in the Host data directory, never in committed public/demo assets.
   // The original seed documents are read-only; one bounded append journal projects chat and Wiki.
   const productJournal = createProductJournal({
@@ -465,6 +466,61 @@ export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path
       }
       return;
     }
+    // Development source is owner-private, even on loopback. There is no
+    // browser-selected filesystem root and no demo fallback, including on HQ failure.
+    if (['/api/file-surface', '/api/file-surface/context', '/api/file-surface/index'].includes(pathname)) {
+      const indexing = pathname.endsWith('/index');
+      const context = pathname.endsWith('/context');
+      if (indexing ? req.method !== 'POST' : !['GET','HEAD'].includes(req.method)) {
+        res.setHeader('allow', indexing ? 'POST' : 'GET, HEAD');
+        sendJson(res, 405, { code: 'METHOD' }); return;
+      }
+      const sameOrigin = String(req.headers.origin || '').toLowerCase() === 'http://' + host;
+      if ((req.headers.origin !== undefined && !sameOrigin) ||
+          (indexing && (!sameOrigin || req.headers['x-vivim-control'] !== '1'))) {
+        sendJson(res, 403, { code: 'ORIGIN_OR_CSRF' }); return;
+      }
+      let bearer = false;
+      try { bearer = verifyOwnerToken(req.headers.authorization, tokenFor()); } catch { /* session may still be valid */ }
+      const session = uiSessions.get(req);
+      const sessionOk = session && uiSessions.authorized(req, { mutate: indexing });
+      if (!bearer && !sessionOk) { sendJson(res, 401, { code: 'OWNER_AUTH' }); return; }
+      const empty = { schema: 'vivim.file-surface/1', generatorVersion: 'hq.source-index/1',
+        status: 'unavailable', authority: 'read_only_projection', truncated: false, files: [] };
+      try {
+        const config = developmentSources ?? {
+          approvedRoots: JSON.parse(process.env.VIVIM_HQ_APPROVED_ROOTS || '[]'),
+          dataDir: process.env.VIVIM_HQ_DATA_DIR || undefined
+        };
+        const actorId = 'desktop-owner';
+        const sessionId = bearer ? 'owner-token' : session.sessionId;
+        const surface = await createLiveSourceSurface({
+          approvedRoots: config.approvedRoots, dataDir: config.dataDir, actorId, sessionId,
+          authorize: request => request.actorId === actorId && request.sessionId === sessionId &&
+            request.domain === 'development' && ['source.read','source.context',
+              ...(indexing ? ['source.index'] : [])].includes(request.operation) &&
+            (bearer || uiSessions.authorized(req, { mutate: indexing }))
+        });
+        const params = new URL(req.url, 'http://' + host).searchParams;
+        const project = params.get('project') ?? undefined;
+        const query = params.get('q') ?? '';
+        const sourcePath = params.get('path') ?? undefined;
+        const task = params.get('task') ?? '';
+        if (query.length > 240 || task.length > 1000 || (project?.length ?? 0) > 128 ||
+            (sourcePath?.length ?? 0) > 512 || (context && (!project || !sourcePath))) {
+          sendJson(res, 400, { code: 'HQ_SOURCE_QUERY_INVALID' }); return;
+        }
+        const value = indexing ? surface.refresh()
+          : context ? surface.context({ project, path: sourcePath, task })
+          : surface.read({ project, query, path: sourcePath, limit: params.get('limit') ?? undefined });
+        sendJson(res, 200, value);
+      } catch {
+        // No credentials, local paths, exception text or old source content in failure responses.
+        sendJson(res, 503, context ? { schema: 'vivim.source-context/1', status: 'unavailable', context: null }
+          : indexing ? { status: 'unavailable', code: 'HQ_UNAVAILABLE' } : empty);
+      }
+      return;
+    }
     if (req.method !== 'GET' && req.method !== 'HEAD') { res.setHeader('allow', 'GET, HEAD'); res.writeHead(405); res.end(); return; }
     if (pathname === '/api/host/status') {
       res.setHeader('content-type', 'application/json; charset=utf-8');
@@ -481,18 +537,6 @@ export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path
       } catch (error) {
         sendJson(res, Number.isInteger(error?.status) ? error.status : 500,
           { error: 'Product projection unavailable' });
-      }
-      return;
-    }
-    // File surfaces remain generated source-backed data; they are not mutable state.
-    if (pathname === '/api/file-surface') {
-      try {
-        const body = await readFile(path.join(here, 'data', 'demo-baseline', 'file-surface.v1.json'), 'utf8');
-        JSON.parse(body);
-        res.setHeader('content-type', 'application/json; charset=utf-8');
-        res.writeHead(200); res.end(req.method === 'HEAD' ? undefined : body);
-      } catch (error) {
-        sendJson(res, error?.code === 'ENOENT' ? 404 : 502, { error: 'File surface unavailable' });
       }
       return;
     }
