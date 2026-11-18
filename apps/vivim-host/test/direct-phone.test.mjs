@@ -12,6 +12,8 @@ import { createBootstrapRuntime } from '../bootstrap/runtime.mjs';
 import { createMediaPlaybackService } from '../media/playback.mjs';
 import { createBridgeStore } from '../../../studio/src/studio/bridge-commands.mjs';
 import { createBootstrapCommandWorker } from '../bootstrap/command-worker.mjs';
+import { resolveBuildRequest, blankSurface } from '../../mobile-relay/build-composer.mjs';
+import { buildUndoProposal, committedUiRevision, matchesCommittedUiReadback } from '../../mobile-relay/build-canvas.mjs';
 
 test('direct phone authenticates proxy, bounds routes and uses the shared queue', async t => {
   const root = mkdtempSync(path.join(os.tmpdir(), 'direct-phone-'));
@@ -186,6 +188,60 @@ test('direct phone authenticates proxy, bounds routes and uses the shared queue'
   const db = new DatabaseSync(runtime.file, { readOnly: true });
   assert.equal(db.prepare('SELECT COUNT(*) AS count FROM themes WHERE request_id = ?').get('relay-' + id).count, 1);
   db.close();
+
+  // Real paired HTTP path: the same VEC adapter used by the Build composer,
+  // durable bootstrap bridge, worker, SQLite publisher and phone readback.
+  const beforeUi = JSON.parse((await call('/mobile/api/relay?path=status')).body).snapshot.bootstrap;
+  assert.equal(beforeUi.uiRevision, null);
+  const beforeSurface = blankSurface();
+  const design = { ...resolveBuildRequest({ request: 'Add a card called Research', surface: beforeSurface }),
+    surface: beforeSurface };
+  assert.equal(design.outcome, 'candidate');
+  assert.equal(design.preview.persisted, false);
+  assert.equal(runtime.uiRevision(), null, 'preview alone must never publish');
+  const postDesign = draft => call(target, { method: 'POST',
+    headers: { origin, 'content-type': 'application/json' },
+    body: JSON.stringify({ text: 'apply-proposal', kind: 'command', consumer: 'bootstrap',
+      mode: 'bootstrap', action: 'apply-proposal', proposal: draft.proposal }) });
+  const activated = await postDesign(design);
+  assert.equal(activated.status, 201);
+  const designId = JSON.parse(activated.body).id;
+  assert.deepEqual(bridge.get(designId).proposal, design.proposal, 'exact UI proposal survives Direct ingress');
+  assert.equal(runtime.uiRevision(), null, 'queue submission is not a committed revision');
+  assert.equal(worker.tick()[0].status, 'done');
+  assert.equal(worker.tick().length, 0, 'claimed proposal is never automatically repeated');
+  const completed = JSON.parse((await call('/mobile/api/relay?path=commands%2F' + designId)).body);
+  const proof = committedUiRevision(completed, beforeSurface);
+  const committed = JSON.parse((await call('/mobile/api/relay?path=status')).body).snapshot.bootstrap.uiRevision;
+  assert.equal(committed.revision, 1);
+  assert.equal(committed.surface.tree.children[0].id, 'vec.card.research');
+  assert.equal(committed.surface.tree.children[0].props.title, 'Research');
+  assert.equal(matchesCommittedUiReadback(proof, design.preview.surface, committed.surface), true);
+  // Reopen the actual persistent ledger; no synthetic browser projection.
+  const reopened = createBootstrapRuntime({ dataRoot: root });
+  try { assert.deepEqual(reopened.uiRevision(), committed.surface); }
+  finally { reopened.close(); }
+
+  const undo = buildUndoProposal({ original: design, before: beforeSurface, committed: proof, live: committed.surface });
+  assert.ok(undo);
+  const undoQueued = await postDesign(undo);
+  assert.equal(undoQueued.status, 201);
+  const undoId = JSON.parse(undoQueued.body).id;
+  assert.equal(worker.tick()[0].status, 'done');
+  const undoResult = JSON.parse((await call('/mobile/api/relay?path=commands%2F' + undoId)).body);
+  const undoProof = committedUiRevision(undoResult, committed.surface);
+  const restored = JSON.parse((await call('/mobile/api/relay?path=status')).body).snapshot.bootstrap.uiRevision;
+  assert.equal(restored.revision, 2);
+  assert.equal(matchesCommittedUiReadback(undoProof, undo.preview.surface, restored.surface), true);
+  assert.deepEqual(restored.surface.tree.children, []);
+  const reopenedAfterUndo = createBootstrapRuntime({ dataRoot: root });
+  try { assert.deepEqual(reopenedAfterUndo.uiRevision(), restored.surface); }
+  finally { reopenedAfterUndo.close(); }
+
+  const stale = await postDesign(design);
+  assert.equal(stale.status, 201);
+  assert.equal(worker.tick()[0].status, 'failed', 'Host rejects stale base revision');
+  assert.equal(runtime.uiRevision().revision, 2);
   worker.close();
   // Actual Direct ingress must project only source-backed metadata, then reconcile
   // Studio claim on the next authenticated status poll. Never infer reply/delivery.
