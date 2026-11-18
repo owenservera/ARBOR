@@ -393,7 +393,7 @@ async function interpretWikiCommand(event) {
   $('wiki-command-run').disabled = true;
   $('wiki-command-status').textContent = 'Interpreting with authenticated Host…';
   try {
-    const csrf = await ownerEditCsrf();
+    const csrf = await ownerEditCsrf({ fresh: true });
     const response = await fetch('/api/host/control/interpret', {
       method: 'POST', credentials: 'same-origin', cache: 'no-store',
       headers: { 'content-type': 'application/json', 'x-vivim-control': '1', 'x-vivim-ui-csrf': csrf },
@@ -497,8 +497,8 @@ async function review() {
 }
 // Reuse the existing Host control UI session; no actor string, Origin claim or
 // x-vivim-control marker on its own can authorize a Wiki mutation.
-async function ownerEditCsrf() {
-  if (ownerCsrf) return ownerCsrf;
+async function ownerEditCsrf({ fresh = false } = {}) {
+  if (ownerCsrf && !fresh) return ownerCsrf;
   const fragment = typeof window !== 'undefined' ? String(window.location?.hash || '') : '';
   let response;
   if (fragment.startsWith('#control-session=')) {
@@ -545,7 +545,7 @@ async function submitEdit(event) {
     }
     const payload = mutationEnvelope(session, reviewed.revision, reviewed.after);
     if (bytesOf(payload) > MAX_ENTRY_BYTES) { invalidatePreview('Entry exceeds 4KB; nothing sent.'); return; }
-    const csrf = await ownerEditCsrf();
+    const csrf = await ownerEditCsrf({ fresh: true });
     requestSent = true;
     const result = await fetch('/api/mutate', {
       method: 'POST', credentials: 'same-origin',
