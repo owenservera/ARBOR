@@ -3,6 +3,8 @@
 // supersede a canonical interpretation, refusal, incomplete command or clarification.
 import { NCLL_VERSION } from '../../mobile-relay/nlcl/frames.mjs';
 import { VEC_COMPILE_SCHEMA } from '../../mobile-relay/vec/compiler.mjs';
+import {sha256Hex} from '../../mobile-relay/generative-ui/portable-digest.mjs';
+import {validWikiRecipe} from './wiki-read-program.mjs';
 export const PERSONAL_RULE_SCHEMA = 'vivim.personal-semantic-rule/1';
 export const PERSONAL_RESOLUTION_SCHEMA = 'vivim.personal-resolution/1';
 const SCOPE_KEYS = ['workspaceId', 'activity', 'providerId', 'surface'];
@@ -21,6 +23,15 @@ const slug=value=>typeof value==='string'&&/^[a-z][a-z0-9-]{0,62}$/.test(value)&
 export const templateAlias=value=>typeof value==='string'&&/^[a-z][a-z0-9]{2,31}$/.test(value);
 const canonical=v=>Array.isArray(v)?v.map(canonical):record(v)?
   Object.fromEntries(Object.keys(v).sort().map(k=>[k,canonical(v[k])])):v;
+// Only this audited additive migration is compatible. Any other catalog change
+// still requires new owner review; no stored rule or receipt is rewritten.
+const CATALOG_13_DIGEST='422f499257f8828ffe22779a896008549966fdcc89bdcdaa2dc89803de7ae967';
+export function compatibleRuleCatalog(rule,catalog){
+  if(rule.catalogVersion===catalog.version)return true;
+  if(rule.catalogVersion!==13||catalog.version!==14||rule.actionId==='program.read_wiki')return false;
+  const predecessor={...catalog,version:13,actions:catalog.actions.filter(a=>a.id!=='program.read_wiki')};
+  return predecessor.actions.length===36&&catalog.actions.length===37&&sha256Hex(JSON.stringify(canonical(predecessor)))===CATALOG_13_DIGEST;
+}
 export function templateDependencies(catalog){
   const action=catalog?.actions?.find(a=>a.id==='wiki.page.create');
   if(!action||action.risk!=='R1'||!['source_wired','verified'].includes(action.readiness)||
@@ -45,7 +56,7 @@ function validTemplate(rule){
 }
 export function currentTemplate(rule,catalog){
   const current=templateDependencies(catalog);
-  return !!(rule?.template&&current&&JSON.stringify(canonical(rule.template.dependencies))===JSON.stringify(canonical(current)));
+  return !!(rule?.template&&current&&compatibleRuleCatalog(rule,catalog)&&JSON.stringify(canonical({...rule.template.dependencies,catalogVersion:catalog.version}))===JSON.stringify(canonical(current)));
 }
 // One deliberately narrow named invocation, not another natural-language parser.
 // Canonical NLCL/refusals always take precedence.
@@ -63,7 +74,7 @@ const decision = (outcome, extra = {}) => ({ schema: PERSONAL_RESOLUTION_SCHEMA,
 /** The private learning state must never be serialized as a Host grant. */
 export function validatePersonalRule(rule, catalog) {
   if (!keysOnly(rule, ['schema', 'id', 'revision', 'phrase', 'actionId', 'args', 'scope',
-    'state', 'source', 'catalogVersion','template']) || rule.schema !== PERSONAL_RULE_SCHEMA ||
+    'state', 'source', 'catalogVersion','template','readProgram']) || rule.schema !== PERSONAL_RULE_SCHEMA ||
     typeof rule.id !== 'string' || !/^rule:[a-z0-9][a-z0-9._-]{0,79}$/.test(rule.id) ||
     !Number.isSafeInteger(rule.revision) || rule.revision < 1 ||
     !phrase(rule.phrase) || typeof rule.actionId !== 'string' ||
@@ -78,6 +89,14 @@ export function validatePersonalRule(rule, catalog) {
     return { ok: false, reason: 'INVALID_RULE' };
   // Stale templates remain readable/revocable after catalog changes; only
   // matching current dependencies can activate them.
+  if(Object.hasOwn(rule,'readProgram')){
+    // Stale recipes remain readable/revocable; current dependency validation is an invocation check.
+    const r=rule.readProgram;
+    return !rule.template&&rule.actionId==='program.read_wiki'&&rule.scope.surface==='desktop'&&rule.source==='explicit-owner'&&
+      keysOnly(rule.args,['commands'])&&typeof rule.args.commands==='string'&&rule.args.commands.length<=950&&
+      r?.schema==='vivim.wiki-read-recipe/1'&&Array.isArray(r.steps)&&r.steps.length>=2&&r.steps.length<=8&&Array.isArray(r.dependencies)
+      ?{ok:true}:{ok:false,reason:'INVALID_READ_RECIPE'};
+  }
   if(Object.hasOwn(rule,'template'))return validTemplate(rule)?{ok:true}:{ok:false,reason:'INVALID_TEMPLATE'};
   const action = catalog.actions.find(a => a.id === rule.actionId);
   if (!action || !action.language || !record(action.args) ||
@@ -131,7 +150,8 @@ export function resolvePersonalSemantics({ text, baseline, rules, catalog, scope
     (rule.template?normalize(parts[0])===normalize(rule.phrase):normalize(rule.phrase)===normalize(text)));
   if (!matches.length) return decision('no_match', { reason: 'NO_ACCEPTED_MATCH' });
   if (matches.some(rule=>rule.template&&!currentTemplate(rule,catalog)))return decision('refused',{reason:'STALE_TEMPLATE_DEPENDENCY'});
-  if (matches.some(rule => rule.catalogVersion !== catalog.version))
+  if(matches.some(rule=>rule.readProgram&&!validWikiRecipe(rule.readProgram,rule.args.commands,catalog)))return decision('refused',{reason:'STALE_READ_RECIPE'});
+  if (matches.some(rule => !compatibleRuleCatalog(rule,catalog)))
     return decision('refused', { reason: 'STALE_CATALOG_RULE' });
   const bound=matches.map(rule=>({rule,args:bindPersonalRule(rule,text,catalog)}));
   if(bound.some(x=>!x.args))return decision('clarification_required',{reason:'TEMPLATE_PARAMETER_REQUIRED',ruleIds:matches.map(r=>r.id).sort()});

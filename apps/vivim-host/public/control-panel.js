@@ -274,10 +274,12 @@
           input.append(opt);
         }
       } else {
-        input = element((a.actionId==='program.validate'&&key==='program')||(a.actionId==='program.read_wiki'&&key==='commands')||(a.actionId==='versions.compare.pinned'&&key==='selection')?'textarea':'input');
+        input = element((a.actionId==='program.validate'&&key==='program')||(a.actionId==='control.rule.remember'&&key==='command')||(a.actionId==='program.read_wiki'&&key==='commands')||(a.actionId==='versions.compare.pinned'&&key==='selection')?'textarea':'input');
         if(a.actionId==='program.validate'&&key==='program'){
           input.rows=8;input.placeholder='JSON program: id, revision, steps (no policy or effect authorizations)';
           detail.append(element('p','text-control-note','Local Rust validation only. Host fixes the policy to R0, no external destinations or effect candidates. Source references must match current committed Wiki evidence, including older sections still current. Validation does not execute the steps.'));
+        }else if(a.actionId==='control.rule.remember'&&key==='command'){
+          input.rows=6;detail.append(element('p','text-control-note','Save an exact command or a run wiki read sequence: followed by separate read commands. The existing owner approval stores its typed meaning, never a grant.'));
         }else if(a.actionId==='program.read_wiki'&&key==='commands'){
           input.rows=6;input.placeholder='list wiki pages\nread wiki page sprint-notes in section specs';
           detail.append(element('p','text-control-note','Enter 2–8 Wiki read commands, one per line. Native validation precedes a consistent read-only snapshot. No writes, providers or automatic execution of effects.'));

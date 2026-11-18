@@ -401,8 +401,8 @@ import { mountComposerAssist } from '/mobile/composer-assist.mjs';
       rulePanel.replaceChildren();
       for(const rule of data.entries.filter(r=>r.state!=='revoked')){
         const row=element('div','control-card');
-        row.append(element('strong','',rule.phrase+(rule.template?' <page-slug>':'')+' · '+rule.state),
-          element('pre','',JSON.stringify({actionId:rule.actionId,args:rule.args,scope:rule.scope,...(rule.template?{parameter:rule.template.slot,sourceReceipt:rule.template.receiptId,privacy:rule.template.privacy}:{})},null,2)),
+        row.append(element('strong','',rule.phrase+(rule.template?' <page-slug>':'')+(rule.readProgram?' · reusable read sequence':'')+' · '+rule.state),
+          element('pre','',JSON.stringify({actionId:rule.actionId,args:rule.args,scope:rule.scope,...(rule.readProgram?{steps:rule.readProgram.steps}:{}),...(rule.template?{parameter:rule.template.slot,sourceReceipt:rule.template.receiptId,privacy:rule.template.privacy}:{})},null,2)),
           element('p','', 'Catalog revision '+rule.catalogVersion+' · rule revision '+rule.revision),
           button('Revoke meaning',()=>void submitPlan({actionId:'control.rule.revoke',args:{rule_id:rule.id}}),true));
         rulePanel.append(row);

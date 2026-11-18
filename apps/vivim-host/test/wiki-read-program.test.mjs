@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {runWikiReadProgram} from '../control/wiki-read-program.mjs';
+import {runWikiReadProgram,compileWikiReadRecipe,validWikiRecipe} from '../control/wiki-read-program.mjs';
 import {createControlPlanner,loadControlCatalog} from '../control/intent-planner.mjs';
 const commands='list wiki pages\nread wiki page main in section about';
 const wiki={revision:3,pages:{main:{sections:{about:'Current text'}}}};
@@ -25,4 +25,14 @@ test('a write, stale revision or failed native validation never runs child reads
  assert.equal((await runWikiReadProgram({...args,readWiki:async()=>({...wiki,revision:3+snapshots++})})).reasonCode,'PROGRAM_WIKI_STALE');
  assert.equal((await runWikiReadProgram({...args,nativeProgram:async()=>({outcome:'unavailable',reasonCode:'NO_BINARY'})})).reasonCode,'NO_BINARY');
  assert.equal(reads,0);
+});
+
+test('reviewed recipe reuses typed child meanings without calling the language interpreter',async()=>{
+ const catalog=loadControlCatalog(),recipe=compileWikiReadRecipe(commands,planCommand,catalog);
+ assert.ok(recipe);assert.equal(validWikiRecipe(recipe,commands,catalog),true);
+ const out=await runWikiReadProgram({commands,recipe,catalog,planCommand:()=>{throw Error('must not re-interpret')},planTyped:step=>planner.planTyped({...step,source:'desktop'}),readWiki:async()=>wiki,nativeProgram:native,readAction});
+ assert.equal(out.outcome,'completed');assert.equal(out.reusedRecipe,true);
+ const stale=structuredClone(catalog);stale.actions.find(a=>a.id==='wiki.section.read').title='changed';
+ assert.equal(validWikiRecipe(recipe,commands,stale),false);
+ const revoked=await runWikiReadProgram({commands,recipe,catalog,planTyped:step=>planner.planTyped({...step,source:'desktop'}),readWiki:async()=>wiki,nativeProgram:native,readAction,stillCurrent:()=>false});assert.equal(revoked.reasonCode,'PROGRAM_RECIPE_STALE');
 });

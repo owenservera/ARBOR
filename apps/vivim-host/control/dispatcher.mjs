@@ -19,7 +19,7 @@ import { interpretControl, resolveLocalDestination, resolveDesktopDestination } 
 import { previewWikiStructure, previewWikiCapture, validateProductEdit } from '../chat/product-journal.mjs';
 import { wikiApprovalSentence } from './command-intent.mjs';
 import { createNativeProgramValidator } from './native-program.mjs';
-import { runWikiReadProgram } from './wiki-read-program.mjs';
+import { runWikiReadProgram,compileWikiReadRecipe,validWikiRecipe } from './wiki-read-program.mjs';
 
 export const DISPATCHER_SCHEMA = 'vivim.control-dispatcher/1';
 export const RECEIPT_SCHEMA = 'vivim.control-receipt/1';
@@ -244,7 +244,8 @@ function createExecutors({ runtime, planner, lexicon, devices, productJournal, p
     'control.lexicon.forget': ({ word }, ctx) => lexicon.forget({ word, planId: ctx.planId }),
     'wiki.pages.list': async () => readWikiPages(await productJournal.readPhoneWiki()),
     'wiki.section.read': async args => readWikiSection(await productJournal.readPhoneWiki(),args),
-    [WIKI_READ_PROGRAM_ACTION]:args=>runWikiReadProgram({commands:args.commands,
+    [WIKI_READ_PROGRAM_ACTION]:(args,ctx={})=>runWikiReadProgram({commands:args.commands,recipe:ctx.recipe??null,catalog:planner.catalog,
+      planTyped:step=>planner.planTyped({...step,source:'desktop'}),stillCurrent:ctx.stillCurrent??(()=>true),
       planCommand:text=>planner.planText(text,{source:'desktop'}),readWiki:()=>productJournal.readPhoneWiki(),nativeProgram,
       readAction:(plan,wiki)=>plan.actionId==='wiki.pages.list'?readWikiPages(wiki):readWikiSection(wiki,plan.args)}),
     [HVI_ACTION]:(args,ctx)=>ctx.readHvi(args.selection),
@@ -452,10 +453,14 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
         throw fail('CONTROL_RULE_PHRASE_NOT_FREE');
     }else{
       const target=planner.planText(args.command,{source:'desktop'});
-      if(target.origin!=='deterministic'||!LEARNABLE.has(target.actionId)||
+      if(target.origin!=='deterministic'||(!LEARNABLE.has(target.actionId)&&target.actionId!==WIKI_READ_PROGRAM_ACTION)||
          !['ready','approval_required'].includes(target.outcome)||!['R0','R1'].includes(target.risk))
         throw fail('CONTROL_RULE_TARGET_INVALID');
       rule={phrase:args.phrase,actionId:target.actionId,args:target.args,scope};
+      if(target.actionId===WIKI_READ_PROGRAM_ACTION){
+        const recipe=compileWikiReadRecipe(target.args.commands,text=>planner.planText(text,{source:'desktop'}),catalog);
+        if(!recipe)throw fail('CONTROL_RULE_TARGET_INVALID');rule.readProgram=recipe;
+      }
       targetRisk=target.risk;
     }
     if(!validatePersonalRule({schema:PERSONAL_RULE_SCHEMA,id:'rule:validation',revision:1,
@@ -478,10 +483,10 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
     return { actionId: a.undo.actionId, args: out };
   }
 
-  function runRead(plan,{readHvi=null}={}) {
+  function runRead(plan,{readHvi=null,recipe=null,stillCurrent=()=>true}={}) {
     const complete = result => ({ ...plan, outcome: 'done', executionPerformed: true, effect: 'read', result });
     if(plan.actionId===HVI_ACTION)return Promise.resolve(executors[plan.actionId](plan.args,{readHvi})).then(complete);
-    if(plan.actionId===WIKI_READ_PROGRAM_ACTION)return Promise.resolve(executors[plan.actionId](plan.args)).then(result=>
+    if(plan.actionId===WIKI_READ_PROGRAM_ACTION)return Promise.resolve(executors[plan.actionId](plan.args,{recipe,stillCurrent})).then(result=>
       result.outcome==='completed'?complete(result):{...plan,outcome:result.outcome,executionPerformed:false,result,refusal:{code:result.reasonCode,message:'Wiki read sequence '+result.outcome+': '+result.reasonCode}});
     if(plan.actionId===NATIVE_PROGRAM_ACTION)return Promise.resolve(executors[plan.actionId](plan.args)).then(result=>
       result.outcome==='compiled'?complete(result):{...plan,outcome:result.outcome,executionPerformed:false,result,refusal:{code:result.reasonCode,message:'Native program '+result.outcome+': '+result.reasonCode}});
@@ -510,10 +515,20 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
     else throw fail('CONTROL_INPUT_INVALID');
     if(RULE_ACTIONS.has(p.actionId)&&(source!=='desktop'||actor!=='desktop-owner'))
       return {...p,outcome:'unavailable',executionPerformed:false,precondition:'Learning requires the authenticated desktop owner.'};
-    if(p.actionId===WIKI_READ_PROGRAM_ACTION&&(source!=='desktop'||actor!=='desktop-owner'||!['typed','deterministic'].includes(p.origin)))return {...p,outcome:'unavailable',executionPerformed:false,precondition:'Wiki read sequences require authenticated desktop owner.'};
+    if(p.actionId===WIKI_READ_PROGRAM_ACTION&&(source!=='desktop'||actor!=='desktop-owner'||!['typed','deterministic','personal_rule'].includes(p.origin)))return {...p,outcome:'unavailable',executionPerformed:false,precondition:'Wiki read sequences require authenticated desktop owner.'};
     if(p.actionId===NATIVE_PROGRAM_ACTION&&(source!=='desktop'||actor!=='desktop-owner'||p.origin!=='typed'))return {...p,outcome:'unavailable',executionPerformed:false,precondition:'Native program validation requires authenticated desktop owner and an explicit typed program.'};
     if(p.actionId===HVI_ACTION&&(source!=='desktop'||actor!=='desktop-owner'||p.origin!=='typed'||typeof readHvi!=='function'))return {...p,outcome:'unavailable',executionPerformed:false,precondition:'Explicit desktop owner source selection and current development grant required.'};
-    if (p.outcome === 'ready') return runRead(p,{readHvi});
+    if (p.outcome === 'ready') {
+      if(p.origin==='personal_rule'&&p.actionId===WIKI_READ_PROGRAM_ACTION){
+        const observed=p.language?.personalRule,snapshot=personalSemantics.snapshot(),scope={...commandScope(),surface:source};
+        const rule=snapshot.entries.find(r=>r.id===observed?.ruleId&&r.revision===observed.ruleRevision&&r.state==='accepted'&&r.actionId===p.actionId);
+        const stillCurrent=()=>{const live=personalSemantics.snapshot();return live.version===snapshot.version&&live.digest===snapshot.digest&&digest({...commandScope(),surface:source})===digest(scope);};
+        if(!rule?.readProgram||digest(rule.args)!==digest(p.args)||digest(observed.semanticScope)!==digest(scope)||!validWikiRecipe(rule.readProgram,p.args.commands,catalog))
+          return {...p,outcome:'refused',executionPerformed:false,refusal:{code:'PROGRAM_RECIPE_STALE',message:'Learned program no longer matches current meaning.'}};
+        return runRead(p,{recipe:rule.readProgram,stillCurrent});
+      }
+      return runRead(p,{readHvi});
+    }
     if (p.outcome !== 'approval_required') return p;
     // Sensitive R2 actions are still discoverable from mobile, but cannot be
     // approved there until native device proof and PC owner scopes are enforced.
