@@ -10,14 +10,14 @@ const req=(o={})=>({schema:HVI_HOST_REQUEST_SCHEMA,sources:sources(),targetIndex
 const port=(o={})=>createHviHostReadPort({actorId:'owner',sessionId:'local',
   approvedRepositories:['synthetic/w2-host'],verifySession:()=>true,
   verifyGrant:()=>true,enabled:true,...o});
-test('single native catalog descriptor is discoverable, not executable',()=>{
+test('single native descriptor is wired; Host request authority is still mandatory',()=>{
   const catalog=loadControlCatalog();
   const hits=catalog.actions.filter(a=>a.id===HVI_HOST_ACTION_ID);
-  assert.equal(hits.length,1);assert.equal(hits[0].readiness,'enforcement_missing');
+  assert.equal(hits.length,1);assert.equal(hits[0].readiness,'source_wired');
   const planner=createControlPlanner({catalog});
-  assert.equal(planner.describe().actions.find(a=>a.actionId===HVI_HOST_ACTION_ID).executable,false);
+  assert.equal(planner.describe().actions.find(a=>a.actionId===HVI_HOST_ACTION_ID).executable,true);
   assert.equal(planner.planTyped({actionId:HVI_HOST_ACTION_ID,
-    args:{selection:'synthetic commits v1 v2 v3'}}).outcome,'unavailable');
+    args:{selection:'synthetic commits v1 v2 v3'}}).outcome,'ready');
 });
 test('disabled and missing authority refuse',async()=>{
   const fixture=syntheticSource();

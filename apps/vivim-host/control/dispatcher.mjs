@@ -39,6 +39,7 @@ const LEARNABLE = new Set(['wiki.pages.list','wiki.section.read','wiki.page.crea
 const WIKI_ACTION = 'wiki.section.edit';
 const CAPTURE_ACTION='wiki.capture.save';
 const NATIVE_PROGRAM_ACTION='program.validate';
+const HVI_ACTION='versions.compare.pinned';
 // A typed VEC document is not an NL action or a string argument. Keep the existing
 // language catalog stable (including accepted learned rules); the visual contract
 // has its own version and uses the very same control plan journal and claim.
@@ -240,6 +241,7 @@ function createExecutors({ runtime, planner, lexicon, devices, productJournal, p
         wikiRevision: found.expectedRevision, content: found.before,
         ...(relatedPages(wiki,found.page).length ? {relatedPages:relatedPages(wiki,found.page)} : {}) };
     },
+    [HVI_ACTION]:(args,ctx)=>ctx.readHvi(args.selection),
     [NATIVE_PROGRAM_ACTION]:args=>nativeProgram(args),
     [CAPTURE_ACTION]: async ({content},ctx)=>{
       const b=ctx.wikiBinding;if(!productJournal||!b?.edit)throw fail('CONTROL_WIKI_NOT_READY');
@@ -470,8 +472,9 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
     return { actionId: a.undo.actionId, args: out };
   }
 
-  function runRead(plan) {
+  function runRead(plan,{readHvi=null}={}) {
     const complete = result => ({ ...plan, outcome: 'done', executionPerformed: true, effect: 'read', result });
+    if(plan.actionId===HVI_ACTION)return Promise.resolve(executors[plan.actionId](plan.args,{readHvi})).then(complete);
     if(plan.actionId===NATIVE_PROGRAM_ACTION)return Promise.resolve(executors[plan.actionId](plan.args)).then(result=>
       result.outcome==='compiled'?complete(result):{...plan,outcome:result.outcome,executionPerformed:false,result,refusal:{code:result.reasonCode,message:'Native program '+result.outcome+': '+result.reasonCode}});
     if (WIKI_READS.has(plan.actionId)) {
@@ -488,7 +491,7 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
     return complete(executors[plan.actionId](plan.args, { requestId: null, planId: null }));
   }
 
-  function plan(input, { source = 'text', actor = 'owner', grantId = null } = {}) {
+  function plan(input, { source = 'text', actor = 'owner', grantId = null, readHvi=null } = {}) {
     if (!input || typeof input !== 'object' || Array.isArray(input)) throw fail('CONTROL_INPUT_INVALID');
     const keys = Object.keys(input);
     if(keys.length===1&&keys[0]==='visualProposal')return planVisual(input.visualProposal,{source,actor,grantId});
@@ -500,7 +503,8 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
     if(RULE_ACTIONS.has(p.actionId)&&(source!=='desktop'||actor!=='desktop-owner'))
       return {...p,outcome:'unavailable',executionPerformed:false,precondition:'Learning requires the authenticated desktop owner.'};
     if(p.actionId===NATIVE_PROGRAM_ACTION&&(source!=='desktop'||actor!=='desktop-owner'||p.origin!=='typed'))return {...p,outcome:'unavailable',executionPerformed:false,precondition:'Native program validation requires authenticated desktop owner and an explicit typed program.'};
-    if (p.outcome === 'ready') return runRead(p);
+    if(p.actionId===HVI_ACTION&&(source!=='desktop'||actor!=='desktop-owner'||p.origin!=='typed'||typeof readHvi!=='function'))return {...p,outcome:'unavailable',executionPerformed:false,precondition:'Explicit desktop owner source selection and current development grant required.'};
+    if (p.outcome === 'ready') return runRead(p,{readHvi});
     if (p.outcome !== 'approval_required') return p;
     // Sensitive R2 actions are still discoverable from mobile, but cannot be
     // approved there until native device proof and PC owner scopes are enforced.

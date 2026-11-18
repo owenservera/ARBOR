@@ -5,6 +5,8 @@ export async function createLiveSourceSurface({ approvedRoots, dataDir, actorId,
   const { createDevIntelligence } = await import('../../../hq/lib/arbor-service.mjs');
   const hq = createDevIntelligence({ mode: 'host', approvedRoots, dataDir, actorId, sessionId, authorize });
   return Object.freeze({
+    status: () => hq.status(),
+    register: params => hq.registerSource(params),
     read: params => hq.fileSurface(params),
     context: params => hq.fileSurfaceContext(params),
     compiledContext: params => hq.compiledContext(params),

@@ -33,6 +33,7 @@ import { createStudioPort } from './onboarding/studio-port.mjs';
 import { detectEnvironment } from './onboarding/environment.mjs';
 import { controlErrorStatus } from './control/http-status.mjs';
 import { createLiveSourceSurface } from './control/live-source-surface.mjs';
+import { createDevelopmentReadPort } from './control/development-read-port.mjs';
 import { attachRequestContext } from './control/request-context.mjs';
 import { composerResponse, needsWikiDraftContext } from '../mobile-relay/composer-assist.mjs';
 
@@ -786,7 +787,7 @@ function ownerAuthorized(req, res, tokenFor) {
 async function handleControl(req, res, pathname, host, controlFor, tokenFor, uiSessions, enrollment, runtimeFor, productJournal, nativeContext, developmentSources) {
   const route = pathname.slice('/api/host/control/'.length);
   const sameOrigin = String(req.headers.origin || '').toLowerCase() === 'http://' + host;
-  const isMutation = ['plan', 'interpret', 'execute', 'ui-logout', 'devices/approve', 'devices/revoke'].includes(route);
+  const isMutation = ['plan', 'interpret', 'execute', 'ui-logout', 'devices/approve', 'devices/revoke','development/register','development/index','development/hvi-grant','development/hvi-revoke'].includes(route);
   if (route === 'ui-session') {
     // Only the native owner process or local CLI can mint a browser launch code.
     if (req.method !== 'POST') { sendJson(res, 405, { code: 'METHOD' }); return; }
@@ -825,6 +826,26 @@ async function handleControl(req, res, pathname, host, controlFor, tokenFor, uiS
   if (owner && verifyOwnerToken(req.headers.authorization, owner)) authorized = true;
   if (!authorized && uiSessions.authorized(req, { mutate: isMutation })) authorized = true;
   if (!authorized) { sendJson(res, 401, { code: 'OWNER_AUTH', error: 'Owner authorization required' }); return; }
+  // The existing owner session/CSRF gate remains the only authority. Config selects
+  // actual approved roots and optional native source adapter, never request paths.
+  const developmentPort=()=>createDevelopmentReadPort({
+    config:developmentSources??{approvedRoots:JSON.parse(process.env.VIVIM_HQ_APPROVED_ROOTS||'[]'),dataDir:process.env.VIVIM_HQ_DATA_DIR||undefined},
+    runtime:runtimeFor(),sessionId:uiSessions.get(req)?.sessionId??'owner-token',
+    stillOwner:()=>{try{if(verifyOwnerToken(req.headers.authorization,tokenFor()))return true;}catch{}
+      return uiSessions.authorized(req,{mutate:isMutation});}
+  });
+  if(route.startsWith('development/')){
+    const op=route.slice('development/'.length);
+    if(!['status','register','index','hvi-grant','hvi-revoke'].includes(op)){sendJson(res,404,{code:'NOT_FOUND'});return;}
+    if(op==='status'?req.method!=='GET':req.method!=='POST'){sendJson(res,405,{code:'METHOD'});return;}
+    if((req.headers.origin!==undefined&&!sameOrigin)||(op!=='status'&&(!sameOrigin||req.headers['x-vivim-control']!=='1'))){sendJson(res,403,{code:'ORIGIN_OR_CSRF'});return;}
+    try{
+      const port=developmentPort(),body=op==='status'?undefined:await readJsonBody(req,8192);
+      const method={'status':'status','register':'register','index':'refresh','hvi-grant':'issueGrant','hvi-revoke':'revokeGrant'}[op];
+      const value=await port[method](body);
+      res.setHeader('cache-control','private, no-store');sendJson(res,200,value);
+    }catch(e){sendJson(res,e.status===401?401:e.status===403?403:e.status===503?503:400,{code:typeof e.code==='string'&&/^[A-Z_]+$/.test(e.code)?e.code:'DEVELOPMENT_REFUSED'});}return;
+  }
   if(route==='wiki-view'){
     if(req.method!=='GET'){sendJson(res,405,{code:'METHOD'});return;}
     if(req.headers.origin!==undefined&&!sameOrigin){sendJson(res,403,{code:'ORIGIN'});return;}
@@ -970,7 +991,8 @@ async function handleControl(req, res, pathname, host, controlFor, tokenFor, uiS
       sendJson(res,200,composerResponse(body.text,meaning,{catalog:c.describe(),wiki,interpret,source:'desktop'}));return;
     }
     if (route === 'plan') {
-      const plan = await c.plan(body, { source: 'desktop', actor: 'desktop-owner' });
+      const plan = await c.plan(body, { source: 'desktop', actor: 'desktop-owner',
+        readHvi: selection=>developmentPort().compare(selection) });
       const stillOwner = () => {
         try { if (verifyOwnerToken(req.headers.authorization, tokenFor())) return true; } catch {}
         return uiSessions.authorized(req, { mutate: true });

@@ -274,25 +274,54 @@
           input.append(opt);
         }
       } else {
-        input = element(a.actionId==='program.validate'&&key==='program'?'textarea':'input');
+        input = element((a.actionId==='program.validate'&&key==='program')||(a.actionId==='versions.compare.pinned'&&key==='selection')?'textarea':'input');
         if(a.actionId==='program.validate'&&key==='program'){
           input.rows=8;input.placeholder='JSON program: id, revision, steps (no policy or effect authorizations)';
           detail.append(element('p','text-control-note','Local Rust validation only. Host fixes the policy to R0, no external destinations or effect candidates. Source references must match current Wiki evidence.'));
+        }else if(a.actionId==='versions.compare.pinned'&&key==='selection'){
+          input.rows=8;input.placeholder='JSON selection: schema, sources [{repo, sha}], targetIndex';
+          detail.append(element('p','text-control-note','Explicit pinned comparison only. Requires a configured source adapter and active repository grant.'));
         }else input.type = 'text';
         input.minLength = spec.min;
         input.maxLength = spec.max;
-        if(a.actionId!=='program.validate'||key!=='program')input.placeholder = key;
+        if(a.actionId!=='program.validate'&&a.actionId!=='versions.compare.pinned')input.placeholder = key;
       }
       inputs[key] = input; label.append(input); detail.append(label);
     }
     if (a.examples?.length) detail.append(element('p', 'text-control-note', 'Try: ' + a.examples[0]));
     detail.append(button(a.executable ? 'Review this action' : 'Inspect availability', () =>
-      plan({ actionId: a.actionId, args: Object.fromEntries(Object.entries(inputs).map(([k, v]) => [k, a.actionId==='program.validate'&&k==='program'?v.value.trim():v.value])) })));
+      plan({ actionId: a.actionId, args: Object.fromEntries(Object.entries(inputs).map(([k, v]) => [k, ['program.validate','versions.compare.pinned'].includes(a.actionId)?v.value.trim():v.value])) })));
     item.append(detail);
     return item;
   }
   function renderCatalog(actions) {
     catalogBox.replaceChildren();
+    const dev=element('details','text-control-action');
+    dev.append(element('summary','','Development sources and version intelligence'));
+    const view=element('div','text-control-action-body');dev.append(view);catalogBox.append(dev);
+    async function refreshDevelopment(){
+      if(!csrfProof)return;
+      view.replaceChildren(element('p','text-control-note','Reading owner-authorized sources…'));
+      try{
+        const data=await api('development/status');if(!csrfProof||!view.isConnected)return;
+        const controls=element('div','text-control-action-body');
+        controls.append(element('pre','text-control-data',JSON.stringify({hq:data.hq,hvi:data.hvi},null,2)));
+        const name=element('input');name.placeholder='Project name';name.maxLength=128;name.setAttribute('aria-label','Project name');
+        const root=element('select');root.setAttribute('aria-label','Approved repository root');
+        for(const r of data.approvedRoots??[]){const o=element('option','',r.path);o.value=r.key;root.append(o);}
+        const run=async(route,body)=>{if(!csrfProof||busy)return;setBusy(true);try{
+          const out=await api('development/'+route,body);say('Development operation result: '+JSON.stringify(out));await refreshDevelopment();
+        }catch(e){say(e.message,'warning');}finally{setBusy(false);}};
+        if(root.options.length){controls.append(name,root,button('Register selected approved root',()=>run('register',{name:name.value.trim(),rootKey:root.value})),button('Refresh existing HQ index (no Git)',()=>run('index',{})));}
+        if(data.hvi?.approvedRepositories?.length){
+          const choices=data.hvi.approvedRepositories.map(repo=>{const box=element('input');box.type='checkbox';const label=element('label','text-control-field');label.append(box,element('span','',repo));controls.append(label);return {repo,box};});
+          controls.append(button('Grant selected repositories for 1 hour',()=>run('hvi-grant',{repoIdentities:choices.filter(x=>x.box.checked).map(x=>x.repo),expiresInMs:3600000})));
+        }
+        if(data.hvi?.grant?.granted)controls.append(button('Revoke repository grant',()=>run('hvi-revoke',{})));
+        controls.append(button('Refresh source status',()=>void refreshDevelopment()));view.replaceChildren(controls);
+      }catch(e){view.replaceChildren(element('p','warning',e.message),button('Retry',()=>void refreshDevelopment()));}
+    }
+    dev.addEventListener('toggle',()=>{if(dev.open)void refreshDevelopment();});
     const groups = new Map();
     for (const a of actions) {
       const name = a.category || 'other';
