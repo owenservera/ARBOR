@@ -205,10 +205,10 @@ function renderFocusPanel() {
         : chatContext?.reason || 'Native context unavailable or not configured.';
   if(available){
     for(const item of chatContext.items.slice(0,8)){
-      rust.append(focusPreview(item.title,'Depth '+item.depth+
-        ' · revision '+item.revision+' · '+item.sourceCount+' provenance sources'));
+      rust.append(focusPreview(item.title,(item.summary ? item.summary+' · ' : '')+
+        'Revision '+(item.sourceRevision ?? item.revision)+' · '+item.sourceCount+' provenance sources'));
     }
-    if(!chatContext.items.length)rust.append(focusPreview('No graph items selected','This is not proof that personal context exists.'));
+    if(!chatContext.items.length)rust.append(focusPreview('No committed Wiki observations','No source-backed items in this bounded native context.'));
     if(chatContext.budgetExhausted)rust.append(focusPreview('Context budget reached','Some nodes were not included.'));
   }
   const activity=$('chat-focus-activity');activity.replaceChildren();

@@ -129,7 +129,7 @@ export function validateProductEdit(payload, wiki) {
 }
 
 // Source-identified observations only: user statements are not verified Wiki facts.
-function projectWikiChanges(records) {
+function projectWikiChanges(records, { currentOnly = false } = {}) {
   const latestBySection = new Map();
   const identified = [];
   for (const e of records) {
@@ -138,7 +138,9 @@ function projectWikiChanges(records) {
     latestBySection.set(key, e.expectedRevision + 1);
     if (typeof e.entryId === 'string' && Number.isSafeInteger(e.sequence)) identified.push(e);
   }
-  const items = identified.slice(-24).map(e => ({
+  const selected = currentOnly ? identified.filter(e =>
+    latestBySection.get(JSON.stringify([e.edit.page, e.edit.section])) === e.expectedRevision + 1) : identified;
+  const items = selected.slice(-24).map(e => ({
     source: 'host-product-journal', entryId: e.entryId, sequence: e.sequence,
     receivedAt: e.receivedAt, kind: 'committed-wiki-edit',
     contentDigest: createHash('sha256').update(e.edit.content, 'utf8').digest('hex'),
@@ -147,7 +149,7 @@ function projectWikiChanges(records) {
       e.expectedRevision + 1 ? 'current-section-revision' : 'superseded-section-revision',
     relationship: { kind: 'mutated-section', page: e.edit.page, section: e.edit.section }
   }));
-  return { total: identified.length, omitted: identified.length - items.length, items };
+  return { total: selected.length, omitted: selected.length - items.length, items };
 }
 
 // A read model only: user statements and committed Wiki effects remain separate.
@@ -259,6 +261,22 @@ export function createProductJournal({ dataRoot, seedState, seedWiki }) {
     requireShape(!current.tornTail, 'Wiki context unavailable: torn journal tail', 503);
     return projectWikiContext(current.records, current.wikiRevision);
   }
+  // Owner-local native input. Use the same validated committed snapshot and
+  // D4 identities, never the demo seed, unverified chat or client-supplied facts.
+  async function readNativeKnowledge() {
+    const current = await snapshot();
+    requireShape(!current.tornTail, 'Native context unavailable: torn journal tail', 503);
+    const context = projectWikiContext(current.records, current.wikiRevision);
+    const changes = projectWikiChanges(current.records, { currentOnly: true });
+    const records = new Map(current.records.filter(e => e.entryId).map(e => [e.entryId, e]));
+    return { context, changes: { ...changes, items: changes.items.map(change => {
+      const record = records.get(change.entryId);
+      requireShape(record?.kind === 'wiki-edit' &&
+        createHash('sha256').update(record.edit.content, 'utf8').digest('hex') === change.contentDigest,
+        'Native context source mismatch', 503);
+      return { ...change, content: record.edit.content };
+    }) } };
+  }
   async function readPhoneWiki() {
     const current = await snapshot();
     requireShape(!current.tornTail, 'Wiki context unavailable: torn journal tail', 503);
@@ -308,5 +326,5 @@ export function createProductJournal({ dataRoot, seedState, seedWiki }) {
     return pending;
   }
   async function rawJournal() { return (await snapshot()).committed; }
-  return { journalPath, readRecords, readProjection, readWikiContext, readPhoneWiki, append, rawJournal };
+  return { journalPath, readRecords, readProjection, readWikiContext, readNativeKnowledge, readPhoneWiki, append, rawJournal };
 }

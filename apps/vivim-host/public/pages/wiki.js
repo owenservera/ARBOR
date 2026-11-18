@@ -153,6 +153,24 @@ function renderContext(context) {
     if (effects.omitted) root.appendChild(element('p', 'empty', effects.omitted + ' additional applied effects omitted.'));
   }
   root.appendChild(element('p', 'meta', 'Project and task relationships or native graph context are not asserted by this projection.'));
+  root.appendChild(element('h3', '', 'Native HQKG · committed knowledge'));
+  const native = context.nativeContext;
+  if (native?.schema !== 'vivim.hqkg-chat-context/1' || native.state !== 'source-backed' ||
+      !Array.isArray(native.items) || native.items.length > 8) {
+    root.appendChild(element('p','empty','Native context unavailable: '+present(native?.reason,'not configured')));
+  } else {
+    root.appendChild(element('p','queue-summary','HQKG epoch '+native.epoch+
+      ' · '+native.tokensUsed+' / '+native.budgetTokens+' estimated tokens · read only'));
+    if (!native.items.length) root.appendChild(element('p','empty','No committed native observations in this bounded view.'));
+    for (const item of native.items) {
+      const card=element('article','section');
+      card.appendChild(element('h4','',present(item.title)));
+      if (item.summary) card.appendChild(element('p','body',item.summary));
+      card.appendChild(element('div','meta',(item.kind==='effect'?'Historical applied receipt':'Committed owner Wiki content')+
+        ' · source revision '+(item.sourceRevision ?? 'unknown')));
+      root.appendChild(card);
+    }
+  }
   return root;
 }
 function renderRoadmap(roadmap) {

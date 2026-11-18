@@ -2,6 +2,11 @@
 // No local Rust binary or existing journal => report unavailable; never
 // substitute synthetic context, accept client-selected graph IDs or spawn a shell.
 import path from 'node:path';
+import { lstatSync } from 'node:fs';
+import { mkdir, lstat } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
+import { createHash } from 'node:crypto';
+import { projectAppliedControlEffects } from './product-journal.mjs';
 import {execFile as execFileCb} from 'node:child_process';
 import {promisify} from 'node:util';
 const execFile=promisify(execFileCb);
@@ -13,8 +18,10 @@ const unavailable=reason=>({
   reason,items:[]
 });
 export function createRustChatContext({
-  env=process.env,execute=execFile
+  env=process.env,execute=execFile,dataRoot=null,productJournal=null,control=null,
+  executePersonal=runPersonal,repoRoot=DEFAULT_ROOT,isFile=regularFile
 }={}){
+  if (productJournal) return managedReader({env,execute,dataRoot,productJournal,control,executePersonal,repoRoot,isFile});
   const binary=env.VIVIM_CHAT_CORE_BIN;
   const journal=env.VIVIM_CHAT_CORE_JOURNAL;
   const seed=env.VIVIM_CHAT_CORE_SEED;
@@ -64,5 +71,197 @@ export function createRustChatContext({
       budgetExhausted:data.budgetExhausted,totalRetrieved:data.totalRetrieved,
       items,note:'Context is advisory. Host owns plans, approvals, execution and receipts.'
     };
+  };
+}
+
+
+
+// Existing packaged runtime root and workspace Cargo outputs. No PATH probing,
+// cargo invocation at runtime, browser-selected executable, or environment
+// variables required for a normal Host installation/development build.
+const DEFAULT_ROOT = fileURLToPath(new URL('../../../', import.meta.url));
+const PERSONAL_SCHEMA = 'vivim.hqkg-personal/1';
+const digest = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
+const SHA = /^[a-f0-9]{64}$/;
+const safe = (value, max) => String(value ?? '').replace(/[\x00-\x1f\x7f-\x9f]/g, ' ')
+  .replace(/\s+/gu, ' ').trim().slice(0, max).replace(/[\uD800-\uDBFF]$/, '');
+const safeUInt = n => Number.isSafeInteger(n) && n >= 0;
+function regularFile(file) {
+  try { const st = lstatSync(file); return st.isFile() && !st.isSymbolicLink(); }
+  catch { return false; }
+}
+
+export function resolveRustContextRuntime({env=process.env, repoRoot=DEFAULT_ROOT, isFile=regularFile,
+  platform=process.platform}={}) {
+  const ext = platform === 'win32' ? '.exe' : '';
+  const dirs = [path.join(repoRoot,'native','bin'), path.join(repoRoot,'target','release'),
+    path.join(repoRoot,'target','debug'), path.join(repoRoot,'native','hqkg','target','release'),
+    path.join(repoRoot,'native','hqkg','target','debug')];
+  const choose = (name, override) => {
+    if (override !== undefined) return typeof override === 'string' && path.isAbsolute(override) &&
+      isFile(override) ? override : null;
+    return dirs.map(dir => path.resolve(dir,name+ext)).find(isFile) ?? null;
+  };
+  return {personal:choose('hqkg-personal',env.VIVIM_PERSONAL_CORE_BIN),
+    reader:choose('hqkg-chat-context',env.VIVIM_CHAT_CORE_BIN)};
+}
+
+// Source records, not authority. Current Wiki content is bounded and labelled
+// as owner-authored content; receipts are historical applied effects only.
+// An unverified chat observation is intentionally never ingested.
+export function buildNativeKnowledge(snapshot, effects) {
+  if (!snapshot || !Array.isArray(snapshot.changes?.items) || snapshot.changes.items.length > 24 ||
+      effects?.state !== 'source-backed' || !Array.isArray(effects.items) || effects.items.length > 24)
+    throw Error('NATIVE_SOURCE_UNAVAILABLE');
+  const rows = [];
+  for (const e of snapshot.changes.items) {
+    const relation = e.relationship;
+    if (e.kind !== 'committed-wiki-edit' || e.source !== 'host-product-journal' ||
+        e.status !== 'current-section-revision' || relation?.kind !== 'mutated-section' ||
+        typeof e.entryId !== 'string' || !/^[0-9a-f-]{36}$/.test(e.entryId) ||
+        typeof relation.page !== 'string' || typeof relation.section !== 'string' ||
+        !safeUInt(e.wikiRevision) || e.wikiRevision === 0 ||
+        typeof e.content !== 'string' || !SHA.test(e.contentDigest) ||
+        createHash('sha256').update(e.content,'utf8').digest('hex') !== e.contentDigest)
+      throw Error('NATIVE_WIKI_SOURCE_INVALID');
+    rows.push({id:'vivim-context-w-'+digest([relation.page,relation.section]),kind:'wiki',
+      sourceRef:e.entryId,digest:e.contentDigest,revision:e.wikiRevision,
+      sourceRevision:e.wikiRevision,order:Date.parse(e.receivedAt),
+      title:safe('Wiki: '+relation.page+'/'+relation.section,100),summary:safe(e.content,120)});
+  }
+  for (const e of effects.items) {
+    if (e.source !== 'host-control-receipt' || e.kind !== 'executed-effect' ||
+        e.status !== 'historical-applied-receipt' ||
+        typeof e.planId !== 'string' || !/^ctl-[a-f0-9]{16}$/.test(e.planId) ||
+        typeof e.actionId !== 'string' || !/^[a-z0-9._-]{1,128}$/.test(e.actionId) ||
+        !SHA.test(e.planDigest) || !(e.sourceRevision === null || safeUInt(e.sourceRevision)))
+      throw Error('NATIVE_EFFECT_SOURCE_INVALID');
+    // The immutable receipt itself has version 1; its target state revision,
+    // when supplied by D4, remains separately and exactly identified.
+    const linked = e.wikiLink ? ' · Wiki revision '+e.wikiLink.wikiRevision : '';
+    rows.push({id:'vivim-context-e-'+digest(e.planId),kind:'effect',
+      sourceRef:e.planId,digest:e.planDigest,revision:Math.max(1,e.sourceRevision ?? 1),
+      sourceRevision:e.sourceRevision,order:Date.parse(e.receivedAt),
+      title:safe('Applied: '+e.actionId,100),summary:safe('Historical Host receipt'+linked,120)});
+  }
+  if (rows.some(r => !safeUInt(r.order) || r.order === 0) ||
+      new Set(rows.map(r=>r.id)).size !== rows.length ||
+      new Set(rows.map(r=>r.sourceRef)).size !== rows.length) throw Error('NATIVE_SOURCE_IDENTITY_INVALID');
+  return rows.sort((a,b)=>a.id<b.id?-1:a.id>b.id?1:0);
+}
+
+function runPersonal(binary, journal, packet) {
+  return new Promise((resolve,reject)=>{
+    const child=execFileCb(binary,['--journal',journal],{
+      encoding:'utf8',shell:false,windowsHide:true,timeout:8000,maxBuffer:MAX_OUTPUT
+    },(error,stdout)=>{
+      if (error) {
+        let reason;
+        try { reason=JSON.parse(stdout)?.error; } catch {}
+        const code=typeof reason==='string' && reason.startsWith('RECOVERY_REQUIRED')
+          ? 'RUST_CORE_RECOVERY_REQUIRED' : typeof reason==='string' &&
+          /^(CAPACITY_HELD|COMPACTION_REQUIRED)/.test(reason) ? 'RUST_CORE_CAPACITY_HELD' : 'RUST_CORE_INGEST_FAILED';
+        reject(Object.assign(Error(code),{code})); return;
+      }
+      resolve({stdout});
+    });
+    child.stdin?.on('error',()=>{}); // callback owns process failure
+    child.stdin?.end(JSON.stringify(packet));
+  });
+}
+
+async function nativePacket(result) {
+  if (typeof result?.stdout !== 'string' || Buffer.byteLength(result.stdout,'utf8') > MAX_OUTPUT)
+    throw Error('RUST_CORE_OUTPUT_INVALID');
+  try { return JSON.parse(result.stdout); } catch { throw Error('RUST_CORE_OUTPUT_INVALID'); }
+}
+
+function managedReader({env,execute,dataRoot,productJournal,control,executePersonal,repoRoot,isFile}) {
+  const root=typeof dataRoot==='string' && path.isAbsolute(dataRoot) ? path.resolve(dataRoot) : null;
+  // One Host-owned native personal journal. An existing explicit journal is
+  // supported, but native namespace validation refuses an unrelated graph.
+  const journal=env.VIVIM_CHAT_CORE_JOURNAL ?? (root && path.join(root,'hqkg','personal.hqj'));
+  const scope=root && digest(['vivim-host-personal/1',root]);
+  let queue=Promise.resolve();
+  const inflight=new Map();
+  async function snapshot() {
+    const current=await productJournal.readNativeKnowledge();
+    const effects=projectAppliedControlEffects(control(),current.context.wikiChanges);
+    return buildNativeKnowledge(current,effects);
+  }
+  async function read(focus,view) {
+    if (!root || typeof journal!=='string' || !path.isAbsolute(journal))
+      return unavailable('RUST_CORE_NOT_CONFIGURED');
+    const runtime=resolveRustContextRuntime({env,repoRoot,isFile});
+    if (!runtime.personal || !runtime.reader) return unavailable('RUST_CORE_NOT_CONFIGURED');
+    try {
+      const dir=path.dirname(journal);
+      await mkdir(dir,{recursive:true,mode:0o700});
+      const st=await lstat(dir);
+      if (!st.isDirectory() || st.isSymbolicLink()) return unavailable('RUST_CORE_UNSAFE_JOURNAL');
+      // Never return an old graph when the authoritative source cannot be read.
+      // Recheck the exact source projection after native ingestion/retrieval.
+      for (let attempt=0;attempt<2;attempt++) {
+        const rows=await snapshot(), fingerprint=digest(rows);
+        const packet=await nativePacket(await executePersonal(runtime.personal,journal,{
+          schema:PERSONAL_SCHEMA,scope,op:'sync-context',nodes:rows
+        }));
+        if (packet?.schema!==PERSONAL_SCHEMA || packet.scope!==scope ||
+            packet.op!=='sync-context' || !safeUInt(packet.epoch) ||
+            !safeUInt(packet.bytes) || packet.synced!==rows.length || typeof packet.changed!=='boolean')
+          return unavailable('RUST_CORE_CONTRACT_INVALID');
+        const result=await nativePacket(await execute(runtime.reader,
+          [journal,'--managed',scope,String(packet.epoch),view],
+          {encoding:'utf8',shell:false,windowsHide:true,timeout:2500,maxBuffer:MAX_OUTPUT}));
+        if (result?.schema!==CHAT_CONTEXT_SCHEMA || result.core!=='hqkg' ||
+            result.state!=='source-backed' || result.authority!=='read-only' ||
+            result.seed!=='managed:'+view || result.epoch!==packet.epoch ||
+            result.staleCount!==0 || result.budgetTokens!==320 || !safeUInt(result.tokensUsed) ||
+            result.tokensUsed>320 || !safeUInt(result.totalRetrieved) ||
+            result.totalRetrieved!==rows.filter(row=>view==='owner'||row.kind==='wiki').length ||
+            typeof result.budgetExhausted!=='boolean' || !Array.isArray(result.items) ||
+            result.items.length>8 || result.items.length>result.totalRetrieved)
+          return unavailable('RUST_CORE_CONTRACT_INVALID');
+        const byRef=new Map(rows.map(row=>[row.sourceRef,row]));
+        const seen=new Set(), items=[];
+        let sum=0;
+        for (const item of result.items) {
+          const expected=byRef.get(item?.sourceRef);
+          if (!expected || seen.has(item.sourceRef) ||
+              (view==='wiki' && expected.kind!=='wiki') || item.kind!==expected.kind ||
+              item.sourceDigest!==expected.digest || item.sourceRevision!==expected.sourceRevision ||
+              item.title!==expected.title || item.summary!==expected.summary ||
+              item.revision!==expected.revision || item.depth!==0 || item.sourceCount!==1 ||
+              !safeUInt(item.estimatedTokens) || item.estimatedTokens>320)
+            return unavailable('RUST_CORE_CONTRACT_INVALID');
+          seen.add(item.sourceRef); sum+=item.estimatedTokens;
+          items.push({title:item.title,summary:item.summary,kind:item.kind,
+            depth:item.depth,revision:item.revision,sourceRevision:item.sourceRevision,
+            sourceCount:item.sourceCount,estimatedTokens:item.estimatedTokens});
+        }
+        if (sum!==result.tokensUsed) return unavailable('RUST_CORE_CONTRACT_INVALID');
+        if (digest(await snapshot())!==fingerprint) continue;
+        return {schema:CHAT_CONTEXT_SCHEMA,state:'source-backed',core:'hqkg',
+          authority:'read-only',focus,epoch:result.epoch,tokensUsed:result.tokensUsed,
+          budgetTokens:320,staleCount:0,budgetExhausted:result.budgetExhausted,
+          totalRetrieved:result.totalRetrieved,items,
+          note:'Committed Wiki content and historical effects are advisory; Host retains effect authority.'};
+      }
+      return unavailable('RUST_CORE_SOURCE_CHANGED');
+    } catch (error) {
+      return unavailable(['RUST_CORE_RECOVERY_REQUIRED','RUST_CORE_CAPACITY_HELD',
+        'RUST_CORE_INGEST_FAILED'].includes(error?.code) ? error.code : 'RUST_CORE_READ_FAILED');
+    }
+  }
+  // Serialize writer/read cycles for this Host; native save_checked adds a
+  // file/epoch CAS under the engine's existing exclusive writer lock.
+  return function readManagedContext(focus='talk', {owner=false}={}) {
+    if (!FOCUS.has(focus)) return Promise.resolve(unavailable('FOCUS_INVALID'));
+    const view=owner?'owner':'wiki', key=view+':'+focus;
+    if (inflight.has(key)) return inflight.get(key);
+    const pending=queue.then(()=>read(focus,view));
+    inflight.set(key,pending);
+    queue=pending.catch(()=>{}).finally(()=>inflight.delete(key));
+    return pending;
   };
 }

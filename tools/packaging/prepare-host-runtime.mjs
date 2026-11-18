@@ -16,7 +16,7 @@ const refuse=s=>{throw new Error('PACKAGING_REFUSED: '+s);};
 function checkInputs(){
  for(const p of [...topFiles,'src-tauri/tauri.conf.json',...dirs])if(!existsSync(path.join(root,p)))refuse('missing '+p);
  const c=JSON.parse(readFileSync(path.join(root,'src-tauri/tauri.conf.json'),'utf8'));
- for(const p of Object.keys(c.bundle?.resources||{}))if(/\.apk$|vivim-release\.manifest/.test(p))refuse('PWA-first still mandates APK: '+p);
+ for(const p of Object.keys(c.bundle?.resources||{}))if(/\.apk$/i.test(p))refuse('PWA-first still mandates APK: '+p);
  if(!Object.keys(c.bundle?.resources||{}).includes('resources/runtime/'))refuse('Missing required resources/runtime/ in Tauri config');
 }
 const forbidden=name=>/(^\.env(?:\.|$)|owner-token|\.sqlite(?:3)?(?:-|$|\.)|\.db$|\.pem$|\.p12$|\.key$|\.log$|\.tap$|\.zip$|\.apk$|\.exe$)/i.test(name);
@@ -59,6 +59,14 @@ if(mode==='--check'){
   for(const p of dirs){const to=path.join(stage,p);mkdirSync(path.dirname(to),{recursive:true});cpSync(path.join(root,p),to,{recursive:true,filter:safeFilter});}
   for(const p of topFiles){const to=path.join(stage,p);mkdirSync(path.dirname(to),{recursive:true});copyFileSync(path.join(root,p),to);}
   copyFileSync(binary,path.join(stage,'node.exe'));
+  // Build and stage the existing Rust CLIs once at packaging time. The Host
+  // discovers these exact bundled executables without Cargo or environment at runtime.
+  run('cargo',['build','--release','-p','hq-knowledge-graph','--features','importer',
+    '--bin','hqkg-personal','--bin','hqkg-chat-context','--target-dir',path.join(root,'target')],root);
+  const nativeDir=path.join(stage,'native','bin');
+  mkdirSync(nativeDir,{recursive:true});
+  for(const name of ['hqkg-personal.exe','hqkg-chat-context.exe'])
+    copyFileSync(path.join(root,'target','release',name),path.join(nativeDir,name));
   run('bun',['install','--production','--frozen-lockfile','--ignore-scripts'],stage);
   run(path.join(stage,'node.exe'),['--check',path.join(stage,'apps/vivim-host/server.mjs')],stage);
   if(existsSync(runtime))renameSync(runtime,previous);

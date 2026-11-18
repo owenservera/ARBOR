@@ -1027,6 +1027,14 @@ impl Journal {
     /// Single-writer append. A lock prevents concurrent writers. A stale crash lock
     /// requires operator inspection; never delete it automatically.
     pub fn save(&self, g: &Graph) -> Result<()> {
+        self.save_snapshot(g, None)
+    }
+    /// Strict snapshot CAS for derived source synchronization. Unlike legacy
+    /// save(), a checked writer never truncates a torn or changed journal.
+    pub fn save_checked(&self, g: &Graph, expected_bytes: u64, expected_epoch: u64) -> Result<()> {
+        self.save_snapshot(g, Some((expected_bytes, expected_epoch)))
+    }
+    fn save_snapshot(&self, g: &Graph, expected: Option<(u64, u64)>) -> Result<()> {
         if let Some(parent) = self.path.parent().filter(|p| !p.as_os_str().is_empty()) {
             fs::create_dir_all(parent)?;
         }
@@ -1047,6 +1055,17 @@ impl Journal {
             file: Some(_file),
         };
         let (previous, end, exists) = self.scan()?;
+        if let Some((bytes, epoch)) = expected {
+            let total = match fs::symlink_metadata(&self.path) {
+                Ok(m) if m.is_file() && !m.file_type().is_symlink() => m.len(),
+                Ok(_) => return Err(Error::Invalid("unsafe checked journal".into())),
+                Err(e) if e.kind() == io::ErrorKind::NotFound => 0,
+                Err(e) => return Err(Error::Io(e)),
+            };
+            if total != bytes || total != end as u64 || previous.epoch() != epoch {
+                return Err(Error::Conflict("checked journal head changed or torn".into()));
+            }
+        }
         // Legacy snapshot writers may recover their old HQJ1 tails, but must
         // not discard an interrupted web delta without explicit operator repair.
         if self.path.exists() && fs::metadata(&self.path)?.len() > end as u64 {

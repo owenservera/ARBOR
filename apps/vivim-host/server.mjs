@@ -257,6 +257,7 @@ export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path
   let control = null;
   const uiSessions = createControlBrowserSessions();
   const controlFor = () => (control ??= createControlDispatcher({ dataRoot, runtime: runtimeFor(), devices: enrollment, productJournal }));
+  const nativeContext = createRustChatContext({dataRoot:path.resolve(dataRoot),productJournal,control:controlFor});
   // APK07 release registry, shared with the Direct phone handler so a release registered on
   // the PC is immediately downloadable by the phone (same dataRoot/apk-artifacts).
   const apk = createApkRegistry({ dataRoot });
@@ -300,7 +301,7 @@ export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path
     ...directPhone, dataRoot, worldId: runtimeFor().worldId,
     projection: () => runtimeFor().projection(),
     webMemory: opts => runtimeFor().webMemory(opts),
-    chatContext: createRustChatContext(),
+    chatContext: nativeContext,
     providerSnapshot: () => onboardingService.providerSnapshot(),
     providerRefresh: async () => {
       // Only explicit phone request; existing Studio owner owns the browser.
@@ -349,7 +350,7 @@ export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path
       return;
     }
     if (pathname.startsWith('/api/host/control/')) {
-      await handleControl(req, res, pathname, host, controlFor, tokenFor, uiSessions, enrollment, runtimeFor, productJournal);
+      await handleControl(req, res, pathname, host, controlFor, tokenFor, uiSessions, enrollment, runtimeFor, productJournal, nativeContext);
       return;
     }
     const workerMatch = pathname.match(/^\/api\/host\/worker\/([^\/]+)\/(status|recover)$/);
@@ -836,7 +837,7 @@ function ownerAuthorized(req, res, tokenFor) {
 // UTC03 desktop surface. Reads: loopback + owner token. Writes additionally require the exact
 // same Origin and an explicit header, like bootstrap mutations. Execution happens only in the
 // dispatcher, bound to a previously returned plan digest.
-async function handleControl(req, res, pathname, host, controlFor, tokenFor, uiSessions, enrollment, runtimeFor, productJournal) {
+async function handleControl(req, res, pathname, host, controlFor, tokenFor, uiSessions, enrollment, runtimeFor, productJournal, nativeContext) {
   const route = pathname.slice('/api/host/control/'.length);
   const sameOrigin = String(req.headers.origin || '').toLowerCase() === 'http://' + host;
   const isMutation = ['plan', 'interpret', 'execute', 'ui-logout', 'devices/approve', 'devices/revoke'].includes(route);
@@ -888,7 +889,12 @@ async function handleControl(req, res, pathname, host, controlFor, tokenFor, uiS
       let applicationEffects;
       try { applicationEffects = projectAppliedControlEffects(controlFor(), context.wikiChanges); }
       catch { applicationEffects = { state: 'unavailable', code: 'CONTROL_RECEIPTS_UNAVAILABLE', items: [] }; }
-      sendJson(res, 200, { ...context, applicationEffects });
+      const native = await nativeContext('wiki',{owner:true});
+      // Recheck an authorized browser session after asynchronous native work.
+      if (!verifyOwnerToken(req.headers.authorization, owner) && !uiSessions.authorized(req,{mutate:false})) {
+        sendJson(res,401,{code:'OWNER_AUTH'}); return;
+      }
+      sendJson(res, 200, { ...context, applicationEffects, nativeContext:native });
     } catch { sendJson(res, 503, { schema: 'vivim.wiki-context/1', state: 'unavailable', code: 'WIKI_CONTEXT_UNAVAILABLE' }); }
     return;
   }

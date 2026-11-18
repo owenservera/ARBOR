@@ -327,6 +327,8 @@ export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'wo
         const result=chatContext
           ? await chatContext(query[0][1])
           : {schema:'vivim.hqkg-chat-context/1',state:'unavailable',reason:'RUST_CORE_NOT_CONFIGURED',items:[]};
+        // A grant can be revoked while the native subprocess is running.
+        authorizeDevice(req,'control:read');
         res.setHeader('cache-control','private, no-store');
         json(res,200,result);
       }catch(error){

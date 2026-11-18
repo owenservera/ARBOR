@@ -1,11 +1,11 @@
 //! Host-invoked bounded adapter over the existing scoped graph and Journal.
-use hqkg::{Error, Journal, NodeKind};
+use hqkg::{Error, Graph, Journal, NodeKind};
 use hqkg::graph_change_set::{ApplyLedger, GraphChangeSet};
 use hqkg::scoped_graph::{self, Provenance};
 use hqkg::typed_dag::{GraphDomain, Namespace, RevisionToken};
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
-use std::{fs, io::{self, Read}, path::PathBuf};
+use std::{collections::BTreeSet, fs, io::{self, Read}, path::PathBuf};
 const MIB: u64 = 1024 * 1024;
 fn text<'a>(v: &'a Value, key: &str) -> Result<&'a str, String> { v[key].as_str().ok_or_else(|| format!("missing {key}")) }
 fn hex(s: &str) -> bool { s.len()==64 && s.bytes().all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b)) }
@@ -13,6 +13,100 @@ fn err(e: impl std::fmt::Display) -> String { e.to_string() }
 // Engine Corrupt results mean the managed journal needs explicit recovery; the Host
 // classifies on the RECOVERY_REQUIRED prefix (never auto-repairs or steals locks).
 fn quarantine(e: Error) -> String { match e { Error::Corrupt(m) => format!("RECOVERY_REQUIRED {m}"), other => err(other) } }
+// Reconcile only reserved Host context nodes in the existing personal graph.
+// No receipt marker per observation, duplicated source journal or mutation
+// authority: identical source observations are a no-op, removed observations
+// leave the active graph, and nodes from other personal capabilities survive.
+fn sync_context(v: &Value, ns: &Namespace, journal: &Journal, g: &mut Graph,
+    before: u64, scope: &str) -> Result<Value, String> {
+    let nodes = v["nodes"].as_array().ok_or("context nodes required")?;
+    if nodes.len() > 48 { return Err("POLICY_LIMIT context nodes".into()); }
+    let prefix = scoped_graph::prefix(ns).map_err(err)?;
+    let managed_prefix = format!("{prefix}vivim-context-");
+    let mut wanted = BTreeSet::new();
+    let mut changes = GraphChangeSet::new(format!("{prefix}sync-host-context"), "host-context");
+    for n in nodes {
+        let kind = text(n, "kind")?;
+        let id = text(n, "id")?;
+        let valid_id = match kind {
+            "wiki" => id.strip_prefix("vivim-context-w-"),
+            "effect" => id.strip_prefix("vivim-context-e-"),
+            _ => None,
+        };
+        if !valid_id.map_or(false, hex) { return Err("invalid managed context identity".into()); }
+        let source_ref = text(n, "sourceRef")?;
+        if source_ref.is_empty() || source_ref.len() > 128 ||
+            !source_ref.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'-' || b == b'.') {
+            return Err("invalid context source identity".into());
+        }
+        let digest = text(n, "digest")?;
+        let title = text(n, "title")?;
+        let summary = text(n, "summary")?;
+        let order = n["order"].as_u64().ok_or("invalid context order")?;
+        let revision = n["revision"].as_u64().ok_or("invalid context revision")?;
+        if !hex(digest) || revision == 0 || title.is_empty() || title.chars().count() > 100 ||
+            summary.chars().count() > 120 || title.chars().any(char::is_control) ||
+            summary.chars().any(char::is_control) || order == 0 {
+            return Err("invalid bounded context observation".into());
+        }
+        let source_revision = match n.get("sourceRevision") {
+            Some(Value::Null) if kind == "effect" => String::new(),
+            Some(x) if x.as_u64().is_some() => x.as_u64().unwrap().to_string(),
+            _ => return Err("invalid source revision".into()),
+        };
+        if kind == "wiki" && source_revision != revision.to_string() {
+            return Err("Wiki source revision mismatch".into());
+        }
+        let source = if kind == "wiki" { "host-product-journal" } else { "host-control-receipt" };
+        let provenance = Provenance { source: format!("{source}:{source_ref}"),
+            revision, digest: digest.into() };
+        let mut node = scoped_graph::node(ns, id, NodeKind::Concept, title, &provenance).map_err(err)?;
+        for (key, value) in [
+            ("vivim.context.kind", kind.to_string()),
+            ("vivim.context.sourceRef", source_ref.to_string()),
+            ("vivim.context.sourceRevision", source_revision),
+            ("vivim.context.order", order.to_string()),
+            ("vivim.context.summary", summary.to_string()),
+        ] { node.properties.insert(key.into(), value); }
+        if !wanted.insert(node.id.clone()) { return Err("duplicate context identity".into()); }
+        if let Some(old) = g.node(&node.id) {
+            if old.properties.get("vivim.context.kind").map(String::as_str) != Some(kind) {
+                return Err("managed context identity conflict".into());
+            }
+            if old.title == node.title && old.properties == node.properties &&
+                old.sources == node.sources { continue; }
+        }
+        changes = changes.put_node(node);
+    }
+    for old in g.nodes() {
+        if old.id.starts_with(&managed_prefix) &&
+            matches!(old.properties.get("vivim.context.kind").map(String::as_str), Some("wiki" | "effect")) &&
+            !wanted.contains(&old.id) {
+            changes = changes.remove_node(&old.id, "Host source no longer in current bounded projection", 0);
+        }
+    }
+    let epoch = g.epoch();
+    let changed = !changes.ops.is_empty();
+    if changed {
+        scoped_graph::apply_scoped(g, ns, &RevisionToken { namespace: ns.clone(), graph_epoch: epoch },
+            &changes, &mut ApplyLedger::new()).map_err(err)?;
+    }
+    if changed || before == 0 {
+        let bytes = hqkg::serialize(g).map_err(err)?;
+        if bytes.len() as u64 > 16*MIB || g.node_count() > 20000 || g.edge_count() > 50000 {
+            return Err("CAPACITY_HELD graph".into());
+        }
+        if before + 20 + bytes.len() as u64 > 48*MIB { return Err("COMPACTION_REQUIRED".into()); }
+        journal.save_checked(g, before, epoch).map_err(quarantine)?;
+    }
+    let status = journal.status().map_err(quarantine)?;
+    if status.trailing_bytes != 0 || status.epoch != g.epoch() {
+        return Err("stale or torn synchronized graph".into());
+    }
+    Ok(json!({"schema":"vivim.hqkg-personal/1","scope":scope,"op":"sync-context",
+        "epoch":status.epoch,"bytes":status.total_bytes,"synced":wanted.len(),"changed":changed}))
+}
+
 fn run() -> Result<Value, String> {
     let mut args=std::env::args().skip(1);
     if args.next().as_deref()!=Some("--journal") { return Err("Host --journal argument required".into()); }
@@ -35,6 +129,12 @@ fn run() -> Result<Value, String> {
     if g.nodes().any(|n| !n.id.starts_with(&prefix) || n.properties.get("hqkg.namespace")!=Some(&ns.label())) || g.edges().any(|e| !e.id.starts_with(&prefix)) {return Err("namespace conflict".into());}
     g.check_indexes().map_err(err)?;
     let op=text(&v,"op")?;
+    if op == "sync-context" {
+        if status.epoch != g.epoch() || status.total_bytes != before {
+            return Err("stale synchronized graph head".into());
+        }
+        return sync_context(&v, &ns, &journal, &mut g, before, scope);
+    }
     // Operation ID is a caller-defined bounded identity (engine local-id rules), not
     // necessarily hex; the payload digest remains a strict sha256 requirement.
     let valid_local=|id:&str| !id.is_empty() && id.len()<=120 && !id.chars().any(char::is_control);
