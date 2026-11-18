@@ -1,6 +1,7 @@
 import {searchCapabilities} from './launcher.mjs';
 import {listUiComponents,UI_TAXONOMY_COUNTS} from '../vec/ui-taxonomy/registry.mjs';
 import {THEME_BINDINGS} from '../build-composer.mjs';
+import {COMPONENT_PRESENTATION_BINDINGS} from '../generative-ui/catalog.mjs';
 // The same reviewed engine registry used by Build. Missing relay assets are explicit unavailable.
 const engineRegistry=()=>import(typeof process!=='undefined'&&process.versions?.node
   ? '../../../packages/vec-ui-engines/src/registry.mjs' : '../vec-engines/registry.mjs');
@@ -72,6 +73,23 @@ export function mountCapabilityLauncher({host,context,onActivate,onInspect=()=>f
             const current=liveRows(context(),'').find(x=>x.instanceId===row.instanceId&&x.surfaceId===row.surfaceId&&x.revision===row.revision);
             if(!current||!onInspect(current))return;closeDialog();
           });list.append(button);
+          if(snapshot.visualDraftAllowed&&row.scope!=='shell'&&row.configurableProperties?.length){
+            const details=make('details','launcher-row');details.append(make('summary','', 'Configure '+row.instanceId));
+            const property=make('select','launcher-search');property.setAttribute('aria-label','Component property');
+            for(const key of row.configurableProperties){const option=make('option','',key);option.value=key;property.append(option);}
+            const value=make('input','launcher-search');value.setAttribute('aria-label','Component value');
+            function configureValue(){const b=COMPONENT_PRESENTATION_BINDINGS[property.value];if(!b)return;
+              value.type=b.type==='color'?'color':'number';value.value=String(row.settings?.[b.field]??(b.type==='color'?'#243146':b.min));
+              if(b.type==='length'){value.min=String(b.min);value.max=String(b.max);value.step='1';}else{value.removeAttribute('min');value.removeAttribute('max');value.removeAttribute('step');}}
+            property.addEventListener('change',configureValue);configureValue();
+            const isCurrent=()=>{const live=context();return live.visualDraftAllowed&&liveRows(live,'').some(x=>x.instanceId===row.instanceId&&x.surfaceId===row.surfaceId&&x.revision===row.revision);};
+            const draft=make('button','btn sm','Draft component change');draft.type='button';draft.addEventListener('click',()=>{
+              if(!isCurrent()||!value.checkValidity())return;const b=COMPONENT_PRESENTATION_BINDINGS[property.value];if(!b)return;
+              if(onDraft('set component '+row.instanceId+' at revision '+row.revision+' '+property.value+' to '+value.value+(b.type==='length'?'px':'')))closeDialog();});
+            details.append(property,value,draft);
+            if(row.configurableProperties.some(key=>Object.hasOwn(row.settings??{},COMPONENT_PRESENTATION_BINDINGS[key].field))){const reset=make('button','btn sm','Draft appearance reset');reset.type='button';reset.addEventListener('click',()=>{if(isCurrent()&&onDraft('reset component '+row.instanceId+' at revision '+row.revision+' appearance'))closeDialog();});details.append(reset);}
+            list.append(details);
+          }
         }
         list.append(make('h3','',definitions.length+' matching / '+UI_TAXONOMY_COUNTS.components+' declared types'));
         for(const row of definitions.slice(0,100)){

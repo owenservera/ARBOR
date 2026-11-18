@@ -1,5 +1,5 @@
 // GUI01 single safe DOM renderer. Never uses innerHTML, eval, remote assets, or code-bearing handlers.
-import {projectSurface,invalid} from './catalog.mjs';
+import {projectSurface,invalid,componentPresentationBindings} from './catalog.mjs';
 import {resolveUiSourceIdentity} from '../vec/ui-taxonomy/registry.mjs';
 
 // One source of TierFlow computation. The Host serves only these reviewed TS
@@ -32,7 +32,7 @@ export function planTierflowSurface(surface, {audience='phone',approvedRefs=[],v
   // or authority is derived here; the caller owns the Host revision guard.
   const converted = importer.importLegacyUiDocument(source,{
     ownerRef:'host-projection-unbound-owner',workspaceRef:source.surfaceId,sourceRef:source.surfaceId,
-    localSelectionControls:true,projectedCardRefs:approvedRefs
+    localSelectionControls:true,projectedCardRefs:approvedRefs,projectedPresentation:true
   });
   if (converted.status !== 'preview' ||
       converted.losses.some(loss=>loss.code!=='THEME_NOT_MIGRATED'))
@@ -77,6 +77,14 @@ export function renderSurface(mount,surface,{audience='phone',approvedRefs=[],on
   Object.assign(container.style,{backgroundColor:t.background,color:ink(t.background),fontFamily:FONT[t.fontFamily],fontSize:t.fontSizePx+'px',borderRadius:t.radiusPx+'px'});
   if(projected){container.setAttribute('data-tierflow-document',projected.document.documentId);container.setAttribute('data-tierflow-revision',String(s.revision));container.setAttribute('data-tierflow-status',projected.plan.status);}
   const instances=[];
+  // One bounded DOM mapping, shared by preview and the committed mount. No model CSS.
+  function applyPresentation(el,n){
+    const p=n.presentation;if(!p)return;
+    if(p.background!==undefined){el.style.backgroundColor=p.background;el.style.color=ink(p.background);}
+    if(p.borderColor!==undefined){el.style.borderColor=p.borderColor;el.style.borderStyle='solid';if(p.borderWidthPx===undefined)el.style.borderWidth='1px';}
+    if(p.borderWidthPx!==undefined){el.style.borderWidth=p.borderWidthPx+'px';el.style.borderStyle='solid';if(p.borderColor===undefined)el.style.borderColor=t.accent;}
+    for(const [k,css] of [['radiusPx','borderRadius'],['fontSizePx','fontSize'],['paddingPx','padding'],['gapPx','gap']])if(p[k]!==undefined)el.style[css]=p[k]+'px';
+  }
   const render=(n,planNode=null,parentId=null)=>{
     if(projected&&(!planNode||planNode.id!==n.id))invalid('TierFlow mounted node mismatch');
     const p=projected?projected.nodes.get(n.id).props:n.props;let el;
@@ -99,7 +107,16 @@ export function renderSurface(mount,surface,{audience='phone',approvedRefs=[],on
           const planItem=planNode?.children[i];
           if(planNode&&(!planItem||planItem.id!==n.id+'.item'+i||planItem.tag!=='li'||planItem.text!==item.label))invalid('TierFlow structured item mismatch');
           const li=element('li','item',planItem?.text??item.label);
-          if(n.type==='chart')li.appendChild(element('span','value',String(item.value)));
+          if(n.type==='chart'){
+            li.appendChild(element('span','value',String(item.value)));
+            const values=p.items.map(x=>x.value),min=Math.min(0,...values),max=Math.max(0,...values),range=max-min;
+            const zero=range?(-min/range)*100:50;
+            const extent=range?Math.abs(item.value)/range*100:0;
+            const track=element('span','chart-track');track.setAttribute('aria-hidden','true');
+            const axis=element('span','chart-zero');axis.style.left=zero+'%';
+            const bar=element('span','chart-bar');bar.style.left=(item.value<0?zero-extent:zero)+'%';bar.style.width=extent+'%';bar.style.backgroundColor=t.accent;
+            track.appendChild(axis);track.appendChild(bar);li.appendChild(track);
+          }
           else if(item.detail)li.appendChild(element('span','detail',item.detail));list.appendChild(li);
         }el.appendChild(list); }break;
       default:invalid('unknown component');
@@ -108,8 +125,9 @@ export function renderSurface(mount,surface,{audience='phone',approvedRefs=[],on
     if(projected){
       // Register the actual mounted element, not a fabricated taxonomy example.
       const settings=Object.fromEntries(Object.entries(p).filter(([k])=>['direction','gap','columns','variant'].includes(k)));
+      Object.assign(settings,n.presentation??{});
       instances.push({element:el,instanceId:n.id,parentId,type:n.type,componentId:projected.identities.get(n.id),
-        surfaceId:s.surfaceId,revision:s.revision,settings});
+        surfaceId:s.surfaceId,revision:s.revision,settings,configurableProperties:componentPresentationBindings(n.type).map(([property])=>property)});
     }
     if(planNode){
       el.setAttribute('data-ui-component-id',projected.identities.get(n.id));
@@ -128,6 +146,7 @@ export function renderSurface(mount,surface,{audience='phone',approvedRefs=[],on
         el.appendChild(render(sourceChild,child,n.id));
       }
     } else for(const child of n.children)el.appendChild(render(child));
+    applyPresentation(el,n);
     return el;
   };
   container.appendChild(render(s.tree,projected?.plan.root.children[0]??null));

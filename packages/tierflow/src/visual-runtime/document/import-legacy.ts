@@ -34,6 +34,8 @@ export interface LegacyImportOptions {
   readonly sourceRef: string;
   /** Only the validated live surface adapter may opt into inert local selection controls. */
   readonly localSelectionControls?: boolean;
+  /** The live validated source owns bounded presentation tokens; never convert them to executable CSS. */
+  readonly projectedPresentation?: boolean;
   /** Already-projected references, not a grant or canonical KB binding. */
   readonly projectedCardRefs?: readonly string[];
 }
@@ -60,7 +62,8 @@ function fromHarness(source:Record<string,unknown>, options:LegacyImportOptions,
   const nodes:UiDocumentNode[]=[];
   const walk=(v:unknown,depth:number):string=>{
     if(!rec(v)||!key(v.id)||typeof v.type!=='string'||!Array.isArray(v.children)||v.children.length>L.children||depth>L.depth)throw Error('Invalid Harness tree');
-    allowedFields(v,['id','type','props','children','visibility']);
+    allowedFields(v,options.projectedPresentation===true?['id','type','props','children','visibility','presentation']:['id','type','props','children','visibility']);
+    if(v.presentation!==undefined&&!rec(v.presentation))throw Error('Invalid projected presentation');
     if(v.visibility==='pc-private')throw Error('Private content cannot be imported without broker authorization');
     if(v.visibility!==undefined&&v.visibility!=='phone')throw Error('Unknown audience');
     const p=rec(v.props)?v.props:{};

@@ -101,6 +101,7 @@ export function buildUndoProposal({ original, before, committed, live }) {
     if (!prior) return null;
     if (op.type === 'replace-props') inverse = { type: 'replace-props',
       componentId: op.componentId, props: prior.node.props };
+    else if(op.type==='set-presentation')inverse={type:'set-presentation',componentId:op.componentId,presentation:prior.node.presentation??null};
     else if (op.type === 'remove' && prior.parent) inverse = { type: 'insert',
       parentId: prior.parent.id, index: prior.parent.children.findIndex(n => n.id === op.componentId),
       component: prior.node };
@@ -330,6 +331,13 @@ export function mountBuildCanvas({ host, request, getSurface, getProvider, send,
     }
     // Explicit scope diff for all proposals, including provider proposals and Undo.
     // A Build-only render must never conceal a change to the rest of the application.
+    const componentStyles=state.proposal.operations.filter(op=>op.type==='set-presentation');
+    if(componentStyles.length){const find=(n,id)=>n.id===id?n:n.children.map(c=>find(c,id)).find(Boolean);
+      const note=el('section','proposal-details');note.append(el('strong',null,'Exact component appearance changes'));
+      for(const op of componentStyles){const before=find(state.surface.tree,op.componentId)?.presentation??{},after=find(state.preview.surface.tree,op.componentId)?.presentation??{};
+        note.append(el('p',null,op.componentId));for(const k of new Set([...Object.keys(before),...Object.keys(after)]))if(before[k]!==after[k])note.append(el('p','muted',k+': '+(before[k]??'Default')+' → '+(after[k]??'Default')));}
+      card.append(note);
+    }
     const oldShell=state.surface.theme.shell??{},newShell=state.preview.surface.theme.shell??{};
     const shellFields=['background','secondary','accent','fontSizePx','radiusPx','spacingScale'];
     const shellChanges=shellFields.filter(k=>oldShell[k]!==newShell[k]);

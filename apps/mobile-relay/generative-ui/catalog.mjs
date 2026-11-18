@@ -47,6 +47,39 @@ export function validateTheme(t) {
   if(OWN(t,'shell'))out.shell=validateShellTheme(t.shell);
   return out;
 }
+// Reviewed source-to-renderer bindings. Types and bounds supplement the canonical VEC engine
+// compiler: a declarative capability alone never authorizes an arbitrary style or action.
+const FOUNDATION=Object.freeze(['stack','grid','text','card']);
+const CONTAINERS=Object.freeze(['stack','grid','card']);
+const componentBinding=(domain,field,type,min,max,kinds)=>Object.freeze({
+  capabilityId:'vivim.ui-engine.'+domain+'@1',field,type,min,max,kinds:kinds??TYPES});
+export const COMPONENT_PRESENTATION_BINDINGS=Object.freeze({
+  background:componentBinding('color.background','background','color'),
+  'border-color':componentBinding('border.color','borderColor','color'),
+  'border-width':componentBinding('border.width','borderWidthPx','length',0,4),
+  radius:componentBinding('corners.radius','radiusPx','length',0,24),
+  'font-size':componentBinding('typography.size','fontSizePx','length',13,32,FOUNDATION),
+  padding:componentBinding('spacing.padding','paddingPx','length',0,24,FOUNDATION),
+  gap:componentBinding('spacing.gap','gapPx','length',0,24,CONTAINERS)
+});
+export function componentPresentationBindings(type){
+  return Object.entries(COMPONENT_PRESENTATION_BINDINGS).filter(([,binding])=>binding.kinds.includes(type));
+}
+export function validateComponentPresentation(type,value){
+  const allowed=componentPresentationBindings(type).map(([,b])=>b);
+  keys(value,allowed.map(b=>b.field),'component presentation');
+  if(!Object.keys(value).length)invalid('empty component presentation');
+  const out={};
+  for(const b of allowed){
+    if(!OWN(value,b.field))continue;
+    const v=value[b.field];
+    if(b.type==='color'){
+      if(typeof v!=='string'||!HEX.test(v))invalid('invalid component color');
+      out[b.field]=v.toLowerCase();
+    }else out[b.field]=int(v,b.min,b.max);
+  }
+  return out;
+}
 function allowedRef(v, refs) {id(v);if(!refs.has(v))invalid('unapproved data/evidence reference');return v;}
 const variants=['body','heading','muted'];
 export function validateProps(type,props,{refs=new Set()}={}) {
@@ -83,7 +116,7 @@ export function validateTree(tree,{refs=new Set()}={}) {
   let count=0;const seen=new Set();
   const walk=(n,depth,parentId)=>{
     if(depth>MAX.depth||++count>MAX.nodes)invalid('component tree too large');
-    keys(n,['id','type','props','children','visibility'],'component');
+    keys(n,['id','type','props','children','visibility','presentation'],'component');
     const name=id(n.id);if(seen.has(name))invalid('duplicate component id');seen.add(name);
     en(n.type,TYPES);
     if(n.visibility!==undefined)en(n.visibility,['phone','pc-private']);
@@ -92,9 +125,10 @@ export function validateTree(tree,{refs=new Set()}={}) {
     if(!Array.isArray(children)||children.length>MAX.children)invalid('invalid child list');
     if(children.length && !['stack','grid','card'].includes(n.type))invalid('component does not accept children');
     // All model-editable IDs and text live *inside* the root. Protected nav is outside it.
-    return {id:name,type:n.type,props:p,visibility:n.visibility??'phone',children:children.map(c=>walk(c,depth+1,name))};
+    return {id:name,type:n.type,props:p,visibility:n.visibility??'phone',children:children.map(c=>walk(c,depth+1,name)),
+      ...(OWN(n,'presentation')?{presentation:validateComponentPresentation(n.type,n.presentation)}:{})};
   };
-  const out=walk(tree,0,null);if(out.id!=='root'||out.type!=='stack')invalid('root must be stable stack');return out;
+  const out=walk(tree,0,null);if(out.id!=='root'||out.type!=='stack'||out.visibility!=='phone')invalid('root must be stable public stack');return out;
 }
 export function validateSurface(surface,{refs=new Set()}={}) {
   keys(surface,['schema','surfaceId','revision','catalogVersion','theme','tree'],'surface');

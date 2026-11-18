@@ -3,7 +3,7 @@
 // Nothing here sends, applies or trusts a reply: a proposal is a draft until the owner taps Activate.
 import { composeDesignContext } from './generative-ui/design-composer.mjs';
 import { compileUiProposal } from './generative-ui/compiler.mjs';
-import { createSurface, PROPOSAL_SCHEMA, validateSurface } from './generative-ui/catalog.mjs';
+import { createSurface, PROPOSAL_SCHEMA, validateSurface, COMPONENT_PRESENTATION_BINDINGS, validateComponentPresentation } from './generative-ui/catalog.mjs';
 import { committedHostSurface } from './generative-ui/host-revision-guard.mjs';
 import { createVecCompiler } from './vec/compiler.mjs';
 import { compileVecUiRequest } from './vec/ui-adapter.mjs';
@@ -131,9 +131,64 @@ export function themeDraftCandidates(surface){
   });
 }
 
+const COMPONENT_START=/^(?:set|reset) component\b/i;
+const COMPONENT_SET=/^set component ([A-Za-z][A-Za-z0-9._:-]{0,95})(?: at revision (\d{1,10}))? ([a-z-]+) to (.+)$/i;
+const COMPONENT_RESET=/^reset component ([A-Za-z][A-Za-z0-9._:-]{0,95})(?: at revision (\d{1,10}))? appearance$/i;
+function visibleComponent(node,cid){
+  if(node.visibility==='pc-private')return null;
+  if(node.id===cid)return node;
+  for(const child of node.children){const found=visibleComponent(child,cid);if(found)return found;}
+  return null;
+}
+// UI-local engine configuration compiles to the same exact approved Host proposal.
+// Launcher commands pin the observed instance revision; typed commands resolve against the live head.
+export function compileVecComponentRequest({text,surface}={}){
+  const refuse=code=>({outcome:'refused',code});
+  if(typeof text!=='string'||text.length>MAX_REQUEST||/[\u0000-\u001f\u007f]/.test(text))return refuse('INVALID_COMPONENT_REQUEST');
+  const request=text.trim().replace(/\s+/g,' ');
+  const set=COMPONENT_SET.exec(request),reset=COMPONENT_RESET.exec(request),match=set??reset;
+  if(!match)return refuse('UNSUPPORTED_COMPONENT_CONFIGURATION');
+  let current;try{current=validateSurface(surface,{refs:new Set()});}catch{return refuse('INVALID_OR_UNAVAILABLE_SURFACE');}
+  if(match[2]!==undefined&&Number(match[2])!==current.revision)return refuse('STALE_COMPONENT_REVISION');
+  const target=visibleComponent(current.tree,match[1]);
+  if(!target)return {outcome:'clarification_required',code:'UI_TARGET_NOT_FOUND'};
+  let presentation=null,detail=null,explanation='Reset component '+target.id+' appearance.';
+  if(set){
+    const property=set[3].toLowerCase();
+    const binding=Object.hasOwn(COMPONENT_PRESENTATION_BINDINGS,property)?COMPONENT_PRESENTATION_BINDINGS[property]:null;
+    if(!binding||!binding.kinds.includes(target.type))return refuse('UNSUPPORTED_COMPONENT_PROPERTY');
+    const raw=set[4].trim();
+    let value=raw;
+    if(binding.type==='color'){if(!COLOR.test(raw))return refuse('INVALID_COMPONENT_COLOR');}
+    else{
+      if(!/^\d{1,2}px$/.test(raw))return refuse('INVALID_COMPONENT_LENGTH');
+      const n=Number(raw.slice(0,-2));
+      if(n<binding.min||n>binding.max)return refuse('INVALID_COMPONENT_LENGTH');
+      value={value:n,unit:'px'};
+    }
+    const source=resolveUiSourceIdentity({schema:current.schema,nativeType:target.type,props:target.props});
+    if(source.outcome!=='mapped'||source.source.status!=='source-closed'||typeof compileUiConfiguration!=='function')return refuse('COMPONENT_ADAPTER_UNAVAILABLE');
+    const typed=compileUiConfiguration({component:{...source.component,id:target.id},sourceSchema:current.schema,
+      baseRevision:current.revision,changes:[{capabilityId:binding.capabilityId,value}]});
+    if(typed.outcome!=='candidate'||typed.changes?.length!==1||typed.changes[0].capabilityId!==binding.capabilityId)return refuse(typed.code??'COMPONENT_CONFIGURATION_REFUSED');
+    const checked=typed.changes[0].value;
+    if(binding.type==='length'&&checked?.unit!=='px')return refuse('INVALID_COMPONENT_LENGTH');
+    const setting=binding.type==='length'?checked.value:checked;
+    try{presentation=validateComponentPresentation(target.type,{...target.presentation,[binding.field]:setting});}catch{return refuse('INVALID_COMPONENT_CONFIGURATION');}
+    explanation='Set component '+target.id+' '+property+' to '+raw+'.';
+    detail={capabilityId:binding.capabilityId,property,scope:'component',componentId:target.id,value:setting,valueType:binding.type,baseRevision:current.revision,targetRevision:current.revision+1};
+  }else if(!target.presentation)return refuse('NO_COMPONENT_PRESENTATION_TO_RESET');
+  const proposal={schema:PROPOSAL_SCHEMA,surfaceId:current.surfaceId,baseRevision:current.revision,
+    operations:[{opId:'vec.component.1',type:'set-presentation',componentId:target.id,presentation}],explanation,assumptions:[],unknowns:[]};
+  try{
+    const preview=compileUiProposal({proposal,surface:current,approvedRefs:[],audience:'phone'});
+    return {outcome:'candidate',code:'VEC_COMPONENT_PREVIEW',proposal,preview,...(detail?{detail}:{}),summary:{explanation,changes:preview.operations,unknowns:[]}};
+  }catch{return refuse('COMPONENT_PREVIEW_REJECTED');}
+}
 const vec = createVecCompiler({ adapters: {
   ui: args => THEME_START.test(String(args.text ?? '').trim())
-    ? compileVecThemeRequest(args) : compileVecUiRequest(args)
+    ? compileVecThemeRequest(args) : COMPONENT_START.test(String(args.text??'').trim())
+      ? compileVecComponentRequest(args) : compileVecUiRequest(args)
 } });
 export function resolveBuildRequest({ request, surface = blankSurface() } = {}) {
   return vec.compile({ domain: 'ui', text: request, context: { surface } });
@@ -153,6 +208,7 @@ export function buildDesignPrompt({ request, surface = blankSurface(), taskId })
     'Rules:',
     '- Reply with exactly one JSON object and nothing else: no Markdown, no code fence, no commentary.',
     `- Keys: schema ("${PROPOSAL_SCHEMA}"), surfaceId ("${surface.surfaceId}"), baseRevision (${surface.revision}), operations, explanation (one plain sentence), assumptions (array), unknowns (array).`,
+    '- Use presentation settings only through explicit set-presentation on an existing component ID (or null to reset): background and borderColor hex colors, borderWidthPx 0–4, radiusPx 0–24. Foundation components also accept fontSizePx 13–32 and paddingPx 0–24; stack/grid/card accept gapPx 0–24. No CSS strings.',
     '- operations: 1 to 12 items. Insert: {"opId","type":"insert","parentId":"root","component":{"id","type","props"}}. Change: {"opId","type":"replace-props","componentId","props"}. Remove: {"opId","type":"remove","componentId"}.',
     '- Component types: stack{direction,gap}, grid{columns 1-4,gap}, text{value,variant body|heading|muted}, card{title,description}, button{label,intent:"preview-only"}, collection{title,items[{label,detail}]}, timeline{title,items[{label,detail}]}, chart{title,items[{label,value}]}. Gaps are sm, md or lg. At most 16 items.',
     '- Ids start with a letter and use letters, digits, dot, dash or colon. Text is plain: no links, no HTML. Titles under 80 characters.',
