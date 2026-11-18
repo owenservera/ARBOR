@@ -4,12 +4,12 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 
-const here = new URL('.', import.meta.url).pathname.replace(/^\\/([A-Za-z]:)/, '$1');
+const here = new URL('.', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1');
 const appSrc = readFileSync(here + 'app.js', 'utf8');
 const chatSrc = readFileSync(here + '../vivim-host/public/pages/chat.js', 'utf8');
 
 function extractFn(src, name) {
-  src = src.replace(/\\r\\n/g, '\\n');
+  src = src.replace(/\r\n/g, '\n');
   let start = src.indexOf('function ' + name + '(');
   assert.notEqual(start, -1, name + '() not found');
   if (src.slice(Math.max(0, start - 6), start) === 'async ') start -= 6;
