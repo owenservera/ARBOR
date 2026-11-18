@@ -22,7 +22,7 @@ export function createRustChatContext({
   env=process.env,execute=execFile,dataRoot=null,productJournal=null,control=null,
   executePersonal=runPersonal,repoRoot=DEFAULT_ROOT,isFile=regularFile
 }={}){
-  if (productJournal) return managedReader({env,execute,dataRoot,productJournal,control,executePersonal,repoRoot,isFile});
+  if (productJournal) return managedReader({env,dataRoot,productJournal,control,executePersonal,repoRoot,isFile});
   const binary=env.VIVIM_CHAT_CORE_BIN;
   const journal=env.VIVIM_CHAT_CORE_JOURNAL;
   const seed=env.VIVIM_CHAT_CORE_SEED;
@@ -233,7 +233,7 @@ async function nativePacket(result) {
   try { return JSON.parse(result.stdout); } catch { throw Error('RUST_CORE_OUTPUT_INVALID'); }
 }
 
-function managedReader({env,execute,dataRoot,productJournal,control,executePersonal,repoRoot,isFile}) {
+function managedReader({env,dataRoot,productJournal,control,executePersonal,repoRoot,isFile}) {
   const root=typeof dataRoot==='string' && path.isAbsolute(dataRoot) ? path.resolve(dataRoot) : null;
   // One Host-owned native personal journal. An existing explicit journal is
   // supported, but native namespace validation refuses an unrelated graph.
@@ -242,16 +242,16 @@ function managedReader({env,execute,dataRoot,productJournal,control,executePerso
   let queue=Promise.resolve();
   const inflight=new Map();
   async function snapshot() {
-    const current=await productJournal.readNativeKnowledge();
+    const current=await productJournal.readNativeKnowledge({nativeOnly:true});
     const effects=projectAppliedControlEffects(control(),current.context.wikiChanges,current.context.wikiStructure);
     const rows=buildNativeKnowledge(current,effects);
     return {rows,relationships:buildNativeRelationships(current,rows)};
   }
-  async function read(focus,view) {
+  async function read(view) {
     if (!root || typeof journal!=='string' || !path.isAbsolute(journal))
       return unavailable('RUST_CORE_NOT_CONFIGURED');
     const runtime=resolveRustContextRuntime({env,repoRoot,isFile});
-    if (!runtime.personal || !runtime.reader) return unavailable('RUST_CORE_NOT_CONFIGURED');
+    if (!runtime.personal) return unavailable('RUST_CORE_NOT_CONFIGURED');
     try {
       const dir=path.dirname(journal);
       await mkdir(dir,{recursive:true,mode:0o700});
@@ -259,19 +259,18 @@ function managedReader({env,execute,dataRoot,productJournal,control,executePerso
       if (!st.isDirectory() || st.isSymbolicLink()) return unavailable('RUST_CORE_UNSAFE_JOURNAL');
       // Never return an old graph when the authoritative source cannot be read.
       // Recheck the exact source projection after native ingestion/retrieval.
+      // One invocation performs both operations against the existing durable graph.
       for (let attempt=0;attempt<2;attempt++) {
         const projection=await snapshot(),{rows,relationships}=projection,fingerprint=digest(projection);
         const packet=await nativePacket(await executePersonal(runtime.personal,journal,{
-          schema:PERSONAL_SCHEMA,scope,op:'sync-context',nodes:rows,relationships
+          schema:PERSONAL_SCHEMA,scope,op:'sync-context-read',view,nodes:rows,relationships
         }));
         if (packet?.schema!==PERSONAL_SCHEMA || packet.scope!==scope ||
-            packet.op!=='sync-context' || !safeUInt(packet.epoch) ||
-            !safeUInt(packet.bytes) || packet.synced!==rows.length || (relationships.length && packet.syncedRelationships!==relationships.length) ||
+            packet.op!=='sync-context-read' || !safeUInt(packet.epoch) ||
+            !safeUInt(packet.bytes) || packet.synced!==rows.length || packet.syncedRelationships!==relationships.length ||
             typeof packet.changed!=='boolean')
           return unavailable('RUST_CORE_CONTRACT_INVALID');
-        const result=await nativePacket(await execute(runtime.reader,
-          [journal,'--managed',scope,String(packet.epoch),view],
-          {encoding:'utf8',shell:false,windowsHide:true,timeout:2500,maxBuffer:MAX_OUTPUT}));
+        const result=packet.context;
         if (result?.schema!==CHAT_CONTEXT_SCHEMA || result.core!=='hqkg' ||
             result.state!=='source-backed' || result.authority!=='read-only' ||
             result.seed!=='managed:'+view || result.epoch!==packet.epoch ||
@@ -311,7 +310,7 @@ function managedReader({env,execute,dataRoot,productJournal,control,executePerso
         if (sum!==result.tokensUsed) return unavailable('RUST_CORE_CONTRACT_INVALID');
         if (digest(await snapshot())!==fingerprint) continue;
         return {schema:CHAT_CONTEXT_SCHEMA,state:'source-backed',core:'hqkg',
-          authority:'read-only',focus,epoch:result.epoch,tokensUsed:result.tokensUsed,
+          authority:'read-only',epoch:result.epoch,tokensUsed:result.tokensUsed,
           budgetTokens:320,staleCount:0,budgetExhausted:result.budgetExhausted,
           totalRetrieved:result.totalRetrieved,items,
           ...(relationships.length?{syncedRelationships:relationships.length,
@@ -330,11 +329,17 @@ function managedReader({env,execute,dataRoot,productJournal,control,executePerso
   // file/epoch CAS under the engine's existing exclusive writer lock.
   return function readManagedContext(focus='talk', {owner=false}={}) {
     if (!FOCUS.has(focus)) return Promise.resolve(unavailable('FOCUS_INVALID'));
-    const view=owner?'owner':'wiki', key=view+':'+focus;
-    if (inflight.has(key)) return inflight.get(key);
-    const pending=queue.then(()=>read(focus,view));
-    inflight.set(key,pending);
-    queue=pending.catch(()=>{}).finally(()=>inflight.delete(key));
-    return pending;
+    const view=owner?'owner':'wiki';
+    // Focus is only a presentation label: native retrieval selects by view.
+    // Coalesce concurrent surfaces, never combine owner and phone scopes.
+    // No completed response is cached; every later read rechecks its sources.
+    let pending=inflight.get(view);
+    if(!pending){
+      const run=queue.then(()=>read(view));
+      pending=run.finally(()=>{if(inflight.get(view)===pending)inflight.delete(view);});
+      inflight.set(view,pending);
+      queue=pending.catch(()=>{});
+    }
+    return pending.then(result=>result.state==='source-backed'?{...result,focus}:result);
   };
 }

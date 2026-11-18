@@ -270,3 +270,30 @@ fn retrieval_is_deterministic_across_calls() {
     let second = retrieve(&g, &req).unwrap();
     assert_eq!(first, second);
 }
+
+#[test]
+fn indexed_edge_projection_matches_full_scan_for_bounded_and_excluded_views() {
+    let mut g=chain();
+    for i in 0..200 {
+        let a=format!("unrelated-a-{i}");
+        let b=format!("unrelated-b-{i}");
+        g.put_node(node(&a)).unwrap();
+        g.put_node(node(&b)).unwrap();
+        g.put_edge(Edge::new(&format!("unrelated-edge-{i}"),&a,"relates",&b)).unwrap();
+    }
+    g.put_edge(Edge::new("z-back","c","relates","a")).unwrap();
+    g.put_edge(Edge::new("a-parallel","a","other","b")).unwrap();
+    for budget in [1,4,12,100] {
+        for excluded in [BTreeSet::new(),BTreeSet::from(["b".to_string()])] {
+            let mut req=request(&["a"],budget);
+            req.excluded=excluded;
+            let bundle=retrieve(&g,&req).unwrap();
+            let selected:BTreeSet<&str>=bundle.items.iter().map(|item|item.id.as_str()).collect();
+            let expected:Vec<&str>=g.edges()
+                .filter(|edge|selected.contains(edge.from.as_str())&&selected.contains(edge.to.as_str()))
+                .map(|edge|edge.id.as_str()).collect();
+            let actual:Vec<&str>=bundle.edges.iter().map(|edge|edge.id.as_str()).collect();
+            assert_eq!(actual,expected);
+        }
+    }
+}

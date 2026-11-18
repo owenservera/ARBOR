@@ -194,16 +194,23 @@ pub fn retrieve(graph: &Graph, request: &ContextRequest) -> Result<ContextBundle
     // Edges ride along only when both endpoints were retrieved, so an excluded
     // or out-of-horizon node is never leaked through an edge endpoint.
     let selected: BTreeSet<&str> = items.iter().map(|i| i.id.as_str()).collect();
-    let edges = graph
-        .edges()
-        .filter(|e| selected.contains(e.from.as_str()) && selected.contains(e.to.as_str()))
-        .map(|e| ContextEdge {
-            id: e.id.clone(),
-            from: e.from.clone(),
-            to: e.to.clone(),
-            relation: e.relation.clone(),
-        })
-        .collect();
+    // Walk existing outgoing indexes only for retrieved nodes rather than
+    // scanning every graph edge after every bounded context request. BTreeMap
+    // retains the original edge-id order, including self-loops.
+    let mut indexed_edges = BTreeMap::new();
+    for id in &selected {
+        for e in graph.outgoing(id, None)? {
+            if selected.contains(e.to.as_str()) {
+                indexed_edges.insert(e.id.clone(), ContextEdge {
+                    id: e.id.clone(),
+                    from: e.from.clone(),
+                    to: e.to.clone(),
+                    relation: e.relation.clone(),
+                });
+            }
+        }
+    }
+    let edges = indexed_edges.into_values().collect();
     let stale_count = items.iter().filter(|i| i.stale).count();
     Ok(ContextBundle {
         request_echo: request.clone(),

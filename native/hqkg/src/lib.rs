@@ -11,6 +11,8 @@ pub mod algorithm_adapter;
 pub mod apply_ledger;
 pub mod builtins;
 pub mod context_retrieval;
+#[cfg(feature = "importer")]
+pub mod managed_context;
 pub mod control;
 pub mod database;
 pub mod durable_dag;
@@ -921,19 +923,29 @@ impl Journal {
         Ok(self.scan()?.0)
     }
     pub fn status(&self) -> Result<JournalStatus> {
+        Ok(self.load_with_status()?.1)
+    }
+    /// One validated replay supplies both graph and journal watermark.
+    /// Callers requiring a complete head must reject trailing bytes and
+    /// compare their observed filesystem head before publishing.
+    pub fn load_with_status(&self) -> Result<(Graph, JournalStatus)> {
         let (graph, verified, exists) = self.scan()?;
         let total = if self.path.exists() {
             fs::metadata(&self.path)?.len()
         } else {
             0
         };
-        Ok(JournalStatus {
+        if total < verified as u64 {
+            return Err(Error::Conflict("journal shrank during replay".into()));
+        }
+        let status = JournalStatus {
             exists,
             epoch: graph.epoch(),
             total_bytes: total,
             verified_bytes: verified as u64,
             trailing_bytes: total.saturating_sub(verified as u64),
-        })
+        };
+        Ok((graph, status))
     }
     /// Explicit, safe local repair for an already-verified journal prefix.
     /// Never rewrites committed frames or removes stale locks; caller must pass

@@ -24,7 +24,9 @@ fn sync(file:&Path,scope:&str,nodes:Vec<Value>) -> (bool,Value) {
     sync_with_relationships(file,scope,nodes,vec![])
 }
 fn sync_with_relationships(file:&Path,scope:&str,nodes:Vec<Value>,relationships:Vec<Value>) -> (bool,Value) {
-    let packet=json!({"schema":"vivim.hqkg-personal/1","scope":scope,"op":"sync-context","nodes":nodes,"relationships":relationships});
+    run_packet(file,json!({"schema":"vivim.hqkg-personal/1","scope":scope,"op":"sync-context","nodes":nodes,"relationships":relationships}))
+}
+fn run_packet(file:&Path,packet:Value) -> (bool,Value) {
     let mut child=Command::new(env!("CARGO_BIN_EXE_hqkg-personal"))
         .arg("--journal").arg(file).stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(Stdio::piped()).spawn().unwrap();
     child.stdin.take().unwrap().write_all(&serde_json::to_vec(&packet).unwrap()).unwrap();
@@ -152,4 +154,44 @@ fn committed_page_links_reconcile_and_are_read_back_as_actual_native_edges() {
     assert!(ok,"{removed}");
     assert_eq!(Journal::new(&file).load().unwrap().edge_count(),0);
     assert_eq!(read(&file,SCOPE,removed["epoch"].as_u64().unwrap(),"wiki").unwrap()["pageRelationships"],json!([]));
+}
+
+#[test]
+fn combined_sync_read_matches_standalone_durable_projection_and_rejects_unsafe_views() {
+    let temp=Temp::new(); let file=temp.journal();
+    let rows=vec![wiki(ENTRY,2,"First committed text"),effect()];
+    let req=|view:&str, nodes:&Vec<Value>|json!({"schema":"vivim.hqkg-personal/1","scope":SCOPE,
+        "op":"sync-context-read","view":view,"nodes":nodes,"relationships":[]});
+    let (ok,initial)=run_packet(&file,req("wiki",&rows));
+    assert!(ok,"{initial}");
+    assert_eq!(initial["op"],"sync-context-read");
+    let epoch=initial["epoch"].as_u64().unwrap();
+    assert_eq!(initial["context"],read(&file,SCOPE,epoch,"wiki").unwrap());
+    assert_eq!(initial["context"]["totalRetrieved"],1);
+    let bytes=fs::read(&file).unwrap();
+    let (ok,owner)=run_packet(&file,req("owner",&rows));
+    assert!(ok,"{owner}");
+    assert_eq!(owner["context"],read(&file,SCOPE,epoch,"owner").unwrap());
+    assert_eq!(owner["context"]["totalRetrieved"],2);
+    assert_eq!(owner["changed"],false);
+    assert_eq!(fs::read(&file).unwrap(),bytes);
+    assert!(!run_packet(&file,req("all",&vec![])).0);
+    assert_eq!(fs::read(&file).unwrap(),bytes);
+    let next=vec![wiki(NEXT,3,"Replacement"),effect()];
+    let (ok,updated)=run_packet(&file,req("wiki",&next));
+    assert!(ok,"{updated}");
+    let new_epoch=updated["epoch"].as_u64().unwrap();
+    assert!(new_epoch>epoch);
+    assert_eq!(updated["context"],read(&file,SCOPE,new_epoch,"wiki").unwrap());
+    assert_eq!(updated["context"]["items"][0]["summary"],"Replacement");
+    let current=fs::read(&file).unwrap();
+    assert!(!run_packet(&file,req("wiki",&rows)).0);
+    assert_eq!(fs::read(&file).unwrap(),current);
+    let (graph,status)=Journal::new(&file).load_with_status().unwrap();
+    assert_eq!(graph.epoch(),status.epoch);
+    assert_eq!(status.total_bytes,current.len() as u64);
+    assert_eq!(status.trailing_bytes,0);
+    let mut f=fs::OpenOptions::new().append(true).open(&file).unwrap();
+    f.write_all(b"HQ").unwrap(); f.sync_all().unwrap(); drop(f);
+    assert!(!run_packet(&file,req("wiki",&next)).0);
 }

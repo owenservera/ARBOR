@@ -333,7 +333,10 @@ export function createProductJournal({ dataRoot, seedState, seedWiki }) {
         'Unsafe or oversized product journal', 503);
       bytes = await readFile(journalPath);
     } catch (error) {
-      if (error?.code === 'ENOENT') return { records: [], committed: '', tornTail: false, size: 0, wikiRevision: seedWiki.revision, wiki: seedWiki };
+      if (error?.code === 'ENOENT') {
+        const projection=replayProductJournal(seedState,seedWiki,[]);
+        return {records:[],committed:'',tornTail:false,size:0,wikiRevision:projection.wiki.revision,wiki:projection.wiki,projection};
+      }
       throw error;
     }
     requireShape(bytes.length <= MAX_JOURNAL_BYTES, 'Product journal exceeds read limit', 503);
@@ -353,10 +356,10 @@ export function createProductJournal({ dataRoot, seedState, seedWiki }) {
     }
     const projection = replayProductJournal(seedState, seedWiki, records);
     return { records, committed: text, tornTail: finalLF !== bytes.length - 1, size: bytes.length,
-      wikiRevision: projection.wiki.revision, wiki: projection.wiki };
+      wikiRevision: projection.wiki.revision, wiki: projection.wiki, projection };
   }
   async function readRecords() { return (await snapshot()).records; }
-  async function readProjection() { return replayProductJournal(seedState, seedWiki, await readRecords()); }
+  async function readProjection() { return (await snapshot()).projection; }
   async function readWikiContext() {
     const current = await snapshot(); // validates committed records and deterministic replay
     requireShape(!current.tornTail, 'Wiki context unavailable: torn journal tail', 503);
@@ -364,10 +367,15 @@ export function createProductJournal({ dataRoot, seedState, seedWiki }) {
   }
   // Owner-local native input. Use the same validated committed snapshot and
   // D4 identities, never the demo seed, unverified chat or client-supplied facts.
-  async function readNativeKnowledge() {
+  async function readNativeKnowledge({nativeOnly=false}={}) {
     const current = await snapshot();
     requireShape(!current.tornTail, 'Native context unavailable: torn journal tail', 503);
-    const context = projectWikiContext(current.records, current.wikiRevision, current.wiki);
+    // Native ingestion needs only committed changes and structure, never the
+    // private observation graph or its presentation relationships.
+    const context = nativeOnly ? {wikiRevision:current.wikiRevision,
+      wikiChanges:projectWikiChanges(current.records),
+      wikiStructure:projectWikiStructure(current.records,current.wiki)} :
+      projectWikiContext(current.records, current.wikiRevision, current.wiki);
     const changes = projectWikiChanges(current.records, { currentOnly: true });
     const records = new Map(current.records.filter(e => e.entryId).map(e => [e.entryId, e]));
     return { context, changes: { ...changes, items: changes.items.map(change => {
@@ -381,7 +389,7 @@ export function createProductJournal({ dataRoot, seedState, seedWiki }) {
   async function readPhoneWiki() {
     const current = await snapshot();
     requireShape(!current.tornTail, 'Wiki context unavailable: torn journal tail', 503);
-    const { wiki } = replayProductJournal(seedState, seedWiki, current.records);
+    const { wiki } = current;
     const changes = projectWikiChanges(current.records);
     const structure=projectWikiStructure(current.records,wiki);
     // Retain only Wiki-scoped structure provenance; no global sequence, receipts
@@ -401,7 +409,7 @@ export function createProductJournal({ dataRoot, seedState, seedWiki }) {
       validateEnvelope(payload);
       const current = await snapshot();
       requireShape(!current.tornTail, 'Torn journal tail requires explicit owner repair', 503);
-      const projected = replayProductJournal(seedState, seedWiki, current.records);
+      const projected = current.projection;
       if (payload.kind === 'wiki-edit') validateProductEdit(payload, projected.wiki);
       if (payload.kind === 'wiki-structure') {
         requireShape(payload.expectedRevision === projected.wiki.revision,'Stale Wiki revision',409);

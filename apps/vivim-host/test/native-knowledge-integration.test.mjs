@@ -84,21 +84,21 @@ test('missing native runtime and mismatching epoch fail closed',async t=>{
   const managed=createRustChatContext({env:{},dataRoot,productJournal:journal,control:()=>controls,
     isFile:()=>true,executePersonal:async(_bin,_journal,packet)=>{
       sent=packet;
-      return {stdout:JSON.stringify({schema:'vivim.hqkg-personal/1',scope:packet.scope,op:'sync-context',
-        epoch:7,bytes:2000,synced:packet.nodes.length,changed:true})};
-    },execute:async(_bin,args)=>{
-      assert.equal(args[1],'--managed'); assert.equal(args[4],'wiki');
-      return {stdout:JSON.stringify({schema:'vivim.hqkg-chat-context/1',state:'source-backed',
+      assert.equal(packet.op,'sync-context-read');
+      assert.equal(packet.view,'wiki');
+      return {stdout:JSON.stringify({schema:'vivim.hqkg-personal/1',scope:packet.scope,op:packet.op,
+        epoch:7,bytes:2000,synced:packet.nodes.length,syncedRelationships:0,changed:true,
+        context:{schema:'vivim.hqkg-chat-context/1',state:'source-backed',
         core:'hqkg',authority:'read-only',seed:'managed:wiki',epoch:6,tokensUsed:0,budgetTokens:320,
-        staleCount:0,budgetExhausted:false,totalRetrieved:1,items:[]})};
-    }});
+        staleCount:0,budgetExhausted:false,totalRetrieved:1,items:[],pageRelationships:[]}})};
+    },execute:async()=>{throw Error('legacy reader must not be launched')}});
   assert.equal((await managed('wiki')).reason,'RUST_CORE_CONTRACT_INVALID');
   assert.equal(sent.nodes.length,1);
   assert.equal(sent.nodes[0].summary,'Owner content');
 });
 const binaries=resolveRustContextRuntime({env:{}});
 test('real Node → actual Rust CLIs → persisted native Wiki readback',
-  {skip: !binaries.personal || !binaries.reader ? 'Native binaries not built; build both with Cargo importer feature' : false},async t=>{
+  {skip: !binaries.personal ? 'Native personal binary not built; build with Cargo importer feature' : false},async t=>{
   const {journal,dataRoot,edit}=await setup(t);
   const make=()=>createRustChatContext({env:{},dataRoot,productJournal:journal,control:()=>controls});
   await edit('Real persisted Wiki value',1);
@@ -113,4 +113,63 @@ test('real Node → actual Rust CLIs → persisted native Wiki readback',
   assert.ok(next.epoch>first.epoch);
   assert.equal(next.items[0].summary,'Real updated Wiki value');
   assert.equal(next.items[0].sourceRevision,3);
+});
+
+test('managed reads share one native invocation per concurrent authorized view and never cache completed results',async t=>{
+  const {journal,dataRoot,edit}=await setup(t);
+  await edit('Current owner text',1);
+  const packets=[];
+  const result=packet=>{
+    const visible=packet.nodes.filter(row=>packet.view==='owner'||row.kind==='wiki');
+    const items=visible.slice(0,1).map(row=>({title:row.title,summary:row.summary,kind:row.kind,
+      sourceRef:row.sourceRef,sourceDigest:row.digest,sourceRevision:row.sourceRevision,
+      revision:row.revision,depth:0,sourceCount:1,estimatedTokens:30}));
+    return {stdout:JSON.stringify({schema:'vivim.hqkg-personal/1',scope:packet.scope,op:packet.op,
+      epoch:7,bytes:2000,synced:packet.nodes.length,syncedRelationships:packet.relationships.length,changed:false,
+      context:{schema:'vivim.hqkg-chat-context/1',state:'source-backed',core:'hqkg',authority:'read-only',
+        seed:'managed:'+packet.view,epoch:7,staleCount:0,budgetTokens:320,tokensUsed:items.length*30,
+        budgetExhausted:false,totalRetrieved:visible.length,items,pageRelationships:packet.relationships}})};
+  };
+  const managed=createRustChatContext({env:{},dataRoot,productJournal:journal,control:()=>controls,
+    isFile:p=>p.includes('hqkg-personal'),execute:async()=>{throw Error('legacy reader must not be launched')},
+    executePersonal:async(_bin,_journal,packet)=>{packets.push(packet);return result(packet);}});
+  const [talk,wiki,owner]=await Promise.all([managed('talk'),managed('wiki'),managed('wiki',{owner:true})]);
+  assert.equal(talk.state,'source-backed',talk.reason);
+  assert.equal(wiki.state,'source-backed',wiki.reason);
+  assert.equal(owner.state,'source-backed',owner.reason);
+  assert.equal(talk.focus,'talk');assert.equal(wiki.focus,'wiki');
+  assert.equal(talk.items[0].summary,'Current owner text');
+  assert.deepEqual(packets.map(p=>[p.op,p.view]),[['sync-context-read','wiki'],['sync-context-read','owner']]);
+  await edit('Updated owner text',2);
+  const fresh=await managed('wiki');
+  assert.equal(fresh.items[0].summary,'Updated owner text');
+  assert.equal(packets.length,3);
+  const nativeOnly=await journal.readNativeKnowledge({nativeOnly:true});
+  const full=await journal.readNativeKnowledge();
+  assert.deepEqual(nativeOnly.changes,full.changes);
+  assert.deepEqual(nativeOnly.context.wikiChanges,full.context.wikiChanges);
+  assert.deepEqual(nativeOnly.context.wikiStructure,full.context.wikiStructure);
+  assert.equal(Object.hasOwn(nativeOnly.context,'semantics'),false);
+  assert.equal(Object.hasOwn(nativeOnly.context,'items'),false);
+  assert.deepEqual(await journal.readProjection(),await journal.readProjection());
+});
+
+test('combined native read detects source edits during execution and retries from new committed records',async t=>{
+  const {journal,dataRoot,edit}=await setup(t);
+  await edit('Before native read',1);
+  let calls=0;
+  const managed=createRustChatContext({env:{},dataRoot,productJournal:journal,control:()=>controls,isFile:()=>true,
+    executePersonal:async(_bin,_journal,p)=>{
+      const row=p.nodes[0],epoch=++calls;
+      if(calls===1)await edit('Changed while native read was running',2);
+      return {stdout:JSON.stringify({schema:'vivim.hqkg-personal/1',scope:p.scope,op:p.op,epoch,bytes:10,
+        synced:p.nodes.length,syncedRelationships:0,changed:true,
+        context:{schema:'vivim.hqkg-chat-context/1',state:'source-backed',core:'hqkg',authority:'read-only',
+          seed:'managed:'+p.view,epoch,tokensUsed:40,budgetTokens:320,staleCount:0,budgetExhausted:false,
+          totalRetrieved:1,pageRelationships:[],items:[{...row,sourceDigest:row.digest,sourceCount:1,depth:0,estimatedTokens:40}]}})};
+    }});
+  const out=await managed('wiki');
+  assert.equal(out.state,'source-backed',out.reason);
+  assert.equal(calls,2);
+  assert.equal(out.items[0].summary,'Changed while native read was running');
 });

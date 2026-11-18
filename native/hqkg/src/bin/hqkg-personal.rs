@@ -2,6 +2,7 @@
 use hqkg::{Error, Graph, Journal, NodeKind};
 use hqkg::graph_change_set::{ApplyLedger, GraphChangeSet};
 use hqkg::scoped_graph::{self, Provenance};
+use hqkg::managed_context::{check_managed_head, project_managed_graph};
 use hqkg::typed_dag::{GraphDomain, Namespace, RevisionToken};
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
@@ -19,6 +20,14 @@ fn quarantine(e: Error) -> String { match e { Error::Corrupt(m) => format!("RECO
 // leave the active graph, and nodes from other personal capabilities survive.
 fn sync_context(v: &Value, ns: &Namespace, journal: &Journal, g: &mut Graph,
     before: u64, scope: &str) -> Result<Value, String> {
+    let view=if v["op"]=="sync-context-read" {
+        let view=text(v,"view")?;
+        if !matches!(view,"wiki"|"owner") {return Err("invalid managed context view".into());}
+        Some(view)
+    } else {
+        if v.get("view").is_some() {return Err("view requires sync-context-read".into());}
+        None
+    };
     let nodes = v["nodes"].as_array().ok_or("context nodes required")?;
     if nodes.len() > 72 { return Err("POLICY_LIMIT context nodes".into()); }
     let prefix = scoped_graph::prefix(ns).map_err(err)?;
@@ -219,12 +228,25 @@ fn sync_context(v: &Value, ns: &Namespace, journal: &Journal, g: &mut Graph,
         if before + 20 + bytes.len() as u64 > 48*MIB { return Err("COMPACTION_REQUIRED".into()); }
         journal.save_checked(g, before, epoch).map_err(quarantine)?;
     }
-    let status = journal.status().map_err(quarantine)?;
+    let (durable,status)=journal.load_with_status().map_err(quarantine)?;
     if status.trailing_bytes != 0 || status.epoch != g.epoch() {
         return Err("stale or torn synchronized graph".into());
     }
-    Ok(json!({"schema":"vivim.hqkg-personal/1","scope":scope,"op":"sync-context",
-        "epoch":status.epoch,"bytes":status.total_bytes,"synced":wanted.len(),"syncedRelationships":page_edges.len(),"changed":changed}))
+    // The read uses the verified durable replay. Keep the existing independent
+    // reader semantics, but avoid launching it and loading the same head again.
+    let mut packet=json!({"schema":"vivim.hqkg-personal/1","scope":scope,"op":v["op"],
+        "epoch":status.epoch,"bytes":status.total_bytes,"synced":wanted.len(),"syncedRelationships":page_edges.len(),"changed":changed});
+    if let Some(view)=view {
+        check_managed_head(journal.path(),&status).map_err(quarantine)?;
+        packet["context"]=project_managed_graph(&durable,scope,status.epoch,view).map_err(quarantine)?;
+        // Preserve the standalone reader's final on-disk epoch/length check.
+        let after=journal.status().map_err(quarantine)?;
+        if after.epoch!=status.epoch || after.total_bytes!=status.total_bytes || after.trailing_bytes!=0 {
+            return Err("managed graph changed while reading".into());
+        }
+        check_managed_head(journal.path(),&after).map_err(quarantine)?;
+    }
+    Ok(packet)
 }
 
 fn run() -> Result<Value, String> {
@@ -242,14 +264,13 @@ fn run() -> Result<Value, String> {
     let before=match fs::symlink_metadata(&path) { Ok(m)=>{if !m.is_file() || m.file_type().is_symlink() {return Err("unsafe journal".into());} m.len()}, Err(e) if e.kind()==io::ErrorKind::NotFound=>0, Err(e)=>return Err(err(e)) };
     if before>64*MIB {return Err("CAPACITY_HELD journal".into());}
     if path.with_extension("hqkg.lock").exists() || path.with_extension("hqkg.compact.tmp").exists() || path.with_extension("hqkg.preflight.tmp").exists() { return Err("RECOVERY_REQUIRED artifact".into()); }
-    let status=journal.status().map_err(quarantine)?;
+    let (mut g,status)=journal.load_with_status().map_err(quarantine)?;
     if status.trailing_bytes!=0 {return Err("RECOVERY_REQUIRED torn journal".into());}
-    let mut g=journal.load().map_err(quarantine)?;
     let prefix=scoped_graph::prefix(&ns).map_err(err)?;
     if g.nodes().any(|n| !n.id.starts_with(&prefix) || n.properties.get("hqkg.namespace")!=Some(&ns.label())) || g.edges().any(|e| !e.id.starts_with(&prefix)) {return Err("namespace conflict".into());}
     g.check_indexes().map_err(err)?;
     let op=text(&v,"op")?;
-    if op == "sync-context" {
+    if matches!(op,"sync-context"|"sync-context-read") {
         if status.epoch != g.epoch() || status.total_bytes != before {
             return Err("stale synchronized graph head".into());
         }
