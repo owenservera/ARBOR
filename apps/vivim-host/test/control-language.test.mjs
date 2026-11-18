@@ -116,4 +116,6 @@ test('Wiki natural-language text slot preserves exact capitalization, punctuatio
     assert.equal(result.candidate.args.content, content);
     assert.equal(Object.hasOwn(result, 'authorized'), false);
   }
+  const missing = interpretControl('edit wiki section main/about Updated from VIVIM', { catalog, world });
+  assert.equal(missing.outcome, 'incomplete', 'a missing text separator cannot silently become replacement content');
 });
