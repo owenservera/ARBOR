@@ -1356,7 +1356,7 @@ function mountCompose() {
   const host = $('build-compose'); if (!host) return;
   compose = mountBuildCanvas({
     host, request: api, navigate: goTab,
-    getSurface: () => (build && build.surface && build.surface()) || null,
+    getSurface: () => build?.surface() ?? build?.draftSurface() ?? null,
     getProvider: () => S.statusObj?.snapshot?.onboarding?.primary || 'chatgpt',
     send: async (prompt, provider) => {
       const conversationId = 'c-' + hex16();
@@ -1424,7 +1424,7 @@ async function pollBuild() {
     const rev = st && st.snapshot && st.snapshot.bootstrap ? st.snapshot.bootstrap.uiRevision : null;
     // Always inspect the Host full snapshot. Comparing just a numeric revision
     // would conceal same-revision conflicts and an unproved rollback.
-    const observed = build.setSurface(rev);
+    const observed = build.setSurface(rev, st?.snapshot?.bootstrap);
     buildKey = observed?.state === 'ready' ? String(rev.surfaceId) + ':' + String(rev.revision) : '';
   } catch (e) {
     if (build) build.clear();
