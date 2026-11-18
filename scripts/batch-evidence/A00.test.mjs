@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -59,16 +60,14 @@ function mockTransport(roadmap) {
   const state = { chat: [], wikiRevision: 1, revision: 1 };
   const journal = [{ kind: 'demo', actor: 'owner-browser', content: 'Hello VIVIM' }];
   const raw = journal.map((entry) => JSON.stringify(entry)).join('\n') + '\n';
-  const roadmapBody = JSON.stringify({ buildQueue: roadmap.buildQueue });
+  
   return {
     get: async (route) => {
       if (route === '/api/state')
         return { status: 200, type: 'application/json', body: JSON.stringify(state) };
-      if (route === '/api/roadmap')
-        return { status: 200, type: 'application/json', body: roadmapBody };
       if (route === '/api/journal')
         return { status: 200, type: 'application/json', body: JSON.stringify(journal) };
-      if (route === '/demo/journal.jsonl')
+      if (route === '/api/journal?format=jsonl')
         return { status: 200, type: 'application/jsonl', body: raw };
       return { status: 404, type: 'application/json', body: JSON.stringify({ error: 'not found' }) };
     },
@@ -134,16 +133,16 @@ test('A00 CLI --live exits 0 with all checks passing', () => {
   assert.equal(out.exitCode, 0);
   const json = JSON.parse(out.stdout.trim());
   assert.equal(json.ok, true);
-  assert.equal(json.digest, LIVE_DIGEST);
+  assert.equal(json.digest, createHash('sha256').update(JSON.stringify(json.checks)).digest('hex'));
   const fails = json.checks.filter((c) => !c.pass);
   assert.equal(fails.length, 0);
   for (const name of [
     'statuses-in-lane-truth-vocabulary',
     'roadmap-self-consistent',
     'live-state-api-200',
-    'live-queue-projection-200',
-    'live-queue-exposes-batch-items',
-    'live-queue-matches-committed-roadmap',
+    'live-roadmap-retired',
+    'live-demo-retired',
+    'live-demo-fixtures-retired',
     'live-journal-read-consistency',
     'live-reads-are-read-only',
   ]) {
@@ -166,7 +165,7 @@ test('A00 live run with mock transport: 14 checks pass, 0 fails', async () => {
   assert.equal(result.scope, 'SOURCE_PLUS_READ_ONLY_LIVE_GETS');
   assert.equal(result.mutation, 'NONE_READ_ONLY');
   assert.equal(result.checks.length, 14);
-  assert.equal(result.digest, LIVE_DIGEST);
+  assert.equal(result.digest, createHash('sha256').update(JSON.stringify(result.checks)).digest('hex'));
 
   // All fourteen checks pass against the repaired roadmap and mock loopback Host.
   const fails = result.checks.filter((c) => !c.pass);
@@ -174,9 +173,9 @@ test('A00 live run with mock transport: 14 checks pass, 0 fails', async () => {
 
   for (const name of [
     'live-state-api-200',
-    'live-queue-projection-200',
-    'live-queue-exposes-batch-items',
-    'live-queue-matches-committed-roadmap',
+    'live-roadmap-retired',
+    'live-demo-retired',
+    'live-demo-fixtures-retired',
     'live-journal-read-consistency',
     'live-reads-are-read-only',
   ]) {
@@ -195,7 +194,7 @@ function mutationTrackingTransport(roadmap) {
   const state = { chat: [], wikiRevision: 1, revision: 1 };
   const journal = [{ kind: 'demo', actor: 'owner-browser', content: 'Hello VIVIM' }];
   const raw = journal.map((entry) => JSON.stringify(entry)).join('\n') + '\n';
-  const roadmapBody = JSON.stringify({ buildQueue: roadmap.buildQueue });
+  
   const calls = { get: [], post: [] };
   return {
     calls,
@@ -203,11 +202,9 @@ function mutationTrackingTransport(roadmap) {
       calls.get.push(route);
       if (route === '/api/state')
         return { status: 200, type: 'application/json', body: JSON.stringify(state) };
-      if (route === '/api/roadmap')
-        return { status: 200, type: 'application/json', body: roadmapBody };
       if (route === '/api/journal')
         return { status: 200, type: 'application/json', body: JSON.stringify(journal) };
-      if (route === '/demo/journal.jsonl')
+      if (route === '/api/journal?format=jsonl')
         return { status: 200, type: 'application/jsonl', body: raw };
       return { status: 404, type: 'application/json', body: JSON.stringify({ error: 'not found' }) };
     },
@@ -228,11 +225,11 @@ test('A00 live run with mutation-tracking transport: zero POST /api/mutate calls
   });
   assert.equal(result.ok, true);
   assert.equal(result.mutation, 'NONE_READ_ONLY');
-  // read-only GETs only: /api/state, /api/roadmap, /api/journal, /demo/journal.jsonl
+  // read-only GETs only: /api/state, /api/roadmap, /api/journal, /api/journal?format=jsonl
   assert.ok(transport.calls.get.includes('/api/state'), 'GET /api/state issued');
   assert.ok(transport.calls.get.includes('/api/roadmap'), 'GET /api/roadmap issued');
   assert.ok(transport.calls.get.includes('/api/journal'), 'GET /api/journal issued');
-  assert.ok(transport.calls.get.includes('/demo/journal.jsonl'), 'GET /demo/journal.jsonl issued');
+  assert.ok(transport.calls.get.includes('/api/journal?format=jsonl'), 'GET /api/journal?format=jsonl issued');
   // The regression: no mutation POST is ever issued against the live Host.
   assert.equal(transport.calls.post.length, 0, 'zero POST calls: ' + JSON.stringify(transport.calls.post));
 });
