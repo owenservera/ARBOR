@@ -46,7 +46,7 @@ import { createHostServer } from '../server.mjs';
 const testDir = typeof __dirname === 'string'
   ? __dirname
   : path.dirname(fileURLToPath(import.meta.url));
-const demoDir = path.resolve(testDir, '..', 'public', 'demo');
+const demoDir = path.resolve(testDir, '..', '..', '..', 'demo', 'host-legacy');
 const demoHtml = readFileSync(path.join(demoDir, 'demo.html'), 'utf8');
 const controllerSrc = readFileSync(path.join(demoDir, 'controller.js'), 'utf8');
 
@@ -111,9 +111,9 @@ test('phone preview route is live and framable same-origin (iframe target smoke)
     assert.equal(shell.status, 200);
     assert.equal(shell.headers.get('x-frame-options'), 'SAMEORIGIN');
     assert.match(shell.headers.get('content-security-policy') || '', /frame-ancestors 'self'/);
-    // The shell route itself stays reachable for the same frame contract.
-    assert.equal((await httpFetch(base, '/demo')).status, 200);
-    assert.equal((await httpFetch(base, '/demo/fixture/index.json')).status, 200);
+    // The retired demo cannot frame or expose fixture content through the Host.
+    assert.equal((await httpFetch(base, '/demo')).status, 404);
+    assert.equal((await httpFetch(base, '/demo/fixture/index.json')).status, 404);
   } finally {
     await new Promise(resolve => server.close(resolve));
     rmSync(dataRoot, { recursive: true, force: true });
