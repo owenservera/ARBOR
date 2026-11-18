@@ -56,10 +56,16 @@ function validateEnvelope(entry, { stored = false } = {}) {
   } else if (entry.kind === 'wiki-edit') {
     const e = entry.edit;
     requireShape(ownKeys(e, ['action','page','section','content']) &&
-      e.action === 'set-section' && typeof e.page === 'string' && SAFE_NAME.test(e.page) &&
+      ['set-section','capture-note','capture-task'].includes(e.action) && typeof e.page === 'string' && SAFE_NAME.test(e.page) &&
       typeof e.section === 'string' && SAFE_NAME.test(e.section) &&
       typeof e.content === 'string' && Buffer.byteLength(e.content, 'utf8') <= MAX_WIKI_TEXT,
       'Invalid bounded Wiki set-section edit', fault);
+    if(e.action!=='set-section')requireShape(
+      /^note-[a-f0-9]{32}$/.test(e.page)&&e.action==='capture-note'&&e.section==='Note'||
+      /^task-[a-f0-9]{32}$/.test(e.page)&&e.action==='capture-task'&&e.section==='Task',
+      'Invalid capture identity',fault);
+    if(e.action!=='set-section')requireShape(e.content.trim()===e.content&&e.content.length>0&&e.content.length<=1200&&
+      !/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(e.content),'Invalid capture text',fault);
     requireShape(Number.isSafeInteger(entry.expectedRevision) && entry.expectedRevision >= 0,
       'Wiki edit requires expectedRevision', stored ? 503 : 428);
   } else if (entry.kind === 'wiki-structure') {
@@ -177,10 +183,10 @@ export function replayProductJournal(seedState, seedWiki, records) {
         revision: ++productRevision });
       lastAt = e.receivedAt;
     } else if (e.kind === 'wiki-edit') {
-      requireShape(wiki.pages?.[e.edit.page]?.sections &&
-        Object.hasOwn(wiki.pages[e.edit.page].sections, e.edit.section) &&
-        e.expectedRevision === wiki.revision, 'Invalid or stale journal Wiki edit', 503);
-      wiki.pages[e.edit.page].sections[e.edit.section] = e.edit.content;
+      validateWikiEditTarget(e,wiki,503);
+      if(e.edit.action==='set-section')wiki.pages[e.edit.page].sections[e.edit.section]=e.edit.content;
+      else Object.defineProperty(wiki.pages,e.edit.page,{value:{sections:{[e.edit.section]:e.edit.content,
+        ...(e.edit.action==='capture-task'?{Status:'Open'}:{})}},enumerable:true,writable:true,configurable:true});
       wiki.revision++;
       productRevision++;
       lastAt = e.receivedAt;
@@ -198,11 +204,30 @@ export function replayProductJournal(seedState, seedWiki, records) {
     wiki, journalRevision: records.length };
 }
 
-export function validateProductEdit(payload, wiki) {
-  validateEnvelope(payload);
-  requireShape(wiki.pages?.[payload.edit.page]?.sections &&
-    Object.hasOwn(wiki.pages[payload.edit.page].sections, payload.edit.section), 'Wiki target does not exist', 404);
-  requireShape(payload.expectedRevision === wiki.revision, 'Stale Wiki revision', 409);
+function validateWikiEditTarget(payload,wiki,fault=409){
+  requireShape(payload.expectedRevision===wiki.revision,'Stale Wiki revision',fault);
+  const e=payload.edit;
+  if(e.action==='set-section'){
+    requireShape(Object.hasOwn(wiki.pages,e.page)&&wiki.pages[e.page]?.sections&&
+      Object.hasOwn(wiki.pages[e.page].sections,e.section),'Wiki target does not exist',fault===503?503:404);
+  }else{
+    requireShape(!Object.keys(wiki.pages).some(p=>p.toLowerCase()===e.page.toLowerCase()),'Capture already exists; inspect Wiki before retrying',fault);
+    requireShape(Object.keys(wiki.pages).length<256,'Wiki page capacity reached',fault===503?503:507);
+  }
+}
+export function validateProductEdit(payload,wiki){
+  validateEnvelope(payload);validateWikiEditTarget(payload,wiki);
+}
+// A capture is one atomic Wiki edit, not a separate task database or two independently approved writes.
+export function previewWikiCapture(wiki,{capture_id,kind,content}={}){
+  requireShape(typeof capture_id==='string'&&/^[A-Za-z0-9-]{8,80}$/.test(capture_id)&&['note','task'].includes(kind),'Invalid capture identity',400);
+  const page=kind+'-'+createHash('sha256').update(JSON.stringify([kind,capture_id])).digest('hex').slice(0,32);
+  const section=kind==='task'?'Task':'Note';
+  const edit={action:'capture-'+kind,page,section,content};
+  const payload={kind:'wiki-edit',actor:'owner-browser',schemaVersion:1,expectedRevision:wiki.revision,edit};
+  validateProductEdit(payload,wiki);
+  return {page,section,expectedRevision:wiki.revision,target:page+'/'+section,before:'New capture (no existing page)',
+    after:content+(kind==='task'?'\n\nTask status: Open':''),edit};
 }
 
 // Source-identified observations only: user statements are not verified Wiki facts.
@@ -224,6 +249,7 @@ function projectWikiChanges(records, { currentOnly = false } = {}) {
     previousWikiRevision: e.expectedRevision, wikiRevision: e.expectedRevision + 1,
     status: latestBySection.get(JSON.stringify([e.edit.page, e.edit.section])) ===
       e.expectedRevision + 1 ? 'current-section-revision' : 'superseded-section-revision',
+    ...(e.edit.action==='capture-note'||e.edit.action==='capture-task'?{captureKind:e.edit.action.slice(8)}:{}),
     relationship: { kind: 'mutated-section', page: e.edit.page, section: e.edit.section }
   }));
   return { total: selected.length, omitted: selected.length - items.length, items };
@@ -278,7 +304,7 @@ export function projectAppliedControlEffects(control, wikiChanges = null, wikiSt
         !['desktop-owner-token', 'direct-phone'].includes(receipt.approvedVia))
       throw new Error('Invalid applied control receipt');
     let wikiLink = null, structureLink = null;
-    if (receipt.actionId === 'wiki.section.edit') {
+    if (['wiki.section.edit','wiki.capture.save'].includes(receipt.actionId)) {
       const result = receipt.result;
       const edit = wikiChanges?.items?.find(e => e.entryId === result?.entryId &&
         e.sequence === result?.sequence && e.wikiRevision === result?.wikiRevision &&

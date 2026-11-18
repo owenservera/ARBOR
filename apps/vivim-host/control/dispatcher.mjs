@@ -16,7 +16,7 @@ import { createLexiconStore } from './lexicon.mjs';
 import { createPersonalRuleStore } from './personal-rule-store.mjs';
 import { PERSONAL_RULE_SCHEMA, validatePersonalRule, TEMPLATE_SCHEMA, templateAlias, templateDependencies, bindPersonalRule, currentTemplate } from './personal-semantics.mjs';
 import { interpretControl, resolveLocalDestination, resolveDesktopDestination } from '../../mobile-relay/control-language.mjs';
-import { previewWikiStructure } from '../chat/product-journal.mjs';
+import { previewWikiStructure, previewWikiCapture } from '../chat/product-journal.mjs';
 import { wikiApprovalSentence } from './command-intent.mjs';
 
 export const DISPATCHER_SCHEMA = 'vivim.control-dispatcher/1';
@@ -36,6 +36,7 @@ const LEARNABLE = new Set(['wiki.pages.list','wiki.section.read','wiki.page.crea
   'wiki.section.edit','wiki.page.move','wiki.pages.link','ui.theme.show','ui.theme.set_preset',
   'vivim.status.show']);
 const WIKI_ACTION = 'wiki.section.edit';
+const CAPTURE_ACTION='wiki.capture.save';
 // A typed VEC document is not an NL action or a string argument. Keep the existing
 // language catalog stable (including accepted learned rules); the visual contract
 // has its own version and uses the very same control plan journal and claim.
@@ -43,7 +44,7 @@ const VISUAL_ACTION='ui.visual.apply';
 const VISUAL_CONTRACT=Object.freeze({id:VISUAL_ACTION,risk:'R1',readiness:'source_wired',
   schema:'vivim.ui-proposal/1',revision:1});
 const WIKI_STRUCTURE = new Set(['wiki.page.create','wiki.page.move','wiki.pages.link']);
-const wikiMutation = id => id === WIKI_ACTION || WIKI_STRUCTURE.has(id);
+const wikiMutation = id => id === WIKI_ACTION || id===CAPTURE_ACTION || WIKI_STRUCTURE.has(id);
 function structureEdit(id,args) {
   if(id==='wiki.page.create')return {action:'create-page',page:args.page};
   if(id==='wiki.page.move')return {action:'move-page',page:args.page,position:args.position};
@@ -237,6 +238,14 @@ function createExecutors({ runtime, planner, lexicon, devices, productJournal, p
         wikiRevision: found.expectedRevision, content: found.before,
         ...(relatedPages(wiki,found.page).length ? {relatedPages:relatedPages(wiki,found.page)} : {}) };
     },
+    [CAPTURE_ACTION]: async ({content},ctx)=>{
+      const b=ctx.wikiBinding;if(!productJournal||!b?.edit)throw fail('CONTROL_WIKI_NOT_READY');
+      const entry=await productJournal.append({kind:'wiki-edit',actor:'owner-browser',schemaVersion:1,expectedRevision:b.expectedRevision,edit:b.edit});
+      const wiki=await productJournal.readPhoneWiki();
+      if(wiki.revision!==b.expectedRevision+1||entry.wikiRevision!==wiki.revision||wiki.pages?.[b.page]?.sections?.[b.section]!==content||
+         (b.edit.action==='capture-task'&&wiki.pages[b.page].sections.Status!=='Open'))throw fail('CONTROL_WIKI_READBACK_MISMATCH');
+      return {page:b.page,section:b.section,content,previousRevision:b.expectedRevision,wikiRevision:wiki.revision,entryId:entry.entryId,sequence:entry.sequence};
+    },
     [WIKI_ACTION]: async ({ content }, ctx) => {
       if (!productJournal || !ctx.wikiBinding) throw fail('CONTROL_WIKI_NOT_READY');
       const { page, section, expectedRevision } = ctx.wikiBinding;
@@ -324,7 +333,8 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
   // Exact resolved values, not a client-rendered paraphrase.
   function approvalBinding(actionId,args,source,wikiBinding){
     const a=action(actionId);
-    const resolved=actionId===WIKI_ACTION?{target:wikiBinding.page+'/'+wikiBinding.section,content:args.content}:
+    const resolved=actionId===CAPTURE_ACTION?{...args,page:wikiBinding.page,section:wikiBinding.section}:
+      actionId===WIKI_ACTION?{target:wikiBinding.page+'/'+wikiBinding.section,content:args.content}:
       actionId==='wiki.pages.link'?{from:wikiBinding.edit.from,to:wikiBinding.edit.to}:
       actionId==='wiki.page.move'?{page:wikiBinding.edit.page,position:wikiBinding.edit.position}:
       {page:wikiBinding.edit.page};
@@ -523,7 +533,8 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
         createdAt, expiresAt: new Date(now() + ttlMs).toISOString(),
         ...(semanticRuleBinding ? { semanticRuleBinding } : {}),
         ...(ruleBinding?{ruleBinding}:{}),
-        ...(wikiBinding ? { wikiBinding,approvalMeaning } : {}) };
+        ...(wikiBinding ? { wikiBinding,approvalMeaning } : {}),
+        ...(p.actionId===CAPTURE_ACTION&&source==='mobile'?{captureGrantId:grantId}:{}) };
       const record = { ...body, planDigest: digest(body) };
       journal.record(record);
       return { ...p, planId: record.planId, planDigest: record.planDigest, createdAt, expiresAt: record.expiresAt,
@@ -537,6 +548,10 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
             ? [source === 'mobile' ? 'direct-phone' : 'desktop-owner-token']
             : [...APPROVAL_CHANNELS] } };
     };
+    if(p.actionId===CAPTURE_ACTION){
+      if(p.origin!=='typed'||(source==='mobile'&&(!grantId||!actor)))throw fail('CONTROL_INPUT_INVALID');
+      return productJournal.readPhoneWiki().then(wiki=>savePlan(previewWikiCapture(wiki,p.args)));
+    }
     if (p.actionId === WIKI_ACTION) {
       if (Buffer.byteLength(p.args.content, 'utf8') > MAX_WIKI_CONTENT_BYTES)
         throw fail('CONTROL_WIKI_CONTENT_INVALID');
@@ -565,6 +580,7 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
        approval.channel!=='desktop-owner-token')throw fail('CONTROL_DESKTOP_APPROVAL_REQUIRED');
     if(RULE_ACTIONS.has(rec.plan.actionId)&&approval.actor!=='desktop-owner')
       throw fail('CONTROL_DESKTOP_APPROVAL_REQUIRED');
+    if(rec.plan.actionId===CAPTURE_ACTION&&rec.plan.source==='mobile'&&approval.grantId!==rec.plan.captureGrantId)throw fail('CONTROL_WIKI_DEVICE_MISMATCH');
     // Receipt replay must respect the original Wiki channel and device.
     if(wikiMutation(rec.plan.actionId)){
       if(rec.plan.source==='mobile'&&(approval.channel!=='direct-phone'||approval.actor!==rec.plan.actor))
@@ -690,6 +706,15 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
         return claimAndRun();
       });
     }
+    if(rec.plan.actionId===CAPTURE_ACTION){
+      if(!productJournal||!rec.plan.wikiBinding)throw fail('CONTROL_WIKI_NOT_READY');
+      return productJournal.readPhoneWiki().then(wiki=>{
+        if(wiki.revision!==rec.plan.wikiBinding.expectedRevision)throw fail('CONTROL_WIKI_STALE');
+        const current=previewWikiCapture(wiki,rec.plan.args);
+        if(digest(current)!==digest(rec.plan.wikiBinding))throw fail('CONTROL_WIKI_STALE');
+        checkApprovalBinding(rec.plan,current);return claimAndRun();
+      });
+    }
     if (rec.plan.actionId === WIKI_ACTION) {
       if (!productJournal || !rec.plan.wikiBinding) throw fail('CONTROL_WIKI_NOT_READY');
       // Check before claiming; the journal's append queue repeats CAS after claim.
@@ -710,6 +735,7 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
     const rec = journal.get(planId);
     if (!rec) throw fail('CONTROL_PLAN_UNKNOWN');
     if(rec.plan.actionId===VISUAL_ACTION&&source==='mobile'&&(actor!==rec.plan.actor||grantId!==rec.plan.approvalMeaning?.deviceGrantId))throw fail('CONTROL_PLAN_UNKNOWN');
+    if(rec.plan.actionId===CAPTURE_ACTION&&source==='mobile'&&(rec.plan.source!=='mobile'||actor!==rec.plan.actor||grantId!==rec.plan.captureGrantId))throw fail('CONTROL_PLAN_UNKNOWN');
     if(source==='mobile'&&(RULE_ACTIONS.has(rec.plan.actionId)||(rec.plan.origin==='personal_rule'&&rec.plan.source==='desktop')))
       throw fail('CONTROL_PLAN_UNKNOWN');
     return { planId, state: rec.state, actionId: rec.plan.actionId, risk: rec.plan.risk, args: rec.plan.args,

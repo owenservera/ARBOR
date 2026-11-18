@@ -2,7 +2,7 @@ import {createLocalNotebook,MAX_NOTE_LENGTH} from './local-notes.mjs';
 
 // Local-only notes drawer: the user explicitly saves each note and can export
 // or delete it. No implicit replay or migration when phone pairing resumes.
-export function mountLocalNotes({host,storage,copyText,saveFile,now,makeId}={}){
+export function mountLocalNotes({host,storage,copyText,saveFile,now,makeId,onCapture=null,canCapture=()=>false}={}){
   if(!host?.ownerDocument)throw new TypeError('LOCAL_NOTES_HOST_REQUIRED');
   const notebook=createLocalNotebook({storage,now,makeId});
   const doc=host.ownerDocument;
@@ -17,7 +17,7 @@ export function mountLocalNotes({host,storage,copyText,saveFile,now,makeId}={}){
   const title=make('h2','', 'Quick capture');
   const dismiss=make('button','btn sm','Close');dismiss.type='button';
   bar.append(title,dismiss);
-  const notice=make('p','muted','Saved only in this browser, as unencrypted local storage. Not synced, imported or sent to your PC or an AI.');
+  const notice=make('p','muted','Saved in unencrypted browser-local storage. Nothing is synced automatically. You can explicitly preview a saved note or task for Host approval.');
   const input=make('textarea','notes-input');
   input.rows=4;input.maxLength=MAX_NOTE_LENGTH;
   input.placeholder='A quick thought, idea or task…';
@@ -70,8 +70,20 @@ export function mountLocalNotes({host,storage,copyText,saveFile,now,makeId}={}){
         try{notebook.remove(note.id);status.textContent='Note deleted from this browser.';render()}
         catch{status.textContent='Could not update browser storage.'}
       });
-      buttons.append(copyItem,remove);row.append(text,when,buttons);items.append(row);
+      buttons.append(copyItem,remove);
+      if(typeof onCapture==='function'&&canCapture())for(const kind of ['note','task']){
+        const review=make('button','btn sm','Review as Host '+kind);review.type='button';review.addEventListener('click',()=>{
+          if(!canCapture())return;let current;try{current=notebook.list().find(n=>n.id===note.id);}catch{return;}
+          if(!current||current.text!==note.text)return;
+          if(onCapture({capture_id:current.id,kind,content:current.text})===true)close();
+        });buttons.append(review);
+      }
+      row.append(text,when,buttons);items.append(row);
     }
+  }
+  function draft(value){
+    if(typeof value!=='string'||value.trim().length<1||value.length>MAX_NOTE_LENGTH)return false;
+    open();input.value=value;input.focus();return true;
   }
   function open(){
     if(dialog.open)return;
@@ -125,5 +137,5 @@ export function mountLocalNotes({host,storage,copyText,saveFile,now,makeId}={}){
       status.textContent='All saved notes were deleted from this browser.';render();
     }catch{status.textContent='Could not clear browser storage.'}
   });
-  return Object.freeze({open,close,list:()=>notebook.list()});
+  return Object.freeze({open,close,draft,list:()=>notebook.list()});
 }

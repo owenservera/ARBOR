@@ -1675,9 +1675,14 @@ welcome = mountWelcome({ host: $('welcome') });
 
 // Local-only tools share this one PWA UI; neither bypasses Host authority.
 if (!HOST_PREVIEW) {
-  try { localNotes = mountLocalNotes({ host: document.body, storage: window.localStorage }); }
+  const canCapture=()=>!HOST_PREVIEW&&S.paired&&transport.direct&&navigator.onLine!==false&&!!transport.deviceHeaders?.()&&S.device.scopes?.includes('control:execute')===true&&!vivimChat.busy();
+  try { localNotes = mountLocalNotes({host:document.body,storage:window.localStorage,canCapture,onCapture:capture=>{
+    if(!canCapture())return false;
+    goTab('talk');if(N.target!=='vivim'){$('talk-target').value='vivim';$('talk-target').dispatchEvent(new Event('change'));}
+    void vivimChat.previewCapture(capture);return true;
+  }}); }
   catch { /* Browser storage may be blocked; Today still works without notes. */ }
-  try { localVoice = mountVoiceCapture({host:document.body}); }
+  try { localVoice = mountVoiceCapture({host:document.body,onReviewedText:text=>localNotes?.draft(text)}); }
   catch { /* No recording permission is requested until the owner taps Start. */ }
 }
 $('dock-mic').hidden = HOST_PREVIEW || !(localVoice?.available || (pocketButton&&!pocketButton.hidden));

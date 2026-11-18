@@ -547,13 +547,13 @@ export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'wo
         }
         if (!c) { json(res, 404, { code: 'CONTROL_DISPATCH_UNAVAILABLE' }); return; }
         if (sub === 'plan') {
-          if(Object.hasOwn(body,'visualProposal'))authorizeDevice(req,'control:execute');
+          if(Object.hasOwn(body,'visualProposal')||body.actionId==='wiki.capture.save')authorizeDevice(req,'control:execute');
           const plan = await c.plan(body, { source: 'mobile', actor: device.deviceId,grantId:req.headers['x-vivim-grant-id'] });
           // Reuse the phone-safe Wiki projection; never open owner-private HQ
           // sources, native personal context, statements or effect history here.
           const result = await attachRequestContext(plan,{text:body.text,readWiki:wikiProjection});
           // A device grant may be revoked during an asynchronous Wiki read.
-          authorizeDevice(req, 'control:read');
+          authorizeDevice(req,body.actionId==='wiki.capture.save'?'control:execute':'control:read');
           res.setHeader('cache-control', 'private, no-store');
           json(res, 200, result); return;
         }

@@ -1650,6 +1650,50 @@
       },
       "subject": "wiki",
       "priority": "P1"
+    },
+    {
+      "id": "wiki.capture.save",
+      "title": "Save reviewed personal note or task",
+      "category": "wiki",
+      "owner": "host-wiki",
+      "executor": "apps/vivim-host/control/dispatcher.mjs:createExecutors",
+      "readiness": "source_wired",
+      "risk": "R1",
+      "target": "local-host",
+      "args": {
+        "capture_id": {
+          "type": "string",
+          "min": 8,
+          "max": 80
+        },
+        "kind": {
+          "type": "enum",
+          "values": [
+            "note",
+            "task"
+          ]
+        },
+        "content": {
+          "type": "string",
+          "min": 1,
+          "max": 1200
+        }
+      },
+      "examples": [
+        "Review a saved local note or task in Quick capture"
+      ],
+      "surfaces": [
+        "text",
+        "desktop",
+        "mobile",
+        "visual"
+      ],
+      "reversible": false,
+      "privacy": "pc-only",
+      "aiCandidate": false,
+      "subject": "wiki",
+      "priority": "P1",
+      "precondition": "Explicit reviewed capture through the typed Host interface."
     }
   ],
   "readinessStates": {

@@ -391,6 +391,7 @@ export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path
         sendJson(res, 400, { code: 'MUTATION_ENVELOPE' }); return;
       }
       if (entry.kind === 'wiki-edit') {
+        if(entry.edit?.action!=='set-section'){sendJson(res,400,{code:'CAPTURE_REQUIRES_CONTROL_PLAN'});return;}
         // Both browser CSRF and the Host's EXISTING owner capability are required.
         // For an owner-browser session, the HttpOnly cookie + x-vivim-ui-csrf
         // must match the same session minted by /api/host/control/ui-exchange.
