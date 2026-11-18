@@ -217,6 +217,40 @@ import { resolveDesktopDestination, resolveProductRoute } from '/mobile/control-
       recent.replaceChildren(element('p', 'warning', 'Host history unavailable: ' + error.message));
     }
   }
+  function showRequestContext(node, plan) {
+    const context=plan.requestContext;
+    if(context?.schema!=='vivim.request-context/1'||context.authority!=='read-only')return;
+    const wiki=context.wiki;
+    if(wiki){
+      node.append(element('strong','','Request Wiki context'));
+      if(wiki.status==='source-backed'){
+        node.append(element('p','','Wiki revision '+wiki.wikiRevision+' · read-only context at planning time'));
+        for(const p of wiki.pages.slice(0,6)){
+          node.append(element('p','',p.page+' · '+p.relation+' · '+p.sections.join(', ')));
+          // Only re-read a section selected explicitly by the user. No filling
+          // missing mutation arguments or approving an effect from context.
+          if(['done','incomplete','clarification_required'].includes(plan.outcome))
+            for(const section of p.sections.slice(0,3)){
+              node.append(button('Read '+p.page+'/'+section,()=>
+                void submitPlan({actionId:'wiki.section.read',args:{page:p.page,section}}),true));
+            }
+        }
+      }else node.append(element('p','','Wiki context '+wiki.status+'; no cached context displayed.'));
+    }
+    const source=context.source;
+    if(source){
+      node.append(element('strong','','VLANG source context'));
+      const bundle=source.context;
+      if(source.status==='indexed'&&bundle?.authority==='read_only_projection'&&Array.isArray(bundle.sources)){
+        const details=element('details','');
+        details.append(element('summary','','Verified at planning time · '+bundle.sources.length+' source(s) · '+bundle.budget.used+' estimated tokens'));
+        for(const item of bundle.sources)
+          details.append(element('p','',item.ref+' · lines '+item.lines.join('–')+' · hash '+item.contentHash));
+        details.append(element('pre','',bundle.fragment));
+        node.append(details);
+      }else node.append(element('p','','Source context '+source.status+'; no invented or cached source displayed.'));
+    }
+  }
   function planView(plan) {
     pending = null;
     if (plan.outcome === 'done') {
@@ -225,6 +259,7 @@ import { resolveDesktopDestination, resolveProductRoute } from '/mobile/control-
       if (meaning?.schema === 'vivim.command-intent/0.1' && meaning.canonical)
         node.append(element('pre', '', meaning.canonical));
       node.append(element('pre', '', JSON.stringify(plan.result, null, 2)));
+      showRequestContext(node,plan);
       return;
     }
     if (plan.outcome !== 'approval_required') {
@@ -243,6 +278,7 @@ import { resolveDesktopDestination, resolveProductRoute } from '/mobile/control-
       if (Array.isArray(plan.missing) && plan.missing.length)
         node.append(element('p', '', 'Missing details: ' +
           plan.missing.slice(0, 8).map(item => item.arg).filter(Boolean).join(', ')));
+      showRequestContext(node,plan);
       return;
     }
     const expected = { planId: plan.planId, planDigest: plan.planDigest };
@@ -272,6 +308,7 @@ import { resolveDesktopDestination, resolveProductRoute } from '/mobile/control-
       pending = null;
       notice('Cancelled. No Host command was executed.');
     }, true));
+    showRequestContext(node,plan);
     node.append(actions);
   }
   async function reviewUnmatched(plan,text) {

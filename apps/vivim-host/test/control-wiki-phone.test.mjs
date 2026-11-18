@@ -181,6 +181,12 @@ test('paired Direct phone: NL Wiki preview -> device approval -> durable Host st
   const reread=await readCommand({text:'read wiki page sprint-notes in section about'});
   assert.equal(reread.body.result.content,'Actual sprint notes');
   assert.deepEqual(reread.body.result.relatedPages,['Main']);
+  assert.equal(reread.body.requestContext.schema,'vivim.request-context/1');
+  assert.equal(reread.body.requestContext.wiki.wikiRevision,reread.body.result.wikiRevision);
+  assert.deepEqual(reread.body.requestContext.wiki.pages.map(p=>[p.page,p.relation]),
+    [['sprint-notes','exact-target'],['Main','linked-page']]);
+  assert.equal(Object.hasOwn(reread.body.requestContext,'source'),false);
+  assert.ok(!JSON.stringify(reread.body.requestContext).includes('Actual sprint notes'));
   owner.revokeGrant({ grantId: grant.grantId, revokedBy: 'desktop-owner' });
   assert.equal((await readCommand({ actionId: 'wiki.pages.list', args: {} })).status, 403);
   assert.equal((await call('/mobile/api/wiki')).status, 403);

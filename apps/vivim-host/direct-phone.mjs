@@ -11,6 +11,7 @@ import { createBridgeStore } from '../../studio/src/studio/bridge-commands.mjs';
 import { createSourceVerifiedLiveProjection } from './conversations/live-projection.mjs';
 import { createPhoneSessions } from './phone-sessions.mjs';
 import { createControlPlanner } from './control/intent-planner.mjs';
+import { attachRequestContext } from './control/request-context.mjs';
 import { createApkRegistry } from './apk/registry.mjs';
 import { createEnrollment } from './apk/enrollment.mjs';
 import { createPairingStore } from './apk/pairing.mjs';
@@ -530,7 +531,10 @@ export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'wo
         }
         if (!c) { json(res, 404, { code: 'CONTROL_DISPATCH_UNAVAILABLE' }); return; }
         if (sub === 'plan') {
-          const result = await c.plan(body, { source: 'mobile', actor: device.deviceId });
+          const plan = await c.plan(body, { source: 'mobile', actor: device.deviceId });
+          // Reuse the phone-safe Wiki projection; never open owner-private HQ
+          // sources, native personal context, statements or effect history here.
+          const result = await attachRequestContext(plan,{text:body.text,readWiki:wikiProjection});
           // A device grant may be revoked during an asynchronous Wiki read.
           authorizeDevice(req, 'control:read');
           res.setHeader('cache-control', 'private, no-store');

@@ -14,13 +14,13 @@ const id = 'vivim.command-intent@0.1';
 const ownerToken = 'real-source-surface-owner-test-12345678901234567890';
 const open = server => new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 const close = server => new Promise(resolve => server.close(resolve));
-function request(server, route, { authenticated = true, method = 'GET', origin, headers = {} } = {}) {
+function request(server, route, { authenticated = true, method = 'GET', origin, headers = {}, body } = {}) {
   const host = '127.0.0.1:' + server.address().port;
   return new Promise((resolve, reject) => {
     const req = http.request({ hostname: '127.0.0.1', port: server.address().port, path: route,
       method, headers: { host, ...(authenticated ? { authorization: 'Bearer ' + ownerToken } : {}),
         ...(method === 'POST' ? { origin: 'http://' + host, 'x-vivim-control': '1' } : {}),
-        ...(origin ? { origin } : {}), ...headers }
+        ...(origin ? { origin } : {}), ...(body!==undefined ? {'content-type':'application/json'} : {}), ...headers }
     }, res => {
       const chunks = [];
       res.on('data', chunk => chunks.push(chunk));
@@ -32,7 +32,7 @@ function request(server, route, { authenticated = true, method = 'GET', origin, 
       });
     });
     req.on('error', reject);
-    req.end();
+    req.end(body===undefined?undefined:JSON.stringify(body));
   });
 }
 function hqAt(root, dataDir) {
@@ -126,6 +126,25 @@ test('real annotated implementation copy: stale refusal, incremental reindex, ch
     const contextUrl = '/api/file-surface/context?project=copy&path=intent-planner.mjs';
     const before = (await request(server, contextUrl)).data;
     checkContext(before, 'copy', 'intent-planner.mjs', id);
+    const command = await request(server,'/api/host/control/plan',{
+      method:'POST',body:{text:'list wiki pages'}
+    });
+    assert.equal(command.status,200,JSON.stringify(command.data));
+    assert.equal(command.data.outcome,'done');
+    assert.equal(command.data.requestContext.authority,'read-only');
+    assert.equal(command.data.requestContext.wiki.status,'source-backed');
+    assert.equal(command.data.requestContext.source.status,'indexed');
+    const automatic=command.data.requestContext.source.context;
+    assert.ok(automatic.sources.length<=3 && automatic.sources.length>0);
+    assert.equal(automatic.budget.maxTokens,2400);
+    assert.ok(automatic.budget.used<=automatic.budget.capacity);
+    assert.ok(automatic.sources.every(s=>s.path==='intent-planner.mjs'&&!Object.hasOwn(s,'absPath')));
+    assert.ok(automatic.sources.every(s=>s.semanticReferences.some(r=>
+      automatic.sourceSemanticIds.includes(r.semanticId))));
+    assert.ok(hq.verifyContext(automatic).valid);
+    assert.equal((await request(server,'/api/host/control/plan',{
+      method:'POST',authenticated:false,body:{text:'list wiki pages'}
+    })).status,401);
     const newer = 'vivim.command-intent@0.2';
     const code = readFileSync(file, 'utf8');
     const edited = code.replace('// @hq:consumes ' + id, '// @hq:consumes ' + newer + '0');
@@ -138,6 +157,12 @@ test('real annotated implementation copy: stale refusal, incremental reindex, ch
     assert.equal(noContext.status, 'stale');
     assert.equal(noContext.context, null);
     assert.equal(hq.verifyContext(before.context).valid, false);
+    const changed = await request(server,'/api/host/control/plan',{
+      method:'POST',body:{text:'list wiki pages'}
+    });
+    assert.equal(changed.data.outcome,'done','optional HQ failure cannot block the authoritative Wiki read');
+    assert.equal(changed.data.requestContext.source.status,'stale');
+    assert.equal(changed.data.requestContext.source.context,null);
 
     const deniedRefresh = await request(server, '/api/file-surface/index', { method: 'POST', authenticated: false });
     assert.equal(deniedRefresh.status, 401);

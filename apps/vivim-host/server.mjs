@@ -33,6 +33,7 @@ import { createStudioPort } from './onboarding/studio-port.mjs';
 import { detectEnvironment } from './onboarding/environment.mjs';
 import { controlErrorStatus } from './control/http-status.mjs';
 import { createLiveSourceSurface } from './control/live-source-surface.mjs';
+import { attachRequestContext } from './control/request-context.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(here, '..', '..');
@@ -300,7 +301,7 @@ export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path
       return;
     }
     if (pathname.startsWith('/api/host/control/')) {
-      await handleControl(req, res, pathname, host, controlFor, tokenFor, uiSessions, enrollment, runtimeFor, productJournal, nativeContext);
+      await handleControl(req, res, pathname, host, controlFor, tokenFor, uiSessions, enrollment, runtimeFor, productJournal, nativeContext, developmentSources);
       return;
     }
     const workerMatch = pathname.match(/^\/api\/host\/worker\/([^\/]+)\/(status|recover)$/);
@@ -776,7 +777,7 @@ function ownerAuthorized(req, res, tokenFor) {
 // UTC03 desktop surface. Reads: loopback + owner token. Writes additionally require the exact
 // same Origin and an explicit header, like bootstrap mutations. Execution happens only in the
 // dispatcher, bound to a previously returned plan digest.
-async function handleControl(req, res, pathname, host, controlFor, tokenFor, uiSessions, enrollment, runtimeFor, productJournal, nativeContext) {
+async function handleControl(req, res, pathname, host, controlFor, tokenFor, uiSessions, enrollment, runtimeFor, productJournal, nativeContext, developmentSources) {
   const route = pathname.slice('/api/host/control/'.length);
   const sameOrigin = String(req.headers.origin || '').toLowerCase() === 'http://' + host;
   const isMutation = ['plan', 'interpret', 'execute', 'ui-logout', 'devices/approve', 'devices/revoke'].includes(route);
@@ -937,7 +938,36 @@ async function handleControl(req, res, pathname, host, controlFor, tokenFor, uiS
       sendJson(res, 200, c.interpret(body.text, { source: 'desktop' })); return;
     }
     if (route === 'plan') {
-      const result = await c.plan(body, { source: 'desktop', actor: 'desktop-owner' });
+      const plan = await c.plan(body, { source: 'desktop', actor: 'desktop-owner' });
+      const stillOwner = () => {
+        try { if (verifyOwnerToken(req.headers.authorization, tokenFor())) return true; } catch {}
+        return uiSessions.authorized(req, { mutate: true });
+      };
+      // Compile request evidence from the actual canonical result. The command
+      // plan/digest is unchanged. Source access stays on the desktop owner path.
+      const result = await attachRequestContext(plan, {
+        text: body.text,
+        readWiki: () => productJournal.readPhoneWiki(),
+        compileSources: async params => {
+          if (!stillOwner()) throw new Error('OWNER_AUTH');
+          const config = developmentSources ?? {
+            approvedRoots: JSON.parse(process.env.VIVIM_HQ_APPROVED_ROOTS || '[]'),
+            dataDir: process.env.VIVIM_HQ_DATA_DIR || undefined
+          };
+          if (!Array.isArray(config.approvedRoots) || !config.approvedRoots.length)
+            return {status:'not-configured',context:null};
+          const session = uiSessions.get(req);
+          const actorId = 'desktop-owner';
+          const sessionId = session?.sessionId ?? 'owner-token';
+          const surface = await createLiveSourceSurface({
+            approvedRoots:config.approvedRoots,dataDir:config.dataDir,actorId,sessionId,
+            authorize: request => request.actorId===actorId && request.sessionId===sessionId &&
+              request.domain==='development' && ['source.read','source.context'].includes(request.operation) &&
+              stillOwner()
+          });
+          return surface.compiledContext(params);
+        }
+      });
       let currentOwner = null;
       try { currentOwner = tokenFor(); } catch { /* fail closed */ }
       if (!(currentOwner && verifyOwnerToken(req.headers.authorization, currentOwner)) &&

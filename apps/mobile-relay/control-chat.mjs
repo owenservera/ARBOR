@@ -113,6 +113,10 @@ export function createControlChat({
       reply.status = 'error';
       return;
     }
+    // This device receives only the phone-safe Wiki scope. Keep context in the
+    // existing transient transcript; never persist or forward it to a provider.
+    reply.requestContext=plan.requestContext?.schema==='vivim.request-context/1'&&
+      plan.requestContext.authority==='read-only'?plan.requestContext.wiki:null;
     if (plan.outcome === 'approval_required') {
       // Throws on a malformed or expired plan; the caller renders the refusal.
       client.validatePlan(plan);
@@ -381,6 +385,27 @@ export function createControlChat({
       const meaning = msg.plan?.language?.vec?.proposal ?? msg.meaning;
       if (meaning?.schema === 'vivim.command-intent/0.1' && meaning.canonical)
         row.append(elem('pre', 'ux-note', meaning.canonical));
+      const context=msg.requestContext;
+      if(context?.status==='source-backed' && Array.isArray(context.pages)){
+        const details=elem('details','vivim-plan');
+        details.append(elem('summary','','Wiki context · revision '+context.wikiRevision+' (at planning time)'));
+        for(const p of context.pages.slice(0,6)){
+          if(!Array.isArray(p.sections))continue;
+          details.append(elem('p','ux-note',p.page+' · '+p.relation+' · '+p.sections.join(', ')));
+          if(['done','clarify'].includes(msg.status))
+            for(const section of p.sections.slice(0,3)){
+              const read=elem('button','chip','Read '+p.page+'/'+section);
+              read.type='button';
+              read.disabled=busy||messages.some(m=>['approval','uncertain','applying','reviewing'].includes(m.status));
+              read.addEventListener('click',()=>{
+                if(messages.some(m=>['approval','uncertain','applying','reviewing'].includes(m.status)))return;
+                void requestAction(msg,{actionId:'wiki.section.read',args:{page:p.page,section}},'Reading selected Wiki section from Host…');
+              });
+              details.append(read);
+            }
+        }
+        row.append(details);
+      }
       if (msg.status === 'build' && msg.requestText) {
         const open = elem('button', 'btn sm ux-secondary', 'Review in Build');
         open.type = 'button';

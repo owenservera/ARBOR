@@ -7,6 +7,7 @@ export async function createLiveSourceSurface({ approvedRoots, dataDir, actorId,
   return Object.freeze({
     read: params => hq.fileSurface(params),
     context: params => hq.fileSurfaceContext(params),
+    compiledContext: params => hq.compiledContext(params),
     // Same existing incremental index, never a source edit. Git is optional.
     refresh: () => {
       const result = hq.index({ useGit: false });

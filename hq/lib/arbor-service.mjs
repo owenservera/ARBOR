@@ -447,6 +447,41 @@ export function createDevIntelligence({
         context: { ...publicBundle, sources } };
     }, 'source.context');
   }
+  // Compile only current, authorized, executable sources carrying an exact
+  // contract identity. Free-text relevance ranks within that scope, never grants it.
+  function compiledContext({ task, sourceSemanticIds = [] } = {}) {
+    if (typeof task !== 'string' || !task.trim() || task.length > 1000 ||
+        !Array.isArray(sourceSemanticIds) || sourceSemanticIds.length < 1 ||
+        sourceSemanticIds.length > 12 || sourceSemanticIds.some(id =>
+          typeof id !== 'string' || id.length > 160 || !isVersionedId(id)))
+      throw new Error('HQ_SOURCE_QUERY_INVALID');
+    const ids = [...new Set(sourceSemanticIds)].sort();
+    const none = status => ({ schema: 'vivim.source-context/1', status, context: null });
+    return withDatabase((db, records) => {
+      const matches = projectSurfaces(db, records, { ids, limit: 16 }).files;
+      const fresh = matches.filter(file => file.freshness === 'indexed');
+      if (!fresh.length) return none(matches.length ? 'stale' : 'empty');
+      const observed = new Map(fresh.map(file => [file.sourceId, file]));
+      const bundle = composeContext(db, { task, sourceSemanticIds: ids,
+        allowedSourceRefs: new Set(observed.keys()), budgetTokens: 2400,
+        reservedForOutput: 400, maxFiles: 3 });
+      if (!bundle.sources.length) return none('empty');
+      if (bundle.sources.some(source => !source.contentHash ||
+          source.contentHash !== observed.get(source.ref)?.sourceDigest ||
+          !source.semanticReferences?.some(ref => ids.includes(ref.semanticId))) ||
+          !verifyHqContext(bundle).valid) return none('unavailable');
+      // Verify full file identity, not merely the selected excerpt, once more.
+      for (const source of bundle.sources) {
+        const current = projectSurfaces(db, records, { project:source.project,
+          path:source.path, limit:1 }).files[0];
+        if (!current || current.freshness !== 'indexed' ||
+            current.sourceDigest !== source.contentHash) return none('stale');
+      }
+      const { vivim, ...publicBundle } = bundle;
+      return { schema:'vivim.source-context/1', status:'indexed',
+        context: { ...publicBundle, sources:bundle.sources.map(({absPath,...source})=>source) } };
+    }, 'source.context');
+  }
   function semanticIds(options = {}) {
     return withDatabase(db => listSemanticIds(db, options));
   }
@@ -493,7 +528,7 @@ export function createDevIntelligence({
   return Object.freeze({
     contract: DEV_INTELLIGENCE_CONTRACT, domain: DEVELOPMENT_DOMAIN,
     registerSource, removeSource, index, search, symbols, files, context,
-    graph, wiki, indexWatermarks, sourceEvidence, fileSurface, fileSurfaceContext, semanticIds, semanticId, scanCapabilities, status,
+    graph, wiki, indexWatermarks, sourceEvidence, fileSurface, fileSurfaceContext, compiledContext, semanticIds, semanticId, scanCapabilities, status,
     verifyContext,
   });
 }
