@@ -29,14 +29,14 @@ function fixture(t, flags={}) {
   let writes=0;
   const get=async route=>{
     if(flags.failRoute===route) return response({error:'unavailable'},503);
-    if(route==='/api/roadmap') return response({buildQueue:[{itemId:'A00'}]});
+    if(route==='/api/roadmap') return response({error:'not found'},404);
     if(route==='/api/wiki') return response(wiki);
     if(route==='/api/state') return response({wikiRevision:wiki.revision});
     if(route==='/api/journal') return response(flags.badArray ? {not:'an array'} : journal);
-    if(route==='/demo/journal.jsonl') return response(flags.corruptRaw ? '{corrupt}\n' :
+    if(route==='/api/journal?format=jsonl') return response(flags.corruptRaw ? '{corrupt}\n' :
       journal.map(JSON.stringify).join('\n')+(journal.length?'\n':''),200,'application/jsonl');
     if(route==='/wiki') return response('<link href="/wiki.css"><script src="/wiki.js"></script>',200,'text/html');
-    if(route==='/wiki.js') return response('function renderRoadmap() {} function renderFileSurface() {} /api/roadmap /api/wiki /api/journal',200,'text/javascript');
+    if(route==='/wiki.js') return response('function renderWiki() {} function renderFileSurface() {} /api/wiki /api/journal',200,'text/javascript');
     if(route==='/wiki.css') return response('.wiki { display:block }',200,'text/css');
     return response({error:'not found'},404);
   };
@@ -76,7 +76,7 @@ test('raw JSONL detects corruption rather than dropping evidence',()=>{
 });
 test('source checks are not DOM checks; must have both external assets',()=>{
   const html='<link href="/wiki.css"><script src="/wiki.js"></script>';
-  const js='function renderRoadmap() {} function renderFileSurface() {} /api/roadmap /api/wiki /api/journal';
+  const js='function renderWiki() {} function renderFileSurface() {} /api/wiki /api/journal';
   assert.equal(rendererSourceContract(html,js,'.wiki{}'),true);
   assert.equal(rendererSourceContract(html,'','.wiki{}'),false);
   assert.equal(rendererSourceContract(html,js,''),false);
