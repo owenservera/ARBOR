@@ -148,7 +148,7 @@ export function projectWikiSemantics(context) {
   const latest = new Map();
   for (const item of changes) {
     const source = { ...journalSource(item), wikiRevision: item.wikiRevision, digest: item.contentDigest };
-    const id = put({ id: journalId(item.entryId), kind: 'wiki-change', label: 'Committed Wiki edit',
+    const id = put({ id: journalId(item.entryId), kind: 'wiki-change', label: item.captureKind==='task'?'Captured personal task':item.captureKind==='note'?'Captured personal note':'Committed Wiki edit',
       classification: 'committed-change', freshness: item.status, source });
     const target = section(item.relationship, source, 'observed-state');
     link(id, 'changed-section', target, 'committed-change', source);

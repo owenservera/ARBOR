@@ -825,6 +825,14 @@ async function handleControl(req, res, pathname, host, controlFor, tokenFor, uiS
   if (owner && verifyOwnerToken(req.headers.authorization, owner)) authorized = true;
   if (!authorized && uiSessions.authorized(req, { mutate: isMutation })) authorized = true;
   if (!authorized) { sendJson(res, 401, { code: 'OWNER_AUTH', error: 'Owner authorization required' }); return; }
+  if(route==='wiki-view'){
+    if(req.method!=='GET'){sendJson(res,405,{code:'METHOD'});return;}
+    if(req.headers.origin!==undefined&&!sameOrigin){sendJson(res,403,{code:'ORIGIN'});return;}
+    try{const wiki=await productJournal.readPhoneWiki();
+      if(!verifyOwnerToken(req.headers.authorization,owner)&&!uiSessions.authorized(req,{mutate:false})){sendJson(res,401,{code:'OWNER_AUTH'});return;}
+      res.setHeader('cache-control','private, no-store');sendJson(res,200,wiki);
+    }catch{sendJson(res,503,{code:'WIKI_VIEW_UNAVAILABLE'});}return;
+  }
   // Private observations are never placed in public /api/wiki.
   if (route === 'wiki-context') {
     if (req.method !== 'GET') { res.setHeader('allow', 'GET'); sendJson(res, 405, { code: 'METHOD' }); return; }

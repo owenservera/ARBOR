@@ -102,7 +102,7 @@ fn sync_context(v: &Value, ns: &Namespace, journal: &Journal, g: &mut Graph,
             if let Some(link) = n.get("wikiLink").filter(|v| !v.is_null()) {
                 let entry = text(link, "entryId")?;
                 let linked_revision = link["wikiRevision"].as_u64().ok_or("invalid linked Wiki revision")?;
-                if action_id != "wiki.section.edit" || entry.len() != 36 ||
+                if !matches!(action_id,"wiki.section.edit" | "wiki.capture.save") || entry.len() != 36 ||
                     !entry.bytes().all(|b| b.is_ascii_hexdigit() || b == b'-') || linked_revision == 0 {
                     return Err("invalid D4 Wiki receipt link".into());
                 }

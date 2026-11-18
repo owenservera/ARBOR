@@ -783,7 +783,7 @@ async function refreshWiki() {
       });
       if (!owner.ok) throw new Error('Owner session required to read the Host Wiki.');
     }
-    const response = await fetch(HOST_PREVIEW ? '/api/wiki' : '/mobile/api/wiki', {
+    const response = await fetch(HOST_PREVIEW ? '/api/host/control/wiki-view' : '/mobile/api/wiki', {
       method: 'GET', credentials: 'same-origin', cache: 'no-store', headers: session || {}
     });
     if (!response.ok) {

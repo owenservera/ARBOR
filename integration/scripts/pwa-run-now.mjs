@@ -23,6 +23,7 @@ const suites = [
     'apps/mobile-relay/test/pwa-local-notes.test.mjs',
     'apps/vivim-host/test/wiki-capture.test.mjs',
     'apps/vivim-host/test/native-program.test.mjs',
+    'apps/vivim-host/test/native-capture-wiring.test.mjs',
     'apps/mobile-relay/test/pwa-preflight-ui.test.mjs',
     'apps/mobile-relay/test/pwa-asset-graph.test.mjs',
     'apps/mobile-relay/test/chat-universal-controller.test.mjs',

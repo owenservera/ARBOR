@@ -372,8 +372,8 @@ export function projectAppliedControlEffects(control, wikiChanges = null, wikiSt
       source: 'host-control-receipt', planId: receipt.planId, planDigest: receipt.planDigest,
       actionId: receipt.actionId, receivedAt: receipt.at, kind: 'executed-effect',
       status: 'historical-applied-receipt',
-      sourceRevision: Number.isSafeInteger(receipt.result?.revision) && receipt.result.revision >= 0
-        ? receipt.result.revision : null
+      sourceRevision: wikiLink?.wikiRevision ?? structureLink?.wikiRevision ??
+        (Number.isSafeInteger(receipt.result?.revision) && receipt.result.revision >= 0 ? receipt.result.revision : null)
     });
   }
   items.sort((a, b) => Date.parse(b.receivedAt) - Date.parse(a.receivedAt) || a.planId.localeCompare(b.planId));
@@ -439,6 +439,13 @@ export function createProductJournal({ dataRoot, seedState, seedWiki }) {
       wikiChanges:projectWikiChanges(current.records),
       wikiStructure:projectWikiStructure(current.records,current.wiki)} :
       projectWikiContext(current.records, current.wikiRevision, current.wiki);
+    // Capture creation is also page provenance, even after its content section is edited.
+    // Keep the page identity tied to the original committed journal entry, not a mutable title.
+    context.capturePages=current.records.filter(e=>e.kind==='wiki-edit'&&['capture-note','capture-task'].includes(e.edit.action)&&
+      typeof e.entryId==='string'&&Object.hasOwn(current.wiki.pages,e.edit.page)).map(e=>({
+      page:e.edit.page,kind:e.edit.action==='capture-task'?'task':'note',entryId:e.entryId,
+      wikiRevision:e.expectedRevision+1,receivedAt:e.receivedAt,
+      contentDigest:createHash('sha256').update(e.edit.content,'utf8').digest('hex')}));
     const changes = projectWikiChanges(current.records, { currentOnly: true });
     const records = new Map(current.records.filter(e => e.entryId).map(e => [e.entryId, e]));
     return { context, changes: { ...changes, items: changes.items.map(change => {
