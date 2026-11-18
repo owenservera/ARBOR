@@ -271,6 +271,16 @@ test('batch-1 product routes: pages, baseline JSON, read-throughs, mutate append
     assert.equal(contextJson.totalObserved, 1);
     assert.equal(contextJson.items[0].entryId, userEntry.entryId);
     assert.equal(contextJson.items[0].text, 'Voice notes to structured tasks');
+    // D4: only committed Wiki effects, not refused or interpretation-only attempts.
+    assert.equal(contextJson.wikiRevision, wikiBeforeContext.revision);
+    assert.equal(contextJson.wikiChanges.total, 3);
+    assert.equal(contextJson.wikiChanges.items.filter(x => x.status === 'current-section-revision').length, 1);
+    assert.deepEqual(contextJson.wikiChanges.items.at(-1).relationship,
+      { kind: 'mutated-section', page: 'Main', section: 'HowTo' });
+    assert.equal(contextJson.wikiChanges.items.at(-1).wikiRevision, wikiBeforeContext.revision);
+    assert.equal((await httpFetch(base, contextUrl)).status, 401);
+    assert.equal(Object.hasOwn(wikiBeforeContext, 'wikiChanges'), false);
+    assert.equal(Object.hasOwn(wikiBeforeContext, 'applicationEffects'), false);
     const wikiAfterContext = await (await httpFetch(base, '/api/wiki')).json();
     assert.equal(wikiAfterContext.revision, wikiBeforeContext.revision);
     assert.deepEqual(wikiAfterContext.pages, wikiBeforeContext.pages);
