@@ -100,8 +100,8 @@ const vivimChat = createControlChat({
   },
   onNavigate: tab => goTab(tab),
   classifyBuild: request => {
-    const surface = S.statusObj?.snapshot?.bootstrap?.uiRevision;
-    if (!S.paired || !surface) return null;
+    const surface = build?.surface() ?? build?.draftSurface() ?? null;
+    if (!S.paired || HOST_PREVIEW || !surface) return null;
     return resolveBuildRequest({ request, surface });
   },
   onBuildDraft: text => {
@@ -1538,13 +1538,13 @@ function mountCompose() {
   const host = $('build-compose'); if (!host) return;
   compose = mountBuildCanvas({
     host, request: api, navigate: goTab,
-    interpretControl: text => transport.direct ? vivimChat.interpret(text) : null,
-    openControlDraft: transport.direct ? text => {
-      goTab('talk');
-      $('talk-target').value = 'vivim';
-      $('talk-target').dispatchEvent(new Event('change'));
-      $('text').value = text; autogrow(); updateSend(); $('text').focus();
-    } : null,
+    interpretControl: transport.direct ? text => vivimChat.interpret(text) : null,
+    openControlDraft: transport.direct ? openVivimDraft : null,
+    openPocket: pocketButton && !pocketButton.hidden ? () => pocketButton.click() : null,
+    openProviderDraft: text => {
+      goTab('talk'); switchChatTarget('harness');
+      $('text').value=text;autogrow();updateSend();$('text').focus();
+    },
     getSurface: () => build?.surface() ?? build?.draftSurface() ?? null,
     getProvider: () => S.statusObj?.snapshot?.onboarding?.primary || 'chatgpt',
     send: async (prompt, provider) => {

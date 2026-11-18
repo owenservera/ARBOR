@@ -3,6 +3,7 @@
 // Nothing is applied from a typed message; approval is a separate deliberate tap.
 // Transcript is in-memory only: private control text is never duplicated in storage.
 import { createControlClient } from './control-client.mjs';
+import { resolveLocalDestination, resolveProductRoute } from './control-language.mjs';
 
 const MAX_TEXT = 1000;
 const MAX_TURNS = 30;
@@ -13,23 +14,7 @@ const KNOWN_OUTCOMES = new Set([
 export const CONTROL_CHAT_EXAMPLES = Object.freeze([
   'show status', 'open World', 'what can I say?'
 ]);
-// Navigating an already-mounted UI is not a Host effect. These exact,
-// deterministic phrases do not approve, schedule, send or mutate anything.
-const LOCAL_NAVIGATION = Object.freeze({
-  'open today': 'today', 'go to today': 'today',
-  'open wiki': 'wiki', 'open the wiki': 'wiki', 'go to wiki': 'wiki', 'show wiki': 'wiki',
-  'open world': 'world', 'go to world': 'world', 'show media library': 'world',
-  'open media library': 'world', 'open my media library': 'world',
-  'open build': 'build', 'go to build': 'build',
-  'open control': 'control', 'go to control': 'control',
-  'open me': 'me', 'open my profile': 'me',
-  'open pocket': 'pocket', 'capture a note': 'pocket'
-});
-export function resolveLocalDestination(input) {
-  if (typeof input !== 'string') return null;
-  const normalized = input.trim().toLowerCase().replace(/\s+/g, ' ');
-  return Object.hasOwn(LOCAL_NAVIGATION, normalized) ? LOCAL_NAVIGATION[normalized] : null;
-}
+export { resolveLocalDestination } from './control-language.mjs';
 // Each mounted screen must be able to state what can be asked from it.
 // These prompts only fill the shared composer; none of them sends or executes.
 const SURFACE_EXAMPLES = Object.freeze({
@@ -133,17 +118,16 @@ export function createControlChat({
           : 'info';
     if (reply.status === 'unrecognized') {
       reply.requestText = requestText;
-      // Only an installed VEC UI adapter can recognize an unmatched command as Build.
-      if (requestText && typeof classifyBuild === 'function' && typeof onBuildDraft === 'function') {
-        try {
-          const reading = classifyBuild(requestText);
-          if (reading?.domain === 'ui' && ['candidate', 'clarification_required'].includes(reading.outcome)) {
-            reply.status = 'build';
-            reply.text = reading.outcome === 'candidate'
-              ? 'VEC recognized a visual change. Open Build to review it; nothing was applied.'
-              : 'VEC needs more detail about the visual target. Continue in Build; nothing was applied.';
-          }
-        } catch { /* Keep original Host interpretation; no fallback effect. */ }
+      const route=resolveProductRoute(requestText,{hostMeaning:plan,
+        compileUi:typeof onBuildDraft==='function'?classifyBuild:null});
+      if(route.kind==='ui'){
+        reply.status='build';
+        reply.text=route.reading.outcome==='candidate'
+          ? 'VEC recognized a visual change. Open Build to review it; nothing was applied.'
+          : 'VEC needs more detail about the visual target. Continue in Build; nothing was applied.';
+      }else if(route.kind==='refused'||route.kind==='unavailable'){
+        reply.status='denied';
+        reply.text='That request cannot be safely previewed. Nothing changed.';
       }
     }
     reply.choices = Array.isArray(plan.choiceDetails)

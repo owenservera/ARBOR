@@ -5,10 +5,11 @@ import { assertBuildPreviewCurrent, committedUiRevision, matchesCommittedUiReadb
 
 const compile = (surface, request) => ({ ...resolveBuildRequest({ request, surface }), surface });
 
-test('Wiki navigation is not a UI proposal; legacy fake intents are refused', () => {
+test('Wiki navigation is not a UI proposal; unmatched text reaches semantic interpretation', () => {
   assert.deepEqual(buildRequestRoute('Open the Wiki'), { kind: 'navigate', tab: 'wiki' });
-  assert.equal(buildRequestRoute('show ARBOR progress projection').kind, 'unsupported');
-  assert.equal(buildRequestRoute('preview an edit').kind, 'unsupported');
+  assert.equal(buildRequestRoute('show ARBOR progress projection').kind, 'design');
+  assert.equal(buildRequestRoute('preview an edit').kind, 'design');
+  assert.deepEqual(buildRequestRoute('capture a note'),{kind:'navigate',tab:'pocket'});
   assert.equal(buildRequestRoute('Add a card called Research').kind, 'design');
 });
 

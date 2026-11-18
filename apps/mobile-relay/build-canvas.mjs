@@ -2,7 +2,7 @@
 // proposal, and applies it only when the owner taps Activate. Sending and applying are injected, so
 // this file never talks to a provider itself and never resends: a draft that is still pending is polled, not re-asked.
 import { SUGGESTIONS, buildDesignPrompt, resolveBuildRequest, previewReply, failureText } from './build-composer.mjs';
-import { resolveLocalDestination } from './control-chat.mjs';
+import { resolveLocalDestination, resolveProductRoute } from './control-language.mjs';
 import { renderSurface, planTierflowSurface, tierflowViewport } from './generative-ui/renderer.mjs';
 import { compileUiProposal } from './generative-ui/compiler.mjs';
 import { validateSurface } from './generative-ui/catalog.mjs';
@@ -29,12 +29,8 @@ export function committedUiRevision(command, surface) {
 }
 
 export function buildRequestRoute(text) {
-  const command = String(text ?? '').trim().replace(/\s+/g, ' ').toLowerCase();
-  const destination = resolveLocalDestination(text);
-  if (destination && destination !== 'pocket') return { kind: 'navigate', tab: destination };
-  if (command === 'show arbor progress projection' || command === 'preview an edit')
-    return { kind: 'unsupported' };
-  return { kind: 'design' };
+  const tab=resolveLocalDestination(text);
+  return tab?{kind:'navigate',tab}:{kind:'design'};
 }
 
 // Recompile only for validation: the proposal and preview approved by the owner
@@ -105,7 +101,7 @@ export function buildUndoProposal({ original, before, committed, live }) {
   } catch { return null; }
 }
 
-export function mountBuildCanvas({ host, request, getSurface, getProvider, send, apply, onApplied = () => {}, navigate = () => {}, openControlDraft = null, interpretControl = null, storage = window.localStorage }) {
+export function mountBuildCanvas({ host, request, getSurface, getProvider, send, apply, onApplied = () => {}, navigate = () => {}, openControlDraft = null, openProviderDraft = null, openPocket = null, interpretControl = null, storage = window.localStorage }) {
   let state = { name: 'idle' }, text = '', run = 0;
   const el = (tag, cls, content) => { const e = document.createElement(tag); if (cls) e.className = cls; if (content != null) e.textContent = content; return e; };
   const current = () => getSurface?.() ?? null;
@@ -135,61 +131,52 @@ export function mountBuildCanvas({ host, request, getSurface, getProvider, send,
   }
 
   async function ask() {
-    if (state.name !== 'idle') return;
-    const route = buildRequestRoute(text);
-    if (route.kind === 'navigate') {
-      ++run;
-      text = '';
-      set({ name: 'idle' });
-      navigate(route.tab);
+    if(state.name!=='idle')return;
+    const checkedText=text;
+    const destination=resolveLocalDestination(checkedText);
+    if(destination){
+      if(destination==='pocket'&&typeof openPocket!=='function')
+        return set({name:'idle',error:'Offline Pocket is unavailable on this device.'});
+      ++run;text='';set({name:'idle'});
+      if(destination==='pocket')openPocket();else navigate(destination);
       return;
     }
-    if (route.kind === 'unsupported')
-      return set({ name: 'idle', error: 'That is not a Build design request. Nothing changed.' });
-    const surface = current();
-    if (!surface) return set({ name: 'idle', error: 'Connect to the Host and load your current app before building.' });
-    const local = resolveBuildRequest({ request: text, surface });
-    if (local.outcome === 'candidate') {
-      ++run;
-      return set({ name: 'ready', ...local, surface, origin: 'vec' });
+    // Same precedence as Talk. The read-only Host interpretation cannot execute.
+    const checkRun=++run;
+    set({name:'checking'});
+    let meaning=null;
+    try{if(typeof interpretControl==='function')meaning=await interpretControl(checkedText);}
+    catch{if(run===checkRun)set({name:'idle',error:'Host interpretation unavailable. Nothing was sent.'});return;}
+    if(run!==checkRun)return;
+    const surface=current();
+    const route=resolveProductRoute(checkedText,{hostMeaning:meaning,
+      hostRequired:typeof interpretControl==='function',
+      compileUi:surface?request=>resolveBuildRequest({request,surface}):null});
+    if(route.kind==='host'){
+      set({name:'idle',note:'This is a Host command. Continue in Talk for its typed preview.'});
+      openControlDraft?.(checkedText);return;
     }
-    if (local.outcome === 'clarification_required') {
-      return set({ name: 'idle', error: local.code === 'UI_TARGET_AMBIGUOUS'
-        ? 'More than one component has that name. Rename or select one first.'
-        : 'I could not find that component on your current screen.' });
-    }
-    if (local.outcome === 'refused') {
-      return set({ name: 'idle', error: 'That edit could not be safely previewed. Nothing changed.' });
-    }
-    if (local.code === 'COMPLEX_REQUEST')
-      return set({ name: 'idle', error: 'Request one change at a time. Nothing changed.' });
-    if (['UNSUPPORTED_UI_GRAMMAR', 'MOVE_NESTED_NOT_SUPPORTED', 'UI_COMPONENT_ADAPTER_NOT_INSTALLED'].includes(local.code))
-      return set({ name: 'idle', error: 'That visual operation is not supported. Nothing changed.' });
-    // Before sending an unknown design to a signed-in AI, ask the existing Host
-    // interpreter. This endpoint is meaning-only: no plan, approval or execution.
-    if (typeof interpretControl === 'function') {
-      const checkedText = text;
-      const checkRun = ++run;
-      set({ name: 'checking' });
-      let reading;
-      try { reading = await interpretControl(checkedText); }
-      catch { return set({ name: 'idle', error: 'Host interpretation unavailable. Nothing was sent to your AI.' }); }
-      if (run !== checkRun) return;
-      // A null reading means the existing cloud-only Build surface, not a failed Direct request.
-      if (reading !== null) {
-        if (reading?.outcome === 'refused') return set({ name: 'idle', error:
-          reading.refusal?.message || 'Host refused this request. Nothing was sent.' });
-        if (['candidate', 'incomplete', 'clarification_required'].includes(reading?.outcome)) {
-          set({ name: 'idle', note: 'This is a Host command. Continue in Talk for its typed preview.' });
-          if (typeof openControlDraft === 'function') openControlDraft(checkedText);
-          return;
-        }
-        if (reading?.outcome !== 'interpretation_required') return set({ name: 'idle', error:
-          'Host interpretation unavailable. Nothing was sent to your AI.' });
+    if(route.kind==='refused'||route.kind==='unavailable')
+      return set({name:'idle',error:route.meaning?.refusal?.message||'That request cannot be safely interpreted or previewed. Nothing changed.'});
+    if(!surface)return set({name:'idle',error:'Connect to the Host and load your current app before building.'});
+    if(route.kind==='ui'){
+      const local=route.reading;
+      if (local.outcome === 'candidate') {
+        return set({ name: 'ready', ...local, surface, origin: 'vec' });
       }
+      return set({name:'idle',error:local.code==='UI_TARGET_AMBIGUOUS'
+        ?'More than one component has that name. Rename or select one first.'
+        :'I could not find that component on your current screen.'});
     }
-    // Unmatched design request: retain the existing bounded model proposal path.
-    // It still cannot apply a change until the owner taps Activate.
+    // Unmatched language has no implicit provider-send authority.
+    set({name:'provider-choice',requestText:checkedText,surface});
+  }
+  async function askDesign(){
+    if(state.name!=='provider-choice')return;
+    const surface=current();
+    if(!surface||surface.surfaceId!==state.surface.surfaceId||surface.revision!==state.surface.revision)
+      return set({name:'idle',error:'Host surface changed. Ask again.'});
+    text=state.requestText;
     const provider = getProvider();
     let prompt;
     try { prompt = buildDesignPrompt({ request: text, surface }); }
@@ -321,6 +308,15 @@ export function mountBuildCanvas({ host, request, getSurface, getProvider, send,
       const wait = el('div', 'proposal is-wait'); wait.setAttribute('role', 'status');
       wait.append(el('p', 'muted', 'Checking Host meaning. Nothing has been sent to your AI.'));
       host.append(wait);
+    } else if (state.name === 'provider-choice') {
+      const choice=el('div','proposal');
+      choice.append(el('p','muted','No deterministic command matched. Choose what to do with your request.'));
+      const design=el('button','btn pri','Ask AI to design');design.type='button';design.onclick=askDesign;
+      const conversation=el('button','btn','Ask my AI instead');conversation.type='button';
+      conversation.disabled=typeof openProviderDraft!=='function';
+      conversation.onclick=()=>{const draft=state.requestText;set({name:'idle'});openProviderDraft?.(draft);};
+      const cancel=el('button','btn','Edit request');cancel.type='button';cancel.onclick=()=>set({name:'idle'});
+      choice.append(design,conversation,cancel);host.append(choice);
     } else if (state.name === 'waiting') {
       const wait = el('div', 'proposal is-wait'); wait.setAttribute('role', 'status');
       wait.append(el('span', 'tour-eyebrow', 'WORKING'), el('h3', null, state.note), el('p', 'muted', 'Your PC sends this once and waits for the answer. You can leave this screen; it keeps going.'));

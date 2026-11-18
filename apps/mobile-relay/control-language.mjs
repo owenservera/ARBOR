@@ -12,6 +12,55 @@ import { interpret, NCLL_VERSION } from './nlcl/index.mjs';
 
 export const LANGUAGE_SCHEMA = 'vivim.control-language/1';
 export const MIN_CONFIDENCE = 0.6;
+
+// Navigating an already-mounted UI is not a Host effect. These exact,
+// deterministic phrases do not approve, schedule, send or mutate anything.
+const LOCAL_NAVIGATION = Object.freeze({
+  'open today': 'today', 'go to today': 'today',
+  'open wiki': 'wiki', 'open the wiki': 'wiki', 'go to wiki': 'wiki', 'show wiki': 'wiki',
+  'open world': 'world', 'go to world': 'world', 'show media library': 'world',
+  'open media library': 'world', 'open my media library': 'world',
+  'open build': 'build', 'go to build': 'build',
+  'open control': 'control', 'go to control': 'control',
+  'open me': 'me', 'open my profile': 'me',
+  'open pocket': 'pocket', 'capture a note': 'pocket'
+});
+export function resolveLocalDestination(input) {
+  if (typeof input !== 'string') return null;
+  const normalized = input.trim().toLowerCase().replace(/\s+/g, ' ');
+  return Object.hasOwn(LOCAL_NAVIGATION, normalized) ? LOCAL_NAVIGATION[normalized] : null;
+}
+// An inert precedence rule over existing compiler results, not another interpreter.
+export function resolveProductRoute(text,{hostMeaning,compileUi=null,hostRequired=true}={}) {
+  const tab=resolveLocalDestination(text);
+  if(tab)return {kind:'navigate',tab};
+  if(hostMeaning==null&&hostRequired)return {kind:'unavailable'};
+  if(hostMeaning!=null){
+    if(['candidate','done','approval_required','incomplete','clarification_required'].includes(hostMeaning.outcome))
+      return {kind:'host',meaning:hostMeaning};
+    if(hostMeaning.outcome==='refused')return {kind:'refused',meaning:hostMeaning};
+    if(hostMeaning.outcome!=='interpretation_required')return {kind:'unavailable'};
+  }
+  if(typeof compileUi==='function'){
+    let reading;
+    try{reading=compileUi(text);}catch{return {kind:'unavailable'};}
+    if(reading?.domain==='ui'){
+      if(['candidate','clarification_required'].includes(reading.outcome))return {kind:'ui',reading};
+      if(reading.outcome==='refused'||(reading.outcome==='unsupported'&&
+        ['COMPLEX_REQUEST','UNSUPPORTED_UI_GRAMMAR','MOVE_NESTED_NOT_SUPPORTED','UI_COMPONENT_ADAPTER_NOT_INSTALLED'].includes(reading.code)))
+        return {kind:'refused',reading};
+      if(reading.outcome!=='unsupported')return {kind:'unavailable'};
+    }
+  }
+  return {kind:'provider'}; // choice only, never an effect
+}
+export function resolveDesktopDestination(text){
+  const tab=resolveLocalDestination(text);
+  if(!tab)return null;
+  const routes={wiki:'/wiki',talk:'/chat',control:'/host/control',today:'/'};
+  return {tab,href:routes[tab]??null};
+}
+
 const OMEGA_RISK = { R0: 'READ', R1: 'MUTATION', R2: 'MUTATION', R3: 'EXTERNAL_MUTATION' };
 
 const fold = s => String(s ?? '').normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase();

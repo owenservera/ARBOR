@@ -1,3 +1,4 @@
+import { resolveDesktopDestination } from '/mobile/control-language.mjs';
 // Host read-model and reviewed Wiki drafts. NL interpretation belongs to Host;
 // only the existing owner-confirmed mutation endpoint writes Wiki content.
 // VEC/0.1 typed display seam: {schema:'vivim.vec-compile/0.1', domain:'wiki',
@@ -641,6 +642,12 @@ async function interpretWikiCommand(event) {
   const sentence = $('wiki-command').value.trim();
   if (!sentence || sentence.length > 1000) {
     $('wiki-command-status').textContent = 'Enter one Wiki command (maximum 1000 characters).';
+    return;
+  }
+  const destination=resolveDesktopDestination(sentence);
+  if(destination){
+    if(destination.href)window.location.assign(destination.href);
+    else $('wiki-command-status').textContent='That screen requires the paired VIVIM PWA.';
     return;
   }
   interpreting = true;

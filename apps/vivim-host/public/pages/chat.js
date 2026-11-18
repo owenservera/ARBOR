@@ -1,3 +1,4 @@
+import { resolveDesktopDestination } from '/mobile/control-language.mjs';
 // The Host owns command authority. This page stores chat text separately from any effect.
 (() => {
   'use strict';
@@ -300,6 +301,13 @@
     if (busy) return;
     const text = input.value.trim();
     if (!text) return;
+    const destination=resolveDesktopDestination(text);
+    if(destination){
+      pending=null;
+      if(destination.href)window.location.assign(destination.href);
+      else notice('That screen requires the paired VIVIM PWA.',true);
+      return;
+    }
     pending = null; // The next message invalidates an unaccepted local preview.
     input.value = '';
     setBusy(true);

@@ -7,7 +7,6 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { buildControlWorld, interpretControl, LANGUAGE_SCHEMA } from '../../mobile-relay/control-language.mjs';
 import { toCommandIntent, validateAiCommandCandidate, COMMAND_INTENT_SCHEMA } from './command-intent.mjs';
-import { resolvePersonalSemantics } from './personal-semantics.mjs';
 import { createVecCompiler } from '../../mobile-relay/vec/compiler.mjs';
 
 const catalogPath = fileURLToPath(new URL('./action-catalog.v1.json', import.meta.url));
@@ -177,31 +176,28 @@ export function createControlPlanner({ catalog = loadControlCatalog(), lexicon =
       ...(a.precondition ? { precondition: a.precondition } : {}) };
   }
 
-  function interpretText(text, { source = 'text', worldSnapshot = world() } = {}) {
-    if (typeof text !== 'string' || text.length > 1000) throw err('CONTROL_TEXT_INVALID');
-    if (!SURFACES.includes(source)) throw err('CONTROL_SOURCE_INVALID');
-    // A personal rule may fill an NLCL gap, never override its positive match, refusal,
-    // ambiguity or incomplete command. Existing syntax guards always run first.
-    const baseline = interpretControl(text, { catalog, world: worldSnapshot });
-    if (baseline.outcome !== 'interpretation_required') return baseline;
-    const resolved = resolvePersonalSemantics({ text, baseline, catalog,
-      rules: personalRules(), scope: scopeFor(source) });
-    if (resolved.outcome === 'candidate') return {
-      ...baseline, outcome: 'candidate', candidate: resolved.candidate,
-      provenance: resolved.provenance,
-    };
-    if (resolved.outcome === 'clarification_required') return {
-      ...baseline, outcome: 'clarification_required',
-      question: 'This phrase has conflicting accepted meanings. Please specify the action.',
-      choices: [], semanticRuleIds: resolved.ruleIds,
-      provenance: { method: 'personal-rule-conflict', ruleIds: resolved.ruleIds },
-    };
-    if (resolved.outcome === 'refused') return {
-      ...baseline, outcome: 'refused',
-      refusal: { code: resolved.reason, message: 'A personal command rule is invalid or stale.' },
-      provenance: { method: 'personal-rule-refusal', reason: resolved.reason },
-    };
-    return baseline;
+  // Keep the existing language endpoint envelope, projecting canonical VEC IR
+  // rather than maintaining a second semantic resolution path.
+  function interpretText(text,{source='text',worldSnapshot}={}){
+    if(typeof text!=='string'||text.length>1000)throw err('CONTROL_TEXT_INVALID');
+    if(!SURFACES.includes(source))throw err('CONTROL_SOURCE_INVALID');
+    if(!text.trim())return interpretControl(text,{catalog,world:worldSnapshot??world()});
+    const compiled=compileCommand(text,{source,worldSnapshot});
+    const meaning=compiled.proposal;
+    const base={schema:LANGUAGE_SCHEMA,input:text,feedback:meaning?.language?.feedback,
+      ...(meaning?.language?.ignoredModifiers?{ignoredModifiers:meaning.language.ignoredModifiers}:{}),
+      ...(meaning?.language?.personalRule?{provenance:meaning.language.personalRule}:{})};
+    if(!meaning||meaning.schema!==COMMAND_INTENT_SCHEMA)
+      return {...base,outcome:'refused',refusal:{code:compiled.code,message:'Command compilation refused.'}};
+    if(meaning.outcome==='candidate')
+      return {...base,outcome:'candidate',candidate:{actionId:meaning.actionId,args:meaning.args}};
+    if(meaning.outcome==='clarification_required'){
+      if(meaning.missing?.length)return {...base,outcome:'incomplete',question:meaning.question,
+        missing:meaning.missing,...(meaning.alternatives?.[0]?{candidate:{actionId:meaning.alternatives[0].actionId,args:{}}}:{})};
+      return {...base,outcome:'clarification_required',question:meaning.question,
+        choices:(meaning.alternatives??[]).map(a=>a.actionId)};
+    }
+    return {...base,outcome:meaning.outcome,...(meaning.refusal?{refusal:meaning.refusal}:{})};
   }
 
   // The VEC adapter is installed by Host code, not selected by user or model input.
@@ -214,11 +210,11 @@ export function createControlPlanner({ catalog = loadControlCatalog(), lexicon =
   } } });
 
   function compileCommand(text, { source = 'text', audience = 'owner',
-    worldRevision, catalogRevision } = {}) {
+    worldRevision, catalogRevision, worldSnapshot: snapshot } = {}) {
     if (typeof text !== 'string' || text.length > 1000) throw err('CONTROL_TEXT_INVALID');
     if (!SURFACES.includes(source)) throw err('CONTROL_SOURCE_INVALID');
     const rules = personalRules();
-    const worldSnapshot = world(taught(), rules);
+    const worldSnapshot = snapshot ?? world(taught(), rules);
     return commandCompiler.compile({ domain: 'command', text, context: {
       input: { scope: source, audience, worldRevision, catalogRevision },
       worldSnapshot, rules, scope: scopeFor(source)
