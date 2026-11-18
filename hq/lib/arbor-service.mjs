@@ -29,7 +29,7 @@ const SURFACE_GENERATOR = 'hq.source-index/1';
 function surfacePath(path) {
   return !isSensitiveSourcePath(path) &&
     !String(path).split('/').some(part => part.startsWith('.') ||
-      /^(?:demo|demo-baseline|test|tests|__tests__|fixtures?|samples?|examples?|evidence|private|secrets?|credentials?|node_modules)$/i.test(part)) &&
+      /^(?:demo|demo-baseline|test|tests|__tests__|fixtures?|samples?|examples?|evidence|private|secrets?|credentials?|node_modules)(?:$|\.)/i.test(part)) &&
     /\.(?:mjs|cjs|js|mts|cts|ts|tsx|jsx|rs|py|go|java|kt|swift|c|cpp|h|hpp)$/i.test(path);
 }
 const surfaceKinds = ['v2:type','v2:capability','v2:contract','v2:emits','v2:consumes','v2:action'];
@@ -409,7 +409,7 @@ export function createDevIntelligence({
       });
     }
     return { schema: SURFACE_SCHEMA, generatorVersion: SURFACE_GENERATOR,
-      status: files.length ? 'indexed' : 'empty', authority: 'read_only_projection',
+      status: !files.length ? 'empty' : files.every(file => file.freshness === 'indexed') ? 'indexed' : 'stale', authority: 'read_only_projection',
       truncated: omitted || rows.length > 256, files };
   }
   function fileSurface(options = {}) {
