@@ -179,7 +179,7 @@ export function resolvePersonalSemantics({ text, baseline, rules, catalog, scope
   if(bound.some(x=>!x.args))return decision('clarification_required',{reason:'TEMPLATE_PARAMETER_REQUIRED',ruleIds:matches.map(r=>r.id).sort()});
   const highest = Math.max(...bound.map(x=>Object.keys(x.rule.scope).length));
   const mostSpecific=bound.filter(x=>Object.keys(x.rule.scope).length===highest);
-  const unique=new Set(mostSpecific.map(x=>x.rule.writeProgram?JSON.stringify(canonical(bindPersonalWriteProgram(x.rule,text,catalog))):signature(x.rule,x.args)));
+  const unique=new Set(mostSpecific.map(x=>x.rule.writeProgram?JSON.stringify([x.rule.actionId,canonical(bindPersonalWriteProgram(x.rule,text,catalog))]):signature(x.rule,x.args)));
   if (unique.size > 1) return decision('clarification_required', {
     reason: 'CONFLICTING_PERSONAL_RULES',
     ruleIds: mostSpecific.map(x=>x.rule.id).sort(),

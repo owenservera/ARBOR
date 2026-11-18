@@ -16,8 +16,12 @@ header .rev { font-size: 11px; opacity: .6; }
 .intent .outcome.refused { background: #3a1616; color: #ff9d9d; }
 .intent .canonical { color: var(--accent, #7aa2f7); }
 form { display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--border-subtle, #23262b); }
-input { min-width: 0; flex: 1; background: var(--bg-secondary, #14161a); border: 1px solid var(--border-subtle, #23262b);
+input, textarea { min-width: 0; flex: 1; background: var(--bg-secondary, #14161a); border: 1px solid var(--border-subtle, #23262b);
   color: inherit; border-radius: 8px; padding: 10px 12px; font-size: 14px; }
+textarea { font-family: inherit; resize: vertical; }
+#teach-rule-form { display: grid; grid-template-columns: minmax(0,1fr); padding: 8px 0; }
+#teach-rule-form input, #teach-rule-form textarea { box-sizing: border-box; width: 100%; }
+#f textarea { max-height: 25dvh; }
 button { background: var(--accent, #7aa2f7); border: 0; border-radius: 8px; padding: 9px 13px; font-size: 13px; cursor: pointer; color: #0c1220; }
 button:disabled { opacity: .5; cursor: not-allowed; }
 .empty { opacity: .65; font-size: 13px; }

@@ -605,6 +605,11 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
     }
     const ruleBinding=RULE_ACTIONS.has(p.actionId)?prepareRuleBinding(p.actionId,p.args):null;
     const savePlan = wikiBinding => {
+      if(p.actionId===WIKI_WRITE_PROGRAM_ACTION&&semanticRuleBinding){
+        const live=personalSemantics.snapshot(),rule=live.entries.find(r=>r.id===semanticRuleBinding.ruleId&&r.state==='accepted'&&r.revision===semanticRuleBinding.ruleRevision);
+        const steps=rule?bindPersonalWriteProgram(rule,semanticRuleBinding.invocation,catalog):null;
+        if(live.version!==semanticRuleBinding.storeVersion||live.digest!==semanticRuleBinding.storeDigest||digest({...commandScope(),surface:source})!==semanticRuleBinding.scopeDigest||!steps||digest(steps)!==semanticRuleBinding.boundStepsDigest)throw fail('CONTROL_SEMANTIC_RULE_STALE');
+      }
       const createdAt = iso();
       const approvalMeaning=wikiBinding?approvalBinding(p.actionId,p.args,source,wikiBinding):null;
       const body = { schema: 'vivim.control-plan-record/1', planId: newPlanId(), actionId: p.actionId, args: p.args,

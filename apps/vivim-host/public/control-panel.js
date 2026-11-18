@@ -198,11 +198,14 @@
       say(message + ' Nothing changed.', p.outcome === 'unavailable' ? 'warning' : '');
       return;
     }
-    pending = { planId: p.planId, planDigest: p.planDigest };
+    const expected = { planId: p.planId, planDigest: p.planDigest };
+    pending = expected;
     const box = element('div', 'text-control-plan');
     box.append(element('h3', '', 'Approve exactly this action?'));
     box.append(element('strong', '', p.title + ' · ' + p.risk));
     box.append(element('pre', 'text-control-data', JSON.stringify(p.args, null, 2)));
+    if(p.learningPreview){box.append(element('h4','','Exact learned typed meaning — does not execute the target'),element('pre','text-control-data',JSON.stringify(p.learningPreview,null,2)),element('p','text-control-note','Every invocation is revalidated; changes always require fresh approval.'));}
+    if(p.actionId==='program.write_wiki'&&p.approvalMeaning?.resolvedArgs){box.append(element('h4','','Resolved typed steps'),element('pre','text-control-data',JSON.stringify(p.approvalMeaning.resolvedArgs,null,2)));}
     if (['wiki.section.edit','wiki.capture.save','program.write_wiki'].includes(p.actionId) && p.preview) {
       box.append(element('h4', '', 'Wiki section · ' + p.preview.target));
       box.append(element('p', 'text-control-note', 'Edit exact Wiki revision ' + p.preview.expectedRevision));
@@ -216,8 +219,9 @@
     if (p.liveAcceptance !== 'verified') box.append(element('p', 'text-control-note warning',
       'Host executor is wired, but live acceptance is still pending.'));
     const actions = element('div', 'text-control-actions');
-    actions.append(button('Approve & apply on PC', () => apply(pending), 'primary'),
+    actions.append(button('Approve & apply on PC', () => apply(expected), 'primary'),
       button('Cancel · make no changes', () => {
+        if(pending!==expected)return;
         pending = null; say('Cancelled. No action was executed.');
       }));
     box.append(actions);

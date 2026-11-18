@@ -54,3 +54,13 @@ test('typed mutation recipes bind only page fields, never literal content or arb
  assert.equal(compileWikiWriteRecipe('create wiki page research\nlist wiki pages',planCommand,catalog,'research'),null);
  const altered=structuredClone(catalog);altered.actions.find(a=>a.id==='wiki.section.edit').title='Changed';assert.equal(validWikiWriteRecipe(recipe,commands,altered),false);
 });
+
+test('recipe slot requires a single explicit page-creation target and preserves unrelated page links',()=>{
+ const catalog=loadControlCatalog();const text='create wiki page research\nlink wiki pages research and main';
+ // Typed planner outputs are boundary inputs in this narrow binding test; real grammar is checked above.
+ const lines=[{actionId:'wiki.page.create',args:{page:'research'}},{actionId:'wiki.pages.link',args:{from:'research',to:'main'}}].map(s=>({...s,risk:'R1',origin:'deterministic',outcome:'approval_required'}));
+ const recipe=compileWikiWriteRecipe(text,(_,i)=>lines[i],catalog,'research');assert.ok(recipe);
+ assert.deepEqual(bindWikiWriteRecipe(recipe,text,catalog,'alpha')[1].args,{from:'alpha',to:'main'});
+ assert.equal(compileWikiWriteRecipe(text,(_,i)=>lines[i],catalog,'unrelated'),null);
+ assert.equal(compileWikiWriteRecipe(text,()=>lines[0],catalog,'research'),null);
+});

@@ -187,6 +187,15 @@ import { mountComposerAssist } from '/mobile/composer-assist.mjs';
         phrase.value='';phrase.focus();
       },true));
     }
+    if(receipt.status==='applied'&&receipt.actionId==='program.write_wiki'&&receipt.source==='desktop'&&['typed','deterministic'].includes(receipt.origin)&&typeof receipt.args?.commands==='string'){
+      node.append(button('Draft teaching from this sequence',()=>{
+        const phrase=$('teach-phrase'),command=$('teach-command'),form=$('teach-rule-form');
+        if(!csrfProof||busy||!phrase||!command||!form)return;
+        if(phrase.value.trim()||command.value.trim()){notice('Clear the existing teaching draft first.');return;}
+        const section=form.closest?.('details');if(section)section.open=true;
+        command.value='run wiki change sequence:\n'+receipt.args.commands;phrase.focus();
+      },true));
+    }
     if (receipt.undo && receipt.status === 'applied') {
       node.append(button('Review undo (requires approval)', () => void submitPlan({
         actionId: receipt.undo.actionId, args: receipt.undo.args
@@ -405,11 +414,23 @@ import { mountComposerAssist } from '/mobile/composer-assist.mjs';
           element('pre','',JSON.stringify({actionId:rule.actionId,args:rule.args,scope:rule.scope,...(rule.readProgram?{steps:rule.readProgram.steps}:{}),...(rule.writeProgram?{steps:rule.writeProgram.steps,slot:rule.writeProgram.slot,approval:'fresh on every invocation'}:{}),...(rule.template?{parameter:rule.template.slot,sourceReceipt:rule.template.receiptId,privacy:rule.template.privacy}:{})},null,2)),
           element('p','', 'Catalog revision '+rule.catalogVersion+' · rule revision '+rule.revision),
           button('Revoke meaning',()=>void submitPlan({actionId:'control.rule.revoke',args:{rule_id:rule.id}}),true));
+        if(rule.state==='accepted')row.append(button('Draft invocation',()=>{
+          if(!csrfProof||busy)return;
+          if(input.value.trim()){notice('Clear the existing chat draft before inserting an invocation.');return;}
+          input.value=rule.phrase+(rule.template||rule.writeProgram?.slot?' ':'');input.focus();
+          input.dispatchEvent(new Event('input',{bubbles:true}));
+        },true));
         rulePanel.append(row);
       }
       if(!rulePanel.children.length)rulePanel.append(element('p','','No saved meanings.'));
     }catch(error){if(proof===csrfProof)rulePanel.replaceChildren(element('p','warning','Learned meanings unavailable: '+error.message));}
   }
+  $('teach-program-example')?.addEventListener('click',()=>{
+    if(!csrfProof||busy)return;
+    const phrase=$('teach-phrase'),command=$('teach-command');
+    if(phrase.value.trim()||command.value.trim()){notice('Clear the existing teaching draft before inserting an example.');return;}
+    phrase.value='projectsetup';command.value='parameterize page research:\nrun wiki change sequence:\ncreate wiki page research\nedit wiki section research/About saying Project notes';phrase.focus();
+  });
   const teachForm=$('teach-rule-form');
   if(teachForm)teachForm.addEventListener('submit',event=>{
     event.preventDefault();
@@ -461,6 +482,9 @@ import { mountComposerAssist } from '/mobile/composer-assist.mjs';
     interpret:text=>controlApi('interpret',{text,composer:true}),
     getScope:()=>busy||document.hidden?null:csrfProof});
   document.addEventListener('visibilitychange',()=>{if(document.hidden)assistance?.reset();});
+  input.addEventListener('keydown',event=>{
+    if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing&&!event.defaultPrevented){event.preventDefault();if(!busy)form.requestSubmit();}
+  });
   form.addEventListener('submit', async event => {
     event.preventDefault();
     assistance?.reset();
