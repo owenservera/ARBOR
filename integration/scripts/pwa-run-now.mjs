@@ -26,6 +26,7 @@ const suites = [
     'apps/vivim-host/test/native-capture-wiring.test.mjs',
     'apps/vivim-host/test/development-read-port.test.mjs',
     'apps/mobile-relay/test/workspace-template-wiring.test.mjs',
+    'apps/mobile-relay/test/workspace-live-data.test.mjs',
     'apps/mobile-relay/test/pwa-preflight-ui.test.mjs',
     'apps/mobile-relay/test/pwa-asset-graph.test.mjs',
     'apps/mobile-relay/test/chat-universal-controller.test.mjs',

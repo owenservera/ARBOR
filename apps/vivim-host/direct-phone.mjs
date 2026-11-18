@@ -80,6 +80,7 @@ const assets = new Map(Object.entries({
   'bootstrap-f02.mjs': ['bootstrap-f02.mjs', 'text/javascript; charset=utf-8'],
   'generative-ui/catalog.mjs': ['generative-ui/catalog.mjs', 'text/javascript; charset=utf-8'],
   'generative-ui/compiler.mjs': ['generative-ui/compiler.mjs', 'text/javascript; charset=utf-8'],
+  'generative-ui/workspace-live-data.mjs':['generative-ui/workspace-live-data.mjs','text/javascript; charset=utf-8'],
   'generative-ui/renderer.mjs': ['generative-ui/renderer.mjs', 'text/javascript; charset=utf-8'],
   'generative-ui/bootstrap-adapters.mjs': ['generative-ui/bootstrap-adapters.mjs', 'text/javascript; charset=utf-8'],
   'generative-ui/semantic-projection.mjs': ['generative-ui/semantic-projection.mjs', 'text/javascript; charset=utf-8'],
@@ -204,6 +205,7 @@ export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'wo
         const verifiedDisplays=new Set(studio.verifiedReplyDisplayCommands);
         liveSummary={schema:timeline.schema,state:reconciliation.failed||studio.failed?'needs-review':'source-backed',
           worldId:timeline.worldId,revision:timeline.revision,
+          studioOutcomes:timeline.studioOutcomes,
           conversations:timeline.conversations.slice(-30).map(c=>({
             id:c.id,provider:c.provider,model:c.model,revision:c.revision,
             messages:c.messages.slice(-30).map(m=>({
@@ -263,6 +265,7 @@ export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'wo
         authorizeDevice(req, 'control:read');
         if (typeof wikiProjection !== 'function') throw failure(503, 'WIKI_UNAVAILABLE');
         const wiki = await wikiProjection();
+        authorizeDevice(req,'control:read'); // no stale grant may receive the completed projection
         res.setHeader('cache-control', 'private, no-store');
         json(res, 200, wiki);
       } catch (error) {

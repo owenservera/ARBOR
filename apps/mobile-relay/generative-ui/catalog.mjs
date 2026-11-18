@@ -123,7 +123,7 @@ export function validateTree(tree,{refs=new Set()}={}) {
     en(n.type,TYPES);
     if(n.visibility!==undefined)en(n.visibility,['phone','pc-private']);
     const p=validateProps(n.type,n.props??{}, {refs});
-    if(OWN(n,'liveBinding')&&(!Object.hasOwn(LIVE_UI_BINDINGS,n.liveBinding)||LIVE_UI_BINDINGS[n.liveBinding]!==n.type||p.items?.length!==0||n.visibility==='pc-private'))invalid('unsupported live UI binding');
+    if(OWN(n,'liveBinding')&&(typeof n.liveBinding!=='string'||!Object.hasOwn(LIVE_UI_BINDINGS,n.liveBinding)||LIVE_UI_BINDINGS[n.liveBinding]!==n.type||p.items?.length!==0||n.visibility==='pc-private'))invalid('unsupported live UI binding');
     const children=n.children??[];
     if(!Array.isArray(children)||children.length>MAX.children)invalid('invalid child list');
     if(children.length && !['stack','grid','card'].includes(n.type))invalid('component does not accept children');

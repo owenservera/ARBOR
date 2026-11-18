@@ -3,6 +3,7 @@ import { transport } from './transport.mjs';
 import { mountBuildSurface } from './generative-ui/phone-surface.mjs';
 import { mountBuildCanvas } from './build-canvas.mjs';
 import { createControlClient } from './control-client.mjs';
+import {workspaceBindingData,hasWorkspaceBinding,projectStudioActivity} from './generative-ui/workspace-live-data.mjs';
 import { resolveBuildRequest, buildSurfaceFromBootstrap, themeDraftCandidates, templateDraftCandidates } from './build-composer.mjs';
 import { mountWelcome } from './welcome.mjs';
 import { parsePairFragment, redeemDevicePairToken } from './pairing-link.mjs';
@@ -464,7 +465,7 @@ function goTab(tab) {
   if (S.tab === 'world' && tab !== 'world' && playerActive) stopMediaPlayer();
   dockAssist?.reset();compose?.resetAssist?.();
   if(S.tab==='wiki'&&tab!=='wiki')clearWikiSources();
-  if(S.tab==='build'&&tab!=='build'){build?.setInspecting?.(false);$('build-inspect-toggle')?.setAttribute('aria-pressed','false');}
+  if(S.tab==='build'&&tab!=='build'){buildBindingSequence++;if(build?.surface())build.setLiveData(null,build.surface().revision);build?.setInspecting?.(false);$('build-inspect-toggle')?.setAttribute('aria-pressed','false');}
   S.tab = tab;
   dockExpanded=false;
   chatContextEpoch++;
@@ -630,6 +631,13 @@ function renderWikiContext() {
       card.append(row);
     }
     if (effects.omitted) card.append(el('p', 'ux-note', effects.omitted + ' additional applied effects omitted.'));
+  }
+  card.append(el('h3','ux-card-title','Studio outcomes · historical source evidence'));
+  const activity=projectStudioActivity(context.studioOutcomes);
+  if(activity.state!=='source-backed')card.append(el('p','ux-note','Studio outcome evidence unavailable.'));
+  else{
+    if(!activity.items.length)card.append(el('p','ux-note','No observed provider outcomes in the committed timeline.'));
+    for(const row of activity.items)card.append(el('strong','ux-item-title',row.label),el('p','ux-note',row.detail+' · event '+row.sourceRef));
   }
   renderSemanticKnowledge(card, context);
   card.append(el('p', 'ux-note', 'Project and task links require explicit source evidence; no inferred project membership is asserted.'));
@@ -844,6 +852,7 @@ function isInvalidDeviceSession(code) {
 // A lost grant must clear *all* private phone projections, not just hide tabs.
 // Session restoration must start from new device proof; no offline replay.
 function clearPrivatePhoneState() {
+  buildBindingSequence++;
   shellPresentation.clear();
   dockAssist?.reset();compose?.resetAssist?.();capabilityLauncher?.close();
   mediaGeneration++;
@@ -1416,7 +1425,7 @@ async function refreshHostPreview() {
     setConn(data.state === 'source-backed' ? 'Owner view · read only' : 'Source unavailable',
       data.state !== 'source-backed');
     renderAll(true);
-    if (build) build.setSurface(data.snapshot.bootstrap?.uiRevision ?? null);
+    if (build) {build.setSurface(data.snapshot.bootstrap?.uiRevision ?? null);if(S.tab==='build')void refreshBuildBindings(data.snapshot);}
     renderHostPreviewActivity();
     if (S.tab === 'wiki') void refreshWiki();
   } catch (error) {
@@ -1763,6 +1772,33 @@ function scheduleBuild(delay = 6000) {
   if (!build || !S.paired || S.tab !== 'build' || buildTimer) return;
   buildTimer = setTimeout(pollBuild, delay);
 }
+// Only while the committed Build view is open, under the same existing read grant.
+let buildBindingSequence=0;
+async function refreshBuildBindings(snapshot){
+ const surface=build?.surface();if(S.tab!=='build'||!surface||!hasWorkspaceBinding(surface))return;
+ const seq=++buildBindingSequence,revision=surface.revision;
+ const headers=HOST_PREVIEW?{}:transport.deviceHeaders?.();
+ const authorized=()=>HOST_PREVIEW?!!S.statusObj:transport.direct&&S.paired&&navigator.onLine!==false&&
+   !!headers&&!!transport.deviceHeaders?.()&&transport.deviceHeaders?.()?.['x-vivim-device-session']===headers['x-vivim-device-session'];
+ if(!authorized()){build.setLiveData(null,revision);return;}
+ const outcomes=HOST_PREVIEW?snapshot?.studioOutcomes:
+   snapshot?.live?.state==='source-backed'?snapshot.live.studioOutcomes:null;
+ let wiki=null;
+ if(HOST_PREVIEW||S.device.scopes?.includes('control:read')){
+   try{
+     const response=await fetch(HOST_PREVIEW?'/api/host/control/wiki-view':'/mobile/api/wiki',
+       {credentials:'same-origin',cache:'no-store',headers,signal:AbortSignal.timeout(4000)});
+     if(response.ok)wiki=await response.json();
+     else if(response.status===401||response.status===403){
+       if(seq===buildBindingSequence)build.setLiveData(null,revision);
+       return;
+     }
+   }catch{/* source unavailable; do not retain old task values */}
+ }
+ if(seq!==buildBindingSequence||S.tab!=='build'||!authorized()||build?.surface()?.revision!==revision||
+    build?.surface()?.surfaceId!==surface.surfaceId)return;
+ build.setLiveData(workspaceBindingData({wiki,outcomes}),revision);
+}
 async function pollBuild() {
   buildTimer = 0;
   if (!build || !S.paired || S.tab !== 'build') return;
@@ -1775,6 +1811,7 @@ async function pollBuild() {
     const observed = build.setSurface(rev, st?.snapshot?.bootstrap);
     shellPresentation.observe(rev??null);
     buildKey = observed?.state === 'ready' ? String(rev.surfaceId) + ':' + String(rev.revision) : '';
+    if(observed?.state==='ready')void refreshBuildBindings(st?.snapshot);
   } catch (e) {
     if (build) build.clear();
     shellPresentation.clear();

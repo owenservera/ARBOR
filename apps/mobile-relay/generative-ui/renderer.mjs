@@ -65,7 +65,7 @@ export function planTierflowSurface(surface, {audience='phone',approvedRefs=[],v
 }
 const FONT={system:'system-ui, sans-serif',humanist:'"Segoe UI", sans-serif',geometric:'"Century Gothic", sans-serif',editorial:'Georgia, serif',mono:'Consolas, monospace'};
 function ink(hex){const rgb=[1,3,5].map(i=>{const v=parseInt(hex.slice(i,i+2),16)/255;return v<=.04045?v/12.92:((v+.055)/1.055)**2.4;});const L=.2126*rgb[0]+.7152*rgb[1]+.0722*rgb[2];return (L+.05)/.05>=1.05/(L+.05)?'#000000':'#ffffff';}
-export function renderSurface(mount,surface,{audience='phone',approvedRefs=[],onIntent=()=>{},tierflow=false,onMounted=null,interactiveLocal=false}={}){
+export function renderSurface(mount,surface,{audience='phone',approvedRefs=[],onIntent=()=>{},tierflow=false,onMounted=null,interactiveLocal=false,liveData=null}={}){
   if(!mount||typeof mount.replaceChildren!=='function'||!mount.ownerDocument)invalid('DOM mount required');
   if(typeof onIntent!=='function')invalid('intent handler required');
   const projected=tierflow?planTierflowSurface(surface,{audience,approvedRefs,viewportPx:tierflowViewport(mount)}):null;
@@ -104,6 +104,14 @@ export function renderSurface(mount,surface,{audience='phone',approvedRefs=[],on
         const list=element('ul','items');
         // TierFlow owns order and labels; canonical source supplies the exact typed detail/value.
         if(planNode&&(n.children.length!==0||planNode.children.length!==p.items.length))invalid('TierFlow structured item count mismatch');
+        if(n.liveBinding){
+          const view=liveData?.[n.liveBinding];
+          const available=view?.state==='source-backed'&&Number.isSafeInteger(view.revision)&&Array.isArray(view.items)&&view.items.length<=16;
+          el.appendChild(element('p','detail',available?'Read-only live source · revision '+view.revision+' · '+view.total+' matching records':'Read-only binding: '+n.liveBinding+' · source unavailable or preview only'));
+          if(available){for(const row of view.items){const li=element('li','item',String(row.label).slice(0,80));li.appendChild(element('span','detail',String(row.detail).slice(0,240)));list.appendChild(li);}
+            if(!view.items.length)el.appendChild(element('p','detail','No matching source records.'));
+          }
+        }
         for(const [i,item] of p.items.entries()){
           const planItem=planNode?.children[i];
           if(planNode&&(!planItem||planItem.id!==n.id+'.item'+i||planItem.tag!=='li'||planItem.text!==item.label))invalid('TierFlow structured item mismatch');
@@ -127,6 +135,7 @@ export function renderSurface(mount,surface,{audience='phone',approvedRefs=[],on
       // Register the actual mounted element, not a fabricated taxonomy example.
       const settings=Object.fromEntries(Object.entries(p).filter(([k])=>['direction','gap','columns','variant'].includes(k)));
       Object.assign(settings,n.presentation??{});
+      if(n.liveBinding)settings.liveBinding=n.liveBinding;
       instances.push({element:el,instanceId:n.id,parentId,type:n.type,componentId:projected.identities.get(n.id),
         surfaceId:s.surfaceId,revision:s.revision,settings,configurableProperties:componentPresentationBindings(n.type).map(([property])=>property)});
     }

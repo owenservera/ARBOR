@@ -136,9 +136,29 @@ export function createLiveStateProjection({dir,worldId,verifyObservation,now=()=
       return {sequence,digest:event.digest,replayed:false};
     }finally{fs.unlinkSync(lock);}
   }
+  // This view derives only from already verified, hash-linked live-state events.
+  // No prompt, reply, session, thread, device credential or provider content is copied.
+  function outcomeProjection(events,state){
+    const kinds={'reply.observed':'reply_observed','delivery.acked':'delivered',
+      'send.uncertain':'uncertain','send.failed_before':'failed_before_send','send.failed_after':'failed_after_send'};
+    const rows=[];
+    for(const m of state.messages.values()){
+      const e=events[m.revision-1];if(!e||kinds[e.kind]!==m.phase)continue;
+      if(!Object.hasOwn(kinds,e.kind)||!DIGEST.test(e.evidenceDigest)||!DIGEST.test(e.digest)||
+         !Number.isFinite(Date.parse(e.observedAt)))continue;
+      rows.push({id:m.id,provider:m.provider??null,state:m.phase,sequence:e.sequence,
+        observedAt:e.observedAt,source:e.source,sourceRevision:e.sourceRevision,evidenceDigest:e.evidenceDigest,
+        eventDigest:e.digest,authority:'historical-source-verified-event'});
+    }
+    rows.sort((a,b)=>b.sequence-a.sequence);
+    return {schema:'vivim.studio-outcomes/1',authority:'read-only-historical',state:'source-backed',
+      revision:events.length,total:rows.length,omitted:Math.max(0,rows.length-16),items:rows.slice(0,16)};
+  }
+  function studioOutcomes(){const {events,state}=validatedEvents();return outcomeProjection(events,state);}
   function snapshot(){
     const {events,state}=validatedEvents();return {schema:LIVE_SCHEMA,worldId,revision:events.length,
       cursor:{sequence:events.length,digest:events.at(-1)?.digest??'0'.repeat(64)},
+      studioOutcomes:outcomeProjection(events,state),
       conversations:[...state.conversations.values()].map(c=>({id:c.id,provider:c.provider,model:c.model,revision:c.revision,
         messages:c.messages.map(id=>{const m=state.messages.get(id);return {id:m.id,commandId:m.commandId,
           provider:m.provider,model:m.model,requestId:m.requestId,threadRef:m.threadRef,phase:m.phase,revision:m.revision};})}))};
@@ -176,7 +196,7 @@ export function createLiveStateProjection({dir,worldId,verifyObservation,now=()=
   function worldTimeline() {
     const current = snapshot();
     return { schema:'vivim.world-conversation-timeline/1', worldId, revision:current.revision,
-      cursor:current.cursor, conversations:current.conversations.map(conversation=>({
+      cursor:current.cursor, studioOutcomes:current.studioOutcomes, conversations:current.conversations.map(conversation=>({
         id:conversation.id, provider:conversation.provider, model:conversation.model,
         revision:conversation.revision, messages:conversation.messages.map(message=>({
           id:message.id, commandId:message.commandId, requestId:message.requestId,
@@ -186,7 +206,7 @@ export function createLiveStateProjection({dir,worldId,verifyObservation,now=()=
         }))
       })) };
   }
-  return {schema:LIVE_SCHEMA,worldId,record,snapshot,changesSince,worldTimeline,messageState};
+  return {schema:LIVE_SCHEMA,worldId,record,snapshot,changesSince,worldTimeline,messageState,studioOutcomes};
 }
 
 /**

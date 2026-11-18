@@ -21,6 +21,7 @@ import { createWorkerSupervisor } from './bootstrap/worker-supervisor.mjs';
 import { loadOwnerToken, verifyOwnerToken } from './bootstrap/owner-auth.mjs';
 import { createDirectPhoneHandler, serveLoopbackPhoneAsset } from './direct-phone.mjs';
 import { createRustChatContext } from './chat/rust-context.mjs';
+import {createLiveStateProjection} from './conversations/live-projection.mjs';
 import { createProductJournal, projectAppliedControlEffects } from './chat/product-journal.mjs';
 import { projectWikiSemantics } from './chat/wiki-semantics.mjs';
 import { createEnrollment } from './apk/enrollment.mjs';
@@ -846,6 +847,11 @@ async function handleControl(req, res, pathname, host, controlFor, tokenFor, uiS
       res.setHeader('cache-control','private, no-store');sendJson(res,200,value);
     }catch(e){sendJson(res,e.status===401?401:e.status===403?403:e.status===503?503:400,{code:typeof e.code==='string'&&/^[A-Z_]+$/.test(e.code)?e.code:'DEVELOPMENT_REFUSED'});}return;
   }
+  function readStudioOutcomes(){
+    try{return createLiveStateProjection({dir:path.dirname(path.dirname(productJournal.journalPath)),
+      worldId:runtimeFor().worldId,verifyObservation:()=>false}).studioOutcomes();}
+    catch{return {schema:'vivim.studio-outcomes/1',state:'unavailable',items:[]};}
+  }
   if(route==='wiki-view'){
     if(req.method!=='GET'){sendJson(res,405,{code:'METHOD'});return;}
     if(req.headers.origin!==undefined&&!sameOrigin){sendJson(res,403,{code:'ORIGIN'});return;}
@@ -869,7 +875,7 @@ async function handleControl(req, res, pathname, host, controlFor, tokenFor, uiS
       if (!verifyOwnerToken(req.headers.authorization, owner) && !uiSessions.authorized(req,{mutate:false})) {
         sendJson(res,401,{code:'OWNER_AUTH'}); return;
       }
-      const enriched = { ...context, applicationEffects, nativeContext:native };
+      const enriched = { ...context, applicationEffects, nativeContext:native, studioOutcomes:readStudioOutcomes() };
       sendJson(res, 200, { ...enriched, semantics: projectWikiSemantics(enriched) });
     } catch { sendJson(res, 503, { schema: 'vivim.wiki-context/1', state: 'unavailable', code: 'WIKI_CONTEXT_UNAVAILABLE' }); }
     return;
@@ -902,6 +908,7 @@ async function handleControl(req, res, pathname, host, controlFor, tokenFor, uiS
             id: c.id, title: c.title, basis: c.basis
           })) : [], preferences: [], hardNos: [] },
           control: { schema: 'vivim.control-recent/1', recent },
+          studioOutcomes:readStudioOutcomes(),
           devices: { schema: 'vivim.device-counts/1', total: grants.length,
             pending: grants.filter(g => g.status === 'pending').length,
             active: grants.filter(g => g.status === 'active').length }

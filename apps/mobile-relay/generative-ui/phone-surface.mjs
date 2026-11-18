@@ -59,12 +59,12 @@ export function mountBuildSurface(mount, { onCommit = () => {}, semantic = null,
   if (mounted) throw new Error('Build surface already mounted');
   mounted = true;
   const revisionGuard = createHostRevisionGuard();
-  let initialDraft = null,instances=new Map(),highlighted=null,selected=null,mountedSemantic=null,inspecting=false;
+  let initialDraft = null,instances=new Map(),highlighted=null,selected=null,mountedSemantic=null,inspecting=false,liveData=null;
 
   function clear() {
     revisionGuard.disconnect();
     surface = null;
-    initialDraft = null;instances.clear();highlighted=null;selected=null;mountedSemantic=null;inspecting=false;
+    initialDraft = null;instances.clear();highlighted=null;selected=null;mountedSemantic=null;inspecting=false;liveData=null;
     mount?.removeAttribute?.('data-vivim-inspect-mode');
     if (mount?.replaceChildren) mount.replaceChildren();
     onInstances([]);onSelection(null);
@@ -79,7 +79,7 @@ export function mountBuildSurface(mount, { onCommit = () => {}, semantic = null,
       audience: 'phone',
       tierflow: true,
       interactiveLocal: !readOnly,
-      approvedRefs: [],
+      approvedRefs: [],liveData,
       onMounted: rows=>{instances=new Map(rows.map(row=>[row.instanceId,row]));},
       onIntent: (intent) => {
         if (readOnly || pending || !surface || intent.revision !== surface.revision || intent.surfaceId !== surface.surfaceId) return;
@@ -112,6 +112,7 @@ export function mountBuildSurface(mount, { onCommit = () => {}, semantic = null,
       return next;
     }
     if (next.changed) {
+      liveData=null; // source rows belong to a specific observed visual revision
       try { render(next.surface); }
       catch {
         clear();
@@ -167,7 +168,13 @@ export function mountBuildSurface(mount, { onCommit = () => {}, semantic = null,
     event.preventDefault();event.stopPropagation();
     selectInstance(target,surface.revision,'tap');
   },true);
-  return { render, setSurface, clear, listInstances, selectInstance, selectedInstance, setInspecting, surface: () => surface,
+  function setLiveData(data,revision){
+    if(!surface||surface.revision!==revision)return false;
+    if(JSON.stringify(liveData)===JSON.stringify(data))return true;
+    liveData=data;
+    try{render(surface);return true;}catch{clear();return false;}
+  }
+  return { render, setSurface, setLiveData, clear, listInstances, selectInstance, selectedInstance, setInspecting, surface: () => surface,
     draftSurface: () => initialDraft, pending: () => pending,
     revisionState: () => revisionGuard.status() };
 }
