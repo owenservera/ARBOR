@@ -146,3 +146,32 @@ test('legacy feedback and gate records remain read-only and replayable', () => r
   await j.append(chat('after legacy'));
   assert.equal((await j.readRecords()).length, 3);
 }));
+
+test('D4 derives committed section relationships and preserves revision history after restart', () => rootTest(async root => {
+  const j = journal(root);
+  await j.append({ ...chat('Project goal: capture observations'), intent: {
+    outcome: 'candidate', candidate: { actionId: 'wiki.section.edit' }
+  } });
+  await j.append({ ...chat('not an owner observation'), actor: 'ai' });
+  const first = await j.append(edit(1, 'First committed change'));
+  await assert.rejects(j.append(edit(1, 'Rejected stale change')), e => e.status === 409);
+  const second = await j.append(edit(2, 'Second committed change'));
+  const before = await j.readWikiContext();
+  const after = await journal(root).readWikiContext();
+  assert.deepEqual(after, before);
+  assert.equal(after.wikiRevision, 3);
+  assert.equal(after.totalObserved, 1);
+  assert.equal(after.items[0].status, 'user-statement-unverified');
+  assert.equal(after.wikiChanges.total, 2);
+  assert.deepEqual(after.wikiChanges.items.map(x => [x.entryId, x.sequence, x.wikiRevision, x.status]), [
+    [first.entryId, first.sequence, 2, 'superseded-section-revision'],
+    [second.entryId, second.sequence, 3, 'current-section-revision']
+  ]);
+  assert.deepEqual(after.wikiChanges.items[1].relationship, {
+    kind: 'mutated-section', page: 'Main', section: 'HowTo'
+  });
+  assert.equal(after.wikiChanges.items[0].previousWikiRevision, 1);
+  assert.equal((await j.readProjection()).wiki.pages.Main.sections.HowTo, 'Second committed change');
+  assert.equal(JSON.stringify(after.wikiChanges).includes('Rejected stale change'), false);
+  assert.equal(JSON.stringify(after.wikiChanges).includes('Project goal'), false);
+}));
