@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { buildControlWorld, interpretControl, LANGUAGE_SCHEMA } from '../../mobile-relay/control-language.mjs';
 import { toCommandIntent, validateAiCommandCandidate, COMMAND_INTENT_SCHEMA } from './command-intent.mjs';
 import { resolvePersonalSemantics } from './personal-semantics.mjs';
+import { createVecCompiler } from '../../mobile-relay/vec/compiler.mjs';
 
 const catalogPath = fileURLToPath(new URL('./action-catalog.v1.json', import.meta.url));
 const err = code => Object.assign(new Error(code), { code });
@@ -117,15 +118,14 @@ export function createControlPlanner({ catalog = loadControlCatalog(), lexicon =
   const taught = () => { const v = lexicon(); return Array.isArray(v) ? v : []; };
   // Version the actual lexicon contents, not just its length: replacing a taught
   // alias with another must invalidate a mobile client's prior WorldModel.
-  function world() {
-    const entries = taught();
+  function world(entries = taught(), rules = personalRules()) {
     let hash = 2166136261;
     // Semantic rules are part of the same versioned interpretation world.
     // A changed/revoked phrase invalidates stale command-intent worldRevision pins.
     const canonical = v => Array.isArray(v) ? v.map(canonical) : v && typeof v === 'object'
       ? Object.fromEntries(Object.entries(v).sort(([a],[b]) => a.localeCompare(b))
         .map(([k,val]) => [k,canonical(val)])) : v;
-    const ruleKeys = personalRules().filter(r => r.state === 'accepted')
+    const ruleKeys = rules.filter(r => r.state === 'accepted')
       .map(r => 'rule:' + JSON.stringify(canonical({
         id:r.id,revision:r.revision,phrase:r.phrase,scope:r.scope,
         actionId:r.actionId,args:r.args,catalogVersion:r.catalogVersion,
@@ -204,50 +204,78 @@ export function createControlPlanner({ catalog = loadControlCatalog(), lexicon =
     return baseline;
   }
 
-  function planText(text, { source = 'text' } = {}) {
-    if (typeof text !== 'string' || !text.trim() || text.length > 1000) throw err('CONTROL_TEXT_INVALID');
+  // The VEC adapter is installed by Host code, not selected by user or model input.
+  // The same command-intent object supplies both the public IR and the typed plan.
+  const commandCompiler = createVecCompiler({ adapters: { command: ({ text, input, worldSnapshot, rules, scope }) => {
+    const intent = toCommandIntent({ ...input, text },
+      { catalog, world: worldSnapshot, personalRules: rules, personalScope: scope });
+    const outcome = intent.outcome === 'interpretation_required' ? 'unsupported' : intent.outcome;
+    return { outcome, code: intent.refusal?.code ?? 'NONE', proposal: intent };
+  } } });
+
+  function compileCommand(text, { source = 'text', audience = 'owner',
+    worldRevision, catalogRevision } = {}) {
+    if (typeof text !== 'string' || text.length > 1000) throw err('CONTROL_TEXT_INVALID');
     if (!SURFACES.includes(source)) throw err('CONTROL_SOURCE_INVALID');
-    const meaning = interpretText(text.trim(), { source });
-    const language = { feedback: meaning.feedback,
-      ...(meaning.ignoredModifiers ? { ignoredModifiers: meaning.ignoredModifiers } : {}),
-      ...(meaning.provenance ? { personalRule: meaning.provenance } : {}) };
-    if (meaning.outcome === 'candidate') return { ...planTyped({ ...meaning.candidate, source,
-      origin: meaning.provenance?.method === 'accepted-personal-rule' ? 'personal_rule' : 'deterministic' }), language };
-    if (meaning.outcome === 'refused') return { schema: 'vivim.control-plan/1', source,
-      outcome: 'refused', refusal: meaning.refusal, executionPerformed: false, language };
+    const rules = personalRules();
+    const worldSnapshot = world(taught(), rules);
+    return commandCompiler.compile({ domain: 'command', text, context: {
+      input: { scope: source, audience, worldRevision, catalogRevision },
+      worldSnapshot, rules, scope: scopeFor(source)
+    } });
+  }
+
+  function planText(text, { source = 'text', worldRevision, catalogRevision } = {}) {
+    if (typeof text !== 'string' || !text.trim() || text.length > 1000) throw err('CONTROL_TEXT_INVALID');
+    const compiled = compileCommand(text.trim(), { source, worldRevision, catalogRevision });
+    const meaning = compiled.proposal;
+    const language = { ...meaning?.language, vec: compiled };
+    const base = { schema: 'vivim.control-plan/1', source, executionPerformed: false, language };
+    if (!meaning || meaning.schema !== COMMAND_INTENT_SCHEMA ||
+        compiled.authorization !== 'none' || compiled.executed !== false || compiled.persisted !== false)
+      return { ...base, outcome: 'refused', refusal: { code: compiled.code, message: 'Command compilation refused.' } };
+    if (compiled.outcome === 'candidate' && meaning.outcome === 'candidate') {
+      // Refuse stale interpretations before handing them to the existing approval planner.
+      if (meaning.provenance.catalogRevision !== catalog.version ||
+          meaning.provenance.worldRevision !== world().v)
+        return { ...base, outcome: 'refused', refusal: { code: 'STALE_WORLD', message: 'Command context changed.' } };
+      return { ...planTyped({ actionId: meaning.actionId, args: meaning.args, source,
+        origin: meaning.provenance.method === 'accepted-personal-rule' ? 'personal_rule' : 'deterministic' }), language };
+    }
+    if (compiled.outcome === 'refused' || meaning.outcome === 'refused')
+      return { ...base, outcome: 'refused', refusal: meaning.refusal ?? { code: compiled.code, message: 'Command refused.' } };
     if (meaning.outcome === 'clarification_required') {
-      const ranked = meaning.choices.map(id => actions.get(id)).filter(Boolean);
-      return { schema: 'vivim.control-plan/1', source, outcome: 'clarification_required', question: meaning.question,
+      if (meaning.missing?.length) return { ...base, outcome: 'incomplete',
+        question: meaning.question ?? 'Missing information.',
+        ...(meaning.alternatives?.[0] ? { actionId: meaning.alternatives[0].actionId } : {}),
+        missing: meaning.missing };
+      const ranked = (meaning.alternatives ?? []).map(choice => actions.get(choice.actionId)).filter(Boolean);
+      return { ...base, outcome: 'clarification_required', question: meaning.question,
         choices: ranked.map(a => a.id), choiceDetails: ranked.map(a => ({ actionId: a.id, title: a.title, risk: a.risk, readiness: a.readiness })),
-        risk: ranked.reduce((m, a) => RISKS.indexOf(a.risk) > RISKS.indexOf(m) ? a.risk : m, 'R0'),
-        executionPerformed: false, language };
+        risk: ranked.reduce((m, a) => RISKS.indexOf(a.risk) > RISKS.indexOf(m) ? a.risk : m, 'R0') };
     }
-    if (meaning.outcome === 'incomplete') {
-      return { schema: 'vivim.control-plan/1', source, outcome: 'incomplete', question: meaning.question ?? 'Missing information.',
-        ...(meaning.candidate ? { actionId: meaning.candidate.actionId } : {}), missing: meaning.missing ?? [],
-        executionPerformed: false, language };
-    }
-    return { schema: 'vivim.control-plan/1', source, outcome: 'interpretation_required',
-      route: 'existing_harness_ai_candidate_only', executionPerformed: false, language,
-      message: 'No deterministic action matched. AI interpretation may propose a typed action; nothing was changed.' };
+    if (compiled.outcome === 'unsupported' && meaning.outcome === 'interpretation_required')
+      return { ...base, outcome: 'interpretation_required', route: 'existing_harness_ai_candidate_only',
+        message: 'No deterministic action matched. AI interpretation may propose a typed action; nothing was changed.' };
+    return { ...base, outcome: 'refused', refusal: { code: 'CONTROL_COMPILATION_INVALID', message: 'Inconsistent command compilation.' } };
   }
 
   /** V0.1 typed, inert command IR; no dispatcher/approval side effects. */
-  function interpretCommand(text, { source = 'text', audience = 'owner',
-    worldRevision, catalogRevision } = {}) {
-    if (typeof text !== 'string' || text.length > 1000) throw err('CONTROL_TEXT_INVALID');
-    const w = world();
-    return toCommandIntent({ text, scope: source, audience, worldRevision, catalogRevision },
-      { catalog, world: w, personalRules: personalRules(), personalScope: scopeFor(source) });
+  function interpretCommand(text, options = {}) {
+    const compiled = compileCommand(text, options);
+    return compiled.proposal ?? { schema: COMMAND_INTENT_SCHEMA, outcome: 'refused',
+      refusal: { code: compiled.code, message: 'Command compilation refused.' },
+      provenance: { authority: 'none' } };
   }
 
   /** Bound a model's suggestion to its original owner sentence and the exact catalog. */
   function validateCommandCandidate(text, candidate, { source = 'text', audience = 'owner',
     worldRevision, catalogRevision } = {}) {
     if (typeof text !== 'string' || text.length > 1000) throw err('CONTROL_TEXT_INVALID');
-    const w = world();
+    const rules = personalRules();
+    const w = world(taught(), rules);
     return validateAiCommandCandidate({ text, candidate, scope: source, audience,
-      worldRevision, catalogRevision }, { catalog, world: w, personalRules: personalRules(), personalScope: scopeFor(source) });
+      worldRevision, catalogRevision }, { catalog, world: w, personalRules: rules, personalScope: scopeFor(source) });
   }
 
   /** UTC05 entry: an untrusted model proposal. Shape-checked, catalog-validated, never trusted. */

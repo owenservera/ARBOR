@@ -88,7 +88,9 @@ export function toCommandIntent(input, { catalog, world, personalRules = [], per
       personalProvenance = { method: 'personal-rule-refusal', reason: resolved.reason };
     }
   }
-  const meta = { provenance: {
+  const meta = { language: { feedback: meaning.feedback,
+    ...(meaning.ignoredModifiers ? { ignoredModifiers: meaning.ignoredModifiers } : {}),
+    ...(personalProvenance ? { personalRule: personalProvenance } : {}) }, provenance: {
     ...provenance(input, catalog, world,
       personalProvenance?.method ?? 'deterministic-nlcl', meaning.feedback),
     ...(personalProvenance ? { personalRule: personalProvenance } : {}),
