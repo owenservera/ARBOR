@@ -28,10 +28,6 @@ class MockNode {
 }
 const clone = x => JSON.parse(JSON.stringify(x));
 const baseWiki = { revision: 1, pages: { Main: { sections: { About: '<img src=x onerror=alert(1)>', HowTo: 'First\nSecond' } } } };
-const baseRoadmap = { acceleration: { revision: 'R002', activeBatch: 'ACCEL-A' }, buildQueue: [
-  { itemId: 'A02', status: 'in-progress', verification: 'UNRUN', ownerAcceptance: 'PENDING', note: 'Host journal' },
-  { itemId: 'A04', status: 'queued', verification: 'UNRUN', ownerAcceptance: 'PENDING', dependsOn: ['A02'], note: 'VEC compiler' }
-] };
 const baseSurface = { schema: 'vivim.file-surface/1', generatorVersion: 'hq.source-index/1', status: 'indexed', files: [
   { project: 'arbor', sourceId: 'arbor:apps/vivim-host/public/pages/wiki.js', path: 'apps/vivim-host/public/pages/wiki.js', surface: '<script>not executable</script>', commentIds: ['vivim.example@1'], actionIds: [], sourceDigest: 'example-digest', freshness: 'indexed', annotations: [{ semanticId: 'vivim.example@1', kind: 'consumes', line: 12, resolution: 'unknown' }], relationships: [] }
 ] };
@@ -45,7 +41,6 @@ function setup() {
       schema: 'vivim.wiki-context/1', state: 'source-backed', revision: 0,
       totalObserved: 0, omitted: 0, items: []
     },
-    '/api/roadmap': clone(baseRoadmap),
     '/api/file-surface': clone(baseSurface),
     '/api/journal': []
   };
@@ -151,24 +146,20 @@ test('Host source projection: revisions, seed truth, actual files[] schema and u
   const ui = setup(); await settle();
   assert.match(ui.el('rev').textContent, /Wiki revision: 1/);
   assert.match(ui.el('state-rev').textContent, /Chat state: 0/);
-  assert.match(ui.el('source-mode').textContent, /seed\/demo baseline/);
-  assert.match(ui.el('roadmap-source').textContent, /roadmap\.v1\.json/);
+  assert.match(ui.el('source-mode').textContent, /initial Wiki content/);
   assert.match(ui.el('surface-source').textContent, /1 indexed files/);
   assert.match(ui.el('journal-source').textContent, /0 entries/);
   const wikiNodes = allChildren(ui.el('wiki-view'));
   assert.ok(wikiNodes.some(n => n.textContent === '<img src=x onerror=alert(1)>'));
-  assert.ok(wikiNodes.some(n => /seed \/ no edit record observed/.test(n.textContent)));
+  assert.ok(wikiNodes.some(n => /initial section \/ no edit record observed/.test(n.textContent)));
   const surfaceNodes = allChildren(ui.el('surface-view'));
   assert.ok(surfaceNodes.some(n => n.textContent === 'apps/vivim-host/public/pages/wiki.js'));
   assert.ok(surfaceNodes.some(n => n.textContent === '<script>not executable</script>'));
   assert.ok(surfaceNodes.some(n => n.textContent === 'consumes · vivim.example@1 · line 12 · unknown'));
   assert.ok(surfaceNodes.some(n => n.tagName === 'button' && n.textContent === 'Read verified source context'));
-  const roadmapNodes = allChildren(ui.el('roadmap-view'));
-  assert.ok(roadmapNodes.some(n => n.textContent === 'A04'));
-  assert.ok(roadmapNodes.some(n => n.textContent === 'UNRUN / PENDING'));
-  const repaints = ['wiki', 'roadmap', 'surface', 'journal'].map(k => ui.el(k + '-view').repaints);
+  const repaints = ['wiki', 'surface', 'journal'].map(k => ui.el(k + '-view').repaints);
   ui.tick(); await settle();
-  assert.deepEqual(['wiki', 'roadmap', 'surface', 'journal'].map(k => ui.el(k + '-view').repaints), repaints);
+  assert.deepEqual(['wiki', 'surface', 'journal'].map(k => ui.el(k + '-view').repaints), repaints);
   ui.setGetFailure('/api/wiki'); ui.tick(); await settle();
   assert.equal(ui.el('wiki-view').repaints, repaints[0], 'last good Wiki remains in DOM on a network failure');
   assert.match(ui.el('wiki-source').textContent, /stale\/unavailable: source unreachable/);

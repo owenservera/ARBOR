@@ -15,7 +15,7 @@
   </div>
   <nav aria-label="Product pages">
     <a href="/chat">Chat <span aria-hidden="true">↗</span></a>
-    <a href="/demo">Dev panel <span aria-hidden="true">↗</span></a>
+    <a href="/host/control">Host Control <span aria-hidden="true">↗</span></a>
     <button type="button" id="refresh-now">Refresh sources</button>
   </nav>
 </header>
@@ -45,13 +45,8 @@
     <p class="source-meta" id="context-source">Owner authorization required · journal-backed user observations</p>
     <div id="context-view" class="stack"><p class="empty">Checking owner access…</p></div>
   </section>
-  <section class="block roadmap-panel" aria-labelledby="roadmap-heading">
-    <div class="section-heading"><div><p class="eyebrow">03 / SOURCE OF TRUTH</p><h2 id="roadmap-heading">Acceleration roadmap</h2></div><a href="/api/roadmap">Host roadmap read-through</a></div>
-    <p class="source-meta" id="roadmap-source">docs/product/roadmap/roadmap.v1.json · /api/roadmap · waiting</p>
-    <div id="roadmap-view"><p class="empty">Loading queue…</p></div>
-  </section>
   <section class="block surface-panel" aria-labelledby="surface-heading">
-    <div class="section-heading"><div><p class="eyebrow">04 / LIVE SOURCE INDEX</p><h2 id="surface-heading">VLang file surfaces</h2></div><a href="/api/file-surface">Host file-surface source</a></div>
+    <div class="section-heading"><div><p class="eyebrow">03 / LIVE SOURCE INDEX</p><h2 id="surface-heading">VLang file surfaces</h2></div><a href="/api/file-surface">Host file-surface source</a></div>
     <p class="source-meta" id="surface-source">vivim.file-surface/1 · owner-authorized HQ source (read only)</p>
     <form id="surface-search" class="wiki-command-form">
       <label for="surface-query">Find a path, symbol, or semantic ID</label>
@@ -64,7 +59,7 @@
     <div id="surface-context-view" aria-live="polite"><p class="empty">Search annotated source or select a file to read verified context.</p></div>
   </section>
   <section class="block journal-panel" aria-labelledby="journal-heading">
-    <div class="section-heading"><div><p class="eyebrow">05 / APPEND-ONLY HISTORY</p><h2 id="journal-heading">Host journal</h2></div><a href="/api/journal">Host journal source</a></div>
+    <div class="section-heading"><div><p class="eyebrow">04 / APPEND-ONLY HISTORY</p><h2 id="journal-heading">Host journal</h2></div><a href="/api/journal">Host journal source</a></div>
     <p class="source-meta" id="journal-source">/api/journal · waiting</p>
     <div id="journal-view"><p class="empty">Loading recent entries…</p></div>
   </section>

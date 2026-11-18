@@ -83,7 +83,7 @@ const S = {
   statusAt: 0, statusObj: null, timer: 0, busy: false, sigs: {}, shownConv: null,
   conn: { label: '', tone: 'ok' }, device: { status: null, scopes: null },
   media: { state: 'idle' }, mediaAt: 0, mediaOffset: 0, mediaLoading: false, nextBatch: null,
-  roadmap: null, roadmapError: '', wiki: null, wikiError: 'Wiki not loaded', wikiContext: null, wikiContextError: ''
+  wiki: null, wikiError: 'Wiki not loaded', wikiContext: null, wikiContextError: ''
 };
 let combinedInbox = true; // UI-only inbox aggregation; never fan-out or a provider target.
 let providerRefreshBusy = false;
@@ -969,7 +969,7 @@ function renderSurfaces() {
   else if (S.tab === 'me') { host = $('v-me'); model = meModel(S.statusObj, S.cmds, ctx); }
   else return;
   if (!host) return;
-  const sig = S.tab + '|' + JSON.stringify(model) + '|' + JSON.stringify(S.roadmap || null) + '|' + S.roadmapError;
+  const sig = S.tab + '|' + JSON.stringify(model);
   if (S.sigs.ux === sig) return;
   S.sigs.ux = sig;
   const options = { onNavigate: goTab,
@@ -1000,8 +1000,7 @@ function renderSurfaces() {
       ? offset => { void refreshMedia(true, offset); } : undefined,
     onInstall: !HOST_PREVIEW && deferredInstallPrompt ? requestPwaInstall : undefined,
     onOpenPocket: () => { if (pocketButton && !pocketButton.hidden) pocketButton.click(); },
-    onReplay: () => { if (welcome) welcome.open(); },
-    roadmap: S.roadmap, roadmapError: S.roadmapError };
+    onReplay: () => { if (welcome) welcome.open(); } };
   if (S.tab === 'today') renderToday(host, model, options);
   else if (S.tab === 'world') renderWorld(host, model, options);
   else renderMe(host, model, options);
@@ -1228,7 +1227,7 @@ function installHostMenu() {
     ['Pair a phone', '/onboarding'],
     ['Connections & permissions', '/host/control'],
     ['Host diagnostics', '/api/host/status'],
-    ['ARBOR progress (live roadmap)', '/wiki']
+    ['Owner Wiki & source context', '/wiki']
   ]) {
     const anchor = el('a', '', label);
     anchor.href = href;
@@ -1281,23 +1280,8 @@ function renderHostPreviewActivity() {
   }
   section.append(list);
 }
-// Live ARBOR progress source: read-through of the machine roadmap, same as /wiki.
-// Read-only; the keeper edits roadmap.v1.json, this app never writes it.
-async function refreshRoadmap() {
-  try {
-    const response = await fetch('/api/roadmap', { method: 'GET', credentials: 'same-origin', cache: 'no-store' });
-    if (!response.ok) throw new Error('HTTP ' + response.status);
-    const data = await response.json();
-    if (data?.schema !== 'arbor.product-roadmap/1') throw new Error('Unexpected roadmap schema');
-    S.roadmap = data; S.roadmapError = '';
-  } catch (error) {
-    S.roadmap = null; S.roadmapError = 'Live roadmap unavailable (' + (error?.message || 'read failed') + ')';
-  }
-  if (S.tab === 'world') renderSurfaces();
-}
 async function refreshHostPreview() {
   if (!HOST_PREVIEW) return;
-  void refreshRoadmap();
   const sequence = ++previewReadSequence;
   try {
     const response = await fetch('/api/host/control/pwa-view', {
@@ -1499,7 +1483,6 @@ function schedule() {
 }
 async function refresh() {
   if (!S.paired || S.busy || N.target === 'phone') return;
-  void refreshRoadmap();
   S.busy = true; clearTimeout(S.timer);
   try {
     const needStatus = !S.statusAt || Date.now() - S.statusAt > 7500;

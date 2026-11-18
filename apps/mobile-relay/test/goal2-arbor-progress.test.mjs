@@ -35,40 +35,29 @@ function textOf(node) {
 
 /* ---------- GOAL-2 acceptance: live ARBOR progress + blockers reachable from the PWA ---------- */
 
-test('host menu links the /wiki surface that renders ARBOR roadmap progress, with unique hrefs', () => {
+test('host menu links the /wiki surface that renders owner Wiki, with unique hrefs', () => {
   const menu = app.match(/for \(const \[label, href\] of \[([\s\S]*?)\]\) \{/);
   assert.ok(menu, 'installHostMenu must keep its label/href table');
   const hrefs = [...menu[1].matchAll(/'([^']+)'/g)].map(m => m[1]).filter(h => h.startsWith('/'));
   for (const href of ['/onboarding', '/host/control', '/api/host/status']) {
     assert.ok(hrefs.includes(href), `existing host menu link ${href} must stay`);
   }
-  assert.ok(hrefs.includes('/wiki'), 'host menu must link /wiki (ARBOR roadmap surface)');
+  assert.ok(hrefs.includes('/wiki'), 'host menu must link /wiki (owner Wiki surface)');
   assert.equal(new Set(hrefs).size, hrefs.length, 'host menu must not carry duplicate hrefs');
 });
 
-test('phone app reads the Host /api/roadmap feed for live ARBOR progress', () => {
-  assert.ok(app.includes('/api/roadmap'), 'app.js must fetch /api/roadmap');
+test('production PWA has no historical roadmap dependency', () => {
+  assert.doesNotMatch(app, /\/api\/roadmap|refreshRoadmap/);
+  assert.doesNotMatch(renderSrc, /\/api\/roadmap|roadmapCard/);
 });
 
-test('World tab renders roadmap progress and blockers from the model', () => {
+test('World keeps committed revision and live empty state', () => {
   const host = fakeHost();
-  renderWorld(host, {
-    revision: { revision: 7, surfaceId: 'world', status: 'applied' },
-    roadmap: {
-      label: 'ARBOR progress',
-      items: [{ title: 'GOAL-2 show live progress', detail: 'in progress' }],
-      blockers: [{ title: 'blocked task', detail: 'needs host' }]
-    }
-  });
+  renderWorld(host, { revision: { revision: 7, surfaceId: 'world', status: 'applied' } });
   const text = textOf(host);
-  assert.match(text, /GOAL-2 show live progress/, 'roadmap item must reach the World tab');
-  assert.match(text, /blocked task/, 'blocker must reach the World tab');
-});
-
-test('renderWorld keeps its existing empty states and gains a progress/blocker feed', () => {
-  assert.ok(renderSrc.includes('Nothing here yet — build something in Build.'), 'built empty state must stay');
-  assert.ok(renderSrc.includes('The Host reported no work in flight.'), 'running empty state must stay');
-  assert.match(renderSrc, /blocker/i, 'renderWorld must carry a blockers feed');
+  assert.match(text, /Host revision 7/);
+  assert.match(text, /Nothing here yet/);
+  assert.doesNotMatch(text, /ARBOR progress|Loading the live roadmap/);
 });
 
 /* ---------- confirmed defect: readGraphContext silent no-op in host preview (app.js:226-227) ---------- */

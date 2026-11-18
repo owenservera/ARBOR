@@ -8,7 +8,6 @@ const SOURCES = Object.freeze({
   wiki: { url: '/api/wiki', path: 'Host product journal → Wiki projection' },
   state: { url: '/api/state', path: 'Host product journal → chat state projection' },
   context: { url: '/api/host/control/wiki-context', path: 'Owner-private journal → observations and committed Wiki effects' },
-  roadmap: { url: '/api/roadmap', path: 'docs/product/roadmap/roadmap.v1.json (keeper-owned)' },
   surface: { url: '/api/file-surface', path: 'Owner-authorized HQ executable source index' },
   journal: { url: '/api/journal', path: 'Host data-root/product-state/journal.jsonl' }
 });
@@ -36,11 +35,6 @@ function element(tag, className, text) {
   return result;
 }
 function present(value, fallback = '—') { return value === undefined || value === null ? fallback : String(value); }
-function statusChip(status) {
-  const value = present(status, 'unknown');
-  const chip = element('span', 'status ' + value.replace(/[^a-z0-9]/gi, '-'), value);
-  return chip;
-}
 function isWikiDocument(wiki) {
   return wiki && Number.isSafeInteger(wiki.revision) && wiki.revision >= 0 &&
     wiki.pages && typeof wiki.pages === 'object' && !Array.isArray(wiki.pages);
@@ -59,7 +53,7 @@ function observedEdit(page, section, content) {
   if (!journal) return 'provenance not observed';
   const matched = entriesOf(journal).some(entry => entry?.kind === 'wiki-edit' &&
     entry.edit?.page === page && entry.edit?.section === section && entry.edit?.content === content);
-  return matched ? 'journal-backed edit observed' : 'seed / no edit record observed';
+  return matched ? 'journal-backed edit observed' : 'initial section / no edit record observed';
 }
 function sectionEl(page, section, text, revision) {
   const wrapper = element('article', 'section');
@@ -235,34 +229,6 @@ function renderContext(context) {
   }
   return root;
 }
-function renderRoadmap(roadmap) {
-  const root = element('div');
-  const items = Array.isArray(roadmap?.buildQueue) ? roadmap.buildQueue : [];
-  if (!items.length) return element('p', 'empty', 'No canonical buildQueue records returned; no synthetic queue substituted.');
-  const active = items.filter(item => item.status === 'in-progress').length;
-  const accepted = items.filter(item => item.ownerAcceptance === 'ACCEPTED').length;
-  root.appendChild(element('p', 'queue-summary', `${items.length} canonical work orders · ${active} in progress · ${accepted} owner-accepted`));
-  const scroll = element('div', 'table-scroll');
-  const table = element('table');
-  const head = element('thead');
-  const hr = element('tr');
-  for (const col of ['ID', 'Status', 'Verification / acceptance', 'Work / dependencies']) hr.appendChild(element('th', '', col));
-  head.appendChild(hr);
-  table.appendChild(head);
-  const body = element('tbody');
-  for (const item of items) {
-    const row = element('tr');
-    row.appendChild(element('td', '', item.itemId || item.id || '—'));
-    const status = element('td'); status.appendChild(statusChip(item.status)); row.appendChild(status);
-    row.appendChild(element('td', '', `${present(item.verification, 'unreported')} / ${present(item.ownerAcceptance, 'unreported')}`));
-    row.appendChild(element('td', '', `${present(item.note, item.title || '')}${item.dependsOn?.length ? ` · needs ${item.dependsOn.join(', ')}` : ''}`));
-    body.appendChild(row);
-  }
-  table.appendChild(body);
-  scroll.appendChild(table);
-  root.appendChild(scroll);
-  return root;
-}
 function renderFileSurface(surface) {
   const root = element('div');
   const records = fileRecords(surface);
@@ -353,7 +319,7 @@ function renderJournal(journal) {
   const root = element('div');
   const entries = entriesOf(journal);
   root.appendChild(element('p', 'queue-summary', `${entries.length} append records observed · newest 12 shown · not an acceptance receipt`));
-  if (!entries.length) { root.appendChild(element('p', 'empty', 'Journal empty; seed Wiki may still be visible.')); return root; }
+  if (!entries.length) { root.appendChild(element('p', 'empty', 'Journal empty; initial Wiki sections are available.')); return root; }
   const scroll = element('div', 'table-scroll');
   const table = element('table');
   const head = element('thead'); const hr = element('tr');
@@ -363,7 +329,7 @@ function renderJournal(journal) {
   for (const entry of entries.slice(-12).reverse()) {
     const row = element('tr');
     row.appendChild(element('td', '', present(entry.receivedAt)));
-    row.appendChild(element('td', '', `${present(entry.kind, 'demo-verdict')} · ${present(entry.actor, 'demo')}`));
+    row.appendChild(element('td', '', `${present(entry.kind, 'legacy-observation')} · ${present(entry.actor, 'legacy')}`));
     const ref = entry.kind === 'wiki-edit' ? `${present(entry.edit?.page)}/${present(entry.edit?.section)}` :
       entry.kind === 'chat-send' ? 'chat message (text not displayed)' : present(entry.round, '—');
     row.appendChild(element('td', '', `${ref} · product rev ${present(entry.revision, '—')} · Wiki rev ${present(entry.wikiRevision, '—')}`));
@@ -516,7 +482,6 @@ function revisionLabel(key, data) {
   if (key === 'wiki') return `Wiki rev ${data.revision}`;
   if (key === 'state') return `state rev ${data.revision} / Wiki rev ${present(data.wikiRevision)}`;
   if (key === 'context') return `source sequence ${data.revision} · ${data.totalObserved} observed`;
-  if (key === 'roadmap') return `batch ${present(data.acceleration?.activeBatch)} · ${data.buildQueue.length} rows · no content rev`;
   if (key === 'surface') return `${fileRecords(data).length} indexed files · ${present(data.generatorVersion)} · ${present(data.status)}`;
   return `${entriesOf(data).length} entries · count is not a revision`;
 }
@@ -546,7 +511,6 @@ function ingest(key, data) {
       if (sourceRecord('context')) $('context-view').replaceChildren(renderContext(sourceRecord('context')));
     }
     if (key === 'context') $('context-view').replaceChildren(renderContext(data));
-    if (key === 'roadmap') $('roadmap-view').replaceChildren(renderRoadmap(data));
     if (key === 'surface') $('surface-view').replaceChildren(renderFileSurface(data));
     if (key === 'journal') {
       $('journal-view').replaceChildren(renderJournal(data));
@@ -583,7 +547,7 @@ function renderSync() {
   const journal = sourceRecord('journal');
   const edits = entriesOf(journal).filter(entry => entry?.kind === 'wiki-edit').length;
   $('source-mode').textContent = seen === keys.length && failures.length === 0
-    ? `Host live read-through · ${edits ? 'journal-backed edits observed' : 'seed/demo baseline'}`
+    ? `Host live read-through · ${edits ? 'journal-backed edits observed' : 'initial Wiki content'}`
     : `Host sources ${seen}/${keys.length} · ${failures.length ? 'partial / stale' : 'loading'}`;
   const context = sourceRecord('context');
   const mismatch = (wiki && state && wiki.revision !== state.wikiRevision) ||
