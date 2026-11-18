@@ -194,6 +194,34 @@ test('source search composes a unique current file context inline and removes st
   assert.match(ui.el('surface-context-view').children[0].textContent, /No cached context/);
 });
 
+test('D4 committed Wiki provenance and receipt readback refresh and clear on auth loss', async () => {
+  const ui = setup(); await settle();
+  ui.docs['/api/host/control/wiki-context'] = {
+    schema: 'vivim.wiki-context/1', state: 'source-backed', revision: 2,
+    wikiRevision: 2, totalObserved: 0, omitted: 0, items: [],
+    wikiChanges: { total: 1, omitted: 0, items: [{
+      source: 'host-product-journal', entryId: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+      sequence: 2, receivedAt: '2026-11-18T12:00:00Z', kind: 'committed-wiki-edit',
+      wikiRevision: 2, previousWikiRevision: 1, status: 'current-section-revision',
+      relationship: { kind: 'mutated-section', page: 'Main', section: 'About' }
+    }] },
+    applicationEffects: { state: 'source-backed', scannedPlans: 1, scanLimit: 100, omitted: 0, items: [{
+      source: 'host-control-receipt', planId: 'ctl-0000000000000001', planDigest: 'a'.repeat(64),
+      actionId: 'ui.theme.set_preset', receivedAt: '2026-11-18T12:01:00Z',
+      kind: 'executed-effect', status: 'historical-applied-receipt', sourceRevision: 4
+    }] }
+  };
+  ui.tick(); await settle();
+  const nodes = allChildren(ui.el('context-view'));
+  assert.ok(nodes.some(n => n.textContent === 'Main/About'));
+  assert.ok(nodes.some(n => /Committed Wiki effect.*current-section-revision/.test(n.textContent)));
+  assert.ok(nodes.some(n => n.textContent === 'ui.theme.set_preset'));
+  assert.ok(nodes.some(n => /Historical applied receipt.*source revision 4/.test(n.textContent)));
+  ui.setOwnerSession(false); ui.tick(); await settle();
+  assert.ok(!allChildren(ui.el('context-view')).some(n =>
+    /Main\/About|ui\.theme\.set_preset/.test(n.textContent)));
+});
+
 test('private context refreshes during polling and clears after owner auth loss', async () => {
   const ui = setup(); await settle();
   assert.match(ui.el('context-source').textContent, /0 observed/);
