@@ -97,7 +97,18 @@ function argsFrom(action, interp, text) {
     const hint = action.language?.slots?.[key] ?? {};
     let v = payload?.[key];
     if (hint.match) { const m = String(text).match(new RegExp('(?:^|\\s)(' + hint.match + ')(?=$|\\s|[.!?])', 'i')); v = m ? m[1] : null; }
-    else if (hint.kind === 'rest' || hint.kind === 'text') v = rawSpan(text, interp, key, action) ?? v;
+    else if (hint.kind === 'rest' || hint.kind === 'text') {
+      v = rawSpan(text, interp, key, action) ?? v;
+      // The vendored NLCL engine folds slot payloads for matching. Owner-authored
+      // free text must instead preserve the original bytes, without the slot's
+      // leading preposition ("saying", etc.) becoming part of the value.
+      if (typeof v === 'string' && Array.isArray(hint.preps)) {
+        const prep = hint.preps.find(p =>
+          v.slice(0, p.length).toLowerCase() === p.toLowerCase() &&
+          /^\\s/.test(v.slice(p.length)));
+        if (prep) v = v.slice(prep.length).trimStart();
+      }
+    }
     if (typeof v === 'string') v = v.trim().replace(/^['"]|['"]$/g, '').replace(/[.!?]+$/, '').trim();
     if (validArg(type, v)) args[key] = v;
     else missing.push({ arg: key, ...(type.type === 'enum' ? { choices: [...type.values] } : { min: type.min, max: type.max }) });
