@@ -551,7 +551,7 @@ function pathMatchBonus(path, gradeTokens) {
   return 0;
 }
 
-function prepareCandidates(db, candidates, { task, projectName, nowMs }) {
+function prepareCandidates(db, candidates, { task, projectName, nowMs, preferredSemanticAnchor }) {
   const tokens = tokenize(task);
   // Grading and coverage run over content words: function words ("how does
   // the") appear in nearly every file and previously levelled the coverage
@@ -581,7 +581,12 @@ function prepareCandidates(db, candidates, { task, projectName, nowMs }) {
 
     let window;
     if (semantic.length) {
-      const line = semantic[0].line;
+      // A source-surface caller can request an observed annotation near the
+      // selected implementation. Never accept an unindexed line as semantic evidence.
+      const preferred = candidate.ref === preferredSemanticAnchor?.ref
+        ? semantic.find(hit => hit.line === preferredSemanticAnchor.line &&
+          hit.semanticId === preferredSemanticAnchor.semanticId) : null;
+      const line = (preferred ?? semantic[0]).line;
       window = selectWindow(parts, { start: Math.max(1, line - 2), maxLines: 16 });
       if (line < window.lines[0] || line > window.lines[1] || Buffer.byteLength(window.text, 'utf8') > MAX_FILE_BYTES) {
         candidate.unreadable = true;
@@ -769,7 +774,8 @@ export function composeContext(db, options = {}) {
     throw new TypeError('HQ_INVALID_SOURCE_SCOPE');
   const candidates = collectCandidates(db, { task, projectName: project.name, sourceSemanticIds })
     .filter(candidate => allowedSourceRefs === undefined || allowedSourceRefs.has(candidate.ref));
-  prepareCandidates(db, candidates, { task, projectName: project.name, nowMs });
+  prepareCandidates(db, candidates, { task, projectName: project.name, nowMs,
+    preferredSemanticAnchor: options.preferredSemanticAnchor });
 
   const readable = candidates.filter((candidate) => !candidate.unreadable);
   const selected = knapsack(readable, capacity, maxFiles)
