@@ -214,10 +214,21 @@
       return;
     }
     if (plan.outcome !== 'approval_required') {
-      notice((plan.question || plan.refusal?.message || plan.message ||
-        (plan.outcome === 'unavailable' ? (plan.precondition || 'Action unavailable') :
-          'No executable command was identified')) +
-        ' · No Host effect was executed.', plan.outcome === 'unavailable' || plan.outcome === 'refused');
+      const node = card('Host interpretation · ' + String(plan.outcome ?? 'unavailable'));
+      node.append(element('p', plan.outcome === 'refused' || plan.outcome === 'unavailable' ? 'warning' : '',
+        (plan.question || plan.refusal?.message || plan.message ||
+          (plan.outcome === 'unavailable' ? (plan.precondition || 'Action unavailable') :
+            'No executable command was identified')) + ' · No Host effect was executed.'));
+      if (Array.isArray(plan.choiceDetails) && plan.choiceDetails.length) {
+        node.append(element('strong', '', 'Possible actions'));
+        for (const choice of plan.choiceDetails.slice(0, 8))
+          node.append(element('p', '', (choice.title || choice.actionId) + ' · ' + (choice.risk || 'unknown risk')));
+      } else if (Array.isArray(plan.choices) && plan.choices.length) {
+        node.append(element('p', '', 'Possible actions: ' + plan.choices.slice(0, 8).join(', ')));
+      }
+      if (Array.isArray(plan.missing) && plan.missing.length)
+        node.append(element('p', '', 'Missing details: ' +
+          plan.missing.slice(0, 8).map(item => item.arg).filter(Boolean).join(', ')));
       return;
     }
     const expected = { planId: plan.planId, planDigest: plan.planDigest };
@@ -268,10 +279,14 @@
       await refreshRecent();
       await refresh();
     } catch (error) {
-      const node = card('Execution response unconfirmed');
-      node.append(element('p', 'warning',
-        'A Host effect may have happened. Do not retry. ' + error.message));
-      node.append(button('Check original plan', () => void inspectPlan(expected.planId), true));
+      if (error.status === 401) {
+        locked('Owner authorization rejected. Reopen the VIVIM desktop app to unlock.');
+      } else {
+        const node = card('Execution response unconfirmed');
+        node.append(element('p', 'warning',
+          'A Host effect may have happened. Do not retry. ' + error.message));
+        node.append(button('Check original plan', () => void inspectPlan(expected.planId), true));
+      }
     } finally { setBusy(false); }
   }
   form.addEventListener('submit', async event => {
