@@ -9,6 +9,7 @@ import { prepareDeviceSigner, enrollWithChallenge, resumeDeviceSession } from '.
 import { worldModel, meModel, todayModel, LIVE_STATE_LABELS, TABS } from './ux/model.mjs';
 import { renderToday, renderWorld, renderMe } from './ux/render.mjs';
 import { createControlChat } from './control-chat.mjs';
+import { mountComposerAssist } from './composer-assist.mjs';
 import { deriveReadiness, safeReadinessReport } from './ux/readiness.mjs';
 import { mountCapabilityLauncher } from './ux/launcher-ui.mjs';
 import { mountLocalNotes } from './ux/local-notes-ui.mjs';
@@ -125,6 +126,15 @@ const vivimChat = createControlChat({
   onOpenPocket: pocketButton && !pocketButton.hidden ? () => pocketButton.click() : null
 });
 let build = null, buildTimer = 0, buildKey = '';
+let dockAssist=null;
+function composerScope(){
+  if(HOST_PREVIEW||!S.paired||!transport.direct||!S.device.scopes?.includes('control:read')||document.hidden)return null;
+  return transport.deviceHeaders?.()?.['x-vivim-device-session']||null;
+}
+function classifyDraftUi(request){
+  const surface=build?.surface()??build?.draftSurface()??buildSurfaceFromBootstrap(S.statusObj?.snapshot?.bootstrap);
+  return surface?resolveBuildRequest({request,surface}):null;
+}
 let welcome = null;
 let capabilityLauncher = null;
 let localNotes = null;
@@ -444,6 +454,7 @@ function goTab(tab) {
   // Leaving World stops an in-flight media open or current native playback.
   // The Host has to release temporary stream access, not just hide the video.
   if (S.tab === 'world' && tab !== 'world' && playerActive) stopMediaPlayer();
+  dockAssist?.reset();compose?.resetAssist?.();
   S.tab = tab;
   dockExpanded=false;
   chatContextEpoch++;
@@ -744,6 +755,7 @@ function isInvalidDeviceSession(code) {
 // A lost grant must clear *all* private phone projections, not just hide tabs.
 // Session restoration must start from new device proof; no offline replay.
 function clearPrivatePhoneState() {
+  dockAssist?.reset();compose?.resetAssist?.();
   mediaGeneration++;
   chatContextEpoch++;
   chatContext=null;closeFocusPanel();dockExpanded=false;
@@ -971,7 +983,7 @@ function openVivimDraft(text) {
   goTab('talk');
   $('text').value = String(text || '').slice(0, 1000);
   autogrow(); updateSend(); $('text').focus();
-  // Only a filled composer: no Host call, AI send, or approval is triggered.
+  // Only a filled composer: at most an inert interpretation read, never an AI send or approval.
 }
 function renderSurfaces() {
   const ctx = surfaceContext();
@@ -1440,6 +1452,7 @@ async function nativeSend() {
 
 /* ---------- send ---------- */
 async function send() {
+  dockAssist?.reset();
   if (!S.paired && !HOST_PREVIEW) {
     toast('This phone is offline or unpaired. No message was sent.');
     return;
@@ -1549,6 +1562,8 @@ function mountCompose() {
   compose = mountBuildCanvas({
     host, request: api, navigate: goTab,
     interpretControl: transport.direct ? text => vivimChat.interpret(text) : null,
+    assistControl: transport.direct ? text=>vivimChat.assist(text) : null,
+    assistScope: ()=>S.tab==='build'?composerScope():null,
     openControlDraft: transport.direct ? openVivimDraft : null,
     openPocket: pocketButton && !pocketButton.hidden ? () => pocketButton.click() : null,
     openProviderDraft: text => {
@@ -1805,6 +1820,7 @@ $('tabs').addEventListener('keydown', event => {
 });
 $('talk-target').value = N.target;
 $('talk-target').addEventListener('change', () => {
+  dockAssist?.reset();
   N.target = $('talk-target').value; N.generation++; clearTimeout(N.timer); clearTimeout(S.timer);
   const native = N.target === 'phone', controller = N.target === 'vivim';
   $('native-session').hidden = !native; $('native-status').hidden = !native;
@@ -1866,6 +1882,12 @@ $('effort').addEventListener('change', e => { const c = curConv(); if (c) { c.ef
 $('clip').addEventListener('click', () => $('file').click());
 $('file').addEventListener('change', e => { for (const f of e.target.files) if (S.files.length < 10) S.files.push(f); e.target.value = ''; renderComposer(); });
 $('files').addEventListener('click', e => { const b = e.target.closest('[data-i]'); if (b) { S.files.splice(+b.dataset.i, 1); renderComposer(); } });
+dockAssist=mountComposerAssist({
+  field:$('text'),host:$('composer-assist'),
+  interpret:text=>vivimChat.assist(text),
+  getScope:()=>N.target==='vivim'?composerScope():null,
+  compileUi:classifyDraftUi,onDraft:()=>{autogrow();updateSend();}
+});
 $('text').addEventListener('input', () => { autogrow(); updateSend(); });
 $('text').addEventListener('keydown', e => {
   if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && matchMedia('(pointer:fine)').matches) {
@@ -1952,6 +1974,7 @@ $('dbgsend').addEventListener('click', async () => {
   catch (e) { toast('Send failed: ' + e.message); }
 });
 document.addEventListener('visibilitychange', () => {
+  if(document.hidden){dockAssist?.reset();compose?.resetAssist?.();}
   if (document.hidden && S.tab === 'wiki') { clearTimeout(S.timer); return; }
   if (!document.hidden) {
     if (HOST_PREVIEW) void refreshHostPreview();
@@ -1963,6 +1986,7 @@ document.addEventListener('visibilitychange', () => {
 // An approved Wiki edit from the shared Talk composer updates the mounted Wiki
 // without a tab switch, mutation retry, or private state in a second store.
 document.addEventListener('vivim:wiki-committed', () => {
+  dockAssist?.reset();compose?.resetAssist?.();
   if (S.tab === 'wiki') void refreshWiki();
 });
 window.addEventListener('vivim:bootstrap-refresh', () => { S.statusAt = 0; if (S.paired) refresh(); });

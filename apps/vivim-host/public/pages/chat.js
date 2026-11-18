@@ -1,4 +1,5 @@
 import { resolveDesktopDestination, resolveProductRoute } from '/mobile/control-language.mjs';
+import { mountComposerAssist } from '/mobile/composer-assist.mjs';
 // The Host owns command authority. This page stores chat text separately from any effect.
 (() => {
   'use strict';
@@ -25,6 +26,7 @@ import { resolveDesktopDestination, resolveProductRoute } from '/mobile/control-
   let csrfProof = null;
   let busy = false;
   let pending = null;
+  let assistance=null;
   // A deliberate same-tab Wiki handoff is draft-only. Consume and erase once;
   // do not keep a transcript, carry authority, or submit automatically.
   try {
@@ -59,12 +61,14 @@ import { resolveDesktopDestination, resolveProductRoute } from '/mobile/control-
   }
   function setBusy(next) {
     busy = next;
+    if(next)assistance?.reset();
     sendBtn.disabled = next;
     input.disabled = next;
     lockButton.disabled = next;
   }
   function locked(message = 'Commands locked. Open the VIVIM desktop owner session to approve PC changes.') {
     csrfProof = null;
+    assistance?.reset();
     pending = null;
     authStatus.textContent = message;
     lockButton.hidden = true;
@@ -92,6 +96,7 @@ import { resolveDesktopDestination, resolveProductRoute } from '/mobile/control-
       method: 'POST', headers: { 'content-type': 'application/json',
         'x-vivim-control': '1', 'x-vivim-ui-csrf': csrfProof }, body: JSON.stringify(body)
     };
+    if(route==='interpret'&&body?.composer===true)options.signal=AbortSignal.timeout(5000);
     try {
       return await json(CONTROL_URL + route, options);
     } catch (error) {
@@ -125,6 +130,7 @@ import { resolveDesktopDestination, resolveProductRoute } from '/mobile/control-
       csrfProof = state.csrf;
     }
     unlocked();
+    assistance?.refresh();
     return true;
   }
   function intentNode(intent) {
@@ -382,8 +388,14 @@ import { resolveDesktopDestination, resolveProductRoute } from '/mobile/control-
       }
     } finally { setBusy(false); }
   }
+  const assistPanel=$('composer-assist');
+  if(assistPanel)assistance=mountComposerAssist({field:input,host:assistPanel,
+    interpret:text=>controlApi('interpret',{text,composer:true}),
+    getScope:()=>busy||document.hidden?null:csrfProof});
+  document.addEventListener('visibilitychange',()=>{if(document.hidden)assistance?.reset();});
   form.addEventListener('submit', async event => {
     event.preventDefault();
+    assistance?.reset();
     if (busy) return;
     const text = input.value.trim();
     if (!text) return;

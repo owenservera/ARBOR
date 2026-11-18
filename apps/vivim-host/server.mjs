@@ -34,6 +34,7 @@ import { detectEnvironment } from './onboarding/environment.mjs';
 import { controlErrorStatus } from './control/http-status.mjs';
 import { createLiveSourceSurface } from './control/live-source-surface.mjs';
 import { attachRequestContext } from './control/request-context.mjs';
+import { composerResponse, needsWikiDraftContext } from '../mobile-relay/composer-assist.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(here, '..', '..');
@@ -934,8 +935,25 @@ async function handleControl(req, res, pathname, host, controlFor, tokenFor, uiS
     const body = await readJsonBody(req, 64 * 1024);
     const c = controlFor();
     if (route === 'interpret') {
-      if (Object.keys(body).some(k => k !== 'text')) throw Object.assign(new Error('Invalid body'), { code: 'CONTROL_INPUT_INVALID' });
-      sendJson(res, 200, c.interpret(body.text, { source: 'desktop' })); return;
+      if (!body || typeof body!=='object'||Array.isArray(body)||
+          Object.keys(body).some(k => !['text','composer'].includes(k)) ||
+          (body.composer!==undefined&&body.composer!==true))
+        throw Object.assign(new Error('Invalid body'), { code: 'CONTROL_INPUT_INVALID' });
+      const interpret=text=>c.interpret(text,{source:'desktop'});
+      const meaning=interpret(body.text);
+      if(body.composer!==true){sendJson(res,200,meaning);return;}
+      let wiki=null;
+      if(needsWikiDraftContext(body.text,meaning)){
+        try{wiki=await productJournal.readPhoneWiki();}catch{/* no cached or synthetic targets */}
+      }
+      let currentOwner=null;
+      try{currentOwner=tokenFor();}catch{}
+      if(!(currentOwner&&verifyOwnerToken(req.headers.authorization,currentOwner))&&
+          !uiSessions.authorized(req,{mutate:true})){
+        sendJson(res,401,{code:'OWNER_AUTH'});return;
+      }
+      res.setHeader('cache-control','private, no-store');
+      sendJson(res,200,composerResponse(body.text,meaning,{catalog:c.describe(),wiki,interpret,source:'desktop'}));return;
     }
     if (route === 'plan') {
       const plan = await c.plan(body, { source: 'desktop', actor: 'desktop-owner' });

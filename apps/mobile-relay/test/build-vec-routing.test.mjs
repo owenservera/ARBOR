@@ -33,11 +33,11 @@ test('Build source does not allow a deterministic candidate to enter provider se
 test('paired Direct exposes only reviewed read-only JS modules; SW shell preloads both', () => {
   const host = readFileSync(new URL('../../vivim-host/direct-phone.mjs', import.meta.url), 'utf8');
   const sw = readFileSync(new URL('../sw.js', import.meta.url), 'utf8');
-  for (const asset of ['vec/compiler.mjs', 'vec/ui-adapter.mjs']) {
+  for (const asset of ['vec/compiler.mjs', 'vec/ui-adapter.mjs', 'composer-assist.mjs']) {
     assert.match(host, new RegExp("'" + asset.replace('.', '\\.') + "': \\['" + asset.replace('.', '\\.') + "'"));
     assert.ok(sw.includes("'" + asset + "'"));
   }
-  assert.match(sw, /var CACHE = 'vivim-relay-shell-v11'/);
+  assert.match(sw, /var CACHE = 'vivim-relay-shell-v12'/);
 });
 
 test('TierFlow modules are fixed Host assets backed by the existing canonical sources', () => {

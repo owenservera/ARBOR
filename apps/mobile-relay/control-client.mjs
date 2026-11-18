@@ -5,11 +5,11 @@ export function createControlClient({ transport, fetchImpl = (...args) => fetch(
   if (!transport || typeof transport.deviceHeaders !== 'function')
     throw new TypeError('A Direct-capable VIVIM transport is required');
 
-  async function directReady() {
+  async function directReady(signal) {
     if (transport.direct !== true) return false;
     try {
       const response = await fetchImpl('/mobile/connection.json', {
-        method: 'GET', credentials: 'same-origin', cache: 'no-store'
+        method: 'GET', credentials: 'same-origin', cache: 'no-store', ...(signal?{signal}:{})
       });
       if (!response.ok) return false;
       const data = await response.json();
@@ -20,7 +20,8 @@ export function createControlClient({ transport, fetchImpl = (...args) => fetch(
   }
 
   async function call(path, body) {
-    if (!await directReady()) throw Object.assign(
+    const signal=path==='interpret'&&body?.composer===true?AbortSignal.timeout(5000):undefined;
+    if (!await directReady(signal)) throw Object.assign(
       new Error('Direct connection to your paired PC is required. Nothing was sent.'),
       { code: 'DIRECT_REQUIRED' });
     const device = transport.deviceHeaders();
@@ -42,7 +43,8 @@ export function createControlClient({ transport, fetchImpl = (...args) => fetch(
         headers: { ...device, ...(writing ? {
           'content-type': 'application/json', 'x-vivim-control': '1'
         } : {}) },
-        ...(writing ? { body: JSON.stringify(body) } : {})
+        ...(writing ? { body: JSON.stringify(body) } : {}),
+        ...(signal?{signal}:{})
       });
     } catch {
       throw Object.assign(new Error(path === 'execute'
@@ -86,6 +88,7 @@ export function createControlClient({ transport, fetchImpl = (...args) => fetch(
     directReady,
     call,
     interpret: text => call('interpret', { text }),
+    assist: text => call('interpret', { text, composer:true }),
     preview: text => call('plan', { text }),
     async execute(plan) {
       const target = validatePlan(plan);

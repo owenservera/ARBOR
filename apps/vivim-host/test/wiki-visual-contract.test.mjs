@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import vm from 'node:vm';
 import { resolveDesktopDestination, resolveProductRoute } from '../../mobile-relay/control-language.mjs';
+import { mountComposerAssist } from '../../mobile-relay/composer-assist.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const pages = path.resolve(here, '../public/pages');
@@ -20,6 +21,7 @@ class MockNode {
     this.disabled = false; this.repaints = 0; this.attributes = {};
   }
   appendChild(child) { this.children.push(child); return child; }
+  append(...children){this.children.push(...children);}
   replaceChildren(...children) { this.children = [...children]; this.repaints++; }
   addEventListener(name, callback) { (this.listeners[name] ||= []).push(callback); }
   setAttribute(name, value) { this.attributes[name] = value; }
@@ -110,8 +112,9 @@ function setup() {
     assert.ok(elements.has(id), `Wiki JS cannot reference absent DOM id ${id}`);
     return elements.get(id);
   }, createElement: name => new MockNode(name), addEventListener() {}, hidden: false };
-  const context = vm.createContext({ resolveDesktopDestination, resolveProductRoute, document, fetch, setInterval: fn => { interval = fn; return 1; }, AbortSignal, TextEncoder, Date, console });
-  vm.runInContext(script.replace("import { resolveDesktopDestination, resolveProductRoute } from '/mobile/control-language.mjs';",''), context, { filename: 'wiki.js' });
+  for(const node of elements.values())node.ownerDocument=document;
+  const context = vm.createContext({ resolveDesktopDestination, resolveProductRoute, mountComposerAssist, document, fetch, setInterval: fn => { interval = fn; return 1; }, AbortSignal, TextEncoder, Date, console });
+  vm.runInContext(script.replace("import { resolveDesktopDestination, resolveProductRoute } from '/mobile/control-language.mjs';",'').replace("import { mountComposerAssist } from '/mobile/composer-assist.mjs';",''), context, { filename: 'wiki.js' });
   const el = id => elements.get(id);
   return { elements, docs, posts, interpretCalls, el, context, tick: () => interval(),
     setPostStatus: value => { postStatus = value; }, setPostThrows: value => { postThrows = value; },

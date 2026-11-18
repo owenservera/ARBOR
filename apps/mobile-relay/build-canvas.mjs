@@ -3,6 +3,7 @@
 // this file never talks to a provider itself and never resends: a draft that is still pending is polled, not re-asked.
 import { SUGGESTIONS, buildDesignPrompt, resolveBuildRequest, previewReply, failureText } from './build-composer.mjs';
 import { resolveLocalDestination, resolveProductRoute } from './control-language.mjs';
+import { mountComposerAssist } from './composer-assist.mjs';
 import { renderSurface, planTierflowSurface, tierflowViewport } from './generative-ui/renderer.mjs';
 import { compileUiProposal } from './generative-ui/compiler.mjs';
 import { validateSurface } from './generative-ui/catalog.mjs';
@@ -101,8 +102,8 @@ export function buildUndoProposal({ original, before, committed, live }) {
   } catch { return null; }
 }
 
-export function mountBuildCanvas({ host, request, getSurface, getProvider, send, apply, onApplied = () => {}, navigate = () => {}, openControlDraft = null, openProviderDraft = null, openPocket = null, interpretControl = null, storage = window.localStorage }) {
-  let state = { name: 'idle' }, text = '', run = 0;
+export function mountBuildCanvas({ host, request, getSurface, getProvider, send, apply, onApplied = () => {}, navigate = () => {}, openControlDraft = null, openProviderDraft = null, openPocket = null, interpretControl = null, assistControl = null, assistScope = ()=>null, storage = window.localStorage }) {
+  let state = { name: 'idle' }, text = '', run = 0, assistance=null;
   const el = (tag, cls, content) => { const e = document.createElement(tag); if (cls) e.className = cls; if (content != null) e.textContent = content; return e; };
   const current = () => getSurface?.() ?? null;
   const empty = () => !current()?.tree?.children?.length;
@@ -256,6 +257,12 @@ export function mountBuildCanvas({ host, request, getSurface, getProvider, send,
     const chips = el('div', 'chips compose-chips');
     for (const s of SUGGESTIONS) { const chip = el('button', 'chip', s); chip.type = 'button'; chip.onclick = () => { text = s; render(); document.getElementById('build-text')?.focus(); }; chips.append(chip); }
     box.append(label, area, el('div', 'compose-row'), chips);
+    if(typeof assistControl==='function'){
+      const panel=el('div','composer-assist');box.append(panel);
+      assistance=mountComposerAssist({field:area,host:panel,interpret:assistControl,getScope:assistScope,
+        compileUi:request=>current()?resolveBuildRequest({request,surface:current()}):null,
+        onDraft:value=>{text=value;go.disabled=!text.trim();}});
+    }
     box.querySelector('.compose-row').append(el('small', 'muted', 'Known edits stay local. Other design requests use your AI. Activate to save.'), go);
     if (typeof openControlDraft === 'function') {
       const control = el('button', 'btn', 'Ask VIVIM instead');
@@ -303,6 +310,7 @@ export function mountBuildCanvas({ host, request, getSurface, getProvider, send,
   }
 
   function render() {
+    assistance?.dispose();assistance=null;
     host.replaceChildren();
     if (state.name === 'checking') {
       const wait = el('div', 'proposal is-wait'); wait.setAttribute('role', 'status');
@@ -381,7 +389,7 @@ export function mountBuildCanvas({ host, request, getSurface, getProvider, send,
   const pending = saved();
   if (pending?.id && Date.now() - pending.at < 3600000) { const token = ++run; state = { name: 'waiting', note: 'Picking up where you left off…' }; watch(pending.id, token); }
   render();
-  return { refresh: render, setDraft(value) {
+  return { refresh: render, resetAssist:()=>assistance?.reset(), setDraft(value) {
     if (state.name !== 'idle' || typeof value !== 'string' || !value.trim() || value.length > 400) return false;
     text = value; render(); return true;
   } };

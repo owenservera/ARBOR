@@ -529,7 +529,7 @@ export function createControlChat({
     return true;
   }
   return Object.freeze({
-    send, render, clear, redact, loadSuggestions, interpret: text => client.interpret(text), busy: () => busy,
+    send, render, clear, redact, loadSuggestions, interpret: text => client.interpret(text), assist: text => client.assist(text), busy: () => busy,
     hasPendingApproval: () => messages.some(msg => msg.status === 'approval')
   });
 }

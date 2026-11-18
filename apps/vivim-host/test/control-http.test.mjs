@@ -95,7 +95,7 @@ test('desktop and Direct mobile share one dispatcher with separate real authenti
   // (Tailscale authenticates the network user, not the installed phone).
   const proxy = { host: 'control.example.ts.net', 'x-forwarded-proto': 'https', 'tailscale-user-login': 'owner@example.com' };
   assert.equal((await call('/mobile/api/control/catalog', { headers: { ...proxy, 'tailscale-user-login': 'attacker@example.com' } })).status, 403);
-  for (const asset of ['control-phone.mjs', 'control-language.mjs', 'nlcl/index.mjs', 'nlcl/interpret.mjs']) {
+  for (const asset of ['control-phone.mjs', 'control-language.mjs', 'composer-assist.mjs', 'nlcl/index.mjs', 'nlcl/interpret.mjs']) {
     assert.equal((await call('/mobile/' + asset, { headers: proxy })).status, 200, asset);
   }
   // Enroll a real device: EC P-256 keypair proves the canonical transcript, the

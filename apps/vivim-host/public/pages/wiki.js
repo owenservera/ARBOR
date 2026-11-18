@@ -1,4 +1,5 @@
 import { resolveDesktopDestination, resolveProductRoute } from '/mobile/control-language.mjs';
+import { mountComposerAssist } from '/mobile/composer-assist.mjs';
 // Host read-model and reviewed Wiki drafts. NL interpretation belongs to Host;
 // only the existing owner-confirmed mutation endpoint writes Wiki content.
 // VEC/0.1 typed display seam: {schema:'vivim.vec-compile/0.1', domain:'wiki',
@@ -22,6 +23,7 @@ let refreshing = false;
 let busy = false;
 let ownerCsrf = null; // memory-only proof of a native Host-issued short-lived session
 let interpreting = false;
+let assistance=null;
 let surfaceQuery = '';
 let surfaceQueryEpoch = 0;
 let surfaceContextEpoch = 0;
@@ -457,7 +459,7 @@ async function getJson(key) {
   const response = await fetch(url, { cache: 'no-store',
     ...(['context','surface'].includes(key) ? { credentials: 'same-origin' } : {}), signal: AbortSignal.timeout(5000) });
   if (!response.ok) {
-    if (key === 'context' && response.status === 401) ownerCsrf = null;
+    if (key === 'context' && response.status === 401) {ownerCsrf = null;assistance?.reset();}
     throw new Error('HTTP ' + response.status + ' ' + SOURCES[key].url);
   }
   const data = await response.json();
@@ -587,7 +589,7 @@ async function refresh() {
         const message = String(result.reason?.message || result.reason);
         if (key === 'context') {
           // Never retain private text in the DOM after auth loss or failed refresh.
-          ownerCsrf = null;
+          ownerCsrf = null;assistance?.reset();
           snapshots[key] = { data: null, signature: null, error: message };
           $('context-view').replaceChildren(element('p', 'empty',
             message.includes('Owner session') || message.includes('HTTP 401')
@@ -614,6 +616,7 @@ async function refresh() {
 // A typed interpretation may open a draft; only explicit owner confirmation mutates Host.
 async function interpretWikiCommand(event) {
   event.preventDefault();
+  assistance?.reset();
   if (interpreting || busy) return;
   if (editSession) {
     $('wiki-command-status').textContent = 'Close the current editor first. Your draft is preserved.';
@@ -641,7 +644,7 @@ async function interpretWikiCommand(event) {
       body: JSON.stringify({ text: sentence }), signal: AbortSignal.timeout(5000)
     });
     if (!response.ok) {
-      if (response.status === 401) ownerCsrf = null;
+      if (response.status === 401) {ownerCsrf = null;assistance?.reset();}
       throw new Error('Host interpretation refused HTTP ' + response.status);
     }
     const meaning = await response.json();
@@ -814,7 +817,7 @@ async function submitEdit(event) {
       body: JSON.stringify(payload), cache: 'no-store', signal: AbortSignal.timeout(5000)
     });
     if (!result.ok) {
-      if (result.status === 401) ownerCsrf = null;
+      if (result.status === 401) {ownerCsrf = null;assistance?.reset();}
       const detail = (await result.text()).slice(0, 240);
       if (result.status === 409) { markStale(fresh.revision); }
       setEditorStatus(`Host refused HTTP ${result.status}: ${detail}. Draft preserved; no save claimed.`);
@@ -891,12 +894,29 @@ $('surface-reindex').addEventListener('click', async () => {
     updateSourceMeta('surface');
   } finally { indexingSources = false; $('surface-reindex').disabled = false; }
 });
+const assistPanel=$('composer-assist');
+if(assistPanel)assistance=mountComposerAssist({field:$('wiki-command'),host:assistPanel,
+  getScope:()=>busy||interpreting||editSession||document.hidden?null:ownerCsrf,
+  interpret:async text=>{
+    const csrf=ownerCsrf;
+    if(!csrf)throw Error('OWNER_AUTH');
+    const response=await fetch('/api/host/control/interpret',{
+      method:'POST',credentials:'same-origin',cache:'no-store',signal:AbortSignal.timeout(5000),
+      headers:{'content-type':'application/json','x-vivim-control':'1','x-vivim-ui-csrf':csrf},
+      body:JSON.stringify({text,composer:true})
+    });
+    if(!response.ok){
+      if(response.status===401){ownerCsrf=null;assistance?.reset();}
+      throw Error('Host interpretation unavailable');
+    }
+    return response.json();
+  }});
 $('wiki-command-form').addEventListener('submit', event => { void interpretWikiCommand(event); });
 $('edit-content').addEventListener('input', () => invalidatePreview());
 $('edit-review').addEventListener('click', () => { void review(); });
 $('edit-rebase').addEventListener('click', () => { void rebase(); });
 $('edit-cancel').addEventListener('click', closeEditor);
 $('edit').addEventListener('submit', event => { void submitEdit(event); });
-document.addEventListener('visibilitychange', () => { if (!document.hidden) void refresh(); });
+document.addEventListener('visibilitychange', () => { if(document.hidden)assistance?.reset();else void refresh(); });
 void refresh();
 setInterval(() => { if (!document.hidden) void refresh(); }, POLL_MS);

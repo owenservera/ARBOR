@@ -6,6 +6,7 @@ import path from 'node:path';
 import os from 'node:os';
 import vm from 'node:vm';
 import { resolveDesktopDestination, resolveProductRoute } from '../../mobile-relay/control-language.mjs';
+import { mountComposerAssist } from '../../mobile-relay/composer-assist.mjs';
 import { randomBytes } from 'node:crypto';
 import { createHostServer } from '../server.mjs';
 
@@ -29,7 +30,7 @@ function dom() {
       this.hidden = false;
       this.value = '';
       this.children = [];
-      this.listeners = {};
+      this.listeners = {};this.attributes={};this.dataset={};
       this.scrollHeight = 0;
       this.scrollTop = 0;
     }
@@ -42,14 +43,16 @@ function dom() {
       })));
     }
     focus() {}
+    setAttribute(name,value){this.attributes[name]=value;}
   }
   const elements = new Map(['log', 'rev', 'f', 't', 'send', 'control-status',
-    'control-result', 'control-recent', 'control-logout'].map(id => [id, new Node()]));
+    'control-result', 'control-recent', 'control-logout','composer-assist'].map(id => [id, new Node()]));
   const all = root => [root, ...root.children.flatMap(child => all(child))];
   const text = id => all(elements.get(id)).map(n => n.textContent).join(' ');
   const buttons = id => all(elements.get(id)).filter(n => n.tagName === 'BUTTON');
-  return { elements, text, buttons,
-    document: { getElementById: id => elements.get(id) || null, createElement: tag => new Node(tag) } };
+  const document={getElementById:id=>elements.get(id)||null,createElement:tag=>new Node(tag),addEventListener(){}};
+  for(const node of elements.values())node.ownerDocument=document;
+  return {elements,text,buttons,document};
 }
 async function withHost(fn) {
   const root = mkdtempSync(path.join(os.tmpdir(), 'vivim-chat-command-'));
@@ -104,8 +107,9 @@ function browser(base, code = '', shared = { cookie: '', executeCount: 0, loseRe
     }
     return response;
   }
-  const entry=src.replace("import { resolveDesktopDestination, resolveProductRoute } from '/mobile/control-language.mjs';",'');
-  vm.runInNewContext(entry, { resolveDesktopDestination, resolveProductRoute, document: ui.document, window, fetch: browserFetch,
+  const entry=src.replace("import { resolveDesktopDestination, resolveProductRoute } from '/mobile/control-language.mjs';",'')
+    .replace("import { mountComposerAssist } from '/mobile/composer-assist.mjs';",'');
+  vm.runInNewContext(entry, { resolveDesktopDestination, resolveProductRoute, mountComposerAssist, document: ui.document, window, fetch: browserFetch,
     setInterval: () => 1, Date, console, encodeURIComponent });
   return { ui, window, shared };
 }

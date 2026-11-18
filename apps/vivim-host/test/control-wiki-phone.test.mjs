@@ -187,7 +187,20 @@ test('paired Direct phone: NL Wiki preview -> device approval -> durable Host st
     [['sprint-notes','exact-target'],['Main','linked-page']]);
   assert.equal(Object.hasOwn(reread.body.requestContext,'source'),false);
   assert.ok(!JSON.stringify(reread.body.requestContext).includes('Actual sprint notes'));
+  const assist=()=>call('/mobile/api/control/interpret',{
+    method:'POST',extra:{origin,'x-vivim-control':'1','content-type':'application/json'},
+    body:{text:'read wiki page sprint-notes in section ',composer:true}});
+  const beforeAssist=(await call('/mobile/api/wiki')).body;
+  const hinted=await assist();
+  assert.equal(hinted.status,200,JSON.stringify(hinted.body));
+  assert.equal(hinted.body.composer.schema,'vivim.composer-assist/1');
+  assert.equal(hinted.body.composer.authority,'none');
+  assert.equal(hinted.body.composer.wikiRevision,beforeAssist.revision);
+  assert.ok(hinted.body.composer.suggestions.some(s=>s.text==='read wiki page sprint-notes in section About'));
+  assert.ok(!JSON.stringify(hinted.body).includes('Actual sprint notes'));
+  assert.equal((await call('/mobile/api/wiki')).body.revision,beforeAssist.revision);
   owner.revokeGrant({ grantId: grant.grantId, revokedBy: 'desktop-owner' });
+  assert.equal((await assist()).status,403);
   assert.equal((await readCommand({ actionId: 'wiki.pages.list', args: {} })).status, 403);
   assert.equal((await call('/mobile/api/wiki')).status, 403);
   assert.equal((await execute()).status, 403);

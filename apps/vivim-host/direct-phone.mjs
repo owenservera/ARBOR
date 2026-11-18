@@ -12,6 +12,7 @@ import { createSourceVerifiedLiveProjection } from './conversations/live-project
 import { createPhoneSessions } from './phone-sessions.mjs';
 import { createControlPlanner } from './control/intent-planner.mjs';
 import { attachRequestContext } from './control/request-context.mjs';
+import { composerResponse, needsWikiDraftContext } from '../mobile-relay/composer-assist.mjs';
 import { createApkRegistry } from './apk/registry.mjs';
 import { createEnrollment } from './apk/enrollment.mjs';
 import { createPairingStore } from './apk/pairing.mjs';
@@ -43,6 +44,7 @@ const assets = new Map(Object.entries({
   'control-client.mjs': ['control-client.mjs', 'text/javascript; charset=utf-8'],
   'control-chat.mjs': ['control-chat.mjs', 'text/javascript; charset=utf-8'],
   'control-language.mjs': ['control-language.mjs', 'text/javascript; charset=utf-8'],
+  'composer-assist.mjs': ['composer-assist.mjs', 'text/javascript; charset=utf-8'],
   ...Object.fromEntries(['frames','grammar','ground','index','interpret','lexer','project','recognize','symbols','text','types']
     .map(n => [`nlcl/${n}.mjs`, [`nlcl/${n}.mjs`, 'text/javascript; charset=utf-8']])),
   'grokbot.html': ['grokbot.html', 'text/html; charset=utf-8'],
@@ -525,9 +527,20 @@ export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'wo
         const body = await readBody(req);
         if (!body || typeof body !== 'object' || Array.isArray(body)) throw failure(400, 'Invalid control body');
         if (sub === 'interpret' || (sub === 'plan' && !c)) {
-          if (Object.keys(body).some(k => k !== 'text')) throw failure(400, 'Invalid control body');
+          if (Object.keys(body).some(k => k !== 'text' && !(sub==='interpret'&&k==='composer')) ||
+              (body.composer!==undefined&&body.composer!==true))throw failure(400,'Invalid control body');
           const planner = c ?? createControlPlanner();
-          json(res, 200, sub === 'interpret' ? (c ? c.interpret(body.text, { source: 'mobile' }) : planner.interpretText(body.text, { source: 'mobile' })) : planner.planText(body.text, { source: 'mobile' })); return;
+          if(sub!=='interpret'){json(res,200,planner.planText(body.text,{source:'mobile'}));return;}
+          const interpret=text=>c?c.interpret(text,{source:'mobile'}):planner.interpretText(text,{source:'mobile'});
+          const meaning=interpret(body.text);
+          if(body.composer!==true){json(res,200,meaning);return;}
+          let wiki=null;
+          if(c&&typeof wikiProjection==='function'&&needsWikiDraftContext(body.text,meaning)){
+            try{wiki=await wikiProjection();}catch{/* no fallback targets */}
+          }
+          authorizeDevice(req,'control:read');
+          res.setHeader('cache-control','private, no-store');
+          json(res,200,composerResponse(body.text,meaning,{catalog:c?c.describe():{actions:[]},wiki,interpret,source:'mobile'}));return;
         }
         if (!c) { json(res, 404, { code: 'CONTROL_DISPATCH_UNAVAILABLE' }); return; }
         if (sub === 'plan') {

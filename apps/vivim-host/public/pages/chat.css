@@ -45,3 +45,9 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   form { padding: 8px 10px; }
   header .rev { display: none; }
 }
+
+.composer-assist { padding: 8px 12px; max-height: 170px; overflow: auto; border-left: 2px solid var(--accent); font-size: 12px; overflow-wrap: anywhere; }
+.composer-assist p { margin: 3px 0; }
+.composer-assist button { color: inherit; background: transparent; border: 1px solid var(--accent); margin: 2px 4px 2px 0; padding: 4px 8px; max-width: 100%; white-space: normal; }
+.composer-assist button[aria-pressed="true"] { outline: 2px solid var(--accent); outline-offset: 1px; }
+.composer-assist[hidden] { display: none !important; }

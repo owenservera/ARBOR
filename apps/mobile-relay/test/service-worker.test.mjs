@@ -29,6 +29,7 @@ const SHELL_FILES = [
   'control-client.mjs',
   'control-chat.mjs',
   'control-language.mjs',
+  'composer-assist.mjs',
   'ux/model.mjs',
   'ux/mission-experience.mjs',
   'ux/render.mjs',
