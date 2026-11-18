@@ -518,7 +518,7 @@ export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'wo
           if (sub === 'world') { json(res, 200, planner.world()); return; }
           if (sub === 'language') { json(res, 200, planner.languagePack()); return; }
           if (!c) { json(res, 404, { code: 'CONTROL_DISPATCH_UNAVAILABLE' }); return; }
-          json(res, 200, planMatch ? c.status(planMatch[1]) : sub === 'lexicon' ? c.lexicon() : { items: c.recent(20) }); return;
+          json(res, 200, planMatch ? c.status(planMatch[1],{source:'mobile'}) : sub === 'lexicon' ? c.lexicon() : { items: c.recent(20,{source:'mobile'}) }); return;
         }
         if (!['plan', 'interpret', 'execute'].includes(sub)) { json(res, 404, { code: 'NOT_FOUND' }); return; }
         if (req.method !== 'POST') { json(res, 405, { code: 'METHOD' }); return; }

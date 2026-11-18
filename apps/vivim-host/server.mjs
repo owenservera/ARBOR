@@ -919,12 +919,13 @@ async function handleControl(req, res, pathname, host, controlFor, tokenFor, uiS
     sendJson(res, 200, { revoked: true });
     return;
   }
-  const reads = { catalog: c => c.describe(), world: c => c.world(), language: c => c.languagePack(), lexicon: c => c.lexicon(), recent: c => ({ items: c.recent(20) }) };
+  const reads = { catalog: c => c.describe(), world: c => c.world(), language: c => c.languagePack(), lexicon: c => c.lexicon(), rules: c => c.ownerRules(), recent: c => ({ items: c.recent(20) }) };
   const planMatch = route.match(/^plans\/(ctl-[a-f0-9]{16})$/);
   try {
     if (reads[route] || planMatch) {
       if (req.method !== 'GET' && req.method !== 'HEAD') { res.setHeader('allow', 'GET, HEAD'); sendJson(res, 405, { error: 'GET only', code: 'METHOD' }); return; }
       if (req.headers.origin !== undefined && String(req.headers.origin).toLowerCase() !== 'http://' + host) { sendJson(res, 403, { error: 'Cross-origin request refused', code: 'ORIGIN' }); return; }
+      if(route==='rules')res.setHeader('cache-control','private, no-store');
       sendJson(res, 200, planMatch ? controlFor().status(planMatch[1]) : reads[route](controlFor())); return;
     }
     if (!['interpret', 'plan', 'execute'].includes(route)) { sendJson(res, 404, { error: 'Unknown control route', code: 'NOT_FOUND' }); return; }

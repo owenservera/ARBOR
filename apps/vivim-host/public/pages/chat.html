@@ -23,6 +23,19 @@
   <div class="control-note">Chat text is saved as a message, not an executed command. Host changes require a separate plan and explicit approval.</div>
   <div id="control-result" role="region" aria-label="Command preview and result" aria-live="polite"></div>
   <div id="control-recent" aria-label="Recent Host command decisions"></div>
+  <details class="control-card">
+    <summary>Teach VIVIM a reusable phrase</summary>
+    <p>Desktop owner only. Save an exact phrase for an existing deterministic command. Saving never runs the target command.</p>
+    <form id="teach-rule-form">
+      <label for="teach-phrase">Your phrase</label>
+      <input id="teach-phrase" maxlength="200" required autocomplete="off" placeholder="e.g. morning briefing">
+      <label for="teach-command">Existing command</label>
+      <input id="teach-command" maxlength="1000" required autocomplete="off" placeholder="e.g. list wiki pages">
+      <button type="submit">Review meaning</button>
+    </form>
+    <button id="show-rules" type="button" class="secondary">Show saved meanings</button>
+    <div id="learned-rules" aria-live="polite"></div>
+  </details>
 </section>
 <div id="composer-assist" class="composer-assist" hidden></div>
 <form id="f">

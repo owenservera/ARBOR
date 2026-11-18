@@ -14,6 +14,8 @@ import { createControlPlanner, loadControlCatalog } from './intent-planner.mjs';
 import { createControlJournal, newPlanId } from './journal.mjs';
 import { createLexiconStore } from './lexicon.mjs';
 import { createPersonalRuleStore } from './personal-rule-store.mjs';
+import { PERSONAL_RULE_SCHEMA, validatePersonalRule } from './personal-semantics.mjs';
+import { interpretControl, resolveLocalDestination, resolveDesktopDestination } from '../../mobile-relay/control-language.mjs';
 import { previewWikiStructure } from '../chat/product-journal.mjs';
 
 export const DISPATCHER_SCHEMA = 'vivim.control-dispatcher/1';
@@ -24,6 +26,14 @@ const stable = v => Array.isArray(v) ? v.map(stable) : v && typeof v === 'object
   ? Object.fromEntries(Object.keys(v).sort().map(k => [k, stable(v[k])])) : v;
 const digest = o => createHash('sha256').update(JSON.stringify(stable(o))).digest('hex');
 const short = (s, n) => String(s ?? '').slice(0, n);
+const RULE_ACTIONS = new Set(['control.rule.remember','control.rule.revoke']);
+const rawDigest = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
+const phraseKey = value => value.normalize('NFKC').trim().replace(/\s+/g,' ').toLowerCase();
+// Only fixed, local, source-wired commands. No security, provider, lexicon,
+// arbitrary code, nested learning, destructive or external-effect capability.
+const LEARNABLE = new Set(['wiki.pages.list','wiki.section.read','wiki.page.create',
+  'wiki.section.edit','wiki.page.move','wiki.pages.link','ui.theme.show','ui.theme.set_preset',
+  'vivim.status.show']);
 const WIKI_ACTION = 'wiki.section.edit';
 const WIKI_STRUCTURE = new Set(['wiki.page.create','wiki.page.move','wiki.pages.link']);
 const wikiMutation = id => id === WIKI_ACTION || WIKI_STRUCTURE.has(id);
@@ -65,6 +75,8 @@ const VALIDATION_ERROR_CODES = new Set([
   'OWNER_PREFERENCE_INVALID',
   'OWNER_PREFERENCE_NOT_OWNER',
   'CONTROL_WORD_RESERVED',
+  'PERSONAL_STORE_STALE','PERSONAL_STORE_CONFLICT','PERSONAL_STORE_FULL','PERSONAL_STORE_BAD_TRANSITION',
+  'PERSONAL_STORE_OWNER_APPROVAL_REQUIRED','CONTROL_RULE_STALE',
   'CONTROL_WORD_UNKNOWN',
   'CONTROL_TEACH_TARGET_INVALID',
   'CONTROL_LEXICON_FULL',
@@ -78,7 +90,7 @@ const VALIDATION_ERROR_CODES = new Set([
 ]);
 
 /** Fixed executors keyed by catalog action id. Each returns a bounded, phone-safe summary. */
-function createExecutors({ runtime, planner, lexicon, devices, productJournal }) {
+function createExecutors({ runtime, planner, lexicon, devices, productJournal, personalSemantics }) {
   const ownerExclusions = () => (runtime.status().preferences ?? [])
     .filter(p => p.hard && p.polarity === 'avoid' && p.source === 'owner')
     .slice(0, 50).map(p => ({ id: p.id, value: short(p.value, 120) }));
@@ -95,6 +107,11 @@ function createExecutors({ runtime, planner, lexicon, devices, productJournal })
       entryId:entry.entryId,sequence:entry.sequence};
   };
   return {
+    'control.rule.remember': (_args,ctx) =>
+      personalSemantics.remember({subject:ctx.ruleBinding.subject,approval:{receiptId:ctx.planId}}),
+    'control.rule.revoke': (_args,ctx) =>
+      personalSemantics.transition({ruleId:ctx.ruleBinding.subject.ruleId,nextState:'revoked',
+        expectedVersion:ctx.ruleBinding.subject.storeVersion,approval:{receiptId:ctx.planId}}),
     'wiki.page.create':commitStructure,
     'wiki.page.move':commitStructure,
     'wiki.pages.link':commitStructure,
@@ -241,20 +258,59 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
   if (!runtime || typeof runtime.status !== 'function') throw fail('CONTROL_RUNTIME_REQUIRED');
   const iso = () => new Date(now()).toISOString();
   const lexicon = createLexiconStore({ dataRoot, catalog, now: iso });
-  // Host-local private semantic state; no public write endpoint and no approval
-  // verifier installed. Learning cannot acquire execution authority.
-  const personalSemantics = createPersonalRuleStore({ dataRoot, catalog, now: iso });
+  const journal = createControlJournal({ dataRoot });
+  // Only the exact claimed Host learning plan can authorize its store CAS.
+  // No caller/model-supplied approval object ever becomes this verifier.
+  let activeRuleCommit=null;
+  const personalSemantics = createPersonalRuleStore({ dataRoot, catalog, now: iso,
+    verifyOwnerApproval: (approval,subject) => {
+      if(!activeRuleCommit||approval?.receiptId!==activeRuleCommit)return false;
+      const rec=journal.get(activeRuleCommit);
+      return !!(rec?.claimed&&!rec.receipt&&rec.plan.source==='desktop'&&
+        RULE_ACTIONS.has(rec.plan.actionId)&&rec.approval?.channel==='desktop-owner-token'&&
+        rec.approval.actor==='desktop-owner'&&rec.approval.planDigest===rec.plan.planDigest&&
+        digest(rec.plan.ruleBinding?.subject)===digest(subject));
+    } });
   const planner = createControlPlanner({ catalog,
     lexicon: () => lexicon.entries(), personalRules: () => personalSemantics.accepted(),
     commandScope });
-  const journal = createControlJournal({ dataRoot });
-  const executors = createExecutors({ runtime, planner, lexicon, devices, productJournal });
+  const executors = createExecutors({ runtime, planner, lexicon, devices, productJournal, personalSemantics });
   // The catalog may not claim an executor the Host does not have, nor hide one it does.
   for (const a of catalog.actions) {
     const runnable = ['source_wired', 'verified'].includes(a.readiness);
     if (runnable !== Object.hasOwn(executors, a.id)) throw fail('CONTROL_EXECUTOR_MISMATCH', { actionId: a.id });
   }
   const action = id => catalog.actions.find(a => a.id === id);
+
+  function prepareRuleBinding(actionId,args) {
+    const snapshot=personalSemantics.snapshot();
+    if(actionId==='control.rule.revoke'){
+      const old=snapshot.entries.find(r=>r.id===args.rule_id&&['accepted','proposed','suspended'].includes(r.state));
+      if(!old)throw fail('CONTROL_RULE_UNKNOWN');
+      return {subject:{ruleId:old.id,ruleDigest:rawDigest(old),nextState:'revoked',
+        storeVersion:snapshot.version,catalogVersion:catalog.version},before:old,after:{...old,state:'revoked'}};
+    }
+    const scope={...commandScope(),surface:'desktop'};
+    // Canonical commands, safety refusals and local navigation retain precedence.
+    if(resolveLocalDestination(args.phrase)||resolveDesktopDestination(args.phrase)||
+        interpretControl(args.phrase,{catalog,world:planner.world()}).outcome!=='interpretation_required')
+      throw fail('CONTROL_RULE_PHRASE_NOT_FREE');
+    const target=planner.planText(args.command,{source:'desktop'});
+    if(target.origin!=='deterministic'||!LEARNABLE.has(target.actionId)||
+       !['ready','approval_required'].includes(target.outcome)||!['R0','R1'].includes(target.risk))
+      throw fail('CONTROL_RULE_TARGET_INVALID');
+    const rule={phrase:args.phrase,actionId:target.actionId,args:target.args,scope};
+    if(!validatePersonalRule({schema:PERSONAL_RULE_SCHEMA,id:'rule:validation',revision:1,
+      ...rule,state:'accepted',source:'explicit-owner',catalogVersion:catalog.version},catalog).ok)
+      throw fail('CONTROL_RULE_TARGET_INVALID');
+    const matches=snapshot.entries.filter(r=>r.state==='accepted'&&phraseKey(r.phrase)===phraseKey(rule.phrase)&&
+      rawDigest(r.scope)===rawDigest(scope));
+    if(matches.length>1)throw fail('PERSONAL_STORE_CONFLICT');
+    const old=matches[0]??null;
+    return {subject:{operation:'remember',storeVersion:snapshot.version,storeDigest:snapshot.digest,
+      catalogVersion:catalog.version,rule,previousId:old?.id??null,previousDigest:old?rawDigest(old):null},
+      before:old,after:rule,targetRisk:target.risk};
+  }
 
   function undoFor(a, args, result) {
     if (!a.undo) return null;
@@ -288,6 +344,8 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
     else if (keys.length === 1 && keys[0] === 'candidate') p = planner.planCandidate(input.candidate, { source });
     else if (keys.every(k => ['actionId', 'args'].includes(k))) p = planner.planTyped({ actionId: input.actionId, args: input.args ?? {}, source, origin: 'typed' });
     else throw fail('CONTROL_INPUT_INVALID');
+    if(RULE_ACTIONS.has(p.actionId)&&(source!=='desktop'||actor!=='desktop-owner'))
+      return {...p,outcome:'unavailable',executionPerformed:false,precondition:'Learning requires the authenticated desktop owner.'};
     if (p.outcome === 'ready') return runRead(p);
     if (p.outcome !== 'approval_required') return p;
     // Sensitive R2 actions are still discoverable from mobile, but cannot be
@@ -319,12 +377,14 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
         storeVersion: snapshot.version, storeDigest: snapshot.digest,
         scopeDigest: digest(activeScope) };
     }
+    const ruleBinding=RULE_ACTIONS.has(p.actionId)?prepareRuleBinding(p.actionId,p.args):null;
     const savePlan = wikiBinding => {
       const createdAt = iso();
       const body = { schema: 'vivim.control-plan-record/1', planId: newPlanId(), actionId: p.actionId, args: p.args,
         risk: p.risk, source, origin: p.origin, actor: short(actor, 120), catalogVersion: catalog.version,
         createdAt, expiresAt: new Date(now() + ttlMs).toISOString(),
         ...(semanticRuleBinding ? { semanticRuleBinding } : {}),
+        ...(ruleBinding?{ruleBinding}:{}),
         ...(wikiBinding ? { wikiBinding } : {}) };
       const record = { ...body, planDigest: digest(body) };
       journal.record(record);
@@ -332,8 +392,9 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
         ...(wikiBinding ? { preview: { target: wikiBinding.target ?? wikiBinding.page + '/' + wikiBinding.section,
           before: wikiBinding.before, after: wikiBinding.edit ? wikiBinding.after : p.args.content,
           expectedRevision: wikiBinding.expectedRevision } } : {}),
+        ...(ruleBinding?{learningPreview:{before:ruleBinding.before,after:ruleBinding.after,targetRisk:ruleBinding.targetRisk??null}}:{}),
         approval: { required: true, freshOwner: p.risk === 'R2',
-          channels: wikiMutation(p.actionId)
+          channels: RULE_ACTIONS.has(p.actionId)?['desktop-owner-token']:wikiMutation(p.actionId)
             ? [source === 'mobile' ? 'direct-phone' : 'desktop-owner-token']
             : [...APPROVAL_CHANNELS] } };
     };
@@ -357,6 +418,11 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
     const rec = journal.get(planId);
     if (!rec) throw fail('CONTROL_PLAN_UNKNOWN');
     if (typeof planDigest !== 'string' || planDigest !== rec.plan.planDigest) throw fail('CONTROL_PLAN_MISMATCH');
+    // Even receipt replay must respect the private desktop learning scope.
+    if((RULE_ACTIONS.has(rec.plan.actionId)||(rec.plan.origin==='personal_rule'&&rec.plan.source==='desktop'))&&
+       approval.channel!=='desktop-owner-token')throw fail('CONTROL_DESKTOP_APPROVAL_REQUIRED');
+    if(RULE_ACTIONS.has(rec.plan.actionId)&&approval.actor!=='desktop-owner')
+      throw fail('CONTROL_DESKTOP_APPROVAL_REQUIRED');
     if (rec.receipt) return { ...rec.receipt, replayed: true };
     if (rec.claimed) throw fail('CONTROL_UNCERTAIN');
     const { planDigest: stored, ...body } = rec.plan;
@@ -377,6 +443,13 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
         throw fail('CONTROL_SEMANTIC_RULE_STALE');
       if (digest({ ...commandScope(), surface: rec.plan.source }) !== bound.scopeDigest)
         throw fail('CONTROL_SEMANTIC_CONTEXT_STALE');
+    }
+    if(RULE_ACTIONS.has(rec.plan.actionId)){
+      if(rec.plan.source!=='desktop'||rec.plan.actor!=='desktop-owner'||
+        approval.channel!=='desktop-owner-token'||approval.actor!=='desktop-owner')
+        throw fail('CONTROL_DESKTOP_APPROVAL_REQUIRED');
+      if(!rec.plan.ruleBinding||digest(prepareRuleBinding(rec.plan.actionId,rec.plan.args))!==digest(rec.plan.ruleBinding))
+        throw fail('CONTROL_RULE_STALE');
     }
     const fresh = planner.planTyped({ actionId: rec.plan.actionId, args: rec.plan.args, source: rec.plan.source, origin: rec.plan.origin });
     if (fresh.outcome !== 'approval_required' || fresh.risk !== rec.plan.risk) throw fail('CONTROL_PLAN_STALE');
@@ -424,8 +497,12 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
         actor: short(approval.actor ?? 'owner', 120), at: iso() });
       if (!journal.claim(planId)) throw fail('CONTROL_UNCERTAIN');
       try {
-        const output = executors[rec.plan.actionId](rec.plan.args,
-          { requestId: 'utc-' + planId, planId, wikiBinding: rec.plan.wikiBinding });
+        let output;
+        if(RULE_ACTIONS.has(rec.plan.actionId))activeRuleCommit=planId;
+        try {
+          output = executors[rec.plan.actionId](rec.plan.args,
+            { requestId: 'utc-' + planId, planId, wikiBinding: rec.plan.wikiBinding,ruleBinding:rec.plan.ruleBinding });
+        } finally {activeRuleCommit=null;}
         return output && typeof output.then === 'function'
           ? output.then(value => finishEffect(value), error => finishEffect(null, error))
           : finishEffect(output);
@@ -456,9 +533,11 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
     return claimAndRun();
   }
 
-  function status(planId) {
+  function status(planId,{source='desktop'}={}) {
     const rec = journal.get(planId);
     if (!rec) throw fail('CONTROL_PLAN_UNKNOWN');
+    if(source==='mobile'&&(RULE_ACTIONS.has(rec.plan.actionId)||(rec.plan.origin==='personal_rule'&&rec.plan.source==='desktop')))
+      throw fail('CONTROL_PLAN_UNKNOWN');
     return { planId, state: rec.state, actionId: rec.plan.actionId, risk: rec.plan.risk, args: rec.plan.args,
       createdAt: rec.plan.createdAt, expiresAt: rec.plan.expiresAt, receipt: rec.receipt,
       ...(rec.state === 'uncertain' ? { note: 'Effect was claimed but no receipt was recorded. It will not be retried; inspect locally before deciding again.' } : {}) };
@@ -475,6 +554,7 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
       return {schema:'vivim.personal-semantic-projection/1',version,digest:stateDigest,
         rules:entries.map(r=>({id:r.id, revision:r.revision, state:r.state, scope:r.scope,
           actionId:r.actionId, catalogVersion:r.catalogVersion}))}; },
-    plan, execute, status, recent: limit => journal.recent(limit),
+    ownerRules:()=>personalSemantics.snapshot(),
+    plan, execute, status, recent: (limit,{source='desktop'}={}) => journal.recent(limit).filter(r=>source!=='mobile'||!RULE_ACTIONS.has(r.actionId)),
   };
 }

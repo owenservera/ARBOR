@@ -62,3 +62,58 @@ test('unknown workspace never activates a scoped personal command',t=>{
   setWorkspace('project-b');
   assert.equal(control.plan({text:phrase},{source:'desktop'}).outcome,'interpretation_required');
 });
+
+test('desktop owner explicitly teaches, replaces, reuses and revokes a real typed command',t=>{
+  const dataRoot=mkdtempSync(path.join(os.tmpdir(),'vivim-live-teaching-'));
+  const runtime=createBootstrapRuntime({dataRoot,file:':memory:'});
+  runtime.grantBootstrap({scope:'full-bootstrap'});
+  t.after(()=>{runtime.close();rmSync(dataRoot,{recursive:true,force:true});});
+  const make=()=>createControlDispatcher({dataRoot,runtime});
+  let c=make();
+  const owner={source:'desktop',actor:'desktop-owner'};
+  const approve={channel:'desktop-owner-token',actor:'desktop-owner'};
+  const learn=(phrase,command)=>c.plan({actionId:'control.rule.remember',args:{phrase,command}},owner);
+  const run=(p,approval=approve)=>c.execute({planId:p.planId,planDigest:p.planDigest,approval});
+  const word='quazzlememo';
+  const before=runtime.projection().preset;
+  assert.equal(c.plan({text:word},owner).outcome,'interpretation_required');
+  const teach=learn(word,'Set my theme to dusk');
+  assert.equal(teach.outcome,'approval_required');
+  assert.deepEqual(teach.learningPreview.after.args,{preset:'dusk'});
+  assert.equal(teach.learningPreview.after.actionId,'ui.theme.set_preset');
+  assert.equal(c.ownerRules().version,0);
+  assert.equal(runtime.projection().preset,before);
+  assert.throws(()=>run(teach,{channel:'direct-phone',actor:'phone'}),/CONTROL_DESKTOP_APPROVAL_REQUIRED/);
+  assert.throws(()=>c.status(teach.planId,{source:'mobile'}),/CONTROL_PLAN_UNKNOWN/);
+  assert.equal(c.plan({actionId:'control.rule.remember',args:{phrase:'private phrase',command:'Set my theme to dusk'}},{source:'mobile'}).outcome,'unavailable');
+  const saved=run(teach);
+  assert.equal(saved.status,'applied');
+  assert.equal(saved.result.state,'accepted');
+  assert.equal(runtime.projection().preset,before);
+  assert.equal(run(teach).replayed,true);
+  assert.equal(c.ownerRules().version,1);
+  assert.throws(()=>run(teach,{channel:'direct-phone',actor:'phone'}),/CONTROL_DESKTOP_APPROVAL_REQUIRED/);
+  c=make();
+  const learned=c.plan({text:word.toUpperCase()},owner);
+  assert.equal(learned.origin,'personal_rule');
+  assert.equal(learned.outcome,'approval_required');
+  assert.equal(learned.language.personalRule.ruleId,saved.result.ruleId);
+  assert.equal(c.plan({text:word},{source:'mobile'}).outcome,'interpretation_required');
+  assert.equal(runtime.projection().preset,before);
+  const replacement=learn(word,'Set my theme to dawn');
+  const competing=learn('quazzleother','Set my theme to dusk');
+  assert.equal(run(replacement).status,'applied');
+  assert.throws(()=>run(competing),/CONTROL_RULE_STALE/);
+  assert.throws(()=>run(learned),/CONTROL_SEMANTIC_RULE_STALE/);
+  const reused=c.plan({text:word},owner);
+  assert.equal(reused.args.preset,'dawn');
+  assert.equal(run(reused).status,'applied');
+  assert.equal(runtime.projection().preset,'dawn');
+  const revoke=c.plan({actionId:'control.rule.revoke',args:{rule_id:saved.result.ruleId}},owner);
+  assert.equal(run(revoke).status,'applied');
+  assert.equal(c.ownerRules().entries[0].state,'revoked');
+  assert.equal(c.plan({text:word},owner).outcome,'interpretation_required');
+  for(const [phrase,command] of [['open Wiki','Set my theme to dusk'],["don't quazzlememo",'Set my theme to dusk'],['quazzlememo','Stop all traffic']]){
+    assert.throws(()=>learn(phrase,command),/CONTROL_RULE_(PHRASE_NOT_FREE|TARGET_INVALID)/);
+  }
+});

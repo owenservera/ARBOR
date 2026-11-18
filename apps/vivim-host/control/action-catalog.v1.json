@@ -1,6 +1,6 @@
 {
   "schema": "vivim.control-action-catalog/1",
-  "version": 12,
+  "version": 13,
   "asOf": "2026-11-18",
   "policy": {
     "allUserFacingActionsRequireTextPath": true,
@@ -14,6 +14,73 @@
     "aiMayNotTeachLanguage": true
   },
   "actions": [
+    {
+      "id": "control.rule.remember",
+      "title": "Remember exact command phrase",
+      "category": "control",
+      "owner": "host-control",
+      "executor": "apps/vivim-host/control/dispatcher.mjs:createExecutors",
+      "readiness": "source_wired",
+      "risk": "R2",
+      "target": "local-host",
+      "surfaces": [
+        "text",
+        "desktop",
+        "mobile",
+        "visual"
+      ],
+      "privacy": "pc-only",
+      "aiCandidate": false,
+      "subject": "personal-semantics",
+      "priority": "P2",
+      "args": {
+        "phrase": {
+          "type": "string",
+          "min": 2,
+          "max": 200
+        },
+        "command": {
+          "type": "string",
+          "min": 2,
+          "max": 1000
+        }
+      },
+      "examples": [
+        "Use desktop Chat to remember an exact phrase"
+      ],
+      "reversible": true
+    },
+    {
+      "id": "control.rule.revoke",
+      "title": "Revoke learned command phrase",
+      "category": "control",
+      "owner": "host-control",
+      "executor": "apps/vivim-host/control/dispatcher.mjs:createExecutors",
+      "readiness": "source_wired",
+      "risk": "R2",
+      "target": "local-host",
+      "surfaces": [
+        "text",
+        "desktop",
+        "mobile",
+        "visual"
+      ],
+      "privacy": "pc-only",
+      "aiCandidate": false,
+      "subject": "personal-semantics",
+      "priority": "P2",
+      "args": {
+        "rule_id": {
+          "type": "string",
+          "min": 6,
+          "max": 85
+        }
+      },
+      "examples": [
+        "Use desktop Chat to revoke a learned phrase"
+      ],
+      "reversible": false
+    },
     {
       "id": "control.catalog.list",
       "title": "What can I say?",

@@ -97,6 +97,32 @@ export function createPersonalRuleStore({
     }, expectedVersion);
     return resultShape(next, created);
   }
+  // Explicit owner teaching is one CAS transaction, not propose followed by
+  // a second write that can leave a half-accepted rule after a crash.
+  function remember({subject,approval}={}) {
+    let changed;
+    const next=locked(current=>{
+      if(subject?.operation!=='remember'||subject.catalogVersion!==catalog.version||
+          subject.storeDigest!==digest(current.entries))throw fail('PERSONAL_STORE_STALE');
+      const candidate=subject.rule;
+      const key=value=>value.normalize('NFKC').trim().replace(/\\s+/g,' ').toLowerCase();
+      const trial={schema:PERSONAL_RULE_SCHEMA,id:'rule:validation',revision:1,
+        ...candidate,state:'accepted',source:'explicit-owner',catalogVersion:catalog.version};
+      if(!validatePersonalRule(trial,catalog).ok)throw fail('PERSONAL_STORE_INVALID_RULE');
+      const matches=current.entries.filter(r=>r.state==='accepted'&&key(r.phrase)===key(candidate.phrase)&&
+        digest(r.scope)===digest(candidate.scope));
+      if(matches.length>1)throw fail('PERSONAL_STORE_CONFLICT');
+      const old=matches[0]??null;
+      if((old?.id??null)!==subject.previousId||(old?digest(old):null)!==subject.previousDigest)
+        throw fail('PERSONAL_STORE_STALE');
+      if(!old&&current.entries.length>=MAX_RULES)throw fail('PERSONAL_STORE_FULL');
+      if(!approval||verifyOwnerApproval(approval,subject)!==true)
+        throw fail('PERSONAL_STORE_OWNER_APPROVAL_REQUIRED');
+      changed={...trial,id:old?.id??'rule:'+randomBytes(12).toString('hex'),revision:old?old.revision+1:1};
+      return record(current,changed,'remember',old,approval.receiptId);
+    },subject?.storeVersion);
+    return resultShape(next,changed);
+  }
   function transition({ ruleId, nextState, expectedVersion, approval } = {}) {
     if (!['accepted', 'suspended', 'revoked'].includes(nextState))
       throw fail('PERSONAL_STORE_BAD_STATE');
@@ -146,6 +172,6 @@ export function createPersonalRuleStore({
     }; },
     accepted: () => read().entries.filter(r => r.state === 'accepted'),
     history: () => read().history.map(({ before, after, ...meta }) => meta),
-    propose, transition, rollback,
+    propose, remember, transition, rollback,
   };
 }

@@ -20,6 +20,7 @@ import { mountComposerAssist } from '/mobile/composer-assist.mjs';
   const result = $('control-result');
   const recent = $('control-recent');
   const lockButton = $('control-logout');
+  const rulePanel=$('learned-rules');
   if (!log || !form || !input || !result) return;
 
   let pollTimer = null;
@@ -68,6 +69,9 @@ import { mountComposerAssist } from '/mobile/composer-assist.mjs';
   }
   function locked(message = 'Commands locked. Open the VIVIM desktop owner session to approve PC changes.') {
     csrfProof = null;
+    rulePanel?.replaceChildren();
+    if($('teach-phrase'))$('teach-phrase').value='';
+    if($('teach-command'))$('teach-command').value='';
     assistance?.reset();
     pending = null;
     authStatus.textContent = message;
@@ -296,6 +300,11 @@ import { mountComposerAssist } from '/mobile/composer-assist.mjs';
     if (meaning?.schema === 'vivim.command-intent/0.1' && meaning.canonical)
       node.append(element('pre', '', meaning.canonical));
     node.append(element('pre', '', JSON.stringify(plan.args, null, 2)));
+    if(plan.learningPreview){
+      node.append(element('strong','','Exact learned meaning (no target action executes now)'));
+      node.append(element('pre','',JSON.stringify(plan.learningPreview,null,2)));
+      node.append(element('p','','Every reuse is revalidated against the current catalog and Host state. Effects require their own approval.'));
+    }
     if (plan.preview) {
       node.append(element('p', '', 'Wiki target: ' + plan.preview.target +
         ' · expected revision ' + plan.preview.expectedRevision));
@@ -356,6 +365,33 @@ import { mountComposerAssist } from '/mobile/composer-assist.mjs';
         'Visual interpretation requires a current Host UI revision. An ordinary provider conversation requires paired Talk. No provider message was sent.'));
     }
   }
+  async function showRules(){
+    if(!csrfProof||busy||!rulePanel)return;
+    const proof=csrfProof;
+    try{
+      const data=await controlApi('rules');
+      if(proof!==csrfProof)return;
+      rulePanel.replaceChildren();
+      for(const rule of data.entries.filter(r=>r.state!=='revoked')){
+        const row=element('div','control-card');
+        row.append(element('strong','',rule.phrase+' · '+rule.state),
+          element('pre','',JSON.stringify({actionId:rule.actionId,args:rule.args,scope:rule.scope},null,2)),
+          element('p','', 'Catalog revision '+rule.catalogVersion+' · rule revision '+rule.revision),
+          button('Revoke meaning',()=>void submitPlan({actionId:'control.rule.revoke',args:{rule_id:rule.id}}),true));
+        rulePanel.append(row);
+      }
+      if(!rulePanel.children.length)rulePanel.append(element('p','','No saved meanings.'));
+    }catch(error){if(proof===csrfProof)rulePanel.replaceChildren(element('p','warning','Learned meanings unavailable: '+error.message));}
+  }
+  const teachForm=$('teach-rule-form');
+  if(teachForm)teachForm.addEventListener('submit',event=>{
+    event.preventDefault();
+    if(!csrfProof||busy)return;
+    const phrase=$('teach-phrase').value.trim(),command=$('teach-command').value.trim();
+    if(!phrase||!command)return;
+    void submitPlan({actionId:'control.rule.remember',args:{phrase,command}});
+  });
+  $('show-rules')?.addEventListener('click',()=>void showRules());
   async function submitPlan(body) {
     if (!csrfProof || busy) return;
     pending = null;
@@ -374,6 +410,11 @@ import { mountComposerAssist } from '/mobile/composer-assist.mjs';
       const receipt = await controlApi('execute', expected);
       const node = card(receipt.actionId + ' · ' + receipt.status);
       receiptDetails(node, receipt);
+      if(receipt.actionId?.startsWith('control.rule.')&&receipt.status==='applied'){
+        rulePanel?.replaceChildren();
+        if($('teach-phrase'))$('teach-phrase').value='';
+        if($('teach-command'))$('teach-command').value='';
+      }
       await observeTheme(node, receipt);
       await refreshRecent();
       await refresh();
