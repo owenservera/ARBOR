@@ -1280,6 +1280,7 @@
             "match": "[a-z0-9][a-z0-9_-]{0,78}/[a-z0-9][a-z0-9_-]{0,78}"
           },
           "content": {
+            "kind": "rest",
             "preps": [
               "saying"
             ]
