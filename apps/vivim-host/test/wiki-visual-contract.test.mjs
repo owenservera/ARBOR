@@ -31,8 +31,8 @@ const baseRoadmap = { acceleration: { revision: 'R002', activeBatch: 'ACCEL-A' }
   { itemId: 'A02', status: 'in-progress', verification: 'UNRUN', ownerAcceptance: 'PENDING', note: 'Host journal' },
   { itemId: 'A04', status: 'queued', verification: 'UNRUN', ownerAcceptance: 'PENDING', dependsOn: ['A02'], note: 'VEC compiler' }
 ] };
-const baseSurface = { schema: 'vivim.file-surface/1', generatorVersion: 'file-surface-gen/1 stage-a', files: [
-  { path: 'apps/vivim-host/public/pages/wiki.js', surface: '<script>not executable</script>', commentIds: ['a'], actionIds: [], sourceDigest: 'example-digest' }
+const baseSurface = { schema: 'vivim.file-surface/1', generatorVersion: 'hq.source-index/1', status: 'indexed', files: [
+  { project: 'arbor', path: 'apps/vivim-host/public/pages/wiki.js', surface: '<script>not executable</script>', commentIds: ['vivim.example@1'], actionIds: [], sourceDigest: 'example-digest', freshness: 'indexed', annotations: [{ semanticId: 'vivim.example@1', kind: 'consumes', line: 12, resolution: 'unknown' }], relationships: [] }
 ] };
 function allChildren(node) { return [node, ...node.children.flatMap(allChildren)]; }
 function setup() {
@@ -63,7 +63,7 @@ function setup() {
         ? { ok: true, status: 200, json: async () => ({ schema: 'vivim.control-ui-session/1', csrf: 'a'.repeat(64) }) }
         : { ok: false, status: 401, json: async () => ({ code: 'OWNER_AUTH' }) };
     }
-    if (url === '/api/host/control/wiki-context' && !ownerSession)
+    if ((url === '/api/host/control/wiki-context' || url === '/api/file-surface') && !ownerSession)
       return { ok: false, status: 401, json: async () => ({ code: 'OWNER_AUTH' }) };
     if (url === '/api/host/control/interpret') {
       assert.equal(options.method, 'POST');
@@ -146,6 +146,8 @@ test('Host source projection: revisions, seed truth, actual files[] schema and u
   const surfaceNodes = allChildren(ui.el('surface-view'));
   assert.ok(surfaceNodes.some(n => n.textContent === 'apps/vivim-host/public/pages/wiki.js'));
   assert.ok(surfaceNodes.some(n => n.textContent === '<script>not executable</script>'));
+  assert.ok(surfaceNodes.some(n => n.textContent === 'consumes · vivim.example@1 · line 12 · unknown'));
+  assert.ok(surfaceNodes.some(n => n.href === '/api/file-surface/context?project=arbor&path=apps%2Fvivim-host%2Fpublic%2Fpages%2Fwiki.js'));
   const roadmapNodes = allChildren(ui.el('roadmap-view'));
   assert.ok(roadmapNodes.some(n => n.textContent === 'A04'));
   assert.ok(roadmapNodes.some(n => n.textContent === 'UNRUN / PENDING'));
@@ -178,6 +180,8 @@ test('private context refreshes during polling and clears after owner auth loss'
   ui.setOwnerSession(false);
   ui.tick(); await settle();
   assert.match(ui.el('context-view').children[0].textContent, /Owner context locked/);
+  assert.match(ui.el('surface-view').children[0].textContent, /Source index locked/);
+  assert.ok(!allChildren(ui.el('surface-view')).some(n => n.textContent.includes('vivim.example@1')));
   assert.equal(allChildren(ui.el('context-view')).some(n =>
     n.textContent === '<img src=x onerror=alert(1)>'), false);
 });
