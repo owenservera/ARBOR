@@ -76,11 +76,20 @@ function renderWiki(wiki) {
   const root = element('div', 'stack');
   const pages = Object.entries(wiki.pages || {});
   if (!pages.length) return element('p', 'empty', 'No Wiki pages in the Host projection.');
+  const pageCards=new Map();
   for (const [name, page] of pages) {
     const card = element('section', 'page');
+    pageCards.set(name,card);
     card.appendChild(element('h3', '', name));
     const links=Array.isArray(page?.links)?page.links.filter(p=>typeof p==='string'&&Object.hasOwn(wiki.pages,p)):[];
-    if(links.length)card.appendChild(element('p','meta','Links to: '+links.join(', ')));
+    if(links.length){
+      card.appendChild(element('p','meta','Links to:'));
+      for(const target of links){
+        const button=element('button','',target);button.type='button';
+        button.addEventListener('click',()=>pageCards.get(target)?.scrollIntoView?.({block:'start'}));
+        card.appendChild(button);
+      }
+    }
     const sections = Object.entries(page?.sections || {});
     if (!sections.length) card.appendChild(element('p', 'empty', 'No sections.'));
     for (const [section, body] of sections) card.appendChild(sectionEl(name, section, present(body, ''), wiki.revision));
@@ -639,8 +648,10 @@ async function interpretWikiCommand(event) {
       const explanation = typeof meaning?.question === 'string' ? meaning.question :
         typeof meaning?.refusal?.message === 'string' ? meaning.refusal.message :
         'Only an unambiguous typed wiki.section.edit candidate can open a draft.';
-      $('wiki-command-status').textContent = 'No Wiki edit (' +
-        String(meaning?.outcome ?? 'invalid').slice(0, 50) + '). ' + explanation;
+      const structural=['wiki.page.create','wiki.page.move','wiki.pages.link','wiki.pages.list','wiki.section.read'].includes(meaning?.candidate?.actionId);
+      $('wiki-command-status').textContent = structural && meaning.outcome==='candidate'
+        ? 'Wiki command recognized. Continue in Chat to review the Host action; nothing has been sent.'
+        : 'No Wiki edit (' + String(meaning?.outcome ?? 'invalid').slice(0, 50) + '). ' + explanation;
       // Keep the dedicated editor for exact Wiki section drafts. All other
       // recognized commands and unresolved requests continue through Chat's
       // existing planner, not another query executor or mutation contract.

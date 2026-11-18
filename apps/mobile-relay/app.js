@@ -620,11 +620,20 @@ function renderWiki() {
   scroll.append(head);
   if (!S.wiki) scroll.append(el('p', 'ux-empty', S.wikiError));
   else {
+    const pageCards=new Map();
     for (const [name, page] of Object.entries(S.wiki.pages)) {
       const card = el('section', 'ux-card');
+      pageCards.set(name,card);
       card.append(el('h3', 'ux-card-title', name));
       const links=Array.isArray(page.links)?page.links.filter(p=>typeof p==='string'&&Object.hasOwn(S.wiki.pages,p)):[];
-      if(links.length)card.append(el('p','ux-note','Links to: '+links.join(', ')));
+      if(links.length){
+        card.append(el('p','ux-note','Links to:'));
+        for(const target of links){
+          const button=el('button','btn sm ux-secondary',target);button.type='button';
+          button.addEventListener('click',()=>pageCards.get(target)?.scrollIntoView?.({block:'start'}));
+          card.append(button);
+        }
+      }
       for (const [section, content] of Object.entries(page.sections)) {
         const item = el('div', 'ux-item');
         item.append(el('strong', 'ux-item-title', section), el('p', 'ux-note', content));
