@@ -268,3 +268,60 @@ test('R2 structural membership is stable, deduplicated and prefers committed evi
   assert.equal(two.relationships.filter(r => r.kind === 'candidate-target').length, 2);
   assert.ok(two.relationships.filter(r => r.kind === 'candidate-target').every(r => r.source.wikiRevision === 2));
 }));
+
+test('fresh owner workspace starts empty and selects the same baseline across reopen', () => rootTest(async root => {
+  const first = createProductJournal({ dataRoot: root });
+  const initial = await first.readProjection();
+  assert.deepEqual(initial.state.chat, []);
+  assert.deepEqual(initial.wiki.pages, { Main: { sections: { About: '', HowTo: '', Sources: '' } } });
+  assert.equal(initial.wiki.revision, 1);
+  assert.equal(initial.state.wikiRevision, 1);
+  assert.deepEqual(await first.readRecords(), []);
+  const save = await first.append(edit(initial.wiki.revision, 'Owner instructions'));
+  const before = await first.readProjection();
+  const reopened = createProductJournal({ dataRoot: root });
+  assert.deepEqual(await reopened.readProjection(), before);
+  assert.equal(before.wiki.revision, 2);
+  assert.equal(save.sequence, 1);
+  assert.equal(before.wiki.pages.Main.sections.HowTo, 'Owner instructions');
+  assert.equal(before.wiki.pages.Main.sections.About, '');
+}));
+
+test('upgrade preserves original legacy Wiki keys and text, exact journal bytes and revision', () => rootTest(async root => {
+  const historicState = {"chat":[],"wikiRevision":0,"at":"2026-11-14T00:00:00.000Z"};
+  const historicWiki = {"revision":1,"at":"2026-11-14T00:00:00.000Z","pages":{"Main":{"sections":{"About":"VIVIM realtime wiki — the reprogrammable product surface. Every section is editable; every edit appends one journal line via POST /api/mutate.","HowTo":"Click a section to edit it. Chat (at /chat) sends natural language; this wiki mirrors the resulting state. Both pages poll the same /api/* routes — machine-readable is primary.","Sources":"Wiki + chat state: apps/vivim-host/data/demo-baseline/. File surface: data/demo-baseline/file-surface.v1.json. Roadmap: read-through of docs/product/roadmap/roadmap.v1.json — single source of truth, never a copy."}},"Roadmap":{"sections":{"BuildQueue":"R002 acceleration active queue is read through from docs/product/roadmap/roadmap.v1.json via GET /api/roadmap. The initial ready frontier is A00, A01 and A02; queued does not imply executed, verified or owner-accepted. This seed section is descriptive only, not a second queue.","Acceleration":"Screen 2 projects roadmap, journal and verified source state; edits are receipts through the canonical Host. See docs/product/roadmap/ACCELERATION-R002.md for A00–A08 definitions and dependency rules. This is seeded demo content; live execution is not yet accepted."}}}};
+  const legacy = createProductJournal({ dataRoot: root, seedState: historicState, seedWiki: historicWiki });
+  await legacy.append(chat('owner already here'));
+  await legacy.append({ kind: 'wiki-edit', actor: 'owner-browser', schemaVersion: 1, expectedRevision: 1,
+    edit: { action: 'set-section', page: 'Roadmap', section: 'BuildQueue', content: 'Owner project notes' } });
+  const bytes = readFileSync(legacy.journalPath, 'utf8');
+  const expected = await legacy.readProjection();
+  const upgraded = createProductJournal({ dataRoot: root });
+  assert.deepEqual(await upgraded.readProjection(), expected);
+  assert.equal(readFileSync(legacy.journalPath, 'utf8'), bytes);
+  await upgraded.append(edit(2, 'More owner notes'));
+  const reopened = createProductJournal({ dataRoot: root });
+  const projection = await reopened.readProjection();
+  assert.equal(projection.wiki.revision, 3);
+  assert.equal(projection.wiki.pages.Roadmap.sections.BuildQueue, 'Owner project notes');
+  assert.equal(projection.wiki.pages.Main.sections.About, historicWiki.pages.Main.sections.About);
+  assert.equal(projection.state.chat[0].text, 'owner already here');
+}));
+
+test('invalid baseline fails closed and leaves existing journal unchanged', () => rootTest(async root => {
+  const current = createProductJournal({ dataRoot: root });
+  await current.append(chat('preserve me'));
+  const bytes = readFileSync(current.journalPath, 'utf8');
+  writeFileSync(path.join(path.dirname(current.journalPath), 'baseline-version.json'), '{"version":"unknown"}');
+  assert.throws(() => createProductJournal({ dataRoot: root }), /Product baseline unavailable/);
+  assert.equal(readFileSync(current.journalPath, 'utf8'), bytes);
+}));
+
+test('legacy gate and feedback remain replay-only; new observations refused', () => rootTest(async root => {
+  const current = createProductJournal({ dataRoot: root });
+  for (const payload of [
+    {kind:'gate-decision',actor:'keeper',schemaVersion:1,itemId:'A02',decision:'approve'},
+    {kind:'feedback-round',actor:'loop-agent',schemaVersion:1,round:'retired',approveAll:false,verdicts:[]}
+  ]) await assert.rejects(current.append(payload), error => error.status === 410);
+  assert.deepEqual(await current.readRecords(), []);
+}));
