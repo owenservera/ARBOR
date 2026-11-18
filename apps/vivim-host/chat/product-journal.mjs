@@ -129,14 +129,36 @@ export function validateProductEdit(payload, wiki) {
 }
 
 // Source-identified observations only: user statements are not verified Wiki facts.
-export function projectWikiContext(records) {
+function projectWikiChanges(records) {
+  const latestBySection = new Map();
+  const identified = [];
+  for (const e of records) {
+    if (e?.kind !== 'wiki-edit') continue;
+    const key = JSON.stringify([e.edit.page, e.edit.section]);
+    latestBySection.set(key, e.expectedRevision + 1);
+    if (typeof e.entryId === 'string' && Number.isSafeInteger(e.sequence)) identified.push(e);
+  }
+  const items = identified.slice(-24).map(e => ({
+    source: 'host-product-journal', entryId: e.entryId, sequence: e.sequence,
+    receivedAt: e.receivedAt, kind: 'committed-wiki-edit',
+    previousWikiRevision: e.expectedRevision, wikiRevision: e.expectedRevision + 1,
+    status: latestBySection.get(JSON.stringify([e.edit.page, e.edit.section])) ===
+      e.expectedRevision + 1 ? 'current-section-revision' : 'superseded-section-revision',
+    relationship: { kind: 'mutated-section', page: e.edit.page, section: e.edit.section }
+  }));
+  return { total: identified.length, omitted: identified.length - items.length, items };
+}
+
+// A read model only: user statements and committed Wiki effects remain separate.
+export function projectWikiContext(records, wikiRevision = null) {
   const observed = records.filter(e => e?.kind === 'chat-send' &&
     (e.actor === 'human' || e.actor === 'owner-browser') &&
     typeof e.entryId === 'string' && Number.isSafeInteger(e.sequence));
   const latest = observed.slice(-24);
   return {
     schema: 'vivim.wiki-context/1', state: 'source-backed',
-    revision: records.length, totalObserved: observed.length,
+    revision: records.length, wikiRevision, totalObserved: observed.length,
+    wikiChanges: projectWikiChanges(records),
     omitted: observed.length - latest.length,
     items: latest.map(e => {
       const outcome = typeof e.intent?.outcome === 'string' ? e.intent.outcome.slice(0, 64) : null;
@@ -163,7 +185,7 @@ export function createProductJournal({ dataRoot, seedState, seedWiki }) {
         'Unsafe or oversized product journal', 503);
       bytes = await readFile(journalPath);
     } catch (error) {
-      if (error?.code === 'ENOENT') return { records: [], committed: '', tornTail: false, size: 0 };
+      if (error?.code === 'ENOENT') return { records: [], committed: '', tornTail: false, size: 0, wikiRevision: seedWiki.revision };
       throw error;
     }
     requireShape(bytes.length <= MAX_JOURNAL_BYTES, 'Product journal exceeds read limit', 503);
@@ -181,15 +203,16 @@ export function createProductJournal({ dataRoot, seedState, seedWiki }) {
       catch { throw invalid('Corrupt committed journal segment', 503); }
       records.push(record);
     }
-    replayProductJournal(seedState, seedWiki, records);
-    return { records, committed: text, tornTail: finalLF !== bytes.length - 1, size: bytes.length };
+    const projection = replayProductJournal(seedState, seedWiki, records);
+    return { records, committed: text, tornTail: finalLF !== bytes.length - 1, size: bytes.length,
+      wikiRevision: projection.wiki.revision };
   }
   async function readRecords() { return (await snapshot()).records; }
   async function readProjection() { return replayProductJournal(seedState, seedWiki, await readRecords()); }
   async function readWikiContext() {
     const current = await snapshot(); // validates committed records and deterministic replay
     requireShape(!current.tornTail, 'Wiki context unavailable: torn journal tail', 503);
-    return projectWikiContext(current.records);
+    return projectWikiContext(current.records, current.wikiRevision);
   }
   function append(payload) {
     const run = async () => {
