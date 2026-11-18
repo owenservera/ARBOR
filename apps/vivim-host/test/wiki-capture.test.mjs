@@ -86,3 +86,16 @@ test('Wiki sequence preflights every ordinary record before writing any prefix',
  const out=await journal.appendWikiSequence([a,b],hash);assert.equal(out.entries.length,2);assert.equal(out.wikiRevision,2);assert.equal((await journal.readPhoneWiki()).pages.research.sections.About,'Notes');
  }finally{await rm(root,{recursive:true,force:true});}
 });
+
+test('sequence correlation is stored-only metadata and exposes exact observed records without retry authority',async()=>{
+ const {previewWikiPayload}=await import('../chat/product-journal.mjs');const {createHash}=await import('node:crypto');
+ const root=await mkdtemp(path.join(tmpdir(),'vivim-sequence-proof-'));
+ try{const journal=createProductJournal({dataRoot:root,seedState:{chat:[]},seedWiki:{revision:0,pages:{}}});
+ const a={kind:'wiki-structure',actor:'owner-browser',schemaVersion:1,expectedRevision:0,edit:{action:'create-page',page:'research'}},b={kind:'wiki-edit',actor:'owner-browser',schemaVersion:1,expectedRevision:1,edit:{action:'set-section',page:'research',section:'About',content:'Notes'}};
+ const binding={planId:'ctl-0123456789abcdef',planDigest:'a'.repeat(64)},before=await journal.readPhoneWiki(),projected=previewWikiPayload(previewWikiPayload(before,a),b),digest=createHash('sha256').update(JSON.stringify(projected.pages)).digest('hex');
+ await assert.rejects(journal.append({...a,sequenceBinding:{...binding,step:1,total:2}}),/Invalid journal envelope/);
+ await journal.appendWikiSequence([a,b],digest,binding);const observed=await journal.readWikiSequenceEvidence(binding.planId,binding.planDigest,[a,b]);assert.equal(observed.state,'all-records-observed');assert.equal(observed.observedSteps,2);assert.equal(observed.retryAuthorized,false);
+ await assert.rejects(journal.readWikiSequenceEvidence(binding.planId,'b'.repeat(64),[a,b]),/Sequence evidence mismatch/);
+ await assert.rejects(journal.appendWikiSequence([a,b],digest,binding),/already has committed records/);
+ }finally{await rm(root,{recursive:true,force:true});}
+});

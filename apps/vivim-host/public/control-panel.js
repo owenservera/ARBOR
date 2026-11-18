@@ -154,6 +154,7 @@
     box.append(element('p', 'text-control-note', 'Plan: ' + record.planId));
     if (record.state === 'uncertain') box.append(element('p', 'text-control-note warning',
       'The effect may have happened. No automatic retry. Inspect the PC before taking another action.'));
+    if(record.recovery){const e=record.recovery;box.append(element('h4','','Committed sequence evidence'),element('p','text-control-note',e.state==='unavailable'?'Journal evidence unavailable; do not retry.':e.observedSteps+' of '+e.expectedSteps+' records observed · '+e.state+' · no retry authority'),element('pre','text-control-data',JSON.stringify(e,null,2)));}
     if (record.receipt) appendReceipt(box, record.receipt);
     else box.append(element('p', 'text-control-note', 'No completed receipt exists for this plan.'));
     result.replaceChildren(box);
@@ -164,6 +165,7 @@
       ' · ' + (receipt.at || 'time unknown')));
     if (receipt.error) box.append(element('p', 'text-control-note warning', receipt.error.code + ': ' + receipt.error.message));
     if (receipt.result !== undefined) box.append(element('pre', 'text-control-data', JSON.stringify(receipt.result, null, 2)));
+    if(receipt.actionId==='program.write_wiki')box.append(button('Inspect committed sequence evidence',()=>void inspect(receipt.planId)));
     if (receipt.status === 'applied' && ['wiki.section.edit','wiki.capture.save'].includes(receipt.actionId) &&
         Number.isSafeInteger(receipt.result?.wikiRevision) &&
         typeof receipt.result?.page === 'string' && typeof receipt.result?.section === 'string') {

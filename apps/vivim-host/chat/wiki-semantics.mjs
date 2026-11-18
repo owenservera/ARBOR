@@ -44,7 +44,7 @@ export function projectWikiStructure(records, wiki) {
     const item={source:'host-product-journal',kind:'committed-wiki-structure',
       entryId:e.entryId,sequence:e.sequence,receivedAt:e.receivedAt,
       previousWikiRevision:e.expectedRevision,wikiRevision:revision,
-      edit:{...edit},contentDigest:digest(edit),
+      edit:{...edit},contentDigest:digest(edit),...(e.sequenceBinding?{sequenceBinding:e.sequenceBinding}:{}),
       status:edit.action==='link-pages'?'current-link':
         edit.action==='create-page'?'current-page':'historical-order-change'};
     items.push(item);
@@ -215,6 +215,7 @@ export function projectWikiSemantics(context) {
     const change = item.wikiLink && nodes.get(journalId(item.wikiLink.entryId));
     if (change?.kind === 'wiki-change' && change.source.wikiRevision === item.wikiLink.wikiRevision)
       link(id, 'confirmed-change', change.id, 'executed-effect', source);
+    for(const step of item.sequenceLinks??[]){const target=nodes.get(journalId(step.entryId));if(target&&['wiki-change','wiki-structure-change'].includes(target.kind)&&target.source.wikiRevision===step.wikiRevision)link(id,'confirmed-change',target.id,'executed-effect',source);}
     const structural=item.structureLink&&nodes.get(journalId(item.structureLink.entryId));
     if(structural?.kind==='wiki-structure-change'&&structural.source.wikiRevision===item.structureLink.wikiRevision)
       link(id,'confirmed-change',structural.id,'executed-effect',source);

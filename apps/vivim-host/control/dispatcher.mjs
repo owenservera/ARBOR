@@ -253,7 +253,7 @@ function createExecutors({ runtime, planner, lexicon, devices, productJournal, p
       readAction:(plan,wiki)=>plan.actionId==='wiki.pages.list'?readWikiPages(wiki):readWikiSection(wiki,plan.args)}),
     [WIKI_WRITE_PROGRAM_ACTION]:async (_args,ctx)=>{
       const bound=ctx.wikiBinding;if(!bound||!productJournal?.appendWikiSequence)throw fail('CONTROL_WIKI_NOT_READY');
-      const observed=await productJournal.appendWikiSequence(bound.steps.map(s=>s.payload),bound.pagesDigest);
+      const observed=await productJournal.appendWikiSequence(bound.steps.map(s=>s.payload),bound.pagesDigest,{planId:ctx.planId,planDigest:ctx.planDigest});
       if(observed.wikiRevision!==bound.finalRevision||observed.entries.length!==bound.steps.length||observed.pagesDigest!==bound.pagesDigest)throw fail('CONTROL_WIKI_READBACK_MISMATCH');
       return {...observed,schema:'vivim.wiki-change-result/1',nativeProgramDigest:bound.nativeProgramDigest,sequenceVerified:true};
     },
@@ -756,7 +756,7 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
             ? runtime.applyUiProposal({proposal:rec.plan.visualProposal,surface:approvedVisual.current.surface,
                 approvedRefs:[],requestId:'utc-'+planId,actor:rec.plan.actor,approvalBinding:approvedVisual.meaning})
             : executors[rec.plan.actionId](rec.plan.args,
-                { requestId: 'utc-' + planId, planId, wikiBinding: rec.plan.wikiBinding,ruleBinding:rec.plan.ruleBinding });
+                { requestId: 'utc-' + planId, planId, planDigest:stored, wikiBinding: rec.plan.wikiBinding,ruleBinding:rec.plan.ruleBinding });
         } finally {activeRuleCommit=null;}
         if(approvedVisual){
           const expected={...approvedVisual.current.preview.surface,revision:approvedVisual.meaning.targetRevision+1};
@@ -826,6 +826,15 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
       ...(rec.state === 'uncertain' ? { note: 'Effect was claimed but no receipt was recorded. It will not be retried; inspect locally before deciding again.' } : {}) };
   }
 
+  async function inspectOwnerPlan(planId){
+    const detail=status(planId),rec=journal.get(planId);
+    if(detail.actionId!==WIKI_WRITE_PROGRAM_ACTION||!rec.claimed)return detail;
+    const {planDigest,...body}=rec.plan;
+    if(digest(body)!==planDigest||rec.approval?.planDigest!==planDigest||rec.approval?.actor!=='desktop-owner')throw fail('CONTROL_PLAN_TAMPERED');
+    try{const recovery=await productJournal.readWikiSequenceEvidence(planId,planDigest,rec.plan.wikiBinding.steps.map(s=>s.payload));
+      return {...detail,recovery};}
+    catch{return {...detail,recovery:{schema:'vivim.wiki-sequence-evidence/1',state:'unavailable',retryAuthorized:false}};}
+  }
   return {
     schema: DISPATCHER_SCHEMA,
     describe: () => planner.describe(),
@@ -838,6 +847,6 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
         rules:entries.map(r=>({id:r.id, revision:r.revision, state:r.state, scope:r.scope,
           actionId:r.actionId, catalogVersion:r.catalogVersion}))}; },
     ownerRules:()=>personalSemantics.snapshot(),
-    plan, execute, status, recent: (limit,{source='desktop'}={}) => journal.recent(limit).filter(r=>source!=='mobile'||(!RULE_ACTIONS.has(r.actionId)&&r.actionId!==WIKI_WRITE_PROGRAM_ACTION)),
+    plan, execute, status, inspectOwnerPlan, recent: (limit,{source='desktop'}={}) => journal.recent(limit).filter(r=>source!=='mobile'||(!RULE_ACTIONS.has(r.actionId)&&r.actionId!==WIKI_WRITE_PROGRAM_ACTION)),
   };
 }

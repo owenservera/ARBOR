@@ -320,6 +320,7 @@ test('approved Wiki sequence preflights dependent changes, writes actual records
  const draft=await control.plan({text:'run wiki change sequence:\n'+commands},owner);assert.equal(draft.outcome,'approval_required');assert.equal((await productJournal.readPhoneWiki()).revision,0);
  assert.throws(()=>control.execute({planId:draft.planId,planDigest:draft.planDigest,approval:PHONE}),/CONTROL_DESKTOP_APPROVAL_REQUIRED/);
  const receipt=await control.execute({planId:draft.planId,planDigest:draft.planDigest,approval});assert.equal(receipt.status,'applied');assert.equal(receipt.result.entries.length,2);
+ const inspection=await control.inspectOwnerPlan(draft.planId);assert.equal(inspection.recovery.state,'all-records-observed');assert.equal(inspection.recovery.retryAuthorized,false);
  const wiki=await productJournal.readPhoneWiki();assert.equal(wiki.revision,2);assert.equal(wiki.pages.research.sections.About,'Project notes');assert.equal((await productJournal.readRecords()).length,2);
  assert.equal((await control.execute({planId:draft.planId,planDigest:draft.planDigest,approval})).replayed,true);assert.equal((await productJournal.readRecords()).length,2);
  const stale=await control.plan({actionId:'program.write_wiki',args:{commands:'create wiki page second\nedit wiki section second/About saying Again'}},owner);

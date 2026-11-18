@@ -32,8 +32,8 @@ function validateEnvelope(entry, { stored = false } = {}) {
   const meta = stored ? ['receivedAt', 'entryId', 'sequence'] : [];
   const allowed = {
     'chat-send': [...base, 'text', 'intent', ...meta],
-    'wiki-edit': [...base, 'expectedRevision', 'edit', ...meta],
-    'wiki-structure': [...base, 'expectedRevision', 'edit', ...meta],
+    'wiki-edit': [...base, 'expectedRevision', 'edit', ...meta,...(stored?['sequenceBinding']:[])],
+    'wiki-structure': [...base, 'expectedRevision', 'edit', ...meta,...(stored?['sequenceBinding']:[])],
     'gate-decision': [...base, 'itemId', 'decision', ...meta],
     'feedback-round': [...base, 'round', 'approveAll', 'verdicts', ...meta]
   };
@@ -82,6 +82,10 @@ function validateEnvelope(entry, { stored = false } = {}) {
         typeof (v.id ?? v.itemId) === 'string' && SAFE_ID.test(v.id ?? v.itemId) &&
         ['approve','reject','defer','pass','fail'].includes(v.verdict ?? v.decision)),
       'Invalid bounded feedback round', fault);
+  }
+  if(stored&&entry.sequenceBinding!==undefined){
+    const b=entry.sequenceBinding;
+    requireShape(b&&ownKeys(b,['planId','planDigest','step','total'])&&/^ctl-[a-f0-9]{16}$/.test(b.planId??'')&&/^[a-f0-9]{64}$/.test(b.planDigest??'')&&Number.isSafeInteger(b.total)&&b.total>=2&&b.total<=8&&Number.isSafeInteger(b.step)&&b.step>=1&&b.step<=b.total,'Invalid sequence provenance',503);
   }
   if (stored) {
     requireShape(typeof entry.receivedAt === 'string' && !Number.isNaN(Date.parse(entry.receivedAt)),
@@ -311,6 +315,7 @@ function projectWikiChanges(records, { currentOnly = false } = {}) {
     status: latestBySection.get(JSON.stringify([e.edit.page, e.edit.section])) ===
       e.expectedRevision + 1 ? 'current-section-revision' : 'superseded-section-revision',
     ...(e.edit.action==='capture-note'||e.edit.action==='capture-task'?{captureKind:e.edit.action.slice(8)}:{}),
+    ...(e.sequenceBinding?{sequenceBinding:e.sequenceBinding}:{}),
     relationship: { kind: 'mutated-section', page: e.edit.page, section: e.edit.section }
   }));
   return { total: selected.length, omitted: selected.length - items.length, items };
@@ -391,6 +396,18 @@ export function projectAppliedControlEffects(control, wikiChanges = null, wikiSt
       if(!event)continue;
       structureLink={kind:'committed-wiki-structure',entryId:event.entryId,wikiRevision:event.wikiRevision};
     }
+    let sequenceLinks=null;
+    if(receipt.actionId==='program.write_wiki'){
+      const result=receipt.result,rows=result?.entries;
+      if(result?.schema!=='vivim.wiki-change-result/1'||result.sequenceVerified!==true||!Array.isArray(rows)||rows.length<2||rows.length>8||result.wikiRevision!==result.previousRevision+rows.length)continue;
+      sequenceLinks=rows.flatMap((row,i)=>{
+        const candidates=row.kind==='wiki-edit'?wikiChanges?.items??[]:row.kind==='wiki-structure'?[...(wikiStructure?.items??[]),...(wikiStructure?.links??[])]:[];
+        const match=candidates.find(e=>e.entryId===row.entryId&&e.sequence===row.sequence&&e.wikiRevision===row.wikiRevision&&row.wikiRevision===result.previousRevision+i+1&&e.sequenceBinding?.planId===receipt.planId&&e.sequenceBinding.planDigest===receipt.planDigest&&e.sequenceBinding.step===i+1&&e.sequenceBinding.total===rows.length&&
+           (row.kind==='wiki-edit'?e.relationship.page===row.edit?.page&&e.relationship.section===row.edit?.section&&typeof row.edit?.content==='string'&&createHash('sha256').update(row.edit.content,'utf8').digest('hex')===e.contentDigest:JSON.stringify(row.edit)===JSON.stringify(e.edit)));
+        return match?[{kind:match.kind,entryId:match.entryId,wikiRevision:match.wikiRevision,step:i+1}]:[];
+      });
+      if(!sequenceLinks.length)continue;
+    }
     let visualLink=null;
     if(receipt.actionId==='ui.visual.apply'){
       const result=receipt.result;
@@ -410,12 +427,13 @@ export function projectAppliedControlEffects(control, wikiChanges = null, wikiSt
     seenPlans.add(summary.planId);
     items.push({
       ...(visualLink?{visualLink}:{}),
+      ...(sequenceLinks?{sequenceLinks}:{}),
       ...(wikiLink ? { wikiLink } : {}),
       ...(structureLink ? { structureLink } : {}),
       source: 'host-control-receipt', planId: receipt.planId, planDigest: receipt.planDigest,
       actionId: receipt.actionId, receivedAt: receipt.at, kind: 'executed-effect',
       status: 'historical-applied-receipt',
-      sourceRevision: wikiLink?.wikiRevision ?? structureLink?.wikiRevision ??
+      sourceRevision: wikiLink?.wikiRevision ?? structureLink?.wikiRevision ?? (sequenceLinks?receipt.result.wikiRevision:null) ??
         (Number.isSafeInteger(receipt.result?.revision) && receipt.result.revision >= 0 ? receipt.result.revision : null)
     });
   }
@@ -547,19 +565,20 @@ export function createProductJournal({ dataRoot, seedState, seedWiki }) {
       wikiRevision: wiki.revision, scope: 'wiki-edits-only', total: changes.total, omitted: changes.omitted,
       items: changes.items.map(({ sequence, ...entry }) => entry) } };
   }
-  function appendEntries(payloads,{sequence=false,expectedPagesDigest=null}={}) {
+  function appendEntries(payloads,{sequence=false,expectedPagesDigest=null,sequenceBinding=null}={}) {
     const run = async () => {
       requireShape(Array.isArray(payloads)&&payloads.length>=1&&payloads.length<=8&&
         (!sequence||payloads.length>=2&&payloads.every(p=>['wiki-edit','wiki-structure'].includes(p?.kind))),
         'Invalid Wiki sequence',400);
       const current=await snapshot();
       requireShape(!current.tornTail,'Torn journal tail requires explicit owner repair',503);
+      if(sequenceBinding)requireShape(!current.records.some(e=>e.sequenceBinding?.planId===sequenceBinding.planId),'Sequence already has committed records; inspect before deciding again',409);
       let wiki=current.wiki;
       const entries=[];
       for(const payload of payloads){
         validateEnvelope(payload);
         if(payload.kind==='wiki-edit'||payload.kind==='wiki-structure')wiki=previewWikiPayload(wiki,payload);
-        const entry={...copy(payload),receivedAt:new Date().toISOString(),entryId:randomUUID(),sequence:current.records.length+entries.length+1};
+        const entry={...copy(payload),receivedAt:new Date().toISOString(),entryId:randomUUID(),sequence:current.records.length+entries.length+1,...(sequenceBinding?{sequenceBinding:{...sequenceBinding,step:entries.length+1,total:payloads.length}}:{})};
         validateEnvelope(entry,{stored:true});entries.push(entry);
       }
       const next=replayProductJournal(seedState,seedWiki,[...current.records,...entries]);
@@ -601,7 +620,18 @@ export function createProductJournal({ dataRoot, seedState, seedWiki }) {
     return pending;
   }
   function append(payload){return appendEntries([payload]);}
-  function appendWikiSequence(payloads,expectedPagesDigest){return appendEntries(copy(payloads),{sequence:true,expectedPagesDigest});}
+  function appendWikiSequence(payloads,expectedPagesDigest,sequenceBinding=null){return appendEntries(copy(payloads),{sequence:true,expectedPagesDigest,sequenceBinding:sequenceBinding?copy(sequenceBinding):null});}
+  async function readWikiSequenceEvidence(planId,planDigest,payloads){
+    const current=await snapshot();const records=current.records.filter(e=>e.sequenceBinding?.planId===planId);
+    const evidence=[];
+    for(const [i,e] of records.entries()){
+      const b=e.sequenceBinding,expected=payloads[i];
+      const {receivedAt,entryId,sequence,sequenceBinding,...payload}=e;
+      requireShape(expected&&b.planDigest===planDigest&&b.step===i+1&&b.total===payloads.length&&JSON.stringify(payload)===JSON.stringify(expected),'Sequence evidence mismatch',503);
+      evidence.push({step:b.step,entryId,sequence,wikiRevision:e.expectedRevision+1,kind:e.kind,edit:e.edit});
+    }
+    return {schema:'vivim.wiki-sequence-evidence/1',authority:'read-only-journal-observation',state:current.tornTail?'torn-tail':evidence.length===payloads.length?'all-records-observed':evidence.length?'prefix-observed':'no-records-observed',expectedSteps:payloads.length,observedSteps:evidence.length,tornTail:current.tornTail,readAtWikiRevision:current.wikiRevision,entries:evidence,retryAuthorized:false};
+  }
   async function rawJournal() { return (await snapshot()).committed; }
-  return { journalPath, readRecords, readProjection, readWikiContext, readNativeKnowledge, readProgramSources, readProgramEvidence, readPhoneWiki, append, appendWikiSequence, rawJournal };
+  return { journalPath, readRecords, readProjection, readWikiContext, readNativeKnowledge, readProgramSources, readProgramEvidence, readPhoneWiki, append, appendWikiSequence, readWikiSequenceEvidence, rawJournal };
 }
