@@ -61,29 +61,6 @@ const MIME = {
   '/fonts/space-grotesk-latin-wght-normal.woff2': 'font/woff2',
   '/fonts/geist-latin-wght-normal.woff2': 'font/woff2',
   '/fonts/jetbrains-mono-latin-wght-normal.woff2': 'font/woff2',
-  '/demo': 'text/html; charset=utf-8',
-  '/demo/demo-shell.html': 'text/html; charset=utf-8',
-  '/demo/controller.js': 'text/javascript; charset=utf-8',
-  '/demo/demo.css': 'text/css; charset=utf-8',
-  '/demo/overlays/overlay-A.js': 'text/javascript; charset=utf-8',
-  '/demo/overlays/overlay-B.js': 'text/javascript; charset=utf-8',
-  '/demo/overlays/overlay-C.js': 'text/javascript; charset=utf-8',
-  '/demo/overlays/overlay-D.js': 'text/javascript; charset=utf-8',
-  '/demo/overlays/overlay-Me.js': 'text/javascript; charset=utf-8',
-  '/demo/overlays/overlay-today.js': 'text/javascript; charset=utf-8',
-  '/demo/overlays/overlay-talk.js': 'text/javascript; charset=utf-8',
-  '/demo/fixture/index.json': 'application/json; charset=utf-8',
-  '/demo/fixture/tab-today.json': 'application/json; charset=utf-8',
-  '/demo/fixture/tab-talk.json': 'application/json; charset=utf-8',
-  '/demo/fixture/tab-build.json': 'application/json; charset=utf-8',
-  '/demo/fixture/tab-build-a04.json': 'application/json; charset=utf-8',
-  '/demo/fixture/tab-build-verify.json': 'application/json; charset=utf-8',
-  '/demo/fixture/tab-world.json': 'application/json; charset=utf-8',
-  '/demo/fixture/tab-me.json': 'application/json; charset=utf-8',
-  '/demo/fixture/tab-control.json': 'application/json; charset=utf-8',
-  '/demo/fixture/tab-world-a02.json': 'application/json; charset=utf-8',
-  '/demo/feedback/inbox.json': 'application/json; charset=utf-8',
-  '/demo/journal.jsonl': 'application/jsonl; charset=utf-8',
   '/chat': 'text/html; charset=utf-8',
   '/wiki': 'text/html; charset=utf-8',
   '/chat.js': 'text/javascript; charset=utf-8',
@@ -106,29 +83,6 @@ const ASSETS = {
   '/fonts/space-grotesk-latin-wght-normal.woff2': 'space-grotesk-latin-wght-normal.woff2',
   '/fonts/geist-latin-wght-normal.woff2': 'geist-latin-wght-normal.woff2',
   '/fonts/jetbrains-mono-latin-wght-normal.woff2': 'jetbrains-mono-latin-wght-normal.woff2',
-  '/demo': 'demo/demo-shell.html',
-  '/demo/demo-shell.html': 'demo/demo-shell.html',
-  '/demo/controller.js': 'demo/controller.js',
-  '/demo/demo.css': 'demo/demo.css',
-  '/demo/overlays/overlay-A.js': 'demo/overlays/overlay-A.js',
-  '/demo/overlays/overlay-B.js': 'demo/overlays/overlay-B.js',
-  '/demo/overlays/overlay-C.js': 'demo/overlays/overlay-C.js',
-  '/demo/overlays/overlay-D.js': 'demo/overlays/overlay-D.js',
-  '/demo/overlays/overlay-Me.js': 'demo/overlays/overlay-Me.js',
-  '/demo/overlays/overlay-today.js': 'demo/overlays/overlay-today.js',
-  '/demo/overlays/overlay-talk.js': 'demo/overlays/overlay-talk.js',
-  '/demo/fixture/index.json': 'demo/fixture/index.json',
-  '/demo/fixture/tab-today.json': 'demo/fixture/tab-today.json',
-  '/demo/fixture/tab-talk.json': 'demo/fixture/tab-talk.json',
-  '/demo/fixture/tab-build.json': 'demo/fixture/tab-build.json',
-  '/demo/fixture/tab-build-a04.json': 'demo/fixture/tab-build-a04.json',
-  '/demo/fixture/tab-build-verify.json': 'demo/fixture/tab-build-verify.json',
-  '/demo/fixture/tab-world.json': 'demo/fixture/tab-world.json',
-  '/demo/fixture/tab-me.json': 'demo/fixture/tab-me.json',
-  '/demo/fixture/tab-control.json': 'demo/fixture/tab-control.json',
-  '/demo/fixture/tab-world-a02.json': 'demo/fixture/tab-world-a02.json',
-  '/demo/feedback/inbox.json': 'demo/feedback/inbox.json',
-  '/demo/journal.jsonl': 'demo/journal.jsonl',
   '/chat': 'pages/chat.html',
   '/wiki': 'pages/wiki.html',
   '/chat.js': 'pages/chat.js',
@@ -231,13 +185,8 @@ export function hostSnapshot({ dataRoot, now = () => new Date().toISOString(), j
 }
 
 export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path.join(here, 'public'), bootstrap = null, ownerToken = null, directPhone = null, worker = null, studioUrl = null, studioToken = null, onboarding = null, autoPump = false, developmentSources = null } = {}) {
-  // Product mutations live in the Host data directory, never in committed public/demo assets.
-  // The original seed documents are read-only; one bounded append journal projects chat and Wiki.
-  const productJournal = createProductJournal({
-    dataRoot,
-    seedState: JSON.parse(readFileSync(path.join(here, 'data', 'demo-baseline', 'state.json'), 'utf8')),
-    seedWiki: JSON.parse(readFileSync(path.join(here, 'data', 'demo-baseline', 'wiki.json'), 'utf8'))
-  });
+  // Owner-local initialization preserves existing journal replay; new workspaces are empty.
+  const productJournal = createProductJournal({ dataRoot });
   let runtime = bootstrap;
   let token = ownerToken;
   const runtimeFor = () => {
@@ -390,9 +339,13 @@ export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path
       await handleOnboarding(req, res, pathname, apk, pairing, onboardingService, enrollment, host, tokenFor, dataRoot);
       return;
     }
-    // One dataRoot-private Host journal for product and demo observations.
+    // Retired development surfaces have no static asset or mutation fallback.
+    if (pathname === '/demo' || pathname.startsWith('/demo/') || pathname === '/api/roadmap') {
+      sendJson(res, 404, { code: 'NOT_FOUND' }); return;
+    }
+    // The one product journal records chat and authorized Wiki edits.
     // A declared actor / loopback Origin is NOT an owner capability.
-    if ((pathname === '/demo/feedback' || pathname === '/demo/mutate' || pathname === '/api/mutate') && req.method === 'POST') {
+    if (pathname === '/api/mutate' && req.method === 'POST') {
       let payload;
       try { payload = await readJsonBody(req, 4096); }
       catch (error) { sendJson(res, error.status ?? 400, { code: 'MUTATION_BODY', error: error.message }); return; }
@@ -405,7 +358,10 @@ export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path
       let entry;
       if (Object.hasOwn(payload, 'kind')) {
         // Journal module validates a strict schema/actor/field allowlist for every kind.
-        if (!['chat-send', 'wiki-edit', 'gate-decision', 'feedback-round'].includes(payload.kind)) {
+        if (['gate-decision', 'feedback-round'].includes(payload.kind)) {
+          sendJson(res, 410, { code: 'LEGACY_FEEDBACK_RETIRED' }); return;
+        }
+        if (!['chat-send', 'wiki-edit'].includes(payload.kind)) {
           sendJson(res, 400, { code: 'MUTATION_KIND' }); return;
         }
         if (Object.hasOwn(payload, 'receivedAt') || Object.hasOwn(payload, 'entryId') ||
@@ -429,19 +385,10 @@ export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path
               { code: error?.code ?? 'CONTROL_INVALID', error: 'Chat interpretation failed' }); return;
           }
         }
-      } else if (pathname === '/demo/feedback' &&
-          Object.keys(payload).every(k => ['round','approveAll','verdicts','receivedAt'].includes(k))) {
-        // Legacy demo feedback remains a typed, bounded, non-executing observation.
-        entry = { kind: 'feedback-round', schemaVersion: 1, actor: 'loop-agent',
-          round: payload.round === undefined ? String(Date.now()) : payload.round,
-          approveAll: payload.approveAll === true, verdicts: payload.verdicts ?? [] };
       } else {
         sendJson(res, 400, { code: 'MUTATION_ENVELOPE' }); return;
       }
-      const claimedApproval = entry.kind === 'feedback-round' &&
-        (entry.approveAll === true || (Array.isArray(entry.verdicts) && entry.verdicts.some(v =>
-          ['approve', 'pass'].includes(v?.verdict ?? v?.decision))));
-      if (entry.kind === 'wiki-edit' || entry.kind === 'gate-decision' || claimedApproval) {
+      if (entry.kind === 'wiki-edit') {
         // Both browser CSRF and the Host's EXISTING owner capability are required.
         // For an owner-browser session, the HttpOnly cookie + x-vivim-ui-csrf
         // must match the same session minted by /api/host/control/ui-exchange.
@@ -542,27 +489,18 @@ export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path
       }
       return;
     }
-    // Roadmap is a read-through; only the existing keeper edits the machine roadmap.
-    if (pathname === '/api/roadmap') {
-      try {
-        const body = await readFile(path.join(REPO_ROOT, 'docs', 'product', 'roadmap', 'roadmap.v1.json'), 'utf8');
-        JSON.parse(body);
-        res.setHeader('content-type', 'application/json; charset=utf-8');
-        res.writeHead(200); res.end(req.method === 'HEAD' ? undefined : body);
-      } catch (error) {
-        sendJson(res, error?.code === 'ENOENT' ? 404 : 502, { error: 'Roadmap read-through failed' });
-      }
-      return;
-    }
     // Human and machine reads share exactly the journal that POST /api/mutate appends.
-    if (pathname === '/api/journal' || pathname === '/demo/journal.jsonl') {
+    if (pathname === '/api/journal') {
+      const format = new URL(req.url, 'http://localhost').searchParams.get('format');
+      if (format !== null && format !== 'json' && format !== 'jsonl') {
+        sendJson(res, 400, { code: 'JOURNAL_FORMAT_INVALID' }); return;
+      }
       try {
-        const body = pathname === '/api/journal'
-          ? JSON.stringify(await productJournal.readRecords())
-          : await productJournal.rawJournal();
-        res.setHeader('content-type', pathname === '/api/journal'
-          ? 'application/json; charset=utf-8'
-          : 'application/jsonl; charset=utf-8');
+        const raw = format === 'jsonl';
+        const body = raw ? await productJournal.rawJournal() : JSON.stringify(await productJournal.readRecords());
+        res.setHeader('content-type', raw
+          ? 'application/jsonl; charset=utf-8'
+          : 'application/json; charset=utf-8');
         res.writeHead(200); res.end(req.method === 'HEAD' ? undefined : body);
       } catch (error) {
         sendJson(res, Number.isInteger(error?.status) ? error.status : 500,

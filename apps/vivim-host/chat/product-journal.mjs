@@ -4,6 +4,7 @@ import { mkdir, readFile, lstat, open } from 'node:fs/promises';
 import { randomUUID, createHash } from 'node:crypto';
 import { projectWikiSemantics, resolveSemanticWikiTarget } from './wiki-semantics.mjs';
 import path from 'node:path';
+import { loadProductBaseline } from './product-baseline.mjs';
 
 const MAX_JOURNAL_BYTES = 8 * 1024 * 1024;
 const MAX_ENTRY_BYTES = 4096;
@@ -25,6 +26,8 @@ function byteSize(value) { return Buffer.byteLength(JSON.stringify(value), 'utf8
 
 function validateEnvelope(entry, { stored = false } = {}) {
   const fault = stored ? 503 : 400;
+  if (!stored && ['gate-decision', 'feedback-round'].includes(entry?.kind))
+    throw invalid('Legacy feedback is read-only', 410);
   const base = ['kind', 'actor', 'schemaVersion'];
   const meta = stored ? ['receivedAt', 'entryId', 'sequence'] : [];
   const allowed = {
@@ -226,6 +229,10 @@ export function projectAppliedControlEffects(control, wikiChanges = null) {
 }
 
 export function createProductJournal({ dataRoot, seedState, seedWiki }) {
+  if (seedState === undefined && seedWiki === undefined)
+    ({ seedState, seedWiki } = loadProductBaseline(dataRoot));
+  else if (!seedState || !seedWiki)
+    throw new TypeError('Both explicit replay fixtures are required');
   const journalPath = path.resolve(dataRoot, 'product-state', 'journal.jsonl');
   const directory = path.dirname(journalPath);
   async function snapshot() {
