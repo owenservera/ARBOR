@@ -116,7 +116,7 @@ function argsFrom(action, interp, text) {
     if (hint.match) { const m = String(text).match(new RegExp('(?:^|\\s)(' + hint.match + ')(?=$|\\s|[.!?])', 'i')); v = m ? m[1] : null; }
     else if (hint.kind === 'rest' || hint.kind === 'text') {
       v = hint.kind === 'text' && Array.isArray(hint.preps) && hint.preps.length
-        ? literalAfterPrep(text, hint.preps) ?? rawSpan(text, interp, key, action) ?? v
+        ? literalAfterPrep(text, hint.preps) // absent separator => incomplete, never guess
         : rawSpan(text, interp, key, action) ?? v;
     }
     if (typeof v === 'string') {
