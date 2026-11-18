@@ -87,10 +87,10 @@ test('Build rejects fake success receipts and does not resend an uncertain Host 
   assert.match(phone, /Command pending or uncertain; not resent/);
 });
 
-test('Direct PWA serves the canonical engine dependency graph from fixed same-origin files', () => {
+test('Direct Host serves canonical VEC assets without making cloud offline shell depend on them', () => {
   const host = readFileSync(new URL('../../vivim-host/direct-phone.mjs', import.meta.url), 'utf8');
   const sw = readFileSync(new URL('../sw.js', import.meta.url), 'utf8');
   assert.match(host, /vec-engines\//);
   for (const name of ['compiler','registry','catalog','validators','enum-choices'])
-    assert.ok(sw.includes("'vec-engines/" + name + ".mjs'"));
+    assert.equal(sw.includes("'vec-engines/" + name + ".mjs'"), false);
 });
