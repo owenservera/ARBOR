@@ -21,7 +21,7 @@ function fixture(t) {
   const productJournal = createProductJournal({ dataRoot, seedState, seedWiki });
   const control = createControlDispatcher({ dataRoot, runtime, productJournal });
   t.after(() => { runtime.close(); rmSync(dataRoot, { recursive: true, force: true }); });
-  return { dataRoot, control, productJournal };
+  return { dataRoot, control, productJournal, runtime };
 }
 const edit = content => ({ actionId: 'wiki.section.edit', args: { target: 'main/howto', content } });
 const apply = (control, plan, approval = DESKTOP) => control.execute({
@@ -63,6 +63,32 @@ test('natural-language Wiki edit is resolved to a typed, revision-bound Host pla
   assert.equal(receipt.status, 'applied');
   assert.equal(receipt.result.content, 'Updated from VIVIM');
   assert.equal((await productJournal.readProjection()).wiki.pages.Main.sections.HowTo, 'Updated from VIVIM');
+});
+
+test('post-append Wiki readback mismatch is uncertain and never re-appends', async t => {
+  const { dataRoot, runtime, productJournal } = fixture(t);
+  let reads = 0;
+  const observed = {
+    append: entry => productJournal.append(entry),
+    readProjection: async () => {
+      const snapshot = await productJournal.readProjection();
+      // The first read binds the plan, the second checks its preconditions.
+      // Simulate an inconsistent third read, AFTER the durable Host append.
+      if (++reads >= 3) return {
+        ...snapshot, wiki: { ...snapshot.wiki, revision: snapshot.wiki.revision + 1 }
+      };
+      return snapshot;
+    }
+  };
+  const control = createControlDispatcher({ dataRoot, runtime, productJournal: observed });
+  const plan = await control.plan(edit('Committed once'), { source: 'desktop' });
+  const receipt = await apply(control, plan);
+  assert.equal(receipt.status, 'uncertain', 'readback cannot be misreported as success');
+  assert.equal(receipt.error.code, 'CONTROL_WIKI_READBACK_MISMATCH');
+  assert.equal((await productJournal.readProjection()).wiki.pages.Main.sections.HowTo, 'Committed once');
+  assert.equal((await productJournal.readRecords()).length, 1);
+  assert.equal((await apply(control, plan)).replayed, true);
+  assert.equal((await productJournal.readRecords()).length, 1, 'reconciliation never repeats a mutation');
 });
 
 test('stale approval never overwrites newer section content', async t => {
