@@ -45,7 +45,7 @@ import { fileURLToPath } from 'node:url';
 const testDir = typeof __dirname === 'string'
   ? __dirname
   : path.dirname(fileURLToPath(import.meta.url));
-const demoDir = path.resolve(testDir, '..', 'public', 'demo');
+const demoDir = path.resolve(testDir, '..', '..', '..', 'demo', 'host-legacy');
 const publicDir = path.resolve(testDir, '..', 'public');
 
 const tokensCss = readFileSync(path.join(publicDir, 'vivim-tokens.css'), 'utf8');
@@ -57,7 +57,7 @@ const hexColor = /#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8
 
 function readDemoCss() {
   const p = path.join(demoDir, 'demo.css');
-  assert.ok(existsSync(p), 'public/demo/demo.css is missing — the demo shell stylesheet must exist (C10)');
+  assert.ok(existsSync(p), 'demo/host-legacy/demo.css is missing — the demo shell stylesheet must exist (C10)');
   return readFileSync(p, 'utf8');
 }
 
