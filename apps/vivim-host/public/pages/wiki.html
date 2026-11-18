@@ -51,8 +51,15 @@
     <div id="roadmap-view"><p class="empty">Loading queue…</p></div>
   </section>
   <section class="block surface-panel" aria-labelledby="surface-heading">
-    <div class="section-heading"><div><p class="eyebrow">04 / GENERATED SOURCE INDEX</p><h2 id="surface-heading">VLang file surfaces</h2></div><a href="/api/file-surface">Host file-surface source</a></div>
-    <p class="source-meta" id="surface-source">vivim.file-surface/1 · stage-A registry (not live code execution)</p>
+    <div class="section-heading"><div><p class="eyebrow">04 / LIVE SOURCE INDEX</p><h2 id="surface-heading">VLang file surfaces</h2></div><a href="/api/file-surface">Host file-surface source</a></div>
+    <p class="source-meta" id="surface-source">vivim.file-surface/1 · owner-authorized HQ source (read only)</p>
+    <form id="surface-search" class="wiki-command-form">
+      <label for="surface-query">Find a path, symbol, or semantic ID</label>
+      <input id="surface-query" type="search" maxlength="240" placeholder="vivim.command-intent@0.1">
+      <button type="submit">Search source</button>
+    </form>
+    <button id="surface-reindex" type="button">Refresh approved source index</button>
+    <p id="surface-reindex-status" class="source-meta" role="status" aria-live="polite"></p>
     <div id="surface-view"><p class="empty">Loading indexed file surfaces…</p></div>
   </section>
   <section class="block journal-panel" aria-labelledby="journal-heading">
