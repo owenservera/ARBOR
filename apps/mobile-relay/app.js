@@ -3,7 +3,7 @@ import { transport } from './transport.mjs';
 import { mountBuildSurface } from './generative-ui/phone-surface.mjs';
 import { mountBuildCanvas } from './build-canvas.mjs';
 import { createControlClient } from './control-client.mjs';
-import {workspaceBindingData,hasWorkspaceBinding,projectStudioActivity} from './generative-ui/workspace-live-data.mjs';
+import {workspaceBindingData,hasWorkspaceBinding,projectStudioActivity,readPersonalCaptures} from './generative-ui/workspace-live-data.mjs';
 import { resolveBuildRequest, buildSurfaceFromBootstrap, themeDraftCandidates, templateDraftCandidates } from './build-composer.mjs';
 import { mountWelcome } from './welcome.mjs';
 import { parsePairFragment, redeemDevicePairToken } from './pairing-link.mjs';
@@ -697,20 +697,13 @@ function renderWiki() {
   if (!S.wiki) scroll.append(el('p', 'ux-empty', S.wikiError));
   else {
     const pageCards=new Map(),captures=new Map();
-    const captureProjection=S.wiki.personalCaptures;
-    if(captureProjection?.schema==='vivim.personal-captures/1'&&captureProjection.authority==='committed-wiki-read-only'&&
-      captureProjection.wikiRevision===S.wiki.revision&&Array.isArray(captureProjection.items)&&captureProjection.items.length<=256){
-      for(const row of captureProjection.items){
-        if(!row||!['note','task'].includes(row.kind)||!Object.hasOwn(S.wiki.pages,row.page)||
-          typeof row.entryId!=='string'||!/^[a-f0-9-]{36}$/.test(row.entryId)||
-          !Number.isSafeInteger(row.createdRevision)||row.createdRevision>S.wiki.revision||row.createdRevision<1||
-          row.section!==(row.kind==='task'?'Task':'Note')||typeof S.wiki.pages[row.page]?.sections?.[row.section]!=='string')continue;
-        if(row.kind==='task'&&row.status!==S.wiki.pages[row.page].sections.Status)continue;
-        captures.set(row.page,row);
-      }
+    const captureProjection=readPersonalCaptures(S.wiki);
+    if(captureProjection){
+      for(const row of captureProjection.items)captures.set(row.page,row);
       const summary=el('section','ux-card');summary.append(el('h3','ux-card-title','Personal captures'));
-      const tasks=[...captures.values()].filter(row=>row.kind==='task'),notes=[...captures.values()].filter(row=>row.kind==='note');
-      summary.append(el('p','ux-note',notes.length+' notes · '+tasks.filter(row=>row.status==='Open').length+' open tasks · '+tasks.filter(row=>row.status==='Done').length+' completed tasks'));
+      const counts=captureProjection.counts;
+      summary.append(el('p','ux-note',counts.notes+' notes · '+counts.openTasks+' open tasks · '+counts.doneTasks+' completed tasks'+(counts.unknownTasks?' · '+counts.unknownTasks+' unknown status':'')));
+      if(captureProjection.omitted)summary.append(el('p','ux-note','Showing '+captureProjection.items.length+' of '+captureProjection.total+' capture shortcuts; all Wiki pages remain below.'));
       for(const row of captures.values()){
         const content=S.wiki.pages[row.page].sections[row.section].replace(/\s+/g,' ').slice(0,90);
         const open=el('button','btn sm ux-secondary',(row.kind==='task'?row.status+' task':'Note')+' · '+content);open.type='button';

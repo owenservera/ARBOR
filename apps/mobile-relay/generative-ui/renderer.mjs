@@ -106,10 +106,10 @@ export function renderSurface(mount,surface,{audience='phone',approvedRefs=[],on
         if(planNode&&(n.children.length!==0||planNode.children.length!==p.items.length))invalid('TierFlow structured item count mismatch');
         if(n.liveBinding){
           const view=liveData?.[n.liveBinding];
-          const available=view?.state==='source-backed'&&Number.isSafeInteger(view.revision)&&Array.isArray(view.items)&&view.items.length<=16;
-          el.appendChild(element('p','detail',available?'Read-only live source · revision '+view.revision+' · '+view.total+' matching records':'Read-only binding: '+n.liveBinding+' · source unavailable or preview only'));
+          const available=view?.state==='source-backed'&&Number.isSafeInteger(view.revision)&&Number.isSafeInteger(view.total)&&Array.isArray(view.items)&&view.items.length<=16&&view.total>=view.items.length;
+          el.appendChild(element('p','detail',available?'Read-only live source · revision '+view.revision+' · '+view.items.length+' shown / '+view.total+' matching records':'Read-only binding: '+n.liveBinding+' · source unavailable or preview only'));
           if(available){for(const row of view.items){const li=element('li','item',String(row.label).slice(0,80));li.appendChild(element('span','detail',String(row.detail).slice(0,240)));list.appendChild(li);}
-            if(!view.items.length)el.appendChild(element('p','detail','No matching source records.'));
+            if(!view.items.length)el.appendChild(element('p','detail',view.total?'Matching records exist outside this bounded view.':'No matching source records.'));
           }
         }
         for(const [i,item] of p.items.entries()){

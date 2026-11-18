@@ -7,26 +7,52 @@ const text=(s,n)=>typeof s==='string'?s.replace(/[\x00-\x1f\x7f-\x9f]/g,' ').rep
 const unavailable=()=>({state:'unavailable',items:[]});
 const label=Object.freeze({reply_observed:'Reply observed',delivered:'Delivery acknowledged',
   uncertain:'Send uncertain',failed_before_send:'Failed before send',failed_after_send:'Possible send — review required'});
-export function projectOpenTasks(wiki){
+// The same checked capture projection feeds Wiki and all workspace collections.
+export function readPersonalCaptures(wiki){
  const capture=wiki?.personalCaptures;
  if(capture?.schema!=='vivim.personal-captures/1'||capture.authority!=='committed-wiki-read-only'||
     !uint(wiki.revision)||capture.wikiRevision!==wiki.revision||!Array.isArray(capture.items)||capture.items.length>256||
-    !wiki.pages||typeof wiki.pages!=='object')return unavailable();
- const seen=new Set(),rows=[];
+    !wiki.pages||typeof wiki.pages!=='object')return null;
+ const seen=new Set(),entries=new Set(),counts={notes:0,openTasks:0,doneTasks:0,unknownTasks:0};
  for(const row of capture.items){
    if(!row||!['task','note'].includes(row.kind)||typeof row.page!=='string'||seen.has(row.page)||
-      !UUID.test(row.entryId??'')||!uint(row.createdRevision)||!row.createdRevision||row.createdRevision>wiki.revision||
-      !Object.hasOwn(wiki.pages,row.page))return unavailable();
-   seen.add(row.page);
-   if(row.kind!=='task')continue;
+      !UUID.test(row.entryId??'')||entries.has(row.entryId)||!uint(row.createdRevision)||!row.createdRevision||row.createdRevision>wiki.revision||
+      !Object.hasOwn(wiki.pages,row.page))return null;
+   seen.add(row.page);entries.add(row.entryId);
    const sections=wiki.pages[row.page]?.sections;
-   if(!/^task-[a-f0-9]{32}$/.test(row.page)||row.section!=='Task'||
-      !sections||typeof sections.Task!=='string'||!['Open','Done'].includes(row.status)||sections.Status!==row.status)return unavailable();
-   if(row.status==='Open')rows.push({label:text(sections.Task,80)||'Open task',detail:'Open · '+row.page+' · created rev '+row.createdRevision,
-      sourceRef:row.entryId});
+   if(row.kind==='note'){
+     if(!/^note-[a-f0-9]{32}$/.test(row.page)||row.section!=='Note'||typeof sections?.Note!=='string')return null;
+     counts.notes++;continue;
+   }
+   const status=['Open','Done'].includes(sections?.Status)?sections.Status:'Unknown';
+   if(!/^task-[a-f0-9]{32}$/.test(row.page)||row.section!=='Task'||typeof sections?.Task!=='string'||row.status!==status)return null;
+   counts[status==='Open'?'openTasks':status==='Done'?'doneTasks':'unknownTasks']++;
  }
- return {state:'source-backed',revision:wiki.revision,total:rows.length,items:rows.slice(0,16)};
+ // Legacy complete projections remain compatible. New partial views must account for
+ // every omitted row with explicit Host counts; never infer zero from an incomplete window.
+ const total=capture.total??capture.items.length,omitted=capture.omitted??0;
+ if(!uint(total)||!uint(omitted)||total!==capture.items.length+omitted)return null;
+ let full=counts;
+ if(capture.counts!==undefined){
+   const claimed=capture.counts,keys=Object.keys(counts);
+   if(!claimed||typeof claimed!=='object'||Object.keys(claimed).length!==keys.length||
+      keys.some(k=>!uint(claimed[k])||claimed[k]<counts[k])||
+      keys.reduce((sum,k)=>sum+claimed[k],0)!==total)return null;
+   full=Object.fromEntries(keys.map(k=>[k,claimed[k]]));
+ }else if(omitted!==0)return null;
+ return {items:[...capture.items].sort((a,b)=>b.createdRevision-a.createdRevision),counts:full,total,omitted};
 }
+function personalRows(wiki,kind,status=null){
+ const source=readPersonalCaptures(wiki);if(!source)return unavailable();
+ const rows=source.items.filter(row=>row.kind===kind&&(status===null||row.status===status)).map(row=>({
+   label:text(wiki.pages[row.page].sections[row.section],80)||(kind==='note'?'Captured note':status+' task'),
+   detail:(kind==='note'?'Committed note':status)+' · '+row.page+' · created rev '+row.createdRevision,sourceRef:row.entryId}));
+ const total=source.counts[kind==='note'?'notes':status==='Open'?'openTasks':'doneTasks'];
+ return {state:'source-backed',revision:wiki.revision,total,items:rows.slice(0,16)};
+}
+export const projectOpenTasks=wiki=>personalRows(wiki,'task','Open');
+export const projectCompletedTasks=wiki=>personalRows(wiki,'task','Done');
+export const projectRecentNotes=wiki=>personalRows(wiki,'note');
 export function projectStudioActivity(outcomes){
  if(outcomes?.schema!=='vivim.studio-outcomes/1'||outcomes.authority!=='read-only-historical'||outcomes.state!=='source-backed'||
    !uint(outcomes.revision)||!uint(outcomes.total)||!Array.isArray(outcomes.items)||outcomes.items.length>16||
@@ -45,21 +71,8 @@ export function projectStudioActivity(outcomes){
  }
  return {state:'source-backed',revision:outcomes.revision,total:outcomes.total,items:rows};
 }
-export function projectRecentNotes(wiki){
- // Reuse the same revision, authority and source-record validation as the task projection.
- if(projectOpenTasks(wiki).state!=='source-backed')return unavailable();
- const rows=[];
- for(const row of wiki.personalCaptures.items){
-   if(row.kind!=='note')continue;
-   const sections=wiki.pages[row.page]?.sections;
-   if(!/^note-[a-f0-9]{32}$/.test(row.page)||row.section!=='Note'||typeof sections?.Note!=='string')return unavailable();
-   rows.push({label:text(sections.Note,80)||'Captured note',detail:'Committed note · '+row.page+' · created rev '+row.createdRevision,sourceRef:row.entryId,createdRevision:row.createdRevision});
- }
- rows.sort((a,b)=>b.createdRevision-a.createdRevision);
- return {state:'source-backed',revision:wiki.revision,total:rows.length,items:rows.slice(0,16).map(({createdRevision,...row})=>row)};
-}
 export function workspaceBindingData({wiki=null,outcomes=null}={}){
- return {'personal.open-tasks':projectOpenTasks(wiki),'personal.recent-notes':projectRecentNotes(wiki),'studio.recent-outcomes':projectStudioActivity(outcomes)};
+ return {'personal.open-tasks':projectOpenTasks(wiki),'personal.completed-tasks':projectCompletedTasks(wiki),'personal.recent-notes':projectRecentNotes(wiki),'studio.recent-outcomes':projectStudioActivity(outcomes)};
 }
 export function hasWorkspaceBinding(surface){
  const walk=n=>!!n&&(!!n.liveBinding||Array.isArray(n.children)&&n.children.some(walk));

@@ -244,8 +244,16 @@ export function projectPersonalCaptures(records,wiki){
     items.push({kind,page:e.edit.page,section:e.edit.section,entryId:e.entryId,createdRevision:e.expectedRevision+1,
       ...(kind==='task'?{status:['Open','Done'].includes(page.sections.Status)?page.sections.Status:'Unknown'}:{})});
   }
+  const counts={notes:0,openTasks:0,doneTasks:0,unknownTasks:0};
+  const category=row=>row.kind==='note'?'notes':row.status==='Open'?'openTasks':row.status==='Done'?'doneTasks':'unknownTasks';
+  const recent=items.slice().reverse();for(const row of recent)counts[category(row)]++;
+  // Bounded UI window, but totals reflect the entire replayed capture history.
+  // Reserve capacity for open tasks and notes rather than let completed history starve either.
+  const selected=new Set([...recent.filter(r=>category(r)==='openTasks').slice(0,128),...recent.filter(r=>category(r)==='notes').slice(0,96)]);
+  for(const row of recent){if(selected.size>=256)break;selected.add(row);}
+  const window=recent.filter(r=>selected.has(r));
   return {schema:'vivim.personal-captures/1',authority:'committed-wiki-read-only',wikiRevision:wiki.revision,
-    total:items.length,items:items.slice().reverse()};
+    total:items.length,omitted:items.length-window.length,counts,items:window};
 }
 
 // Source-identified observations only: user statements are not verified Wiki facts.
@@ -441,12 +449,19 @@ export function createProductJournal({ dataRoot, seedState, seedWiki }) {
       projectWikiContext(current.records, current.wikiRevision, current.wiki);
     // Capture creation is also page provenance, even after its content section is edited.
     // Keep the page identity tied to the original committed journal entry, not a mutable title.
-    context.capturePages=current.records.filter(e=>e.kind==='wiki-edit'&&['capture-note','capture-task'].includes(e.edit.action)&&
+    const capturePages=current.records.filter(e=>e.kind==='wiki-edit'&&['capture-note','capture-task'].includes(e.edit.action)&&
       typeof e.entryId==='string'&&Object.hasOwn(current.wiki.pages,e.edit.page)).map(e=>({
       page:e.edit.page,kind:e.edit.action==='capture-task'?'task':'note',entryId:e.entryId,
       wikiRevision:e.expectedRevision+1,receivedAt:e.receivedAt,
       contentDigest:createHash('sha256').update(e.edit.content,'utf8').digest('hex')}));
     const changes = projectWikiChanges(current.records, { currentOnly: true });
+    // Native adapter accepts a bounded input. Preserve current section owners and linked pages
+    // first, then fill the remainder with recent capture identities; the durable journal is unchanged.
+    const priority=new Set([...changes.items.map(e=>e.relationship.page),...(context.wikiStructure?.links??[]).flatMap(e=>[e.edit.from,e.edit.to])]);
+    const newest=capturePages.slice().reverse();const selected=new Set(newest.filter(e=>priority.has(e.page)).slice(0,256));
+    for(const row of newest){if(selected.size>=256)break;selected.add(row);}
+    context.capturePages=capturePages.filter(e=>selected.has(e));
+    context.capturePagesOmitted=capturePages.length-context.capturePages.length;
     const records = new Map(current.records.filter(e => e.entryId).map(e => [e.entryId, e]));
     return { context, changes: { ...changes, items: changes.items.map(change => {
       const record = records.get(change.entryId);

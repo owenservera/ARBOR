@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {mkdtemp,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
-import {createProductJournal,previewWikiCapture} from '../chat/product-journal.mjs';
+import {createProductJournal,previewWikiCapture,projectPersonalCaptures} from '../chat/product-journal.mjs';
 const input={capture_id:'capture-0001',kind:'task',content:'Call the supplier\nConfirm order'};
 test('reviewed capture is one durable Wiki append, native source record, and cannot overwrite existing page',async()=>{
  const root=await mkdtemp(path.join(tmpdir(),'vivim-capture-'));
@@ -35,4 +35,15 @@ test('reject malformed ids, blank or oversized text before a plan is saved',()=>
  const wiki={revision:0,pages:{}};
  for(const bad of [{...input,capture_id:'../../x'},{...input,kind:'unknown'},{...input,content:'   '},{...input,content:'x'.repeat(1201)}])
    assert.throws(()=>previewWikiCapture(wiki,bad));
+});
+
+test('large capture histories retain exact totals and prioritize open tasks and notes without growing the client window',()=>{
+ const records=[],pages={};for(let i=1;i<=400;i++){
+  const kind=i<50?'task':i<100?'note':'task',page=kind+'-'+i.toString(16).padStart(32,'0'),section=kind==='note'?'Note':'Task';
+  pages[page]={sections:{[section]:'Recorded '+i,...(kind==='task'?{Status:i<50?'Open':'Done'}:{})}};
+  records.push({kind:'wiki-edit',entryId:'00000000-0000-0000-0000-'+String(i).padStart(12,'0'),expectedRevision:i-1,edit:{action:'capture-'+kind,page,section}});
+ }
+ const result=projectPersonalCaptures(records,{revision:400,pages});assert.equal(result.total,400);assert.equal(result.items.length,256);assert.equal(result.omitted,144);
+ assert.deepEqual(result.counts,{notes:50,openTasks:49,doneTasks:301,unknownTasks:0});
+ assert.equal(result.items.filter(r=>r.status==='Open').length,49);assert.equal(result.items.filter(r=>r.kind==='note').length,50);
 });

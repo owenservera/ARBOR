@@ -24,3 +24,8 @@ test('unavailable API and permission race fail closed',async()=>{
  let resolve;class Pending extends Recognition{static available(){return new Promise(r=>resolve=r)}}
  const pending=createLocalDictation({Recognition:Pending});const p=pending.check('en-US');pending.cancel();resolve('available');assert.equal(await p,false);assert.equal(pending.start(),false);
 });
+
+test('overlong recognition is refused instead of silently truncating the reviewed note',async()=>{
+ const texts=[],d=createLocalDictation({Recognition,onText:x=>texts.push(x)});await d.check('en-US');d.start();const r=Recognition.last;
+ r.onresult({results:[Object.assign([{transcript:'x'.repeat(1201)}],{isFinal:true})]});r.onend();assert.equal(d.state(),'error');assert.deepEqual(texts,[]);
+});

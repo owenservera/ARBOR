@@ -24,14 +24,17 @@ export function createLocalDictation({Recognition=globalThis.SpeechRecognition??
     try{r=new Recognition();r.processLocally=true;if(r.processLocally!==true)throw Error('LOCAL_ONLY_UNAVAILABLE');
       r.lang=readyLang;r.continuous=true;r.interimResults=false;r.maxAlternatives=1;
     }catch{report('unavailable');return false;}
-    recognizer=r;const fragments=new Map();let error=false,ending=false;
+    recognizer=r;const fragments=new Map();let error=false;
     function finish(state,detail=''){if(token!==generation||recognizer!==r)return;clearTimer();recognizer=null;readyLang=null;report(state,detail);}
     r.onresult=e=>{
       if(token!==generation||recognizer!==r||error||!canListen())return;
       for(let i=e.resultIndex??0;i<(e.results?.length??0);i++){
-        if(i>=128)break;
+        if(i>=128){error=true;cancel();report('error','Too many recognition fragments; no partial transcript transferred.');return;}
         const row=e.results[i],txt=row?.[0]?.transcript;
-        if(row?.isFinal&&typeof txt==='string')fragments.set(i,txt.trim().slice(0,DICTATION_LIMIT));
+        if(row?.isFinal&&typeof txt==='string'){
+          if(txt.length>DICTATION_LIMIT){error=true;cancel();report('error','Transcript exceeds local limit; no partial transcript transferred.');return;}
+          fragments.set(i,txt.trim());
+        }
       }
       const joined=[...fragments.entries()].sort((a,b)=>a[0]-b[0]).map(x=>x[1]).join(' ').trim();
       if(joined.length>DICTATION_LIMIT){error=true;cancel();report('error','Transcript exceeds local limit; no partial transcript transferred.');}

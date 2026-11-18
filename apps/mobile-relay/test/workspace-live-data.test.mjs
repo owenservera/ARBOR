@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {projectOpenTasks,projectStudioActivity,projectRecentNotes,workspaceBindingData} from '../generative-ui/workspace-live-data.mjs';
+import {projectOpenTasks,projectStudioActivity,projectRecentNotes,projectCompletedTasks,readPersonalCaptures,workspaceBindingData} from '../generative-ui/workspace-live-data.mjs';
 const page='task-'+'a'.repeat(32),task={kind:'task',page,section:'Task',entryId:'00000000-0000-0000-0000-000000000001',createdRevision:1,status:'Open'};
 const wiki={revision:2,pages:{[page]:{sections:{Task:'A real task',Status:'Open'}}},personalCaptures:{
  schema:'vivim.personal-captures/1',authority:'committed-wiki-read-only',wikiRevision:2,items:[task]}};
@@ -28,4 +28,13 @@ test('recent notes read only real capture records in the current authorized Wiki
  assert.equal(workspaceBindingData({wiki:view})['personal.recent-notes'].state,'source-backed');
  assert.equal(workspaceBindingData()['personal.recent-notes'].state,'unavailable');
  view.personalCaptures.items[0].section='Task';assert.equal(projectRecentNotes(view).state,'unavailable');
+});
+
+test('bounded capture counts stay explicit, completed tasks use current status, inconsistent totals refuse',()=>{
+ const done=structuredClone(wiki);done.pages[page].sections.Status='Done';done.personalCaptures.items[0].status='Done';
+ done.personalCaptures.total=300;done.personalCaptures.omitted=299;done.personalCaptures.counts={notes:100,openTasks:99,doneTasks:101,unknownTasks:0};
+ assert.equal(projectOpenTasks(done).total,99);assert.deepEqual(projectOpenTasks(done).items,[]);assert.equal(projectCompletedTasks(done).total,101);
+ assert.equal(projectCompletedTasks(done).items[0].label,'A real task');assert.equal(projectRecentNotes(done).total,100);
+ assert.equal(workspaceBindingData({wiki:done})['personal.completed-tasks'].state,'source-backed');
+ done.personalCaptures.counts.doneTasks=0;assert.equal(readPersonalCaptures(done),null);assert.equal(projectOpenTasks(done).state,'unavailable');
 });
