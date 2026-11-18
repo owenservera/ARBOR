@@ -4,7 +4,7 @@
 // Writes only to the SQLite database it is given.
 import { existsSync, readFileSync } from 'node:fs';
 import { isAbsolute, join, posix, resolve } from 'node:path';import { nowISO, sha256, toPosix } from './util.mjs';
-import { transaction } from './schema.mjs';
+import { transaction, getMeta, setMeta } from './schema.mjs';
 import { discoverFiles } from './walk.mjs';
 import { isSourceLang } from './lang.mjs';
 import {
@@ -14,6 +14,14 @@ import {
   remote as gitRemote,
 } from './git.mjs';
 import { extractSymbols, extractImports, extractAnnotations } from './extract.mjs';
+import { parseAnnotationV2, isVersionedId } from './annotation-v2.mjs';
+import { getSemanticId } from './semantic-registry.mjs';
+import { isSensitiveSourcePath } from './search.mjs';
+
+// The existing v2 scanner is a JS-style lexer, not a universal language parser.
+// Do not treat JSX markup, Python strings, Rust raw strings, etc. as JS comments.
+const supportsV2 = entry => /\.(?:mjs|cjs|js|mts|cts|ts)$/i.test(entry.rel)
+  && (entry.lang === 'javascript' || entry.lang === 'typescript');
 
 const DEFAULT_OPTIONS = {
   force: false,
@@ -313,7 +321,8 @@ export function indexProject({ root, db, project, options = {} }) {
     extraIgnores: opts.ignores,
     ignores: opts.ignores,
     useGit: opts.useGit,
-  }).sort((a, b) => (a.rel < b.rel ? -1 : a.rel > b.rel ? 1 : 0));
+  }).filter(entry => !isSensitiveSourcePath(entry.rel))
+    .sort((a, b) => (a.rel < b.rel ? -1 : a.rel > b.rel ? 1 : 0));
 
   const finalRow = transaction(db, () => {
     // Snapshot before upsertProject overwrites head/branch: a no-op reindex
@@ -327,6 +336,9 @@ export function indexProject({ root, db, project, options = {} }) {
       .get(name) || null;
     const projectRow = upsertProject(db, { name, path: absPath, git });
     const stmts = prepareStatements(db);
+    // Backfill existing database files on the first successful v2 index only.
+    const v2Key = 'annotation_v2:' + projectRow.id + ':' + absPath;
+    const backfillV2 = getMeta(db, v2Key) !== '2';
 
     const existing = new Map();
     for (const row of stmts.filesForProject.all(projectRow.id)) existing.set(row.path, row);
@@ -337,7 +349,8 @@ export function indexProject({ root, db, project, options = {} }) {
       seen.add(entry.rel);
       const prev = existing.get(entry.rel) || null;
 
-      if (!opts.force && prev && prev.size === entry.size && prev.mtime_ms === entry.mtimeMs) {
+      const refreshV2 = backfillV2 && supportsV2(entry);
+      if (!opts.force && !refreshV2 && prev && prev.size === entry.size && prev.mtime_ms === entry.mtimeMs) {
         result.unchanged++;
         continue;
       }
@@ -352,7 +365,7 @@ export function indexProject({ root, db, project, options = {} }) {
       const buffer = Buffer.isBuffer(data) ? data : Buffer.from(String(data), 'utf8');
       const hash = sha256(buffer);
 
-      if (!opts.force && prev && prev.hash === hash) {
+      if (!opts.force && !refreshV2 && prev && prev.hash === hash) {
         stmts.updateStat.run(entry.size, entry.mtimeMs, prev.id);
         result.unchanged++;
         continue;
@@ -371,6 +384,18 @@ export function indexProject({ root, db, project, options = {} }) {
           symbols = extract.symbols(lang, text) || [];
           imports = extract.imports(lang, text) || [];
           annotations = extract.annotations(lang, text) || [];
+          if (supportsV2(entry) && text.includes('@hq:')) {
+            const parsed = parseAnnotationV2(text, {
+              projectId: String(projectRow.id), path: entry.rel, contentHash: hash,
+              registry: { lookup: id => getSemanticId(db, id) },
+            });
+            annotations = [...annotations, ...parsed.records.map(record => ({
+              line: record.line, kind: 'v2:' + record.kind, text: record.value,
+              ref: isVersionedId(record.value) ? record.value : null,
+            }))];
+            // Unknown/deprecated IDs remain observations, not registry writes.
+            // Malformed/secret values are not emitted by the existing parser.
+          }
         } else if (lang === 'markdown') {
           annotations = extract.annotations(lang, text) || [];
         }
@@ -479,6 +504,7 @@ export function indexProject({ root, db, project, options = {} }) {
     // Zero-delta reindex on an unchanged tree: counts already correct,
     // indexed_at stays — nothing happened worth churning derived pages for.
 
+    if (backfillV2 && errors.length === 0) setMeta(db, v2Key, '2');
     return stmts.projectById.get(projectRow.id);
   });
 

@@ -12,7 +12,8 @@ import { closeSync, existsSync, openSync, readSync } from 'node:fs';
 import { isAbsolute, join } from 'node:path';
 import { userTerm } from './nomenclature.mjs';
 import { alignmentForTask } from './vivim.mjs';
-import { findFiles, searchContent, searchSymbols, contentTokens, isNoisyPath, pathTokenMatch } from './search.mjs';
+import { findFiles, searchContent, searchSymbols, searchSemanticReferences, isSensitiveSourcePath,
+  contentTokens, isNoisyPath, pathTokenMatch } from './search.mjs';
 import {
   digestOf, estimateTokens, sha256, toPosix, tokenize,
 } from './util.mjs';
@@ -25,6 +26,8 @@ const ESTIMATOR = 'utf8-bytes/3';
 const MAX_FILE_BYTES = 24 * 1024;
 // Verification needs at least the bytes composeContext was allowed to read.
 const VERIFY_BYTES = 64 * 1024;
+// Semantic candidates verify the whole indexed file, but excerpts retain MAX_FILE_BYTES.
+const SEMANTIC_VERIFY_BYTES = 1_500_001;
 const DOC_LINE_LIMIT = 120;
 const COVERAGE_CHARS = 2500;
 const TOKEN_UNIT = 32;
@@ -54,12 +57,10 @@ const PATH_BONUS_PREFIX = 0.45;
 const TEST_SCORE_DEMOTE = 0.6;
 const PER_TOKEN_CONTENT_HITS = 8;
 
-const REASON_ORDER = ['symbol', 'fts', 'path', 'doc', 'recent'];
+const REASON_ORDER = ['semantic', 'symbol', 'fts', 'path', 'doc', 'recent'];
 
 // Secret material never becomes a candidate, not even as an omission ref.
-const SECRET_NAMES = new Set([
-  'session.json', 'storage-state.json', 'release-profile.json', 'cookies', 'login data',
-]);
+
 
 const LABELS = Object.freeze({
   aperture: userTerm('aperture'),
@@ -95,13 +96,7 @@ function toIso(value) {
 }
 
 function isSecretPath(value) {
-  const posix = toPosix(value);
-  const name = (posix.split('/').pop() || '').trim().toLowerCase();
-  if (!name) return true;
-  if (name.startsWith('.env')) return true;
-  if (name.endsWith('.env')) return true;
-  if (name.endsWith('.keystore')) return true;
-  return SECRET_NAMES.has(name);
+  return !String(value ?? '').trim() || isSensitiveSourcePath(value);
 }
 
 // readPrefix — read at most maxBytes from the start of a file. Returns null on
@@ -204,6 +199,7 @@ function sourceDigest(source) {
     estimatedTokens: source.estimatedTokens,
     score: source.score,
     reason: source.reason,
+    ...(source.contentHash ? { contentHash: source.contentHash, semanticReferences: source.semanticReferences } : {}),
     text: source.text,
   });
 }
@@ -222,6 +218,7 @@ function bundleDigest(bundle) {
     estimatedTokens: source.estimatedTokens,
     score: source.score,
     reason: source.reason,
+    ...(source.contentHash ? { contentHash: source.contentHash, semanticReferences: source.semanticReferences } : {}),
     digest: source.digest,
   }));
   return digestOf({
@@ -312,10 +309,15 @@ function createCollector(db) {
         reasons: new Set(),
         symbolRanges: [],
         symbolHits: [],
+        semanticReferences: [],
       };
       map.set(ref, candidate);
     }
     candidate.reasons.add(reason);
+    if (extra.semantic) {
+      const { snippet, ...reference } = extra.semantic;
+      candidate.semanticReferences.push(reference);
+    }
     if (extra.symbol) {
       const line = Number(extra.symbol.line) || 1;
       const endLine = Number(extra.symbol.end_line) || line;
@@ -429,6 +431,10 @@ function collectRecent(db, projectName, add) {
 function collectCandidates(db, { task, projectName }) {
   const collector = createCollector(db);
   const tokens = tokenize(task).slice(0, TOKEN_QUERIES);
+
+  for (const hit of searchSemanticReferences(db, { query: task, project: projectName, limit: CONTENT_HITS }).results) {
+    collector.add(hit, 'semantic', { semantic: hit });
+  }
 
   try {
     for (const hit of searchContent(db, { query: task, project: projectName, limit: CONTENT_HITS }).results) collector.add(hit, 'fts');
@@ -552,7 +558,12 @@ function prepareCandidates(db, candidates, { task, projectName, nowMs }) {
   const commitDates = newestCommitDates(db, projectName);
 
   for (const candidate of candidates) {
-    const raw = readPrefix(candidate.absPath, MAX_FILE_BYTES);
+    const semantic = candidate.semanticReferences;
+    const raw = readPrefix(candidate.absPath, semantic.length ? SEMANTIC_VERIFY_BYTES : MAX_FILE_BYTES);
+    if (semantic.length && (raw == null || sha256(raw) !== semantic[0].contentHash)) {
+      candidate.unreadable = true;
+      continue;
+    }
     if (raw == null) {
       candidate.unreadable = true;
       continue;
@@ -564,7 +575,17 @@ function prepareCandidates(db, candidates, { task, projectName, nowMs }) {
     }
 
     let window;
-    if (candidate.symbolRanges.length) window = selectSymbolWindow(parts, candidate.symbolRanges);
+    if (semantic.length) {
+      const line = semantic[0].line;
+      window = selectWindow(parts, { start: Math.max(1, line - 2), maxLines: 16 });
+      if (line < window.lines[0] || line > window.lines[1] || Buffer.byteLength(window.text, 'utf8') > MAX_FILE_BYTES) {
+        candidate.unreadable = true;
+        continue;
+      }
+      candidate.contentHash = semantic[0].contentHash;
+      candidate.semanticReferences = semantic.filter(hit => hit.line >= window.lines[0] && hit.line <= window.lines[1]);
+    }
+    else if (candidate.symbolRanges.length) window = selectSymbolWindow(parts, candidate.symbolRanges);
     else if (candidate.kind === 'doc') window = selectWindow(parts, { start: 1, maxLines: DOC_LINE_LIMIT });
     else window = selectWindow(parts, { start: 1 });
 
@@ -600,7 +621,8 @@ function prepareCandidates(db, candidates, { task, projectName, nowMs }) {
       + 0.8 * recency
       + 0.6 * authority
       + 0.5 * proximity
-      + pathBonus;
+      + pathBonus
+      + (semantic.length ? 12 : 0);
     candidate.score = round6(candidate.isTest ? rawScore * TEST_SCORE_DEMOTE : rawScore);
     candidate.digest = sourceDigest(candidate);
   }
@@ -751,6 +773,7 @@ export function composeContext(db, options = {}) {
       estimatedTokens: candidate.estimatedTokens,
       score: candidate.score,
       reason: candidate.reason,
+      ...(candidate.contentHash ? { contentHash: candidate.contentHash, semanticReferences: candidate.semanticReferences } : {}),
       digest: candidate.digest,
       // Local resolution hint for verifyContext; excluded from every digest.
       absPath: candidate.absPath,
@@ -759,6 +782,7 @@ export function composeContext(db, options = {}) {
       ref: candidate.ref,
       lines: candidate.lines,
       sha256: candidate.sha256,
+      ...(candidate.contentHash ? { contentHash: candidate.contentHash, semanticReferences: candidate.semanticReferences } : {}),
     });
     fragments.push(`SOURCE ${header}\n${candidate.text}`);
   }
@@ -856,7 +880,7 @@ export function verifyContext(bundle) {
       currentSources.push(source);
       continue;
     }
-    const raw = readPrefix(absPath, VERIFY_BYTES);
+    const raw = readPrefix(absPath, source.contentHash ? SEMANTIC_VERIFY_BYTES : VERIFY_BYTES);
     if (raw == null) {
       changed.push(String(source?.ref ?? ''));
       currentSources.push(source);
@@ -879,12 +903,14 @@ export function verifyContext(bundle) {
       estimatedTokens: source.estimatedTokens,
       score: source.score,
       reason: source.reason,
+      ...(source.contentHash ? { contentHash: sha256(raw), semanticReferences: source.semanticReferences } : {}),
       text,
     });
     if (currentSha !== source.sha256 || currentDigest !== source.digest) {
       changed.push(String(source.ref ?? ''));
     }
-    currentSources.push({ ...source, sha256: currentSha, digest: currentDigest });
+    currentSources.push({ ...source, sha256: currentSha, digest: currentDigest,
+      ...(source.contentHash ? { contentHash: sha256(raw) } : {}) });
   }
 
   const current = bundleDigest({ ...bundle, sources: currentSources });

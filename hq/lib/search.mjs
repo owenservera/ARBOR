@@ -4,7 +4,80 @@
 // search (FTS5), symbol search and file search. Every function returns a total
 // match count plus a page of results, and every ordering is explicit so the
 // same index always produces the same output.
-import { globToRegExp, toPosix } from './util.mjs';
+import { globToRegExp, toPosix, sha256 } from './util.mjs';
+import { getSemanticId } from './semantic-registry.mjs';
+import { isVersionedId } from './annotation-v2.mjs';
+
+const SEMANTIC_KINDS = ['type', 'capability', 'contract', 'emits', 'consumes', 'action'];
+const SEMANTIC_ROW_LIMIT = 100;
+const SEMANTIC_SOURCE_BYTES = 1_500_000;
+
+export function isSensitiveSourcePath(path) {
+  return toPosix(path).split('/').some(part => {
+    const name = part.trim().toLowerCase();
+    return name.startsWith('.env') || name.endsWith('.env') ||
+      /\.(?:keystore|pem|p12)$/.test(name) ||
+      ['session.json', 'storage-state.json', 'release-profile.json', 'cookies', 'login data'].includes(name);
+  });
+}
+
+function semanticIdsIn(text) {
+  const ids = String(text ?? '').match(/(?<![a-zA-Z0-9._@-])[a-z0-9][a-z0-9._-]*@\d+(?:\.\d+)*(?![a-zA-Z0-9_@-]|\.[a-zA-Z0-9])/g) || [];
+  return [...new Set(ids.filter(isVersionedId))].slice(0, 12);
+}
+
+// Read-only, exact semantic ID lookup over the existing indexed snapshot.
+// No disk reads here: arbor-service's search authority is index-only.
+export function searchSemanticReferences(db, options = {}) {
+  const ids = semanticIdsIn(options.query);
+  const limit = Math.min(SEMANTIC_ROW_LIMIT, toCount(options.limit, 40));
+  if (!ids.length || !limit) return { total: 0, results: [] };
+  const filters = [];
+  const params = [...ids, ...SEMANTIC_KINDS.map(kind => 'v2:' + kind)];
+  if (options.project) { filters.push('lower(p.name) = lower(?)'); params.push(options.project); }
+  if (options.lang) { filters.push('lower(f.lang) = lower(?)'); params.push(options.lang); }
+  if (options.kind) { filters.push('lower(f.kind) = lower(?)'); params.push(options.kind); }
+  const rows = db.prepare(`
+    SELECT a.line, a.kind AS annotation_kind, a.ref AS semantic_id, f.id AS file_id,
+      f.project_id, f.path, f.lang, f.kind, f.hash, p.name AS project
+    FROM annotations a JOIN files f ON f.id=a.file_id AND f.project_id=a.project_id
+    JOIN projects p ON p.id=f.project_id
+    WHERE a.ref IN (${ids.map(() => '?').join(',')})
+      AND a.kind IN (${SEMANTIC_KINDS.map(() => '?').join(',')})
+      AND f.kind='source' AND f.is_generated=0 AND f.size <= ?
+      ${filters.length ? 'AND ' + filters.join(' AND ') : ''}
+    ORDER BY p.name, f.path, a.line, a.kind, a.ref LIMIT ?`)
+    .all(...params.slice(0, ids.length + SEMANTIC_KINDS.length), SEMANTIC_SOURCE_BYTES,
+      ...params.slice(ids.length + SEMANTIC_KINDS.length), SEMANTIC_ROW_LIMIT);
+  const content = db.prepare('SELECT content FROM content_fts WHERE rowid=?');
+  const results = [];
+  let priorFile = null;
+  let parts = null;
+  for (const row of rows) {
+    if (isSensitiveSourcePath(row.path) || !row.hash) continue;
+    if (priorFile !== row.file_id) {
+      priorFile = row.file_id;
+      const source = content.get(row.file_id)?.content;
+      parts = typeof source === 'string' && sha256(source) === row.hash ? source.split(/\r?\n/) : null;
+    }
+    if (!parts || row.line < 1 || row.line > parts.length) continue;
+    const annotationKind = row.annotation_kind.slice(3);
+    const entry = getSemanticId(db, row.semantic_id);
+    const expected = ['emits', 'consumes'].includes(annotationKind) ? ['event', 'type', 'schema'] : [annotationKind];
+    const resolution = !entry ? 'unknown' : !expected.includes(entry.kind) ? 'invalid_kind' : entry.status;
+    const start = Math.max(1, row.line - 2);
+    const end = Math.min(parts.length, row.line + 8);
+    results.push({
+      path: row.path, project: row.project, lang: row.lang, kind: row.kind,
+      fileId: row.file_id, projectId: row.project_id, line: row.line,
+      semanticId: row.semantic_id, annotationKind, schemaVersion: '2',
+      registryStatus: entry?.status ?? null, registryKind: entry?.kind ?? null, resolution,
+      contentHash: row.hash, snapshot: 'indexed', lines: [start, end],
+      snippet: parts.slice(start - 1, end).join('\n').slice(0, 4096),
+    });
+  }
+  return { total: results.length, results: results.slice(0, limit) };
+}
 
 const DEFAULT_CONTENT_LIMIT = 20;
 const DEFAULT_SYMBOL_LIMIT = 30;
@@ -172,7 +245,7 @@ function contentFilterSql({ project, lang, kind }) {
 const TEST_RANK_DEMOTE = 0.75;
 const PATH_RANK_PROMOTE = 1.25;
 
-function runContentQuery(db, matchText, filters, limit, offset, pathPatterns = []) {
+function runContentQuery(db, matchText, filters, limit, offset, pathPatterns = [], excludeIds = []) {
   const hasMatch = Boolean(matchText);
   const { clauses, params } = contentFilterSql(filters);
   const conditions = [];
@@ -183,6 +256,10 @@ function runContentQuery(db, matchText, filters, limit, offset, pathPatterns = [
   }
   for (const clause of clauses) conditions.push(clause);
   for (const param of params) bind.push(param);
+  if (excludeIds.length) {
+    conditions.push('content_fts.rowid NOT IN (' + excludeIds.map(() => '?').join(',') + ')');
+    bind.push(...excludeIds);
+  }
   const whereSql = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
 
   const countSql = `SELECT COUNT(*) AS c FROM content_fts LEFT JOIN files f ON f.id = content_fts.rowid ${whereSql}`;
@@ -242,14 +319,31 @@ export function searchContent(db, options = {}) {
     .filter((token) => token.length >= 3)
     .map((token) => `%${escapeLike(token)}%`);
 
+  const semantic = searchSemanticReferences(db, { ...filters, query: text, limit: SEMANTIC_ROW_LIMIT });
+  const matchedFiles = new Map();
+  for (const hit of semantic.results) {
+    let file = matchedFiles.get(hit.fileId);
+    if (!file) {
+      file = { path: hit.path, project: hit.project, lang: hit.lang, kind: hit.kind,
+        snippet: hit.snippet, line: hit.line, score: -1, semanticReferences: [] };
+      matchedFiles.set(hit.fileId, file);
+    }
+    const { snippet, ...reference } = hit;
+    file.semanticReferences.push(reference);
+  }
+  const prefix = [...matchedFiles.values()];
+  const semanticPage = prefix.slice(pageOffset, pageOffset + pageLimit);
+  const textLimit = Math.max(0, pageLimit - semanticPage.length);
+  const textOffset = Math.max(0, pageOffset - prefix.length);
+  const excludeIds = [...matchedFiles.keys()];
   let attempt;
   try {
-    attempt = runContentQuery(db, text, filters, pageLimit, pageOffset, pathPatterns);
+    attempt = runContentQuery(db, text, filters, textLimit, textOffset, pathPatterns, excludeIds);
   } catch (error) {
     const safe = text ? safeFtsExpression(text) : null;
-    if (!safe) return { total: 0, results: [] };
+    if (!safe) return { total: prefix.length, results: semanticPage };
     try {
-      attempt = runContentQuery(db, safe, filters, pageLimit, pageOffset, pathPatterns);
+      attempt = runContentQuery(db, safe, filters, textLimit, textOffset, pathPatterns, excludeIds);
     } catch {
       throw error;
     }
@@ -264,7 +358,7 @@ export function searchContent(db, options = {}) {
     const safe = safeFtsExpression(text);
     if (safe) {
       try {
-        attempt = runContentQuery(db, safe, filters, pageLimit, pageOffset, pathPatterns);
+        attempt = runContentQuery(db, safe, filters, textLimit, textOffset, pathPatterns, excludeIds);
       } catch { /* keep the empty AND result */ }
     }
   }
@@ -278,7 +372,7 @@ export function searchContent(db, options = {}) {
     score: roundScore(row.score),
     line: matchLine(row.content, tokens),
   }));
-  return { total: attempt.total, results };
+  return { total: prefix.length + attempt.total, results: [...semanticPage, ...results] };
 }
 
 function symbolFilterSql({ kind, project }) {
