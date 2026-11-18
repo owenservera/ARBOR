@@ -49,6 +49,11 @@ function setup() {
     '/api/journal': []
   };
   let postStatus = 200, postThrows = false, getFailure = null, ownerSession = true;
+  let interpretStatus = 200;
+  let meaning = { schema: 'vivim.control-language/1', outcome: 'candidate',
+    candidate: { actionId: 'wiki.section.edit',
+      args: { target: 'main/about', content: 'Voice notes are now our active priority' } } };
+  const interpretCalls = [];
   const posts = [];
   let interval = null;
   const fetch = async (url, options = {}) => {
@@ -60,6 +65,17 @@ function setup() {
     }
     if (url === '/api/host/control/wiki-context' && !ownerSession)
       return { ok: false, status: 401, json: async () => ({ code: 'OWNER_AUTH' }) };
+    if (url === '/api/host/control/interpret') {
+      assert.equal(options.method, 'POST');
+      assert.equal(options.credentials, 'same-origin');
+      assert.equal(options.headers['x-vivim-control'], '1');
+      assert.equal(options.headers['x-vivim-ui-csrf'], 'a'.repeat(64));
+      assert.deepEqual(Object.keys(JSON.parse(options.body)), ['text']);
+      interpretCalls.push({ url, options });
+      if (!ownerSession || interpretStatus !== 200)
+        return { ok: false, status: !ownerSession ? 401 : interpretStatus };
+      return { ok: true, status: 200, json: async () => clone(meaning) };
+    }
     if (url === '/api/mutate') {
       const body = JSON.parse(options.body);
       assert.equal(options.credentials, 'same-origin');
@@ -87,10 +103,12 @@ function setup() {
   const context = vm.createContext({ document, fetch, setInterval: fn => { interval = fn; return 1; }, AbortSignal, TextEncoder, Date, console });
   vm.runInContext(script, context, { filename: 'wiki.js' });
   const el = id => elements.get(id);
-  return { elements, docs, posts, el, context, tick: () => interval(),
+  return { elements, docs, posts, interpretCalls, el, context, tick: () => interval(),
     setPostStatus: value => { postStatus = value; }, setPostThrows: value => { postThrows = value; },
     setGetFailure: value => { getFailure = value; },
-    setOwnerSession: value => { ownerSession = value; } };
+    setOwnerSession: value => { ownerSession = value; },
+    setInterpretation: value => { meaning = value; },
+    setInterpretStatus: value => { interpretStatus = value; } };
 }
 async function settle() { for (let i = 0; i < 8; i++) await new Promise(resolve => setImmediate(resolve)); }
 
@@ -103,6 +121,9 @@ test('external-asset CSP, accessible controls, and read-only typed VEC seam', ()
   assert.match(html, /data-vec-schema="vivim\.vec-compile\/0\.1"/);
   assert.match(html, /data-vec-outcome="unsupported"/);
   assert.match(html, /<label for="edit-content">/);
+  assert.match(html, /<label for="wiki-command">/);
+  assert.match(html, /<form id="wiki-command-form"/);
+  assert.match(css, /\.wiki-command-form/);
   assert.match(css, /:focus-visible/);
   assert.match(css, /@media \(max-width: 600px\)/);
   assert.doesNotMatch(script, /\.innerHTML\s*=|\beval\s*\(|new Function\s*\(|https?:\/\//);
@@ -159,6 +180,79 @@ test('private context refreshes during polling and clears after owner auth loss'
   assert.match(ui.el('context-view').children[0].textContent, /Owner context locked/);
   assert.equal(allChildren(ui.el('context-view')).some(n =>
     n.textContent === '<img src=x onerror=alert(1)>'), false);
+});
+
+test('typed Wiki command opens existing editor; interpretation/review do not write, confirmation does', async () => {
+  const ui = setup(); await settle();
+  const sentence = 'edit wiki section main/about saying Voice notes are now our active priority';
+  ui.el('wiki-command').value = sentence;
+  ui.el('wiki-command-form').fire('submit'); await settle();
+  assert.equal(ui.interpretCalls.length, 1);
+  assert.equal(ui.el('edit-target').textContent, 'Main/About');
+  assert.equal(ui.el('edit-content').value, 'Voice notes are now our active priority');
+  assert.match(ui.el('edit-command-context').textContent, /wiki\.section\.edit/);
+  assert.match(ui.el('edit-command-context').textContent, /edit wiki section main\/about/);
+  assert.equal(ui.posts.length, 0, 'typed interpretation must not append');
+  ui.el('edit-review').fire('click'); await settle();
+  assert.equal(ui.el('edit-save').hidden, false);
+  assert.match(ui.el('edit-diff').textContent, /\+ Voice notes are now our active priority/);
+  assert.equal(ui.posts.length, 0, 'diff preview must not append');
+  ui.el('edit').fire('submit'); await settle();
+  assert.equal(ui.posts.length, 1);
+  assert.deepEqual(ui.posts[0].body.edit, { action: 'set-section', page: 'Main',
+    section: 'About', content: 'Voice notes are now our active priority' });
+  assert.equal(ui.docs['/api/wiki'].pages.Main.sections.About, 'Voice notes are now our active priority');
+  assert.equal(ui.docs['/api/wiki'].revision, 2);
+  assert.match(ui.el('edit-status').textContent, /fresh GET \/api\/wiki confirms/);
+});
+
+test('unsupported, missing, ambiguous and oversized NL Wiki targets never create a mutation', async () => {
+  const sentence = 'edit wiki section main/about saying Voice notes are now our active priority';
+  const typed = (target, content) => ({ schema: 'vivim.control-language/1',
+    outcome: 'candidate', candidate: { actionId: 'wiki.section.edit', args: { target, content } } });
+  for (const { reply, expected } of [
+    { reply: { schema: 'vivim.control-language/1', outcome: 'clarification_required',
+      question: 'Specify a single action.' }, expected: /No Wiki edit/ },
+    { reply: { schema: 'vivim.control-language/1', outcome: 'candidate',
+      candidate: { actionId: 'ui.theme.set_preset', args: { preset: 'dusk' } } }, expected: /No Wiki edit/ },
+    { reply: typed('main/missing', 'new'), expected: /does not exist/ },
+    { reply: typed('main/about', 'ü'.repeat(1600)), expected: /limits/ }
+  ]) {
+    const ui = setup(); await settle();
+    ui.setInterpretation(reply);
+    ui.el('wiki-command').value = sentence;
+    ui.el('wiki-command-form').fire('submit'); await settle();
+    assert.match(ui.el('wiki-command-status').textContent, expected);
+    assert.equal(ui.el('edit-target').textContent, '');
+    assert.equal(ui.posts.length, 0);
+    assert.equal(ui.el('wiki-command').value, sentence);
+  }
+  const ambiguous = setup(); await settle();
+  ambiguous.docs['/api/wiki'].pages.main = { sections: { About: 'A duplicate folded name' } };
+  ambiguous.setInterpretation(typed('main/about', 'new'));
+  ambiguous.el('wiki-command').value = sentence;
+  ambiguous.el('wiki-command-form').fire('submit'); await settle();
+  assert.match(ambiguous.el('wiki-command-status').textContent, /Ambiguous Wiki target/);
+  assert.equal(ambiguous.posts.length, 0);
+});
+
+test('NL Wiki interpretation requires owner and preserves stale drafts without auto-retry', async () => {
+  const denied = setup(); await settle();
+  denied.setOwnerSession(false);
+  denied.el('wiki-command').value = 'edit wiki section main/about saying New text';
+  denied.el('wiki-command-form').fire('submit'); await settle();
+  assert.match(denied.el('wiki-command-status').textContent, /HTTP 401|Owner session required/);
+  assert.equal(denied.posts.length, 0);
+  assert.equal(denied.el('edit-target').textContent, '');
+  const stale = setup(); await settle();
+  stale.el('wiki-command').value = 'edit wiki section main/about saying New text';
+  stale.el('wiki-command-form').fire('submit'); await settle();
+  stale.el('edit-review').fire('click'); await settle();
+  stale.docs['/api/wiki'].revision = 2;
+  stale.el('edit').fire('submit'); await settle();
+  assert.equal(stale.posts.length, 0);
+  assert.equal(stale.el('edit-content').value, 'Voice notes are now our active priority');
+  assert.equal(stale.el('edit-rebase').hidden, false);
 });
 
 test('fresh revision diff, explicit Host POST receipt, readback and stale refusal without losing the draft', async () => {

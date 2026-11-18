@@ -51,6 +51,15 @@ test('raw NCLL "ok" with an unresolved slot never becomes a candidate (AION E3)'
   assert.equal(interpretControl('change my theme to purple', { catalog, world }).outcome, 'incomplete');
 });
 
+test('Wiki free-text interpretation retains exact owner wording through NLCL modifiers', () => {
+  const sentence = 'edit wiki section main/about saying Voice notes are now our active priority';
+  const meaning = interpretControl(sentence, { catalog, world: buildControlWorld(catalog) });
+  assert.equal(meaning.outcome, 'candidate');
+  assert.deepEqual(meaning.candidate, { actionId: 'wiki.section.edit',
+    args: { target: 'main/about', content: 'Voice notes are now our active priority' } });
+  assert.equal(Object.hasOwn(meaning, 'executionPerformed'), false);
+});
+
 test('world is derived from the catalog only: every spoken action is routable, nothing else', () => {
   const world = buildControlWorld(catalog);
   const spoken = catalog.actions.filter(a => a.language).map(a => a.id).sort();

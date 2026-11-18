@@ -185,6 +185,28 @@ test('batch-1 product routes: pages, baseline JSON, read-throughs, mutate append
     const cookie = String(exchanged.headers.get('set-cookie')).split(';')[0];
     assert.equal((await httpFetch(base, contextUrl, { headers: { cookie } })).status, 200,
       'owner browser cookie may read private context');
+    // Host's actual interpreter must return the original Wiki sentence verbatim and never mutate.
+    const nlSentence = 'edit wiki section main/about saying Voice notes are now our active priority';
+    const interpretHeaders = { ...mutationHeaders, cookie, 'x-vivim-ui-csrf': session.csrf };
+    const noOwnerInterpret = await httpFetch(base, '/api/host/control/interpret', {
+      method: 'POST', headers: mutationHeaders, body: JSON.stringify({ text: nlSentence })
+    });
+    assert.equal(noOwnerInterpret.status, 401);
+    const journalBeforeInterpret = await (await httpFetch(base, '/api/journal')).json();
+    const interpreted = await httpFetch(base, '/api/host/control/interpret', {
+      method: 'POST', headers: interpretHeaders, body: JSON.stringify({ text: nlSentence })
+    });
+    assert.equal(interpreted.status, 200);
+    const typedMeaning = await interpreted.json();
+    assert.equal(typedMeaning.schema, 'vivim.control-language/1');
+    assert.equal(typedMeaning.outcome, 'candidate');
+    assert.deepEqual(typedMeaning.candidate, {
+      actionId: 'wiki.section.edit',
+      args: { target: 'main/about', content: 'Voice notes are now our active priority' }
+    });
+    assert.deepEqual(await (await httpFetch(base, '/api/journal')).json(), journalBeforeInterpret,
+      'interpretation is not a write');
+
     const next = { ...editor, expectedRevision: afterEdit.revision,
       edit: { ...editor.edit, content: 'owner browser session update' } };
     assert.equal((await sendEdit(next, { ...mutationHeaders, cookie })).status, 401, 'missing session CSRF');
