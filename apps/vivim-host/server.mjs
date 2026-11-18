@@ -309,7 +309,8 @@ export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path
       }
       return onboardingService.providerSnapshot();
     },
-    control: controlFor, apkRegistry: apk, pairingStore: pairing,
+    control: controlFor, wikiProjection: async () => (await productJournal.readProjection()).wiki,
+    apkRegistry: apk, pairingStore: pairing,
     onPhoneSeen: () => onboardingService.phoneSeen(),
     primary: () => onboardingService.primary()
   }) : null;
