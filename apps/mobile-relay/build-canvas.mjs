@@ -2,6 +2,7 @@
 // proposal, and applies it only when the owner taps Activate. Sending and applying are injected, so
 // this file never talks to a provider itself and never resends: a draft that is still pending is polled, not re-asked.
 import { SUGGESTIONS, buildDesignPrompt, resolveBuildRequest, previewReply, failureText } from './build-composer.mjs';
+import { resolveLocalDestination } from './control-chat.mjs';
 import { renderSurface, planTierflowSurface, tierflowViewport } from './generative-ui/renderer.mjs';
 import { compileUiProposal } from './generative-ui/compiler.mjs';
 import { validateSurface } from './generative-ui/catalog.mjs';
@@ -29,7 +30,8 @@ export function committedUiRevision(command, surface) {
 
 export function buildRequestRoute(text) {
   const command = String(text ?? '').trim().replace(/\s+/g, ' ').toLowerCase();
-  if (['open the wiki', 'open wiki', 'go to wiki', 'show wiki'].includes(command)) return { kind: 'navigate', tab: 'wiki' };
+  const destination = resolveLocalDestination(text);
+  if (destination && destination !== 'pocket') return { kind: 'navigate', tab: destination };
   if (command === 'show arbor progress projection' || command === 'preview an edit')
     return { kind: 'unsupported' };
   return { kind: 'design' };
@@ -103,7 +105,7 @@ export function buildUndoProposal({ original, before, committed, live }) {
   } catch { return null; }
 }
 
-export function mountBuildCanvas({ host, request, getSurface, getProvider, send, apply, onApplied = () => {}, navigate = () => {}, storage = window.localStorage }) {
+export function mountBuildCanvas({ host, request, getSurface, getProvider, send, apply, onApplied = () => {}, navigate = () => {}, openControlDraft = null, storage = window.localStorage }) {
   let state = { name: 'idle' }, text = '', run = 0;
   const el = (tag, cls, content) => { const e = document.createElement(tag); if (cls) e.className = cls; if (content != null) e.textContent = content; return e; };
   const current = () => getSurface?.() ?? null;
@@ -244,7 +246,13 @@ export function mountBuildCanvas({ host, request, getSurface, getProvider, send,
     const chips = el('div', 'chips compose-chips');
     for (const s of SUGGESTIONS) { const chip = el('button', 'chip', s); chip.type = 'button'; chip.onclick = () => { text = s; render(); document.getElementById('build-text')?.focus(); }; chips.append(chip); }
     box.append(label, area, el('div', 'compose-row'), chips);
-    box.querySelector('.compose-row').append(el('small', 'muted', 'Known edits stay local. Other requests use your AI. Activate to save.'), go);
+    box.querySelector('.compose-row').append(el('small', 'muted', 'Known edits stay local. Other design requests use your AI. Activate to save.'), go);
+    if (typeof openControlDraft === 'function') {
+      const control = el('button', 'btn', 'Ask VIVIM instead');
+      control.type = 'button';
+      control.onclick = () => { if (text.trim()) openControlDraft(text); };
+      box.querySelector('.compose-row').append(control);
+    }
     if (state.error) { const e = el('p', 'compose-error', state.error); e.setAttribute('role', 'alert'); box.append(e); }
     if (state.note) box.append(el('p', 'muted', state.note));
     return box;
@@ -350,5 +358,8 @@ export function mountBuildCanvas({ host, request, getSurface, getProvider, send,
   const pending = saved();
   if (pending?.id && Date.now() - pending.at < 3600000) { const token = ++run; state = { name: 'waiting', note: 'Picking up where you left off…' }; watch(pending.id, token); }
   render();
-  return { refresh: render };
+  return { refresh: render, setDraft(value) {
+    if (state.name !== 'idle' || typeof value !== 'string' || !value.trim() || value.length > 400) return false;
+    text = value; render(); return true;
+  } };
 }

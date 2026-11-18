@@ -2,6 +2,7 @@
 import { transport } from './transport.mjs';
 import { mountBuildSurface, sendProposal } from './generative-ui/phone-surface.mjs';
 import { mountBuildCanvas } from './build-canvas.mjs';
+import { resolveBuildRequest } from './build-composer.mjs';
 import { mountWelcome } from './welcome.mjs';
 import { parsePairFragment, redeemDevicePairToken } from './pairing-link.mjs';
 import { prepareDeviceSigner, enrollWithChallenge, resumeDeviceSession } from './device-enrollment.mjs';
@@ -98,6 +99,16 @@ const vivimChat = createControlChat({
     updateDock();
   },
   onNavigate: tab => goTab(tab),
+  classifyBuild: request => {
+    const surface = S.statusObj?.snapshot?.bootstrap?.uiRevision;
+    if (!S.paired || !surface) return null;
+    return resolveBuildRequest({ request, surface });
+  },
+  onBuildDraft: text => {
+    if (!S.paired || HOST_PREVIEW) return;
+    goTab('build');
+    if (!compose?.setDraft(text)) toast('Build has an active request or this draft is too long. Finish it before starting another.');
+  },
   onOpenPocket: pocketButton && !pocketButton.hidden ? () => pocketButton.click() : null
 });
 let build = null, buildTimer = 0, buildKey = '';
@@ -1472,6 +1483,12 @@ function mountCompose() {
   const host = $('build-compose'); if (!host) return;
   compose = mountBuildCanvas({
     host, request: api, navigate: goTab,
+    openControlDraft: transport.direct ? text => {
+      goTab('talk');
+      $('talk-target').value = 'vivim';
+      $('talk-target').dispatchEvent(new Event('change'));
+      $('text').value = text; autogrow(); updateSend(); $('text').focus();
+    } : null,
     getSurface: () => build?.surface() ?? build?.draftSurface() ?? null,
     getProvider: () => S.statusObj?.snapshot?.onboarding?.primary || 'chatgpt',
     send: async (prompt, provider) => {

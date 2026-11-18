@@ -8,7 +8,7 @@ const MAX_TEXT = 1000;
 const MAX_TURNS = 30;
 const KNOWN_OUTCOMES = new Set([
   'done', 'approval_required', 'clarification_required', 'incomplete',
-  'interpretation_required', 'unavailable'
+  'interpretation_required', 'unavailable', 'refused'
 ]);
 export const CONTROL_CHAT_EXAMPLES = Object.freeze([
   'show status', 'open World', 'what can I say?'
@@ -17,7 +17,7 @@ export const CONTROL_CHAT_EXAMPLES = Object.freeze([
 // deterministic phrases do not approve, schedule, send or mutate anything.
 const LOCAL_NAVIGATION = Object.freeze({
   'open today': 'today', 'go to today': 'today',
-  'open wiki': 'wiki', 'go to wiki': 'wiki', 'show wiki': 'wiki',
+  'open wiki': 'wiki', 'open the wiki': 'wiki', 'go to wiki': 'wiki', 'show wiki': 'wiki',
   'open world': 'world', 'go to world': 'world', 'show media library': 'world',
   'open media library': 'world', 'open my media library': 'world',
   'open build': 'build', 'go to build': 'build',
@@ -47,7 +47,8 @@ export function examplesForSurface(surface) {
 
 export function createControlChat({
   host, transport, fetchImpl, onChange = () => {},
-  onNavigate = null, onOpenPocket = null, getSurface = null
+  onNavigate = null, onOpenPocket = null, getSurface = null,
+  classifyBuild = null, onBuildDraft = null
 } = {}) {
   if (!host || typeof host.replaceChildren !== 'function')
     throw new TypeError('Chat transcript root required');
@@ -88,6 +89,8 @@ export function createControlChat({
         return (plan.question || 'Please give more detail.') + '\nNothing changed.';
       case 'interpretation_required':
         return 'VIVIM does not recognize that command yet. Try an available command; nothing was executed.';
+      case 'refused':
+        return (plan.refusal?.message || 'Your PC refused this action.') + '\nNothing changed.';
       case 'unavailable':
         return (plan.title || 'That action') + ' is not available (' + (plan.readiness || 'not ready') + '). Nothing changed.';
       default:
@@ -123,11 +126,26 @@ export function createControlChat({
       return;
     }
     reply.text = planText(plan);
-    reply.status = plan.outcome === 'done' ? 'done'
+    reply.meaning = plan.language?.vec?.proposal ?? null;
+    reply.status = plan.outcome === 'refused' ? 'denied' : plan.outcome === 'done' ? 'done'
       : plan.outcome === 'interpretation_required' ? 'unrecognized'
         : plan.outcome === 'clarification_required' || plan.outcome === 'incomplete' ? 'clarify'
           : 'info';
-    if (reply.status === 'unrecognized') reply.requestText = requestText;
+    if (reply.status === 'unrecognized') {
+      reply.requestText = requestText;
+      // Only an installed VEC UI adapter can recognize an unmatched command as Build.
+      if (requestText && typeof classifyBuild === 'function' && typeof onBuildDraft === 'function') {
+        try {
+          const reading = classifyBuild(requestText);
+          if (reading?.domain === 'ui' && ['candidate', 'clarification_required'].includes(reading.outcome)) {
+            reply.status = 'build';
+            reply.text = reading.outcome === 'candidate'
+              ? 'VEC recognized a visual change. Open Build to review it; nothing was applied.'
+              : 'VEC needs more detail about the visual target. Continue in Build; nothing was applied.';
+          }
+        } catch { /* Keep original Host interpretation; no fallback effect. */ }
+      }
+    }
     reply.choices = Array.isArray(plan.choiceDetails)
       ? plan.choiceDetails.filter(choice => choice && typeof choice.actionId === 'string' &&
         choice.actionId && (choice.readiness === undefined ||
@@ -359,6 +377,15 @@ export function createControlChat({
         check.addEventListener('click', () => { void reconcile(msg); });
         row.append(check);
       }
+      const meaning = msg.plan?.language?.vec?.proposal ?? msg.meaning;
+      if (meaning?.schema === 'vivim.command-intent/0.1' && meaning.canonical)
+        row.append(elem('pre', 'ux-note', meaning.canonical));
+      if (msg.status === 'build' && msg.requestText) {
+        const open = elem('button', 'btn sm ux-secondary', 'Review in Build');
+        open.type = 'button';
+        open.addEventListener('click', () => { onBuildDraft(msg.requestText); });
+        row.append(open);
+      }
       if (msg.status === 'unrecognized' && msg.requestText) {
         const redirect = elem('button', 'btn sm ux-secondary', 'Ask my AI instead');
         redirect.type = 'button';
@@ -391,7 +418,7 @@ export function createControlChat({
           (plan.liveAcceptance !== 'verified' ? ' · Not live-verified' : '') +
           (typeof plan.planDigest === 'string' ? ' · Plan ' + plan.planDigest.slice(0, 12) : '')));
         const args = plan.args && typeof plan.args === 'object' ? Object.entries(plan.args).slice(0, 12) : [];
-        if (args.length) card.append(elem('p', 'ux-note', args.map(([k,v])=>k + ': ' + describe(v)).join(' · ')));
+        if (args.length) card.append(elem('pre', 'ux-note', JSON.stringify(plan.args, null, 2)));
         if (plan.actionId === 'wiki.section.edit' && plan.preview) {
           // Host-resolved target and bound revision, not caller-supplied display data.
           card.append(elem('strong', '', 'Wiki · ' + plan.preview.target),

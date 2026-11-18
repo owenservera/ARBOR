@@ -294,3 +294,37 @@ test('The mounted screen states what can be asked here',async()=>{
   assert.ok(buttons(host).some(x=>x.textContent==='open media library'));
   assert.equal(buttons(host).some(x=>x.textContent==='open World'),false);
 });
+
+
+test('R4 unmatched command recognized by existing UI compiler offers draft-only Build handoff', async () => {
+  const {host}=fixture();
+  const calls=[]; const drafts=[];
+  const chat=createControlChat({host,transport:grant,
+    classifyBuild: text => { assert.equal(text,'add a card called Research'); return {domain:'ui',outcome:'candidate'}; },
+    onBuildDraft: text => drafts.push(text),
+    fetchImpl:async(path)=>{
+      calls.push(path);
+      if(path==='/mobile/connection.json')return response({direct:true,directOnly:true,cloudEnabled:false});
+      if(path.endsWith('/plan'))return response({outcome:'interpretation_required'});
+      throw Error('Unexpected effect');
+    }});
+  await chat.send('add a card called Research');
+  assert.deepEqual(drafts, []);
+  assert.equal(buttons(host).some(b=>b.textContent==='Ask my AI instead'),false);
+  buttons(host).find(b=>b.textContent==='Review in Build').events.click();
+  assert.deepEqual(drafts,['add a card called Research']);
+  assert.equal(calls.some(path=>path.endsWith('/execute')),false);
+});
+
+test('R4 a refused Host interpretation never falls through to UI compilation or AI', async () => {
+  const {host}=fixture(); let classified=0;
+  const chat=createControlChat({host,transport:grant,
+    classifyBuild:()=>{classified++;return {domain:'ui',outcome:'candidate'};},onBuildDraft:()=>assert.fail('no draft'),
+    fetchImpl:async path=>path==='/mobile/connection.json'
+      ? response({direct:true,directOnly:true,cloudEnabled:false})
+      : response({outcome:'refused',refusal:{message:'Negated action refused'}})});
+  await chat.send('do not delete the card');
+  assert.equal(classified,0);
+  assert.match(displayed(host),/Negated action refused/);
+  assert.equal(buttons(host).some(b=>['Review in Build','Ask my AI instead','Approve & apply'].includes(b.textContent)),false);
+});

@@ -210,6 +210,9 @@
     pending = null;
     if (plan.outcome === 'done') {
       const node = card(plan.title + ' · Host read only');
+      const meaning = plan.language?.vec?.proposal;
+      if (meaning?.schema === 'vivim.command-intent/0.1' && meaning.canonical)
+        node.append(element('pre', '', meaning.canonical));
       node.append(element('pre', '', JSON.stringify(plan.result, null, 2)));
       return;
     }
@@ -235,6 +238,9 @@
     pending = expected;
     const node = card('Approve exactly this Host action?');
     node.append(element('p', '', plan.title + ' · ' + plan.actionId + ' · ' + plan.risk));
+    const meaning = plan.language?.vec?.proposal;
+    if (meaning?.schema === 'vivim.command-intent/0.1' && meaning.canonical)
+      node.append(element('pre', '', meaning.canonical));
     node.append(element('pre', '', JSON.stringify(plan.args, null, 2)));
     if (plan.preview) {
       node.append(element('p', '', 'Wiki section: ' + plan.preview.target +
