@@ -160,7 +160,7 @@ export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'wo
       if (record.mode === 'bootstrap' && record.action === 'personalize') throw failure(501, 'Personalize is not supported by direct phone');
       // 'messageId' is the owner message id of the VIVIM phone session route.
       // The relay command route never sets it, so it cannot be injected there.
-      const chat = { ...Object.fromEntries(['mode', 'conversationId', 'newChat', 'target', 'attachments', 'action', 'preset', 'messageId'].filter(k => record[k] !== undefined).map(k => [k, record[k]])), transport: 'direct' };
+      const chat = { ...Object.fromEntries(['mode', 'conversationId', 'newChat', 'target', 'attachments', 'action', 'preset', 'proposal', 'messageId'].filter(k => record[k] !== undefined).map(k => [k, record[k]])), transport: 'direct' };
       bridge.create({ id: record.id, origin: 'relay', text: record.text, kind: record.kind, consumer: record.consumer, stage: record.stage, chat });
       if (record.mode === 'relay-chat' && record.conversationId) {
         // The command has already been durably accepted. A projection failure
