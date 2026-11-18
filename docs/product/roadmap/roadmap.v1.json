@@ -1753,7 +1753,7 @@
           "An unrun or failed verifier cannot mark acceptance; original evidence is immutable and retained.",
           "Owner batch approvals and Host effect permissions stay enforced; unattended actions remain limited to preauthorized boundaries."
         ],
-        "verification": "UNRUN",
+        "verification": "RECEIPT_VERIFICATION_FAILED",
         "ownerAcceptance": "PENDING",
         "execution": "NOT_STARTED",
         "releaseClaim": false
@@ -2373,7 +2373,7 @@
       "dependsOn": [],
       "priority": 3,
       "accelerationScore": 96,
-      "verification": "STATIC_LIVE_PASS_EXIT0",
+      "verification": "UNRUN",
       "ownerAcceptance": "PENDING",
       "note": "Canonical stateful chat-to-Wiki projection — all W1 lane source integrated; round-3 verify 2026-11-17: bun scripts/batch-evidence/A02.mjs --static exit 0 (4/4, digest eb2f13a282a4dc0120034f558749a85c7e28c06cf518bcd8d592a01dae2020d9), --live exit 0 isolated scratch Host 21/21 (parityDigest d810c51b708d8346150079070111dcdacc250708d086612cefad6eff3fb882b1, live digest bb8afa2a8a556a64d9e641dac0fa42e9e253fc1ba55fcf55c875852cedb9ef32, no request to port 43187); GET http://127.0.0.1:43187/api/wiki HTTP 200 revision 1; browserDom/physicalDevice UNRUN; receipt docs/product/roadmap/receipts/A02.receipt.json still gated (rewrite outside this lane paths).",
       "rewalk": "pending"
@@ -2418,7 +2418,7 @@
       ],
       "priority": 6,
       "accelerationScore": 94,
-      "verification": "UNRUN",
+      "verification": "RECEIPT_VERIFICATION_FAILED",
       "ownerAcceptance": "PENDING",
       "note": "Authorized build, verify, demonstrate and requeue — Connect the existing keeper/demo execution contracts to a cycle that selects a ready work order, executes only allowed scoped work, independently verifies, shows product proof and proposes the next batch."
     },

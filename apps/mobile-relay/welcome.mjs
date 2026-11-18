@@ -27,13 +27,14 @@ export function welcomeCards(bootstrap) {
 }
 
 export function mountWelcome({ host, startHost, storage = window.localStorage }) {
-  let bootstrap = null, index = 0;
+  let bootstrap = null, index = 0, lastTourSig = '';
   const seen = () => { try { return storage.getItem(WELCOME_KEY) === '1'; } catch { return true; } };
   const mark = () => { try { storage.setItem(WELCOME_KEY, '1'); } catch { /* the tour may repeat; never blocks */ } };
   const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
 
   function renderTour() {
     const cards = welcomeCards(bootstrap), card = cards[index];
+    lastTourSig = JSON.stringify(cards);
     host.replaceChildren();
     const sheet = el('div', 'tour-sheet'); sheet.setAttribute('role', 'dialog'); sheet.setAttribute('aria-modal', 'true'); sheet.setAttribute('aria-labelledby', 'tour-title');
     const title = el('h2', null, card.title); title.id = 'tour-title';
@@ -66,7 +67,13 @@ export function mountWelcome({ host, startHost, storage = window.localStorage })
     startHost.append(wrap);
   }
 
-  window.addEventListener('vivim:bootstrap-status', e => { bootstrap = e.detail?.snapshot?.bootstrap ?? bootstrap; renderStart(); if (!host.hidden) renderTour(); });
+  window.addEventListener('vivim:bootstrap-status', e => {
+    bootstrap = e.detail?.snapshot?.bootstrap ?? bootstrap; renderStart();
+    // Re-render the open tour only when its content actually changed: replacing the
+    // sheet on every status event swaps the clicked button mid-interaction.
+    const sig = JSON.stringify(welcomeCards(bootstrap));
+    if (!host.hidden && sig !== lastTourSig) renderTour();
+  });
   window.addEventListener('vivim:paired', e => { if (e.detail?.paired && !seen()) { index = 0; renderTour(); } });
   renderStart();
   return { open() { index = 0; renderTour(); } };

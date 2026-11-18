@@ -1,6 +1,6 @@
 # ARBOR Acceleration-First Execution — R002
 
-**Owner directive:** 2026-11-14. **Machine authority:** `docs/product/roadmap/roadmap.v1.json`. This is an explanatory companion, not a second backlog. **Status:** queue/planning applied; A00–A08 source implementation and tests are **UNRUN**.
+**Owner directive:** 2026-11-14. **Machine authority:** `docs/product/roadmap/roadmap.v1.json`. This is an explanatory companion, not a second backlog. **Status:** queue/planning applied; A00–A08 source implementation and tests are **UNRUN**. A08 is the current deterministic pick (2026-11-18); a pick does not change any item's status, verification or ownerAcceptance.
 
 ## 1. Objective and priorities
 
@@ -31,6 +31,8 @@ Safety, privacy, explicit approvals, source pinning, independent test receipts a
 A00–A02 are now `in-progress` with `execution=SOURCE_LANDED_TESTS_UNRUN`; A03–A08 remain `queued`. All nine retain `verification=UNRUN` and `ownerAcceptance=PENDING` until actual independent results. Every record supplies write scopes, acceptance checks, source references, dependency IDs and an estimated score breakdown. Dependencies are satisfied by independently accepted results, never merely the words "implemented", "executed" or "source-wired".
 
 Deterministic pick round 3 (2026-11-17): **A07** picked — `status=queued`, `verification=UNRUN`, `ownerAcceptance=PENDING`. Note: Evidence-driven parallel worker execution — Execute independent, nonoverlapping tasks using the existing orchestration a
+
+Deterministic pick round 4 (2026-11-18): **A08** picked — `status=queued`, `verification=UNRUN`, `ownerAcceptance=PENDING`. Note: Physical Windows Host and paired PWA acceptance — Validate the proven loop on Windows Host and a real HTTPS paired Android PWA; exercise revocation, offline/reconnect and revision consistency, while treating MSI/APK packaging as separate work. Round-number note: the work order that produced this edit labels itself "round 1"; the previously recorded entry above (round 3, A07, 2026-11-17) implies the sequence continues from there, so this entry is recorded as round 4 and the discrepancy is flagged for the keeper rather than resolved here. A08's machine record (`docs/product/roadmap/roadmap.v1.json`) remains `status=queued`, `verification=UNRUN`, `ownerAcceptance=PENDING`, `execution=NOT_STARTED`; physical Windows Host and real HTTPS-paired Android PWA execution cannot be verified from a documentation write, so no acceptance evidence is claimed and the item stays UNRUN.
 
 ### Three lanes start in parallel
 

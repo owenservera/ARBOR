@@ -76,11 +76,12 @@ function md(src) {
 const FALLBACK = [['chatgpt', 'ChatGPT'], ['claude', 'Claude'], ['qwen', 'Qwen'], ['zai', 'Z.ai']]
   .map(([id, label]) => ({ id, label, signedIn: false, models: [], thinkingLevels: [], newChat: true, attachments: false }));
 const S = {
-  tab: 'today', manifest: null, convs: lsGet('relay.convs.v1', []), active: lsGet('relay.active.v1', null),
+  tab: 'talk', manifest: null, convs: lsGet('relay.convs.v1', []), active: lsGet('relay.active.v1', null),
   hidden: new Set(lsGet('relay.hidden.v1', [])), cmds: [], files: [], sending: false, paired: false,
   statusAt: 0, statusObj: null, timer: 0, busy: false, sigs: {}, shownConv: null,
   conn: { label: '', tone: 'ok' }, device: { status: null, scopes: null },
-  media: { state: 'idle' }, mediaAt: 0, mediaOffset: 0, mediaLoading: false, nextBatch: null
+  media: { state: 'idle' }, mediaAt: 0, mediaOffset: 0, mediaLoading: false, nextBatch: null,
+  roadmap: null, roadmapError: ''
 };
 let combinedInbox = true; // UI-only inbox aggregation; never fan-out or a provider target.
 let providerRefreshBusy = false;
@@ -136,7 +137,9 @@ function updateDock() {
   const composer = $('chat-composer');
   if (!composer) return;
   const expanded = S.tab === 'talk' || dockExpanded;
-  composer.hidden = HOST_PREVIEW;
+  // A first-time user must be able to type in Chat even before pairing
+  // (host-preview used to hide the composer entirely on every first visit).
+  composer.hidden = false;
   composer.classList.toggle('is-collapsed',!expanded);
   $('dock-preview').hidden = expanded;
   $('dock-preview-title').textContent = chatHasApproval
@@ -224,7 +227,10 @@ async function readGraphContext() {
   const focus=S.tab;
   const device=transport.deviceHeaders?.();
   if(HOST_PREVIEW||!transport.direct||!S.paired||!device){
-    chatContext=null;renderFocusPanel();return;
+    // Gated read: say so in the UI instead of silently repainting the panel.
+    chatContext={state:'unavailable',reason:'Verified Host context needs a paired phone on a Direct PC connection.'};
+    toast('Read verified context: pair this phone over Direct to load Host context.');
+    renderFocusPanel();return;
   }
   const epoch=++chatContextEpoch;
   chatContext={state:'loading'};renderFocusPanel();
@@ -410,6 +416,9 @@ function surfaceContext() {
   };
 }
 function goTab(tab) {
+  // Wiki is not a local panel: the real wiki page lives on the host at /wiki,
+  // so the rail tab navigates there instead of switching a local surface.
+  if (tab === 'wiki') { location.assign('/wiki'); return; }
   if (!tab || !TABS.includes(tab)) return;
   // Leaving World stops an in-flight media open or current native playback.
   // The Host has to release temporary stream access, not just hide the video.
@@ -669,7 +678,7 @@ function renderSurfaces() {
   else if (S.tab === 'me') { host = $('v-me'); model = meModel(S.statusObj, S.cmds, ctx); }
   else return;
   if (!host) return;
-  const sig = S.tab + '|' + JSON.stringify(model);
+  const sig = S.tab + '|' + JSON.stringify(model) + '|' + JSON.stringify(S.roadmap || null) + '|' + S.roadmapError;
   if (S.sigs.ux === sig) return;
   S.sigs.ux = sig;
   const options = { onNavigate: goTab,
@@ -700,7 +709,8 @@ function renderSurfaces() {
       ? offset => { void refreshMedia(true, offset); } : undefined,
     onInstall: !HOST_PREVIEW && deferredInstallPrompt ? requestPwaInstall : undefined,
     onOpenPocket: () => { if (pocketButton && !pocketButton.hidden) pocketButton.click(); },
-    onReplay: () => { if (welcome) welcome.open(); } };
+    onReplay: () => { if (welcome) welcome.open(); },
+    roadmap: S.roadmap, roadmapError: S.roadmapError };
   if (S.tab === 'today') renderToday(host, model, options);
   else if (S.tab === 'world') renderWorld(host, model, options);
   else renderMe(host, model, options);
@@ -926,8 +936,8 @@ function installHostMenu() {
   for (const [label, href] of [
     ['Pair a phone', '/onboarding'],
     ['Connections & permissions', '/host/control'],
-    ['Host Control', '/host/control'],
-    ['Host diagnostics', '/api/host/status']
+    ['Host diagnostics', '/api/host/status'],
+    ['ARBOR progress (live roadmap)', '/wiki']
   ]) {
     const anchor = el('a', '', label);
     anchor.href = href;
@@ -980,8 +990,23 @@ function renderHostPreviewActivity() {
   }
   section.append(list);
 }
+// Live ARBOR progress source: read-through of the machine roadmap, same as /wiki.
+// Read-only; the keeper edits roadmap.v1.json, this app never writes it.
+async function refreshRoadmap() {
+  try {
+    const response = await fetch('/api/roadmap', { method: 'GET', credentials: 'same-origin', cache: 'no-store' });
+    if (!response.ok) throw new Error('HTTP ' + response.status);
+    const data = await response.json();
+    if (data?.schema !== 'arbor.product-roadmap/1') throw new Error('Unexpected roadmap schema');
+    S.roadmap = data; S.roadmapError = '';
+  } catch (error) {
+    S.roadmap = null; S.roadmapError = 'Live roadmap unavailable (' + (error?.message || 'read failed') + ')';
+  }
+  if (S.tab === 'world') renderSurfaces();
+}
 async function refreshHostPreview() {
   if (!HOST_PREVIEW) return;
+  void refreshRoadmap();
   const sequence = ++previewReadSequence;
   try {
     const response = await fetch('/api/host/control/pwa-view', {
@@ -1036,7 +1061,7 @@ async function startHostPreview() {
   $('app').hidden = false;
   S.paired = false;
   S.cmds = []; S.convs = []; S.active = null; S.statusObj = null;
-  S.tab = 'today'; N.target = 'vivim'; N.pending = null;
+  S.tab = 'talk'; N.target = 'vivim'; N.pending = null;
   $('talk-target').value = 'vivim';
   S.device = { status: 'preview', scopes: [] };
   $('control-text').disabled = true;
@@ -1167,6 +1192,7 @@ async function send() {
 function schedule() { clearTimeout(S.timer); if (!S.paired || N.target === 'phone') return; S.timer = setTimeout(refresh, pending(S.active) ? 2500 : 8000); }
 async function refresh() {
   if (!S.paired || S.busy || N.target === 'phone') return;
+  void refreshRoadmap();
   S.busy = true; clearTimeout(S.timer);
   try {
     const needStatus = !S.statusAt || Date.now() - S.statusAt > 7500;
@@ -1354,7 +1380,7 @@ function showOfflineShell() {
   clearPrivatePhoneState();
   $('pairbox').hidden = true; $('app').hidden = false;
   document.body.classList.add('offline-shell');
-  S.tab = 'today'; N.target = transport.direct ? 'vivim' : 'harness';
+  S.tab = 'talk'; N.target = transport.direct ? 'vivim' : 'harness';
   $('talk-target').value = N.target;
   S.device = { status: 'offline', scopes: [] };
   setConn('Offline · local PWA shell only', true);

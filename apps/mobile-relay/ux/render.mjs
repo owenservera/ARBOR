@@ -102,6 +102,7 @@ export function renderToday(host, model, options = {}) {
       ['talk', 'Talk', 'AI conversations and requests'],
       ['build', 'Build', 'Design and preview interfaces'],
       ['world', 'World', 'Things you have built'],
+      ['wiki', 'Wiki', 'Shared notes and docs on the host'],
       ['me', 'Me', 'Your device and preferences'],
       ['control', 'Control', 'Review PC changes']
     ];
@@ -110,7 +111,11 @@ export function renderToday(host, model, options = {}) {
       button.type = 'button';
       button.setAttribute('aria-label', 'Open ' + title);
       button.append(make(doc, 'strong', '', title), make(doc, 'small', '', description));
-      button.addEventListener('click', () => options.onNavigate(tab));
+      button.addEventListener('click', () => {
+        // Wiki opens the real host page, not a local stand-in surface.
+        if (tab === 'wiki') { location.assign('/wiki'); return; }
+        options.onNavigate(tab);
+      });
       shortcuts.append(button);
     }
     explore.append(shortcuts);
@@ -213,12 +218,49 @@ export function renderToday(host, model, options = {}) {
 
 /* ---------------- World ---------------- */
 
+// Live ARBOR progress + blockers from the /api/roadmap read-through (same source /wiki
+// renders). Read-only: this surface never writes the roadmap and infers no completion.
+function roadmapCard(doc, roadmap, error) {
+  const section = card(doc, 'ARBOR progress');
+  if (error) {
+    section.append(make(doc, 'p', 'ux-empty', error + ' — the Host wiki still renders the roadmap.'));
+    return section;
+  }
+  if (!roadmap || !roadmap.layers) {
+    section.append(make(doc, 'p', 'ux-empty', 'Loading the live roadmap from the Host…'));
+    return section;
+  }
+  section.append(make(doc, 'p', 'ux-meta', 'Live source: /api/roadmap · arbor.product-roadmap/1 · read-only'));
+  const layerRows = [];
+  for (const [layer, list] of Object.entries(roadmap.layers)) {
+    const counts = {};
+    for (const item of list || []) { const k = item.status || 'unknown'; counts[k] = (counts[k] || 0) + 1; }
+    layerRows.push({ label: layer, value: Object.entries(counts).map(([k, v]) => v + ' ' + k).join(' · ') });
+  }
+  section.append(rows(doc, layerRows));
+  const queue = Array.isArray(roadmap.buildQueue) ? roadmap.buildQueue : [];
+  const blocked = queue.filter(q => q.status === 'gated' || q.verification === 'UNRUN' || q.ownerAcceptance === 'PENDING');
+  const entries = blocked.slice(0, 6).map(q => ({
+    title: String(q.itemId || '?') + ' · ' + String(q.status || ''),
+    detail: 'verify ' + String(q.verification || '?') + ' · owner accept ' + String(q.ownerAcceptance || '?') +
+      (q.note ? ' · ' + String(q.note).slice(0, 140) : '')
+  }));
+  if (entries.length) section.append(items(doc, entries));
+  else section.append(make(doc, 'p', 'ux-empty', 'No gated or unverified work orders in the live build queue.'));
+  const inFlight = queue.filter(q => ['in-progress', 'queued', 'active'].includes(q.status)).length;
+  section.append(make(doc, 'p', 'ux-meta',
+    'Build queue: ' + queue.length + ' work orders · ' + inFlight + ' active/queued · ' + blocked.length + ' gated or unverified'));
+  return section;
+}
+
 // The things that exist now: what was built, what is running, what the owner can change.
 export function renderWorld(host, model, options = {}) {
   const doc = dom(host);
   if (!doc || !host || typeof host.replaceChildren !== 'function') return;
   const m = model || {};
   const { wrap, scroll } = shell(doc);
+
+  scroll.append(roadmapCard(doc, options.roadmap, options.roadmapError));
 
   const built = card(doc, 'What was built');
   if (m.revision) {

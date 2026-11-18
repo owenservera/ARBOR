@@ -68,8 +68,9 @@ const stubHiddenTabs = () => {
 };
 
 /* ---------- the tab strip ---------- */
-test('the tab strip exposes Today, Talk, Build, World, Me and Control — and no Agents or Self', () => {
-  assert.deepEqual(tabsIn(), ['today', 'talk', 'build', 'world', 'me', 'control']);
+test('the tab strip exposes Today, Talk, Build, World, Wiki, Me and Control — and no Agents or Self', () => {
+  // Wiki is in the rail but has no local panel: the tab navigates to /wiki (app.js:419-421).
+  assert.deepEqual(tabsIn(), ['today', 'talk', 'build', 'world', 'wiki', 'me', 'control']);
   assert.ok(!html.includes('data-tab="agents"'), 'the Agents stub tab must be gone');
   assert.ok(!html.includes('data-tab="self"'), 'the Self stub tab must be gone');
   for (const id of ['v-today', 'v-world', 'v-me']) {
@@ -79,8 +80,9 @@ test('the tab strip exposes Today, Talk, Build, World, Me and Control — and no
 });
 
 test('reintroducing a stub panel for World or Me fails this suite', () => {
-  // The retired panel is hidden for every tab in the strip, so no tab can fall back to it.
-  assert.deepEqual(stubHiddenTabs().slice().sort(), tabsIn().slice().sort());
+  // The retired panel is hidden for every local tab in the strip, so no tab can fall back to it.
+  // Wiki is exempt: it has no local panel at all — the tab navigates to /wiki (app.js:419-421).
+  assert.deepEqual(stubHiddenTabs().slice().sort(), tabsIn().filter(t => t !== 'wiki').slice().sort());
   // The stub wording survives nowhere in the phone shell.
   assert.doesNotMatch(html, /coming soon/i, 'index.html must not carry the stub wording');
   assert.doesNotMatch(app, /coming soon/i, 'app.js must not carry the stub wording');
@@ -265,14 +267,23 @@ test('every surface keeps one thumb-reachable primary action and issues no other
       'every button is explicitly classified as local navigation or read-only refresh');
   }
   const routes = [];
+  const external = [];
+  // The harness has no browser location; stub it so the Wiki tile's real
+  // host-page navigation (render.mjs: location.assign('/wiki')) is observable.
+  const prevLocation = globalThis.location;
+  globalThis.location = { assign: url => { external.push(url); } };
   const shortcuts = fakeHost();
   renderToday(shortcuts, todayModel(null, [], { connection: 'Connecting…' }),
     { onNavigate: tab => { routes.push(tab); } });
   const tiles = byClass(shortcuts, 'ux-surface-tile');
-  assert.equal(tiles.length, 5, 'Today links to exactly the five other sections');
+  assert.equal(tiles.length, 6, 'Today links to exactly the six other sections');
   tiles.forEach(tile => tile.events.click());
+  if (prevLocation === undefined) delete globalThis.location;
+  else globalThis.location = prevLocation;
   assert.deepEqual(routes, ['talk', 'build', 'world', 'me', 'control'],
     'shortcuts can only navigate local tabs and never invoke a Host effect');
+  assert.deepEqual(external, ['/wiki'],
+    'the Wiki shortcut opens the real host page instead of a local surface');
 });
 
 test('the Today primary action leads to a real surface and never claims an effect happened', () => {
@@ -384,11 +395,13 @@ test('offline shell exposes navigation but never private content',()=>{
 });
 
 
-test('PWA starts on Today consistently in the desktop preview and the paired phone',()=>{
-  assert.match(app,/tab: 'today', manifest: null/);
-  assert.match(app,/S\.tab = 'today'; N\.target = 'vivim'/);
-  assert.match(html,/id="tab-today" class="tab on"/);
-  assert.match(html,/id="tab-talk" class="tab"/);
+test('PWA starts on Talk (Chat) consistently in the desktop preview and the paired phone',()=>{
+  // GOAL-1 defect-3: a first-time user lands in Chat, not Today.
+  assert.match(app,/tab: 'talk', manifest: null/);
+  assert.match(app,/S\.tab = 'talk'; N\.target = 'vivim'/);
+  assert.match(html,/id="tab-talk" class="tab on"/);
+  assert.match(html,/id="tab-talk"[^>]*aria-selected="true"/);
+  assert.match(html,/id="tab-today" class="tab"/);
 });
 
 

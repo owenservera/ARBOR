@@ -65,15 +65,16 @@ async function start(parentPid) {
   const port = await freePort();
   if (port === REAL_PORT) throw new Error('refuse: scratch port equals real port 43187');
   const dataRoot = realpathSync(mkdtempSync(join(os.tmpdir(), ISO_MARKER)));
+  // stdio 'ignore' (not pipes): this command must EXIT after printing its ONE JSON line — held
+  // pipes keep the event loop alive so a synchronous caller (world.run, subagent shell) waits
+  // forever (observed 2026-11-17: boot "failed" on a 90s timeout while the host was actually up).
+  // An ignored stdout can also never block the child on a full buffer; health is proven by probes.
   const child = spawn('bun', [SERVER], {
     cwd: ROOT,
     env: { ...process.env, VIVIM_HOST_PORT: String(port), VIVIM_HOST_DATA_DIR: dataRoot },
-    stdio: ['ignore', 'pipe', 'pipe'],
+    stdio: 'ignore',
     detached: true,
   });
-  // Hold the pipes open: on Windows an unread child pipe can block the child on a full buffer.
-  child.stdout?.on('data', () => {});
-  child.stderr?.on('data', () => {});
   const baseUrl = `http://127.0.0.1:${port}`;
   let up = false;
   for (let i = 0; i < 60 && !up; i++) {
@@ -91,6 +92,7 @@ async function start(parentPid) {
   writeFileSync(join(os.tmpdir(), `arbor-life-scratch-${port}.pid`), String(child.pid));
   if (parentPid) watchdog(parentPid);
   console.log(JSON.stringify({ baseUrl, dataRoot, port, pid: child.pid }));
+  process.exit(0); // session mode prints ONE line and MUST exit — detached child outlives us
 }
 
 function stop(args) {

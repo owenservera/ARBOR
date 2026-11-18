@@ -118,8 +118,10 @@ test('two disjoint write orders converge with receipts linked to same commit SHA
   const result = await driver({
     root,
     workOrders: [
-      { id: 'WO-A', writeScope: [a], command: ['node', '-e', `import {writeFileSync} from 'node:fs'; writeFileSync('${a}','A')`], expectedSha: head },
-      { id: 'WO-B', writeScope: [b], command: ['node', '-e', `import {writeFileSync} from 'node:fs'; writeFileSync('${b}','B')`], expectedSha: head },
+      // JSON.stringify the fs path: on Windows the raw backslash path interpolated
+      // verbatim into `node -e` is consumed as JS escapes (drive-relative junk path).
+      { id: 'WO-A', writeScope: [a], command: ['node', '-e', `import {writeFileSync} from 'node:fs'; writeFileSync(${JSON.stringify(a)},'A')`], expectedSha: head },
+      { id: 'WO-B', writeScope: [b], command: ['node', '-e', `import {writeFileSync} from 'node:fs'; writeFileSync(${JSON.stringify(b)},'B')`], expectedSha: head },
     ]
   });
   assert.equal(result.ok, true, JSON.stringify(result.checks.filter(c => !c.pass)));
@@ -150,8 +152,8 @@ test('overlapping write scopes serialize and refuse without silent clobber', asy
   const result = await driver({
     root,
     workOrders: [
-      { id: 'WO-X', writeScope: [shared], command: ['node', '-e', `import {writeFileSync} from 'node:fs'; writeFileSync('${shared}','X')`], expectedSha: head },
-      { id: 'WO-Y', writeScope: [shared], command: ['node', '-e', `import {writeFileSync} from 'node:fs'; writeFileSync('${shared}','Y')`], expectedSha: head },
+      { id: 'WO-X', writeScope: [shared], command: ['node', '-e', `import {writeFileSync} from 'node:fs'; writeFileSync(${JSON.stringify(shared)},'X')`], expectedSha: head },
+      { id: 'WO-Y', writeScope: [shared], command: ['node', '-e', `import {writeFileSync} from 'node:fs'; writeFileSync(${JSON.stringify(shared)},'Y')`], expectedSha: head },
     ]
   });
   assert.equal(result.ok, false, 'overlapping scopes must not both succeed');
@@ -177,7 +179,7 @@ test('stale expected SHA refuses publish with nonzero exit', async t => {
   const out = join(root, 'out.txt');
   const result = await driver({
     root,
-    workOrders: [{ id: 'WO-STALE', writeScope: [out], command: ['node', '-e', `import {writeFileSync} from 'node:fs'; writeFileSync('${out}','ok')`], expectedSha: stale }]
+    workOrders: [{ id: 'WO-STALE', writeScope: [out], command: ['node', '-e', `import {writeFileSync} from 'node:fs'; writeFileSync(${JSON.stringify(out)},'ok')`], expectedSha: stale }]
   });
   assert.equal(result.ok, false, 'stale SHA must refuse publish');
   assert.ok(result.checks.some(c => /stale|fresh.head|drift|expectedSha/.test(String(c.name).toLowerCase())),
@@ -198,7 +200,7 @@ test('missing executed receipt refuses publish', async t => {
   const out = join(root, 'out.txt');
   const result = await driver({
     root,
-    workOrders: [{ id: 'WO-NORECEIPT', writeScope: [out], command: ['node', '-e', `import {writeFileSync} from 'node:fs'; writeFileSync('${out}','ok')`], expectedSha: head, linkReceipt: false }]
+    workOrders: [{ id: 'WO-NORECEIPT', writeScope: [out], command: ['node', '-e', `import {writeFileSync} from 'node:fs'; writeFileSync(${JSON.stringify(out)},'ok')`], expectedSha: head, linkReceipt: false }]
   });
   assert.equal(result.ok, false, 'missing receipt must refuse publish');
   assert.ok(result.checks.some(c => /receipt|missing|executed/.test(String(c.name).toLowerCase())),

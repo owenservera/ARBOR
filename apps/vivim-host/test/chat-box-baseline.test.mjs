@@ -44,7 +44,14 @@ async function withHost(fn) {
     await fn('http://127.0.0.1:' + server.address().port, { ownerToken });
   } finally {
     await new Promise(resolve => server.close(resolve));
-    rmSync(dataRoot, { recursive: true, force: true });
+    // Windows: the Host's journal/sqlite handles can outlive close() by a beat, so the dataRoot
+    // removal throws EBUSY and failed the WHOLE suite (fleet-wide gate exit 1, 2026-11-18).
+    // Best-effort retry — same pattern scratch-host.mjs journey uses; a leaked flagged temp dir
+    // under os.tmpdir() is harmless and never fails the test.
+    for (let i = 0; i < 6; i++) {
+      try { rmSync(dataRoot, { recursive: true, force: true, maxRetries: 3, retryDelay: 200 }); break; }
+      catch { await new Promise(r => setTimeout(r, 300)); }
+    }
   }
 }
 const post = (base, body, headers = {}) => request(base, '/api/mutate', {

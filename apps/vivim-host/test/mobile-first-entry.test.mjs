@@ -188,7 +188,7 @@ test('desktop PWA reads Host owner view without granting any phone or Build effe
   assert.match(app, /fetch\('\/api\/host\/control\/pwa-view'/);
   assert.match(app, /credentials: 'same-origin', cache: 'no-store'/);
   assert.match(app, /if \(build\) build\.clear\(\)/);
-  assert.match(app, /S\.tab = 'today'; N\.target = 'vivim'; N\.pending = null/);
+  assert.match(app, /S\.tab = 'talk'; N\.target = 'vivim'; N\.pending = null/);
   assert.match(app, /readOnly: HOST_PREVIEW/);
   assert.match(app, /\$\('control-preview'\)\.disabled = true/);
   assert.match(surface, /if \(readOnly \|\| pending \|\| !surface/);

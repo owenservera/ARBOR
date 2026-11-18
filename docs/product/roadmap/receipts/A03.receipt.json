@@ -41,7 +41,7 @@
         "detail": "Demo cannot directly perform Host effects or unilaterally alter the owner-approved roadmap"
       }
     ],
-    "digest": "d9506caea68e796987c8aad281f5ce722e6d857cea770919c1137613de40757b"
+    "digest": "4fc6c9684af0f4def284c452858f7ccc3ae5c4d9c3ddec7085a83257649c1350"
   },
   "verificationRun": {
     "kind": "verify",

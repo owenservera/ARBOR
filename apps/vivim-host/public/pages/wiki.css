@@ -69,3 +69,23 @@ pre { color: var(--text); white-space: pre-wrap; overflow-wrap: anywhere; font: 
 @media (max-width: 920px) { .dashboard { grid-template-columns: minmax(0,1fr); } .wiki-panel { grid-row: auto; } }
 @media (max-width: 600px) { .topbar { align-items: start; flex-direction: column; padding: 16px; gap: 13px; } .dashboard { padding: 12px 12px 80px; gap: 12px; } .block { padding: 14px; } .signal { padding: 0 12px; } .diff-grid { grid-template-columns: 1fr; } .editor-shell { max-height: 92dvh; border-radius: 12px 12px 0 0; } .edit { padding: 14px; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; } }
+
+/* ── Queue-truth design (2026-11-18): the roadmap panel renders receipt-backed verification
+   chips (RECEIPT_* vocabulary from the keeper flip) plus status values gated/queued/in-progress.
+   Case-insensitive attribute matches so chip styling survives vocabulary case drift; colors reuse
+   the page tokens (--warn amber, --danger red) and one green for verified truth. */
+.status[class*="receipt-verified" i] { color: #a6ecbe; border-color: #3f7a52; background: #12281c; }
+.status[class*="receipt-gated" i] { color: var(--warn); border-color: #8a6d3b; background: #2a2312; }
+.status[class*="receipt-verification-failed" i] { color: var(--danger); border-color: #8a4a4a; background: #2a1414; }
+.status.gated { color: var(--warn); border-color: #8a6d3b; background: #2a2312; }
+.status.in-progress { color: var(--warn); animation: queue-pulse 2.2s ease-in-out infinite; }
+@keyframes queue-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .55; } }
+/* Row scan rails: the row's truth is legible without reading a single chip. */
+tbody tr { border-left: 3px solid transparent; }
+tbody tr:has(.status[class*="receipt-verified" i]) { border-left-color: #3f7a52; }
+tbody tr:has(.status[class*="receipt-gated" i]), tbody tr:has(.status.gated) { border-left-color: #8a6d3b; }
+tbody tr:has(.status[class*="receipt-verification-failed" i]) { border-left-color: #8a4a4a; }
+td { overflow-wrap: anywhere; }
+tbody td:nth-child(3) { font: 10px/1.6 ui-monospace, monospace; color: var(--muted); }
+/* Queue summary: the one-glance state line. */
+.queue-summary { font: 700 12px/1.5 ui-monospace, monospace; letter-spacing: .02em; border-bottom: 1px dashed var(--border); padding-bottom: 8px; }
