@@ -128,6 +128,30 @@ export function validateProductEdit(payload, wiki) {
   requireShape(payload.expectedRevision === wiki.revision, 'Stale Wiki revision', 409);
 }
 
+// Source-identified observations only: user statements are not verified Wiki facts.
+export function projectWikiContext(records) {
+  const observed = records.filter(e => e?.kind === 'chat-send' &&
+    (e.actor === 'human' || e.actor === 'owner-browser') &&
+    typeof e.entryId === 'string' && Number.isSafeInteger(e.sequence));
+  const latest = observed.slice(-24);
+  return {
+    schema: 'vivim.wiki-context/1', state: 'source-backed',
+    revision: records.length, totalObserved: observed.length,
+    omitted: observed.length - latest.length,
+    items: latest.map(e => {
+      const outcome = typeof e.intent?.outcome === 'string' ? e.intent.outcome.slice(0, 64) : null;
+      const actionId = typeof e.intent?.candidate?.actionId === 'string'
+        ? e.intent.candidate.actionId.slice(0, 128) : null;
+      return {
+        source: 'host-product-journal', entryId: e.entryId, sequence: e.sequence,
+        receivedAt: e.receivedAt, actorDeclared: e.actor, text: e.text,
+        status: 'user-statement-unverified',
+        ...(outcome ? { interpretation: { outcome, ...(actionId ? { actionId } : {}) } } : {})
+      };
+    })
+  };
+}
+
 export function createProductJournal({ dataRoot, seedState, seedWiki }) {
   const journalPath = path.resolve(dataRoot, 'product-state', 'journal.jsonl');
   const directory = path.dirname(journalPath);
@@ -162,6 +186,11 @@ export function createProductJournal({ dataRoot, seedState, seedWiki }) {
   }
   async function readRecords() { return (await snapshot()).records; }
   async function readProjection() { return replayProductJournal(seedState, seedWiki, await readRecords()); }
+  async function readWikiContext() {
+    const current = await snapshot(); // validates committed records and deterministic replay
+    requireShape(!current.tornTail, 'Wiki context unavailable: torn journal tail', 503);
+    return projectWikiContext(current.records);
+  }
   function append(payload) {
     const run = async () => {
       validateEnvelope(payload);
@@ -200,5 +229,5 @@ export function createProductJournal({ dataRoot, seedState, seedWiki }) {
     return pending;
   }
   async function rawJournal() { return (await snapshot()).committed; }
-  return { journalPath, readRecords, readProjection, append, rawJournal };
+  return { journalPath, readRecords, readProjection, readWikiContext, append, rawJournal };
 }

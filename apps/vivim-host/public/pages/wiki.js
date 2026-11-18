@@ -5,6 +5,7 @@
 const SOURCES = Object.freeze({
   wiki: { url: '/api/wiki', path: 'Host product journal → Wiki projection' },
   state: { url: '/api/state', path: 'Host product journal → chat state projection' },
+  context: { url: '/api/host/control/wiki-context', path: 'Owner-private journal → user observations' },
   roadmap: { url: '/api/roadmap', path: 'docs/product/roadmap/roadmap.v1.json (keeper-owned)' },
   surface: { url: '/api/file-surface', path: 'data/demo-baseline/file-surface.v1.json (stage A)' },
   journal: { url: '/api/journal', path: 'Host data-root/product-state/journal.jsonl' }
@@ -79,6 +80,28 @@ function renderWiki(wiki) {
     for (const [section, body] of sections) card.appendChild(sectionEl(name, section, present(body, ''), wiki.revision));
     root.appendChild(card);
   }
+  return root;
+}
+function renderContext(context) {
+  const root = element('div', 'stack');
+  root.appendChild(element('p', 'queue-summary', context.totalObserved + ' user-declared observation(s) · source sequence ' + context.revision + ' · not verified facts'));
+  if (!context.items.length) {
+    root.appendChild(element('p', 'empty', 'No source-identified user messages yet. Send a message in Chat to begin.'));
+    return root;
+  }
+  for (const item of context.items.slice().reverse()) {
+    const card = element('article', 'section');
+    card.dataset.entryId = item.entryId;
+    card.dataset.sequence = String(item.sequence);
+    card.appendChild(element('p', 'body', item.text));
+    const interpretation = item.interpretation?.outcome
+      ? ' · typed interpretation: ' + item.interpretation.outcome +
+        (item.interpretation.actionId ? ' / ' + item.interpretation.actionId : '') : '';
+    card.appendChild(element('div', 'meta', 'Unverified user statement · journal ' + item.entryId +
+      ' · sequence ' + item.sequence + ' · ' + item.receivedAt + interpretation));
+    root.appendChild(card);
+  }
+  if (context.omitted) root.appendChild(element('p', 'empty', context.omitted + ' older observations omitted from bounded view.'));
   return root;
 }
 function renderRoadmap(roadmap) {
@@ -214,11 +237,24 @@ function checkEditorRevision() {
   if (isWikiDocument(wiki) && wiki.revision !== editSession.revision) markStale(wiki.revision);
 }
 async function getJson(key) {
-  const response = await fetch(SOURCES[key].url, { cache: 'no-store', signal: AbortSignal.timeout(5000) });
-  if (!response.ok) throw new Error(`HTTP ${response.status} ${SOURCES[key].url}`);
+  if (key === 'context') await ownerEditCsrf(); // exchange native launch code when provided
+  const response = await fetch(SOURCES[key].url, { cache: 'no-store',
+    ...(key === 'context' ? { credentials: 'same-origin' } : {}), signal: AbortSignal.timeout(5000) });
+  if (!response.ok) {
+    if (key === 'context' && response.status === 401) ownerCsrf = null;
+    throw new Error('HTTP ' + response.status + ' ' + SOURCES[key].url);
+  }
   const data = await response.json();
   if (key === 'wiki' && !isWikiDocument(data)) throw new Error('Invalid Wiki revision/schema');
   if (key === 'state' && (!data || !Number.isSafeInteger(data.revision))) throw new Error('Invalid Host state revision');
+  if (key === 'context' && (data?.schema !== 'vivim.wiki-context/1' ||
+      data.state !== 'source-backed' || !Number.isSafeInteger(data.revision) ||
+      !Number.isSafeInteger(data.totalObserved) || !Number.isSafeInteger(data.omitted) ||
+      !Array.isArray(data.items) || data.items.length > 24 ||
+      data.items.some(item => typeof item.entryId !== 'string' ||
+        !Number.isSafeInteger(item.sequence) || typeof item.text !== 'string' ||
+        item.status !== 'user-statement-unverified')))
+    throw new Error('Invalid Host Wiki-context projection');
   if (key === 'roadmap' && !Array.isArray(data?.buildQueue)) throw new Error('Invalid canonical roadmap queue');
   if (key === 'surface' && !Array.isArray(data?.files) && !Array.isArray(data?.records) && !Array.isArray(data)) throw new Error('Invalid file-surface registry');
   if (key === 'journal' && !Array.isArray(data) && !Array.isArray(data?.entries)) throw new Error('Invalid journal records');
@@ -227,6 +263,7 @@ async function getJson(key) {
 function revisionLabel(key, data) {
   if (key === 'wiki') return `Wiki rev ${data.revision}`;
   if (key === 'state') return `state rev ${data.revision} / Wiki rev ${present(data.wikiRevision)}`;
+  if (key === 'context') return `source sequence ${data.revision} · ${data.totalObserved} observed`;
   if (key === 'roadmap') return `batch ${present(data.acceleration?.activeBatch)} · ${data.buildQueue.length} rows · no content rev`;
   if (key === 'surface') return `${fileRecords(data).length} indexed files · ${present(data.generatorVersion)} · generated seed`;
   return `${entriesOf(data).length} entries · count is not a revision`;
@@ -247,6 +284,7 @@ function ingest(key, data) {
   updateSourceMeta(key);
   if (changed) {
     if (key === 'wiki') $('wiki-view').replaceChildren(renderWiki(data));
+    if (key === 'context') $('context-view').replaceChildren(renderContext(data));
     if (key === 'roadmap') $('roadmap-view').replaceChildren(renderRoadmap(data));
     if (key === 'surface') $('surface-view').replaceChildren(renderFileSurface(data));
     if (key === 'journal') {
@@ -276,7 +314,7 @@ function checkReadback(wiki) {
   }
 }
 function renderSync() {
-  const keys = Object.keys(SOURCES);
+  const keys = Object.keys(SOURCES).filter(key => key !== 'context'; // private source may be locked
   const seen = keys.filter(key => !!snapshots[key]?.data).length;
   const failures = keys.filter(key => !!snapshots[key]?.error);
   const wiki = sourceRecord('wiki');
@@ -301,7 +339,16 @@ async function refresh() {
       const key = keys[index];
       if (result.status === 'fulfilled') ingest(key, result.value);
       else {
-        snapshots[key] = { ...snapshots[key], error: String(result.reason?.message || result.reason) };
+        const message = String(result.reason?.message || result.reason);
+        if (key === 'context') {
+          // Never retain private text in the DOM after auth loss or failed refresh.
+          ownerCsrf = null;
+          snapshots[key] = { data: null, signature: null, error: message };
+          $('context-view').replaceChildren(element('p', 'empty',
+            message.includes('Owner session') || message.includes('HTTP 401')
+              ? 'Owner context locked. Unlock Host Control to see user observations.'
+              : 'Owner context temporarily unavailable. No cached private content displayed.'));
+        } else snapshots[key] = { ...snapshots[key], error: message };
         updateSourceMeta(key);
       }
     });

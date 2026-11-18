@@ -348,7 +348,7 @@ export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path
       return;
     }
     if (pathname.startsWith('/api/host/control/')) {
-      await handleControl(req, res, pathname, host, controlFor, tokenFor, uiSessions, enrollment, runtimeFor);
+      await handleControl(req, res, pathname, host, controlFor, tokenFor, uiSessions, enrollment, runtimeFor, productJournal);
       return;
     }
     const workerMatch = pathname.match(/^\/api\/host\/worker\/([^\/]+)\/(status|recover)$/);
@@ -792,7 +792,7 @@ function ownerAuthorized(req, res, tokenFor) {
 // UTC03 desktop surface. Reads: loopback + owner token. Writes additionally require the exact
 // same Origin and an explicit header, like bootstrap mutations. Execution happens only in the
 // dispatcher, bound to a previously returned plan digest.
-async function handleControl(req, res, pathname, host, controlFor, tokenFor, uiSessions, enrollment, runtimeFor) {
+async function handleControl(req, res, pathname, host, controlFor, tokenFor, uiSessions, enrollment, runtimeFor, productJournal) {
   const route = pathname.slice('/api/host/control/'.length);
   const sameOrigin = String(req.headers.origin || '').toLowerCase() === 'http://' + host;
   const isMutation = ['plan', 'interpret', 'execute', 'ui-logout', 'devices/approve', 'devices/revoke'].includes(route);
@@ -834,6 +834,14 @@ async function handleControl(req, res, pathname, host, controlFor, tokenFor, uiS
   if (owner && verifyOwnerToken(req.headers.authorization, owner)) authorized = true;
   if (!authorized && uiSessions.authorized(req, { mutate: isMutation })) authorized = true;
   if (!authorized) { sendJson(res, 401, { code: 'OWNER_AUTH', error: 'Owner authorization required' }); return; }
+  // Private observations are never placed in public /api/wiki.
+  if (route === 'wiki-context') {
+    if (req.method !== 'GET') { res.setHeader('allow', 'GET'); sendJson(res, 405, { code: 'METHOD' }); return; }
+    if (req.headers.origin !== undefined && !sameOrigin) { sendJson(res, 403, { code: 'ORIGIN' }); return; }
+    try { sendJson(res, 200, await productJournal.readWikiContext()); }
+    catch { sendJson(res, 503, { schema: 'vivim.wiki-context/1', state: 'unavailable', code: 'WIKI_CONTEXT_UNAVAILABLE' }); }
+    return;
+  }
   // Desktop PWA reads the Host's existing phone-safe projection using ONLY the
   // one-use owner browser session or local owner capability. This is not a phone
   // grant, a relay, a live-message transcript or an execution endpoint.

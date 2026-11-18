@@ -81,6 +81,15 @@ test('batch-1 product routes: pages, baseline JSON, read-throughs, mutate append
       assert.equal(res.status, 200, name + ' external CSP asset');
     }
 
+    // Context read is owner-private despite public Wiki seed reads.
+    const contextUrl = '/api/host/control/wiki-context';
+    assert.equal((await httpFetch(base, contextUrl)).status, 401);
+    assert.equal((await httpFetch(base, contextUrl, { headers: { authorization: 'Bearer incorrect' } })).status, 401);
+    assert.equal((await httpFetch(base, contextUrl, { headers: {
+      authorization: 'Bearer ' + token, origin: 'http://evil.invalid'
+    } })).status, 403);
+    assert.equal((await httpFetch(base, contextUrl, { headers: { authorization: 'Bearer ' + token } })).status, 200);
+
     // Baseline seeds: state = chat state projection shape (state.mjs.draft loadState),
     // wiki = {revision, pages{name:{sections}}} with a few sections.
     const state = await httpFetch(base, '/api/state');
@@ -174,6 +183,8 @@ test('batch-1 product routes: pages, baseline JSON, read-throughs, mutate append
     assert.match(String(exchanged.headers.get('set-cookie')), /HttpOnly; SameSite=Strict; Path=\/api;/);
     const session = await exchanged.json();
     const cookie = String(exchanged.headers.get('set-cookie')).split(';')[0];
+    assert.equal((await httpFetch(base, contextUrl, { headers: { cookie } })).status, 200,
+      'owner browser cookie may read private context');
     const next = { ...editor, expectedRevision: afterEdit.revision,
       edit: { ...editor.edit, content: 'owner browser session update' } };
     assert.equal((await sendEdit(next, { ...mutationHeaders, cookie })).status, 401, 'missing session CSRF');
@@ -184,6 +195,8 @@ test('batch-1 product routes: pages, baseline JSON, read-throughs, mutate append
       method: 'POST', headers: { ...mutationHeaders, cookie, 'x-vivim-ui-csrf': session.csrf }
     });
     assert.equal(loggedOut.status, 200);
+    assert.equal((await httpFetch(base, contextUrl, { headers: { cookie } })).status, 401,
+      'revoked owner session cannot read context');
     const revoked = { ...next, expectedRevision: afterEdit.revision + 1 };
     assert.equal((await sendEdit(revoked, { ...mutationHeaders, cookie,
       'x-vivim-ui-csrf': session.csrf })).status, 401, 'revoked browser session refused');
@@ -215,6 +228,25 @@ test('batch-1 product routes: pages, baseline JSON, read-throughs, mutate append
       authorization: 'Bearer ' + token })]);
     assert.deepEqual(race.map(r => r.status).sort(), [200,409]);
     assert.equal((await (await httpFetch(base, '/api/journal')).json()).length, 5);
+
+    // Real HTTP chat append becomes private context without changing the editable Wiki.
+    const wikiBeforeContext = await (await httpFetch(base, '/api/wiki')).json();
+    const userPost = await httpFetch(base, '/api/mutate', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ schemaVersion: 1, actor: 'human', kind: 'chat-send',
+        text: 'Voice notes to structured tasks' })
+    });
+    assert.equal(userPost.status, 200);
+    const userEntry = await userPost.json();
+    const contextJson = await (await httpFetch(base, contextUrl, {
+      headers: { authorization: 'Bearer ' + token }
+    })).json();
+    assert.equal(contextJson.totalObserved, 1);
+    assert.equal(contextJson.items[0].entryId, userEntry.entryId);
+    assert.equal(contextJson.items[0].text, 'Voice notes to structured tasks');
+    const wikiAfterContext = await (await httpFetch(base, '/api/wiki')).json();
+    assert.equal(wikiAfterContext.revision, wikiBeforeContext.revision);
+    assert.deepEqual(wikiAfterContext.pages, wikiBeforeContext.pages);
 
     // Exact-string dispatch only: unknown /api/* paths still 404 (no catch-all).
     assert.equal((await httpFetch(base, '/api/definitely-not-a-route')).status, 404);

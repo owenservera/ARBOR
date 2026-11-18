@@ -39,6 +39,33 @@ test('fsynced append, private dataRoot isolation, restart and all read surfaces 
   assert.equal((await two.readRecords()).length, 0);
 }));
 
+test('source-identified user context is bounded and restart-persistent', () => rootTest(async root => {
+  const j = journal(root);
+  const wikiRev = (await j.readProjection()).wiki.revision;
+  await j.append({ ...chat('Voice notes to structured tasks'),
+    intent: { outcome: 'candidate', candidate: { actionId: 'wiki.section.edit' } } });
+  await j.append({ ...chat('AI output'), actor: 'ai' });
+  await j.append({ ...chat('background event'), actor: 'loop-agent' });
+  const restored = journal(root);
+  const context = await restored.readWikiContext();
+  const first = (await restored.readRecords())[0];
+  assert.equal(context.schema, 'vivim.wiki-context/1');
+  assert.equal(context.revision, 3);
+  assert.equal(context.totalObserved, 1);
+  assert.equal(context.items[0].entryId, first.entryId);
+  assert.equal(context.items[0].sequence, 1);
+  assert.equal(context.items[0].text, 'Voice notes to structured tasks');
+  assert.equal(context.items[0].status, 'user-statement-unverified');
+  assert.equal(context.items[0].interpretation.actionId, 'wiki.section.edit');
+  assert.equal((await restored.readProjection()).wiki.revision, wikiRev);
+  for (let n = 0; n < 27; n++) await j.append(chat('observed ' + n));
+  const bounded = await restored.readWikiContext();
+  assert.equal(bounded.totalObserved, 28);
+  assert.equal(bounded.items.length, 24);
+  assert.equal(bounded.omitted, 4);
+  assert.equal(bounded.items.at(-1).text, 'observed 26');
+}));
+
 test('same revision concurrent attempts across two instances: one commit one 409', () => rootTest(async root => {
   const a = journal(root), b = journal(root);
   const results = await Promise.allSettled([a.append(edit()), b.append(edit())]);
@@ -75,6 +102,7 @@ test('torn tail replays committed prefix, exposes only committed JSONL, refuses 
   appendFileSync(j.journalPath, '{"kind":"chat-send","actor":');
   assert.equal((await j.readRecords()).length, 1);
   assert.equal(await j.rawJournal(), before);
+  await assert.rejects(j.readWikiContext(), e => e.status === 503);
   await assert.rejects(j.append(chat('unsafe')), e => e.status === 503);
   assert.ok(readFileSync(j.journalPath, 'utf8').endsWith('"actor":'));
 }));

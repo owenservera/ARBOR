@@ -40,6 +40,10 @@ function setup() {
   const docs = {
     '/api/wiki': clone(baseWiki),
     '/api/state': { revision: 0, wikiRevision: 1, chat: [] },
+    '/api/host/control/wiki-context': {
+      schema: 'vivim.wiki-context/1', state: 'source-backed', revision: 0,
+      totalObserved: 0, omitted: 0, items: []
+    },
     '/api/roadmap': clone(baseRoadmap),
     '/api/file-surface': clone(baseSurface),
     '/api/journal': []
@@ -54,6 +58,8 @@ function setup() {
         ? { ok: true, status: 200, json: async () => ({ schema: 'vivim.control-ui-session/1', csrf: 'a'.repeat(64) }) }
         : { ok: false, status: 401, json: async () => ({ code: 'OWNER_AUTH' }) };
     }
+    if (url === '/api/host/control/wiki-context' && !ownerSession)
+      return { ok: false, status: 401, json: async () => ({ code: 'OWNER_AUTH' }) };
     if (url === '/api/mutate') {
       const body = JSON.parse(options.body);
       assert.equal(options.credentials, 'same-origin');
@@ -131,6 +137,28 @@ test('Host source projection: revisions, seed truth, actual files[] schema and u
   assert.match(ui.el('sync-status').textContent, /Retry pending/);
   ui.setGetFailure(null); ui.el('refresh-now').fire('click'); await settle();
   assert.doesNotMatch(ui.el('wiki-source').textContent, /stale\/unavailable/);
+});
+
+test('private context refreshes during polling and clears after owner auth loss', async () => {
+  const ui = setup(); await settle();
+  assert.match(ui.el('context-source').textContent, /0 observed/);
+  ui.docs['/api/host/control/wiki-context'] = {
+    schema: 'vivim.wiki-context/1', state: 'source-backed', revision: 1,
+    totalObserved: 1, omitted: 0, items: [{
+      source: 'host-product-journal', entryId: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+      sequence: 1, receivedAt: '2026-11-18T12:00:00Z', actorDeclared: 'human',
+      text: '<img src=x onerror=alert(1)>', status: 'user-statement-unverified'
+    }]
+  };
+  ui.tick(); await settle();
+  const nodes = allChildren(ui.el('context-view'));
+  assert.ok(nodes.some(n => n.textContent === '<img src=x onerror=alert(1)>'));
+  assert.ok(nodes.some(n => /Unverified user statement/.test(n.textContent)));
+  ui.setOwnerSession(false);
+  ui.tick(); await settle();
+  assert.match(ui.el('context-view').children[0].textContent, /Owner context locked/);
+  assert.equal(allChildren(ui.el('context-view')).some(n =>
+    n.textContent === '<img src=x onerror=alert(1)>'), false);
 });
 
 test('fresh revision diff, explicit Host POST receipt, readback and stale refusal without losing the draft', async () => {
