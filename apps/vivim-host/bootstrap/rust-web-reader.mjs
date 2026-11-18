@@ -4,6 +4,7 @@ import path from 'node:path';
 import { execFile as execFileCb } from 'node:child_process';
 import { promisify } from 'node:util';
 import { WEB_MEMORY_SCHEMA } from './web-memory.mjs';
+import { resolveBundledRustBinary } from '../chat/rust-context.mjs';
 
 const execFile = promisify(execFileCb);
 const error = code => Object.assign(new Error(code), { code });
@@ -11,7 +12,7 @@ const error = code => Object.assign(new Error(code), { code });
 export function createRustWebReader({ dataRoot, env = process.env, execute = execFile } = {}) {
   if (typeof dataRoot !== 'string' || !path.isAbsolute(dataRoot))
     throw error('WEB_ROOT_REQUIRED');
-  const binary = env.VIVIM_WEB_MEMORY_BIN;
+  const binary = env.VIVIM_WEB_MEMORY_BIN ?? resolveBundledRustBinary('hqkg-web-feed');
   const journal = env.VIVIM_WEB_MEMORY_JOURNAL ||
     path.join(dataRoot, 'browser-companion', 'web-memory.hqj');
 

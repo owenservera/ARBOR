@@ -61,7 +61,7 @@ export function mountCapabilityLauncher({host,context,onActivate,onInspect=()=>f
       let snapshot;try{snapshot=context()}catch{snapshot={}}
       const query=input.value.trim().slice(0,100);
       if(mode===1){
-        info.textContent='Read-only inspection. Declared types are not installed components.';
+        info.textContent='Inspect live instances and canonical definitions. Shell identity does not grant edit authority.';
         const live=liveRows(snapshot,query),definitions=listUiComponents({search:query});
         list.append(make('h3','',live.length+' live matching PWA instances'));
         for(const row of live){

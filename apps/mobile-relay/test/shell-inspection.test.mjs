@@ -18,3 +18,10 @@ test('inspection enumerates only real visible known shell mounts without content
   nodes.text.hidden=true;
   assert.equal(selectShell(doc,'talk',rows[1]),false);
 });
+
+test('native shell reports canonical identities without granting mutation authority',()=>{
+  const doc={getElementById:id=>id==='text'?mounted():null};
+  const [row]=inspectShell(doc,'talk');
+  assert.equal(row.componentId,'vivim.ui.input.text-entry.textarea@1');
+  assert.equal(row.settings.authority,'protected inspection only');
+});

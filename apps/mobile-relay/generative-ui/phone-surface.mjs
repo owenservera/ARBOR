@@ -75,6 +75,7 @@ export function mountBuildSurface(mount, { onCommit = () => {}, semantic = null,
     renderSurface(mount, s, {
       audience: 'phone',
       tierflow: true,
+      interactiveLocal: !readOnly,
       approvedRefs: [],
       onMounted: rows=>{instances=new Map(rows.map(row=>[row.instanceId,row]));},
       onIntent: (intent) => {

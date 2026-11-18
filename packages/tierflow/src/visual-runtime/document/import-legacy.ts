@@ -32,7 +32,12 @@ export interface LegacyImportOptions {
   readonly ownerRef: string;
   readonly workspaceRef: string;
   readonly sourceRef: string;
+  /** Only the validated live surface adapter may opt into inert local selection controls. */
+  readonly localSelectionControls?: boolean;
+  /** Already-projected references, not a grant or canonical KB binding. */
+  readonly projectedCardRefs?: readonly string[];
 }
+const LOCAL_SELECTION_ACTION = Object.freeze({id:'ui.local.select',version:1});
 const ID = /^[A-Za-z][A-Za-z0-9._:-]{0,95}$/;
 const RESTRICTED = /<\s*\/?[a-z!]|javascript:|data:|vbscript:|https?:\/\/|www\.|(?:onerror|onclick|onload)\s*=|=>|\beval\s*\(/i;
 function rec(v:unknown): v is Record<string,unknown> {return v!==null&&typeof v==='object'&&!Array.isArray(v);}
@@ -76,8 +81,13 @@ function fromHarness(source:Record<string,unknown>, options:LegacyImportOptions,
     if(v.type==='button'&&(!safeText(p.label)||!['preview-only','select-component'].includes(p.intent as string)))throw Error('Unknown/unsafe legacy action');
     if(v.type==='button') {
       // A component with an intent in the old grammar is not a Host-authorized command.
-      losses.push({code:'ACTION_UNBOUND',sourceId:id,message:'Legacy intent remains unavailable; no executable action imported'});
-      node={id,type:'text',props:{value:`${label} (unavailable action)`},children:[],a11y:{role:'text',name:label}};
+      if(options.localSelectionControls===true){
+        if(children.length|| (p.targetId!==undefined&&!key(p.targetId)))throw Error('Invalid local selection control');
+        node={id,type:'button',props:{label},children:[],a11y:{role:'button',name:label,focusOrder:nodes.length},actionRefs:[LOCAL_SELECTION_ACTION]};
+      }else{
+        losses.push({code:'ACTION_UNBOUND',sourceId:id,message:'Legacy intent remains unavailable; no executable action imported'});
+        node={id,type:'text',props:{value:`${label} (unavailable action)`},children:[],a11y:{role:'text',name:label}};
+      }
     } else if(v.type==='stack') {
       node={id,type:'stack',props:{direction:p.direction==='horizontal'?'horizontal':'vertical',gap:['sm','md','lg'].includes(p.gap as string)?p.gap as 'sm'|'md'|'lg':'md'},children,a11y:{role:id==='root'?'main':'group',name:'Section'}};
     } else if(v.type==='grid') {
@@ -89,8 +99,9 @@ function fromHarness(source:Record<string,unknown>, options:LegacyImportOptions,
       const title=safeText(p.title);if(!title)throw Error('Unsafe card label');
       const description=p.description===undefined?undefined:safeText(p.description);
       if(p.description!==undefined&&!description)throw Error('Unsafe card description');
-      if(p.sourceRef!==undefined)losses.push({code:'SOURCE_REF_UNBOUND',sourceId:id,message:'Legacy sourceRef is not a canonical KB stableId'});
-      const renderedType=v.type==='card'?'card':'card';
+      const projected=typeof p.sourceRef==='string'&&options.projectedCardRefs?.includes(p.sourceRef)===true;
+      if(p.sourceRef!==undefined&&!projected)losses.push({code:'SOURCE_REF_UNBOUND',sourceId:id,message:'Legacy sourceRef is not a canonical KB stableId'});
+      const renderedType=projected&&(v.type==='profile-card'||v.type==='project-card')?v.type:'card';
       node={id,type:renderedType,props:{title,...(description?{description}:{})},children:v.type==='card'?children:[],a11y:{role:'region',name:title}};
     } else {
       const title=safeText(p.title);if(!title||!Array.isArray(p.items))throw Error('Invalid structured content');
@@ -177,7 +188,7 @@ export function importLegacyUiDocument(raw:unknown, options:LegacyImportOptions)
   try {
     const candidate=schema==='vivim.ui-surface/1'?fromHarness(original,options,losses)
       : schema==='vivim.surface/1'?fromHq(original,options,losses):fromSpatial(original,options,losses);
-    const verdict=validateUiDocument(candidate);
+    const verdict=validateUiDocument(candidate,{knownActions:options.localSelectionControls===true?[LOCAL_SELECTION_ACTION]:[]});
     if(!verdict.ok)return refuse(`Conversion refused: ${verdict.unavailable.reason}`,losses);
     return {status:'preview',readOnly:true,document:verdict.document,losses,provenance:{sourceSchema:schema,sourceRef:options.sourceRef,original,authorizedForRendering:false}};
   } catch(error) {

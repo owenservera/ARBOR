@@ -9,7 +9,8 @@
     "studio",
     "harness",
     "hq",
-    "packages/tierflow"
+    "packages/tierflow",
+    "packages/vec-ui-engines"
   ],
   "engines": {
     "node": ">=24"

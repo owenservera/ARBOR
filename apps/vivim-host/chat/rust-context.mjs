@@ -92,17 +92,18 @@ function regularFile(file) {
   catch { return false; }
 }
 
-export function resolveRustContextRuntime({env=process.env, repoRoot=DEFAULT_ROOT, isFile=regularFile,
-  platform=process.platform}={}) {
+export function resolveBundledRustBinary(name,{repoRoot=DEFAULT_ROOT,isFile=regularFile,platform=process.platform}={}) {
+  if(!['hqkg-personal','hqkg-chat-context','hqkg-web-feed'].includes(name))return null;
   const ext = platform === 'win32' ? '.exe' : '';
   const dirs = [path.join(repoRoot,'native','bin'), path.join(repoRoot,'target','release'),
     path.join(repoRoot,'target','debug'), path.join(repoRoot,'native','hqkg','target','release'),
     path.join(repoRoot,'native','hqkg','target','debug')];
-  const choose = (name, override) => {
-    if (override !== undefined) return typeof override === 'string' && path.isAbsolute(override) &&
-      isFile(override) ? override : null;
-    return dirs.map(dir => path.resolve(dir,name+ext)).find(isFile) ?? null;
-  };
+  return dirs.map(dir => path.resolve(dir,name+ext)).find(isFile) ?? null;
+}
+export function resolveRustContextRuntime({env=process.env,repoRoot=DEFAULT_ROOT,isFile=regularFile,platform=process.platform}={}) {
+  const choose=(name,override)=>override!==undefined
+    ? (typeof override==='string'&&path.isAbsolute(override)&&isFile(override)?override:null)
+    : resolveBundledRustBinary(name,{repoRoot,isFile,platform});
   return {personal:choose('hqkg-personal',env.VIVIM_PERSONAL_CORE_BIN),
     reader:choose('hqkg-chat-context',env.VIVIM_CHAT_CORE_BIN)};
 }

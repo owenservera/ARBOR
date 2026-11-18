@@ -9,10 +9,10 @@ import { getUiComponent, resolveUiSourceIdentity } from './ui-taxonomy/registry.
 const PREFIX = /^(?:add|create|rename|remove|delete|move)\b/i;
 // Refuse possible second actions/conditionals instead of treating them as card titles.
 const COMPLEX = /(?:[;]|\b(?:and then|and also|and (?:add|create|remove|delete|move|rename)|after that|unless|whenever|when|if|then|automatically|every (?:day|morning|night|week))\b)/i;
-const ADD = /^(?:add|create) (?:a |an )?(card|heading|text) (?:called|named|saying) (.+)$/i;
-const RENAME = /^rename (?:the )?(card|heading|text) (?:called |named )?(.+?) to (.+)$/i;
-const REMOVE = /^(?:remove|delete) (?:the )?(card|heading|text) (?:called |named )?(.+)$/i;
-const MOVE = /^move (?:the )?(card|heading|text) (?:called |named )?(.+?) to (?:the )?(top|bottom)$/i;
+const ADD = /^(?:add|create) (?:a |an )?(card|heading|text|button|collection|timeline|chart) (?:called|named|saying) (.+)$/i;
+const RENAME = /^rename (?:the )?(card|heading|text|button|collection|timeline|chart) (?:called |named )?(.+?) to (.+)$/i;
+const REMOVE = /^(?:remove|delete) (?:the )?(card|heading|text|button|collection|timeline|chart) (?:called |named )?(.+)$/i;
+const MOVE = /^move (?:the )?(card|heading|text|button|collection|timeline|chart) (?:called |named )?(.+?) to (?:the )?(top|bottom)$/i;
 const normalized = value => value.trim().toLocaleLowerCase('en');
 const MAX_UI_REQUEST = 400;
 const WORD = /[^a-z0-9]+/g;
@@ -20,14 +20,14 @@ const outcome = (state, code, detail = null) => ({
   outcome: state, code, ...(detail ? { detail } : {})
 });
 function isType(node, type) {
-  if (type === 'card') return node.type === 'card';
+  if (!['heading','text'].includes(type)) return node.type === type;
   return node.type === 'text' &&
     (type === 'heading' ? node.props?.variant === 'heading' : node.props?.variant !== 'heading');
 }
 function visibleCandidates(node, type, name, found = [], visible = true) {
   const allowed = visible && node.visibility !== 'pc-private';
   if (!allowed) return found;
-  const label = node.props?.title ?? node.props?.value;
+  const label = node.props?.title ?? node.props?.value ?? node.props?.label;
   if (isType(node, type) && typeof label === 'string' && normalized(label) === normalized(name))
     found.push(node);
   for (const child of node.children ?? []) visibleCandidates(child, type, name, found, allowed);
@@ -75,7 +75,9 @@ export function compileVecUiRequest({ text, surface } = {}) {
   const canonicalId = ({
     card: 'vivim.ui.foundation.surface.card@1',
     heading: 'vivim.ui.foundation.typography.heading@1',
-    text: 'vivim.ui.foundation.typography.text@1'
+    text: 'vivim.ui.foundation.typography.text@1',
+    button:'vivim.ui.input.actions.button@1', collection:'vivim.ui.data.collections.collection@1',
+    timeline:'vivim.ui.data.temporal.timeline@1', chart:'vivim.ui.data.charts.chart@1'
   })[type];
   const taxonomy = getUiComponent(canonicalId);
   const nativeType = type === 'heading' ? 'text' : type;
@@ -92,7 +94,8 @@ export function compileVecUiRequest({ text, surface } = {}) {
   if (add) {
     const componentType = type === 'heading' ? 'text' : type;
     const component = { id: identifier(title, type, current.tree), type: componentType,
-      props: type === 'card' ? { title } : { value: title, variant: type === 'heading' ? 'heading' : 'body' },
+      props: type === 'card' ? { title } : type==='button'?{label:title,intent:'preview-only'}:
+        ['collection','timeline','chart'].includes(type)?{title,items:[]}:{ value: title, variant: type === 'heading' ? 'heading' : 'body' },
       children: [] };
     op = { type: 'insert', parentId: 'root', component };
     explanation = 'Add ' + type + ' "' + title + '".';
@@ -105,7 +108,7 @@ export function compileVecUiRequest({ text, surface } = {}) {
       const next = safeTitle(rename[3]);
       if (!next) return outcome('refused', 'INVALID_UI_TITLE');
       op = { type: 'replace-props', componentId: target.id,
-        props: type === 'card' ? { title: next } : { value: next } };
+        props: type==='button'?{label:next}:['card','collection','timeline','chart'].includes(type)?{title:next}:{ value: next } };
       explanation = 'Rename ' + type + ' "' + title + '" to "' + next + '".';
     } else if (remove) {
       op = { type: 'remove', componentId: target.id };

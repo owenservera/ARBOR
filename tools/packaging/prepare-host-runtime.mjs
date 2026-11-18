@@ -10,11 +10,11 @@ const resources=path.join(root,'src-tauri','resources');
 const runtime=path.join(resources,'runtime');
 const stage=path.join(resources,'.runtime-stage-'+process.pid);
 const previous=path.join(resources,'.runtime-previous-'+process.pid);
-const dirs=['apps/vivim-host','apps/mobile-relay','studio','harness','hq','packages/tierflow','contracts'];
-const topFiles=['package.json','bun.lock','integration/source-lock.json'];
+const dirs=['apps/vivim-host','apps/mobile-relay','studio','harness','hq','packages/tierflow','packages/vec-ui-engines','contracts'];
+const topFiles=['package.json','bun.lock','integration/source-lock.json','docs/data-intelligence/ingress-registry.v1.json'];
 const refuse=s=>{throw new Error('PACKAGING_REFUSED: '+s);};
-function checkInputs(){
- for(const p of [...topFiles,'src-tauri/tauri.conf.json',...dirs])if(!existsSync(path.join(root,p)))refuse('missing '+p);
+function checkInputs({requireLock=true}={}){
+ for(const p of [...topFiles.filter(p=>requireLock||p!=='bun.lock'),'src-tauri/tauri.conf.json',...dirs])if(!existsSync(path.join(root,p)))refuse('missing '+p);
  const c=JSON.parse(readFileSync(path.join(root,'src-tauri/tauri.conf.json'),'utf8'));
  for(const p of Object.keys(c.bundle?.resources||{}))if(/\.apk$/i.test(p))refuse('PWA-first still mandates APK: '+p);
  if(!Object.keys(c.bundle?.resources||{}).includes('resources/runtime/'))refuse('Missing required resources/runtime/ in Tauri config');
@@ -47,9 +47,14 @@ function nodeBinary(){
  return p;
 }
 const mode=process.argv[2]||'--check';
-if(!['--check','--stage'].includes(mode))refuse('Usage: node tools/packaging/prepare-host-runtime.mjs --check|--stage');
-checkInputs();
-if(mode==='--check'){
+if(!['--check','--stage','--lock'].includes(mode))refuse('Usage: node tools/packaging/prepare-host-runtime.mjs --check|--stage|--lock');
+checkInputs({requireLock:mode!=='--lock'});
+if(mode==='--lock'){
+ // Explicit developer step, never replace the frozen distribution install with a floating install.
+ run('bun',['install','--lockfile-only','--ignore-scripts'],root);
+ checkInputs();
+ console.log(JSON.stringify({status:'LOCK_GENERATED',note:'Review and commit bun.lock before staging'}));
+}else if(mode==='--check'){
  console.log(JSON.stringify({status:'SOURCE_PREFLIGHT_ONLY',runtime:'NOT_STAGED',pwaFirst:true,apk:'DEFERRED',note:'No build or binary trust acceptance implied'}));
 }else{
  const binary=nodeBinary();
@@ -62,10 +67,10 @@ if(mode==='--check'){
   // Build and stage the existing Rust CLIs once at packaging time. The Host
   // discovers these exact bundled executables without Cargo or environment at runtime.
   run('cargo',['build','--release','-p','hq-knowledge-graph','--features','importer',
-    '--bin','hqkg-personal','--bin','hqkg-chat-context','--target-dir',path.join(root,'target')],root);
+    '--bin','hqkg-personal','--bin','hqkg-chat-context','--bin','hqkg-web-feed','--target-dir',path.join(root,'target')],root);
   const nativeDir=path.join(stage,'native','bin');
   mkdirSync(nativeDir,{recursive:true});
-  for(const name of ['hqkg-personal.exe','hqkg-chat-context.exe'])
+  for(const name of ['hqkg-personal.exe','hqkg-chat-context.exe','hqkg-web-feed.exe'])
     copyFileSync(path.join(root,'target','release',name),path.join(nativeDir,name));
   run('bun',['install','--production','--frozen-lockfile','--ignore-scripts'],stage);
   run(path.join(stage,'node.exe'),['--check',path.join(stage,'apps/vivim-host/server.mjs')],stage);

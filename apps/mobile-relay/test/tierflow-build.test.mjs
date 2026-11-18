@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {createSurface} from '../generative-ui/catalog.mjs';
 import {compileUiProposal} from '../generative-ui/compiler.mjs';
 import {planTierflowSurface,renderSurface} from '../generative-ui/renderer.mjs';
+import {compileVecUiRequest} from '../vec/ui-adapter.mjs';
 
 function mount(width) {
   const doc={defaultView:{innerWidth:width},createElement(tag){
@@ -54,8 +55,9 @@ test('private nodes are excluded; unsupported and invalid public documents refus
   assert.equal(planTierflowSurface(source).nodes.has('private'),false);
   const screen=mount(390);
   source.tree.children.push({id:'action',type:'button',props:{label:'Do it',intent:'preview-only'},children:[]});
-  assert.throws(()=>renderSurface(screen,source,{tierflow:true}),/unsupported TierFlow component/);
-  assert.equal(screen.children.length,0);
+  renderSurface(screen,source,{tierflow:true});
+  assert.equal(screen.children[0].children[0].children.at(-1).disabled,true);
+  screen.replaceChildren();
   source.tree.children.pop();
   source.tree.children.push({id:'bad',type:'text',props:{value:'<script>alert(1)</script>'},children:[]});
   assert.throws(()=>renderSurface(screen,source,{tierflow:true}),/UI_REJECTED/);
@@ -78,4 +80,24 @@ test('structured source values and ordered TierFlow item plans paint together',(
   assert.equal(items.children[1].children[0].children[0].textContent,'Detail');
   assert.equal(timeline.children[1].children[1].textContent,'Next');
   assert.equal(chart.children[1].children[0].children[0].textContent,'42');
+});
+
+test('deterministic structured and local selection components use the same TierFlow plan',()=>{
+  for(const type of ['button','collection','timeline','chart']){
+    const out=compileVecUiRequest({text:'Add a '+type+' called Example',surface:createSurface()});
+    assert.equal(out.outcome,'candidate',type);
+    const plan=planTierflowSurface(out.preview.surface);
+    assert.equal(plan.plan.status,'ok');
+    assert.equal(plan.document.nodes.find(n=>n.id!=='root').type,type);
+  }
+});
+test('sourced profile/project cards require approved references; local selection target must be visible',()=>{
+  const surface=createSurface();
+  for(const type of ['profile-card','project-card'])surface.tree.children.push({id:type,type,props:{title:type,sourceRef:'source.one'},children:[]});
+  assert.throws(()=>planTierflowSurface(surface),/unapproved/);
+  const mapped=planTierflowSurface(surface,{approvedRefs:['source.one']});
+  assert.equal(mapped.nodes.get('profile-card').type,'profile-card');
+  assert.equal(mapped.nodes.get('project-card').type,'project-card');
+  surface.tree.children.push({id:'select',type:'button',props:{label:'Select',intent:'select-component',targetId:'missing'},children:[]});
+  assert.throws(()=>planTierflowSurface(surface,{approvedRefs:['source.one']}),/target unavailable/);
 });
