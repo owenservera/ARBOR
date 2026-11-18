@@ -31,8 +31,13 @@ test('only fixed focus names, absolute Host-configured paths and bounded native 
  assert.equal(JSON.stringify(data).includes('not-disclosed'),false);
  assert.equal(JSON.stringify(data).includes('/private/root'),false);
  assert.equal(calls,1);
+ const wikiContext=await fn('wiki');
+ assert.equal(wikiContext.state,'source-backed');
+ assert.equal(wikiContext.focus,'wiki');
+ assert.equal(wikiContext.authority,'read-only');
+ assert.equal(calls,2);
  assert.equal((await fn('../../etc/passwd')).reason,'FOCUS_INVALID');
- assert.equal(calls,1);
+ assert.equal(calls,2);
 });
 test('invalid, stale, oversized, unreadable or untrusted Rust output fails closed',async()=>{
  for(const output of [null,{...response,staleCount:1},{...response,authority:'execute'},

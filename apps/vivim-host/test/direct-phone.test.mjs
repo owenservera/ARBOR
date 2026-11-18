@@ -99,6 +99,13 @@ test('direct phone authenticates proxy, bounds routes and uses the shared queue'
   assert.ok(['unavailable','source-backed'].includes(graphBody.state));
   assert.equal(graphBody.items instanceof Array,true);
   assert.equal(JSON.stringify(graphBody).includes('planDigest'),false);
+  const wikiGraphRead=await call('/mobile/api/chat/context?focus=wiki');
+  assert.equal(wikiGraphRead.status,200,'Wiki uses same authorized native read port');
+  const wikiGraph=JSON.parse(wikiGraphRead.body);
+  assert.equal(wikiGraph.schema,'vivim.hqkg-chat-context/1');
+  assert.equal(wikiGraph.authority,'read-only');
+  assert.ok(['unavailable','source-backed'].includes(wikiGraph.state));
+  if(wikiGraph.state==='source-backed')assert.equal(wikiGraph.focus,'wiki');
   assert.equal((await call('/mobile/api/chat/context?focus=../secret')).status,400);
   assert.equal((await call('/mobile/api/chat/context?focus=talk&focus=world')).status,400);
   assert.equal((await call('/mobile/api/chat/context?focus=talk',{method:'POST'})).status,405);

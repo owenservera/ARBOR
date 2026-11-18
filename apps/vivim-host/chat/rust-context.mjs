@@ -7,7 +7,7 @@ import {promisify} from 'node:util';
 const execFile=promisify(execFileCb);
 export const CHAT_CONTEXT_SCHEMA='vivim.hqkg-chat-context/1';
 const MAX_OUTPUT=32768;
-const FOCUS=new Set(['today','talk','build','world','me','control']);
+const FOCUS=new Set(['today','talk','build','world','wiki','me','control']);
 const unavailable=reason=>({
   schema:CHAT_CONTEXT_SCHEMA,state:'unavailable',core:'hqkg',authority:'read-only',
   reason,items:[]

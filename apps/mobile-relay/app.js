@@ -132,7 +132,7 @@ let dockExpanded = false;
 let chatContextEpoch = 0;
 let chatContext = null;
 let focusReturn = null;
-const CHAT_FOCUS = Object.freeze(['today','talk','build','world','me','control']);
+const CHAT_FOCUS = Object.freeze(['today','talk','build','world','wiki','me','control']);
 function updateDock() {
   const composer = $('chat-composer');
   if (!composer) return;
@@ -429,6 +429,9 @@ function goTab(tab) {
   if (HOST_PREVIEW) void refreshHostPreview();
   else if (tab === 'world') void refreshMedia(false);
   if (tab === 'wiki') void refreshWiki();
+  // Reuse the existing PWA polling timer. Navigating does not open a new tab,
+  // duplicate a relay or schedule work when the phone is unpaired.
+  if (HOST_PREVIEW || S.paired) schedule();
 }
 
 // The Host journal owns Wiki state; this view is strictly read-only.
@@ -445,7 +448,17 @@ function renderWiki() {
     el('p', 'ux-note', Number.isSafeInteger(S.wiki?.revision) ? 'Revision ' + S.wiki.revision : 'Not available'));
   const refresh = el('button', 'btn sm', 'Refresh Wiki');
   refresh.type = 'button'; refresh.addEventListener('click', () => { void refreshWiki(); });
-  head.append(refresh); scroll.append(head);
+  head.append(refresh);
+  const contextButton = el('button', 'btn sm', 'Source context');
+  contextButton.type = 'button';
+  contextButton.disabled = HOST_PREVIEW || !transport.direct || !S.paired ||
+    !S.device.scopes?.includes('control:read');
+  contextButton.addEventListener('click', () => {
+    if ($('chat-context-panel').hidden) openFocusPanel();
+    void readGraphContext(); // Existing authorized, bounded native HQKG read only.
+  });
+  head.append(contextButton);
+  scroll.append(head);
   if (!S.wiki) scroll.append(el('p', 'ux-empty', S.wikiError));
   else {
     for (const [name, page] of Object.entries(S.wiki.pages)) {
@@ -527,6 +540,7 @@ function clearPrivatePhoneState() {
   chatContext=null;closeFocusPanel();dockExpanded=false;
   stopMediaPlayer();
   clearWiki('Device authorization expired');
+  clearTimeout(S.timer); S.timer = 0;
   S.paired = false; S.cmds = []; S.statusObj = null; S.manifest = null;
   vivimChat.redact();
   S.files = []; N.messages = []; N.sessions = []; N.session = '';
@@ -1272,7 +1286,21 @@ async function send() {
 }
 
 /* ---------- polling ---------- */
-function schedule() { clearTimeout(S.timer); if (!S.paired || N.target === 'phone') return; S.timer = setTimeout(refresh, pending(S.active) ? 2500 : 8000); }
+function schedule() {
+  clearTimeout(S.timer);
+  // A mounted Wiki must observe Host edits without a tab switch or second writer.
+  // Reuse S.timer even in native-phone mode, where ordinary chat polling is idle.
+  if (S.tab === 'wiki' && document.hidden) return;
+  if (S.tab === 'wiki' && (HOST_PREVIEW || (S.paired && N.target === 'phone'))) {
+    S.timer = setTimeout(() => {
+      if (S.tab === 'wiki' && !document.hidden) void refreshWiki();
+      schedule();
+    }, 8000);
+    return;
+  }
+  if (!S.paired || N.target === 'phone') return;
+  S.timer = setTimeout(refresh, pending(S.active) ? 2500 : 8000);
+}
 async function refresh() {
   if (!S.paired || S.busy || N.target === 'phone') return;
   void refreshRoadmap();
@@ -1298,7 +1326,9 @@ async function refresh() {
     }
     setConn('Relay error: ' + e.message, true); ensureActive(); renderAll();
   }
-  S.busy = false; schedule();
+  S.busy = false;
+  if (S.tab === 'wiki' && S.paired) void refreshWiki();
+  schedule();
 }
 
 /* ---------- Build tab: committed surface plus poll-driven repaint ---------- */
@@ -1722,7 +1752,15 @@ $('dbgsend').addEventListener('click', async () => {
   try { await api('commands', { method: 'POST', body: JSON.stringify({ text, kind: $('kind').value, consumer: $('consumer').value }) }); $('dbgtext').value = ''; refresh(); }
   catch (e) { toast('Send failed: ' + e.message); }
 });
-document.addEventListener('visibilitychange', () => { if (!document.hidden) { if (HOST_PREVIEW) void refreshHostPreview(); else if (N.target === 'phone') nativeRefresh(); else refresh(); if (S.tab === 'wiki') void refreshWiki(); } });
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && S.tab === 'wiki') { clearTimeout(S.timer); return; }
+  if (!document.hidden) {
+    if (HOST_PREVIEW) void refreshHostPreview();
+    else if (N.target === 'phone') nativeRefresh();
+    else refresh();
+    if (S.tab === 'wiki') { void refreshWiki(); schedule(); }
+  }
+});
 // An approved Wiki edit from the shared Talk composer updates the mounted Wiki
 // without a tab switch, mutation retry, or private state in a second store.
 document.addEventListener('vivim:wiki-committed', () => {

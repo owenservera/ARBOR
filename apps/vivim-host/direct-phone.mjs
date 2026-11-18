@@ -307,7 +307,7 @@ export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'wo
         authorizeDevice(req,'control:read');
         const query = [...new URL(req.url,origin).searchParams.entries()];
         if (query.length!==1 || query[0][0]!=='focus' ||
-          !['today','talk','build','world','me','control'].includes(query[0][1]))
+          !['today','talk','build','world','wiki','me','control'].includes(query[0][1]))
           throw failure(400,'CHAT_FOCUS_INVALID');
         const result=chatContext
           ? await chatContext(query[0][1])
