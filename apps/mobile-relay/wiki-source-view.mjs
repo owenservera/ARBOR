@@ -73,6 +73,11 @@ export function reconcileSourceCards(container,cards,{createElement,onRead}){
     }
     next.push(node);
   }
-  const before=Array.from(container.children);
-  if(before.length!==next.length||before.some((node,i)=>node!==next[i]))container.replaceChildren(...next);
+  // Never detach unchanged siblings merely because another card changed.
+  const retained=new Set(next);
+  for(const node of Array.from(container.children))if(!retained.has(node))container.removeChild(node);
+  for(let i=0;i<next.length;i++){
+    const current=container.children[i]??null;
+    if(current!==next[i])container.insertBefore(next[i],current);
+  }
 }

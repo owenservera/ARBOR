@@ -61,3 +61,21 @@ test('private nodes are excluded; unsupported and invalid public documents refus
   assert.throws(()=>renderSurface(screen,source,{tierflow:true}),/UI_REJECTED/);
   assert.equal(screen.children.length,0);
 });
+
+
+test('structured source values and ordered TierFlow item plans paint together',()=>{
+  const surface=createSurface();
+  surface.tree.children.push(
+    {id:'items',type:'collection',props:{title:'Collection',items:[{label:'A',detail:'Detail'}]},children:[]},
+    {id:'timeline',type:'timeline',props:{title:'Sequence',items:[{label:'First'},{label:'Next'}]},children:[]},
+    {id:'chart',type:'chart',props:{title:'Values',items:[{label:'Revenue',value:42}]},children:[]}
+  );
+  const plan=planTierflowSurface(surface);
+  assert.equal(plan.plan.status,'ok');
+  assert.equal(plan.identities.get('chart'),'vivim.ui.data.charts.chart@1');
+  const screen=mount(390);renderSurface(screen,surface,{tierflow:true});
+  const [items,timeline,chart]=screen.children[0].children[0].children;
+  assert.equal(items.children[1].children[0].children[0].textContent,'Detail');
+  assert.equal(timeline.children[1].children[1].textContent,'Next');
+  assert.equal(chart.children[1].children[0].children[0].textContent,'42');
+});

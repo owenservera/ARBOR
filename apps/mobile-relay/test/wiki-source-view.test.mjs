@@ -47,6 +47,8 @@ test('reconcile changes only affected cards; clear revoked source and preserve u
   class Node{constructor(tag){this.tagName=tag;this.dataset={};this.children=[];this.listeners={};}
     appendChild(n){this.children.push(n);return n}
     replaceChildren(...v){this.children=v}
+    removeChild(n){this.children=this.children.filter(x=>x!==n);this.removed=(this.removed??[]).concat(n);return n}
+    insertBefore(n,ref){this.children=this.children.filter(x=>x!==n);const i=ref===null?this.children.length:this.children.indexOf(ref);this.children.splice(i,0,n);return n}
     addEventListener(k,f){this.listeners[k]=f}}
   const root=new Node('div'),createElement=tag=>new Node(tag),reads=[];
   const a=file('src/a.mjs'),b=file('src/b.mjs','b');
@@ -56,6 +58,7 @@ test('reconcile changes only affected cards; clear revoked source and preserve u
   b.freshness='stale';b.currentDigest=h('a');render();
   assert.equal(root.children[0],first);assert.equal(first.open,true);
   assert.notEqual(root.children[1],second);
+  assert.deepEqual(root.removed,[second],'unchanged card was never detached');
   assert.equal(root.children[1].children.some(n=>n.tagName==='button'),false);
   root.children[0].children.find(n=>n.tagName==='button').listeners.click();
   assert.equal(reads[0].id,first.dataset.anchorId);

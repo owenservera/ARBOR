@@ -11,7 +11,7 @@ const tierflowRuntime = await Promise.all([
   import(new URL('document/import-legacy.ts', runtimeRoot).href),
   import(new URL('render/dom.ts', runtimeRoot).href)
 ]).catch(() => null);
-const BUILD_TYPES = new Set(['stack','grid','text','card']);
+const BUILD_TYPES = new Set(['stack','grid','text','card','collection','timeline','chart']);
 export function tierflowViewport(mount) {
   const width = mount?.ownerDocument?.defaultView?.innerWidth ?? 390;
   return Math.max(240, Math.min(3840, Math.round(width) || 390));
@@ -78,17 +78,24 @@ export function renderSurface(mount,surface,{audience='phone',approvedRefs=[],on
     if(projected&&(!planNode||planNode.id!==n.id))invalid('TierFlow mounted node mismatch');
     const p=projected?projected.nodes.get(n.id).props:n.props;let el;
     switch(n.type){
-      case 'stack':case 'grid':el=element('div',n.type);el.style.display=planNode?.layout.display??'grid';el.style.gap={sm:'8px',md:'14px',lg:'22px'}[p.gap];
+      case 'stack':case 'grid':el=element('div',n.type);el.style.display=planNode?.layout.display??'grid';el.style.gap=({sm:8,md:14,lg:22}[p.gap]*t.spacingScale)+'px';
         if(n.type==='grid')el.style.gridTemplateColumns=`repeat(${planNode?.layout.columns??p.columns},minmax(0,1fr))`;
         else if(planNode){el.style.flexDirection=p.direction==='horizontal'?'row':'column';if(p.direction==='horizontal')el.style.flexWrap='wrap';}
         else if(p.direction==='horizontal')el.style.gridAutoFlow='column';break;
-      case 'text':el=element(p.variant==='heading'?'h2':'p','text',planNode?.text??p.value);break;
-      case 'card':case 'profile-card':case 'project-card':el=element('article','card');{const h=element('h3','card-title',planNode?.text??p.title);el.appendChild(h);if(p.description)el.appendChild(element('p','card-description',p.description));}break;
+      case 'text':el=element(p.variant==='heading'?'h2':'p','text',planNode?.text??p.value);if(p.variant==='heading')el.style.fontSize=t.headingSizePx+'px';break;
+      case 'card':case 'profile-card':case 'project-card':el=element('article','card');{const h=element('h3','card-title',planNode?.text??p.title);el.appendChild(h);if(p.description)el.appendChild(element('p','card-description',p.description));Object.assign(el.style,{backgroundColor:t.secondary,color:ink(t.secondary),borderRadius:t.radiusPx+'px',borderColor:t.accent});}break;
       case 'button':el=element('button','button',p.label);el.type='button';el.addEventListener('click',()=>onIntent({intent:p.intent,targetId:p.targetId??n.id,componentId:n.id,surfaceId:s.surfaceId,revision:s.revision}));break;
       case 'collection':case 'timeline':case 'chart':el=element('section',n.type);el.appendChild(element('h3','collection-title',p.title));{
-        const list=element('ul','items');for(const item of p.items){const li=element('li','item',item.label);
+        const list=element('ul','items');
+        // TierFlow owns order and labels; canonical source supplies the exact typed detail/value.
+        if(planNode&&(n.children.length!==0||planNode.children.length!==p.items.length))invalid('TierFlow structured item count mismatch');
+        for(const [i,item] of p.items.entries()){
+          const planItem=planNode?.children[i];
+          if(planNode&&(!planItem||planItem.id!==n.id+'.item'+i||planItem.tag!=='li'||planItem.text!==item.label))invalid('TierFlow structured item mismatch');
+          const li=element('li','item',planItem?.text??item.label);
           if(n.type==='chart')li.appendChild(element('span','value',String(item.value)));
-          else if(item.detail)li.appendChild(element('span','detail',item.detail));list.appendChild(li);}el.appendChild(list); }break;
+          else if(item.detail)li.appendChild(element('span','detail',item.detail));list.appendChild(li);
+        }el.appendChild(list); }break;
       default:invalid('unknown component');
     }
     el.setAttribute('data-component-id',n.id);
@@ -100,8 +107,9 @@ export function renderSurface(mount,surface,{audience='phone',approvedRefs=[],on
         el.setAttribute(name,value);
       }
       el.style.minWidth='0';
-      if(planNode.children.length!==n.children.length)invalid('TierFlow child count mismatch');
-      for(const child of planNode.children){
+      const structuralChildren=['collection','timeline','chart'].includes(n.type)?[]:planNode.children;
+      if(structuralChildren.length!==n.children.length)invalid('TierFlow child count mismatch');
+      for(const child of structuralChildren){
         const sourceChild=n.children.find(c=>c.id===child.id);
         if(!sourceChild)invalid('TierFlow child identity mismatch');
         el.appendChild(render(sourceChild,child));

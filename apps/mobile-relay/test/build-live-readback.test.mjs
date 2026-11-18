@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { digestJson } from '../generative-ui/portable-digest.mjs';
 import { resolveBuildRequest, blankSurface } from '../build-composer.mjs';
 import { assertBuildPreviewCurrent, committedUiRevision, matchesCommittedUiReadback, buildRequestRoute, buildUndoProposal } from '../build-canvas.mjs';
 
@@ -63,5 +64,21 @@ test('Undo compiles exact previous screen as a new Host revision, never an unpro
     undo.preview.surface, { ...before, revision: 9 }), true);
   for (const stale of [null, before, { ...live, revision: 9 }, { ...before, revision: 8 }]) {
     assert.equal(buildUndoProposal({ original, before, committed, live: stale }), null);
+  }
+});
+
+
+test('real preview proof fields must match expected candidate before readback',()=>{
+  const surface={...blankSurface(),revision:7};
+  const {preview}=compile(surface,'Add a card called Research');
+  const stable=v=>Array.isArray(v)?v.map(stable):v&&typeof v==='object'?Object.fromEntries(Object.keys(v).sort().map(k=>[k,stable(v[k])])):v;
+  const projectionDigest=digestJson(stable({audience:'phone',surfaceId:preview.surfaceId,catalogVersion:preview.catalogVersion,theme:preview.surface.theme,tree:preview.surface.tree}));
+  const body={schema:'vivim.bootstrap-command-worker/1',action:'apply-proposal',persisted:true,revision:8,parentRevision:7,surfaceId:surface.surfaceId,previewDigest:preview.previewDigest,projectionDigest,changeId:'chg-test'};
+  const ack=result=>({status:'done',result});
+  assert.doesNotThrow(()=>committedUiRevision(ack(body),surface,preview));
+  for(const key of ['previewDigest','projectionDigest','changeId']){
+    assert.throws(()=>committedUiRevision(ack({...body,[key]:'wrong'}),surface,preview));
+    const absent={...body};delete absent[key];
+    assert.throws(()=>committedUiRevision(ack(absent),surface,preview));
   }
 });

@@ -320,6 +320,12 @@ body.host-preview #grokbot-direct-link{display:none!important}
 /* Universal composer: one DOM input, one send path, all six existing tabs. */
 #app{position:relative}
  .composer-assist{max-height:140px;overflow:auto;padding:5px 8px;border-left:2px solid currentColor;font-size:12px;overflow-wrap:anywhere}.composer-assist p{margin:3px 0}.composer-assist button{max-width:100%;white-space:normal;margin:2px}.composer-assist button[aria-pressed="true"]{outline:2px solid currentColor;outline-offset:1px}.composer-assist[hidden]{display:none!important}
+.semantic-draft-slots{display:grid;gap:5px;margin:5px 0}
+.semantic-draft-slots>div{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:6px;border:1px solid var(--line-strong);border-radius:var(--r-md);background:var(--s2)}
+.semantic-draft-slots>div[data-state="missing"],.semantic-draft-slots>div[data-state="unresolved"]{border-color:var(--warn)}
+.semantic-draft-slots>div[data-state="interpreted"]{border-color:var(--ac)}
+.semantic-draft-slots input{min-width:0;flex:1 1 120px;color:var(--tx);background:var(--s1);border:1px solid var(--line-strong);border-radius:var(--r-md);padding:6px;font-size:16px}
+.semantic-draft-slots button{min-height:40px}
 #chat-composer{flex:none;z-index:30;padding-bottom:calc(8px + env(safe-area-inset-bottom,0px))}
 #chat-composer.is-collapsed{padding:5px 10px;min-height:52px}
 #chat-composer.is-collapsed> :not(#dock-preview){display:none!important}
