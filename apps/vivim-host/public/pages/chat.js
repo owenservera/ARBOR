@@ -1,4 +1,4 @@
-import { resolveDesktopDestination } from '/mobile/control-language.mjs';
+import { resolveDesktopDestination, resolveProductRoute } from '/mobile/control-language.mjs';
 // The Host owns command authority. This page stores chat text separately from any effect.
 (() => {
   'use strict';
@@ -7,6 +7,7 @@ import { resolveDesktopDestination } from '/mobile/control-language.mjs';
   const CONTROL_URL = '/api/host/control/';
   const ACTOR = 'owner-browser';
   const POLL_MS = 1500;
+  const HANDOFF_KEY = 'vivim.desktop-chat-draft.v1';
 
   const $ = id => document.getElementById(id);
   const log = $('log');
@@ -24,6 +25,15 @@ import { resolveDesktopDestination } from '/mobile/control-language.mjs';
   let csrfProof = null;
   let busy = false;
   let pending = null;
+  // A deliberate same-tab Wiki handoff is draft-only. Consume and erase once;
+  // do not keep a transcript, carry authority, or submit automatically.
+  try {
+    const raw=window.sessionStorage.getItem(HANDOFF_KEY);
+    window.sessionStorage.removeItem(HANDOFF_KEY);
+    const draft=raw?JSON.parse(raw):null;
+    if(draft&&typeof draft.text==='string'&&draft.text.length<=1000&&
+       draft.expiresAt>Date.now()&&draft.expiresAt<=Date.now()+60000)input.value=draft.text;
+  }catch{/* Storage may be unavailable; ordinary Chat remains usable. */}
 
   function element(tag, className = '', value) {
     const node = document.createElement(tag);
@@ -264,6 +274,44 @@ import { resolveDesktopDestination } from '/mobile/control-language.mjs';
     }, true));
     node.append(actions);
   }
+  async function reviewUnmatched(plan,text) {
+    if(plan.outcome!=='interpretation_required')return planView(plan);
+    let reading=null;
+    try {
+      // Use existing owner-authenticated, phone-safe Host readback, never a
+      // synthetic revision, browser grant, or additional writer.
+      const view=await controlApi('pwa-view');
+      const compiler=await import('/mobile/build-composer.mjs');
+      const surface=view?.schema==='vivim.host-pwa-view/1'&&view.state==='source-backed'
+        ?compiler.buildSurfaceFromBootstrap(view.snapshot?.bootstrap):null;
+      if(surface)reading=compiler.resolveBuildRequest({request:text,surface});
+    }catch{/* No UI candidate is claimed if Host state/compiler is unavailable. */}
+    const route=resolveProductRoute(text,{hostMeaning:plan,compileUi:reading?()=>reading:null});
+    if(route.kind==='ui'){
+      pending=null;
+      const node=card('VEC visual request · read-only desktop review');
+      if(route.reading.outcome==='candidate'){
+        node.append(element('p','',route.reading.summary?.explanation||'Typed UI proposal'));
+        node.append(element('pre','',JSON.stringify(route.reading.proposal,null,2)));
+        const preview=element('div','visual-preview');
+        try {
+          const {renderSurface}=await import('/mobile/generative-ui/renderer.mjs');
+          renderSurface(preview,route.reading.preview.surface,{audience:'phone',tierflow:true,approvedRefs:[],onIntent:()=>{}});
+          node.append(preview);
+        }catch{node.append(element('p','warning','Visual rendering unavailable; only the inert typed proposal is shown.'));}
+      }else node.append(element('p','', 'VEC requires clarification of the visual target.'));
+      node.append(element('p','','Continue in the paired PWA Build composer to review a fresh proposal and Activate. Desktop has no paired Build write grant. Nothing was applied.'));
+      return;
+    }
+    planView(plan);
+    if(route.kind==='refused'||route.kind==='unavailable'){
+      const node=element('p','warning','The request cannot be safely previewed; no provider message was sent.');
+      result.append(node);
+    }else if(route.kind==='provider'){
+      result.append(element('p','',reading?'No deterministic command matched. A signed-in AI conversation requires the existing paired Talk surface. No provider message was sent.':
+        'Visual interpretation requires a current Host UI revision. An ordinary provider conversation requires paired Talk. No provider message was sent.'));
+    }
+  }
   async function submitPlan(body) {
     if (!csrfProof || busy) return;
     pending = null;
@@ -320,7 +368,7 @@ import { resolveDesktopDestination } from '/mobile/control-language.mjs';
       stored = true;
       await refresh();
       if (csrfProof) {
-        try { planView(await controlApi('plan', { text })); }
+        try { await reviewUnmatched(await controlApi('plan', { text }),text); }
         catch (error) {
           notice('Message recorded, but command planning failed: ' + error.message +
             '. No Host effect was confirmed.', true);

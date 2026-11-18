@@ -1,4 +1,4 @@
-import { resolveDesktopDestination } from '/mobile/control-language.mjs';
+import { resolveDesktopDestination, resolveProductRoute } from '/mobile/control-language.mjs';
 // Host read-model and reviewed Wiki drafts. NL interpretation belongs to Host;
 // only the existing owner-confirmed mutation endpoint writes Wiki content.
 // VEC/0.1 typed display seam: {schema:'vivim.vec-compile/0.1', domain:'wiki',
@@ -14,6 +14,7 @@ const SOURCES = Object.freeze({
 const ACTOR = 'owner-browser';
 const POLL_MS = 1600;
 const MAX_ENTRY_BYTES = 4096;
+const HANDOFF_KEY = 'vivim.desktop-chat-draft.v1';
 const $ = id => document.getElementById(id);
 const snapshots = Object.create(null);
 let editSession = null;
@@ -629,6 +630,7 @@ async function interpretWikiCommand(event) {
       throw new Error('Host interpretation refused HTTP ' + response.status);
     }
     const meaning = await response.json();
+    const route=resolveProductRoute(sentence,{hostMeaning:meaning});
     if (meaning?.schema !== 'vivim.control-language/1' || meaning.outcome !== 'candidate' ||
         meaning.candidate?.actionId !== 'wiki.section.edit' ||
         !meaning.candidate.args || meaning.executionPerformed === true) {
@@ -637,6 +639,23 @@ async function interpretWikiCommand(event) {
         'Only an unambiguous typed wiki.section.edit candidate can open a draft.';
       $('wiki-command-status').textContent = 'No Wiki edit (' +
         String(meaning?.outcome ?? 'invalid').slice(0, 50) + '). ' + explanation;
+      // Keep the dedicated editor for exact Wiki section drafts. All other
+      // recognized commands and unresolved requests continue through Chat's
+      // existing planner, not another query executor or mutation contract.
+      if(meaning?.schema==='vivim.control-language/1'&&
+         (route.kind==='host'||route.kind==='provider')){
+        const open=element('button','','Continue in Chat (draft only)');
+        open.type='button';
+        open.addEventListener('click',()=>{
+          try {
+            window.sessionStorage.setItem(HANDOFF_KEY,JSON.stringify({text:sentence,expiresAt:Date.now()+60000}));
+            window.location.assign('/chat');
+          }catch{
+            $('wiki-command-status').textContent='Could not transfer the draft. Copy your request and open Chat; nothing was sent.';
+          }
+        });
+        $('wiki-command-status').appendChild(open);
+      }
       return;
     }
     const { target, content } = meaning.candidate.args;

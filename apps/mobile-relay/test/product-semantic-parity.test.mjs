@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {resolveLocalDestination,resolveDesktopDestination,resolveProductRoute} from '../control-language.mjs';
 import {resolveLocalDestination as talkDestination} from '../control-chat.mjs';
 import {buildRequestRoute} from '../build-canvas.mjs';
-import {resolveBuildRequest,blankSurface} from '../build-composer.mjs';
+import {resolveBuildRequest,blankSurface,buildSurfaceFromBootstrap} from '../build-composer.mjs';
 import {createControlPlanner} from '../../vivim-host/control/intent-planner.mjs';
 test('actual surface navigation consumers share semantic destinations',()=>{
   for(const text of ['open the wiki','  OPEN   WIKI ','show wiki']){
@@ -41,4 +41,16 @@ test('refusals retain precedence and existing VEC supplies visual candidates',()
   assert.equal(resolveProductRoute('do not delete the card',{hostMeaning:refusal,compileUi:()=>assert.fail()}).kind,'refused');
   assert.equal(resolveProductRoute(text,{hostMeaning:null,compileUi}).kind,'unavailable');
   assert.equal(resolveProductRoute('What is photosynthesis?',{hostMeaning:{outcome:'interpretation_required'},compileUi}).kind,'provider');
+});
+
+test('actual revision envelope is unwrapped, never interpreted as a UI tree',()=>{
+  const surface=blankSurface();
+  const boot={schema:'vivim.bootstrap-phone/1',state:'ready'};
+  assert.equal(buildSurfaceFromBootstrap(boot),null);
+  assert.deepEqual(buildSurfaceFromBootstrap({...boot,uiRevision:null}),surface);
+  assert.equal(buildSurfaceFromBootstrap({...boot,uiRevision:surface}),null);
+  const row={status:'applied',surfaceId:surface.surfaceId,revision:surface.revision,surface};
+  assert.deepEqual(buildSurfaceFromBootstrap({...boot,uiRevision:row}),surface);
+  assert.equal(buildSurfaceFromBootstrap({...boot,uiRevision:{...row,revision:999}}),null);
+  assert.equal(buildSurfaceFromBootstrap({...boot,state:'unavailable',uiRevision:null}),null);
 });

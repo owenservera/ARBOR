@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import os from 'node:os';
 import vm from 'node:vm';
-import { resolveDesktopDestination } from '../../mobile-relay/control-language.mjs';
+import { resolveDesktopDestination, resolveProductRoute } from '../../mobile-relay/control-language.mjs';
 import { randomBytes } from 'node:crypto';
 import { createHostServer } from '../server.mjs';
 
@@ -104,8 +104,8 @@ function browser(base, code = '', shared = { cookie: '', executeCount: 0, loseRe
     }
     return response;
   }
-  const entry=src.replace("import { resolveDesktopDestination } from '/mobile/control-language.mjs';",'');
-  vm.runInNewContext(entry, { resolveDesktopDestination, document: ui.document, window, fetch: browserFetch,
+  const entry=src.replace("import { resolveDesktopDestination, resolveProductRoute } from '/mobile/control-language.mjs';",'');
+  vm.runInNewContext(entry, { resolveDesktopDestination, resolveProductRoute, document: ui.document, window, fetch: browserFetch,
     setInterval: () => 1, Date, console, encodeURIComponent });
   return { ui, window, shared };
 }

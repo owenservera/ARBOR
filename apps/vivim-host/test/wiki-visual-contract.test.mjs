@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import vm from 'node:vm';
-import { resolveDesktopDestination } from '../../mobile-relay/control-language.mjs';
+import { resolveDesktopDestination, resolveProductRoute } from '../../mobile-relay/control-language.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const pages = path.resolve(here, '../public/pages');
@@ -110,8 +110,8 @@ function setup() {
     assert.ok(elements.has(id), `Wiki JS cannot reference absent DOM id ${id}`);
     return elements.get(id);
   }, createElement: name => new MockNode(name), addEventListener() {}, hidden: false };
-  const context = vm.createContext({ resolveDesktopDestination, document, fetch, setInterval: fn => { interval = fn; return 1; }, AbortSignal, TextEncoder, Date, console });
-  vm.runInContext(script.replace("import { resolveDesktopDestination } from '/mobile/control-language.mjs';",''), context, { filename: 'wiki.js' });
+  const context = vm.createContext({ resolveDesktopDestination, resolveProductRoute, document, fetch, setInterval: fn => { interval = fn; return 1; }, AbortSignal, TextEncoder, Date, console });
+  vm.runInContext(script.replace("import { resolveDesktopDestination, resolveProductRoute } from '/mobile/control-language.mjs';",''), context, { filename: 'wiki.js' });
   const el = id => elements.get(id);
   return { elements, docs, posts, interpretCalls, el, context, tick: () => interval(),
     setPostStatus: value => { postStatus = value; }, setPostThrows: value => { postThrows = value; },

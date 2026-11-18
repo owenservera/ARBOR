@@ -2,8 +2,7 @@
 import { transport } from './transport.mjs';
 import { mountBuildSurface, sendProposal } from './generative-ui/phone-surface.mjs';
 import { mountBuildCanvas } from './build-canvas.mjs';
-import { resolveBuildRequest, blankSurface } from './build-composer.mjs';
-import { committedHostSurface } from './generative-ui/host-revision-guard.mjs';
+import { resolveBuildRequest, buildSurfaceFromBootstrap } from './build-composer.mjs';
 import { mountWelcome } from './welcome.mjs';
 import { parsePairFragment, redeemDevicePairToken } from './pairing-link.mjs';
 import { prepareDeviceSigner, enrollWithChallenge, resumeDeviceSession } from './device-enrollment.mjs';
@@ -113,7 +112,7 @@ const vivimChat = createControlChat({
       build.setSurface(bootstrap.uiRevision,bootstrap);
       surface=build.surface()??build.draftSurface();
     }else{
-      surface=bootstrap.uiRevision===null?blankSurface():committedHostSurface(bootstrap.uiRevision);
+      surface=buildSurfaceFromBootstrap(bootstrap);
     }
     if(!surface)return null;
     return resolveBuildRequest({request,surface});

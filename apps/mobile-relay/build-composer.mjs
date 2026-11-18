@@ -4,6 +4,7 @@
 import { composeDesignContext } from './generative-ui/design-composer.mjs';
 import { compileUiProposal } from './generative-ui/compiler.mjs';
 import { createSurface, PROPOSAL_SCHEMA, validateSurface } from './generative-ui/catalog.mjs';
+import { committedHostSurface } from './generative-ui/host-revision-guard.mjs';
 import { createVecCompiler } from './vec/compiler.mjs';
 import { compileVecUiRequest } from './vec/ui-adapter.mjs';
 import { getUiComponent, resolveUiSourceIdentity } from './vec/ui-taxonomy/registry.mjs';
@@ -21,6 +22,17 @@ export const BUILD_COMPONENTS = Object.freeze(['stack', 'grid', 'text', 'card', 
 export const MAX_REQUEST = 400;
 
 export function blankSurface() { return createSurface({ surfaceId: 'my-space' }); }
+
+// Use only an authenticated caller's actual bootstrap projection. A blank
+// document is a draft baseline solely when Host explicitly reports no revision.
+export function buildSurfaceFromBootstrap(bootstrap) {
+  if(!bootstrap||bootstrap.schema!=='vivim.bootstrap-phone/1'||
+     bootstrap.state!=='ready'||!Object.hasOwn(bootstrap,'uiRevision'))return null;
+  if(bootstrap.uiRevision===null)return blankSurface();
+  const committed=committedHostSurface(bootstrap.uiRevision);
+  if(!committed)return null;
+  try{return validateSurface(committed,{refs:new Set()});}catch{return null;}
+}
 
 // Deterministic first, same canonical UI proposal and Host approval as the model path.
 // The compiler is an inert preview boundary, not a new action dispatcher or publisher.
