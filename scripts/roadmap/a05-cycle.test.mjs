@@ -15,8 +15,8 @@ const ROOT = path.resolve(HERE, '../..');
 const ROADMAP_PATH = path.join(ROOT, 'docs/product/roadmap/roadmap.v1.json');
 const RECEIPT_PATH = path.join(ROOT, 'docs/product/roadmap/receipts/A05.receipt.json');
 const GATE_CARDS_PATH = path.join(ROOT, '.coordination/artifacts/roadmap/gate-cards.jsonl');
-const CONTROLLER_PATH = path.join(ROOT, 'apps/vivim-host/public/demo/controller.js');
-const POLL_ROUND_PATH = path.join(ROOT, 'apps/vivim-host/public/demo/poll-round.mjs');
+const CONTROLLER_PATH = path.join(ROOT, 'demo/host-legacy/controller.js');
+const POLL_ROUND_PATH = path.join(ROOT, 'demo/host-legacy/poll-round.mjs');
 
 const A05_WRITE_SCOPE = ['.coordination/', 'docs/product/roadmap/', 'scripts/'];
 const LEDGERS = [

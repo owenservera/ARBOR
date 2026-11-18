@@ -15,7 +15,7 @@
 //   scripts/lib/test-manifest.mjs           -> discoverTests, testCoversFile
 //   scripts/lib/test-receipt.mjs            -> commitSha, binaryVersion (real
 //     dispatched runtime version, never the gate's own process.version)
-//   apps/vivim-host/public/demo/poll-round.mjs -> disk-only one-shot demo
+//   demo/host-legacy/poll-round.mjs -> disk-only one-shot demo
 //     feedback inbox poller, spawned read-only as a child process (demo rewalk)
 //
 // Fail-closed: if the roadmap is invalid or the selected item's dependencies are
@@ -41,7 +41,7 @@ const REPO_ROOT = resolve(HERE, '..', '..');
 const ARTIFACTS_DIR = join(HERE, 'artifacts');
 const ITEM = 'A05';
 const DEP_IDS = ['A01', 'A02', 'A03'];
-const POLL_ROUND = join(REPO_ROOT, 'apps', 'vivim-host', 'public', 'demo', 'poll-round.mjs');
+const POLL_ROUND = join(REPO_ROOT, 'demo', 'host-legacy', 'poll-round.mjs');
 
 // --- cycle stages ------------------------------------------------------------
 

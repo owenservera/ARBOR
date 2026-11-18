@@ -13,7 +13,7 @@ import { promisify } from 'node:util';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const EVIDENCE_PATH = path.join(ROOT, 'scripts', 'batch-evidence', 'WIKI-BASELINE.mjs');
-const PUBLIC_DEMO_JOURNAL = path.join(ROOT, 'apps', 'vivim-host', 'public', 'demo', 'journal.jsonl');
+const PUBLIC_DEMO_JOURNAL = path.join(ROOT, 'demo', 'host-legacy', 'journal.jsonl');
 const execFile = promisify(execFileCallback);
 const excerpt = value => String(value ?? '').slice(-2400);
 const digest = text => createHash('sha256').update(text).digest('hex');
@@ -160,11 +160,11 @@ export async function runHostLoopCheck({ command = 'node scripts/acceleration/li
     await start(createHostServer);
     receipt.boundHost = { bindAddress: '127.0.0.1', ephemeralPort: true };
     for (const [route, type] of [
-      ['/chat', /text\/html/], ['/wiki', /text\/html/], ['/demo', /text\/html/],
+      ['/chat', /text\/html/], ['/wiki', /text\/html/],
       ['/chat.js', /javascript/], ['/wiki.js', /javascript/],
       ['/chat.css', /text\/css/], ['/wiki.css', /text\/css/],
       ['/api/state', /application\/json/], ['/api/wiki', /application\/json/],
-      ['/api/journal', /application\/json/], ['/api/roadmap', /application\/json/],
+      ['/api/journal', /application\/json/],
       ['/api/file-surface', /application\/json/]
     ]) {
       const response = await get(route);
@@ -173,16 +173,18 @@ export async function runHostLoopCheck({ command = 'node scripts/acceleration/li
         assert.match(response.contentType || '', type);
       }, { status: response.status, contentType: response.contentType });
     }
+    for (const route of ['/demo', '/api/roadmap']) {
+      const response = await get(route);
+      check('Retired ' + route, () => assert.equal(response.status, 404));
+    }
     const initialState = await readJson('/api/state');
     const before = await readJson('/api/wiki');
-    const roadmap = await readJson('/api/roadmap');
     const surface = await readJson('/api/file-surface');
     check('typed source-backed reads', () => {
       assert.ok(Array.isArray(initialState.chat));
       assert.ok(Number.isSafeInteger(before.revision));
-      assert.ok(Array.isArray(roadmap.buildQueue));
       assert.ok(surface && typeof surface === 'object');
-    }, { wikiRevision: before.revision, buildQueueCount: roadmap.buildQueue.length });
+    }, { wikiRevision: before.revision });
     const initialJournal = await readJson('/api/journal');
     check('fresh private journal is empty', () => assert.deepEqual(initialJournal, []));
     // This read intentionally happens before any writes, proving no owner history was loaded.
@@ -239,8 +241,8 @@ export async function runHostLoopCheck({ command = 'node scripts/acceleration/li
       assert.equal(state.revision, afterChat.revision + 1);
     }, { wikiRevision: wiki.revision, productRevision: state.revision });
     const journal = await readJson('/api/journal');
-    const raw = await get('/demo/journal.jsonl');
-    check('read-through API and demo alias match exact private JSONL bytes', () => {
+    const raw = await get('/api/journal?format=jsonl');
+    check('canonical API JSON and JSONL match exact private journal bytes', () => {
       assert.deepEqual(journal.map(x => x.kind), ['chat-send', 'wiki-edit']);
       assert.equal(raw.status, 200);
       assert.deepEqual(jsonl(raw.text), journal);

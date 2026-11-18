@@ -21,11 +21,11 @@ test('Acceleration R002 W1/B: single-command isolated Host acceptance', async t 
     assert.equal(receipt.failedChecks, 0);
     const names = new Set(receipt.tests.filter(x => x.pass).map(x => x.name));
     for (const name of [
-      'GET /chat', 'GET /wiki', 'GET /demo', 'GET /api/roadmap', 'GET /api/file-surface',
+      'GET /chat', 'GET /wiki', 'Retired /demo', 'Retired /api/roadmap', 'GET /api/file-surface',
       'cross-origin chat rejected', 'Wiki edit without origin/control refused',
       'Wiki edit without CSRF control refused', 'cross-origin Wiki edit refused',
       'stale Wiki revision refused', 'missing Wiki revision refused',
-      'Wiki path traversal target refused', 'read-through API and demo alias match exact private JSONL bytes',
+      'Wiki path traversal target refused', 'canonical API JSON and JSONL match exact private journal bytes',
       'fresh Host restart replays same private journal and state'
     ]) assert.ok(names.has(name), 'missing actual check: ' + name);
     assert.ok(receipt.requests.some(x => x.method === 'POST' && x.route === '/api/mutate' && x.status === 409));

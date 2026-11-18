@@ -122,7 +122,7 @@ function normalizeJournal(wrapper) {
   sized(wrapper, MAX_INPUT_BYTES);
   if (wrapper.entries.length > MAX_RECORDS) reject('OVERSIZED_INPUT', 'Too many journal entries');
   const path = sourceRef(wrapper.path, 'journal path');
-  if (path !== 'apps/vivim-host/public/demo/journal.jsonl' &&
+  if (path !== 'demo/host-legacy/journal.jsonl' &&
       !/^scripts\/feedback-loop\/fixtures\/[a-z0-9.-]+\.jsonl$/.test(path)) {
     reject('UNTRUSTED_PATH', 'Journal outside allowed read-only sources');
   }

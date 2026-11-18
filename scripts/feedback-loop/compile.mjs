@@ -6,14 +6,14 @@ import { fileURLToPath } from 'node:url';
 import { compileFeedback, MAX_INPUT_BYTES, summary } from './compiler.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const USAGE = `Usage: node scripts/feedback-loop/compile.mjs --receipt <repo-relative-path> [--receipt <path>] [--journal <path>] --source-sha <40-hex> --current-sha <40-hex> --revision R002 --current-revision R002 [--condition <verifier-check>] [--summary]\n\nDRY-RUN ONLY. The --current-sha pin must be independently supplied by the keeper from the checked-out Git HEAD; this CLI compares claims but does not verify git itself.\nAllowed receipt paths: .coordination/pdr/evidence/*.verify.*.json or scripts/feedback-loop/fixtures/*.json\nAllowed journal paths: apps/vivim-host/public/demo/journal.jsonl or scripts/feedback-loop/fixtures/*.jsonl\nDefault output is machine-readable JSON. --summary prints plain text instead.\n`;
+const USAGE = `Usage: node scripts/feedback-loop/compile.mjs --receipt <repo-relative-path> [--receipt <path>] [--journal <path>] --source-sha <40-hex> --current-sha <40-hex> --revision R002 --current-revision R002 [--condition <verifier-check>] [--summary]\n\nDRY-RUN ONLY. The --current-sha pin must be independently supplied by the keeper from the checked-out Git HEAD; this CLI compares claims but does not verify git itself.\nAllowed receipt paths: .coordination/pdr/evidence/*.verify.*.json or scripts/feedback-loop/fixtures/*.json\nAllowed journal paths: demo/host-legacy/journal.jsonl or scripts/feedback-loop/fixtures/*.jsonl\nDefault output is machine-readable JSON. --summary prints plain text instead.\n`;
 
 function fail(msg, code = 2) { process.stderr.write(msg + '\n'); process.exitCode = code; }
 function readBounded(rel, kind) {
   if (typeof rel !== 'string' || rel.startsWith('/') || rel.includes('\\') || rel.split('/').some(p => !p || p === '.' || p === '..')) throw new Error('Invalid relative path');
   const valid = kind === 'receipt'
     ? (/^\.coordination\/pdr\/evidence\/[A-Z0-9-]+\.verify\.[a-z0-9-]+\.json$/.test(rel) || /^scripts\/feedback-loop\/fixtures\/[a-z0-9.-]+\.json$/.test(rel))
-    : (rel === 'apps/vivim-host/public/demo/journal.jsonl' || /^scripts\/feedback-loop\/fixtures\/[a-z0-9.-]+\.jsonl$/.test(rel));
+    : (rel === 'demo/host-legacy/journal.jsonl' || /^scripts\/feedback-loop\/fixtures\/[a-z0-9.-]+\.jsonl$/.test(rel));
   if (!valid) throw new Error('Path outside permitted ' + kind + ' inputs');
   const resolved = realpathSync(path.resolve(ROOT, rel));
   if (!resolved.startsWith(realpathSync(ROOT) + path.sep)) throw new Error('Refusing symlink escape');
