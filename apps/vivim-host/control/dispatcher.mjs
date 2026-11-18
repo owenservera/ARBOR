@@ -377,7 +377,7 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
   }
   function approvalBinding(actionId,args,source,wikiBinding){
     const a=action(actionId);
-    if(actionId===WIKI_WRITE_PROGRAM_ACTION){const manifest={schema:'vivim.approval-meaning/1',templateRevision:1,catalogRevision:catalog.version,worldRevision:planner.world().v,actionId,risk:a.risk,readiness:a.readiness,contractDigest:digest(a),source,exactArgs:args,resolvedArgs:wikiBinding.steps.map(s=>({actionId:s.actionId,args:s.args})),targetRevision:wikiBinding.expectedRevision,target:wikiBinding.target,effectDigest:digest(wikiBinding),roundTrip:'verified-children',authority:'none'};return {...manifest,semanticDigest:digest(manifest)};}
+    if(actionId===WIKI_WRITE_PROGRAM_ACTION){const manifest={schema:'vivim.approval-meaning/1',templateRevision:1,catalogRevision:catalog.version,worldRevision:planner.world().v,actionId,risk:a.risk,readiness:a.readiness,contractDigest:digest(a),source,exactArgs:args,resolvedArgs:wikiBinding.steps.map(s=>({actionId:s.actionId,args:s.args})),targetRevision:wikiBinding.expectedRevision,target:wikiBinding.target,effectDigest:digest(wikiBinding),roundTrip:'unavailable',childCompilation:'verified',authority:'none'};return {...manifest,semanticDigest:digest(manifest)};}
     const resolved=actionId===CAPTURE_ACTION?{...args,page:wikiBinding.page,section:wikiBinding.section}:
       actionId===WIKI_ACTION?{target:wikiBinding.page+'/'+wikiBinding.section,content:args.content}:
       actionId==='wiki.pages.link'?{from:wikiBinding.edit.from,to:wikiBinding.edit.to}:

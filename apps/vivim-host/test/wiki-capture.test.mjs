@@ -95,6 +95,7 @@ test('sequence correlation is stored-only metadata and exposes exact observed re
  const binding={planId:'ctl-0123456789abcdef',planDigest:'a'.repeat(64)},before=await journal.readPhoneWiki(),projected=previewWikiPayload(previewWikiPayload(before,a),b),digest=createHash('sha256').update(JSON.stringify(projected.pages)).digest('hex');
  await assert.rejects(journal.append({...a,sequenceBinding:{...binding,step:1,total:2}}),/Invalid journal envelope/);
  await journal.appendWikiSequence([a,b],digest,binding);const observed=await journal.readWikiSequenceEvidence(binding.planId,binding.planDigest,[a,b]);assert.equal(observed.state,'all-records-observed');assert.equal(observed.observedSteps,2);assert.equal(observed.retryAuthorized,false);
+ const phone=await journal.readPhoneWiki();assert.equal(JSON.stringify(phone).includes(binding.planId),false);assert.equal(JSON.stringify(phone).includes(binding.planDigest),false);
  await assert.rejects(journal.readWikiSequenceEvidence(binding.planId,'b'.repeat(64),[a,b]),/Sequence evidence mismatch/);
  await assert.rejects(journal.appendWikiSequence([a,b],digest,binding),/already has committed records/);
  }finally{await rm(root,{recursive:true,force:true});}

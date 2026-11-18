@@ -556,14 +556,14 @@ export function createProductJournal({ dataRoot, seedState, seedWiki }) {
     // Retain only Wiki-scoped structure provenance; no global sequence, receipts
     // or owner-private chat observations are returned to the paired device.
     const phoneStructure={...structure,
-      items:structure.items.map(({sequence,...entry})=>entry),
-      links:structure.links.map(({sequence,...entry})=>entry),
-      pageSources:structure.pageSources.map(({page,role,event:{sequence,...event}})=>({page,role,event}))};
+      items:structure.items.map(({sequence,sequenceBinding,...entry})=>entry),
+      links:structure.links.map(({sequence,sequenceBinding,...entry})=>entry),
+      pageSources:structure.pageSources.map(({page,role,event:{sequence,sequenceBinding,...event}})=>({page,role,event}))};
     // Phone Wiki read permission does not grant access to private chat/effects.
     // No global sequence or history content is disclosed through this overlay.
     return { ...wiki, personalCaptures:projectPersonalCaptures(current.records,wiki), wikiStructure:phoneStructure, autoWiki: { schema: 'vivim.autowiki-wiki-changes/1',
       wikiRevision: wiki.revision, scope: 'wiki-edits-only', total: changes.total, omitted: changes.omitted,
-      items: changes.items.map(({ sequence, ...entry }) => entry) } };
+      items: changes.items.map(({ sequence, sequenceBinding, ...entry }) => entry) } };
   }
   function appendEntries(payloads,{sequence=false,expectedPagesDigest=null,sequenceBinding=null}={}) {
     const run = async () => {

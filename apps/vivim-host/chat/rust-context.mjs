@@ -192,6 +192,10 @@ export function buildNativeKnowledge(snapshot, effects) {
         !/^[0-9a-f-]{36}$/.test(wikiLink.entryId) ||
         !safeUInt(wikiLink.wikiRevision) || wikiLink.wikiRevision===0))
       throw Error('NATIVE_EFFECT_SOURCE_LINK_INVALID');
+    const sequenceLinks=e.sequenceLinks??null;
+    if(sequenceLinks&& (e.actionId!=='program.write_wiki'||!Array.isArray(sequenceLinks)||!sequenceLinks.length||sequenceLinks.length>8||
+        !safeUInt(e.sourceRevision)||new Set(sequenceLinks.map(s=>s.step)).size!==sequenceLinks.length||
+        sequenceLinks.some(s=>!s||!['committed-wiki-edit','committed-wiki-structure'].includes(s.kind)||! /^[0-9a-f-]{36}$/.test(s.entryId)||!safeUInt(s.wikiRevision)||s.wikiRevision<1||s.wikiRevision>e.sourceRevision||!safeUInt(s.step)||s.step<1||s.step>8)))throw Error('NATIVE_WIKI_SEQUENCE_SOURCE_INVALID');
     const visual=e.visualLink??null;
     if(e.actionId==='ui.visual.apply'&&(!visual||visual.kind!=='committed-visual-revision'||
       typeof visual.surfaceId!=='string'||! /^[a-zA-Z][a-zA-Z0-9._:-]{0,95}$/.test(visual.surfaceId)||
@@ -201,6 +205,7 @@ export function buildNativeKnowledge(snapshot, effects) {
       !SHA.test(visual.semanticDigest)))throw Error('NATIVE_VISUAL_EFFECT_SOURCE_INVALID');
     if(visual&&e.actionId!=='ui.visual.apply')throw Error('NATIVE_VISUAL_EFFECT_SOURCE_INVALID');
     const linked = wikiLink ? ' · Wiki revision '+wikiLink.wikiRevision :
+      sequenceLinks?' · Wiki sequence final rev '+e.sourceRevision+' · '+sequenceLinks.length+' linked records':
       visual?' · Visual '+visual.surfaceId+' rev '+visual.parentRevision+' → '+visual.revision+' · '+visual.changeId:'';
     rows.push({id:'vivim-context-e-'+digest(e.planId),kind:'effect',
       sourceRef:e.planId,digest:e.planDigest,revision:Math.max(1,e.sourceRevision ?? 1),
