@@ -192,6 +192,14 @@
     box.append(element('h3', '', 'Approve exactly this action?'));
     box.append(element('strong', '', p.title + ' · ' + p.risk));
     box.append(element('pre', 'text-control-data', JSON.stringify(p.args, null, 2)));
+    if (p.actionId === 'wiki.section.edit' && p.preview) {
+      box.append(element('h4', '', 'Wiki section · ' + p.preview.target));
+      box.append(element('p', 'text-control-note', 'Edit exact Wiki revision ' + p.preview.expectedRevision));
+      box.append(element('strong', '', 'Before'));
+      box.append(element('pre', 'text-control-data', p.preview.before));
+      box.append(element('strong', '', 'After'));
+      box.append(element('pre', 'text-control-data', p.preview.after));
+    }
     box.append(element('p', 'text-control-note', 'Plan digest: ' + p.planDigest +
       ' · expires ' + new Date(p.expiresAt).toLocaleString()));
     if (p.liveAcceptance !== 'verified') box.append(element('p', 'text-control-note warning',

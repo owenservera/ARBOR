@@ -255,7 +255,7 @@ export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path
   // One Host-owned control dispatcher for desktop text, phone text and GUI (UTC03).
   let control = null;
   const uiSessions = createControlBrowserSessions();
-  const controlFor = () => (control ??= createControlDispatcher({ dataRoot, runtime: runtimeFor(), devices: enrollment }));
+  const controlFor = () => (control ??= createControlDispatcher({ dataRoot, runtime: runtimeFor(), devices: enrollment, productJournal }));
   // APK07 release registry, shared with the Direct phone handler so a release registered on
   // the PC is immediately downloadable by the phone (same dataRoot/apk-artifacts).
   const apk = createApkRegistry({ dataRoot });
@@ -932,9 +932,9 @@ async function handleControl(req, res, pathname, host, controlFor, tokenFor, uiS
       if (Object.keys(body).some(k => k !== 'text')) throw Object.assign(new Error('Invalid body'), { code: 'CONTROL_INPUT_INVALID' });
       sendJson(res, 200, c.interpret(body.text)); return;
     }
-    if (route === 'plan') { sendJson(res, 200, c.plan(body, { source: 'desktop', actor: 'desktop-owner' })); return; }
+    if (route === 'plan') { sendJson(res, 200, await c.plan(body, { source: 'desktop', actor: 'desktop-owner' })); return; }
     if (Object.keys(body).some(k => !['planId', 'planDigest'].includes(k))) throw Object.assign(new Error('Invalid body'), { code: 'CONTROL_INPUT_INVALID' });
-    sendJson(res, 200, c.execute({ planId: body.planId, planDigest: body.planDigest, approval: { channel: 'desktop-owner-token', actor: 'desktop-owner' } }));
+    sendJson(res, 200, await c.execute({ planId: body.planId, planDigest: body.planDigest, approval: { channel: 'desktop-owner-token', actor: 'desktop-owner' } }));
   } catch (error) {
     const code = error?.code ?? 'CONTROL_INVALID';
     sendJson(res, error?.status ?? controlErrorStatus(code), { error: String(error?.message ?? error).slice(0, 200), code });

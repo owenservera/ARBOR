@@ -1,7 +1,7 @@
 {
   "schema": "vivim.control-action-catalog/1",
-  "version": 9,
-  "asOf": "2026-11-14",
+  "version": 10,
+  "asOf": "2026-11-18",
   "policy": {
     "allUserFacingActionsRequireTextPath": true,
     "uiSharesTypedExecutor": true,
@@ -1229,8 +1229,8 @@
       "title": "Edit a wiki page section",
       "category": "wiki",
       "owner": "host-wiki",
-      "executor": null,
-      "readiness": "adapter_pending",
+      "executor": "apps/vivim-host/control/dispatcher.mjs:createExecutors",
+      "readiness": "source_wired",
       "risk": "R1",
       "target": "local-host",
       "args": {

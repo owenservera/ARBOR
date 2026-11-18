@@ -23,6 +23,22 @@ const stable = v => Array.isArray(v) ? v.map(stable) : v && typeof v === 'object
   ? Object.fromEntries(Object.keys(v).sort().map(k => [k, stable(v[k])])) : v;
 const digest = o => createHash('sha256').update(JSON.stringify(stable(o))).digest('hex');
 const short = (s, n) => String(s ?? '').slice(0, n);
+const WIKI_ACTION = 'wiki.section.edit';
+const MAX_WIKI_CONTENT_BYTES = 3072;
+
+// Only existing sections, resolved to their canonical names. A model cannot invent a Wiki target.
+function resolveWikiTarget(wiki, target) {
+  const names = typeof target === 'string' ? target.split('/') : [];
+  if (names.length !== 2 || names.some(x => !x)) throw fail('CONTROL_WIKI_TARGET_UNKNOWN');
+  const pages = Object.keys(wiki?.pages ?? {}).filter(k => k.toLowerCase() === names[0].toLowerCase());
+  if (pages.length !== 1) throw fail('CONTROL_WIKI_TARGET_UNKNOWN');
+  const page = pages[0];
+  const sections = Object.keys(wiki.pages[page]?.sections ?? {}).filter(k => k.toLowerCase() === names[1].toLowerCase());
+  if (sections.length !== 1) throw fail('CONTROL_WIKI_TARGET_UNKNOWN');
+  const section = sections[0], before = wiki.pages[page].sections[section];
+  if (!Number.isSafeInteger(wiki.revision) || typeof before !== 'string') throw fail('CONTROL_WIKI_TARGET_UNKNOWN');
+  return { page, section, before, expectedRevision: wiki.revision };
+}
 
 // Error codes thrown by executors that are pure validation/precondition checks:
 // nothing was attempted, so `failed` (not `uncertain`) is the correct observed state.
@@ -45,7 +61,7 @@ const VALIDATION_ERROR_CODES = new Set([
 ]);
 
 /** Fixed executors keyed by catalog action id. Each returns a bounded, phone-safe summary. */
-function createExecutors({ runtime, planner, lexicon, devices }) {
+function createExecutors({ runtime, planner, lexicon, devices, productJournal }) {
   const ownerExclusions = () => (runtime.status().preferences ?? [])
     .filter(p => p.hard && p.polarity === 'avoid' && p.source === 'owner')
     .slice(0, 50).map(p => ({ id: p.id, value: short(p.value, 120) }));
@@ -146,10 +162,20 @@ function createExecutors({ runtime, planner, lexicon, devices }) {
     'privacy.hard_no.clear': ({ id }) => { const out = runtime.clearHardNo({ id }); return { id: out.id, value: short(out.value, 120) }; },
     'control.lexicon.teach': ({ word, action }, ctx) => lexicon.teach({ word, actionId: action, planId: ctx.planId }),
     'control.lexicon.forget': ({ word }, ctx) => lexicon.forget({ word, planId: ctx.planId }),
+    [WIKI_ACTION]: async ({ content }, ctx) => {
+      if (!productJournal || !ctx.wikiBinding) throw fail('CONTROL_WIKI_NOT_READY');
+      const { page, section, expectedRevision } = ctx.wikiBinding;
+      const entry = await productJournal.append({
+        kind: 'wiki-edit', actor: 'owner-browser', schemaVersion: 1, expectedRevision,
+        edit: { action: 'set-section', page, section, content }
+      });
+      return { page, section, previousRevision: expectedRevision,
+        wikiRevision: entry.wikiRevision, entryId: entry.entryId, sequence: entry.sequence };
+    },
   };
 }
 
-export function createControlDispatcher({ dataRoot, runtime, devices = null, catalog = loadControlCatalog(),
+export function createControlDispatcher({ dataRoot, runtime, devices = null, productJournal = null, catalog = loadControlCatalog(),
   commandScope = () => ({}),
   now = () => Date.now(), ttlMs = 10 * 60_000, freshMs = 2 * 60_000 } = {}) {
   if (!runtime || typeof runtime.status !== 'function') throw fail('CONTROL_RUNTIME_REQUIRED');
@@ -162,7 +188,7 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, cat
     lexicon: () => lexicon.entries(), personalRules: () => personalSemantics.accepted(),
     commandScope });
   const journal = createControlJournal({ dataRoot });
-  const executors = createExecutors({ runtime, planner, lexicon, devices });
+  const executors = createExecutors({ runtime, planner, lexicon, devices, productJournal });
   // The catalog may not claim an executor the Host does not have, nor hide one it does.
   for (const a of catalog.actions) {
     const runnable = ['source_wired', 'verified'].includes(a.readiness);
@@ -200,6 +226,15 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, cat
       ...p, outcome: 'unavailable', executionPerformed: false,
       precondition: 'Use the authenticated PC owner control for privacy-sensitive changes until verified device-bound phone approval is available.'
     };
+    // A PC-only edit may be described to the phone but cannot become phone-authorizable.
+    if (p.actionId === WIKI_ACTION && source === 'mobile') return {
+      ...p, outcome: 'unavailable', executionPerformed: false,
+      precondition: 'Use the authenticated desktop Host Control to edit the Wiki.'
+    };
+    if (p.actionId === WIKI_ACTION && !productJournal) return {
+      ...p, outcome: 'unavailable', executionPerformed: false,
+      precondition: 'Host Wiki journal unavailable.'
+    };
     // Bind a personalized reading to the exact accepted rule *and* complete store
     // snapshot. Any correction, revocation or concurrent activation makes it stale.
     let semanticRuleBinding = null;
@@ -218,15 +253,30 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, cat
         storeVersion: snapshot.version, storeDigest: snapshot.digest,
         scopeDigest: digest(activeScope) };
     }
-    const createdAt = iso();
-    const body = { schema: 'vivim.control-plan-record/1', planId: newPlanId(), actionId: p.actionId, args: p.args,
-      risk: p.risk, source, origin: p.origin, actor: short(actor, 120), catalogVersion: catalog.version,
-      createdAt, expiresAt: new Date(now() + ttlMs).toISOString(),
-      ...(semanticRuleBinding ? { semanticRuleBinding } : {}) };
-    const record = { ...body, planDigest: digest(body) };
-    journal.record(record);
-    return { ...p, planId: record.planId, planDigest: record.planDigest, createdAt, expiresAt: record.expiresAt,
-      approval: { required: true, freshOwner: p.risk === 'R2', channels: [...APPROVAL_CHANNELS] } };
+    const savePlan = wikiBinding => {
+      const createdAt = iso();
+      const body = { schema: 'vivim.control-plan-record/1', planId: newPlanId(), actionId: p.actionId, args: p.args,
+        risk: p.risk, source, origin: p.origin, actor: short(actor, 120), catalogVersion: catalog.version,
+        createdAt, expiresAt: new Date(now() + ttlMs).toISOString(),
+        ...(semanticRuleBinding ? { semanticRuleBinding } : {}),
+        ...(wikiBinding ? { wikiBinding } : {}) };
+      const record = { ...body, planDigest: digest(body) };
+      journal.record(record);
+      return { ...p, planId: record.planId, planDigest: record.planDigest, createdAt, expiresAt: record.expiresAt,
+        ...(wikiBinding ? { preview: { target: wikiBinding.page + '/' + wikiBinding.section,
+          before: wikiBinding.before, after: p.args.content,
+          expectedRevision: wikiBinding.expectedRevision } } : {}),
+        approval: { required: true, freshOwner: p.risk === 'R2',
+          channels: p.actionId === WIKI_ACTION ? ['desktop-owner-token'] : [...APPROVAL_CHANNELS] } };
+    };
+    if (p.actionId === WIKI_ACTION) {
+      if (Buffer.byteLength(p.args.content, 'utf8') > MAX_WIKI_CONTENT_BYTES)
+        throw fail('CONTROL_WIKI_CONTENT_INVALID');
+      // Existing synchronous commands retain their API. Wiki planning is asynchronous.
+      return productJournal.readProjection().then(({ wiki }) =>
+        savePlan(resolveWikiTarget(wiki, p.args.target)));
+    }
+    return savePlan(null);
   }
 
   /** One owner decision: approve this exact digest and apply it. Never retried after claim. */
@@ -273,27 +323,51 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, cat
       throw fail('CONTROL_APPROVAL_SOURCE_MISMATCH');
     if (rec.plan.source === 'desktop' && approval.channel !== 'desktop-owner-token')
       throw fail('CONTROL_APPROVAL_SOURCE_MISMATCH');
-    journal.approve(planId, { planId, planDigest: stored, channel: approval.channel, actor: short(approval.actor ?? 'owner', 120), at: iso() });
-    if (!journal.claim(planId)) throw fail('CONTROL_UNCERTAIN');
-    let status = 'applied', result = null, error = null;
-    try { result = executors[rec.plan.actionId](rec.plan.args, { requestId: 'utc-' + planId, planId }); }
-    catch (e) {
-      // Effect fence already claimed: the mutation may have partially taken effect
-      // (setHardNo/clearHardNo/theme/undo/lexicon are not guaranteed transactional).
-      // Pure validation/precondition failures (nothing attempted) stay `failed`;
-      // anything else surfaces `uncertain` so the owner decides — never retry, never
-      // report "nothing changed" falsely.
-      const code = e?.code ?? 'CONTROL_EFFECT_UNCERTAIN';
-      status = VALIDATION_ERROR_CODES.has(code) ? 'failed' : 'uncertain';
-      error = { code: short(code, 64), message: short(e?.message ?? e, 200) };
+    if (rec.plan.actionId === WIKI_ACTION && approval.channel !== 'desktop-owner-token')
+      throw fail('CONTROL_DESKTOP_APPROVAL_REQUIRED');
+
+    function finishEffect(result = null, cause = null) {
+      // Revision conflicts are definitive pre-write CAS failures. For other
+      // async journal failures, an append could have happened: never retry.
+      const code = cause?.status === 409 ? 'CONTROL_WIKI_STALE' :
+        cause?.code ?? 'CONTROL_EFFECT_UNCERTAIN';
+      const definitive = cause?.status === 409 || VALIDATION_ERROR_CODES.has(code) ||
+        (rec.plan.actionId === WIKI_ACTION && [400, 404, 413, 428].includes(cause?.status));
+      const status = !cause ? 'applied' : definitive ? 'failed' : 'uncertain';
+      const error = cause ? { code: short(code, 64), message: short(cause.message ?? cause, 200) } : null;
+      const receipt = { schema: RECEIPT_SCHEMA, planId, planDigest: stored, actionId: rec.plan.actionId, args: rec.plan.args,
+        risk: rec.plan.risk, source: rec.plan.source, origin: rec.plan.origin, approvedVia: approval.channel,
+        status, at: iso(), executionPerformed: status === 'applied',
+        ...(result ? { result } : {}), ...(error ? { error } : {}),
+        ...(status === 'applied' && undoFor(a, rec.plan.args, result) ? { undo: undoFor(a, rec.plan.args, result) } : {}),
+        liveAcceptance: a.readiness === 'verified' ? 'verified' : 'pending' };
+      return journal.finish(planId, receipt);
     }
-    const receipt = { schema: RECEIPT_SCHEMA, planId, planDigest: stored, actionId: rec.plan.actionId, args: rec.plan.args,
-      risk: rec.plan.risk, source: rec.plan.source, origin: rec.plan.origin, approvedVia: approval.channel,
-      status, at: iso(), executionPerformed: status === 'applied',
-      ...(result ? { result } : {}), ...(error ? { error } : {}),
-      ...(status === 'applied' && undoFor(a, rec.plan.args, result) ? { undo: undoFor(a, rec.plan.args, result) } : {}),
-      liveAcceptance: a.readiness === 'verified' ? 'verified' : 'pending' };
-    return journal.finish(planId, receipt);
+    function claimAndRun() {
+      journal.approve(planId, { planId, planDigest: stored, channel: approval.channel,
+        actor: short(approval.actor ?? 'owner', 120), at: iso() });
+      if (!journal.claim(planId)) throw fail('CONTROL_UNCERTAIN');
+      try {
+        const output = executors[rec.plan.actionId](rec.plan.args,
+          { requestId: 'utc-' + planId, planId, wikiBinding: rec.plan.wikiBinding });
+        return output && typeof output.then === 'function'
+          ? output.then(value => finishEffect(value), error => finishEffect(null, error))
+          : finishEffect(output);
+      } catch (error) { return finishEffect(null, error); }
+    }
+    if (rec.plan.actionId === WIKI_ACTION) {
+      if (!productJournal || !rec.plan.wikiBinding) throw fail('CONTROL_WIKI_NOT_READY');
+      // Check before claiming; the journal's append queue repeats CAS after claim.
+      return productJournal.readProjection().then(({ wiki }) => {
+        const current = resolveWikiTarget(wiki, rec.plan.args.target);
+        const bound = rec.plan.wikiBinding;
+        if (current.page !== bound.page || current.section !== bound.section ||
+            current.before !== bound.before || current.expectedRevision !== bound.expectedRevision)
+          throw fail('CONTROL_WIKI_STALE');
+        return claimAndRun();
+      });
+    }
+    return claimAndRun();
   }
 
   function status(planId) {
