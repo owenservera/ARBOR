@@ -474,6 +474,14 @@ async function refreshWiki() {
   }
   const session = HOST_PREVIEW ? null : transport.deviceHeaders();
   try {
+    // The local /api/wiki route is loopback-only, but the embedded desktop
+    // owner preview must also have a live, unexpired browser owner session.
+    if (HOST_PREVIEW) {
+      const owner = await fetch('/api/host/control/ui-state', {
+        method: 'GET', credentials: 'same-origin', cache: 'no-store'
+      });
+      if (!owner.ok) throw new Error('Owner session required to read the Host Wiki.');
+    }
     const response = await fetch(HOST_PREVIEW ? '/api/wiki' : '/mobile/api/wiki', {
       method: 'GET', credentials: 'same-origin', cache: 'no-store', headers: session || {}
     });
