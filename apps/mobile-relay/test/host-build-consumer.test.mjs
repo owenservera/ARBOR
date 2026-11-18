@@ -26,6 +26,15 @@ const host = (revision, status='applied') => {
 test('actual phone Build consumer unwraps only applied Host head, refuses stale and clears disconnected paint', () => {
   const {mount,handlers}=mockDom();
   const build=mountBuildSurface(mount);
+  build.setSurface(null);
+  assert.equal(build.draftSurface(),null,'unknown head is not an editable blank');
+  const emptyHost={state:'ready',schema:'vivim.bootstrap-phone/1',uiRevision:null};
+  build.setSurface(null,emptyHost);
+  assert.deepEqual(build.draftSurface(),createSurface(),'explicit empty Host head permits only a revision-zero draft');
+  assert.equal(build.surface(),null,'blank draft is never committed paint');
+  assert.equal(mount.children.length,0);
+  build.clear();
+  assert.equal(build.draftSurface(),null,'disconnect clears the draft baseline');
   const first=build.setSurface(host(5));
   assert.equal(first.state,'ready');
   assert.equal(build.surface().revision,5);
@@ -51,11 +60,13 @@ test('actual phone Build consumer unwraps only applied Host head, refuses stale 
   build.clear();
   assert.equal(build.surface(),null);
   assert.equal(build.revisionState().state,'blocked');
+  build.setSurface(null,emptyHost);
+  assert.equal(build.draftSurface(),null,'previously observed committed head cannot become a blank draft');
 });
 
 test('polling path checks full Host head and clears Build UI on lost status authority', () => {
   const source=readFileSync(new URL('../app.js',import.meta.url),'utf8');
-  assert.match(source,/const observed = build\.setSurface\(rev\)/);
+  assert.match(source,/const observed = build\.setSurface\(rev, st\?\.snapshot\?\.bootstrap\)/);
   assert.match(source,/if \(build\) build\.clear\(\)/);
   assert.doesNotMatch(source,/if \(rev && key !== buildKey\)/);
 });
