@@ -297,3 +297,16 @@ test('committed visual receipts reach historical AutoWiki and native owner knowl
   const invalid=structuredClone(effects);invalid.items[0].visualLink.revision=9;
   assert.throws(()=>buildNativeKnowledge({changes:{items:[]},context:{}},invalid),/NATIVE_VISUAL_EFFECT_SOURCE_INVALID/);
 });
+
+test('desktop owner can approve, reuse and revoke a typed read recipe through the incumbent rule store',async t=>{
+ const {runtime,dataRoot}=fixture(t);const {createProductJournal}=await import('../chat/product-journal.mjs');
+ const productJournal=createProductJournal({dataRoot,seedState:{chat:[]},seedWiki:{revision:0,pages:{main:{sections:{about:'Test section'}}}}});
+ const control=createControlDispatcher({dataRoot,runtime,productJournal,nativeProgram:async({program})=>{const p=JSON.parse(program);return {outcome:'compiled',programId:p.id,programRevision:p.revision,orderedStepIds:p.steps.map(s=>s.id),programDigest:'a'.repeat(64),executionAuthorized:false,effectPerformed:false,sourceReferencesVerified:0};}});
+ const owner={source:'desktop',actor:'desktop-owner'},approval={channel:'desktop-owner-token',actor:'desktop-owner'};
+ const command='run wiki read sequence:\nlist wiki pages\nread wiki page main in section about';
+ const draft=await control.plan({actionId:'control.rule.remember',args:{phrase:'morningbrief',command}},owner);assert.equal(draft.outcome,'approval_required');assert.equal(control.ownerRules().entries.length,0);
+ const saved=await control.execute({planId:draft.planId,planDigest:draft.planDigest,approval});assert.equal(saved.status,'applied');const rule=control.ownerRules().entries[0];assert.equal(rule.readProgram.steps.length,2);
+ const read=await control.plan({text:'morningbrief'},owner);assert.equal(read.outcome,'done');assert.equal(read.result.reusedRecipe,true);assert.equal(read.result.steps[1].result.content,'Test section');assert.equal((await productJournal.readPhoneWiki()).revision,0);
+ assert.notEqual((await control.plan({text:'morningbrief'},{source:'mobile',actor:'phone'})).outcome,'done');
+ const revoke=await control.plan({actionId:'control.rule.revoke',args:{rule_id:rule.id}},owner);assert.equal((await control.execute({planId:revoke.planId,planDigest:revoke.planDigest,approval})).status,'applied');assert.notEqual((await control.plan({text:'morningbrief'},owner)).outcome,'done');
+});

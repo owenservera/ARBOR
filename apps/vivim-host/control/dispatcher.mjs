@@ -247,6 +247,8 @@ function createExecutors({ runtime, planner, lexicon, devices, productJournal, p
     [WIKI_READ_PROGRAM_ACTION]:(args,ctx={})=>runWikiReadProgram({commands:args.commands,recipe:ctx.recipe??null,catalog:planner.catalog,
       planTyped:step=>planner.planTyped({...step,source:'desktop'}),stillCurrent:ctx.stillCurrent??(()=>true),
       planCommand:text=>planner.planText(text,{source:'desktop'}),readWiki:()=>productJournal.readPhoneWiki(),nativeProgram,
+      readEvidence:(targets,revision)=>productJournal.readProgramEvidence(targets,revision),
+      resolveTarget:(plan,wiki)=>{const hit=resolveWikiTarget(wiki,plan.args.page+'/'+plan.args.section);return {page:hit.page,section:hit.section};},
       readAction:(plan,wiki)=>plan.actionId==='wiki.pages.list'?readWikiPages(wiki):readWikiSection(wiki,plan.args)}),
     [HVI_ACTION]:(args,ctx)=>ctx.readHvi(args.selection),
     [NATIVE_PROGRAM_ACTION]:args=>nativeProgram(args),

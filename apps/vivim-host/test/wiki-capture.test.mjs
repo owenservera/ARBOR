@@ -64,3 +64,13 @@ test('exact program inputs resolve older current sections beyond the recent wind
   assert.deepEqual((await journal.readProgramSources([first.entryId])).items,[]);
  }finally{await rm(root,{recursive:true,force:true});}
 });
+
+test('program evidence distinguishes committed section identities from seed content without exporting raw data',async()=>{
+ const root=await mkdtemp(path.join(tmpdir(),'vivim-program-evidence-'));
+ try{const journal=createProductJournal({dataRoot:root,seedState:{chat:[]},seedWiki:{revision:0,pages:{main:{sections:{about:'Seed'}}}}});
+ const targets=[{page:'main',section:'about'}];assert.equal((await journal.readProgramEvidence(targets,0)).items[0].source,null);
+ const entry=await journal.append({kind:'wiki-edit',actor:'owner-browser',schemaVersion:1,expectedRevision:0,edit:{action:'set-section',page:'main',section:'about',content:'Committed'}});
+ const view=await journal.readProgramEvidence(targets,1);assert.equal(view.items[0].source.entryId,entry.entryId);assert.equal(Object.hasOwn(view.items[0].source,'content'),false);
+ await assert.rejects(journal.readProgramEvidence(targets,0),/Stale Wiki revision/);
+ }finally{await rm(root,{recursive:true,force:true});}
+});

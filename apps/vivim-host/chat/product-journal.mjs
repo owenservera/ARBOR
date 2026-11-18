@@ -462,6 +462,24 @@ export function createProductJournal({ dataRoot, seedState, seedWiki }) {
     requireShape(!current.tornTail,'Native program sources unavailable: torn journal tail',503);
     return projectProgramSources(current.records,current.wiki,ids);
   }
+  async function readProgramEvidence(targets,expectedRevision){
+    requireShape(Array.isArray(targets)&&targets.length<=8&&targets.every(t=>t&&typeof t.page==='string'&&typeof t.section==='string'&&SAFE_NAME.test(t.page)&&SAFE_NAME.test(t.section)),'Invalid native program targets',400);
+    const current=await snapshot();
+    requireShape(!current.tornTail,'Native program sources unavailable: torn journal tail',503);
+    requireShape(current.wikiRevision===expectedRevision,'Stale Wiki revision',409);
+    const selected=new Map(),latest=new Map();
+    for(const e of current.records){if(e.kind==='wiki-edit')latest.set(JSON.stringify([e.edit.page,e.edit.section]),e);}
+    for(const {page,section} of targets){
+      const key=JSON.stringify([page,section]),entry=latest.get(key),content=current.wiki.pages[page]?.sections?.[section];
+      requireShape(typeof content==='string','Wiki program target unavailable',400);
+      if(entry&&typeof entry.entryId==='string'&&entry.edit.content===content)selected.set(key,entry.entryId);
+    }
+    const ids=[...new Set(selected.values())];
+    const verified=ids.length?projectProgramSources(current.records,current.wiki,ids).items:[];
+    const byId=new Map(verified.map(e=>[e.entryId,e]));
+    return {schema:'vivim.wiki-program-evidence/1',authority:'host-product-journal',wikiRevision:current.wikiRevision,
+      items:targets.map(({page,section})=>({page,section,source:byId.get(selected.get(JSON.stringify([page,section])))??null}))};
+  }
   async function readNativeKnowledge({nativeOnly=false}={}) {
     const current = await snapshot();
     requireShape(!current.tornTail, 'Native context unavailable: torn journal tail', 503);
@@ -556,5 +574,5 @@ export function createProductJournal({ dataRoot, seedState, seedWiki }) {
     return pending;
   }
   async function rawJournal() { return (await snapshot()).committed; }
-  return { journalPath, readRecords, readProjection, readWikiContext, readNativeKnowledge, readProgramSources, readPhoneWiki, append, rawJournal };
+  return { journalPath, readRecords, readProjection, readWikiContext, readNativeKnowledge, readProgramSources, readProgramEvidence, readPhoneWiki, append, rawJournal };
 }

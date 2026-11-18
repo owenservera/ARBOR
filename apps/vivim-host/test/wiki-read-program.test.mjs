@@ -36,3 +36,12 @@ test('reviewed recipe reuses typed child meanings without calling the language i
  assert.equal(validWikiRecipe(recipe,commands,stale),false);
  const revoked=await runWikiReadProgram({commands,recipe,catalog,planTyped:step=>planner.planTyped({...step,source:'desktop'}),readWiki:async()=>wiki,nativeProgram:native,readAction,stillCurrent:()=>false});assert.equal(revoked.reasonCode,'PROGRAM_RECIPE_STALE');
 });
+
+test('native wire contains exact committed section references and never invented seed identities',async()=>{
+ const {createHash}=await import('node:crypto');const contentDigest=createHash('sha256').update('Current text','utf8').digest('hex');
+ const source={kind:'committed-wiki-edit',status:'current-section-revision',entryId:'11111111-1111-1111-1111-111111111111',wikiRevision:2,contentDigest};
+ const readEvidence=async(targets,revision)=>({schema:'vivim.wiki-program-evidence/1',authority:'host-product-journal',wikiRevision:revision,items:targets.map(t=>({...t,source}))});
+ const out=await runWikiReadProgram({commands,planCommand,readWiki:async()=>wiki,readEvidence,readAction,nativeProgram:async(args)=>{const p=JSON.parse(args.program);assert.deepEqual(p.steps[0].inputs,[]);assert.equal(p.steps[1].inputs[0].source_id,source.entryId);return {...await native(args),sourceReferencesVerified:1};}});
+ assert.equal(out.outcome,'completed');assert.equal(out.steps[0].sourceEvidence.state,'snapshot-only');assert.equal(out.steps[1].sourceEvidence.state,'committed-section');
+ const bad=await runWikiReadProgram({commands,planCommand,readWiki:async()=>wiki,readEvidence:async(...args)=>{const e=await readEvidence(...args);e.items[0].source.contentDigest='0'.repeat(64);return e;},readAction,nativeProgram:async()=>{throw Error('must not run')}});assert.equal(bad.reasonCode,'PROGRAM_SOURCE_UNAVAILABLE');
+});
