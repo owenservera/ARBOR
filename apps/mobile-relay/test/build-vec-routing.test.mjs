@@ -37,5 +37,20 @@ test('paired Direct exposes only reviewed read-only JS modules; SW shell preload
     assert.match(host, new RegExp("'" + asset.replace('.', '\\.') + "': \\['" + asset.replace('.', '\\.') + "'"));
     assert.ok(sw.includes("'" + asset + "'"));
   }
-  assert.match(sw, /var CACHE = 'vivim-relay-shell-v10'/);
+  assert.match(sw, /var CACHE = 'vivim-relay-shell-v11'/);
+});
+
+test('TierFlow modules are fixed Host assets backed by the existing canonical sources', () => {
+  const host = readFileSync(new URL('../../vivim-host/direct-phone.mjs', import.meta.url), 'utf8');
+  const sw = readFileSync(new URL('../sw.js', import.meta.url), 'utf8');
+  for (const asset of ['document/schema.ts','document/validate.ts','document/import-legacy.ts',
+    'render/dom.ts','render/spatial-fallback.ts']) {
+    const route = 'tierflow-runtime/' + asset;
+    const canonical = '../../packages/tierflow/src/visual-runtime/' + asset;
+    assert.ok(host.includes("'" + route + "': ['" + canonical + "'"));
+    assert.ok(sw.includes("'" + route + "'"));
+    assert.ok(readFileSync(new URL('../../../packages/tierflow/src/visual-runtime/' + asset, import.meta.url), 'utf8').length > 0);
+  }
+  assert.match(host, /stripTypeScriptTypes\(await readFile\(filename,'utf8'\)\)/);
+  assert.equal((host.match(/await readPhoneAsset\(asset\)/g) ?? []).length,2);
 });
