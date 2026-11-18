@@ -26,18 +26,20 @@ impl HostProcess {
         }
     }
 
-    /// Resolve the repo root from the current executable:
-    /// <repo>/src-tauri/target/debug/vivim-host.exe -> up 3 -> <repo>
+    /// Resolve the actual Host runtime in a workspace or older Tauri target tree.
     fn repo_root() -> PathBuf {
-        let exe = std::env::current_exe().unwrap_or_else(|_| PathBuf::from("."));
-        let mut p = exe.parent().unwrap_or(Path::new(".")).to_path_buf();
-        for _ in 0..3 {
-            p = match p.parent() {
-                Some(parent) => parent.to_path_buf(),
-                None => break,
-            };
+        let host = Path::new("apps").join("vivim-host").join("server.mjs");
+        if let Ok(exe) = std::env::current_exe() {
+            for dir in exe.ancestors().skip(1).take(6) {
+                if dir.join(&host).is_file() { return dir.to_path_buf(); }
+            }
         }
-        p
+        if let Ok(cwd) = std::env::current_dir() {
+            for dir in cwd.ancestors().take(4) {
+                if dir.join(&host).is_file() { return dir.to_path_buf(); }
+            }
+        }
+        PathBuf::from(".")
     }
 
     fn start(app: &tauri::App) -> Result<std::process::Child, Box<dyn std::error::Error + Send + Sync>> {

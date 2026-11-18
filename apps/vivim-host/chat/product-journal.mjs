@@ -269,7 +269,7 @@ export function createProductJournal({ dataRoot, seedState, seedWiki }) {
   async function readNativeKnowledge() {
     const current = await snapshot();
     requireShape(!current.tornTail, 'Native context unavailable: torn journal tail', 503);
-    const context = projectWikiContext(current.records, current.wikiRevision);
+    const context = projectWikiContext(current.records, current.wikiRevision, current.wiki);
     const changes = projectWikiChanges(current.records, { currentOnly: true });
     const records = new Map(current.records.filter(e => e.entryId).map(e => [e.entryId, e]));
     return { context, changes: { ...changes, items: changes.items.map(change => {

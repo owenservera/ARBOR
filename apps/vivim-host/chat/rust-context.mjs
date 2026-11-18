@@ -7,6 +7,7 @@ import { mkdir, lstat } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 import { projectAppliedControlEffects } from './product-journal.mjs';
+import { sectionId, receiptId } from './wiki-semantics.mjs';
 import {execFile as execFileCb} from 'node:child_process';
 import {promisify} from 'node:util';
 const execFile=promisify(execFileCb);
@@ -125,6 +126,7 @@ export function buildNativeKnowledge(snapshot, effects) {
         createHash('sha256').update(e.content,'utf8').digest('hex') !== e.contentDigest)
       throw Error('NATIVE_WIKI_SOURCE_INVALID');
     rows.push({id:'vivim-context-w-'+digest([relation.page,relation.section]),kind:'wiki',
+      semanticId:sectionId(relation.page,relation.section),
       sourceRef:e.entryId,digest:e.contentDigest,revision:e.wikiRevision,
       sourceRevision:e.wikiRevision,order:Date.parse(e.receivedAt),
       title:safe('Wiki: '+relation.page+'/'+relation.section,100),summary:safe(e.content,120)});
@@ -138,10 +140,17 @@ export function buildNativeKnowledge(snapshot, effects) {
       throw Error('NATIVE_EFFECT_SOURCE_INVALID');
     // The immutable receipt itself has version 1; its target state revision,
     // when supplied by D4, remains separately and exactly identified.
-    const linked = e.wikiLink ? ' · Wiki revision '+e.wikiLink.wikiRevision : '';
+    const wikiLink = e.wikiLink ?? null;
+    if (wikiLink && (e.actionId!=='wiki.section.edit' ||
+        wikiLink.kind!=='committed-wiki-change' || typeof wikiLink.entryId!=='string' ||
+        !/^[0-9a-f-]{36}$/.test(wikiLink.entryId) ||
+        !safeUInt(wikiLink.wikiRevision) || wikiLink.wikiRevision===0))
+      throw Error('NATIVE_EFFECT_SOURCE_LINK_INVALID');
+    const linked = wikiLink ? ' · Wiki revision '+wikiLink.wikiRevision : '';
     rows.push({id:'vivim-context-e-'+digest(e.planId),kind:'effect',
       sourceRef:e.planId,digest:e.planDigest,revision:Math.max(1,e.sourceRevision ?? 1),
       sourceRevision:e.sourceRevision,order:Date.parse(e.receivedAt),
+      semanticId:receiptId(e.planId),actionId:e.actionId,wikiLink,
       title:safe('Applied: '+e.actionId,100),summary:safe('Historical Host receipt'+linked,120)});
   }
   if (rows.some(r => !safeUInt(r.order) || r.order === 0) ||

@@ -5,7 +5,7 @@ use hqkg::scoped_graph::{self, Provenance};
 use hqkg::typed_dag::{GraphDomain, Namespace, RevisionToken};
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
-use std::{collections::BTreeSet, fs, io::{self, Read}, path::PathBuf};
+use std::{collections::{BTreeMap, BTreeSet}, fs, io::{self, Read}, path::PathBuf};
 const MIB: u64 = 1024 * 1024;
 fn text<'a>(v: &'a Value, key: &str) -> Result<&'a str, String> { v[key].as_str().ok_or_else(|| format!("missing {key}")) }
 fn hex(s: &str) -> bool { s.len()==64 && s.bytes().all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b)) }
@@ -24,6 +24,8 @@ fn sync_context(v: &Value, ns: &Namespace, journal: &Journal, g: &mut Graph,
     let prefix = scoped_graph::prefix(ns).map_err(err)?;
     let managed_prefix = format!("{prefix}vivim-context-");
     let mut wanted = BTreeSet::new();
+    let mut wiki_nodes = BTreeMap::new();
+    let mut effect_links = Vec::new();
     let mut changes = GraphChangeSet::new(format!("{prefix}sync-host-context"), "host-context");
     for n in nodes {
         let kind = text(n, "kind")?;
@@ -68,6 +70,35 @@ fn sync_context(v: &Value, ns: &Namespace, journal: &Journal, g: &mut Graph,
             ("vivim.context.order", order.to_string()),
             ("vivim.context.summary", summary.to_string()),
         ] { node.properties.insert(key.into(), value); }
+        let semantic_id = text(n, "semanticId")?;
+        if semantic_id.is_empty() || semantic_id.len() > 512 || semantic_id.chars().any(char::is_control) {
+            return Err("invalid semantic source identity".into());
+        }
+        node.properties.insert("vivim.context.semanticId".into(), semantic_id.into());
+        if kind == "wiki" {
+            if wiki_nodes.insert(source_ref.to_string(), (node.id.clone(), revision)).is_some() {
+                return Err("duplicate Wiki source identity".into());
+            }
+        } else {
+            let action_id = text(n, "actionId")?;
+            if action_id.is_empty() || action_id.len() > 128 ||
+                !action_id.bytes().all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || matches!(b,b'.'|b'_'|b'-')) {
+                return Err("invalid semantic action identity".into());
+            }
+            node.properties.insert("vivim.context.actionId".into(), action_id.into());
+            if let Some(link) = n.get("wikiLink").filter(|v| !v.is_null()) {
+                let entry = text(link, "entryId")?;
+                let linked_revision = link["wikiRevision"].as_u64().ok_or("invalid linked Wiki revision")?;
+                if action_id != "wiki.section.edit" || entry.len() != 36 ||
+                    !entry.bytes().all(|b| b.is_ascii_hexdigit() || b == b'-') || linked_revision == 0 {
+                    return Err("invalid D4 Wiki receipt link".into());
+                }
+                node.properties.insert("vivim.context.wikiEntryId".into(), entry.into());
+                node.properties.insert("vivim.context.wikiRevision".into(), linked_revision.to_string());
+                effect_links.push((id.to_string(), node.id.clone(), entry.to_string(),
+                    linked_revision, provenance.clone()));
+            }
+        }
         if !wanted.insert(node.id.clone()) { return Err("duplicate context identity".into()); }
         if let Some(old) = g.node(&node.id) {
             if old.properties.get("vivim.context.kind").map(String::as_str) != Some(kind) {
@@ -77,6 +108,33 @@ fn sync_context(v: &Value, ns: &Namespace, journal: &Journal, g: &mut Graph,
                 old.sources == node.sources { continue; }
         }
         changes = changes.put_node(node);
+    }
+    // Only link an applied receipt to the exact current D4 source entry and
+    // revision. Historical receipt metadata stays historical after supersession.
+    let mut wanted_edges = BTreeSet::new();
+    for (local, from, entry, revision, provenance) in effect_links {
+        if let Some((to, current_revision)) = wiki_nodes.get(&entry) {
+            if *current_revision != revision { continue; }
+            let local_edge = format!("vivim-context-l-{}", &local["vivim-context-e-".len()..]);
+            let mut edge = scoped_graph::edge(ns, &local_edge, &from, "committed-wiki-change",
+                to, &provenance).map_err(err)?;
+            edge.properties.insert("vivim.context.kind".into(), "effect-wiki-link".into());
+            wanted_edges.insert(edge.id.clone());
+            if let Some(old) = g.edge(&edge.id) {
+                if old.properties.get("vivim.context.kind").map(String::as_str) != Some("effect-wiki-link") {
+                    return Err("managed context edge identity conflict".into());
+                }
+                if old == &edge { continue; }
+            }
+            changes = changes.put_edge(edge);
+        }
+    }
+    for old in g.edges() {
+        if old.id.starts_with(&format!("{prefix}vivim-context-l-")) &&
+            old.properties.get("vivim.context.kind").map(String::as_str) == Some("effect-wiki-link") &&
+            !wanted_edges.contains(&old.id) {
+            changes = changes.remove_edge(&old.id, "D4 committed Wiki relationship invalidated", 0);
+        }
     }
     for old in g.nodes() {
         if old.id.starts_with(&managed_prefix) &&

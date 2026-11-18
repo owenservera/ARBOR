@@ -3,10 +3,10 @@ import { createHash } from 'node:crypto';
 
 const digest = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const pageId = page => 'wiki:page:' + encodeURIComponent(page);
-const sectionId = (page, section) => 'wiki:section:' + encodeURIComponent(page) + '/' + encodeURIComponent(section);
+export const sectionId = (page, section) => 'wiki:section:' + encodeURIComponent(page) + '/' + encodeURIComponent(section);
 const actionId = id => 'control:action:' + id;
 const journalId = id => 'journal:' + id;
-const receiptId = id => 'receipt:' + id;
+export const receiptId = id => 'receipt:' + id;
 const validAction = id => typeof id === 'string' && /^[a-z0-9][a-z0-9_.-]{0,127}$/.test(id);
 
 // Only the existing typed Wiki action may resolve a candidate target.

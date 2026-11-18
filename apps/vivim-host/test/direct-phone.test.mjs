@@ -311,8 +311,9 @@ test('chat context is a strictly bounded read-only Host-owned native projection'
   assert.match(source,/CHAT_FOCUS_INVALID/);
   assert.match(source,/chatContext\(query\[0\]\[1\]\)/);
   assert.match(source,/cache-control','private, no-store'/);
-  assert.match(host,/createRustChatContext\(\)/);
-  assert.match(host,/chatContext: createRustChatContext\(\)/);
+  assert.match(host,/createRustChatContext\(\{dataRoot:path\.resolve\(dataRoot\),productJournal,control:controlFor\}\)/);
+  assert.match(host,/chatContext: nativeContext/);
+  assert.match(source,/authorizeDevice\(req,'control:read'\);\s*res\.setHeader\('cache-control','private, no-store'\)/);
 });
 
 
