@@ -174,6 +174,36 @@ export function projectWikiContext(records, wikiRevision = null) {
   };
 }
 
+export function projectAppliedControlEffects(control) {
+  // The existing dispatcher owns receipt reads. No new journal or graph writes.
+  const recent = control.recent(100);
+  const items = [];
+  for (const summary of recent) {
+    if (summary.state !== 'applied' || summary.actionId === 'wiki.section.edit' ||
+        !['R1', 'R2'].includes(summary.risk)) continue;
+    const detail = control.status(summary.planId);
+    const receipt = detail?.receipt;
+    if (detail?.state !== 'applied' || receipt?.schema !== 'vivim.control-receipt/1' ||
+        receipt.status !== 'applied' || receipt.executionPerformed !== true ||
+        receipt.planId !== summary.planId || receipt.actionId !== summary.actionId ||
+        receipt.risk !== summary.risk || typeof receipt.planDigest !== 'string' ||
+        !/^[a-f0-9]{64}$/.test(receipt.planDigest) || typeof receipt.at !== 'string' ||
+        !Number.isFinite(Date.parse(receipt.at)) ||
+        !['desktop-owner-token', 'direct-phone'].includes(receipt.approvedVia))
+      throw new Error('Invalid applied control receipt');
+    items.push({
+      source: 'host-control-receipt', planId: receipt.planId, planDigest: receipt.planDigest,
+      actionId: receipt.actionId, receivedAt: receipt.at, kind: 'executed-effect',
+      status: 'historical-applied-receipt',
+      sourceRevision: Number.isSafeInteger(receipt.result?.revision) && receipt.result.revision >= 0
+        ? receipt.result.revision : null
+    });
+  }
+  items.sort((a, b) => Date.parse(b.receivedAt) - Date.parse(a.receivedAt) || a.planId.localeCompare(b.planId));
+  return { state: 'source-backed', scannedPlans: recent.length, scanLimit: 100,
+    omitted: Math.max(0, items.length - 24), items: items.slice(0, 24) };
+}
+
 export function createProductJournal({ dataRoot, seedState, seedWiki }) {
   const journalPath = path.resolve(dataRoot, 'product-state', 'journal.jsonl');
   const directory = path.dirname(journalPath);
