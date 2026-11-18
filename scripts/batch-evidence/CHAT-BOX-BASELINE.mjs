@@ -156,30 +156,33 @@ if (live) {
 
   // (c) same-envelope parity: one typed write endpoint, identical envelope {actor, schemaVersion,...} for human and AI
   const writePath = '/api/mutate';
-  const baseEnvelope = { kind: 'chat-send', schemaVersion: '1', text: 'parity check message' };
+  const baseEnvelope = { kind: 'chat-send', schemaVersion: 1, text: 'parity check message' };
   const envHuman = { ...baseEnvelope, actor: 'human' };
   const envAi = { ...baseEnvelope, actor: 'ai' };
-  const jBefore = await attempt('journal-before', () => get('/demo/journal.jsonl'));
+  const jBefore = await attempt('journal-before', () => get('/api/journal?format=jsonl'));
   const before = await attempt('state-before', () => get('/api/state'));
   const postHuman = await attempt('post-human', () => post(writePath, envHuman));
   const postAi = await attempt('post-ai', () => post(writePath, envAi));
   const after = await attempt('state-after', () => get('/api/state'));
-  const jAfter = await attempt('journal-after', () => get('/demo/journal.jsonl'));
+  const jAfter = await attempt('journal-after', () => get('/api/journal?format=jsonl'));
   const sameStatus = postHuman.ok && postAi.ok && postHuman.status === 200 && postAi.status === 200;
   // keeper §2c rule in ratified design terms: chat-send appends ONE journal line per actor.
-  // identical mutation = journal +2 lines (one per actor, kind=chat-send, intent present), state unchanged.
+  // identical mutation = journal +2 lines (one per actor, kind=chat-send, intent present), chat and state revision advance by two, wiki revision unchanged.
   let sameMutation = false;
   try {
     const bLines = jBefore.ok ? jBefore.body.trim().split(/\r?\n/).filter(Boolean) : [];
     const aLines = jAfter.ok ? jAfter.body.trim().split(/\r?\n/).filter(Boolean) : [];
     const tail2 = aLines.slice(-2).map(l => { try { return JSON.parse(l); } catch { return {}; } });
-    const stateUnchanged = before.ok && after.ok && before.body === after.body;
+    const prior = JSON.parse(before.body);
+    const next = JSON.parse(after.body);
+    const stateProjected = before.ok && after.ok && next.chat.length === prior.chat.length + 2 &&
+      next.revision === prior.revision + 2 && next.wikiRevision === prior.wikiRevision;
     sameMutation = sameStatus && jBefore.ok && jAfter.ok && aLines.length === bLines.length + 2 &&
-      tail2.every(e => e.kind === 'chat-send' && e.actor != null && e.intent != null) && stateUnchanged;
+      tail2.every(e => e.kind === 'chat-send' && e.actor != null && e.intent != null) && stateProjected;
   } catch { sameMutation = false; }
   const parityDigest = digestOf({ human: postHuman, ai: postAi, before: before.body, after: after.body });
   check('write-endpoint-parity', sameStatus && sameMutation,
-    `human status=${postHuman.ok ? postHuman.status : postHuman.error} ai status=${postAi.ok ? postAi.status : postAi.error} parityDigest=${parityDigest} stateUnchanged=${sameMutation}`);
+    `human status=${postHuman.ok ? postHuman.status : postHuman.error} ai status=${postAi.ok ? postAi.status : postAi.error} parityDigest=${parityDigest} stateProjected=${sameMutation}`);
 }
 
 // ---------------- verdict ----------------
