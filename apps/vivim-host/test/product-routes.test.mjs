@@ -1,5 +1,5 @@
 // Batch-1 product routes (oracle ack2) — /chat /wiki pages, /api/state|wiki|file-surface
-// baseline seeds, /api/roadmap + /api/journal read-throughs, POST /api/mutate append.
+// owner initialization and canonical /api/journal reads, POST /api/mutate append.
 // Modeled on demo-iframe-smoke.test.mjs: raw HTTP over node:http (immune to a
 // globalThis.fetch stub from another test file — the suite runs in one bun process),
 // server started on an ephemeral port via createHostServer().
@@ -43,13 +43,10 @@ const testDir = typeof __dirname === 'string'
   : path.dirname(fileURLToPath(import.meta.url));
 const realPagesDir = path.resolve(testDir, '..', 'public', 'pages');
 
-// Temp staticRoot: the pages tree is copied so POST /api/mutate appends to a TEMP
-// demo/journal.jsonl (same path the handler resolves via staticRoot) — the real
-// repo journal is never touched by this test.
+// Serve only real page assets in the isolated Host test.
 function makeStaticRoot() {
   const root = mkdtempSync(path.join(os.tmpdir(), 'vivim-product-routes-'));
   mkdirSync(path.join(root, 'pages'), { recursive: true });
-  mkdirSync(path.join(root, 'demo'), { recursive: true });
   copyFileSync(path.join(realPagesDir, 'chat.html'), path.join(root, 'pages', 'chat.html'));
   copyFileSync(path.join(realPagesDir, 'wiki.html'), path.join(root, 'pages', 'wiki.html'));
   for (const name of ['chat.js', 'wiki.js', 'chat.css', 'wiki.css']) {
@@ -116,11 +113,10 @@ test('batch-1 product routes: pages, baseline JSON, read-throughs, mutate append
     assert.match(surface.headers.get('content-type') || '', /application\/json/);
     assert.deepEqual((await surface.json()).files, []);
 
-    // Read-throughs: roadmap from docs/product/roadmap/roadmap.v1.json (single source).
-    const roadmap = await httpFetch(base, '/api/roadmap');
-    assert.equal(roadmap.status, 200);
-    const roadmapJson = await roadmap.json();
-    assert.ok(Array.isArray(roadmapJson.buildQueue) && roadmapJson.buildQueue.length >= 1);
+    // Historical development documents are no longer a live product source.
+    assert.equal((await httpFetch(base, '/api/roadmap')).status, 404);
+    assert.deepEqual(mainSections, { About: '', HowTo: '', Sources: '' });
+    assert.deepEqual(Object.keys(wikiJson.pages), ['Main']);
 
     // Journal read-through: temp staticRoot has no journal yet — an empty array.
     const journalBefore = await httpFetch(base, '/api/journal');
@@ -228,19 +224,18 @@ test('batch-1 product routes: pages, baseline JSON, read-throughs, mutate append
     assert.equal((await sendEdit(revoked, { ...mutationHeaders, cookie,
       'x-vivim-ui-csrf': session.csrf })).status, 401, 'revoked browser session refused');
 
-    // Gate observations are not privileged execution receipts and cannot be forged.
+    // Neither a demo alias nor an owner token may revive legacy gate writes.
     const gate = { schemaVersion: 1, actor: 'keeper', kind: 'gate-decision',
       itemId: 'CHAT-BOX-BASELINE', decision: 'approve' };
-    assert.equal((await httpFetch(base, '/demo/mutate', {
-      method: 'POST', headers: mutationHeaders, body: JSON.stringify(gate)
-    })).status, 401);
-    assert.equal((await httpFetch(base, '/demo/mutate', {
-      method: 'POST', headers: { ...mutationHeaders, authorization: 'Bearer ' + token },
-      body: JSON.stringify(gate)
-    })).status, 200);
+    for (const route of ['/demo/mutate', '/api/mutate']) {
+      assert.equal((await httpFetch(base, route, {
+        method: 'POST', headers: { ...mutationHeaders, authorization: 'Bearer ' + token },
+        body: JSON.stringify(gate)
+      })).status, route === '/demo/mutate' ? 404 : 410);
+    }
     const journalFinal = await (await httpFetch(base, '/api/journal')).json();
-    const rawFinal = await (await httpFetch(base, '/demo/journal.jsonl')).text();
-    assert.equal(journalFinal.length, 4);
+    const rawFinal = await (await httpFetch(base, '/api/journal?format=jsonl')).text();
+    assert.equal(journalFinal.length, 3);
     assert.deepEqual(rawFinal.split('\n').filter(Boolean).map(JSON.parse), journalFinal);
     const stateFinal = await (await httpFetch(base, '/api/state')).json();
     const wikiFinal = await (await httpFetch(base, '/api/wiki')).json();
@@ -254,7 +249,7 @@ test('batch-1 product routes: pages, baseline JSON, read-throughs, mutate append
       authorization: 'Bearer ' + token }), sendEdit(parallelEdit, { ...mutationHeaders,
       authorization: 'Bearer ' + token })]);
     assert.deepEqual(race.map(r => r.status).sort(), [200,409]);
-    assert.equal((await (await httpFetch(base, '/api/journal')).json()).length, 5);
+    assert.equal((await (await httpFetch(base, '/api/journal')).json()).length, 4);
 
     // Real HTTP chat append becomes private context without changing the editable Wiki.
     const wikiBeforeContext = await (await httpFetch(base, '/api/wiki')).json();
