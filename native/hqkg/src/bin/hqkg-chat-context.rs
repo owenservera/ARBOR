@@ -131,13 +131,40 @@ fn project_managed(journal: &Path, scope: &str, epoch: u64, view: &str) -> Resul
                 "summary":p.get("vivim.context.summary")}));
         }
     }
+    let mut page_relationships = Vec::new();
+    for edge in graph.edges() {
+        if !edge.id.starts_with(&format!("{prefix}vivim-context-p-")) ||
+            edge.properties.get("vivim.context.kind").map(String::as_str) != Some("wiki-page-link") {
+            continue;
+        }
+        let from = graph.node(&edge.from).ok_or_else(|| Error::Corrupt("Wiki link endpoint missing".into()))?;
+        let to = graph.node(&edge.to).ok_or_else(|| Error::Corrupt("Wiki link endpoint missing".into()))?;
+        for node in [from,to] {
+            if node.properties.get("vivim.context.kind").map(String::as_str) != Some("wiki") ||
+                !node.properties.get("vivim.context.semanticId").map_or(false, |s| s.starts_with("wiki:page:")) {
+                return Err(Error::Corrupt("Wiki link endpoint invalid".into()));
+            }
+        }
+        let revision = edge.properties.get("hqkg.provenance.revision").and_then(|s| s.parse::<u64>().ok())
+            .ok_or_else(|| Error::Corrupt("Wiki link revision missing".into()))?;
+        page_relationships.push(json!({
+            "id":edge.id.strip_prefix(prefix.as_str()),"from":edge.from.strip_prefix(prefix.as_str()),"to":edge.to.strip_prefix(prefix.as_str()),
+            "kind":edge.relation,"sourceRef":edge.properties.get("vivim.context.sourceRef"),
+            "revision":revision,"digest":edge.properties.get("hqkg.provenance.digest")
+        }));
+    }
+    if page_relationships.len()>24 {
+        return Err(Error::Corrupt("Wiki link bound exceeded".into()));
+    }
+    page_relationships.sort_by(|a,b| a["id"].as_str().cmp(&b["id"].as_str()));
     let after = store.status()?;
     if after.epoch != epoch || after.total_bytes != before.total_bytes || after.trailing_bytes != 0 {
         return Err(Error::Conflict("managed graph changed while reading".into()));
     }
     Ok(json!({"schema":SCHEMA,"state":"source-backed","core":"hqkg","authority":"read-only",
         "seed":format!("managed:{view}"),"epoch":epoch,"tokensUsed":tokens,"budgetTokens":320,
-        "budgetExhausted":exhausted,"staleCount":0,"totalRetrieved":total,"items":items}))
+        "budgetExhausted":exhausted,"staleCount":0,"totalRetrieved":total,"items":items,
+        "pageRelationships":page_relationships}))
 }
 
 fn run() -> Result<Value> {

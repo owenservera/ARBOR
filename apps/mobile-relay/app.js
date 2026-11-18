@@ -481,9 +481,11 @@ function semanticRows(context) {
   const labels = { 'changed-section': 'changed', 'supersedes-change': 'supersedes',
     'belongs-to-page': 'belongs to', 'interpreted-as': 'interpreted as',
     'candidate-target': 'possible target', 'executed-action': 'executed',
-    'confirmed-change': 'confirmed' };
+    'confirmed-change': 'confirmed', 'created-page':'created', 'moved-page':'reordered',
+    'linked-from':'linked from', 'linked-to':'linked to', 'wiki-page-link':'links to' };
   const priority = { 'confirmed-change': 0, 'changed-section': 1, 'supersedes-change': 2,
-    'candidate-target': 3, 'executed-action': 4, 'interpreted-as': 5, 'belongs-to-page': 6 };
+    'candidate-target': 3, 'executed-action': 4, 'interpreted-as': 5, 'belongs-to-page': 6, 'wiki-page-link':-1,
+    'created-page':1, 'moved-page':2, 'linked-from':2, 'linked-to':2 };
   const rows = [];
   const ids = new Set();
   for (const relation of graph.relationships) {
@@ -560,6 +562,7 @@ function renderWikiContext() {
         el('p', 'ux-note', 'Historical applied receipt · ' + item.planId + ' · source revision ' +
           (item.sourceRevision ?? 'not recorded') + ' · ' + item.receivedAt));
       if (item.wikiLink) row.append(el('p', 'ux-note', 'Linked committed edit ' + item.wikiLink.entryId + ' · Wiki rev ' + item.wikiLink.wikiRevision));
+      if(item.structureLink) row.append(el('p','ux-note','Linked committed Wiki structure '+item.structureLink.entryId+' · Wiki rev '+item.structureLink.wikiRevision));
       card.append(row);
     }
     if (effects.omitted) card.append(el('p', 'ux-note', effects.omitted + ' additional applied effects omitted.'));

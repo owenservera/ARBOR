@@ -2,7 +2,7 @@
 import { constants } from 'node:fs';
 import { mkdir, readFile, lstat, open } from 'node:fs/promises';
 import { randomUUID, createHash } from 'node:crypto';
-import { projectWikiSemantics, resolveSemanticWikiTarget } from './wiki-semantics.mjs';
+import { projectWikiSemantics, resolveSemanticWikiTarget, projectWikiStructure, resolveSemanticWikiPages } from './wiki-semantics.mjs';
 import path from 'node:path';
 import { loadProductBaseline } from './product-baseline.mjs';
 
@@ -239,25 +239,27 @@ export function projectWikiContext(records, wikiRevision = null, wiki = null) {
     schema: 'vivim.wiki-context/1', state: 'source-backed',
     revision: records.length, wikiRevision, totalObserved: observed.length,
     wikiChanges: projectWikiChanges(records),
+    wikiStructure: projectWikiStructure(records,wiki),
     omitted: observed.length - latest.length,
     items: latest.map(e => {
       const outcome = typeof e.intent?.outcome === 'string' ? e.intent.outcome.slice(0, 64) : null;
       const actionId = typeof e.intent?.candidate?.actionId === 'string'
         ? e.intent.candidate.actionId.slice(0, 128) : null;
       const target = resolveSemanticWikiTarget(wiki, e.intent);
+      const pageTargets = resolveSemanticWikiPages(wiki,e.intent);
       return {
         source: 'host-product-journal', entryId: e.entryId, sequence: e.sequence,
         receivedAt: e.receivedAt, actorDeclared: e.actor, text: e.text,
         contentDigest: createHash('sha256').update(JSON.stringify([e.text, e.intent || null])).digest('hex'),
         status: 'user-statement-unverified',
-        ...(outcome ? { interpretation: { outcome, ...(actionId ? { actionId } : {}), ...(target ? { target } : {}) } } : {})
+        ...(outcome ? { interpretation: { outcome, ...(actionId ? { actionId } : {}), ...(target ? { target } : {}), ...(pageTargets.length?{pageTargets}:{}) } } : {})
       };
     })
   };
   return { ...context, semantics: projectWikiSemantics(context) };
 }
 
-export function projectAppliedControlEffects(control, wikiChanges = null) {
+export function projectAppliedControlEffects(control, wikiChanges = null, wikiStructure = null) {
   // The existing dispatcher owns receipt reads. No new journal or graph writes.
   const recent = control.recent(100);
   const items = [];
@@ -274,7 +276,7 @@ export function projectAppliedControlEffects(control, wikiChanges = null) {
         !Number.isFinite(Date.parse(receipt.at)) ||
         !['desktop-owner-token', 'direct-phone'].includes(receipt.approvedVia))
       throw new Error('Invalid applied control receipt');
-    let wikiLink = null;
+    let wikiLink = null, structureLink = null;
     if (receipt.actionId === 'wiki.section.edit') {
       const result = receipt.result;
       const edit = wikiChanges?.items?.find(e => e.entryId === result?.entryId &&
@@ -287,8 +289,23 @@ export function projectAppliedControlEffects(control, wikiChanges = null) {
       if (!edit) continue;
       wikiLink = { kind: 'committed-wiki-change', entryId: edit.entryId, wikiRevision: edit.wikiRevision };
     }
+    const expectedStructure={
+      'wiki.page.create':'create-page','wiki.page.move':'move-page','wiki.pages.link':'link-pages'
+    }[receipt.actionId];
+    if(expectedStructure){
+      const result=receipt.result;
+      const event=[...(wikiStructure?.items||[]),...(wikiStructure?.links||[])].find(e=>
+        e.entryId===result?.entryId&&e.sequence===result?.sequence&&
+        e.wikiRevision===result?.wikiRevision&&e.previousWikiRevision===result?.previousRevision&&
+        e.edit.action===expectedStructure&&result?.edit&&
+        Object.keys(result.edit).length===Object.keys(e.edit).length&&
+        Object.keys(e.edit).every(key=>result.edit[key]===e.edit[key]));
+      if(!event)continue;
+      structureLink={kind:'committed-wiki-structure',entryId:event.entryId,wikiRevision:event.wikiRevision};
+    }
     items.push({
       ...(wikiLink ? { wikiLink } : {}),
+      ...(structureLink ? { structureLink } : {}),
       source: 'host-control-receipt', planId: receipt.planId, planDigest: receipt.planDigest,
       actionId: receipt.actionId, receivedAt: receipt.at, kind: 'executed-effect',
       status: 'historical-applied-receipt',
@@ -366,9 +383,16 @@ export function createProductJournal({ dataRoot, seedState, seedWiki }) {
     requireShape(!current.tornTail, 'Wiki context unavailable: torn journal tail', 503);
     const { wiki } = replayProductJournal(seedState, seedWiki, current.records);
     const changes = projectWikiChanges(current.records);
+    const structure=projectWikiStructure(current.records,wiki);
+    // Retain only Wiki-scoped structure provenance; no global sequence, receipts
+    // or owner-private chat observations are returned to the paired device.
+    const phoneStructure={...structure,
+      items:structure.items.map(({sequence,...entry})=>entry),
+      links:structure.links.map(({sequence,...entry})=>entry),
+      pageSources:structure.pageSources.map(({page,role,event:{sequence,...event}})=>({page,role,event}))};
     // Phone Wiki read permission does not grant access to private chat/effects.
     // No global sequence or history content is disclosed through this overlay.
-    return { ...wiki, autoWiki: { schema: 'vivim.autowiki-wiki-changes/1',
+    return { ...wiki, wikiStructure:phoneStructure, autoWiki: { schema: 'vivim.autowiki-wiki-changes/1',
       wikiRevision: wiki.revision, scope: 'wiki-edits-only', total: changes.total, omitted: changes.omitted,
       items: changes.items.map(({ sequence, ...entry }) => entry) } };
   }

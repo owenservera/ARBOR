@@ -392,6 +392,7 @@ export function createControlChat({
         for(const p of context.pages.slice(0,6)){
           if(!Array.isArray(p.sections))continue;
           details.append(elem('p','ux-note',p.page+' · '+p.relation+' · '+p.sections.join(', ')));
+          if(p.relationshipSource)details.append(elem('p','ux-note','Committed link · Wiki rev '+p.relationshipSource.wikiRevision+' · '+p.relationshipSource.ref));
           if(['done','clarify'].includes(msg.status))
             for(const section of p.sections.slice(0,3)){
               const read=elem('button','chip','Read '+p.page+'/'+section);

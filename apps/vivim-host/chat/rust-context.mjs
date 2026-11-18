@@ -7,7 +7,7 @@ import { mkdir, lstat } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 import { projectAppliedControlEffects } from './product-journal.mjs';
-import { sectionId, receiptId } from './wiki-semantics.mjs';
+import { sectionId, receiptId, pageId } from './wiki-semantics.mjs';
 import {execFile as execFileCb} from 'node:child_process';
 import {promisify} from 'node:util';
 const execFile=promisify(execFileCb);
@@ -131,6 +131,36 @@ export function buildNativeKnowledge(snapshot, effects) {
       sourceRevision:e.wikiRevision,order:Date.parse(e.receivedAt),
       title:safe('Wiki: '+relation.page+'/'+relation.section,100),summary:safe(e.content,120)});
   }
+  // Page nodes share the existing managed Wiki scope. Use committed structure
+  // evidence (including both endpoints of a real link), never seed content.
+  const structure=snapshot.context?.wikiStructure;
+  const pages=new Map();
+  for(const {page,role,event:e} of structure?.pageSources||[]){
+    if(e.kind!=='committed-wiki-structure'||e.source!=='host-product-journal'||
+       !/^[0-9a-f-]{36}$/.test(e.entryId)||!safeUInt(e.wikiRevision)||!e.wikiRevision||
+       e.wikiRevision>structure.wikiRevision||digest(e.edit)!==e.contentDigest||
+       typeof page!=='string'||!page||
+       !(e.edit.action==='link-pages'?['from','to'].includes(role):role==='page')||
+       e.edit[role]!==page||pages.has(page))
+      throw Error('NATIVE_WIKI_STRUCTURE_INVALID');
+    pages.set(page,{row:{id:'vivim-context-w-'+digest([page]),kind:'wiki',semanticId:pageId(page),
+      sourceRef:e.entryId+'.'+role,digest:e.contentDigest,revision:e.wikiRevision,
+      sourceRevision:e.wikiRevision,order:Date.parse(e.receivedAt),
+      title:safe('Wiki page: '+page,100),summary:'Committed Wiki structure'},page});
+  }
+  // Preserve the existing 24 section + 24 effect allowance. At most 24
+  // additional page nodes, choosing complete recent link endpoint pairs first.
+  const selected=new Set();
+  for(const item of [...(structure?.links||[])].reverse()){
+    const pair=[item.edit.from,item.edit.to].filter(p=>!selected.has(p));
+    if(selected.size+pair.length<=24)for(const p of pair)selected.add(p);
+  }
+  for(const {page} of [...pages.values()].sort((a,b)=>b.row.revision-a.row.revision||
+    (a.page<b.page?-1:a.page>b.page?1:0))){
+    if(selected.size>=24)break;
+    selected.add(page);
+  }
+  for(const page of selected)rows.push(pages.get(page).row);
   for (const e of effects.items) {
     if (e.source !== 'host-control-receipt' || e.kind !== 'executed-effect' ||
         e.status !== 'historical-applied-receipt' ||
@@ -157,6 +187,24 @@ export function buildNativeKnowledge(snapshot, effects) {
       new Set(rows.map(r=>r.id)).size !== rows.length ||
       new Set(rows.map(r=>r.sourceRef)).size !== rows.length) throw Error('NATIVE_SOURCE_IDENTITY_INVALID');
   return rows.sort((a,b)=>a.id<b.id?-1:a.id>b.id?1:0);
+}
+
+// First-class native edges between actual managed page nodes. A bounded
+// packet never includes an edge with an omitted endpoint or an unverified link.
+export function buildNativeRelationships(snapshot,rows){
+  const ids=new Map(rows.filter(r=>r.kind==='wiki'&&r.semanticId.startsWith('wiki:page:'))
+    .map(r=>[r.semanticId,r.id]));
+  const links=snapshot.context?.wikiStructure?.links||[];
+  return links.flatMap(e=>{
+    const from=ids.get(pageId(e.edit.from)),to=ids.get(pageId(e.edit.to));
+    if(!from||!to)return [];
+    if(e.status!=='current-link'||e.edit.action!=='link-pages'||from===to||
+      !/^[0-9a-f-]{36}$/.test(e.entryId)||!safeUInt(e.wikiRevision)||!e.wikiRevision||
+      e.wikiRevision>snapshot.context.wikiStructure.wikiRevision||digest(e.edit)!==e.contentDigest)
+      throw Error('NATIVE_WIKI_RELATION_INVALID');
+    return [{id:'vivim-context-p-'+digest([from,to]),from,to,kind:'wiki-page-link',
+      sourceRef:e.entryId,revision:e.wikiRevision,digest:e.contentDigest}];
+  }).sort((a,b)=>a.id<b.id?-1:a.id>b.id?1:0);
 }
 
 function runPersonal(binary, journal, packet) {
@@ -195,8 +243,9 @@ function managedReader({env,execute,dataRoot,productJournal,control,executePerso
   const inflight=new Map();
   async function snapshot() {
     const current=await productJournal.readNativeKnowledge();
-    const effects=projectAppliedControlEffects(control(),current.context.wikiChanges);
-    return buildNativeKnowledge(current,effects);
+    const effects=projectAppliedControlEffects(control(),current.context.wikiChanges,current.context.wikiStructure);
+    const rows=buildNativeKnowledge(current,effects);
+    return {rows,relationships:buildNativeRelationships(current,rows)};
   }
   async function read(focus,view) {
     if (!root || typeof journal!=='string' || !path.isAbsolute(journal))
@@ -211,13 +260,14 @@ function managedReader({env,execute,dataRoot,productJournal,control,executePerso
       // Never return an old graph when the authoritative source cannot be read.
       // Recheck the exact source projection after native ingestion/retrieval.
       for (let attempt=0;attempt<2;attempt++) {
-        const rows=await snapshot(), fingerprint=digest(rows);
+        const projection=await snapshot(),{rows,relationships}=projection,fingerprint=digest(projection);
         const packet=await nativePacket(await executePersonal(runtime.personal,journal,{
-          schema:PERSONAL_SCHEMA,scope,op:'sync-context',nodes:rows
+          schema:PERSONAL_SCHEMA,scope,op:'sync-context',nodes:rows,relationships
         }));
         if (packet?.schema!==PERSONAL_SCHEMA || packet.scope!==scope ||
             packet.op!=='sync-context' || !safeUInt(packet.epoch) ||
-            !safeUInt(packet.bytes) || packet.synced!==rows.length || typeof packet.changed!=='boolean')
+            !safeUInt(packet.bytes) || packet.synced!==rows.length || (relationships.length && packet.syncedRelationships!==relationships.length) ||
+            typeof packet.changed!=='boolean')
           return unavailable('RUST_CORE_CONTRACT_INVALID');
         const result=await nativePacket(await execute(runtime.reader,
           [journal,'--managed',scope,String(packet.epoch),view],
@@ -231,6 +281,16 @@ function managedReader({env,execute,dataRoot,productJournal,control,executePerso
             typeof result.budgetExhausted!=='boolean' || !Array.isArray(result.items) ||
             result.items.length>8 || result.items.length>result.totalRetrieved)
           return unavailable('RUST_CORE_CONTRACT_INVALID');
+        const nativeLinks=result.pageRelationships??[];
+        if(!Array.isArray(nativeLinks)||nativeLinks.length!==relationships.length)
+          return unavailable('RUST_CORE_CONTRACT_INVALID');
+        const expectedLinks=new Map(relationships.map(link=>[link.id,link]));
+        for(const link of nativeLinks){
+          const expected=expectedLinks.get(link?.id);
+          if(!expected||Object.keys(expected).some(key=>link[key]!==expected[key]))
+            return unavailable('RUST_CORE_CONTRACT_INVALID');
+          expectedLinks.delete(link.id);
+        }
         const byRef=new Map(rows.map(row=>[row.sourceRef,row]));
         const seen=new Set(), items=[];
         let sum=0;
@@ -254,6 +314,10 @@ function managedReader({env,execute,dataRoot,productJournal,control,executePerso
           authority:'read-only',focus,epoch:result.epoch,tokensUsed:result.tokensUsed,
           budgetTokens:320,staleCount:0,budgetExhausted:result.budgetExhausted,
           totalRetrieved:result.totalRetrieved,items,
+          ...(relationships.length?{syncedRelationships:relationships.length,
+            pageRelationships:relationships.map(({from,to,kind,sourceRef,revision,digest:sourceDigest})=>({
+              from:rows.find(row=>row.id===from).semanticId,to:rows.find(row=>row.id===to).semanticId,
+              kind,sourceRef,revision,sourceDigest}))}:{}),
           note:'Committed Wiki content and historical effects are advisory; Host retains effect authority.'};
       }
       return unavailable('RUST_CORE_SOURCE_CHANGED');

@@ -2,6 +2,7 @@
 #![cfg(feature = "importer")]
 use hqkg::Journal;
 use serde_json::{json, Value};
+use sha2::{Digest, Sha256};
 use std::{fs, io::Write, path::{Path, PathBuf}, process::{Command, Stdio}, time::{SystemTime, UNIX_EPOCH}};
 const SCOPE: &str = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 const ENTRY: &str = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
@@ -20,7 +21,10 @@ impl Temp {
 impl Drop for Temp { fn drop(&mut self) { let _=fs::remove_dir_all(&self.0); } }
 
 fn sync(file:&Path,scope:&str,nodes:Vec<Value>) -> (bool,Value) {
-    let packet=json!({"schema":"vivim.hqkg-personal/1","scope":scope,"op":"sync-context","nodes":nodes});
+    sync_with_relationships(file,scope,nodes,vec![])
+}
+fn sync_with_relationships(file:&Path,scope:&str,nodes:Vec<Value>,relationships:Vec<Value>) -> (bool,Value) {
+    let packet=json!({"schema":"vivim.hqkg-personal/1","scope":scope,"op":"sync-context","nodes":nodes,"relationships":relationships});
     let mut child=Command::new(env!("CARGO_BIN_EXE_hqkg-personal"))
         .arg("--journal").arg(file).stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(Stdio::piped()).spawn().unwrap();
     child.stdin.take().unwrap().write_all(&serde_json::to_vec(&packet).unwrap()).unwrap();
@@ -114,4 +118,38 @@ fn empty_source_sync_is_a_real_empty_native_journal() {
     assert!(ok,"{empty}");
     assert!(file.is_file());
     assert_eq!(read(&file,SCOPE,empty["epoch"].as_u64().unwrap(),"owner").unwrap()["items"],json!([]));
+}
+
+#[test]
+fn committed_page_links_reconcile_and_are_read_back_as_actual_native_edges() {
+    let temp=Temp::new(); let file=temp.journal();
+    let mut a=wiki(ENTRY,3,"Committed Wiki structure");
+    a["semanticId"]=json!("wiki:page:Main");
+    let mut b=wiki(NEXT,3,"Committed Wiki structure");
+    b["id"]=json!(format!("vivim-context-w-{}","5".repeat(64)));
+    b["semanticId"]=json!("wiki:page:project");
+    let local_id=format!("vivim-context-p-{:x}",Sha256::digest(serde_json::to_string(&[a["id"].as_str().unwrap(),b["id"].as_str().unwrap()]).unwrap().as_bytes()));
+    let relation=json!({"id":local_id,
+        "from":a["id"],"to":b["id"],"kind":"wiki-page-link",
+        "sourceRef":NEXT,"revision":3,"digest":"3".repeat(64)});
+    let rows=vec![a,b];
+    let (ok,first)=sync_with_relationships(&file,SCOPE,rows.clone(),vec![relation.clone()]);
+    assert!(ok,"{first}");
+    assert_eq!(first["syncedRelationships"],1);
+    assert_eq!(Journal::new(&file).load().unwrap().edge_count(),1);
+    let epoch=first["epoch"].as_u64().unwrap();
+    let phone=read(&file,SCOPE,epoch,"wiki").unwrap();
+    assert_eq!(phone["pageRelationships"],json!([relation.clone()]));
+    let bytes=fs::read(&file).unwrap();
+    let (ok,unchanged)=sync_with_relationships(&file,SCOPE,rows.clone(),vec![relation.clone()]);
+    assert!(ok,"{unchanged}"); assert_eq!(unchanged["changed"],false);
+    assert_eq!(fs::read(&file).unwrap(),bytes);
+    let mut invalid=relation;
+    invalid["to"]=invalid["from"].clone();
+    assert!(!sync_with_relationships(&file,SCOPE,rows.clone(),vec![invalid]).0);
+    assert_eq!(fs::read(&file).unwrap(),bytes);
+    let (ok,removed)=sync_with_relationships(&file,SCOPE,rows,vec![]);
+    assert!(ok,"{removed}");
+    assert_eq!(Journal::new(&file).load().unwrap().edge_count(),0);
+    assert_eq!(read(&file,SCOPE,removed["epoch"].as_u64().unwrap(),"wiki").unwrap()["pageRelationships"],json!([]));
 }

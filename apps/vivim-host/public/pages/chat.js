@@ -227,6 +227,7 @@ import { resolveDesktopDestination, resolveProductRoute } from '/mobile/control-
         node.append(element('p','','Wiki revision '+wiki.wikiRevision+' · read-only context at planning time'));
         for(const p of wiki.pages.slice(0,6)){
           node.append(element('p','',p.page+' · '+p.relation+' · '+p.sections.join(', ')));
+          if(p.relationshipSource)node.append(element('p','','Committed link '+p.relationshipSource.from+' → '+p.relationshipSource.to+' · Wiki rev '+p.relationshipSource.wikiRevision+' · journal '+p.relationshipSource.ref));
           // Only re-read a section selected explicitly by the user. No filling
           // missing mutation arguments or approving an effect from context.
           if(['done','incomplete','clarification_required'].includes(plan.outcome))

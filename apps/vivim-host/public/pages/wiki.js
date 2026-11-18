@@ -112,9 +112,11 @@ function semanticRows(context) {
   const labels = { 'changed-section': 'changed', 'supersedes-change': 'supersedes',
     'belongs-to-page': 'belongs to', 'interpreted-as': 'interpreted as',
     'candidate-target': 'possible target', 'executed-action': 'executed',
-    'confirmed-change': 'confirmed' };
+    'confirmed-change': 'confirmed', 'created-page':'created', 'moved-page':'reordered',
+    'linked-from':'linked from', 'linked-to':'linked to', 'wiki-page-link':'links to' };
   const priority = { 'confirmed-change': 0, 'changed-section': 1, 'supersedes-change': 2,
-    'candidate-target': 3, 'executed-action': 4, 'interpreted-as': 5, 'belongs-to-page': 6 };
+    'candidate-target': 3, 'executed-action': 4, 'interpreted-as': 5, 'belongs-to-page': 6, 'wiki-page-link':-1,
+    'created-page':1, 'moved-page':2, 'linked-from':2, 'linked-to':2 };
   const rows = [];
   const ids = new Set();
   for (const relation of graph.relationships) {
@@ -215,6 +217,7 @@ function renderContext(context) {
       card.appendChild(element('div', 'meta', 'Historical applied receipt · plan ' + item.planId +
         ' · source revision ' + present(item.sourceRevision, 'not recorded') + ' · ' + item.receivedAt));
       if (item.wikiLink) card.appendChild(element('p', 'meta', 'Linked committed Wiki edit ' + item.wikiLink.entryId + ' · Wiki rev ' + item.wikiLink.wikiRevision));
+      if (item.structureLink) card.appendChild(element('p','meta','Linked committed Wiki structure '+item.structureLink.entryId+' · Wiki rev '+item.structureLink.wikiRevision));
       root.appendChild(card);
     }
     if (effects.omitted) root.appendChild(element('p', 'empty', effects.omitted + ' additional applied effects omitted.'));
@@ -229,6 +232,7 @@ function renderContext(context) {
   } else {
     root.appendChild(element('p','queue-summary','HQKG epoch '+native.epoch+
       ' · '+native.tokensUsed+' / '+native.budgetTokens+' estimated tokens · read only'));
+    if (native.syncedRelationships) root.appendChild(element('p','meta',native.syncedRelationships+' native Wiki page links verified against committed source'));
     if (!native.items.length) root.appendChild(element('p','empty','No committed native observations in this bounded view.'));
     for (const item of native.items) {
       const card=element('article','section');

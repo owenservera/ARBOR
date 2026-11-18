@@ -20,11 +20,12 @@ fn quarantine(e: Error) -> String { match e { Error::Corrupt(m) => format!("RECO
 fn sync_context(v: &Value, ns: &Namespace, journal: &Journal, g: &mut Graph,
     before: u64, scope: &str) -> Result<Value, String> {
     let nodes = v["nodes"].as_array().ok_or("context nodes required")?;
-    if nodes.len() > 48 { return Err("POLICY_LIMIT context nodes".into()); }
+    if nodes.len() > 72 { return Err("POLICY_LIMIT context nodes".into()); }
     let prefix = scoped_graph::prefix(ns).map_err(err)?;
     let managed_prefix = format!("{prefix}vivim-context-");
     let mut wanted = BTreeSet::new();
     let mut wiki_nodes = BTreeMap::new();
+    let mut wiki_page_nodes = BTreeMap::new();
     let mut effect_links = Vec::new();
     let mut changes = GraphChangeSet::new(format!("{prefix}sync-host-context"), "host-context");
     for n in nodes {
@@ -76,6 +77,9 @@ fn sync_context(v: &Value, ns: &Namespace, journal: &Journal, g: &mut Graph,
         }
         node.properties.insert("vivim.context.semanticId".into(), semantic_id.into());
         if kind == "wiki" {
+            if semantic_id.starts_with("wiki:page:") {
+                wiki_page_nodes.insert(id.to_string(),revision);
+            }
             if wiki_nodes.insert(source_ref.to_string(), (node.id.clone(), revision)).is_some() {
                 return Err("duplicate Wiki source identity".into());
             }
@@ -138,7 +142,56 @@ fn sync_context(v: &Value, ns: &Namespace, journal: &Journal, g: &mut Graph,
             changes = changes.put_edge(edge);
         }
     }
+    // Only Host-supplied evidence over two selected managed Wiki page nodes.
+    // Omitted or removed structure is reconciled in the same change set.
+    let mut page_edges = BTreeSet::new();
+    if let Some(value) = v.get("relationships") {
+        let relationships = value.as_array().ok_or("invalid Wiki relationships")?;
+        if relationships.len() > 24 { return Err("POLICY_LIMIT Wiki relationships".into()); }
+        for item in relationships {
+            let id = text(item, "id")?;
+            let from = text(item, "from")?;
+            let to = text(item, "to")?;
+            let source = text(item, "sourceRef")?;
+            let digest = text(item, "digest")?;
+            let revision = item["revision"].as_u64().ok_or("invalid Wiki relationship revision")?;
+            let canonical_id=format!("vivim-context-p-{:x}",Sha256::digest(
+                serde_json::to_string(&[from,to]).map_err(err)?.as_bytes()));
+            if id != canonical_id.as_str() ||
+                !wiki_page_nodes.get(from).map_or(false,|r| *r>=revision) ||
+                !wiki_page_nodes.get(to).map_or(false,|r| *r>=revision) || from == to ||
+                text(item, "kind")? != "wiki-page-link" || !hex(digest) || revision == 0 ||
+                source.len() != 36 || !source.bytes().all(|b| b.is_ascii_hexdigit() || b == b'-') {
+                return Err("invalid Wiki page relationship".into());
+            }
+            let from = scoped_graph::qualified_id(ns, from).map_err(err)?;
+            let to = scoped_graph::qualified_id(ns, to).map_err(err)?;
+            let provenance = Provenance {source:format!("host-product-journal:{source}"),revision,digest:digest.into()};
+            let mut edge = scoped_graph::edge(ns,id,&from,"wiki-page-link",&to,&provenance).map_err(err)?;
+            edge.properties.insert("vivim.context.kind".into(),"wiki-page-link".into());
+            edge.properties.insert("vivim.context.sourceRef".into(),source.into());
+            if !page_edges.insert(edge.id.clone()) { return Err("duplicate Wiki relationship".into()); }
+            if let Some(old) = g.edge(&edge.id) {
+                if old.properties.get("vivim.context.kind").map(String::as_str) != Some("wiki-page-link") ||
+                    old.from != edge.from || old.to != edge.to {
+                    return Err("managed Wiki relationship identity conflict".into());
+                }
+                let old_revision = old.properties.get("hqkg.provenance.revision")
+                    .and_then(|v| v.parse::<u64>().ok()).ok_or("invalid prior link revision")?;
+                if old_revision > revision || (old_revision == revision && old != &edge) {
+                    return Err("STALE_CONTEXT_SOURCE or immutable Wiki link conflict".into());
+                }
+                if old == &edge { continue; }
+            }
+            changes = changes.put_edge(edge);
+        }
+    }
     for old in g.edges() {
+        if old.id.starts_with(&format!("{prefix}vivim-context-p-")) &&
+            old.properties.get("vivim.context.kind").map(String::as_str) == Some("wiki-page-link") &&
+            !page_edges.contains(&old.id) {
+            changes = changes.remove_edge(&old.id, "Committed Wiki page link absent from current projection", 0);
+        }
         if old.id.starts_with(&format!("{prefix}vivim-context-l-")) &&
             old.properties.get("vivim.context.kind").map(String::as_str) == Some("effect-wiki-link") &&
             !wanted_edges.contains(&old.id) {
@@ -171,7 +224,7 @@ fn sync_context(v: &Value, ns: &Namespace, journal: &Journal, g: &mut Graph,
         return Err("stale or torn synchronized graph".into());
     }
     Ok(json!({"schema":"vivim.hqkg-personal/1","scope":scope,"op":"sync-context",
-        "epoch":status.epoch,"bytes":status.total_bytes,"synced":wanted.len(),"changed":changed}))
+        "epoch":status.epoch,"bytes":status.total_bytes,"synced":wanted.len(),"syncedRelationships":page_edges.len(),"changed":changed}))
 }
 
 fn run() -> Result<Value, String> {

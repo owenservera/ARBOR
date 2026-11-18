@@ -72,11 +72,18 @@ export function selectRequestWiki(wiki, plan) {
     for(const page of Object.keys(wiki.pages).slice(0,MAX_PAGES))
       selected.set(page,{page,section:null,relation:'available-target'});
   }
+  const journalLinks=wiki.wikiStructure?.wikiRevision===wiki.revision?wiki.wikiStructure.links||[]:[];
   const pages=[...selected.values()].map(({page,section,relation})=>{
     const names=Object.keys(wiki.pages[page].sections);
     const items=names.slice(0,MAX_SECTIONS);
     if(section&&!items.includes(section))items[items.length-1]=section;
+    const evidence=relation==='linked-page'?journalLinks.find(e=>
+      e.status==='current-link'&&((e.edit.from===page&&targets.some(t=>t.page===e.edit.to))||
+        (e.edit.to===page&&targets.some(t=>t.page===e.edit.from)))):null;
     return {page,semanticId:'wiki:page:'+encodeURIComponent(page),relation,
+      ...(evidence?{relationshipSource:{authority:'host-product-journal',ref:evidence.entryId,
+        wikiRevision:evidence.wikiRevision,digest:evidence.contentDigest,
+        from:evidence.edit.from,to:evidence.edit.to}}:{}),
       sections:items,omittedSections:Math.max(0,names.length-items.length),
       ...(section?{section:{name:section,semanticId:sectionId(page,section),
         contentDigest:createHash('sha256').update(wiki.pages[page].sections[section],'utf8').digest('hex')}}:{})};

@@ -827,7 +827,7 @@ async function handleControl(req, res, pathname, host, controlFor, tokenFor, uiS
     try {
       const context = await productJournal.readWikiContext();
       let applicationEffects;
-      try { applicationEffects = projectAppliedControlEffects(controlFor(), context.wikiChanges); }
+      try { applicationEffects = projectAppliedControlEffects(controlFor(), context.wikiChanges, context.wikiStructure); }
       catch { applicationEffects = { state: 'unavailable', code: 'CONTROL_RECEIPTS_UNAVAILABLE', items: [] }; }
       const native = await nativeContext('wiki',{owner:true});
       // Recheck an authorized browser session after asynchronous native work.
