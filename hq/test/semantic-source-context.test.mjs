@@ -49,13 +49,19 @@ test('real approved source -> HQ index -> semantic search -> verified context', 
       authorize: () => false,
     });
     assert.throws(() => denied.index(), /HQ_HOST_PERMISSION_DENIED/);
-    assert.equal(hq.index().errors.length, 0);
+    const firstIndex=hq.index();
+    assert.equal(firstIndex.errors.length, 0);
+    assert.equal(firstIndex.projects[0].semanticChangeComplete,true);
+    const firstAnchor=firstIndex.projects[0].semanticChanges.find(c=>c.semanticId===id&&c.annotationKind==='capability');
+    assert.equal(firstAnchor.change,'added');
     const results = hq.search({ query: id, project: 'actual-hq' }).results;
     assert.equal(results[0].path, 'util.mjs');
     assert.equal(results[0].line, line);
     assert.equal(results[0].semanticReferences[0].semanticId, id);
     assert.equal(results[0].semanticReferences[0].resolution, 'proposed');
     assert.equal(results[0].semanticReferences[0].contentHash, sha256(source));
+    assert.equal(results[0].semanticReferences[0].semanticAnchor.anchorId,firstAnchor.anchorId);
+    assert.equal(results[0].semanticReferences[0].semanticAnchor.fingerprint,firstAnchor.fingerprint);
     assert.ok(results[0].snippet.includes('export function sha256'));
     assert.ok(results.some(hit => hit.path === 'incidental.mjs'));
     assert.equal(hq.search({ query: id, project: 'missing' }).results.length, 0);
@@ -79,7 +85,9 @@ test('real approved source -> HQ index -> semantic search -> verified context', 
     assert.equal(getSemanticId(db, unknown), null);
     assert.equal(db.prepare('SELECT count(*) AS n FROM semantic_link').get().n, 0);
     db.close(); db = null;
-    assert.equal(hq.index().projects[0].annotations, 0);
+    const unchanged=hq.index().projects[0];
+    assert.equal(unchanged.annotations,0);
+    assert.deepEqual(unchanged.semanticChanges,[]);
     // Simulate opening a pre-v2 index: unchanged source is backfilled once.
     db = open();
     db.exec("DELETE FROM annotations WHERE kind LIKE 'v2:%'; DELETE FROM meta WHERE key LIKE 'annotation_v2:%'");
@@ -91,11 +99,16 @@ test('real approved source -> HQ index -> semantic search -> verified context', 
     const edited = source + '\nexport const revision = 2;\n';
     writeFileSync(file, edited);
     assert.equal(hq.verifyContext(bundle).valid, false);
-    assert.equal(hq.index().errors.length, 0);
+    const editedIndex=hq.index();
+    assert.equal(editedIndex.errors.length,0);
+    const delta=editedIndex.projects[0].semanticChanges.find(c=>c.anchorId===firstAnchor.anchorId);
+    assert.equal(delta.change,'changed');
+    assert.notEqual(delta.fingerprint,firstAnchor.fingerprint);
     assert.equal(hq.search({ query: id, project: 'actual-hq' }).results[0].semanticReferences[0].contentHash, sha256(edited));
     const changed = edited.replace(annotation, '// removed annotation').replace('// @hq:contract ' + id, '// removed contract');
     writeFileSync(file, changed);
-    hq.index();
+    const removed=hq.index().projects[0].semanticChanges;
+    assert.ok(removed.some(c=>c.anchorId===firstAnchor.anchorId&&c.change==='removed'&&c.fingerprint===null));
     assert.equal(hq.search({ query: id, project: 'actual-hq' }).results.some(hit => hit.semanticReferences?.length), false);
     unlinkSync(file);
     hq.index();

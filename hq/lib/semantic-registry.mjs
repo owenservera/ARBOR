@@ -16,7 +16,8 @@
  */
 import { statSync } from 'node:fs';
 import { isAbsolute, resolve } from 'node:path';
-import { nowISO, sha256File, toPosix } from './util.mjs';
+import { nowISO, sha256, sha256File, toPosix } from './util.mjs';
+import { isVersionedId } from './annotation-v2.mjs';
 import { buildAliasIndex, detectDrift, resolveAlias } from './semantic-optimizers.mjs';
 
 export const SEMANTIC_REGISTRY_SCHEMA = 'hq.semantic-registry/1';
@@ -26,6 +27,44 @@ export const SEMANTIC_KINDS = Object.freeze([
 ]);
 
 export const SEMANTIC_STATUS = Object.freeze(['proposed', 'current', 'deprecated']);
+const INDEXED_ANCHOR_KINDS=['type','capability','contract','emits','consumes','action'];
+// The v2 parser proves comment occurrences, not AST ownership. Identity is
+// scoped to project/path/tag/semantic ID, not line, row ID or guessed symbol.
+// A source move is removal plus addition. Repeated occurrences are ambiguous.
+export function indexedSemanticAnchors(db,{fileId,project,path,hash}={}){
+  if(!Number.isSafeInteger(fileId)||typeof project!=='string'||typeof path!=='string'||
+      isSecretPath(path)||typeof hash!=='string'||!(/^[a-f0-9]{64}$/).test(hash))return [];
+  const rows=db.prepare('SELECT kind,ref,line FROM annotations WHERE file_id=? AND kind IN ('+
+    INDEXED_ANCHOR_KINDS.map(()=>'?').join(',')+') AND ref IS NOT NULL ORDER BY kind,ref,line')
+    .all(fileId,...INDEXED_ANCHOR_KINDS.map(k=>'v2:'+k));
+  const groups=new Map();
+  for(const row of rows){
+    if(!isVersionedId(row.ref))continue;
+    const annotationKind=row.kind.slice(3);
+    const key=JSON.stringify([project,path,annotationKind,row.ref]);
+    if(!groups.has(key))groups.set(key,{semanticId:row.ref,annotationKind,lines:[]});
+    groups.get(key).lines.push(row.line);
+  }
+  return [...groups].map(([key,group])=>{
+    const anchorId='hq:file-anchor:'+sha256('hq.indexed-anchor/1\0'+key);
+    return {anchorId,...group,granularity:'file-conservative',
+      state:group.lines.length===1?'indexed':'ambiguous',
+      fingerprint:sha256('hq.indexed-anchor-fingerprint/1\0'+JSON.stringify([anchorId,hash,group.lines])),
+      contentHash:hash};
+  }).sort((a,b)=>compare(a.anchorId,b.anchorId));
+}
+export function semanticAnchorChanges(previous,current){
+  const before=new Map(previous.map(a=>[a.anchorId,a]));
+  const after=new Map(current.map(a=>[a.anchorId,a]));
+  return [...new Set([...before.keys(),...after.keys()])].sort(compare).flatMap(anchorId=>{
+    const old=before.get(anchorId),next=after.get(anchorId);
+    if(old?.fingerprint===next?.fingerprint)return [];
+    return [{anchorId,semanticId:(next??old).semanticId,annotationKind:(next??old).annotationKind,
+      change:!old?'added':!next?'removed':'changed',previousFingerprint:old?.fingerprint??null,
+      fingerprint:next?.fingerprint??null,state:next?.state??'removed'}];
+  });
+}
+
 
 const NAME_RE = /^[a-z0-9][a-z0-9._-]*$/;
 const VERSION_RE = /^\d+(\.\d+)*$/;

@@ -3,7 +3,8 @@
 // file, FTS populated from file text, imports resolved after parsing.
 // Writes only to the SQLite database it is given.
 import { existsSync, readFileSync } from 'node:fs';
-import { isAbsolute, join, posix, resolve } from 'node:path';import { nowISO, sha256, toPosix } from './util.mjs';
+import { isAbsolute, join, posix, resolve } from 'node:path';
+import { nowISO, sha256, toPosix } from './util.mjs';
 import { transaction, getMeta, setMeta } from './schema.mjs';
 import { discoverFiles } from './walk.mjs';
 import { isSourceLang } from './lang.mjs';
@@ -15,7 +16,7 @@ import {
 } from './git.mjs';
 import { extractSymbols, extractImports, extractAnnotations } from './extract.mjs';
 import { parseAnnotationV2, isVersionedId } from './annotation-v2.mjs';
-import { getSemanticId } from './semantic-registry.mjs';
+import { getSemanticId, indexedSemanticAnchors, semanticAnchorChanges } from './semantic-registry.mjs';
 import { isSensitiveSourcePath } from './search.mjs';
 
 // The existing v2 scanner is a JS-style lexer, not a universal language parser.
@@ -98,7 +99,7 @@ function upsertProject(db, { name, path, git }) {
 
 function prepareStatements(db) {
   return {
-    filesForProject: db.prepare('SELECT id, path, size, mtime_ms, hash FROM files WHERE project_id = ?'),
+    filesForProject: db.prepare('SELECT id, path, size, mtime_ms, hash, kind, is_generated FROM files WHERE project_id = ?'),
     allFiles: db.prepare('SELECT id, path FROM files WHERE project_id = ?'),
     countFiles: db.prepare('SELECT count(*) AS c FROM files WHERE project_id = ?'),
     countSymbols: db.prepare('SELECT count(*) AS c FROM symbols WHERE project_id = ?'),
@@ -297,6 +298,8 @@ export function indexProject({ root, db, project, options = {} }) {
     symbols: 0,
     imports: 0,
     annotations: 0,
+    semanticChanges: [],
+    semanticChangeComplete: false,
     fts: 0,
     errors,
     ms: 0,
@@ -344,6 +347,10 @@ export function indexProject({ root, db, project, options = {} }) {
     for (const row of stmts.filesForProject.all(projectRow.id)) existing.set(row.path, row);
 
     const seen = new Set();
+    const anchors=row=>row&&row.kind==='source'&&!row.is_generated
+      ?indexedSemanticAnchors(db,{fileId:row.id,project:projectRow.name,path:row.path,hash:row.hash}):[];
+    const changes=(path,before,after)=>result.semanticChanges.push(...semanticAnchorChanges(before,after)
+      .map(change=>({path,...change})));
 
     for (const entry of entries) {
       seen.add(entry.rel);
@@ -423,6 +430,7 @@ export function indexProject({ root, db, project, options = {} }) {
         result.added++;
       }
 
+      const beforeAnchors=anchors(prev);
       // Replace children transactionally (we are already inside the project transaction).
       stmts.deleteSymbols.run(fileId);
       for (const symbol of symbols) {
@@ -459,6 +467,7 @@ export function indexProject({ root, db, project, options = {} }) {
         result.annotations++;
       }
 
+      changes(entry.rel,beforeAnchors,anchors({id:fileId,path:entry.rel,kind,is_generated:entry.isGenerated,hash}));
       stmts.deleteFts.run(fileId);
       stmts.insertFts.run(fileId, entry.rel, text, projectRow.name, lang);
       result.fts++;
@@ -469,6 +478,7 @@ export function indexProject({ root, db, project, options = {} }) {
       .filter((row) => !seen.has(row.path))
       .sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
     for (const row of stale) {
+      changes(row.path,anchors(row),[]);
       stmts.deleteFts.run(row.id);
       stmts.deleteFile.run(row.id);
       result.removed++;
@@ -509,6 +519,7 @@ export function indexProject({ root, db, project, options = {} }) {
   });
 
   result.project = finalRow;
+  result.semanticChangeComplete = errors.length === 0;
   result.ms = Date.now() - started;
   return result;
 }
@@ -542,6 +553,8 @@ export function indexWorkspace({ root, db, projects = [], options = {} }) {
         symbols: result.symbols,
         imports: result.imports,
         annotations: result.annotations,
+        semanticChanges:result.semanticChanges,
+        semanticChangeComplete:result.semanticChangeComplete,
         ms: result.ms,
       });
       const row = db.prepare('SELECT id, file_count, symbol_count FROM projects WHERE name = ?').get(result.project?.name ?? name);
@@ -557,7 +570,7 @@ export function indexWorkspace({ root, db, projects = [], options = {} }) {
       errors.push({ project: name, path: String(project?.abs || project?.path || ''), message: errorMessage(error) });
       rows.push({
         name, added: 0, changed: 0, unchanged: 0, removed: 0, symbols: 0, imports: 0,
-        annotations: 0, ms: 0,
+        annotations: 0, semanticChanges: [], semanticChangeComplete: false, ms: 0,
       });
     }
   }
