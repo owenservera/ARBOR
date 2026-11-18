@@ -38,7 +38,7 @@ function main() {
   let result;
   if (command === 'register') result = intelligence.registerSource({ name: flags.name, path: flags.source });
   else if (command === 'revoke') result = intelligence.removeSource(flags.name);
-  else if (command === 'index') result = intelligence.index({ force: Boolean(flags.force) });
+  else if (command === 'index') result = intelligence.index({ force: Boolean(flags.force), useGit: !flags['no-git'] });
   else if (command === 'search') result = intelligence.search({ query: task, project: flags.project });
   else if (command === 'context') result = intelligence.context({ task, project: flags.project, sourceSemanticIds: flags.semantic });
   else if (command === 'wiki') result = intelligence.wiki({ force: Boolean(flags.force) });
