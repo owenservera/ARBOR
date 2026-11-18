@@ -81,7 +81,7 @@ const S = {
   statusAt: 0, statusObj: null, timer: 0, busy: false, sigs: {}, shownConv: null,
   conn: { label: '', tone: 'ok' }, device: { status: null, scopes: null },
   media: { state: 'idle' }, mediaAt: 0, mediaOffset: 0, mediaLoading: false, nextBatch: null,
-  roadmap: null, roadmapError: '', wiki: null, wikiError: 'Wiki not loaded'
+  roadmap: null, roadmapError: '', wiki: null, wikiError: 'Wiki not loaded', wikiContext: null, wikiContextError: ''
 };
 let combinedInbox = true; // UI-only inbox aggregation; never fan-out or a provider target.
 let providerRefreshBusy = false;
@@ -438,7 +438,57 @@ function goTab(tab) {
 let wikiReadSequence = 0;
 function clearWiki(reason = 'Wiki unavailable') {
   wikiReadSequence++; S.wiki = null; S.wikiError = reason;
+  S.wikiContext = null; S.wikiContextError = reason;
   if (S.tab === 'wiki') renderWiki();
+}
+// The owner-private context is a read-only overlay, not a second Wiki or a device grant.
+function renderWikiContext() {
+  const card = el('section', 'ux-card');
+  card.append(el('h3', 'ux-card-title', 'AutoWiki · source-backed context'));
+  const context = S.wikiContext;
+  if (!context) {
+    card.append(el('p', 'ux-note', S.wikiContextError || 'Owner-private context unavailable.'));
+    return card;
+  }
+  card.append(el('p', 'ux-note', 'User statements (unverified) · journal sequence ' + context.revision));
+  if (!context.items.length) card.append(el('p', 'ux-note', 'No source-identified observations.'));
+  for (const item of context.items.slice().reverse()) {
+    const row = el('div', 'ux-item');
+    row.append(el('p', 'ux-note', item.text),
+      el('p', 'ux-note', 'Unverified user statement · journal ' + item.entryId + ' · sequence ' + item.sequence));
+    card.append(row);
+  }
+  if (context.omitted) card.append(el('p', 'ux-note', context.omitted + ' older observations omitted.'));
+  card.append(el('h3', 'ux-card-title', 'Committed Wiki changes · derived, read only'));
+  if (!context.wikiChanges.items.length) card.append(el('p', 'ux-note', 'No source-identified committed changes.'));
+  for (const item of context.wikiChanges.items.slice().reverse()) {
+    const row = el('div', 'ux-item');
+    row.append(el('strong', 'ux-item-title', item.relationship.page + '/' + item.relationship.section),
+      el('p', 'ux-note', item.status + ' · Wiki rev ' + item.previousWikiRevision + ' → ' + item.wikiRevision),
+      el('p', 'ux-note', 'Journal ' + item.entryId + ' · sequence ' + item.sequence));
+    card.append(row);
+  }
+  if (context.wikiChanges.omitted) card.append(el('p', 'ux-note', context.wikiChanges.omitted + ' older changes omitted.'));
+  card.append(el('p', 'ux-note', 'Other application effects and project relationships are not available in this projection.'));
+  return card;
+}
+function validWikiContext(context, wiki) {
+  const validEntry = item => item?.source === 'host-product-journal' && typeof item.entryId === 'string' &&
+    Number.isSafeInteger(item.sequence) && item.sequence >= 1 && item.sequence <= context.revision;
+  return context?.schema === 'vivim.wiki-context/1' && context.state === 'source-backed' &&
+    Number.isSafeInteger(context.revision) && context.revision >= 0 && context.wikiRevision === wiki.revision &&
+    Array.isArray(context.items) && context.items.length <= 24 &&
+    Number.isSafeInteger(context.omitted) && context.omitted >= 0 &&
+    context.items.every(item => validEntry(item) && item.status === 'user-statement-unverified' && typeof item.text === 'string') &&
+    Array.isArray(context.wikiChanges?.items) && context.wikiChanges.items.length <= 24 &&
+    Number.isSafeInteger(context.wikiChanges.omitted) && context.wikiChanges.omitted >= 0 &&
+    context.wikiChanges.items.every(item => validEntry(item) && item.kind === 'committed-wiki-edit' &&
+      ['current-section-revision', 'superseded-section-revision'].includes(item.status) &&
+      Number.isSafeInteger(item.previousWikiRevision) && item.previousWikiRevision >= 0 &&
+      item.wikiRevision === item.previousWikiRevision + 1 && item.wikiRevision <= wiki.revision &&
+      item.relationship?.kind === 'mutated-section' && typeof item.relationship.page === 'string' &&
+      typeof item.relationship.section === 'string' &&
+      Object.hasOwn(wiki.pages[item.relationship.page]?.sections || {}, item.relationship.section));
 }
 function renderWiki() {
   const host = $('v-wiki'); if (!host) return;
@@ -472,6 +522,8 @@ function renderWiki() {
       scroll.append(card);
     }
     if (!Object.keys(S.wiki.pages).length) scroll.append(el('p', 'ux-empty', 'No Wiki pages yet.'));
+    if (HOST_PREVIEW) scroll.append(renderWikiContext());
+    else scroll.append(el('p', 'ux-note', 'Owner-private AutoWiki observations are not granted to this device.'));
   }
   host.replaceChildren(scroll);
 }
@@ -514,11 +566,26 @@ async function refreshWiki() {
           typeof page.sections !== 'object' || Array.isArray(page.sections) ||
           Object.values(page.sections).some(value => typeof value !== 'string')))
       throw new Error('Invalid Host Wiki projection');
+    let context = null, contextError = '';
+    if (HOST_PREVIEW) {
+      try {
+        const privateRead = await fetch('/api/host/control/wiki-context', {
+          method: 'GET', credentials: 'same-origin', cache: 'no-store'
+        });
+        if (!privateRead.ok) throw new Error('Owner context unavailable (HTTP ' + privateRead.status + ').');
+        const data = await privateRead.json();
+        if (!validWikiContext(data, wiki)) throw new Error('AutoWiki revision mismatch or invalid context; rechecking.');
+        context = data;
+      } catch (error) { contextError = error?.message || 'Owner context unavailable.'; }
+    }
     if (sequence !== wikiReadSequence || S.tab !== 'wiki') return;
     if (!HOST_PREVIEW && transport.deviceHeaders?.()?.['x-vivim-device-session'] !==
         session['x-vivim-device-session']) return;
-    if (S.wiki && wiki.revision < S.wiki.revision) return;
-    S.wiki = wiki; S.wikiError = ''; renderWiki();
+    if (S.wiki && wiki.revision < S.wiki.revision) {
+      S.wikiContext = null; S.wikiContextError = 'Wiki revision regressed; private context cleared.';
+      renderWiki(); return;
+    }
+    S.wiki = wiki; S.wikiError = ''; S.wikiContext = context; S.wikiContextError = contextError; renderWiki();
   } catch (error) {
     if (sequence === wikiReadSequence && S.tab === 'wiki')
       clearWiki(error?.message || 'Wiki unavailable');
