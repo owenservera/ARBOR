@@ -12,6 +12,7 @@ import { closeSync, existsSync, openSync, readSync } from 'node:fs';
 import { isAbsolute, join } from 'node:path';
 import { userTerm } from './nomenclature.mjs';
 import { alignmentForTask } from './vivim.mjs';
+import { isVersionedId } from './annotation-v2.mjs';
 import { findFiles, searchContent, searchSymbols, searchSemanticReferences, isSensitiveSourcePath,
   contentTokens, isNoisyPath, pathTokenMatch } from './search.mjs';
 import {
@@ -223,6 +224,7 @@ function bundleDigest(bundle) {
   return digestOf({
     schema: bundle?.schema ?? BUNDLE_SCHEMA,
     task: bundle?.task ?? '',
+    ...(bundle?.sourceSemanticIds?.length ? { sourceSemanticIds: bundle.sourceSemanticIds } : {}),
     project: bundle?.project ?? null,
     budget: bundle?.budget ?? null,
     sources,
@@ -238,6 +240,7 @@ function emptyBundle(base) {
   const bundle = {
     schema: BUNDLE_SCHEMA,
     task: base.task,
+    ...(base.sourceSemanticIds?.length ? { sourceSemanticIds: base.sourceSemanticIds } : {}),
     project: base.project ?? null,
     generatedAt: base.generatedAt,
     budget: {
@@ -427,11 +430,14 @@ function collectRecent(db, projectName, add) {
   }
 }
 
-function collectCandidates(db, { task, projectName }) {
+function collectCandidates(db, { task, projectName, sourceSemanticIds = [] }) {
   const collector = createCollector(db);
   const tokens = tokenize(task).slice(0, TOKEN_QUERIES);
 
-  for (const hit of searchSemanticReferences(db, { query: task, project: projectName, limit: CONTENT_HITS }).results) {
+  // Compiled contract identities are exact source lookups, not free-text synonyms
+  // or grants. Prioritize them before identities in the free-text task.
+  const semanticQuery = [...sourceSemanticIds, task].join(' ');
+  for (const hit of searchSemanticReferences(db, { query: semanticQuery, project: projectName, limit: CONTENT_HITS }).results) {
     collector.add(hit, 'semantic', { semantic: hit });
   }
 
@@ -731,6 +737,11 @@ function buildSymbols(selected) {
  * @returns {object} hq.context-bundle/1
  */
 export function composeContext(db, options = {}) {
+  const supplied = options.sourceSemanticIds ?? [];
+  if (!Array.isArray(supplied) || supplied.length > 12 ||
+      supplied.some(id => typeof id !== 'string' || id.length > 160 || !isVersionedId(id)))
+    throw new TypeError('HQ_INVALID_SOURCE_SEMANTIC_IDS');
+  const sourceSemanticIds = [...new Set(supplied)].sort();
   const task = String(options.task ?? '').trim();
   const project = resolveProject(db, options.project);
   const budgetTokens = toCount(options.budgetTokens, 6000, 0, 10_000_000);
@@ -742,7 +753,7 @@ export function composeContext(db, options = {}) {
   const capacity = Math.max(0, budgetTokens - reservedForOutput - OVERHEAD_TOKENS);
 
   const base = {
-    task,
+    task, sourceSemanticIds,
     project: project.name ?? null,
     generatedAt,
     budgetTokens,
@@ -751,7 +762,7 @@ export function composeContext(db, options = {}) {
   };
   if (!task || project.missing) return emptyBundle(base);
 
-  const candidates = collectCandidates(db, { task, projectName: project.name });
+  const candidates = collectCandidates(db, { task, projectName: project.name, sourceSemanticIds });
   prepareCandidates(db, candidates, { task, projectName: project.name, nowMs });
 
   const readable = candidates.filter((candidate) => !candidate.unreadable);
@@ -805,6 +816,7 @@ export function composeContext(db, options = {}) {
   const bundle = {
     schema: BUNDLE_SCHEMA,
     task,
+    ...(sourceSemanticIds.length ? { sourceSemanticIds } : {}),
     project: project.name ?? null,
     generatedAt,
     budget: {
