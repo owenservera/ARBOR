@@ -112,8 +112,6 @@ export function renderToday(host, model, options = {}) {
       button.setAttribute('aria-label', 'Open ' + title);
       button.append(make(doc, 'strong', '', title), make(doc, 'small', '', description));
       button.addEventListener('click', () => {
-        // Wiki opens the real host page, not a local stand-in surface.
-        if (tab === 'wiki') { location.assign('/wiki'); return; }
         options.onNavigate(tab);
       });
       shortcuts.append(button);
