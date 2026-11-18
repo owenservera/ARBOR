@@ -263,6 +263,15 @@ function exactDeviceIntent(text, {catalog,world}) {
 }
 
 export function interpretControl(text, { catalog, world }) {
+  const raw=String(text??'').trim();
+  // Explicit read-program envelope only; ordinary compound/negated commands remain refused.
+  const envelope=/^run wiki read sequence:\s*\n([\s\S]+)$/i.exec(raw);
+  if(envelope&&catalog.actions.some(a=>a.id==='program.read_wiki')){
+    const commands=envelope[1].trim();
+    if(commands.length<=950&&commands.split(/\r?\n/).length>=2)
+      return {schema:LANGUAGE_SCHEMA,input:raw,outcome:'candidate',candidate:{actionId:'program.read_wiki',args:{commands}},
+        feedback:{status:'ok',confidence:1,canonical:'program.read_wiki',reading:'Read-only Wiki sequence; child meanings checked by Host',nlclVersion:NCLL_VERSION,worldV:world?.v,tokens:[],suggestions:[],gaps:[]}};
+  }
   const unsafe = guardControlSyntax(text, { catalog, world });
   if (unsafe) return unsafe;
   const exact=exactDeviceIntent(text,{catalog,world});

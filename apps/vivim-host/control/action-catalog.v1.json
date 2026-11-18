@@ -1,6 +1,6 @@
 {
   "schema": "vivim.control-action-catalog/1",
-  "version": 13,
+  "version": 14,
   "asOf": "2026-11-18",
   "policy": {
     "allUserFacingActionsRequireTextPath": true,
@@ -1694,6 +1694,38 @@
       "subject": "wiki",
       "priority": "P1",
       "precondition": "Explicit reviewed capture through the typed Host interface."
+    },
+    {
+      "id": "program.read_wiki",
+      "title": "Run a read-only Wiki sequence",
+      "category": "program",
+      "owner": "host-native-program",
+      "executor": "apps/vivim-host/control/dispatcher.mjs:createExecutors",
+      "readiness": "source_wired",
+      "risk": "R0",
+      "target": "local-host",
+      "args": {
+        "commands": {
+          "type": "string",
+          "min": 3,
+          "max": 950
+        }
+      },
+      "examples": [
+        "run wiki read sequence:\nlist wiki pages\nread wiki page sprint-notes in section specs"
+      ],
+      "surfaces": [
+        "text",
+        "desktop",
+        "mobile",
+        "visual"
+      ],
+      "reversible": false,
+      "privacy": "pc-only",
+      "aiCandidate": false,
+      "subject": "program",
+      "priority": "P1",
+      "precondition": "Authenticated desktop owner; native validation and current committed Wiki snapshot. No writes or external effects."
     },
     {
       "id": "program.validate",

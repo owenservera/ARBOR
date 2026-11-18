@@ -274,23 +274,26 @@
           input.append(opt);
         }
       } else {
-        input = element((a.actionId==='program.validate'&&key==='program')||(a.actionId==='versions.compare.pinned'&&key==='selection')?'textarea':'input');
+        input = element((a.actionId==='program.validate'&&key==='program')||(a.actionId==='program.read_wiki'&&key==='commands')||(a.actionId==='versions.compare.pinned'&&key==='selection')?'textarea':'input');
         if(a.actionId==='program.validate'&&key==='program'){
           input.rows=8;input.placeholder='JSON program: id, revision, steps (no policy or effect authorizations)';
           detail.append(element('p','text-control-note','Local Rust validation only. Host fixes the policy to R0, no external destinations or effect candidates. Source references must match current committed Wiki evidence, including older sections still current. Validation does not execute the steps.'));
+        }else if(a.actionId==='program.read_wiki'&&key==='commands'){
+          input.rows=6;input.placeholder='list wiki pages\nread wiki page sprint-notes in section specs';
+          detail.append(element('p','text-control-note','Enter 2–8 Wiki read commands, one per line. Native validation precedes a consistent read-only snapshot. No writes, providers or automatic execution of effects.'));
         }else if(a.actionId==='versions.compare.pinned'&&key==='selection'){
           input.rows=8;input.placeholder='JSON selection: schema, sources [{repo, sha}], targetIndex';
           detail.append(element('p','text-control-note','Explicit pinned comparison only. Requires a configured source adapter and active repository grant.'));
         }else input.type = 'text';
         input.minLength = spec.min;
         input.maxLength = spec.max;
-        if(a.actionId!=='program.validate'&&a.actionId!=='versions.compare.pinned')input.placeholder = key;
+        if(a.actionId!=='program.validate'&&a.actionId!=='program.read_wiki'&&a.actionId!=='versions.compare.pinned')input.placeholder = key;
       }
       inputs[key] = input; label.append(input); detail.append(label);
     }
     if (a.examples?.length) detail.append(element('p', 'text-control-note', 'Try: ' + a.examples[0]));
     detail.append(button(a.executable ? 'Review this action' : 'Inspect availability', () =>
-      plan({ actionId: a.actionId, args: Object.fromEntries(Object.entries(inputs).map(([k, v]) => [k, ['program.validate','versions.compare.pinned'].includes(a.actionId)?v.value.trim():v.value])) })));
+      plan({ actionId: a.actionId, args: Object.fromEntries(Object.entries(inputs).map(([k, v]) => [k, ['program.validate','program.read_wiki','versions.compare.pinned'].includes(a.actionId)?v.value.trim():v.value])) })));
     item.append(detail);
     return item;
   }

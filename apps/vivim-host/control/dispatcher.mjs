@@ -19,6 +19,7 @@ import { interpretControl, resolveLocalDestination, resolveDesktopDestination } 
 import { previewWikiStructure, previewWikiCapture, validateProductEdit } from '../chat/product-journal.mjs';
 import { wikiApprovalSentence } from './command-intent.mjs';
 import { createNativeProgramValidator } from './native-program.mjs';
+import { runWikiReadProgram } from './wiki-read-program.mjs';
 
 export const DISPATCHER_SCHEMA = 'vivim.control-dispatcher/1';
 export const RECEIPT_SCHEMA = 'vivim.control-receipt/1';
@@ -39,6 +40,7 @@ const LEARNABLE = new Set(['wiki.pages.list','wiki.section.read','wiki.page.crea
 const WIKI_ACTION = 'wiki.section.edit';
 const CAPTURE_ACTION='wiki.capture.save';
 const NATIVE_PROGRAM_ACTION='program.validate';
+const WIKI_READ_PROGRAM_ACTION='program.read_wiki';
 const HVI_ACTION='versions.compare.pinned';
 // A typed VEC document is not an NL action or a string argument. Keep the existing
 // language catalog stable (including accepted learned rules); the visual contract
@@ -99,6 +101,24 @@ const VALIDATION_ERROR_CODES = new Set([
   'CONTROL_DEVICE_SCOPE_INVALID',
   'GRANT_NOT_PENDING',
 ]);
+
+function readWikiPages(wiki) {
+      const pages = Object.entries(wiki.pages);
+      return { wikiRevision: wiki.revision, total: pages.length,
+        omitted: Math.max(0, pages.length - MAX_WIKI_LIST_PAGES),
+        pages: pages.slice(0, MAX_WIKI_LIST_PAGES).map(([page, value]) => {
+          const sections = Object.keys(value.sections);
+          return { page, sections: sections.slice(0, MAX_WIKI_LIST_SECTIONS),
+            omittedSections: Math.max(0, sections.length - MAX_WIKI_LIST_SECTIONS),
+            ...(relatedPages(wiki,page).length ? {relatedPages:relatedPages(wiki,page)} : {}) };
+        }) };
+}
+function readWikiSection(wiki,{page,section}) {
+      const found = resolveWikiTarget(wiki, page + '/' + section);
+      return { page: found.page, section: found.section,
+        wikiRevision: found.expectedRevision, content: found.before,
+        ...(relatedPages(wiki,found.page).length ? {relatedPages:relatedPages(wiki,found.page)} : {}) };
+}
 
 /** Fixed executors keyed by catalog action id. Each returns a bounded, phone-safe summary. */
 function createExecutors({ runtime, planner, lexicon, devices, productJournal, personalSemantics, nativeProgram }) {
@@ -222,25 +242,11 @@ function createExecutors({ runtime, planner, lexicon, devices, productJournal, p
     'privacy.hard_no.clear': ({ id }) => { const out = runtime.clearHardNo({ id }); return { id: out.id, value: short(out.value, 120) }; },
     'control.lexicon.teach': ({ word, action }, ctx) => lexicon.teach({ word, actionId: action, planId: ctx.planId }),
     'control.lexicon.forget': ({ word }, ctx) => lexicon.forget({ word, planId: ctx.planId }),
-    'wiki.pages.list': async () => {
-      const wiki = await productJournal.readPhoneWiki();
-      const pages = Object.entries(wiki.pages);
-      return { wikiRevision: wiki.revision, total: pages.length,
-        omitted: Math.max(0, pages.length - MAX_WIKI_LIST_PAGES),
-        pages: pages.slice(0, MAX_WIKI_LIST_PAGES).map(([page, value]) => {
-          const sections = Object.keys(value.sections);
-          return { page, sections: sections.slice(0, MAX_WIKI_LIST_SECTIONS),
-            omittedSections: Math.max(0, sections.length - MAX_WIKI_LIST_SECTIONS),
-            ...(relatedPages(wiki,page).length ? {relatedPages:relatedPages(wiki,page)} : {}) };
-        }) };
-    },
-    'wiki.section.read': async ({ page, section }) => {
-      const wiki = await productJournal.readPhoneWiki();
-      const found = resolveWikiTarget(wiki, page + '/' + section);
-      return { page: found.page, section: found.section,
-        wikiRevision: found.expectedRevision, content: found.before,
-        ...(relatedPages(wiki,found.page).length ? {relatedPages:relatedPages(wiki,found.page)} : {}) };
-    },
+    'wiki.pages.list': async () => readWikiPages(await productJournal.readPhoneWiki()),
+    'wiki.section.read': async args => readWikiSection(await productJournal.readPhoneWiki(),args),
+    [WIKI_READ_PROGRAM_ACTION]:args=>runWikiReadProgram({commands:args.commands,
+      planCommand:text=>planner.planText(text,{source:'desktop'}),readWiki:()=>productJournal.readPhoneWiki(),nativeProgram,
+      readAction:(plan,wiki)=>plan.actionId==='wiki.pages.list'?readWikiPages(wiki):readWikiSection(wiki,plan.args)}),
     [HVI_ACTION]:(args,ctx)=>ctx.readHvi(args.selection),
     [NATIVE_PROGRAM_ACTION]:args=>nativeProgram(args),
     [CAPTURE_ACTION]: async ({content},ctx)=>{
@@ -475,6 +481,8 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
   function runRead(plan,{readHvi=null}={}) {
     const complete = result => ({ ...plan, outcome: 'done', executionPerformed: true, effect: 'read', result });
     if(plan.actionId===HVI_ACTION)return Promise.resolve(executors[plan.actionId](plan.args,{readHvi})).then(complete);
+    if(plan.actionId===WIKI_READ_PROGRAM_ACTION)return Promise.resolve(executors[plan.actionId](plan.args)).then(result=>
+      result.outcome==='completed'?complete(result):{...plan,outcome:result.outcome,executionPerformed:false,result,refusal:{code:result.reasonCode,message:'Wiki read sequence '+result.outcome+': '+result.reasonCode}});
     if(plan.actionId===NATIVE_PROGRAM_ACTION)return Promise.resolve(executors[plan.actionId](plan.args)).then(result=>
       result.outcome==='compiled'?complete(result):{...plan,outcome:result.outcome,executionPerformed:false,result,refusal:{code:result.reasonCode,message:'Native program '+result.outcome+': '+result.reasonCode}});
     if (WIKI_READS.has(plan.actionId)) {
@@ -502,6 +510,7 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
     else throw fail('CONTROL_INPUT_INVALID');
     if(RULE_ACTIONS.has(p.actionId)&&(source!=='desktop'||actor!=='desktop-owner'))
       return {...p,outcome:'unavailable',executionPerformed:false,precondition:'Learning requires the authenticated desktop owner.'};
+    if(p.actionId===WIKI_READ_PROGRAM_ACTION&&(source!=='desktop'||actor!=='desktop-owner'||!['typed','deterministic'].includes(p.origin)))return {...p,outcome:'unavailable',executionPerformed:false,precondition:'Wiki read sequences require authenticated desktop owner.'};
     if(p.actionId===NATIVE_PROGRAM_ACTION&&(source!=='desktop'||actor!=='desktop-owner'||p.origin!=='typed'))return {...p,outcome:'unavailable',executionPerformed:false,precondition:'Native program validation requires authenticated desktop owner and an explicit typed program.'};
     if(p.actionId===HVI_ACTION&&(source!=='desktop'||actor!=='desktop-owner'||p.origin!=='typed'||typeof readHvi!=='function'))return {...p,outcome:'unavailable',executionPerformed:false,precondition:'Explicit desktop owner source selection and current development grant required.'};
     if (p.outcome === 'ready') return runRead(p,{readHvi});
