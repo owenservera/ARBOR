@@ -3,9 +3,18 @@
 // Nothing here sends, applies or trusts a reply: a proposal is a draft until the owner taps Activate.
 import { composeDesignContext } from './generative-ui/design-composer.mjs';
 import { compileUiProposal } from './generative-ui/compiler.mjs';
-import { createSurface, PROPOSAL_SCHEMA } from './generative-ui/catalog.mjs';
+import { createSurface, PROPOSAL_SCHEMA, validateSurface } from './generative-ui/catalog.mjs';
 import { createVecCompiler } from './vec/compiler.mjs';
 import { compileVecUiRequest } from './vec/ui-adapter.mjs';
+import { getUiComponent, resolveUiSourceIdentity } from './vec/ui-taxonomy/registry.mjs';
+
+// Canonical first-party VEC engine, not a rewritten client-side compiler.
+// Node resolves its source directly; the paired browser uses Host's fixed asset map.
+const { compileUiConfiguration } = await import(
+  typeof process !== 'undefined' && process.versions?.node
+    ? '../../packages/vec-ui-engines/src/compiler.mjs'
+    : './vec-engines/compiler.mjs'
+);
 
 export const SUGGESTIONS = Object.freeze(['Set up everything for me', 'I need help researching', 'Make a simple AI workspace']);
 export const BUILD_COMPONENTS = Object.freeze(['stack', 'grid', 'text', 'card', 'button', 'collection', 'timeline', 'chart']);
@@ -15,7 +24,66 @@ export function blankSurface() { return createSurface({ surfaceId: 'my-space' })
 
 // Deterministic first, same canonical UI proposal and Host approval as the model path.
 // The compiler is an inert preview boundary, not a new action dispatcher or publisher.
-const vec = createVecCompiler({ adapters: { ui: compileVecUiRequest } });
+const THEME_CAPABILITIES = Object.freeze({
+  background: 'vivim.ui-engine.color.background@1',
+  accent: 'vivim.ui-engine.color.accent@1'
+});
+const THEME_START = /^set my app\b/i;
+const THEME_PATTERN = /^set my app ([a-z-]+) to (.+)$/i;
+const COLOR = /^#[0-9a-fA-F]{6}$/;
+
+// Two reviewed VEC capabilities map to the existing Host set-theme operation.
+// A descriptive engine capability grants neither execution nor write authority.
+export function compileVecThemeRequest({ text, surface } = {}) {
+  const refuse = code => ({ outcome: 'refused', code });
+  const matched = THEME_PATTERN.exec(typeof text === 'string' ? text.trim().replace(/\s+/g, ' ') : '');
+  if (!matched) return refuse('UNSUPPORTED_THEME_REQUEST');
+  const property = matched[1].toLowerCase();
+  const capabilityId = THEME_CAPABILITIES[property];
+  if (!capabilityId) return refuse('UNSUPPORTED_THEME_PROPERTY');
+  const value = matched[2].trim();
+  if (!COLOR.test(value)) return refuse('INVALID_THEME_COLOR');
+  let current;
+  try { current = validateSurface(surface, { refs: new Set() }); }
+  catch { return refuse('INVALID_OR_UNAVAILABLE_SURFACE'); }
+  const source = resolveUiSourceIdentity({ schema: 'vivim.ui-surface/1',
+    nativeType: current.tree.type });
+  if (current.tree.id !== 'root' || source.outcome !== 'mapped' ||
+      source.source.status !== 'source-closed' ||
+      getUiComponent(source.component.id) !== source.component)
+    return refuse('UI_COMPONENT_ADAPTER_NOT_INSTALLED');
+  // Classify the actual root instance by the reviewed canonical descriptor.
+  const typed = compileUiConfiguration({
+    component: { ...source.component, id: current.tree.id },
+    sourceSchema: 'vivim.ui-surface/1', baseRevision: current.revision,
+    changes: [{ capabilityId, value }]
+  });
+  if (typed.outcome !== 'candidate' || typed.changes?.length !== 1 ||
+      typed.changes[0].capabilityId !== capabilityId ||
+      !COLOR.test(typed.changes[0].value))
+    return refuse(typed.code ?? 'VEC_CONFIGURATION_REFUSED');
+  const color = typed.changes[0].value;
+  const proposal = {
+    schema: PROPOSAL_SCHEMA, surfaceId: current.surfaceId, baseRevision: current.revision,
+    operations: [{ opId: 'vec.theme.1', type: 'set-theme',
+      theme: { ...current.theme, [property]: color } }],
+    explanation: 'Set app ' + property + ' to ' + color + '.',
+    assumptions: [], unknowns: []
+  };
+  try {
+    const preview = compileUiProposal({ proposal, surface: current, approvedRefs: [], audience: 'phone' });
+    return { outcome: 'candidate', code: 'VEC_THEME_PREVIEW', proposal, preview,
+      summary: { explanation: preview.notes.explanation, changes: preview.operations,
+        unknowns: preview.notes.unknowns },
+      detail: { capabilityId, property, value: color,
+        baseRevision: current.revision, targetRevision: current.revision + 1 } };
+  } catch { return refuse('VEC_THEME_PREVIEW_REJECTED'); }
+}
+
+const vec = createVecCompiler({ adapters: {
+  ui: args => THEME_START.test(String(args.text ?? '').trim())
+    ? compileVecThemeRequest(args) : compileVecUiRequest(args)
+} });
 export function resolveBuildRequest({ request, surface = blankSurface() } = {}) {
   return vec.compile({ domain: 'ui', text: request, context: { surface } });
 }
