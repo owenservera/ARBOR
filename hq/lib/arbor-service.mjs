@@ -425,11 +425,19 @@ export function createDevIntelligence({
       const ids = selected.commentIds.slice(0,12);
       const related = projectSurfaces(db, records, { project, ids, limit: 16 }).files
         .filter(file => file.freshness === 'indexed');
-      const allowedSourceRefs = new Set([selected.sourceId, ...related.map(file => file.sourceId)]);
+      const observed = new Map([...related, selected].map(file => [file.sourceId, file]));
+      const allowedSourceRefs = new Set(observed.keys());
+      const anchor = selected.annotations.find(a => ['emits','consumes','action','capability'].includes(a.kind) && ids.includes(a.semanticId))
+        ?? selected.annotations.find(a => ids.includes(a.semanticId));
+      const preferredSemanticAnchor = { ref: selected.sourceId, line: anchor.line, semanticId: anchor.semanticId };
       const bundle = composeContext(db, { task: task.trim() || 'Explain ' + selected.path,
-        project, sourceSemanticIds: ids, allowedSourceRefs, budgetTokens: 5000, maxFiles: 16 });
-      if (!bundle.sources.some(source => source.ref === selected.sourceId) ||
-          !verifyHqContext(bundle).valid)
+        project, sourceSemanticIds: ids, allowedSourceRefs, preferredSemanticAnchor, budgetTokens: 5000, maxFiles: 16 });
+      // Reject ranked free-text fallback or a changed source. Every returned
+      // excerpt must be grounded in the same verified indexed bytes.
+      if (!bundle.sources.some(source => source.ref === selected.sourceId &&
+            source.semanticReferences?.some(ref => ref.line === anchor.line && ref.semanticId === anchor.semanticId)) ||
+          bundle.sources.some(source => source.contentHash !== observed.get(source.ref)?.sourceDigest ||
+            !source.contentHash) || !verifyHqContext(bundle).valid)
         return { schema: 'vivim.source-context/1', status: 'unavailable', context: null };
       // Machine-local absolute paths are not part of the context digest.
       const sources = bundle.sources.map(({ absPath, ...source }) => source);
