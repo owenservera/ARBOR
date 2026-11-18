@@ -234,6 +234,7 @@ test('direct phone authenticates proxy, bounds routes and uses the shared queue'
   assert.equal((await call('/mobile/api/relay?path=session')).status,403);
   assert.equal((await call('/mobile/api/media/library')).status,403);
   assert.equal((await call('/mobile/api/chat/context?focus=talk')).status,403);
+  assert.equal((await call('/mobile/api/wiki')).status, 403);
   assert.equal(trustedPhonePresence,seenBeforeRevokedRequest);
 });
 
