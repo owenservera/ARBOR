@@ -164,6 +164,29 @@ export function previewWikiStructure(wiki, edit) {
     pagesDigest:createHash('sha256').update(JSON.stringify(next.pages)).digest('hex')};
 }
 
+// Pure application shared by preflight, sequential preview and journal replay.
+function applySectionEdit(wiki,entry,fault){
+  validateWikiEditTarget(entry,wiki,fault);
+  if(entry.edit.action==='set-section')wiki.pages[entry.edit.page].sections[entry.edit.section]=entry.edit.content;
+  else Object.defineProperty(wiki.pages,entry.edit.page,{value:{sections:{[entry.edit.section]:entry.edit.content,
+    ...(entry.edit.action==='capture-task'?{Status:'Open'}:{})}},enumerable:true,writable:true,configurable:true});
+  wiki.revision++;
+}
+function applyStructureEdit(wiki,entry,fault){
+  requireShape(entry.expectedRevision===wiki.revision,'Stale Wiki revision',fault);
+  const applied=applyWikiStructure(wiki,entry.edit,fault);
+  requireShape(Object.keys(entry.edit).every(k=>entry.edit[k]===applied.edit[k]),'Noncanonical Wiki structure record',fault);
+  wiki.revision++;
+}
+export function previewWikiPayload(wiki,payload){
+  validateEnvelope(payload);
+  requireShape(['wiki-edit','wiki-structure'].includes(payload.kind),'Wiki sequence requires Wiki records',400);
+  const next=copy(wiki);
+  if(payload.kind==='wiki-edit')applySectionEdit(next,payload,409);
+  else applyStructureEdit(next,payload,409);
+  return next;
+}
+
 export function replayProductJournal(seedState, seedWiki, records) {
   const wiki = copy(seedWiki);
   const chat = copy(seedState.chat || []);
@@ -183,18 +206,11 @@ export function replayProductJournal(seedState, seedWiki, records) {
         revision: ++productRevision });
       lastAt = e.receivedAt;
     } else if (e.kind === 'wiki-edit') {
-      validateWikiEditTarget(e,wiki,503);
-      if(e.edit.action==='set-section')wiki.pages[e.edit.page].sections[e.edit.section]=e.edit.content;
-      else Object.defineProperty(wiki.pages,e.edit.page,{value:{sections:{[e.edit.section]:e.edit.content,
-        ...(e.edit.action==='capture-task'?{Status:'Open'}:{})}},enumerable:true,writable:true,configurable:true});
-      wiki.revision++;
+      applySectionEdit(wiki,e,503);
       productRevision++;
       lastAt = e.receivedAt;
     } else if (e.kind === 'wiki-structure') {
-      requireShape(e.expectedRevision === wiki.revision,'Invalid or stale journal Wiki structure',503);
-      const applied=applyWikiStructure(wiki,e.edit,503);
-      requireShape(Object.keys(e.edit).every(k=>e.edit[k]===applied.edit[k]),'Noncanonical Wiki structure record',503);
-      wiki.revision++;
+      applyStructureEdit(wiki,e,503);
       productRevision++;
       lastAt=e.receivedAt;
     }
@@ -531,40 +547,51 @@ export function createProductJournal({ dataRoot, seedState, seedWiki }) {
       wikiRevision: wiki.revision, scope: 'wiki-edits-only', total: changes.total, omitted: changes.omitted,
       items: changes.items.map(({ sequence, ...entry }) => entry) } };
   }
-  function append(payload) {
+  function appendEntries(payloads,{sequence=false,expectedPagesDigest=null}={}) {
     const run = async () => {
-      validateEnvelope(payload);
-      const current = await snapshot();
-      requireShape(!current.tornTail, 'Torn journal tail requires explicit owner repair', 503);
-      const projected = current.projection;
-      if (payload.kind === 'wiki-edit') validateProductEdit(payload, projected.wiki);
-      if (payload.kind === 'wiki-structure') {
-        requireShape(payload.expectedRevision === projected.wiki.revision,'Stale Wiki revision',409);
-        const checked=previewWikiStructure(projected.wiki,payload.edit);
-        requireShape(Object.keys(payload.edit).every(k=>payload.edit[k]===checked.edit[k]),'Noncanonical Wiki structure record',400);
+      requireShape(Array.isArray(payloads)&&payloads.length>=1&&payloads.length<=8&&
+        (!sequence||payloads.length>=2&&payloads.every(p=>['wiki-edit','wiki-structure'].includes(p?.kind))),
+        'Invalid Wiki sequence',400);
+      const current=await snapshot();
+      requireShape(!current.tornTail,'Torn journal tail requires explicit owner repair',503);
+      let wiki=current.wiki;
+      const entries=[];
+      for(const payload of payloads){
+        validateEnvelope(payload);
+        if(payload.kind==='wiki-edit'||payload.kind==='wiki-structure')wiki=previewWikiPayload(wiki,payload);
+        const entry={...copy(payload),receivedAt:new Date().toISOString(),entryId:randomUUID(),sequence:current.records.length+entries.length+1};
+        validateEnvelope(entry,{stored:true});entries.push(entry);
       }
-      const entry = { ...copy(payload), receivedAt: new Date().toISOString(), entryId: randomUUID(),
-        sequence: current.records.length + 1 };
-      validateEnvelope(entry, { stored: true });
-      const line = JSON.stringify(entry) + '\n';
-      const length = Buffer.byteLength(line, 'utf8');
-      requireShape(length <= MAX_ENTRY_BYTES && current.size + length <= MAX_JOURNAL_BYTES,
-        'Product journal capacity reached', 507);
-      await mkdir(directory, { recursive: true, mode: 0o700 });
-      const dirStat = await lstat(directory);
-      requireShape(dirStat.isDirectory() && !dirStat.isSymbolicLink(), 'Unsafe journal directory', 503);
-      // No temp-file replacement: one append, then fsync before acknowledging a commit.
-      const handle = await open(journalPath, constants.O_APPEND | constants.O_WRONLY |
-        constants.O_CREAT | (constants.O_NOFOLLOW || 0), 0o600);
-      try {
-        const st = await handle.stat();
-        requireShape(st.isFile() && st.size === current.size, 'Journal changed outside Host writer', 503);
-        const { bytesWritten } = await handle.write(Buffer.from(line));
-        requireShape(bytesWritten === length, 'Partial journal append; outcome uncertain', 503);
+      const next=replayProductJournal(seedState,seedWiki,[...current.records,...entries]);
+      if(sequence)requireShape(createHash('sha256').update(JSON.stringify(next.wiki.pages)).digest('hex')===expectedPagesDigest,
+        'Wiki sequence projection mismatch',409);
+      const data=entries.map(entry=>JSON.stringify(entry)+'\n').join('');
+      const length=Buffer.byteLength(data,'utf8');
+      requireShape(current.size+length<=MAX_JOURNAL_BYTES,'Product journal capacity reached',507);
+      await mkdir(directory,{recursive:true,mode:0o700});
+      const dirStat=await lstat(directory);
+      requireShape(dirStat.isDirectory()&&!dirStat.isSymbolicLink(),'Unsafe journal directory',503);
+      const handle=await open(journalPath,constants.O_APPEND|constants.O_WRONLY|constants.O_CREAT|(constants.O_NOFOLLOW||0),0o600);
+      try{
+        const st=await handle.stat();
+        requireShape(st.isFile()&&st.size===current.size,'Journal changed outside Host writer',503);
+        const {bytesWritten}=await handle.write(Buffer.from(data));
+        requireShape(bytesWritten===length,'Partial journal append; outcome uncertain',503);
         await handle.sync();
-      } finally { await handle.close(); }
-      const next = replayProductJournal(seedState, seedWiki, [...current.records, entry]);
-      return { ...entry, revision: next.state.revision, wikiRevision: next.wiki.revision };
+      }finally{await handle.close();}
+      if(sequence){
+        // Inspect actual committed records while still inside the shared write queue.
+        // Failure after I/O is uncertain, never a pre-write CAS refusal.
+        let observed;try{observed=await snapshot();}catch{throw invalid('Wiki sequence readback unavailable; outcome uncertain',503);}
+        requireShape(!observed.tornTail&&observed.wikiRevision===next.wiki.revision&&
+          observed.records.length===current.records.length+entries.length&&
+          entries.every((e,i)=>JSON.stringify(e)===JSON.stringify(observed.records[current.records.length+i]))&&
+          createHash('sha256').update(JSON.stringify(observed.wiki.pages)).digest('hex')===expectedPagesDigest,
+          'Wiki sequence readback mismatch; outcome uncertain',503);
+        return {wikiRevision:observed.wikiRevision,previousRevision:current.wikiRevision,pagesDigest:expectedPagesDigest,
+          entries:entries.map((e,i)=>({entryId:e.entryId,sequence:e.sequence,kind:e.kind,edit:e.edit,wikiRevision:current.wikiRevision+i+1}))};
+      }
+      return {...entries[0],revision:next.state.revision,wikiRevision:next.wiki.revision};
     };
     const before = queues.get(journalPath) || Promise.resolve();
     const pending = before.then(run, run);
@@ -573,6 +600,8 @@ export function createProductJournal({ dataRoot, seedState, seedWiki }) {
     void settled.then(() => { if (queues.get(journalPath) === settled) queues.delete(journalPath); });
     return pending;
   }
+  function append(payload){return appendEntries([payload]);}
+  function appendWikiSequence(payloads,expectedPagesDigest){return appendEntries(copy(payloads),{sequence:true,expectedPagesDigest});}
   async function rawJournal() { return (await snapshot()).committed; }
-  return { journalPath, readRecords, readProjection, readWikiContext, readNativeKnowledge, readProgramSources, readProgramEvidence, readPhoneWiki, append, rawJournal };
+  return { journalPath, readRecords, readProjection, readWikiContext, readNativeKnowledge, readProgramSources, readProgramEvidence, readPhoneWiki, append, appendWikiSequence, rawJournal };
 }

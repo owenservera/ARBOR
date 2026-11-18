@@ -201,7 +201,7 @@
     box.append(element('h3', '', 'Approve exactly this action?'));
     box.append(element('strong', '', p.title + ' · ' + p.risk));
     box.append(element('pre', 'text-control-data', JSON.stringify(p.args, null, 2)));
-    if (['wiki.section.edit','wiki.capture.save'].includes(p.actionId) && p.preview) {
+    if (['wiki.section.edit','wiki.capture.save','program.write_wiki'].includes(p.actionId) && p.preview) {
       box.append(element('h4', '', 'Wiki section · ' + p.preview.target));
       box.append(element('p', 'text-control-note', 'Edit exact Wiki revision ' + p.preview.expectedRevision));
       box.append(element('strong', '', 'Before'));
@@ -274,12 +274,15 @@
           input.append(opt);
         }
       } else {
-        input = element((a.actionId==='program.validate'&&key==='program')||(a.actionId==='control.rule.remember'&&key==='command')||(a.actionId==='program.read_wiki'&&key==='commands')||(a.actionId==='versions.compare.pinned'&&key==='selection')?'textarea':'input');
+        input = element((a.actionId==='program.validate'&&key==='program')||(a.actionId==='control.rule.remember'&&key==='command')||(['program.read_wiki','program.write_wiki'].includes(a.actionId)&&key==='commands')||(a.actionId==='versions.compare.pinned'&&key==='selection')?'textarea':'input');
         if(a.actionId==='program.validate'&&key==='program'){
           input.rows=8;input.placeholder='JSON program: id, revision, steps (no policy or effect authorizations)';
           detail.append(element('p','text-control-note','Local Rust validation only. Host fixes the policy to R0, no external destinations or effect candidates. Source references must match current committed Wiki evidence, including older sections still current. Validation does not execute the steps.'));
         }else if(a.actionId==='control.rule.remember'&&key==='command'){
           input.rows=6;detail.append(element('p','text-control-note','Save an exact command or a run wiki read sequence: followed by separate read commands. The existing owner approval stores its typed meaning, never a grant.'));
+        }else if(a.actionId==='program.write_wiki'&&key==='commands'){
+          input.rows=6;input.placeholder='create wiki page research\nedit wiki section research/About saying Project notes';
+          detail.append(element('p','text-control-note','Review 2–8 ordered Wiki changes. One fresh exact approval; partial disk failure is uncertain and never retried.'));
         }else if(a.actionId==='program.read_wiki'&&key==='commands'){
           input.rows=6;input.placeholder='list wiki pages\nread wiki page sprint-notes in section specs';
           detail.append(element('p','text-control-note','Enter 2–8 Wiki read commands, one per line. Native validation precedes a consistent read-only snapshot. No writes, providers or automatic execution of effects.'));
@@ -289,13 +292,13 @@
         }else input.type = 'text';
         input.minLength = spec.min;
         input.maxLength = spec.max;
-        if(a.actionId!=='program.validate'&&a.actionId!=='program.read_wiki'&&a.actionId!=='versions.compare.pinned')input.placeholder = key;
+        if(a.actionId!=='program.validate'&&a.actionId!=='program.read_wiki'&&a.actionId!=='program.write_wiki'&&a.actionId!=='versions.compare.pinned')input.placeholder = key;
       }
       inputs[key] = input; label.append(input); detail.append(label);
     }
     if (a.examples?.length) detail.append(element('p', 'text-control-note', 'Try: ' + a.examples[0]));
     detail.append(button(a.executable ? 'Review this action' : 'Inspect availability', () =>
-      plan({ actionId: a.actionId, args: Object.fromEntries(Object.entries(inputs).map(([k, v]) => [k, ['program.validate','program.read_wiki','versions.compare.pinned'].includes(a.actionId)?v.value.trim():v.value])) })));
+      plan({ actionId: a.actionId, args: Object.fromEntries(Object.entries(inputs).map(([k, v]) => [k, ['program.validate','program.read_wiki','program.write_wiki','versions.compare.pinned'].includes(a.actionId)?v.value.trim():v.value])) })));
     item.append(detail);
     return item;
   }

@@ -28,6 +28,10 @@ const canonical=v=>Array.isArray(v)?v.map(canonical):record(v)?
 const CATALOG_13_DIGEST='422f499257f8828ffe22779a896008549966fdcc89bdcdaa2dc89803de7ae967';
 export function compatibleRuleCatalog(rule,catalog){
   if(rule.catalogVersion===catalog.version)return true;
+  if(catalog.version===15&&[13,14].includes(rule.catalogVersion)&&rule.actionId!=='program.write_wiki'){
+    const prior={...catalog,version:14,actions:catalog.actions.filter(a=>a.id!=='program.write_wiki')};
+    return catalog.actions.length===38&&sha256Hex(JSON.stringify(canonical(prior)))==='c2c2e6d53a709beca16fb81052206c7ea14bd52a010d996088b662083f24d504'&&compatibleRuleCatalog(rule,prior);
+  }
   if(rule.catalogVersion!==13||catalog.version!==14||rule.actionId==='program.read_wiki')return false;
   const predecessor={...catalog,version:13,actions:catalog.actions.filter(a=>a.id!=='program.read_wiki')};
   return predecessor.actions.length===36&&catalog.actions.length===37&&sha256Hex(JSON.stringify(canonical(predecessor)))===CATALOG_13_DIGEST;

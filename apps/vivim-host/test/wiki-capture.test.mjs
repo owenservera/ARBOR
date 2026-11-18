@@ -74,3 +74,15 @@ test('program evidence distinguishes committed section identities from seed cont
  await assert.rejects(journal.readProgramEvidence(targets,0),/Stale Wiki revision/);
  }finally{await rm(root,{recursive:true,force:true});}
 });
+
+test('Wiki sequence preflights every ordinary record before writing any prefix',async()=>{
+ const {previewWikiPayload}=await import('../chat/product-journal.mjs');const {createHash}=await import('node:crypto');
+ const root=await mkdtemp(path.join(tmpdir(),'vivim-sequence-'));
+ try{const journal=createProductJournal({dataRoot:root,seedState:{chat:[]},seedWiki:{revision:0,pages:{}}});
+ const a={kind:'wiki-structure',actor:'owner-browser',schemaVersion:1,expectedRevision:0,edit:{action:'create-page',page:'research'}},b={kind:'wiki-edit',actor:'owner-browser',schemaVersion:1,expectedRevision:1,edit:{action:'set-section',page:'research',section:'About',content:'Notes'}};
+ const before=await journal.readPhoneWiki(),projected=previewWikiPayload(previewWikiPayload(before,a),b),hash=createHash('sha256').update(JSON.stringify(projected.pages)).digest('hex');
+ await assert.rejects(journal.appendWikiSequence([a,{...b,expectedRevision:7}],hash),/Stale Wiki revision/);assert.equal((await journal.readRecords()).length,0);
+ await assert.rejects(journal.appendWikiSequence([a,b],'0'.repeat(64)),/projection mismatch/);assert.equal((await journal.readRecords()).length,0);
+ const out=await journal.appendWikiSequence([a,b],hash);assert.equal(out.entries.length,2);assert.equal(out.wikiRevision,2);assert.equal((await journal.readPhoneWiki()).pages.research.sections.About,'Notes');
+ }finally{await rm(root,{recursive:true,force:true});}
+});

@@ -310,3 +310,19 @@ test('desktop owner can approve, reuse and revoke a typed read recipe through th
  assert.notEqual((await control.plan({text:'morningbrief'},{source:'mobile',actor:'phone'})).outcome,'done');
  const revoke=await control.plan({actionId:'control.rule.revoke',args:{rule_id:rule.id}},owner);assert.equal((await control.execute({planId:revoke.planId,planDigest:revoke.planDigest,approval})).status,'applied');assert.notEqual((await control.plan({text:'morningbrief'},owner)).outcome,'done');
 });
+
+test('approved Wiki sequence preflights dependent changes, writes actual records once and rejects stale or foreign approval',async t=>{
+ const {runtime,dataRoot}=fixture(t);const {createProductJournal}=await import('../chat/product-journal.mjs');
+ const productJournal=createProductJournal({dataRoot,seedState:{chat:[]},seedWiki:{revision:0,pages:{main:{sections:{About:'Original'}}}}});
+ const control=createControlDispatcher({dataRoot,runtime,productJournal,nativeProgram:async({program})=>{const p=JSON.parse(program);return {outcome:'compiled',programId:p.id,programRevision:p.revision,orderedStepIds:p.steps.map(s=>s.id),programDigest:'a'.repeat(64),executionAuthorized:false,effectPerformed:false};}});
+ const owner={source:'desktop',actor:'desktop-owner'},approval={channel:'desktop-owner-token',actor:'desktop-owner'};
+ const commands='create wiki page research\nedit wiki section research/About saying Project notes';
+ const draft=await control.plan({text:'run wiki change sequence:\n'+commands},owner);assert.equal(draft.outcome,'approval_required');assert.equal((await productJournal.readPhoneWiki()).revision,0);
+ assert.throws(()=>control.execute({planId:draft.planId,planDigest:draft.planDigest,approval:PHONE}),/CONTROL_DESKTOP_APPROVAL_REQUIRED/);
+ const receipt=await control.execute({planId:draft.planId,planDigest:draft.planDigest,approval});assert.equal(receipt.status,'applied');assert.equal(receipt.result.entries.length,2);
+ const wiki=await productJournal.readPhoneWiki();assert.equal(wiki.revision,2);assert.equal(wiki.pages.research.sections.About,'Project notes');assert.equal((await productJournal.readRecords()).length,2);
+ assert.equal((await control.execute({planId:draft.planId,planDigest:draft.planDigest,approval})).replayed,true);assert.equal((await productJournal.readRecords()).length,2);
+ const stale=await control.plan({actionId:'program.write_wiki',args:{commands:'create wiki page second\nedit wiki section second/About saying Again'}},owner);
+ await productJournal.append({kind:'wiki-edit',actor:'owner-browser',schemaVersion:1,expectedRevision:2,edit:{action:'set-section',page:'main',section:'About',content:'Other change'}});
+ await assert.rejects(control.execute({planId:stale.planId,planDigest:stale.planDigest,approval}),/CONTROL_WIKI_STALE/);assert.equal((await productJournal.readPhoneWiki()).pages.second,undefined);
+});

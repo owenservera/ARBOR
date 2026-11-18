@@ -16,7 +16,7 @@ import { createLexiconStore } from './lexicon.mjs';
 import { createPersonalRuleStore } from './personal-rule-store.mjs';
 import { PERSONAL_RULE_SCHEMA, validatePersonalRule, TEMPLATE_SCHEMA, templateAlias, templateDependencies, bindPersonalRule, currentTemplate } from './personal-semantics.mjs';
 import { interpretControl, resolveLocalDestination, resolveDesktopDestination } from '../../mobile-relay/control-language.mjs';
-import { previewWikiStructure, previewWikiCapture, validateProductEdit } from '../chat/product-journal.mjs';
+import { previewWikiStructure, previewWikiCapture, validateProductEdit, previewWikiPayload } from '../chat/product-journal.mjs';
 import { wikiApprovalSentence } from './command-intent.mjs';
 import { createNativeProgramValidator } from './native-program.mjs';
 import { runWikiReadProgram,compileWikiReadRecipe,validWikiRecipe } from './wiki-read-program.mjs';
@@ -41,6 +41,7 @@ const WIKI_ACTION = 'wiki.section.edit';
 const CAPTURE_ACTION='wiki.capture.save';
 const NATIVE_PROGRAM_ACTION='program.validate';
 const WIKI_READ_PROGRAM_ACTION='program.read_wiki';
+const WIKI_WRITE_PROGRAM_ACTION='program.write_wiki';
 const HVI_ACTION='versions.compare.pinned';
 // A typed VEC document is not an NL action or a string argument. Keep the existing
 // language catalog stable (including accepted learned rules); the visual contract
@@ -49,7 +50,7 @@ const VISUAL_ACTION='ui.visual.apply';
 const VISUAL_CONTRACT=Object.freeze({id:VISUAL_ACTION,risk:'R1',readiness:'source_wired',
   schema:'vivim.ui-proposal/1',revision:1});
 const WIKI_STRUCTURE = new Set(['wiki.page.create','wiki.page.move','wiki.pages.link']);
-const wikiMutation = id => id === WIKI_ACTION || id===CAPTURE_ACTION || WIKI_STRUCTURE.has(id);
+const wikiMutation = id => id === WIKI_ACTION || id===CAPTURE_ACTION || id===WIKI_WRITE_PROGRAM_ACTION || WIKI_STRUCTURE.has(id);
 function structureEdit(id,args) {
   if(id==='wiki.page.create')return {action:'create-page',page:args.page};
   if(id==='wiki.page.move')return {action:'move-page',page:args.page,position:args.position};
@@ -250,6 +251,12 @@ function createExecutors({ runtime, planner, lexicon, devices, productJournal, p
       readEvidence:(targets,revision)=>productJournal.readProgramEvidence(targets,revision),
       resolveTarget:(plan,wiki)=>{const hit=resolveWikiTarget(wiki,plan.args.page+'/'+plan.args.section);return {page:hit.page,section:hit.section};},
       readAction:(plan,wiki)=>plan.actionId==='wiki.pages.list'?readWikiPages(wiki):readWikiSection(wiki,plan.args)}),
+    [WIKI_WRITE_PROGRAM_ACTION]:async (_args,ctx)=>{
+      const bound=ctx.wikiBinding;if(!bound||!productJournal?.appendWikiSequence)throw fail('CONTROL_WIKI_NOT_READY');
+      const observed=await productJournal.appendWikiSequence(bound.steps.map(s=>s.payload),bound.pagesDigest);
+      if(observed.wikiRevision!==bound.finalRevision||observed.entries.length!==bound.steps.length||observed.pagesDigest!==bound.pagesDigest)throw fail('CONTROL_WIKI_READBACK_MISMATCH');
+      return {...observed,schema:'vivim.wiki-change-result/1',nativeProgramDigest:bound.nativeProgramDigest,sequenceVerified:true};
+    },
     [HVI_ACTION]:(args,ctx)=>ctx.readHvi(args.selection),
     [NATIVE_PROGRAM_ACTION]:args=>nativeProgram(args),
     [CAPTURE_ACTION]: async ({content},ctx)=>{
@@ -346,8 +353,31 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
   }
 
   // Exact resolved values, not a client-rendered paraphrase.
+  async function previewWriteSequence(commands,wiki){
+    const lines=String(commands).split(/\r?\n/).map(s=>s.trim());
+    if(lines.length<2||lines.length>8||lines.some(s=>!s||s.length>240))throw fail('CONTROL_PROGRAM_INPUT_INVALID');
+    let projected={revision:wiki.revision,pages:wiki.pages};const steps=[];
+    for(const line of lines){
+      const p=planner.planText(line,{source:'desktop'});
+      if(p.outcome!=='approval_required'||p.origin!=='deterministic'||p.risk!=='R1'||!(p.actionId===WIKI_ACTION||WIKI_STRUCTURE.has(p.actionId)))throw fail('CONTROL_PROGRAM_CHILD_REFUSED');
+      let binding,payload;
+      if(p.actionId===WIKI_ACTION){binding=resolveWikiTarget(projected,p.args.target);payload={kind:'wiki-edit',actor:'owner-browser',schemaVersion:1,expectedRevision:projected.revision,edit:{action:'set-section',page:binding.page,section:binding.section,content:p.args.content}};binding={...binding,target:binding.page+'/'+binding.section,after:p.args.content};}
+      else {binding=previewWikiStructure(projected,structureEdit(p.actionId,p.args));payload={kind:'wiki-structure',actor:'owner-browser',schemaVersion:1,expectedRevision:projected.revision,edit:binding.edit};}
+      projected=previewWikiPayload(projected,payload);
+      steps.push({actionId:p.actionId,args:p.args,contractDigest:digest(action(p.actionId)),target:binding.target,before:binding.before,after:binding.after,payload});
+    }
+    const pagesDigest=rawDigest(projected.pages),baseDigest=rawDigest(wiki.pages),programId='wiki-change-'+digest({baseDigest,steps,pagesDigest}).slice(0,24);
+    // Native policy validates the inert dependency program only; R1 effects remain Host-owned.
+    const nativeSteps=steps.map((_,i)=>({id:'change-'+(i+1),kind:'compile',dependencies:i?['change-'+i]:[],inputs:[],output_data_class:'private',risk:'R0',destination:null}));
+    const checked=await nativeProgram({program:JSON.stringify({id:programId,revision:1,steps:nativeSteps})});
+    if(checked?.outcome!=='compiled'||checked.programId!==programId||checked.programRevision!==1||checked.executionAuthorized!==false||checked.effectPerformed!==false||!/^[a-f0-9]{64}$/.test(checked.programDigest??'')||digest(checked.orderedStepIds)!==digest(nativeSteps.map(s=>s.id)))throw fail('CONTROL_PROGRAM_NATIVE_UNAVAILABLE');
+    const latest=await productJournal.readPhoneWiki();if(latest.revision!==wiki.revision||rawDigest(latest.pages)!==baseDigest)throw fail('CONTROL_WIKI_STALE');
+    return {schema:'vivim.wiki-change-preview/1',target:'Wiki change sequence',expectedRevision:wiki.revision,finalRevision:projected.revision,baseDigest,pagesDigest,nativeProgramDigest:checked.programDigest,steps,
+      before:steps.map((s,i)=>(i+1)+'. '+s.target+'\n'+s.before).join('\n\n'),after:steps.map((s,i)=>(i+1)+'. '+s.target+'\n'+s.after).join('\n\n')};
+  }
   function approvalBinding(actionId,args,source,wikiBinding){
     const a=action(actionId);
+    if(actionId===WIKI_WRITE_PROGRAM_ACTION){const manifest={schema:'vivim.approval-meaning/1',templateRevision:1,catalogRevision:catalog.version,worldRevision:planner.world().v,actionId,risk:a.risk,readiness:a.readiness,contractDigest:digest(a),source,exactArgs:args,resolvedArgs:wikiBinding.steps.map(s=>({actionId:s.actionId,args:s.args})),targetRevision:wikiBinding.expectedRevision,target:wikiBinding.target,effectDigest:digest(wikiBinding),roundTrip:'verified-children',authority:'none'};return {...manifest,semanticDigest:digest(manifest)};}
     const resolved=actionId===CAPTURE_ACTION?{...args,page:wikiBinding.page,section:wikiBinding.section}:
       actionId===WIKI_ACTION?{target:wikiBinding.page+'/'+wikiBinding.section,content:args.content}:
       actionId==='wiki.pages.link'?{from:wikiBinding.edit.from,to:wikiBinding.edit.to}:
@@ -518,6 +548,7 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
     if(RULE_ACTIONS.has(p.actionId)&&(source!=='desktop'||actor!=='desktop-owner'))
       return {...p,outcome:'unavailable',executionPerformed:false,precondition:'Learning requires the authenticated desktop owner.'};
     if(p.actionId===WIKI_READ_PROGRAM_ACTION&&(source!=='desktop'||actor!=='desktop-owner'||!['typed','deterministic','personal_rule'].includes(p.origin)))return {...p,outcome:'unavailable',executionPerformed:false,precondition:'Wiki read sequences require authenticated desktop owner.'};
+    if(p.actionId===WIKI_WRITE_PROGRAM_ACTION&&(source!=='desktop'||actor!=='desktop-owner'||!['typed','deterministic'].includes(p.origin)))return {...p,outcome:'unavailable',executionPerformed:false,precondition:'Wiki change sequences require authenticated desktop owner.'};
     if(p.actionId===NATIVE_PROGRAM_ACTION&&(source!=='desktop'||actor!=='desktop-owner'||p.origin!=='typed'))return {...p,outcome:'unavailable',executionPerformed:false,precondition:'Native program validation requires authenticated desktop owner and an explicit typed program.'};
     if(p.actionId===HVI_ACTION&&(source!=='desktop'||actor!=='desktop-owner'||p.origin!=='typed'||typeof readHvi!=='function'))return {...p,outcome:'unavailable',executionPerformed:false,precondition:'Explicit desktop owner source selection and current development grant required.'};
     if (p.outcome === 'ready') {
@@ -577,7 +608,7 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
       return { ...p, planId: record.planId, planDigest: record.planDigest, createdAt, expiresAt: record.expiresAt,
         ...(approvalMeaning?{approvalMeaning}:{}),
         ...(wikiBinding ? { preview: { target: wikiBinding.target ?? wikiBinding.page + '/' + wikiBinding.section,
-          before: wikiBinding.before, after: wikiBinding.edit ? wikiBinding.after : p.args.content,
+          before: wikiBinding.before, after: p.actionId===WIKI_WRITE_PROGRAM_ACTION||wikiBinding.edit ? wikiBinding.after : p.args.content,
           expectedRevision: wikiBinding.expectedRevision } } : {}),
         ...(ruleBinding?{learningPreview:{before:ruleBinding.before,after:ruleBinding.after,targetRisk:ruleBinding.targetRisk??null}}:{}),
         approval: { required: true, freshOwner: p.risk === 'R2',
@@ -585,6 +616,9 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
             ? [source === 'mobile' ? 'direct-phone' : 'desktop-owner-token']
             : [...APPROVAL_CHANNELS] } };
     };
+    if(p.actionId===WIKI_WRITE_PROGRAM_ACTION){
+      return productJournal.readPhoneWiki().then(wiki=>previewWriteSequence(p.args.commands,wiki)).then(savePlan);
+    }
     if(p.actionId===CAPTURE_ACTION){
       if(p.origin!=='typed'||(source==='mobile'&&(!grantId||!actor)))throw fail('CONTROL_INPUT_INVALID');
       return productJournal.readPhoneWiki().then(wiki=>savePlan(previewWikiCapture(wiki,p.args)));
@@ -619,6 +653,7 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
     // Even receipt replay must respect the private desktop learning scope.
     if((RULE_ACTIONS.has(rec.plan.actionId)||(rec.plan.origin==='personal_rule'&&rec.plan.source==='desktop'))&&
        approval.channel!=='desktop-owner-token')throw fail('CONTROL_DESKTOP_APPROVAL_REQUIRED');
+    if(rec.plan.actionId===WIKI_WRITE_PROGRAM_ACTION&&(approval.actor!=='desktop-owner'||approval.channel!=='desktop-owner-token'||rec.plan.actor!=='desktop-owner'||rec.plan.source!=='desktop'))throw fail('CONTROL_DESKTOP_APPROVAL_REQUIRED');
     if(RULE_ACTIONS.has(rec.plan.actionId)&&approval.actor!=='desktop-owner')
       throw fail('CONTROL_DESKTOP_APPROVAL_REQUIRED');
     if(rec.plan.actionId===CAPTURE_ACTION&&rec.plan.source==='mobile'&&approval.grantId!==rec.plan.captureGrantId)throw fail('CONTROL_WIKI_DEVICE_MISMATCH');
@@ -736,6 +771,13 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
           : finishEffect(output);
       } catch (error) { return finishEffect(null, error); }
     }
+    if(rec.plan.actionId===WIKI_WRITE_PROGRAM_ACTION){
+      if(!productJournal||!rec.plan.wikiBinding)throw fail('CONTROL_WIKI_NOT_READY');
+      return productJournal.readPhoneWiki().then(wiki=>previewWriteSequence(rec.plan.args.commands,wiki)).then(current=>{
+        if(digest(current)!==digest(rec.plan.wikiBinding))throw fail('CONTROL_WIKI_STALE');
+        checkApprovalBinding(rec.plan,current);return claimAndRun();
+      });
+    }
     if (WIKI_STRUCTURE.has(rec.plan.actionId)) {
       if (!productJournal || !rec.plan.wikiBinding?.edit) throw fail('CONTROL_WIKI_NOT_READY');
       return productJournal.readPhoneWiki().then(wiki=>{
@@ -777,7 +819,7 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
     if (!rec) throw fail('CONTROL_PLAN_UNKNOWN');
     if(rec.plan.actionId===VISUAL_ACTION&&source==='mobile'&&(actor!==rec.plan.actor||grantId!==rec.plan.approvalMeaning?.deviceGrantId))throw fail('CONTROL_PLAN_UNKNOWN');
     if(rec.plan.actionId===CAPTURE_ACTION&&source==='mobile'&&(rec.plan.source!=='mobile'||actor!==rec.plan.actor||grantId!==rec.plan.captureGrantId))throw fail('CONTROL_PLAN_UNKNOWN');
-    if(source==='mobile'&&(RULE_ACTIONS.has(rec.plan.actionId)||(rec.plan.origin==='personal_rule'&&rec.plan.source==='desktop')))
+    if(source==='mobile'&&(rec.plan.actionId===WIKI_WRITE_PROGRAM_ACTION||RULE_ACTIONS.has(rec.plan.actionId)||(rec.plan.origin==='personal_rule'&&rec.plan.source==='desktop')))
       throw fail('CONTROL_PLAN_UNKNOWN');
     return { planId, state: rec.state, actionId: rec.plan.actionId, risk: rec.plan.risk, args: rec.plan.args,
       createdAt: rec.plan.createdAt, expiresAt: rec.plan.expiresAt, receipt: rec.receipt,
@@ -796,6 +838,6 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
         rules:entries.map(r=>({id:r.id, revision:r.revision, state:r.state, scope:r.scope,
           actionId:r.actionId, catalogVersion:r.catalogVersion}))}; },
     ownerRules:()=>personalSemantics.snapshot(),
-    plan, execute, status, recent: (limit,{source='desktop'}={}) => journal.recent(limit).filter(r=>source!=='mobile'||!RULE_ACTIONS.has(r.actionId)),
+    plan, execute, status, recent: (limit,{source='desktop'}={}) => journal.recent(limit).filter(r=>source!=='mobile'||(!RULE_ACTIONS.has(r.actionId)&&r.actionId!==WIKI_WRITE_PROGRAM_ACTION)),
   };
 }

@@ -1,6 +1,6 @@
 {
   "schema": "vivim.control-action-catalog/1",
-  "version": 14,
+  "version": 15,
   "asOf": "2026-11-18",
   "policy": {
     "allUserFacingActionsRequireTextPath": true,
@@ -1694,6 +1694,38 @@
       "subject": "wiki",
       "priority": "P1",
       "precondition": "Explicit reviewed capture through the typed Host interface."
+    },
+    {
+      "id": "program.write_wiki",
+      "title": "Review a Wiki change sequence",
+      "category": "program",
+      "owner": "host-native-program",
+      "executor": "apps/vivim-host/control/dispatcher.mjs:createExecutors",
+      "readiness": "source_wired",
+      "risk": "R1",
+      "target": "local-host",
+      "args": {
+        "commands": {
+          "type": "string",
+          "min": 3,
+          "max": 950
+        }
+      },
+      "examples": [
+        "run wiki change sequence:\ncreate wiki page research\nedit wiki section research/About saying Project notes"
+      ],
+      "surfaces": [
+        "text",
+        "desktop",
+        "mobile",
+        "visual"
+      ],
+      "reversible": false,
+      "privacy": "pc-only",
+      "aiCandidate": false,
+      "subject": "program",
+      "priority": "P1",
+      "precondition": "Authenticated desktop owner; exact sequence approval with revision-bound preflight and durable readback. No external effects."
     },
     {
       "id": "program.read_wiki",
