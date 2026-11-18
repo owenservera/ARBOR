@@ -22,6 +22,7 @@ let busy = false;
 let ownerCsrf = null; // memory-only proof of a native Host-issued short-lived session
 let interpreting = false;
 let surfaceQuery = '';
+let surfaceQueryEpoch = 0;
 let indexingSources = false;
 
 function element(tag, className, text) {
@@ -372,9 +373,11 @@ async function refresh() {
   refreshing = true;
   try {
     const keys = Object.keys(SOURCES);
+    const queryEpoch = surfaceQueryEpoch;
     const responses = await Promise.allSettled(keys.map(getJson));
     responses.forEach((result, index) => {
       const key = keys[index];
+      if (key === 'surface' && queryEpoch !== surfaceQueryEpoch) return;
       if (result.status === 'fulfilled') ingest(key, result.value);
       else {
         const message = String(result.reason?.message || result.reason);
@@ -611,14 +614,16 @@ async function submitEdit(event) {
 }
 
 $('refresh-now').addEventListener('click', () => { void refresh(); });
-$('surface-search').addEventListener('submit', async event => {
+$('surface-search').addEventListener('submit', event => {
   event.preventDefault();
   surfaceQuery = $('surface-query').value.trim().slice(0,240);
-  // Do not render an old search after the owner changes the query.
-  try { ingest('surface', await getJson('surface')); }
-  catch { snapshots.surface = { data: null, error: 'Source search unavailable' };
-    $('surface-view').replaceChildren(element('p', 'empty', 'Source search unavailable. No cached source displayed.'));
-    updateSourceMeta('surface'); }
+  surfaceQueryEpoch++;
+  snapshots.surface = { data: null, error: null };
+  $('surface-view').replaceChildren(element('p', 'empty', 'Searching authorized source…'));
+  updateSourceMeta('surface');
+  // If a poll is active, its obsolete query result is ignored; the next poll
+  // automatically issues the latest search.
+  void refresh();
 });
 $('surface-reindex').addEventListener('click', async () => {
   if (indexingSources) return;
@@ -636,7 +641,9 @@ $('surface-reindex').addEventListener('click', async () => {
     const result = await response.json();
     $('surface-reindex-status').textContent = result.status === 'indexed'
       ? 'Index refreshed. Reading current source…' : 'Index partially refreshed; some sources could not be read.';
-    ingest('surface', await getJson('surface'));
+    const epoch = surfaceQueryEpoch;
+    const currentSurface = await getJson('surface');
+    if (epoch === surfaceQueryEpoch) ingest('surface', currentSurface);
   } catch {
     snapshots.surface = { data: null, error: 'Index refresh not confirmed' };
     $('surface-view').replaceChildren(element('p', 'empty', 'Index refresh not confirmed. Refresh sources to inspect the result.'));
