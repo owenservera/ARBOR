@@ -134,8 +134,12 @@ export function describeDraft(text,meaning,{compileUi,hostRequired=true}={}){
     }
     return {kind:'clarify',label:'More information needed',detail:compact(m.question)||'Complete the request before submitting.'};
   }
-  if(route.kind==='ui')return {kind:'ui',label:route.reading.outcome==='candidate'?'Visual edit recognized':'Visual target needs clarification',
-    detail:'Review the exact proposed UI before Activate.'};
+  if(route.kind==='ui'){
+    const detail=route.reading.detail;
+    return {kind:'ui',label:route.reading.outcome==='candidate'?'Visual edit recognized':'Visual target needs clarification',
+      detail:detail?.capabilityId?'Typed '+detail.property+' · '+detail.value+' · '+detail.capabilityId+' · revision '+detail.baseRevision+'. Preview before Activate.':
+        'Review the exact proposed UI before Activate.'};
+  }
   if(route.kind==='refused')return {kind:'refused',label:'Not a safe command',detail:compact(route.meaning?.refusal?.message||route.reading?.code)};
   if(route.kind==='provider')return {kind:'provider',label:'No deterministic match',detail:'Choose an AI explicitly after submitting; nothing is sent while typing.'};
   return {kind:'unavailable',label:'Host interpretation unavailable',detail:'Draft preserved. No action was executed.'};
@@ -155,7 +159,7 @@ export function draftSuggestions(text,meaning){
 
 // Latest-input-wins, one read in flight. Session/target changes clear private
 // text immediately. Tab selects, second Tab fills; Enter retains normal send.
-export function mountComposerAssist({field,host,interpret,getScope,onDraft=()=>{},compileUi,delay=300,hostRequired=true}={}){
+export function mountComposerAssist({field,host,interpret,getScope,onDraft=()=>{},compileUi,getUiDraftCandidates=()=>[],delay=300,hostRequired=true}={}){
   if(!field||!host||typeof interpret!=='function'||typeof getScope!=='function')
     throw TypeError('Composer assistance requires an input and read-only interpreter');
   const doc=field.ownerDocument;
@@ -239,7 +243,18 @@ export function mountComposerAssist({field,host,interpret,getScope,onDraft=()=>{
       if(!destination&&(meaning?.schema!=='vivim.control-language/1'||meaning.input!==job.text))throw Error('Invalid interpretation response');
       const desc=describeDraft(job.text,meaning,{compileUi,hostRequired});
       if(!desc)return;
-      shown={job,meaning,description:desc,suggestions:draftSuggestions(job.text,meaning),at:Date.now()};
+      const suggestions=draftSuggestions(job.text,meaning);
+      // Use current installed Build mappings only when local/Host route permits.
+      if(desc.kind==='ui'||desc.kind==='provider'){
+        let candidates=[];try{candidates=getUiDraftCandidates()}catch{}
+        for(const text of candidates){
+          if(suggestions.length>=LIMIT)break;
+          if(typeof text!=='string'||!text.startsWith(job.text)||text.length<=job.text.length||suggestions.some(s=>s.text===text))continue;
+          const candidate=compileUi?.(text);
+          if(candidate?.outcome==='candidate')suggestions.push({text,source:'visual'});
+        }
+      }
+      shown={job,meaning,description:desc,suggestions,at:Date.now()};
       selected=-1;render();
       expiry=setTimeout(()=>{if(shown?.job===job)hide();},15000);
     }catch{

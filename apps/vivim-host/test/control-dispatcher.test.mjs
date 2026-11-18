@@ -7,6 +7,8 @@ import { createBootstrapRuntime } from '../bootstrap/runtime.mjs';
 import { createControlDispatcher } from '../control/dispatcher.mjs';
 import { loadControlCatalog } from '../control/intent-planner.mjs';
 import {createSurface} from '../../mobile-relay/generative-ui/catalog.mjs';
+import {projectAppliedControlEffects} from '../chat/product-journal.mjs';
+import {buildNativeKnowledge} from '../chat/rust-context.mjs';
 
 const DESKTOP = { channel: 'desktop-owner-token', actor: 'owner' };
 const PHONE = { channel: 'direct-phone', actor: 'owner@example.com' };
@@ -274,4 +276,24 @@ test('stale competing visual approvals never execute or overwrite a current revi
   const three=control.plan(visualInput(runtime.uiRevision()),visualDevice);
   runtime.revokeGrant();
   assert.throws(()=>exec(three));assert.equal(runtime.uiRevision().revision,1);
+});
+
+
+test('committed visual receipts reach historical AutoWiki and native owner knowledge, never as current state',t=>{
+  const {control}=fixture(t);
+  const plan=control.plan(visualInput(),visualDevice);
+  const receipt=control.execute({planId:plan.planId,planDigest:plan.planDigest,approval:visualApproval});
+  assert.equal(receipt.status,'applied');
+  const effects=projectAppliedControlEffects(control);
+  const item=effects.items.find(x=>x.planId===plan.planId);
+  assert.equal(item.status,'historical-applied-receipt');
+  assert.equal(item.visualLink.previewDigest,plan.visualPreview.previewDigest);
+  assert.equal(item.visualLink.semanticDigest,plan.approvalMeaning.semanticDigest);
+  assert.equal(item.visualLink.revision,1);
+  const rows=buildNativeKnowledge({changes:{items:[]},context:{}},effects);
+  assert.equal(rows[0].kind,'effect');
+  assert.equal(rows[0].sourceRevision,1);
+  assert.match(rows[0].summary,/Visual my-space rev 0 → 1/);
+  const invalid=structuredClone(effects);invalid.items[0].visualLink.revision=9;
+  assert.throws(()=>buildNativeKnowledge({changes:{items:[]},context:{}},invalid),/NATIVE_VISUAL_EFFECT_SOURCE_INVALID/);
 });

@@ -3,7 +3,7 @@ import { transport } from './transport.mjs';
 import { mountBuildSurface } from './generative-ui/phone-surface.mjs';
 import { mountBuildCanvas } from './build-canvas.mjs';
 import { createControlClient } from './control-client.mjs';
-import { resolveBuildRequest, buildSurfaceFromBootstrap } from './build-composer.mjs';
+import { resolveBuildRequest, buildSurfaceFromBootstrap, themeDraftCandidates } from './build-composer.mjs';
 import { mountWelcome } from './welcome.mjs';
 import { parsePairFragment, redeemDevicePairToken } from './pairing-link.mjs';
 import { prepareDeviceSigner, enrollWithChallenge, resumeDeviceSession } from './device-enrollment.mjs';
@@ -14,6 +14,7 @@ import { mountComposerAssist } from './composer-assist.mjs';
 import { sourceCards, sameSourceCard, matchesSourceContext, exactSourceContextUrl, reconcileSourceCards } from './wiki-source-view.mjs';
 import { deriveReadiness, safeReadinessReport } from './ux/readiness.mjs';
 import { mountCapabilityLauncher } from './ux/launcher-ui.mjs';
+import { inspectShell, selectShell } from './ux/shell-inspection.mjs';
 import { mountLocalNotes } from './ux/local-notes-ui.mjs';
 import { mountVoiceCapture } from './ux/voice-capture.mjs';
 const $ = id => document.getElementById(id);
@@ -131,7 +132,10 @@ let build = null, buildTimer = 0, buildKey = '';
 let dockAssist=null;
 function composerScope(){
   if(HOST_PREVIEW||!S.paired||!transport.direct||!S.device.scopes?.includes('control:read')||document.hidden)return null;
-  return transport.deviceHeaders?.()?.['x-vivim-device-session']||null;
+  const headers=transport.deviceHeaders?.();
+  const session=headers?.['x-vivim-device-session'];if(!session)return null;
+  const revision=build?.surface()?.revision??S.statusObj?.snapshot?.bootstrap?.uiRevision?.revision??0;
+  return [session,headers['x-vivim-grant-id'],S.tab,revision,S.wiki?.revision??0].join(':');
 }
 function classifyDraftUi(request){
   const surface=build?.surface()??build?.draftSurface()??buildSurfaceFromBootstrap(S.statusObj?.snapshot?.bootstrap);
@@ -617,6 +621,8 @@ function renderWikiContext() {
         el('p', 'ux-note', 'Historical applied receipt · ' + item.planId + ' · source revision ' +
           (item.sourceRevision ?? 'not recorded') + ' · ' + item.receivedAt));
       if (item.wikiLink) row.append(el('p', 'ux-note', 'Linked committed edit ' + item.wikiLink.entryId + ' · Wiki rev ' + item.wikiLink.wikiRevision));
+      if(item.visualLink)row.append(el('p','ux-note','Committed visual revision '+item.visualLink.surfaceId+
+        ' · '+item.visualLink.parentRevision+' → '+item.visualLink.revision+' · '+item.visualLink.changeId));
       if(item.structureLink) row.append(el('p','ux-note','Linked committed Wiki structure '+item.structureLink.entryId+' · Wiki rev '+item.structureLink.wikiRevision));
       card.append(row);
     }
@@ -805,7 +811,7 @@ function isInvalidDeviceSession(code) {
 // A lost grant must clear *all* private phone projections, not just hide tabs.
 // Session restoration must start from new device proof; no offline replay.
 function clearPrivatePhoneState() {
-  dockAssist?.reset();compose?.resetAssist?.();
+  dockAssist?.reset();compose?.resetAssist?.();capabilityLauncher?.close();
   mediaGeneration++;
   chatContextEpoch++;
   chatContext=null;closeFocusPanel();dockExpanded=false;
@@ -1614,6 +1620,7 @@ function mountCompose() {
     interpretControl: transport.direct ? text => vivimChat.interpret(text) : null,
     assistControl: transport.direct ? text=>vivimChat.assist(text) : null,
     assistScope: ()=>S.tab==='build'?composerScope():null,
+    getUiDraftCandidates:()=>themeDraftCandidates(build?.surface()??build?.draftSurface()),
     openControlDraft: transport.direct ? openVivimDraft : null,
     openPocket: pocketButton && !pocketButton.hidden ? () => pocketButton.click() : null,
     openProviderDraft: text => {
@@ -1656,7 +1663,10 @@ function launcherContext() {
     mediaVisible:transport.direct&&S.paired&&!!transport.deviceHeaders?.(),
     controlRead:!!transport.deviceHeaders?.()&&
       Array.isArray(S.device.scopes)&&S.device.scopes.includes('control:read'),
-    liveInstances:S.tab==='build'&&S.paired&&S.statusObj&&navigator.onLine!==false?build?.listInstances?.()??[]:[],
+    liveInstances:[...inspectShell(document,S.tab),
+      ...(S.tab==='build'&&S.paired&&S.statusObj&&navigator.onLine!==false?build?.listInstances?.()??[]:[])],
+    visualDraftAllowed:!HOST_PREVIEW&&!!composerScope()&&S.device.scopes?.includes('control:execute')===true,
+    visualTheme:build?.surface()?.theme??build?.draftSurface()?.theme??buildSurfaceFromBootstrap(S.statusObj?.snapshot?.bootstrap)?.theme,
     installOffered:!!deferredInstallPrompt,
     installed:!!window.matchMedia?.('(display-mode: standalone)')?.matches ||
       navigator.standalone===true};
@@ -1676,7 +1686,13 @@ function launcherActivate(item) {
 }
 capabilityLauncher = mountCapabilityLauncher({
   host:document.body,context:launcherContext,onActivate:launcherActivate,
-  onInspect:row=>S.tab==='build'&&S.paired&&!!S.statusObj&&!!build?.selectInstance?.(row.instanceId,row.revision)
+  onInspect:row=>row.scope==='shell'?selectShell(document,S.tab,row):S.tab==='build'&&S.paired&&!!S.statusObj&&!!build?.selectInstance?.(row.instanceId,row.revision),
+  onDraft:text=>{
+    if(!launcherContext().visualDraftAllowed)return false;
+    goTab('build');
+    if(!compose?.setDraft(text)){toast('Finish the current Build request first.');return false;}
+    return true;
+  }
 });
 function scheduleBuild(delay = 6000) {
   if (!build || !S.paired || S.tab !== 'build' || buildTimer) return;
@@ -1939,7 +1955,7 @@ dockAssist=mountComposerAssist({
   field:$('text'),host:$('composer-assist'),
   interpret:text=>vivimChat.assist(text),
   getScope:()=>N.target==='vivim'?composerScope():null,
-  compileUi:classifyDraftUi,onDraft:()=>{autogrow();updateSend();}
+  compileUi:classifyDraftUi,getUiDraftCandidates:()=>themeDraftCandidates(build?.surface()??build?.draftSurface()??buildSurfaceFromBootstrap(S.statusObj?.snapshot?.bootstrap)),onDraft:()=>{autogrow();updateSend();}
 });
 $('text').addEventListener('input', () => { autogrow(); updateSend(); });
 $('text').addEventListener('keydown', e => {

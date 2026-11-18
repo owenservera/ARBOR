@@ -94,3 +94,20 @@ test('Direct Host serves canonical VEC assets without making cloud offline shell
   for (const name of ['compiler','registry','catalog','validators','enum-choices'])
     assert.equal(sw.includes("'vec-engines/" + name + ".mjs'"), false);
 });
+
+
+test('real typed theme mappings preserve other values and reject unsupported units',()=>{
+  for(const [phrase,field,value] of [
+    ['set my app secondary to #123456','secondary','#123456'],
+    ['set my app font-size to 17px','fontSizePx',17],
+    ['set my app radius to 18px','radiusPx',18],
+    ['set my app spacing-scale to 0.9','spacingScale',0.9]
+  ]){
+    const before=makeSurface(),out=request(phrase,before);
+    assert.equal(out.outcome,'candidate',phrase);assert.equal(out.preview.surface.theme[field],value);
+    for(const key of Object.keys(before.theme).filter(k=>k!==field))assert.equal(out.preview.surface.theme[key],before.theme[key]);
+    assert.deepEqual(out.preview.surface.tree,before.tree);
+  }
+  for(const phrase of ['set my app font-size to 50px','set my app radius to 2rem','set my app spacing-scale to 9'])
+    assert.equal(request(phrase).outcome,'refused');
+});

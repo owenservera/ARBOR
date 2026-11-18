@@ -34,6 +34,7 @@ const assets = new Map(Object.entries({
   'ux/readiness.mjs': ['ux/readiness.mjs', 'text/javascript; charset=utf-8'],
   'ux/launcher.mjs': ['ux/launcher.mjs', 'text/javascript; charset=utf-8'],
   'ux/launcher-ui.mjs': ['ux/launcher-ui.mjs', 'text/javascript; charset=utf-8'],
+  'ux/shell-inspection.mjs': ['ux/shell-inspection.mjs', 'text/javascript; charset=utf-8'],
   'ux/local-notes.mjs': ['ux/local-notes.mjs', 'text/javascript; charset=utf-8'],
   'ux/local-notes-ui.mjs': ['ux/local-notes-ui.mjs', 'text/javascript; charset=utf-8'],
   'ux/voice-capture.mjs': ['ux/voice-capture.mjs', 'text/javascript; charset=utf-8'],

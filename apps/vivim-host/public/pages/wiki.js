@@ -222,6 +222,9 @@ function renderContext(context) {
       card.appendChild(element('div', 'meta', 'Historical applied receipt · plan ' + item.planId +
         ' · source revision ' + present(item.sourceRevision, 'not recorded') + ' · ' + item.receivedAt));
       if (item.wikiLink) card.appendChild(element('p', 'meta', 'Linked committed Wiki edit ' + item.wikiLink.entryId + ' · Wiki rev ' + item.wikiLink.wikiRevision));
+      if (item.visualLink) card.appendChild(element('p','meta','Committed visual revision '+item.visualLink.surfaceId+
+        ' · '+item.visualLink.parentRevision+' → '+item.visualLink.revision+' · '+item.visualLink.changeId+
+        ' · preview '+item.visualLink.previewDigest));
       if (item.structureLink) card.appendChild(element('p','meta','Linked committed Wiki structure '+item.structureLink.entryId+' · Wiki rev '+item.structureLink.wikiRevision));
       root.appendChild(card);
     }

@@ -304,8 +304,25 @@ export function projectAppliedControlEffects(control, wikiChanges = null, wikiSt
       if(!event)continue;
       structureLink={kind:'committed-wiki-structure',entryId:event.entryId,wikiRevision:event.wikiRevision};
     }
+    let visualLink=null;
+    if(receipt.actionId==='ui.visual.apply'){
+      const result=receipt.result;
+      const sha=value=>typeof value==='string'&&/^[a-f0-9]{64}$/.test(value);
+      if(result?.persisted!==true||typeof result.surfaceId!=='string'||
+        !/^[a-zA-Z][a-zA-Z0-9._:-]{0,95}$/.test(result.surfaceId)||
+        typeof result.changeId!=='string'||!/^chg-[a-f0-9]{8}$/.test(result.changeId)||
+        !Number.isSafeInteger(result.parentRevision)||result.parentRevision<0||
+        !Number.isSafeInteger(result.revision)||result.revision!==result.parentRevision+1||
+        !sha(result.previewDigest)||!sha(result.projectionDigest)||!sha(receipt.semanticDigest)||
+        receipt.args?.surfaceId!==result.surfaceId||!sha(receipt.args?.proposalDigest))
+          throw new Error('Invalid applied visual receipt');
+      visualLink={kind:'committed-visual-revision',surfaceId:result.surfaceId,changeId:result.changeId,
+        parentRevision:result.parentRevision,revision:result.revision,previewDigest:result.previewDigest,
+        projectionDigest:result.projectionDigest,semanticDigest:receipt.semanticDigest};
+    }
     seenPlans.add(summary.planId);
     items.push({
+      ...(visualLink?{visualLink}:{}),
       ...(wikiLink ? { wikiLink } : {}),
       ...(structureLink ? { structureLink } : {}),
       source: 'host-control-receipt', planId: receipt.planId, planDigest: receipt.planDigest,

@@ -1,12 +1,13 @@
 import {searchCapabilities} from './launcher.mjs';
 import {listUiComponents,UI_TAXONOMY_COUNTS} from '../vec/ui-taxonomy/registry.mjs';
+import {THEME_BINDINGS} from '../build-composer.mjs';
 // The same reviewed engine registry used by Build. Missing relay assets are explicit unavailable.
 const engineRegistry=()=>import(typeof process!=='undefined'&&process.versions?.node
   ? '../../../packages/vec-ui-engines/src/registry.mjs' : '../vec-engines/registry.mjs');
 
 // Local navigation dialog. No dynamic HTML, web search, command invocation or
 // external URLs; selections resolve again against *current* authorization.
-export function mountCapabilityLauncher({host,context,onActivate,onInspect=()=>false}={}){
+export function mountCapabilityLauncher({host,context,onActivate,onInspect=()=>false,onDraft=()=>false}={}){
   if (!host?.ownerDocument || typeof context!=='function' || typeof onActivate!=='function')
     throw new TypeError('Capability launcher needs a host and local callbacks');
   const doc=host.ownerDocument, make=(tag,cls,content)=>{
@@ -62,10 +63,10 @@ export function mountCapabilityLauncher({host,context,onActivate,onInspect=()=>f
       if(mode===1){
         info.textContent='Read-only inspection. Declared types are not installed components.';
         const live=liveRows(snapshot,query),definitions=listUiComponents({search:query});
-        list.append(make('h3','',live.length+' live matching Build instances'));
+        list.append(make('h3','',live.length+' live matching PWA instances'));
         for(const row of live){
           const button=make('button','launcher-row');button.type='button';
-          button.append(make('strong','',row.instanceId+' · '+row.type),make('span','',row.componentId+' · revision '+row.revision),
+          button.append(make('strong','',row.instanceId+' · '+row.type),make('span','',row.componentId+(row.scope==='shell'?' · protected shell':' · revision '+row.revision)),
             make('small','',Object.entries(row.settings??{}).map(([k,v])=>k+': '+v).join(' · ')||'Select for inspection'));
           button.addEventListener('click',()=>{
             const current=liveRows(context(),'').find(x=>x.instanceId===row.instanceId&&x.surfaceId===row.surfaceId&&x.revision===row.revision);
@@ -92,8 +93,23 @@ export function mountCapabilityLauncher({host,context,onActivate,onInspect=()=>f
       const capabilities=engines.listEngineCapabilities({search:query});
       list.append(make('h3','',capabilities.length+' matching / '+engines.ENGINE_COUNTS.capabilities+' declared capabilities'));
       for(const cap of capabilities.slice(0,100)){
-        const bridge=['vivim.ui-engine.color.background@1','vivim.ui-engine.color.accent@1'].includes(cap.id);
-        list.append(libraryRow(cap.name,cap.id+' · '+cap.valueSchema.type,bridge?'Reviewed Build preview mapping; effect authority separate':'Described; installation not established'));
+        const mapped=Object.entries(THEME_BINDINGS).find(([,b])=>b.capabilityId===cap.id);
+        const row=libraryRow(cap.name,cap.id+' · '+cap.valueSchema.type,mapped?'Reviewed Build preview mapping; effect authority separate':'Described; installation not established');
+        if(mapped&&snapshot.visualDraftAllowed){
+          const [property,binding]=mapped;
+          const value=make('input','launcher-search');value.type=binding.type==='color'?'color':'number';
+          const existing=snapshot.visualTheme?.[binding.field];
+          value.value=String(existing??(binding.type==='color'?'#111722':binding.min));
+          if(binding.type!=='color'){value.min=String(binding.min);value.max=String(binding.max);value.step=binding.type==='length'?'1':'0.01';}
+          value.setAttribute('aria-label',property);
+          const draft=make('button','btn sm','Draft change');draft.type='button';
+          draft.addEventListener('click',()=>{
+            if(!context().visualDraftAllowed||!value.checkValidity())return;
+            const raw=binding.type==='length'?value.value+'px':value.value;
+            if(onDraft('set my app '+property+' to '+raw))closeDialog();
+          });row.append(value,draft);
+        }
+        list.append(row);
       }
       if(capabilities.length>100)list.append(make('p','muted','Showing first 100; narrow search to inspect others.'));
       return;

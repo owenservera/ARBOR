@@ -176,7 +176,16 @@ export function buildNativeKnowledge(snapshot, effects) {
         !/^[0-9a-f-]{36}$/.test(wikiLink.entryId) ||
         !safeUInt(wikiLink.wikiRevision) || wikiLink.wikiRevision===0))
       throw Error('NATIVE_EFFECT_SOURCE_LINK_INVALID');
-    const linked = wikiLink ? ' · Wiki revision '+wikiLink.wikiRevision : '';
+    const visual=e.visualLink??null;
+    if(e.actionId==='ui.visual.apply'&&(!visual||visual.kind!=='committed-visual-revision'||
+      typeof visual.surfaceId!=='string'||! /^[a-zA-Z][a-zA-Z0-9._:-]{0,95}$/.test(visual.surfaceId)||
+      !/^chg-[a-f0-9]{8}$/.test(visual.changeId)||!safeUInt(visual.parentRevision)||
+      !safeUInt(visual.revision)||visual.revision!==visual.parentRevision+1||
+      visual.revision!==e.sourceRevision||!SHA.test(visual.previewDigest)||!SHA.test(visual.projectionDigest)||
+      !SHA.test(visual.semanticDigest)))throw Error('NATIVE_VISUAL_EFFECT_SOURCE_INVALID');
+    if(visual&&e.actionId!=='ui.visual.apply')throw Error('NATIVE_VISUAL_EFFECT_SOURCE_INVALID');
+    const linked = wikiLink ? ' · Wiki revision '+wikiLink.wikiRevision :
+      visual?' · Visual '+visual.surfaceId+' rev '+visual.parentRevision+' → '+visual.revision+' · '+visual.changeId:'';
     rows.push({id:'vivim-context-e-'+digest(e.planId),kind:'effect',
       sourceRef:e.planId,digest:e.planDigest,revision:Math.max(1,e.sourceRevision ?? 1),
       sourceRevision:e.sourceRevision,order:Date.parse(e.receivedAt),

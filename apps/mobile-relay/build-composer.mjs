@@ -36,25 +36,43 @@ export function buildSurfaceFromBootstrap(bootstrap) {
 
 // Deterministic first, same canonical UI proposal and Host approval as the model path.
 // The compiler is an inert preview boundary, not a new action dispatcher or publisher.
-const THEME_CAPABILITIES = Object.freeze({
-  background: 'vivim.ui-engine.color.background@1',
-  accent: 'vivim.ui-engine.color.accent@1'
+// Reviewed bindings to existing theme fields. These are preview mappings,
+ // not a claim that every declared engine is installed or authorized.
+export const THEME_BINDINGS = Object.freeze({
+  background: Object.freeze({capabilityId:'vivim.ui-engine.color.background@1',field:'background',type:'color'}),
+  accent: Object.freeze({capabilityId:'vivim.ui-engine.color.accent@1',field:'accent',type:'color'}),
+  secondary: Object.freeze({capabilityId:'vivim.ui-engine.color.surface@1',field:'secondary',type:'color'}),
+  'font-size': Object.freeze({capabilityId:'vivim.ui-engine.typography.size@1',field:'fontSizePx',type:'length',min:13,max:19}),
+  radius: Object.freeze({capabilityId:'vivim.ui-engine.corners.radius@1',field:'radiusPx',type:'length',min:6,max:24}),
+  'spacing-scale': Object.freeze({capabilityId:'vivim.ui-engine.spacing.scale@1',field:'spacingScale',type:'number',min:0.85,max:1.2})
 });
 const THEME_START = /^set my app\b/i;
 const THEME_PATTERN = /^set my app ([a-z-]+) to (.+)$/i;
 const COLOR = /^#[0-9a-fA-F]{6}$/;
 
-// Two reviewed VEC capabilities map to the existing Host set-theme operation.
+// Reviewed VEC capabilities map to the existing Host set-theme operation.
 // A descriptive engine capability grants neither execution nor write authority.
 export function compileVecThemeRequest({ text, surface } = {}) {
   const refuse = code => ({ outcome: 'refused', code });
   const matched = THEME_PATTERN.exec(typeof text === 'string' ? text.trim().replace(/\s+/g, ' ') : '');
   if (!matched) return refuse('UNSUPPORTED_THEME_REQUEST');
   const property = matched[1].toLowerCase();
-  const capabilityId = THEME_CAPABILITIES[property];
-  if (!capabilityId) return refuse('UNSUPPORTED_THEME_PROPERTY');
-  const value = matched[2].trim();
-  if (!COLOR.test(value)) return refuse('INVALID_THEME_COLOR');
+  const binding=Object.hasOwn(THEME_BINDINGS,property)?THEME_BINDINGS[property]:null;
+  if(!binding)return refuse('UNSUPPORTED_THEME_PROPERTY');
+  const {capabilityId,field,type,min,max}=binding;
+  const raw=matched[2].trim();
+  let value=raw;
+  if(type==='color'){
+    if(!COLOR.test(raw))return refuse('INVALID_THEME_COLOR');
+  }else if(type==='length'){
+    if(!/^\d{1,2}px$/.test(raw))return refuse('INVALID_THEME_LENGTH');
+    const number=Number(raw.slice(0,-2));
+    if(number<min||number>max)return refuse('INVALID_THEME_LENGTH');
+    value={value:number,unit:'px'};
+  }else{
+    if(!/^\d(?:\.\d{1,3})?$/.test(raw))return refuse('INVALID_THEME_SCALE');
+    value=Number(raw);if(value<min||value>max)return refuse('INVALID_THEME_SCALE');
+  }
   if (typeof compileUiConfiguration !== 'function') return refuse('VEC_ENGINE_UNAVAILABLE');
   let current;
   try { current = validateSurface(surface, { refs: new Set() }); }
@@ -72,15 +90,20 @@ export function compileVecThemeRequest({ text, surface } = {}) {
     changes: [{ capabilityId, value }]
   });
   if (typed.outcome !== 'candidate' || typed.changes?.length !== 1 ||
-      typed.changes[0].capabilityId !== capabilityId ||
-      !COLOR.test(typed.changes[0].value))
+      typed.changes[0].capabilityId !== capabilityId)
     return refuse(typed.code ?? 'VEC_CONFIGURATION_REFUSED');
-  const color = typed.changes[0].value;
+  const checked=typed.changes[0].value;
+  if(type==='color'&&!COLOR.test(checked))return refuse('INVALID_THEME_COLOR');
+  if(type==='length'&&(checked?.unit!=='px'||!Number.isInteger(checked.value)||checked.value<min||checked.value>max))
+    return refuse('INVALID_THEME_LENGTH');
+  if(type==='number'&&(!Number.isFinite(checked)||checked<min||checked>max))return refuse('INVALID_THEME_SCALE');
+  const setting=type==='length'?checked.value:checked;
+  const display=type==='length'?setting+'px':String(setting);
   const proposal = {
     schema: PROPOSAL_SCHEMA, surfaceId: current.surfaceId, baseRevision: current.revision,
     operations: [{ opId: 'vec.theme.1', type: 'set-theme',
-      theme: { ...current.theme, [property]: color } }],
-    explanation: 'Set app ' + property + ' to ' + color + '.',
+      theme: { ...current.theme, [field]: setting } }],
+    explanation: 'Set app ' + property + ' to ' + display + '.',
     assumptions: [], unknowns: []
   };
   try {
@@ -88,9 +111,21 @@ export function compileVecThemeRequest({ text, surface } = {}) {
     return { outcome: 'candidate', code: 'VEC_THEME_PREVIEW', proposal, preview,
       summary: { explanation: preview.notes.explanation, changes: preview.operations,
         unknowns: preview.notes.unknowns },
-      detail: { capabilityId, property, value: color,
+      detail: { capabilityId, property, value: setting, valueType:type,
         baseRevision: current.revision, targetRevision: current.revision + 1 } };
   } catch { return refuse('VEC_THEME_PREVIEW_REJECTED'); }
+}
+
+// Discovery uses the actual current revision and the same compiler, not a
+// separate grammar or an assertion of effect authority.
+export function themeDraftCandidates(surface){
+  if(!surface)return [];
+  return Object.entries(THEME_BINDINGS).flatMap(([property,binding])=>{
+    const value=surface.theme?.[binding.field];
+    const raw=binding.type==='length'?value+'px':String(value);
+    const text='set my app '+property+' to '+raw;
+    return compileVecThemeRequest({text,surface}).outcome==='candidate'?[text]:[];
+  });
 }
 
 const vec = createVecCompiler({ adapters: {

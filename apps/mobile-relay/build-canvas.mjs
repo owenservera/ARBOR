@@ -120,7 +120,7 @@ export function buildUndoProposal({ original, before, committed, live }) {
   } catch { return null; }
 }
 
-export function mountBuildCanvas({ host, request, getSurface, getProvider, send, apply, prepareVisual = null, onApplied = () => {}, navigate = () => {}, openControlDraft = null, openProviderDraft = null, openPocket = null, interpretControl = null, assistControl = null, assistScope = ()=>null, storage = window.localStorage }) {
+export function mountBuildCanvas({ host, request, getSurface, getProvider, send, apply, prepareVisual = null, onApplied = () => {}, navigate = () => {}, openControlDraft = null, openProviderDraft = null, openPocket = null, interpretControl = null, assistControl = null, assistScope = ()=>null, getUiDraftCandidates=()=>[], storage = window.localStorage }) {
   let state = { name: 'idle' }, text = '', run = 0, assistance=null;
   const el = (tag, cls, content) => { const e = document.createElement(tag); if (cls) e.className = cls; if (content != null) e.textContent = content; return e; };
   const current = () => getSurface?.() ?? null;
@@ -288,7 +288,7 @@ export function mountBuildCanvas({ host, request, getSurface, getProvider, send,
     if(typeof assistControl==='function'){
       const panel=el('div','composer-assist');box.append(panel);
       assistance=mountComposerAssist({field:area,host:panel,interpret:assistControl,getScope:assistScope,
-        compileUi:request=>current()?resolveBuildRequest({request,surface:current()}):null,
+        getUiDraftCandidates,compileUi:request=>current()?resolveBuildRequest({request,surface:current()}):null,
         onDraft:value=>{text=value;go.disabled=!text.trim();}});
     }
     box.querySelector('.compose-row').append(el('small', 'muted', 'Known edits stay local. Other design requests use your AI. Activate to save.'), go);
@@ -316,6 +316,8 @@ export function mountBuildCanvas({ host, request, getSurface, getProvider, send,
     if (state.origin === 'vec' && state.detail?.capabilityId) {
       const d = state.detail;
       card.append(el('p', 'muted', d.capabilityId + ' · revision ' + d.baseRevision + ' → ' + d.targetRevision));
+      if(d.valueType&&d.valueType!=='color')card.append(el('p','muted','Proposed '+d.property+': '+d.value+(d.valueType==='length'?'px':'')));
+      else {
       const swatch = el('span', 'color-swatch');
       swatch.setAttribute('role', 'img');
       swatch.setAttribute('aria-label', 'Proposed ' + d.property + ' color ' + d.value);
@@ -324,6 +326,7 @@ export function mountBuildCanvas({ host, request, getSurface, getProvider, send,
       swatch.style.width = '36px'; swatch.style.height = '36px';
       swatch.style.border = '1px solid currentColor'; swatch.style.borderRadius = '6px';
       card.append(el('p', 'muted', 'Proposed ' + d.property + ': ' + d.value), swatch);
+      }
     }
     const view = el('div', 'proposal-preview');
     let previewVisible = true;
