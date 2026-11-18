@@ -101,7 +101,7 @@ export function toCommandIntent(input, { catalog, world, personalRules = [], per
       personalProvenance = resolved.provenance;
     } else if (resolved.outcome === 'clarification_required') {
       meaning = { ...baseline, outcome: 'clarification_required',
-        question: 'Conflicting accepted personal meanings. Please specify the action.',
+        question: resolved.reason==='TEMPLATE_PARAMETER_REQUIRED' ? 'Supply one new lowercase Wiki page slug after the learned command name.' : 'Conflicting accepted personal meanings. Please specify the action.',
         choices: [] };
       personalProvenance = { method: 'personal-rule-conflict', ruleIds: resolved.ruleIds };
     } else if (resolved.outcome === 'refused') {

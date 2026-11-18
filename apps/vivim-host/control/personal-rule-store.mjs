@@ -105,7 +105,7 @@ export function createPersonalRuleStore({
       if(subject?.operation!=='remember'||subject.catalogVersion!==catalog.version||
           subject.storeDigest!==digest(current.entries))throw fail('PERSONAL_STORE_STALE');
       const candidate=subject.rule;
-      const key=value=>value.normalize('NFKC').trim().replace(/\\s+/g,' ').toLowerCase();
+      const key=value=>value.normalize('NFKC').trim().replace(/\s+/g,' ').toLowerCase();
       const trial={schema:PERSONAL_RULE_SCHEMA,id:'rule:validation',revision:1,
         ...candidate,state:'accepted',source:'explicit-owner',catalogVersion:catalog.version};
       if(!validatePersonalRule(trial,catalog).ok)throw fail('PERSONAL_STORE_INVALID_RULE');

@@ -14,7 +14,7 @@ import { createControlPlanner, loadControlCatalog } from './intent-planner.mjs';
 import { createControlJournal, newPlanId } from './journal.mjs';
 import { createLexiconStore } from './lexicon.mjs';
 import { createPersonalRuleStore } from './personal-rule-store.mjs';
-import { PERSONAL_RULE_SCHEMA, validatePersonalRule } from './personal-semantics.mjs';
+import { PERSONAL_RULE_SCHEMA, validatePersonalRule, TEMPLATE_SCHEMA, templateAlias, templateDependencies, bindPersonalRule, currentTemplate } from './personal-semantics.mjs';
 import { interpretControl, resolveLocalDestination, resolveDesktopDestination } from '../../mobile-relay/control-language.mjs';
 import { previewWikiStructure } from '../chat/product-journal.mjs';
 import { wikiApprovalSentence } from './command-intent.mjs';
@@ -327,10 +327,27 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
         throw fail('CONTROL_SEMANTIC_RULE_STALE');
       if(digest({...commandScope(),surface:record.source})!==bound.scopeDigest)
         throw fail('CONTROL_SEMANTIC_CONTEXT_STALE');
+      const rule=snapshot.entries.find(r=>r.id===bound.ruleId);
+      if(rule?.template&&(!templateReceiptCurrent(rule)||!currentTemplate(rule,catalog)||digest(rule.template)!==bound.templateDigest||
+        digest(bindPersonalRule(rule,bound.invocation,catalog))!==digest(record.args)))
+        throw fail('CONTROL_SEMANTIC_RULE_STALE');
     }
     if(now()>=Date.parse(record.expiresAt))throw fail('CONTROL_PLAN_EXPIRED');
   }
 
+  function templateReceiptCurrent(rule){
+    if(!rule?.template)return true;
+    const rec=journal.get(rule.template.receiptId);
+    const {planDigest,...body}=rec?.plan??{};
+    return !!(rec?.claimed&&rec.receipt?.status==='applied'&&rec.receipt.executionPerformed===true&&
+      typeof planDigest==='string'&&digest(body)===planDigest&&
+      rec.approval?.planDigest===planDigest&&rec.approval.channel==='desktop-owner-token'&&
+      rec.plan.source==='desktop'&&rec.plan.actor==='desktop-owner'&&
+      rec.plan.actionId===rule.actionId&&rec.receipt.planDigest===planDigest&&
+      rec.receipt.semanticDigest===rule.template.sourceSemanticDigest&&
+      rec.receipt.result?.entryId===rule.template.sourceEntryId&&
+      digest(rec.receipt)===rule.template.receiptDigest);
+  }
   function prepareRuleBinding(actionId,args) {
     const snapshot=personalSemantics.snapshot();
     if(actionId==='control.rule.revoke'){
@@ -344,11 +361,43 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
     if(resolveLocalDestination(args.phrase)||resolveDesktopDestination(args.phrase)||
         interpretControl(args.phrase,{catalog,world:planner.world()}).outcome!=='interpretation_required')
       throw fail('CONTROL_RULE_PHRASE_NOT_FREE');
-    const target=planner.planText(args.command,{source:'desktop'});
-    if(target.origin!=='deterministic'||!LEARNABLE.has(target.actionId)||
-       !['ready','approval_required'].includes(target.outcome)||!['R0','R1'].includes(target.risk))
-      throw fail('CONTROL_RULE_TARGET_INVALID');
-    const rule={phrase:args.phrase,actionId:target.actionId,args:target.args,scope};
+    let rule,targetRisk;
+    // Explicit receipt reference in the existing typed remember command.
+    // Never interpret arbitrary transcript text as a successful execution.
+    if(args.command.startsWith('receipt:')){
+      const id=args.command.slice(8);
+      if(!templateAlias(args.phrase)||!/^ctl-[a-f0-9]{16}$/.test(id))throw fail('CONTROL_RULE_TARGET_INVALID');
+      const rec=journal.get(id),p=rec?.plan,r=rec?.receipt;
+      const {planDigest,...body}=p??{};
+      const deps=templateDependencies(catalog);
+      if(!deps||!p||!r||!p.wikiBinding?.edit||!r.result?.edit||!rec.claimed||rec.approval?.planDigest!==planDigest||
+        p.actionId!=='wiki.page.create'||p.source!=='desktop'||p.actor!=='desktop-owner'||
+        p.catalogVersion!==catalog.version||digest(body)!==planDigest||r.planDigest!==planDigest||
+        r.planId!==id||r.actionId!==p.actionId||r.status!=='applied'||r.executionPerformed!==true||
+        r.approvedVia!=='desktop-owner-token'||rec.approval.channel!=='desktop-owner-token'||
+        p.approvalMeaning?.roundTrip!=='verified'||p.approvalMeaning.contractDigest!==digest(action(p.actionId))||
+        r.semanticDigest!==p.approvalMeaning.semanticDigest||
+        digest(r.result?.edit)!==digest(p.wikiBinding?.edit)||
+        r.result?.wikiRevision!==p.wikiBinding.expectedRevision+1||
+        r.result?.previousRevision!==p.wikiBinding.expectedRevision||
+        !r.result?.entryId||r.result.edit.page!==p.args.page)throw fail('CONTROL_RULE_TARGET_INVALID');
+      rule={phrase:args.phrase,actionId:p.actionId,args:{page:p.args.page},scope,
+        template:{schema:TEMPLATE_SCHEMA,receiptId:id,receiptDigest:digest(r),
+          sourceSemanticDigest:r.semanticDigest,sourceEntryId:r.result.entryId,
+          slot:{name:'page',type:'wiki-page-slug',provenance:'owner-selected-receipt-argument'},
+          dependencies:deps,privacy:'pc-only'}};
+      targetRisk='R1';
+      // Verify example invocation is not a canonical command or refusal.
+      if(interpretControl(rule.phrase+' '+rule.args.page,{catalog,world:planner.world()}).outcome!=='interpretation_required')
+        throw fail('CONTROL_RULE_PHRASE_NOT_FREE');
+    }else{
+      const target=planner.planText(args.command,{source:'desktop'});
+      if(target.origin!=='deterministic'||!LEARNABLE.has(target.actionId)||
+         !['ready','approval_required'].includes(target.outcome)||!['R0','R1'].includes(target.risk))
+        throw fail('CONTROL_RULE_TARGET_INVALID');
+      rule={phrase:args.phrase,actionId:target.actionId,args:target.args,scope};
+      targetRisk=target.risk;
+    }
     if(!validatePersonalRule({schema:PERSONAL_RULE_SCHEMA,id:'rule:validation',revision:1,
       ...rule,state:'accepted',source:'explicit-owner',catalogVersion:catalog.version},catalog).ok)
       throw fail('CONTROL_RULE_TARGET_INVALID');
@@ -358,7 +407,7 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
     const old=matches[0]??null;
     return {subject:{operation:'remember',storeVersion:snapshot.version,storeDigest:snapshot.digest,
       catalogVersion:catalog.version,rule,previousId:old?.id??null,previousDigest:old?rawDigest(old):null},
-      before:old,after:rule,targetRisk:target.risk};
+      before:old,after:rule,targetRisk};
   }
 
   function undoFor(a, args, result) {
@@ -416,15 +465,15 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
       const snapshot = personalSemantics.snapshot();
       const rule = snapshot.entries.find(r => r.id === observed?.ruleId && r.state === 'accepted' &&
         r.revision === observed.ruleRevision && r.actionId === p.actionId &&
-        digest(r.args) === digest(p.args));
-      if (!rule) throw fail('CONTROL_SEMANTIC_RULE_STALE');
+        digest(r.template?bindPersonalRule(r,input.text,catalog):r.args) === digest(p.args));
+      if (!rule||!templateReceiptCurrent(rule)) throw fail('CONTROL_SEMANTIC_RULE_STALE');
       // The context is owned by the Host callback, never by caller request fields.
       const activeScope = { ...commandScope(), surface: source };
       if (!observed.semanticScope || digest(activeScope) !== digest(observed.semanticScope))
         throw fail('CONTROL_SEMANTIC_CONTEXT_STALE');
       semanticRuleBinding = { ruleId: rule.id, ruleRevision: rule.revision,
         storeVersion: snapshot.version, storeDigest: snapshot.digest,
-        scopeDigest: digest(activeScope) };
+        scopeDigest: digest(activeScope),...(rule.template?{invocation:input.text,templateDigest:digest(rule.template)}:{}) };
     }
     const ruleBinding=RULE_ACTIONS.has(p.actionId)?prepareRuleBinding(p.actionId,p.args):null;
     const savePlan = wikiBinding => {
@@ -501,6 +550,10 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
         throw fail('CONTROL_SEMANTIC_RULE_STALE');
       if (digest({ ...commandScope(), surface: rec.plan.source }) !== bound.scopeDigest)
         throw fail('CONTROL_SEMANTIC_CONTEXT_STALE');
+      const rule=snapshot.entries.find(r=>r.id===bound.ruleId);
+      if(rule?.template&&(!templateReceiptCurrent(rule)||!currentTemplate(rule,catalog)||digest(rule.template)!==bound.templateDigest||
+        digest(bindPersonalRule(rule,bound.invocation,catalog))!==digest(rec.plan.args)))
+        throw fail('CONTROL_SEMANTIC_RULE_STALE');
     }
     if(RULE_ACTIONS.has(rec.plan.actionId)){
       if(rec.plan.source!=='desktop'||rec.plan.actor!=='desktop-owner'||

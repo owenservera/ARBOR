@@ -127,7 +127,7 @@ export function createControlPlanner({ catalog = loadControlCatalog(), lexicon =
     const ruleKeys = rules.filter(r => r.state === 'accepted')
       .map(r => 'rule:' + JSON.stringify(canonical({
         id:r.id,revision:r.revision,phrase:r.phrase,scope:r.scope,
-        actionId:r.actionId,args:r.args,catalogVersion:r.catalogVersion,
+        actionId:r.actionId,args:r.args,catalogVersion:r.catalogVersion,...(r.template?{template:r.template}:{}),
       })));
     const keys = [...entries.map(e => String(e.word) + '\0' + String(e.actionId)), ...ruleKeys].sort();
     for (const key of keys) {

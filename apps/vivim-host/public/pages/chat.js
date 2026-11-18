@@ -177,6 +177,16 @@ import { mountComposerAssist } from '/mobile/composer-assist.mjs';
     if (receipt.result !== undefined) node.append(element('pre', '', JSON.stringify(receipt.result, null, 2)));
     node.append(element('p', '', 'Host receipt: ' + receipt.planId +
       ' · live acceptance: ' + (receipt.liveAcceptance ?? 'pending')));
+    if(receipt.status==='applied'&&receipt.executionPerformed===true&&receipt.actionId==='wiki.page.create'&&
+        receipt.source==='desktop'&&receipt.semanticDigest&&receipt.result?.edit?.page){
+      node.append(button('Teach a command from this successful creation',()=>{
+        const phrase=$('teach-phrase'),command=$('teach-command'),form=$('teach-rule-form');
+        if(!csrfProof||!phrase||!command||!form)return;
+        const section=form.closest?.('details');if(section)section.open=true;
+        command.value='receipt:'+receipt.planId;
+        phrase.value='';phrase.focus();
+      },true));
+    }
     if (receipt.undo && receipt.status === 'applied') {
       node.append(button('Review undo (requires approval)', () => void submitPlan({
         actionId: receipt.undo.actionId, args: receipt.undo.args
@@ -391,8 +401,8 @@ import { mountComposerAssist } from '/mobile/composer-assist.mjs';
       rulePanel.replaceChildren();
       for(const rule of data.entries.filter(r=>r.state!=='revoked')){
         const row=element('div','control-card');
-        row.append(element('strong','',rule.phrase+' · '+rule.state),
-          element('pre','',JSON.stringify({actionId:rule.actionId,args:rule.args,scope:rule.scope},null,2)),
+        row.append(element('strong','',rule.phrase+(rule.template?' <page-slug>':'')+' · '+rule.state),
+          element('pre','',JSON.stringify({actionId:rule.actionId,args:rule.args,scope:rule.scope,...(rule.template?{parameter:rule.template.slot,sourceReceipt:rule.template.receiptId,privacy:rule.template.privacy}:{})},null,2)),
           element('p','', 'Catalog revision '+rule.catalogVersion+' · rule revision '+rule.revision),
           button('Revoke meaning',()=>void submitPlan({actionId:'control.rule.revoke',args:{rule_id:rule.id}}),true));
         rulePanel.append(row);
