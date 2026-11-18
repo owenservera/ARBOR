@@ -4,7 +4,7 @@
 // A tap never sends a provider prompt and is never automatically resent while uncertain.
 import { renderSurface } from './renderer.mjs';
 import { compileUiProposal } from './compiler.mjs';
-import { PROPOSAL_SCHEMA } from './catalog.mjs';
+import { PROPOSAL_SCHEMA, createSurface } from './catalog.mjs';
 import { projectVisualIntent } from './semantic-projection.mjs';
 import { transport } from '../transport.mjs';
 import { createHostRevisionGuard } from './host-revision-guard.mjs';
@@ -83,10 +83,12 @@ export function mountBuildSurface(mount, { onCommit = () => {}, semantic = null,
   if (mounted) throw new Error('Build surface already mounted');
   mounted = true;
   const revisionGuard = createHostRevisionGuard();
+  let initialDraft = null;
 
   function clear() {
     revisionGuard.disconnect();
     surface = null;
+    initialDraft = null;
     if (mount?.replaceChildren) mount.replaceChildren();
   }
   clearBuildSurface = clear;
@@ -123,20 +125,34 @@ export function mountBuildSurface(mount, { onCommit = () => {}, semantic = null,
   }
 
   // Read-only Host snapshot gate. A revision envelope is not a renderable document.
-  function setSurface(record) {
+  function setSurface(record, bootstrap = null) {
+    initialDraft = null;
     const next = revisionGuard.observe(record);
-    if (next.state !== 'ready') { clear(); return next; }
+    if (next.state !== 'ready') {
+      clear();
+      // A fresh, authenticated, explicitly empty Host projection is the only
+      // source for revision-zero design. Never paint it as a committed surface
+      // or treat an unavailable/reverted head as a new empty document.
+      if (!readOnly && record === null && bootstrap?.state === 'ready' &&
+          bootstrap.schema === 'vivim.bootstrap-phone/1' &&
+          Object.hasOwn(bootstrap, 'uiRevision') && bootstrap.uiRevision === null &&
+          revisionGuard.status().highRevision === null) {
+        initialDraft = createSurface({ surfaceId: 'my-space' });
+      }
+      return next;
+    }
     if (next.changed) {
       try { render(next.surface); }
       catch { clear(); return { state: 'blocked', reason: 'RENDER_REFUSED', surface: null }; }
     }
     return next;
   }
-  handleStatus = status => setSurface(status?.snapshot?.bootstrap?.uiRevision ?? null);
+  handleStatus = status => setSurface(status?.snapshot?.bootstrap?.uiRevision ?? null, status?.snapshot?.bootstrap);
 
   window.addEventListener('vivim:bootstrap-status', (e) => handleStatus(e.detail));
   window.addEventListener('vivim:bootstrap-refresh', repaint);
 
-  return { render, setSurface, clear, surface: () => surface, pending: () => pending,
+  return { render, setSurface, clear, surface: () => surface,
+    draftSurface: () => initialDraft, pending: () => pending,
     revisionState: () => revisionGuard.status() };
 }
