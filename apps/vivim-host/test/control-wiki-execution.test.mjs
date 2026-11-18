@@ -46,6 +46,23 @@ test('Wiki previews exact persisted section then appends once and survives reope
   assert.equal((await reopened.readProjection()).wiki.pages.Main.sections.HowTo, 'Updated instructions');
 });
 
+test('natural-language Wiki edit is resolved to a typed, revision-bound Host plan', async t => {
+  const { control, productJournal } = fixture(t);
+  const plan = await control.plan({ text: 'edit wiki section main/howto saying Updated from VIVIM' },
+    { source: 'desktop', actor: 'desktop-owner' });
+  assert.equal(plan.outcome, 'approval_required');
+  assert.equal(plan.actionId, 'wiki.section.edit');
+  assert.equal(plan.args.target.toLowerCase(), 'main/howto');
+  assert.equal(plan.args.content, 'Updated from VIVIM');
+  assert.deepEqual(plan.preview, { target: 'Main/HowTo', before: 'Seed description',
+    after: 'Updated from VIVIM', expectedRevision: 1 });
+  assert.equal((await productJournal.readRecords()).length, 0);
+  const receipt = await apply(control, plan);
+  assert.equal(receipt.status, 'applied');
+  assert.equal(receipt.result.content, 'Updated from VIVIM');
+  assert.equal((await productJournal.readProjection()).wiki.pages.Main.sections.HowTo, 'Updated from VIVIM');
+});
+
 test('stale approval never overwrites newer section content', async t => {
   const { control, productJournal } = fixture(t);
   const plan = await control.plan(edit('Stale proposed'), { source: 'desktop' });
@@ -57,14 +74,25 @@ test('stale approval never overwrites newer section content', async t => {
   assert.equal((await productJournal.readProjection()).wiki.pages.Main.sections.HowTo, 'Newer desktop edit');
 });
 
-test('mobile Wiki editing cannot plan or execute the PC-only mutation', async t => {
+test('approved paired phone can edit only its own previewed Wiki plan', async t => {
   const { control, productJournal } = fixture(t);
-  const denied = await control.plan(edit('bad'), { source: 'mobile' });
-  assert.equal(denied.outcome, 'unavailable');
-  assert.equal(control.recent().length, 0);
-  const desktop = await control.plan(edit('Good'), { source: 'desktop' });
-  assert.throws(() => apply(control, desktop, PHONE), /CONTROL_DESKTOP_APPROVAL_REQUIRED/);
+  const phoneActor = 'approved-device-a';
+  const plan = await control.plan(edit('Updated by approved phone'),
+    { source: 'mobile', actor: phoneActor });
+  assert.equal(plan.outcome, 'approval_required');
+  assert.deepEqual(plan.approval.channels, ['direct-phone']);
   assert.equal((await productJournal.readProjection()).wiki.revision, 1);
+  assert.throws(() => apply(control, plan,
+    { channel: 'direct-phone', actor: 'different-device-b' }), /CONTROL_WIKI_DEVICE_MISMATCH/);
+  assert.equal((await productJournal.readProjection()).wiki.revision, 1);
+  const applied = await apply(control, plan, { channel: 'direct-phone', actor: phoneActor });
+  assert.equal(applied.status, 'applied');
+  assert.equal(applied.result.wikiRevision, 2);
+  assert.equal(applied.result.content, 'Updated by approved phone');
+  assert.equal((await productJournal.readRecords()).length, 1);
+  assert.equal((await apply(control, plan, { channel: 'direct-phone', actor: phoneActor })).replayed, true);
+  const desktop = await control.plan(edit('Good'), { source: 'desktop' });
+  assert.throws(() => apply(control, desktop, PHONE), /CONTROL_APPROVAL_SOURCE_MISMATCH|CONTROL_DESKTOP_APPROVAL_REQUIRED/);
 });
 
 test('nonexistent target and oversized UTF-8 content refuse to plan', async t => {
