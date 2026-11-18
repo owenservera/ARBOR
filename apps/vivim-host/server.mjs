@@ -22,6 +22,7 @@ import { loadOwnerToken, verifyOwnerToken } from './bootstrap/owner-auth.mjs';
 import { createDirectPhoneHandler, serveLoopbackPhoneAsset } from './direct-phone.mjs';
 import { createRustChatContext } from './chat/rust-context.mjs';
 import { createProductJournal, projectAppliedControlEffects } from './chat/product-journal.mjs';
+import { projectWikiSemantics } from './chat/wiki-semantics.mjs';
 import { createEnrollment } from './apk/enrollment.mjs';
 import { createApkRegistry } from './apk/registry.mjs';
 import { createPairingStore } from './apk/pairing.mjs';
@@ -894,7 +895,8 @@ async function handleControl(req, res, pathname, host, controlFor, tokenFor, uiS
       if (!verifyOwnerToken(req.headers.authorization, owner) && !uiSessions.authorized(req,{mutate:false})) {
         sendJson(res,401,{code:'OWNER_AUTH'}); return;
       }
-      sendJson(res, 200, { ...context, applicationEffects, nativeContext:native });
+      const enriched = { ...context, applicationEffects, nativeContext:native };
+      sendJson(res, 200, { ...enriched, semantics: projectWikiSemantics(enriched) });
     } catch { sendJson(res, 503, { schema: 'vivim.wiki-context/1', state: 'unavailable', code: 'WIKI_CONTEXT_UNAVAILABLE' }); }
     return;
   }

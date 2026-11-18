@@ -90,6 +90,66 @@ function renderWiki(wiki) {
   }
   return root;
 }
+function semanticRows(context) {
+  const graph = context.semantics;
+  if (graph?.schema !== 'vivim.autowiki-semantics/1' || graph.scope !== 'owner-private' ||
+      graph.authority !== 'read-only' || graph.journalRevision !== context.revision ||
+      graph.wikiRevision !== context.wikiRevision || !/^[a-f0-9]{64}$/.test(graph.digest || '') ||
+      !Array.isArray(graph.nodes) || graph.nodes.length > 256 ||
+      !Array.isArray(graph.relationships) || graph.relationships.length > 256) return null;
+  const nodes = new Map();
+  for (const node of graph.nodes) {
+    if (typeof node?.id !== 'string' || typeof node.label !== 'string' || nodes.has(node.id)) return null;
+    nodes.set(node.id, node);
+  }
+  const labels = { 'changed-section': 'changed', 'supersedes-change': 'supersedes',
+    'belongs-to-page': 'belongs to', 'interpreted-as': 'interpreted as',
+    'candidate-target': 'possible target', 'executed-action': 'executed',
+    'confirmed-change': 'confirmed' };
+  const priority = { 'confirmed-change': 0, 'changed-section': 1, 'supersedes-change': 2,
+    'candidate-target': 3, 'executed-action': 4, 'interpreted-as': 5, 'belongs-to-page': 6 };
+  const rows = [];
+  const ids = new Set();
+  for (const relation of graph.relationships) {
+    if (!relation || typeof relation.id !== 'string' || ids.has(relation.id) ||
+        !Object.hasOwn(labels, relation.kind) || !nodes.has(relation.from) || !nodes.has(relation.to) ||
+        !['observed-state','committed-change','inferred-relationship','executed-effect'].includes(relation.classification) ||
+        !['host-product-journal','host-control-receipt'].includes(relation.source?.authority) ||
+        typeof relation.source.ref !== 'string') return null;
+    ids.add(relation.id);
+    const from = nodes.get(relation.from), to = nodes.get(relation.to);
+    rows.push({ id: relation.id, label: from.label + ' → ' + labels[relation.kind] + ' → ' + to.label,
+      classification: relation.classification,
+      freshness: from.freshness || to.freshness || null,
+      source: relation.source, priority: priority[relation.kind] });
+  }
+  rows.sort((a,b) => a.priority - b.priority ||
+    (Number(b.source.revision) || 0) - (Number(a.source.revision) || 0) ||
+    (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+  return { rows, count: nodes.size, digest: graph.digest, sources: graph.sources };
+}
+function renderSemanticKnowledge(root, context) {
+  root.appendChild(element('h3', '', 'AutoWiki · semantic relationships'));
+  const knowledge = semanticRows(context);
+  if (!knowledge) {
+    root.appendChild(element('p', 'empty', 'Semantic projection unavailable or revision mismatch.'));
+    return;
+  }
+  root.appendChild(element('p', 'queue-summary', knowledge.count + ' source-identified entities and events · ' +
+    knowledge.rows.length + ' relationships · read only'));
+  if (!knowledge.rows.length) root.appendChild(element('p', 'empty', 'No source-supported relationships in the bounded snapshot.'));
+  for (const row of knowledge.rows.slice(0,32)) {
+    const card = element('article', 'section');
+    card.dataset.relationshipId = row.id;
+    card.appendChild(element('p', 'body', row.label));
+    card.appendChild(element('div', 'meta', row.classification + (row.freshness ? ' · ' + row.freshness : '') +
+      ' · ' + row.source.authority + ' ' + row.source.ref +
+      ' · source revision ' + present(row.source.revision, 'not recorded')));
+    root.appendChild(card);
+  }
+  if (knowledge.rows.length > 32) root.appendChild(element('p', 'empty', (knowledge.rows.length - 32) + ' additional relationships in the Host read model.'));
+  root.appendChild(element('p', 'meta', 'Snapshot digest ' + knowledge.digest));
+}
 function renderContext(context) {
   const root = element('div', 'stack');
   root.appendChild(element('p', 'queue-summary', context.totalObserved + ' user-declared observation(s) · source sequence ' + context.revision + ' · not verified facts'));
@@ -152,7 +212,8 @@ function renderContext(context) {
     }
     if (effects.omitted) root.appendChild(element('p', 'empty', effects.omitted + ' additional applied effects omitted.'));
   }
-  root.appendChild(element('p', 'meta', 'Project and task relationships or native graph context are not asserted by this projection.'));
+  renderSemanticKnowledge(root, context);
+  root.appendChild(element('p', 'meta', 'Project and task links require explicit source evidence; no inferred project membership is asserted.'));
   root.appendChild(element('h3', '', 'Native HQKG · committed knowledge'));
   const native = context.nativeContext;
   if (native?.schema !== 'vivim.hqkg-chat-context/1' || native.state !== 'source-backed' ||

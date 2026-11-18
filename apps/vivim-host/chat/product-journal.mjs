@@ -2,6 +2,7 @@
 import { constants } from 'node:fs';
 import { mkdir, readFile, lstat, open } from 'node:fs/promises';
 import { randomUUID, createHash } from 'node:crypto';
+import { projectWikiSemantics, resolveSemanticWikiTarget } from './wiki-semantics.mjs';
 import path from 'node:path';
 
 const MAX_JOURNAL_BYTES = 8 * 1024 * 1024;
@@ -153,12 +154,12 @@ function projectWikiChanges(records, { currentOnly = false } = {}) {
 }
 
 // A read model only: user statements and committed Wiki effects remain separate.
-export function projectWikiContext(records, wikiRevision = null) {
+export function projectWikiContext(records, wikiRevision = null, wiki = null) {
   const observed = records.filter(e => e?.kind === 'chat-send' &&
     (e.actor === 'human' || e.actor === 'owner-browser') &&
     typeof e.entryId === 'string' && Number.isSafeInteger(e.sequence));
   const latest = observed.slice(-24);
-  return {
+  const context = {
     schema: 'vivim.wiki-context/1', state: 'source-backed',
     revision: records.length, wikiRevision, totalObserved: observed.length,
     wikiChanges: projectWikiChanges(records),
@@ -167,14 +168,16 @@ export function projectWikiContext(records, wikiRevision = null) {
       const outcome = typeof e.intent?.outcome === 'string' ? e.intent.outcome.slice(0, 64) : null;
       const actionId = typeof e.intent?.candidate?.actionId === 'string'
         ? e.intent.candidate.actionId.slice(0, 128) : null;
+      const target = resolveSemanticWikiTarget(wiki, e.intent);
       return {
         source: 'host-product-journal', entryId: e.entryId, sequence: e.sequence,
         receivedAt: e.receivedAt, actorDeclared: e.actor, text: e.text,
         status: 'user-statement-unverified',
-        ...(outcome ? { interpretation: { outcome, ...(actionId ? { actionId } : {}) } } : {})
+        ...(outcome ? { interpretation: { outcome, ...(actionId ? { actionId } : {}), ...(target ? { target } : {}) } } : {})
       };
     })
   };
+  return { ...context, semantics: projectWikiSemantics(context) };
 }
 
 export function projectAppliedControlEffects(control, wikiChanges = null) {
@@ -232,7 +235,7 @@ export function createProductJournal({ dataRoot, seedState, seedWiki }) {
         'Unsafe or oversized product journal', 503);
       bytes = await readFile(journalPath);
     } catch (error) {
-      if (error?.code === 'ENOENT') return { records: [], committed: '', tornTail: false, size: 0, wikiRevision: seedWiki.revision };
+      if (error?.code === 'ENOENT') return { records: [], committed: '', tornTail: false, size: 0, wikiRevision: seedWiki.revision, wiki: seedWiki };
       throw error;
     }
     requireShape(bytes.length <= MAX_JOURNAL_BYTES, 'Product journal exceeds read limit', 503);
@@ -252,14 +255,14 @@ export function createProductJournal({ dataRoot, seedState, seedWiki }) {
     }
     const projection = replayProductJournal(seedState, seedWiki, records);
     return { records, committed: text, tornTail: finalLF !== bytes.length - 1, size: bytes.length,
-      wikiRevision: projection.wiki.revision };
+      wikiRevision: projection.wiki.revision, wiki: projection.wiki };
   }
   async function readRecords() { return (await snapshot()).records; }
   async function readProjection() { return replayProductJournal(seedState, seedWiki, await readRecords()); }
   async function readWikiContext() {
     const current = await snapshot(); // validates committed records and deterministic replay
     requireShape(!current.tornTail, 'Wiki context unavailable: torn journal tail', 503);
-    return projectWikiContext(current.records, current.wikiRevision);
+    return projectWikiContext(current.records, current.wikiRevision, current.wiki);
   }
   // Owner-local native input. Use the same validated committed snapshot and
   // D4 identities, never the demo seed, unverified chat or client-supplied facts.

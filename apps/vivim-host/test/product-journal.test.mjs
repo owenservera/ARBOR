@@ -4,6 +4,7 @@ import { mkdtempSync, rmSync, readFileSync, appendFileSync, existsSync, writeFil
 import os from 'node:os';
 import path from 'node:path';
 import { createProductJournal, replayProductJournal } from '../chat/product-journal.mjs';
+import { projectWikiSemantics, resolveSemanticWikiTarget } from '../chat/wiki-semantics.mjs';
 
 const seedState = Object.freeze({ chat: [], wikiRevision: 0, at: '2026-11-14T00:00:00Z' });
 const seedWiki = Object.freeze({ revision: 1, pages: { Main: { sections: { HowTo: 'Seed description' } } } });
@@ -194,4 +195,55 @@ test('paired Wiki projection exposes only committed section provenance, not priv
   assert.equal(next.autoWiki.items[1].status, 'current-section-revision');
   appendFileSync(restored.journalPath, '{');
   await assert.rejects(restored.readPhoneWiki(), e => e.status === 503);
+}));
+
+test('R2 semantic projection uses actual persisted typed targets, revisions and evidence only', () => rootTest(async root => {
+  const j = journal(root);
+  const obs = await j.append({ ...chat('Edit the Wiki section'), intent: {
+    outcome: 'candidate', candidate: { actionId: 'wiki.section.edit', args: { target: 'main/howto', content: 'A' } }
+  } });
+  const unrelated = await j.append(chat('An unsupported project or task mention'));
+  const first = await j.append(edit(1, 'A'));
+  const second = await j.append(edit(2, 'B'));
+  const snapshot = await j.readWikiContext(), graph = snapshot.semantics;
+  const target = 'wiki:section:Main/HowTo';
+  assert.equal(graph.schema, 'vivim.autowiki-semantics/1');
+  assert.equal(graph.wikiRevision, snapshot.wikiRevision);
+  assert.equal(graph.nodes.find(n => n.id === target).contentDigest, snapshot.wikiChanges.items[1].contentDigest);
+  assert.equal(graph.nodes.find(n => n.id === target).source.ref, second.entryId);
+  assert.ok(graph.relationships.some(r => r.from === 'journal:' + obs.entryId && r.to === target &&
+    r.kind === 'candidate-target' && r.classification === 'inferred-relationship'));
+  assert.ok(graph.relationships.some(r => r.from === 'journal:' + second.entryId &&
+    r.to === 'journal:' + first.entryId && r.kind === 'supersedes-change'));
+  assert.equal(graph.relationships.some(r => r.from === 'journal:' + unrelated.entryId), false);
+  assert.ok(!graph.nodes.some(n => n.kind === 'project' || n.kind === 'task'));
+  const restored = await journal(root).readWikiContext();
+  assert.deepEqual(restored.semantics, graph);
+  assert.equal((await j.readPhoneWiki()).semantics, undefined);
+  assert.equal((await journal(path.join(root, 'isolated')).readWikiContext()).semantics.nodes.length, 0);
+  const withReceipt = projectWikiSemantics({ ...snapshot, applicationEffects: { state: 'source-backed', items: [{
+    planId: 'ctl-test', planDigest: 'a'.repeat(64), actionId: 'wiki.section.edit',
+    sourceRevision: second.wikiRevision, receivedAt: second.receivedAt,
+    wikiLink: { entryId: second.entryId, wikiRevision: second.wikiRevision }
+  }] } });
+  assert.ok(withReceipt.relationships.some(r => r.kind === 'confirmed-change' && r.to === 'journal:' + second.entryId));
+  const unavailable = projectWikiSemantics({ ...snapshot, applicationEffects: { state: 'unavailable', items: [] } });
+  assert.equal(unavailable.sources.receipts, 'unavailable');
+  assert.ok(!unavailable.nodes.some(n => n.kind === 'applied-effect'));
+}));
+
+test('R2 semantic target resolution refuses missing and ambiguous targets; source reset removes derived knowledge', () => rootTest(async root => {
+  const intent = { outcome: 'candidate', candidate: { actionId: 'wiki.section.edit', args: { target: 'main/howto' } } };
+  assert.equal(resolveSemanticWikiTarget({ pages: {} }, intent), null);
+  assert.equal(resolveSemanticWikiTarget({ pages: { Main: { sections: { HowTo: 'a', HOWTO: 'b' } } } }, intent), null);
+  const j = journal(root);
+  await j.append(edit(1, 'Before reset'));
+  const before = (await j.readWikiContext()).semantics;
+  assert.ok(before.nodes.length);
+  // Simulate removal of the journal source, not an unsupported product delete action.
+  rmSync(j.journalPath);
+  const after = (await journal(root).readWikiContext()).semantics;
+  assert.equal(after.nodes.length, 0);
+  assert.equal(after.relationships.length, 0);
+  assert.notEqual(after.digest, before.digest);
 }));
