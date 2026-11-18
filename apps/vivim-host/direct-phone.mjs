@@ -55,6 +55,10 @@ const assets = new Map(Object.entries({
   'build-canvas.mjs': ['build-canvas.mjs', 'text/javascript; charset=utf-8'],
   'vec/compiler.mjs': ['vec/compiler.mjs', 'text/javascript; charset=utf-8'],
   'vec/ui-adapter.mjs': ['vec/ui-adapter.mjs', 'text/javascript; charset=utf-8'],
+  // Serve the reviewed VEC engine sources verbatim, not a duplicated browser compiler.
+  ...Object.fromEntries(['compiler','registry','catalog','validators','enum-choices']
+    .map(n => [`vec-engines/${n}.mjs`,
+      [`../../packages/vec-ui-engines/src/${n}.mjs`, 'text/javascript; charset=utf-8']])),
   'vec/ui-taxonomy/catalog.mjs': ['vec/ui-taxonomy/catalog.mjs', 'text/javascript; charset=utf-8'],
   'vec/ui-taxonomy/registry.mjs': ['vec/ui-taxonomy/registry.mjs', 'text/javascript; charset=utf-8'],
   'welcome.mjs': ['welcome.mjs', 'text/javascript; charset=utf-8'],
