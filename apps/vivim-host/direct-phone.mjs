@@ -5,6 +5,7 @@ import { createReadStream } from 'node:fs';
 import { pipeline } from 'node:stream/promises';
 import { fileURLToPath } from 'node:url';
 import { randomBytes } from 'node:crypto';
+import { stripTypeScriptTypes } from 'node:module';
 import { createRelay, COOKIE, sessionValue } from '../mobile-relay/lib/relay-core.mjs';
 import { createBridgeStore } from '../../studio/src/studio/bridge-commands.mjs';
 import { createSourceVerifiedLiveProjection } from './conversations/live-projection.mjs';
@@ -59,6 +60,12 @@ const assets = new Map(Object.entries({
   ...Object.fromEntries(['compiler','registry','catalog','validators','enum-choices']
     .map(n => [`vec-engines/${n}.mjs`,
       [`../../packages/vec-ui-engines/src/${n}.mjs`, 'text/javascript; charset=utf-8']])),
+  // Same TierFlow source for local and authorized Direct PWA, with types erased.
+  'tierflow-runtime/document/schema.ts': ['../../packages/tierflow/src/visual-runtime/document/schema.ts', 'text/javascript; charset=utf-8'],
+  'tierflow-runtime/document/validate.ts': ['../../packages/tierflow/src/visual-runtime/document/validate.ts', 'text/javascript; charset=utf-8'],
+  'tierflow-runtime/document/import-legacy.ts': ['../../packages/tierflow/src/visual-runtime/document/import-legacy.ts', 'text/javascript; charset=utf-8'],
+  'tierflow-runtime/render/dom.ts': ['../../packages/tierflow/src/visual-runtime/render/dom.ts', 'text/javascript; charset=utf-8'],
+  'tierflow-runtime/render/spatial-fallback.ts': ['../../packages/tierflow/src/visual-runtime/render/spatial-fallback.ts', 'text/javascript; charset=utf-8'],
   'vec/ui-taxonomy/catalog.mjs': ['vec/ui-taxonomy/catalog.mjs', 'text/javascript; charset=utf-8'],
   'vec/ui-taxonomy/registry.mjs': ['vec/ui-taxonomy/registry.mjs', 'text/javascript; charset=utf-8'],
   'welcome.mjs': ['welcome.mjs', 'text/javascript; charset=utf-8'],
@@ -83,6 +90,14 @@ const assets = new Map(Object.entries({
 }));
 // Exposed so tests can assert the loopback preview asset allowlist stays complete.
 export const PHONE_ASSETS = assets;
+async function readPhoneAsset(asset) {
+  const filename = path.join(root, asset[0]);
+  // Only allowlisted TierFlow files have the .ts suffix. No runtime input is
+  // compiled and no additional path is exposed.
+  return asset[0].endsWith('.ts')
+    ? stripTypeScriptTypes(await readFile(filename,'utf8'))
+    : readFile(filename);
+}
 // Desktop preview serves only static PWA assets on local loopback. All phone APIs
 // remain behind the independently authorized Direct/Tailscale phone handler.
 export async function serveLoopbackPhoneAsset(req, res, pathname) {
@@ -103,7 +118,7 @@ export async function serveLoopbackPhoneAsset(req, res, pathname) {
   res.setHeader('content-security-policy',
     "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; media-src 'self' blob:; frame-src 'none'; object-src 'none'; frame-ancestors 'self'; base-uri 'none'; form-action 'none'");
   try {
-    const content = await readFile(path.join(root, asset[0]));
+    const content = await readPhoneAsset(asset);
     res.setHeader('content-type', asset[1]);
     res.writeHead(200); res.end(req.method === 'HEAD' ? undefined : content);
   } catch {
@@ -655,7 +670,7 @@ export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'wo
 
     const asset = assets.get(route);
     if (!asset) { json(res, 404, { error: 'Not found' }); return; }
-    try { const content = await readFile(path.join(root, asset[0])); res.setHeader('content-type', asset[1]); res.writeHead(200); res.end(req.method === 'HEAD' ? undefined : content); }
+    try { const content = await readPhoneAsset(asset); res.setHeader('content-type', asset[1]); res.writeHead(200); res.end(req.method === 'HEAD' ? undefined : content); }
     catch { json(res, 503, { error: 'Mobile UI unavailable' }); }
   };
 }

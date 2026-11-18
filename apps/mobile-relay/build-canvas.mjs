@@ -2,7 +2,7 @@
 // proposal, and applies it only when the owner taps Activate. Sending and applying are injected, so
 // this file never talks to a provider itself and never resends: a draft that is still pending is polled, not re-asked.
 import { SUGGESTIONS, buildDesignPrompt, resolveBuildRequest, previewReply, failureText } from './build-composer.mjs';
-import { renderSurface } from './generative-ui/renderer.mjs';
+import { renderSurface, planTierflowSurface, tierflowViewport } from './generative-ui/renderer.mjs';
 import { compileUiProposal } from './generative-ui/compiler.mjs';
 import { validateSurface } from './generative-ui/catalog.mjs';
 
@@ -200,6 +200,8 @@ export function mountBuildCanvas({ host, request, getSurface, getProvider, send,
     const submitted = state;
     try { assertBuildPreviewCurrent(submitted, current()); }
     catch { return set({ name: 'error', message: 'Your preview is no longer current. Load the Host screen and ask again.' }); }
+    try { planTierflowSurface(submitted.preview.surface,{viewportPx:tierflowViewport(host)}); }
+    catch { return set({name:'error',message:'TierFlow cannot safely render this proposal. Nothing was changed.'}); }
     set({ ...submitted, name: 'applying' });
     let proof;
     try {
@@ -271,8 +273,8 @@ export function mountBuildCanvas({ host, request, getSurface, getProvider, send,
     }
     const view = el('div', 'proposal-preview');
     let previewVisible = true;
-    try { renderSurface(view, state.preview.surface, { audience: 'phone', approvedRefs: [], onIntent: () => {} }); }
-    catch { previewVisible = false; view.textContent = 'Preview unavailable. Activation is disabled.'; }
+    try { renderSurface(view, state.preview.surface, { audience: 'phone', approvedRefs: [], tierflow: true, onIntent: () => {} }); }
+    catch { previewVisible = false; view.textContent = 'TierFlow preview unavailable: unsupported or invalid UI. Activation is disabled.'; }
     const actions = el('div', 'compose-row');
     const yes = el('button', 'btn pri', state.name === 'applying' ? 'Adding…' : 'Activate'); yes.type = 'button'; yes.disabled = state.name === 'applying' || !previewVisible; yes.onclick = activate;
     const change = el('button', 'btn', 'Change it'); change.type = 'button'; change.disabled = state.name === 'applying'; change.onclick = () => { if (state.name === 'ready') set({ name: 'idle' }); };

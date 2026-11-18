@@ -97,6 +97,7 @@ export function mountBuildSurface(mount, { onCommit = () => {}, semantic = null,
     if (!mount || !mount.replaceChildren || !mount.ownerDocument) return;
     renderSurface(mount, s, {
       audience: 'phone',
+      tierflow: true,
       approvedRefs: [],
       onIntent: async (intent) => {
         if (readOnly || pending || !surface || intent.revision !== surface.revision || intent.surfaceId !== surface.surfaceId) return;
@@ -143,7 +144,16 @@ export function mountBuildSurface(mount, { onCommit = () => {}, semantic = null,
     }
     if (next.changed) {
       try { render(next.surface); }
-      catch { clear(); return { state: 'blocked', reason: 'RENDER_REFUSED', surface: null }; }
+      catch {
+        clear();
+        if (mount?.ownerDocument && mount.replaceChildren) {
+          const notice = mount.ownerDocument.createElement('p');
+          notice.setAttribute('role','alert');
+          notice.textContent = 'Committed UI cannot be safely displayed by TierFlow. Nothing was changed.';
+          mount.replaceChildren(notice);
+        }
+        return { state: 'blocked', reason: 'RENDER_REFUSED', surface: null };
+      }
     }
     return next;
   }
@@ -151,6 +161,11 @@ export function mountBuildSurface(mount, { onCommit = () => {}, semantic = null,
 
   window.addEventListener('vivim:bootstrap-status', (e) => handleStatus(e.detail));
   window.addEventListener('vivim:bootstrap-refresh', repaint);
+  window.addEventListener('resize', () => {
+    if (!surface) return;
+    try { render(surface); }
+    catch { clear(); }
+  });
 
   return { render, setSurface, clear, surface: () => surface,
     draftSurface: () => initialDraft, pending: () => pending,
