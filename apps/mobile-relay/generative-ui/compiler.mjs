@@ -23,6 +23,7 @@ function normalizeOp(op){
   if(op.type==='replace-props'&&!plain(op.props))invalid('invalid changed props');
   return op;
 }
+// @hq:consumes vivim.ui-proposal@1
 export function compileUiProposal({proposal,surface,approvedRefs=[],audience='pc'}={}) {
   if(!['pc','phone'].includes(audience))invalid('unknown preview audience');
   if(!Array.isArray(approvedRefs)||approvedRefs.length>128)invalid('invalid reference allowlist');
