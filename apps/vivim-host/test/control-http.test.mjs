@@ -34,6 +34,23 @@ test('desktop and Direct mobile share one dispatcher with separate real authenti
   const catalog = await call('/api/host/control/catalog', { headers: bearer });
   assert.equal(catalog.status, 200);
   assert.equal(catalog.json.status, 'plan_and_dispatch');
+  // Unified API is a derived discovery surface, not a new execution authority.
+  const apiPath = '/api/host/control/openapi.json';
+  assert.equal((await call(apiPath)).status, 401);
+  assert.equal((await call(apiPath, { headers: { ...bearer, origin: 'https://evil.invalid' } })).status, 403);
+  const api = await call(apiPath, { headers: bearer });
+  assert.equal(api.status, 200);
+  assert.equal(api.json.openapi, '3.1.1');
+  assert.equal(api.json['x-vivim'].catalogVersion, catalog.json.version);
+  assert.deepEqual(api.json['x-vivim'].capabilities.map(a => a.id), catalog.json.actions.map(a => a.actionId));
+  assert.equal(api.json.paths['/api/host/control/execute'].post.operationId, 'vivimApproveAndExecute');
+  const alternatives = api.json.paths['/api/host/control/plan'].post.requestBody.content['application/json'].schema.oneOf;
+  const wikiEdit = alternatives.find(a => a.properties.actionId?.const === 'wiki.section.edit');
+  assert.deepEqual(wikiEdit.properties.args.required.sort(), ['content', 'target']);
+  assert.equal(wikiEdit.properties.args.additionalProperties, false);
+  assert.equal(api.json['x-vivim'].capabilities.filter(a => a.available).length, catalog.json.coverage.verified);
+  assert.equal((await post(apiPath, desk, {})).status, 405);
+
   assert.equal((await post('/api/host/control/plan', { ...bearer, 'content-type': 'application/json' }, { text: 'Set my theme to dusk' })).status, 403);
   assert.equal((await post('/api/host/control/plan', { ...desk, origin: 'https://evil.invalid' }, { text: 'Set my theme to dusk' })).status, 403);
   assert.equal((await call('/api/host/control/nope', { headers: bearer })).status, 404);
