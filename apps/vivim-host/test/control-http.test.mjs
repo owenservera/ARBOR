@@ -98,6 +98,40 @@ test('desktop and Direct mobile share one dispatcher with separate real authenti
   assert.equal((await post(capabilitiesPath,desk,{})).status,405);
   assert.ok(api.json.paths[searchPath].get.parameters.some(x=>x.name==='cursor'));
   assert.ok(api.json.paths[capabilitiesPath].get.parameters.some(x=>x.name==='risk'));
+  // Exact action detail is descriptive. Internal browser primitives are not tools.
+  const detailPath=capabilitiesPath+'/wiki.section.edit';
+  assert.equal((await call(detailPath)).status,401);
+  assert.equal((await call(detailPath,{headers:{...bearer,origin:'https://evil.invalid'}})).status,403);
+  const detail=await call(detailPath,{headers:bearer});
+  assert.equal(detail.status,200);
+  assert.equal(detail.json.capability.id,'wiki.section.edit');
+  assert.equal(detail.json.capability.risk,'R1');
+  assert.equal(detail.json.source.catalogVersion,catalog.json.version);
+  assert.equal(detail.json.authorization,'not-evaluated');
+  assert.equal(detail.json.semanticMapping.semanticId,null);
+  assert.equal(detail.json.invocation.inputSchema.properties.actionId.const,'wiki.section.edit');
+  assert.deepEqual(detail.json.invocation.inputSchema.properties.args.required.sort(),['content','target']);
+  assert.equal((await call(capabilitiesPath+'/VIV-0003',{headers:bearer})).status,404);
+  assert.equal((await call(capabilitiesPath+'/unknown.action',{headers:bearer})).status,404);
+  assert.equal((await post(detailPath,desk,{})).status,405);
+  const sourcesPath='/api/host/control/capability-sources';
+  assert.equal((await call(sourcesPath)).status,401);
+  const sources=await call(sourcesPath,{headers:bearer});
+  assert.equal(sources.status,200);
+  assert.equal(sources.json.host.count,catalog.json.actions.length);
+  assert.equal(sources.json.researchTargets.count,1000);
+  assert.equal(sources.json.researchTargets.authority,'research-only');
+  assert.equal(sources.json.studio.publicInvocation,false);
+  assert.equal(sources.json.countsAreNotAdditive,true);
+  assert.equal(sources.json.semantic.mappedCount,null);
+  assert.ok(['descriptor-complete','descriptor-partial','unavailable'].includes(sources.json.studio.status));
+  if(sources.json.studio.status!=='unavailable'){
+    assert.equal(sources.json.studio.families.reduce((n,f)=>n+f.count,0),sources.json.studio.count);
+    assert.ok(!Object.hasOwn(sources.json.studio,'atoms'));
+  }
+  assert.ok(api.json.paths[sourcesPath]);
+  assert.ok(api.json.paths[capabilitiesPath+'/{actionId}']);
+
 
 
 
