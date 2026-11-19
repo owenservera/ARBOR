@@ -858,6 +858,10 @@ function clearPrivatePhoneState() {
   S.paired = false; S.cmds = []; S.statusObj = null; S.manifest = null;
   vivimChat.redact();
   S.files = []; N.messages = []; N.sessions = []; N.session = '';
+  // Invalidate outstanding native reads and redact the local pending projection.
+  // Host remains authoritative for any already-submitted prompt.
+  N.generation++; clearTimeout(N.timer); N.timer = 0;
+  N.pending = null; saveNativePending(); N.sending = false; N.note = '';
   $('text').value = ''; $('dbg').hidden = true;
   S.media = { state: 'not-authorized' }; S.mediaAt = 0; S.mediaOffset = 0; S.mediaLoading = false;
   S.sigs.ux = null; S.sigs.msgs = null; S.sigs.list = null;
@@ -1494,16 +1498,20 @@ function renderNative() {
   box.replaceChildren(frag); if (near) box.scrollTop = box.scrollHeight;
 }
 async function nativeSessions() {
-  if (!transport.direct || N.target !== 'phone') return;
+  if (!transport.direct || N.target !== 'phone' || !S.paired) return;
+  const generation = N.generation;
   try {
     const result = await api('sessions');
-    if (N.target !== 'phone') return;
+    if (!S.paired || N.target !== 'phone' || N.generation !== generation) return;
     N.sessions = Array.isArray(result?.sessions) ? result.sessions.filter(s => typeof s.id === 'string') : [];
     $('native-session').replaceChildren(new Option('Choose an existing session', ''), ...N.sessions.map(s => new Option(s.title || s.id, s.id)));
     $('native-session').value = N.session;
     N.note = N.sessions.length ? 'Choose an existing session.' : 'No existing sessions found.';
-  } catch (e) { N.note = 'Could not load PC sessions: ' + e.message; }
-  if (N.target === 'phone') renderNative();
+  } catch (e) {
+    if (!S.paired || N.generation !== generation) return;
+    N.note = 'Could not load PC sessions: ' + e.message;
+  }
+  if (S.paired && N.target === 'phone' && N.generation === generation) renderNative();
 }
 async function nativeRefresh() {
   clearTimeout(N.timer);
@@ -1530,16 +1538,18 @@ async function nativeRefresh() {
 }
 async function nativeSend() {
   const text = $('text').value.trim(), session = N.session;
-  if (!transport.direct || !session || !text || N.sending || N.pending) return;
+  if (!transport.direct || !S.paired || !session || !text || N.sending || N.pending) return;
   const item = { id: 'msg_' + hex16() + hex16(), text, session, accepted: false };
   N.pending = item; saveNativePending(); N.sending = true; N.note = 'Sending…'; renderNative(); updateSend();
   try {
     const result = await api('sessions/' + encodeURIComponent(session) + '/prompt', { method: 'POST', body: JSON.stringify({ id: item.id, text }) });
+    if (!S.paired || N.pending !== item) return;
     if (result?.accepted !== true || result.id !== item.id || result.sessionId !== session) throw Object.assign(new Error('Unexpected acknowledgment'), { uncertain: true });
     item.accepted = true; saveNativePending();
     if ($('text').value.trim() === text) { $('text').value = ''; autogrow(); }
     N.note = 'Queued · waiting for your PC.';
   } catch (e) {
+    if (!S.paired || N.pending !== item) return;
     N.note = 'Send uncertain · check this session; not resent. ID: ' + item.id;
   }
   N.sending = false; updateSend(); if (N.target === 'phone') { renderNative(); nativeRefresh(); }
