@@ -515,7 +515,7 @@ export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'wo
       // Host dispatcher, bound to a digest the phone received from a prior /plan call.
       const sub = route.slice('api/control/'.length);
       const planMatch = sub.match(/^plans\/(ctl-[a-f0-9]{16})$/);
-      const reads = { catalog: 1, world: 1, language: 1, lexicon: 1, recent: 1 };
+      const reads = { catalog: 1, world: 1, language: 1, lexicon: 1, recent: 1, programs: 1 };
       try {
         const c = control ? control() : null;
         const device = authorizeDevice(req, 'control:read');
@@ -526,7 +526,9 @@ export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'wo
           if (sub === 'world') { json(res, 200, planner.world()); return; }
           if (sub === 'language') { json(res, 200, planner.languagePack()); return; }
           if (!c) { json(res, 404, { code: 'CONTROL_DISPATCH_UNAVAILABLE' }); return; }
-          json(res, 200, planMatch ? c.status(planMatch[1],{source:'mobile',actor:device.deviceId,grantId:req.headers['x-vivim-grant-id']}) : sub === 'lexicon' ? c.lexicon() : { items: c.recent(20,{source:'mobile'}) }); return;
+          res.setHeader('cache-control','private, no-store');
+          if(sub==='programs'){json(res,200,c.sharedPrograms({canExecute:device.scopes.includes('control:execute')}));return;}
+          json(res, 200, planMatch ? c.status(planMatch[1],{source:'mobile',actor:device.deviceId,grantId:req.headers['x-vivim-grant-id']}) : sub === 'lexicon' ? c.lexicon() : { items: c.recent(20,{source:'mobile',actor:device.deviceId,grantId:req.headers['x-vivim-grant-id']}) }); return;
         }
         if (!['plan', 'interpret', 'execute'].includes(sub)) { json(res, 404, { code: 'NOT_FOUND' }); return; }
         if (req.method !== 'POST') { json(res, 405, { code: 'METHOD' }); return; }
@@ -553,19 +555,22 @@ export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'wo
         if (!c) { json(res, 404, { code: 'CONTROL_DISPATCH_UNAVAILABLE' }); return; }
         if (sub === 'plan') {
           if(Object.hasOwn(body,'visualProposal')||body.actionId==='wiki.capture.save')authorizeDevice(req,'control:execute');
-          const plan = await c.plan(body, { source: 'mobile', actor: device.deviceId,grantId:req.headers['x-vivim-grant-id'] });
+          const authorizeProgram=scope=>{const live=authorizeDevice(req,scope);if(live.deviceId!==device.deviceId)throw failure(403,'DEVICE_SCOPE_DENIED');return live;};
+          const plan = await c.plan(body, { source: 'mobile', actor: device.deviceId,grantId:req.headers['x-vivim-grant-id'],authorizeProgram });
           // Reuse the phone-safe Wiki projection; never open owner-private HQ
           // sources, native personal context, statements or effect history here.
           const result = await attachRequestContext(plan,{text:body.text,readWiki:wikiProjection});
           // A device grant may be revoked during an asynchronous Wiki read.
-          authorizeDevice(req,body.actionId==='wiki.capture.save'?'control:execute':'control:read');
+          authorizeDevice(req,body.actionId==='wiki.capture.save'||plan.actionId==='program.write_wiki'&&plan.outcome==='approval_required'?'control:execute':'control:read');
           res.setHeader('cache-control', 'private, no-store');
           json(res, 200, result); return;
         }
         if (Object.keys(body).some(k => !['planId', 'planDigest'].includes(k))) throw failure(400, 'Invalid control body');
         // Recheck after reading the request body; the same grant must remain live.
         const currentDevice=authorizeDevice(req,'control:execute');
-        json(res, 200, await c.execute({ planId: body.planId, planDigest: body.planDigest, approval: { channel:'direct-phone',actor:currentDevice.deviceId,grantId:req.headers['x-vivim-grant-id'] } }));
+        const receipt=await c.execute({ planId: body.planId, planDigest: body.planDigest, approval: { channel:'direct-phone',actor:currentDevice.deviceId,grantId:req.headers['x-vivim-grant-id'] } },{authorizeProgram:scope=>{const live=authorizeDevice(req,scope);if(live.deviceId!==currentDevice.deviceId)throw failure(403,'DEVICE_SCOPE_DENIED');return live;}});
+        if(receipt.actionId==='program.write_wiki'){try{authorizeDevice(req,'control:execute');}catch{throw failure(503,'Program outcome not delivered; inspect on desktop.');}}
+        res.setHeader('cache-control','private, no-store');json(res,200,receipt);
       } catch (error) {
         json(res, error.status || controlErrorStatus(error.code), { code: error.code || 'CONTROL_INVALID', error: String(error.message ?? error).slice(0, 160) });
       }

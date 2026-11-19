@@ -104,7 +104,7 @@ export function validatePersonalRule(rule, catalog) {
   // matching current dependencies can activate them.
   if(Object.hasOwn(rule,'writeProgram')){
     const r=rule.writeProgram;
-    return !rule.template&&!rule.readProgram&&rule.actionId==='program.write_wiki'&&rule.scope.surface==='desktop'&&rule.source==='explicit-owner'&&
+    return !rule.template&&!rule.readProgram&&rule.actionId==='program.write_wiki'&&['desktop','mobile'].includes(rule.scope.surface)&&rule.source==='explicit-owner'&&
       keysOnly(rule.args,['commands'])&&typeof rule.args.commands==='string'&&rule.args.commands.length<=950&&
       r?.schema==='vivim.wiki-write-recipe/1'&&Array.isArray(r.steps)&&r.steps.length>=2&&r.steps.length<=8&&Array.isArray(r.dependencies)&&
       (r.slot===null||r.slot?.type==='wiki-page-slug'&&templateAlias(rule.phrase)&&wikiProgramSlug(r.slot.example))
@@ -113,7 +113,7 @@ export function validatePersonalRule(rule, catalog) {
   if(Object.hasOwn(rule,'readProgram')){
     // Stale recipes remain readable/revocable; current dependency validation is an invocation check.
     const r=rule.readProgram;
-    return !rule.template&&rule.actionId==='program.read_wiki'&&rule.scope.surface==='desktop'&&rule.source==='explicit-owner'&&
+    return !rule.template&&rule.actionId==='program.read_wiki'&&['desktop','mobile'].includes(rule.scope.surface)&&rule.source==='explicit-owner'&&
       keysOnly(rule.args,['commands'])&&typeof rule.args.commands==='string'&&rule.args.commands.length<=950&&
       r?.schema==='vivim.wiki-read-recipe/1'&&Array.isArray(r.steps)&&r.steps.length>=2&&r.steps.length<=8&&Array.isArray(r.dependencies)
       ?{ok:true}:{ok:false,reason:'INVALID_READ_RECIPE'};

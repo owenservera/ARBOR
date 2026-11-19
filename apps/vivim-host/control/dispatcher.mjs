@@ -19,7 +19,7 @@ import { interpretControl, resolveLocalDestination, resolveDesktopDestination } 
 import { previewWikiStructure, previewWikiCapture, validateProductEdit, previewWikiPayload } from '../chat/product-journal.mjs';
 import { wikiApprovalSentence } from './command-intent.mjs';
 import { createNativeProgramValidator } from './native-program.mjs';
-import { runWikiReadProgram,compileWikiReadRecipe,validWikiRecipe,compileWikiWriteRecipe } from './wiki-read-program.mjs';
+import { runWikiReadProgram,compileWikiReadRecipe,validWikiRecipe,compileWikiWriteRecipe,validWikiWriteRecipe } from './wiki-read-program.mjs';
 
 export const DISPATCHER_SCHEMA = 'vivim.control-dispatcher/1';
 export const RECEIPT_SCHEMA = 'vivim.control-receipt/1';
@@ -452,7 +452,9 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
       return {subject:{ruleId:old.id,ruleDigest:rawDigest(old),nextState:'revoked',
         storeVersion:snapshot.version,catalogVersion:catalog.version},before:old,after:{...old,state:'revoked'}};
     }
-    const scope={...commandScope(),surface:'desktop'};
+    const share=/^share with paired phones:[ \t]*\r?\n([\s\S]+)$/.exec(args.command);
+    const command=share?share[1]:args.command;
+    const scope={...commandScope(),surface:share?'mobile':'desktop'};
     // Canonical commands, safety refusals and local navigation retain precedence.
     if(resolveLocalDestination(args.phrase)||resolveDesktopDestination(args.phrase)||
         interpretControl(args.phrase,{catalog,world:planner.world()}).outcome!=='interpretation_required')
@@ -460,8 +462,9 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
     let rule,targetRisk;
     // Explicit receipt reference in the existing typed remember command.
     // Never interpret arbitrary transcript text as a successful execution.
-    if(args.command.startsWith('receipt:')){
-      const id=args.command.slice(8);
+    if(command.startsWith('receipt:')){
+      if(share)throw fail('CONTROL_RULE_TARGET_INVALID');
+      const id=command.slice(8);
       if(!templateAlias(args.phrase)||!/^ctl-[a-f0-9]{16}$/.test(id))throw fail('CONTROL_RULE_TARGET_INVALID');
       const rec=journal.get(id),p=rec?.plan,r=rec?.receipt;
       const {planDigest,...body}=p??{};
@@ -487,11 +490,12 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
       if(interpretControl(rule.phrase+' '+rule.args.page,{catalog,world:planner.world()}).outcome!=='interpretation_required')
         throw fail('CONTROL_RULE_PHRASE_NOT_FREE');
     }else{
-      const parameter=/^parameterize page ([a-z][a-z0-9-]{0,62}):[ \t]*\r?\n([\s\S]+)$/.exec(args.command);
-      const target=planner.planText(parameter?parameter[2]:args.command,{source:'desktop'});
+      const parameter=/^parameterize page ([a-z][a-z0-9-]{0,62}):[ \t]*\r?\n([\s\S]+)$/.exec(command);
+      const target=planner.planText(parameter?parameter[2]:command,{source:'desktop'});
       if(target.origin!=='deterministic'||(!LEARNABLE.has(target.actionId)&&![WIKI_READ_PROGRAM_ACTION,WIKI_WRITE_PROGRAM_ACTION].includes(target.actionId))||
          !['ready','approval_required'].includes(target.outcome)||!['R0','R1'].includes(target.risk))
         throw fail('CONTROL_RULE_TARGET_INVALID');
+      if(share&&![WIKI_WRITE_PROGRAM_ACTION,WIKI_READ_PROGRAM_ACTION].includes(target.actionId))throw fail('CONTROL_RULE_TARGET_INVALID');
       if(parameter&&(target.actionId!==WIKI_WRITE_PROGRAM_ACTION||!templateAlias(args.phrase)))throw fail('CONTROL_RULE_TARGET_INVALID');
       rule={phrase:args.phrase,actionId:target.actionId,args:target.args,scope};
       if(target.actionId===WIKI_WRITE_PROGRAM_ACTION){
@@ -546,7 +550,7 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
     return complete(executors[plan.actionId](plan.args, { requestId: null, planId: null }));
   }
 
-  function plan(input, { source = 'text', actor = 'owner', grantId = null, readHvi=null } = {}) {
+  function plan(input, { source = 'text', actor = 'owner', grantId = null, readHvi=null, authorizeProgram=null } = {}) {
     if (!input || typeof input !== 'object' || Array.isArray(input)) throw fail('CONTROL_INPUT_INVALID');
     const keys = Object.keys(input);
     if(keys.length===1&&keys[0]==='visualProposal')return planVisual(input.visualProposal,{source,actor,grantId});
@@ -557,15 +561,19 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
     else throw fail('CONTROL_INPUT_INVALID');
     if(RULE_ACTIONS.has(p.actionId)&&(source!=='desktop'||actor!=='desktop-owner'))
       return {...p,outcome:'unavailable',executionPerformed:false,precondition:'Learning requires the authenticated desktop owner.'};
-    if(p.actionId===WIKI_READ_PROGRAM_ACTION&&(source!=='desktop'||actor!=='desktop-owner'||!['typed','deterministic','personal_rule'].includes(p.origin)))return {...p,outcome:'unavailable',executionPerformed:false,precondition:'Wiki read sequences require authenticated desktop owner.'};
-    if(p.actionId===WIKI_WRITE_PROGRAM_ACTION&&(source!=='desktop'||actor!=='desktop-owner'||!['typed','deterministic','personal_rule'].includes(p.origin)))return {...p,outcome:'unavailable',executionPerformed:false,precondition:'Wiki change sequences require authenticated desktop owner.'};
+    const isProgram=[WIKI_READ_PROGRAM_ACTION,WIKI_WRITE_PROGRAM_ACTION].includes(p.actionId);
+    const mobileProgram=isProgram&&source==='mobile'&&p.origin==='personal_rule'&&typeof grantId==='string'&&grantId.length>0&&typeof authorizeProgram==='function';
+    const desktopProgram=source==='desktop'&&actor==='desktop-owner'&&['typed','deterministic','personal_rule'].includes(p.origin);
+    const programScope=p.actionId===WIKI_WRITE_PROGRAM_ACTION?'control:execute':'control:read';
+    if(isProgram&&!desktopProgram&&!mobileProgram)return {...p,outcome:'unavailable',executionPerformed:false,precondition:'Use an owner-shared learned program on an approved phone, or the desktop owner controls.'};
+    if(mobileProgram)authorizeProgram(programScope);
     if(p.actionId===NATIVE_PROGRAM_ACTION&&(source!=='desktop'||actor!=='desktop-owner'||p.origin!=='typed'))return {...p,outcome:'unavailable',executionPerformed:false,precondition:'Native program validation requires authenticated desktop owner and an explicit typed program.'};
     if(p.actionId===HVI_ACTION&&(source!=='desktop'||actor!=='desktop-owner'||p.origin!=='typed'||typeof readHvi!=='function'))return {...p,outcome:'unavailable',executionPerformed:false,precondition:'Explicit desktop owner source selection and current development grant required.'};
     if (p.outcome === 'ready') {
       if(p.origin==='personal_rule'&&p.actionId===WIKI_READ_PROGRAM_ACTION){
         const observed=p.language?.personalRule,snapshot=personalSemantics.snapshot(),scope={...commandScope(),surface:source};
         const rule=snapshot.entries.find(r=>r.id===observed?.ruleId&&r.revision===observed.ruleRevision&&r.state==='accepted'&&r.actionId===p.actionId);
-        const stillCurrent=()=>{const live=personalSemantics.snapshot();return live.version===snapshot.version&&live.digest===snapshot.digest&&digest({...commandScope(),surface:source})===digest(scope);};
+        const stillCurrent=()=>{if(mobileProgram){try{authorizeProgram(programScope);}catch{return false;}}const live=personalSemantics.snapshot();return live.version===snapshot.version&&live.digest===snapshot.digest&&digest({...commandScope(),surface:source})===digest(scope);};
         if(!rule?.readProgram||digest(rule.args)!==digest(p.args)||digest(observed.semanticScope)!==digest(scope)||!validWikiRecipe(rule.readProgram,p.args.commands,catalog))
           return {...p,outcome:'refused',executionPerformed:false,refusal:{code:'PROGRAM_RECIPE_STALE',message:'Learned program no longer matches current meaning.'}};
         return runRead(p,{recipe:rule.readProgram,stillCurrent});
@@ -605,6 +613,7 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
     }
     const ruleBinding=RULE_ACTIONS.has(p.actionId)?prepareRuleBinding(p.actionId,p.args):null;
     const savePlan = wikiBinding => {
+      if(mobileProgram)authorizeProgram(programScope);
       if(p.actionId===WIKI_WRITE_PROGRAM_ACTION&&semanticRuleBinding){
         const live=personalSemantics.snapshot(),rule=live.entries.find(r=>r.id===semanticRuleBinding.ruleId&&r.state==='accepted'&&r.revision===semanticRuleBinding.ruleRevision);
         const steps=rule?bindPersonalWriteProgram(rule,semanticRuleBinding.invocation,catalog):null;
@@ -618,7 +627,7 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
         ...(semanticRuleBinding ? { semanticRuleBinding } : {}),
         ...(ruleBinding?{ruleBinding}:{}),
         ...(wikiBinding ? { wikiBinding,approvalMeaning } : {}),
-        ...(p.actionId===CAPTURE_ACTION&&source==='mobile'?{captureGrantId:grantId}:{}) };
+        ...(p.actionId===CAPTURE_ACTION&&source==='mobile'?{captureGrantId:grantId}:{}),...(mobileProgram?{programGrantId:grantId}:{}) };
       const record = { ...body, planDigest: digest(body) };
       journal.record(record);
       return { ...p, planId: record.planId, planDigest: record.planDigest, createdAt, expiresAt: record.expiresAt,
@@ -658,7 +667,7 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
   }
 
   /** One owner decision: approve this exact digest and apply it. Never retried after claim. */
-  function execute({ planId, planDigest, approval } = {}) {
+  function execute({ planId, planDigest, approval } = {},{authorizeProgram=null}={}) {
     if (!approval || !APPROVAL_CHANNELS.includes(approval.channel)) throw fail('CONTROL_APPROVAL_CHANNEL');
     const rec = journal.get(planId);
     if (!rec) throw fail('CONTROL_PLAN_UNKNOWN');
@@ -669,7 +678,11 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
     // Even receipt replay must respect the private desktop learning scope.
     if((RULE_ACTIONS.has(rec.plan.actionId)||(rec.plan.origin==='personal_rule'&&rec.plan.source==='desktop'))&&
        approval.channel!=='desktop-owner-token')throw fail('CONTROL_DESKTOP_APPROVAL_REQUIRED');
-    if(rec.plan.actionId===WIKI_WRITE_PROGRAM_ACTION&&(approval.actor!=='desktop-owner'||approval.channel!=='desktop-owner-token'||rec.plan.actor!=='desktop-owner'||rec.plan.source!=='desktop'))throw fail('CONTROL_DESKTOP_APPROVAL_REQUIRED');
+    const phoneProgram=rec.plan.actionId===WIKI_WRITE_PROGRAM_ACTION&&rec.plan.source==='mobile';
+    if(rec.plan.actionId===WIKI_WRITE_PROGRAM_ACTION){
+      if(phoneProgram){if(rec.plan.origin!=='personal_rule'||approval.channel!=='direct-phone'||approval.actor!==rec.plan.actor||!rec.plan.programGrantId||approval.grantId!==rec.plan.programGrantId||typeof authorizeProgram!=='function')throw fail('CONTROL_WIKI_DEVICE_MISMATCH');authorizeProgram('control:execute');}
+      else if(approval.actor!=='desktop-owner'||approval.channel!=='desktop-owner-token'||rec.plan.actor!=='desktop-owner'||rec.plan.source!=='desktop')throw fail('CONTROL_DESKTOP_APPROVAL_REQUIRED');
+    }
     if(RULE_ACTIONS.has(rec.plan.actionId)&&approval.actor!=='desktop-owner')
       throw fail('CONTROL_DESKTOP_APPROVAL_REQUIRED');
     if(rec.plan.actionId===CAPTURE_ACTION&&rec.plan.source==='mobile'&&approval.grantId!==rec.plan.captureGrantId)throw fail('CONTROL_WIKI_DEVICE_MISMATCH');
@@ -763,6 +776,7 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
       return journal.finish(planId, receipt);
     }
     function claimAndRun() {
+      if(phoneProgram)authorizeProgram('control:execute');
       journal.approve(planId, { planId, planDigest: stored, channel: approval.channel,
         actor: short(approval.actor ?? 'owner', 120), at: iso() });
       if (!journal.claim(planId)) throw fail('CONTROL_UNCERTAIN');
@@ -841,7 +855,8 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
     if (!rec) throw fail('CONTROL_PLAN_UNKNOWN');
     if(rec.plan.actionId===VISUAL_ACTION&&source==='mobile'&&(actor!==rec.plan.actor||grantId!==rec.plan.approvalMeaning?.deviceGrantId))throw fail('CONTROL_PLAN_UNKNOWN');
     if(rec.plan.actionId===CAPTURE_ACTION&&source==='mobile'&&(rec.plan.source!=='mobile'||actor!==rec.plan.actor||grantId!==rec.plan.captureGrantId))throw fail('CONTROL_PLAN_UNKNOWN');
-    if(source==='mobile'&&(rec.plan.actionId===WIKI_WRITE_PROGRAM_ACTION||RULE_ACTIONS.has(rec.plan.actionId)||(rec.plan.origin==='personal_rule'&&rec.plan.source==='desktop')))
+    if(source==='mobile'&&rec.plan.actionId===WIKI_WRITE_PROGRAM_ACTION&&(rec.plan.source!=='mobile'||rec.plan.actor!==actor||rec.plan.programGrantId!==grantId||!grantId))throw fail('CONTROL_PLAN_UNKNOWN');
+    if(source==='mobile'&&(RULE_ACTIONS.has(rec.plan.actionId)||(rec.plan.origin==='personal_rule'&&rec.plan.source==='desktop')))
       throw fail('CONTROL_PLAN_UNKNOWN');
     return { planId, state: rec.state, actionId: rec.plan.actionId, risk: rec.plan.risk, args: rec.plan.args,
       createdAt: rec.plan.createdAt, expiresAt: rec.plan.expiresAt, receipt: rec.receipt,
@@ -852,10 +867,16 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
     const detail=status(planId),rec=journal.get(planId);
     if(detail.actionId!==WIKI_WRITE_PROGRAM_ACTION||!rec.claimed)return detail;
     const {planDigest,...body}=rec.plan;
-    if(digest(body)!==planDigest||rec.approval?.planDigest!==planDigest||rec.approval?.actor!=='desktop-owner')throw fail('CONTROL_PLAN_TAMPERED');
+    if(digest(body)!==planDigest||rec.approval?.planDigest!==planDigest||rec.approval?.actor!==rec.plan.actor||rec.approval?.channel!==(rec.plan.source==='mobile'?'direct-phone':'desktop-owner-token'))throw fail('CONTROL_PLAN_TAMPERED');
     try{const recovery=await productJournal.readWikiSequenceEvidence(planId,planDigest,rec.plan.wikiBinding.steps.map(s=>s.payload));
       return {...detail,recovery};}
     catch{return {...detail,recovery:{schema:'vivim.wiki-sequence-evidence/1',state:'unavailable',retryAuthorized:false}};}
+  }
+  function sharedPrograms({canExecute=false}={}){
+    const scope={...commandScope(),surface:'mobile'},snapshot=personalSemantics.snapshot();
+    const entries=snapshot.entries.filter(r=>r.state==='accepted'&&Object.entries(r.scope).every(([k,v])=>scope[k]===v)&&
+      (r.actionId===WIKI_READ_PROGRAM_ACTION&&r.readProgram&&validWikiRecipe(r.readProgram,r.args.commands,catalog)||r.actionId===WIKI_WRITE_PROGRAM_ACTION&&r.writeProgram&&validWikiWriteRecipe(r.writeProgram,r.args.commands,catalog)));
+    return {schema:'vivim.shared-programs/1',authority:'discovery-only',entries:entries.map(r=>({phrase:r.phrase,kind:r.readProgram?'read':'change',parameter:r.writeProgram?.slot?'wiki-page-slug':null,steps:(r.readProgram??r.writeProgram).steps.length,available:!!r.readProgram||canExecute===true}))};
   }
   return {
     schema: DISPATCHER_SCHEMA,
@@ -869,6 +890,6 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
         rules:entries.map(r=>({id:r.id, revision:r.revision, state:r.state, scope:r.scope,
           actionId:r.actionId, catalogVersion:r.catalogVersion}))}; },
     ownerRules:()=>personalSemantics.snapshot(),
-    plan, execute, status, inspectOwnerPlan, recent: (limit,{source='desktop'}={}) => journal.recent(limit).filter(r=>source!=='mobile'||(!RULE_ACTIONS.has(r.actionId)&&r.actionId!==WIKI_WRITE_PROGRAM_ACTION)),
+    sharedPrograms,plan, execute, status, inspectOwnerPlan, recent: (limit,{source='desktop',actor=null,grantId=null}={}) => journal.recent(limit).filter(r=>{if(source!=='mobile')return true;if(RULE_ACTIONS.has(r.actionId))return false;if(r.actionId!==WIKI_WRITE_PROGRAM_ACTION)return true;const rec=journal.get(r.planId);return !!grantId&&rec?.plan.source==='mobile'&&rec.plan.actor===actor&&rec.plan.programGrantId===grantId;}),
   };
 }

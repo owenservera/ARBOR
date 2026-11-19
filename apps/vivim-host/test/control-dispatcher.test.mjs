@@ -343,3 +343,22 @@ test('owner-taught parameterized Wiki change recipe always requires fresh exact 
  const rule=control.ownerRules().entries[0];const revoke=await control.plan({actionId:'control.rule.revoke',args:{rule_id:rule.id}},owner);await control.execute({planId:revoke.planId,planDigest:revoke.planDigest,approval});
  await assert.rejects(async()=>control.execute({planId:second.planId,planDigest:second.planDigest,approval}),/CONTROL_SEMANTIC_RULE_STALE/);assert.equal((await productJournal.readPhoneWiki()).pages.beta,undefined);
 });
+
+test('only explicitly shared phone programs are discoverable and execution requires the original current grant',async t=>{
+ const {runtime,dataRoot}=fixture(t);const {createProductJournal}=await import('../chat/product-journal.mjs');
+ const productJournal=createProductJournal({dataRoot,seedState:{chat:[]},seedWiki:{revision:0,pages:{main:{sections:{About:'Original'}}}}});
+ const control=createControlDispatcher({dataRoot,runtime,productJournal,nativeProgram:async({program})=>{const p=JSON.parse(program);return {outcome:'compiled',programId:p.id,programRevision:p.revision,orderedStepIds:p.steps.map(s=>s.id),programDigest:'a'.repeat(64),executionAuthorized:false,effectPerformed:false};}});
+ const owner={source:'desktop',actor:'desktop-owner'},approval={channel:'desktop-owner-token',actor:'desktop-owner'};
+ const command='parameterize page research:\nrun wiki change sequence:\ncreate wiki page research\nedit wiki section research/About saying Project notes';
+ for(const [phrase,text] of [['privateproject',command],['phoneproject','share with paired phones:\n'+command]]){const p=await control.plan({actionId:'control.rule.remember',args:{phrase,command:text}},owner);assert.equal((await control.execute({planId:p.planId,planDigest:p.planDigest,approval})).status,'applied');}
+ const list=control.sharedPrograms({canExecute:true});assert.deepEqual(list.entries.map(e=>e.phrase),['phoneproject']);assert.equal(Object.hasOwn(list.entries[0],'commands'),false);assert.equal(control.sharedPrograms().entries[0].available,false);
+ let live=true;const authorizeProgram=()=>{if(!live)throw Error('revoked grant');};const mobile={source:'mobile',actor:'phone-a',grantId:'grant-a',authorizeProgram};
+ const draft=await control.plan({text:'phoneproject alpha'},mobile);assert.equal(draft.outcome,'approval_required');assert.equal((await productJournal.readPhoneWiki()).revision,0);
+ const body={planId:draft.planId,planDigest:draft.planDigest,approval:{channel:'direct-phone',actor:'phone-a',grantId:'grant-a'}};
+ assert.throws(()=>control.execute({...body,approval:{...body.approval,grantId:'other'}},{authorizeProgram}),/CONTROL_WIKI_DEVICE_MISMATCH/);
+ live=false;assert.throws(()=>control.execute(body,{authorizeProgram}),/revoked grant/);live=true;
+ const receipt=await control.execute(body,{authorizeProgram});assert.equal(receipt.status,'applied');assert.equal((await productJournal.readPhoneWiki()).pages.alpha.sections.About,'Project notes');
+ assert.throws(()=>control.status(draft.planId,{source:'mobile',actor:'phone-a',grantId:'other'}),/CONTROL_PLAN_UNKNOWN/);
+ assert.equal(control.status(draft.planId,mobile).receipt.planId,draft.planId);
+ assert.equal((await control.plan({actionId:'program.write_wiki',args:{commands:'create wiki page bad\ncreate wiki page worse'}},mobile)).outcome,'unavailable');
+});
