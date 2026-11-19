@@ -62,6 +62,43 @@ test('desktop and Direct mobile share one dispatcher with separate real authenti
   assert.ok(targets.json.entries.every(e => !e.verified.web && !e.verified.api && !e.verified.native));
   assert.ok(targets.json.entries.every(e => !catalog.json.actions.some(a => a.actionId === e.id)));
   assert.equal((await post(targetsPath, desk, {})).status, 405);
+  // Bounded v0.2 discovery, retaining the original full-catalog endpoint.
+  const searchPath = targetsPath + '/search';
+  assert.equal((await call(searchPath)).status, 401);
+  assert.equal((await call(searchPath, { headers: { ...bearer, origin: 'https://evil.invalid' } })).status, 403);
+  const page1 = await call(searchPath + '?limit=2', { headers: bearer });
+  assert.equal(page1.status, 200);
+  assert.equal(page1.json.authority, 'research-only');
+  assert.equal(page1.json.total, 1000);
+  assert.deepEqual(page1.json.entries.map(x => x.id), ['VIV-0001','VIV-0002']);
+  assert.ok(page1.json.nextCursor);
+  const next = '&cursor=' + encodeURIComponent(page1.json.nextCursor);
+  const page2 = await call(searchPath + '?limit=2' + next, { headers: bearer });
+  assert.equal(page2.status, 200);
+  assert.deepEqual(page2.json.entries.map(x => x.id), ['VIV-0003','VIV-0004']);
+  assert.equal(page2.json.revision, page1.json.revision);
+  assert.equal((await call(searchPath + '?limit=3' + next, { headers: bearer })).status, 400);
+  assert.equal((await call(searchPath + '?limit=2&q=gmail' + next, { headers: bearer })).status, 400);
+  assert.equal((await call(searchPath + '?limit=2' + next + 'x', { headers: bearer })).status, 400);
+  for (const invalid of ['limit=0','limit=101','limit=2&limit=3','unknown=1','tier=invalid']) {
+    assert.equal((await call(searchPath + '?' + invalid, { headers: bearer })).status, 400);
+  }
+  const gmail = await call(searchPath + '?q=Gmail&category=Email%20and%20calendar&tier=P0', { headers: bearer });
+  assert.equal(gmail.status, 200);
+  assert.ok(gmail.json.entries.some(x=>x.id==='VIV-0003'));
+  assert.ok(gmail.json.entries.every(x=>x.category==='Email and calendar' && x.tier==='P0'));
+  const capabilitiesPath = '/api/host/control/capabilities';
+  assert.equal((await call(capabilitiesPath)).status, 401);
+  const reads = await call(capabilitiesPath + '?risk=R0&readiness=source_wired&limit=100',{headers:bearer});
+  assert.equal(reads.status,200);
+  assert.equal(reads.json.authority,'catalog-description-only');
+  assert.equal(reads.json.total,catalog.json.actions.filter(x=>x.risk==='R0'&&x.readiness==='source_wired').length);
+  assert.ok(reads.json.entries.every(x=>x.risk==='R0'&&x.readiness==='source_wired'&&!x.available));
+  assert.equal((await call(capabilitiesPath+'?limit=2'+next,{headers:bearer})).status,400);
+  assert.equal((await post(capabilitiesPath,desk,{})).status,405);
+  assert.ok(api.json.paths[searchPath].get.parameters.some(x=>x.name==='cursor'));
+  assert.ok(api.json.paths[capabilitiesPath].get.parameters.some(x=>x.name==='risk'));
+
 
 
   assert.equal((await post('/api/host/control/plan', { ...bearer, 'content-type': 'application/json' }, { text: 'Set my theme to dusk' })).status, 403);
