@@ -97,6 +97,52 @@ function capabilitySummary(a) {
     args:typedSchema(a).properties.args,examples:a.examples,surfaces:a.surfaces,
     ...(a.precondition?{precondition:a.precondition}:{})};
 }
+// Exact detail and source coverage are projections, never capability promotion.
+export function describeUniversalCapability(discovery, actionId) {
+  if (discovery?.schema !== 'vivim.control-discovery/1' || !Array.isArray(discovery.actions))
+    throw searchError('API_DISCOVERY_UNAVAILABLE',503);
+  const action = discovery.actions.find(a=>a.actionId===actionId);
+  if (!action) throw searchError('API_CAPABILITY_UNKNOWN',404);
+  const capability = capabilitySummary(action);
+  return {schema:'vivim.capability-description/1',authority:'catalog-description-only',
+    source:{schema:discovery.schema,catalogVersion:discovery.version,actionId,revision:hash([discovery.version,capability])},
+    capability, invocation:{method:'POST',path:BASE+'/plan',inputSchema:typedSchema(action)},
+    resultContract:{status:'not-described-by-catalog'},
+    semanticMapping:{status:'not-attested',semanticId:null},
+    authorization:'not-evaluated'};
+}
+async function loadStudioDescriptors() {
+  const mod=await import('../../../studio/src/studio/browser-atoms.mjs');
+  return {registry:await mod.loadRegistry(),targetCount:mod.TARGET_COUNT};
+}
+export async function describeCapabilitySources(discovery,{loadStudio=loadStudioDescriptors}={}) {
+  if (discovery?.schema !== 'vivim.control-discovery/1' || !Array.isArray(discovery.actions))
+    throw searchError('API_DISCOVERY_UNAVAILABLE',503);
+  const inventory=readIntegrationTargets();
+  const actions=discovery.actions.map(capabilitySummary);
+  const readiness=Object.fromEntries(READINESS.map(state=>[state,actions.filter(a=>a.readiness===state).length]));
+  const host={schema:discovery.schema,version:discovery.version,revision:hash([discovery.version,actions]),
+    count:actions.length,readiness,authority:'catalog-description-only'};
+  const targets={schema:inventory.schema,snapshot:inventory.snapshot,revision:hash(inventory),
+    count:inventory.total,authority:'research-only'};
+  let studio={status:'unavailable',authority:'internal-descriptors-only',publicInvocation:false};
+  try {
+    const {registry,targetCount}=await loadStudio();
+    if (registry && Array.isArray(registry.atoms) && Array.isArray(registry.problems) &&
+        Array.isArray(registry.missing) && Number.isSafeInteger(targetCount) && targetCount>=0) {
+      const familyCounts=Object.entries(registry.families??{}).filter(([k,v])=>/^[a-z0-9-]{1,40}$/.test(k)&&Number.isSafeInteger(v)&&v>=0)
+        .sort(([a],[b])=>a<b?-1:a>b?1:0).map(([family,count])=>({family,count}));
+      const unique=new Set(registry.atoms.map(a=>a.id)).size;
+      studio={status:registry.complete===true&&unique===registry.atoms.length&&registry.atoms.length===targetCount&&registry.missing.length===0&&registry.problems.length===0?'descriptor-complete':'descriptor-partial',
+        authority:'internal-descriptors-only',publicInvocation:false,count:registry.atoms.length,unique,targetCount,
+        families:familyCounts,missingFamilyCount:registry.missing.length,problemCount:registry.problems.length};
+    }
+  } catch { /* Missing optional Studio source closure is reported, never fabricated. */ }
+  return {schema:'vivim.capability-sources/1',authority:'discovery-only',
+    host,researchTargets:targets,studio,
+    semantic:{status:'not-attested',mappedCount:null,reason:'No approved per-action HQ identity mapping is supplied by Host discovery.'},
+    countsAreNotAdditive:true,liveAcceptance:'not-established-by-source-coverage'};
+}
 const queryParameter = (name,schema,description) => ({name,in:'query',required:false,schema,description});
 function discoveryParameters(kind) {
   return [
@@ -157,6 +203,8 @@ export function buildUniversalApi(discovery) {
     paths: {
       [BASE + '/openapi.json']: { get: read('vivimDescribeApi', 'Discover this owner-scoped API contract') },
       [BASE + '/catalog']: { get: read('vivimDiscoverCapabilities', 'Discover canonical Host capability readiness') },
+      [BASE + '/capability-sources']: { get: read('vivimDescribeCapabilitySources', 'Separate Host, research and internal Studio descriptor coverage') },
+      [BASE + '/capabilities/{actionId}']: { get: read('vivimDescribeCapability', 'Describe an exact canonical Host action without evaluating authority', [{name:'actionId',in:'path',required:true,schema:{type:'string'}}]) },
       [BASE + '/capabilities']: { get: read('vivimSearchCapabilities', 'Search the Host action catalog without granting access', discoveryParameters('actions')) },
       [BASE + '/integration-targets/search']: { get: read('vivimSearchIntegrationTargets', 'Browse research-only targets in bounded pages', discoveryParameters('targets')) },
       [BASE + '/integration-targets']: { get: read('vivimDiscoverIntegrationTargets', 'Read the original research-only integration inventory; entries are not callable actions') },
