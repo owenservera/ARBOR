@@ -28,7 +28,7 @@ import { createEnrollment } from './apk/enrollment.mjs';
 import { createApkRegistry } from './apk/registry.mjs';
 import { createPairingStore } from './apk/pairing.mjs';
 import { createControlDispatcher } from './control/dispatcher.mjs';
-import { buildUniversalApi, readIntegrationTargets, searchUniversalApi } from './control/universal-api.mjs';
+import { buildUniversalApi, readIntegrationTargets, searchUniversalApi, describeUniversalCapability, describeCapabilitySources } from './control/universal-api.mjs';
 import { createControlBrowserSessions, UI_COOKIE } from './control/browser-session.mjs';
 import { createOnboardingService } from './onboarding/service.mjs';
 import { createStudioPort } from './onboarding/studio-port.mjs';
@@ -963,6 +963,24 @@ async function handleControl(req, res, pathname, host, controlFor, tokenFor, uiS
     sendJson(res, 200, { revoked: true });
     return;
   }
+  const capabilityDetailMatch = route.match(/^capabilities\/([a-z][a-z0-9._-]{2,95})$/);
+  if (route === 'capability-sources' || capabilityDetailMatch) {
+    if (req.method !== 'GET' && req.method !== 'HEAD') { res.setHeader('allow','GET, HEAD');sendJson(res,405,{code:'METHOD'});return; }
+    if (req.headers.origin !== undefined && !sameOrigin) { sendJson(res,403,{code:'ORIGIN'});return; }
+    res.setHeader('cache-control','private, no-store');
+    try {
+      const discovery=controlFor().describe();
+      const result=capabilityDetailMatch
+        ? describeUniversalCapability(discovery,capabilityDetailMatch[1])
+        : await describeCapabilitySources(discovery);
+      let currentOwner=null;try{currentOwner=tokenFor();}catch{}
+      if (!(currentOwner&&verifyOwnerToken(req.headers.authorization,currentOwner))&&!uiSessions.authorized(req,{mutate:false})) {
+        sendJson(res,401,{code:'OWNER_AUTH'});return;
+      }
+      sendJson(res,200,result);
+    } catch(e){sendJson(res,e.status||503,{code:typeof e.code==='string'&&/^API_[A-Z_]+$/.test(e.code)?e.code:'API_DISCOVERY_UNAVAILABLE'});}
+    return;
+  }
   if (route === 'capabilities' || route === 'integration-targets/search') {
     if (req.method !== 'GET' && req.method !== 'HEAD') { res.setHeader('allow','GET, HEAD'); sendJson(res,405,{code:'METHOD'});return; }
     if (req.headers.origin !== undefined && !sameOrigin) { sendJson(res,403,{code:'ORIGIN'});return; }
@@ -978,7 +996,7 @@ async function handleControl(req, res, pathname, host, controlFor, tokenFor, uiS
   const reads = { 'openapi.json': c => buildUniversalApi(c.describe()), 'integration-targets': () => readIntegrationTargets(), catalog: c => c.describe(), world: c => c.world(), language: c => c.languagePack(), lexicon: c => c.lexicon(), rules: c => c.ownerRules(), recent: c => ({ items: c.recent(20) }) };
   const planMatch = route.match(/^plans\/(ctl-[a-f0-9]{16})$/);
   try {
-    if (reads[route] || planMatch) {
+    if (Object.hasOwn(reads,route) || planMatch) {
       if (req.method !== 'GET' && req.method !== 'HEAD') { res.setHeader('allow', 'GET, HEAD'); sendJson(res, 405, { error: 'GET only', code: 'METHOD' }); return; }
       if (req.headers.origin !== undefined && String(req.headers.origin).toLowerCase() !== 'http://' + host) { sendJson(res, 403, { error: 'Cross-origin request refused', code: 'ORIGIN' }); return; }
       if(route==='rules')res.setHeader('cache-control','private, no-store');
