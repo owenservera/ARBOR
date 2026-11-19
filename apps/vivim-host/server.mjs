@@ -28,7 +28,7 @@ import { createEnrollment } from './apk/enrollment.mjs';
 import { createApkRegistry } from './apk/registry.mjs';
 import { createPairingStore } from './apk/pairing.mjs';
 import { createControlDispatcher } from './control/dispatcher.mjs';
-import { buildUniversalApi } from './control/universal-api.mjs';
+import { buildUniversalApi, readIntegrationTargets } from './control/universal-api.mjs';
 import { createControlBrowserSessions, UI_COOKIE } from './control/browser-session.mjs';
 import { createOnboardingService } from './onboarding/service.mjs';
 import { createStudioPort } from './onboarding/studio-port.mjs';
@@ -963,7 +963,7 @@ async function handleControl(req, res, pathname, host, controlFor, tokenFor, uiS
     sendJson(res, 200, { revoked: true });
     return;
   }
-  const reads = { 'openapi.json': c => buildUniversalApi(c.describe()), catalog: c => c.describe(), world: c => c.world(), language: c => c.languagePack(), lexicon: c => c.lexicon(), rules: c => c.ownerRules(), recent: c => ({ items: c.recent(20) }) };
+  const reads = { 'openapi.json': c => buildUniversalApi(c.describe()), 'integration-targets': () => readIntegrationTargets(), catalog: c => c.describe(), world: c => c.world(), language: c => c.languagePack(), lexicon: c => c.lexicon(), rules: c => c.ownerRules(), recent: c => ({ items: c.recent(20) }) };
   const planMatch = route.match(/^plans\/(ctl-[a-f0-9]{16})$/);
   try {
     if (reads[route] || planMatch) {
