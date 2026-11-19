@@ -2,7 +2,19 @@
 // operations. Never registers actions, grants permission or performs effects.
 // @hq:context Machine-readable API surface derived from the canonical Host catalog.
 // @hq:invariant Discovery is not authorization or live acceptance.
+import { readFileSync } from 'node:fs';
 const BASE = '/api/host/control';
+// Research candidates are not executable capabilities. The original snapshot
+// remains independent of current Host capability readiness or account grants.
+export function readIntegrationTargets() {
+  const inventory = JSON.parse(readFileSync(new URL('./integration-targets.v1.json', import.meta.url), 'utf8'));
+  if (inventory.schema !== 'vivim.integration-target-inventory/1' ||
+      inventory.authority !== 'research-only' || !Array.isArray(inventory.entries) ||
+      inventory.entries.length !== inventory.total ||
+      new Set(inventory.entries.map(e => e.id)).size !== inventory.total)
+    throw new TypeError('Invalid integration research inventory');
+  return inventory;
+}
 const json = schema => ({ 'application/json': { schema } });
 const response = (description, schema = { type: 'object' }) => ({ description, content: json(schema) });
 const closed = (properties, required = Object.keys(properties)) => ({ type: 'object', properties, required, additionalProperties: false });
@@ -51,6 +63,7 @@ export function buildUniversalApi(discovery) {
     paths: {
       [BASE + '/openapi.json']: { get: read('vivimDescribeApi', 'Discover this owner-scoped API contract') },
       [BASE + '/catalog']: { get: read('vivimDiscoverCapabilities', 'Discover canonical Host capability readiness') },
+      [BASE + '/integration-targets']: { get: read('vivimDiscoverIntegrationTargets', 'Read the original research-only integration inventory; entries are not callable actions') },
       [BASE + '/interpret']: { post: post('vivimInterpret', 'Resolve text without performing a requested effect',
         closed({ text: { type: 'string', maxLength: 1000 } })) },
       [BASE + '/plan']: { post: post('vivimPlan', 'Plan typed or natural-language actions; authorized R0 reads may return results. Mutation previews are not execution.', input) },
