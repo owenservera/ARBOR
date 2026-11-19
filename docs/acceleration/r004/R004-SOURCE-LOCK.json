@@ -1,0 +1,17 @@
+{
+  "schema": "arbor.r004.source-lock/1",
+  "observedAt": "2026-11-15",
+  "repository": "owenservera/ARBOR",
+  "remoteMainShaAtInspection": "6f3fb8509ce6b5814b44de36e687b838462f677f",
+  "sourceCommitMessage": "fix(acceleration): expect the owner-browser actor on a wiki edit",
+  "observedMainActionsRun": 43739690454,
+  "observedMainActionsConclusion": "startup_failure",
+  "localWindowsHead": null,
+  "gitHubMainModified": false,
+  "realNode24ProductEvidence": "UNRUN",
+  "physicalDeviceEvidence": "UNRUN",
+  "ownerAcceptance": "PENDING",
+  "releaseAuthorization": "BLOCKED",
+  "r004DLaneBranch": "work/arbor-r004-d",
+  "r004DLaneCommit": "87c35576f142978a11071737b5815911308901a2"
+}
