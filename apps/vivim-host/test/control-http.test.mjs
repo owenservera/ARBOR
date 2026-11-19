@@ -50,6 +50,19 @@ test('desktop and Direct mobile share one dispatcher with separate real authenti
   assert.equal(wikiEdit.properties.args.additionalProperties, false);
   assert.equal(api.json['x-vivim'].capabilities.filter(a => a.available).length, catalog.json.coverage.verified);
   assert.equal((await post(apiPath, desk, {})).status, 405);
+  const targetsPath = '/api/host/control/integration-targets';
+  assert.equal((await call(targetsPath)).status, 401);
+  assert.equal((await call(targetsPath, { headers: { ...bearer, origin: 'https://evil.invalid' } })).status, 403);
+  const targets = await call(targetsPath, { headers: bearer });
+  assert.equal(targets.status, 200);
+  assert.equal(targets.json.authority, 'research-only');
+  assert.equal(targets.json.total, 1000);
+  assert.equal(targets.json.entries.length, 1000);
+  assert.equal(new Set(targets.json.entries.map(e => e.id)).size, 1000);
+  assert.ok(targets.json.entries.every(e => !e.verified.web && !e.verified.api && !e.verified.native));
+  assert.ok(targets.json.entries.every(e => !catalog.json.actions.some(a => a.actionId === e.id)));
+  assert.equal((await post(targetsPath, desk, {})).status, 405);
+
 
   assert.equal((await post('/api/host/control/plan', { ...bearer, 'content-type': 'application/json' }, { text: 'Set my theme to dusk' })).status, 403);
   assert.equal((await post('/api/host/control/plan', { ...desk, origin: 'https://evil.invalid' }, { text: 'Set my theme to dusk' })).status, 403);
