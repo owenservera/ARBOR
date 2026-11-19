@@ -14,7 +14,7 @@ import { createControlPlanner, loadControlCatalog } from './intent-planner.mjs';
 import { createControlJournal, newPlanId } from './journal.mjs';
 import { createLexiconStore } from './lexicon.mjs';
 import { createPersonalRuleStore } from './personal-rule-store.mjs';
-import { PERSONAL_RULE_SCHEMA, validatePersonalRule, TEMPLATE_SCHEMA, templateAlias, templateDependencies, bindPersonalRule, currentTemplate, bindPersonalWriteProgram } from './personal-semantics.mjs';
+import { PERSONAL_RULE_SCHEMA, validatePersonalRule, TEMPLATE_SCHEMA, templateAlias, templateDependencies, bindPersonalRule, currentTemplate, bindPersonalWriteProgram, compatibleRuleCatalog } from './personal-semantics.mjs';
 import { interpretControl, resolveLocalDestination, resolveDesktopDestination } from '../../mobile-relay/control-language.mjs';
 import { previewWikiStructure, previewWikiCapture, validateProductEdit, previewWikiPayload } from '../chat/product-journal.mjs';
 import { wikiApprovalSentence } from './command-intent.mjs';
@@ -874,7 +874,7 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
   }
   function sharedPrograms({canExecute=false}={}){
     const scope={...commandScope(),surface:'mobile'},snapshot=personalSemantics.snapshot();
-    const entries=snapshot.entries.filter(r=>r.state==='accepted'&&Object.entries(r.scope).every(([k,v])=>scope[k]===v)&&
+    const entries=snapshot.entries.filter(r=>r.state==='accepted'&&compatibleRuleCatalog(r,catalog)&&Object.entries(r.scope).every(([k,v])=>scope[k]===v)&&
       (r.actionId===WIKI_READ_PROGRAM_ACTION&&r.readProgram&&validWikiRecipe(r.readProgram,r.args.commands,catalog)||r.actionId===WIKI_WRITE_PROGRAM_ACTION&&r.writeProgram&&validWikiWriteRecipe(r.writeProgram,r.args.commands,catalog)));
     return {schema:'vivim.shared-programs/1',authority:'discovery-only',entries:entries.map(r=>({phrase:r.phrase,kind:r.readProgram?'read':'change',parameter:r.writeProgram?.slot?'wiki-page-slug':null,steps:(r.readProgram??r.writeProgram).steps.length,available:!!r.readProgram||canExecute===true}))};
   }

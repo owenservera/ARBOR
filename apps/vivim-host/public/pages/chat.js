@@ -71,7 +71,7 @@ import { mountComposerAssist } from '/mobile/composer-assist.mjs';
     csrfProof = null;
     rulePanel?.replaceChildren();
     if($('teach-phrase'))$('teach-phrase').value='';
-    if($('teach-command'))$('teach-command').value='';
+    if($('teach-command'))$('teach-command').value='';if($('teach-share-phone'))$('teach-share-phone').checked=false;
     assistance?.reset();
     pending = null;
     authStatus.textContent = message;
@@ -414,7 +414,8 @@ import { mountComposerAssist } from '/mobile/composer-assist.mjs';
           element('pre','',JSON.stringify({actionId:rule.actionId,args:rule.args,scope:rule.scope,...(rule.readProgram?{steps:rule.readProgram.steps}:{}),...(rule.writeProgram?{steps:rule.writeProgram.steps,slot:rule.writeProgram.slot,approval:'fresh on every invocation'}:{}),...(rule.template?{parameter:rule.template.slot,sourceReceipt:rule.template.receiptId,privacy:rule.template.privacy}:{})},null,2)),
           element('p','', 'Catalog revision '+rule.catalogVersion+' · rule revision '+rule.revision),
           button('Revoke meaning',()=>void submitPlan({actionId:'control.rule.revoke',args:{rule_id:rule.id}}),true));
-        if(rule.state==='accepted')row.append(button('Draft invocation',()=>{
+        if(rule.scope.surface==='mobile')row.append(element('p','','Shared with paired phones · current grants required.'));
+        if(rule.state==='accepted'&&rule.scope.surface==='desktop')row.append(button('Draft invocation',()=>{
           if(!csrfProof||busy)return;
           if(input.value.trim()){notice('Clear the existing chat draft before inserting an invocation.');return;}
           input.value=rule.phrase+(rule.template||rule.writeProgram?.slot?' ':'');input.focus();
@@ -435,9 +436,9 @@ import { mountComposerAssist } from '/mobile/composer-assist.mjs';
   if(teachForm)teachForm.addEventListener('submit',event=>{
     event.preventDefault();
     if(!csrfProof||busy)return;
-    const phrase=$('teach-phrase').value.trim(),command=$('teach-command').value.trim();
+    const phrase=$('teach-phrase').value.trim(),command=$('teach-command').value.trim(),share=$('teach-share-phone')?.checked===true;
     if(!phrase||!command)return;
-    void submitPlan({actionId:'control.rule.remember',args:{phrase,command}});
+    void submitPlan({actionId:'control.rule.remember',args:{phrase,command:share?'share with paired phones:\n'+command:command}});
   });
   $('show-rules')?.addEventListener('click',()=>void showRules());
   async function submitPlan(body) {
@@ -461,7 +462,7 @@ import { mountComposerAssist } from '/mobile/composer-assist.mjs';
       if(receipt.actionId?.startsWith('control.rule.')&&receipt.status==='applied'){
         rulePanel?.replaceChildren();
         if($('teach-phrase'))$('teach-phrase').value='';
-        if($('teach-command'))$('teach-command').value='';
+        if($('teach-command'))$('teach-command').value='';if($('teach-share-phone'))$('teach-share-phone').checked=false;
       }
       await observeTheme(node, receipt);
       await refreshRecent();

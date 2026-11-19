@@ -29,7 +29,7 @@ export function createControlClient({ transport, fetchImpl = (...args) => fetch(
       new Error('Approve this phone on the PC before using private control.'),
       { code: 'DEVICE_GRANT_REQUIRED' });
     const writing = body !== undefined;
-    if (!['catalog', 'language', 'world', 'lexicon', 'recent', 'interpret', 'plan', 'execute'].includes(path) &&
+    if (!['catalog', 'language', 'world', 'lexicon', 'recent', 'programs', 'interpret', 'plan', 'execute'].includes(path) &&
         !/^plans\/ctl-[a-f0-9]{16}$/.test(path))
       throw new TypeError('Unknown control operation');
     if (writing && !['interpret', 'plan', 'execute'].includes(path)) throw new TypeError('Invalid control method');
@@ -98,7 +98,7 @@ export function createControlClient({ transport, fetchImpl = (...args) => fetch(
       if (!receipt || receipt.schema !== 'vivim.control-receipt/1' ||
           receipt.planId !== target.planId || receipt.planDigest !== target.planDigest ||
           !['applied', 'failed', 'uncertain'].includes(receipt.status) ||
-          (['ui.visual.apply','wiki.capture.save'].includes(plan.actionId)&&(receipt.actionId!==plan.actionId||
+          (['ui.visual.apply','wiki.capture.save','program.write_wiki'].includes(plan.actionId)&&(receipt.actionId!==plan.actionId||
            !plan.approvalMeaning?.semanticDigest||receipt.semanticDigest!==plan.approvalMeaning.semanticDigest))) {
         throw Object.assign(new Error('Host receipt could not be verified. Check the PC before another action.'), {
           code: 'CONTROL_UNCERTAIN'

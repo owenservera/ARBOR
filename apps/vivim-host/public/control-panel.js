@@ -285,7 +285,7 @@
           input.rows=8;input.placeholder='JSON program: id, revision, steps (no policy or effect authorizations)';
           detail.append(element('p','text-control-note','Local Rust validation only. Host fixes the policy to R0, no external destinations or effect candidates. Source references must match current committed Wiki evidence, including older sections still current. Validation does not execute the steps.'));
         }else if(a.actionId==='control.rule.remember'&&key==='command'){
-          input.rows=6;detail.append(element('p','text-control-note','Save an exact command, read sequence or change sequence. For a reusable page parameter, prefix a change sequence with parameterize page research: on its own line. Teaching never authorizes future changes.'));
+          input.rows=6;detail.append(element('p','text-control-note','Save an exact command, read sequence or change sequence. For a reusable page parameter, prefix a change sequence with parameterize page research: on its own line. Prefix with share with paired phones: on its own line to teach an explicitly mobile-scoped program. Teaching never authorizes future changes.'));
         }else if(a.actionId==='program.write_wiki'&&key==='commands'){
           input.rows=6;input.placeholder='create wiki page research\nedit wiki section research/About saying Project notes';
           detail.append(element('p','text-control-note','Review 2–8 ordered Wiki changes. One fresh exact approval; partial disk failure is uncertain and never retried.'));

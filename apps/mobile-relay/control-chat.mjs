@@ -44,6 +44,7 @@ export function createControlChat({
   let suggestions = [];
   let loadingSuggestions = false;
   let suggestionEpoch = 0;
+  let sharedPrograms=null,programLoading=false,programError='';
 
   const elem = (tag, className, content) => {
     const node = doc.createElement(tag);
@@ -76,6 +77,7 @@ export function createControlChat({
               (p.omittedSections ? ' (+' + p.omittedSections + ' more)' : '') +
               (p.relatedPages?.length ? ' · related: '+p.relatedPages.join(', ') : '')).join('\n') || '(No pages)') +
             (result.omitted ? '\n' + result.omitted + ' more pages not shown.' : '');
+        if(plan.actionId==='program.read_wiki'&&Array.isArray(result?.steps))return 'Wiki sequence · revision '+result.wikiRevision+' · '+result.steps.length+' completed read steps';
         return (plan.title || 'Done') + (result === undefined ? '' : '\n' + describe(result));
       }
       case 'approval_required':
@@ -127,6 +129,7 @@ export function createControlChat({
     }
     reply.text = planText(plan);
     reply.meaning = plan.language?.vec?.proposal ?? null;
+    if(plan.outcome==='done'&&plan.actionId==='program.read_wiki'&&plan.result?.schema==='vivim.wiki-read-program/1')reply.programRead=plan.result;
     reply.status = plan.outcome === 'refused' ? 'denied' : plan.outcome === 'done' ? 'done'
       : plan.outcome === 'interpretation_required' ? 'unrecognized'
         : plan.outcome === 'clarification_required' || plan.outcome === 'incomplete' ? 'clarify'
@@ -230,7 +233,7 @@ export function createControlChat({
   // Tell the existing PWA Wiki tab to re-read Host state only after a
   // verified applied Wiki receipt. This event carries no mutation authority.
   function notifyWikiCommitted(receipt) {
-    if (receipt?.status === 'applied' && ['wiki.section.edit','wiki.page.create','wiki.page.move','wiki.pages.link','wiki.capture.save'].includes(receipt.actionId) &&
+    if (receipt?.status === 'applied' && ['wiki.section.edit','wiki.page.create','wiki.page.move','wiki.pages.link','wiki.capture.save','program.write_wiki'].includes(receipt.actionId) &&
         Number.isSafeInteger(receipt.result?.wikiRevision)) {
       host.dispatchEvent(new CustomEvent('vivim:wiki-committed', {
         bubbles: true, detail: { revision: receipt.result.wikiRevision }
@@ -334,7 +337,7 @@ export function createControlChat({
     const card = elem('div', 'vivim-receipt');
     if (receipt.replayed) card.append(elem('p', 'ux-meta', 'This receipt was already applied; nothing ran twice.'));
     if (receipt.result !== undefined) card.append(elem('pre', 'ux-note', describe(receipt.result)));
-    if (receipt.status === 'applied' && ['wiki.section.edit','wiki.page.create','wiki.page.move','wiki.pages.link','wiki.capture.save'].includes(receipt.actionId) &&
+    if (receipt.status === 'applied' && ['wiki.section.edit','wiki.page.create','wiki.page.move','wiki.pages.link','wiki.capture.save','program.write_wiki'].includes(receipt.actionId) &&
         typeof onNavigate === 'function') {
       const open = elem('button', 'btn sm ux-secondary', 'View updated Wiki');
       open.type = 'button';
@@ -353,6 +356,39 @@ export function createControlChat({
     return card.children.length ? card : null;
   }
 
+  async function loadSharedPrograms(){
+    if(programLoading||!transport.direct)return;
+    const epoch=suggestionEpoch;programLoading=true;programError='';redraw();
+    try{const result=await client.call('programs');if(epoch!==suggestionEpoch)return;
+      if(result?.schema!=='vivim.shared-programs/1'||result.authority!=='discovery-only'||!Array.isArray(result.entries)||result.entries.length>500)throw Error('Invalid shared program projection');
+      sharedPrograms=result.entries.filter(x=>x&&typeof x.phrase==='string'&&x.phrase.length<=200&&['read','change'].includes(x.kind)&&[null,'wiki-page-slug'].includes(x.parameter)&&Number.isSafeInteger(x.steps)&&x.steps>=2&&x.steps<=8&&typeof x.available==='boolean');
+    }catch{if(epoch===suggestionEpoch){sharedPrograms=null;programError='Shared programs unavailable. Check the paired connection.';}}
+    finally{programLoading=false;if(epoch===suggestionEpoch)redraw();}
+  }
+  function renderSharedPrograms(){
+    const programs=elem('section','vivim-plan');
+    const load=elem('button','btn sm ux-secondary',programLoading?'Reading shared programs…':sharedPrograms?'Refresh shared programs':'Shared programs');load.type='button';load.disabled=programLoading;load.addEventListener('click',()=>void loadSharedPrograms());programs.append(load);
+    if(programError)programs.append(elem('p','ux-meta',programError));
+    if(sharedPrograms){
+      programs.append(elem('p','ux-meta','Owner-shared meanings only. Drafting does not send or approve.'));
+      for(const entry of sharedPrograms){
+        const row=elem('div','vivim-plan');row.append(elem('strong','',entry.phrase),elem('p','ux-meta',entry.steps+' steps · '+(entry.kind==='read'?'read only':'fresh approval required')+(entry.parameter?' · page slug':'')));
+        const draft=elem('button','btn sm','Draft invocation');draft.type='button';draft.disabled=!entry.available;
+        let field=null;
+        if(entry.parameter){field=elem('input','notes-input');field.placeholder='new-page-slug';field.setAttribute('aria-label','Page slug for '+entry.phrase);field.maxLength=63;field.disabled=!entry.available;row.append(field);}
+        const status=elem('p','ux-meta','');
+        draft.addEventListener('click',()=>{
+          if(busy||!entry.available)return;
+          const parameter=field?.value.trim()??'';
+          if(field&&(!/^[a-z][a-z0-9-]{0,62}$/.test(parameter)||['constructor','prototype','__proto__'].includes(parameter))){status.textContent='Enter a valid lowercase page slug.';return;}
+          host.dispatchEvent(new CustomEvent('vivim:control-example',{bubbles:true,detail:{text:entry.phrase+(field?' '+parameter:'')}}));
+        });
+        row.append(draft,status);if(!entry.available)row.append(elem('p','ux-meta','This grant does not permit changes.'));programs.append(row);
+      }
+      if(!sharedPrograms.length)programs.append(elem('p','ux-meta','No compatible programs shared with this surface.'));
+    }
+    return programs;
+  }
   function render() {
     const fragment = doc.createDocumentFragment();
     // The mounted screen names what can be asked from here; prompts only fill
@@ -371,6 +407,7 @@ export function createControlChat({
       empty.append(examples);
       fragment.append(empty);
     }
+    if(transport.direct&&!busy&&!messages.some(m=>['approval','uncertain','applying','reviewing'].includes(m.status)))fragment.append(renderSharedPrograms());
     for (const msg of messages) {
       const row = elem('div', 'm ' + (msg.role === 'owner' ? 'u' : 'a'));
       if (msg.role !== 'owner') row.append(elem('div', 'badge', 'VIVIM · HOST'));
@@ -381,6 +418,7 @@ export function createControlChat({
       if (msg.status === 'waiting' || msg.status === 'applying' || msg.status === 'reviewing')
         row.append(elem('div', 'ux-meta', msg.status === 'applying' ? 'Applying once · waiting for receipt…' :
           msg.status === 'reviewing' ? 'Reading the Host receipt · no second execution' : 'Previewing · no action executed'));
+      if(msg.programRead&&Array.isArray(msg.programRead.steps)){const summary=elem('div','vivim-plan');for(const step of msg.programRead.steps){const r=step.result;summary.append(elem('strong','',step.stepId+' · '+step.actionId));if(step.actionId==='wiki.section.read'&&typeof r?.content==='string')summary.append(elem('p','ux-meta',r.page+'/'+r.section),elem('pre','ux-note',r.content));else if(Array.isArray(r?.pages))summary.append(elem('pre','ux-note',r.pages.map(p=>p.page+': '+p.sections.join(', ')).join('\n')+(r.omitted?'\nMore pages: '+r.omitted:'')));}row.append(summary);}
       if (msg.receipt) {
         const card = receiptCard(msg);
         if (card) row.append(card);
@@ -481,7 +519,7 @@ export function createControlChat({
         }
         const args = plan.args && typeof plan.args === 'object' ? Object.entries(plan.args).slice(0, 12) : [];
         if (args.length) card.append(elem('pre', 'ux-note', JSON.stringify(plan.args, null, 2)));
-        if (['wiki.section.edit','wiki.page.create','wiki.page.move','wiki.pages.link','wiki.capture.save'].includes(plan.actionId) && plan.preview) {
+        if (['wiki.section.edit','wiki.page.create','wiki.page.move','wiki.pages.link','wiki.capture.save','program.write_wiki'].includes(plan.actionId) && plan.preview) {
           // Host-resolved target and bound revision, not caller-supplied display data.
           card.append(elem('strong', '', 'Wiki · ' + plan.preview.target),
             elem('p', 'ux-meta', 'Revision ' + plan.preview.expectedRevision + ' · Exact change'));
@@ -537,7 +575,7 @@ export function createControlChat({
   function redact() {
     suggestionEpoch++;
     messages = [];
-    suggestions = [];
+    suggestions = [];sharedPrograms=null;programError='';
     redraw();
   }
 
