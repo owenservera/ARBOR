@@ -3,6 +3,7 @@
 // @hq:context Machine-readable API surface derived from the canonical Host catalog.
 // @hq:invariant Discovery is not authorization or live acceptance.
 import { readFileSync } from 'node:fs';
+import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
 const BASE = '/api/host/control';
 // Research candidates are not executable capabilities. The original snapshot
 // remains independent of current Host capability readiness or account grants.
@@ -15,6 +16,99 @@ export function readIntegrationTargets() {
     throw new TypeError('Invalid integration research inventory');
   return inventory;
 }
+// Cursors are integrity-protected, bound to the authenticated owner credential
+// or short-lived UI session, exact filters and current projection. No new store.
+const hash = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
+const searchError = (code, status = 400) => Object.assign(new Error(code), { code, status });
+const READINESS = ['adapter_pending', 'enforcement_missing', 'unsupported', 'source_wired', 'verified'];
+const TIERS = ['P0','P1','P2','P3'];
+const RISKS = ['R0','R1','R2','R3'];
+function queryShape(params, kind) {
+  const allowed = new Set(['q','category','limit','cursor', ...(kind === 'actions' ? ['readiness','risk'] : ['tier'])]);
+  for (const key of params.keys()) {
+    if (!allowed.has(key) || params.getAll(key).length !== 1) throw searchError('API_QUERY_INVALID');
+  }
+  const get = key => params.get(key) ?? '';
+  if (['q','category'].some(key => get(key).length > 160) ||
+      (params.has('readiness') && !READINESS.includes(get('readiness'))) ||
+      (params.has('risk') && !RISKS.includes(get('risk'))) ||
+      (params.has('tier') && !TIERS.includes(get('tier')))) throw searchError('API_QUERY_INVALID');
+  const n = params.has('limit') ? get('limit') : '25';
+  if (!/^[1-9][0-9]{0,2}$/.test(n) || Number(n)>100) throw searchError('API_QUERY_INVALID');
+  if (params.has('cursor') && (!get('cursor') || get('cursor').length > 1024)) throw searchError('API_CURSOR_INVALID');
+  return { filters: { q:get('q').trim().toLowerCase(), category:get('category').trim().toLowerCase(),
+    ...(kind === 'actions' ? { readiness:get('readiness'), risk:get('risk') } : { tier:get('tier') }) },
+    limit:Number(n), cursor:get('cursor') };
+}
+function cursorSigner(secret) {
+  if (typeof secret !== 'string' || secret.length < 32) throw searchError('OWNER_AUTH', 401);
+  const key = createHmac('sha256', secret).update('vivim.discovery.cursor/1').digest();
+  const sign = body => createHmac('sha256', key).update(body).digest();
+  return {
+    encode(data) {
+      const body = Buffer.from(JSON.stringify(data)).toString('base64url');
+      return body + '.' + sign(body).toString('base64url');
+    },
+    decode(token) {
+      const parts = token.split('.');
+      if (parts.length !== 2 || !parts.every(p=>/^[A-Za-z0-9_-]+$/.test(p))) throw searchError('API_CURSOR_INVALID');
+      const [body, signature] = parts, actual = Buffer.from(signature,'base64url'), expected = sign(body);
+      if (actual.length !== expected.length || actual.toString('base64url') !== signature ||
+          !timingSafeEqual(actual,expected)) throw searchError('API_CURSOR_INVALID');
+      try { return JSON.parse(Buffer.from(body,'base64url').toString('utf8')); }
+      catch { throw searchError('API_CURSOR_INVALID'); }
+    }
+  };
+}
+export function searchUniversalApi({kind, discovery, inventory, params, secret}) {
+  if (!['actions','targets'].includes(kind)) throw searchError('API_QUERY_INVALID');
+  const {filters,limit,cursor} = queryShape(params,kind), signer = cursorSigner(secret);
+  if (kind === 'actions' && (discovery?.schema !== 'vivim.control-discovery/1' || !Array.isArray(discovery.actions)))
+    throw searchError('API_DISCOVERY_UNAVAILABLE',503);
+  const source = kind === 'actions' ? discovery.actions.map(capabilitySummary) : (inventory ?? readIntegrationTargets()).entries;
+  const id = entry => entry.id;
+  const revision = hash([kind,kind === 'actions' ? discovery.version : '2026-11-06',source]);
+  const binding = hash([kind,filters,limit]);
+  const matches = source.filter(entry => {
+    const searchable = [id(entry),entry.title,entry.category,entry.entityArchetype,...(entry.examples ?? [])]
+      .filter(v=>typeof v==='string').join(' ').toLowerCase();
+    return (!filters.q || filters.q.split(/\s+/).every(word=>searchable.includes(word))) &&
+      (!filters.category || String(entry.category).toLowerCase() === filters.category) &&
+      (!filters.readiness || entry.readiness === filters.readiness) &&
+      (!filters.risk || entry.risk === filters.risk) && (!filters.tier || entry.tier === filters.tier);
+  }).sort((a,b)=>id(a)<id(b)?-1:id(a)>id(b)?1:0);
+  let start = 0;
+  if (cursor) {
+    const state = signer.decode(cursor);
+    if (!state || state.binding !== binding || typeof state.last !== 'string') throw searchError('API_CURSOR_INVALID');
+    if (state.revision !== revision) throw searchError('API_CURSOR_STALE',409);
+    const index = matches.findIndex(entry=>id(entry)===state.last);
+    if (index < 0) throw searchError('API_CURSOR_INVALID');
+    start = index+1;
+  }
+  const entries = matches.slice(start,start+limit);
+  return { schema:'vivim.discovery-page/1', kind, authority:kind==='actions'?'catalog-description-only':'research-only',
+    revision, total:matches.length, limit, entries,
+    nextCursor:start+entries.length<matches.length?signer.encode({binding,revision,last:id(entries.at(-1))}):null };
+}
+function capabilitySummary(a) {
+  return {id:a.actionId,title:a.title,category:a.category,risk:a.risk,readiness:a.readiness,
+    executable:a.executable,available:a.available,liveAcceptance:a.liveAcceptance,reversible:a.reversible,
+    args:typedSchema(a).properties.args,examples:a.examples,surfaces:a.surfaces,
+    ...(a.precondition?{precondition:a.precondition}:{})};
+}
+const queryParameter = (name,schema,description) => ({name,in:'query',required:false,schema,description});
+function discoveryParameters(kind) {
+  return [
+    queryParameter('q',{type:'string',maxLength:160},'Case-insensitive token search'),
+    queryParameter('category',{type:'string',maxLength:160},'Exact category, case-insensitive'),
+    queryParameter('limit',{type:'integer',minimum:1,maximum:100,default:25},'Maximum entries per page'),
+    queryParameter('cursor',{type:'string',maxLength:1024},'Opaque cursor; repeat identical filters and page size'),
+    ...(kind==='actions'?[queryParameter('readiness',{type:'string',enum:READINESS},'Source readiness'),queryParameter('risk',{type:'string',enum:RISKS},'Canonical risk')]:
+      [queryParameter('tier',{type:'string',enum:TIERS},'Research priority tier')])
+  ];
+}
+
 const json = schema => ({ 'application/json': { schema } });
 const response = (description, schema = { type: 'object' }) => ({ description, content: json(schema) });
 const closed = (properties, required = Object.keys(properties)) => ({ type: 'object', properties, required, additionalProperties: false });
@@ -54,7 +148,7 @@ export function buildUniversalApi(discovery) {
   const input = { oneOf: [closed({ text: { type: 'string', minLength: 1, maxLength: 1000 } }), ...typed] };
   return {
     openapi: '3.1.1',
-    info: { title: 'VIVIM / ARBOR Universal API', version: '0.1.0',
+    info: { title: 'VIVIM / ARBOR Universal API', version: '0.2.0',
       description: 'Local owner API derived from the existing Host action catalog. Readiness does not grant access. R0 plans may read; changes require exact owner-approved plans. This contract describes the text and typed subset; other specialized Host surfaces retain their existing contracts.' },
     servers: [{ url: '/' }],
     security: [{ ownerToken: [] }],
@@ -63,6 +157,8 @@ export function buildUniversalApi(discovery) {
     paths: {
       [BASE + '/openapi.json']: { get: read('vivimDescribeApi', 'Discover this owner-scoped API contract') },
       [BASE + '/catalog']: { get: read('vivimDiscoverCapabilities', 'Discover canonical Host capability readiness') },
+      [BASE + '/capabilities']: { get: read('vivimSearchCapabilities', 'Search the Host action catalog without granting access', discoveryParameters('actions')) },
+      [BASE + '/integration-targets/search']: { get: read('vivimSearchIntegrationTargets', 'Browse research-only targets in bounded pages', discoveryParameters('targets')) },
       [BASE + '/integration-targets']: { get: read('vivimDiscoverIntegrationTargets', 'Read the original research-only integration inventory; entries are not callable actions') },
       [BASE + '/interpret']: { post: post('vivimInterpret', 'Resolve text without performing a requested effect',
         closed({ text: { type: 'string', maxLength: 1000 } })) },
