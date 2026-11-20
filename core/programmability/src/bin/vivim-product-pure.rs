@@ -1,54 +1,76 @@
-//! Single bounded native stdio adapter for five existing pure VIVIM domains.
-//! @hq:capability vivim.product-pure-native@1
-//! Zero network, filesystem paths, authorization, device I/O or Host effects.
-use std::io::{self,Read,Write};
-use serde_json::{Value,json};
-const REQUEST_SCHEMA:&str="vivim.product-pure-request/1";
-const RESPONSE_SCHEMA:&str="vivim.product-pure-response/1";
-const MAX_INPUT:u64=512*1024;
-const MAX_OUTPUT:usize=512*1024;
-fn refuse(operation:&str,code:&str)->Value{
-    json!({"schema":RESPONSE_SCHEMA,"state":"refused","operation":operation,
-        "code":code,"authority":"none","executionAuthorized":false,
-        "effectPerformed":false})
+//! Shared Rust kernel transport: bounded one-shot (legacy) and persistent NDJSON.
+//! @hq:capability vivim.product-kernel-transport@1
+//! Both modes execute inert pure computations, no Host authority.
+use std::io::{self,BufRead,Read,Write};
+use serde_json::Value;
+use vivim_programmability_core::product_kernel::{
+    dispatch_json,refuse,MAX_WIRE_BYTES
+};
+const MAX_FRAME:usize=MAX_WIRE_BYTES+256;
+fn write_response<W:Write>(out:&mut W,response:&str)->io::Result<()>{
+    out.write_all(response.as_bytes())?;
+    out.write_all(b"\n")?;
+    out.flush()
 }
-fn dispatch(raw:&Value)->Value{
-    let operation=raw["operation"].as_str().unwrap_or("");
-    if raw["schema"]!=REQUEST_SCHEMA||!raw["input"].is_object(){
-        return refuse(operation,"INVALID_NATIVE_REQUEST")
+fn frame<R:BufRead>(reader:&mut R)->io::Result<Option<Vec<u8>>>{
+    let mut data=Vec::new();
+    loop{
+        let chunk=reader.fill_buf()?;
+        if chunk.is_empty(){
+            return if data.is_empty(){Ok(None)}
+            else{Err(io::Error::new(io::ErrorKind::UnexpectedEof,"incomplete kernel frame"))}
+        }
+        let line_end=chunk.iter().position(|b|*b==b'\n');
+        let len=line_end.map(|n|n+1).unwrap_or(chunk.len());
+        let too_large=data.len().saturating_add(len)>MAX_FRAME;
+        if !too_large{data.extend_from_slice(&chunk[..len]);}
+        reader.consume(len);
+        if too_large{
+            return Err(io::Error::new(io::ErrorKind::InvalidData,"kernel frame too large"))
+        }
+        if line_end.is_some(){return Ok(Some(data))}
     }
-    let result=match operation{
-        "command-program"=>
-            vivim_programmability_core::command_program::compile(&raw["input"]),
-        "context-grounding"=>
-            vivim_programmability_core::context_grounding::resolve(&raw["input"]),
-        "wiki-target"=>
-            vivim_programmability_core::wiki_target::resolve(&raw["input"]),
-        "wiki-target-batch"=>
-            vivim_programmability_core::wiki_target::resolve_batch(&raw["input"]),
-        "recovery-diagnosis"=>
-            vivim_programmability_core::recovery_diagnosis::diagnose(&raw["input"]["finding"]),
-        "recovery-diagnosis-batch"=>
-            vivim_programmability_core::recovery_diagnosis::diagnose_batch(&raw["input"]),
-        "ui-value"=>
-            vivim_programmability_core::ui_value::validate(&raw["input"]),
-        _=>return refuse(operation,"UNKNOWN_NATIVE_OPERATION")
-    };
-    json!({"schema":RESPONSE_SCHEMA,"state":"computed","operation":operation,
-        "result":result,"authority":"none","executionAuthorized":false,
-        "effectPerformed":false})
+}
+fn serve()->io::Result<()>{
+    let stdin=io::stdin();let mut reader=stdin.lock();
+    let stdout=io::stdout();let mut writer=stdout.lock();
+    while let Some(bytes)=frame(&mut reader)?{
+        let response=match serde_json::from_slice::<Value>(&bytes){
+            Ok(request)=>{
+                let id=request["requestId"].as_str().unwrap_or("");
+                let valid=!id.is_empty()&&id.len()<=64&&id.bytes().all(|b|
+                    b.is_ascii_alphanumeric()||b==b'_'||b==b'-');
+                if !valid{
+                    refuse("","INVALID_REQUEST_ID").to_string()
+                }else{
+                    let mut result=serde_json::from_str::<Value>(&dispatch_json(
+                        std::str::from_utf8(&bytes).unwrap_or("")
+                    )).unwrap_or_else(|_|refuse("","INVALID_JSON"));
+                    result["requestId"]=Value::String(id.to_owned());
+                    let encoded=result.to_string();
+                    if encoded.len()>MAX_FRAME{
+                        let mut fallback=refuse("","NATIVE_RESULT_TOO_LARGE");
+                        fallback["requestId"]=Value::String(id.to_owned());
+                        fallback.to_string()
+                    }else{encoded}
+                }
+            }
+            Err(_)=>refuse("","INVALID_JSON").to_string()
+        };
+        write_response(&mut writer,&response)?;
+    }
+    Ok(())
 }
 fn main()->io::Result<()>{
-    let mut bytes=Vec::new();
-    io::stdin().lock().take(MAX_INPUT+1).read_to_end(&mut bytes)?;
-    let outcome=if bytes.len() as u64>MAX_INPUT{refuse("","INPUT_TOO_LARGE")}
-        else if let Ok(value)=serde_json::from_slice::<Value>(&bytes){dispatch(&value)}
-        else{refuse("","INVALID_JSON")};
-    let output=serde_json::to_vec(&outcome).map_err(io::Error::other)?;
-    let output=if output.len()>MAX_OUTPUT{
-        serde_json::to_vec(&refuse("","NATIVE_RESULT_TOO_LARGE")).map_err(io::Error::other)?
-    }else{output};
-    let mut stdout=io::stdout().lock();
-    stdout.write_all(&output)?;
-    stdout.write_all(b"\n")
+    if std::env::args().nth(1).as_deref()==Some("--serve"){return serve()}
+    let mut data=Vec::new();
+    io::stdin().lock().take((MAX_WIRE_BYTES+1)as u64).read_to_end(&mut data)?;
+    let result=if data.len()>MAX_WIRE_BYTES{refuse("","INPUT_TOO_LARGE").to_string()}
+    else{
+        match std::str::from_utf8(&data){
+            Ok(raw)=>dispatch_json(raw),
+            Err(_)=>refuse("","INVALID_JSON").to_string()
+        }
+    };
+    write_response(&mut io::stdout().lock(),&result)
 }
