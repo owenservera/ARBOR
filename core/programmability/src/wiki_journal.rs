@@ -193,3 +193,127 @@ pub fn changes(input:&Value)->Value {
         "total":total,"omitted":total.saturating_sub(projected.len()),"items":projected
     })
 }
+
+
+// Rust computes exact pure Wiki structure transitions from Host-supplied current
+// page identities and links. The Host alone persists the resulting journal edit.
+// @hq:capability vivim.rust-wiki-structure-transition@1
+fn valid_page_name(name:&str)->bool{
+    let bytes=name.as_bytes();
+    !bytes.is_empty()&&bytes.len()<=80&&bytes[0].is_ascii_alphabetic()&&
+    bytes[1..].iter().all(|b|b.is_ascii_alphanumeric()||
+        matches!(*b,b' '|b'_'|b'.'|b'-'))
+}
+fn valid_page_slug(name:&str)->bool{
+    let bytes=name.as_bytes();
+    !bytes.is_empty()&&bytes.len()<=63&&bytes[0].is_ascii_alphabetic()&&
+    bytes[1..].iter().all(|b|b.is_ascii_alphanumeric()||*b==b'-')&&
+    !matches!(name.to_ascii_lowercase().as_str(),"__proto__"|"constructor"|"prototype")
+}
+fn canonical<'a>(names:&'a [String],requested:&str)->Option<&'a str>{
+    let mut matched=names.iter().filter(|name|name.eq_ignore_ascii_case(requested));
+    let name=matched.next()?;
+    if matched.next().is_some(){return None}
+    Some(name.as_str())
+}
+pub fn structure_transition(input:&Value)->Value {
+    let refuse=|code:&str|json!({
+        "schema":"vivim.wiki-structure-transition/1","outcome":"refused",
+        "code":code,"authority":"none","executionAuthorized":false,
+        "effectPerformed":false
+    });
+    if input["schema"]!="vivim.wiki-structure-source/1"{return refuse("INVALID_SOURCE")}
+    let Some(revision)=input["wikiRevision"].as_u64()else{return refuse("INVALID_SOURCE")};
+    if revision==u64::MAX{return refuse("INVALID_SOURCE")}
+    let Some(raw)=input["pages"].as_array()else{return refuse("INVALID_SOURCE")};
+    if raw.len()>1024{return refuse("INVALID_SOURCE")}
+    let mut names=Vec::new();
+    let mut link_sets=std::collections::HashMap::new();
+    for row in raw {
+        let Some(name)=row["name"].as_str().filter(|n|valid_page_name(n))
+            else{return refuse("INVALID_SOURCE")};
+        if names.iter().any(|old:String|old.eq_ignore_ascii_case(name)){
+            return refuse("AMBIGUOUS_SOURCE_PAGE")
+        }
+        let links=match &row["links"] {
+            Value::Null=>Vec::new(),
+            Value::Array(items) if items.len()<=128=>{
+                let mut found=Vec::new();
+                for item in items {
+                    let Some(target)=item.as_str().filter(|target|valid_page_name(target))
+                        else{return refuse("INVALID_SOURCE")};
+                    if found.iter().any(|old:&String|old==target){
+                        return refuse("INVALID_SOURCE")
+                    }
+                    found.push(target.to_owned());
+                }
+                found
+            },
+            _=>return refuse("INVALID_SOURCE"),
+        };
+        names.push(name.to_owned());
+        link_sets.insert(name.to_owned(),links);
+    }
+    let edit=&input["edit"];
+    let Some(action)=edit["action"].as_str()else{return refuse("INVALID_EDIT")};
+    let mut order=names.clone();
+    let (canonical_edit,patch)=match action {
+        "create-page"=>{
+            let Some(name)=edit["page"].as_str().filter(|name|valid_page_slug(name))
+                else{return refuse("INVALID_EDIT")};
+            if names.len()>=256{return refuse("PAGE_CAPACITY")}
+            if names.iter().any(|existing|existing.eq_ignore_ascii_case(name)){
+                return refuse("PAGE_EXISTS")
+            }
+            order.push(name.to_owned());
+            (json!({"action":"create-page","page":name}),
+             json!({"kind":"create-page","page":name,"order":order}))
+        },
+        "move-page"=>{
+            let Some(name)=edit["page"].as_str().filter(|name|valid_page_name(name))
+                else{return refuse("INVALID_EDIT")};
+            let Some(position)=edit["position"].as_str().filter(|position|
+                matches!(*position,"top"|"bottom"|"up"|"down"))
+                else{return refuse("INVALID_EDIT")};
+            let Some(page)=canonical(&names,name)else{return refuse("PAGE_UNKNOWN")};
+            let Some(from)=names.iter().position(|name|name==page)
+                else{return refuse("PAGE_UNKNOWN")};
+            let to=match position {
+                "top"=>0,"bottom"=>names.len()-1,
+                "up"=>from.saturating_sub(1),
+                "down"=>(from+1).min(names.len()-1),
+                _=>return refuse("INVALID_EDIT")
+            };
+            if from==to{return refuse("PAGE_ALREADY_POSITIONED")}
+            let moved=order.remove(from);
+            order.insert(to,moved);
+            (json!({"action":"move-page","page":page,"position":position}),
+             json!({"kind":"move-page","page":page,"order":order}))
+        },
+        "link-pages"=>{
+            let Some(source)=edit["from"].as_str().filter(|name|valid_page_name(name))
+                else{return refuse("INVALID_EDIT")};
+            let Some(target)=edit["to"].as_str().filter(|name|valid_page_name(name))
+                else{return refuse("INVALID_EDIT")};
+            let Some(from)=canonical(&names,source)else{return refuse("PAGE_UNKNOWN")};
+            let Some(to)=canonical(&names,target)else{return refuse("PAGE_UNKNOWN")};
+            if from==to{return refuse("SELF_LINK")}
+            let Some(old_links)=link_sets.get(from)else{return refuse("INVALID_SOURCE")};
+            if old_links.len()>=128||old_links.iter().any(|link|link==to){
+                return refuse("LINK_EXISTS_OR_CAPACITY")
+            }
+            let mut links=old_links.clone();
+            links.push(to.to_owned());
+            (json!({"action":"link-pages","from":from,"to":to}),
+             json!({"kind":"link-pages","from":from,"to":to,
+                    "order":order,"links":links}))
+        },
+        _=>return refuse("INVALID_EDIT")
+    };
+    json!({
+        "schema":"vivim.wiki-structure-transition/1","outcome":"computed",
+        "previousRevision":revision,"wikiRevision":revision+1,
+        "edit":canonical_edit,"patch":patch,
+        "authority":"none","executionAuthorized":false,"effectPerformed":false
+    })
+}

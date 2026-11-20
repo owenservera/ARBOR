@@ -33,6 +33,7 @@ pub fn dispatch(request:&Value)->Value{
         "wiki-source-delta"=>crate::wiki_read::source_delta(input),
         "wiki-capture-projection"=>crate::wiki_journal::captures(input),
         "wiki-change-projection"=>crate::wiki_journal::changes(input),
+        "wiki-structure-transition"=>crate::wiki_journal::structure_transition(input),
         "development-projection"=>crate::development_projection::project(input),
         "control-plan-preview"=>crate::control_plan_presentation::project(input),
         "control-receipt-preview"=>crate::control_plan_presentation::receipt_project(input),

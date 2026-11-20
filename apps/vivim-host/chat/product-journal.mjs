@@ -183,6 +183,55 @@ function applyStructureEdit(wiki,entry,fault){
   requireShape(Object.keys(entry.edit).every(k=>entry.edit[k]===applied.edit[k]),'Noncanonical Wiki structure record',fault);
   wiki.revision++;
 }
+// This write-queue preflight uses Rust to compute a pure structure patch from
+// the committed Host snapshot. There is no Rust filesystem access or effect path.
+async function previewNativeWikiStructure(wiki,payload){
+  const source={schema:'vivim.wiki-structure-source/1',wikiRevision:wiki.revision,
+    pages:Object.entries(wiki.pages).map(([name,page])=>({
+      name,links:page.links??null
+    })),edit:payload.edit};
+  const native=await runNativeProductPure('wiki-structure-transition',source);
+  if(native.state==='unavailable')return previewWikiPayload(wiki,payload);
+  const value=native.result,patch=value?.patch;
+  requireShape(native.state==='computed'&&value?.schema==='vivim.wiki-structure-transition/1'&&
+    value.outcome==='computed'&&value.authority==='none'&&
+    value.executionAuthorized===false&&value.effectPerformed===false&&
+    value.previousRevision===wiki.revision&&value.wikiRevision===wiki.revision+1&&
+    patch?.kind===payload.edit.action&&Array.isArray(patch.order)&&
+    patch.order.length<=256&&new Set(patch.order).size===patch.order.length&&
+    patch.order.every(name=>typeof name==='string')&&
+    value.edit&&typeof value.edit==='object'&&
+    Object.entries(payload.edit).every(([key,original])=>value.edit[key]===original),
+    'Rust Wiki structure transition refused or incompatible',409);
+  const previous=Object.keys(wiki.pages);
+  const next=copy(wiki);
+  if(patch.kind==='create-page'){
+    requireShape(patch.page===payload.edit.page&&patch.order.length===previous.length+1&&
+      JSON.stringify(patch.order)===JSON.stringify([...previous,patch.page])&&
+      !Object.hasOwn(next.pages,patch.page),'Invalid Rust page creation patch',503);
+    Object.defineProperty(next.pages,patch.page,{
+      value:{sections:{About:''}},enumerable:true,writable:true,configurable:true
+    });
+  }else if(patch.kind==='move-page'){
+    requireShape(patch.order.length===previous.length&&
+      patch.order.every(name=>Object.hasOwn(next.pages,name))&&
+      Object.hasOwn(next.pages,patch.page),'Invalid Rust move patch',503);
+    next.pages=Object.fromEntries(patch.order.map(name=>[name,next.pages[name]]));
+  }else if(patch.kind==='link-pages'){
+    const old=next.pages[patch.from]?.links??[];
+    requireShape(patch.order.length===previous.length&&
+      JSON.stringify(patch.order)===JSON.stringify(previous)&&
+      typeof patch.to==='string'&&Object.hasOwn(next.pages,patch.to)&&
+      Array.isArray(old)&&Array.isArray(patch.links)&&
+      patch.links.length===old.length+1&&
+      JSON.stringify(patch.links)===JSON.stringify([...old,patch.to]),
+      'Invalid Rust link patch',503);
+    next.pages[patch.from].links=patch.links;
+  }else throw invalid('Unknown Rust structure patch',503);
+  next.revision++;
+  return next;
+}
+
 export function previewWikiPayload(wiki,payload){
   validateEnvelope(payload);
   requireShape(['wiki-edit','wiki-structure'].includes(payload.kind),'Wiki sequence requires Wiki records',400);
@@ -685,11 +734,17 @@ export function createProductJournal({ dataRoot, seedState, seedWiki }) {
       const entries=[];
       for(const payload of payloads){
         validateEnvelope(payload);
-        if(payload.kind==='wiki-edit'||payload.kind==='wiki-structure')wiki=previewWikiPayload(wiki,payload);
+        if(payload.kind==='wiki-edit')wiki=previewWikiPayload(wiki,payload);
+        else if(payload.kind==='wiki-structure')wiki=await previewNativeWikiStructure(wiki,payload);
         const entry={...copy(payload),receivedAt:new Date().toISOString(),entryId:randomUUID(),sequence:current.records.length+entries.length+1,...(sequenceBinding?{sequenceBinding:{...sequenceBinding,step:entries.length+1,total:payloads.length}}:{})};
         validateEnvelope(entry,{stored:true});entries.push(entry);
       }
       const next=replayProductJournal(seedState,seedWiki,[...current.records,...entries]);
+      // The replayed Host journal remains the source of truth; Rust's preflight
+      // must converge to its exact revision and ordered Wiki pages before I/O.
+      requireShape(wiki.revision===next.wiki.revision&&
+        JSON.stringify(wiki.pages)===JSON.stringify(next.wiki.pages),
+        'Rust Wiki transition diverged from committed Host replay',503);
       if(sequence)requireShape(createHash('sha256').update(JSON.stringify(next.wiki.pages)).digest('hex')===expectedPagesDigest,
         'Wiki sequence projection mismatch',409);
       const data=entries.map(entry=>JSON.stringify(entry)+'\n').join('');
