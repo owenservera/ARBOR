@@ -443,7 +443,7 @@ function firstExistingFile(dir, names) {
  * @returns {{mode: string, available: boolean, program: string|null,
  *   args: string[], cwd: string|null, source: string, reason: string|null}}
  */
-export function resolveGraphImporter({ root, env = process.env, platform = process.platform, runtimeRoot = RUNTIME_ROOT } = {}) {
+function resolveGraphBinary(name, features, { root, env = process.env, platform = process.platform, runtimeRoot = RUNTIME_ROOT } = {}) {
   if (typeof root !== 'string' || root.length === 0) throw new TypeError('root_required');
   const base = resolve(root);
   const mode = String(env[IMPORT_MODE_ENV] ?? 'packaged').trim().toLowerCase();
@@ -455,7 +455,7 @@ export function resolveGraphImporter({ root, env = process.env, platform = proce
     const available = existsSync(manifest);
     return {
       mode: 'cargo', available, program: available ? 'cargo' : null,
-      args: available ? ['run', '--quiet', '--manifest-path', manifest, '--features', 'importer', '--bin', IMPORTER_BIN, '--'] : [],
+      args: available ? ['run', '--quiet', '--manifest-path', manifest, '--features', features, '--bin', name, '--'] : [],
       cwd: crateDir, source: `${IMPORT_MODE_ENV}=cargo`,
       reason: available ? null : 'cargo_manifest_missing',
     };
@@ -463,7 +463,7 @@ export function resolveGraphImporter({ root, env = process.env, platform = proce
   if (mode !== 'packaged') {
     return { mode, available: false, program: null, args: [], cwd: null, source: `${IMPORT_MODE_ENV}=${mode}`, reason: `unsupported_import_mode_${mode}` };
   }
-  const names = binaryNames(IMPORTER_BIN, platform);
+  const names = binaryNames(name, platform);
   const overrideDir = env[IMPORTER_BIN_DIR_ENV];
   const override = firstExistingFile(overrideDir, names);
   if (override) {
@@ -485,6 +485,31 @@ export function resolveGraphImporter({ root, env = process.env, platform = proce
     mode: 'packaged', available: false, program: null, args: [], cwd: null,
     source: candidates[0].source, reason: 'importer_not_packaged',
   };
+}
+
+export function resolveGraphImporter(options = {}) {
+  return resolveGraphBinary(IMPORTER_BIN,'importer',options);
+}
+
+// Existing native binary discovery, fixed read-only operation and bounded stdio.
+export function queryDevelopmentGraph({root,journal,operation,key,depth,program,env=process.env}={}){
+  if(!['sources','symbols','impact','program'].includes(operation))throw Error('UNKNOWN_GRAPH_OPERATION');
+  const native=resolveGraphBinary('hqkg-development','importer,native-program',{root,env});
+  if(!native.available) return {schema:'hqkg.development-query/1',state:'unavailable',reason:native.reason};
+  const args=[...native.args,journal,operation,String(key)];
+  if(operation==='impact'&&depth!==undefined)args.push(String(depth));
+  if(operation==='program'&&(typeof program!=='string'||Buffer.byteLength(program)>65536))throw Error('INVALID_PROGRAM');
+  const result=spawnSync(native.program,args,{cwd:native.cwd??undefined,input:operation==='program'?program:undefined,
+    encoding:'utf8',windowsHide:true,shell:false,timeout:120000,maxBuffer:2*1024*1024});
+  if(result.error||result.status!==0)return {schema:'hqkg.development-query/1',state:'unavailable',
+    reason:result.error?'native_graph_spawn_failed':'native_graph_exit_'+result.status,
+    detail:String(result.stderr??'').trim().slice(0,1000)};
+  try{
+    const value=JSON.parse(result.stdout);
+    if(value.schema!=='hqkg.development-query/1'||value.authority!=='read-only'||value.operation!==operation||
+       !Number.isSafeInteger(value.epoch)||value.epoch<0)throw Error('invalid response');
+    return value;
+  }catch{return {schema:'hqkg.development-query/1',state:'unavailable',reason:'native_graph_response_invalid'};}
 }
 
 function field(text, key) {
@@ -534,7 +559,7 @@ export function parseImporterOutput(stdout) {
  * }} args
  */
 export function importGraphExchange({
-  root, journal, exchange, namespace = SOURCE_NAMESPACE,
+  root, journal, exchange, namespace = SOURCE_NAMESPACE, expectedDigest = null,
   env = process.env, platform = process.platform, runtimeRoot = RUNTIME_ROOT, spawn = spawnSync,
 } = {}) {
   if (typeof journal !== 'string' || journal.length === 0) throw new TypeError('journal_required');
@@ -561,13 +586,14 @@ export function importGraphExchange({
   // regression never does. Namespace binding is checked against the importer's
   // own report, so a packaged product cannot apply another producer's exchange.
   const epochOk = parsed.epochAfter != null && (parsed.epochBefore == null || parsed.epochAfter >= parsed.epochBefore);
-  const namespaceOk = namespace == null || parsed.namespace == null ? null : parsed.namespace === namespace;
-  const ok = !spawnError && status === 0 && epochOk && namespaceOk !== false;
+  const namespaceOk = namespace == null ? null : parsed.namespace === namespace;
+  const digestOk=expectedDigest==null||parsed.digest===expectedDigest;
+  const ok = !spawnError && status === 0 && epochOk && namespaceOk !== false && digestOk;
   const reason = ok ? null
     : spawnError ? 'importer_spawn_failed'
       : status !== 0 ? `importer_exit_${status}`
         : !epochOk ? 'epoch_regression'
-          : 'namespace_mismatch';
+          : !digestOk ? 'exchange_digest_mismatch' : 'namespace_mismatch';
   return {
     ok, mode: resolved.mode, importer: resolved.source, program: resolved.program,
     status, reason, epochBefore: parsed.epochBefore, epochAfter: parsed.epochAfter,

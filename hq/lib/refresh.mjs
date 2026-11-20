@@ -313,6 +313,7 @@ export async function runRefreshPipeline({
         journal: join(root, '.hq', 'kg-journal.hqj'),
         exchange: outPath,
         namespace: kgModule.SOURCE_NAMESPACE,
+        expectedDigest: export_.digest,
       });
       kg.mode = imp.mode;
       if (!imp.ok) {

@@ -1049,9 +1049,25 @@ async function cmdVerify(flags) {
 
 async function cmdKg(positional, flags) {
   const sub = positional.shift();
+  if (['sources','symbols','impact','program'].includes(sub)) {
+    const root=findRoot();
+    const kg=await import('../lib/kg-export.mjs');
+    const key=positional.shift();
+    if(typeof key!=='string'||!key||positional.length)return fail(2,'hq kg '+sub+' <key or program-file>');
+    const journal=resolve(String(flags.journal??join(root,'.hq','kg-journal.hqj')));
+    let program,queryKey=key;
+    if(sub==='program'){
+      if(!/^\d+$/.test(String(flags.epoch??'')))return fail(2,'hq kg program <file> --epoch <graph epoch>');
+      if(statSync(resolve(key)).size>65536)return fail(2,'program exceeds 64 KiB');
+      program=readFileSync(resolve(key),'utf8');queryKey=String(flags.epoch);
+    }
+    const result=kg.queryDevelopmentGraph({root,journal,operation:sub,key:queryKey,depth:flags.depth,program});
+    emit(flags,result,JSON.stringify(result,null,2));
+    return result.state==='unavailable'?1:0;
+  }
   if (sub !== 'export' && sub !== 'sync') {
-    emit(flags, { schema: 'hq.kg/1', commands: ['export', 'sync'] },
-      'Usage: hq kg export [--out FILE] [--state FILE] [--no-state] | hq kg sync [--journal FILE]');
+    emit(flags, { schema: 'hq.kg/1', commands: ['export', 'sync','sources','symbols','impact','program'] },
+      'Usage: hq kg export [--out FILE] [--state FILE] [--no-state] | hq kg sync [--journal FILE] | hq kg sources|symbols|impact <key> | hq kg program <file> --epoch <epoch>');
     return sub === undefined ? 0 : 2;
   }
   const { root, config, db } = openWorkspace();
@@ -1072,7 +1088,7 @@ async function cmdKg(positional, flags) {
   // HQKG_IMPORT_MODE=cargo explicitly selects the development fallback.
 // Lane A: spawnSync('cargo') is swapped for bundled hqkg-import binary.
   const journal = resolve(String(flags.journal ?? join(root, '.hq', 'kg-journal.hqj')));
-  const imp = kg.importGraphExchange({ root, journal, exchange: outPath, namespace: kg.SOURCE_NAMESPACE });
+  const imp = kg.importGraphExchange({ root, journal, exchange: outPath, namespace: kg.SOURCE_NAMESPACE, expectedDigest: result.digest });
   if (!imp.ok) {
     const detail = imp.reason === 'importer_not_packaged'
       ? `importer unavailable: packaged ${kg.IMPORTER_BIN} not found in ${kg.PACKAGED_NATIVE_BIN_DIR} (set ${kg.IMPORTER_BIN_DIR_ENV} or select ${kg.IMPORT_MODE_ENV}=cargo for development)`

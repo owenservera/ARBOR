@@ -107,14 +107,16 @@ fn refuse(reason:&str)->Value {json!({
     "schema":crate::SCHEMA,"outcome":"refused","reasonCode":reason,
     "executionAuthorized":false,"effectPerformed":false
 })}
+/// Decode the same bounded strict wire for trusted local native callers.
+pub fn decode_json(input:&str)->Result<(Program,PolicyLimits),&'static str>{
+    if input.len()>65_536{return Err("INPUT_TOO_LARGE")}
+    let raw:Request=serde_json::from_str(input).map_err(|_|"INVALID_WIRE")?;
+    parse(raw)
+}
 /// Byte-limited, strict schema, deterministic output. Never handles grant tokens.
 /// The Host must supply CURRENT authenticated policy and separately admit each effect.
 pub fn validate_json(input:&str)->Value {
-    if input.len()>65_536{return refuse("INPUT_TOO_LARGE");}
-    let raw:Request=match serde_json::from_str(input){
-        Ok(v)=>v,Err(_)=>return refuse("INVALID_WIRE"),
-    };
-    let (program,policy)=match parse(raw){
+    let (program,policy)=match decode_json(input){
         Ok(v)=>v,Err(e)=>return refuse(e),
     };
     match validate_program(&program,&policy){

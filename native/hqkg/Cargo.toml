@@ -52,6 +52,11 @@ name = "hqkg-chat-context"
 path = "src/bin/hqkg-chat-context.rs"
 required-features = ["importer"]
 
+[[bin]]
+name = "hqkg-development"
+path = "src/bin/hqkg-development.rs"
+required-features = ["importer", "native-program"]
+
 [features]
 default = []
 native-program = ["dep:vivim-programmability-core"]
