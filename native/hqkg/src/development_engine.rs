@@ -8,6 +8,7 @@ use crate::{Error, Graph, Node, Result};
 use crate::engine::{ComputeEngine, EngineDescriptor, EngineOutput, EngineRegistry, EngineRequest,
                     SwapReceipt, PURE_ENGINE_SLOT, PURE_INTERFACE, PURE_OPERATIONS};
 use crate::typed_dag::CONTRACT;
+use crate::development_relations;
 use serde_json::{json, Value};
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
@@ -63,7 +64,7 @@ fn parse_count(raw: Option<&&str>, maximum: usize) -> Result<usize> {
 /// incumbent DAG executor. No client may select source paths through this engine.
 fn request_parts<'a>(request: &'a EngineRequest) -> Result<(Vec<(&'a str,u64,&'a str)>, Vec<(&'a str,&'a str)>)> {
     let rows = fields(&request.data)?;
-    if rows.len() < 7 || rows[0] != CONTRACT || rows[2] != "sources" {
+    if rows.len() < 6 || rows[0] != CONTRACT || rows[2] != "sources" {
         return Err(Error::Invalid("not a validated HQKG transformation frame".into()));
     }
     let original = fields(rows[1])?;
@@ -144,14 +145,23 @@ impl ComputeEngine for DevelopmentGraphEngine {
         let mut dependents = BTreeMap::<String,Value>::new();
         let mut symbols = BTreeMap::<String,Value>::new();
         let mut semantic = BTreeMap::<String,Value>::new();
+        let mut potential_wiring=BTreeMap::<String,Value>::new();
+        let mut truncated=false;
+        let mut returns_to_source=false;
         for id in canonical.keys() {
             if matches!(request.operation.as_str(),"select-context"|"compile"|"project") {
-                for row in linked(&self.graph,id,"imports",false)? {
+                let walk=development_relations::imports(&self.graph,id,false,3)?;
+                truncated|=walk.truncated;
+                returns_to_source|=walk.returns_to_source;
+                for row in walk.nodes {
                     if let Some(key)=row["id"].as_str(){imports.insert(key.into(),row);}
                 }
             }
             if matches!(request.operation.as_str(),"evaluate"|"project") {
-                for row in linked(&self.graph,id,"imports",true)? {
+                let walk=development_relations::imports(&self.graph,id,true,3)?;
+                truncated|=walk.truncated;
+                returns_to_source|=walk.returns_to_source;
+                for row in walk.nodes {
                     if let Some(key)=row["id"].as_str(){dependents.insert(key.into(),row);}
                 }
             }
@@ -159,8 +169,16 @@ impl ComputeEngine for DevelopmentGraphEngine {
                 for row in linked(&self.graph,id,"contains-indexed-symbol",false)? {
                     if let Some(key)=row["id"].as_str(){symbols.insert(key.into(),row);}
                 }
-                for row in linked(&self.graph,id,"has-semantic-anchor",false)? {
-                    if let Some(key)=row["id"].as_str(){semantic.insert(key.into(),row);}
+                let found=development_relations::semantic(&self.graph,id)?;
+                truncated|=found.truncated;
+                for row in found.observations {
+                    if let Some(key)=row["anchorId"].as_str(){semantic.insert(key.into(),row);}
+                }
+                for row in found.potential_wiring {
+                    if let (Some(role),Some(peer),Some(id))=
+                        (row["role"].as_str(),row["peerFileId"].as_str(),row["semanticId"].as_str()){
+                        potential_wiring.insert(format!("{role}:{peer}:{id}"),row);
+                    }
                 }
             }
         }
@@ -171,7 +189,8 @@ impl ComputeEngine for DevelopmentGraphEngine {
             let value:Value=serde_json::from_str(data)
                 .map_err(|_|Error::Invalid("upstream computation is not structured graph data".into()))?;
             if value["schema"]!="hqkg.development-transform/1"
-                || value["authority"]!="none" {
+                || value["authority"]!="none"
+                ||value["graphEpoch"].as_u64()!=Some(self.graph.epoch()) {
                 return Err(Error::Conflict("upstream compute contract mismatch".into()));
             }
             previous.push(json!({"stepId":id,"operation":value["operation"],
@@ -183,13 +202,17 @@ impl ComputeEngine for DevelopmentGraphEngine {
         let output=json!({
             "schema":"hqkg.development-transform/1","authority":"none",
             "evidence":"indexed-static-only","operation":request.operation,"state":state,
-            "sourceCount":canonical.len(),"importCount":imports.len(),"symbolCount":symbols.len(),
+            "graphEpoch":self.graph.epoch(),"sourceCount":canonical.len(),
+            "importCount":imports.len(),"symbolCount":symbols.len(),
             "semanticCount":semantic.len(),"dependentCount":dependents.len(),
+            "potentialWiringCount":potential_wiring.len(),"truncated":truncated,
+            "returnsToSource":returns_to_source,
             "sources":canonical.into_values().collect::<Vec<_>>(),
             "imports":imports.into_values().collect::<Vec<_>>(),
             "symbols":symbols.into_values().collect::<Vec<_>>(),
             "semantics":semantic.into_values().collect::<Vec<_>>(),
             "dependents":dependents.into_values().collect::<Vec<_>>(),
+            "potentialWiring":potential_wiring.into_values().collect::<Vec<_>>(),
             "upstream":previous,"executionAuthorized":false,"effectPerformed":false
         });
         let text=serde_json::to_string(&output).map_err(|e|Error::Invalid(e.to_string()))?;

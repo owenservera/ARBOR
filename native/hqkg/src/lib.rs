@@ -29,6 +29,8 @@ pub mod semantic_source;
 pub mod native_program;
 #[cfg(feature = "native-program")]
 pub mod development_engine;
+#[cfg(feature = "native-program")]
+pub mod development_relations;
 pub mod typed_dag;
 pub mod utility_adapter;
 #[cfg(feature = "importer")]
