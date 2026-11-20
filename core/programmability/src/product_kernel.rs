@@ -28,6 +28,7 @@ pub fn dispatch(request:&Value)->Value{
         "vec-admission"=>crate::vec_admission::admit(input),
         "sha256-utf8"=>crate::source_digest::digest_utf8(input),
         "wiki-source-stamp"=>crate::wiki_read::source_stamp(input),
+        "wiki-source-search"=>crate::wiki_read::source_search(input),
         _=>return refuse(op,"UNKNOWN_NATIVE_OPERATION"),
     };
     json!({"schema":RESPONSE_SCHEMA,"state":"computed","operation":op,

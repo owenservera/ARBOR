@@ -1,6 +1,7 @@
 // Same compiled Rust domain kernel as desktop and Host, run locally in PWA.
 // @hq:capability vivim.rust-browser-kernel@1
 // @hq:consumes vivim.rust-wiki-source-stamp@1
+// @hq:consumes vivim.rust-wiki-source-search@1
 // No interpreted source, dynamic code, Host grants or effect APIs.
 const SCHEMA='vivim.product-pure-response/1';
 const WASM_URL='/mobile/wasm/vivim_programmability_core.wasm';
@@ -103,5 +104,25 @@ export function rustWikiSourceStamp(wiki){
     typeof value.digest!=='string'||!/^[a-f0-9]{64}$/.test(value.digest))
     return undefined;
   return {revision:value.revision,digest:value.digest,pagesTotal:value.pagesTotal};
+}
+// Optional bounded Rust-only search over an already-authorized Host Wiki read.
+export function rustWikiSearch(wiki,query){
+  const value=invoke('wiki-source-search',{wiki,query});
+  if(!value||value.schema!=='vivim.wiki-source-search/1'||
+    value.outcome!=='computed'||value.authority!=='none'||
+    value.scope!=='bounded-source-preview'||
+    value.executionAuthorized!==false||value.effectPerformed!==false||
+    !Number.isSafeInteger(value.wikiRevision)||value.wikiRevision<0||
+    typeof value.wikiDigest!=='string'||!/^[0-9a-f]{64}$/.test(value.wikiDigest)||
+    !Number.isSafeInteger(value.scannedPages)||value.scannedPages<0||
+    !Number.isSafeInteger(value.totalPages)||value.totalPages<value.scannedPages||
+    !Number.isSafeInteger(value.matches)||value.matches<0||
+    !Array.isArray(value.results)||value.results.length>24||
+    value.results.length>value.matches||
+    value.results.some(row=>typeof row?.page!=='string'||!row.page||
+      row.section!==null&&typeof row.section!=='string'||
+      typeof row.excerpt!=='string'||row.excerpt.length>240))
+    return undefined;
+  return value;
 }
 export function nativeBrowserKernelReady(){return instance!==null;}

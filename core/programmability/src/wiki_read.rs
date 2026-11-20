@@ -210,3 +210,75 @@ fn capture_read(wiki: &Value, revision: u64) -> Option<Captures> {
     recent.truncate(16);
     Some(Captures{total,omitted,counts:full,recent})
 }
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SearchHit {
+    pub page: String,
+    pub section: Option<String>,
+    pub excerpt: String,
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SearchRead {
+    pub revision: u64,
+    pub digest: String,
+    pub scanned_pages: usize,
+    pub pages_total: usize,
+    pub matches: usize,
+    pub hits: Vec<SearchHit>,
+}
+/// Query the admitted, deliberately bounded Wiki read surface.
+pub fn search_view(view: &WikiRead, query: &str, limit: usize) -> Option<SearchRead> {
+    let term=query.trim();
+    if term.is_empty() || term.chars().count()>160
+       || term.chars().any(char::is_control) || !(1..=24).contains(&limit) {
+        return None;
+    }
+    let needle=term.to_lowercase();
+    let mut hits=Vec::new();
+    let mut matches=0usize;
+    for page in &view.pages {
+        if page.name.to_lowercase().contains(&needle) {
+            matches+=1;
+            if hits.len()<limit {hits.push(SearchHit{
+                page:page.name.clone(),section:None,excerpt:page.name.clone(),
+            });}
+        }
+        for section in &page.sections {
+            if section.title.to_lowercase().contains(&needle)
+                || section.text.to_lowercase().contains(&needle) {
+                matches+=1;
+                if hits.len()<limit {
+                    hits.push(SearchHit{page:page.name.clone(),
+                        section:Some(section.title.clone()),
+                        excerpt:section.text.chars().take(240).collect()});
+                }
+            }
+        }
+    }
+    Some(SearchRead {
+        revision:view.revision,digest:view.digest.clone(),
+        scanned_pages:view.pages.len(),pages_total:view.pages_total,matches,hits,
+    })
+}
+/// Same bounded source-backed search for Host native transport and browser WASM.
+pub fn source_search(input: &Value) -> Value {
+    let refusal=||json!({
+        "schema":"vivim.wiki-source-search/1","outcome":"refused",
+        "code":"INVALID_WIKI_SEARCH","authority":"none",
+        "executionAuthorized":false,"effectPerformed":false
+    });
+    let Some(query)=input["query"].as_str()else{return refusal()};
+    let Ok(view)=read(&input["wiki"])else{return refusal()};
+    let Some(found)=search_view(&view,query,24)else{return refusal()};
+    let rows:Vec<Value>=found.hits.iter().map(|hit|json!({
+        "page":hit.page,"section":hit.section,"excerpt":hit.excerpt,
+    })).collect();
+    json!({
+        "schema":"vivim.wiki-source-search/1","outcome":"computed",
+        "wikiRevision":found.revision,"wikiDigest":found.digest,
+        "scannedPages":found.scanned_pages,"totalPages":found.pages_total,
+        "matches":found.matches,"results":rows,
+        "scope":"bounded-source-preview","authority":"none",
+        "executionAuthorized":false,"effectPerformed":false
+    })
+}
