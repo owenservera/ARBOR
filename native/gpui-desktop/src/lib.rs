@@ -204,7 +204,7 @@ pub fn read_development(operation:&str,key:&str)->Result<String,ReadError>{
         }
         _=>return Err(ReadError::InvalidInput),
     }
-    Ok(lines.join("\\n"))
+    Ok(lines.join("\n"))
 }
 
 #[cfg(test)]
