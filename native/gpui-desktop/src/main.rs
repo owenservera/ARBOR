@@ -64,16 +64,32 @@ impl Desktop {
                     Ok(next) => {
                         match visual_delta(view.visual.as_ref(),next.as_ref()){
                             Ok(delta)=>{
-                                let summary=next.as_ref().map(|v|format!("Committed {} · revision {} · read-only · {} changed / {} added / {} removed",v.surface_id,v.revision,delta.changed.len(),delta.added.len(),delta.removed.len())).unwrap_or_else(||"No committed visual surface".into());
-                                if !delta.is_empty(){
+                                if delta.is_empty(){
+                                    view.visual_status=next.as_ref().map(|v|format!("Committed {} · revision {} · Rust VEC unchanged",v.surface_id,v.revision)).unwrap_or_else(||"No committed visual surface".into());
+                                }else{
                                     match next.as_ref().map(vec::compile).transpose(){
-                                        Ok(compiled)=>{view.vec_view=compiled;view.visual=next;view.visual_status=summary;}
+                                        Ok(compiled)=>match vec::diff(view.vec_view.as_ref(),compiled.as_ref()){
+                                            Ok(changes)=>{
+                                                view.visual_status=next.as_ref().map(|v|format!(
+                                                    "Committed {} · rev {} · Rust VEC: +{} / ~{} / -{} / {} moved / {} reordered / {} bindings{}",
+                                                    v.surface_id,v.revision,changes.added.len(),changes.updated.len(),
+                                                    changes.removed.len(),changes.moved.len(),changes.reordered.len(),
+                                                    changes.changed_bindings.len(),if changes.theme_changed{" · theme changed"}else{""}
+                                                )).unwrap_or_else(||"No committed visual surface".into());
+                                                // Retain revision and binding fences even if no redraw is required.
+                                                view.visual=next;view.vec_view=compiled;
+                                            }
+                                            Err(_)=>{
+                                                view.visual=None;view.vec_view=None;
+                                                view.visual_status="VEC revision or design digest conflict".into();
+                                            }
+                                        },
                                         Err(_)=>{
                                             view.visual=None;view.vec_view=None;
                                             view.visual_status="VEC compilation rejected the admitted visual".into();
                                         }
                                     }
-                                }else{view.visual_status=summary;}
+                                }
                             }
                             Err(_)=>{view.visual=None;view.vec_view=None;view.visual_status="Visual revision conflict".into();}
                         }
