@@ -273,7 +273,52 @@ function buildProjectNameIndex(db) {
 
 // Rust module resolution uses exact, already-indexed files. Never guess a
 // dependency from a crate/package string or add an edge outside this index.
-function resolveRustLocal({importerPath,specifier,kind,index}){
+// Only explicitly indexed local Cargo path dependencies may become cross-crate
+// Rust edges. Unknown registry packages and ambiguous paths stay unresolved.
+function rustManifest(text){
+  let section='',packageName=null,libName=null,libPath='src/lib.rs';
+  const paths=[];
+  for(const line of String(text).split(/\r?\n/)){
+    const heading=/^\s*\[{1,2}([A-Za-z0-9_.-]+)\]{1,2}\s*(?:#.*)?$/.exec(line);
+    if(heading){section=heading[1];continue;}
+    let m;
+    if(section==='package'&&(m=/^\s*name\s*=\s*"([^"]+)"/.exec(line)))packageName=m[1];
+    if(section==='lib'){
+      if((m=/^\s*name\s*=\s*"([^"]+)"/.exec(line)))libName=m[1];
+      if((m=/^\s*path\s*=\s*"([^"]+)"/.exec(line)))libPath=m[1];
+    }
+    if(['dependencies','dev-dependencies','build-dependencies'].includes(section)){
+      m=/^\s*([A-Za-z0-9_-]+)\s*=\s*\{[^}]*\bpath\s*=\s*"([^"]+)"[^}]*\}/.exec(line);
+      if(m)paths.push([m[1].replace(/-/g,'_'),m[2]]);
+    }
+  }
+  return {packageName,libName,libPath,paths};
+}
+function indexedRustCrates(entries,index,readFile){
+  const crates=new Map();
+  for(const entry of entries){
+    const path=toPosix(entry.rel);
+    if(posix.basename(path)!=='Cargo.toml'||!index.has(path)||entry.size>200000)continue;
+    let data;
+    try{data=rustManifest(readFile(entry.abs,'utf8'))}catch{continue}
+    if(!data.packageName)continue;
+    const lib=posix.normalize(posix.join(posix.dirname(path),data.libPath));
+    if(!lib.endsWith('.rs')||lib.startsWith('../')||!index.has(lib))continue;
+    crates.set(path,{rootDir:posix.dirname(lib),rootFile:lib,
+      libName:data.libName??data.packageName.replace(/-/g,'_'),
+      paths:data.paths,aliases:new Map()});
+  }
+  for(const [manifest,crate]of crates){
+    for(const [alias,relative]of crate.paths){
+      const target=posix.normalize(posix.join(posix.dirname(manifest),relative,'Cargo.toml'));
+      const other=crates.get(target);
+      if(other&&other!==crate)crate.aliases.set(alias,other);
+    }
+  }
+  return crates;
+}
+
+function resolveRustLocal({importerPath,specifier,kind,index,rustCrates=null}){
   const miss={file_id:null,project_id:null,kind:'external'};
   if(!importerPath.endsWith('.rs')||!['use','mod'].includes(kind))return miss;
   const path=toPosix(importerPath);
@@ -289,6 +334,7 @@ function resolveRustLocal({importerPath,specifier,kind,index}){
     const parent=posix.dirname(dir);if(parent===dir)break;dir=parent;
   }
   if(!rootDir)return miss;
+  if(posix.basename(path)==='main.rs'&&index.has(path))rootFile=path;
   const rel=posix.relative(rootDir,path);
   if(rel.startsWith('../')||rel==='..')return miss;
   let components=rel.split('/');
@@ -321,7 +367,13 @@ function resolveRustLocal({importerPath,specifier,kind,index}){
         if(!parts.length)return miss;
         parts.pop();tokens.shift();
       }
-    }else return miss;
+    }else{
+      const manifest=rustCrates?.get(posix.join(posix.dirname(rootDir),'Cargo.toml'));
+      const target=manifest?.aliases.get(first)||
+        (bin&&manifest?.libName===first?manifest:null);
+      if(!target)return miss;
+      rootDir=target.rootDir;rootFile=target.rootFile;parts=[];
+    }
     for(const token of tokens){
       if(!/^[A-Za-z_]\\w*$/.test(token))break;
       parts.push(token);
@@ -348,7 +400,7 @@ function resolveRustLocal({importerPath,specifier,kind,index}){
  * resolveImport — resolve one specifier to a file and/or project.
  * @returns {{file_id: number|null, project_id: number|null, kind: 'file'|'project'|'external'}}
  */
-export function resolveImport({ db, projectId = null, file = null, specifier = '', fileIndex = null, projectNames = null, importerLang = null, importKind = null } = {}) {
+export function resolveImport({ db, projectId = null, file = null, specifier = '', fileIndex = null, projectNames = null, importerLang = null, importKind = null, rustCrates = null } = {}) {
   const miss = { file_id: null, project_id: null, kind: 'external' };
   const spec = String(specifier ?? '').trim();
   if (!spec) return miss;
@@ -356,7 +408,7 @@ export function resolveImport({ db, projectId = null, file = null, specifier = '
   const index = normalizeFileIndex(fileIndex);
 
   if(importerLang==='rust'&&['use','mod'].includes(importKind)){
-    return resolveRustLocal({importerPath,specifier:spec,kind:importKind,index});
+    return resolveRustLocal({importerPath,specifier:spec,kind:importKind,index,rustCrates});
   }
 
   if (isRelativeSpecifier(spec)) {
@@ -615,6 +667,7 @@ export function indexProject({ root, db, project, options = {} }) {
     const fileIndex = new Map();
     for (const row of stmts.allFiles.all(projectRow.id)) fileIndex.set(row.path, row.id);
     const projectNames = buildProjectNameIndex(db);
+    const rustCrates=indexedRustCrates(entries,fileIndex,readFile);
     for (const imp of stmts.projectImports.all(projectRow.id)) {
       const resolution = resolveImport({
         db,
@@ -623,6 +676,7 @@ export function indexProject({ root, db, project, options = {} }) {
         specifier: imp.specifier,
         importerLang: imp.importer_lang,
         importKind: imp.import_kind,
+        rustCrates,
         fileIndex,
         projectNames,
       });
