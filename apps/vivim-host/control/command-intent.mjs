@@ -2,6 +2,7 @@
 // Browser/phone and desktop share the exact same NLCL world; Host owns effects.
 import { interpretControl } from '../../mobile-relay/control-language.mjs';
 import { resolvePersonalSemantics } from './personal-semantics.mjs';
+import { runNativeProductPureSync } from './native-product-pure-sync.mjs';
 
 // @hq:type vivim.command-intent@0.1
 export const COMMAND_INTENT_SCHEMA = 'vivim.command-intent/0.1';
@@ -165,12 +166,39 @@ export function validateAiCommandCandidate(input, { catalog, world, personalRule
          proposal.uncertainty < 0 || proposal.uncertainty > 1)))
     return refuse(input, 'INVALID_AI_PROPOSAL', 'AI proposal shape is invalid.');
   const reading = toCommandIntent(input, { catalog, world, personalRules, personalScope });
+  // NLCL owns the interpretation. Rust checks the exact owner-text reading
+  // against the model's bounded proposal and current Host catalog action.
+  const action=check.actions.get(proposal.actionId);
+  const native=runNativeProductPureSync('command-ai-guard',{
+    schema:'vivim.command-ai-proposal-guard-input/1',
+    input:{text:input.text,scope:input.scope??'text',audience:input.audience??'owner',
+      catalogRevision:input.catalogRevision??null,worldRevision:input.worldRevision??null},
+    proposal,reading,action:action??null,
+    catalogVersion:catalog.version,worldRevision:world.v
+  });
+  if(native){
+    const intent=native.intent;
+    if(native.outcome==='projected'&&native.authority==='none'&&
+      native.executionAuthorized===false&&native.effectPerformed===false&&
+      intent?.schema===COMMAND_INTENT_SCHEMA&&
+      (intent.outcome==='refused'&&typeof intent.refusal?.code==='string'&&
+        intent.provenance?.authority==='none'||
+        intent.outcome==='candidate'&&intent.actionId===proposal.actionId&&
+        intent.risk===action?.risk&&intent.owner===action?.owner&&
+        intent.readiness===action?.readiness&&
+        intent.canonical===canonical(proposal.actionId,intent.args)&&
+        intent.provenance?.method==='bounded-ai-proposal'&&
+        intent.provenance?.worldRevision===world.v&&
+        intent.provenance?.catalogRevision===catalog.version&&
+        intent.provenance?.authority==='none'))
+      return intent;
+    return refuse(input,'NATIVE_INTENT_INVALID','Native AI candidate binding invalid.');
+  }
   if (!allowedOutcomes.has(reading.outcome) || reading.outcome === 'refused' ||
       reading.outcome === 'clarification_required')
     return refuse(input, 'UNSAFE_OR_UNRESOLVED_TEXT', 'Owner text must be clarified before proposing an action.');
   if (reading.outcome === 'candidate' && reading.actionId !== proposal.actionId)
     return refuse(input, 'CONFLICTING_ACTION', 'AI proposal conflicts with the deterministic reading.');
-  const action = check.actions.get(proposal.actionId);
   if (!action || action.aiCandidate === false)
     return refuse(input, 'AI_ACTION_NOT_ALLOWED', 'AI may only propose catalog-approved action IDs.');
   const args = checkedArgs(action, proposal.args ?? {});
