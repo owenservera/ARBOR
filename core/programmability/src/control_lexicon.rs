@@ -69,7 +69,7 @@ pub fn transition(input:&Value)->Value{
         }
     }
     let previous=entries.iter().find(|row|row["word"]==word)
-        .and_then(|row|row["actionId"].as_str());
+        .and_then(|row|row["actionId"].as_str()).map(str::to_owned);
     let response=if mode=="teach"{
         if reserved.iter().any(|value|value==word){
             return refused("CONTROL_WORD_RESERVED")
@@ -87,11 +87,11 @@ pub fn transition(input:&Value)->Value{
         entries.push(json!({"word":word,"actionId":action_id,"at":at,"planId":plan_id}));
         entries.sort_by(|a,b|a["word"].as_str().cmp(&b["word"].as_str()));
         history.push(json!({"op":"teach","word":word,"actionId":action_id,
-            "previous":previous,"at":at,"planId":plan_id}));
+            "previous":previous.clone(),"at":at,"planId":plan_id}));
         json!({"word":word,"actionId":action_id,"previous":previous,"version":version+1})
     }else{
         let Some(old)=previous else{return refused("CONTROL_WORD_UNKNOWN")};
-        let forgot=old.to_owned();
+        let forgot=old;
         entries.retain(|row|row["word"]!=word);
         history.push(json!({"op":"forget","word":word,"actionId":forgot,
             "at":at,"planId":plan_id}));
