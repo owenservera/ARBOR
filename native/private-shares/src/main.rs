@@ -454,3 +454,94 @@ fn main() {
     out.push(b'\n');
     let _ = io::stdout().write_all(&out);
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn temporary() -> PathBuf {
+        let root = std::env::temp_dir().join(format!("vivim-shares-native-{}", new_secret(8)));
+        fs::create_dir_all(&root).expect("private native scratch dir");
+        root
+    }
+    fn wire(root: &Path, operation: &str) -> Value {
+        json!({"schema":REQUEST,"dataRoot":root.to_string_lossy(),"operation":operation})
+    }
+    #[test]
+    fn scrypt_keeps_node_legacy_record_compatibility() {
+        // Node 24 crypto.scryptSync('secret44', hex(salt), 32), N=16384,r=8,p=1.
+        assert_eq!(key("secret44", "00112233445566778899aabbccddeeff").unwrap(),
+            "2642a50224dd3d01c6096bb315ecf87866a1441979d409a7159740c3a8095f83");
+    }
+    #[test]
+    fn actual_native_store_reserves_uploads_admits_once_and_revokes() {
+        let root = temporary();
+        let owner = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+        let mut create = wire(&root, "reserve");
+        create["ownerDeviceId"] = json!(owner);
+        create["options"] = json!({"name":"notes.txt","mime":"text/plain","bytes":5,
+            "expiresInHours":1,"maxDownloads":1,"passcode":"secret44"});
+        let share = dispatch(&create).unwrap();
+        let id = supplied(&share, "id").to_owned();
+        let capability = supplied(&share, "capability").to_owned();
+        assert!(is_hex(&id, 32) && is_hex(&capability, 64));
+        let stored = metadata(&root.join("private-shares"), &id).unwrap();
+        assert!(!stored.to_string().contains(&capability));
+        assert!(!stored.to_string().contains("secret44"));
+        let staging = root.join("private-shares/staging/0123456789abcdef0123456789abcdef.upload");
+        fs::write(&staging, b"hello").unwrap();
+        let mut complete = wire(&root, "finish");
+        complete["id"] = json!(id);
+        complete["capability"] = json!(capability);
+        complete["ownerDeviceId"] = json!(owner);
+        complete["stagingName"] = json!("0123456789abcdef0123456789abcdef.upload");
+        assert_eq!(dispatch(&complete).unwrap()["state"],"ready");
+        let mut meta = wire(&root, "inspect");
+        meta["id"] = json!(id);
+        meta["capability"] = json!(capability);
+        meta["passcode"] = json!("secret44");
+        assert_eq!(dispatch(&meta).unwrap()["views"],1);
+        let mut read = meta.clone(); read["operation"] = json!("download");
+        let result = dispatch(&read).unwrap();
+        assert_eq!(result["downloads"],1);
+        assert_eq!(fs::read(supplied(&result, "file")).unwrap(), b"hello");
+        assert_eq!(dispatch(&read).unwrap_err().code,"SHARE_DOWNLOAD_LIMIT_REACHED");
+        let mut revoke = wire(&root,"revoke");
+        revoke["id"] = json!(id); revoke["ownerDeviceId"] = json!(owner);
+        assert!(dispatch(&revoke).unwrap()["revokedAt"].is_string());
+        assert_eq!(dispatch(&meta).unwrap_err().code,"SHARE_NOT_FOUND");
+        fs::remove_dir_all(root).unwrap();
+    }
+    #[test]
+    fn wrong_passcodes_lock_out_even_when_native_process_restarts() {
+        let root=temporary();
+        let owner="bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+        let mut create=wire(&root,"reserve");
+        create["ownerDeviceId"]=json!(owner);
+        create["options"]=json!({"name":"locked.bin","bytes":5,"passcode":"secret44"});
+        let share=dispatch(&create).unwrap();
+        let id=supplied(&share,"id").to_owned();
+        let salt=supplied(&metadata(&root.join("private-shares"),&id).unwrap(),"passSalt").to_owned();
+        assert!(is_hex(&salt,32));
+        let mut meta=wire(&root,"inspect");
+        meta["id"]=share["id"].clone();meta["capability"]=share["capability"].clone();
+        meta["passcode"]=json!("wrong-pass");
+        // Pre-upload inspection intentionally refuses; lockout begins only for live shares.
+        assert_eq!(dispatch(&meta).unwrap_err().code,"SHARE_NOT_READY");
+        let staging=root.join("private-shares/staging/0123456789abcdef0123456789abcdef.upload");
+        fs::write(&staging,b"hello").unwrap();
+        let mut finish=wire(&root,"finish");
+        finish["id"]=share["id"].clone();
+        finish["capability"]=share["capability"].clone();
+        finish["ownerDeviceId"]=json!(owner);
+        finish["stagingName"]=json!("0123456789abcdef0123456789abcdef.upload");
+        dispatch(&finish).unwrap();
+        for _ in 0..5 {
+            assert_eq!(dispatch(&meta).unwrap_err().code,"SHARE_PASSCODE_INVALID");
+        }
+        meta["passcode"]=json!("secret44");
+        assert_eq!(dispatch(&meta).unwrap_err().code,"SHARE_PASSCODE_RATE_LIMITED");
+        fs::remove_dir_all(root).unwrap();
+    }
+}
