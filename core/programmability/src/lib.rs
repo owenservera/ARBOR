@@ -13,6 +13,7 @@ pub mod vec;
 pub mod command_program;
 pub mod context_grounding;
 pub mod wiki_target;
+pub mod recovery_diagnosis;
 mod lineage;
 
 pub const SCHEMA: &str = "vivim.native-program/1";
