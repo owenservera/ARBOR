@@ -7,7 +7,7 @@ export const NATIVE_PURE_SCHEMA='vivim.product-pure-response/1';
 const OPERATIONS=new Set([
   'command-program','context-grounding','wiki-target','wiki-target-batch',
   'recovery-diagnosis','recovery-diagnosis-batch','ui-value','ui-token-pack',
-  'local-navigation','vec-admission'
+  'local-navigation','vec-admission','sha256-utf8'
 ]);
 const unavailable=(operation,code)=>({schema:NATIVE_PURE_SCHEMA,
   state:'unavailable',operation,code,authority:'none',
