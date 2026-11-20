@@ -191,7 +191,8 @@ async function previewNativeWikiStructure(wiki,payload){
       name,links:page.links??null
     })),edit:payload.edit};
   const native=await runNativeProductPure('wiki-structure-transition',source);
-  if(native.state==='unavailable')return previewWikiPayload(wiki,payload);
+  if(native.state==='unavailable'||native.state==='refused'&&
+    native.code==='UNKNOWN_NATIVE_OPERATION')return previewWikiPayload(wiki,payload);
   const value=native.result,patch=value?.patch;
   requireShape(native.state==='computed'&&value?.schema==='vivim.wiki-structure-transition/1'&&
     value.outcome==='computed'&&value.authority==='none'&&
@@ -269,7 +270,7 @@ async function replayNativeProductJournal(seedState,seedWiki,records){
     pages,records:admitted
   });
   if(native.state==='unavailable'||native.state==='refused'&&
-    ['INPUT_TOO_LARGE','NATIVE_RESULT_TOO_LARGE'].includes(native.code))
+    ['UNKNOWN_NATIVE_OPERATION','INPUT_TOO_LARGE','NATIVE_RESULT_TOO_LARGE'].includes(native.code))
     return replayProductJournal(seedState,seedWiki,records);
   const result=native.result;
   requireShape(native.state==='computed'&&result?.schema==='vivim.wiki-journal-replay/1'&&
@@ -397,7 +398,8 @@ async function nativePersonalCaptures(records,wiki){
   const native=await runNativeProductPure('wiki-capture-projection',{
     schema:'vivim.capture-source/1',wikiRevision:wiki.revision,items
   });
-  if(native.state==='unavailable')return projectPersonalCaptures(records,wiki);
+  if(native.state==='unavailable'||native.state==='refused'&&
+    native.code==='UNKNOWN_NATIVE_OPERATION')return projectPersonalCaptures(records,wiki);
   const value=native.result;
   const keys=['notes','openTasks','doneTasks','unknownTasks'];
   requireShape(native.state==='computed'&&value?.schema==='vivim.personal-captures/1'&&
@@ -495,7 +497,9 @@ async function nativeWikiChanges(records,{currentOnly=false}={}){
   const native=await runNativeProductPure('wiki-change-projection',{
     schema:'vivim.wiki-change-source/1',currentOnly,entries
   });
-  if(native.state==='unavailable')return projectWikiChanges(records,{currentOnly});
+  if(native.state==='unavailable'||native.state==='refused'&&
+    ['UNKNOWN_NATIVE_OPERATION','INPUT_TOO_LARGE','NATIVE_RESULT_TOO_LARGE'].includes(native.code))
+    return projectWikiChanges(records,{currentOnly});
   const view=native.result;
   requireShape(native.state==='computed'&&view?.schema==='vivim.wiki-changes-projection/1'&&
     view.outcome==='computed'&&view.authority==='none'&&
