@@ -47,6 +47,7 @@ pub fn dispatch(request:&Value)->Value{
         "wiki-read-recipe"=>crate::wiki_read_recipe::process(input),
         "command-ai-guard"=>crate::command_ai_guard::validate(input),
         "control-lexicon-transition"=>crate::control_lexicon::transition(input),
+        "personal-rule-selection"=>crate::personal_rule_selection::select(input),
         "development-projection"=>crate::development_projection::project(input),
         "control-plan-preview"=>crate::control_plan_presentation::project(input),
         "control-receipt-preview"=>crate::control_plan_presentation::receipt_project(input),
