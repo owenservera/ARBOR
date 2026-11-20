@@ -58,6 +58,16 @@ test('Host persists a private share; capability digest is stored but not plainte
   assert.equal((await reopened.download(row.id,row.capability,'secret44')).downloads,1);
 });
 
+test('Repeated wrong passcodes lock the share for 15 minutes and survive restart',async t=>{
+  const { root, shares }=await fixture(t);
+  const row=await ready(shares,options({passcode:'correct-passcode'}));
+  for(let n=0;n<5;n++)
+    await expectCode(shares.inspect(row.id,row.capability,'wrong-passcode'),403,'SHARE_PASSCODE_INVALID');
+  await expectCode(shares.inspect(row.id,row.capability,'correct-passcode'),429,'SHARE_PASSCODE_RATE_LIMITED');
+  const reopened=createPrivateShares({dataRoot:root});
+  await expectCode(reopened.download(row.id,row.capability,'correct-passcode'),429,'SHARE_PASSCODE_RATE_LIMITED');
+});
+
 test('Only the reserving device may upload or revoke a share',async t=>{
   const { shares }=await fixture(t);
   await expectCode(shares.reserve(options(), 'not-a-device-id'),403,'SHARE_OWNER_INVALID');
