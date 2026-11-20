@@ -27,6 +27,8 @@ pub mod scoped_graph;
 pub mod semantic_source;
 #[cfg(feature = "native-program")]
 pub mod native_program;
+#[cfg(feature = "native-program")]
+pub mod development_engine;
 pub mod typed_dag;
 pub mod utility_adapter;
 #[cfg(feature = "importer")]

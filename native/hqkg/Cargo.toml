@@ -59,7 +59,7 @@ required-features = ["importer", "native-program"]
 
 [features]
 default = []
-native-program = ["dep:vivim-programmability-core"]
+native-program = ["dep:vivim-programmability-core", "dep:serde_json"]
 importer = ["dep:serde_json", "dep:sha2"]
 sqlite = ["dep:rusqlite"]
 postgres = ["dep:postgres"]
