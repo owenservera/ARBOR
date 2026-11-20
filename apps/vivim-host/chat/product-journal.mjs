@@ -334,9 +334,9 @@ async function nativePersonalCaptures(records,wiki){
     keys.every(key=>Number.isSafeInteger(value.counts?.[key])&&value.counts[key]>=0)&&
     keys.reduce((sum,key)=>sum+value.counts[key],0)===value.total&&
     value.items.every(row=>items.some(item=>item.entryId===row.entryId&&
-      item.page===row.page&&item.kind===row.kind&&item.createdRevision===row.createdRevision&&
-      item.status===row.status || item.status===null&&row.status===undefined&&
-        item.entryId===row.entryId&&item.page===row.page)),
+      item.page===row.page&&item.kind===row.kind&&item.section===row.section&&
+      item.createdRevision===row.createdRevision&&
+      (item.status===row.status||(item.status===null&&row.status===undefined)))),
     'Invalid native capture projection',503);
   return value;
 }
