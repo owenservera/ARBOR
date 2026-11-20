@@ -23,6 +23,7 @@ pub fn dispatch(request:&Value)->Value{
         "recovery-diagnosis"=>crate::recovery_diagnosis::diagnose(&input["finding"]),
         "recovery-diagnosis-batch"=>crate::recovery_diagnosis::diagnose_batch(input),
         "ui-value"=>crate::ui_value::validate(input),
+        "ui-token-pack"=>crate::ui_tokens::resolve_package(input),
         _=>return refuse(op,"UNKNOWN_NATIVE_OPERATION"),
     };
     json!({"schema":RESPONSE_SCHEMA,"state":"computed","operation":op,
