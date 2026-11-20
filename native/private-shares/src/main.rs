@@ -1,5 +1,9 @@
 //! VIVIM Direct private sharing: native authority for bytes, policy and persistence.
+//! @hq:context Host-scoped secure private-share engine with durable file policy.
+//! @hq:owner native-private-shares
 //! @hq:capability vivim.private-shares-native@1
+//! @hq:contract vivim.private-shares-request/1
+//! @hq:effect host:local-storage
 //! The Host alone verifies Tailscale identity, device grants and Origin/CSRF.
 //! This binary accepts Host-only bounded JSON on stdin. No network or browser I/O.
 //! Existing JS share records, SHA-256 capabilities and Node scrypt passcodes
