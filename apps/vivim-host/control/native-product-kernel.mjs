@@ -25,15 +25,17 @@ class NativeKernel {
   admit(data){
     if(!this.child)return;
     const payload=Buffer.isBuffer(data)?data:Buffer.from(data);
-    if(this.buf.length+payload.length>MAX_WIRE+512){
-      this.discard('RUST_KERNEL_FRAME_LIMIT');return;
-    }
-    this.buf=Buffer.concat([this.buf,payload]);
-    for(;;){
-      const at=this.buf.indexOf(10);
+    for(let offset=0;offset<payload.length;){
+      const at=payload.indexOf(10,offset);
+      const end=at<0?payload.length:at+1;
+      if(this.buf.length+end-offset>MAX_WIRE+512){
+        this.discard('RUST_KERNEL_FRAME_LIMIT');return;
+      }
+      this.buf=Buffer.concat([this.buf,payload.subarray(offset,end)]);
+      offset=end;
       if(at<0)break;
-      const frame=this.buf.subarray(0,at);
-      this.buf=this.buf.subarray(at+1);
+      const frame=this.buf.subarray(0,this.buf.length-1);
+      this.buf=Buffer.alloc(0);
       let response;
       try{response=JSON.parse(frame.toString('utf8'));}catch{
         this.discard('RUST_KERNEL_INVALID_JSON');return;
