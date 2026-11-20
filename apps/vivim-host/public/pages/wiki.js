@@ -865,6 +865,106 @@ async function submitEdit(event) {
   } finally { busy = false; $('edit-save').disabled = false; renderSync(); }
 }
 
+// Source-derived Rust VEC tree inspector. Rendering here is an inspection of
+// *compiled metadata*, never the executable DOM renderer or an approval surface.
+// @hq:consumes vivim.vec-visual-ir@1
+let vecBusy=false, vecSnapshot='';
+const vecStatus=message=>{$('vec-inspector-status').textContent=message;};
+const vecClear=message=>{
+  vecSnapshot='';
+  $('vec-inspector-view').replaceChildren(element('p','empty',message));
+};
+function vecTreeNode(n,depth,seen) {
+  if(!n||typeof n!=='object'||Array.isArray(n)||depth>7||seen.size>=64||
+    typeof n.id!=='string'||!n.id||seen.has(n.id)||typeof n.kind!=='string'||
+    !Array.isArray(n.children)||n.children.length>24)
+    throw Error('INVALID_VEC_NODE');
+  seen.add(n.id);
+  const wrap=element('details','vec-component');
+  wrap.open=depth<2;
+  const summary=element('summary');
+  const kind=element('span','source-kind',n.kind+' · '+n.layout);
+  summary.append(kind,document.createTextNode(' · '+n.id+
+    (typeof n.label==='string'?' · '+n.label.slice(0,120):'')));
+  wrap.appendChild(summary);
+  const extras=element('div','vec-style');
+  const attributes={
+    role:n.role,component:n.componentId,
+    ...(n.style?.background?{background:n.style.background}:{}),
+    ...(n.style?.foreground?{foreground:n.style.foreground}:{}),
+    ...(n.style?.fontSizePx!=null?{font:n.style.fontSizePx+'px'}:{}),
+    ...(n.style?.gapPx!=null?{gap:n.style.gapPx+'px'}:{}),
+    ...(n.style?.paddingPx!=null?{padding:n.style.paddingPx+'px'}:{}),
+    ...(n.style?.borderColor?{border:n.style.borderColor}:{}),
+    ...(n.layout==='grid'?{columns:n.columns}:{})
+  };
+  for(const [k,v] of Object.entries(attributes)){
+    if(v!=null&&typeof v!=='object')extras.appendChild(element('span','',k+': '+String(v).slice(0,160)));
+  }
+  wrap.appendChild(extras);
+  if(n.previewOnly===true)wrap.appendChild(element('p','vec-item vec-preview-only','Inert preview action · no Host execution authority'));
+  if(n.detail)wrap.appendChild(element('p','vec-item',String(n.detail).slice(0,240)));
+  for(const item of (Array.isArray(n.items)?n.items:[]).slice(0,16))
+    wrap.appendChild(element('p','vec-item',String(item).slice(0,240)));
+  for(const bar of (Array.isArray(n.bars)?n.bars:[]).slice(0,16))
+    wrap.appendChild(element('p','vec-item',String(bar.label).slice(0,100)+' · '+bar.value+' · zero '+bar.zero));
+  if(n.children.length){
+    const children=element('div','vec-children');
+    for(const child of n.children)children.appendChild(vecTreeNode(child,depth+1,seen));
+    wrap.appendChild(children);
+  }
+  return wrap;
+}
+async function refreshVecInspector(){
+  if(document.hidden||vecBusy)return;
+  vecBusy=true;
+  $('vec-refresh').disabled=true;
+  try{
+    const response=await fetch('/api/host/control/native-vec-ir?viewportPx=1000',{
+      method:'GET',credentials:'same-origin',cache:'no-store',signal:AbortSignal.timeout(15000)
+    });
+    if(response.status===401||response.status===403){
+      vecClear('Desktop owner authorization required. Pairing is not an owner session.');
+      vecStatus('Rust VEC · owner authorization required');return;
+    }
+    if(!response.ok){
+      vecClear('Native VEC compiler unavailable. The committed UI has not been reinterpreted locally.');
+      vecStatus('Rust VEC · unavailable ('+response.status+')');return;
+    }
+    const result=await response.json();
+    if(result?.schema!=='vivim.vec-visual-ir/1'||result.authority!=='none'||
+      result.executionAuthorized!==false||result.effectPerformed!==false)
+      throw Error('INVALID_VEC_CONTRACT');
+    if(result.state==='absent'){
+      vecClear('No committed visual revision. Nothing rendered from drafts.');
+      vecStatus('Rust VEC · no committed surface');return;
+    }
+    if(result.state!=='compiled'||typeof result.surfaceId!=='string'||
+      !Number.isSafeInteger(result.revision)||result.revision<0||
+      !Number.isSafeInteger(result.nodeCount)||result.nodeCount<1||result.nodeCount>64||
+      !Array.isArray(result.previewActionIds)||result.previewActionIds.length>64||
+      !Array.isArray(result.liveBindingIds)||result.liveBindingIds.length>16)
+      throw Error('INVALID_VEC_CONTRACT');
+    const signature=JSON.stringify(result);
+    if(signature===vecSnapshot)return;
+    const seen=new Set(),tree=vecTreeNode(result.root,0,seen);
+    if(seen.size!==result.nodeCount||result.root.id!=='root')throw Error('INVALID_VEC_TREE');
+    const summary=element('p','queue-summary',
+      result.surfaceId+' · committed revision '+result.revision+' · '+
+      result.nodeCount+' components · '+result.chartCount+' charts · '+
+      result.previewActionIds.length+' inert actions · '+result.liveBindingIds.length+' live selectors');
+    $('vec-inspector-view').replaceChildren(summary,tree);
+    vecSnapshot=signature;
+    vecStatus('Rust VEC · source-backed compiled view · read-only · no authority');
+  }catch{
+    vecClear('Native compiled view could not be admitted. No local fallback is shown.');
+    vecStatus('Rust VEC · projection unavailable or invalid');
+  }finally{
+    vecBusy=false;$('vec-refresh').disabled=false;
+  }
+}
+$('vec-refresh').addEventListener('click',()=>{void refreshVecInspector();});
+
 $('refresh-now').addEventListener('click', () => { void refresh(); });
 $('surface-search').addEventListener('submit', event => {
   event.preventDefault();
@@ -932,4 +1032,6 @@ $('edit-cancel').addEventListener('click', closeEditor);
 $('edit').addEventListener('submit', event => { void submitEdit(event); });
 document.addEventListener('visibilitychange', () => { if(document.hidden)assistance?.reset();else void refresh(); });
 void refresh();
+void refreshVecInspector();
 setInterval(() => { if (!document.hidden) void refresh(); }, POLL_MS);
+setInterval(() => { if (!document.hidden) void refreshVecInspector(); }, 15000);

@@ -59,8 +59,17 @@
     <div id="surface-view"><p class="empty">Loading indexed file surfaces…</p></div>
     <div id="surface-context-view" aria-live="polite"><p class="empty">Search annotated source or select a file to read verified context.</p></div>
   </section>
+  <section class="block vec-panel" aria-labelledby="vec-heading">
+    <div class="section-heading">
+      <div><p class="eyebrow">04 / SHARED RUST VISUAL CORE</p><h2 id="vec-heading">VEC visual inspector</h2></div>
+      <button id="vec-refresh" type="button">Read committed UI</button>
+    </div>
+    <p class="source-meta">Host committed revision → TierFlow projection → Rust VEC IR. Owner-only, read-only; preview buttons never execute.</p>
+    <p id="vec-inspector-status" class="source-meta" role="status" aria-live="polite">Not yet loaded. Requires an authorized desktop session and the packaged Rust compiler.</p>
+    <div id="vec-inspector-view" class="vec-inspector"><p class="empty">No compiled visual source observed.</p></div>
+  </section>
   <section class="block journal-panel" aria-labelledby="journal-heading">
-    <div class="section-heading"><div><p class="eyebrow">04 / APPEND-ONLY HISTORY</p><h2 id="journal-heading">Host journal</h2></div><a href="/api/journal">Host journal source</a></div>
+    <div class="section-heading"><div><p class="eyebrow">05 / APPEND-ONLY HISTORY</p><h2 id="journal-heading">Host journal</h2></div><a href="/api/journal">Host journal source</a></div>
     <p class="source-meta" id="journal-source">/api/journal · waiting</p>
     <div id="journal-view"><p class="empty">Loading recent entries…</p></div>
   </section>
