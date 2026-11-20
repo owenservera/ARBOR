@@ -13,7 +13,7 @@ fn hex(s: &str, n: usize) -> bool {
 pub fn valid_id(id: &str) -> bool {
     id.strip_prefix("ctl-").is_some_and(|s| hex(s, 16))
 }
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct PlanKey {
     id: String,
     digest: String,

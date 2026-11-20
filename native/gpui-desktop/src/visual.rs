@@ -38,7 +38,22 @@ fn number(v:&Value,k:&str,min:u64,max:u64)->Result<Option<f32>,ReadError>{
     if v.get(k).is_none(){return Ok(None)}
     v[k].as_u64().filter(|n|*n>=min&&*n<=max).map(|n|Some(n as f32)).ok_or(ReadError::InvalidProjection)
 }
-fn node(source:&Value,plan:&Value,identities:&Value,seen:&mut HashSet<String>,depth:usize)->Result<Node,ReadError>{
+fn live_rows(binding:&str,v:&Value)->Result<Vec<String>,ReadError>{
+    if !matches!(binding,"personal.open-tasks"|"personal.completed-tasks"|"personal.recent-notes"|"studio.recent-outcomes"){return invalid()}
+    if v.is_null()||v["state"]=="unavailable"{return Ok(vec![format!("Read-only binding: {binding} · source unavailable")])}
+    if v["state"]!="source-backed"{return invalid()}
+    let revision=v["revision"].as_u64().ok_or(ReadError::InvalidProjection)?;
+    let total=v["total"].as_u64().ok_or(ReadError::InvalidProjection)?;
+    let rows=v["items"].as_array().filter(|a|a.len()<=16&&a.len() as u64<=total).ok_or(ReadError::InvalidProjection)?;
+    let mut output=vec![format!("Read-only binding · source revision {revision} · {total} total · {} shown",rows.len())];
+    for row in rows{
+        let label=str_at(row,"label")?;let detail=str_at(row,"detail")?;
+        if label.chars().count()>100||detail.chars().count()>512||label.chars().any(char::is_control)||detail.chars().any(char::is_control){return invalid()}
+        output.push(format!("{label} · {detail}"));
+    }
+    Ok(output)
+}
+fn node(source:&Value,plan:&Value,identities:&Value,bindings:&Value,seen:&mut HashSet<String>,depth:usize)->Result<Node,ReadError>{
     let id=str_at(source,"id")?;
     if depth>7||seen.len()>=64||!seen.insert(id.into())||plan["id"]!=id{return invalid()}
     let kind=str_at(source,"type")?;
@@ -61,11 +76,11 @@ fn node(source:&Value,plan:&Value,identities:&Value,seen:&mut HashSet<String>,de
             items.push(match detail{Some(d)=>format!("{label} · {d}"),None=>label.to_owned()});
         }
         if let Some(binding)=source["liveBinding"].as_str(){
-            items.push(format!("Read-only binding: {binding} · live rows not projected by native view"));
+            items.extend(live_rows(binding,&bindings[binding])?);
         }
     }else{
         if source_children.len()!=plan_children.len(){return invalid()}
-        for(s,p)in source_children.iter().zip(plan_children){children.push(node(s,p,identities,seen,depth+1)?)}
+        for(s,p)in source_children.iter().zip(plan_children){children.push(node(s,p,identities,bindings,seen,depth+1)?)}
     }
     let expected=match kind{"text"=>props["value"].as_str(),"button"=>props["label"].as_str(),"card"|"profile-card"|"project-card"|"collection"|"timeline"|"chart"=>props["title"].as_str(),_=>None};
     if expected!=plan["text"].as_str(){return invalid()}
@@ -89,7 +104,7 @@ pub fn parse(v:&Value)->Result<Option<Visual>,ReadError>{
         ||plan["root"]["id"]!="render_root"||source["tree"]["id"]!="root"{return invalid()}
     let roots=plan["root"]["children"].as_array().filter(|a|a.len()==1).ok_or(ReadError::InvalidProjection)?;
     let mut seen=HashSet::new();
-    let root=node(&source["tree"],&roots[0],&v["identities"],&mut seen,0)?;
+    let root=node(&source["tree"],&roots[0],&v["identities"],&v["liveBindings"],&mut seen,0)?;
     let traces=plan["trace"].as_array().ok_or(ReadError::InvalidProjection)?;
     let mut traced=HashSet::new();
     if traces.len()!=seen.len()||v["identities"].as_object().map(|m|m.len())!=Some(seen.len()){return invalid()}
@@ -137,5 +152,13 @@ mod tests{
     #[test]fn rejects_conflicting_plan(){let mut f=fixture();f["plan"]["revision"]=json!(3);assert!(parse(&f).is_err());}
     #[test]fn rejects_missing_trace(){let mut f=fixture();f["plan"]["trace"]=json!([]);assert!(parse(&f).is_err());}
     #[test]fn revision_guard_retains_high_water(){let mut g=RevisionGuard::default();let v=parse(&fixture()).unwrap().unwrap();g.accept(Some(v.clone())).unwrap();g.accept(None).unwrap();let mut old=v;old.revision=1;assert!(g.accept(Some(old)).is_err());}
+    #[test]fn binding_rows_require_source_and_explicit_counts(){
+        let row=json!({"state":"source-backed","revision":7,"total":3,"items":[{"label":"Task","detail":"Open · revision 2","sourceRef":"x"}]});
+        let rows=live_rows("personal.open-tasks",&row).unwrap();
+        assert_eq!(rows.len(),2);assert!(rows[0].contains("3 total"));assert!(rows[1].contains("Task"));
+        let mut bad=row.clone();bad["total"]=json!(0);assert!(live_rows("personal.open-tasks",&bad).is_err());
+        assert!(live_rows("unknown",&row).is_err());
+        assert!(live_rows("personal.open-tasks",&Value::Null).unwrap()[0].contains("unavailable"));
+    }
     #[test]fn no_committed_surface_is_not_a_blank_success(){assert!(parse(&json!({"schema":"vivim.native-ui-view/1","authority":"none","state":"absent"})).unwrap().is_none());}
 }

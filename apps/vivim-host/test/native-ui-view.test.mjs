@@ -18,4 +18,5 @@ test('native projection reuses actual TierFlow compiler and stable source identi
   assert.equal(view.plan.root.children[0].id,'root');
   assert.equal(view.plan.trace.length,1);
   assert.ok(view.identities.root);
+  assert.deepEqual(view.liveBindings,{});
 });

@@ -873,7 +873,9 @@ async function handleControl(req, res, pathname, host, controlFor, tokenFor, uiS
       const url=new URL(req.url,'http://'+host);
       const width=url.searchParams.get('viewportPx')??'1000';
       if(!/^\d{3,4}$/.test(width)||Number(width)<240||Number(width)>3840){sendJson(res,400,{code:'INVALID_VIEWPORT'});return;}
-      const result=projectNativeUi(runtimeFor().projection(),Number(width));
+      let wiki=null;
+      try{wiki=await productJournal.readPhoneWiki();}catch{/* no guessed live rows */}
+      const result=projectNativeUi(runtimeFor().projection(),Number(width),{wiki,outcomes:readStudioOutcomes()});
       let currentOwner=null;try{currentOwner=tokenFor();}catch{}
       if(!(currentOwner&&verifyOwnerToken(req.headers.authorization,currentOwner))&&!uiSessions.authorized(req,{mutate:false})){
         sendJson(res,401,{code:'OWNER_AUTH'});return;
