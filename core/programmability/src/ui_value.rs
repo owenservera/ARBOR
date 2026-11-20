@@ -178,7 +178,7 @@ fn good_value(ty:&str,v:&Value,choices:Option<&Value>)->Result<Value,&'static st
         }
         "map"=>{
             let Some(o)=v.as_object()else{return Err("INVALID_MAP")};
-            if o.len()>64||serde_json::to_string(v).is_err_or(|s|s.encode_utf16().count()>8192){
+            if o.len()>64||serde_json::to_string(v).map(|s|s.encode_utf16().count()>8192).unwrap_or(true){
                 return Err("INVALID_MAP")
             }
             Ok(v.clone())

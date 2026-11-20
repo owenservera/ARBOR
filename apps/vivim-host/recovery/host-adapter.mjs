@@ -84,7 +84,7 @@ export function projectHostRecovery(snapshot, { maxFindings = 12, collected = nu
 export async function projectHostRecoveryNative(snapshot,{maxFindings=12}={}){
   const collected=[];
   const baseline=projectHostRecovery(snapshot,{maxFindings,collected});
-  if(!collected.length)return {...baseline,native:{state:'source-backed',engine:'rust',diagnosed:0}};
+  if(!collected.length)return {...baseline,native:{state:'no-findings',engine:'not-invoked',diagnosed:0}};
   const native=await runNativeProductPure('recovery-diagnosis-batch',{findings:collected});
   const rows=native?.result?.results;
   const closed=new Set(['unknown','already_recovered','missing_observability',
