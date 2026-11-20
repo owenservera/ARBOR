@@ -38,7 +38,7 @@ struct Desktop {
     vec_view: Option<VecView>,
     visual_status: String,
     visual_guard: RevisionGuard,
-    wiki_guard: WikiRevisionGuard;
+    wiki_guard: WikiRevisionGuard,
     detail: String,
     graph_detail: String,
     graph_status: String,
