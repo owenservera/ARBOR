@@ -66,7 +66,10 @@ same-origin request plus an explicit share-operation header. Grant scopes are
 
 Maximum file size is 10 MiB, lifetime 30 days, and download allowance 100.
 A device is limited to 100 unrevoked unexpired shares and 250 MiB of
-allocated share storage. Revocation deletes the content. Download admission
+allocated share storage. Revocation deletes the content. Five incorrect
+passcodes trigger a persisted 15-minute lockout. Maintenance during new share
+reservations reclaims expired content and reservations abandoned for 20 minutes;
+terminal metadata is retained for up to 30 further days. Download admission
 counts toward the allowance even if a client disconnects. Inline preview
 supports a subset of safe document and media types and also counts toward the
 allowance. Metadata views and download admissions are counted locally.
@@ -82,3 +85,18 @@ content expiry deletion job, or Office-document inline rendering. These
 features must not be advertised as implemented. A successful source commit is
 not device acceptance: the paired-phone upload/download journey still
 requires an actual Host/PWA runtime exercise.
+
+### Test commands (Node 24)
+
+```sh
+node --test apps/vivim-host/test/private-shares.test.mjs
+node --test apps/vivim-host/test/private-shares-direct.test.mjs
+bun scripts/test-gate.mjs --gate host-suite
+```
+
+These tests are registered in `scripts/test-manifest.json`. Source parsing,
+asset registration, and DOM-ID closure have been checked remotely, but an actual
+Node 24 execution and Android PWA/Tailscale journey have not been attested in
+this integration session. The natural-language phrases `open sharing`,
+`show my shares`, and `share a file` only open the PWA sheet; they are **not**
+Host typed-effects or an automatic file share.
