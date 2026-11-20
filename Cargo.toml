@@ -2,11 +2,13 @@
 resolver = "2"
 members = [
   "native/hqkg",
+  "native/private-shares",
   "core/programmability",
   "src-tauri",
 ]
 default-members = [
   "native/hqkg",
+  "native/private-shares",
   "core/programmability",
 ]
 
