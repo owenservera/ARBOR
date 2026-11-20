@@ -868,20 +868,21 @@ async function submitEdit(event) {
 // Source-derived Rust VEC tree inspector. Rendering here is an inspection of
 // *compiled metadata*, never the executable DOM renderer or an approval surface.
 // @hq:consumes vivim.vec-visual-ir@1
-let vecBusy=false, vecSnapshot='';
+let vecBusy=false, vecSnapshot='', vecHigh=null;
 const vecStatus=message=>{$('vec-inspector-status').textContent=message;};
 const vecClear=message=>{
   vecSnapshot='';
   $('vec-inspector-view').replaceChildren(element('p','empty',message));
 };
-function vecTreeNode(n,depth,seen) {
+function vecTreeNode(n,depth,seen,opened=null) {
   if(!n||typeof n!=='object'||Array.isArray(n)||depth>7||seen.size>=64||
     typeof n.id!=='string'||!n.id||seen.has(n.id)||typeof n.kind!=='string'||
     !Array.isArray(n.children)||n.children.length>24)
     throw Error('INVALID_VEC_NODE');
   seen.add(n.id);
   const wrap=element('details','vec-component');
-  wrap.open=depth<2;
+  wrap.dataset.vecNodeId=n.id;
+  wrap.open=opened===null?depth<2:opened.has(n.id);
   const summary=element('summary');
   const kind=element('span','source-kind',n.kind+' · '+n.layout);
   summary.append(kind,document.createTextNode(' · '+n.id+
@@ -910,7 +911,7 @@ function vecTreeNode(n,depth,seen) {
     wrap.appendChild(element('p','vec-item',String(bar.label).slice(0,100)+' · '+bar.value+' · zero '+bar.zero));
   if(n.children.length){
     const children=element('div','vec-children');
-    for(const child of n.children)children.appendChild(vecTreeNode(child,depth+1,seen));
+    for(const child of n.children)children.appendChild(vecTreeNode(child,depth+1,seen,opened));
     wrap.appendChild(children);
   }
   return wrap;
@@ -945,9 +946,19 @@ async function refreshVecInspector(){
       !Array.isArray(result.previewActionIds)||result.previewActionIds.length>64||
       !Array.isArray(result.liveBindingIds)||result.liveBindingIds.length>16)
       throw Error('INVALID_VEC_CONTRACT');
+    // The compiler stamps only the admitted Host design; live bindings may
+    // advance independently at the same design revision.
+    if(typeof result.designDigest!=='string'||!/^[a-f0-9]{64}$/.test(result.designDigest))
+      throw Error('INVALID_VEC_DESIGN_DIGEST');
+    if(vecHigh&&(result.surfaceId!==vecHigh.surfaceId||
+      result.revision<vecHigh.revision||
+      (result.revision===vecHigh.revision&&result.designDigest!==vecHigh.digest)))
+      throw Error('VEC_REVISION_REGRESSION');
     const signature=JSON.stringify(result);
     if(signature===vecSnapshot)return;
-    const seen=new Set(),tree=vecTreeNode(result.root,0,seen);
+    const old=vecSnapshot?new Set([...$('vec-inspector-view').querySelectorAll('details[data-vec-node-id]')]
+      .filter(node=>node.open).map(node=>node.dataset.vecNodeId)):null;
+    const seen=new Set(),tree=vecTreeNode(result.root,0,seen,old);
     if(seen.size!==result.nodeCount||result.root.id!=='root')throw Error('INVALID_VEC_TREE');
     const summary=element('p','queue-summary',
       result.surfaceId+' · committed revision '+result.revision+' · '+
@@ -955,7 +966,8 @@ async function refreshVecInspector(){
       result.previewActionIds.length+' inert actions · '+result.liveBindingIds.length+' live selectors');
     $('vec-inspector-view').replaceChildren(summary,tree);
     vecSnapshot=signature;
-    vecStatus('Rust VEC · source-backed compiled view · read-only · no authority');
+    vecHigh={surfaceId:result.surfaceId,revision:result.revision,digest:result.designDigest};
+    vecStatus('Rust VEC · source-backed revision-fenced view · read-only · no authority');
   }catch{
     vecClear('Native compiled view could not be admitted. No local fallback is shown.');
     vecStatus('Rust VEC · projection unavailable or invalid');
