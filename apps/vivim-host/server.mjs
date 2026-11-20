@@ -868,18 +868,26 @@ async function handleControl(req, res, pathname, host, controlFor, tokenFor, uiS
     if (req.method !== 'GET') { sendJson(res,405,{code:'METHOD'});return; }
     if (req.headers.origin !== undefined && !sameOrigin) {sendJson(res,403,{code:'ORIGIN'});return;}
     res.setHeader('cache-control','private, no-store');
+    // Bind the request to the original authentication channel, never silently
+    // switch from a revoked bearer to a browser session during an async read.
+    const bearer=!!owner&&verifyOwnerToken(req.headers.authorization,owner);
+    const sessionId=bearer?null:uiSessions.get(req)?.sessionId;
+    const stillAuthorized=()=>{
+      if(bearer){try{return verifyOwnerToken(req.headers.authorization,tokenFor());}catch{return false;}}
+      return !!sessionId&&uiSessions.get(req)?.sessionId===sessionId&&uiSessions.authorized(req,{mutate:false});
+    };
+    if(!stillAuthorized()){sendJson(res,401,{code:'OWNER_AUTH'});return;}
     try {
       const {projectNativeUi}=await import('./control/native-ui-view.mjs');
       const url=new URL(req.url,'http://'+host);
+      if([...url.searchParams.keys()].some(k=>k!=='viewportPx')||url.searchParams.getAll('viewportPx').length>1){sendJson(res,400,{code:'INVALID_VIEWPORT'});return;}
       const width=url.searchParams.get('viewportPx')??'1000';
       if(!/^\d{3,4}$/.test(width)||Number(width)<240||Number(width)>3840){sendJson(res,400,{code:'INVALID_VIEWPORT'});return;}
       let wiki=null;
       try{wiki=await productJournal.readPhoneWiki();}catch{/* no guessed live rows */}
+      if(!stillAuthorized()){sendJson(res,401,{code:'OWNER_AUTH'});return;}
       const result=projectNativeUi(runtimeFor().projection(),Number(width),{wiki,outcomes:readStudioOutcomes()});
-      let currentOwner=null;try{currentOwner=tokenFor();}catch{}
-      if(!(currentOwner&&verifyOwnerToken(req.headers.authorization,currentOwner))&&!uiSessions.authorized(req,{mutate:false})){
-        sendJson(res,401,{code:'OWNER_AUTH'});return;
-      }
+      if(!stillAuthorized()){sendJson(res,401,{code:'OWNER_AUTH'});return;}
       sendJson(res,200,result);
     } catch {
       sendJson(res,503,{schema:'vivim.native-ui-view/1',state:'unavailable',code:'NATIVE_UI_VIEW_UNAVAILABLE'});

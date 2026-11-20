@@ -34,6 +34,17 @@ test('desktop and Direct mobile share one dispatcher with separate real authenti
   const catalog = await call('/api/host/control/catalog', { headers: bearer });
   assert.equal(catalog.status, 200);
   assert.equal(catalog.json.status, 'plan_and_dispatch');
+  const nativeView='/api/host/control/native-ui-view';
+  assert.equal((await call(nativeView)).status,401);
+  assert.equal((await call(nativeView,{headers:{...bearer,origin:'https://evil.invalid'}})).status,403);
+  assert.equal((await post(nativeView,desk,{})).status,405);
+  for(const suffix of ['?viewportPx=99','?viewportPx=1000&viewportPx=800','?unknown=1']){
+    assert.equal((await call(nativeView+suffix,{headers:bearer})).status,400);
+  }
+  const native=await call(nativeView,{headers:bearer});
+  assert.equal(native.status,200);
+  assert.equal(native.json.schema,'vivim.native-ui-view/1');
+  assert.equal(native.json.authority,'none');
   // Unified API is a derived discovery surface, not a new execution authority.
   const apiPath = '/api/host/control/openapi.json';
   assert.equal((await call(apiPath)).status, 401);
