@@ -17,6 +17,8 @@ pub mod recovery_diagnosis;
 pub mod ui_value;
 pub mod product_kernel;
 pub mod ui_tokens;
+#[cfg(target_arch="wasm32")]
+pub mod browser_abi;
 mod lineage;
 
 pub const SCHEMA: &str = "vivim.native-program/1";
