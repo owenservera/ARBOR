@@ -255,6 +255,43 @@ export function previewWikiCapture(wiki,{capture_id,kind,content}={}){
     after:content+(kind==='task'?'\n\nTask status: Open':''),edit};
 }
 
+// The Rust core owns capture selection/counting when present; the Host supplies
+// only source fields derived from its replay-validated committed journal.
+// A legacy unpackaged Host can still render the existing JS projection.
+async function nativePersonalCaptures(records,wiki){
+  const items=[];
+  for(const e of records){
+    if(e?.kind!=='wiki-edit'||!['capture-note','capture-task'].includes(e.edit?.action)||
+      typeof e.entryId!=='string')continue;
+    const page=wiki.pages[e.edit.page],section=e.edit.section;
+    if(!page||typeof page.sections?.[section]!=='string')continue;
+    const kind=e.edit.action==='capture-task'?'task':'note';
+    const status=kind==='task'?
+      (['Open','Done'].includes(page.sections.Status)?page.sections.Status:'Unknown'):null;
+    items.push({kind,page:e.edit.page,section,entryId:e.entryId,
+      createdRevision:e.expectedRevision+1,sectionPresent:true,status});
+  }
+  const native=await runNativeProductPure('wiki-capture-projection',{
+    schema:'vivim.capture-source/1',wikiRevision:wiki.revision,items
+  });
+  if(native.state==='unavailable')return projectPersonalCaptures(records,wiki);
+  const value=native.result;
+  const keys=['notes','openTasks','doneTasks','unknownTasks'];
+  requireShape(native.state==='computed'&&value?.schema==='vivim.personal-captures/1'&&
+    value.authority==='committed-wiki-read-only'&&value.wikiRevision===wiki.revision&&
+    value.total===items.length&&Array.isArray(value.items)&&value.items.length<=256&&
+    Number.isSafeInteger(value.omitted)&&value.omitted>=0&&
+    value.omitted+value.items.length===value.total&&
+    keys.every(key=>Number.isSafeInteger(value.counts?.[key])&&value.counts[key]>=0)&&
+    keys.reduce((sum,key)=>sum+value.counts[key],0)===value.total&&
+    value.items.every(row=>items.some(item=>item.entryId===row.entryId&&
+      item.page===row.page&&item.kind===row.kind&&item.createdRevision===row.createdRevision&&
+      item.status===row.status || item.status===null&&row.status===undefined&&
+        item.entryId===row.entryId&&item.page===row.page)),
+    'Invalid native capture projection',503);
+  return value;
+}
+
 // The capture list is a read model of actual committed creation records, never inferred from page names.
 export function projectPersonalCaptures(records,wiki){
   const items=[];
@@ -594,7 +631,8 @@ export function createProductJournal({ dataRoot, seedState, seedWiki }) {
       pageSources:structure.pageSources.map(({page,role,event:{sequence,sequenceBinding,...event}})=>({page,role,event}))};
     // Phone Wiki read permission does not grant access to private chat/effects.
     // No global sequence or history content is disclosed through this overlay.
-    return { ...wiki, personalCaptures:projectPersonalCaptures(current.records,wiki), wikiStructure:phoneStructure, autoWiki: { schema: 'vivim.autowiki-wiki-changes/1',
+    const captures=await nativePersonalCaptures(current.records,wiki);
+    return { ...wiki, personalCaptures:captures, wikiStructure:phoneStructure, autoWiki: { schema: 'vivim.autowiki-wiki-changes/1',
       wikiRevision: wiki.revision, scope: 'wiki-edits-only', total: changes.total, omitted: changes.omitted,
       items: changes.items.map(({ sequence, sequenceBinding, ...entry }) => entry) } };
   }

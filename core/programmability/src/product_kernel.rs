@@ -31,6 +31,7 @@ pub fn dispatch(request:&Value)->Value{
         "wiki-source-search"=>crate::wiki_read::source_search(input),
         "wiki-source-transition"=>crate::wiki_read::source_transition(input),
         "wiki-source-delta"=>crate::wiki_read::source_delta(input),
+        "wiki-capture-projection"=>crate::wiki_journal::captures(input),
         "development-projection"=>crate::development_projection::project(input),
         "control-plan-preview"=>crate::control_plan_presentation::project(input),
         "control-receipt-preview"=>crate::control_plan_presentation::receipt_project(input),

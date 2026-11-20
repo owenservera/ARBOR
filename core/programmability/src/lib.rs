@@ -10,6 +10,7 @@ use std::collections::{BTreeMap, BTreeSet};
 pub mod wire;
 pub mod visual;
 pub mod wiki_read;
+pub mod wiki_journal;
 pub mod development_projection;
 pub mod control_plan_presentation;
 pub mod vec;
