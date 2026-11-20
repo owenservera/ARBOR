@@ -76,4 +76,11 @@ export function rustNavigation(text){
     return undefined;
   return value.destination;
 }
+export function rustVecAdmission(input){
+  const value=invoke('vec-admission',input);
+  if(!value||value.schema!=='vivim.vec-compile/0.1'||
+    value.authorization!=='none'||value.executed!==false||value.persisted!==false)
+    return undefined;
+  return value;
+}
 export function nativeBrowserKernelReady(){return instance!==null;}
