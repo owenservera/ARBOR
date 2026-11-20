@@ -2,6 +2,8 @@
 // A Host-integrated caller must filter actual verified owner-feedback events first.
 import { createHash } from 'node:crypto';
 import { PERSONAL_RULE_SCHEMA, validatePersonalRule } from './personal-semantics.mjs';
+import { runNativeProductPureSync } from './native-product-pure-sync.mjs';
+
 export const SEMANTIC_OBSERVATORY_SCHEMA='vivim.semantic-observation/1';
 const own=v=>v!==null&&typeof v==='object'&&!Array.isArray(v)&&
  (Object.getPrototypeOf(v)===Object.prototype||Object.getPrototypeOf(v)===null)&&
@@ -11,11 +13,14 @@ const canonical=v=>Array.isArray(v)?v.map(canonical):own(v)?
   .map(([k,val])=>[k,canonical(val)])):v;
 const hash=v=>createHash('sha256').update(JSON.stringify(canonical(v))).digest('hex');
 const normalize=s=>s.normalize('NFKC').trim().replace(/\s+/g,' ').toLowerCase();
+const invalid=()=>({schema:SEMANTIC_OBSERVATORY_SCHEMA,status:'invalid',candidates:[],conflicts:[]});
+
 export function observePersonalLanguage({events,catalog,minConfirmations=3}={}) {
   if(!Array.isArray(events)||events.length>2000||!Number.isSafeInteger(minConfirmations)||
     minConfirmations<2||minConfirmations>20||!catalog||!Array.isArray(catalog.actions))
-    return {schema:SEMANTIC_OBSERVATORY_SCHEMA,status:'invalid',candidates:[],conflicts:[]};
-  const groups=new Map(), seenEvents=new Set();
+    return invalid();
+
+  const seenEvents=new Set(),validated=[];
   let skipped=0;
   for(const event of events){
     // A receipt or model assertion alone is not semantic consent.
@@ -32,11 +37,48 @@ export function observePersonalLanguage({events,catalog,minConfirmations=3}={}) 
       phrase:event.phrase,actionId:event.actionId,args:event.args,scope:event.scope,
       source:'system-observed',state:'proposed',catalogVersion:catalog.version};
     if(!validatePersonalRule(draft,catalog).ok){skipped++;continue;}
-    const grouping=[normalize(event.phrase),canonical(event.scope)];
-    const key=hash(grouping);
+    validated.push({phrase:event.phrase,scope:event.scope,
+      actionId:event.actionId,args:event.args,
+      groupKey:hash([normalize(event.phrase),canonical(event.scope)]),
+      meaningKey:hash([event.actionId,event.args])});
+  }
+
+  // The native reducer owns only aggregation and contradictory-meaning
+  // detection. Host above owns eligibility, replay filtering and identity;
+  // proposals below remain inert and cannot become accepted personal rules.
+  const native=runNativeProductPureSync('semantic-observation',{
+    schema:'vivim.semantic-observation-aggregation-input/1',
+    validatedEvents:validated,considered:events.length,skipped,
+    catalogVersion:catalog.version,minConfirmations
+  });
+  if(native){
+    const sound=native.schema===SEMANTIC_OBSERVATORY_SCHEMA&&
+      native.status==='inert-proposals'&&native.authority==='none'&&
+      native.activationPermitted===false&&native.executionAuthorized===false&&
+      native.effectPerformed===false&&native.considered===events.length&&
+      native.skipped===skipped&&Number.isSafeInteger(native.groups)&&
+      native.groups>=0&&native.groups<=validated.length&&
+      Array.isArray(native.candidates)&&Array.isArray(native.conflicts)&&
+      native.candidates.every(({rule,evidence,executionAuthorized})=>
+        executionAuthorized===false&&rule?.schema===PERSONAL_RULE_SCHEMA&&
+        rule.state==='proposed'&&rule.source==='system-observed'&&
+        rule.revision===1&&rule.catalogVersion===catalog.version&&
+        validatePersonalRule(rule,catalog).ok&&
+        evidence?.kind==='explicit-confirmation-only'&&
+        Number.isSafeInteger(evidence.confirmationCount)&&
+        evidence.confirmationCount>=minConfirmations)&&
+      native.conflicts.every(row=>/^[a-f0-9]{64}$/.test(row?.phraseDigest??'')&&
+        Number.isSafeInteger(row.distinctMeanings)&&row.distinctMeanings>=2);
+    return sound?native:invalid();
+  }
+
+  // Unpackaged/older native kernels retain the original deterministic path.
+  const groups=new Map();
+  for(const event of validated){
+    const key=event.groupKey,meaningKey=event.meaningKey;
     const record=groups.get(key)??{phrase:event.phrase,scope:event.scope,meanings:new Map()};
-    const meaningKey=hash([event.actionId,event.args]);
-    const item=record.meanings.get(meaningKey)??{actionId:event.actionId,args:event.args,count:0};
+    const item=record.meanings.get(meaningKey)??
+      {actionId:event.actionId,args:event.args,count:0};
     item.count++;
     record.meanings.set(meaningKey,item);
     groups.set(key,record);
