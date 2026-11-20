@@ -1,0 +1,12 @@
+{
+  "unit": "NEXT:D02:scoped-query-retrieval",
+  "round": 1,
+  "workflow": "arbor-area-a",
+  "runId": "dwfrun-ffd84dea-f28a-4418-88c8-5a3b10d3d9a1",
+  "wave": "P0",
+  "note": "workflow:arbor-area-a run:dwfrun-ffd84dea-f28a-4418-88c8-5a3b10d3d9a1 wave:P0",
+  "changes": [],
+  "discoveries": [],
+  "status": "green",
+  "implementationCommit": null
+}

@@ -339,9 +339,10 @@ export function createDevIntelligence({
       const indexedHash = row.hash || null;
       const currentHash = sha256(buffer);
       const sourceRoot = storedRoot(records.find(item => item.name === project));
-      const currentRevision = gitHead(sourceRoot);
-      const stale = currentHash !== indexedHash
-        || Boolean(row.project_head && currentRevision && row.project_head !== currentRevision);
+      // Git-independent source admission: a source's evidence is current when its
+      // indexed content hash matches the live bytes. Git HEAD is never a freshness
+      // grant here, so no second journal or parallel interpreter is introduced.
+      const stale = currentHash !== indexedHash;
       const lines = buffer.toString('utf8').split(/\r?\n/u);
       const from = Math.max(1, Math.min(lines.length, Math.trunc(Number(startLine) || 1)));
       const to = Math.max(from, Math.min(lines.length, from + 499, Math.trunc(Number(endLine) || 60)));
@@ -349,7 +350,7 @@ export function createDevIntelligence({
         schema: DEV_SOURCE_EVIDENCE_CONTRACT, status: stale ? 'stale' : 'indexed',
         domain: DEVELOPMENT_DOMAIN, sourceId: String(project) + ':' + rel,
         devSourceId: stableSourceId(sourceRoot), project, path: rel,
-        projectRevision: row.project_head, currentRevision,
+        projectRevision: row.project_head,
         indexWatermark: row.index_watermark, indexedHash, currentHash,
         lineStart: from, lineEnd: to, text: lines.slice(from - 1, to).join('\n'),
       };

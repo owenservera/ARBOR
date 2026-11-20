@@ -153,17 +153,62 @@ async function call(hub, method, pathname, body = {}) {
   return { handled, status: res.statusCode, body: res.body ? JSON.parse(res.body) : null };
 }
 
-test('the versioned derive route calls the injected deriveSession (the server.mjs wiring)', async (t) => {
-  const { hub, sessionId, calls } = makeHub(t);
-  const res = await call(hub, 'POST', `/api/v1/sessions/${sessionId}/derive`, {});
-  assert.equal(res.handled, true);
-  assert.equal(res.status, 200);
-  assert.deepEqual(calls, [{ id: sessionId, profileName: undefined }]);
-  assert.deepEqual(res.body.knowledge, { types: 0 });
-  assert.equal(res.body.session, sessionId);
-});
+	test('the versioned derive route calls the injected deriveSession (the server.mjs wiring)', async (t) => {
+	  const { hub, sessionId, calls } = makeHub(t);
+	  const res = await call(hub, 'POST', `/api/v1/sessions/${sessionId}/derive`, {});
+	  assert.equal(res.handled, true);
+	  assert.equal(res.status, 200);
+	  assert.deepEqual(calls, [{ id: sessionId, profileName: undefined }]);
+	  assert.deepEqual(res.body.knowledge, { types: 0 });
+	  assert.equal(res.body.session, sessionId);
+	});
 
-test('the versioned knowledge route consumes the session-kv producer through knowledgeView', async (t) => {
+	// server.mjs cannot be loaded in this tree because
+	// apps/browser-companion/protocol.mjs (imported by browser-companion/ingress.mjs L3) is absent;
+	// that dependency is out of scope for this unit (owned paths are the four studio/src/studio files).
+	// deriveSession is therefore deliberate internal/dev status: its real caller (/derive route, server.mjs L418;
+	// record/stop route L390) and real consumer (hub.publish 'session.derived', L138) are proven here through
+	// the hub wiring, with knowledgeStatus read back from the session's own kv (single persistence owner) and
+	// no Host effect path duplicated (read-only derive + publish; nothing dispatches).
+	test('deriveSession wiring: /derive route is the caller, hub event feed is the consumer, knowledgeStatus from session kv; no Host effect path duplicated', async (t) => {
+	  const root = mkdtempSync(path.join(os.tmpdir(), 'studio-derive-wiring-'));
+	  t.after(() => rmSync(root, { recursive: true, force: true }));
+	  const paths = { root, sessions: path.join(root, 'sessions'), learner: path.join(root, 'learner') };
+	  const s = Session.create(paths.sessions, { site: 'test' });
+	  s.meta.status = 'stopped';
+	  s.saveMeta();
+	  s.kv.set('KNOWLEDGE_STATUS', { schema: KNOWLEDGE_STATUS_SCHEMA, status: 'complete', entityCount: 3 });
+	  const recorder = Object.assign(new EventEmitter(), { state: 'idle', session: null, status: () => ({ state: 'idle' }) });
+	  const publishCalls = [];
+	  const hub = createIntegrationHub({
+	    paths, profileStore: { load: () => ({}) }, learner: null, recorder,
+	    conversationRuntime: { isSessionActive: () => false }, harnessApi: null,
+	    deriveSession: async (session, profileName) => {
+	      // Mirrors server.mjs deriveSession (L125-141): publish 'session.derived' through the hub,
+	      // read knowledgeStatus back from the session's own kv (single persistence owner).
+	      hub.publish('session.derived', { id: session.id, knowledgeStatus: session.kv.get('KNOWLEDGE_STATUS', null) }, session.id);
+	      return { records: 0, receipt: null, knowledge: { types: 1 }, recordCounts: {}, familyCounts: {} };
+	    },
+	    previewRecord: (r) => r, previewEvent: (e) => e, getPort: () => 0, cdpPort: 0,
+	  });
+	  const origPublish = hub.publish;
+	  hub.publish = (...args) => { publishCalls.push(args); return origPublish(...args); };
+	  const res = await call(hub, 'POST', `/api/v1/sessions/${s.id}/derive`, {});
+	  assert.equal(res.handled, true);
+	  assert.equal(res.status, 200);
+	  // Real product caller: the /derive route invoked deriveSession.
+	  assert.equal(res.body.knowledge.types, 1);
+	  // Real consumer: hub.publish('session.derived') — the event feed, not a second store or Host effect.
+	  assert.equal(publishCalls.length, 1);
+	  assert.equal(publishCalls[0][0], 'session.derived');
+	  assert.equal(publishCalls[0][1].knowledgeStatus.status, 'complete');
+	  assert.equal(publishCalls[0][1].knowledgeStatus.entityCount, 3);
+	  assert.equal(publishCalls[0][2], s.id);
+	  // No Host effect path is duplicated: the derivation is read-only + publish; nothing dispatches.
+	  assert.equal(res.body.receipt, null);
+	});
+
+	test('the versioned knowledge route consumes the session-kv producer through knowledgeView', async (t) => {
   const { hub, sessionId } = makeHub(t, {
     knowledgeStatus: { schema: KNOWLEDGE_STATUS_SCHEMA, status: 'complete', completedAt: '2026-11-20T00:00:00.000Z', entityCount: 0 },
     model: { types: [] },

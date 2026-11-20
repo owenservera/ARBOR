@@ -4,7 +4,8 @@
  * @hq:task token-budget
  * @hq:invariant every fixture is constructed here; these tests never open db.sqlite or .hq/index.db.
  */
-import { describe, expect, test } from 'bun:test';
+import { describe, test } from 'node:test';
+import assert from 'node:assert/strict';
 import {
   census,
   sessionContexts,
@@ -51,27 +52,27 @@ function session(id, over = {}) {
 describe('census', () => {
   test('totals the window and splits cached from fresh input', () => {
     const report = census([usage(), usage({ input_tokens: 50000, cache_read_input_tokens: 40000, output_tokens: 500, computed_total_tokens: 50500 })], { now: NOW, windowMs: 3 * DAY });
-    expect(report.schema).toBe(CONTEXT_BUDGET_SCHEMA);
-    expect(report.requests).toBe(2);
-    expect(report.inputTokens).toBe(150000);
-    expect(report.outputTokens).toBe(1500);
-    expect(report.cacheReadTokens).toBe(130000);
-    expect(report.freshInputTokens).toBe(20000);
-    expect(report.cacheHitRatio).toBeCloseTo(130000 / 150000, 6);
-    expect(report.avgInputPerRequest).toBe(75000);
-    expect(report.totalTokens).toBe(151500);
+    assert.equal(report.schema, CONTEXT_BUDGET_SCHEMA);
+    assert.equal(report.requests, 2);
+    assert.equal(report.inputTokens, 150000);
+    assert.equal(report.outputTokens, 1500);
+    assert.equal(report.cacheReadTokens, 130000);
+    assert.equal(report.freshInputTokens, 20000);
+    assert.ok(Math.abs(report.cacheHitRatio - (130000 / 150000)) < 1e-6);
+    assert.equal(report.avgInputPerRequest, 75000);
+    assert.equal(report.totalTokens, 151500);
   });
 
   test('excludes rows outside the window', () => {
     const report = census([usage(), usage({ started_at: NOW - 4 * DAY })], { now: NOW, windowMs: 3 * DAY });
-    expect(report.requests).toBe(1);
-    expect(report.inputTokens).toBe(100000);
+    assert.equal(report.requests, 1);
+    assert.equal(report.inputTokens, 100000);
   });
 
   test('counts non-completed requests and retries as waste', () => {
     const report = census([usage({ status: 'error', retry_count: 2 }), usage({ status: 'cancelled' })], { now: NOW, windowMs: 3 * DAY });
-    expect(report.nonCompletedRequests).toBe(2);
-    expect(report.retries).toBe(2);
+    assert.equal(report.nonCompletedRequests, 2);
+    assert.equal(report.retries, 2);
   });
 
   test('aggregates by day, model and agent with deterministic ordering', () => {
@@ -80,24 +81,24 @@ describe('census', () => {
       usage({ started_at: NOW - MIN, model_id: 'b', computed_total_tokens: 900, input_tokens: 900 }),
       usage({ started_at: NOW - MIN, model_id: 'b', agent: 'zcode-forge', computed_total_tokens: 900, input_tokens: 900 }),
     ], { now: NOW, windowMs: 3 * DAY });
-    expect(report.byDay.map((d) => d.day)).toEqual(['2026-11-02', '2026-11-04']);
-    expect(report.byModel[0].model).toBe('b');
-    expect(report.byModel[0].requests).toBe(2);
-    expect(report.byModel[0].totalTokens).toBe(1800);
-    expect(report.byAgent[0].agent).toBe('zcode-agent');
-    expect(report.byAgent.find((a) => a.agent === 'zcode-forge').requests).toBe(1);
+    assert.deepEqual(report.byDay.map((d) => d.day), ['2026-11-02', '2026-11-04']);
+    assert.equal(report.byModel[0].model, 'b');
+    assert.equal(report.byModel[0].requests, 2);
+    assert.equal(report.byModel[0].totalTokens, 1800);
+    assert.equal(report.byAgent[0].agent, 'zcode-agent');
+    assert.equal(report.byAgent.find((a) => a.agent === 'zcode-forge').requests, 1);
   });
 
   test('falls back to input+output when computed_total is absent', () => {
     const report = census([usage({ computed_total_tokens: null, input_tokens: 100, output_tokens: 20 })], { now: NOW, windowMs: 3 * DAY });
-    expect(report.totalTokens).toBe(120);
+    assert.equal(report.totalTokens, 120);
   });
 
   test('an empty window is zero, not NaN', () => {
     const report = census([], { now: NOW, windowMs: 3 * DAY });
-    expect(report.requests).toBe(0);
-    expect(report.cacheHitRatio).toBe(0);
-    expect(report.avgInputPerRequest).toBe(0);
+    assert.equal(report.requests, 0);
+    assert.equal(report.cacheHitRatio, 0);
+    assert.equal(report.avgInputPerRequest, 0);
   });
 });
 
@@ -108,10 +109,10 @@ describe('sessionContexts', () => {
       usage({ started_at: NOW - MIN, input_tokens: 250000 }),
     ];
     const [ctx] = sessionContexts([session('sess_a')], rows, { now: NOW });
-    expect(ctx.contextTokens).toBe(250000);
-    expect(ctx.idleMs).toBe(MIN);
-    expect(ctx.turns).toBe(1);
-    expect(ctx.hasUsage).toBe(true);
+    assert.equal(ctx.contextTokens, 250000);
+    assert.equal(ctx.idleMs, MIN);
+    assert.equal(ctx.turns, 1);
+    assert.equal(ctx.hasUsage, true);
   });
 
   test('labels child sessions and counts distinct turns', () => {
@@ -121,41 +122,41 @@ describe('sessionContexts', () => {
       usage({ turn_id: 't2', started_at: NOW - 3 * MIN }),
     ];
     const ctx = sessionContexts([session('sess_a', { parent_id: 'sess_root' })], rows, { now: NOW })[0];
-    expect(ctx.kind).toBe('child');
-    expect(ctx.parentId).toBe('sess_root');
-    expect(ctx.turns).toBe(2);
+    assert.equal(ctx.kind, 'child');
+    assert.equal(ctx.parentId, 'sess_root');
+    assert.equal(ctx.turns, 2);
   });
 
   test('a session with no usage reports no usage rather than zero context', () => {
     const [ctx] = sessionContexts([session('sess_quiet')], [], { now: NOW });
-    expect(ctx.hasUsage).toBe(false);
-    expect(ctx.contextTokens).toBe(0);
+    assert.equal(ctx.hasUsage, false);
+    assert.equal(ctx.contextTokens, 0);
   });
 });
 
 describe('resolveCeiling', () => {
   test('derives the ceiling from a 1M window at 80% by default', () => {
     const r = resolveCeiling();
-    expect(r.window).toBe(DEFAULT_WINDOW_TOKENS);
-    expect(r.utilization).toBe(DEFAULT_UTILIZATION);
-    expect(r.ceiling).toBe(800000);
-    expect(r.source).toBe('window');
+    assert.equal(r.window, DEFAULT_WINDOW_TOKENS);
+    assert.equal(r.utilization, DEFAULT_UTILIZATION);
+    assert.equal(r.ceiling, 800000);
+    assert.equal(r.source, 'window');
   });
 
   test('an explicit ceiling wins and is labelled as a budget', () => {
     const r = resolveCeiling({ ceiling: 150000, window: 1000000, utilization: 0.8 });
-    expect(r.ceiling).toBe(150000);
-    expect(r.source).toBe('explicit');
+    assert.equal(r.ceiling, 150000);
+    assert.equal(r.source, 'explicit');
   });
 
   test('a smaller window lowers the ceiling', () => {
-    expect(resolveCeiling({ window: 200000, utilization: 0.5 }).ceiling).toBe(100000);
+    assert.equal(resolveCeiling({ window: 200000, utilization: 0.5 }).ceiling, 100000);
   });
 
   test('out-of-range utilisation falls back instead of producing nonsense', () => {
-    expect(resolveCeiling({ utilization: 0 }).ceiling).toBe(800000);
-    expect(resolveCeiling({ utilization: 2 }).ceiling).toBe(800000);
-    expect(resolveCeiling({ window: -1 }).ceiling).toBe(800000);
+    assert.equal(resolveCeiling({ utilization: 0 }).ceiling, 800000);
+    assert.equal(resolveCeiling({ utilization: 2 }).ceiling, 800000);
+    assert.equal(resolveCeiling({ window: -1 }).ceiling, 800000);
   });
 });
 
@@ -171,11 +172,11 @@ describe('planCompactions', () => {
 
   test('selects an idle session over the ceiling', () => {
     const p = plan();
-    expect(p.schema).toBe(COMPACTION_PLAN_SCHEMA);
-    expect(p.compact).toHaveLength(1);
-    expect(p.compact[0].sessionId).toBe('sess_hot');
-    expect(p.compact[0].reason).toContain('400000');
-    expect(p.overCeiling).toBe(1);
+    assert.equal(p.schema, COMPACTION_PLAN_SCHEMA);
+    assert.equal(p.compact.length, 1);
+    assert.equal(p.compact[0].sessionId, 'sess_hot');
+    assert.ok(p.compact[0].reason.includes('400000'));
+    assert.equal(p.overCeiling, 1);
   });
 
   test('derives the ceiling from the model window when none is given', () => {
@@ -185,33 +186,33 @@ describe('planCompactions', () => {
       now: NOW,
       idleMs: 5 * MIN,
     });
-    expect(p.ceiling).toBe(800000);
-    expect(p.ceilingSource).toBe('window');
-    expect(p.compact).toHaveLength(0);
-    expect(p.skipped[0].code).toBe(SKIP_CODES.BELOW_CEILING);
+    assert.equal(p.ceiling, 800000);
+    assert.equal(p.ceilingSource, 'window');
+    assert.equal(p.compact.length, 0);
+    assert.equal(p.skipped[0].code, SKIP_CODES.BELOW_CEILING);
   });
 
   test('a context exactly at the ceiling is not selected', () => {
     const p = plan({ usageRows: [usage({ session_id: 'sess_hot', input_tokens: 150000, started_at: NOW - 30 * MIN })] });
-    expect(p.compact).toHaveLength(0);
-    expect(p.skipped[0].code).toBe(SKIP_CODES.BELOW_CEILING);
+    assert.equal(p.compact.length, 0);
+    assert.equal(p.skipped[0].code, SKIP_CODES.BELOW_CEILING);
   });
 
   test('a session that just made a request is still running', () => {
     const p = plan({ usageRows: [usage({ session_id: 'sess_hot', input_tokens: 400000, started_at: NOW - MIN })] });
-    expect(p.compact).toHaveLength(0);
-    expect(p.skipped[0].code).toBe(SKIP_CODES.RUNNING);
-    expect(p.overCeiling).toBe(1);
+    assert.equal(p.compact.length, 0);
+    assert.equal(p.skipped[0].code, SKIP_CODES.RUNNING);
+    assert.equal(p.overCeiling, 1);
   });
 
   test('a session already compacting is skipped', () => {
     const p = plan({ sessions: [session('sess_hot', { time_compacting: NOW - MIN })] });
-    expect(p.skipped[0].code).toBe(SKIP_CODES.ALREADY_COMPACTING);
+    assert.equal(p.skipped[0].code, SKIP_CODES.ALREADY_COMPACTING);
   });
 
   test('a session with no usage is skipped', () => {
     const p = plan({ usageRows: [] });
-    expect(p.skipped[0].code).toBe(SKIP_CODES.NO_USAGE);
+    assert.equal(p.skipped[0].code, SKIP_CODES.NO_USAGE);
   });
 
   test('orders selections by context size descending', () => {
@@ -224,15 +225,15 @@ describe('planCompactions', () => {
       ],
       now: NOW, ceiling: 150000, idleMs: 5 * MIN,
     });
-    expect(p.compact.map((c) => c.sessionId)).toEqual(['sess_big', 'sess_mid', 'sess_small']);
+    assert.deepEqual(p.compact.map((c) => c.sessionId), ['sess_big', 'sess_mid', 'sess_small']);
   });
 });
 
 describe('rendering', () => {
   test('formatTokens uses magnitudes', () => {
-    expect(formatTokens(999)).toBe('999');
-    expect(formatTokens(1500)).toBe('1.5k');
-    expect(formatTokens(1866300000)).toBe('1.87B');
+    assert.equal(formatTokens(999), '999');
+    assert.equal(formatTokens(1500), '1.5k');
+    assert.equal(formatTokens(1866300000), '1.87B');
   });
 
   test('the rendered report names the plan and the skip counts', () => {
@@ -240,8 +241,8 @@ describe('rendering', () => {
     const report = census(rows, { now: NOW, windowMs: 3 * DAY });
     const p = planCompactions({ sessions: [session('sess_hot')], usageRows: rows, now: NOW, ceiling: 150000, idleMs: 5 * MIN });
     const text = renderContextBudget(report, p);
-    expect(text).toContain('Context budget — 3d window');
-    expect(text).toContain('COMPACT sess_hot');
-    expect(text).toContain('ceiling 150.0k');
+    assert.ok(text.includes('Context budget — 3d window'));
+    assert.ok(text.includes('COMPACT sess_hot'));
+    assert.ok(text.includes('ceiling 150.0k'));
   });
 });

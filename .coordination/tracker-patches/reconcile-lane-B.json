@@ -1,0 +1,1109 @@
+{
+ "schema": "arbor-transient-stable-id-row-patch/2",
+ "source_head": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+ "last_readable_ledger_commit": "dfa6321d60294739c80eec0ad60d93373475acc7",
+ "last_readable_ledger_blob": "5163c12582e9759d16836047d92e75fd72028f43",
+ "lane": "B",
+ "rows": [
+  {
+   "stable_id": "AT-4BF6BC95F4EC",
+   "path": "apps/vivim-host/server.mjs",
+   "symbol": "",
+   "lane": "B",
+   "batch": "B-F01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L1",
+   "source_anchors": "git diff e07e61385a53f30890b4a7f7441fe25d22a79b1c..7c062c57036b36a803485baa04d3fc6133fa64c8 -- apps/vivim-host/server.mjs",
+   "source_blob_sha": "8411cc1bc390d0a4bd3a82b9bec050364a34489c",
+   "expected_old_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "AUDIT FINDING — OPEN",
+    "Evidence detail / anchor": "Pinned blob prefix 8411cc1bc390; apps/vivim-host/server.mjs:191-219,254-342,347-350,825-930,1004-1043,1235-1264; Live composition root: worker.start before lease takeover and ignores result; actual CLI startup passes no developmentSources, so default HVI config has approvedRoots/dataDir only; production demo routes already return 404, neutral baseline mounted. Consolidate boot/lease and adapter admission without reviving demo."
+   },
+   "changed_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Evidence detail / anchor": "Pinned blob prefix 8411cc1bc390; apps/vivim-host/server.mjs:191-219,254-342,347-350,825-930,1004-1043,1235-1264; Live composition root: worker.start before lease takeover and ignores result; actual CLI startup passes no developmentSources, so default HVI config has approvedRoots/dataDir only; production demo routes already return 404, neutral baseline mounted. Consolidate boot/lease and adapter admission without reviving demo.\n[RECONCILE 2026-11-20] path modified in ARBOR commit 7c062c57036b36a803485baa04d3fc6133fa64c8 (git diff e07e61385a53..7c062c57036b); runtime test UNRUN; reconciled from lane fleet build"
+   },
+   "append_evidence": "RECONCILE-20261120-7c062c57036b-AT-4BF6BC95F4EC",
+   "review_completed": "2026-11-20 path-touched reconciliation over ARBOR commits e07e61385a53..7c062c57036b",
+   "evidence_scope": "file touched by lane fleet build commit 7c062c57036b36a803485baa04d3fc6133fa64c8; runtime UNRUN"
+  },
+  {
+   "stable_id": "AT-E63E924C3EB7",
+   "path": "apps/vivim-host/control/journal.mjs",
+   "symbol": "",
+   "lane": "B",
+   "batch": "B-F01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/control/journal.mjs#L1",
+   "source_anchors": "git diff e07e61385a53f30890b4a7f7441fe25d22a79b1c..7c062c57036b36a803485baa04d3fc6133fa64c8 -- apps/vivim-host/control/journal.mjs",
+   "source_blob_sha": "b9739a00c8345a0513dba32ddc0361e96bb9b16f",
+   "expected_old_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "REVIEW REQUIRED",
+    "Evidence detail / anchor": ""
+   },
+   "changed_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Evidence detail / anchor": "[RECONCILE 2026-11-20] path modified in ARBOR commit 7c062c57036b36a803485baa04d3fc6133fa64c8 (git diff e07e61385a53..7c062c57036b); runtime test UNRUN; reconciled from lane fleet build"
+   },
+   "append_evidence": "RECONCILE-20261120-7c062c57036b-AT-E63E924C3EB7",
+   "review_completed": "2026-11-20 path-touched reconciliation over ARBOR commits e07e61385a53..7c062c57036b",
+   "evidence_scope": "file touched by lane fleet build commit 7c062c57036b36a803485baa04d3fc6133fa64c8; runtime UNRUN"
+  },
+  {
+   "stable_id": "AT-1D41E00C6496",
+   "path": "harness/src/context/dcb-sources.mjs",
+   "symbol": "",
+   "lane": "B",
+   "batch": "B-F01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/harness/src/context/dcb-sources.mjs#L1",
+   "source_anchors": "git diff e07e61385a53f30890b4a7f7441fe25d22a79b1c..7c062c57036b36a803485baa04d3fc6133fa64c8 -- harness/src/context/dcb-sources.mjs",
+   "source_blob_sha": "c1156c628c4c0276e6b00060a2be102e0a0c9a38",
+   "expected_old_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "REVIEW REQUIRED",
+    "Evidence detail / anchor": "Blob prefix c1156c628c4c; lines 33-59,78-145; Historical source discovery and Git HEAD helper; replace discovery with authorized HQ/Host sources."
+   },
+   "changed_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Evidence detail / anchor": "Blob prefix c1156c628c4c; lines 33-59,78-145; Historical source discovery and Git HEAD helper; replace discovery with authorized HQ/Host sources.\n[RECONCILE 2026-11-20] path modified in ARBOR commit 7c062c57036b36a803485baa04d3fc6133fa64c8 (git diff e07e61385a53..7c062c57036b); runtime test UNRUN; reconciled from lane fleet build"
+   },
+   "append_evidence": "RECONCILE-20261120-7c062c57036b-AT-1D41E00C6496",
+   "review_completed": "2026-11-20 path-touched reconciliation over ARBOR commits e07e61385a53..7c062c57036b",
+   "evidence_scope": "file touched by lane fleet build commit 7c062c57036b36a803485baa04d3fc6133fa64c8; runtime UNRUN"
+  },
+  {
+   "stable_id": "AT-BEB57E2A22C7",
+   "path": "apps/vivim-host/bootstrap/worker-supervisor.mjs",
+   "symbol": "",
+   "lane": "B",
+   "batch": "B-F01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/bootstrap/worker-supervisor.mjs#L1",
+   "source_anchors": "git diff e07e61385a53f30890b4a7f7441fe25d22a79b1c..7c062c57036b36a803485baa04d3fc6133fa64c8 -- apps/vivim-host/bootstrap/worker-supervisor.mjs",
+   "source_blob_sha": "86a4bf8598d8c51db490daa60f504877e2d39e47",
+   "expected_old_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "REVIEW REQUIRED",
+    "Evidence detail / anchor": "Pinned blob prefix 86a4bf8598d8; apps/vivim-host/bootstrap/worker-supervisor.mjs:16-65,66-116; Live worker lease uses non-exclusive write after liveness check; server starts poller before takeover, ignores already_running. Future heartbeat age not bounded below, PID reuse not attested. Bridge command claim fence limits duplicate effects; don't claim duplicate send occurred."
+   },
+   "changed_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Evidence detail / anchor": "Pinned blob prefix 86a4bf8598d8; apps/vivim-host/bootstrap/worker-supervisor.mjs:16-65,66-116; Live worker lease uses non-exclusive write after liveness check; server starts poller before takeover, ignores already_running. Future heartbeat age not bounded below, PID reuse not attested. Bridge command claim fence limits duplicate effects; don't claim duplicate send occurred.\n[RECONCILE 2026-11-20] path modified in ARBOR commit 7c062c57036b36a803485baa04d3fc6133fa64c8 (git diff e07e61385a53..7c062c57036b); runtime test UNRUN; reconciled from lane fleet build"
+   },
+   "append_evidence": "RECONCILE-20261120-7c062c57036b-AT-BEB57E2A22C7",
+   "review_completed": "2026-11-20 path-touched reconciliation over ARBOR commits e07e61385a53..7c062c57036b",
+   "evidence_scope": "file touched by lane fleet build commit 7c062c57036b36a803485baa04d3fc6133fa64c8; runtime UNRUN"
+  },
+  {
+   "stable_id": "AT-57918B172821",
+   "path": "apps/vivim-host/control/hvi-native-guide.json",
+   "symbol": "",
+   "lane": "B",
+   "batch": "B-F01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/control/hvi-native-guide.json#L1",
+   "source_anchors": "git diff e07e61385a53f30890b4a7f7441fe25d22a79b1c..7c062c57036b36a803485baa04d3fc6133fa64c8 -- apps/vivim-host/control/hvi-native-guide.json",
+   "source_blob_sha": "7cc846e2c5fcfc520eefd9c64f681c3ca6edade2",
+   "expected_old_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "REVIEW REQUIRED",
+    "Evidence detail / anchor": "Pinned path present; generated versus runtime ownership unresolved."
+   },
+   "changed_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Evidence detail / anchor": "Pinned path present; generated versus runtime ownership unresolved.\n[RECONCILE 2026-11-20] path modified in ARBOR commit 7c062c57036b36a803485baa04d3fc6133fa64c8 (git diff e07e61385a53..7c062c57036b); runtime test UNRUN; reconciled from lane fleet build"
+   },
+   "append_evidence": "RECONCILE-20261120-7c062c57036b-AT-57918B172821",
+   "review_completed": "2026-11-20 path-touched reconciliation over ARBOR commits e07e61385a53..7c062c57036b",
+   "evidence_scope": "file touched by lane fleet build commit 7c062c57036b36a803485baa04d3fc6133fa64c8; runtime UNRUN"
+  },
+  {
+   "stable_id": "AT-91886B58F339",
+   "path": "apps/vivim-host/conversations/bridge-evidence.mjs",
+   "symbol": "",
+   "lane": "B",
+   "batch": "B-F01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/conversations/bridge-evidence.mjs#L1",
+   "source_anchors": "git diff e07e61385a53f30890b4a7f7441fe25d22a79b1c..7c062c57036b36a803485baa04d3fc6133fa64c8 -- apps/vivim-host/conversations/bridge-evidence.mjs",
+   "source_blob_sha": "3984a12745032b7625a15c5e6325a16b6f55cc68",
+   "expected_old_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "REVIEW REQUIRED",
+    "Evidence detail / anchor": ""
+   },
+   "changed_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Evidence detail / anchor": "[RECONCILE 2026-11-20] path modified in ARBOR commit 7c062c57036b36a803485baa04d3fc6133fa64c8 (git diff e07e61385a53..7c062c57036b); runtime test UNRUN; reconciled from lane fleet build"
+   },
+   "append_evidence": "RECONCILE-20261120-7c062c57036b-AT-91886B58F339",
+   "review_completed": "2026-11-20 path-touched reconciliation over ARBOR commits e07e61385a53..7c062c57036b",
+   "evidence_scope": "file touched by lane fleet build commit 7c062c57036b36a803485baa04d3fc6133fa64c8; runtime UNRUN"
+  },
+  {
+   "stable_id": "AT-D4FE78FC0EA9",
+   "path": "apps/vivim-host/conversations/live-projection.mjs",
+   "symbol": "",
+   "lane": "B",
+   "batch": "B-F01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/conversations/live-projection.mjs#L1",
+   "source_anchors": "git diff e07e61385a53f30890b4a7f7441fe25d22a79b1c..7c062c57036b36a803485baa04d3fc6133fa64c8 -- apps/vivim-host/conversations/live-projection.mjs",
+   "source_blob_sha": "64008f6e9726f459e9dd10983696b7ae966b5e0e",
+   "expected_old_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "REVIEW REQUIRED",
+    "Evidence detail / anchor": ""
+   },
+   "changed_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Evidence detail / anchor": "[RECONCILE 2026-11-20] path modified in ARBOR commit 7c062c57036b36a803485baa04d3fc6133fa64c8 (git diff e07e61385a53..7c062c57036b); runtime test UNRUN; reconciled from lane fleet build"
+   },
+   "append_evidence": "RECONCILE-20261120-7c062c57036b-AT-D4FE78FC0EA9",
+   "review_completed": "2026-11-20 path-touched reconciliation over ARBOR commits e07e61385a53..7c062c57036b",
+   "evidence_scope": "file touched by lane fleet build commit 7c062c57036b36a803485baa04d3fc6133fa64c8; runtime UNRUN"
+  },
+  {
+   "stable_id": "AT-8990DEA9794C",
+   "path": "apps/vivim-host/conversations/studio-journal-evidence.mjs",
+   "symbol": "",
+   "lane": "B",
+   "batch": "B-F01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/conversations/studio-journal-evidence.mjs#L1",
+   "source_anchors": "git diff e07e61385a53f30890b4a7f7441fe25d22a79b1c..7c062c57036b36a803485baa04d3fc6133fa64c8 -- apps/vivim-host/conversations/studio-journal-evidence.mjs",
+   "source_blob_sha": "0bb6ec0430aa7a309f10acfe23be9153ff4bca63",
+   "expected_old_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "REVIEW REQUIRED",
+    "Evidence detail / anchor": ""
+   },
+   "changed_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Evidence detail / anchor": "[RECONCILE 2026-11-20] path modified in ARBOR commit 7c062c57036b36a803485baa04d3fc6133fa64c8 (git diff e07e61385a53..7c062c57036b); runtime test UNRUN; reconciled from lane fleet build"
+   },
+   "append_evidence": "RECONCILE-20261120-7c062c57036b-AT-8990DEA9794C",
+   "review_completed": "2026-11-20 path-touched reconciliation over ARBOR commits e07e61385a53..7c062c57036b",
+   "evidence_scope": "file touched by lane fleet build commit 7c062c57036b36a803485baa04d3fc6133fa64c8; runtime UNRUN"
+  },
+  {
+   "stable_id": "AT-CF53D5862720",
+   "path": "apps/vivim-host/public/host.js",
+   "symbol": "",
+   "lane": "B",
+   "batch": "B-F01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/public/host.js#L1",
+   "source_anchors": "git diff e07e61385a53f30890b4a7f7441fe25d22a79b1c..7c062c57036b36a803485baa04d3fc6133fa64c8 -- apps/vivim-host/public/host.js",
+   "source_blob_sha": "090e8a53c95b851e65ed5ee7946aafd9f042fa9d",
+   "expected_old_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "REVIEW REQUIRED",
+    "Evidence detail / anchor": ""
+   },
+   "changed_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Evidence detail / anchor": "[RECONCILE 2026-11-20] path modified in ARBOR commit 7c062c57036b36a803485baa04d3fc6133fa64c8 (git diff e07e61385a53..7c062c57036b); runtime test UNRUN; reconciled from lane fleet build"
+   },
+   "append_evidence": "RECONCILE-20261120-7c062c57036b-AT-CF53D5862720",
+   "review_completed": "2026-11-20 path-touched reconciliation over ARBOR commits e07e61385a53..7c062c57036b",
+   "evidence_scope": "file touched by lane fleet build commit 7c062c57036b36a803485baa04d3fc6133fa64c8; runtime UNRUN"
+  },
+  {
+   "stable_id": "AT-F4361C6F5D6C",
+   "path": "apps/vivim-host/public/pages/wiki.css",
+   "symbol": "",
+   "lane": "B",
+   "batch": "B-F01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/public/pages/wiki.css#L1",
+   "source_anchors": "git diff e07e61385a53f30890b4a7f7441fe25d22a79b1c..7c062c57036b36a803485baa04d3fc6133fa64c8 -- apps/vivim-host/public/pages/wiki.css",
+   "source_blob_sha": "46bb67e20bac18757ad78d4cf580a7d2fc925b24",
+   "expected_old_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "REVIEW REQUIRED",
+    "Evidence detail / anchor": ""
+   },
+   "changed_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Evidence detail / anchor": "[RECONCILE 2026-11-20] path modified in ARBOR commit 7c062c57036b36a803485baa04d3fc6133fa64c8 (git diff e07e61385a53..7c062c57036b); runtime test UNRUN; reconciled from lane fleet build"
+   },
+   "append_evidence": "RECONCILE-20261120-7c062c57036b-AT-F4361C6F5D6C",
+   "review_completed": "2026-11-20 path-touched reconciliation over ARBOR commits e07e61385a53..7c062c57036b",
+   "evidence_scope": "file touched by lane fleet build commit 7c062c57036b36a803485baa04d3fc6133fa64c8; runtime UNRUN"
+  },
+  {
+   "stable_id": "AT-34285F271418",
+   "path": "harness/src/dev/bootstrap.mjs",
+   "symbol": "",
+   "lane": "B",
+   "batch": "B-F01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/harness/src/dev/bootstrap.mjs#L1",
+   "source_anchors": "git diff e07e61385a53f30890b4a7f7441fe25d22a79b1c..7c062c57036b36a803485baa04d3fc6133fa64c8 -- harness/src/dev/bootstrap.mjs",
+   "source_blob_sha": "a91e92c2e515c27647188265f80b5172c9e82fcd",
+   "expected_old_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "REVIEW REQUIRED",
+    "Evidence detail / anchor": "Blob prefix a91e92c2e515; lines 73-114; Redundant bootstrap orchestration obtains Host grant then self-approves Harness request."
+   },
+   "changed_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Evidence detail / anchor": "Blob prefix a91e92c2e515; lines 73-114; Redundant bootstrap orchestration obtains Host grant then self-approves Harness request.\n[RECONCILE 2026-11-20] path modified in ARBOR commit 7c062c57036b36a803485baa04d3fc6133fa64c8 (git diff e07e61385a53..7c062c57036b); runtime test UNRUN; reconciled from lane fleet build"
+   },
+   "append_evidence": "RECONCILE-20261120-7c062c57036b-AT-34285F271418",
+   "review_completed": "2026-11-20 path-touched reconciliation over ARBOR commits e07e61385a53..7c062c57036b",
+   "evidence_scope": "file touched by lane fleet build commit 7c062c57036b36a803485baa04d3fc6133fa64c8; runtime UNRUN"
+  },
+  {
+   "stable_id": "AT-CDC13B279CE2",
+   "path": "apps/vivim-host/server.mjs",
+   "symbol": "tokenFor @ L200",
+   "lane": "B",
+   "batch": "B-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L200",
+   "source_anchors": "git diff e07e61385a53f30890b4a7f7441fe25d22a79b1c..7c062c57036b36a803485baa04d3fc6133fa64c8 -- apps/vivim-host/server.mjs",
+   "source_blob_sha": "8411cc1bc390d0a4bd3a82b9bec050364a34489c",
+   "expected_old_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L200-212\",\"body\":\"L200 const tokenFor = () => { | L201 if (token) return token; | L203 return token;\",\"lexical_refs\":[295,299,303,307,322,331,343,406],\"previous_nonempty_values\":{\"Top-level review state\":\"PENDING\"},\"runtime\":\"UNRUN\"}"
+   },
+   "changed_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L200-212\",\"body\":\"L200 const tokenFor = () => { | L201 if (token) return token; | L203 return token;\",\"lexical_refs\":[295,299,303,307,322,331,343,406],\"previous_nonempty_values\":{\"Top-level review state\":\"PENDING\"},\"runtime\":\"UNRUN\"}\n[RECONCILE 2026-11-20] path modified in ARBOR commit 7c062c57036b36a803485baa04d3fc6133fa64c8 (git diff e07e61385a53..7c062c57036b); runtime test UNRUN; reconciled from lane fleet build"
+   },
+   "append_evidence": "RECONCILE-20261120-7c062c57036b-AT-CDC13B279CE2",
+   "review_completed": "2026-11-20 path-touched reconciliation over ARBOR commits e07e61385a53..7c062c57036b",
+   "evidence_scope": "file touched by lane fleet build commit 7c062c57036b36a803485baa04d3fc6133fa64c8; runtime UNRUN"
+  },
+  {
+   "stable_id": "AT-736BDC4F2798",
+   "path": "apps/vivim-host/server.mjs",
+   "symbol": "ownerAuthorized @ L775",
+   "lane": "B",
+   "batch": "B-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L775",
+   "source_anchors": "git diff e07e61385a53f30890b4a7f7441fe25d22a79b1c..7c062c57036b36a803485baa04d3fc6133fa64c8 -- apps/vivim-host/server.mjs",
+   "source_blob_sha": "8411cc1bc390d0a4bd3a82b9bec050364a34489c",
+   "expected_old_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L775-787\",\"body\":\"L775 function ownerAuthorized(req, res, tokenFor) { | L778 catch { sendJson(res, 503, { error: 'Owner capability unavailable', code: 'OWNER_TOKEN_UNAVAILABLE' }); return false; } | L779 if (!verifyOwnerToken(req.headers.authorization, ownerToken)) {\",\"lexical_refs\":[322,331,689,706,747,753,796,1068],\"previous_nonempty_values\":{\"Top-level review state\":\"PENDING\"},\"runtime\":\"UNRUN\"}"
+   },
+   "changed_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L775-787\",\"body\":\"L775 function ownerAuthorized(req, res, tokenFor) { | L778 catch { sendJson(res, 503, { error: 'Owner capability unavailable', code: 'OWNER_TOKEN_UNAVAILABLE' }); return false; } | L779 if (!verifyOwnerToken(req.headers.authorization, ownerToken)) {\",\"lexical_refs\":[322,331,689,706,747,753,796,1068],\"previous_nonempty_values\":{\"Top-level review state\":\"PENDING\"},\"runtime\":\"UNRUN\"}\n[RECONCILE 2026-11-20] path modified in ARBOR commit 7c062c57036b36a803485baa04d3fc6133fa64c8 (git diff e07e61385a53..7c062c57036b); runtime test UNRUN; reconciled from lane fleet build"
+   },
+   "append_evidence": "RECONCILE-20261120-7c062c57036b-AT-736BDC4F2798",
+   "review_completed": "2026-11-20 path-touched reconciliation over ARBOR commits e07e61385a53..7c062c57036b",
+   "evidence_scope": "file touched by lane fleet build commit 7c062c57036b36a803485baa04d3fc6133fa64c8; runtime UNRUN"
+  },
+  {
+   "stable_id": "AT-6423F300C362",
+   "path": "apps/vivim-host/server.mjs",
+   "symbol": "studioDataDir @ L99",
+   "lane": "B",
+   "batch": "B-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L99",
+   "source_anchors": "git diff e07e61385a53f30890b4a7f7441fe25d22a79b1c..7c062c57036b36a803485baa04d3fc6133fa64c8 -- apps/vivim-host/server.mjs",
+   "source_blob_sha": "8411cc1bc390d0a4bd3a82b9bec050364a34489c",
+   "expected_old_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L99-109\",\"body\":\"L99 export function studioDataDir(env = process.env, platform = process.platform, home = os.homedir()) { | L101 if (env.VIVIM_HOST_DATA_DIR) return paths.resolve(env.VIVIM_HOST_DATA_DIR); | L102 if (env.CAPTURE_STUDIO_HOME) return paths.resolve(env.CAPTURE_STUDIO_HOME);\",\"lexical_refs\":[113,191,1238],\"previous_nonempty_values\":{\"Top-level review state\":\"PENDING\"},\"runtime\":\"UNRUN\"}"
+   },
+   "changed_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L99-109\",\"body\":\"L99 export function studioDataDir(env = process.env, platform = process.platform, home = os.homedir()) { | L101 if (env.VIVIM_HOST_DATA_DIR) return paths.resolve(env.VIVIM_HOST_DATA_DIR); | L102 if (env.CAPTURE_STUDIO_HOME) return paths.resolve(env.CAPTURE_STUDIO_HOME);\",\"lexical_refs\":[113,191,1238],\"previous_nonempty_values\":{\"Top-level review state\":\"PENDING\"},\"runtime\":\"UNRUN\"}\n[RECONCILE 2026-11-20] path modified in ARBOR commit 7c062c57036b36a803485baa04d3fc6133fa64c8 (git diff e07e61385a53..7c062c57036b); runtime test UNRUN; reconciled from lane fleet build"
+   },
+   "append_evidence": "RECONCILE-20261120-7c062c57036b-AT-6423F300C362",
+   "review_completed": "2026-11-20 path-touched reconciliation over ARBOR commits e07e61385a53..7c062c57036b",
+   "evidence_scope": "file touched by lane fleet build commit 7c062c57036b36a803485baa04d3fc6133fa64c8; runtime UNRUN"
+  },
+  {
+   "stable_id": "AT-491E1310EB86",
+   "path": "apps/vivim-host/server.mjs",
+   "symbol": "manifestFile @ L110",
+   "lane": "B",
+   "batch": "B-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L110",
+   "source_anchors": "git diff e07e61385a53f30890b4a7f7441fe25d22a79b1c..7c062c57036b36a803485baa04d3fc6133fa64c8 -- apps/vivim-host/server.mjs",
+   "source_blob_sha": "8411cc1bc390d0a4bd3a82b9bec050364a34489c",
+   "expected_old_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L110-116\",\"body\":\"L110 export function manifestFile(env = process.env) { | L112 if (mf) return mf; | L113 return path.join(studioDataDir(env), MANIFEST_FILE);\",\"lexical_refs\":[118,142,1098,1103],\"previous_nonempty_values\":{\"Top-level review state\":\"PENDING\"},\"runtime\":\"UNRUN\"}"
+   },
+   "changed_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L110-116\",\"body\":\"L110 export function manifestFile(env = process.env) { | L112 if (mf) return mf; | L113 return path.join(studioDataDir(env), MANIFEST_FILE);\",\"lexical_refs\":[118,142,1098,1103],\"previous_nonempty_values\":{\"Top-level review state\":\"PENDING\"},\"runtime\":\"UNRUN\"}\n[RECONCILE 2026-11-20] path modified in ARBOR commit 7c062c57036b36a803485baa04d3fc6133fa64c8 (git diff e07e61385a53..7c062c57036b); runtime test UNRUN; reconciled from lane fleet build"
+   },
+   "append_evidence": "RECONCILE-20261120-7c062c57036b-AT-491E1310EB86",
+   "review_completed": "2026-11-20 path-touched reconciliation over ARBOR commits e07e61385a53..7c062c57036b",
+   "evidence_scope": "file touched by lane fleet build commit 7c062c57036b36a803485baa04d3fc6133fa64c8; runtime UNRUN"
+  },
+  {
+   "stable_id": "AT-CBF12E635901",
+   "path": "apps/vivim-host/server.mjs",
+   "symbol": "manifestComplete @ L117",
+   "lane": "B",
+   "batch": "B-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L117",
+   "source_anchors": "git diff e07e61385a53f30890b4a7f7441fe25d22a79b1c..7c062c57036b36a803485baa04d3fc6133fa64c8 -- apps/vivim-host/server.mjs",
+   "source_blob_sha": "8411cc1bc390d0a4bd3a82b9bec050364a34489c",
+   "expected_old_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L117-126\",\"body\":\"L117 export function manifestComplete(env = process.env) { | L119 if (!existsSync(file)) return false; | L122 return Boolean(m && m.schema === MANIFEST_SCHEMA && m.version === MANIFEST_VERSION && m.setupComplete === true);\",\"lexical_refs\":[142],\"previous_nonempty_values\":{\"Top-level review state\":\"PENDING\"},\"runtime\":\"UNRUN\"}"
+   },
+   "changed_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L117-126\",\"body\":\"L117 export function manifestComplete(env = process.env) { | L119 if (!existsSync(file)) return false; | L122 return Boolean(m && m.schema === MANIFEST_SCHEMA && m.version === MANIFEST_VERSION && m.setupComplete === true);\",\"lexical_refs\":[142],\"previous_nonempty_values\":{\"Top-level review state\":\"PENDING\"},\"runtime\":\"UNRUN\"}\n[RECONCILE 2026-11-20] path modified in ARBOR commit 7c062c57036b36a803485baa04d3fc6133fa64c8 (git diff e07e61385a53..7c062c57036b); runtime test UNRUN; reconciled from lane fleet build"
+   },
+   "append_evidence": "RECONCILE-20261120-7c062c57036b-AT-CBF12E635901",
+   "review_completed": "2026-11-20 path-touched reconciliation over ARBOR commits e07e61385a53..7c062c57036b",
+   "evidence_scope": "file touched by lane fleet build commit 7c062c57036b36a803485baa04d3fc6133fa64c8; runtime UNRUN"
+  },
+  {
+   "stable_id": "AT-18F1FA21E691",
+   "path": "apps/vivim-host/server.mjs",
+   "symbol": "runCommand @ L127",
+   "lane": "B",
+   "batch": "B-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L127",
+   "source_anchors": "git diff e07e61385a53f30890b4a7f7441fe25d22a79b1c..7c062c57036b36a803485baa04d3fc6133fa64c8 -- apps/vivim-host/server.mjs",
+   "source_blob_sha": "8411cc1bc390d0a4bd3a82b9bec050364a34489c",
+   "expected_old_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L127-136\",\"body\":\"L127 async function runCommand(file, args) { | L129 const { stdout, stderr } = await execFile(file, args, { maxBuffer: 10 * 1024 * 1024 }); | L130 return { ok: true, stdout, stderr };\",\"lexical_refs\":[1090,1110,1117],\"previous_nonempty_values\":{\"Top-level review state\":\"PENDING\"},\"runtime\":\"UNRUN\"}"
+   },
+   "changed_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L127-136\",\"body\":\"L127 async function runCommand(file, args) { | L129 const { stdout, stderr } = await execFile(file, args, { maxBuffer: 10 * 1024 * 1024 }); | L130 return { ok: true, stdout, stderr };\",\"lexical_refs\":[1090,1110,1117],\"previous_nonempty_values\":{\"Top-level review state\":\"PENDING\"},\"runtime\":\"UNRUN\"}\n[RECONCILE 2026-11-20] path modified in ARBOR commit 7c062c57036b36a803485baa04d3fc6133fa64c8 (git diff e07e61385a53..7c062c57036b); runtime test UNRUN; reconciled from lane fleet build"
+   },
+   "append_evidence": "RECONCILE-20261120-7c062c57036b-AT-18F1FA21E691",
+   "review_completed": "2026-11-20 path-touched reconciliation over ARBOR commits e07e61385a53..7c062c57036b",
+   "evidence_scope": "file touched by lane fleet build commit 7c062c57036b36a803485baa04d3fc6133fa64c8; runtime UNRUN"
+  },
+  {
+   "stable_id": "AT-68FE7A5AD612",
+   "path": "apps/vivim-host/server.mjs",
+   "symbol": "onboardingState @ L137",
+   "lane": "B",
+   "batch": "B-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L137",
+   "source_anchors": "git diff e07e61385a53f30890b4a7f7441fe25d22a79b1c..7c062c57036b36a803485baa04d3fc6133fa64c8 -- apps/vivim-host/server.mjs",
+   "source_blob_sha": "8411cc1bc390d0a4bd3a82b9bec050364a34489c",
+   "expected_old_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L137-148\",\"body\":\"L137 function onboardingState() { | L139 return {\",\"lexical_refs\":[1080],\"previous_nonempty_values\":{\"Top-level review state\":\"PENDING\"},\"runtime\":\"UNRUN\"}"
+   },
+   "changed_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L137-148\",\"body\":\"L137 function onboardingState() { | L139 return {\",\"lexical_refs\":[1080],\"previous_nonempty_values\":{\"Top-level review state\":\"PENDING\"},\"runtime\":\"UNRUN\"}\n[RECONCILE 2026-11-20] path modified in ARBOR commit 7c062c57036b36a803485baa04d3fc6133fa64c8 (git diff e07e61385a53..7c062c57036b); runtime test UNRUN; reconciled from lane fleet build"
+   },
+   "append_evidence": "RECONCILE-20261120-7c062c57036b-AT-68FE7A5AD612",
+   "review_completed": "2026-11-20 path-touched reconciliation over ARBOR commits e07e61385a53..7c062c57036b",
+   "evidence_scope": "file touched by lane fleet build commit 7c062c57036b36a803485baa04d3fc6133fa64c8; runtime UNRUN"
+  },
+  {
+   "stable_id": "AT-16AD38EA98AB",
+   "path": "apps/vivim-host/server.mjs",
+   "symbol": "bridgeSnapshot @ L149",
+   "lane": "B",
+   "batch": "B-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L149",
+   "source_anchors": "git diff e07e61385a53f30890b4a7f7441fe25d22a79b1c..7c062c57036b36a803485baa04d3fc6133fa64c8 -- apps/vivim-host/server.mjs",
+   "source_blob_sha": "8411cc1bc390d0a4bd3a82b9bec050364a34489c",
+   "expected_old_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L149-168\",\"body\":\"L149 export function bridgeSnapshot(dataRoot) { | L151 if (!existsSync(file)) return { state: 'not_observed', totals: {}, recent: [] }; | L153 if (statSync(file).size > 8 * 1024 * 1024) return { state: 'unavailable', reason: 'Bridge log exceeds preview limit', to\",\"lexical_refs\":[171],\"previous_nonempty_values\":{\"Top-level review state\":\"PENDING\"},\"runtime\":\"UNRUN\"}"
+   },
+   "changed_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L149-168\",\"body\":\"L149 export function bridgeSnapshot(dataRoot) { | L151 if (!existsSync(file)) return { state: 'not_observed', totals: {}, recent: [] }; | L153 if (statSync(file).size > 8 * 1024 * 1024) return { state: 'unavailable', reason: 'Bridge log exceeds preview limit', to\",\"lexical_refs\":[171],\"previous_nonempty_values\":{\"Top-level review state\":\"PENDING\"},\"runtime\":\"UNRUN\"}\n[RECONCILE 2026-11-20] path modified in ARBOR commit 7c062c57036b36a803485baa04d3fc6133fa64c8 (git diff e07e61385a53..7c062c57036b); runtime test UNRUN; reconciled from lane fleet build"
+   },
+   "append_evidence": "RECONCILE-20261120-7c062c57036b-AT-16AD38EA98AB",
+   "review_completed": "2026-11-20 path-touched reconciliation over ARBOR commits e07e61385a53..7c062c57036b",
+   "evidence_scope": "file touched by lane fleet build commit 7c062c57036b36a803485baa04d3fc6133fa64c8; runtime UNRUN"
+  },
+  {
+   "stable_id": "AT-CEB6E9CBC063",
+   "path": "apps/vivim-host/server.mjs",
+   "symbol": "hostSnapshot @ L169",
+   "lane": "B",
+   "batch": "B-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L169",
+   "source_anchors": "git diff e07e61385a53f30890b4a7f7441fe25d22a79b1c..7c062c57036b36a803485baa04d3fc6133fa64c8 -- apps/vivim-host/server.mjs",
+   "source_blob_sha": "8411cc1bc390d0a4bd3a82b9bec050364a34489c",
+   "expected_old_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L169-190\",\"body\":\"L169 export function hostSnapshot({ dataRoot, now = () => new Date().toISOString(), journalRoot = path.resolve(here, '../../r | L188 return { ...snapshot, recovery: projectHostRecovery(snapshot) };\",\"lexical_refs\":[485],\"previous_nonempty_values\":{\"Top-level review state\":\"PENDING\"},\"runtime\":\"UNRUN\"}"
+   },
+   "changed_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L169-190\",\"body\":\"L169 export function hostSnapshot({ dataRoot, now = () => new Date().toISOString(), journalRoot = path.resolve(here, '../../r | L188 return { ...snapshot, recovery: projectHostRecovery(snapshot) };\",\"lexical_refs\":[485],\"previous_nonempty_values\":{\"Top-level review state\":\"PENDING\"},\"runtime\":\"UNRUN\"}\n[RECONCILE 2026-11-20] path modified in ARBOR commit 7c062c57036b36a803485baa04d3fc6133fa64c8 (git diff e07e61385a53..7c062c57036b); runtime test UNRUN; reconciled from lane fleet build"
+   },
+   "append_evidence": "RECONCILE-20261120-7c062c57036b-AT-CEB6E9CBC063",
+   "review_completed": "2026-11-20 path-touched reconciliation over ARBOR commits e07e61385a53..7c062c57036b",
+   "evidence_scope": "file touched by lane fleet build commit 7c062c57036b36a803485baa04d3fc6133fa64c8; runtime UNRUN"
+  },
+  {
+   "stable_id": "AT-7DD9F1E3705D",
+   "path": "apps/vivim-host/server.mjs",
+   "symbol": "createHostServer @ L191",
+   "lane": "B",
+   "batch": "B-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L191",
+   "source_anchors": "git diff e07e61385a53f30890b4a7f7441fe25d22a79b1c..7c062c57036b36a803485baa04d3fc6133fa64c8 -- apps/vivim-host/server.mjs",
+   "source_blob_sha": "8411cc1bc390d0a4bd3a82b9bec050364a34489c",
+   "expected_old_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L191-291\",\"body\":\"L191 export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path.join(here, 'public'), bootstrap = null, | L197 if (!runtime) runtime = createBootstrapRuntime({ dataRoot }); | L198 return runtime;\",\"lexical_refs\":[1258],\"previous_nonempty_values\":{\"Top-level review state\":\"PENDING\"},\"runtime\":\"UNRUN\"}"
+   },
+   "changed_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L191-291\",\"body\":\"L191 export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path.join(here, 'public'), bootstrap = null, | L197 if (!runtime) runtime = createBootstrapRuntime({ dataRoot }); | L198 return runtime;\",\"lexical_refs\":[1258],\"previous_nonempty_values\":{\"Top-level review state\":\"PENDING\"},\"runtime\":\"UNRUN\"}\n[RECONCILE 2026-11-20] path modified in ARBOR commit 7c062c57036b36a803485baa04d3fc6133fa64c8 (git diff e07e61385a53..7c062c57036b); runtime test UNRUN; reconciled from lane fleet build"
+   },
+   "append_evidence": "RECONCILE-20261120-7c062c57036b-AT-7DD9F1E3705D",
+   "review_completed": "2026-11-20 path-touched reconciliation over ARBOR commits e07e61385a53..7c062c57036b",
+   "evidence_scope": "file touched by lane fleet build commit 7c062c57036b36a803485baa04d3fc6133fa64c8; runtime UNRUN"
+  },
+  {
+   "stable_id": "AT-DCDFBC846794",
+   "path": "apps/vivim-host/server.mjs",
+   "symbol": "runtimeFor @ L196",
+   "lane": "B",
+   "batch": "B-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L196",
+   "source_anchors": "git diff e07e61385a53f30890b4a7f7441fe25d22a79b1c..7c062c57036b36a803485baa04d3fc6133fa64c8 -- apps/vivim-host/server.mjs",
+   "source_blob_sha": "8411cc1bc390d0a4bd3a82b9bec050364a34489c",
+   "expected_old_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L196-199\",\"body\":\"L196 const runtimeFor = () => { | L197 if (!runtime) runtime = createBootstrapRuntime({ dataRoot }); | L198 return runtime;\",\"lexical_refs\":[213,249,255,256,257,295,303,307],\"previous_nonempty_values\":{\"Top-level review state\":\"PENDING\"},\"runtime\":\"UNRUN\"}"
+   },
+   "changed_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L196-199\",\"body\":\"L196 const runtimeFor = () => { | L197 if (!runtime) runtime = createBootstrapRuntime({ dataRoot }); | L198 return runtime;\",\"lexical_refs\":[213,249,255,256,257,295,303,307],\"previous_nonempty_values\":{\"Top-level review state\":\"PENDING\"},\"runtime\":\"UNRUN\"}\n[RECONCILE 2026-11-20] path modified in ARBOR commit 7c062c57036b36a803485baa04d3fc6133fa64c8 (git diff e07e61385a53..7c062c57036b); runtime test UNRUN; reconciled from lane fleet build"
+   },
+   "append_evidence": "RECONCILE-20261120-7c062c57036b-AT-DCDFBC846794",
+   "review_completed": "2026-11-20 path-touched reconciliation over ARBOR commits e07e61385a53..7c062c57036b",
+   "evidence_scope": "file touched by lane fleet build commit 7c062c57036b36a803485baa04d3fc6133fa64c8; runtime UNRUN"
+  },
+  {
+   "stable_id": "AT-47379B512B9E",
+   "path": "apps/vivim-host/server.mjs",
+   "symbol": "controlFor @ L213",
+   "lane": "B",
+   "batch": "B-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L213",
+   "source_anchors": "git diff e07e61385a53f30890b4a7f7441fe25d22a79b1c..7c062c57036b36a803485baa04d3fc6133fa64c8 -- apps/vivim-host/server.mjs",
+   "source_blob_sha": "8411cc1bc390d0a4bd3a82b9bec050364a34489c",
+   "expected_old_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L213-313\",\"body\":\"L213 const controlFor = () => (control ??= createControlDispatcher({ dataRoot, runtime: runtimeFor(), devices: enrollment, pr | L222 if (bundledApk && bundledManifest && existsSync(bundledApk) && existsSync(bundledManifest)) { | L226 if (manifest.schema !== 'vivim.apk-release/1' || manifest.artifact?.sha256 !== actualSha ||\",\"lexical_refs\":[214,268,307,386,788,871,894,973],\"previous_nonempty_values\":{\"Top-level review state\":\"PENDING\"},\"runtime\":\"UNRUN\"}"
+   },
+   "changed_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L213-313\",\"body\":\"L213 const controlFor = () => (control ??= createControlDispatcher({ dataRoot, runtime: runtimeFor(), devices: enrollment, pr | L222 if (bundledApk && bundledManifest && existsSync(bundledApk) && existsSync(bundledManifest)) { | L226 if (manifest.schema !== 'vivim.apk-release/1' || manifest.artifact?.sha256 !== actualSha ||\",\"lexical_refs\":[214,268,307,386,788,871,894,973],\"previous_nonempty_values\":{\"Top-level review state\":\"PENDING\"},\"runtime\":\"UNRUN\"}\n[RECONCILE 2026-11-20] path modified in ARBOR commit 7c062c57036b36a803485baa04d3fc6133fa64c8 (git diff e07e61385a53..7c062c57036b); runtime test UNRUN; reconciled from lane fleet build"
+   },
+   "append_evidence": "RECONCILE-20261120-7c062c57036b-AT-47379B512B9E",
+   "review_completed": "2026-11-20 path-touched reconciliation over ARBOR commits e07e61385a53..7c062c57036b",
+   "evidence_scope": "file touched by lane fleet build commit 7c062c57036b36a803485baa04d3fc6133fa64c8; runtime UNRUN"
+  },
+  {
+   "stable_id": "AT-522054257334",
+   "path": "apps/vivim-host/server.mjs",
+   "symbol": "BOOTSTRAP_BODY_LIMIT @ L533",
+   "lane": "B",
+   "batch": "B-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L533",
+   "source_anchors": "git diff e07e61385a53f30890b4a7f7441fe25d22a79b1c..7c062c57036b36a803485baa04d3fc6133fa64c8 -- apps/vivim-host/server.mjs",
+   "source_blob_sha": "8411cc1bc390d0a4bd3a82b9bec050364a34489c",
+   "expected_old_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L533-541\",\"body\":\"L533 const BOOTSTRAP_BODY_LIMIT = 256 * 1024;\",\"lexical_refs\":[553],\"previous_nonempty_values\":{\"Top-level review state\":\"PENDING\"},\"runtime\":\"UNRUN\"}"
+   },
+   "changed_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L533-541\",\"body\":\"L533 const BOOTSTRAP_BODY_LIMIT = 256 * 1024;\",\"lexical_refs\":[553],\"previous_nonempty_values\":{\"Top-level review state\":\"PENDING\"},\"runtime\":\"UNRUN\"}\n[RECONCILE 2026-11-20] path modified in ARBOR commit 7c062c57036b36a803485baa04d3fc6133fa64c8 (git diff e07e61385a53..7c062c57036b); runtime test UNRUN; reconciled from lane fleet build"
+   },
+   "append_evidence": "RECONCILE-20261120-7c062c57036b-AT-522054257334",
+   "review_completed": "2026-11-20 path-touched reconciliation over ARBOR commits e07e61385a53..7c062c57036b",
+   "evidence_scope": "file touched by lane fleet build commit 7c062c57036b36a803485baa04d3fc6133fa64c8; runtime UNRUN"
+  },
+  {
+   "stable_id": "AT-4142563B6CAC",
+   "path": "apps/vivim-host/server.mjs",
+   "symbol": "sendJson @ L548",
+   "lane": "B",
+   "batch": "B-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L548",
+   "source_anchors": "git diff e07e61385a53f30890b4a7f7441fe25d22a79b1c..7c062c57036b36a803485baa04d3fc6133fa64c8 -- apps/vivim-host/server.mjs",
+   "source_blob_sha": "8411cc1bc390d0a4bd3a82b9bec050364a34489c",
+   "expected_old_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L548-552\",\"body\":\"L548 function sendJson(res, status, body) {\",\"lexical_refs\":[314,320,323,329,335,339,348,355],\"previous_nonempty_values\":{\"Top-level review state\":\"PENDING\"},\"runtime\":\"UNRUN\"}"
+   },
+   "changed_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L548-552\",\"body\":\"L548 function sendJson(res, status, body) {\",\"lexical_refs\":[314,320,323,329,335,339,348,355],\"previous_nonempty_values\":{\"Top-level review state\":\"PENDING\"},\"runtime\":\"UNRUN\"}\n[RECONCILE 2026-11-20] path modified in ARBOR commit 7c062c57036b36a803485baa04d3fc6133fa64c8 (git diff e07e61385a53..7c062c57036b); runtime test UNRUN; reconciled from lane fleet build"
+   },
+   "append_evidence": "RECONCILE-20261120-7c062c57036b-AT-4142563B6CAC",
+   "review_completed": "2026-11-20 path-touched reconciliation over ARBOR commits e07e61385a53..7c062c57036b",
+   "evidence_scope": "file touched by lane fleet build commit 7c062c57036b36a803485baa04d3fc6133fa64c8; runtime UNRUN"
+  },
+  {
+   "stable_id": "AT-2761E94934AF",
+   "path": "apps/vivim-host/server.mjs",
+   "symbol": "readJsonBody @ L553",
+   "lane": "B",
+   "batch": "B-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L553",
+   "source_anchors": "git diff e07e61385a53f30890b4a7f7441fe25d22a79b1c..7c062c57036b36a803485baa04d3fc6133fa64c8 -- apps/vivim-host/server.mjs",
+   "source_blob_sha": "8411cc1bc390d0a4bd3a82b9bec050364a34489c",
+   "expected_old_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L553-577\",\"body\":\"L553 function readJsonBody(req, limit = BOOTSTRAP_BODY_LIMIT) { | L554 return new Promise((resolve, reject) => { | L556 if (type !== 'application/json') { reject(Object.assign(new Error('Content-Type application/json required'), { status: 4\",\"lexical_refs\":[354,656,708,804,844,980,1086,1130],\"previous_nonempty_values\":{\"Top-level review state\":\"PENDING\"},\"runtime\":\"UNRUN\"}"
+   },
+   "changed_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L553-577\",\"body\":\"L553 function readJsonBody(req, limit = BOOTSTRAP_BODY_LIMIT) { | L554 return new Promise((resolve, reject) => { | L556 if (type !== 'application/json') { reject(Object.assign(new Error('Content-Type application/json required'), { status: 4\",\"lexical_refs\":[354,656,708,804,844,980,1086,1130],\"previous_nonempty_values\":{\"Top-level review state\":\"PENDING\"},\"runtime\":\"UNRUN\"}\n[RECONCILE 2026-11-20] path modified in ARBOR commit 7c062c57036b36a803485baa04d3fc6133fa64c8 (git diff e07e61385a53..7c062c57036b); runtime test UNRUN; reconciled from lane fleet build"
+   },
+   "append_evidence": "RECONCILE-20261120-7c062c57036b-AT-2761E94934AF",
+   "review_completed": "2026-11-20 path-touched reconciliation over ARBOR commits e07e61385a53..7c062c57036b",
+   "evidence_scope": "file touched by lane fleet build commit 7c062c57036b36a803485baa04d3fc6133fa64c8; runtime UNRUN"
+  },
+  {
+   "stable_id": "AT-180996BE26DC",
+   "path": "apps/vivim-host/server.mjs",
+   "symbol": "handleBootstrap @ L578",
+   "lane": "B",
+   "batch": "B-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L578",
+   "source_anchors": "git diff e07e61385a53f30890b4a7f7441fe25d22a79b1c..7c062c57036b36a803485baa04d3fc6133fa64c8 -- apps/vivim-host/server.mjs",
+   "source_blob_sha": "8411cc1bc390d0a4bd3a82b9bec050364a34489c",
+   "expected_old_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L578-672\",\"body\":\"L578 async function handleBootstrap(req, res, pathname, host, runtime, tokenFor) { | L581 if (origin !== undefined && String(origin).toLowerCase() !== expected) { sendJson(res, 403, { error: 'Cross-origin boots | L582 if (pathname === '/api/host/bootstrap/status') {\",\"lexical_refs\":[295],\"previous_nonempty_values\":{\"Top-level review state\":\"PENDING\"},\"runtime\":\"UNRUN\"}"
+   },
+   "changed_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L578-672\",\"body\":\"L578 async function handleBootstrap(req, res, pathname, host, runtime, tokenFor) { | L581 if (origin !== undefined && String(origin).toLowerCase() !== expected) { sendJson(res, 403, { error: 'Cross-origin boots | L582 if (pathname === '/api/host/bootstrap/status') {\",\"lexical_refs\":[295],\"previous_nonempty_values\":{\"Top-level review state\":\"PENDING\"},\"runtime\":\"UNRUN\"}\n[RECONCILE 2026-11-20] path modified in ARBOR commit 7c062c57036b36a803485baa04d3fc6133fa64c8 (git diff e07e61385a53..7c062c57036b); runtime test UNRUN; reconciled from lane fleet build"
+   },
+   "append_evidence": "RECONCILE-20261120-7c062c57036b-AT-180996BE26DC",
+   "review_completed": "2026-11-20 path-touched reconciliation over ARBOR commits e07e61385a53..7c062c57036b",
+   "evidence_scope": "file touched by lane fleet build commit 7c062c57036b36a803485baa04d3fc6133fa64c8; runtime UNRUN"
+  },
+  {
+   "stable_id": "AT-06C2B35D101D",
+   "path": "apps/vivim-host/server.mjs",
+   "symbol": "APK_REGISTER_BODY_LIMIT @ L673",
+   "lane": "B",
+   "batch": "B-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L673",
+   "source_anchors": "git diff e07e61385a53f30890b4a7f7441fe25d22a79b1c..7c062c57036b36a803485baa04d3fc6133fa64c8 -- apps/vivim-host/server.mjs",
+   "source_blob_sha": "8411cc1bc390d0a4bd3a82b9bec050364a34489c",
+   "expected_old_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L673-674\",\"body\":\"L673 const APK_REGISTER_BODY_LIMIT = 64 * 1024;\",\"lexical_refs\":[708],\"previous_nonempty_values\":{\"Top-level review state\":\"PENDING\"},\"runtime\":\"UNRUN\"}"
+   },
+   "changed_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L673-674\",\"body\":\"L673 const APK_REGISTER_BODY_LIMIT = 64 * 1024;\",\"lexical_refs\":[708],\"previous_nonempty_values\":{\"Top-level review state\":\"PENDING\"},\"runtime\":\"UNRUN\"}\n[RECONCILE 2026-11-20] path modified in ARBOR commit 7c062c57036b36a803485baa04d3fc6133fa64c8 (git diff e07e61385a53..7c062c57036b); runtime test UNRUN; reconciled from lane fleet build"
+   },
+   "append_evidence": "RECONCILE-20261120-7c062c57036b-AT-06C2B35D101D",
+   "review_completed": "2026-11-20 path-touched reconciliation over ARBOR commits e07e61385a53..7c062c57036b",
+   "evidence_scope": "file touched by lane fleet build commit 7c062c57036b36a803485baa04d3fc6133fa64c8; runtime UNRUN"
+  },
+  {
+   "stable_id": "AT-479D1BCFA872",
+   "path": "apps/vivim-host/server.mjs",
+   "symbol": "apkSlug @ L675",
+   "lane": "B",
+   "batch": "B-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L675",
+   "source_anchors": "git diff e07e61385a53f30890b4a7f7441fe25d22a79b1c..7c062c57036b36a803485baa04d3fc6133fa64c8 -- apps/vivim-host/server.mjs",
+   "source_blob_sha": "8411cc1bc390d0a4bd3a82b9bec050364a34489c",
+   "expected_old_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L675-680\",\"body\":\"L675 const apkSlug = (value, max) => String(value ?? '').toLowerCase().replace(/[^a-z0-9_-]+/g, '-')\",\"lexical_refs\":[721],\"previous_nonempty_values\":{\"Top-level review state\":\"PENDING\"},\"runtime\":\"UNRUN\"}"
+   },
+   "changed_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L675-680\",\"body\":\"L675 const apkSlug = (value, max) => String(value ?? '').toLowerCase().replace(/[^a-z0-9_-]+/g, '-')\",\"lexical_refs\":[721],\"previous_nonempty_values\":{\"Top-level review state\":\"PENDING\"},\"runtime\":\"UNRUN\"}\n[RECONCILE 2026-11-20] path modified in ARBOR commit 7c062c57036b36a803485baa04d3fc6133fa64c8 (git diff e07e61385a53..7c062c57036b); runtime test UNRUN; reconciled from lane fleet build"
+   },
+   "append_evidence": "RECONCILE-20261120-7c062c57036b-AT-479D1BCFA872",
+   "review_completed": "2026-11-20 path-touched reconciliation over ARBOR commits e07e61385a53..7c062c57036b",
+   "evidence_scope": "file touched by lane fleet build commit 7c062c57036b36a803485baa04d3fc6133fa64c8; runtime UNRUN"
+  },
+  {
+   "stable_id": "AT-D189A608E0F6",
+   "path": "apps/vivim-host/server.mjs",
+   "symbol": "handleDataIntelligence @ L681",
+   "lane": "B",
+   "batch": "B-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L681",
+   "source_anchors": "git diff e07e61385a53f30890b4a7f7441fe25d22a79b1c..7c062c57036b36a803485baa04d3fc6133fa64c8 -- apps/vivim-host/server.mjs",
+   "source_blob_sha": "8411cc1bc390d0a4bd3a82b9bec050364a34489c",
+   "expected_old_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L681-697\",\"body\":\"L681 function handleDataIntelligence(req, res, pathname, host, runtimeFor, tokenFor) { | L683 if (req.headers.origin !== undefined && String(req.headers.origin).toLowerCase() !== 'http://' + host) { | L686 if (req.method !== 'GET' && req.method !== 'HEAD') {\",\"lexical_refs\":[303],\"previous_nonempty_values\":{\"Top-level review state\":\"PENDING\"},\"runtime\":\"UNRUN\"}"
+   },
+   "changed_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L681-697\",\"body\":\"L681 function handleDataIntelligence(req, res, pathname, host, runtimeFor, tokenFor) { | L683 if (req.headers.origin !== undefined && String(req.headers.origin).toLowerCase() !== 'http://' + host) { | L686 if (req.method !== 'GET' && req.method !== 'HEAD') {\",\"lexical_refs\":[303],\"previous_nonempty_values\":{\"Top-level review state\":\"PENDING\"},\"runtime\":\"UNRUN\"}\n[RECONCILE 2026-11-20] path modified in ARBOR commit 7c062c57036b36a803485baa04d3fc6133fa64c8 (git diff e07e61385a53..7c062c57036b); runtime test UNRUN; reconciled from lane fleet build"
+   },
+   "append_evidence": "RECONCILE-20261120-7c062c57036b-AT-D189A608E0F6",
+   "review_completed": "2026-11-20 path-touched reconciliation over ARBOR commits e07e61385a53..7c062c57036b",
+   "evidence_scope": "file touched by lane fleet build commit 7c062c57036b36a803485baa04d3fc6133fa64c8; runtime UNRUN"
+  },
+  {
+   "stable_id": "AT-0CE3D79696CF",
+   "path": "apps/vivim-host/server.mjs",
+   "symbol": "handleApk @ L698",
+   "lane": "B",
+   "batch": "B-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L698",
+   "source_anchors": "git diff e07e61385a53f30890b4a7f7441fe25d22a79b1c..7c062c57036b36a803485baa04d3fc6133fa64c8 -- apps/vivim-host/server.mjs",
+   "source_blob_sha": "8411cc1bc390d0a4bd3a82b9bec050364a34489c",
+   "expected_old_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L698-774\",\"body\":\"L698 async function handleApk(req, res, pathname, host, apk, tokenFor) { | L700 if (origin !== undefined && String(origin).toLowerCase() !== 'http://' + host) { | L703 if (pathname === '/api/host/apk/register') {\",\"lexical_refs\":[299],\"previous_nonempty_values\":{\"Top-level review state\":\"PENDING\"},\"runtime\":\"UNRUN\"}"
+   },
+   "changed_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L698-774\",\"body\":\"L698 async function handleApk(req, res, pathname, host, apk, tokenFor) { | L700 if (origin !== undefined && String(origin).toLowerCase() !== 'http://' + host) { | L703 if (pathname === '/api/host/apk/register') {\",\"lexical_refs\":[299],\"previous_nonempty_values\":{\"Top-level review state\":\"PENDING\"},\"runtime\":\"UNRUN\"}\n[RECONCILE 2026-11-20] path modified in ARBOR commit 7c062c57036b36a803485baa04d3fc6133fa64c8 (git diff e07e61385a53..7c062c57036b); runtime test UNRUN; reconciled from lane fleet build"
+   },
+   "append_evidence": "RECONCILE-20261120-7c062c57036b-AT-0CE3D79696CF",
+   "review_completed": "2026-11-20 path-touched reconciliation over ARBOR commits e07e61385a53..7c062c57036b",
+   "evidence_scope": "file touched by lane fleet build commit 7c062c57036b36a803485baa04d3fc6133fa64c8; runtime UNRUN"
+  },
+  {
+   "stable_id": "AT-A8E5EF4B023D",
+   "path": "apps/vivim-host/server.mjs",
+   "symbol": "handleControl @ L788",
+   "lane": "B",
+   "batch": "B-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L788",
+   "source_anchors": "git diff e07e61385a53f30890b4a7f7441fe25d22a79b1c..7c062c57036b36a803485baa04d3fc6133fa64c8 -- apps/vivim-host/server.mjs",
+   "source_blob_sha": "8411cc1bc390d0a4bd3a82b9bec050364a34489c",
+   "expected_old_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L788-888\",\"body\":\"L788 async function handleControl(req, res, pathname, host, controlFor, tokenFor, uiSessions, enrollment, runtimeFor, product | L791 const isMutation = ['plan', 'interpret', 'execute', 'ui-logout', 'devices/approve', 'devices/revoke','development/regist | L792 if (route === 'ui-session') {\",\"lexical_refs\":[307],\"previous_nonempty_values\":{\"Top-level review state\":\"PENDING\"},\"runtime\":\"UNRUN\"}"
+   },
+   "changed_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L788-888\",\"body\":\"L788 async function handleControl(req, res, pathname, host, controlFor, tokenFor, uiSessions, enrollment, runtimeFor, product | L791 const isMutation = ['plan', 'interpret', 'execute', 'ui-logout', 'devices/approve', 'devices/revoke','development/regist | L792 if (route === 'ui-session') {\",\"lexical_refs\":[307],\"previous_nonempty_values\":{\"Top-level review state\":\"PENDING\"},\"runtime\":\"UNRUN\"}\n[RECONCILE 2026-11-20] path modified in ARBOR commit 7c062c57036b36a803485baa04d3fc6133fa64c8 (git diff e07e61385a53..7c062c57036b); runtime test UNRUN; reconciled from lane fleet build"
+   },
+   "append_evidence": "RECONCILE-20261120-7c062c57036b-AT-A8E5EF4B023D",
+   "review_completed": "2026-11-20 path-touched reconciliation over ARBOR commits e07e61385a53..7c062c57036b",
+   "evidence_scope": "file touched by lane fleet build commit 7c062c57036b36a803485baa04d3fc6133fa64c8; runtime UNRUN"
+  },
+  {
+   "stable_id": "AT-8FFE2F565EBB",
+   "path": "apps/vivim-host/server.mjs",
+   "symbol": "developmentPort @ L832",
+   "lane": "B",
+   "batch": "B-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L832",
+   "source_anchors": "git diff e07e61385a53f30890b4a7f7441fe25d22a79b1c..7c062c57036b36a803485baa04d3fc6133fa64c8 -- apps/vivim-host/server.mjs",
+   "source_blob_sha": "8411cc1bc390d0a4bd3a82b9bec050364a34489c",
+   "expected_old_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L832-849\",\"body\":\"L832 const developmentPort=()=>createDevelopmentReadPort({ | L834 runtime:runtimeFor(),sessionId:uiSessions.get(req)?.sessionId??'owner-token', | L835 stillOwner:()=>{try{if(verifyOwnerToken(req.headers.authorization,tokenFor()))return true;}catch{}\",\"lexical_refs\":[844,1005],\"previous_nonempty_values\":{\"Disposition round\":\"DR02\",\"Revised should wire?\":\"Yes — change parent path\",\"Review basis\":\"MODULE SOURCE / SYMBOL CLASSIFICATION\",\"Source finding\":\"developmentPort is existing Host entry; source configuration and owner authentication remain Host-owned.\",\"Atomic decision / boundary\":\"developmentPort: Connect actual authorized adapter through existing server config, not a second endpoint.\",\"Acceptance / exit\":\"Registered project compare works via owner path; unauthenticated request denied.\",\"Decision confidence\":\"MEDIUM — source boundary; individual caller pending\",\"Caller verification\":\"Module source inspected; individual reverse callers not exhaustively verified\",\"Top-level review state\":\"PRIOR DISPOSITION\",\"Target Rust\":\"3\",\"Target Host\":\"3\",\"Target Studio\":\"2\",\"Target HQ\":\"4\",\"Target AutoWiki\":\"2\"},\"runtime\":\"UNRUN\"}"
+   },
+   "changed_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L832-849\",\"body\":\"L832 const developmentPort=()=>createDevelopmentReadPort({ | L834 runtime:runtimeFor(),sessionId:uiSessions.get(req)?.sessionId??'owner-token', | L835 stillOwner:()=>{try{if(verifyOwnerToken(req.headers.authorization,tokenFor()))return true;}catch{}\",\"lexical_refs\":[844,1005],\"previous_nonempty_values\":{\"Disposition round\":\"DR02\",\"Revised should wire?\":\"Yes — change parent path\",\"Review basis\":\"MODULE SOURCE / SYMBOL CLASSIFICATION\",\"Source finding\":\"developmentPort is existing Host entry; source configuration and owner authentication remain Host-owned.\",\"Atomic decision / boundary\":\"developmentPort: Connect actual authorized adapter through existing server config, not a second endpoint.\",\"Acceptance / exit\":\"Registered project compare works via owner path; unauthenticated request denied.\",\"Decision confidence\":\"MEDIUM — source boundary; individual caller pending\",\"Caller verification\":\"Module source inspected; individual reverse callers not exhaustively verified\",\"Top-level review state\":\"PRIOR DISPOSITION\",\"Target Rust\":\"3\",\"Target Host\":\"3\",\"Target Studio\":\"2\",\"Target HQ\":\"4\",\"Target AutoWiki\":\"2\"},\"runtime\":\"UNRUN\"}\n[RECONCILE 2026-11-20] path modified in ARBOR commit 7c062c57036b36a803485baa04d3fc6133fa64c8 (git diff e07e61385a53..7c062c57036b); runtime test UNRUN; reconciled from lane fleet build"
+   },
+   "append_evidence": "RECONCILE-20261120-7c062c57036b-AT-8FFE2F565EBB",
+   "review_completed": "2026-11-20 path-touched reconciliation over ARBOR commits e07e61385a53..7c062c57036b",
+   "evidence_scope": "file touched by lane fleet build commit 7c062c57036b36a803485baa04d3fc6133fa64c8; runtime UNRUN"
+  },
+  {
+   "stable_id": "AT-4CFFFBF02BAC",
+   "path": "apps/vivim-host/server.mjs",
+   "symbol": "readStudioOutcomes @ L850",
+   "lane": "B",
+   "batch": "B-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L850",
+   "source_anchors": "git diff e07e61385a53f30890b4a7f7441fe25d22a79b1c..7c062c57036b36a803485baa04d3fc6133fa64c8 -- apps/vivim-host/server.mjs",
+   "source_blob_sha": "8411cc1bc390d0a4bd3a82b9bec050364a34489c",
+   "expected_old_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L850-950\",\"body\":\"L850 function readStudioOutcomes(){ | L851 try{return createLiveStateProjection({dir:path.dirname(path.dirname(productJournal.journalPath)), | L853 catch{return {schema:'vivim.studio-outcomes/1',state:'unavailable',items:[]};}\",\"lexical_refs\":[878,913],\"previous_nonempty_values\":{\"Top-level review state\":\"PENDING\"},\"runtime\":\"UNRUN\"}"
+   },
+   "changed_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L850-950\",\"body\":\"L850 function readStudioOutcomes(){ | L851 try{return createLiveStateProjection({dir:path.dirname(path.dirname(productJournal.journalPath)), | L853 catch{return {schema:'vivim.studio-outcomes/1',state:'unavailable',items:[]};}\",\"lexical_refs\":[878,913],\"previous_nonempty_values\":{\"Top-level review state\":\"PENDING\"},\"runtime\":\"UNRUN\"}\n[RECONCILE 2026-11-20] path modified in ARBOR commit 7c062c57036b36a803485baa04d3fc6133fa64c8 (git diff e07e61385a53..7c062c57036b); runtime test UNRUN; reconciled from lane fleet build"
+   },
+   "append_evidence": "RECONCILE-20261120-7c062c57036b-AT-4CFFFBF02BAC",
+   "review_completed": "2026-11-20 path-touched reconciliation over ARBOR commits e07e61385a53..7c062c57036b",
+   "evidence_scope": "file touched by lane fleet build commit 7c062c57036b36a803485baa04d3fc6133fa64c8; runtime UNRUN"
+  },
+  {
+   "stable_id": "AT-D82851E4115C",
+   "path": "apps/vivim-host/server.mjs",
+   "symbol": "interpret @ L987",
+   "lane": "B",
+   "batch": "B-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L987",
+   "source_anchors": "git diff e07e61385a53f30890b4a7f7441fe25d22a79b1c..7c062c57036b36a803485baa04d3fc6133fa64c8 -- apps/vivim-host/server.mjs",
+   "source_blob_sha": "8411cc1bc390d0a4bd3a82b9bec050364a34489c",
+   "expected_old_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L987-1005\",\"body\":\"L987 const interpret=text=>c.interpret(text,{source:'desktop'}); | L989 if(body.composer!==true){sendJson(res,200,meaning);return;} | L991 if(needsWikiDraftContext(body.text,meaning)){\",\"lexical_refs\":[386,791,975,982,988,1001],\"previous_nonempty_values\":{\"Top-level review state\":\"PENDING\"},\"runtime\":\"UNRUN\"}"
+   },
+   "changed_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L987-1005\",\"body\":\"L987 const interpret=text=>c.interpret(text,{source:'desktop'}); | L989 if(body.composer!==true){sendJson(res,200,meaning);return;} | L991 if(needsWikiDraftContext(body.text,meaning)){\",\"lexical_refs\":[386,791,975,982,988,1001],\"previous_nonempty_values\":{\"Top-level review state\":\"PENDING\"},\"runtime\":\"UNRUN\"}\n[RECONCILE 2026-11-20] path modified in ARBOR commit 7c062c57036b36a803485baa04d3fc6133fa64c8 (git diff e07e61385a53..7c062c57036b); runtime test UNRUN; reconciled from lane fleet build"
+   },
+   "append_evidence": "RECONCILE-20261120-7c062c57036b-AT-D82851E4115C",
+   "review_completed": "2026-11-20 path-touched reconciliation over ARBOR commits e07e61385a53..7c062c57036b",
+   "evidence_scope": "file touched by lane fleet build commit 7c062c57036b36a803485baa04d3fc6133fa64c8; runtime UNRUN"
+  },
+  {
+   "stable_id": "AT-3FC39F9310B0",
+   "path": "apps/vivim-host/server.mjs",
+   "symbol": "stillOwner @ L1006",
+   "lane": "B",
+   "batch": "B-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L1006",
+   "source_anchors": "git diff e07e61385a53f30890b4a7f7441fe25d22a79b1c..7c062c57036b36a803485baa04d3fc6133fa64c8 -- apps/vivim-host/server.mjs",
+   "source_blob_sha": "8411cc1bc390d0a4bd3a82b9bec050364a34489c",
+   "expected_old_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L1006-1053\",\"body\":\"L1006 const stillOwner = () => { | L1007 try { if (verifyOwnerToken(req.headers.authorization, tokenFor())) return true; } catch {} | L1008 return uiSessions.authorized(req, { mutate: true });\",\"lexical_refs\":[835,1016,1030],\"previous_nonempty_values\":{\"Top-level review state\":\"PENDING\"},\"runtime\":\"UNRUN\"}"
+   },
+   "changed_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L1006-1053\",\"body\":\"L1006 const stillOwner = () => { | L1007 try { if (verifyOwnerToken(req.headers.authorization, tokenFor())) return true; } catch {} | L1008 return uiSessions.authorized(req, { mutate: true });\",\"lexical_refs\":[835,1016,1030],\"previous_nonempty_values\":{\"Top-level review state\":\"PENDING\"},\"runtime\":\"UNRUN\"}\n[RECONCILE 2026-11-20] path modified in ARBOR commit 7c062c57036b36a803485baa04d3fc6133fa64c8 (git diff e07e61385a53..7c062c57036b); runtime test UNRUN; reconciled from lane fleet build"
+   },
+   "append_evidence": "RECONCILE-20261120-7c062c57036b-AT-3FC39F9310B0",
+   "review_completed": "2026-11-20 path-touched reconciliation over ARBOR commits e07e61385a53..7c062c57036b",
+   "evidence_scope": "file touched by lane fleet build commit 7c062c57036b36a803485baa04d3fc6133fa64c8; runtime UNRUN"
+  },
+  {
+   "stable_id": "AT-21AB879B15CF",
+   "path": "apps/vivim-host/server.mjs",
+   "symbol": "handleOnboarding @ L1054",
+   "lane": "B",
+   "batch": "B-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L1054",
+   "source_anchors": "git diff e07e61385a53f30890b4a7f7441fe25d22a79b1c..7c062c57036b36a803485baa04d3fc6133fa64c8 -- apps/vivim-host/server.mjs",
+   "source_blob_sha": "8411cc1bc390d0a4bd3a82b9bec050364a34489c",
+   "expected_old_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L1054-1154\",\"body\":\"L1054 async function handleOnboarding(req, res, pathname, apk, pairing, onboarding, enrollment, host, tokenFor, dataRoot) { | L1062 return t === r || t.startsWith(r + path.sep); | L1065 if (!sameOrigin() || String(req.headers['x-vivim-control'] || '') !== '1') {\",\"lexical_refs\":[343],\"previous_nonempty_values\":{\"Top-level review state\":\"PENDING\"},\"runtime\":\"UNRUN\"}"
+   },
+   "changed_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L1054-1154\",\"body\":\"L1054 async function handleOnboarding(req, res, pathname, apk, pairing, onboarding, enrollment, host, tokenFor, dataRoot) { | L1062 return t === r || t.startsWith(r + path.sep); | L1065 if (!sameOrigin() || String(req.headers['x-vivim-control'] || '') !== '1') {\",\"lexical_refs\":[343],\"previous_nonempty_values\":{\"Top-level review state\":\"PENDING\"},\"runtime\":\"UNRUN\"}\n[RECONCILE 2026-11-20] path modified in ARBOR commit 7c062c57036b36a803485baa04d3fc6133fa64c8 (git diff e07e61385a53..7c062c57036b); runtime test UNRUN; reconciled from lane fleet build"
+   },
+   "append_evidence": "RECONCILE-20261120-7c062c57036b-AT-21AB879B15CF",
+   "review_completed": "2026-11-20 path-touched reconciliation over ARBOR commits e07e61385a53..7c062c57036b",
+   "evidence_scope": "file touched by lane fleet build commit 7c062c57036b36a803485baa04d3fc6133fa64c8; runtime UNRUN"
+  },
+  {
+   "stable_id": "AT-6C9CB0748F7E",
+   "path": "apps/vivim-host/server.mjs",
+   "symbol": "sameOrigin @ L1058",
+   "lane": "B",
+   "batch": "B-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L1058",
+   "source_anchors": "git diff e07e61385a53f30890b4a7f7441fe25d22a79b1c..7c062c57036b36a803485baa04d3fc6133fa64c8 -- apps/vivim-host/server.mjs",
+   "source_blob_sha": "8411cc1bc390d0a4bd3a82b9bec050364a34489c",
+   "expected_old_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L1058-1058\",\"body\":\"L1058 const sameOrigin = () => String(req.headers.origin || '').toLowerCase() === 'http://' + host;\",\"lexical_refs\":[432,433,434,790,795,802,817,842],\"previous_nonempty_values\":{\"Top-level review state\":\"PENDING\"},\"runtime\":\"UNRUN\"}"
+   },
+   "changed_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L1058-1058\",\"body\":\"L1058 const sameOrigin = () => String(req.headers.origin || '').toLowerCase() === 'http://' + host;\",\"lexical_refs\":[432,433,434,790,795,802,817,842],\"previous_nonempty_values\":{\"Top-level review state\":\"PENDING\"},\"runtime\":\"UNRUN\"}\n[RECONCILE 2026-11-20] path modified in ARBOR commit 7c062c57036b36a803485baa04d3fc6133fa64c8 (git diff e07e61385a53..7c062c57036b); runtime test UNRUN; reconciled from lane fleet build"
+   },
+   "append_evidence": "RECONCILE-20261120-7c062c57036b-AT-6C9CB0748F7E",
+   "review_completed": "2026-11-20 path-touched reconciliation over ARBOR commits e07e61385a53..7c062c57036b",
+   "evidence_scope": "file touched by lane fleet build commit 7c062c57036b36a803485baa04d3fc6133fa64c8; runtime UNRUN"
+  },
+  {
+   "stable_id": "AT-55B43ECDD928",
+   "path": "apps/vivim-host/server.mjs",
+   "symbol": "isInside @ L1059",
+   "lane": "B",
+   "batch": "B-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L1059",
+   "source_anchors": "git diff e07e61385a53f30890b4a7f7441fe25d22a79b1c..7c062c57036b36a803485baa04d3fc6133fa64c8 -- apps/vivim-host/server.mjs",
+   "source_blob_sha": "8411cc1bc390d0a4bd3a82b9bec050364a34489c",
+   "expected_old_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L1059-1063\",\"body\":\"L1059 const isInside = (root, target) => { | L1062 return t === r || t.startsWith(r + path.sep);\",\"lexical_refs\":[1135],\"previous_nonempty_values\":{\"Top-level review state\":\"PENDING\"},\"runtime\":\"UNRUN\"}"
+   },
+   "changed_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L1059-1063\",\"body\":\"L1059 const isInside = (root, target) => { | L1062 return t === r || t.startsWith(r + path.sep);\",\"lexical_refs\":[1135],\"previous_nonempty_values\":{\"Top-level review state\":\"PENDING\"},\"runtime\":\"UNRUN\"}\n[RECONCILE 2026-11-20] path modified in ARBOR commit 7c062c57036b36a803485baa04d3fc6133fa64c8 (git diff e07e61385a53..7c062c57036b); runtime test UNRUN; reconciled from lane fleet build"
+   },
+   "append_evidence": "RECONCILE-20261120-7c062c57036b-AT-55B43ECDD928",
+   "review_completed": "2026-11-20 path-touched reconciliation over ARBOR commits e07e61385a53..7c062c57036b",
+   "evidence_scope": "file touched by lane fleet build commit 7c062c57036b36a803485baa04d3fc6133fa64c8; runtime UNRUN"
+  },
+  {
+   "stable_id": "AT-95BAEBEC6C0E",
+   "path": "apps/vivim-host/server.mjs",
+   "symbol": "requireOwnerMutation @ L1064",
+   "lane": "B",
+   "batch": "B-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L1064",
+   "source_anchors": "git diff e07e61385a53f30890b4a7f7441fe25d22a79b1c..7c062c57036b36a803485baa04d3fc6133fa64c8 -- apps/vivim-host/server.mjs",
+   "source_blob_sha": "8411cc1bc390d0a4bd3a82b9bec050364a34489c",
+   "expected_old_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L1064-1164\",\"body\":\"L1064 const requireOwnerMutation = () => { | L1065 if (!sameOrigin() || String(req.headers['x-vivim-control'] || '') !== '1') { | L1066 send(403, { ok: false, error: 'Cross-origin request refused', code: 'ORIGIN_OR_CSRF' }); return false;\",\"lexical_refs\":[1076],\"previous_nonempty_values\":{\"Top-level review state\":\"PENDING\"},\"runtime\":\"UNRUN\"}"
+   },
+   "changed_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L1064-1164\",\"body\":\"L1064 const requireOwnerMutation = () => { | L1065 if (!sameOrigin() || String(req.headers['x-vivim-control'] || '') !== '1') { | L1066 send(403, { ok: false, error: 'Cross-origin request refused', code: 'ORIGIN_OR_CSRF' }); return false;\",\"lexical_refs\":[1076],\"previous_nonempty_values\":{\"Top-level review state\":\"PENDING\"},\"runtime\":\"UNRUN\"}\n[RECONCILE 2026-11-20] path modified in ARBOR commit 7c062c57036b36a803485baa04d3fc6133fa64c8 (git diff e07e61385a53..7c062c57036b); runtime test UNRUN; reconciled from lane fleet build"
+   },
+   "append_evidence": "RECONCILE-20261120-7c062c57036b-AT-95BAEBEC6C0E",
+   "review_completed": "2026-11-20 path-touched reconciliation over ARBOR commits e07e61385a53..7c062c57036b",
+   "evidence_scope": "file touched by lane fleet build commit 7c062c57036b36a803485baa04d3fc6133fa64c8; runtime UNRUN"
+  },
+  {
+   "stable_id": "AT-F71D56F11974",
+   "path": "apps/vivim-host/server.mjs",
+   "symbol": "SECURITY @ L46",
+   "lane": "B",
+   "batch": "B-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L46",
+   "source_anchors": "git diff e07e61385a53f30890b4a7f7441fe25d22a79b1c..7c062c57036b36a803485baa04d3fc6133fa64c8 -- apps/vivim-host/server.mjs",
+   "source_blob_sha": "8411cc1bc390d0a4bd3a82b9bec050364a34489c",
+   "expected_old_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L46-54\",\"body\":\"L46 const SECURITY = {\",\"lexical_refs\":[275],\"previous_nonempty_values\":{\"Top-level review state\":\"PENDING\"},\"runtime\":\"UNRUN\"}"
+   },
+   "changed_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L46-54\",\"body\":\"L46 const SECURITY = {\",\"lexical_refs\":[275],\"previous_nonempty_values\":{\"Top-level review state\":\"PENDING\"},\"runtime\":\"UNRUN\"}\n[RECONCILE 2026-11-20] path modified in ARBOR commit 7c062c57036b36a803485baa04d3fc6133fa64c8 (git diff e07e61385a53..7c062c57036b); runtime test UNRUN; reconciled from lane fleet build"
+   },
+   "append_evidence": "RECONCILE-20261120-7c062c57036b-AT-F71D56F11974",
+   "review_completed": "2026-11-20 path-touched reconciliation over ARBOR commits e07e61385a53..7c062c57036b",
+   "evidence_scope": "file touched by lane fleet build commit 7c062c57036b36a803485baa04d3fc6133fa64c8; runtime UNRUN"
+  },
+  {
+   "stable_id": "AT-0903280A4B65",
+   "path": "apps/vivim-host/server.mjs",
+   "symbol": "send @ L1056",
+   "lane": "B",
+   "batch": "B-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L1056",
+   "source_anchors": "git diff e07e61385a53f30890b4a7f7441fe25d22a79b1c..7c062c57036b36a803485baa04d3fc6133fa64c8 -- apps/vivim-host/server.mjs",
+   "source_blob_sha": "8411cc1bc390d0a4bd3a82b9bec050364a34489c",
+   "expected_old_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L1056-1056\",\"body\":\"L1056 const send = (status, body) => sendJson(res, status, body);\",\"lexical_refs\":[368,376,1057,1066,1080,1098,1112,1122],\"previous_nonempty_values\":{\"Top-level review state\":\"PENDING\"},\"runtime\":\"UNRUN\"}"
+   },
+   "changed_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L1056-1056\",\"body\":\"L1056 const send = (status, body) => sendJson(res, status, body);\",\"lexical_refs\":[368,376,1057,1066,1080,1098,1112,1122],\"previous_nonempty_values\":{\"Top-level review state\":\"PENDING\"},\"runtime\":\"UNRUN\"}\n[RECONCILE 2026-11-20] path modified in ARBOR commit 7c062c57036b36a803485baa04d3fc6133fa64c8 (git diff e07e61385a53..7c062c57036b); runtime test UNRUN; reconciled from lane fleet build"
+   },
+   "append_evidence": "RECONCILE-20261120-7c062c57036b-AT-0903280A4B65",
+   "review_completed": "2026-11-20 path-touched reconciliation over ARBOR commits e07e61385a53..7c062c57036b",
+   "evidence_scope": "file touched by lane fleet build commit 7c062c57036b36a803485baa04d3fc6133fa64c8; runtime UNRUN"
+  },
+  {
+   "stable_id": "AT-7CBAD4E52B82",
+   "path": "apps/vivim-host/server.mjs",
+   "symbol": "fail @ L1057",
+   "lane": "B",
+   "batch": "B-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L1057",
+   "source_anchors": "git diff e07e61385a53f30890b4a7f7441fe25d22a79b1c..7c062c57036b36a803485baa04d3fc6133fa64c8 -- apps/vivim-host/server.mjs",
+   "source_blob_sha": "8411cc1bc390d0a4bd3a82b9bec050364a34489c",
+   "expected_old_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L1057-1057\",\"body\":\"L1057 const fail = (status, message, code = 'INVALID') => send(status, { ok: false, error: message, code });\",\"lexical_refs\":[1036,1079,1084,1086,1088,1097,1102,1111],\"previous_nonempty_values\":{\"Top-level review state\":\"PENDING\"},\"runtime\":\"UNRUN\"}"
+   },
+   "changed_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L1057-1057\",\"body\":\"L1057 const fail = (status, message, code = 'INVALID') => send(status, { ok: false, error: message, code });\",\"lexical_refs\":[1036,1079,1084,1086,1088,1097,1102,1111],\"previous_nonempty_values\":{\"Top-level review state\":\"PENDING\"},\"runtime\":\"UNRUN\"}\n[RECONCILE 2026-11-20] path modified in ARBOR commit 7c062c57036b36a803485baa04d3fc6133fa64c8 (git diff e07e61385a53..7c062c57036b); runtime test UNRUN; reconciled from lane fleet build"
+   },
+   "append_evidence": "RECONCILE-20261120-7c062c57036b-AT-7CBAD4E52B82",
+   "review_completed": "2026-11-20 path-touched reconciliation over ARBOR commits e07e61385a53..7c062c57036b",
+   "evidence_scope": "file touched by lane fleet build commit 7c062c57036b36a803485baa04d3fc6133fa64c8; runtime UNRUN"
+  },
+  {
+   "stable_id": "AT-3F21D5F6F738",
+   "path": "apps/vivim-host/test/control-http.test.mjs",
+   "symbol": "",
+   "lane": "B",
+   "batch": "B-F01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/test/control-http.test.mjs#L1",
+   "source_anchors": "git diff e07e61385a53f30890b4a7f7441fe25d22a79b1c..7c062c57036b36a803485baa04d3fc6133fa64c8 -- apps/vivim-host/test/control-http.test.mjs",
+   "source_blob_sha": "b151c45ba47f86f5f792e651047ac6a91b7f4fd1",
+   "expected_old_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "INVENTORIED — NOT DISPOSITIONED",
+    "Evidence detail / anchor": "Pinned tree and central 311-path manifest cross-check: registered. Test body not individually inspected."
+   },
+   "changed_fields": {
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN",
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Evidence detail / anchor": "Pinned tree and central 311-path manifest cross-check: registered. Test body not individually inspected.\n[RECONCILE 2026-11-20] path modified in ARBOR commit 7c062c57036b36a803485baa04d3fc6133fa64c8 (git diff e07e61385a53..7c062c57036b); runtime test UNRUN; reconciled from lane fleet build"
+   },
+   "append_evidence": "RECONCILE-20261120-7c062c57036b-AT-3F21D5F6F738",
+   "review_completed": "2026-11-20 path-touched reconciliation over ARBOR commits e07e61385a53..7c062c57036b",
+   "evidence_scope": "file touched by lane fleet build commit 7c062c57036b36a803485baa04d3fc6133fa64c8; runtime UNRUN"
+  }
+ ]
+}

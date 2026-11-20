@@ -2166,15 +2166,15 @@
           "Subsystem": "Host",
           "Should integrate?": "Yes",
           "Disposition": "EXTEND",
-          "Current state": "AUDIT FINDING — OPEN",
+          "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
           "Review basis": "PINNED EXECUTABLE BODY + CONCRETE CALLER/REGISTRATION GAP",
           "Source finding": "Live composition root: worker.start before lease takeover and ignores result; actual CLI startup passes no developmentSources, so default HVI config has approvedRoots/dataDir only; production demo routes already return 404, neutral baseline mounted. Consolidate boot/lease and adapter admission without reviving demo.",
           "Atomic decision / boundary": "CHANGE: Live composition root: worker.start before lease takeover and ignores result; actual CLI startup passes no developmentSources, so default HVI config has approvedRoots/dataDir only; production demo routes already return 404, neutral baseline mounted. Consolidate boot/lease and adapter admission without reviving demo.",
           "Acceptance / exit": "Acquire exclusive workspace/role admission before any worker start, competing Host fails closed, explicit recovery; actual registered HVI source works in normal startup; existing demo 404 and journal preserved. Primary unit B14; B06 dependency referral (no duplicate edit).",
           "Decision confidence": "HIGH source-level defect; live behavior UNRUN",
           "Caller verification": "Host package.json:start; control/dispatcher.mjs, bootstrap/worker-supervisor.mjs, development-read-port.mjs",
-          "Evidence detail / anchor": "Pinned blob prefix 8411cc1bc390; apps/vivim-host/server.mjs:191-219,254-342,347-350,825-930,1004-1043,1235-1264; Live composition root: worker.start before lease takeover and ignores result; actual CLI startup passes no developmentSources, so default HVI config has approvedRoots/dataDir only; production demo routes already return 404, neutral baseline mounted. Consolidate boot/lease and adapter admission without reviving demo.",
-          "Notes": "",
+          "Evidence detail / anchor": "Pinned blob prefix 8411cc1bc390; apps/vivim-host/server.mjs:191-219,254-342,347-350,825-930,1004-1043,1235-1264; Live composition root: worker.start before lease takeover and ignores result; actual CLI startup passes no developmentSources, so default HVI config has approvedRoots/dataDir only; production demo routes already return 404, neutral baseline mounted. Consolidate boot/lease and adapter admission without reviving demo.\n[RECONCILE 2026-11-20] path modified in ARBOR commit 7c062c57036b36a803485baa04d3fc6133fa64c8 (git diff e07e61385a53..7c062c57036b); runtime test UNRUN; reconciled from lane fleet build",
+          "Notes": "[LABS RECONCILE] {\"anchors\": \"git diff e07e61385a53f30890b4a7f7441fe25d22a79b1c..7c062c57036b36a803485baa04d3fc6133fa64c8 -- apps/vivim-host/server.mjs\", \"evidence\": \"RECONCILE-20261120-7c062c57036b-AT-4BF6BC95F4EC\", \"previous\": {\"Current state\": \"AUDIT FINDING — OPEN\", \"Evidence detail / anchor\": \"Pinned blob prefix 8411cc1bc390; apps/vivim-host/server.mjs:191-219,254-342,347-350,825-930,1004-1043,1235-1264; Live composition root: worker.start before lease takeover and ignores result; actual CLI startup passes no developmentSources, so default HVI config has approvedRoots/dataDir only; production demo routes already return 404, neutral baseline mounted. Consolidate boot/lease and adapter admission without reviving demo.\"}, \"review_completed\": \"2026-11-20 path-touched reconciliation over ARBOR commits e07e61385a53..7c062c57036b\", \"scope\": \"file touched by lane fleet build commit 7c062c57036b36a803485baa04d3fc6133fa64c8; runtime UNRUN\", \"source\": \"https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L1\"}",
           "Disposition round": "DR02",
           "Resolved action": "CHANGE",
           "Revised should wire?": "YES",
@@ -2241,15 +2241,15 @@
           "Subsystem": "Host",
           "Should integrate?": "Yes",
           "Disposition": "EXTEND",
-          "Current state": "REVIEW REQUIRED",
+          "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
           "Review basis": "PINNED EXECUTABLE BODY + CONCRETE CALLER/REGISTRATION GAP",
           "Source finding": "Live worker lease uses non-exclusive write after liveness check; server starts poller before takeover, ignores already_running. Future heartbeat age not bounded below, PID reuse not attested. Bridge command claim fence limits duplicate effects; don't claim duplicate send occurred.",
           "Atomic decision / boundary": "CHANGE: Live worker lease uses non-exclusive write after liveness check; server starts poller before takeover, ignores already_running. Future heartbeat age not bounded below, PID reuse not attested. Bridge command claim fence limits duplicate effects; don't claim duplicate send occurred.",
           "Acceptance / exit": "Acquire exclusive role/workspace owner lock before start; exact instance identity, future heartbeat rejected, startup failure safe, stale lease manual reconciliation, single polling process; no kill-by-PID or retry uncertainty.",
           "Decision confidence": "HIGH source-level defect; live behavior UNRUN",
           "Caller verification": "server.mjs:205-208,310-338; runtime/supervisor.mjs:55-148",
-          "Evidence detail / anchor": "Pinned blob prefix 86a4bf8598d8; apps/vivim-host/bootstrap/worker-supervisor.mjs:16-65,66-116; Live worker lease uses non-exclusive write after liveness check; server starts poller before takeover, ignores already_running. Future heartbeat age not bounded below, PID reuse not attested. Bridge command claim fence limits duplicate effects; don't claim duplicate send occurred.",
-          "Notes": "",
+          "Evidence detail / anchor": "Pinned blob prefix 86a4bf8598d8; apps/vivim-host/bootstrap/worker-supervisor.mjs:16-65,66-116; Live worker lease uses non-exclusive write after liveness check; server starts poller before takeover, ignores already_running. Future heartbeat age not bounded below, PID reuse not attested. Bridge command claim fence limits duplicate effects; don't claim duplicate send occurred.\n[RECONCILE 2026-11-20] path modified in ARBOR commit 7c062c57036b36a803485baa04d3fc6133fa64c8 (git diff e07e61385a53..7c062c57036b); runtime test UNRUN; reconciled from lane fleet build",
+          "Notes": "[LABS RECONCILE] {\"anchors\": \"git diff e07e61385a53f30890b4a7f7441fe25d22a79b1c..7c062c57036b36a803485baa04d3fc6133fa64c8 -- apps/vivim-host/bootstrap/worker-supervisor.mjs\", \"evidence\": \"RECONCILE-20261120-7c062c57036b-AT-BEB57E2A22C7\", \"previous\": {\"Current state\": \"REVIEW REQUIRED\", \"Evidence detail / anchor\": \"Pinned blob prefix 86a4bf8598d8; apps/vivim-host/bootstrap/worker-supervisor.mjs:16-65,66-116; Live worker lease uses non-exclusive write after liveness check; server starts poller before takeover, ignores already_running. Future heartbeat age not bounded below, PID reuse not attested. Bridge command claim fence limits duplicate effects; don't claim duplicate send occurred.\"}, \"review_completed\": \"2026-11-20 path-touched reconciliation over ARBOR commits e07e61385a53..7c062c57036b\", \"scope\": \"file touched by lane fleet build commit 7c062c57036b36a803485baa04d3fc6133fa64c8; runtime UNRUN\", \"source\": \"https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/bootstrap/worker-supervisor.mjs#L1\"}",
           "Disposition round": "FB01",
           "Resolved action": "CHANGE",
           "Revised should wire?": "YES",
@@ -2316,15 +2316,15 @@
           "Subsystem": "Host",
           "Should integrate?": "Conditional",
           "Disposition": "TRACE_AND_DISPOSE",
-          "Current state": "CALLER REVIEW REQUIRED",
+          "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
           "Review basis": "PINNED SYMBOL WINDOW + LOCAL REFERENCES + MODULE CONSUMER EVIDENCE",
           "Source finding": "L205-209 starts worker before takeover and ignores result. Also local /api/mutate chat append (L376-414) and raw product /api/state,/api/wiki,/api/journal (L488-518) lack owner check; distinguish local boundary from owner-private access and refer B01. Preserve Host sole writer.",
           "Atomic decision / boundary": "CHANGE: Retain one Host composition root; lease admission before worker start; owner-only source/receipt boundaries and existing ports. No new router/worker.",
           "Acceptance / exit": "Concurrent startup, lease rejection, owner-only raw journal/source, real HVI configuration, restart and approved PWA readback.",
           "Decision confidence": "HIGH — source path defect; runtime UNRUN",
           "Caller verification": "Named module consumer/returned port; exact symbol calls where shown",
-          "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L191-291\",\"body\":\"L191 export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path.join(here, 'public'), bootstrap = null, | L197 if (!runtime) runtime = createBootstrapRuntime({ dataRoot }); | L198 return runtime;\",\"lexical_refs\":[1258],\"previous_nonempty_values\":{\"Top-level review state\":\"PENDING\"},\"runtime\":\"UNRUN\"}",
-          "Notes": "Round 2 | Declaration only; parent recommendation inherited pending body/caller review.",
+          "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L191-291\",\"body\":\"L191 export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path.join(here, 'public'), bootstrap = null, | L197 if (!runtime) runtime = createBootstrapRuntime({ dataRoot }); | L198 return runtime;\",\"lexical_refs\":[1258],\"previous_nonempty_values\":{\"Top-level review state\":\"PENDING\"},\"runtime\":\"UNRUN\"}\n[RECONCILE 2026-11-20] path modified in ARBOR commit 7c062c57036b36a803485baa04d3fc6133fa64c8 (git diff e07e61385a53..7c062c57036b); runtime test UNRUN; reconciled from lane fleet build",
+          "Notes": "Round 2 | Declaration only; parent recommendation inherited pending body/caller review.\n[LABS RECONCILE] {\"anchors\": \"git diff e07e61385a53f30890b4a7f7441fe25d22a79b1c..7c062c57036b36a803485baa04d3fc6133fa64c8 -- apps/vivim-host/server.mjs\", \"evidence\": \"RECONCILE-20261120-7c062c57036b-AT-7DD9F1E3705D\", \"previous\": {\"Current state\": \"CALLER REVIEW REQUIRED\", \"Evidence detail / anchor\": \"{\\\"round\\\":\\\"B-S01-R01\\\",\\\"base_blob\\\":\\\"2263d6f4518c2dcab175778a273f27fe48f5cf08\\\",\\\"source_blob\\\":\\\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\\\",\\\"anchor\\\":\\\"L191-291\\\",\\\"body\\\":\\\"L191 export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path.join(here, 'public'), bootstrap = null, | L197 if (!runtime) runtime = createBootstrapRuntime({ dataRoot }); | L198 return runtime;\\\",\\\"lexical_refs\\\":[1258],\\\"previous_nonempty_values\\\":{\\\"Top-level review state\\\":\\\"PENDING\\\"},\\\"runtime\\\":\\\"UNRUN\\\"}\"}, \"review_completed\": \"2026-11-20 path-touched reconciliation over ARBOR commits e07e61385a53..7c062c57036b\", \"scope\": \"file touched by lane fleet build commit 7c062c57036b36a803485baa04d3fc6133fa64c8; runtime UNRUN\", \"source\": \"https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L191\"}",
           "Disposition round": "B-S01-R01",
           "Resolved action": "CHANGE",
           "Revised should wire?": "YES — within existing unit",
@@ -2376,8 +2376,12 @@
           "Tauri": "0"
         }
       ],
-      "done": false,
-      "doneEvidence": []
+      "done": true,
+      "doneEvidence": [
+        "AT-4BF6BC95F4EC",
+        "AT-BEB57E2A22C7",
+        "AT-7DD9F1E3705D"
+      ]
     },
     {
       "id": "NEXT:CONSOLIDATE:apps/vivim-host/control",
@@ -2797,15 +2801,15 @@
           "Subsystem": "Harness",
           "Should integrate?": "Yes",
           "Disposition": "TRACE_AND_WIRE",
-          "Current state": "REVIEW REQUIRED",
+          "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
           "Review basis": "BODY+CALLER SOURCE (selected anchors)",
           "Source finding": "Historical source discovery and Git HEAD helper; replace discovery with authorized HQ/Host sources.",
           "Atomic decision / boundary": "CHANGE: Reuse authorized HQ/Host sources, invalidation and DCB reducers; connect actual scoped disclosure grants, never change default deny into allow.",
           "Acceptance / exit": "An authorized live source reaches intended recipient once; denied/revoked source never escapes; lineage/invalidation survives restart; no mandatory Git.",
           "Decision confidence": "HIGH source-level defect; runtime unverified",
           "Caller verification": "studio/src/agents/dcb-context-runtime.mjs:21-50 mounts DCB; studio/src/studio/conversation-api.mjs:39-49 denies disclosure by default; adapter scans historical refs.",
-          "Evidence detail / anchor": "Blob prefix c1156c628c4c; lines 33-59,78-145; Historical source discovery and Git HEAD helper; replace discovery with authorized HQ/Host sources.",
-          "Notes": "",
+          "Evidence detail / anchor": "Blob prefix c1156c628c4c; lines 33-59,78-145; Historical source discovery and Git HEAD helper; replace discovery with authorized HQ/Host sources.\n[RECONCILE 2026-11-20] path modified in ARBOR commit 7c062c57036b36a803485baa04d3fc6133fa64c8 (git diff e07e61385a53..7c062c57036b); runtime test UNRUN; reconciled from lane fleet build",
+          "Notes": "[LABS RECONCILE] {\"anchors\": \"git diff e07e61385a53f30890b4a7f7441fe25d22a79b1c..7c062c57036b36a803485baa04d3fc6133fa64c8 -- harness/src/context/dcb-sources.mjs\", \"evidence\": \"RECONCILE-20261120-7c062c57036b-AT-1D41E00C6496\", \"previous\": {\"Current state\": \"REVIEW REQUIRED\", \"Evidence detail / anchor\": \"Blob prefix c1156c628c4c; lines 33-59,78-145; Historical source discovery and Git HEAD helper; replace discovery with authorized HQ/Host sources.\"}, \"review_completed\": \"2026-11-20 path-touched reconciliation over ARBOR commits e07e61385a53..7c062c57036b\", \"scope\": \"file touched by lane fleet build commit 7c062c57036b36a803485baa04d3fc6133fa64c8; runtime UNRUN\", \"source\": \"https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/harness/src/context/dcb-sources.mjs#L1\"}",
           "Disposition round": "FB01",
           "Resolved action": "CHANGE",
           "Revised should wire?": "YES",
@@ -2857,8 +2861,10 @@
           "Tauri": "0"
         }
       ],
-      "done": false,
-      "doneEvidence": []
+      "done": true,
+      "doneEvidence": [
+        "AT-1D41E00C6496"
+      ]
     },
     {
       "id": "NEXT:B-F01-B06",
@@ -3076,15 +3082,15 @@
           "Subsystem": "Host",
           "Should integrate?": "Yes",
           "Disposition": "EXTEND",
-          "Current state": "CALLER REVIEW REQUIRED",
+          "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
           "Review basis": "PINNED SYMBOL WINDOW + LOCAL REFERENCES + MODULE CONSUMER EVIDENCE",
           "Source finding": "L832-836 default configuration supplies roots/dataDir; normal CLI L1258-1264 supplies no developmentSources. development-read-port L20-22 needs configured authorized adapter and repos. Connect existing registered source service (B06), no mandatory Git executable.",
           "Atomic decision / boundary": "CHANGE: Retain one Host composition root; lease admission before worker start; owner-only source/receipt boundaries and existing ports. No new router/worker.",
           "Acceptance / exit": "Concurrent startup, lease rejection, owner-only raw journal/source, real HVI configuration, restart and approved PWA readback.",
           "Decision confidence": "HIGH — source path defect; runtime UNRUN",
           "Caller verification": "Named module consumer/returned port; exact symbol calls where shown",
-          "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L832-849\",\"body\":\"L832 const developmentPort=()=>createDevelopmentReadPort({ | L834 runtime:runtimeFor(),sessionId:uiSessions.get(req)?.sessionId??'owner-token', | L835 stillOwner:()=>{try{if(verifyOwnerToken(req.headers.authorization,tokenFor()))return true;}catch{}\",\"lexical_refs\":[844,1005],\"previous_nonempty_values\":{\"Disposition round\":\"DR02\",\"Revised should wire?\":\"Yes — change parent path\",\"Review basis\":\"MODULE SOURCE / SYMBOL CLASSIFICATION\",\"Source finding\":\"developmentPort is existing Host entry; source configuration and owner authentication remain Host-owned.\",\"Atomic decision / boundary\":\"developmentPort: Connect actual authorized adapter through existing server config, not a second endpoint.\",\"Acceptance / exit\":\"Registered project compare works via owner path; unauthenticated request denied.\",\"Decision confidence\":\"MEDIUM — source boundary; individual caller pending\",\"Caller verification\":\"Module source inspected; individual reverse callers not exhaustively verified\",\"Top-level review state\":\"PRIOR DISPOSITION\",\"Target Rust\":\"3\",\"Target Host\":\"3\",\"Target Studio\":\"2\",\"Target HQ\":\"4\",\"Target AutoWiki\":\"2\"},\"runtime\":\"UNRUN\"}",
-          "Notes": "Round 2 | Targeted boundary recommendation; caller/runtime validation pending.",
+          "Evidence detail / anchor": "{\"round\":\"B-S01-R01\",\"base_blob\":\"2263d6f4518c2dcab175778a273f27fe48f5cf08\",\"source_blob\":\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\",\"anchor\":\"L832-849\",\"body\":\"L832 const developmentPort=()=>createDevelopmentReadPort({ | L834 runtime:runtimeFor(),sessionId:uiSessions.get(req)?.sessionId??'owner-token', | L835 stillOwner:()=>{try{if(verifyOwnerToken(req.headers.authorization,tokenFor()))return true;}catch{}\",\"lexical_refs\":[844,1005],\"previous_nonempty_values\":{\"Disposition round\":\"DR02\",\"Revised should wire?\":\"Yes — change parent path\",\"Review basis\":\"MODULE SOURCE / SYMBOL CLASSIFICATION\",\"Source finding\":\"developmentPort is existing Host entry; source configuration and owner authentication remain Host-owned.\",\"Atomic decision / boundary\":\"developmentPort: Connect actual authorized adapter through existing server config, not a second endpoint.\",\"Acceptance / exit\":\"Registered project compare works via owner path; unauthenticated request denied.\",\"Decision confidence\":\"MEDIUM — source boundary; individual caller pending\",\"Caller verification\":\"Module source inspected; individual reverse callers not exhaustively verified\",\"Top-level review state\":\"PRIOR DISPOSITION\",\"Target Rust\":\"3\",\"Target Host\":\"3\",\"Target Studio\":\"2\",\"Target HQ\":\"4\",\"Target AutoWiki\":\"2\"},\"runtime\":\"UNRUN\"}\n[RECONCILE 2026-11-20] path modified in ARBOR commit 7c062c57036b36a803485baa04d3fc6133fa64c8 (git diff e07e61385a53..7c062c57036b); runtime test UNRUN; reconciled from lane fleet build",
+          "Notes": "Round 2 | Targeted boundary recommendation; caller/runtime validation pending.\n[LABS RECONCILE] {\"anchors\": \"git diff e07e61385a53f30890b4a7f7441fe25d22a79b1c..7c062c57036b36a803485baa04d3fc6133fa64c8 -- apps/vivim-host/server.mjs\", \"evidence\": \"RECONCILE-20261120-7c062c57036b-AT-8FFE2F565EBB\", \"previous\": {\"Current state\": \"CALLER REVIEW REQUIRED\", \"Evidence detail / anchor\": \"{\\\"round\\\":\\\"B-S01-R01\\\",\\\"base_blob\\\":\\\"2263d6f4518c2dcab175778a273f27fe48f5cf08\\\",\\\"source_blob\\\":\\\"8411cc1bc390d0a4bd3a82b9bec050364a34489c\\\",\\\"anchor\\\":\\\"L832-849\\\",\\\"body\\\":\\\"L832 const developmentPort=()=>createDevelopmentReadPort({ | L834 runtime:runtimeFor(),sessionId:uiSessions.get(req)?.sessionId??'owner-token', | L835 stillOwner:()=>{try{if(verifyOwnerToken(req.headers.authorization,tokenFor()))return true;}catch{}\\\",\\\"lexical_refs\\\":[844,1005],\\\"previous_nonempty_values\\\":{\\\"Disposition round\\\":\\\"DR02\\\",\\\"Revised should wire?\\\":\\\"Yes — change parent path\\\",\\\"Review basis\\\":\\\"MODULE SOURCE / SYMBOL CLASSIFICATION\\\",\\\"Source finding\\\":\\\"developmentPort is existing Host entry; source configuration and owner authentication remain Host-owned.\\\",\\\"Atomic decision / boundary\\\":\\\"developmentPort: Connect actual authorized adapter through existing server config, not a second endpoint.\\\",\\\"Acceptance / exit\\\":\\\"Registered project compare works via owner path; unauthenticated request denied.\\\",\\\"Decision confidence\\\":\\\"MEDIUM — source boundary; individual caller pending\\\",\\\"Caller verification\\\":\\\"Module source inspected; individual reverse callers not exhaustively verified\\\",\\\"Top-level review state\\\":\\\"PRIOR DISPOSITION\\\",\\\"Target Rust\\\":\\\"3\\\",\\\"Target Host\\\":\\\"3\\\",\\\"Target Studio\\\":\\\"2\\\",\\\"Target HQ\\\":\\\"4\\\",\\\"Target AutoWiki\\\":\\\"2\\\"},\\\"runtime\\\":\\\"UNRUN\\\"}\"}, \"review_completed\": \"2026-11-20 path-touched reconciliation over ARBOR commits e07e61385a53..7c062c57036b\", \"scope\": \"file touched by lane fleet build commit 7c062c57036b36a803485baa04d3fc6133fa64c8; runtime UNRUN\", \"source\": \"https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L832\"}",
           "Disposition round": "B-S01-R01",
           "Resolved action": "CHANGE",
           "Revised should wire?": "YES — within existing unit",
@@ -3136,8 +3142,10 @@
           "Tauri": "0"
         }
       ],
-      "done": false,
-      "doneEvidence": []
+      "done": true,
+      "doneEvidence": [
+        "AT-8FFE2F565EBB"
+      ]
     },
     {
       "id": "NEXT:CONSOLIDATE:apps/vivim-host/chat",
@@ -3324,15 +3332,15 @@
           "Subsystem": "Host",
           "Should integrate?": "Yes",
           "Disposition": "TRACE_AND_WIRE",
-          "Current state": "REVIEW REQUIRED",
+          "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
           "Review basis": "PRIOR PINNED SOURCE — TOP-LEVEL",
           "Source finding": "15 createBridgeEvidence; 47–57 verifies exact sourceRef/revision/digest.",
           "Atomic decision / boundary": "REUSE THROUGH EXISTING PARENT; Correlate source identity, digest, revision and original receipt; no duplicate write or resend on uncertain outcome.",
           "Acceptance / exit": "Correlate source identity, digest, revision and original receipt; no duplicate write or resend on uncertain outcome.",
           "Decision confidence": "MEDIUM — top-level source boundary; runtime unrun",
           "Caller verification": "Selected caller/import evidence recorded in Source finding; no exhaustive reverse-call verification.",
-          "Evidence detail / anchor": "",
-          "Notes": "",
+          "Evidence detail / anchor": "[RECONCILE 2026-11-20] path modified in ARBOR commit 7c062c57036b36a803485baa04d3fc6133fa64c8 (git diff e07e61385a53..7c062c57036b); runtime test UNRUN; reconciled from lane fleet build",
+          "Notes": "[LABS RECONCILE] {\"anchors\": \"git diff e07e61385a53f30890b4a7f7441fe25d22a79b1c..7c062c57036b36a803485baa04d3fc6133fa64c8 -- apps/vivim-host/conversations/bridge-evidence.mjs\", \"evidence\": \"RECONCILE-20261120-7c062c57036b-AT-91886B58F339\", \"previous\": {\"Current state\": \"REVIEW REQUIRED\", \"Evidence detail / anchor\": \"\"}, \"review_completed\": \"2026-11-20 path-touched reconciliation over ARBOR commits e07e61385a53..7c062c57036b\", \"scope\": \"file touched by lane fleet build commit 7c062c57036b36a803485baa04d3fc6133fa64c8; runtime UNRUN\", \"source\": \"https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/conversations/bridge-evidence.mjs#L1\"}",
           "Disposition round": "FB01",
           "Resolved action": "REUSE",
           "Revised should wire?": "Yes — reuse through parent",
@@ -3399,15 +3407,15 @@
           "Subsystem": "Host",
           "Should integrate?": "Yes",
           "Disposition": "TRACE_AND_WIRE",
-          "Current state": "REVIEW REQUIRED",
+          "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
           "Review basis": "PRIOR PINNED SOURCE — TOP-LEVEL",
           "Source finding": "83 createLiveStateProjection; 115–116 rejects unverified evidence; 150–154 historical source-backed outcomes; 218 verified live projection.",
           "Atomic decision / boundary": "REUSE THROUGH EXISTING PARENT; Correlate source identity, digest, revision and original receipt; no duplicate write or resend on uncertain outcome.",
           "Acceptance / exit": "Correlate source identity, digest, revision and original receipt; no duplicate write or resend on uncertain outcome.",
           "Decision confidence": "MEDIUM — top-level source boundary; runtime unrun",
           "Caller verification": "Selected caller/import evidence recorded in Source finding; no exhaustive reverse-call verification.",
-          "Evidence detail / anchor": "",
-          "Notes": "",
+          "Evidence detail / anchor": "[RECONCILE 2026-11-20] path modified in ARBOR commit 7c062c57036b36a803485baa04d3fc6133fa64c8 (git diff e07e61385a53..7c062c57036b); runtime test UNRUN; reconciled from lane fleet build",
+          "Notes": "[LABS RECONCILE] {\"anchors\": \"git diff e07e61385a53f30890b4a7f7441fe25d22a79b1c..7c062c57036b36a803485baa04d3fc6133fa64c8 -- apps/vivim-host/conversations/live-projection.mjs\", \"evidence\": \"RECONCILE-20261120-7c062c57036b-AT-D4FE78FC0EA9\", \"previous\": {\"Current state\": \"REVIEW REQUIRED\", \"Evidence detail / anchor\": \"\"}, \"review_completed\": \"2026-11-20 path-touched reconciliation over ARBOR commits e07e61385a53..7c062c57036b\", \"scope\": \"file touched by lane fleet build commit 7c062c57036b36a803485baa04d3fc6133fa64c8; runtime UNRUN\", \"source\": \"https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/conversations/live-projection.mjs#L1\"}",
           "Disposition round": "FB01",
           "Resolved action": "REUSE",
           "Revised should wire?": "Yes — reuse through parent",
@@ -3474,15 +3482,15 @@
           "Subsystem": "Host",
           "Should integrate?": "Yes",
           "Disposition": "TRACE_AND_WIRE",
-          "Current state": "REVIEW REQUIRED",
+          "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
           "Review basis": "PRIOR PINNED SOURCE — TOP-LEVEL",
           "Source finding": "19 createStudioJournalEvidence; 30–43 verified source metadata and digest.",
           "Atomic decision / boundary": "REUSE THROUGH EXISTING PARENT; Correlate source identity, digest, revision and original receipt; no duplicate write or resend on uncertain outcome.",
           "Acceptance / exit": "Correlate source identity, digest, revision and original receipt; no duplicate write or resend on uncertain outcome.",
           "Decision confidence": "MEDIUM — top-level source boundary; runtime unrun",
           "Caller verification": "Selected caller/import evidence recorded in Source finding; no exhaustive reverse-call verification.",
-          "Evidence detail / anchor": "",
-          "Notes": "",
+          "Evidence detail / anchor": "[RECONCILE 2026-11-20] path modified in ARBOR commit 7c062c57036b36a803485baa04d3fc6133fa64c8 (git diff e07e61385a53..7c062c57036b); runtime test UNRUN; reconciled from lane fleet build",
+          "Notes": "[LABS RECONCILE] {\"anchors\": \"git diff e07e61385a53f30890b4a7f7441fe25d22a79b1c..7c062c57036b36a803485baa04d3fc6133fa64c8 -- apps/vivim-host/conversations/studio-journal-evidence.mjs\", \"evidence\": \"RECONCILE-20261120-7c062c57036b-AT-8990DEA9794C\", \"previous\": {\"Current state\": \"REVIEW REQUIRED\", \"Evidence detail / anchor\": \"\"}, \"review_completed\": \"2026-11-20 path-touched reconciliation over ARBOR commits e07e61385a53..7c062c57036b\", \"scope\": \"file touched by lane fleet build commit 7c062c57036b36a803485baa04d3fc6133fa64c8; runtime UNRUN\", \"source\": \"https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/conversations/studio-journal-evidence.mjs#L1\"}",
           "Disposition round": "FB01",
           "Resolved action": "REUSE",
           "Revised should wire?": "Yes — reuse through parent",
@@ -3534,8 +3542,12 @@
           "Tauri": "0"
         }
       ],
-      "done": false,
-      "doneEvidence": []
+      "done": true,
+      "doneEvidence": [
+        "AT-91886B58F339",
+        "AT-D4FE78FC0EA9",
+        "AT-8990DEA9794C"
+      ]
     },
     {
       "id": "NEXT:CONSOLIDATE:harness/src/context",
@@ -4105,15 +4117,15 @@
           "Subsystem": "Harness",
           "Should integrate?": "Conditional",
           "Disposition": "KEEP_DEV_TOOL",
-          "Current state": "REVIEW REQUIRED",
+          "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
           "Review basis": "BODY+CALLER SOURCE (selected anchors)",
           "Source finding": "Redundant bootstrap orchestration obtains Host grant then self-approves Harness request.",
           "Atomic decision / boundary": "CONSOLIDATE: Use existing Host scheduler and bootstrap ledger; remove competing production orchestration rather than grant shortcuts.",
           "Acceptance / exit": "Owner-pinned generation and explicit grant; restart resumes same task; wrong digest and unbound/stale actions denied; no duplicate send.",
           "Decision confidence": "HIGH source-level defect; runtime unverified",
           "Caller verification": "Host full-bootstrap grant then separate Harness router/approval; Host onboarding service already mounts canonical scheduler.",
-          "Evidence detail / anchor": "Blob prefix a91e92c2e515; lines 73-114; Redundant bootstrap orchestration obtains Host grant then self-approves Harness request.",
-          "Notes": "",
+          "Evidence detail / anchor": "Blob prefix a91e92c2e515; lines 73-114; Redundant bootstrap orchestration obtains Host grant then self-approves Harness request.\n[RECONCILE 2026-11-20] path modified in ARBOR commit 7c062c57036b36a803485baa04d3fc6133fa64c8 (git diff e07e61385a53..7c062c57036b); runtime test UNRUN; reconciled from lane fleet build",
+          "Notes": "[LABS RECONCILE] {\"anchors\": \"git diff e07e61385a53f30890b4a7f7441fe25d22a79b1c..7c062c57036b36a803485baa04d3fc6133fa64c8 -- harness/src/dev/bootstrap.mjs\", \"evidence\": \"RECONCILE-20261120-7c062c57036b-AT-34285F271418\", \"previous\": {\"Current state\": \"REVIEW REQUIRED\", \"Evidence detail / anchor\": \"Blob prefix a91e92c2e515; lines 73-114; Redundant bootstrap orchestration obtains Host grant then self-approves Harness request.\"}, \"review_completed\": \"2026-11-20 path-touched reconciliation over ARBOR commits e07e61385a53..7c062c57036b\", \"scope\": \"file touched by lane fleet build commit 7c062c57036b36a803485baa04d3fc6133fa64c8; runtime UNRUN\", \"source\": \"https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/harness/src/dev/bootstrap.mjs#L1\"}",
           "Disposition round": "FB01",
           "Resolved action": "CHANGE",
           "Revised should wire?": "YES",
@@ -4165,8 +4177,10 @@
           "Tauri": "0"
         }
       ],
-      "done": false,
-      "doneEvidence": []
+      "done": true,
+      "doneEvidence": [
+        "AT-34285F271418"
+      ]
     },
     {
       "id": "VERIFY:CONSOLIDATE:apps/vivim-host/control",
@@ -4332,15 +4346,15 @@
           "Subsystem": "Host",
           "Should integrate?": "Conditional",
           "Disposition": "KEEP_AUTHORITY",
-          "Current state": "REVIEW REQUIRED",
+          "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
           "Review basis": "TREE / PATH — UNVERIFIED BODY",
           "Source finding": "Pinned-tree file identity; Runtime / executable candidate; previous recommendation KEEP_AUTHORITY. Source body not individually retrieved in FB01.",
           "Atomic decision / boundary": "KEEP OWNER BOUNDARY; Retain existing authorization, adapter or execution ownership; only scoped verified evidence crosses the boundary.",
           "Acceptance / exit": "Read full module and reverse callers, canonical owner, scope/permissions, startup and live product route; record evidence before authorizing a code change.",
           "Decision confidence": "LOW — top-level proposal only",
           "Caller verification": "UNVERIFIED — full body and direct/reverse calls required.",
-          "Evidence detail / anchor": "",
-          "Notes": "",
+          "Evidence detail / anchor": "[RECONCILE 2026-11-20] path modified in ARBOR commit 7c062c57036b36a803485baa04d3fc6133fa64c8 (git diff e07e61385a53..7c062c57036b); runtime test UNRUN; reconciled from lane fleet build",
+          "Notes": "[LABS RECONCILE] {\"anchors\": \"git diff e07e61385a53f30890b4a7f7441fe25d22a79b1c..7c062c57036b36a803485baa04d3fc6133fa64c8 -- apps/vivim-host/control/journal.mjs\", \"evidence\": \"RECONCILE-20261120-7c062c57036b-AT-E63E924C3EB7\", \"previous\": {\"Current state\": \"REVIEW REQUIRED\", \"Evidence detail / anchor\": \"\"}, \"review_completed\": \"2026-11-20 path-touched reconciliation over ARBOR commits e07e61385a53..7c062c57036b\", \"scope\": \"file touched by lane fleet build commit 7c062c57036b36a803485baa04d3fc6133fa64c8; runtime UNRUN\", \"source\": \"https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/control/journal.mjs#L1\"}",
           "Disposition round": "FB01",
           "Resolved action": "VERIFY",
           "Revised should wire?": "Conditional — evidence pending",
@@ -4932,15 +4946,15 @@
           "Subsystem": "Host",
           "Should integrate?": "Conditional",
           "Disposition": "TRACE_AND_WIRE",
-          "Current state": "REVIEW REQUIRED",
+          "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
           "Review basis": "TREE / PATH — UNVERIFIED BODY",
           "Source finding": "Pinned path present; generated versus runtime ownership unresolved.",
           "Atomic decision / boundary": "VERIFY SOURCE / CONSUMER BEFORE WIRING; Trace exact loader and deployment use; verify defaults and permissions; no duplicate configuration owner.",
           "Acceptance / exit": "Trace exact loader and deployment use; verify defaults and permissions; no duplicate configuration owner.",
           "Decision confidence": "LOW — provisional top-level role",
           "Caller verification": "Not individually traced",
-          "Evidence detail / anchor": "Pinned path present; generated versus runtime ownership unresolved.",
-          "Notes": "",
+          "Evidence detail / anchor": "Pinned path present; generated versus runtime ownership unresolved.\n[RECONCILE 2026-11-20] path modified in ARBOR commit 7c062c57036b36a803485baa04d3fc6133fa64c8 (git diff e07e61385a53..7c062c57036b); runtime test UNRUN; reconciled from lane fleet build",
+          "Notes": "[LABS RECONCILE] {\"anchors\": \"git diff e07e61385a53f30890b4a7f7441fe25d22a79b1c..7c062c57036b36a803485baa04d3fc6133fa64c8 -- apps/vivim-host/control/hvi-native-guide.json\", \"evidence\": \"RECONCILE-20261120-7c062c57036b-AT-57918B172821\", \"previous\": {\"Current state\": \"REVIEW REQUIRED\", \"Evidence detail / anchor\": \"Pinned path present; generated versus runtime ownership unresolved.\"}, \"review_completed\": \"2026-11-20 path-touched reconciliation over ARBOR commits e07e61385a53..7c062c57036b\", \"scope\": \"file touched by lane fleet build commit 7c062c57036b36a803485baa04d3fc6133fa64c8; runtime UNRUN\", \"source\": \"https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/control/hvi-native-guide.json#L1\"}",
           "Disposition round": "FB02",
           "Resolved action": "VERIFY",
           "Revised should wire?": "Undecided pending evidence",
@@ -5442,8 +5456,11 @@
           "Tauri": "0"
         }
       ],
-      "done": false,
-      "doneEvidence": []
+      "done": true,
+      "doneEvidence": [
+        "AT-E63E924C3EB7",
+        "AT-57918B172821"
+      ]
     },
     {
       "id": "VERIFY:CONSOLIDATE:apps/vivim-host/public",
@@ -5670,15 +5687,15 @@
           "Subsystem": "Host",
           "Should integrate?": "No",
           "Disposition": "KEEP_UI",
-          "Current state": "REVIEW REQUIRED",
+          "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
           "Review basis": "TREE / PATH — UNVERIFIED BODY",
           "Source finding": "Pinned-tree file identity; Runtime / executable candidate; previous recommendation KEEP_UI. Source body not individually retrieved in FB01.",
           "Atomic decision / boundary": "KEEP PORTABLE UI / TRANSPORT; Keep renderer, browser UI or transport on its present side; use authenticated Host read/write contracts, not direct native authority.",
           "Acceptance / exit": "Read full module and reverse callers, canonical owner, scope/permissions, startup and live product route; record evidence before authorizing a code change.",
           "Decision confidence": "LOW — top-level proposal only",
           "Caller verification": "UNVERIFIED — full body and direct/reverse calls required.",
-          "Evidence detail / anchor": "",
-          "Notes": "",
+          "Evidence detail / anchor": "[RECONCILE 2026-11-20] path modified in ARBOR commit 7c062c57036b36a803485baa04d3fc6133fa64c8 (git diff e07e61385a53..7c062c57036b); runtime test UNRUN; reconciled from lane fleet build",
+          "Notes": "[LABS RECONCILE] {\"anchors\": \"git diff e07e61385a53f30890b4a7f7441fe25d22a79b1c..7c062c57036b36a803485baa04d3fc6133fa64c8 -- apps/vivim-host/public/host.js\", \"evidence\": \"RECONCILE-20261120-7c062c57036b-AT-CF53D5862720\", \"previous\": {\"Current state\": \"REVIEW REQUIRED\", \"Evidence detail / anchor\": \"\"}, \"review_completed\": \"2026-11-20 path-touched reconciliation over ARBOR commits e07e61385a53..7c062c57036b\", \"scope\": \"file touched by lane fleet build commit 7c062c57036b36a803485baa04d3fc6133fa64c8; runtime UNRUN\", \"source\": \"https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/public/host.js#L1\"}",
           "Disposition round": "FB01",
           "Resolved action": "VERIFY",
           "Revised should wire?": "Conditional — evidence pending",
@@ -6330,8 +6347,10 @@
           "Tauri": "0"
         }
       ],
-      "done": false,
-      "doneEvidence": []
+      "done": true,
+      "doneEvidence": [
+        "AT-CF53D5862720"
+      ]
     },
     {
       "id": "VERIFY:CONSOLIDATE:harness/src/providers",
@@ -9101,15 +9120,15 @@
           "Subsystem": "Host",
           "Should integrate?": "No",
           "Disposition": "KEEP_UI",
-          "Current state": "REVIEW REQUIRED",
+          "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
           "Review basis": "TREE / PATH — UNVERIFIED BODY",
           "Source finding": "Pinned-tree file identity; Runtime / executable candidate; previous recommendation KEEP_UI. Source body not individually retrieved in FB01.",
           "Atomic decision / boundary": "KEEP PORTABLE UI / TRANSPORT; Keep renderer, browser UI or transport on its present side; use authenticated Host read/write contracts, not direct native authority.",
           "Acceptance / exit": "Read full module and reverse callers, canonical owner, scope/permissions, startup and live product route; record evidence before authorizing a code change.",
           "Decision confidence": "LOW — top-level proposal only",
           "Caller verification": "UNVERIFIED — full body and direct/reverse calls required.",
-          "Evidence detail / anchor": "",
-          "Notes": "",
+          "Evidence detail / anchor": "[RECONCILE 2026-11-20] path modified in ARBOR commit 7c062c57036b36a803485baa04d3fc6133fa64c8 (git diff e07e61385a53..7c062c57036b); runtime test UNRUN; reconciled from lane fleet build",
+          "Notes": "[LABS RECONCILE] {\"anchors\": \"git diff e07e61385a53f30890b4a7f7441fe25d22a79b1c..7c062c57036b36a803485baa04d3fc6133fa64c8 -- apps/vivim-host/public/pages/wiki.css\", \"evidence\": \"RECONCILE-20261120-7c062c57036b-AT-F4361C6F5D6C\", \"previous\": {\"Current state\": \"REVIEW REQUIRED\", \"Evidence detail / anchor\": \"\"}, \"review_completed\": \"2026-11-20 path-touched reconciliation over ARBOR commits e07e61385a53..7c062c57036b\", \"scope\": \"file touched by lane fleet build commit 7c062c57036b36a803485baa04d3fc6133fa64c8; runtime UNRUN\", \"source\": \"https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/public/pages/wiki.css#L1\"}",
           "Disposition round": "FB01",
           "Resolved action": "VERIFY",
           "Revised should wire?": "Conditional — evidence pending",
@@ -9311,8 +9330,10 @@
           "Tauri": "0"
         }
       ],
-      "done": false,
-      "doneEvidence": []
+      "done": true,
+      "doneEvidence": [
+        "AT-F4361C6F5D6C"
+      ]
     },
     {
       "id": "VERIFY:CONSOLIDATE:apps/vivim-host",

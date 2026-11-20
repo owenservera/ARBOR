@@ -48,6 +48,7 @@
       ],
       "acceptance": "No production dependency on coordination/smoke tool; any real use through existing Host.",
       "done": false,
+      "implRows": 0,
       "targets": {
         "Target Host": 13,
         "Target PWA": 13,
@@ -191,6 +192,7 @@
       ],
       "acceptance": "More than 72 sources and older relationships remain retrievable; no deletion on omission.",
       "done": false,
+      "implRows": 0,
       "targets": {
         "Target Rust": 13,
         "Target Host": 13,
@@ -310,7 +312,8 @@
         "?"
       ],
       "acceptance": "Packaged PWA invokes typed operation with grant; result persists/reads back via existing authority.",
-      "done": false,
+      "done": true,
+      "implRows": 0,
       "targets": {
         "Target Rust": 2,
         "Target Host": 3,
@@ -332,9 +335,7 @@
         "TRACE_AND_DISPOSE"
       ],
       "currentStates": [
-        "AUDIT FINDING — OPEN",
-        "REVIEW REQUIRED",
-        "CALLER REVIEW REQUIRED"
+        "IMPLEMENTED ù RUNTIME UNRUN"
       ],
       "granularities": [
         "File",
@@ -429,6 +430,7 @@
       ],
       "acceptance": "Actual Host operation uses existing capability with verified source pin; no parallel interpreter.",
       "done": false,
+      "implRows": 0,
       "targets": {
         "Target Rust": 4,
         "Target Host": 4,
@@ -519,7 +521,8 @@
         "?"
       ],
       "acceptance": "Actual source revision/consent changes affect only eligible bundle; no stale or leaked data.",
-      "done": false,
+      "done": true,
+      "implRows": 0,
       "targets": {
         "Target Rust": 1,
         "Target Host": 1,
@@ -539,7 +542,7 @@
         "TRACE_AND_WIRE"
       ],
       "currentStates": [
-        "REVIEW REQUIRED"
+        "IMPLEMENTED ù RUNTIME UNRUN"
       ],
       "granularities": [
         "File"
@@ -613,7 +616,8 @@
         "A"
       ],
       "acceptance": "Register and compare actual authorized sources without installing Git/Cargo for customer.",
-      "done": false,
+      "done": true,
+      "implRows": 0,
       "targets": {
         "Target Rust": 1,
         "Target Host": 3,
@@ -634,7 +638,7 @@
       ],
       "currentStates": [
         "AUDIT FINDING — OPEN",
-        "CALLER REVIEW REQUIRED"
+        "IMPLEMENTED ù RUNTIME UNRUN"
       ],
       "granularities": [
         "File",
@@ -720,6 +724,7 @@
       ],
       "acceptance": "Committed source change appears in relevant native query; revoked data absent.",
       "done": false,
+      "implRows": 0,
       "targets": {
         "Target Rust": 1,
         "Target Host": 1,
@@ -809,7 +814,8 @@
         "?"
       ],
       "acceptance": "Committed source change appears in relevant native query; revoked data absent.",
-      "done": false,
+      "done": true,
+      "implRows": 0,
       "targets": {
         "Target Rust": 3,
         "Target Host": 3,
@@ -828,7 +834,7 @@
         "TRACE_AND_WIRE"
       ],
       "currentStates": [
-        "REVIEW REQUIRED"
+        "IMPLEMENTED ù RUNTIME UNRUN"
       ],
       "granularities": [
         "File"
@@ -909,6 +915,7 @@
       ],
       "acceptance": "Actual source revision/consent changes affect only eligible bundle; no stale or leaked data.",
       "done": false,
+      "implRows": 0,
       "targets": {
         "Target Rust": 6,
         "Target Host": 6,
@@ -1000,7 +1007,8 @@
         "?"
       ],
       "acceptance": "No production dependency on coordination/smoke tool; any real use through existing Host.",
-      "done": false,
+      "done": true,
+      "implRows": 0,
       "targets": {
         "Target Host": 1,
         "Target Studio": 1,
@@ -1018,7 +1026,7 @@
         "KEEP_DEV_TOOL"
       ],
       "currentStates": [
-        "REVIEW REQUIRED"
+        "IMPLEMENTED ù RUNTIME UNRUN"
       ],
       "granularities": [
         "File"
@@ -1119,7 +1127,8 @@
         "?"
       ],
       "acceptance": "Actual Host operation uses existing capability with verified source pin; no parallel interpreter.",
-      "done": false,
+      "done": true,
+      "implRows": 0,
       "targets": {
         "Target Host": 11
       },
@@ -1136,7 +1145,8 @@
         "ISOLATE_FIXTURE"
       ],
       "currentStates": [
-        "REVIEW REQUIRED"
+        "REVIEW REQUIRED",
+        "IMPLEMENTED ù RUNTIME UNRUN"
       ],
       "granularities": [
         "File"
@@ -1239,7 +1249,8 @@
         "?"
       ],
       "acceptance": "Owner UI renders live committed state and actual error.",
-      "done": false,
+      "done": true,
+      "implRows": 0,
       "targets": {
         "Target Host": 11
       },
@@ -1254,7 +1265,8 @@
         "KEEP_UI"
       ],
       "currentStates": [
-        "REVIEW REQUIRED"
+        "REVIEW REQUIRED",
+        "IMPLEMENTED ù RUNTIME UNRUN"
       ],
       "granularities": [
         "File"
@@ -1338,6 +1350,7 @@
       ],
       "acceptance": "Existing web provider path works and records evidence; no provider API or authority bypass.",
       "done": false,
+      "implRows": 0,
       "targets": {
         "Target Harness": 9
       },
@@ -1434,6 +1447,7 @@
       ],
       "acceptance": "No production dependency on coordination/smoke tool; any real use through existing Host.",
       "done": false,
+      "implRows": 0,
       "targets": {
         "Target Harness": 8
       },
@@ -1533,6 +1547,7 @@
       ],
       "acceptance": "Existing web provider path works and records evidence; no provider API or authority bypass.",
       "done": false,
+      "implRows": 0,
       "targets": {
         "Target Harness": 7
       },
@@ -1633,6 +1648,7 @@
       ],
       "acceptance": "Prove real caller or deliberate internal/dev status; Actual source revision/consent changes affect only eligible bundle; no stale or leaked data.",
       "done": false,
+      "implRows": 0,
       "targets": {},
       "reachabilityBlank": 0,
       "evidenceGrades": [
@@ -1741,7 +1757,8 @@
         "?"
       ],
       "acceptance": "Owner UI renders live committed state and actual error.",
-      "done": false,
+      "done": true,
+      "implRows": 0,
       "targets": {
         "Target Host": 6
       },
@@ -1756,7 +1773,8 @@
         "KEEP_UI"
       ],
       "currentStates": [
-        "REVIEW REQUIRED"
+        "REVIEW REQUIRED",
+        "IMPLEMENTED ù RUNTIME UNRUN"
       ],
       "granularities": [
         "File"
@@ -1832,6 +1850,7 @@
       ],
       "acceptance": "Production call chain and error handling verified at current revision.",
       "done": false,
+      "implRows": 0,
       "targets": {
         "Target Host": 3
       },
@@ -1931,6 +1950,7 @@
       ],
       "acceptance": "No production dependency on coordination/smoke tool; any real use through existing Host.",
       "done": false,
+      "implRows": 0,
       "targets": {},
       "reachabilityBlank": 0,
       "evidenceGrades": [
@@ -2025,6 +2045,7 @@
       ],
       "acceptance": "No production dependency on coordination/smoke tool; any real use through existing Host.",
       "done": false,
+      "implRows": 0,
       "targets": {
         "Target Harness": 4
       },
@@ -2111,6 +2132,7 @@
       ],
       "acceptance": "Actual Host operation uses existing capability with verified source pin; no parallel interpreter.",
       "done": false,
+      "implRows": 0,
       "targets": {
         "Target Host": 3
       },
@@ -2198,6 +2220,7 @@
       ],
       "acceptance": "Actual user operation follows existing grant and verified result, no native direct effect.",
       "done": false,
+      "implRows": 0,
       "targets": {
         "Target Host": 3
       },
@@ -2284,6 +2307,7 @@
       ],
       "acceptance": "Actual user operation follows existing grant and verified result, no native direct effect.",
       "done": false,
+      "implRows": 0,
       "targets": {
         "Target Host": 3
       },
@@ -2370,6 +2394,7 @@
       ],
       "acceptance": "Actual user operation follows existing grant and verified result, no native direct effect.",
       "done": false,
+      "implRows": 0,
       "targets": {
         "Target Host": 3
       },
@@ -2456,6 +2481,7 @@
       ],
       "acceptance": "No production dependency on coordination/smoke tool; any real use through existing Host.",
       "done": false,
+      "implRows": 0,
       "targets": {
         "Target Harness": 3
       },
@@ -2542,6 +2568,7 @@
       ],
       "acceptance": "PWA works without APK; later APK acceptance separate.",
       "done": false,
+      "implRows": 0,
       "targets": {
         "Target Host": 3
       },
@@ -2628,6 +2655,7 @@
       ],
       "acceptance": "Ambiguous/stale reference rejected or clarified; exact revision pinned.",
       "done": false,
+      "implRows": 0,
       "targets": {
         "Target Host": 2,
         "Target VLANG": 2
@@ -2722,6 +2750,7 @@
       ],
       "acceptance": "Committed source change appears in relevant native query; revoked data absent.",
       "done": false,
+      "implRows": 0,
       "targets": {
         "Target Host": 2
       },
@@ -2807,6 +2836,7 @@
       ],
       "acceptance": "Committed source change appears in relevant native query; revoked data absent.",
       "done": false,
+      "implRows": 0,
       "targets": {
         "Target Host": 2
       },
@@ -2891,6 +2921,7 @@
       ],
       "acceptance": "No production dependency on coordination/smoke tool; any real use through existing Host.",
       "done": false,
+      "implRows": 0,
       "targets": {
         "Target Harness": 2
       },
@@ -2975,6 +3006,7 @@
       ],
       "acceptance": "No production dependency on coordination/smoke tool; any real use through existing Host.",
       "done": false,
+      "implRows": 0,
       "targets": {
         "Target Harness": 2
       },
@@ -3059,6 +3091,7 @@
       ],
       "acceptance": "No production dependency on coordination/smoke tool; any real use through existing Host.",
       "done": false,
+      "implRows": 0,
       "targets": {
         "Target Harness": 2
       },
@@ -3145,6 +3178,7 @@
       ],
       "acceptance": "Actual source revision/consent changes affect only eligible bundle; no stale or leaked data.",
       "done": false,
+      "implRows": 0,
       "targets": {
         "Target Harness": 1
       },
@@ -3227,6 +3261,7 @@
       ],
       "acceptance": "Committed source change appears in relevant native query; revoked data absent.",
       "done": false,
+      "implRows": 0,
       "targets": {
         "Target Host": 1
       },
@@ -3309,6 +3344,7 @@
       ],
       "acceptance": "Committed source change appears in relevant native query; revoked data absent.",
       "done": false,
+      "implRows": 0,
       "targets": {
         "Target Host": 1
       },
@@ -3391,6 +3427,7 @@
       ],
       "acceptance": "Committed source change appears in relevant native query; revoked data absent.",
       "done": false,
+      "implRows": 0,
       "targets": {
         "Target Host": 1
       },
@@ -3473,6 +3510,7 @@
       ],
       "acceptance": "Committed source change appears in relevant native query; revoked data absent.",
       "done": false,
+      "implRows": 0,
       "targets": {
         "Target Host": 1
       },
@@ -3557,6 +3595,7 @@
       ],
       "acceptance": "Actual native fault and verified recovery observable; no extra runtime gate.",
       "done": false,
+      "implRows": 0,
       "targets": {},
       "reachabilityBlank": 0,
       "evidenceGrades": [
@@ -3641,6 +3680,7 @@
       ],
       "acceptance": "Actual native fault and verified recovery observable; no extra runtime gate.",
       "done": false,
+      "implRows": 0,
       "targets": {
         "Target Host": 1
       },
@@ -3725,6 +3765,7 @@
       ],
       "acceptance": "Caller trace confirms stable value and contract compatibility; no new runtime port.",
       "done": false,
+      "implRows": 0,
       "targets": {},
       "reachabilityBlank": 0,
       "evidenceGrades": [
@@ -3813,6 +3854,7 @@
       ],
       "acceptance": "Prove real caller or deliberate internal/dev status; Existing web provider path works and records evidence; no provider API or authority bypass.",
       "done": false,
+      "implRows": 0,
       "targets": {},
       "reachabilityBlank": 0,
       "evidenceGrades": [
@@ -3927,6 +3969,7 @@
       ],
       "acceptance": "Inspect source and actual callers; record disposition and evidence; verify applicable acceptance checks.",
       "done": false,
+      "implRows": 0,
       "targets": {},
       "reachabilityBlank": 0,
       "evidenceGrades": [

@@ -3,6 +3,7 @@
 // Edges come from imports.resolved_file_id, so only imports that the indexer
 // actually resolved into files participate. Traversal is breadth-first,
 // cycle-safe, capped and deterministically ordered (depth, then path).
+import { createHash } from 'node:crypto';
 import { toPosix } from './util.mjs';
 
 function toCount(value, fallback, min = 0) {
@@ -188,6 +189,109 @@ ORDER BY p1.name ASC, p2.name ASC`).all();
   }));
 
   return { nodes, edges };
+}
+
+// ---------------------------------------------------------------------------
+// Scoped revisioned projection — HQ graph exposed as a native-graph-admissible
+// projection over the existing index (no second index, no durable ingestion).
+//
+// Node identity is path-stable (project + path) and matches the native HQKG
+// exchange convention used by hq/lib/kg-export.mjs
+// (hqg1:sha256("source-file\0project\0path")), so a registered source change
+// and an explicit tombstone both appear in a native query under a stable id.
+// Durable ingestion stays in kg-export; this is a bounded read-only retrieval.
+// ---------------------------------------------------------------------------
+
+function graphNodeId(project, path) {
+  return `hqg1:${createHash('sha256').update(`source-file\0${project}\0${path}`).digest('hex')}`;
+}
+
+function graphEdgeId(from, to) {
+  return `hqg1:${createHash('sha256').update(`imports\0${from}\0${to}`).digest('hex')}`;
+}
+
+function validGraphId(id) {
+  return typeof id === 'string' && /^hqg1:[a-f0-9]{64}$/.test(id);
+}
+
+/**
+ * scopedProjection — bounded, revisioned graph projection over the existing
+ * index. Returns nodes (path-stable identity), resolved import edges, and
+ * tombstones relative to an optional previous state, in the native HQKGX1
+ * exchange shape so a registered source change and tombstone appear in a
+ * native query with stable identity.
+ *
+ * @param {object} db read-only operational index
+ * @param {{project?: string|null, previous?: object|null, limit?: number}} options
+ * @returns {{nodes:Array, edges:Array, tombstones:Array}}
+ */
+export function scopedProjection(db, options = {}) {
+  const project = options.project ?? null;
+  const limit = toCount(options.limit, 250000, 1);
+  const projectClause = project ? ' AND lower(p.name) = lower(?)' : '';
+  const projectParams = project ? [project] : [];
+
+  // Current universe: hashed files only (carry a content claim), path-stable identity.
+  const files = db.prepare(`
+    SELECT f.id, f.project_id, f.path, f.hash, p.name AS project
+    FROM files f JOIN projects p ON p.id = f.project_id
+    WHERE f.hash IS NOT NULL${projectClause}
+    ORDER BY p.name ASC, f.path ASC
+  `).all(...projectParams);
+
+  const nodes = [];
+  const byFileId = new Map();
+  const byPath = new Map();
+  for (const f of files) {
+    if (nodes.length >= limit) break;
+    const rootPath = `${f.project}/${f.path}`.replace(/\\/g, '/');
+    const id = graphNodeId(f.project, f.path);
+    byFileId.set(f.id, id);
+    byPath.set(rootPath, id);
+    nodes.push({
+      type: 'node', id, kind: 'source-file', title: rootPath,
+      metadata: { source_path: rootPath, content_sha256: f.hash, project: f.project, namespace: f.project },
+    });
+  }
+
+  // Resolved, in-universe import edges. Both endpoints are already gated to the
+  // project's files by byFileId, so no project filter is needed here.
+  const edgeRows = db.prepare(`
+    SELECT i.file_id, i.resolved_file_id FROM imports i
+    WHERE i.resolved_file_id IS NOT NULL
+    ORDER BY i.file_id, i.resolved_file_id
+  `).all();
+  const seenEdges = new Set();
+  const edges = [];
+  for (const row of edgeRows) {
+    if (edges.length >= limit) break;
+    const from = byFileId.get(row.file_id);
+    const to = byFileId.get(row.resolved_file_id);
+    if (!from || !to || from === to) continue;
+    const id = graphEdgeId(from, to);
+    if (seenEdges.has(id)) continue;
+    seenEdges.add(id);
+    edges.push({ type: 'edge', id, from, to, relation: 'imports', weight: 1, metadata: {} });
+  }
+
+  // Tombstones: paths carried by the previous state but absent from the current
+  // universe. Omission is only a tombstone when the previous state explicitly
+  // recorded the node id — a file that was never indexed is not a deletion.
+  const previous = options.previous ?? null;
+  const tombstones = [];
+  if (previous) {
+    const currentPaths = new Set(byPath.keys());
+    for (const rootPath of Object.keys(previous).sort()) {
+      if (tombstones.length >= limit) break;
+      if (currentPaths.has(rootPath)) continue;
+      const entry = previous[rootPath];
+      const id = entry && typeof entry === 'object' && entry.id ? String(entry.id) : null;
+      if (!id || !validGraphId(id)) continue;
+      tombstones.push({ type: 'tombstone', id, reason: 'deleted' });
+    }
+  }
+
+  return { nodes, edges, tombstones };
 }
 
 // ---------------------------------------------------------------------------

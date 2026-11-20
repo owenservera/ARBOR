@@ -1716,6 +1716,12 @@
     "gate": "roadmap-acceleration"
   },
   {
+    "path": "scripts/batch-evidence/interop-contract-roundtrip.test.mjs",
+    "root": "scripts/batch-evidence",
+    "runtime": "node24-ajv",
+    "gate": "roadmap-acceleration"
+  },
+  {
     "path": "scripts/batch-evidence/A05.test.mjs",
     "root": "scripts/batch-evidence",
     "runtime": "node24-ajv",
@@ -1870,5 +1876,47 @@
   "root": "scripts/batch-evidence",
   "runtime": "node24-ajv",
   "gate": "roadmap-acceleration"
-}
+},
+{
+    "path": "scripts/roadmap/release-truth-separation.test.mjs",
+    "root": "scripts/roadmap",
+    "runtime": "node24-ajv",
+    "gate": "roadmap-acceleration"
+},
+{
+    "path": "studio/test/unit/browser-companion-ingress.test.mjs",
+    "root": "studio/test/unit",
+    "runtime": "node",
+    "gate": "studio-suite"
+},
+{
+    "path": "studio/test/unit/capture-conversation-evidence.test.mjs",
+    "root": "studio/test/unit",
+    "runtime": "node",
+    "gate": "studio-suite"
+},
+{
+    "path": "studio/test/unit/capture-conversation-thread.test.mjs",
+    "root": "studio/test/unit",
+    "runtime": "node",
+    "gate": "studio-suite"
+},
+{
+    "path": "studio/test/unit/consolidate-studio-src.test.mjs",
+    "root": "studio/test/unit",
+    "runtime": "node",
+    "gate": "studio-suite"
+},
+{
+    "path": "studio/test/unit/replay-derive-determinism.test.mjs",
+    "root": "studio/test/unit",
+    "runtime": "node",
+	    "gate": "studio-suite"
+	},
+	{
+	    "path": "scripts/batch-evidence/tauri-schema-permissions.test.mjs",
+	    "root": "scripts/batch-evidence",
+	    "runtime": "node24-ajv",
+	    "gate": "roadmap-acceleration"
+	}
 ]

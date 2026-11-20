@@ -139,6 +139,12 @@ export function createDcbSourceAdapters({
       if (projectRef && cand.projectRef && cand.projectRef !== projectRef) return;
       if (revoked.has(cand.ref)) return;
       if (!consentAllows(cand, consent)) return;
+      // Honour the caller's pinned HEAD: a source whose identity is pinned to a
+      // different HEAD is stale at this boundary and stays unavailable. This
+      // keeps source identity/freshness scoped at the adapter layer (defence in
+      // depth with the composer's stale_head check); a missing HEAD (no git) is
+      // never treated as stale.
+      if (sourceHead && cand.head && cand.head !== sourceHead) return;
       seen.add(cand.ref);
       candidates.push(cand);
     };

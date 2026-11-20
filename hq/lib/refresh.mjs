@@ -297,9 +297,8 @@ export async function runRefreshPipeline({
     // Uses the existing pipeline (no new scheduler). The importer is the frozen
     // package's own binary — Cargo is never spawned here; the explicitly
     // selected `HQKG_IMPORT_MODE=cargo` development fallback is resolved by
-    // kg-export.mjs. An unavailable or failing importer degrades gracefully: the
-    // exchange is still written, the state stays at its acknowledged base, and
-    // tombstones are re-emitted on the next sync.
+    // kg-export.mjs. Lane A: hqkg-import and spawnSync('cargo') are swapped for
+    // the bundled binary.
     let kg = { imported: false, reason: null };
     try {
       const kgModule = await import('./kg-export.mjs');

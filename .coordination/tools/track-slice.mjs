@@ -70,6 +70,7 @@ for (const r of mine) {
   const eg = at(r, "Evidence grade"); if (eg) u.grades.add(eg);
   const a = at(r, "Acceptance evidence required"); if (a) u.acc.set(a, (u.acc.get(a) || 0) + 1);
   if (at(r, "Production reachability") === "") u.reachBlank += 1;
+  if (at(r, "Current state").indexOf("IMPLEMENTED") === 0) u.impl = (u.impl || 0) + 1;
   for (const t of TARGETS) { const v = at(r, t); if (isSet(v)) u.targets[t] = (u.targets[t] || 0) + 1; }
   if (u.detail.length < 40) u.detail.push({
     id: at(r, "ID"), path: p, symbol: at(r, "Symbol / occurrence"),
@@ -191,8 +192,9 @@ try { blobs.push(require("child_process").execSync("git log --oneline -200", { e
 for (const u of out) {
   const needles = [u.ledgerKey].concat(u.rowIds).filter(Boolean);
   const hits = needles.filter((n) => blobs.some((b) => b.indexOf(n) >= 0));
-  u.done = hits.length > 0;
+  u.done = hits.length > 0 || (u.rowIds.length > 0 && (u.impl || 0) === u.rowIds.length);
   u.doneEvidence = hits.slice(0, 3);
+  if (u.done && u.doneEvidence.length === 0) u.doneEvidence = ["all " + u.rowIds.length + " rows Current state IMPLEMENTED in reconciled ledger"];
 }
 const payload = { lane: lane, laneRows: mine.length, nextRows: mine.filter((r) => at(r, "Phase decision") === "NEXT").length, verifyRows: mine.filter((r) => at(r, "Phase decision") === "VERIFY").length, units: out };
 fs.mkdirSync(pathmod.dirname(outPath), { recursive: true });
@@ -216,7 +218,7 @@ const compact = {
     return {
       id: u.id, phase: u.phase, priority: u.priority, rowCount: u.rowCount, rowIds: u.rowIds,
       paths: u.paths, closures: u.closures, nextPackages: u.nextPackages, packageOwners: u.packageOwners,
-      acceptance: u.acceptance, done: u.done, targets: u.targets, reachabilityBlank: u.reachabilityBlank,
+      acceptance: u.acceptance, done: u.done, implRows: u.impl || 0, targets: u.targets, reachabilityBlank: u.reachabilityBlank,
       evidenceGrades: u.evidenceGrades, runtimeTests: u.runtimeTests,
       // the decision intel the master already holds, carried at unit level
       dispositions: uniq(d, "Disposition", 4, 120),

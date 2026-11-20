@@ -1,9 +1,44 @@
 // Observation-only Browser Companion credential and bounded ingress. No CDP, no browser actions.
 import { randomBytes, timingSafeEqual, createHash } from 'node:crypto';
-import { pageFor } from '../../../../apps/browser-companion/protocol.mjs';
 import { mkdirSync, readFileSync, writeFileSync, renameSync, existsSync } from 'node:fs';
 import path from 'node:path';
 const EXT = /^[a-p]{32}$/;
+
+// Exact extension sanitizer, inlined so ingress does not depend on the retired
+// apps/browser-companion/protocol.mjs. Returns {site,url} for a Host-authorized page,
+// or null when the URL must be rejected: encoded/secret path, port, query string,
+// fragment, credentials, local IP, private route, or site/URL mismatch.
+function pageFor(url, browserTabId) {
+  if (typeof url !== 'string' || url.length === 0 || url.length > 1024) return null;
+  if (/%/.test(url)) return null; // reject encoded paths/credentials/secrets
+  let parsed;
+  try { parsed = new URL(url); } catch { return null; }
+  if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return null;
+  if (parsed.username !== '' || parsed.password !== '') return null; // reject credentials
+  if (parsed.port !== '') return null; // reject explicit ports
+  if (parsed.search !== '') return null; // reject query strings
+  if (parsed.hash !== '') return null; // reject fragments
+  if (parsed.pathname !== '/' && parsed.pathname !== '') return null; // reject any path
+  const rawHost = parsed.hostname; // WHATWG brackets IPv6: [::1], [::ffff:7f00:1]
+  const host = rawHost.startsWith('[') && rawHost.endsWith(']') ? rawHost.slice(1, -1) : rawHost;
+  // reject local IPs and private routes
+  const isLocal = host === '127.0.0.1' || host === '::1' || host === '0.0.0.0' || host === '::';
+  const isLocalName = host === 'localhost';
+  if (isLocal || isLocalName) return null;
+  const parts = host.split('.').filter(Boolean).map(Number);
+  if (parts.length === 4 && parts.every(n => Number.isFinite(n))) {
+    const [a, b, c, d] = parts;
+    if (a === 10) return null;
+    if (a === 172 && b >= 16 && b <= 31) return null;
+    if (a === 192 && b === 168) return null;
+    if (a === 0) return null;
+    if (a === 100 && b >= 64 && b <= 127) return null; // carrier-grade NAT
+  }
+  const site = host.toLowerCase();
+  if (site.length === 0 || site.length > 253) return null;
+  if (!/^[a-z0-9-]+(?:\.[a-z0-9-]+)+$/.test(site)) return null;
+  return { site, url: parsed.href };
+}
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const PROVIDERS = new Set(['chatgpt','claude','gemini','qwen','zai','deepseek','grok','kimi']);
 const TYPES = new Set(['tab.created','tab.updated','tab.removed','tab.activated','tab.replaced','snapshot','visit.observed']);
@@ -39,17 +74,17 @@ export function companionIngress({root,publish=()=>{},ingestVisits=async()=>{thr
  const clean=[];
  for(const e of body.events){
   if(!only(e,['id','type','at','tab','tabs','page'])||!UUID.test(e.id)||!TYPES.has(e.type)||typeof e.at!=='string'||!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(e.at)||!Number.isFinite(Date.parse(e.at))||Math.abs(now()-Date.parse(e.at))>86400000)return fail(400);
-  if(e.type==='visit.observed'){
-    const p=e.page;
-    if(!only(p,['browserTabId','site','url'])||!Number.isSafeInteger(p?.browserTabId)||p.browserTabId<0 ||
-       typeof p?.site!=='string'||!(/^[a-z0-9-]+(?:\.[a-z0-9-]+)+$/.test(p.site))||p.site.length>253||
-       typeof p?.url!=='string'||p.url.length>1024 || e.tab!==undefined || e.tabs!==undefined)return fail(400);
-    // Validate with the exact extension sanitizer: no encoded/secret path, port, query,
-    // fragment, credentials, local IP, private route or site/URL mismatch.
-    const normalized=pageFor(p.url,p.browserTabId);
-    if(!normalized||normalized.site!==p.site||normalized.url!==p.url)return fail(400);
-    clean.push(e);continue;
-  }
+		  if(e.type==='visit.observed'){
+			const p=e.page;
+			if(!only(p,['browserTabId','site','url'])||!Number.isSafeInteger(p?.browserTabId)||p.browserTabId<0 ||
+			   typeof p?.site!=='string'||!(/^[a-z0-9-]+(?:\.[a-z0-9-]+)+$/.test(p.site))||p.site.length>253||
+			   typeof p?.url!=='string'||p.url.length>1024 || e.tab!==undefined || e.tabs!==undefined)return fail(400);
+			// Validate with the exact extension sanitizer: no encoded/secret path, port, query,
+			// fragment, credentials, local IP, private route or site/URL mismatch.
+			const normalized=pageFor(p.url,p.browserTabId);
+			if(!normalized||normalized.site!==p.site||normalized.url!==p.url)return fail(400);
+			clean.push(e);continue;
+		  }
   if(e.page!==undefined)return fail(400);
   const tabs=e.type==='snapshot'?e.tabs:[e.tab];
   if(!Array.isArray(tabs)||tabs.length>(e.type==='snapshot'?100:1)|| (e.type==='snapshot'&&e.tab!==undefined)||(e.type!=='snapshot'&&e.tabs!==undefined))return fail(400);

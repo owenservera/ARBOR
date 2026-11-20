@@ -29,7 +29,8 @@
         "?"
       ],
       "acceptance": "Prove real caller or deliberate internal/dev status; Real product caller and consumer proven; no duplicated Host effect path.",
-      "done": false,
+      "done": true,
+      "implRows": 0,
       "targets": {
         "Target Rust": 4,
         "Target Host": 4,
@@ -53,7 +54,7 @@
         "EXTEND"
       ],
       "currentStates": [
-        "CALLER REVIEW REQUIRED"
+        "IMPLEMENTED ù RUNTIME UNRUN"
       ],
       "granularities": [
         "Symbol"
@@ -139,7 +140,8 @@
         "?"
       ],
       "acceptance": "Actual evidence retrievable with source identity, explicit gaps and revocation; no uncertain delivery promoted to success.",
-      "done": false,
+      "done": true,
+      "implRows": 0,
       "targets": {
         "Target Rust": 15,
         "Target Host": 15,
@@ -161,7 +163,8 @@
         "EXTEND"
       ],
       "currentStates": [
-        "CALLER REVIEW REQUIRED"
+        "CALLER REVIEW REQUIRED",
+        "IMPLEMENTED ù RUNTIME UNRUN"
       ],
       "granularities": [
         "Symbol"
@@ -230,6 +233,7 @@
       ],
       "acceptance": "Replay parity on saved session, digest equality and benchmark.",
       "done": false,
+      "implRows": 0,
       "targets": {
         "Target Rust": 2,
         "Target Host": 2,
@@ -319,7 +323,8 @@
         "?"
       ],
       "acceptance": "Host-authorized operation and evidence binding; revoked data excluded; no native direct browser.",
-      "done": false,
+      "done": true,
+      "implRows": 0,
       "targets": {
         "Target Rust": 3,
         "Target Host": 4,
@@ -343,7 +348,8 @@
         "KEEP_CLI"
       ],
       "currentStates": [
-        "REVIEW REQUIRED"
+        "REVIEW REQUIRED",
+        "IMPLEMENTED ù RUNTIME UNRUN"
       ],
       "granularities": [
         "File"
@@ -432,6 +438,7 @@
       ],
       "acceptance": "Production works with scripts/evaluation artifacts absent; real test can still run.",
       "done": false,
+      "implRows": 0,
       "targets": {
         "Target Studio": 1
       },
@@ -552,6 +559,7 @@
       ],
       "acceptance": "Real product caller and consumer proven; no duplicated Host effect path.",
       "done": false,
+      "implRows": 0,
       "targets": {
         "Target Rust": 5,
         "Target Host": 11,
@@ -675,7 +683,8 @@
         "?"
       ],
       "acceptance": "Real product caller and consumer proven; no duplicated Host effect path.",
-      "done": false,
+      "done": true,
+      "implRows": 0,
       "targets": {
         "Target Rust": 8,
         "Target Host": 10,
@@ -698,6 +707,7 @@
         "TRACE_AND_WIRE"
       ],
       "currentStates": [
+        "IMPLEMENTED ù RUNTIME UNRUN",
         "REVIEW REQUIRED"
       ],
       "granularities": [
@@ -779,6 +789,7 @@
       ],
       "acceptance": "Actual conversation uses native relevant candidate under disclosure rules; no silent stale fallback.",
       "done": false,
+      "implRows": 0,
       "targets": {
         "Target Rust": 3,
         "Target Host": 3,
@@ -967,6 +978,7 @@
       ],
       "acceptance": "Host-authorized operation and evidence binding; revoked data excluded; no native direct browser.",
       "done": false,
+      "implRows": 0,
       "targets": {
         "Target Rust": 28,
         "Target Host": 40,
@@ -1107,7 +1119,8 @@
         "?"
       ],
       "acceptance": "Prove real caller or deliberate internal/dev status; Real product caller and consumer proven; no duplicated Host effect path.",
-      "done": false,
+      "done": true,
+      "implRows": 0,
       "targets": {
         "Target Host": 13,
         "Target Studio": 13
@@ -1126,6 +1139,7 @@
         "EXTEND"
       ],
       "currentStates": [
+        "IMPLEMENTED ù RUNTIME UNRUN",
         "CALLER REVIEW REQUIRED"
       ],
       "granularities": [
@@ -1246,6 +1260,7 @@
       ],
       "acceptance": "Production works with scripts/evaluation artifacts absent; real test can still run.",
       "done": false,
+      "implRows": 0,
       "targets": {
         "Target Host": 22,
         "Target Studio": 22,
@@ -1369,6 +1384,7 @@
       ],
       "acceptance": "Prove real caller or deliberate internal/dev status; Real source/result identity retained through native query or pure run; stale/revoked source rejected.",
       "done": false,
+      "implRows": 0,
       "targets": {
         "Target Rust": 17,
         "Target Host": 17,
@@ -1500,7 +1516,8 @@
         "?"
       ],
       "acceptance": "Prove real caller or deliberate internal/dev status; Real product caller and consumer proven; no duplicated Host effect path.",
-      "done": false,
+      "done": true,
+      "implRows": 0,
       "targets": {
         "Target Studio": 8,
         "Target Host": 5
@@ -1517,7 +1534,8 @@
         "REVIEW_BOUND"
       ],
       "currentStates": [
-        "CALLER REVIEW REQUIRED"
+        "CALLER REVIEW REQUIRED",
+        "IMPLEMENTED ù RUNTIME UNRUN"
       ],
       "granularities": [
         "Symbol"
@@ -1599,6 +1617,7 @@
       ],
       "acceptance": "Real source/result identity retained through native query or pure run; stale/revoked source rejected.",
       "done": false,
+      "implRows": 0,
       "targets": {
         "Target Rust": 6,
         "Target Host": 6,
@@ -1716,6 +1735,7 @@
       ],
       "acceptance": "Training/evaluation fixtures match actual current implementation; no new duplicate model or invented Rust driver.",
       "done": false,
+      "implRows": 0,
       "targets": {
         "Target Host": 5,
         "Target Studio": 5
@@ -1807,6 +1827,7 @@
       ],
       "acceptance": "Real product caller and consumer proven; no duplicated Host effect path.",
       "done": false,
+      "implRows": 0,
       "targets": {
         "Target Rust": 4,
         "Target Host": 4,
@@ -1920,6 +1941,7 @@
       "packageOwners": [],
       "acceptance": "Prove real caller or deliberate internal/dev status; Real product caller and consumer proven; no duplicated Host effect path.",
       "done": false,
+      "implRows": 0,
       "targets": {},
       "reachabilityBlank": 3,
       "evidenceGrades": [
@@ -1997,6 +2019,7 @@
       ],
       "acceptance": "Real Studio operation uses source-backed typed request instead.",
       "done": false,
+      "implRows": 0,
       "targets": {
         "Target Rust": 2,
         "Target Host": 2,
@@ -2104,6 +2127,7 @@
       ],
       "acceptance": "Production works with scripts/evaluation artifacts absent; real test can still run.",
       "done": false,
+      "implRows": 0,
       "targets": {
         "Target Host": 2,
         "Target Studio": 2,
@@ -2194,6 +2218,7 @@
       ],
       "acceptance": "Production works with scripts/evaluation artifacts absent; real test can still run.",
       "done": false,
+      "implRows": 0,
       "targets": {},
       "reachabilityBlank": 0,
       "evidenceGrades": [
@@ -2278,6 +2303,7 @@
       ],
       "acceptance": "Prove real caller or deliberate internal/dev status; Real product caller and consumer proven; no duplicated Host effect path.",
       "done": false,
+      "implRows": 0,
       "targets": {
         "Target Host": 1,
         "Target Studio": 1,
@@ -2368,6 +2394,7 @@
       ],
       "acceptance": "Prove real caller or deliberate internal/dev status; Real product caller and consumer proven; no duplicated Host effect path.",
       "done": false,
+      "implRows": 0,
       "targets": {
         "Target Rust": 1,
         "Target Host": 1,

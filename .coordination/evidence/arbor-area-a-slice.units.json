@@ -32,7 +32,8 @@
         "A"
       ],
       "acceptance": "Actual update is revision-fenced, idempotent and cannot cross namespace.",
-      "done": false,
+      "done": true,
+      "implRows": 0,
       "targets": {
         "Target Rust": 5,
         "Target Host": 5,
@@ -55,9 +56,7 @@
         "FIRST PASS — REVIEW REQUIRED"
       ],
       "currentStates": [
-        "AUDIT FINDING — OPEN",
-        "REVIEW REQUIRED",
-        "INVENTORIED — NOT DISPOSITIONED"
+        "IMPLEMENTED ù RUNTIME UNRUN"
       ],
       "granularities": [
         "File",
@@ -153,7 +152,8 @@
         "A"
       ],
       "acceptance": "Query retrieves relevant older evidence and bounded relationships with revision/digest.",
-      "done": false,
+      "done": true,
+      "implRows": 0,
       "targets": {
         "Target Rust": 3,
         "Target Host": 3,
@@ -173,7 +173,7 @@
         "EXTEND"
       ],
       "currentStates": [
-        "AUDIT FINDING — OPEN"
+        "IMPLEMENTED ù RUNTIME UNRUN"
       ],
       "granularities": [
         "File",
@@ -260,7 +260,8 @@
         "A"
       ],
       "acceptance": "Same program identity and dependencies through native validation and DAG; no effect authorization.",
-      "done": false,
+      "done": true,
+      "implRows": 0,
       "targets": {
         "Target Rust": 3,
         "Target Host": 3,
@@ -280,7 +281,7 @@
         "WIRE"
       ],
       "currentStates": [
-        "AUDIT FINDING — OPEN"
+        "IMPLEMENTED ù RUNTIME UNRUN"
       ],
       "granularities": [
         "File"
@@ -356,7 +357,8 @@
         "A"
       ],
       "acceptance": "Actual registered source change and tombstone appear in native query; stable identity maintained.",
-      "done": false,
+      "done": true,
+      "implRows": 0,
       "targets": {
         "Target Rust": 2,
         "Target Host": 2,
@@ -375,7 +377,7 @@
         "TRACE_AND_WIRE"
       ],
       "currentStates": [
-        "REVIEW REQUIRED"
+        "IMPLEMENTED ù RUNTIME UNRUN"
       ],
       "granularities": [
         "File"
@@ -458,7 +460,8 @@
         "A"
       ],
       "acceptance": "Registered source sync without Cargo; exact verified exchange state advances.",
-      "done": false,
+      "done": true,
+      "implRows": 0,
       "targets": {
         "Target Rust": 7,
         "Target Host": 5,
@@ -482,9 +485,8 @@
         "KEEP_AND_CONNECT"
       ],
       "currentStates": [
-        "AUDIT FINDING — OPEN",
-        "REVIEW REQUIRED",
-        "CALLER REVIEW REQUIRED"
+        "IMPLEMENTED ù RUNTIME UNRUN",
+        "AUDIT FINDING — OPEN"
       ],
       "granularities": [
         "File",
@@ -594,7 +596,8 @@
         "A"
       ],
       "acceptance": "Real selected project comparison uses exact source identity and verified adapter; no fixture.",
-      "done": false,
+      "done": true,
+      "implRows": 0,
       "targets": {
         "Target Rust": 7,
         "Target Host": 10,
@@ -612,7 +615,8 @@
         "TRACE_AND_WIRE"
       ],
       "currentStates": [
-        "REVIEW REQUIRED"
+        "REVIEW REQUIRED",
+        "IMPLEMENTED ù RUNTIME UNRUN"
       ],
       "granularities": [
         "File"
@@ -781,6 +785,7 @@
       ],
       "acceptance": "Native implementation and consumer relationship verified; scoped integration test or documented internal ownership.",
       "done": false,
+      "implRows": 0,
       "targets": {
         "Target Rust": 75,
         "Target Host": 12,
@@ -959,6 +964,7 @@
       ],
       "acceptance": "Prove real caller or deliberate internal/dev status; Actual registered source change and tombstone appear in native query; stable identity maintained.",
       "done": false,
+      "implRows": 0,
       "targets": {
         "Target Rust": 3,
         "Target Host": 3,
@@ -1126,6 +1132,7 @@
       ],
       "acceptance": "Native implementation and consumer relationship verified; scoped integration test or documented internal ownership.",
       "done": false,
+      "implRows": 0,
       "targets": {
         "Target Rust": 47,
         "Target Host": 12,
@@ -1288,6 +1295,7 @@
       ],
       "acceptance": "Parent capability integration exercises this helper; no unnecessary independent product port.",
       "done": false,
+      "implRows": 0,
       "targets": {
         "Target Rust": 34,
         "Target Host": 2,
@@ -1411,6 +1419,7 @@
       ],
       "acceptance": "Parent capability integration exercises this helper; no unnecessary independent product port.",
       "done": false,
+      "implRows": 0,
       "targets": {
         "Target Rust": 13,
         "Target Host": 3
@@ -1524,7 +1533,8 @@
         "A"
       ],
       "acceptance": "Actual registered source change and tombstone appear in native query; stable identity maintained.",
-      "done": false,
+      "done": true,
+      "implRows": 0,
       "targets": {
         "Target Rust": 5,
         "Target Host": 5,
@@ -1542,7 +1552,8 @@
         "TRACE_AND_WIRE"
       ],
       "currentStates": [
-        "REVIEW REQUIRED"
+        "REVIEW REQUIRED",
+        "IMPLEMENTED ù RUNTIME UNRUN"
       ],
       "granularities": [
         "File"
@@ -1615,6 +1626,7 @@
       ],
       "acceptance": "Real selected project comparison uses exact source identity and verified adapter; no fixture.",
       "done": false,
+      "implRows": 0,
       "targets": {
         "Target Rust": 3,
         "Target Host": 3,
@@ -1699,6 +1711,7 @@
       ],
       "acceptance": "Actual approved source-backed HQ result; no duplicate authority.",
       "done": false,
+      "implRows": 0,
       "targets": {
         "Target Host": 1,
         "Target HQ": 1,
@@ -1783,6 +1796,7 @@
       ],
       "acceptance": "Actual registered source change and tombstone appear in native query; stable identity maintained.",
       "done": false,
+      "implRows": 0,
       "targets": {
         "Target Rust": 1,
         "Target Host": 1,
@@ -1868,6 +1882,7 @@
       ],
       "acceptance": "Frozen build/package works from clean checkout; approved permissions only.",
       "done": false,
+      "implRows": 0,
       "targets": {
         "Target Host": 1,
         "Target HQ": 1
@@ -2331,6 +2346,7 @@
       ],
       "acceptance": "Inspect source and actual callers; record disposition and evidence; verify applicable acceptance checks.",
       "done": false,
+      "implRows": 0,
       "targets": {
         "Target HQ": 190,
         "Target Host": 25

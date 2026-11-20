@@ -1,8 +1,9 @@
 // hq/test/graph.test.mjs — dependency traversal and project graph over a synthetic index.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { openMemoryDb } from '../lib/schema.mjs';
-import { deps, impact, projectGraph } from '../lib/graph.mjs';
+import { deps, impact, projectGraph, scopedProjection } from '../lib/graph.mjs';
 
 const PROJECTS = [
   { name: 'alpha', path: 'C:/ws/alpha' },
@@ -49,9 +50,9 @@ function seed() {
 
   const insertFile = db.prepare(`
 INSERT INTO files(id, project_id, path, abs_path, lang, kind, size, mtime_ms, hash, lines, is_test, is_generated, indexed_at)
-VALUES (?, (SELECT id FROM projects WHERE name = ?), ?, ?, 'javascript', 'source', 100, 0, NULL, 5, 0, 0, '2026-01-01T00:00:00Z')`);
+VALUES (?, (SELECT id FROM projects WHERE name = ?), ?, ?, 'javascript', 'source', 100, 0, ?, 5, 0, 0, '2026-01-01T00:00:00Z')`);
   for (const file of FILES) {
-    insertFile.run(file.id, file.project, file.path, `C:/ws/${file.project}/${file.path}`);
+    insertFile.run(file.id, file.project, file.path, `C:/ws/${file.project}/${file.path}`, `hash-${file.id}`);
   }
 
   const insertImport = db.prepare(`
@@ -201,3 +202,57 @@ test('graph output is deterministic and empty for an empty index', () => {
     root: null, direction: 'forward', nodes: [], edges: [],
   });
 });
+
+test('scopedProjection returns path-stable nodes, edges and tombstones', () => {
+  const db = seed();
+  const projection = scopedProjection(db, { project: 'alpha' });
+
+  // Stable, path-stable node identity (matches kg-export / native HQKG convention).
+  const byPath = new Map(projection.nodes.map((n) => [n.metadata.source_path, n]));
+  assert.ok(byPath.has('alpha/src/index.mjs'));
+  assert.ok(byPath.has('alpha/src/util.mjs'));
+  assert.equal(byPath.get('alpha/src/index.mjs').kind, 'source-file');
+  assert.equal(byPath.get('alpha/src/index.mjs').metadata.namespace, 'alpha');
+  assert.match(byPath.get('alpha/src/index.mjs').id, /^hqg1:[a-f0-9]{64}$/);
+
+  // Stable identity: same project + path yields the same id on re-query.
+  const again = scopedProjection(db, { project: 'alpha' });
+  const againByPath = new Map(again.nodes.map((n) => [n.metadata.source_path, n]));
+  assert.equal(againByPath.get('alpha/src/index.mjs').id, byPath.get('alpha/src/index.mjs').id);
+
+  // Edges connect resolved in-universe endpoints (stored by stable node id).
+  const indexNode = byPath.get('alpha/src/index.mjs');
+  const utilNode = byPath.get('alpha/src/util.mjs');
+  const indexEdge = projection.edges.find(
+    (e) => e.from === indexNode.id && e.to === utilNode.id,
+  );
+  assert.ok(indexEdge, 'expected index.mjs -> util.mjs edge');
+  assert.equal(indexEdge.relation, 'imports');
+  assert.equal(indexEdge.weight, 1);
+  assert.match(indexEdge.id, /^hqg1:[a-f0-9]{64}$/);
+
+  // Every edge endpoint is a known node (no dangling references).
+  const nodeIds = new Set(projection.nodes.map((n) => n.id));
+  assert.ok(projection.edges.every((e) => nodeIds.has(e.from) && nodeIds.has(e.to)));
+
+  // Tombstones: files in the previous state that are absent now are tombstoned.
+  const previous = {
+    'alpha/src/removed.mjs': { id: graphNodeIdForTest('alpha', 'src/removed.mjs'), content_sha256: 'hash-99' },
+    'alpha/src/index.mjs': { id: byPath.get('alpha/src/index.mjs').id, content_sha256: 'hash-1' },
+  };
+  const withTombstones = scopedProjection(db, { project: 'alpha', previous });
+  const tombstoneIds = withTombstones.tombstones.map((t) => t.id);
+  assert.ok(tombstoneIds.includes(graphNodeIdForTest('alpha', 'src/removed.mjs')));
+  assert.equal(withTombstones.tombstones.filter((t) => t.reason === 'deleted').length, 1);
+  // index.mjs is still present, so it is NOT a tombstone.
+  assert.ok(!tombstoneIds.includes(byPath.get('alpha/src/index.mjs').id));
+
+  // Empty index yields an empty projection.
+  const empty = openMemoryDb();
+  assert.deepEqual(scopedProjection(empty), { nodes: [], edges: [], tombstones: [] });
+});
+
+// Test-only helper mirroring graphNodeId so the test asserts the real identity.
+function graphNodeIdForTest(project, path) {
+  return `hqg1:${createHash('sha256').update(`source-file\0${project}\0${path}`).digest('hex')}`;
+}

@@ -1,5 +1,6 @@
 // Thin authenticated-server surface over the shared lifecycle runtime. No browser logic here.
 import { readdirSync, readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { json, object, problem, storageName, text } from './http.mjs';
 import { TRANSCRIPT_LIMITS } from '../capture/conversation-thread.mjs';
@@ -15,14 +16,19 @@ import { createDcbSourceAdapters } from '../../../harness/src/context/dcb-source
 //   - verifyTarget: a thread verifies only if THIS Host observed it bound on the provider's
 //     origin (conversation binding records written by authenticated connect flows, site-matched
 //     through the existing adapter registry).
-//   - authorizeSourceDisclosure: the Host has NO source-disclosure grant evidence store yet, so
-//     the callback refuses unconditionally. The dispatch gate can therefore never mint a send
-//     candidate — the facade structurally runs in OBSERVATION-ONLY mode: assemble context and
-//     record provenance, never block a send (log-and-continue), refuse to invent authority.
-//     Flipping to enforcing REQUIRES replacing this refuser with a callback backed by real
-//     grant evidence first.
-export function createDcbConversationFacade({ paths } = {}) {
+//   - authorizeSourceDisclosure: authorizes source disclosure only when each requested
+//     source resolves through the Host's native scoped source registry for the
+//     principal (registered, in scope, not revoked) and the destination is a known
+//     driveable site. Revoked, out-of-scope, mismatched-principal or undisclosed
+//     evidence is denied. Absent a grant the facade stays observation-only and
+//     never promotes an uncertain delivery to success.
+export function createDcbConversationFacade({ paths, sourceAdapters } = {}) {
   const directory = path.join(paths.root, 'conversations');
+  // One source-adapter instance owns native scoped resolution for this facade:
+  // it is used both by authorizeSourceDisclosure (disclosure policy) and by the
+  // Host facade's retrieval/invalidation (native context), so there is never a
+  // second, diverging adapter path.
+  const adapters = sourceAdapters ?? createDcbSourceAdapters({});
   const verifyTarget = async ({ principalRef, destinationProvider, threadRef }) => {
     let verified = false;
     try {
@@ -36,12 +42,51 @@ export function createDcbConversationFacade({ paths } = {}) {
     } catch { verified = false; }
     return { verified, principalRef, destinationProvider, threadRef };
   };
-  const authorizeSourceDisclosure = async (request) => ({ authorized: false, proofRef: null,
-    principalRef: request?.principalRef ?? null, destinationProvider: request?.destinationProvider ?? null,
-    sourceRefs: Array.isArray(request?.sourceRefs) ? [...request.sourceRefs] : [],
-    reason: 'NO_HOST_DISCLOSURE_GRANT_EVIDENCE' });
+  // Disclosure authorization: reuse native scoped context for DCB composition.
+  // A source is authorized for disclosure only when it resolves through the
+  // Host's own scoped source registry for this principal (registered, in scope,
+  // not revoked, consent-allowed) and the destination is a known, driveable site.
+  // Revoked, out-of-scope, mismatched-principal or undisclosed evidence is never
+  // authorized; absent a grant the facade stays observation-only and never
+  // promotes an uncertain delivery to success.
+  const authorizeSourceDisclosure = async (request) => {
+    const principalRef = typeof request?.principalRef === 'string' ? request.principalRef : null;
+    const destinationProvider = typeof request?.destinationProvider === 'string' ? request.destinationProvider : null;
+    const threadRef = typeof request?.threadRef === 'string' ? request.threadRef : null;
+    const sourceRefs = Array.isArray(request?.sourceRefs) ? [...request.sourceRefs] : [];
+    const bundleId = typeof request?.bundleId === 'string' ? request.bundleId : null;
+    const packetDigest = typeof request?.packetDigest === 'string' ? request.packetDigest : null;
+
+    const deny = (code) => ({ authorized: false, proofRef: null, principalRef, destinationProvider,
+      sourceRefs, reason: code });
+
+    if (!principalRef) return deny('NO_PRINCIPAL_REF');
+
+    // Target authorization: the destination must be a known, driveable site.
+    if (!destinationProvider || !(await getAdapter(destinationProvider))) {
+      return deny(`DESTINATION_NOT_AUTHORIZED:${destinationProvider ?? ''}`);
+    }
+
+    // Native scoped context: which sources the Host actually authorizes for
+    // this principal. Revoked and out-of-scope sources simply stay unavailable.
+    let candidates = [];
+    try { candidates = await adapters.resolveSources({ principalRef }); } catch { candidates = []; }
+    if (!Array.isArray(candidates)) candidates = [];
+    const authorizedRefs = new Set();
+    for (const c of candidates) if (c && typeof c.ref === 'string') authorizedRefs.add(c.ref);
+
+    const problems = [];
+    for (const ref of sourceRefs) if (!authorizedRefs.has(ref)) problems.push(`source_not_scoped:${ref}`);
+    if (problems.length) return deny(problems.join('; '));
+
+    const proofRef = createHash('sha256').update(JSON.stringify({
+      principalRef, destinationProvider, threadRef, sourceRefs: [...sourceRefs].sort(), bundleId, packetDigest,
+    }), 'utf8').digest('hex');
+    return { authorized: true, proofRef, principalRef, destinationProvider, sourceRefs,
+      reason: 'NATIVE_SCOPED_DISCLOSURE_AUTHORIZED' };
+  };
   const facade = createDcbHostContextRuntime({
-    paths, ownerRef: 'owner:studio-host', sourceAdapters: createDcbSourceAdapters({}),
+    paths, ownerRef: 'owner:studio-host', sourceAdapters: adapters,
     verifyTarget, authorizeSourceDisclosure,
   });
   // The evidence callbacks are returned for inspection/testing in the SAME trusted module

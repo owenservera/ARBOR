@@ -339,7 +339,11 @@ export function buildReceipt(session, reducer, summary = reducer.summary()) {
   let host = '';
   try { host = new URL(m.target?.url).hostname; } catch { /* ignore */ }
   return {
-    date_utc: new Date(m.createdAt ?? Date.now()).toISOString(),
+    // Deterministic: never wall-clock. Derive from the session's capture time (written once at
+    // session creation and preserved across replays), falling back to the run's first record
+    // timestamp, then to a fixed epoch. Date.now() would make every re-derive emit a different
+    // receipt, breaking digest equality on a saved session.
+    date_utc: new Date(m.createdAt ?? reducer.run?.t ?? null).toISOString(),
     windows_version_observed: m.os ?? 'unknown',
     chrome_version_observed: m.browser ?? 'unknown',
     collector_source_sha: m.collector?.sourceSha ?? collectorSourceSha(),

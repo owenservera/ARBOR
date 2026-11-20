@@ -1,0 +1,12 @@
+{
+  "unit": "VERIFY:D04:revision-cache-lifecycle",
+  "round": 1,
+  "workflow": "arbor-area-a",
+  "runId": "dwfrun-ffd84dea-f28a-4418-88c8-5a3b10d3d9a1",
+  "wave": "P1",
+  "note": "workflow:arbor-area-a run:dwfrun-ffd84dea-f28a-4418-88c8-5a3b10d3d9a1 wave:P1",
+  "changes": [],
+  "discoveries": [],
+  "status": "PASSED",
+  "implementationCommit": null
+}

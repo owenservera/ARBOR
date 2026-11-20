@@ -3,4 +3,5 @@ export { SOURCE_SCHEMA, MANIFEST_SCHEMA, SourceError, gitBlobSha, canonicalRepo,
 export { createGitObjectAdapter, NO_SOURCE_ADAPTER } from './adapters.mjs';
 export {
   DEFAULT_LIMITS, resolvePin, verifyPin, snapshotAt, readPinnedBlob, manifestDigestOf,
+  acquirePinnedSnapshot,
 } from './snapshots.mjs';

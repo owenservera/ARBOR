@@ -1,0 +1,90 @@
+{
+  "schema": "arbor-transient-stable-id-row-patch/2",
+  "source_head": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+  "last_readable_ledger_commit": "038854852ab5e9ed387e86bea6c518d6ff919da7",
+  "last_readable_ledger_blob": "74805dc33430f54b8ee779cc05b71757560ae4de",
+  "lane": "A",
+  "rows": [
+    {
+      "stable_id": "AT-31474A74E071",
+      "path": "hq/version-intelligence/identity/legacy-adapters.mjs",
+      "symbol": "",
+      "lane": "A",
+      "batch": "A-F01",
+      "source_blob_sha": "058b11ccaa5beefa9c7e9988d56c117785017ffc",
+      "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/hq/version-intelligence/identity/legacy-adapters.mjs#L1",
+      "expected_old_fields": {
+        "Export acquirePinnedSnapshot": "",
+        "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+        "Runtime test": "UNRUN"
+      },
+      "changed_fields": {
+        "Export acquirePinnedSnapshot": "acquirePinnedSnapshot",
+        "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+        "Runtime test": "UNRUN"
+      },
+      "append_evidence": "[arbor-integrate dwfrun-9c0408e7-9f01-403a-955c-c265736634d5 VERIFY:D07:hvi-live-source-composition AT-31474A74E071]",
+      "source_anchors": [
+        "VERIFY:D07:hvi-live-source-composition",
+        "VERIFY-D07-hvi-live-source-composition.json",
+        "Export acquirePinnedSnapshot,Review HEAD,Runtime test"
+      ],
+      "review_completed": "pass via P1",
+      "evidence_scope": "{\"workflow\":\"arbor-area-a\",\"runId\":\"dwfrun-ffd84dea-f28a-4418-88c8-5a3b10d3d9a1\",\"unit\":\"VERIFY:D07:hvi-live-source-composition\",\"evidence\":[\"Export acquirePinnedSnapshot=acquirePinnedSnapshot (Review HEAD set to e07e61385a53f30890b4a7f7441fe25d22a79b1c; Runtime test = UNRUN @ gate exit 0 @ commit 7c062c5)\"]}"
+    },
+    {
+      "stable_id": "AT-AF1E228271B8",
+      "path": "hq/version-intelligence/sources/common.mjs",
+      "symbol": "",
+      "lane": "A",
+      "batch": "A-F01",
+      "source_blob_sha": "4277ccf0027f30b6b4d931920e8b506ac9f7ced6",
+      "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/hq/version-intelligence/sources/common.mjs#L1",
+      "expected_old_fields": {
+        "Export acquirePinnedSnapshot": "",
+        "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+        "Runtime test": "UNRUN"
+      },
+      "changed_fields": {
+        "Export acquirePinnedSnapshot": "acquirePinnedSnapshot",
+        "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+        "Runtime test": "UNRUN"
+      },
+      "append_evidence": "[arbor-integrate dwfrun-9c0408e7-9f01-403a-955c-c265736634d5 VERIFY:D07:hvi-live-source-composition AT-AF1E228271B8]",
+      "source_anchors": [
+        "VERIFY:D07:hvi-live-source-composition",
+        "VERIFY-D07-hvi-live-source-composition.json",
+        "Export acquirePinnedSnapshot,Review HEAD,Runtime test"
+      ],
+      "review_completed": "pass via P1",
+      "evidence_scope": "{\"workflow\":\"arbor-area-a\",\"runId\":\"dwfrun-ffd84dea-f28a-4418-88c8-5a3b10d3d9a1\",\"unit\":\"VERIFY:D07:hvi-live-source-composition\",\"evidence\":[\"Export acquirePinnedSnapshot=acquirePinnedSnapshot (Review HEAD set to e07e61385a53f30890b4a7f7441fe25d22a79b1c; Runtime test = UNRUN @ gate exit 0 @ commit 7c062c5)\"]}"
+    },
+    {
+      "stable_id": "AT-B9F7D64A8801",
+      "path": "hq/version-intelligence/sources/index.mjs",
+      "symbol": "",
+      "lane": "A",
+      "batch": "A-F01",
+      "source_blob_sha": "6048248f4b77d021143dc24f43a11a8abcad54d2",
+      "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/hq/version-intelligence/sources/index.mjs#L1",
+      "expected_old_fields": {
+        "Export acquirePinnedSnapshot": "",
+        "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+        "Runtime test": "UNRUN"
+      },
+      "changed_fields": {
+        "Export acquirePinnedSnapshot": "acquirePinnedSnapshot",
+        "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+        "Runtime test": "UNRUN"
+      },
+      "append_evidence": "[arbor-integrate dwfrun-9c0408e7-9f01-403a-955c-c265736634d5 VERIFY:D07:hvi-live-source-composition AT-B9F7D64A8801]",
+      "source_anchors": [
+        "VERIFY:D07:hvi-live-source-composition",
+        "VERIFY-D07-hvi-live-source-composition.json",
+        "Export acquirePinnedSnapshot,Review HEAD,Runtime test"
+      ],
+      "review_completed": "pass via P1",
+      "evidence_scope": "{\"workflow\":\"arbor-area-a\",\"runId\":\"dwfrun-ffd84dea-f28a-4418-88c8-5a3b10d3d9a1\",\"unit\":\"VERIFY:D07:hvi-live-source-composition\",\"evidence\":[\"Export acquirePinnedSnapshot=acquirePinnedSnapshot (Review HEAD set to e07e61385a53f30890b4a7f7441fe25d22a79b1c; Runtime test = UNRUN @ gate exit 0 @ commit 7c062c5)\"]}"
+    }
+  ]
+}

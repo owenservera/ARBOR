@@ -1,0 +1,36 @@
+{
+  "schema": "arbor-transient-stable-id-row-patch/2",
+  "source_head": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+  "last_readable_ledger_commit": "038854852ab5e9ed387e86bea6c518d6ff919da7",
+  "last_readable_ledger_blob": "74805dc33430f54b8ee779cc05b71757560ae4de",
+  "lane": "D",
+  "rows": [
+    {
+      "stable_id": "AT-0CE8E0AE8DE4",
+      "path": "apps/mobile-relay/app.js",
+      "symbol": "saveNativePending @ L155",
+      "lane": "D",
+      "batch": "D-S01",
+      "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+      "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L1",
+      "expected_old_fields": {
+        "status": "",
+        "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+        "Runtime test": "UNRUN"
+      },
+      "changed_fields": {
+        "status": "CLOSED_NO_CHANGE",
+        "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+        "Runtime test": "UNRUN"
+      },
+      "append_evidence": "[arbor-integrate dwfrun-9c0408e7-9f01-403a-955c-c265736634d5 NEXT:D14.device-pairing AT-0CE8E0AE8DE4]",
+      "source_anchors": [
+        "NEXT:D14.device-pairing",
+        "NEXT-D14.device-pairing.json",
+        "status,Review HEAD,Runtime test"
+      ],
+      "review_completed": "CLOSED_NO_CHANGE via P1",
+      "evidence_scope": "{\"workflow\":\"arbor-area-d\",\"runId\":\"dwfrun-6ea4c66a-f782-45a1-a1c0-479500a83dc7\",\"unit\":\"NEXT:D14.device-pairing\",\"evidence\":[\"status=CLOSED_NO_CHANGE (apps/mobile-relay/test/a02-verify-no-change.test.mjs,apps/mobile-relay/test/a08-paired-pwa-acceptance.test.mjs,apps/mobile-relay/test/bootstrap-actions-allowlist.test.mjs,apps/mobile-relay/test/bootstrap-f02.test.mjs,apps/mobile-relay/test/bootstrap-phone.test.mjs,apps/mobile-relay/test/browser-device-key.test.mjs,apps/mobile-relay/test/browser-enrollment-flow.test.mjs,apps/mobile-relay/test/build-composer.test.mjs,apps/mobile-relay/test/build-live-readback.test.mjs,apps/mobile-relay/test/build-vec-routing.test.mjs,apps/mobile-relay/test/build-vec-theme.test.mjs,apps/mobile-relay/test/chat-universal-controller.test.mjs,apps/mobile-relay/test/component-presentation.test.mjs,apps/mobile-relay/test/composer-assist.test.mjs,apps/mobile-relay/test/control-tab-navigation.test.mjs,apps/mobile-relay/test/design-composer.test.mjs,apps/mobile-relay/test/device-enrollment.test.mjs,apps/mobile-relay/test/generative-bootstrap.test.mjs,apps/mobile-relay/test/generative-browser-compat.test.mjs,apps/mobile-relay/test/generative-semantic.test.mjs,apps/mobile-relay/test/generative-ui.test.mjs,apps/mobile-relay/test/goal2-arbor-progress.test.mjs,apps/mobile-relay/test/host-build-consumer.test.mjs,apps/mobile-relay/test/host-preview-mode.test.mjs,apps/mobile-relay/test/host-revision-guard.test.mjs,apps/mobile-relay/test/host-static-allowlist-contract.test.mjs,apps/mobile-relay/test/local-dictation.test.mjs,apps/mobile-relay/test/mission-experience.test.mjs,apps/mobile-relay/test/mobile-orphan-exposure.test.mjs,apps/mobile-relay/test/native-pairing-boundary.test.mjs,apps/mobile-relay/test/pairing-link.test.mjs,apps/mobile-relay/test/product-semantic-parity.test.mjs,apps/mobile-relay/test/pwa-activation-readiness.test.mjs,apps/mobile-relay/test/pwa-asset-graph.test.mjs,apps/mobile-relay/test/pwa-local-notes.test.mjs,apps/mobile-relay/test/pwa-preflight-ui.test.mjs,apps/mobile-relay/test/pwa-voice-capture.test.mjs,apps/mobile-relay/test/redis-store.test.mjs,apps/mobile-relay/test/relay-core.test.mjs,apps/mobile-relay/test/service-worker.test.mjs,apps/mobile-relay/test/shell-inspection.test.mjs,apps/mobile-relay/test/shell-presentation.test.mjs,apps/mobile-relay/test/tierflow-build.test.mjs,apps/mobile-relay/test/transport.test.mjs,apps/mobile-relay/test/universal-control-chat.test.mjs,apps/mobile-relay/test/ux-surfaces.test.mjs,apps/mobile-relay/test/vec-ui-compiler.test.mjs,apps/mobile-relay/test/vec-ui-taxonomy.test.mjs,apps/mobile-relay/test/visual-bootstrap-startup.test.mjs,apps/mobile-relay/test/visual-theme.test.mjs,apps/mobile-relay/test/wiki-live-context.test.mjs,apps/mobile-relay/test/wiki-root-suites-node-runtime.test.mjs,apps/mobile-relay/test/wiki-source-view.test.mjs,apps/mobile-relay/test/workspace-live-data.test.mjs,apps/mobile-relay/test/workspace-template-wiring.test.mjs)\"]}"
+    }
+  ]
+}

@@ -21,7 +21,7 @@ pub enum HostJournalState { Planned, Approved, Uncertain, Applied, Failed }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ViewStatus { Candidate, Grounded, Ambiguous, Stale, Unavailable }
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct InertViewProjection { pub source: SourceRef, pub status: ViewStatus, pub actions: Vec<String> }
+pub struct InertViewProjection { pub schema: String, pub source: SourceRef, pub inert: bool, pub status: ViewStatus, pub actions: Vec<String> }
 #[cfg(test)]
 mod tests {
  use super::*;

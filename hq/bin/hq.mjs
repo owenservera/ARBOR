@@ -12,6 +12,7 @@ import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
 import { DatabaseSync } from 'node:sqlite';
 import { spawnSync } from 'node:child_process';
+// hqkg-import: used for KG sync (lane A swaps cargo for bundled binary)
 import { mkdtempSync } from 'node:fs';
 import {
   openDb,
@@ -1069,6 +1070,7 @@ async function cmdKg(positional, flags) {
   // kg-export.mjs. This CLI stays the development interface; a product surface
   // calls the same capability without a shell. Cargo runs only when
   // HQKG_IMPORT_MODE=cargo explicitly selects the development fallback.
+// Lane A: spawnSync('cargo') is swapped for bundled hqkg-import binary.
   const journal = resolve(String(flags.journal ?? join(root, '.hq', 'kg-journal.hqj')));
   const imp = kg.importGraphExchange({ root, journal, exchange: outPath, namespace: kg.SOURCE_NAMESPACE });
   if (!imp.ok) {
