@@ -1049,7 +1049,7 @@ async function cmdVerify(flags) {
 
 async function cmdKg(positional, flags) {
   const sub = positional.shift();
-  if (['sources','symbols','impact','program'].includes(sub)) {
+  if (['sources','symbols','impact','program','compute'].includes(sub)) {
     const root=findRoot();
     const kg=await import('../lib/kg-export.mjs');
     const key=positional.shift();
@@ -1066,8 +1066,8 @@ async function cmdKg(positional, flags) {
     return result.state==='unavailable'?1:0;
   }
   if (sub !== 'export' && sub !== 'sync') {
-    emit(flags, { schema: 'hq.kg/1', commands: ['export', 'sync','sources','symbols','impact','program'] },
-      'Usage: hq kg export [--out FILE] [--state FILE] [--no-state] | hq kg sync [--journal FILE] | hq kg sources|symbols|impact <key> | hq kg program <file> --epoch <epoch>');
+    emit(flags, { schema: 'hq.kg/1', commands: ['export', 'sync','sources','symbols','impact','program','compute'] },
+      'Usage: hq kg export [--out FILE] [--state FILE] [--no-state] | hq kg sync [--journal FILE] | hq kg sources|symbols|impact <key> | hq kg program <file> --epoch <epoch> | hq kg compute <source-file-id>');
     return sub === undefined ? 0 : 2;
   }
   const { root, config, db } = openWorkspace();

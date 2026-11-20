@@ -493,7 +493,7 @@ export function resolveGraphImporter(options = {}) {
 
 // Existing native binary discovery, fixed read-only operation and bounded stdio.
 export function queryDevelopmentGraph({root,journal,operation,key,depth,program,env=process.env}={}){
-  if(!['sources','symbols','impact','program'].includes(operation))throw Error('UNKNOWN_GRAPH_OPERATION');
+  if(!['sources','symbols','impact','program','compute'].includes(operation))throw Error('UNKNOWN_GRAPH_OPERATION');
   const native=resolveGraphBinary('hqkg-development','importer,native-program',{root,env});
   if(!native.available) return {schema:'hqkg.development-query/1',state:'unavailable',reason:native.reason};
   const args=[...native.args,journal,operation,String(key)];

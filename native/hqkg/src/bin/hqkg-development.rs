@@ -5,9 +5,10 @@
 //! No graph mutations, personal data, provider calls or Host effect grants.
 use hqkg::{Error,Graph,Journal,Result};
 use hqkg::semantic_source;
-use hqkg::engine::{Budget,CancellationToken,EngineRegistry,install_pure_engine};
+use hqkg::engine::{Budget,CancellationToken,EngineRegistry};
+use hqkg::development_engine::install_development_engine;
 use hqkg::typed_dag::{GraphDomain,Namespace,RevisionToken,IncrementalCache,RunState};
-use vivim_programmability_core::{DataClass,PolicyLimits,Risk,wire};
+use vivim_programmability_core::{DataClass,PolicyLimits,Risk,Program,SourceRef,TransformStep,TransformKind,wire};
 use serde_json::{json,Value};
 use std::{fs,io::{self,Read},path::Path};
 const SCHEMA:&str="hqkg.development-query/1";
@@ -45,30 +46,77 @@ fn query(graph:&Graph,operation:&str,key:&str,extra:Option<&str>)->Result<Value>
     Ok(json!({"schema":SCHEMA,"state":"indexed-snapshot","authority":"read-only",
         "operation":operation,"epoch":graph.epoch(),"key":key,"result":rows}))
 }
+fn fixed_policy()->PolicyLimits{
+    PolicyLimits{id:"development-preview".into(),revision:1,max_risk:Risk::R0,
+        max_input_class:DataClass::Internal,max_output_class:DataClass::Internal,
+        allowed_destinations:Default::default(),allow_effect_candidates:false}
+}
+fn compute_program(graph:&Graph,epoch:u64,program:&Program,operation:&str)->Result<Value>{
+    let expected=RevisionToken{namespace:Namespace{domain:GraphDomain::Development,owner:"local-hq".into()},graph_epoch:epoch};
+    let registry=EngineRegistry::new();
+    // Use the source-backed graph engine, not the former fingerprint-only engine.
+    install_development_engine(&registry,graph.clone())?;
+    let mut cache=IncrementalCache::new();
+    let report=hqkg::native_program::run_indexed_program(graph,&expected,program,&fixed_policy(),
+        &registry,&mut cache,Budget::default(),&CancellationToken::new())?;
+    if report.state!=RunState::Complete{
+        return Err(Error::Conflict(format!("development computation incomplete: {:?}",report.state)))
+    }
+    let mut outputs=Vec::new();
+    for out in report.outputs{
+        let value:Value=serde_json::from_str(&out.data)
+            .map_err(|_|Error::Corrupt("native graph engine returned invalid structured output".into()))?;
+        if value["schema"]!="hqkg.development-transform/1"||value["authority"]!="none"{
+            return Err(Error::Corrupt("native graph transform contract mismatch".into()))
+        }
+        outputs.push(json!({"stepId":out.step_id,"generation":out.generation,
+            "state":format!("{:?}",out.state).to_lowercase(),"result":value}));
+    }
+    Ok(json!({"schema":SCHEMA,"state":"computed","authority":"read-only",
+        "operation":operation,"computation":"source-backed-graph","epoch":graph.epoch(),
+        "programId":program.id,"programRevision":program.revision,
+        "outputs":outputs,"executionAuthorized":false,"effectPerformed":false}))
+}
 fn execute_program(graph:&Graph,epoch:u64)->Result<Value>{
     let mut input=String::new();
     io::stdin().lock().take(65_537).read_to_string(&mut input)?;
     let (program,_caller_policy)=wire::decode_json(&input).map_err(|e|Error::Invalid(e.into()))?;
-    let policy=PolicyLimits{id:"development-preview".into(),revision:1,max_risk:Risk::R0,
-        max_input_class:DataClass::Internal,max_output_class:DataClass::Internal,
-        allowed_destinations:Default::default(),allow_effect_candidates:false};
-    let expected=RevisionToken{namespace:Namespace{domain:GraphDomain::Development,owner:"local-hq".into()},graph_epoch:epoch};
-    let registry=EngineRegistry::new();
-    install_pure_engine(&registry,"builtin-development-metadata",None)?;
-    let mut cache=IncrementalCache::new();
-    let report=hqkg::native_program::run_indexed_program(graph,&expected,&program,&policy,
-        &registry,&mut cache,Budget::default(),&CancellationToken::new())?;
-    if report.state!=RunState::Complete{return Err(Error::Conflict("native program did not complete".into()))}
-    Ok(json!({"schema":SCHEMA,"state":"computed","authority":"read-only",
-        "operation":"program","computation":"metadata-fingerprint","epoch":graph.epoch(),
-        "programId":program.id,"programRevision":program.revision,
-        "outputs":report.outputs.into_iter().map(|o|json!({"stepId":o.step_id,"generation":o.generation,"result":o.data})).collect::<Vec<_>>(),
-        "executionAuthorized":false,"effectPerformed":false}))
+    compute_program(graph,epoch,&program,"program")
+}
+/// One real source-file identity, directly from the imported development graph.
+/// No fabricated documents or caller-controlled source digest or policy.
+fn compute_source(graph:&Graph,id:&str)->Result<Value>{
+    let node=graph.node(id).ok_or_else(||Error::Missing("indexed source file not found".into()))?;
+    if node.kind.as_str()!="source-file"||
+        node.properties.get("hqkg.exchange.source").map(String::as_str)!=Some("repos-hq.index"){
+        return Err(Error::Invalid("not an imported development source file".into()))
+    }
+    let digest=node.properties.get("content_sha256")
+        .ok_or_else(||Error::Corrupt("indexed source digest absent".into()))?;
+    let source=SourceRef{source_id:node.id.clone(),revision:node.version,digest:digest.clone(),
+        data_class:DataClass::Internal};
+    let steps=[
+        ("source",TransformKind::SelectContext,vec![]),
+        ("semantics",TransformKind::Interpret,vec!["source".into()]),
+        ("impact",TransformKind::Evaluate,vec!["source".into()]),
+        ("view",TransformKind::Project,vec!["semantics".into(),"impact".into()])
+    ].into_iter().map(|(id,kind,dependencies)|TransformStep{
+        id:id.into(),kind,dependencies,inputs:vec![source.clone()],
+        output_data_class:DataClass::Internal,risk:Risk::R0,destination:None
+    }).collect();
+    let program=Program{id:format!("dev.{}",node.id),revision:node.version,
+        policy_id:"development-preview".into(),policy_revision:1,steps};
+    compute_program(graph,graph.epoch(),&program,"compute")
 }
 fn run()->Result<Value>{
     let args=std::env::args().skip(1).collect::<Vec<_>>();
-    if args.len()<3||args.len()>4{return Err(Error::Invalid("usage: hqkg-development <absolute-journal> sources|symbols|impact <key> [depth] | program <epoch>".into()))}
+    if args.len()<3||args.len()>4{return Err(Error::Invalid("usage: hqkg-development <absolute-journal> sources|symbols|impact <key> [depth] | program <epoch> | compute <source-file-id>".into()))}
     let graph=open(Path::new(&args[0]))?;
+    graph.check_indexes()?;
+    if args[1]=="compute"{
+        if args.len()!=3{return Err(Error::Invalid("compute requires one exact source-file ID".into()))}
+        return compute_source(&graph,&args[2])
+    }
     if args[1]=="program"{
         if args.len()!=3{return Err(Error::Invalid("program requires exact graph epoch".into()))}
         return execute_program(&graph,args[2].parse().map_err(|_|Error::Invalid("invalid graph epoch".into()))?)
