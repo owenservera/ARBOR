@@ -2,7 +2,7 @@
 // A share is NOT a public web endpoint: Direct/Tailscale and a live device grant
 // are required by the caller before this module is reached.
 import path from 'node:path';
-import { mkdir, open, readFile, readdir, rename, rm, stat, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, readdir, rename, rm, stat, writeFile } from 'node:fs/promises';
 import { createWriteStream } from 'node:fs';
 import { pipeline } from 'node:stream/promises';
 import { Transform } from 'node:stream';
@@ -119,7 +119,8 @@ export function createPrivateShares({ dataRoot }) {
       if (Date.parse(row.expiresAt) <= Date.now()) throw err(410, 'SHARE_EXPIRED');
       if (String(request.headers['content-type'] || '').split(';')[0].trim() !== 'application/octet-stream')
         throw err(415, 'SHARE_BINARY_REQUIRED');
-      if (Number(request.headers['content-length']) !== row.bytes) throw err(400, 'SHARE_LENGTH_MISMATCH');
+      if (request.headers['content-length'] != null && Number(request.headers['content-length']) !== row.bytes)
+        throw err(400, 'SHARE_LENGTH_MISMATCH');
       const temporary = path.join(root, id + '.' + randomBytes(8).toString('hex') + '.upload');
       let count = 0;
       const digest = createHash('sha256');
