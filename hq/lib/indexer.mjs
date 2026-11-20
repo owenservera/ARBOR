@@ -168,7 +168,7 @@ function prepareStatements(db) {
        VALUES (?,?,?,?,?,?,?)`,
     ),
     projectImports: db.prepare(
-      `SELECT i.id, i.specifier, f.path AS file_path
+      `SELECT i.id, i.specifier, i.kind AS import_kind, f.path AS file_path, f.lang AS importer_lang
        FROM imports i JOIN files f ON f.id = i.file_id
        WHERE i.project_id = ?`,
     ),
@@ -271,16 +271,93 @@ function buildProjectNameIndex(db) {
   return map;
 }
 
+// Rust module resolution uses exact, already-indexed files. Never guess a
+// dependency from a crate/package string or add an edge outside this index.
+function resolveRustLocal({importerPath,specifier,kind,index}){
+  const miss={file_id:null,project_id:null,kind:'external'};
+  if(!importerPath.endsWith('.rs')||!['use','mod'].includes(kind))return miss;
+  const path=toPosix(importerPath);
+  // A bin under src/bin is a distinct crate, not a module of src/lib.rs.
+  const bin=/(^|\\/)src\\/bin\\/.test(path);
+  let rootDir=null,rootFile=null,dir=posix.dirname(path);
+  while(dir&&dir!=='.'){
+    for(const name of ['lib.rs','main.rs']){
+      const candidate=posix.join(dir,name);
+      if(index.has(candidate)){rootDir=dir;rootFile=candidate;break}
+    }
+    if(rootDir)break;
+    const parent=posix.dirname(dir);if(parent===dir)break;dir=parent;
+  }
+  if(!rootDir)return miss;
+  const rel=posix.relative(rootDir,path);
+  if(rel.startsWith('../')||rel==='..')return miss;
+  let components=rel.split('/');
+  const file=components.pop();
+  if(file!=='lib.rs'&&file!=='main.rs'&&file!=='mod.rs')components.push(file.slice(0,-3));
+  // For a bin crate, local mod declarations are bin-relative, and crate::
+  // means the bin itself; never silently bind it to library exports.
+  if(bin){
+    if(kind==='use'&&specifier.trim().startsWith('crate::'))return miss;
+    const binParts=rel.split('/');binParts.pop();
+    components=binParts;
+    if(file!=='main.rs'&&file!=='mod.rs')components.push(file.slice(0,-3));
+  }
+  let parts;
+  if(kind==='mod'){
+    if(!/^[A-Za-z_]\\w*$/.test(specifier))return miss;
+    parts=[...components,specifier];
+  }else{
+    const tokens=String(specifier).trim().split('::');
+    const first=tokens.shift();
+    if(first==='crate'){
+      if(bin)return miss;parts=[];
+    }else if(first==='self'){
+      parts=[...components];
+    }else if(first==='super'){
+      parts=[...components];
+      if(!parts.length)return miss;
+      parts.pop();
+      while(tokens[0]==='super'){
+        if(!parts.length)return miss;
+        parts.pop();tokens.shift();
+      }
+    }else return miss;
+    for(const token of tokens){
+      if(!/^[A-Za-z_]\\w*$/.test(token))break;
+      parts.push(token);
+    }
+    // crate::{Error,Graph} names exactly the library root, not a module.
+    if(!parts.length&&first==='crate'&&rootFile&&index.has(rootFile)){
+      return {file_id:index.get(rootFile),project_id:null,kind:'file'};
+    }
+  }
+  // Prefer the deepest concrete module actually present. This handles both
+  // src/module.rs and src/module/mod.rs and paths to re-exported symbols.
+  for(let length=parts.length;length>=1;length--){
+    const base=posix.join(rootDir,...parts.slice(0,length));
+    for(const candidate of [base+'.rs',posix.join(base,'mod.rs')]){
+      if(candidate!==path&&index.has(candidate)){
+        return {file_id:index.get(candidate),project_id:null,kind:'file'};
+      }
+    }
+  }
+  return miss;
+}
+
 /**
  * resolveImport — resolve one specifier to a file and/or project.
  * @returns {{file_id: number|null, project_id: number|null, kind: 'file'|'project'|'external'}}
  */
-export function resolveImport({ db, projectId = null, file = null, specifier = '', fileIndex = null, projectNames = null } = {}) {
+export function resolveImport({ db, projectId = null, file = null, specifier = '', fileIndex = null, projectNames = null, importerLang = null, importKind = null } = {}) {
   const miss = { file_id: null, project_id: null, kind: 'external' };
   const spec = String(specifier ?? '').trim();
   if (!spec) return miss;
   const importerPath = typeof file === 'string' ? file : (file?.path ? String(file.path) : '');
   const index = normalizeFileIndex(fileIndex);
+
+  if(importerLang==='rust'&&['use','mod'].includes(importKind)){
+    return resolveRustLocal({importerPath,specifier:spec,kind:importKind,index});
+  }
 
   if (isRelativeSpecifier(spec)) {
     const target = resolveRelativeTarget(importerPath, spec);
@@ -544,6 +621,8 @@ export function indexProject({ root, db, project, options = {} }) {
         projectId: projectRow.id,
         file: { path: imp.file_path },
         specifier: imp.specifier,
+        importerLang: imp.importer_lang,
+        importKind: imp.import_kind,
         fileIndex,
         projectNames,
       });

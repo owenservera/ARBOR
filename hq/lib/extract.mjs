@@ -1241,7 +1241,7 @@ export function extractImports(lang, text) {
         continue;
       }
       m = /^\s*(?:pub\s+)?mod\s+([A-Za-z_]\w*)\s*;/.exec(t);
-      if (m) out.push({ specifier: m[1], kind: 'use', line: i + 1 });
+      if (m) out.push({ specifier: m[1], kind: 'mod', line: i + 1 });
     }
     return finalizeImports(out);
   }
