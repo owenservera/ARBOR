@@ -15,12 +15,15 @@ const HOST_STATUS_SCHEMA: &str = "vivim.host-status/1";
 /// Native binaries the frozen packaging contract may stage
 /// (tools/packaging/prepare-host-runtime.mjs PACKAGED_BINARIES). The native shell
 /// reports which of these the installed runtime actually ships.
-const APPROVED_BINARIES: [&str; 6] = [
+const APPROVED_BINARIES: [&str; 9] = [
     "hqkg-personal",
     "hqkg-chat-context",
     "hqkg-web-feed",
     "hqkg-import",
+    "hqkg-development",
     "vivim-program-validate",
+    "vivim-vec-project",
+    "vivim-product-pure",
     "vivim-private-shares",
 ];
 
