@@ -23,9 +23,10 @@ import { mountVoiceCapture } from './ux/voice-capture.mjs';
 // @hq:consumes vivim.rust-wiki-source-search@1
 // @hq:consumes vivim.rust-wiki-source-transition@1
 // @hq:consumes vivim.rust-wiki-source-delta@1
+// @hq:consumes vivim.rust-control-receipt-presentation@1
 // The browser keeps its current Wiki UI; Rust supplies optional source identity
 // from the same local WASM kernel used for VEC and other pure operations.
-let rustWikiSourceStamp=null,rustWikiSearch=null,rustWikiSourceTransition=null,rustWikiSourceDelta=null;
+let rustWikiSourceStamp=null,rustWikiSearch=null,rustWikiSourceTransition=null,rustWikiSourceDelta=null,rustControlReceiptPreview=null;
 let wikiSourceFence=null; // session-keyed and memory-only; a read never becomes a grant
 if(typeof window!=='undefined'){
   void import('./vec-engines/rust-wasm.mjs')
@@ -34,6 +35,7 @@ if(typeof window!=='undefined'){
       rustWikiSearch=module.rustWikiSearch;
       rustWikiSourceTransition=module.rustWikiSourceTransition;
       rustWikiSourceDelta=module.rustWikiSourceDelta;
+      rustControlReceiptPreview=module.rustControlReceiptPreview;
       return module.initializeRustUiEngine();
     }).catch(()=>{});
 }
@@ -119,6 +121,7 @@ let chatHasApproval = false;
 const vivimChat = createControlChat({
   host: $('msgs'), transport,
   getSurface: () => S.tab,
+  receiptPresentation:(plan,receipt)=>rustControlReceiptPreview?.(plan,receipt),
   onChange: () => {
     chatHasApproval = vivimChat.hasPendingApproval();
     updateSend();

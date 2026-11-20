@@ -33,6 +33,8 @@ pub fn dispatch(request:&Value)->Value{
         "wiki-source-delta"=>crate::wiki_read::source_delta(input),
         "development-projection"=>crate::development_projection::project(input),
         "control-plan-preview"=>crate::control_plan_presentation::project(input),
+        "control-receipt-preview"=>crate::control_plan_presentation::receipt_project(input),
+        "control-inspection-preview"=>crate::control_plan_presentation::inspection_project(input),
         _=>return refuse(op,"UNKNOWN_NATIVE_OPERATION"),
     };
     json!({"schema":RESPONSE_SCHEMA,"state":"computed","operation":op,

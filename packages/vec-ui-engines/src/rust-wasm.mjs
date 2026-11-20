@@ -4,6 +4,7 @@
 // @hq:consumes vivim.rust-wiki-source-search@1
 // @hq:consumes vivim.rust-wiki-source-transition@1
 // @hq:consumes vivim.rust-wiki-source-delta@1
+// @hq:consumes vivim.rust-control-receipt-presentation@1
 // No interpreted source, dynamic code, Host grants or effect APIs.
 const SCHEMA='vivim.product-pure-response/1';
 const WASM_URL='/mobile/wasm/vivim_programmability_core.wasm';
@@ -159,5 +160,21 @@ export function rustWikiSourceDelta(previous,current){
       (event.section!==undefined&&(typeof event.section!=='string'||event.section.length>160))))
     return undefined;
   return value;
+}
+// UI-only exact Host receipt binding. Host authorization is unchanged.
+export function rustControlReceiptPreview(plan,receipt){
+  if(typeof plan?.planId!=='string'||typeof plan?.planDigest!=='string'||
+     typeof plan?.actionId!=='string')return undefined;
+  const value=invoke('control-receipt-preview',{
+    receipt,binding:{planId:plan.planId,planDigest:plan.planDigest,
+      actionId:plan.actionId,source:'mobile'}
+  });
+  if(!value||value.schema!=='vivim.control-receipt-presentation/1'||
+    value.outcome!=='computed'||value.authority!=='none'||
+    value.executionAuthorized!==false||value.effectPerformed!==false||
+    !['applied','failed','uncertain'].includes(value.status)||
+    value.status!==receipt?.status||typeof value.text!=='string')
+    return undefined;
+  return {status:value.status,readOnly:true};
 }
 export function nativeBrowserKernelReady(){return instance!==null;}

@@ -33,7 +33,7 @@ export function examplesForSurface(surface) {
 export function createControlChat({
   host, transport, fetchImpl, onChange = () => {},
   onNavigate = null, onOpenPocket = null, onOpenShares = null, getSurface = null,
-  classifyBuild = null, onBuildDraft = null
+  classifyBuild = null, onBuildDraft = null, receiptPresentation = null
 } = {}) {
   if (!host || typeof host.replaceChildren !== 'function')
     throw new TypeError('Chat transcript root required');
@@ -256,6 +256,9 @@ export function createControlChat({
     try {
       const receipt = await client.execute(plan);
       reply.receipt = receipt;
+      // Optional Rust-only source presentation; no effect or extra grant.
+      reply.receiptPresentation=typeof receiptPresentation==='function'
+        ?receiptPresentation(plan,receipt):null;
       notifyWikiCommitted(receipt);
       reply.status = receipt?.status === 'applied' ? 'done' :
         receipt?.status === 'uncertain' ? 'uncertain' : 'error';
@@ -339,6 +342,8 @@ export function createControlChat({
     const receipt = msg.receipt;
     const card = elem('div', 'vivim-receipt');
     if (receipt.replayed) card.append(elem('p', 'ux-meta', 'This receipt was already applied; nothing ran twice.'));
+    if(msg.receiptPresentation?.readOnly&&msg.receiptPresentation.status===receipt.status)
+      card.append(elem('p','ux-meta','Rust-confirmed receipt binding · read only · '+receipt.status));
     if (receipt.result !== undefined) card.append(elem('pre', 'ux-note', describe(receipt.result)));
     if (receipt.status === 'applied' && ['wiki.section.edit','wiki.page.create','wiki.page.move','wiki.pages.link','wiki.capture.save','program.write_wiki'].includes(receipt.actionId) &&
         typeof onNavigate === 'function') {

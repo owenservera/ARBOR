@@ -2,6 +2,8 @@
 //! @hq:consumes vivim.control-plan@1
 //! @hq:consumes vivim.control-receipt@1
 //! @hq:consumes vivim.rust-control-plan-presentation@1
+//! @hq:consumes vivim.rust-control-receipt-presentation@1
+//! @hq:consumes vivim.rust-control-inspection-presentation@1
 //! Native client for the existing Host control contract. Planning is not approval.
 use super::{BASE, LIMIT, Endpoint, ReadError, get, owner_token, validate_health};
 use reqwest::blocking::Client;
@@ -105,17 +107,11 @@ pub struct Receipt {
     pub detail: String,
 }
 fn parse_receipt(p: Value, key: &PlanKey) -> Result<Receipt, ReadError> {
-    if p["schema"] != "vivim.control-receipt/1" || p["planId"].as_str()!=Some(key.id.as_str())
-        || p["planDigest"].as_str()!=Some(key.digest.as_str())
-        || p["actionId"].as_str()!=Some(key.action.as_str()) || p["source"]!="desktop" {
-        return Err(ReadError::InvalidProjection);
-    }
-    let status=p["status"].as_str().filter(|s| matches!(*s,"applied"|"failed"|"uncertain"))
+    let binding=json!({"planId":key.id,"planDigest":key.digest,
+        "actionId":key.action,"source":"desktop"});
+    let (status,detail)=control_plan_presentation::format_receipt(&p,&binding)
         .ok_or(ReadError::InvalidProjection)?;
-    if p["executionPerformed"].as_bool()!=Some(status=="applied") {
-        return Err(ReadError::InvalidProjection);
-    }
-    Ok(Receipt{status:status.into(),detail:serde_json::to_string_pretty(&p).map_err(|_|ReadError::InvalidProjection)?})
+    Ok(Receipt{status,detail})
 }
 // Transport or response errors after a click are treated as uncertain by the UI.
 // No automatic replay or fallback to a different execution route.
@@ -125,10 +121,8 @@ pub fn execute(key: PlanKey) -> Result<Receipt, ReadError> {
 pub fn inspect(id: &str) -> Result<String, ReadError> {
     if !valid_id(id) { return Err(ReadError::InvalidInput); }
     let p=request(&format!("plans/{id}"),None)?;
-    if p["planId"].as_str()!=Some(id) || !matches!(p["state"].as_str(),Some("planned"|"approved"|"applied"|"failed"|"uncertain")) {
-        return Err(ReadError::InvalidProjection);
-    }
-    serde_json::to_string_pretty(&p).map_err(|_|ReadError::InvalidProjection)
+    control_plan_presentation::format_inspection(&p,id)
+        .ok_or(ReadError::InvalidProjection)
 }
 
 #[cfg(test)]

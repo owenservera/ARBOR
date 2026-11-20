@@ -66,3 +66,78 @@ pub fn project(input:&Value)->Value{
         })
     }
 }
+
+
+// Exact receipt and inspection presentation, independent of GPUI and browser.
+// @hq:capability vivim.rust-control-receipt-presentation@1
+// @hq:capability vivim.rust-control-inspection-presentation@1
+// @hq:consumes vivim.control-receipt@1
+// A Host-supplied receipt is evidence, never a new approval or replay token.
+pub fn format_receipt(receipt:&Value,binding:&Value)->Option<(String,String)>{
+    let id=required(binding,"planId").filter(|id|plan_id(id))?;
+    let digest=required(binding,"planDigest").filter(|value|exact_digest(value))?;
+    let action=required(binding,"actionId")?;
+    let source=required(binding,"source").filter(|value|
+        matches!(*value,"desktop"|"mobile"))?;
+    if receipt["schema"]!="vivim.control-receipt/1"||
+        receipt["planId"]!=id||receipt["planDigest"]!=digest||
+        receipt["actionId"]!=action||receipt["source"]!=source{return None}
+    let status=required(receipt,"status").filter(|value|
+        matches!(*value,"applied"|"failed"|"uncertain"))?;
+    if receipt["executionPerformed"].as_bool()!=Some(status=="applied"){return None}
+    let lines=vec![
+        "VIVIM · canonical Host receipt".to_owned(),
+        format!("Status: {status}"),
+        format!("Action: {action}"),
+        format!("Plan: {id}"),
+        format!("Exact plan digest: {digest}"),
+        format!("Source: {source}"),
+        "This is a read-only observation; it cannot authorize or replay the action.".into(),
+        String::new(),
+        "COMPLETE HOST RECEIPT (UNMODIFIED VALUES)".into(),
+        serde_json::to_string_pretty(receipt).ok()?,
+    ];
+    Some((status.to_owned(),lines.join("\n")))
+}
+pub fn receipt_project(input:&Value)->Value{
+    match format_receipt(&input["receipt"],&input["binding"]){
+        Some((status,text))=>json!({
+            "schema":"vivim.control-receipt-presentation/1",
+            "outcome":"computed","status":status,"text":text,
+            "authority":"none","executionAuthorized":false,"effectPerformed":false
+        }),
+        None=>json!({
+            "schema":"vivim.control-receipt-presentation/1",
+            "outcome":"refused","code":"INVALID_CONTROL_RECEIPT",
+            "authority":"none","executionAuthorized":false,"effectPerformed":false
+        })
+    }
+}
+pub fn format_inspection(record:&Value,expected_id:&str)->Option<String>{
+    if !plan_id(expected_id)||record["planId"]!=expected_id{return None}
+    let state=required(record,"state").filter(|value|
+        matches!(*value,"planned"|"approved"|"applied"|"failed"|"uncertain"))?;
+    Some([
+        "VIVIM · Host plan status (read only)".to_owned(),
+        format!("Plan: {expected_id}"),
+        format!("State: {state}"),
+        "Reading a plan is not an execution or approval.".into(),
+        String::new(),
+        serde_json::to_string_pretty(record).ok()?,
+    ].join("\n"))
+}
+pub fn inspection_project(input:&Value)->Value{
+    let result=input["planId"].as_str().and_then(|id|
+        format_inspection(&input["record"],id));
+    match result {
+        Some(text)=>json!({
+            "schema":"vivim.control-inspection-presentation/1","outcome":"computed",
+            "text":text,"authority":"none","executionAuthorized":false,"effectPerformed":false
+        }),
+        None=>json!({
+            "schema":"vivim.control-inspection-presentation/1","outcome":"refused",
+            "code":"INVALID_CONTROL_INSPECTION","authority":"none",
+            "executionAuthorized":false,"effectPerformed":false
+        })
+    }
+}
