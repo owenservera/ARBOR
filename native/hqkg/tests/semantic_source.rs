@@ -49,3 +49,30 @@ fn fixture()->Exchange{
     assert_eq!(rows.len(),1);assert_eq!(rows[0].occurrence_count,2);assert_eq!(rows[0].state,"ambiguous");
     assert!(hqkg::semantic_source::symbols(&g,"missing").unwrap().is_empty());
 }
+
+#[cfg(feature="native-program")]
+#[test]fn actual_core_validator_binds_current_graph_and_runs_existing_dag(){
+    use hqkg::engine::{install_pure_engine,Budget,CancellationToken,EngineRegistry};
+    use hqkg::typed_dag::{GraphDomain,Namespace,RevisionToken,IncrementalCache,OutputState,RunState};
+    use vivim_programmability_core::{Program,PolicyLimits,TransformStep,SourceRef,TransformKind,DataClass,Risk};
+    let mut g=Graph::new();fixture().apply(&mut g).unwrap();
+    let f=g.node("f").unwrap();
+    let mut program=Program{id:"graph-preview".into(),revision:1,policy_id:"development-preview".into(),policy_revision:1,steps:vec![
+        TransformStep{id:"project".into(),kind:TransformKind::Project,dependencies:vec!["read".into()],inputs:vec![],output_data_class:DataClass::Internal,risk:Risk::R0,destination:None},
+        TransformStep{id:"read".into(),kind:TransformKind::SelectContext,dependencies:vec![],inputs:vec![SourceRef{source_id:f.id.clone(),revision:f.version,digest:f.properties["content_sha256"].clone(),data_class:DataClass::Internal}],output_data_class:DataClass::Internal,risk:Risk::R0,destination:None}
+    ]};
+    let policy=PolicyLimits{id:"development-preview".into(),revision:1,max_risk:Risk::R0,max_input_class:DataClass::Internal,max_output_class:DataClass::Internal,allowed_destinations:Default::default(),allow_effect_candidates:false};
+    let expected=RevisionToken{namespace:Namespace{domain:GraphDomain::Development,owner:"owner".into()},graph_epoch:g.epoch()};
+    let reg=EngineRegistry::new();install_pure_engine(&reg,"graph-preview-pure",None).unwrap();
+    let mut cache=IncrementalCache::new();let cancel=CancellationToken::new();
+    let first=hqkg::native_program::run_indexed_program(&g,&expected,&program,&policy,&reg,&mut cache,Budget::default(),&cancel).unwrap();
+    assert_eq!(first.state,RunState::Complete);assert!(!first.effect_authorized);
+    assert_eq!(first.outputs.iter().map(|o|o.step_id.as_str()).collect::<Vec<_>>(),vec!["read","project"]);
+    let second=hqkg::native_program::run_indexed_program(&g,&expected,&program,&policy,&reg,&mut cache,Budget::default(),&cancel).unwrap();
+    assert!(second.outputs.iter().all(|o|o.state==OutputState::Reused));
+    program.steps[1].inputs[0].digest="b".repeat(64);
+    assert!(hqkg::native_program::bind_indexed_program(&g,&expected,&program,&policy).is_err());
+    program.steps[1].inputs[0].digest="a".repeat(64);
+    g.put_node(Node::new("other",NodeKind::Fact,"Other")).unwrap();
+    assert!(hqkg::native_program::bind_indexed_program(&g,&expected,&program,&policy).is_err());
+}

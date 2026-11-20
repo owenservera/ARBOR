@@ -54,12 +54,14 @@ required-features = ["importer"]
 
 [features]
 default = []
+native-program = ["dep:vivim-programmability-core"]
 importer = ["dep:serde_json", "dep:sha2"]
 sqlite = ["dep:rusqlite"]
 postgres = ["dep:postgres"]
 databases = ["sqlite", "postgres"]
 
 [dependencies]
+vivim-programmability-core = { path = "../../core/programmability", optional = true }
 rusqlite = { version = "0.32", optional = true, features = ["bundled"] }
 postgres = { version = "0.19", optional = true }
 serde_json = { version = "1.0", optional = true }

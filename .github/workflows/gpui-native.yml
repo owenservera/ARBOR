@@ -31,7 +31,7 @@ jobs:
       - name: Shared Rust validation tests
         run: cargo test -p vivim-programmability-core
       - name: Semantic graph query and importer contracts
-        run: cargo test -p hq-knowledge-graph --features importer --test semantic_source --test import
+        run: cargo test -p hq-knowledge-graph --features importer,native-program --test semantic_source --test import --test validated_pure_program
       - name: Native contract tests
         run: cargo test --manifest-path native/gpui-desktop/Cargo.toml --lib
       - name: Compile native desktop
