@@ -7,6 +7,7 @@
 //! @hq:consumes hqkg.development-query@1
 use std::time::Duration;
 use vivim_programmability_core::visual::visual_delta;
+use vivim_programmability_core::wiki_read::RevisionGuard as WikiRevisionGuard;
 use vivim_programmability_core::vec::{self, View as VecView, Element as VecElement};
 use gpui::{AnyElement, App, Application, Bounds, Context, Entity, Window, WindowBounds, WindowOptions, div, prelude::*, px, relative, rgb, size};
 use gpui_component::{Root, input::{Input, InputState}, button::{Button, ButtonVariants}};
@@ -20,6 +21,7 @@ struct Desktop {
     vec_view: Option<VecView>,
     visual_status: String,
     visual_guard: RevisionGuard,
+    wiki_guard: WikiRevisionGuard;
     detail: String,
     graph_detail: String,
     graph_status: String,
@@ -57,7 +59,14 @@ impl Desktop {
                 view.busy = false;
                 let (overview, visual) = result;
                 match overview {
-                    Ok(data) => { if view.overview.as_ref()!=Some(&data){view.overview=Some(data);} }
+                    Ok(data) => {
+                        if view.wiki_guard.accept(data.wiki_revision, &data.wiki_digest).is_err() {
+                            view.visual_status="Wiki revision or source-content conflict".into();
+                            view.overview=None;view.review=None;view.visual=None;view.vec_view=None;
+                            cx.notify();return;
+                        }
+                        if view.overview.as_ref()!=Some(&data){view.overview=Some(data);}
+                    }
                     Err(error) => { view.visual_status=error.label().into(); view.overview = None; view.review = None; view.visual=None; view.vec_view=None; cx.notify(); return; }
                 }
                 match visual.and_then(|v| view.visual_guard.accept(v).map_err(Into::into)) {
@@ -264,7 +273,37 @@ impl Render for Desktop {
             body = body.child(format!("Host observed: {}", data.observed_at))
                 .child(format!("Active devices: {}", data.active_devices))
                 .child(div().text_lg().child(format!("Wiki · revision {}", data.wiki_revision)));
-            for page in &data.wiki_pages { body = body.child(div().p_1().child(page.clone())); }
+            body=body.child(div().text_sm().child(format!(
+                "{} source-backed Wiki pages · {} displayed",data.wiki_page_total,data.wiki_content.len()
+            )));
+            for page in &data.wiki_content {
+                let mut page_view=div().flex().flex_col().gap_2().p_3()
+                    .bg(rgb(0x202b3a))
+                    .child(div().text_lg().child(page.name.clone()));
+                if !page.links.is_empty() {
+                    page_view=page_view.child(div().text_sm()
+                        .child(format!("Links to: {}",page.links.join(", "))));
+                }
+                for section in &page.sections {
+                    let text=if section.truncated {
+                        format!("{}… [additional source text not displayed]",section.text)
+                    }else{section.text.clone()};
+                    page_view=page_view.child(div().p_2().flex().flex_col().gap_1()
+                        .child(div().font_semibold().child(section.title.clone()))
+                        .child(div().child(text)));
+                }
+                if page.sections_total>page.sections.len(){
+                    page_view=page_view.child(format!(
+                        "{} additional sections not displayed",page.sections_total-page.sections.len()
+                    ));
+                }
+                body=body.child(page_view);
+            }
+            if data.wiki_page_total>data.wiki_content.len(){
+                body=body.child(format!(
+                    "{} additional Wiki pages not displayed",data.wiki_page_total-data.wiki_content.len()
+                ));
+            }
             body = body.child(div().text_lg().child("Recent Host decisions"));
             for row in &data.recent { body = body.child(div().p_1().child(row.clone())); }
         }
@@ -317,7 +356,7 @@ fn main() {
             |window, cx| {
                 let input=cx.new(|cx| InputState::new(window,cx).placeholder("Ask VIVIM or describe a Host command"));
                 let view=cx.new(|cx| {
-                    let mut view=Desktop {input,status:"Not yet observed".into(),overview:None,visual:None,vec_view:None,visual_status:"Not yet observed".into(),visual_guard:RevisionGuard::default(),detail:String::new(),
+                    let mut view=Desktop {input,status:"Not yet observed".into(),overview:None,visual:None,vec_view:None,visual_status:"Not yet observed".into(),visual_guard:RevisionGuard::default(),wiki_guard:WikiRevisionGuard::default(),detail:String::new(),
                         review:None,last_plan:None,busy:false,uncertain:false,
                         graph_detail:String::new(),graph_status:"Graph not yet queried".into(),graph_busy:false};
                     view.refresh(cx);view.start_observer(cx);view

@@ -5,6 +5,7 @@ pub mod control;
 pub mod visual;
 use reqwest::blocking::Client;
 use serde_json::Value;
+use vivim_programmability_core::wiki_read::{self, Page as WikiPage};
 use std::{path::{Path, PathBuf}, time::Duration, io::Read};
 
 const BASE: &str = "http://127.0.0.1:43187";
@@ -17,6 +18,9 @@ pub struct Overview {
     pub active_devices: u64,
     pub wiki_revision: u64,
     pub wiki_pages: Vec<String>,
+    pub wiki_content: Vec<WikiPage>,
+    pub wiki_digest: String,
+    pub wiki_page_total: usize,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -64,10 +68,13 @@ pub fn project(pwa: &Value, wiki: &Value) -> Result<Overview, ReadError> {
             let state = r["state"].as_str().ok_or(ReadError::InvalidProjection)?;
             Ok(format!("{} · {}", bounded_text(action), bounded_text(state)))
         }).collect::<Result<Vec<_>, ReadError>>()?;
-    let wiki_revision = wiki["revision"].as_u64().ok_or(ReadError::InvalidProjection)?;
-    let pages = wiki["pages"].as_object().ok_or(ReadError::InvalidProjection)?;
-    let wiki_pages = pages.keys().take(40).map(|s| bounded_text(s)).collect();
-    Ok(Overview { observed_at: bounded_text(observed_at), recent, active_devices, wiki_revision, wiki_pages })
+    let read = wiki_read::read(wiki).map_err(|_| ReadError::InvalidProjection)?;
+    let wiki_pages = read.pages.iter().map(|page| page.name.clone()).collect();
+    Ok(Overview {
+        observed_at: bounded_text(observed_at), recent, active_devices,
+        wiki_revision: read.revision, wiki_pages, wiki_content: read.pages,
+        wiki_digest: read.digest, wiki_page_total: read.pages_total,
+    })
 }
 
 // Same owner-token path convention as the existing Tauri native shell.
