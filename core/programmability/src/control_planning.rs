@@ -31,7 +31,7 @@ fn validate_args(action:&Value,args:&Value)->Result<Value,&'static str>{
             else{return Err("CONTROL_ARGS_INVALID")};
         let allowed=match spec["type"].as_str(){
             Some("enum")=>spec["values"].as_array()
-                .is_some_and(|values|values.iter().any(|choice|choice==value)),
+                .is_some_and(|values|values.iter().any(|choice|choice.as_str()==Some(value))),
             Some("string")=>match(spec["min"].as_u64(),spec["max"].as_u64()){
                 (Some(min),Some(max))=>{
                     let length=utf16_length(value) as u64;

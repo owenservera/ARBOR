@@ -166,7 +166,7 @@ export function createControlPlanner({ catalog = loadControlCatalog(), lexicon =
       throw err(native.code);
     }
     const p=native.plan;
-    const requiredApproval=origin==='ai_candidate'||action.risk!=='R0';
+    const requiredApproval=operation==='control-candidate-plan'||action.risk!=='R0';
     const executable=EXECUTABLE.has(action.readiness);
     const expectedOutcome=!executable?'unavailable':
       requiredApproval?'approval_required':'ready';
