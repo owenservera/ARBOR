@@ -12,7 +12,7 @@ const KNOWN_OUTCOMES = new Set([
   'interpretation_required', 'unavailable', 'refused'
 ]);
 export const CONTROL_CHAT_EXAMPLES = Object.freeze([
-  'show status', 'open World', 'what can I say?'
+  'show status', 'open sharing', 'what can I say?'
 ]);
 export { resolveLocalDestination } from './control-language.mjs';
 // Each mounted screen must be able to state what can be asked from it.
@@ -32,7 +32,7 @@ export function examplesForSurface(surface) {
 
 export function createControlChat({
   host, transport, fetchImpl, onChange = () => {},
-  onNavigate = null, onOpenPocket = null, getSurface = null,
+  onNavigate = null, onOpenPocket = null, onOpenShares = null, getSurface = null,
   classifyBuild = null, onBuildDraft = null
 } = {}) {
   if (!host || typeof host.replaceChildren !== 'function')
@@ -194,13 +194,16 @@ export function createControlChat({
     if (destination) {
       const available = destination === 'pocket'
         ? typeof onOpenPocket === 'function'
-        : typeof onNavigate === 'function';
-      note(available ? 'Opening ' + (destination === 'pocket' ? 'offline Pocket' : destination) +
+        : destination === 'shares'
+          ? transport.direct === true && typeof onOpenShares === 'function'
+          : typeof onNavigate === 'function';
+      note(available ? 'Opening ' + (destination === 'pocket' ? 'offline Pocket' : destination === 'shares' ? 'private shares' : destination) +
         '… No command or AI message was sent.' :
         'This screen is not available on the current device. Nothing changed.', available ? 'done' : 'info');
       redraw();
       if (available) {
         if (destination === 'pocket') onOpenPocket();
+        else if (destination === 'shares') onOpenShares();
         else onNavigate(destination);
       }
       return true;
