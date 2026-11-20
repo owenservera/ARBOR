@@ -67,8 +67,8 @@ same-origin request plus an explicit share-operation header. Grant scopes are
 Maximum file size is 10 MiB, lifetime 30 days, and download allowance 100.
 A device is limited to 100 unrevoked unexpired shares and 250 MiB of
 allocated share storage. Revocation deletes the content. Five incorrect
-passcodes trigger a persisted 15-minute lockout. Maintenance during new share
-reservations reclaims expired content and reservations abandoned for 20 minutes;
+passcodes trigger a persisted 15-minute lockout. Host startup, a 15-minute Host-owned maintenance timer, and new share
+reservations reclaim expired content and reservations abandoned for 20 minutes;
 terminal metadata is retained for up to 30 further days. Download admission
 counts toward the allowance even if a client disconnects. Inline preview
 supports a subset of safe document and media types and also counts toward the
@@ -80,8 +80,8 @@ caches the static share UI module, never share APIs or file data.
 
 This is an independent VIVIM implementation inspired by the features of
 `adcar/opensend` (MIT), not a copy or deployment of its Rails application.
-There is no anonymous/public internet access, geographic blocking, automatic
-content expiry deletion job, or Office-document inline rendering. These
+There is no anonymous/public internet access, geographic blocking, or
+Office-document inline rendering. Expiry cleanup is Host-owned, not a cloud job. These
 features must not be advertised as implemented. A successful source commit is
 not device acceptance: the paired-phone upload/download journey still
 requires an actual Host/PWA runtime exercise.
