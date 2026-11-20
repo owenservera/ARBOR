@@ -19,9 +19,9 @@ export async function initializeRustUiEngine(){
   attempt=(async()=>{
     try{
       const response=await fetch(WASM_URL,{credentials:'same-origin',cache:'no-cache'});
-      if(!response.ok||Number(response.headers.get('content-length')??0)>4*1024*1024)return false;
+      if(!response.ok||Number(response.headers.get('content-length')??0)>12*1024*1024)return false;
       const bytes=await response.arrayBuffer();
-      if(bytes.byteLength<8||bytes.byteLength>4*1024*1024)return false;
+      if(bytes.byteLength<8||bytes.byteLength>12*1024*1024)return false;
       const output=await WebAssembly.instantiate(bytes,{});
       const native=output.instance?.exports??output.exports;
       if(!admit(native))return false;
