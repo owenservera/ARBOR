@@ -62,7 +62,7 @@ fn new_secret(n: usize) -> String {
 }
 fn eq_hex(a: &str, b: &str) -> bool {
     match (unhex(a), unhex(b)) {
-        (Some(x), Some(y)) if x.len() == y.len() => bool::from(x.ct_eq(&y)),
+        (Some(x), Some(y)) if x.len() == y.len() => bool::from(x.as_slice().ct_eq(y.as_slice())),
         _ => false,
     }
 }
