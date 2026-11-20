@@ -19,7 +19,7 @@
 // (OVN-B lane 4).
 
 use hqkg::context_retrieval::{retrieve, ContextBundle, ContextRequest};
-use hqkg::graph_change_set::{ApplyLedger, ApplyReport, GraphChangeSet};
+use hqkg::graph_change_set::ApplyReport;
 use hqkg::invalidate::{
     CallerId, InvalidateCache, SourceRevision,
 };

@@ -310,7 +310,7 @@
         "?"
       ],
       "acceptance": "Packaged PWA invokes typed operation with grant; result persists/reads back via existing authority.",
-      "done": true,
+      "done": false,
       "targets": {
         "Target Rust": 2,
         "Target Host": 3,
@@ -519,7 +519,7 @@
         "?"
       ],
       "acceptance": "Actual source revision/consent changes affect only eligible bundle; no stale or leaked data.",
-      "done": true,
+      "done": false,
       "targets": {
         "Target Rust": 1,
         "Target Host": 1,
@@ -613,7 +613,7 @@
         "A"
       ],
       "acceptance": "Register and compare actual authorized sources without installing Git/Cargo for customer.",
-      "done": true,
+      "done": false,
       "targets": {
         "Target Rust": 1,
         "Target Host": 3,
@@ -809,7 +809,7 @@
         "?"
       ],
       "acceptance": "Committed source change appears in relevant native query; revoked data absent.",
-      "done": true,
+      "done": false,
       "targets": {
         "Target Rust": 3,
         "Target Host": 3,
@@ -1000,7 +1000,7 @@
         "?"
       ],
       "acceptance": "No production dependency on coordination/smoke tool; any real use through existing Host.",
-      "done": true,
+      "done": false,
       "targets": {
         "Target Host": 1,
         "Target Studio": 1,
@@ -1119,7 +1119,7 @@
         "?"
       ],
       "acceptance": "Actual Host operation uses existing capability with verified source pin; no parallel interpreter.",
-      "done": true,
+      "done": false,
       "targets": {
         "Target Host": 11
       },
@@ -1239,7 +1239,7 @@
         "?"
       ],
       "acceptance": "Owner UI renders live committed state and actual error.",
-      "done": true,
+      "done": false,
       "targets": {
         "Target Host": 11
       },
@@ -1741,7 +1741,7 @@
         "?"
       ],
       "acceptance": "Owner UI renders live committed state and actual error.",
-      "done": true,
+      "done": false,
       "targets": {
         "Target Host": 6
       },

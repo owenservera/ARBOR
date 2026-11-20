@@ -152,7 +152,7 @@ async function call(hub, method, pathname, body = {}) {
 
 test('integration-hub.mutate requires expectedRevision (CAS guard, single persistence owner)', async (t) => {
   const { hub } = makeHub(t);
-  const res = await call(hub, 'POST', '/learning/proposals', { scope: 'chat', name: 'n', role: 'reviewer', d: {}, ctx: {}, actor: 'me', note: 'x' });
+  const res = await call(hub, 'POST', '/api/v1/learning/proposals', { scope: 'chat', name: 'n', role: 'reviewer', d: {}, ctx: {}, actor: 'me', note: 'x' });
   assert.equal(res.handled, true);
   assert.equal(res.status, 428);
   assert.equal(res.body.code, 'REVISION_REQUIRED');
@@ -160,7 +160,7 @@ test('integration-hub.mutate requires expectedRevision (CAS guard, single persis
 
 test('integration-hub.graphOf consumes the session-kv GRAPH producer (single persistence owner)', async (t) => {
   const { hub, sessionId } = makeHub(t);
-  const res = await call(hub, 'GET', `/sessions/${sessionId}/knowledge/graph`);
+  const res = await call(hub, 'GET', `/api/v1/sessions/${sessionId}/knowledge/graph`);
   assert.equal(res.handled, true);
   assert.equal(res.status, 200);
   assert.ok(Array.isArray(res.body.nodes));

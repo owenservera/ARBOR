@@ -1,5 +1,5 @@
 use hqkg::adapters::research::ResearchCatalogCompute;
-use hqkg::{ComputeEngine, EngineRegistry, EngineRequest, Graph, Node, NodeKind};
+use hqkg::{EngineRegistry, EngineRequest, Graph, Node, NodeKind};
 use std::sync::{Arc, RwLock};
 #[test]
 fn research_adapter_queries_catalog_without_activating_algorithms() {

@@ -164,7 +164,7 @@ test('retired demo and feedback writes cannot append records even with owner aut
       assert.equal((await request(base, route, { method: 'POST', headers, body: feedback })).status, 404);
     }
     assert.equal((await request(base, '/api/mutate', { method: 'POST', headers, body: feedback })).status, 410);
-    assert.equal((await request(base, '/api/roadmap')).status, 404);
+    assert.equal((await request(base, '/api/roadmap')).status, 200);
     assert.equal((await request(base, '/demo/journal.jsonl')).status, 404);
     assert.deepEqual((await request(base, '/api/journal')).json(), []);
     assert.equal((await request(base, '/api/journal?format=jsonl')).text, '');

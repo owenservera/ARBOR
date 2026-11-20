@@ -4,7 +4,6 @@ use hqkg::engine::{
 };
 use hqkg::typed_dag::*;
 use hqkg::{Error, Result};
-use std::collections::BTreeSet;
 use std::io;
 use std::sync::{
     atomic::{AtomicBool, AtomicUsize, Ordering},
@@ -268,6 +267,7 @@ fn partial_failure_is_explicit_and_does_not_commit_cache() {
     assert_eq!(cache.len(), 0);
 }
 #[test]
+#[allow(non_snake_case)]
 fn IO_retry_is_opt_in_bounded_and_pure_only() {
     let reg = EngineRegistry::new();
     let calls = Arc::new(AtomicUsize::new(0));

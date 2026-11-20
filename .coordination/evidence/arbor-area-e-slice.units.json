@@ -27,7 +27,7 @@
         "?"
       ],
       "acceptance": "Installed runtime launches all required binaries without Cargo/Bun/Git; no debug fallback.",
-      "done": true,
+      "done": false,
       "targets": {
         "Target Rust": 1,
         "Target Host": 1,
@@ -128,7 +128,7 @@
         "?"
       ],
       "acceptance": "Installed Windows app starts Host, discovers approved binaries and detects dead process; clean restart.",
-      "done": true,
+      "done": false,
       "targets": {
         "Target Rust": 1,
         "Target Host": 2,
@@ -528,7 +528,7 @@
         "?"
       ],
       "acceptance": "Runs as optional developer validation; product can start without it.",
-      "done": true,
+      "done": false,
       "targets": {
         "Target HQ": 2,
         "Target Rust": 2,
@@ -1028,7 +1028,7 @@
         "?"
       ],
       "acceptance": "Frozen build/package works from clean checkout; approved permissions only.",
-      "done": true,
+      "done": false,
       "targets": {
         "Target Host": 1,
         "Target Tauri": 1

@@ -123,10 +123,8 @@
           "Tauri": "0"
         }
       ],
-      "done": true,
-      "doneEvidence": [
-        "AT-9237D196A64F"
-      ]
+      "done": false,
+      "doneEvidence": []
     },
     {
       "id": "NEXT:D14.device-pairing",
@@ -627,12 +625,8 @@
           "Tauri": "0"
         }
       ],
-      "done": true,
-      "doneEvidence": [
-        "AT-0CE8E0AE8DE4",
-        "AT-F96DC41E9395",
-        "AT-E3802992E70B"
-      ]
+      "done": false,
+      "doneEvidence": []
     },
     {
       "id": "NEXT:D14.wiki-source-card",
@@ -980,12 +974,8 @@
           "Tauri": ""
         }
       ],
-      "done": true,
-      "doneEvidence": [
-        "AT-70393C0BD9D1",
-        "AT-34F0BF4A9826",
-        "AT-7435DF1954D2"
-      ]
+      "done": false,
+      "doneEvidence": []
     },
     {
       "id": "NEXT:D15.relay-boundary",

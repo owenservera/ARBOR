@@ -29,7 +29,7 @@
         "?"
       ],
       "acceptance": "Prove real caller or deliberate internal/dev status; Real product caller and consumer proven; no duplicated Host effect path.",
-      "done": true,
+      "done": false,
       "targets": {
         "Target Rust": 4,
         "Target Host": 4,
@@ -139,7 +139,7 @@
         "?"
       ],
       "acceptance": "Actual evidence retrievable with source identity, explicit gaps and revocation; no uncertain delivery promoted to success.",
-      "done": true,
+      "done": false,
       "targets": {
         "Target Rust": 15,
         "Target Host": 15,
@@ -319,7 +319,7 @@
         "?"
       ],
       "acceptance": "Host-authorized operation and evidence binding; revoked data excluded; no native direct browser.",
-      "done": true,
+      "done": false,
       "targets": {
         "Target Rust": 3,
         "Target Host": 4,
@@ -675,7 +675,7 @@
         "?"
       ],
       "acceptance": "Real product caller and consumer proven; no duplicated Host effect path.",
-      "done": true,
+      "done": false,
       "targets": {
         "Target Rust": 8,
         "Target Host": 10,
@@ -1107,7 +1107,7 @@
         "?"
       ],
       "acceptance": "Prove real caller or deliberate internal/dev status; Real product caller and consumer proven; no duplicated Host effect path.",
-      "done": true,
+      "done": false,
       "targets": {
         "Target Host": 13,
         "Target Studio": 13
@@ -1500,7 +1500,7 @@
         "?"
       ],
       "acceptance": "Prove real caller or deliberate internal/dev status; Real product caller and consumer proven; no duplicated Host effect path.",
-      "done": true,
+      "done": false,
       "targets": {
         "Target Studio": 8,
         "Target Host": 5

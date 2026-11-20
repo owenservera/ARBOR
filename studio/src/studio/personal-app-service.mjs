@@ -95,11 +95,11 @@ export function createPersonalAppService({ paths, clock = () => new Date().toISO
   }
   function applyChange({ id, expectedVersion, proposal, approval } = {}) {
     if (approval !== 'user-confirmed') {
-      throw fail(403, 'Explicit local user approval is required', 'PERSONAL_APP_APPROVAL_REQUIRED');
+      throw fail(403, 'Explicit local user approval is required [PERSONAL_APP_APPROVAL_REQUIRED]', 'PERSONAL_APP_APPROVAL_REQUIRED');
     }
     const before = load(id);
     if (!Number.isSafeInteger(expectedVersion) || expectedVersion !== before.version) {
-      throw fail(409, 'App revision changed; refresh before applying', 'PERSONAL_APP_VERSION_CONFLICT');
+      throw fail(409, 'App revision changed; refresh before applying [PERSONAL_APP_VERSION_CONFLICT]', 'PERSONAL_APP_VERSION_CONFLICT');
     }
     const preview = previewPersonalAppChange(before, proposal, { now: clock() });
     let next = before;

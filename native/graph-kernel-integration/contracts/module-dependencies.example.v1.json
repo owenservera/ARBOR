@@ -1,0 +1,48 @@
+{
+  "schema": "hqkg.module-dependencies/1",
+  "status": "research example; not an installed runtime manifest",
+  "module": {
+    "id": "language:spell",
+    "interface": "hqkg.language.v1",
+    "version": "1.0.0",
+    "slot": "language:spell",
+    "production_ready": false
+  },
+  "requirements": [
+    {
+      "id": "dataset:spell-freq:version-a",
+      "kind": "Dataset",
+      "min_inclusive": "1.0.0",
+      "max_exclusive": "2.0.0",
+      "required": true,
+      "expected_sha256": null,
+      "after": [],
+      "status": "unverified example; production must reject"
+    },
+    {
+      "id": "engine:language:normalizer",
+      "kind": "Engine",
+      "min_inclusive": "1.0.0",
+      "max_exclusive": "2.0.0",
+      "required": true,
+      "expected_sha256": null,
+      "after": [],
+      "status": "generation pinned at execution"
+    },
+    {
+      "id": "database:spell-cache",
+      "kind": "Database",
+      "min_inclusive": "1.0.0",
+      "max_exclusive": "2.0.0",
+      "required": false,
+      "expected_sha256": null,
+      "after": [],
+      "status": "optional read-only database node"
+    }
+  ],
+  "guarantees": [
+    "no package installation",
+    "no provider effects",
+    "a mutable database is not an immutable pinned corpus"
+  ]
+}

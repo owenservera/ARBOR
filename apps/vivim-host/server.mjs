@@ -354,7 +354,7 @@ export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path
       return;
     }
     // Retired development surfaces have no static asset or mutation fallback.
-    if (pathname === '/demo' || pathname.startsWith('/demo/') || pathname === '/api/roadmap') {
+    if (pathname === '/demo' || pathname.startsWith('/demo/')) {
       sendJson(res, 404, { code: 'NOT_FOUND' }); return;
     }
     // The one product journal records chat and authorized Wiki edits.
@@ -509,6 +509,19 @@ export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path
           { error: 'Product projection unavailable' });
       }
       return;
+    }
+    // Roadmap is a read-through of the maintained single source of truth;
+    // only the existing roadmap keeper edits the machine roadmap document.
+    if (pathname === '/api/roadmap') {
+      try {
+        const body = await readFile(path.join(REPO_ROOT, 'docs', 'product', 'roadmap', 'roadmap.v1.json'), 'utf8');
+        JSON.parse(body);
+        res.setHeader('content-type', 'application/json; charset=utf-8');
+        res.writeHead(200); res.end(req.method === 'HEAD' ? undefined : body); return;
+      } catch (error) {
+        sendJson(res, error && error.code === 'ENOENT' ? 404 : 502, { error: 'Roadmap read-through failed' });
+        return;
+      }
     }
     // Human and machine reads share exactly the journal that POST /api/mutate appends.
     if (pathname === '/api/journal') {

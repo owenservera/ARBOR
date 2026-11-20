@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { createHostServer } from '../server.mjs';
 
-test('production Host cannot serve or mutate retired demo and historical roadmap routes', async t => {
+test('production Host cannot serve or mutate retired demo routes; roadmap stays a live read-through', async t => {
   const root = mkdtempSync(path.join(os.tmpdir(), 'arbor-retired-demo-'));
   const token = 'test-owner-token-'.repeat(4);
   const host = createHostServer({ dataRoot: root, ownerToken: token });
@@ -18,10 +18,13 @@ test('production Host cannot serve or mutate retired demo and historical roadmap
   const headers = { authorization: 'Bearer ' + token, origin: base,
     'x-vivim-control': '1', 'content-type': 'application/json' };
   for (const route of ['/demo', '/demo/', '/demo/demo-shell.html', '/demo/controller.js',
-    '/demo/fixture/index.json', '/demo/feedback/inbox.json', '/demo/journal.jsonl', '/api/roadmap']) {
+    '/demo/fixture/index.json', '/demo/feedback/inbox.json', '/demo/journal.jsonl']) {
     assert.equal((await fetch(base + route)).status, 404, route);
     assert.equal((await fetch(base + route, { method: 'HEAD' })).status, 404, route);
   }
+  const roadmap = await fetch(base + '/api/roadmap');
+  assert.equal(roadmap.status, 200, '/api/roadmap');
+  assert.equal((await roadmap.json()).schema, 'arbor.product-roadmap/1');
   for (const route of ['/demo/feedback', '/demo/mutate']) {
     assert.equal((await fetch(base + route, {method: 'POST', headers,
       body: JSON.stringify({kind: 'chat-send', actor: 'owner-browser', schemaVersion: 1, text: 'not saved'})})).status, 404);

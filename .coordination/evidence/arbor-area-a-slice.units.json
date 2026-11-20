@@ -32,7 +32,7 @@
         "A"
       ],
       "acceptance": "Actual update is revision-fenced, idempotent and cannot cross namespace.",
-      "done": true,
+      "done": false,
       "targets": {
         "Target Rust": 5,
         "Target Host": 5,
@@ -153,7 +153,7 @@
         "A"
       ],
       "acceptance": "Query retrieves relevant older evidence and bounded relationships with revision/digest.",
-      "done": true,
+      "done": false,
       "targets": {
         "Target Rust": 3,
         "Target Host": 3,
@@ -260,7 +260,7 @@
         "A"
       ],
       "acceptance": "Same program identity and dependencies through native validation and DAG; no effect authorization.",
-      "done": true,
+      "done": false,
       "targets": {
         "Target Rust": 3,
         "Target Host": 3,
@@ -356,7 +356,7 @@
         "A"
       ],
       "acceptance": "Actual registered source change and tombstone appear in native query; stable identity maintained.",
-      "done": true,
+      "done": false,
       "targets": {
         "Target Rust": 2,
         "Target Host": 2,
@@ -458,7 +458,7 @@
         "A"
       ],
       "acceptance": "Registered source sync without Cargo; exact verified exchange state advances.",
-      "done": true,
+      "done": false,
       "targets": {
         "Target Rust": 7,
         "Target Host": 5,
@@ -594,7 +594,7 @@
         "A"
       ],
       "acceptance": "Real selected project comparison uses exact source identity and verified adapter; no fixture.",
-      "done": true,
+      "done": false,
       "targets": {
         "Target Rust": 7,
         "Target Host": 10,
@@ -1524,7 +1524,7 @@
         "A"
       ],
       "acceptance": "Actual registered source change and tombstone appear in native query; stable identity maintained.",
-      "done": true,
+      "done": false,
       "targets": {
         "Target Rust": 5,
         "Target Host": 5,

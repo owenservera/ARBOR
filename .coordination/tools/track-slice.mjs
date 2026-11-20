@@ -182,11 +182,11 @@ out.sort((a, b) => {
 const blobs = [];
 // Only real completion evidence counts: receipts, evidence receipts, roadmap artifacts, git log.
 // NEVER the slice's own output or lane claim files (they would self-match every row).
-const SKIP = /-slice\.json$|-slice\.units\.json$|-claims\.json$/;
+const SKIP = /-slice|-claims|units\.units/;
 const scan = (dir) => { try { for (const f of fs.readdirSync(dir)) { if (SKIP.test(f)) continue; try { blobs.push(fs.readFileSync(dir + "/" + f, "utf8")); } catch (e) {} } } catch (e) {} };
 // Only receipt/evidence files that carry a PASS marker prove completion. Path
 // changes, git-log subjects and slice/claim files never close a unit.
-const PASSMARK = /exit 0|VERIFIED|RECEIPT/i;
+const PASSMARK = /exit 0|VERIFIED/;
 const scan2 = (dir) => { try { for (const f of fs.readdirSync(dir)) { if (SKIP.test(f)) continue; try { const c = fs.readFileSync(dir + "/" + f, "utf8"); if (PASSMARK.test(c)) blobs.push(c); } catch (e) {} } } catch (e) {} };
 scan2(".coordination/evidence");
 scan2("docs/product/roadmap/receipts");

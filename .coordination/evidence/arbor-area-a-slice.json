@@ -435,12 +435,8 @@
           "Tauri": ""
         }
       ],
-      "done": true,
-      "doneEvidence": [
-        "AT-001113D995E8",
-        "AT-EF9F4CDEA8AC",
-        "AT-E91209CD1800"
-      ]
+      "done": false,
+      "doneEvidence": []
     },
     {
       "id": "NEXT:D02:scoped-query-retrieval",
@@ -717,12 +713,8 @@
           "Tauri": "0"
         }
       ],
-      "done": true,
-      "doneEvidence": [
-        "AT-205D13DE9B33",
-        "AT-577736F5F9BE",
-        "AT-3BAB6F833EE2"
-      ]
+      "done": false,
+      "doneEvidence": []
     },
     {
       "id": "NEXT:D03:validated-pure-dag",
@@ -997,12 +989,8 @@
           "Tauri": "0"
         }
       ],
-      "done": true,
-      "doneEvidence": [
-        "AT-6C426923A737",
-        "AT-55C13124A65F",
-        "AT-9487BCA769DC"
-      ]
+      "done": false,
+      "doneEvidence": []
     },
     {
       "id": "NEXT:D04:revision-cache-lifecycle",
@@ -1200,11 +1188,8 @@
           "Tauri": "0"
         }
       ],
-      "done": true,
-      "doneEvidence": [
-        "AT-C5A7109D7D65",
-        "AT-46C6B73B665D"
-      ]
+      "done": false,
+      "doneEvidence": []
     },
     {
       "id": "NEXT:D07:bundled-hqkg-import",
@@ -1790,12 +1775,8 @@
           "Tauri": "0"
         }
       ],
-      "done": true,
-      "doneEvidence": [
-        "AT-8D1FF600A784",
-        "AT-16EE19B2CCBE",
-        "AT-26069031F01A"
-      ]
+      "done": false,
+      "doneEvidence": []
     },
     {
       "id": "NEXT:D07:hvi-live-source-composition",
@@ -2608,12 +2589,8 @@
           "Tauri": "0"
         }
       ],
-      "done": true,
-      "doneEvidence": [
-        "AT-6C4E343346DB",
-        "AT-3494B0DB6459",
-        "AT-2EBA7AE325B5"
-      ]
+      "done": false,
+      "doneEvidence": []
     },
     {
       "id": "VERIFY:D09:observability-consumer-proof",
@@ -16079,10 +16056,8 @@
           "Tauri": "0"
         }
       ],
-      "done": true,
-      "doneEvidence": [
-        "AT-8AB7C3ECBBD9"
-      ]
+      "done": false,
+      "doneEvidence": []
     },
     {
       "id": "VERIFY:D07:hvi-live-source-composition",

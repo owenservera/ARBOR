@@ -23,7 +23,7 @@
         "A"
       ],
       "acceptance": "Same committed source usable in UI and instruction; revoked grant clears displayed data.",
-      "done": true,
+      "done": false,
       "targets": {
         "Target Rust": 1,
         "Target Host": 1,
@@ -120,7 +120,7 @@
         "?"
       ],
       "acceptance": "Prove real caller or deliberate internal/dev status; Same committed source usable in UI and instruction; revoked grant clears displayed data.",
-      "done": true,
+      "done": false,
       "targets": {
         "Target Host": 6,
         "Target PWA": 6
@@ -229,7 +229,7 @@
         "?"
       ],
       "acceptance": "Inspect source and actual callers; record disposition and evidence; verify applicable acceptance checks.",
-      "done": true,
+      "done": false,
       "targets": {},
       "reachabilityBlank": 0,
       "evidenceGrades": [

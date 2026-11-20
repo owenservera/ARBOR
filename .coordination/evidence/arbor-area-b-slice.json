@@ -2376,12 +2376,8 @@
           "Tauri": "0"
         }
       ],
-      "done": true,
-      "doneEvidence": [
-        "AT-4BF6BC95F4EC",
-        "AT-BEB57E2A22C7",
-        "AT-7DD9F1E3705D"
-      ]
+      "done": false,
+      "doneEvidence": []
     },
     {
       "id": "NEXT:CONSOLIDATE:apps/vivim-host/control",
@@ -2861,10 +2857,8 @@
           "Tauri": "0"
         }
       ],
-      "done": true,
-      "doneEvidence": [
-        "AT-1D41E00C6496"
-      ]
+      "done": false,
+      "doneEvidence": []
     },
     {
       "id": "NEXT:B-F01-B06",
@@ -3142,10 +3136,8 @@
           "Tauri": "0"
         }
       ],
-      "done": true,
-      "doneEvidence": [
-        "AT-8FFE2F565EBB"
-      ]
+      "done": false,
+      "doneEvidence": []
     },
     {
       "id": "NEXT:CONSOLIDATE:apps/vivim-host/chat",
@@ -3542,12 +3534,8 @@
           "Tauri": "0"
         }
       ],
-      "done": true,
-      "doneEvidence": [
-        "AT-91886B58F339",
-        "AT-D4FE78FC0EA9",
-        "AT-8990DEA9794C"
-      ]
+      "done": false,
+      "doneEvidence": []
     },
     {
       "id": "NEXT:CONSOLIDATE:harness/src/context",
@@ -4177,10 +4165,8 @@
           "Tauri": "0"
         }
       ],
-      "done": true,
-      "doneEvidence": [
-        "AT-34285F271418"
-      ]
+      "done": false,
+      "doneEvidence": []
     },
     {
       "id": "VERIFY:CONSOLIDATE:apps/vivim-host/control",
@@ -5456,11 +5442,8 @@
           "Tauri": "0"
         }
       ],
-      "done": true,
-      "doneEvidence": [
-        "AT-E63E924C3EB7",
-        "AT-57918B172821"
-      ]
+      "done": false,
+      "doneEvidence": []
     },
     {
       "id": "VERIFY:CONSOLIDATE:apps/vivim-host/public",
@@ -6347,10 +6330,8 @@
           "Tauri": "0"
         }
       ],
-      "done": true,
-      "doneEvidence": [
-        "AT-CF53D5862720"
-      ]
+      "done": false,
+      "doneEvidence": []
     },
     {
       "id": "VERIFY:CONSOLIDATE:harness/src/providers",
@@ -9330,10 +9311,8 @@
           "Tauri": "0"
         }
       ],
-      "done": true,
-      "doneEvidence": [
-        "AT-F4361C6F5D6C"
-      ]
+      "done": false,
+      "doneEvidence": []
     },
     {
       "id": "VERIFY:CONSOLIDATE:apps/vivim-host",

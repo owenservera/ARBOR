@@ -1,5 +1,5 @@
 //! Typed, read-only Lane C -> Lane D handoff. No executor, permission grants or effects.
-use super::{safe_id, Condition, DiagnosticFinding, EvidenceStatus, NextStep};
+use super::{safe_id, Condition, DiagnosticFinding, EvidenceStatus};
 use crate::{Error, Result};
 
 pub const HANDOFF_CONTRACT: &str = "vivim.rust-diagnostic-handoff/1";
@@ -146,6 +146,7 @@ pub fn verify_recovery_result(
 #[cfg(test)]
 mod tests {
     use super::super::finding;
+    use super::super::NextStep;
     use super::*;
     fn observation(code: &'static str, condition: Condition, evidence: &str) -> DiagnosticFinding {
         finding(

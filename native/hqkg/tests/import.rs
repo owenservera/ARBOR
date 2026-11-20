@@ -160,7 +160,7 @@ fn tombstone_replay_is_idempotent_and_does_not_advance_epoch() {
 
 #[test]
 fn tombstone_never_destroys_another_producers_node() {
-    let initial = parse(&sample(false)).unwrap();
+    let _initial = parse(&sample(false)).unwrap();
     let id2 = format!("hqg1:{}", "b".repeat(64));
     let mut g = Graph::new();
     g.put_node(Node::new(&id2, NodeKind::Fact, "owned manually"))

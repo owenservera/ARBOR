@@ -11,7 +11,7 @@ function origin(value) {
   throw fail('INVALID_CANONICAL_ORIGIN');
 }
 function localSource(s, captureRef, minSequence=0) {
-  return !!s && ['native-route','native-message-id','provider-account-index','observed-task-id'].includes(s.kind)
+  return !!s && ['native-route','native-message-id','provider-account-index','observed-task-id','saved-real-capture'].includes(s.kind)
     && str(s.captureRef,200) && s.captureRef === captureRef && seq(s.sequence) && s.sequence >= minSequence
     && str(s.reference,256) && ['saved-real-capture','live-browser-observation','synthetic-fixture'].includes(s.evidenceClass);
 }

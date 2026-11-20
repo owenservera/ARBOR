@@ -113,8 +113,13 @@ test('batch-1 product routes: pages, baseline JSON, read-throughs, mutate append
     assert.match(surface.headers.get('content-type') || '', /application\/json/);
     assert.deepEqual((await surface.json()).files, []);
 
-    // Historical development documents are no longer a live product source.
-    assert.equal((await httpFetch(base, '/api/roadmap')).status, 404);
+    // Roadmap is a live read-through of the maintained machine document.
+    const roadmap = await httpFetch(base, '/api/roadmap');
+    assert.equal(roadmap.status, 200);
+    assert.match(roadmap.headers.get('content-type') || '', /application\/json/);
+    const roadmapJson = await roadmap.json();
+    assert.equal(roadmapJson.schema, 'arbor.product-roadmap/1');
+    assert.ok(Array.isArray(roadmapJson.buildQueue));
     assert.deepEqual(mainSections, { About: '', HowTo: '', Sources: '' });
     assert.deepEqual(Object.keys(wikiJson.pages), ['Main']);
 

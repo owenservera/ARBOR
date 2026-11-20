@@ -202,11 +202,8 @@
           "Tauri": "0"
         }
       ],
-      "done": true,
-      "doneEvidence": [
-        "AT-CE1EAA2642DA",
-        "AT-7AE45AD102EA"
-      ]
+      "done": false,
+      "doneEvidence": []
     },
     {
       "id": "NEXT:D05-E02-host-process-health",
@@ -402,12 +399,8 @@
           "Tauri": "4"
         }
       ],
-      "done": true,
-      "doneEvidence": [
-        "D05-E02-host-process-health",
-        "AT-2F5E0A90D419",
-        "AT-0A6ABCF6F615"
-      ]
+      "done": false,
+      "doneEvidence": []
     },
     {
       "id": "NEXT:D05-E03-test-discovery",
@@ -3177,11 +3170,8 @@
           "Tauri": ""
         }
       ],
-      "done": true,
-      "doneEvidence": [
-        "AT-ECAA652669CD",
-        "AT-63C8101506CA"
-      ]
+      "done": false,
+      "doneEvidence": []
     },
     {
       "id": "VERIFY:CONSOLIDATE:src-tauri/gen/schemas",
@@ -4239,10 +4229,8 @@
           "Tauri": "1"
         }
       ],
-      "done": true,
-      "doneEvidence": [
-        "D05-E02-host-process-health"
-      ]
+      "done": false,
+      "doneEvidence": []
     },
     {
       "id": "VERIFY:E-verify-repository-exclusions",

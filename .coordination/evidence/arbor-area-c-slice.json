@@ -357,12 +357,8 @@
           "Tauri": "0"
         }
       ],
-      "done": true,
-      "doneEvidence": [
-        "AT-64713736D0D1",
-        "AT-ECC846F6B5BA",
-        "AT-EE5630007A77"
-      ]
+      "done": false,
+      "doneEvidence": []
     },
     {
       "id": "NEXT:CONSOLIDATE:studio/src/capture",
@@ -1553,12 +1549,8 @@
           "Tauri": "0"
         }
       ],
-      "done": true,
-      "doneEvidence": [
-        "AT-FE689541D023",
-        "AT-8BFD21C9B97A",
-        "AT-BAF544DC961B"
-      ]
+      "done": false,
+      "doneEvidence": []
     },
     {
       "id": "NEXT:CONSOLIDATE:studio/src/replay",
@@ -2114,10 +2106,8 @@
           "Tauri": "0"
         }
       ],
-      "done": true,
-      "doneEvidence": [
-        "AT-8188A8C5A4B6"
-      ]
+      "done": false,
+      "doneEvidence": []
     },
     {
       "id": "NEXT:D05-E-STUDIO-TEST-CLOSURE",
@@ -4105,12 +4095,8 @@
           "Tauri": "0"
         }
       ],
-      "done": true,
-      "doneEvidence": [
-        "AT-0E3AD934FCA3",
-        "AT-A9BF3795ADC9",
-        "AT-41CC4A30C0E6"
-      ]
+      "done": false,
+      "doneEvidence": []
     },
     {
       "id": "NEXT:D12-B-DCB-GRANT",
@@ -9318,12 +9304,8 @@
           "Tauri": "0"
         }
       ],
-      "done": true,
-      "doneEvidence": [
-        "AT-96B4FAEEC75E",
-        "AT-ACD94468A610",
-        "AT-AC8F4128C97C"
-      ]
+      "done": false,
+      "doneEvidence": []
     },
     {
       "id": "VERIFY:C-RETAIN-INTEGRATION-PORT",
@@ -13065,12 +13047,8 @@
           "Tauri": "0"
         }
       ],
-      "done": true,
-      "doneEvidence": [
-        "AT-6CEE19358975",
-        "AT-4EA170FCBBA0",
-        "AT-60919E195CBA"
-      ]
+      "done": false,
+      "doneEvidence": []
     },
     {
       "id": "VERIFY:D06-C-WORLD-READ-PROJECTION",
