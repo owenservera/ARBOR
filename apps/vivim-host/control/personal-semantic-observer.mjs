@@ -59,14 +59,14 @@ export function observePersonalLanguage({events,catalog,minConfirmations=3}={}) 
       native.skipped===skipped&&Number.isSafeInteger(native.groups)&&
       native.groups>=0&&native.groups<=validated.length&&
       Array.isArray(native.candidates)&&Array.isArray(native.conflicts)&&
-      native.candidates.every(({rule,evidence,executionAuthorized})=>
-        executionAuthorized===false&&rule?.schema===PERSONAL_RULE_SCHEMA&&
-        rule.state==='proposed'&&rule.source==='system-observed'&&
-        rule.revision===1&&rule.catalogVersion===catalog.version&&
-        validatePersonalRule(rule,catalog).ok&&
-        evidence?.kind==='explicit-confirmation-only'&&
-        Number.isSafeInteger(evidence.confirmationCount)&&
-        evidence.confirmationCount>=minConfirmations)&&
+      native.candidates.every(item=>item&&
+        item.executionAuthorized===false&&item.rule?.schema===PERSONAL_RULE_SCHEMA&&
+        item.rule.state==='proposed'&&item.rule.source==='system-observed'&&
+        item.rule.revision===1&&item.rule.catalogVersion===catalog.version&&
+        validatePersonalRule(item.rule,catalog).ok&&
+        item.evidence?.kind==='explicit-confirmation-only'&&
+        Number.isSafeInteger(item.evidence.confirmationCount)&&
+        item.evidence.confirmationCount>=minConfirmations)&&
       native.conflicts.every(row=>/^[a-f0-9]{64}$/.test(row?.phraseDigest??'')&&
         Number.isSafeInteger(row.distinctMeanings)&&row.distinctMeanings>=2);
     return sound?native:invalid();
