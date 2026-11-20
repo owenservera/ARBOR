@@ -1,3 +1,4 @@
+import {rustTokenPackage} from './rust-wasm.mjs';
 // Subset of Design Tokens Community Group 2025.10: explicit typed tokens,
 // nested groups and full-value {alias.path}. No claim of complete spec compliance.
 // Node/phone safe, no filesystem/network/CSS evaluation or side effects.
@@ -9,7 +10,7 @@ const TYPE_MAP=Object.freeze({color:'color',dimension:'length',duration:'duratio
   number:'number',fontFamily:'token',fontWeight:'number',cubicBezier:'map',
   shadow:'shadow',gradient:'gradient'});
 function validGroup(group){return plain(group)&&Object.keys(group).length<=128;}
-export function resolveUiTokenPackage(input){
+function resolveUiTokenPackageJavaScript(input){
   const fail=(code,path)=>({schema:TOKEN_PACKAGE_SCHEMA,outcome:'refused',code,
     ...(path?{path}:{}),installed:false});
   if(!plain(input)||Object.keys(input).some(k=>!['schema','tokens','mode'].includes(k))||
@@ -62,4 +63,20 @@ export function resolveUiTokenReference(tokenPack,path,requiredType){
   const token=tokenPack.tokens[path];
   if(requiredType&&token.type!==requiredType)return {outcome:'refused',code:'TOKEN_TYPE_MISMATCH'};
   return {outcome:'resolved',token};
+}
+
+
+// A package compiled by browser Rust must match the existing normalized token
+// graph until migration parity has been established on real deployed inputs.
+const stableToken=v=>Array.isArray(v)?v.map(stableToken):
+  v&&typeof v==='object'?Object.fromEntries(Object.keys(v).sort().map(
+    key=>[key,stableToken(v[key])])):v;
+export function resolveUiTokenPackage(input){
+  const js=resolveUiTokenPackageJavaScript(input);
+  const native=rustTokenPackage(input);
+  if(native===null)return js;
+  if(JSON.stringify(stableToken(native))!==JSON.stringify(stableToken(js)))
+    return {schema:TOKEN_PACKAGE_SCHEMA,outcome:'refused',
+      code:'RUST_TOKEN_PARITY_MISMATCH',installed:false};
+  return native;
 }
