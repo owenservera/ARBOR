@@ -15,6 +15,7 @@ pub mod wiki_replay;
 pub mod control_lifecycle;
 pub mod control_planning;
 pub mod wiki_write_recipe;
+pub mod wiki_read_recipe;
 pub mod development_projection;
 pub mod control_plan_presentation;
 pub mod vec;

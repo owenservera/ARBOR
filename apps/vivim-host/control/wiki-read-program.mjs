@@ -4,6 +4,19 @@ import {createHash} from 'node:crypto';
 import {runNativeProductPureSync} from './native-product-pure-sync.mjs';
 export const WIKI_RECIPE_SCHEMA='vivim.wiki-read-recipe/1';
 const READS=new Set(['wiki.pages.list','wiki.section.read']);
+// Rust is the canonical deterministic recipe compiler where packaged.
+function nativeWikiReadRecipe(mode,commands,catalog,details={}){
+  const reply=runNativeProductPureSync('wiki-read-recipe',{
+    schema:'vivim.wiki-read-recipe-request/1',mode,commands,
+    actions:catalog?.actions??[],...details
+  });
+  if(!reply)return null;
+  if(reply.authority!=='none'||reply.executionAuthorized!==false||
+    reply.effectPerformed!==false||!['compiled','valid','refused'].includes(reply.outcome))
+    return {outcome:'refused'};
+  return reply;
+}
+
 const canonical=v=>Array.isArray(v)?v.map(canonical):v&&typeof v==='object'?Object.fromEntries(Object.keys(v).sort().map(k=>[k,canonical(v[k])])):v;
 const hash=v=>createHash('sha256').update(JSON.stringify(canonical(v))).digest('hex');
 export function compileWikiReadRecipe(commands,planCommand,catalog){
@@ -11,12 +24,22 @@ export function compileWikiReadRecipe(commands,planCommand,catalog){
   const lines=commands.split(/\r?\n/).map(s=>s.trim());
   if(lines.length<2||lines.length>8||lines.some(s=>!s||s.length>240))return null;
   let plans;try{plans=lines.map(planCommand)}catch{return null;}
+  const native=nativeWikiReadRecipe('compile',commands,catalog,{plans});
+  if(native){
+    if(native.outcome==='compiled'&&native.recipe?.schema===WIKI_RECIPE_SCHEMA&&
+      Array.isArray(native.recipe.steps)&&native.recipe.steps.length===plans.length&&
+      native.recipe.steps.every((step,i)=>step.actionId===plans[i].actionId&&
+        hash(step.args)===hash(plans[i].args)))return native.recipe;
+    return null;
+  }
   if(plans.some(p=>p?.outcome!=='ready'||p.risk!=='R0'||p.origin!=='deterministic'||!READS.has(p.actionId)))return null;
   const steps=plans.map(p=>({actionId:p.actionId,args:p.args}));
   const dependencies=[...new Set(['program.read_wiki',...steps.map(p=>p.actionId)])].sort().map(id=>({id,digest:hash(catalog.actions.find(a=>a.id===id)??null)}));
   return {schema:WIKI_RECIPE_SCHEMA,steps,dependencies,commandDigest:hash(commands)};
 }
 export function validWikiRecipe(recipe,commands,catalog){
+  const native=nativeWikiReadRecipe('validate',commands,catalog,{recipe});
+  if(native)return native.outcome==='valid';
   if(!recipe||recipe.schema!==WIKI_RECIPE_SCHEMA||Object.keys(recipe).sort().join(',')!=='commandDigest,dependencies,schema,steps'||
     typeof commands!=='string'||commands.length>950||recipe.commandDigest!==hash(commands)||!Array.isArray(recipe.steps)||recipe.steps.length<2||recipe.steps.length>8||!Array.isArray(recipe.dependencies))return false;
   for(const p of recipe.steps){if(!p||Object.keys(p).sort().join(',')!=='actionId,args'||!READS.has(p.actionId)||!p.args||Array.isArray(p.args)||typeof p.args!=='object')return false;

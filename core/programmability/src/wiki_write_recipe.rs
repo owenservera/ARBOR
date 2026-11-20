@@ -14,12 +14,12 @@ fn result(outcome:&str,value:Option<(&str,Value)>)->Value{
     if let Some((key,content))=value{output[key]=content}
     output
 }
-fn fingerprint(value:&Value)->String{
+pub(crate) fn fingerprint(value:&Value)->String{
     let wire=serde_json::to_vec(value).unwrap_or_default();
     format!("{:x}",Sha256::digest(&wire))
 }
-fn text_length(s:&str)->usize{s.encode_utf16().count()}
-fn valid_commands(commands:&str)->bool{
+pub(crate) fn text_length(s:&str)->usize{s.encode_utf16().count()}
+pub(crate) fn valid_commands(commands:&str)->bool{
     if text_length(commands)>950{return false}
     let lines:Vec<&str>=commands.split('\n').collect();
     (2..=8).contains(&lines.len())&&lines.iter().all(|line|{
@@ -37,10 +37,10 @@ fn slug(page:&str)->bool{
     bytes[1..].iter().all(|b|b.is_ascii_lowercase()||b.is_ascii_digit()||*b==b'-')&&
     !matches!(page,"constructor"|"prototype"|"__proto__")
 }
-fn action<'a>(actions:&'a [Value],id:&str)->Option<&'a Value>{
+pub(crate) fn action<'a>(actions:&'a [Value],id:&str)->Option<&'a Value>{
     actions.iter().find(|item|item["id"]==id)
 }
-fn valid_args(specs:&Value,args:&Value)->bool{
+pub(crate) fn valid_args(specs:&Value,args:&Value)->bool{
     let (Some(expected),Some(actual))=(specs.as_object(),args.as_object())
         else{return false};
     if expected.len()!=actual.len(){return false}
@@ -73,7 +73,7 @@ fn valid_step(step:&Value,actions:&[Value])->bool{
     a["risk"]=="R1"&&matches!(a["readiness"].as_str(),Some("source_wired"|"verified"))&&
         valid_args(&a["args"],&step["args"])
 }
-fn expected_dependencies(steps:&[Value],actions:&[Value],program_id:&str)->Value{
+pub(crate) fn expected_dependencies(steps:&[Value],actions:&[Value],program_id:&str)->Value{
     let mut ids=BTreeSet::new();
     ids.insert(program_id.to_owned());
     for step in steps{
@@ -132,8 +132,9 @@ fn compile(input:&Value,commands:&str,actions:&[Value])->Value{
         json!({"name":"page","type":"wiki-page-slug","example":page})
     }else if input["page"].is_null(){Value::Null}
     else{return result("refused",None)};
+    let dependencies=expected_dependencies(&steps,actions,"program.write_wiki");
     let recipe=json!({"schema":RECIPE,"steps":steps,
-        "dependencies":expected_dependencies(&steps,actions,"program.write_wiki"),
+        "dependencies":dependencies,
         "commandDigest":fingerprint(&json!(commands)),"slot":slot});
     result("compiled",Some(("recipe",recipe)))
 }

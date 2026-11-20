@@ -12,7 +12,8 @@ const operations=Object.freeze({
   'control-effect-disposition':'vivim.control-effect-disposition/1',
   'control-typed-plan':'vivim.control-plan-projection/1',
   'control-candidate-plan':'vivim.control-plan-projection/1',
-  'wiki-write-recipe':'vivim.wiki-write-recipe-native/1'
+  'wiki-write-recipe':'vivim.wiki-write-recipe-native/1',
+  'wiki-read-recipe':'vivim.wiki-read-recipe-native/1'
 });
 export function runNativeProductPureSync(operation,input){
   if(!Object.hasOwn(operations,operation)||input===null||typeof input!=='object')
