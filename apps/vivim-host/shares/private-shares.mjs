@@ -84,6 +84,50 @@ export function createPrivateShares({ dataRoot }) {
       if (locks.get(id) === next) locks.delete(id);
     }
   }
+  // Lazy lifecycle maintenance. Content never outlives expiry or an abandoned
+  // reservation once a Host owner next uses sharing. The metadata history is
+  // preserved for 30 days, then purged to keep the store bounded.
+  async function prune() {
+    await ensure();
+    const now = Date.now();
+    let purged = 0, bytesRemoved = 0, abandoned = 0;
+    const names = await readdir(root);
+    for (const filename of names.filter(name => HEX.test(name.slice(0, 32)) && name.endsWith('.json') && name.length === 37)) {
+      const id = filename.slice(0, 32);
+      await locked(id, async () => {
+        let row;
+        try { row = await read(id); } catch { return; }
+        const expired = Number.isFinite(Date.parse(row.expiresAt)) && Date.parse(row.expiresAt) <= now;
+        const oldUpload = row.state === 'uploading' &&
+          Number.isFinite(Date.parse(row.createdAt)) && Date.parse(row.createdAt) + 20 * 60_000 <= now;
+        const terminal = expired || oldUpload || !!row.revokedAt || row.state === 'expired' || row.state === 'abandoned';
+        if (!terminal) return;
+        const file = contentPath(id);
+        try { bytesRemoved += (await stat(file)).size; } catch { /* already absent */ }
+        await rm(file, { force: true });
+        if (oldUpload) abandoned += 1;
+        if (!row.revokedAt && row.state !== 'expired' && row.state !== 'abandoned') {
+          row.state = expired ? 'expired' : 'abandoned';
+          await save(row);
+        }
+        const terminalAt = row.revokedAt ? Date.parse(row.revokedAt)
+          : expired ? Date.parse(row.expiresAt)
+          : Date.parse(row.createdAt) + 20 * 60_000;
+        if (Number.isFinite(terminalAt) && terminalAt + 30 * 24 * 60 * 60_000 <= now) {
+          await rm(recordPath(id), { force: true }); purged += 1;
+        }
+      });
+    }
+    // Incomplete uploads can be orphaned by a terminated Host process.
+    for (const name of names.filter(x => /^[a-f0-9]{32}\.[a-f0-9]{16}\.upload$/.test(x))) {
+      const file = path.join(root, name);
+      try {
+        const info = await stat(file);
+        if (info.mtimeMs + 60 * 60_000 < now) await rm(file, { force: true });
+      } catch { /* concurrent upload or already removed */ }
+    }
+    return { schema: 'vivim.private-share-prune/1', purged, bytesRemoved, abandoned };
+  }
   async function reserve(input, ownerDeviceId) {
     return locked('reserve', async () => {
     if (!HEX.test(text(ownerDeviceId))) throw err(403, 'SHARE_OWNER_INVALID');
@@ -110,7 +154,7 @@ export function createPrivateShares({ dataRoot }) {
       maxDownloads: max, downloads: 0, views: 0, revokedAt: null, sha256: null,
       passSalt: salt, passHash: passcode ? scryptSync(passcode, Buffer.from(salt,'hex'), 32).toString('hex') : null
     };
-    await ensure();
+    await prune();
     const existing = (await list(ownerDeviceId)).items.filter(x => !x.revokedAt && Date.parse(x.expiresAt) > Date.now());
     const allocated = existing.reduce((sum, x) => sum + x.bytes, 0);
     if (existing.length >= 100 || allocated + bytes > 250 * 1024 * 1024)
@@ -157,7 +201,7 @@ export function createPrivateShares({ dataRoot }) {
     await ensure();
     const names = await readdir(root);
     const items = [];
-    for (const name of names.filter(x => /^[a-f0-9]{32}\.json$/.test(x)).slice(0, 2000)) {
+    for (const name of names.filter(x => /^[a-f0-9]{32}\.json$/.test(x))) {
       try {
         const row = await read(name.slice(0, 32));
         if (row.ownerDeviceId === ownerDeviceId) items.push(publicRow(row));
@@ -200,5 +244,5 @@ export function createPrivateShares({ dataRoot }) {
       return publicRow(row);
     });
   }
-  return Object.freeze({ reserve, finish, list, inspect, download, revoke });
+  return Object.freeze({ reserve, finish, list, inspect, download, revoke, prune });
 }
