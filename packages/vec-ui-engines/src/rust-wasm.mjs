@@ -83,4 +83,12 @@ export function rustVecAdmission(input){
     return undefined;
   return value;
 }
+export function rustDigest(text){
+  const value=invoke('sha256-utf8',{text});
+  if(!value||value.schema!=='vivim.sha256-utf8/1'||
+    value.outcome!=='computed'||value.authority!=='none'||
+    typeof value.digest!=='string'||!/^[a-f0-9]{64}$/.test(value.digest))
+    return undefined;
+  return value.digest;
+}
 export function nativeBrowserKernelReady(){return instance!==null;}
