@@ -15,6 +15,8 @@ use std::fs::{self, File, OpenOptions};
 use std::io::{self, Read, Write};
 use std::path::{Path, PathBuf};
 use std::time::Duration as StdDuration;
+#[cfg(unix)]
+use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
 use subtle::ConstantTimeEq;
 
 const REQUEST: &str = "vivim.private-shares-request/1";
@@ -89,7 +91,11 @@ fn metadata(root: &Path, id: &str) -> R<Value> {
     Ok(row)
 }
 fn write_bytes(path: &Path, data: &[u8]) -> R<()> {
-    let mut file = OpenOptions::new().write(true).create_new(true).open(path).map_err(io_err)?;
+    let mut options = OpenOptions::new();
+    options.write(true).create_new(true);
+    #[cfg(unix)]
+    options.mode(0o600);
+    let mut file = options.open(path).map_err(io_err)?;
     file.write_all(data).map_err(io_err)?;
     file.sync_all().map_err(io_err)
 }
@@ -328,7 +334,11 @@ fn finish(root: &Path, input: &Value) -> R<Value> {
     let mut hash = Sha256::new();
     let tmp = root.join(format!("{}.{}.upload", id, new_secret(8)));
     let result = (|| -> R<String> {
-        let mut out = OpenOptions::new().create_new(true).write(true).open(&tmp).map_err(io_err)?;
+        let mut options = OpenOptions::new();
+        options.create_new(true).write(true);
+        #[cfg(unix)]
+        options.mode(0o600);
+        let mut out = options.open(&tmp).map_err(io_err)?;
         let mut buf = [0u8; 32 * 1024];
         let mut copied = 0u64;
         loop {
@@ -413,8 +423,17 @@ fn dispatch(input: &Value) -> R<Value> {
     }
     let root = PathBuf::from(base).join("private-shares");
     fs::create_dir_all(root.join("staging")).map_err(io_err)?;
-    let lock = OpenOptions::new().read(true).write(true).create(true)
-        .open(root.join(".rust-store.lock")).map_err(io_err)?;
+    // Preserve the private 0700/0600 posture of the original Node store.
+    #[cfg(unix)]
+    {
+        fs::set_permissions(&root, fs::Permissions::from_mode(0o700)).map_err(io_err)?;
+        fs::set_permissions(root.join("staging"), fs::Permissions::from_mode(0o700)).map_err(io_err)?;
+    }
+    let mut lock_options = OpenOptions::new();
+    lock_options.read(true).write(true).create(true);
+    #[cfg(unix)]
+    lock_options.mode(0o600);
+    let lock = lock_options.open(root.join(".rust-store.lock")).map_err(io_err)?;
     lock.lock_exclusive().map_err(io_err)?;
     let owner = supplied(input, "ownerDeviceId");
     let result = match supplied(input, "operation") {
