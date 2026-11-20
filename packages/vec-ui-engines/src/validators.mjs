@@ -1,3 +1,4 @@
+import {rustUiValue} from './rust-wasm.mjs';
 // Pure typed value validation shared by all VEC UI engines.
 // No DOM, CSS eval, network, filesystem, dynamic code, or access to Host grants.
 export const VALUE_SCHEMA = 'vivim.ui-engine-value/1';
@@ -59,7 +60,7 @@ function normVector(v,n) {
   if(!valueObject(v,keys)||keys.some(k=>!bounded(v[k],-1e6,1e6)))return null;
   return Object.fromEntries(keys.map(k=>[k,v[k]]));
 }
-export function validateUiValue(type,value,{choices}={}) {
+function validateUiValueJavaScript(type,value,{choices}={}) {
   if(!TYPE_SET.has(type))return fail('UNKNOWN_VALUE_TYPE');
   if(!inertData(value))return fail('NON_INERT_VALUE');
   if(type==='color'){const v=normColor(value);return v===null?fail('INVALID_COLOR'):{ok:true,value:v};}
@@ -129,4 +130,21 @@ export function validateUiValue(type,value,{choices}={}) {
     return {ok:true,value:JSON.parse(copy)};
   }
   return fail('TYPE_UNSUPPORTED');
+}
+
+
+// Rust owns the native value model. For now reject any browser/native
+// disagreement instead of silently adopting a different normalization.
+// Unpackaged PWAs retain the incumbent deterministic JS validator.
+const stable = v => Array.isArray(v)?v.map(stable):
+  v&&typeof v==='object'?Object.fromEntries(Object.keys(v).sort().map(
+    key=>[key,stable(v[key])])):v;
+export function validateUiValue(type,value,{choices}={}){
+  const js=validateUiValueJavaScript(type,value,{choices});
+  const native=rustUiValue(type,value,choices);
+  if(native===null)return js;
+  if(native?.ok!==js.ok||
+     JSON.stringify(stable(native))!==JSON.stringify(stable(js)))
+    return fail('RUST_UI_PARITY_MISMATCH');
+  return native;
 }
