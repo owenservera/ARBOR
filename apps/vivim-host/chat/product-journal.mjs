@@ -323,7 +323,7 @@ function projectWikiChanges(records, { currentOnly = false } = {}) {
 }
 
 // A read model only: user statements and committed Wiki effects remain separate.
-export function projectWikiContext(records, wikiRevision = null, wiki = null, nativeTargets = null) {
+export function projectWikiContext(records, wikiRevision = null, wiki = null, nativeTargets = null, targetSource = null) {
   const observed = records.filter(e => e?.kind === 'chat-send' &&
     (e.actor === 'human' || e.actor === 'owner-browser') &&
     typeof e.entryId === 'string' && Number.isSafeInteger(e.sequence));
@@ -334,7 +334,7 @@ export function projectWikiContext(records, wikiRevision = null, wiki = null, na
     wikiChanges: projectWikiChanges(records),
     wikiStructure: projectWikiStructure(records,wiki),
     omitted: observed.length - latest.length,
-    nativeTargets: nativeTargets===null?'legacy-unavailable':'rust-source-backed',
+    nativeTargets: targetSource??(nativeTargets===null?'javascript-compatibility':'rust-source-backed'),
     items: latest.map((e,index) => {
       const outcome = typeof e.intent?.outcome === 'string' ? e.intent.outcome.slice(0, 64) : null;
       const actionId = typeof e.intent?.candidate?.actionId === 'string'
@@ -501,6 +501,9 @@ export function createProductJournal({ dataRoot, seedState, seedWiki }) {
     const intents=latest.map(e=>({outcome:e.intent?.outcome??null,
       candidate:{actionId:e.intent?.candidate?.actionId??null,
         args:{target:e.intent?.candidate?.args?.target??null}}}));
+    if(!intents.some(row=>row.outcome==='candidate'&&row.candidate.actionId==='wiki.section.edit'))
+      return projectWikiContext(current.records,current.wikiRevision,current.wiki,
+        Array(latest.length).fill(null),'no-targets-to-resolve');
     const native=await runNativeProductPure('wiki-target-batch',{wiki:{pages},intents});
     let targets=null;
     const result=native?.result;
@@ -516,7 +519,8 @@ export function createProductJournal({ dataRoot, seedState, seedWiki }) {
         return intents[i]?.outcome==='candidate'&&
           intents[i]?.candidate?.actionId==='wiki.section.edit';
       }))targets=result.results;
-    return projectWikiContext(current.records,current.wikiRevision,current.wiki,targets);
+    return projectWikiContext(current.records,current.wikiRevision,current.wiki,targets,
+      targets===null?'rust-unavailable-javascript-compatibility':'rust-source-backed');
   }
   // Owner-local native input. Use the same validated committed snapshot and
   // D4 identities, never the demo seed, unverified chat or client-supplied facts.
