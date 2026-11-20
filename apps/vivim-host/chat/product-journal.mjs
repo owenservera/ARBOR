@@ -241,6 +241,78 @@ export function previewWikiPayload(wiki,payload){
   return next;
 }
 
+// Rust is the primary pure reducer for the Host's append-only journal.
+// The Host retains envelope admission, disk authority and exact page ordering.
+// Oversized legacy journals retain the synchronous compatibility reducer.
+async function replayNativeProductJournal(seedState,seedWiki,records){
+  const admitted=records.map((raw,i)=>{
+    const entry=normalizeLegacy(raw);
+    validateEnvelope(entry,{stored:true});
+    return entry;
+  });
+  const ids=new Set();
+  for(let i=0;i<admitted.length;i++){
+    const entry=admitted[i];
+    if(entry.entryId){
+      requireShape(!ids.has(entry.entryId)&&entry.sequence===i+1,
+        'Duplicate or out-of-order journal entry',503);
+      ids.add(entry.entryId);
+    }
+  }
+  const pages=Object.entries(seedWiki.pages).map(([name,page])=>({
+    name,fields:Object.entries(page).map(([key,value])=>
+      [key,key==='sections'?Object.entries(value):value])
+  }));
+  const native=await runNativeProductPure('wiki-journal-replay',{
+    schema:'vivim.wiki-journal-replay-input/1',
+    wikiRevision:seedWiki.revision,seedAt:seedState.at||'',
+    pages,records:admitted
+  });
+  if(native.state==='unavailable')return replayProductJournal(seedState,seedWiki,records);
+  const result=native.result;
+  requireShape(native.state==='computed'&&result?.schema==='vivim.wiki-journal-replay/1'&&
+    result.outcome==='computed'&&result.authority==='none'&&
+    result.executionAuthorized===false&&result.effectPerformed===false&&
+    Number.isSafeInteger(result.productRevision)&&result.productRevision>=0&&
+    Number.isSafeInteger(result.wikiRevision)&&result.wikiRevision>=seedWiki.revision&&
+    result.journalRevision===records.length&&typeof result.lastAt==='string'&&
+    Array.isArray(result.pages)&&result.pages.length<=256&&
+    Array.isArray(result.chatEntries)&&result.chatEntries.length<=records.length,
+    'Native Wiki journal replay refused',503);
+  const decoded=new Map(),names=new Set();
+  for(const page of result.pages){
+    requireShape(page&&typeof page.name==='string'&&SAFE_NAME.test(page.name)&&
+      Array.isArray(page.fields)&&!names.has(page.name.toLowerCase()),
+      'Invalid Rust replay page',503);
+    names.add(page.name.toLowerCase());
+    const fields=new Map();
+    for(const field of page.fields){
+      requireShape(Array.isArray(field)&&field.length===2&&typeof field[0]==='string'&&
+        !fields.has(field[0]),'Invalid Rust replay field',503);
+      if(field[0]==='sections'){
+        requireShape(Array.isArray(field[1])&&field[1].every(section=>
+          Array.isArray(section)&&section.length===2&&typeof section[0]==='string'&&
+          typeof section[1]==='string'),
+          'Invalid Rust replay sections',503);
+        fields.set('sections',Object.fromEntries(field[1]));
+      }else fields.set(field[0],field[1]);
+    }
+    requireShape(fields.has('sections'),'Missing Rust Wiki sections',503);
+    decoded.set(page.name,Object.fromEntries(fields));
+  }
+  const wiki={...copy(seedWiki),pages:Object.fromEntries(decoded),at:result.lastAt,
+    revision:result.wikiRevision};
+  const chat=[...copy(seedState.chat||[]),...result.chatEntries];
+  requireShape(result.chatEntries.length===admitted.filter(e=>e.kind==='chat-send').length&&
+    result.productRevision===admitted.filter(e=>
+      ['chat-send','wiki-edit','wiki-structure'].includes(e.kind)).length&&
+    result.wikiRevision===seedWiki.revision+
+      admitted.filter(e=>['wiki-edit','wiki-structure'].includes(e.kind)).length,
+    'Rust replay revision mismatch',503);
+  return {state:{schemaVersion:1,chat,wikiRevision:wiki.revision,
+    revision:result.productRevision,at:result.lastAt},wiki,journalRevision:records.length};
+}
+
 export function replayProductJournal(seedState, seedWiki, records) {
   const wiki = copy(seedWiki);
   const chat = copy(seedState.chat || []);
@@ -580,7 +652,7 @@ export function createProductJournal({ dataRoot, seedState, seedWiki }) {
       bytes = await readFile(journalPath);
     } catch (error) {
       if (error?.code === 'ENOENT') {
-        const projection=replayProductJournal(seedState,seedWiki,[]);
+        const projection=await replayNativeProductJournal(seedState,seedWiki,[]);
         return {records:[],committed:'',tornTail:false,size:0,wikiRevision:projection.wiki.revision,wiki:projection.wiki,projection};
       }
       throw error;
@@ -600,7 +672,7 @@ export function createProductJournal({ dataRoot, seedState, seedWiki }) {
       catch { throw invalid('Corrupt committed journal segment', 503); }
       records.push(record);
     }
-    const projection = replayProductJournal(seedState, seedWiki, records);
+    const projection = await replayNativeProductJournal(seedState, seedWiki, records);
     return { records, committed: text, tornTail: finalLF !== bytes.length - 1, size: bytes.length,
       wikiRevision: projection.wiki.revision, wiki: projection.wiki, projection };
   }
@@ -739,7 +811,7 @@ export function createProductJournal({ dataRoot, seedState, seedWiki }) {
         const entry={...copy(payload),receivedAt:new Date().toISOString(),entryId:randomUUID(),sequence:current.records.length+entries.length+1,...(sequenceBinding?{sequenceBinding:{...sequenceBinding,step:entries.length+1,total:payloads.length}}:{})};
         validateEnvelope(entry,{stored:true});entries.push(entry);
       }
-      const next=replayProductJournal(seedState,seedWiki,[...current.records,...entries]);
+      const next=await replayNativeProductJournal(seedState,seedWiki,[...current.records,...entries]);
       // The replayed Host journal remains the source of truth; Rust's preflight
       // must converge to its exact revision and ordered Wiki pages before I/O.
       requireShape(wiki.revision===next.wiki.revision&&

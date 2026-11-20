@@ -7,7 +7,7 @@ export const NATIVE_PURE_SCHEMA='vivim.product-pure-response/1';
 const OPERATIONS=new Set([
   'command-program','context-grounding','wiki-target','wiki-target-batch',
   'recovery-diagnosis','recovery-diagnosis-batch','ui-value','ui-token-pack',
-  'local-navigation','vec-admission','sha256-utf8','wiki-source-stamp','wiki-source-search','wiki-source-transition','wiki-source-delta','wiki-capture-projection','wiki-change-projection','wiki-structure-transition','development-projection','control-plan-preview','control-receipt-preview','control-inspection-preview'
+  'local-navigation','vec-admission','sha256-utf8','wiki-source-stamp','wiki-source-search','wiki-source-transition','wiki-source-delta','wiki-capture-projection','wiki-change-projection','wiki-structure-transition','wiki-journal-replay','development-projection','control-plan-preview','control-receipt-preview','control-inspection-preview'
 ]);
 const unavailable=(operation,code)=>({schema:NATIVE_PURE_SCHEMA,
   state:'unavailable',operation,code,authority:'none',
