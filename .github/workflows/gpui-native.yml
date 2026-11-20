@@ -7,6 +7,8 @@ on:
       - 'core/programmability/**'
       - 'native/hqkg/**'
       - 'hq/test/kg-export.test.mjs'
+      - 'hq/test/kg-import-product.test.mjs'
+      - 'apps/vivim-host/test/control-http.test.mjs'
       - 'hq/lib/kg-export.mjs'
       - 'hq/lib/indexer.mjs'
       - 'apps/vivim-host/control/native-ui-view.mjs'
@@ -44,5 +46,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build real Rust graph binaries
+        run: cargo build -p hq-knowledge-graph --features importer --bin hqkg --bin hqkg-import
+      - name: Required persisted semantic graph journey
+        env:
+          HQKG_REQUIRE_SEMANTIC_JOURNEY: '1'
+        run: node --test hq/test/kg-import-product.test.mjs
       - name: Canonical native and workspace projections
-        run: node --experimental-strip-types --test apps/vivim-host/test/native-ui-view.test.mjs apps/mobile-relay/test/workspace-live-data.test.mjs hq/test/kg-export.test.mjs
+        run: node --experimental-strip-types --test apps/vivim-host/test/native-ui-view.test.mjs apps/mobile-relay/test/workspace-live-data.test.mjs hq/test/kg-export.test.mjs apps/vivim-host/test/control-http.test.mjs

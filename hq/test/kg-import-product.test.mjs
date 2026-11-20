@@ -329,3 +329,44 @@ test('source refresh imports through the packaged binary and advances state only
     rmSync(ws, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
   }
 });
+test('semantic source journey: index, packaged Rust import, query, tombstone, durable readback',t=>{
+  const dir=localImporterDir();
+  const cli=dir&&join(dir,process.platform==='win32'?'hqkg.exe':'hqkg');
+  if(!dir||!existsSync(cli)){
+    if(process.env.HQKG_REQUIRE_SEMANTIC_JOURNEY==='1')assert.fail('required native graph binaries are not built');
+    t.skip('native importer and hqkg query binary not built');return;
+  }
+  const semantic='vivim.native-visual-validation@1';
+  const {root,project,db}=workspace({
+    'src/core.rs':'//! @hq:capability '+semantic+'\npub fn validate() {}\n',
+    'src/consumer.mjs':'// @hq:consumes '+semantic+'\nexport const consumer=1;\n'
+  });
+  const env={...process.env,[IMPORTER_BIN_DIR_ENV]:dir,[IMPORT_MODE_ENV]:'packaged'};
+  function apply(){
+    const x=exportOf(db,root);
+    const receipt=importGraphExchange({root,journal:x.journal,exchange:x.outPath,namespace:SOURCE_NAMESPACE,env});
+    assert.equal(receipt.ok,true,JSON.stringify(receipt));
+    assert.equal(receipt.namespace,SOURCE_NAMESPACE);
+    assert.equal(receipt.digest,x.exported.digest);
+    assert.equal(acknowledgeGraphExport({statePath:x.statePath,digest:receipt.digest,
+      acknowledgment:{epochBefore:receipt.epochBefore,epochAfter:receipt.epochAfter}}).acked,true);
+    return x;
+  }
+  function query(journal,command,...args){return execFileSync(cli,[journal,command,semantic,...args],{encoding:'utf8'});}
+  try{
+    const first=apply();
+    const observed=query(first.journal,'semantic-sources');
+    assert.match(observed,/matches=2/);assert.match(observed,/demo\/src\/core\.rs/);assert.match(observed,/demo\/src\/consumer\.mjs/);
+    assert.match(query(first.journal,'semantic-impact','2'),/authority=static-impact-only/);
+    writeFileSync(join(project,'src','core.rs'),'pub fn validate() {}\n','utf8');
+    indexProject({root,db,project:{name:'demo',path:project},options:{useGit:false}});
+    const second=apply();
+    const remaining=query(second.journal,'semantic-sources');
+    assert.match(remaining,/matches=1/);assert.doesNotMatch(remaining,/core\.rs/);
+    assert.match(remaining,/consumer\.mjs/);
+    writeFileSync(join(project,'src','consumer.mjs'),'export const consumer=1;\n','utf8');
+    indexProject({root,db,project:{name:'demo',path:project},options:{useGit:false}});
+    const third=apply();
+    assert.throws(()=>query(third.journal,'semantic-sources'));
+  }finally{db.close();rmSync(root,{recursive:true,force:true,maxRetries:5,retryDelay:200});}
+});
