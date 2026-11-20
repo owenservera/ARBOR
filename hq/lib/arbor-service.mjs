@@ -15,7 +15,6 @@ import { listSemanticIds, getSemanticId, indexedSemanticAnchors, indexedAnnotati
 import { scanCapabilitySource, persistCapabilityScan, capabilityStatus } from './capabilities.mjs';
 import { head as gitHead } from './git.mjs';
 import { sha256 } from './util.mjs';
-import { exportGraphExchange, importGraphExchange, acknowledgeGraphExport, queryDevelopmentGraph, SOURCE_NAMESPACE } from './kg-export.mjs';
 
 export const DEV_INTELLIGENCE_CONTRACT = 'arbor.dev-intelligence/1';
 export const DEVELOPMENT_DOMAIN = 'development';
@@ -299,17 +298,18 @@ export function createDevIntelligence({
   }
   // Same development index and same Rust journal as HQ kg sync.
   // Only registered, approved source roots are admitted; nothing from World.
-  function syncNativeGraph() {
-    return withDatabase(db => {
+  async function syncNativeGraph() {
+    return withDatabase(async db => {
+      const kg=await import('./kg-export.mjs');
       const outPath=join(dbDir,'kg-exchange.jsonl');
       const statePath=join(dbDir,'kg-export-state.json');
       const journal=join(dbDir,'kg-journal.hqj');
-      const exported=exportGraphExchange({db,outPath,statePath});
-      const imported=importGraphExchange({root,journal,exchange:outPath,
-        namespace:SOURCE_NAMESPACE,expectedDigest:exported.digest});
+      const exported=kg.exportGraphExchange({db,outPath,statePath});
+      const imported=kg.importGraphExchange({root,journal,exchange:outPath,
+        namespace:kg.SOURCE_NAMESPACE,expectedDigest:exported.digest});
       if(!imported.ok)return {schema:'hqkg.development-sync/1',state:'unavailable',
         reason:imported.reason,exported:exported.stats,imported:false};
-      const ack=acknowledgeGraphExport({statePath,digest:exported.digest,
+      const ack=kg.acknowledgeGraphExport({statePath,digest:exported.digest,
         acknowledgment:{epochBefore:imported.epochBefore,epochAfter:imported.epochAfter,
           stats:imported.statsLine??undefined}});
       if(!ack.acked)return {schema:'hqkg.development-sync/1',state:'unavailable',
@@ -318,13 +318,14 @@ export function createDevIntelligence({
         epoch:imported.epochAfter,exported:exported.stats,imported:true,acked:true};
     },'source.index',true);
   }
-  function nativeGraphQuery({operation,key,depth}={}) {
+  async function nativeGraphQuery({operation,key,depth}={}) {
     if(!['sources','symbols','impact','compute'].includes(operation)
       ||typeof key!=='string'||key.length<1||key.length>180||/[\\u0000-\\u001f\\u007f]/.test(key)
       ||(depth!==undefined&&(!Number.isSafeInteger(depth)||depth<0||depth>8)))
       throw new Error('HQ_GRAPH_QUERY_INVALID');
-    return withDatabase(db => {
-      return queryDevelopmentGraph({root,journal:join(dbDir,'kg-journal.hqj'),
+    return withDatabase(async db => {
+      const kg=await import('./kg-export.mjs');
+      return kg.queryDevelopmentGraph({root,journal:join(dbDir,'kg-journal.hqj'),
         operation,key,depth});
     },'source.read',true);
   }

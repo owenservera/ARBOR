@@ -3,11 +3,12 @@
 //! @hq:consumes vivim.gpui-control-client@1
 //! @hq:consumes vivim.native-visual-validation@1
 //! @hq:consumes vivim.native-visual-delta@1
+//! @hq:consumes hqkg.development-query@1
 use std::time::Duration;
 use vivim_programmability_core::visual::visual_delta;
 use gpui::{AnyElement, App, Application, Bounds, Context, Entity, Window, WindowBounds, WindowOptions, div, prelude::*, px, relative, rgb, size};
 use gpui_component::{Root, input::{Input, InputState}, button::{Button, ButtonVariants}};
-use vivim_gpui_desktop::{Overview, read_overview, control::{self, Review}, visual::{self, Visual, Node, RevisionGuard}};
+use vivim_gpui_desktop::{Overview, read_overview, read_development, control::{self, Review}, visual::{self, Visual, Node, RevisionGuard}};
 
 struct Desktop {
     input: Entity<InputState>,
@@ -17,6 +18,9 @@ struct Desktop {
     visual_status: String,
     visual_guard: RevisionGuard,
     detail: String,
+    graph_detail: String,
+    graph_status: String,
+    graph_busy: bool,
     review: Option<Review>,
     last_plan: Option<String>,
     busy: bool,
@@ -129,6 +133,26 @@ impl Desktop {
             });
         }).detach();
     }
+    fn inspect_graph(&mut self,operation:&'static str,cx:&mut Context<Self>){
+        if self.graph_busy{return}
+        let key=self.input.read(cx).value().to_string();
+        self.graph_busy=true;
+        self.graph_status=format!("Reading indexed {}…",operation);
+        self.graph_detail.clear();
+        cx.notify();
+        let work=cx.background_executor().spawn(async move{read_development(operation,&key)});
+        cx.spawn(async move |this,cx|{
+            let result=work.await;
+            let _=this.update(cx,|view,cx|{
+                view.graph_busy=false;
+                match result{
+                    Ok(data)=>{view.graph_status="Source-backed HQKG read only".into();view.graph_detail=data;}
+                    Err(e)=>{view.graph_status=e.label().into();view.graph_detail.clear();}
+                }
+                cx.notify();
+            });
+        }).detach();
+    }
     fn inspect(&mut self,cx:&mut Context<Self>) {
         if self.busy { return; }
         let Some(id)=self.last_plan.clone() else {return};
@@ -216,7 +240,9 @@ impl Render for Desktop {
         }
         let mut controls=div().flex().flex_wrap().gap_2()
             .child(Button::new("refresh").label("Refresh Host").on_click(cx.listener(|v,_,_,cx|v.refresh(cx))))
-            .child(Button::new("plan").label("Review command").on_click(cx.listener(|v,_,_,cx|v.submit(cx))));
+            .child(Button::new("plan").label("Review command").on_click(cx.listener(|v,_,_,cx|v.submit(cx))))
+            .child(Button::new("graph-symbol").label("Find graph symbol").on_click(cx.listener(|v,_,_,cx|v.inspect_graph("symbols",cx))))
+            .child(Button::new("graph-file").label("Compute graph file ID").on_click(cx.listener(|v,_,_,cx|v.inspect_graph("compute",cx))));
         if !self.busy && self.review.as_ref().is_some_and(Review::needs_approval) && !self.uncertain {
             controls=controls.child(Button::new("approve").primary().label("Approve exact displayed Host plan")
                 .on_click(cx.listener(|v,_,_,cx|v.approve(cx))))
@@ -226,6 +252,11 @@ impl Render for Desktop {
         }
         if self.last_plan.is_some() {
             controls=controls.child(Button::new("inspect").label("Inspect original plan").on_click(cx.listener(|v,_,_,cx|v.inspect(cx))));
+        }
+        body=body.child(div().text_lg().child("Development graph · source-backed only"))
+            .child(self.graph_status.clone());
+        if !self.graph_detail.is_empty(){
+            body=body.child(div().p_3().bg(rgb(0x202b3a)).child(self.graph_detail.clone()));
         }
         if !self.detail.is_empty() {
             body=body.child(div().text_lg().child("Canonical Host response"))
@@ -249,7 +280,8 @@ fn main() {
                 let input=cx.new(|cx| InputState::new(window,cx).placeholder("Ask VIVIM or describe a Host command"));
                 let view=cx.new(|cx| {
                     let mut view=Desktop {input,status:"Not yet observed".into(),overview:None,visual:None,visual_status:"Not yet observed".into(),visual_guard:RevisionGuard::default(),detail:String::new(),
-                        review:None,last_plan:None,busy:false,uncertain:false};
+                        review:None,last_plan:None,busy:false,uncertain:false,
+                        graph_detail:String::new(),graph_status:"Graph not yet queried".into(),graph_busy:false};
                     view.refresh(cx);view.start_observer(cx);view
                 });
                 cx.new(|cx|Root::new(view,window,cx))

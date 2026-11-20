@@ -130,6 +130,83 @@ pub fn read_overview() -> Result<Overview, ReadError> {
     project(&pwa, &wiki)
 }
 
+/// Owner-only development graph read, from the same Host endpoint used by PWA.
+/// Neither a graph reference nor a symbol name is an execution credential.
+pub fn read_development(operation:&str,key:&str)->Result<String,ReadError>{
+    if !matches!(operation,"symbols"|"compute")||key.is_empty()||key.len()>180
+        ||key.chars().any(char::is_control) {return Err(ReadError::InvalidInput)}
+    if operation=="compute" {
+        let digest=key.strip_prefix("hqg1:").ok_or(ReadError::InvalidInput)?;
+        if digest.len()!=64||!digest.bytes().all(|b|b.is_ascii_digit()||(b'a'..=b'f').contains(&b)){
+            return Err(ReadError::InvalidInput)
+        }
+    }
+    let client=Client::builder().no_proxy().redirect(reqwest::redirect::Policy::none())
+        .timeout(Duration::from_secs(12)).connect_timeout(Duration::from_secs(2))
+        .build().map_err(|_|ReadError::Unavailable)?;
+    validate_health(&get(&client,Endpoint::Health,None)?)?;
+    let token=owner_token()?;
+    let response=client.get(format!("{BASE}/api/host/control/development/graph"))
+        .bearer_auth(token).query(&[("operation",operation),("key",key)])
+        .send().map_err(|_|ReadError::Offline)?;
+    match response.status().as_u16(){
+        401|403=>return Err(ReadError::OwnerRequired),
+        200=>{},
+        _=>return Err(ReadError::Unavailable),
+    }
+    let mut bytes=Vec::new();
+    response.take(256*1024+1).read_to_end(&mut bytes).map_err(|_|ReadError::Unavailable)?;
+    if bytes.len()>256*1024{return Err(ReadError::InvalidProjection)}
+    let data:Value=serde_json::from_slice(&bytes).map_err(|_|ReadError::InvalidProjection)?;
+    if data["schema"]!="hqkg.development-query/1"||data["authority"]!="read-only"
+        ||data["operation"]!=operation||!data["epoch"].is_u64(){
+        return Err(ReadError::InvalidProjection)
+    }
+    let mut lines=vec![format!("HQKG · {} · epoch {} · indexed observations only",operation,
+        data["epoch"].as_u64().unwrap_or(0))];
+    match operation{
+        "symbols"=>{
+            if data["state"]!="indexed-snapshot"{return Err(ReadError::Unavailable)}
+            let rows=data["result"]["symbols"].as_array().ok_or(ReadError::InvalidProjection)?;
+            lines.push(format!("{} indexed matching symbols",rows.len()));
+            for row in rows.iter().take(30){
+                let name=row["name"].as_str().ok_or(ReadError::InvalidProjection)?;
+                let path=row["path"].as_str().ok_or(ReadError::InvalidProjection)?;
+                let id=row["id"].as_str().ok_or(ReadError::InvalidProjection)?;
+                lines.push(format!("{} · {}:{} · {}",bounded_text(name),bounded_text(path),
+                    row["line"].as_u64().unwrap_or(0),bounded_text(id)));
+            }
+            lines.push("To compute a source file, supply its source-file node ID (not the symbol ID).".into());
+        }
+        "compute"=>{
+            if data["state"]!="computed"||data["executionAuthorized"]!=false||
+                data["effectPerformed"]!=false||data["computation"]!="source-backed-graph"{
+                return Err(ReadError::InvalidProjection)
+            }
+            let rows=data["outputs"].as_array().ok_or(ReadError::InvalidProjection)?;
+            for row in rows.iter().take(8){
+                let result=&row["result"];
+                if result["schema"]!="hqkg.development-transform/1"||result["authority"]!="none"{
+                    return Err(ReadError::InvalidProjection)
+                }
+                lines.push(format!("{} · {} · {} sources · {} imports · {} symbols · {} semantics · {} reverse dependencies",
+                    bounded_text(row["stepId"].as_str().unwrap_or("unknown")),
+                    bounded_text(result["operation"].as_str().unwrap_or("unknown")),
+                    result["sourceCount"].as_u64().unwrap_or(0),result["importCount"].as_u64().unwrap_or(0),
+                    result["symbolCount"].as_u64().unwrap_or(0),result["semanticCount"].as_u64().unwrap_or(0),
+                    result["dependentCount"].as_u64().unwrap_or(0)));
+                if let Some(sources)=result["sources"].as_array(){
+                    for source in sources.iter().take(4){
+                        if let Some(path)=source["path"].as_str(){lines.push(format!("  {}",bounded_text(path)));}
+                    }
+                }
+            }
+        }
+        _=>return Err(ReadError::InvalidInput),
+    }
+    Ok(lines.join("\\n"))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
