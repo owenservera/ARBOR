@@ -516,6 +516,18 @@
     "gate": "host-suite"
   },
   {
+    "path": "apps/vivim-host/test/private-shares-direct.test.mjs",
+    "root": "apps/vivim-host/test",
+    "runtime": "node24-ajv",
+    "gate": "host-suite"
+  },
+  {
+    "path": "apps/vivim-host/test/private-shares.test.mjs",
+    "root": "apps/vivim-host/test",
+    "runtime": "node24-ajv",
+    "gate": "host-suite"
+  },
+  {
     "path": "apps/vivim-host/test/receipt-runner.test.mjs",
     "root": "apps/vivim-host/test",
     "runtime": "node24-ajv",
@@ -1853,76 +1865,76 @@
     "runtime": "bun",
     "gate": "roadmap-acceleration"
   },
-{
-  "path": "native/hqkg/tests/invalidate-revision.test.mjs",
-  "root": "native/hqkg/tests",
-  "runtime": "node24-ajv",
-  "gate": "roadmap-acceleration"
-},
-{
-  "path": "scripts/batch-evidence/A00.test.mjs",
-  "root": "scripts/batch-evidence",
-  "runtime": "node24-ajv",
-  "gate": "roadmap-acceleration"
-},
-{
-  "path": "scripts/batch-evidence/A01.test.mjs",
-  "root": "scripts/batch-evidence",
-  "runtime": "node24-ajv",
-  "gate": "roadmap-acceleration"
-},
-{
-  "path": "scripts/batch-evidence/A02.test.mjs",
-  "root": "scripts/batch-evidence",
-  "runtime": "node24-ajv",
-  "gate": "roadmap-acceleration"
-},
-{
+  {
+    "path": "native/hqkg/tests/invalidate-revision.test.mjs",
+    "root": "native/hqkg/tests",
+    "runtime": "node24-ajv",
+    "gate": "roadmap-acceleration"
+  },
+  {
+    "path": "scripts/batch-evidence/A00.test.mjs",
+    "root": "scripts/batch-evidence",
+    "runtime": "node24-ajv",
+    "gate": "roadmap-acceleration"
+  },
+  {
+    "path": "scripts/batch-evidence/A01.test.mjs",
+    "root": "scripts/batch-evidence",
+    "runtime": "node24-ajv",
+    "gate": "roadmap-acceleration"
+  },
+  {
+    "path": "scripts/batch-evidence/A02.test.mjs",
+    "root": "scripts/batch-evidence",
+    "runtime": "node24-ajv",
+    "gate": "roadmap-acceleration"
+  },
+  {
     "path": "scripts/roadmap/release-truth-separation.test.mjs",
     "root": "scripts/roadmap",
     "runtime": "node24-ajv",
     "gate": "roadmap-acceleration"
-},
-{
+  },
+  {
     "path": "studio/test/unit/browser-companion-ingress.test.mjs",
     "root": "studio/test/unit",
     "runtime": "node",
     "gate": "studio-suite"
-},
-{
+  },
+  {
     "path": "studio/test/unit/capture-conversation-evidence.test.mjs",
     "root": "studio/test/unit",
     "runtime": "node",
     "gate": "studio-suite"
-},
-{
+  },
+  {
     "path": "studio/test/unit/capture-conversation-thread.test.mjs",
     "root": "studio/test/unit",
     "runtime": "node",
     "gate": "studio-suite"
-},
-{
+  },
+  {
     "path": "studio/test/unit/consolidate-studio-src.test.mjs",
     "root": "studio/test/unit",
     "runtime": "node",
     "gate": "studio-suite"
-},
-{
+  },
+  {
     "path": "studio/test/unit/replay-derive-determinism.test.mjs",
     "root": "studio/test/unit",
     "runtime": "node",
-	    "gate": "studio-suite"
-	},
-		{
-		    "path": "scripts/batch-evidence/tauri-schema-permissions.test.mjs",
-		    "root": "scripts/batch-evidence",
-		    "runtime": "node24-ajv",
-		    "gate": "roadmap-acceleration"
-		},
-		{
-		    "path": "scripts/roadmap/a05-evidence-artifact-reachability.test.mjs",
-		    "root": "scripts/roadmap",
-		    "runtime": "node24-ajv",
-		    "gate": "roadmap-acceleration"
-		}
+    "gate": "studio-suite"
+  },
+  {
+    "path": "scripts/batch-evidence/tauri-schema-permissions.test.mjs",
+    "root": "scripts/batch-evidence",
+    "runtime": "node24-ajv",
+    "gate": "roadmap-acceleration"
+  },
+  {
+    "path": "scripts/roadmap/a05-evidence-artifact-reachability.test.mjs",
+    "root": "scripts/roadmap",
+    "runtime": "node24-ajv",
+    "gate": "roadmap-acceleration"
+  }
 ]
