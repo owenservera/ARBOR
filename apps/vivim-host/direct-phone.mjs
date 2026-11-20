@@ -127,7 +127,7 @@ export async function serveLoopbackPhoneAsset(req, res, pathname) {
   // by the new loopback Host presentation shell only.
   res.setHeader('x-frame-options', 'SAMEORIGIN');
   res.setHeader('content-security-policy',
-    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; media-src 'self' blob:; frame-src 'none'; object-src 'none'; frame-ancestors 'self'; base-uri 'none'; form-action 'none'");
+    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; frame-src blob:; object-src 'none'; frame-ancestors 'self'; base-uri 'none'; form-action 'none'");
   try {
     const content = await readPhoneAsset(asset);
     res.setHeader('content-type', asset[1]);
@@ -265,7 +265,7 @@ export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'wo
   const handleDirectPhone = async function directPhone(req, res) {
     const remote = req.socket.remoteAddress;
     if (!['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(remote) || req.headers.host !== url.host || req.headers['x-forwarded-proto'] !== 'https' || req.headers['tailscale-user-login'] !== user) { json(res, 403, { error: 'Forbidden' }); return; }
-    res.setHeader('content-security-policy', "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; media-src 'self' blob:; frame-src 'none'; object-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'");
+    res.setHeader('content-security-policy', "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; frame-src blob:; object-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'");
     const rawPath = (req.url || '').split('?')[0];
     if (rawPath === '/mobile') { res.writeHead(308, { location: '/mobile/' }); res.end(); return; }
     if (!rawPath.startsWith('/mobile/')) { json(res, 404, { error: 'Not found' }); return; }
