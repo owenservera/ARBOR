@@ -9,6 +9,12 @@ import { createVecCompiler } from './vec/compiler.mjs';
 import { compileVecUiRequest } from './vec/ui-adapter.mjs';
 import { getUiComponent, resolveUiSourceIdentity } from './vec/ui-taxonomy/registry.mjs';
 
+// Initialize the identical Rust product kernel on PWA surfaces that edit UI.
+ // Unpackaged local previews keep their original pure JS path.
+if(typeof window!=='undefined'){
+  void import('./vec-engines/rust-wasm.mjs')
+    .then(module=>module.initializeRustUiEngine()).catch(()=>{});
+}
 // Canonical first-party VEC engine, not a rewritten client-side compiler.
 // Node resolves its source directly; the paired browser uses Host's fixed asset map.
 const { compileUiConfiguration } = await import(
