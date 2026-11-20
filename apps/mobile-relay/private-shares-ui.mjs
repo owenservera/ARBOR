@@ -12,7 +12,7 @@ const incomingCapability = shareHash?.[1] || null;
 let created = null;
 let inspected = null;
 if (shareHash) history.replaceState(null, '', location.pathname + location.search);
-if (button && !transport?.direct) button.hidden = true;
+if (button) button.hidden = !transport?.direct || new URLSearchParams(location.search).get('host-preview') === '1';
 
 function message(value) { if (status) status.textContent = String(value); }
 function ready() {
@@ -123,7 +123,7 @@ if (button && dialog) {
   $('share-create')?.addEventListener('click', async () => {
     const upload = fileInput?.files?.[0];
     if (!upload) { message('Choose a file to share.'); return; }
-    const action = $('share-create'); action.disabled = true; output.value = '';
+    const action = $('share-create'); action.disabled = true; output.value = ''; created = null;
     try {
       message('Reserving private share on Host…');
       const policy = {
