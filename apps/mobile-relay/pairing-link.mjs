@@ -1,7 +1,7 @@
 // Single-use Direct device enrollment. Explicitly separate it from legacy relay-secret pairing.
 export function parsePairFragment(fragment) {
   const raw = String(fragment || '').replace(/^#/, '');
-  if (!raw || raw.startsWith('ask=')) return {type:'none'};
+  if (!raw || raw.startsWith('ask=') || /^share-token=[a-f0-9]{64}$/.test(raw)) return {type:'none'};
   let value;
   try { value = decodeURIComponent(raw); } catch { return {type:'invalid'}; }
   if (/^[a-f0-9]{64}$/.test(value)) return {type:'device',token:value};
