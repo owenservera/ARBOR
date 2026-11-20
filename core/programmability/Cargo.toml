@@ -8,6 +8,7 @@ description = "Pure native types and deterministic validation for VIVIM programm
 [lib]
 name = "vivim_programmability_core"
 path = "src/lib.rs"
+crate-type = ["rlib", "cdylib"]
 
 [dependencies]
 
