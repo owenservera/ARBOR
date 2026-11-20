@@ -11,6 +11,7 @@ const shareHash = /^#share-token=([a-f0-9]{64})$/.exec(location.hash);
 const incomingCapability = shareHash?.[1] || null;
 let created = null;
 let inspected = null;
+let previewUrl = null;
 if (shareHash) history.replaceState(null, '', location.pathname + location.search);
 if (button) button.hidden = !transport?.direct || new URLSearchParams(location.search).get('host-preview') === '1';
 
@@ -99,12 +100,37 @@ async function receive(preview) {
   const passcode = $('share-receive-passcode')?.value || '';
   const blob = await call('/'+shareId+'/download',{capability:incomingCapability,passcode,binary:true});
   const url = URL.createObjectURL(new Blob([blob],{type:preview?inspected.mime:'application/octet-stream'}));
-  if (preview) window.open(url, '_blank', 'noopener,noreferrer');
-  else {
+  if (preview) {
+    const pane = $('share-preview-pane');
+    if (!pane) { URL.revokeObjectURL(url); throw new Error('Preview surface unavailable.'); }
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    previewUrl = url;
+    pane.replaceChildren(); pane.hidden = false;
+    const mime = inspected.mime;
+    let viewer;
+    if (mime === 'text/plain') {
+      viewer = document.createElement('pre');
+      viewer.textContent = await blob.text();
+      viewer.style.whiteSpace = 'pre-wrap';
+      viewer.style.overflowWrap = 'anywhere';
+    } else if (mime.startsWith('image/')) {
+      viewer = document.createElement('img');
+      viewer.src = url; viewer.alt = inspected.name; viewer.style.maxWidth = '100%';
+    } else if (mime.startsWith('audio/') || mime.startsWith('video/')) {
+      viewer = document.createElement(mime.startsWith('audio/') ? 'audio' : 'video');
+      viewer.controls = true; viewer.src = url; viewer.style.maxWidth = '100%';
+    } else {
+      viewer = document.createElement('iframe');
+      viewer.src = url; viewer.title = 'Private PDF preview';
+      viewer.setAttribute('sandbox','allow-same-origin');
+      viewer.style.width = '100%'; viewer.style.height = '55dvh'; viewer.style.border = '0';
+    }
+    pane.append(viewer);
+  } else {
     const link = document.createElement('a');
     link.href = url; link.download = inspected.name; document.body.append(link); link.click(); link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
   }
-  setTimeout(() => URL.revokeObjectURL(url), 60000);
   message('Retrieved. Preview also counts against the download limit.');
   inspected = null; // fresh inspection is needed after use
 }
@@ -120,6 +146,12 @@ if (button && dialog) {
     refresh().catch(e => message(e.message));
   });
   $('share-close')?.addEventListener('click', () => dialog.close?.());
+  dialog.addEventListener('close', () => {
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    previewUrl = null;
+    const pane = $('share-preview-pane');
+    if (pane) { pane.replaceChildren(); pane.hidden = true; }
+  });
   $('share-create')?.addEventListener('click', async () => {
     const upload = fileInput?.files?.[0];
     if (!upload) { message('Choose a file to share.'); return; }
@@ -153,7 +185,8 @@ if (button && dialog) {
   $('share-inspect')?.addEventListener('click',()=>inspectIncoming().catch(e=>message(e.message)));
   $('share-download')?.addEventListener('click',()=>receive(false).catch(e=>message(e.message)));
   $('share-preview')?.addEventListener('click',()=>receive(true).catch(e=>message(e.message)));
-  if (shareId && incomingCapability) {
+  if (shareId && incomingCapability && transport?.direct &&
+      new URLSearchParams(location.search).get('host-preview') !== '1') {
     button.hidden = false;
     // Only display the link on arrival, never download without an owner gesture.
     button.setAttribute('aria-label','Open received share');
