@@ -1,8 +1,7 @@
-# VIVIM GPUI desktop — first integration slice
+# VIVIM GPUI desktop — native Host interaction
 
 Opt-in native renderer, not a replacement for the shipped Tauri shell or PWA.
-The canonical Host remains the only state/effect authority. No provider calls,
-extra grants, local journal, fake UI data, or execution endpoints are introduced.
+The canonical Host remains the only state/effect authority. No provider calls, extra grants, local journal, fake UI data, or NEW execution endpoints are introduced. Native commands reuse the existing owner-authorized control plan/execute/inspect endpoints.
 
 ## Run from repository root
 
@@ -24,8 +23,10 @@ generated lockfile. Generate and review it on the Windows build machine.
 - Canonical GET Host status, private PWA projection, private Wiki projection.
 - Schema-checked source-backed overview with Wiki revision, page names,
   active paired-device count, recent Host decision states and explicit refresh.
-- Background fetch, fail-closed state, no automatic retry or writes.
-- Projection tests (not live acceptance).
+- Background fetch, fail-closed state, no automatic retry or writes from refresh.
+- Production text input using pinned gpui-component 0.5.0, native plan review, explicit one-click approval, canonical receipt validation and original plan inspection.
+- Unknown execution outcomes block new commands in the current UI session; inspect locally before opening a new session. Closing the window does not resolve an uncertain effect.
+- Projection and exact approval/receipt contract tests (not live acceptance).
 
 ## Required convergence
 1. Run and record actual Windows GPU build and smoke; verify wiki-view payload
@@ -34,8 +35,7 @@ generated lockfile. Generate and review it on the Windows build machine.
    duplicating it; prefer short-lived native sessions when supported.
 3. Map existing VEC/TierFlow component/schema contracts into GPUI elements,
    preserving stable IDs and revision semantics; reuse theme tokens.
-4. Add native composer with canonical Host interpret/plan and digest-bound
-   explicit approval, receipts and recovery. Never execute on render.
+4. Native plan/approve/receipt source exists; validate on Windows and add typed preview widgets, explicit recovery across restart, composer assistance and accessibility. Never execute on render.
 5. Add HQ/Wiki live revision projection, accessible keyboard/touch navigation,
    resizing and device pairing parity, then opt-in installer packaging.
 6. Retire the Tauri renderer only after reproducible desktop parity and owner

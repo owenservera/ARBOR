@@ -9,12 +9,13 @@ publish = false
 
 [features]
 default = []
-desktop = ["dep:gpui"]
+desktop = ["dep:gpui", "dep:gpui-component"]
 
 [dependencies]
 serde_json = "1"
 reqwest = { version = "0.12", default-features = false, features = ["blocking", "json"] }
 gpui = { version = "=0.2.2", optional = true }
+gpui-component = { version = "=0.5.0", optional = true }
 
 [[bin]]
 name = "vivim-gpui-desktop"

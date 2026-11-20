@@ -1,5 +1,5 @@
-//! Native read-only adapter for the canonical VIVIM Host.
-//! No journal writes, browser grants, or action execution.
+//! Native adapter for the canonical VIVIM Host. No local journal or dispatcher.
+pub mod control;
 use reqwest::blocking::Client;
 use serde_json::Value;
 use std::{path::{Path, PathBuf}, time::Duration, io::Read};
@@ -18,7 +18,7 @@ pub struct Overview {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ReadError {
-    Offline, OwnerRequired, Unavailable, InvalidProjection,
+    Offline, OwnerRequired, Unavailable, InvalidProjection, InvalidInput,
 }
 impl ReadError {
     pub fn label(&self) -> &'static str {
@@ -27,6 +27,7 @@ impl ReadError {
             Self::OwnerRequired => "Local owner authorization required",
             Self::Unavailable => "Host projection unavailable",
             Self::InvalidProjection => "Invalid Host projection",
+            Self::InvalidInput => "Invalid command or plan identity",
         }
     }
 }
