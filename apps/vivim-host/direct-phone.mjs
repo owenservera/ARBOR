@@ -307,7 +307,7 @@ export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'wo
           authorizeDevice(req, 'control:read');
           res.setHeader('x-content-type-options', 'nosniff');
           res.setHeader('content-type', 'application/octet-stream');
-          res.setHeader('content-disposition', "attachment; filename*=UTF-8''" + encodeURIComponent(info.name));
+          res.setHeader('content-disposition', "attachment; filename*=UTF-8''" + encodeURIComponent(info.name).replace(/['()*]/g, c => '%' + c.charCodeAt(0).toString(16).toUpperCase()));
           res.setHeader('content-length', String(info.bytes));
           res.writeHead(200);
           await pipeline(createReadStream(info.file), res);
