@@ -16,7 +16,8 @@ const operations=Object.freeze({
   'wiki-read-recipe':'vivim.wiki-read-recipe-native/1',
   'command-ai-guard':'vivim.command-ai-proposal-guard/1',
   'control-lexicon-transition':'vivim.control-lexicon-transition/1',
-  'personal-rule-selection':'vivim.personal-rule-selection/1'
+  'personal-rule-selection':'vivim.personal-rule-selection/1',
+  'control-catalog-compatibility':'vivim.control-catalog-compatibility/1'
 });
 export function runNativeProductPureSync(operation,input){
   if(!Object.hasOwn(operations,operation)||input===null||typeof input!=='object')
