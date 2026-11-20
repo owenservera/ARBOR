@@ -888,6 +888,38 @@ async function handleControl(req, res, pathname, host, controlFor, tokenFor, uiS
   }
   // Native renderer consumes the SAME validated TierFlow render plan as the PWA.
   // There is no new writer, phone grant, or renderer-side compiler authority.
+  if(route==='native-pure'){
+    if(req.method!=='POST'){sendJson(res,405,{code:'METHOD'});return;}
+    if(!sameOrigin||req.headers['x-vivim-control']!=='1'){
+      sendJson(res,403,{code:'ORIGIN_OR_CSRF'});return;
+    }
+    const bearer=!!owner&&verifyOwnerToken(req.headers.authorization,owner);
+    const ownerSession=bearer?null:uiSessions.get(req)?.sessionId;
+    const stillOwner=()=>{
+      if(bearer){try{return verifyOwnerToken(req.headers.authorization,tokenFor());}catch{return false;}}
+      return !!ownerSession&&uiSessions.get(req)?.sessionId===ownerSession&&
+        uiSessions.authorized(req,{mutate:false});
+    };
+    if(!stillOwner()){sendJson(res,401,{code:'OWNER_AUTH'});return;}
+    try{
+      const body=await readJsonBody(req,262144);
+      if(!body||typeof body.operation!=='string'||body.operation.length>50||
+        !body.input||typeof body.input!=='object'||Array.isArray(body.input)||
+        Object.keys(body).some(k=>!['operation','input'].includes(k))){
+        sendJson(res,400,{code:'INVALID_NATIVE_INPUT'});return;
+      }
+      const {runNativeProductPure}=await import('./control/native-product-pure.mjs');
+      const result=await runNativeProductPure(body.operation,body.input);
+      if(!stillOwner()){sendJson(res,401,{code:'OWNER_AUTH'});return;}
+      res.setHeader('cache-control','private, no-store');
+      sendJson(res,result.state==='unavailable'?503:result.state==='refused'?400:200,result);
+    }catch{
+      sendJson(res,503,{schema:'vivim.product-pure-response/1',state:'unavailable',
+        code:'NATIVE_PURE_UNAVAILABLE',authority:'none',
+        executionAuthorized:false,effectPerformed:false});
+    }
+    return;
+  }
   if (route === 'native-ui-view' || route === 'native-vec-ir') {
     if (req.method !== 'GET') { sendJson(res,405,{code:'METHOD'});return; }
     if (req.headers.origin !== undefined && !sameOrigin) {sendJson(res,403,{code:'ORIGIN'});return;}
