@@ -6,7 +6,8 @@ import {callNativeProductKernel} from './native-product-kernel.mjs';
 export const NATIVE_PURE_SCHEMA='vivim.product-pure-response/1';
 const OPERATIONS=new Set([
   'command-program','context-grounding','wiki-target','wiki-target-batch',
-  'recovery-diagnosis','recovery-diagnosis-batch','ui-value','ui-token-pack'
+  'recovery-diagnosis','recovery-diagnosis-batch','ui-value','ui-token-pack',
+  'local-navigation'
 ]);
 const unavailable=(operation,code)=>({schema:NATIVE_PURE_SCHEMA,
   state:'unavailable',operation,code,authority:'none',
