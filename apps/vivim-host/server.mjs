@@ -540,6 +540,11 @@ export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path
   // Release the Direct share-maintenance timer with the server. Do not leave
   // background cleanup running after the owning Host instance shuts down.
   server.on('close', () => { try { direct?.close?.(); } catch { /* no timer remains */ } });
+  // The persistent Rust computation child belongs to this Host lifetime.
+  server.on('close', () => {
+    void import('./control/native-product-kernel.mjs')
+      .then(module=>module.closeNativeProductKernel()).catch(()=>{});
+  });
   // A runtime this server opened lazily is its own to release; a caller-supplied one is not.
   if (!bootstrap) server.on('close', () => { try { runtime?.close(); } catch { /* already closed */ } });
   return server;
