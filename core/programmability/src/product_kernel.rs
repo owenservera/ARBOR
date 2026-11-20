@@ -26,6 +26,7 @@ pub fn dispatch(request:&Value)->Value{
         "ui-token-pack"=>crate::ui_tokens::resolve_package(input),
         "local-navigation"=>crate::navigation::destination(input),
         "vec-admission"=>crate::vec_admission::admit(input),
+        "sha256-utf8"=>crate::source_digest::digest_utf8(input),
         _=>return refuse(op,"UNKNOWN_NATIVE_OPERATION"),
     };
     json!({"schema":RESPONSE_SCHEMA,"state":"computed","operation":op,
