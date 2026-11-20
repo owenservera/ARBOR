@@ -29,6 +29,15 @@ fn run() -> Result<()> {
     if args.len() == 2 && stats.changed() {
         journal.save(&next)?;
     }
+    // An acknowledgment is now conditional on durable readback, not merely a
+    // successful save call. No new snapshot or write is done for verification.
+    if args.len() == 2 {
+        let persisted=journal.load()?;
+        if persisted.epoch()!=next.epoch(){
+            return Err(Error::Corrupt("persisted graph epoch differs from applied exchange".into()));
+        }
+        exchange.verify_source_projection(&persisted)?;
+    }
     println!(
         "schema={} source={} namespace={} digest={}",
         hqkg::import::SCHEMA,

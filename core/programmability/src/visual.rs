@@ -5,7 +5,8 @@
 //! @hq:consumes vivim.ui-surface@1
 //! Source validation and revision fencing do not confer execution authority.
 use serde_json::Value;
-use std::collections::HashSet;
+use std::collections::{BTreeMap, HashSet};
+use sha2::{Digest, Sha256};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum VisualError { InvalidProjection, Unavailable }
@@ -34,6 +35,7 @@ pub struct Visual {
     pub accent:u32,
     pub root:Node,
     pub fingerprint:String,
+    pub binding_watermarks:BTreeMap<String,(u64,String)>,
 }
 #[derive(Clone, Debug, PartialEq)]
 pub struct Node {
@@ -133,19 +135,40 @@ pub fn parse(v:&Value)->Result<Option<Visual>,VisualError>{
         let id=str_at(t,"id")?;
         if t["sourceId"]!=id||t["outcome"]!="rendered"||!seen.contains(id)||!traced.insert(id){return invalid()}
     }
+    // Each live projection has its own revision domain, independent of the
+    // committed design. Retain only revision and digest for session fencing.
+    let mut binding_watermarks=BTreeMap::new();
+    if let Some(bindings)=v["liveBindings"].as_object(){
+        for (key, value) in bindings{
+            live_rows(key,value)?;
+            if value["state"]=="source-backed"{
+                let revision=value["revision"].as_u64().ok_or(VisualError::InvalidProjection)?;
+                let bytes=serde_json::to_vec(value).map_err(|_|VisualError::InvalidProjection)?;
+                binding_watermarks.insert(key.clone(),(revision,format!("{:x}",Sha256::digest(&bytes))));
+            }
+        }
+    }
     let theme=&source["theme"];
     Ok(Some(Visual{surface_id:str_at(source,"surfaceId")?.into(),revision,root,
         background:color(&theme["background"])?,secondary:color(&theme["secondary"])?,accent:color(&theme["accent"])?,
-        fingerprint:serde_json::to_string(source).map_err(|_|VisualError::InvalidProjection)?}))
+        fingerprint:serde_json::to_string(source).map_err(|_|VisualError::InvalidProjection)?,binding_watermarks}))
 }
 #[derive(Default)]
-pub struct RevisionGuard{ high:Option<(String,u64,String)> }
+pub struct RevisionGuard{ high:Option<(String,u64,String)>, bindings:BTreeMap<String,(u64,String)> }
 impl RevisionGuard{
     pub fn accept(&mut self,view:Option<Visual>)->Result<Option<Visual>,VisualError>{
         let Some(view)=view else{return Ok(None)};
         if let Some((id,rev,fp))=&self.high{
             if &view.surface_id!=id||view.revision<*rev||(view.revision==*rev&&&view.fingerprint!=fp){return invalid()}
         }
+        for (key,(rev,digest)) in &view.binding_watermarks{
+            if let Some((high,previous))=self.bindings.get(key){
+                if rev<high||(rev==high&&digest!=previous){return invalid()}
+            }
+        }
+        // Advance only after every domain passes. Unavailability does not erase
+        // a high-water mark; a later lower revision is still refused.
+        self.bindings.extend(view.binding_watermarks.clone());
         self.high=Some((view.surface_id.clone(),view.revision,view.fingerprint.clone()));Ok(Some(view))
     }
 }
@@ -174,6 +197,20 @@ mod tests{
         let mut bad=row.clone();bad["total"]=json!(0);assert!(live_rows("personal.open-tasks",&bad).is_err());
         assert!(live_rows("unknown",&row).is_err());
         assert!(live_rows("personal.open-tasks",&Value::Null).unwrap()[0].contains("unavailable"));
+    }
+    #[test]fn independent_live_binding_revision_fence(){
+        let mut guard=RevisionGuard::default();
+        let mut view=parse(&fixture()).unwrap().unwrap();
+        view.binding_watermarks.insert("personal.open-tasks".into(),(7,"a".into()));
+        guard.accept(Some(view.clone())).unwrap();
+        let mut unavailable=view.clone();unavailable.binding_watermarks.clear();
+        guard.accept(Some(unavailable)).unwrap();
+        let mut rollback=view.clone();rollback.binding_watermarks.insert("personal.open-tasks".into(),(6,"b".into()));
+        assert!(guard.accept(Some(rollback)).is_err());
+        let mut conflict=view.clone();conflict.binding_watermarks.insert("personal.open-tasks".into(),(7,"b".into()));
+        assert!(guard.accept(Some(conflict)).is_err());
+        view.binding_watermarks.insert("personal.open-tasks".into(),(8,"c".into()));
+        assert!(guard.accept(Some(view)).is_ok());
     }
     #[test]fn no_committed_surface_is_not_a_blank_success(){assert!(parse(&json!({"schema":"vivim.native-ui-view/1","authority":"none","state":"absent"})).unwrap().is_none());}
 }
