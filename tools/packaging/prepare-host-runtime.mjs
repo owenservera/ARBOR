@@ -30,14 +30,14 @@ export const LOCKFILES=['bun.lock','Cargo.lock'];
 // (hq/bin/hq.mjs:1075) and the refresh pipeline (hq/lib/refresh.mjs:313); it
 // must be staged before those call sites can drop their Cargo spawn, or product
 // KG sync regresses.
-export const PACKAGED_BINARIES=['hqkg-personal','hqkg-chat-context','hqkg-web-feed','hqkg-import','hqkg-development','vivim-program-validate'];
+export const PACKAGED_BINARIES=['hqkg-personal','hqkg-chat-context','hqkg-web-feed','hqkg-import','hqkg-development','vivim-program-validate','vivim-vec-project'];
 // Release build plan for the packaged binaries. A name in PACKAGED_BINARIES that
 // is not built here could only come from a debug target tree, so the two lists
 // are asserted against each other by scripts/batch-evidence/D05-packaging.test.mjs.
 export const CARGO_BUILDS=[
  {package:'hq-knowledge-graph',features:['importer','native-program'],
   bins:['hqkg-personal','hqkg-chat-context','hqkg-web-feed','hqkg-import','hqkg-development']},
- {package:'vivim-programmability-core',features:[],bins:['vivim-program-validate']}];
+ {package:'vivim-programmability-core',features:[],bins:['vivim-program-validate','vivim-vec-project']}];
 export function cargoArgs(plan,targetDir){
  const args=['build','--release','-p',plan.package];
  if(plan.features?.length)args.push('--features',plan.features.join(','));
