@@ -1,6 +1,7 @@
 // Fixed local composition over incumbent typed Wiki reads. A native validation
 // is not a grant. The dispatcher alone supplies authenticated read ports.
 import {createHash} from 'node:crypto';
+import {runNativeProductPureSync} from './native-product-pure-sync.mjs';
 export const WIKI_RECIPE_SCHEMA='vivim.wiki-read-recipe/1';
 const READS=new Set(['wiki.pages.list','wiki.section.read']);
 const canonical=v=>Array.isArray(v)?v.map(canonical):v&&typeof v==='object'?Object.fromEntries(Object.keys(v).sort().map(k=>[k,canonical(v[k])])):v;
@@ -87,6 +88,21 @@ export async function runWikiReadProgram({commands,planCommand,readWiki,nativePr
 // Reuse the same canonical contract fingerprinting for owner-reviewed mutation recipes.
 // Parameterization is over typed fields only; literal content is never interpolated.
 export const WIKI_WRITE_RECIPE_SCHEMA='vivim.wiki-write-recipe/1';
+// Compiled Rust recipe operations are inert. Older/unpackaged kernels retain
+// the current JS contracts; current kernel refusals remain refusals.
+function nativeWikiWriteRecipe(mode,commands,catalog,details={}){
+  const reply=runNativeProductPureSync('wiki-write-recipe',{
+    schema:'vivim.wiki-write-recipe-request/1',mode,commands,
+    actions:catalog?.actions??[],...details
+  });
+  if(!reply)return null;
+  if(reply.authority!=='none'||reply.executionAuthorized!==false||
+    reply.effectPerformed!==false||
+    !['compiled','valid','bound','refused'].includes(reply.outcome))
+    return {outcome:'refused'};
+  return reply;
+}
+
 const WRITES=new Set(['wiki.page.create','wiki.section.edit','wiki.page.move','wiki.pages.link']);
 export const wikiProgramSlug=v=>typeof v==='string'&&/^[a-z][a-z0-9-]{0,62}$/.test(v)&&!['constructor','prototype','__proto__'].includes(v);
 function writeDependencies(steps,catalog){
@@ -107,6 +123,14 @@ export function compileWikiWriteRecipe(commands,planCommand,catalog,page=null){
   const lines=commands.split(/\r?\n/).map(s=>s.trim());
   if(lines.length<2||lines.length>8||lines.some(s=>!s||s.length>240))return null;
   let plans;try{plans=lines.map(planCommand);}catch{return null;}
+  const native=nativeWikiWriteRecipe('compile',commands,catalog,{plans,page});
+  if(native){
+    if(native.outcome==='compiled'&&native.recipe?.schema===WIKI_WRITE_RECIPE_SCHEMA&&
+      Array.isArray(native.recipe.steps)&&native.recipe.steps.length===plans.length&&
+      native.recipe.steps.every((step,i)=>step.actionId===plans[i].actionId&&
+        hash(step.args)===hash(plans[i].args)))return native.recipe;
+    return null;
+  }
   if(plans.some(p=>p?.outcome!=='approval_required'||p.origin!=='deterministic'||p.risk!=='R1'||!WRITES.has(p.actionId)))return null;
   const steps=plans.map(p=>({actionId:p.actionId,args:p.args}));
   if(!steps.every(s=>writeArgsValid(s,catalog))||(page!==null&&!hasPageSlot(steps,page)))return null;
@@ -114,12 +138,21 @@ export function compileWikiWriteRecipe(commands,planCommand,catalog,page=null){
     slot:page===null?null:{name:'page',type:'wiki-page-slug',example:page}};
 }
 export function validWikiWriteRecipe(recipe,commands,catalog){
+  const native=nativeWikiWriteRecipe('validate',commands,catalog,{recipe});
+  if(native)return native.outcome==='valid';
   return !!recipe&&recipe.schema===WIKI_WRITE_RECIPE_SCHEMA&&Object.keys(recipe).sort().join(',')==='commandDigest,dependencies,schema,slot,steps'&&
     typeof commands==='string'&&commands.length<=950&&recipe.commandDigest===hash(commands)&&Array.isArray(recipe.steps)&&recipe.steps.length>=2&&recipe.steps.length<=8&&
     recipe.steps.every(s=>writeArgsValid(s,catalog))&&Array.isArray(recipe.dependencies)&&hash(recipe.dependencies)===hash(writeDependencies(recipe.steps,catalog))&&
     (recipe.slot===null||recipe.slot&&Object.keys(recipe.slot).sort().join(',')==='example,name,type'&&recipe.slot.name==='page'&&recipe.slot.type==='wiki-page-slug'&&hasPageSlot(recipe.steps,recipe.slot.example));
 }
 export function bindWikiWriteRecipe(recipe,commands,catalog,page=null){
+  const native=nativeWikiWriteRecipe('bind',commands,catalog,{recipe,page});
+  if(native){
+    if(native.outcome==='bound'&&Array.isArray(native.steps)&&
+      native.steps.length===recipe?.steps?.length&&
+      native.steps.every(step=>writeArgsValid(step,catalog)))return native.steps;
+    return null;
+  }
   if(!validWikiWriteRecipe(recipe,commands,catalog))return null;
   if(recipe.slot===null)return page===null?recipe.steps.map(s=>({actionId:s.actionId,args:{...s.args}})):null;
   if(!wikiProgramSlug(page))return null;
