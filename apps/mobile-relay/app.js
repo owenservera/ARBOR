@@ -107,6 +107,12 @@ const vivimChat = createControlChat({
     updateDock();
   },
   onNavigate: tab => goTab(tab),
+  onOpenShares: () => {
+    if (HOST_PREVIEW || !S.paired || !transport.direct || !transport.deviceHeaders?.()) {
+      toast('Private sharing requires a paired, approved Direct phone.'); return;
+    }
+    $('share-open')?.click();
+  },
   classifyBuild: async request => {
     if (!S.paired || HOST_PREVIEW || !transport.direct) return null;
     // Do not depend on Build having been opened or on a cached status envelope.
