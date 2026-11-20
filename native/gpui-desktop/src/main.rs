@@ -190,7 +190,22 @@ impl Desktop {
     }
     fn inspect(&mut self,cx:&mut Context<Self>) {
         if self.busy { return; }
-        let Some(id)=self.last_plan.clone() else {return};
+        // An owner can inspect a Host-owned plan after restarting GPUI without
+        // inventing a local receipt ledger or replaying the original effect.
+        let typed=self.input.read(cx).value().to_string();
+        let typed=typed.trim();
+        let id=if control::valid_id(typed) {
+            typed.to_owned()
+        }else if typed.starts_with("ctl-") {
+            self.status="Invalid Host plan ID · expected ctl- and 16 lowercase hex characters".into();
+            cx.notify();return;
+        }else if let Some(id)=self.last_plan.clone(){
+            id
+        }else{
+            self.status="Enter a Host plan ID from Recent Host decisions to inspect it".into();
+            cx.notify();return;
+        };
+        self.last_plan=Some(id.clone());
         self.review=None;
         self.busy=true;
         self.status="Inspecting durable Host decision…".into();
@@ -304,7 +319,10 @@ impl Render for Desktop {
                     "{} additional Wiki pages not displayed",data.wiki_page_total-data.wiki_content.len()
                 ));
             }
-            body = body.child(div().text_lg().child("Recent Host decisions"));
+            body = body.child(div().text_lg().child("Recent Host decisions"))
+                .child(div().text_sm().child(
+                    "Copy a ctl- plan ID into the command field and choose Inspect Host plan ID. This never retries execution."
+                ));
             for row in &data.recent { body = body.child(div().p_1().child(row.clone())); }
         }
         body=body.child(div().text_lg().child("Committed TierFlow surface")).child(self.visual_status.clone());
@@ -327,9 +345,8 @@ impl Render for Desktop {
                     v.review=None;v.status="Cancelled locally · no execution sent".into();cx.notify();
                 })));
         }
-        if self.last_plan.is_some() {
-            controls=controls.child(Button::new("inspect").label("Inspect original plan").on_click(cx.listener(|v,_,_,cx|v.inspect(cx))));
-        }
+        controls=controls.child(Button::new("inspect").label("Inspect Host plan ID · read only")
+            .on_click(cx.listener(|v,_,_,cx|v.inspect(cx))));
         body=body.child(div().text_lg().child("Development graph · source-backed only"))
             .child(self.graph_status.clone());
         if !self.graph_detail.is_empty(){

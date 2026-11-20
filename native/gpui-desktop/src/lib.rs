@@ -66,7 +66,13 @@ pub fn project(pwa: &Value, wiki: &Value) -> Result<Overview, ReadError> {
         .iter().take(12).map(|r| {
             let action = r["actionId"].as_str().ok_or(ReadError::InvalidProjection)?;
             let state = r["state"].as_str().ok_or(ReadError::InvalidProjection)?;
-            Ok(format!("{} · {}", bounded_text(action), bounded_text(state)))
+            let label = format!("{} · {}", bounded_text(action), bounded_text(state));
+            // The Host owns these plan IDs. A valid reference is useful for
+            // recovery after a desktop restart, but is not an approval token.
+            Ok(match r["planId"].as_str().filter(|id| control::valid_id(id)) {
+                Some(id) => format!("{label} · {id}"),
+                None => label,
+            })
         }).collect::<Result<Vec<_>, ReadError>>()?;
     let read = wiki_read::read(wiki).map_err(|_| ReadError::InvalidProjection)?;
     let wiki_pages = read.pages.iter().map(|page| page.name.clone()).collect();
