@@ -80,21 +80,45 @@ pub fn assess(input: &Value) -> Value {
 #[cfg(test)]
 mod tests {
     use super::*;
-    #[test]
-    fn does_not_treat_arbitrary_catalog_changes_as_compatible() {
-        let catalog = json!({"version":15,"actions":[{"id":"wiki.page.create"}]});
-        let answer = assess(&json!({"schema":"vivim.control-catalog-compatibility-input/1",
-            "ruleCatalogVersion":14,"actionId":"wiki.page.create","catalog":catalog}));
-        assert_eq!(answer["outcome"], "stale");
-        assert_eq!(answer["executionAuthorized"], false);
+    fn published_catalog() -> Value {
+        serde_json::from_str(include_str!("../../../apps/vivim-host/control/action-catalog.v1.json"))
+            .expect("published catalog is valid JSON")
     }
+    fn request(catalog: &Value, revision: u64, action_id: &str) -> Value {
+        json!({"schema":"vivim.control-catalog-compatibility-input/1",
+            "ruleCatalogVersion":revision,"actionId":action_id,"catalog":catalog})
+    }
+
     #[test]
-    fn matching_version_is_inert_and_not_an_approval() {
-        let catalog = json!({"version":15,"actions":[]});
-        let answer = assess(&json!({"schema":"vivim.control-catalog-compatibility-input/1",
-            "ruleCatalogVersion":15,"actionId":"wiki.page.create","catalog":catalog}));
-        assert_eq!(answer["compatible"], true);
-        assert_eq!(answer["authority"], "none");
-        assert_eq!(answer["effectPerformed"], false);
+    fn published_catalog_reconstructs_exact_fingerprinted_predecessors() {
+        let catalog = published_catalog();
+        assert_eq!(catalog["version"], 15);
+        assert_eq!(catalog["actions"].as_array().unwrap().len(), 38);
+        let v14 = predecessor(&catalog, 14, "program.write_wiki").unwrap();
+        let v13 = predecessor(&v14, 13, "program.read_wiki").unwrap();
+        assert_eq!(v14["actions"].as_array().unwrap().len(), 37);
+        assert_eq!(v13["actions"].as_array().unwrap().len(), 36);
+        assert_eq!(fingerprint(&v14).as_deref(), Some(VERSION_14_DIGEST));
+        assert_eq!(fingerprint(&v13).as_deref(), Some(VERSION_13_DIGEST));
+
+        for revision in [13, 14, 15] {
+            let result = assess(&request(&catalog, revision, "wiki.page.create"));
+            assert_eq!(result["compatible"], true);
+            assert_eq!(result["authority"], "none");
+            assert_eq!(result["executionAuthorized"], false);
+            assert_eq!(result["effectPerformed"], false);
+        }
+        assert_eq!(assess(&request(&catalog, 13, "program.read_wiki"))["outcome"], "stale");
+        assert_eq!(assess(&request(&catalog, 14, "program.write_wiki"))["outcome"], "stale");
+        assert_eq!(assess(&request(&catalog, 12, "wiki.page.create"))["outcome"], "stale");
+    }
+
+    #[test]
+    fn published_catalog_mutation_fails_closed_for_old_rules() {
+        let mut catalog = published_catalog();
+        catalog["policy"]["forceModifierGrantsNothing"] = json!(false);
+        let result = assess(&request(&catalog, 14, "wiki.page.create"));
+        assert_eq!(result["compatible"], false);
+        assert_eq!(result["executionAuthorized"], false);
     }
 }
