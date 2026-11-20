@@ -885,7 +885,7 @@ async function handleControl(req, res, pathname, host, controlFor, tokenFor, uiS
   }
   // Native renderer consumes the SAME validated TierFlow render plan as the PWA.
   // There is no new writer, phone grant, or renderer-side compiler authority.
-  if (route === 'native-ui-view') {
+  if (route === 'native-ui-view' || route === 'native-vec-ir') {
     if (req.method !== 'GET') { sendJson(res,405,{code:'METHOD'});return; }
     if (req.headers.origin !== undefined && !sameOrigin) {sendJson(res,403,{code:'ORIGIN'});return;}
     res.setHeader('cache-control','private, no-store');
@@ -908,10 +908,15 @@ async function handleControl(req, res, pathname, host, controlFor, tokenFor, uiS
       try{wiki=await productJournal.readPhoneWiki();}catch{/* no guessed live rows */}
       if(!stillAuthorized()){sendJson(res,401,{code:'OWNER_AUTH'});return;}
       const result=projectNativeUi(runtimeFor().projection(),Number(width),{wiki,outcomes:readStudioOutcomes()});
+      const response=route==='native-vec-ir'
+        ?await (await import('./control/native-vec-ir.mjs')).compileRustVecView(result)
+        :result;
       if(!stillAuthorized()){sendJson(res,401,{code:'OWNER_AUTH'});return;}
-      sendJson(res,200,result);
+      sendJson(res,response?.state==='unavailable'&&route==='native-vec-ir'?503:200,response);
     } catch {
-      sendJson(res,503,{schema:'vivim.native-ui-view/1',state:'unavailable',code:'NATIVE_UI_VIEW_UNAVAILABLE'});
+      sendJson(res,503,{schema:route==='native-vec-ir'?'vivim.vec-visual-ir/1':'vivim.native-ui-view/1',
+        state:'unavailable',authority:'none',code:'NATIVE_VISUAL_UNAVAILABLE',
+        executionAuthorized:false,effectPerformed:false});
     }
     return;
   }
