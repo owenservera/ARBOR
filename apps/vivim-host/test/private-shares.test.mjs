@@ -99,6 +99,14 @@ test('Upload rejects invalid input, unexpected bytes, duplicate upload, and unsa
   await expectCode(shares.finish(row.id,row.capability,OWNER,request(Buffer.from('hello'))),409,'SHARE_ALREADY_FINALIZED');
 });
 
+test('Content tampering at identical length fails integrity before download admission',async t=>{
+  const {root,shares}=await fixture(t);
+  const row=await ready(shares);
+  await writeFile(path.join(root,'private-shares',row.id+'.bin'),Buffer.from('HELLO'));
+  await expectCode(shares.download(row.id,row.capability,''),409,'SHARE_CONTENT_INTEGRITY');
+  assert.equal((await shares.list(OWNER)).items[0].downloads,0);
+});
+
 test('Concurrent download admissions enforce the exact limit and count once each',async t=>{
   const { shares }=await fixture(t);
   const row=await ready(shares,options({ maxDownloads:1 }));
