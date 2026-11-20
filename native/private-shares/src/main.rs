@@ -197,6 +197,20 @@ fn prune(root: &Path) -> R<Value> {
     for entry in fs::read_dir(root).map_err(io_err)? {
         let entry = entry.map_err(io_err)?;
         let name = entry.file_name().to_string_lossy().into_owned();
+        // Uncommitted temporary records and content from an interrupted
+        // process are never served. Reclaim them after an hour; the OS store
+        // lock prevents this from racing a live native operation.
+        if name.ends_with(".tmp") || name.ends_with(".upload") {
+            let fields: Vec<&str> = name.split('.').collect();
+            if fields.len() == 3 && is_hex(fields[0], 32) && is_hex(fields[1], 16) {
+                if entry.metadata().ok().and_then(|meta| meta.modified().ok())
+                    .and_then(|modified| modified.elapsed().ok())
+                    .is_some_and(|elapsed| elapsed > StdDuration::from_secs(3600)) {
+                    fs::remove_file(entry.path()).map_err(io_err)?;
+                }
+            }
+            continue;
+        }
         let Some(id) = name.strip_suffix(".json") else { continue };
         if !is_hex(id, 32) { continue; }
         let Ok(mut row) = metadata(root, id) else { continue };
