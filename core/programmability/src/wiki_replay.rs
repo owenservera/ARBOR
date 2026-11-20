@@ -102,7 +102,7 @@ fn edit_section(pages:&mut Vec<Value>,edit:&Value,revision:u64)->Result<(),&'sta
             if !page_name.starts_with(prefix)||page_name.len()!=prefix.len()+32||
                 !page_name[prefix.len()..].bytes()
                     .all(|b|b.is_ascii_digit()||(b'a'..=b'f').contains(&b))||
-                section!=if task{"Task"}else{"Note"}{return Err("INVALID_CAPTURE")}
+                section!=(if task{"Task"}else{"Note"}){return Err("INVALID_CAPTURE")}
             if pages.len()>=256{return Err("PAGE_CAPACITY")}
             if pages.iter().any(|p|p["name"].as_str()
                 .is_some_and(|old|old.eq_ignore_ascii_case(page_name))){

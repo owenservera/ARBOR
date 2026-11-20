@@ -268,7 +268,9 @@ async function replayNativeProductJournal(seedState,seedWiki,records){
     wikiRevision:seedWiki.revision,seedAt:seedState.at||'',
     pages,records:admitted
   });
-  if(native.state==='unavailable')return replayProductJournal(seedState,seedWiki,records);
+  if(native.state==='unavailable'||native.state==='refused'&&
+    ['INPUT_TOO_LARGE','NATIVE_RESULT_TOO_LARGE'].includes(native.code))
+    return replayProductJournal(seedState,seedWiki,records);
   const result=native.result;
   requireShape(native.state==='computed'&&result?.schema==='vivim.wiki-journal-replay/1'&&
     result.outcome==='computed'&&result.authority==='none'&&

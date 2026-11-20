@@ -5,6 +5,8 @@ import {spawn} from 'node:child_process';
 import {resolveBundledRustBinary} from '../chat/rust-context.mjs';
 
 const MAX_WIRE=512*1024;
+const MAX_JOURNAL_WIRE=12*1024*1024;
+const wireLimit=operation=>operation==='wiki-journal-replay'?MAX_JOURNAL_WIRE:MAX_WIRE;
 const MAX_PENDING=32;
 const DEADLINE_MS=4000;
 let active=null;
@@ -28,7 +30,7 @@ class NativeKernel {
     for(let offset=0;offset<payload.length;){
       const at=payload.indexOf(10,offset);
       const end=at<0?payload.length:at+1;
-      if(this.buf.length+end-offset>MAX_WIRE+512){
+      if(this.buf.length+end-offset>MAX_JOURNAL_WIRE+512){
         this.discard('RUST_KERNEL_FRAME_LIMIT');return;
       }
       this.buf=Buffer.concat([this.buf,payload.subarray(offset,end)]);
@@ -69,13 +71,13 @@ class NativeKernel {
     const frame=JSON.stringify({
       schema:'vivim.product-pure-request/1',requestId:id,operation,input
     });
-    if(Buffer.byteLength(frame,'utf8')>MAX_WIRE)
+    if(Buffer.byteLength(frame,'utf8')>wireLimit(operation))
       throw Object.assign(Error('RUST_KERNEL_INPUT_LIMIT'),{code:'RUST_KERNEL_INPUT_LIMIT'});
     this.ensure();
     return new Promise((resolve,reject)=>{
       const timer=setTimeout(()=>{
         if(this.pending.has(id))this.discard('RUST_KERNEL_TIMEOUT');
-      },DEADLINE_MS);
+      },operation==='wiki-journal-replay'?12000:DEADLINE_MS);
       this.pending.set(id,{resolve,reject,timer,operation});
       try{this.child.stdin.write(frame+'\n');}
       catch{this.discard('RUST_KERNEL_PIPE_FAILED');}

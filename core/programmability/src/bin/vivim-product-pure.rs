@@ -4,9 +4,9 @@
 use std::io::{self,BufRead,Read,Write};
 use serde_json::Value;
 use vivim_programmability_core::product_kernel::{
-    dispatch_json,refuse,MAX_WIRE_BYTES
+    dispatch_json,refuse,MAX_WIRE_BYTES,MAX_JOURNAL_WIRE_BYTES
 };
-const MAX_FRAME:usize=MAX_WIRE_BYTES+256;
+const MAX_FRAME:usize=MAX_JOURNAL_WIRE_BYTES+256;
 fn write_response<W:Write>(out:&mut W,response:&str)->io::Result<()>{
     out.write_all(response.as_bytes())?;
     out.write_all(b"\n")?;
@@ -64,8 +64,8 @@ fn serve()->io::Result<()>{
 fn main()->io::Result<()>{
     if std::env::args().nth(1).as_deref()==Some("--serve"){return serve()}
     let mut data=Vec::new();
-    io::stdin().lock().take((MAX_WIRE_BYTES+1)as u64).read_to_end(&mut data)?;
-    let result=if data.len()>MAX_WIRE_BYTES{refuse("","INPUT_TOO_LARGE").to_string()}
+    io::stdin().lock().take((MAX_JOURNAL_WIRE_BYTES+1)as u64).read_to_end(&mut data)?;
+    let result=if data.len()>MAX_JOURNAL_WIRE_BYTES{refuse("","INPUT_TOO_LARGE").to_string()}
     else{
         match std::str::from_utf8(&data){
             Ok(raw)=>dispatch_json(raw),

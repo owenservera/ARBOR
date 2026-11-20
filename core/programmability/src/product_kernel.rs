@@ -5,6 +5,9 @@ use serde_json::{json,Value};
 pub const REQUEST_SCHEMA:&str="vivim.product-pure-request/1";
 pub const RESPONSE_SCHEMA:&str="vivim.product-pure-response/1";
 pub const MAX_WIRE_BYTES:usize=512*1024;
+// The Host durable journal is bounded at 8 MiB. Only this native-only replay
+// operation can use a larger transport frame; browser ABI remains 512 KiB.
+pub const MAX_JOURNAL_WIRE_BYTES:usize=12*1024*1024;
 pub fn refuse(op:&str,code:&str)->Value{
     json!({"schema":RESPONSE_SCHEMA,"state":"refused","operation":op,
         "code":code,"authority":"none","executionAuthorized":false,"effectPerformed":false})
@@ -48,11 +51,18 @@ pub fn dispatch(request:&Value)->Value{
         "effectPerformed":false})
 }
 pub fn dispatch_json(raw:&str)->String{
-    if raw.len()>MAX_WIRE_BYTES{return refuse("","INPUT_TOO_LARGE").to_string()}
-    let result=match serde_json::from_str::<Value>(raw){
-        Ok(request)=>dispatch(&request),Err(_)=>refuse("","INVALID_JSON")
+    if raw.len()>MAX_JOURNAL_WIRE_BYTES{
+        return refuse("","INPUT_TOO_LARGE").to_string()
+    }
+    let request=match serde_json::from_str::<Value>(raw){
+        Ok(request)=>request,Err(_)=>return refuse("","INVALID_JSON").to_string()
     };
-    let wire=result.to_string();
-    if wire.len()>MAX_WIRE_BYTES{refuse("","NATIVE_RESULT_TOO_LARGE").to_string()}
+    let operation=request["operation"].as_str().unwrap_or("");
+    let limit=if operation=="wiki-journal-replay"{
+        MAX_JOURNAL_WIRE_BYTES
+    }else{MAX_WIRE_BYTES};
+    if raw.len()>limit{return refuse(operation,"INPUT_TOO_LARGE").to_string()}
+    let wire=dispatch(&request).to_string();
+    if wire.len()>limit{refuse(operation,"NATIVE_RESULT_TOO_LARGE").to_string()}
     else{wire}
 }
