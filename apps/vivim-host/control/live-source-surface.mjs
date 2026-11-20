@@ -6,15 +6,17 @@ export async function createLiveSourceSurface({ approvedRoots, dataDir, actorId,
   const hq = createDevIntelligence({ mode: 'host', approvedRoots, dataDir, actorId, sessionId, authorize });
   return Object.freeze({
     status: () => hq.status(),
+    graph: params => hq.nativeGraphQuery(params),
     register: params => hq.registerSource(params),
     read: params => hq.fileSurface(params),
     context: params => hq.fileSurfaceContext(params),
     compiledContext: params => hq.compiledContext(params),
     // Same existing incremental index, never a source edit. Git is optional.
-    refresh: () => {
+    refresh: async () => {
       const result = hq.index({ useGit: false });
+      const nativeGraph=result.errors.length?{schema:'hqkg.development-sync/1',state:'unavailable',reason:'INDEX_PARTIAL'}:await hq.syncNativeGraph();
       return { status: result.errors.length ? 'partial' : result.projects.length ? 'indexed' : 'empty',
-        totals: result.totals, errorCount: result.errors.length };
+        totals: result.totals, errorCount: result.errors.length, nativeGraph };
     }
   });
 }

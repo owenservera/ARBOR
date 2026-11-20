@@ -839,23 +839,44 @@ async function handleControl(req, res, pathname, host, controlFor, tokenFor, uiS
   if (!authorized) { sendJson(res, 401, { code: 'OWNER_AUTH', error: 'Owner authorization required' }); return; }
   // The existing owner session/CSRF gate remains the only authority. Config selects
   // actual approved roots and optional native source adapter, never request paths.
+  const developmentBearer=!!owner&&verifyOwnerToken(req.headers.authorization,owner);
+  const developmentSession=developmentBearer?null:uiSessions.get(req)?.sessionId;
+  const developmentStillOwner=()=>{
+    if(developmentBearer){try{return verifyOwnerToken(req.headers.authorization,tokenFor());}catch{return false;}}
+    return !!developmentSession&&uiSessions.get(req)?.sessionId===developmentSession&&
+      uiSessions.authorized(req,{mutate:isMutation});
+  };
   const developmentPort=()=>createDevelopmentReadPort({
     config:developmentSources??{approvedRoots:JSON.parse(process.env.VIVIM_HQ_APPROVED_ROOTS||'[]'),dataDir:process.env.VIVIM_HQ_DATA_DIR||undefined},
-    runtime:runtimeFor(),sessionId:uiSessions.get(req)?.sessionId??'owner-token',
-    stillOwner:()=>{try{if(verifyOwnerToken(req.headers.authorization,tokenFor()))return true;}catch{}
-      return uiSessions.authorized(req,{mutate:isMutation});}
+    runtime:runtimeFor(),sessionId:developmentSession??'owner-token',
+    stillOwner:developmentStillOwner
   });
   if(route.startsWith('development/')){
     const op=route.slice('development/'.length);
-    if(!['status','register','index','hvi-grant','hvi-revoke'].includes(op)){sendJson(res,404,{code:'NOT_FOUND'});return;}
-    if(op==='status'?req.method!=='GET':req.method!=='POST'){sendJson(res,405,{code:'METHOD'});return;}
-    if((req.headers.origin!==undefined&&!sameOrigin)||(op!=='status'&&(!sameOrigin||req.headers['x-vivim-control']!=='1'))){sendJson(res,403,{code:'ORIGIN_OR_CSRF'});return;}
+    if(!['status','graph','register','index','hvi-grant','hvi-revoke'].includes(op)){sendJson(res,404,{code:'NOT_FOUND'});return;}
+    const readOnly=op==='status'||op==='graph';
+    if(readOnly?req.method!=='GET':req.method!=='POST'){sendJson(res,405,{code:'METHOD'});return;}
+    if((req.headers.origin!==undefined&&!sameOrigin)||(!readOnly&&(!sameOrigin||req.headers['x-vivim-control']!=='1'))){
+      sendJson(res,403,{code:'ORIGIN_OR_CSRF'});return;
+    }
     try{
-      const port=developmentPort(),body=op==='status'?undefined:await readJsonBody(req,8192);
-      const method={'status':'status','register':'register','index':'refresh','hvi-grant':'issueGrant','hvi-revoke':'revokeGrant'}[op];
-      const value=await port[method](body);
+      let body;
+      if(op==='graph'){
+        const query=new URL(req.url,'http://'+host).searchParams;
+        if([...query.keys()].some(k=>!['operation','key','depth'].includes(k)||query.getAll(k).length!==1)){
+          sendJson(res,400,{code:'HQ_GRAPH_QUERY_INVALID'});return;
+        }
+        body={operation:query.get('operation'),key:query.get('key')};
+        if(query.has('depth'))body.depth=Number(query.get('depth'));
+      }else if(!readOnly){body=await readJsonBody(req,8192);}
+      const method={'status':'status','graph':'graph','register':'register','index':'refresh',
+        'hvi-grant':'issueGrant','hvi-revoke':'revokeGrant'}[op];
+      const value=await developmentPort()[method](body);
+      if(!developmentStillOwner()){sendJson(res,401,{code:'OWNER_AUTH'});return;}
       res.setHeader('cache-control','private, no-store');sendJson(res,200,value);
-    }catch(e){sendJson(res,e.status===401?401:e.status===403?403:e.status===503?503:400,{code:typeof e.code==='string'&&/^[A-Z_]+$/.test(e.code)?e.code:'DEVELOPMENT_REFUSED'});}return;
+    }catch(e){sendJson(res,e.status===401?401:e.status===403?403:e.status===503?503:400,
+      {code:typeof e.code==='string'&&/^[A-Z_]+$/.test(e.code)?e.code:'DEVELOPMENT_REFUSED'});}
+    return;
   }
   function readStudioOutcomes(){
     try{return createLiveStateProjection({dir:path.dirname(path.dirname(productJournal.journalPath)),

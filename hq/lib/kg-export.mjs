@@ -500,7 +500,7 @@ export function queryDevelopmentGraph({root,journal,operation,key,depth,program,
   if(operation==='impact'&&depth!==undefined)args.push(String(depth));
   if(operation==='program'&&(typeof program!=='string'||Buffer.byteLength(program)>65536))throw Error('INVALID_PROGRAM');
   const result=spawnSync(native.program,args,{cwd:native.cwd??undefined,input:operation==='program'?program:undefined,
-    encoding:'utf8',windowsHide:true,shell:false,timeout:120000,maxBuffer:2*1024*1024});
+    encoding:'utf8',windowsHide:true,shell:false,timeout:15000,maxBuffer:2*1024*1024});
   if(result.error||result.status!==0)return {schema:'hqkg.development-query/1',state:'unavailable',
     reason:result.error?'native_graph_spawn_failed':'native_graph_exit_'+result.status,
     detail:String(result.stderr??'').trim().slice(0,1000)};

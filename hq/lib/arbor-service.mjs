@@ -107,7 +107,7 @@ export function createDevIntelligence({
   const database = join(dbDir, 'index.db');
   const wikiDir = join(root, 'wiki');
   function safeStorage() {
-    for (const path of [join(root, 'projects.json'), dbDir, database, database + '-wal', database + '-shm', wikiDir]) {
+    for (const path of [join(root, 'projects.json'), dbDir, database, database + '-wal', database + '-shm', wikiDir, ...['kg-exchange.jsonl','kg-export-state.json','kg-export-state.json.pending','kg-export-state.json.last-export','kg-journal.hqj'].map(n=>join(dbDir,n))]) {
       try {
         if (lstatSync(path).isSymbolicLink()) throw new Error('HQ_DATA_SYMLINK');
       } catch (error) {
@@ -295,6 +295,39 @@ export function createDevIntelligence({
       if (kind === 'impact') return impact(db, { project, target, depth });
       throw new Error('HQ_UNSUPPORTED_GRAPH_QUERY');
     });
+  }
+  // Same development index and same Rust journal as HQ kg sync.
+  // Only registered, approved source roots are admitted; nothing from World.
+  async function syncNativeGraph() {
+    return withDatabase(async db => {
+      const kg=await import('./kg-export.mjs');
+      const outPath=join(dbDir,'kg-exchange.jsonl');
+      const statePath=join(dbDir,'kg-export-state.json');
+      const journal=join(dbDir,'kg-journal.hqj');
+      const exported=kg.exportGraphExchange({db,outPath,statePath});
+      const imported=kg.importGraphExchange({root,journal,exchange:outPath,
+        namespace:kg.SOURCE_NAMESPACE,expectedDigest:exported.digest});
+      if(!imported.ok)return {schema:'hqkg.development-sync/1',state:'unavailable',
+        reason:imported.reason,exported:exported.stats,imported:false};
+      const ack=kg.acknowledgeGraphExport({statePath,digest:exported.digest,
+        acknowledgment:{epochBefore:imported.epochBefore,epochAfter:imported.epochAfter,
+          stats:imported.statsLine??undefined}});
+      if(!ack.acked)return {schema:'hqkg.development-sync/1',state:'unavailable',
+        reason:ack.reason,exported:exported.stats,imported:true,acked:false};
+      return {schema:'hqkg.development-sync/1',state:'source-backed',
+        epoch:imported.epochAfter,exported:exported.stats,imported:true,acked:true};
+    },'source.index',true);
+  }
+  async function nativeGraphQuery({operation,key,depth}={}) {
+    if(!['sources','symbols','impact','compute'].includes(operation)
+      ||typeof key!=='string'||key.length<1||key.length>180||/[\\u0000-\\u001f\\u007f]/.test(key)
+      ||(depth!==undefined&&(!Number.isSafeInteger(depth)||depth<0||depth>8)))
+      throw new Error('HQ_GRAPH_QUERY_INVALID');
+    return withDatabase(async db => {
+      const kg=await import('./kg-export.mjs');
+      return kg.queryDevelopmentGraph({root,journal:join(dbDir,'kg-journal.hqj'),
+        operation,key,depth});
+    },'source.read',true);
   }
   function wiki({ force = false, maxFilePages = MAX_WIKI_PAGES } = {}) {
     return withDatabase(db => buildWiki({
@@ -576,7 +609,7 @@ export function createDevIntelligence({
   return Object.freeze({
     contract: DEV_INTELLIGENCE_CONTRACT, domain: DEVELOPMENT_DOMAIN,
     registerSource, removeSource, index, search, symbols, files, context,
-    graph, wiki, indexWatermarks, sourceEvidence, fileSurface, fileSurfaceContext, compiledContext, semanticIds, semanticId, scanCapabilities, status,
+    graph, syncNativeGraph, nativeGraphQuery, wiki, indexWatermarks, sourceEvidence, fileSurface, fileSurfaceContext, compiledContext, semanticIds, semanticId, scanCapabilities, status,
     verifyContext,
   });
 }

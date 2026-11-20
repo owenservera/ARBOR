@@ -44,6 +44,17 @@ export function createDevelopmentReadPort({config={},runtime,actorId='desktop-ow
   async function refresh(input){
     if(!keys(input,[]))fail('HQ_INDEX_INVALID');const p=await surface('index');authorize();const out=await p.refresh();authorize();return out;
   }
+  async function graph(input){
+    authorize();
+    if(!keys(input,['operation','key','depth'])||!['sources','symbols','impact','compute'].includes(input.operation)
+       ||typeof input.key!=='string'||input.key.length<1||input.key.length>180
+       ||/[\\u0000-\\u001f\\u007f]/.test(input.key)
+       ||(input.depth!==undefined&&(!Number.isSafeInteger(input.depth)||input.depth<0||input.depth>8)))
+      fail('HQ_GRAPH_QUERY_INVALID');
+    const p=await surface('status');authorize();
+    const value=await p.graph(input);
+    authorize();return value;
+  }
   function issueGrant(input){
     authorize();if(!keys(input,['repoIdentities','expiresInMs'])||!Array.isArray(input.repoIdentities)||!input.repoIdentities.length||input.repoIdentities.length>16)fail('HVI_GRANT_INVALID');
     const requested=input.repoIdentities.map(r=>canonicalRepo(r));
@@ -79,5 +90,5 @@ export function createDevelopmentReadPort({config={},runtime,actorId='desktop-ow
     if(sources.some(s=>!verifyGrant({sourceGrantRef:grant.id,repoIdentity:s.repo})))fail('HVI_SOURCE_GRANT_STALE',403);
     return result;
   }
-  return Object.freeze({status,register,refresh,issueGrant,revokeGrant,compare});
+  return Object.freeze({status,graph,register,refresh,issueGrant,revokeGrant,compare});
 }
