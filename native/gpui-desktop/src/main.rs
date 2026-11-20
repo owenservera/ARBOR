@@ -5,12 +5,13 @@
 //! @hq:consumes vivim.native-visual-delta@1
 //! @hq:consumes vivim.native-vec-visual-ir@1
 //! @hq:consumes vivim.rust-wiki-read-model@1
+//! @hq:consumes vivim.rust-wiki-source-search@1
 //! @hq:consumes hqkg.development-query@1
 use std::time::Duration;
 use serde_json::json;
 use vivim_programmability_core::navigation;
 use vivim_programmability_core::visual::visual_delta;
-use vivim_programmability_core::wiki_read::RevisionGuard as WikiRevisionGuard;
+use vivim_programmability_core::wiki_read::{self, RevisionGuard as WikiRevisionGuard};
 use vivim_programmability_core::vec::{self, View as VecView, Element as VecElement};
 use gpui::{AnyElement, App, Application, Bounds, Context, Entity, Window, WindowBounds, WindowOptions, div, prelude::*, px, relative, rgb, size};
 use gpui_component::{Root, input::{Input, InputState}, button::{Button, ButtonVariants}};
@@ -29,6 +30,7 @@ impl Panel {
 struct Desktop {
     panel: Panel,
     viewport_px: u32,
+    wiki_query: Option<String>,
     input: Entity<InputState>,
     status: String,
     overview: Option<Overview>,
@@ -48,6 +50,21 @@ struct Desktop {
     uncertain: bool,
 }
 impl Desktop {
+    fn find_wiki(&mut self,cx:&mut Context<Self>){
+        let raw=self.input.read(cx).value().to_string();
+        let query=raw.trim();
+        if query.is_empty() || query.chars().count()>160 || query.chars().any(char::is_control){
+            self.status="Wiki search requires 1–160 visible characters".into();
+            cx.notify();return;
+        }
+        self.wiki_query=Some(query.to_owned());
+        self.select_panel(Panel::Wiki,cx);
+    }
+    fn clear_wiki_search(&mut self,cx:&mut Context<Self>){
+        self.wiki_query=None;
+        self.status="Wiki search cleared · original source view".into();
+        cx.notify();
+    }
     fn set_viewport(&mut self, viewport_px:u32, cx:&mut Context<Self>){
         if !matches!(viewport_px,360|768|1000|1440) || self.viewport_px==viewport_px{return;}
         self.viewport_px=viewport_px;
@@ -362,6 +379,36 @@ impl Render for Desktop {
                     ));
                 }
             }
+            if let Some(query)=&self.wiki_query {
+                let read=wiki_read::WikiRead{
+                    revision:data.wiki_revision,digest:data.wiki_digest.clone(),
+                    pages_total:data.wiki_page_total,pages:data.wiki_content.clone(),
+                    captures:data.wiki_captures.clone(),
+                };
+                if let Some(found)=wiki_read::search_view(&read,query,24) {
+                    body=body.child(div().text_lg().child(format!(
+                        "Rust Wiki search · {} bounded matches for “{}”",
+                        found.matches,query
+                    )));
+                    body=body.child(div().text_sm().child(format!(
+                        "Read-only source revision {} · {} of {} pages scanned; only admitted section previews are searched",
+                        found.revision,found.scanned_pages,found.pages_total
+                    )));
+                    for hit in &found.hits {
+                        body=body.child(div().p_2().bg(rgb(0x202b3a))
+                            .child(format!(
+                                "{}{} · {}",
+                                hit.page,hit.section.as_ref().map(|s|format!(" / {s}")).unwrap_or_default(),
+                                hit.excerpt
+                            )));
+                    }
+                    if found.matches>found.hits.len(){
+                        body=body.child(format!(
+                            "{} additional preview matches not displayed",found.matches-found.hits.len()
+                        ));
+                    }
+                }
+            } else {
             for page in &data.wiki_content {
                 let mut page_view=div().flex().flex_col().gap_2().p_3()
                     .bg(rgb(0x202b3a))
@@ -389,6 +436,7 @@ impl Render for Desktop {
                 body=body.child(format!(
                     "{} additional Wiki pages not displayed",data.wiki_page_total-data.wiki_content.len()
                 ));
+            }
             }
             }
             if matches!(self.panel,Panel::Overview|Panel::Control){
@@ -440,6 +488,13 @@ impl Render for Desktop {
                 .child(div().p_3().bg(rgb(0x202b3a)).child(self.detail.clone()));
         }
         let mut actions=div().flex().flex_col().gap_2().child(controls);
+        if matches!(self.panel,Panel::Overview|Panel::Wiki){
+            actions=actions.child(div().flex().flex_wrap().gap_2()
+                .child(Button::new("wiki-search").label("Search current Wiki")
+                    .on_click(cx.listener(|v,_,_,cx|v.find_wiki(cx))))
+                .child(Button::new("wiki-clear").label("Clear Wiki search")
+                    .on_click(cx.listener(|v,_,_,cx|v.clear_wiki_search(cx)))));
+        }
         if matches!(self.panel,Panel::Overview|Panel::Visual){
             let viewports=div().flex().flex_wrap().gap_2()
                 .child(Button::new("viewport-phone").label("Phone · 360px")
@@ -481,7 +536,7 @@ fn main() {
             |window, cx| {
                 let input=cx.new(|cx| InputState::new(window,cx).placeholder("Ask VIVIM or describe a Host command"));
                 let view=cx.new(|cx| {
-                    let mut view=Desktop {input,panel:Panel::Overview,viewport_px:1000,status:"Not yet observed".into(),overview:None,visual:None,vec_view:None,visual_status:"Not yet observed".into(),visual_guard:RevisionGuard::default(),wiki_guard:WikiRevisionGuard::default(),detail:String::new(),
+                    let mut view=Desktop {input,panel:Panel::Overview,viewport_px:1000,wiki_query:None,status:"Not yet observed".into(),overview:None,visual:None,vec_view:None,visual_status:"Not yet observed".into(),visual_guard:RevisionGuard::default(),wiki_guard:WikiRevisionGuard::default(),detail:String::new(),
                         review:None,last_plan:None,busy:false,uncertain:false,
                         graph_detail:String::new(),graph_status:"Graph not yet queried".into(),graph_busy:false};
                     view.refresh(cx);view.start_observer(cx);view
