@@ -6,7 +6,8 @@
 use crate::visual::{self, Visual, Node, VisualError};
 use serde::Serialize;
 use serde_json::{Value,json};
-use std::collections::BTreeSet;
+use std::collections::{BTreeSet,BTreeMap};
+use sha2::{Digest,Sha256};
 pub const SCHEMA:&str="vivim.vec-visual-ir/1";
 #[derive(Clone,Debug,Serialize,PartialEq)]
 #[serde(rename_all="camelCase")]
@@ -37,6 +38,11 @@ pub struct Element{
 pub struct View{
     pub schema:&'static str,pub state:&'static str,pub authority:&'static str,
     pub surface_id:String,pub revision:u64,
+    /// SHA256 of the exact admitted Host design; not authorization.
+    pub design_digest:String,
+    /// Per-binding revision/digest metadata retained only in native memory.
+    #[serde(skip_serializing)]
+    pub binding_watermarks:BTreeMap<String,(u64,String)>,
     pub background:String,pub foreground:String,
     pub secondary:String,pub accent:String,
     pub root:Element,pub node_count:usize,pub chart_count:usize,
@@ -96,6 +102,8 @@ pub fn compile(view:&Visual)->Result<View,VisualError>{
     let root=element(&view.root,view,&mut seen,&mut actions,&mut charts,0)?;
     Ok(View{schema:SCHEMA,state:"compiled",authority:"none",
         surface_id:view.surface_id.clone(),revision:view.revision,
+        design_digest:format!("{:x}",Sha256::digest(view.fingerprint.as_bytes())),
+        binding_watermarks:view.binding_watermarks.clone(),
         background:hex(view.background),foreground:hex(visual::contrast_ink(view.background)),
         secondary:hex(view.secondary),accent:hex(view.accent),
         root,node_count:seen.len(),chart_count:charts,preview_action_ids:actions,
@@ -111,4 +119,81 @@ pub fn compile_projection(projection:&Value)->Result<Value,VisualError>{
         None=>Ok(json!({"schema":SCHEMA,"state":"absent","authority":"none",
             "executionAuthorized":false,"effectPerformed":false})),
     }
+}
+
+/// Source-derived change-set, not a Host UI mutation or GPU partial-draw claim.
+pub const DELTA_SCHEMA:&str="vivim.vec-change-set/1";
+#[derive(Clone,Debug,Serialize,PartialEq,Eq)]
+#[serde(rename_all="camelCase")]
+pub struct Delta{
+    pub schema:&'static str,pub surface_id:Option<String>,
+    pub from_revision:Option<u64>,pub to_revision:Option<u64>,
+    pub added:Vec<String>,pub removed:Vec<String>,pub updated:Vec<String>,
+    pub moved:Vec<String>,pub reordered:Vec<String>,
+    pub changed_bindings:Vec<String>,
+    pub theme_changed:bool,pub revision_changed:bool,pub repaint_required:bool,
+}
+fn flatten_ir<'a>(node:&'a Element,parent:Option<&'a str>,index:usize,
+    out:&mut BTreeMap<&'a str,(&'a Element,Option<&'a str>,usize)>)->Result<(),VisualError>{
+    if out.len()>=64||out.insert(node.id.as_str(),(node,parent,index)).is_some(){
+        return Err(VisualError::InvalidProjection)
+    }
+    for(i,child)in node.children.iter().enumerate(){
+        flatten_ir(child,Some(&node.id),i,out)?;
+    }
+    Ok(())
+}
+fn same_local(a:&Element,b:&Element)->bool{
+    let mut a=a.clone();let mut b=b.clone();a.children.clear();b.children.clear();a==b
+}
+pub fn diff(previous:Option<&View>,next:Option<&View>)->Result<Delta,VisualError>{
+    if let(Some(a),Some(b))=(previous,next){
+        if a.surface_id!=b.surface_id||a.revision>b.revision||
+            (a.revision==b.revision&&a.design_digest!=b.design_digest){
+            return Err(VisualError::InvalidProjection)
+        }
+    }
+    let mut old=BTreeMap::new();let mut new=BTreeMap::new();
+    if let Some(v)=previous{flatten_ir(&v.root,None,0,&mut old)?}
+    if let Some(v)=next{flatten_ir(&v.root,None,0,&mut new)?}
+    let mut out=Delta{
+        schema:DELTA_SCHEMA,
+        surface_id:next.or(previous).map(|v|v.surface_id.clone()),
+        from_revision:previous.map(|v|v.revision),to_revision:next.map(|v|v.revision),
+        added:Vec::new(),removed:Vec::new(),updated:Vec::new(),
+        moved:Vec::new(),reordered:Vec::new(),changed_bindings:Vec::new(),
+        theme_changed:previous.map(|v|(&v.background,&v.foreground,&v.secondary,&v.accent))
+            !=next.map(|v|(&v.background,&v.foreground,&v.secondary,&v.accent)),
+        revision_changed:previous.map(|v|v.revision)!=next.map(|v|v.revision),
+        repaint_required:false
+    };
+    for(id,(n,parent,index))in &new{
+        match old.get(id){
+            None=>out.added.push((*id).to_owned()),
+            Some((prior,old_parent,old_index))=>{
+                if !same_local(prior,n){out.updated.push((*id).to_owned())}
+                if old_parent!=parent||old_index!=index{out.moved.push((*id).to_owned())}
+                let before=prior.children.iter().map(|n|n.id.as_str()).collect::<Vec<_>>();
+                let after=n.children.iter().map(|n|n.id.as_str()).collect::<Vec<_>>();
+                if before!=after&&before.iter().copied().collect::<BTreeSet<_>>()
+                    ==after.iter().copied().collect::<BTreeSet<_>>(){
+                    out.reordered.push((*id).to_owned());
+                }
+            }
+        }
+    }
+    for id in old.keys(){if !new.contains_key(id){out.removed.push((*id).to_owned())}}
+    let mut keys=BTreeSet::new();
+    if let Some(v)=previous{keys.extend(v.binding_watermarks.keys().cloned())}
+    if let Some(v)=next{keys.extend(v.binding_watermarks.keys().cloned())}
+    for id in keys{
+        if previous.and_then(|v|v.binding_watermarks.get(&id))
+            !=next.and_then(|v|v.binding_watermarks.get(&id)){
+            out.changed_bindings.push(id);
+        }
+    }
+    out.repaint_required=out.theme_changed||out.revision_changed||
+        !out.added.is_empty()||!out.removed.is_empty()||!out.updated.is_empty()||
+        !out.moved.is_empty()||!out.changed_bindings.is_empty();
+    Ok(out)
 }
