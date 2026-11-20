@@ -1,5 +1,6 @@
 // Pure, source-pinned reference grounding for Lane A Dynamic Context Bundles.
 // No graph writes, provider access, timing inference or authority delegation.
+import {runNativeProductPureSync} from './native-product-pure-sync.mjs';
 export const COMMAND_CONTEXT_SCHEMA = 'vivim.command-context-projection/1';
 export const GROUNDED_REFERENCE_SCHEMA = 'vivim.command-grounding/1';
 const HEX = /^[a-f0-9]{64}$/;
@@ -18,6 +19,8 @@ const refused = (code,extra={})=>({
  * cannot create a "latest" fact; the owner of each source must attest it.
  */
 export function groundCommandReferences({bundle,requests}={}) {
+  const native=runNativeProductPureSync('context-grounding',{bundle,requests});
+  if(native)return native;
   if(!keys(bundle,['schema','revision','digest','entries','selectors']) ||
     bundle.schema!==COMMAND_CONTEXT_SCHEMA ||
     typeof bundle.revision!=='string'||!ID.test(bundle.revision)||

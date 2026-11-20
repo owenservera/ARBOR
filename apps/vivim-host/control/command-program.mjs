@@ -1,6 +1,7 @@
 // Lane B declarative multi-command compiler. NOT an orchestrator or executor.
 // Its product is an inert DAG of existing Host action IDs, with no approval token.
 // Mission Intelligence may consume this only through the canonical Host dispatcher.
+import {runNativeProductPureSync} from './native-product-pure-sync.mjs';
 export const COMMAND_PROGRAM_SCHEMA='vivim.command-program/1';
 const own = v => v !== null && typeof v==='object' && !Array.isArray(v) &&
   (Object.getPrototypeOf(v)===Object.prototype || Object.getPrototypeOf(v)===null) &&
@@ -23,6 +24,8 @@ function validArgs(expected,actual) {
   });
 }
 export function compileCommandProgram({steps,catalog,programId='command-program',expectedCatalogVersion}={}) {
+  const native=runNativeProductPureSync('command-program',{steps,catalog,programId,expectedCatalogVersion});
+  if(native)return native;
   if(!Array.isArray(steps)||steps.length<1||steps.length>32||
     !only(catalog,['schema','version','asOf','policy','actions','languageGroups'])||
     catalog.schema!=='vivim.control-action-catalog/1'||
