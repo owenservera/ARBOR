@@ -198,8 +198,9 @@ if (button && dialog) {
       message('Uploading to Host…');
       await call('/'+row.id+'/content',{method:'PUT',body:upload,capability:row.capability,binary:true});
       output.value = buildLink(row,row.capability);
-      message('Share ready. This link works only over your trusted Direct connection with an approved device.');
-      await refresh();
+      created = null; // the temporary upload credential is no longer needed
+      message('Share ready. Copy this link now; its capability cannot be recovered from Host metadata.');
+      try { await refresh(); } catch { /* committed share remains available for copying */ }
     } catch (error) {
       message(error.message + (created ? ' The reservation may remain on the PC.' : ''));
     } finally { action.disabled = false; }
