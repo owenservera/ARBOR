@@ -24,7 +24,10 @@ const LOCAL_NAVIGATION = Object.freeze({
   'open talk': 'talk', 'go to talk': 'talk', 'open chat': 'talk', 'go to chat': 'talk',
   'open control': 'control', 'go to control': 'control',
   'open me': 'me', 'open my profile': 'me',
-  'open pocket': 'pocket', 'capture a note': 'pocket'
+  'open pocket': 'pocket', 'capture a note': 'pocket',
+  'open sharing': 'shares', 'open shares': 'shares',
+  'show private shares': 'shares', 'show my shares': 'shares',
+  'share a file': 'shares', 'open file sharing': 'shares'
 });
 export function resolveLocalDestination(input) {
   if (typeof input !== 'string') return null;
