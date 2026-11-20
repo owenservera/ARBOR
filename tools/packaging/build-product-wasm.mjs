@@ -12,7 +12,7 @@ const target=process.env.CARGO_TARGET_DIR?
   path.resolve(root,process.env.CARGO_TARGET_DIR):path.join(root,'target');
 const src=path.join(target,'wasm32-unknown-unknown','release','vivim_programmability_core.wasm');
 const dest=path.join(root,'apps','mobile-relay','wasm','vivim_programmability_core.wasm');
-const args=['build','--release','--locked','--target','wasm32-unknown-unknown',
+const args=['build','--release','--target','wasm32-unknown-unknown',
   '-p','vivim-programmability-core','--lib'];
 const status=spawnSync('cargo',args,{cwd:root,stdio:'inherit',shell:false,
   timeout:600000,windowsHide:true});
