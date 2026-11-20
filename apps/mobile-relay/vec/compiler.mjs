@@ -14,6 +14,18 @@ export const VEC_PRODUCTS = Object.freeze({
 const PRODUCT_SCHEMAS = Object.freeze({
   wiki: 'hq.wiki-program/1', command: 'vivim.command-intent/0.1', ui: 'vivim.ui-proposal/1'
 });
+// Rust/WASM admits the exact same inert VEC envelope when installed.
+let rustAdmission=null;
+if(typeof window!=='undefined'){
+  void import('/mobile/vec-engines/rust-wasm.mjs')
+    .then(module=>{
+      rustAdmission=module.rustVecAdmission;
+      return module.initializeRustUiEngine();
+    }).catch(()=>{});
+}
+const canonical=v=>Array.isArray(v)?v.map(canonical):
+  v&&typeof v==='object'?Object.fromEntries(Object.keys(v).sort().map(
+    key=>[key,canonical(v[key])])):v;
 function semanticId(schema) {
   const at = schema.lastIndexOf('/');
   return schema.slice(0, at) + '@' + schema.slice(at + 1);
@@ -51,12 +63,19 @@ export function createVecCompiler({ adapters = {} } = {}) {
         const sourceSemanticIds = outcome === 'candidate' && plain(proposal) &&
           proposal.schema === PRODUCT_SCHEMAS[domain]
           ? [semanticId(VEC_COMPILE_SCHEMA), semanticId(PRODUCT_SCHEMAS[domain])] : null;
-        return { ...fail(domain, outcome, code ?? 'NONE'),
+        const js={ ...fail(domain, outcome, code ?? 'NONE'),
           ...(sourceSemanticIds ? { sourceSemanticIds } : {}),
           ...(proposal === undefined ? {} : { proposal }),
           ...(preview === undefined ? {} : { preview }),
           ...(summary === undefined ? {} : { summary }),
           ...(detail === undefined ? {} : { detail }) };
+        const native=rustAdmission?.({
+          domain,text,contextValid:true,adapterInstalled:true,adapterResult:result
+        });
+        if(native===undefined)return js;
+        if(JSON.stringify(canonical(native))!==JSON.stringify(canonical(js)))
+          return fail(domain,'refused','RUST_VEC_ADMISSION_MISMATCH');
+        return native;
       } catch {
         return fail(domain, 'refused', 'ADAPTER_FAILURE');
       }
