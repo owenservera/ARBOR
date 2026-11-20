@@ -49,12 +49,17 @@ reuses the canonical phone UI on the **approved Direct/Tailscale origin**.
 There is no Cloud relay fallback and no public anonymous download endpoint.
 The Host remains the sole authority for file bytes and share lifecycle.
 
-`apps/vivim-host/shares/private-shares.mjs` stores files and policy metadata
-under the Host's existing `dataRoot/private-shares`. Each share uses a random
-ID and an independent random capability whose SHA-256 digest (not plaintext)
-is persisted. Optional passcodes are salted and derived with scrypt. The
-recipient's link contains its capability in a URL fragment, removed from
-browser history when opened; private APIs receive it only in a header.
+The native Rust binary `vivim-private-shares` (source in
+`native/private-shares/src/main.rs`) owns persistent file bytes, record
+policies, capability generation, scrypt passcodes, expiry, and download
+admission under the existing `dataRoot/private-shares` directory.
+`apps/vivim-host/shares/private-shares.mjs` is now a bounded streaming/
+stdio Host adapter **without a JavaScript share-engine fallback**.
+Existing JSON records, hex capability hashes and Node scrypt parameters
+remain compatible. The recipient's link still contains its capability in
+a URL fragment, removed from history when opened; private APIs receive
+it only in a header. A missing native binary is an explicit 503, never a
+silent alternative writer.
 
 The existing authenticated Direct handler accepts the following routes with
 a **live approved device grant**: `GET/POST /mobile/api/shares`,
@@ -86,9 +91,11 @@ features must not be advertised as implemented. A successful source commit is
 not device acceptance: the paired-phone upload/download journey still
 requires an actual Host/PWA runtime exercise.
 
-### Test commands (Node 24)
+### Build and test the Rust capability
 
 ```sh
+cargo test -p vivim-private-shares
+cargo build --release -p vivim-private-shares --bin vivim-private-shares
 node --test apps/vivim-host/test/private-shares.test.mjs
 node --test apps/vivim-host/test/private-shares-direct.test.mjs
 bun scripts/test-gate.mjs --gate host-suite
@@ -100,3 +107,9 @@ Node 24 execution and Android PWA/Tailscale journey have not been attested in
 this integration session. The natural-language phrases `open sharing`,
 `show my shares`, and `share a file` only open the PWA sheet; they are **not**
 Host typed-effects or an automatic file share.
+
+The authoritative native operation contract and graph dependency are documented
+in [native/private-shares/README.md](../../native/private-shares/README.md).
+The Rust binary has been added to the frozen package build list. A signed
+package and live paired-device acceptance must still be exercised on the
+supported machine, rather than inferred from source commits.
