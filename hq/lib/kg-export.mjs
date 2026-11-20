@@ -159,6 +159,13 @@ function currentUniverse(db) {
       domain:'development'}});
     edges.push({type:'edge',id:graphId('has-semantic-anchor',g.file.id,anchorId),from:g.file.id,to:anchorId,relation:'has-semantic-anchor',weight:1,metadata:{}});
     edges.push({type:'edge',id:graphId('references-semantic-id',anchorId,semId),from:anchorId,to:semId,relation:'references-semantic-id',weight:1,metadata:{}});
+    // A direct typed adjacency is a convenience for traversal, never a runtime
+    // call/effect assertion. Ambiguous observations remain only on anchor edges.
+    if(lines.length===1){
+      const relation=Object.freeze({type:'declares-type',capability:'declares-capability',contract:'declares-contract',emits:'annotated-emits',consumes:'annotated-consumes',action:'annotated-action'})[g.tag];
+      edges.push({type:'edge',id:graphId(relation,g.file.id,semId),from:g.file.id,to:semId,relation,weight:1,
+        metadata:{anchor_id:anchorId,evidence_class:'indexed-annotation-occurrence',content_sha256:g.file.hash,source_line:lines[0]}});
+    }
   }
   nodes.push(...[...semantic.values()].sort((a,b)=>a.id.localeCompare(b.id)));
   return { nodes, edges };

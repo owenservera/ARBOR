@@ -211,6 +211,12 @@ test('native graph exchange includes Rust header and JS semantic anchors without
     assert.equal(rows.filter(r=>r.kind==='semantic-id'&&r.metadata.semantic_id==='vivim.native-visual-validation@1').length,1);
     assert.ok(!rows.some(r=>r.metadata?.semantic_id==='forged.raw@1'));
     assert.equal(rows.filter(r=>r.relation==='references-semantic-id').length,2);
+    for(const relation of ['declares-capability','annotated-consumes']){
+      const edge=rows.find(r=>r.relation===relation);
+      assert.ok(edge);
+      assert.equal(edge.metadata.evidence_class,'indexed-annotation-occurrence');
+      assert.ok(rows.some(r=>r.id===edge.metadata.anchor_id&&r.kind==='semantic-file-anchor'));
+    }
     assert.ok(buildGraphIndex(out).nodeCount>=5);
   }finally{rmSync(ws,{recursive:true,force:true,maxRetries:5,retryDelay:200});}
 });
