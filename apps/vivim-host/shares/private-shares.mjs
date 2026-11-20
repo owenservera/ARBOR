@@ -5,7 +5,7 @@
 // are required by the caller before this module is reached.
 import path from 'node:path';
 import { mkdir, readFile, readdir, rename, rm, stat, writeFile } from 'node:fs/promises';
-import { createWriteStream } from 'node:fs';
+import { createReadStream, createWriteStream } from 'node:fs';
 import { pipeline } from 'node:stream/promises';
 import { Transform } from 'node:stream';
 import { createHash, randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
@@ -247,6 +247,14 @@ export function createPrivateShares({ dataRoot }) {
       if (row.downloads >= row.maxDownloads) throw err(410, 'SHARE_DOWNLOAD_LIMIT_REACHED');
       const info = await stat(contentPath(id)).catch(() => null);
       if (!info?.isFile() || info.size !== row.bytes) throw err(503, 'SHARE_CONTENT_UNAVAILABLE');
+      // Verify the originally committed bytes before admitting a download.
+      // Streaming the hash avoids buffering up to 10 MiB per request in RAM.
+      const digest = createHash('sha256');
+      try {
+        for await (const chunk of createReadStream(contentPath(id))) digest.update(chunk);
+      } catch { throw err(503, 'SHARE_CONTENT_UNAVAILABLE'); }
+      if (!row.sha256 || digest.digest('hex') !== row.sha256)
+        throw err(409, 'SHARE_CONTENT_INTEGRITY');
       row.downloads += 1; // download admission counts, even if client disconnects
       await save(row);
       return { ...publicRow(row), file: contentPath(id) };
