@@ -12,6 +12,7 @@ pub mod visual;
 pub mod vec;
 pub mod command_program;
 pub mod context_grounding;
+pub mod wiki_target;
 mod lineage;
 
 pub const SCHEMA: &str = "vivim.native-program/1";
