@@ -189,14 +189,20 @@ export function resolvePersonalSemantics({ text, baseline, rules, catalog, scope
   if(matches.some(rule=>rule.readProgram&&!validWikiRecipe(rule.readProgram,rule.args.commands,catalog)))return decision('refused',{reason:'STALE_READ_RECIPE'});
   if (matches.some(rule => !compatibleRuleCatalog(rule,catalog)))
     return decision('refused', { reason: 'STALE_CATALOG_RULE' });
-  const bound=matches.map(rule=>({rule,args:bindPersonalRule(rule,text,catalog)}));
+  // Bind each write recipe once per request. Both the native selector and
+  // the compatibility path must compare the same immutable semantic result.
+  const bound=matches.map(rule=>{
+    const writeMeaning=rule.writeProgram?bindPersonalWriteProgram(rule,text,catalog):null;
+    const args=rule.writeProgram?(writeMeaning?{...rule.args}:null):bindPersonalRule(rule,text,catalog);
+    return {rule,args,writeMeaning};
+  });
   // NLCL, catalog validity, scope, stale recipes and parameter binding stay
   // with their incumbent owners above. Rust resolves only the remaining pure
   // specificity/meaning conflict and stable-provenance selection.
-  const nativeBindings=bound.map(({rule,args})=>({
+  const nativeBindings=bound.map(({rule,args,writeMeaning})=>({
     ruleId:rule.id,ruleRevision:rule.revision,actionId:rule.actionId,
     scopeKeys:Object.keys(rule.scope).length,args,
-    meaning:rule.writeProgram?bindPersonalWriteProgram(rule,text,catalog):args,
+    meaning:rule.writeProgram?writeMeaning:args,
     writeProgram:!!rule.writeProgram,template:!!rule.template
   })).sort((a,b)=>a.ruleId.localeCompare(b.ruleId));
   const native=runNativeProductPureSync('personal-rule-selection',{
@@ -243,7 +249,7 @@ export function resolvePersonalSemantics({ text, baseline, rules, catalog, scope
   if(bound.some(x=>!x.args))return decision('clarification_required',{reason:'TEMPLATE_PARAMETER_REQUIRED',ruleIds:matches.map(r=>r.id).sort()});
   const highest = Math.max(...bound.map(x=>Object.keys(x.rule.scope).length));
   const mostSpecific=bound.filter(x=>Object.keys(x.rule.scope).length===highest);
-  const unique=new Set(mostSpecific.map(x=>x.rule.writeProgram?JSON.stringify([x.rule.actionId,canonical(bindPersonalWriteProgram(x.rule,text,catalog))]):signature(x.rule,x.args)));
+  const unique=new Set(mostSpecific.map(x=>x.rule.writeProgram?JSON.stringify([x.rule.actionId,canonical(x.writeMeaning)]):signature(x.rule,x.args)));
   if (unique.size > 1) return decision('clarification_required', {
     reason: 'CONFLICTING_PERSONAL_RULES',
     ruleIds: mostSpecific.map(x=>x.rule.id).sort(),
