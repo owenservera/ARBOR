@@ -1,0 +1,39 @@
+name: GPUI native verification
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'native/gpui-desktop/**'
+      - 'apps/vivim-host/control/native-ui-view.mjs'
+      - 'apps/vivim-host/server.mjs'
+      - 'apps/vivim-host/test/native-ui-view.test.mjs'
+      - 'apps/mobile-relay/generative-ui/**'
+      - '.github/workflows/gpui-native.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  windows-native:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Native contract tests
+        run: cargo test --manifest-path native/gpui-desktop/Cargo.toml --lib
+      - name: Compile native desktop
+        run: cargo check --manifest-path native/gpui-desktop/Cargo.toml --features desktop
+  host-projection:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Canonical native and workspace projections
+        run: node --experimental-strip-types --test apps/vivim-host/test/native-ui-view.test.mjs apps/mobile-relay/test/workspace-live-data.test.mjs
