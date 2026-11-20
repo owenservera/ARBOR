@@ -535,6 +535,9 @@ export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path
       res.setHeader('content-type', MIME[pathname] ?? MIME['/']); res.writeHead(200); res.end(req.method === 'HEAD' ? undefined : body);
     } catch { res.writeHead(503); res.end('Host UI unavailable'); }
   });
+  // Release the Direct share-maintenance timer with the server. Do not leave
+  // background cleanup running after the owning Host instance shuts down.
+  server.on('close', () => { try { direct?.close?.(); } catch { /* no timer remains */ } });
   // A runtime this server opened lazily is its own to release; a caller-supplied one is not.
   if (!bootstrap) server.on('close', () => { try { runtime?.close(); } catch { /* already closed */ } });
   return server;
