@@ -242,7 +242,8 @@ impl Render for Desktop {
             .child(Button::new("refresh").label("Refresh Host").on_click(cx.listener(|v,_,_,cx|v.refresh(cx))))
             .child(Button::new("plan").label("Review command").on_click(cx.listener(|v,_,_,cx|v.submit(cx))))
             .child(Button::new("graph-symbol").label("Find graph symbol").on_click(cx.listener(|v,_,_,cx|v.inspect_graph("symbols",cx))))
-            .child(Button::new("graph-file").label("Compute graph file ID").on_click(cx.listener(|v,_,_,cx|v.inspect_graph("compute",cx))));
+            .child(Button::new("graph-file").label("Compute graph file ID").on_click(cx.listener(|v,_,_,cx|v.inspect_graph("compute",cx))))
+            .child(Button::new("graph-wiring").label("Find potential wiring").on_click(cx.listener(|v,_,_,cx|v.inspect_graph("wiring",cx))));
         if !self.busy && self.review.as_ref().is_some_and(Review::needs_approval) && !self.uncertain {
             controls=controls.child(Button::new("approve").primary().label("Approve exact displayed Host plan")
                 .on_click(cx.listener(|v,_,_,cx|v.approve(cx))))

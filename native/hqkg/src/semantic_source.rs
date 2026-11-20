@@ -103,7 +103,7 @@ pub fn impact(graph:&Graph, semantic_id:&str, depth:usize)->Result<Impact>{
 /// Exact source symbol group. Multiple declarations are never resolved to one.
 #[derive(Debug,PartialEq,Eq)]
 pub struct IndexedSymbol {
-    pub id:String,pub path:String,pub name:String,pub kind:String,
+    pub id:String,pub file_id:String,pub path:String,pub name:String,pub kind:String,
     pub first_line:u64,pub occurrence_count:u64,pub state:String,pub content_digest:String,
 }
 pub fn symbols(graph:&Graph,name:&str)->Result<Vec<IndexedSymbol>>{
@@ -129,7 +129,7 @@ pub fn symbols(graph:&Graph,name:&str)->Result<Vec<IndexedSymbol>>{
             (if count==1{state!="indexed-not-live-checked"}else{state!="ambiguous"}){
             return Err(Error::Corrupt("symbol provenance mismatch".into()))
         }
-        found.push(IndexedSymbol{id:n.id.clone(),path:path.into(),name:name.into(),kind:kind.into(),
+        found.push(IndexedSymbol{id:n.id.clone(),file_id:f.id.clone(),path:path.into(),name:name.into(),kind:kind.into(),
             first_line:line,occurrence_count:count,state:state.into(),content_digest:digest.into()});
     }
     found.sort_by(|a,b|(&a.path,&a.kind,&a.id).cmp(&(&b.path,&b.kind,&b.id)));

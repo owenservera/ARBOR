@@ -5,6 +5,7 @@
 //! No graph mutations, personal data, provider calls or Host effect grants.
 use hqkg::{Error,Graph,Journal,Result};
 use hqkg::semantic_source;
+use hqkg::development_relations;
 use hqkg::engine::{Budget,CancellationToken,EngineRegistry};
 use hqkg::development_engine::install_development_engine;
 use hqkg::typed_dag::{GraphDomain,Namespace,RevisionToken,IncrementalCache,RunState};
@@ -33,9 +34,28 @@ fn query(graph:&Graph,operation:&str,key:&str,extra:Option<&str>)->Result<Value>
             json!({"anchors":rows})
         }
         "symbols"=>json!({"symbols":semantic_source::symbols(graph,key)?.into_iter().map(|s|json!({
-            "id":s.id,"path":s.path,"name":s.name,"kind":s.kind,"line":s.first_line,
+            "id":s.id,"fileId":s.file_id,"path":s.path,"name":s.name,"kind":s.kind,"line":s.first_line,
             "occurrences":s.occurrence_count,"state":s.state,"digest":s.content_digest
         })).collect::<Vec<_>>()}),
+        "wiring"=>{
+            let node=graph.node(key).ok_or_else(||Error::Missing("indexed source file absent".into()))?;
+            if node.kind.as_str()!="source-file"
+                ||node.properties.get("hqkg.exchange.source").map(String::as_str)!=Some("repos-hq.index"){
+                return Err(Error::Invalid("source-file graph identity required".into()))
+            }
+            let imports=development_relations::imports(graph,key,false,3)?;
+            let dependents=development_relations::imports(graph,key,true,3)?;
+            let semantics=development_relations::semantic(graph,key)?;
+            let truncated=imports.truncated||dependents.truncated||semantics.truncated;
+            json!({"source":{"fileId":key,"path":node.properties.get("source_path"),
+                "revision":node.version,"digest":node.properties.get("content_sha256")},
+                "imports":imports.nodes,"dependents":dependents.nodes,
+                "semanticObservations":semantics.observations,
+                "potentialWiring":semantics.potential_wiring,
+                "truncated":truncated,
+                "returnsToSource":imports.returns_to_source||dependents.returns_to_source,
+                "evidence":"static-indexed-only"})
+        }
         "impact"=>{
             let depth=extra.unwrap_or("3").parse().map_err(|_|Error::Invalid("invalid depth".into()))?;
             let result=semantic_source::impact(graph,key,depth)?;
@@ -110,7 +130,7 @@ fn compute_source(graph:&Graph,id:&str)->Result<Value>{
 }
 fn run()->Result<Value>{
     let args=std::env::args().skip(1).collect::<Vec<_>>();
-    if args.len()<3||args.len()>4{return Err(Error::Invalid("usage: hqkg-development <absolute-journal> sources|symbols|impact <key> [depth] | program <epoch> | compute <source-file-id>".into()))}
+    if args.len()<3||args.len()>4{return Err(Error::Invalid("usage: hqkg-development <absolute-journal> sources|symbols|impact|wiring <key> [depth] | program <epoch> | compute <source-file-id>".into()))}
     let graph=open(Path::new(&args[0]))?;
     graph.check_indexes()?;
     if args[1]=="compute"{

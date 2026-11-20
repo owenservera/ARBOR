@@ -46,7 +46,7 @@ export function createDevelopmentReadPort({config={},runtime,actorId='desktop-ow
   }
   async function graph(input){
     authorize();
-    if(!keys(input,['operation','key','depth'])||!['sources','symbols','impact','compute'].includes(input.operation)
+    if(!keys(input,['operation','key','depth'])||!['sources','symbols','impact','wiring','compute'].includes(input.operation)
        ||typeof input.key!=='string'||input.key.length<1||input.key.length>180
        ||/[\\u0000-\\u001f\\u007f]/.test(input.key)
        ||(input.depth!==undefined&&(!Number.isSafeInteger(input.depth)||input.depth<0||input.depth>8)))

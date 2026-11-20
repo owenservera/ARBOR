@@ -319,7 +319,7 @@ export function createDevIntelligence({
     },'source.index',true);
   }
   function nativeGraphQuery({operation,key,depth}={}) {
-    if(!['sources','symbols','impact','compute'].includes(operation)
+    if(!['sources','symbols','impact','wiring','compute'].includes(operation)
       ||typeof key!=='string'||key.length<1||key.length>180||/[\\u0000-\\u001f\\u007f]/.test(key)
       ||(depth!==undefined&&(!Number.isSafeInteger(depth)||depth<0||depth>8)))
       throw new Error('HQ_GRAPH_QUERY_INVALID');

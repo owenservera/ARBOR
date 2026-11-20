@@ -133,9 +133,9 @@ pub fn read_overview() -> Result<Overview, ReadError> {
 /// Owner-only development graph read, from the same Host endpoint used by PWA.
 /// Neither a graph reference nor a symbol name is an execution credential.
 pub fn read_development(operation:&str,key:&str)->Result<String,ReadError>{
-    if !matches!(operation,"symbols"|"compute")||key.is_empty()||key.len()>180
+    if !matches!(operation,"symbols"|"compute"|"wiring")||key.is_empty()||key.len()>180
         ||key.chars().any(char::is_control) {return Err(ReadError::InvalidInput)}
-    if operation=="compute" {
+    if matches!(operation,"compute"|"wiring") {
         let digest=key.strip_prefix("hqg1:").ok_or(ReadError::InvalidInput)?;
         if digest.len()!=64||!digest.bytes().all(|b|b.is_ascii_digit()||(b'a'..=b'f').contains(&b)){
             return Err(ReadError::InvalidInput)
@@ -173,10 +173,36 @@ pub fn read_development(operation:&str,key:&str)->Result<String,ReadError>{
                 let name=row["name"].as_str().ok_or(ReadError::InvalidProjection)?;
                 let path=row["path"].as_str().ok_or(ReadError::InvalidProjection)?;
                 let id=row["id"].as_str().ok_or(ReadError::InvalidProjection)?;
-                lines.push(format!("{} · {}:{} · {}",bounded_text(name),bounded_text(path),
-                    row["line"].as_u64().unwrap_or(0),bounded_text(id)));
+                let file_id=row["fileId"].as_str().ok_or(ReadError::InvalidProjection)?;
+                lines.push(format!("{} · {}:{} · symbol {} · file {}",
+                    bounded_text(name),bounded_text(path),
+                    row["line"].as_u64().unwrap_or(0),bounded_text(id),bounded_text(file_id)));
             }
-            lines.push("To compute a source file, supply its source-file node ID (not the symbol ID).".into());
+            lines.push("Use the displayed file ID with Compute or Wiring, not the symbol ID.".into());
+        }
+        "wiring"=>{
+            if data["state"]!="indexed-snapshot"{return Err(ReadError::Unavailable)}
+            let view=&data["result"];
+            let source=view["source"]["path"].as_str().ok_or(ReadError::InvalidProjection)?;
+            lines.push(format!("Source: {}",bounded_text(source)));
+            let groups=[("Resolved transitive imports","imports"),("Reverse import dependents","dependents"),
+                ("Observed semantic identities","semanticObservations"),("Possible producer/consumer wiring","potentialWiring")];
+            for (title,key) in groups{
+                let rows=view[key].as_array().ok_or(ReadError::InvalidProjection)?;
+                lines.push(format!("{} · {}",title,rows.len()));
+                for row in rows.iter().take(16){
+                    let path=row["peerPath"].as_str().or_else(||row["path"].as_str());
+                    let semantic=row["semanticId"].as_str();
+                    let label=match (path,semantic){
+                        (Some(p),Some(id))=>format!("{} · {}",bounded_text(id),bounded_text(p)),
+                        (Some(p),None)=>bounded_text(p),
+                        (None,Some(id))=>bounded_text(id),
+                        _=>String::new()
+                    };
+                    if !label.is_empty(){lines.push(format!("  {}",label));}
+                }
+            }
+            if view["truncated"]==true{lines.push("Some static relationships were omitted at traversal bounds".into());}
         }
         "compute"=>{
             if data["state"]!="computed"||data["executionAuthorized"]!=false||
@@ -195,6 +221,17 @@ pub fn read_development(operation:&str,key:&str)->Result<String,ReadError>{
                     result["sourceCount"].as_u64().unwrap_or(0),result["importCount"].as_u64().unwrap_or(0),
                     result["symbolCount"].as_u64().unwrap_or(0),result["semanticCount"].as_u64().unwrap_or(0),
                     result["dependentCount"].as_u64().unwrap_or(0)));
+                if let Some(wires)=result["potentialWiring"].as_array(){
+                    for wire in wires.iter().take(12){
+                        lines.push(format!("  Possible {} · {} · {}",
+                            bounded_text(wire["role"].as_str().unwrap_or("connection")),
+                            bounded_text(wire["semanticId"].as_str().unwrap_or("semantic ID")),
+                            bounded_text(wire["peerPath"].as_str().unwrap_or("source"))));
+                    }
+                }
+                if result["truncated"]==true{
+                    lines.push("  Dependency traversal capped; result is partial".into());
+                }
                 if let Some(sources)=result["sources"].as_array(){
                     for source in sources.iter().take(4){
                         if let Some(path)=source["path"].as_str(){lines.push(format!("  {}",bounded_text(path)));}
