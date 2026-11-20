@@ -121,7 +121,7 @@ export function rustWikiSearch(wiki,query){
     value.results.length>value.matches||
     value.results.some(row=>typeof row?.page!=='string'||!row.page||
       row.section!==null&&typeof row.section!=='string'||
-      typeof row.excerpt!=='string'||row.excerpt.length>240))
+      typeof row.excerpt!=='string'||Array.from(row.excerpt).length>240))
     return undefined;
   return value;
 }

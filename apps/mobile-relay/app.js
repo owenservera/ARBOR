@@ -20,13 +20,15 @@ import { createShellPresentation } from './ux/shell-presentation.mjs';
 import { mountLocalNotes } from './ux/local-notes-ui.mjs';
 import { mountVoiceCapture } from './ux/voice-capture.mjs';
 // @hq:consumes vivim.rust-wiki-source-stamp@1
+// @hq:consumes vivim.rust-wiki-source-search@1
 // The browser keeps its current Wiki UI; Rust supplies optional source identity
 // from the same local WASM kernel used for VEC and other pure operations.
-let rustWikiSourceStamp=null;
+let rustWikiSourceStamp=null,rustWikiSearch=null;
 if(typeof window!=='undefined'){
   void import('./vec-engines/rust-wasm.mjs')
     .then(module=>{
       rustWikiSourceStamp=module.rustWikiSourceStamp;
+      rustWikiSearch=module.rustWikiSearch;
       return module.initializeRustUiEngine();
     }).catch(()=>{});
 }
@@ -500,6 +502,7 @@ function goTab(tab) {
 
 // The Host journal owns Wiki state; this view is strictly read-only.
 let wikiReadSequence = 0;
+let wikiSearchQuery=''; // ephemeral authorized source search; never persisted
 let wikiSourceSurface=null,wikiSourcePanel=null,wikiSourceList=null,wikiSourceExcerpt=null,wikiSourceSelection=null,wikiSourceEpoch=0,wikiSourceStatus='Source index not loaded';
 function clearWikiSources(reason='Source index not loaded'){
   wikiSourceEpoch++;wikiSourceSurface=null;wikiSourceSelection=null;wikiSourceStatus=reason;
@@ -541,7 +544,8 @@ function renderWikiSources(){
   return wikiSourcePanel;
 }
 function clearWiki(reason = 'Wiki unavailable') {
-  wikiReadSequence++;clearWikiSources(reason); S.wiki = null; S.wikiStamp=null; S.wikiError = reason;
+  wikiReadSequence++;clearWikiSources(reason); wikiSearchQuery='';
+  S.wiki = null; S.wikiStamp=null; S.wikiError = reason;
   S.wikiContext = null; S.wikiContextError = reason;
   if (S.tab === 'wiki') renderWiki();
 }
@@ -713,10 +717,58 @@ function renderWiki() {
     void readGraphContext(); // Existing authorized, bounded native HQKG read only.
   });
   head.append(contextButton);
+  // Search the authorized Host Wiki through the same Rust kernel as GPUI.
+  // It cannot mutate the source, escape this device session, or publish a grant.
+  const searchInput=el('input','ux-search');
+  searchInput.type='search';
+  searchInput.placeholder='Search Wiki source previews';
+  searchInput.maxLength=160;
+  searchInput.value=wikiSearchQuery;
+  searchInput.autocomplete='off';
+  const runWikiSearch=()=>{
+    wikiSearchQuery=searchInput.value.trim().slice(0,160);
+    renderWiki();
+  };
+  searchInput.addEventListener('keydown',event=>{
+    if(event.key==='Enter'){event.preventDefault();runWikiSearch();}
+  });
+  const searchButton=el('button','btn sm','Search Wiki');
+  searchButton.type='button';searchButton.disabled=!S.wiki;
+  searchButton.addEventListener('click',runWikiSearch);
+  const clearSearch=el('button','btn sm','Clear search');
+  clearSearch.type='button';clearSearch.disabled=!wikiSearchQuery;
+  clearSearch.addEventListener('click',()=>{wikiSearchQuery='';renderWiki();});
+  head.append(searchInput,searchButton,clearSearch);
   scroll.append(head);
   if (!S.wiki) scroll.append(el('p', 'ux-empty', S.wikiError));
   else {
     const pageCards=new Map(),captures=new Map();
+    if(wikiSearchQuery){
+      const found=rustWikiSearch?.(S.wiki,wikiSearchQuery);
+      const searchCard=el('section','ux-card');
+      searchCard.append(el('h3','ux-card-title','Rust Wiki search · read only'));
+      if(found?.wikiRevision===S.wiki.revision &&
+          (!S.wikiStamp||found.wikiDigest===S.wikiStamp.digest)){
+        searchCard.append(el('p','ux-note',
+          found.matches+' bounded matches · '+found.scannedPages+' of '+found.totalPages+
+          ' pages scanned · section previews only'));
+        for(const hit of found.results){
+          const label=hit.page+(hit.section?' / '+hit.section:'')+
+            (hit.excerpt?' · '+hit.excerpt:'');
+          const jump=el('button','btn sm ux-secondary',label);
+          jump.type='button';
+          jump.addEventListener('click',()=>pageCards.get(hit.page)?.scrollIntoView?.({block:'start'}));
+          searchCard.append(jump);
+        }
+        if(found.matches>found.results.length)
+          searchCard.append(el('p','ux-note',
+            (found.matches-found.results.length)+' more preview matches not displayed.'));
+      }else{
+        searchCard.append(el('p','ux-note',
+          'Rust search is unavailable or source identity changed. No fallback matching or cached results.'));
+      }
+      scroll.append(searchCard);
+    }
     const captureProjection=readPersonalCaptures(S.wiki);
     if(captureProjection){
       for(const row of captureProjection.items)captures.set(row.page,row);
