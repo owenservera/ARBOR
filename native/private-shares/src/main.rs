@@ -161,7 +161,7 @@ fn passcode(root: &Path, row: &mut Value, supplied_code: &str) -> R<()> {
         return fail(429, "SHARE_PASSCODE_RATE_LIMITED");
     }
     if supplied_code.is_empty() { return fail(401, "SHARE_PASSCODE_REQUIRED"); }
-    let matches = supplied_code.len() <= 512
+    let matches = supplied_code.chars().count() <= 128 && supplied_code.len() <= 512
         && eq_hex(&key(supplied_code, supplied(row, "passSalt"))?, supplied(row, "passHash"));
     if !matches {
         let attempts = row["failedPasscodes"].as_u64().unwrap_or(0).saturating_add(1);
@@ -243,11 +243,15 @@ fn reserve(root: &Path, input: &Value, owner: &str) -> R<Value> {
     }
     let bytes = input["bytes"].as_u64().unwrap_or(0);
     if bytes == 0 || bytes > MAX_BYTES { return fail(413, "SHARE_SIZE_INVALID"); }
-    let hours = input["expiresInHours"].as_f64().unwrap_or(24.0);
+    let hours = if input.get("expiresInHours").is_some() {
+        input["expiresInHours"].as_f64().ok_or(Fault { status: 400, code: "SHARE_EXPIRY_INVALID" })?
+    } else { 24.0 };
     if !hours.is_finite() || !(1.0..=MAX_AGE_HOURS).contains(&hours) {
         return fail(400, "SHARE_EXPIRY_INVALID");
     }
-    let max = input["maxDownloads"].as_u64().unwrap_or(5);
+    let max = if input.get("maxDownloads").is_some() {
+        input["maxDownloads"].as_u64().ok_or(Fault { status: 400, code: "SHARE_DOWNLOAD_LIMIT_INVALID" })?
+    } else { 5 };
     if !(1..=100).contains(&max) { return fail(400, "SHARE_DOWNLOAD_LIMIT_INVALID"); }
     let raw_name = supplied(input, "name").replace('\\', "/");
     let name = raw_name.rsplit('/').next().unwrap_or("").trim().chars().map(|c|
