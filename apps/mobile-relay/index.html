@@ -406,6 +406,9 @@ body.host-preview #grokbot-direct-link{display:none!important}
 .shares-dialog .share-actions .btn{min-height:44px}
 .shares-dialog .share-row{display:flex;justify-content:space-between;align-items:center;gap:12px;border-bottom:1px solid var(--bd);padding:10px 0;font-size:13px}
 .shares-dialog .share-row span{overflow-wrap:anywhere}
+.shares-dialog .share-dropzone{border:1px dashed var(--line-strong);background:var(--s2);border-radius:var(--r-md);padding:14px;display:grid;gap:7px;margin:12px 0}
+.shares-dialog .share-dropzone.dragging{border-color:var(--ac);background:var(--ac2)}
+.shares-dialog .share-dropzone strong{font:600 14px var(--font-display);color:var(--tx)}
 .shares-dialog #share-status{min-height:24px;color:var(--mu);font-size:13px;overflow-wrap:anywhere}
 @media(max-width:480px){.shares-dialog{width:100vw;max-height:95dvh;padding:14px}.shares-dialog .share-grid{grid-template-columns:1fr}}
 </style>
@@ -574,7 +577,11 @@ body.host-preview #grokbot-direct-link{display:none!important}
   </div>
   <p class="muted">Share up to 10 MB with another approved device on your trusted Direct connection. Your PC stores and controls each share.</p>
   <h3>Create share</h3>
-  <label for="share-file">File<input id="share-file" type="file"></label>
+  <div id="share-drop" class="share-dropzone" aria-label="Select or drop a file here">
+    <strong>Choose or drop a file</strong>
+    <label for="share-file">File<input id="share-file" type="file"></label>
+    <small id="share-selected-name" class="muted">Maximum 10 MB · Direct Host only</small>
+  </div>
   <div class="share-grid">
     <label for="share-expiry">Expires after<select id="share-expiry"><option value="1">1 hour</option><option value="24" selected>24 hours</option><option value="168">7 days</option><option value="720">30 days</option></select></label>
     <label for="share-downloads">Allowed downloads<input id="share-downloads" type="number" min="1" max="100" value="5"></label>
