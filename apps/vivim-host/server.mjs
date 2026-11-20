@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { execFile as execFileCb } from 'node:child_process';
 import { promisify } from 'node:util';
 import { workerHealth, messageJourney } from './diagnostics.mjs';
-import { projectHostRecovery } from './recovery/host-adapter.mjs';
+import { projectHostRecovery, projectHostRecoveryNative } from './recovery/host-adapter.mjs';
 import { workspaceManifestFile } from '../../studio/src/config.mjs';
 import { MANIFEST_FILE, MANIFEST_SCHEMA, MANIFEST_VERSION } from '../../studio/src/workspace-manifest.mjs';
 import { diagnoseHost } from './insights.mjs';
@@ -492,7 +492,9 @@ export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path
     if (req.method !== 'GET' && req.method !== 'HEAD') { res.setHeader('allow', 'GET, HEAD'); res.writeHead(405); res.end(); return; }
     if (pathname === '/api/host/status') {
       res.setHeader('content-type', 'application/json; charset=utf-8');
-      res.writeHead(200); res.end(req.method === 'HEAD' ? undefined : JSON.stringify(hostSnapshot({ dataRoot, bootstrap: runtimeFor() }))); return;
+      const snapshot=hostSnapshot({dataRoot,bootstrap:runtimeFor()});
+      if(req.method==='GET')snapshot.recovery=await projectHostRecoveryNative(snapshot);
+      res.writeHead(200);res.end(req.method==='HEAD'?undefined:JSON.stringify(snapshot));return;
     }
     // Product state is projected deterministically from one durable Host journal.
     if (pathname === '/api/state' || pathname === '/api/wiki') {
