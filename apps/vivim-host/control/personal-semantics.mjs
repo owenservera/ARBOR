@@ -2,6 +2,7 @@
 // The caller MUST pass the existing Host NLCL result first. A personal rule cannot
 // supersede a canonical interpretation, refusal, incomplete command or clarification.
 import { NCLL_VERSION } from '../../mobile-relay/nlcl/frames.mjs';
+import { runNativeProductPureSync } from './native-product-pure-sync.mjs';
 import { VEC_COMPILE_SCHEMA } from '../../mobile-relay/vec/compiler.mjs';
 import {sha256Hex} from '../../mobile-relay/generative-ui/portable-digest.mjs';
 import {validWikiRecipe,validWikiWriteRecipe,bindWikiWriteRecipe,wikiProgramSlug} from './wiki-read-program.mjs';
@@ -176,6 +177,56 @@ export function resolvePersonalSemantics({ text, baseline, rules, catalog, scope
   if (matches.some(rule => !compatibleRuleCatalog(rule,catalog)))
     return decision('refused', { reason: 'STALE_CATALOG_RULE' });
   const bound=matches.map(rule=>({rule,args:bindPersonalRule(rule,text,catalog)}));
+  // NLCL, catalog validity, scope, stale recipes and parameter binding stay
+  // with their incumbent owners above. Rust resolves only the remaining pure
+  // specificity/meaning conflict and stable-provenance selection.
+  const nativeBindings=bound.map(({rule,args})=>({
+    ruleId:rule.id,ruleRevision:rule.revision,actionId:rule.actionId,
+    scopeKeys:Object.keys(rule.scope).length,args,
+    meaning:rule.writeProgram?bindPersonalWriteProgram(rule,text,catalog):args,
+    writeProgram:!!rule.writeProgram,template:!!rule.template
+  })).sort((a,b)=>a.ruleId.localeCompare(b.ruleId));
+  const native=runNativeProductPureSync('personal-rule-selection',{
+    schema:'vivim.personal-rule-selection-input/1',
+    catalogVersion:catalog.version,scope,text,matches:nativeBindings
+  });
+  if(native){
+    const d=native.decision;
+    const invalid=()=>decision('refused',{reason:'NATIVE_PERSONAL_SELECTION_INVALID'});
+    if(native.authority!=='none'||native.executionAuthorized!==false||
+      native.effectPerformed!==false||!d||d.schema!==PERSONAL_RESOLUTION_SCHEMA||
+      d.executionAuthorized!==false)return invalid();
+    if(native.outcome==='selected'&&d.outcome==='candidate'){
+      const selected=bound.find(({rule})=>rule.id===d.provenance?.ruleId);
+      const highest=Math.max(...bound.map(({rule})=>Object.keys(rule.scope).length));
+      if(!selected||!selected.args||
+        Object.keys(selected.rule.scope).length!==highest||
+        d.candidate?.actionId!==selected.rule.actionId||
+        JSON.stringify(canonical(d.candidate.args))!==JSON.stringify(canonical(selected.args))||
+        d.provenance.method!=='accepted-personal-rule'||
+        d.provenance.ruleRevision!==selected.rule.revision||
+        d.provenance.catalogRevision!==catalog.version||
+        JSON.stringify(canonical(d.provenance.semanticScope))!==JSON.stringify(canonical(scope))||
+        (selected.rule.writeProgram
+          ?d.provenance.reuse!=='typed-write-recipe'||d.provenance.invocation!==text
+          :selected.rule.template
+            ?d.provenance.reuse!=='parameterized-template'||
+              d.provenance.templateSchema!==TEMPLATE_SCHEMA||d.provenance.invocation!==text
+            :d.provenance.reuse!==undefined))
+        return invalid();
+      return d;
+    }
+    if(native.outcome==='clarification_required'&&d.outcome==='clarification_required'&&
+      ['TEMPLATE_PARAMETER_REQUIRED','CONFLICTING_PERSONAL_RULES'].includes(d.reason)&&
+      Array.isArray(d.ruleIds)){
+      const highest=Math.max(...bound.map(({rule})=>Object.keys(rule.scope).length));
+      const expected=(d.reason==='TEMPLATE_PARAMETER_REQUIRED'?bound:
+        bound.filter(({rule})=>Object.keys(rule.scope).length===highest))
+        .map(({rule})=>rule.id).sort();
+      if(JSON.stringify(d.ruleIds)===JSON.stringify(expected))return d;
+    }
+    return invalid();
+  }
   if(bound.some(x=>!x.args))return decision('clarification_required',{reason:'TEMPLATE_PARAMETER_REQUIRED',ruleIds:matches.map(r=>r.id).sort()});
   const highest = Math.max(...bound.map(x=>Object.keys(x.rule.scope).length));
   const mostSpecific=bound.filter(x=>Object.keys(x.rule.scope).length===highest);
