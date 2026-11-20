@@ -41,6 +41,8 @@ pub fn dispatch(request:&Value)->Value{
         "wiki-journal-replay"=>crate::wiki_replay::replay(input),
         "control-preclaim"=>crate::control_lifecycle::preclaim(input),
         "control-effect-disposition"=>crate::control_lifecycle::effect_disposition(input),
+        "control-typed-plan"=>crate::control_planning::typed(input),
+        "control-candidate-plan"=>crate::control_planning::candidate(input),
         "development-projection"=>crate::development_projection::project(input),
         "control-plan-preview"=>crate::control_plan_presentation::project(input),
         "control-receipt-preview"=>crate::control_plan_presentation::receipt_project(input),

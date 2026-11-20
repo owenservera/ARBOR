@@ -9,7 +9,9 @@ const operations=Object.freeze({
   'command-program':'vivim.command-program/1',
   'context-grounding':'vivim.command-grounding/1',
   'control-preclaim':'vivim.control-preclaim/1',
-  'control-effect-disposition':'vivim.control-effect-disposition/1'
+  'control-effect-disposition':'vivim.control-effect-disposition/1',
+  'control-typed-plan':'vivim.control-plan-projection/1',
+  'control-candidate-plan':'vivim.control-plan-projection/1'
 });
 export function runNativeProductPureSync(operation,input){
   if(!Object.hasOwn(operations,operation)||input===null||typeof input!=='object')

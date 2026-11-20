@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { buildControlWorld, interpretControl, LANGUAGE_SCHEMA } from '../../mobile-relay/control-language.mjs';
 import { toCommandIntent, validateAiCommandCandidate, COMMAND_INTENT_SCHEMA } from './command-intent.mjs';
 import { createVecCompiler } from '../../mobile-relay/vec/compiler.mjs';
+import { runNativeProductPureSync } from './native-product-pure-sync.mjs';
 
 const catalogPath = fileURLToPath(new URL('./action-catalog.v1.json', import.meta.url));
 const err = code => Object.assign(new Error(code), { code });
@@ -152,10 +153,49 @@ export function createControlPlanner({ catalog = loadControlCatalog(), lexicon =
       actions: catalog.actions.map(safeSummary) };
   }
 
+  // Rust performs the deterministic typed action / argument / risk projection.
+  // The incumbent catalog and owner-only Host executor map remain canonical.
+  function nativePlan(operation,input,action,source,origin){
+    const native=runNativeProductPureSync(operation,input);
+    if(!native)return null; // unpackaged or older kernel, preserve compatibility
+    if(native.outcome==='refused'){
+      if(!['CONTROL_SOURCE_INVALID','CONTROL_ACTION_UNKNOWN',
+        'CONTROL_ARGS_INVALID','CONTROL_CANDIDATE_INVALID',
+        'CONTROL_CANDIDATE_REFUSED'].includes(native.code))
+        throw err('CONTROL_NATIVE_PLAN_INVALID');
+      throw err(native.code);
+    }
+    const p=native.plan;
+    const requiredApproval=origin==='ai_candidate'||action.risk!=='R0';
+    const executable=EXECUTABLE.has(action.readiness);
+    const expectedOutcome=!executable?'unavailable':
+      requiredApproval?'approval_required':'ready';
+    if(native.outcome!=='planned'||native.authority!=='none'||
+      native.executionAuthorized!==false||native.effectPerformed!==false||
+      !plain(p)||p.schema!=='vivim.control-plan/1'||p.source!==source||
+      p.origin!==origin||p.actionId!==action.id||p.title!==action.title||
+      p.target!==action.target||p.risk!==action.risk||
+      p.readiness!==action.readiness||p.outcome!==expectedOutcome||
+      p.requiresApproval!==requiredApproval||p.executionPerformed!==false||
+      p.executorStatus!==action.readiness||p.reversible!==(action.reversible===true)||
+      p.liveAcceptance!==(action.readiness==='verified'?'verified':'pending')||
+      !plain(p.args)||Object.keys(p.args).length!==Object.keys(action.args).length||
+      Object.keys(action.args).some(key=>!Object.hasOwn(p.args,key)||
+        p.args[key]!==input.args?.[key]&&
+          p.args[key]!==input.candidate?.args?.[key]))
+      throw err('CONTROL_NATIVE_PLAN_INVALID');
+    return p;
+  }
+
   function planTyped({ actionId, args = {}, source = 'text', origin = 'typed' } = {}) {
     if (!SURFACES.includes(source)) throw err('CONTROL_SOURCE_INVALID');
     if (typeof actionId !== 'string' || !actions.has(actionId)) throw err('CONTROL_ACTION_UNKNOWN');
     const a = actions.get(actionId);
+    const native=nativePlan('control-typed-plan',{
+      schema:'vivim.control-typed-plan-input/1',
+      source,origin,actionId,args,action:a
+    },a,source,origin);
+    if(native)return native;
     if (!plain(args) || Object.keys(args).some(k => !Object.hasOwn(a.args, k)) ||
         Object.keys(a.args).some(k => !Object.hasOwn(args, k))) throw err('CONTROL_ARGS_INVALID');
     const normalized = {};
@@ -284,6 +324,18 @@ export function createControlPlanner({ catalog = loadControlCatalog(), lexicon =
       throw err('CONTROL_CANDIDATE_INVALID');
     const a = actions.get(candidate.actionId);
     if (a?.aiCandidate === false) throw err('CONTROL_CANDIDATE_REFUSED');
+    if(a){
+      const native=nativePlan('control-candidate-plan',{
+        schema:'vivim.control-candidate-plan-input/1',
+        source,candidate,action:a
+      },a,source,'ai_candidate');
+      if(native){
+        if(!plain(native.candidate)||native.candidate.rationale!==(candidate.rationale??null)||
+          native.candidate.uncertainty!==(candidate.uncertainty??null))
+          throw err('CONTROL_NATIVE_PLAN_INVALID');
+        return native;
+      }
+    }
     const plan = planTyped({ actionId: candidate.actionId, args: candidate.args ?? {}, source, origin: 'ai_candidate' });
     return { ...plan, requiresApproval: true, outcome: plan.outcome === 'ready' ? 'approval_required' : plan.outcome,
       candidate: { rationale: candidate.rationale ?? null, uncertainty: candidate.uncertainty ?? null } };
