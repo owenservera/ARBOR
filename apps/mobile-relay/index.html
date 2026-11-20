@@ -394,6 +394,20 @@ body.host-preview #grokbot-direct-link{display:none!important}
 .media-player-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .media-player-head h2{font-size:18px;font-weight:600}
 #media-player-video{display:block;width:100%;max-height:75vh;background:#000;border-radius:10px}
+.shares-dialog{border:1px solid var(--line-strong);border-radius:var(--r-lg);background:var(--s1);color:var(--tx);width:min(95vw,640px);max-height:90dvh;overflow:auto;padding:20px}
+.shares-dialog::backdrop{background:#000c}
+.shares-dialog h2{font:600 23px/1.2 var(--font-display);margin:0}
+.shares-dialog h3{font:600 17px/1.3 var(--font-display);margin:16px 0 6px}
+.shares-dialog label{display:flex;flex-direction:column;gap:5px;font-size:13px;color:var(--mu)}
+.shares-dialog input,.shares-dialog select{max-width:100%;min-height:43px;background:var(--s2);border:1px solid var(--line-strong);border-radius:var(--r-sm);padding:8px;color:var(--tx)}
+.shares-dialog input[type=file]{width:100%;height:auto}
+.shares-dialog .share-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:12px 0}
+.shares-dialog .share-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.shares-dialog .share-actions .btn{min-height:44px}
+.shares-dialog .share-row{display:flex;justify-content:space-between;align-items:center;gap:12px;border-bottom:1px solid var(--bd);padding:10px 0;font-size:13px}
+.shares-dialog .share-row span{overflow-wrap:anywhere}
+.shares-dialog #share-status{min-height:24px;color:var(--mu);font-size:13px;overflow-wrap:anywhere}
+@media(max-width:480px){.shares-dialog{width:100vw;max-height:95dvh;padding:14px}.shares-dialog .share-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -415,6 +429,7 @@ body.host-preview #grokbot-direct-link{display:none!important}
   <span id="dot" class="dot bad" aria-hidden="true"></span><span id="conn">Connecting…</span><span id="connection-announcer" class="sr-only" role="status" aria-live="polite">Connecting…</span>
   <button id="theme-toggle" class="icon needpair" type="button" aria-label="Choose background" aria-expanded="false" aria-controls="theme-panel" title="Background">◐</button>
   <button id="pocket-native" class="icon" type="button" hidden aria-label="Open offline Pocket captures" title="Offline Pocket">▣</button>
+  <button id="share-open" class="icon" type="button" aria-label="Private file shares" title="Private shares" hidden>↗</button>
   <button id="gear" class="icon" type="button" aria-label="Settings">⚙</button>
 </header>
 
@@ -552,6 +567,39 @@ body.host-preview #grokbot-direct-link{display:none!important}
   </div>
 </main>
 
+<dialog id="share-dialog" class="shares-dialog" aria-labelledby="share-title">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
+    <h2 id="share-title">Private file shares</h2>
+    <button id="share-close" class="btn sm" type="button">Close</button>
+  </div>
+  <p class="muted">Share up to 10 MB with another approved device on your trusted Direct connection. Your PC stores and controls each share.</p>
+  <h3>Create share</h3>
+  <label for="share-file">File<input id="share-file" type="file"></label>
+  <div class="share-grid">
+    <label for="share-expiry">Expires after<select id="share-expiry"><option value="1">1 hour</option><option value="24" selected>24 hours</option><option value="168">7 days</option><option value="720">30 days</option></select></label>
+    <label for="share-downloads">Allowed downloads<input id="share-downloads" type="number" min="1" max="100" value="5"></label>
+  </div>
+  <label for="share-passcode">Optional passcode (6+ characters)<input id="share-passcode" type="password" autocomplete="new-password" maxlength="128" placeholder="No passcode required"></label>
+  <div class="share-actions"><button id="share-create" class="btn pri" type="button">Upload and share</button></div>
+  <div class="share-actions">
+    <label for="share-link" style="flex:1;min-width:0">Private link<input id="share-link" type="text" readonly placeholder="Ready after upload"></label>
+    <button id="share-copy" class="btn" type="button">Copy</button>
+  </div>
+  <section id="share-incoming" hidden>
+    <h3>Receive a share</h3>
+    <p id="share-receive-details" class="muted">Inspect before downloading.</p>
+    <label for="share-receive-passcode">Passcode, if required<input id="share-receive-passcode" type="password" maxlength="128" autocomplete="off"></label>
+    <div class="share-actions">
+      <button id="share-inspect" class="btn" type="button">Inspect</button>
+      <button id="share-preview" class="btn" type="button">Preview</button>
+      <button id="share-download" class="btn pri" type="button">Download</button>
+    </div>
+  </section>
+  <p id="share-status" role="status" aria-live="polite"></p>
+  <h3>Your recent shares</h3>
+  <button id="share-refresh" class="btn sm" type="button">Refresh</button>
+  <div id="share-recent"></div>
+</dialog>
 <div id="welcome" hidden></div>
 
 <div id="dbg" hidden>
@@ -583,5 +631,6 @@ body.host-preview #grokbot-direct-link{display:none!important}
 <script type="module" src="generative-ui/phone-surface.mjs"></script>
 <script type="module" src="app.js"></script>
 <script type="module" src="control-phone.mjs"></script>
+<script type="module" src="private-shares-ui.mjs"></script>
 </body>
 </html>
