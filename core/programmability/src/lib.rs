@@ -12,6 +12,7 @@ pub mod visual;
 pub mod wiki_read;
 pub mod wiki_journal;
 pub mod wiki_replay;
+pub mod control_lifecycle;
 pub mod development_projection;
 pub mod control_plan_presentation;
 pub mod vec;

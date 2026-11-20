@@ -11,6 +11,7 @@
 // owner); executors are fixed Host functions — no shell, SQL, URL or generated code.
 import { createHash } from 'node:crypto';
 import { createControlPlanner, loadControlCatalog } from './intent-planner.mjs';
+import { runNativeProductPureSync } from './native-product-pure-sync.mjs';
 import { createControlJournal, newPlanId } from './journal.mjs';
 import { createLexiconStore } from './lexicon.mjs';
 import { createPersonalRuleStore } from './personal-rule-store.mjs';
@@ -758,13 +759,24 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
       throw fail('CONTROL_DESKTOP_APPROVAL_REQUIRED');
 
     function finishEffect(result = null, cause = null) {
-      // Revision conflicts are definitive pre-write CAS failures. For other
-      // async journal failures, an append could have happened: never retry.
-      const code = cause?.status === 409 ? 'CONTROL_WIKI_STALE' :
-        cause?.code ?? 'CONTROL_EFFECT_UNCERTAIN';
-      const definitive = cause?.status === 409 || VALIDATION_ERROR_CODES.has(code) ||
-        (wikiMutation(rec.plan.actionId) && [400, 404, 413, 428].includes(cause?.status));
-      const status = !cause ? 'applied' : definitive ? 'failed' : 'uncertain';
+      // Rust owns the pure failure classification when packaged. Host still
+      // persists the one final receipt; unknown post-claim outcomes never retry.
+      const native=runNativeProductPureSync('control-effect-disposition',{
+        schema:'vivim.control-effect-input/1',failed:!!cause,
+        statusCode:Number.isSafeInteger(cause?.status)?cause.status:null,
+        code:typeof cause?.code==='string'?cause.code:null,
+        wikiMutation:wikiMutation(rec.plan.actionId)
+      });
+      const fallbackCode=cause?.status===409?'CONTROL_WIKI_STALE':
+        cause?.code??'CONTROL_EFFECT_UNCERTAIN';
+      const definitive=cause?.status===409||VALIDATION_ERROR_CODES.has(fallbackCode)||
+        (wikiMutation(rec.plan.actionId)&&[400,404,413,428].includes(cause?.status));
+      const status=native?.disposition==='computed'&&
+        ['applied','failed','uncertain'].includes(native.status)&&
+        (cause?native.status!=='applied':native.status==='applied')
+        ?native.status:!cause?'applied':definitive?'failed':'uncertain';
+      const code=native?.disposition==='computed'&&typeof native.code==='string'
+        ?native.code:fallbackCode;
       const error = cause ? { code: short(code, 64), message: short(cause.message ?? cause, 200) } : null;
       const receipt = { schema: RECEIPT_SCHEMA, planId, planDigest: stored, actionId: rec.plan.actionId, args: rec.plan.args,
         risk: rec.plan.risk, source: rec.plan.source, origin: rec.plan.origin, approvedVia: approval.channel,
@@ -777,6 +789,18 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
     }
     function claimAndRun() {
       if(phoneProgram)authorizeProgram('control:execute');
+      // Rust returns eligibility evidence, never an approval or effect grant.
+      // Existing Host policy and revision checks above remain mandatory.
+      const nativeFence=runNativeProductPureSync('control-preclaim',{
+        schema:'vivim.control-preclaim-input/1',risk:rec.plan.risk,
+        source:rec.plan.source,channel:approval.channel,
+        actor:approval.actor??'owner',planActor:rec.plan.actor,
+        wikiMutation:wikiMutation(rec.plan.actionId),
+        ruleAction:RULE_ACTIONS.has(rec.plan.actionId),
+        nowMs:now(),expiresMs:Date.parse(rec.plan.expiresAt)
+      });
+      if(nativeFence&&nativeFence.disposition!=='admissible')
+        throw fail(typeof nativeFence.code==='string'?nativeFence.code:'CONTROL_NATIVE_PRECLAIM_REFUSED');
       journal.approve(planId, { planId, planDigest: stored, channel: approval.channel,
         actor: short(approval.actor ?? 'owner', 120), at: iso() });
       if (!journal.claim(planId)) throw fail('CONTROL_UNCERTAIN');

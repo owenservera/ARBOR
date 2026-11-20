@@ -35,6 +35,8 @@ pub fn dispatch(request:&Value)->Value{
         "wiki-change-projection"=>crate::wiki_journal::changes(input),
         "wiki-structure-transition"=>crate::wiki_journal::structure_transition(input),
         "wiki-journal-replay"=>crate::wiki_replay::replay(input),
+        "control-preclaim"=>crate::control_lifecycle::preclaim(input),
+        "control-effect-disposition"=>crate::control_lifecycle::effect_disposition(input),
         "development-projection"=>crate::development_projection::project(input),
         "control-plan-preview"=>crate::control_plan_presentation::project(input),
         "control-receipt-preview"=>crate::control_plan_presentation::receipt_project(input),
