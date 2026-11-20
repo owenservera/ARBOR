@@ -292,6 +292,27 @@ impl Render for Desktop {
             body=body.child(div().text_sm().child(format!(
                 "{} source-backed Wiki pages · {} displayed",data.wiki_page_total,data.wiki_content.len()
             )));
+            if let Some(captures)=&data.wiki_captures {
+                body=body.child(div().text_lg().child("Personal captures · committed Wiki"))
+                    .child(format!(
+                        "{} notes · {} open tasks · {} completed · {} unknown · {} total",
+                        captures.counts.notes,captures.counts.open_tasks,
+                        captures.counts.done_tasks,captures.counts.unknown_tasks,captures.total
+                    ));
+                for item in &captures.recent {
+                    let kind=if item.kind=="note"{"Note".to_owned()}
+                        else{format!("{} task",item.status.as_deref().unwrap_or("Unknown"))};
+                    body=body.child(div().p_1().child(format!(
+                        "{} · {} · revision {} · {}",
+                        kind,item.page,item.created_revision,item.preview
+                    )));
+                }
+                if captures.omitted>0 {
+                    body=body.child(format!(
+                        "{} earlier captures omitted by canonical Host projection",captures.omitted
+                    ));
+                }
+            }
             for page in &data.wiki_content {
                 let mut page_view=div().flex().flex_col().gap_2().p_3()
                     .bg(rgb(0x202b3a))

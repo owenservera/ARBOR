@@ -30,6 +30,7 @@ pub struct WikiRead {
     pub digest: String,
     pub pages_total: usize,
     pub pages: Vec<Page>,
+    pub captures: Option<Captures>,
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ReadError { InvalidProjection, RevisionConflict }
@@ -72,7 +73,8 @@ pub fn read(wiki: &Value) -> Result<WikiRead, ReadError> {
         }
         output.push(Page { name: name.clone(), links, sections: shown, sections_total: sections.len() });
     }
-    Ok(WikiRead { revision, digest, pages_total: pages.len(), pages: output })
+    let captures=capture_read(wiki,revision);
+    Ok(WikiRead { revision, digest, pages_total: pages.len(), pages: output, captures })
 }
 
 /// Keep the last admitted source revision even when a Host read becomes unavailable.
@@ -117,4 +119,94 @@ pub fn source_stamp(input: &Value) -> Value {
             "effectPerformed": false
         })
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CaptureCounts {
+    pub notes: u64,
+    pub open_tasks: u64,
+    pub done_tasks: u64,
+    pub unknown_tasks: u64,
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CaptureItem {
+    pub kind: String,
+    pub status: Option<String>,
+    pub page: String,
+    pub created_revision: u64,
+    pub preview: String,
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Captures {
+    pub total: u64,
+    pub omitted: u64,
+    pub counts: CaptureCounts,
+    pub recent: Vec<CaptureItem>,
+}
+fn capture_page(kind: &str, name: &str) -> bool {
+    let Some(id) = name.strip_prefix(if kind == "task" { "task-" } else { "note-" }) else {return false;};
+    id.len() == 32 && id.bytes().all(|b| b.is_ascii_hexdigit() && !b.is_ascii_uppercase())
+}
+fn capture_uuid(id: &str) -> bool {
+    id.len() == 36 && id.bytes().enumerate().all(|(i,b)| {
+        if [8,13,18,23].contains(&i) {b == b'-'}
+        else {b.is_ascii_hexdigit()}
+    })
+}
+fn capture_read(wiki: &Value, revision: u64) -> Option<Captures> {
+    let c = wiki.get("personalCaptures")?;
+    if c["schema"] != "vivim.personal-captures/1"
+        || c["authority"] != "committed-wiki-read-only"
+        || c["wikiRevision"].as_u64()? != revision {return None;}
+    let total=c["total"].as_u64()?;
+    let omitted=c["omitted"].as_u64()?;
+    let items=c["items"].as_array().filter(|a|a.len()<=256)?;
+    if total!=omitted.checked_add(items.len() as u64)? {return None;}
+    let counts=&c["counts"];
+    let full=CaptureCounts{
+        notes:counts["notes"].as_u64()?,
+        open_tasks:counts["openTasks"].as_u64()?,
+        done_tasks:counts["doneTasks"].as_u64()?,
+        unknown_tasks:counts["unknownTasks"].as_u64()?,
+    };
+    let sum=full.notes.checked_add(full.open_tasks)?
+        .checked_add(full.done_tasks)?.checked_add(full.unknown_tasks)?;
+    if sum!=total{return None;}
+    let pages=wiki["pages"].as_object()?;
+    let mut seen_pages=std::collections::HashSet::new();
+    let mut seen_entries=std::collections::HashSet::new();
+    let mut window=[0u64;4];
+    let mut recent=Vec::new();
+    for entry in items {
+        let kind=entry["kind"].as_str().filter(|s|matches!(*s,"note"|"task"))?;
+        let page=entry["page"].as_str().filter(|s|capture_page(kind,s))?;
+        let uuid=entry["entryId"].as_str().filter(|s|capture_uuid(s))?;
+        if !seen_pages.insert(page) || !seen_entries.insert(uuid) {return None;}
+        let created=entry["createdRevision"].as_u64().filter(|n|*n>0&&*n<=revision)?;
+        let section=if kind=="task" {"Task"}else{"Note"};
+        if entry["section"]!=section{return None;}
+        let document=pages.get(page)?;
+        let text=document["sections"][section].as_str()?;
+        let status=if kind=="task"{
+            let actual=match document["sections"]["Status"].as_str(){
+                Some("Open")=>"Open",Some("Done")=>"Done",_=>"Unknown"
+            };
+            if entry["status"]!=actual{return None;}
+            Some(actual.to_owned())
+        }else{None};
+        let index=if kind=="note"{0}else{match status.as_deref(){
+            Some("Open")=>1,Some("Done")=>2,_=>3
+        }};
+        window[index]+=1;
+        let (preview,_)=preview(text);
+        recent.push(CaptureItem{
+            kind:kind.to_owned(),status,page:page.to_owned(),
+            created_revision:created,preview
+        });
+    }
+    if [full.notes,full.open_tasks,full.done_tasks,full.unknown_tasks]
+        .iter().zip(window).any(|(a,b)|*a<b){return None;}
+    recent.sort_by(|a,b|b.created_revision.cmp(&a.created_revision));
+    recent.truncate(16);
+    Some(Captures{total,omitted,counts:full,recent})
 }
