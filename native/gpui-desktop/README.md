@@ -19,7 +19,7 @@ generated lockfile. Generate and review it on the Windows build machine.
 
 ## Implemented source
 - Owner-authorized native visual GET uses the same canonical TierFlow plan and committed Host surface as PWA. No blank draft substitution. Native client validates source/plan identities, complete trace, revision and monotonic head during the session; preview actions are inert.
-- Native layout maps stack/grid/card/text and structured rows, source colors and bounded presentation. Fixed 1000px plan viewport for now, no pixel/font/animation or interactive parity claim; live binding rows reuse the canonical workspace projection, with bounded totals and source revisions. Missing data stays unavailable. Session high-water fencing independently checks every observed live binding revision and rejects same-revision content conflicts.
+- Native layout maps stack/grid/card/text and structured rows, source colors and bounded presentation. Native viewport controls request the existing Host planner at 360, 768, 1000 or 1440px; this is not automatic window-size tracking and makes no pixel/font/animation or interactive parity claim; live binding rows reuse the canonical workspace projection, with bounded totals and source revisions. Missing data stays unavailable. Session high-water fencing independently checks every observed live binding revision and rejects same-revision content conflicts.
 - Loopback-only client with no redirects or proxies, bounded response size,
   timeouts and existing native owner-token convention.
 - Canonical GET Host status, private PWA projection, private Wiki projection.
@@ -44,5 +44,7 @@ generated lockfile. Generate and review it on the Windows build machine.
    decision. PWA mobile remains unchanged.
 
 No build or GPU/device runtime evidence is claimed by this source change.
+
+The native workspace has Overview, Wiki, Build, Graph and Decisions panels; exact local Wiki/Build/Control navigation uses the shared Rust grammar without sending an effect. The Rust Wiki read model displays committed pages, sections, links and source-validated personal captures. Native viewport choices request fresh TierFlow plans from the Host; stale in-flight viewport responses are discarded.
 
 The native window now polls the authenticated read projections every 15 seconds while idle, skips pending approvals, retains read-only receipt status, and refreshes immediately after a known execution outcome. The shared Rust delta reports changed/added/removed UI nodes; it does not yet prove retained GPU element reuse or server push.

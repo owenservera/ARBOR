@@ -28,6 +28,7 @@ impl Panel {
 }
 struct Desktop {
     panel: Panel,
+    viewport_px: u32,
     input: Entity<InputState>,
     status: String,
     overview: Option<Overview>,
@@ -47,6 +48,17 @@ struct Desktop {
     uncertain: bool,
 }
 impl Desktop {
+    fn set_viewport(&mut self, viewport_px:u32, cx:&mut Context<Self>){
+        if !matches!(viewport_px,360|768|1000|1440) || self.viewport_px==viewport_px{return;}
+        self.viewport_px=viewport_px;
+        self.visual_status=format!("Reading canonical {}px Host viewport…",viewport_px);
+        // The current GPU visual is from another layout contract. Never show
+        // it as the newly selected viewport before fresh Host admission.
+        self.visual=None;
+        self.vec_view=None;
+        cx.notify();
+        if !self.busy{self.refresh(cx);}
+    }
     fn select_panel(&mut self, panel:Panel, cx:&mut Context<Self>){
         self.panel=panel;
         self.status=format!("{} · local native view only",panel.label());
@@ -71,11 +83,18 @@ impl Desktop {
         self.busy = true;
         self.visual_status = "Checking Host · displayed observations may be stale".into();
         cx.notify();
-        let work = cx.background_executor().spawn(async move { (read_overview(), visual::read()) });
+        let viewport_px=self.viewport_px;
+        let work = cx.background_executor().spawn(async move { (read_overview(), visual::read_at(viewport_px)) });
         cx.spawn(async move |this, cx| {
             let result = work.await;
             let _ = this.update(cx, |view, cx| {
                 view.busy = false;
+                // A user can change viewports during an in-flight read. Old
+                // viewport responses cannot be displayed under the new label.
+                if view.viewport_px!=viewport_px {
+                    view.refresh(cx);
+                    return;
+                }
                 let (overview, visual) = result;
                 match overview {
                     Ok(data) => {
@@ -381,7 +400,9 @@ impl Render for Desktop {
             }
         }
         if matches!(self.panel,Panel::Overview|Panel::Visual){
-        body=body.child(div().text_lg().child("Committed TierFlow surface")).child(self.visual_status.clone());
+        body=body.child(div().text_lg().child(format!(
+            "Committed TierFlow surface · {}px canonical viewport",self.viewport_px
+        ))).child(self.visual_status.clone());
         if let Some(v)=&self.vec_view{
             body=body.child(div().child(format!("Rust VEC · {} components · {} charts · {} preview-only actions",
                 v.node_count,v.chart_count,v.preview_action_ids.len())))
@@ -418,6 +439,19 @@ impl Render for Desktop {
             body=body.child(div().text_lg().child("Canonical Host response"))
                 .child(div().p_3().bg(rgb(0x202b3a)).child(self.detail.clone()));
         }
+        let mut actions=div().flex().flex_col().gap_2().child(controls);
+        if matches!(self.panel,Panel::Overview|Panel::Visual){
+            let viewports=div().flex().flex_wrap().gap_2()
+                .child(Button::new("viewport-phone").label("Phone · 360px")
+                    .on_click(cx.listener(|v,_,_,cx|v.set_viewport(360,cx))))
+                .child(Button::new("viewport-tablet").label("Tablet · 768px")
+                    .on_click(cx.listener(|v,_,_,cx|v.set_viewport(768,cx))))
+                .child(Button::new("viewport-desktop").label("Desktop · 1000px")
+                    .on_click(cx.listener(|v,_,_,cx|v.set_viewport(1000,cx))))
+                .child(Button::new("viewport-wide").label("Wide · 1440px")
+                    .on_click(cx.listener(|v,_,_,cx|v.set_viewport(1440,cx))));
+            actions=actions.child(viewports);
+        }
         let navigation=div().flex().flex_wrap().gap_2()
             .child(Button::new("panel-overview").label("Overview")
                 .on_click(cx.listener(|v,_,_,cx|v.select_panel(Panel::Overview,cx))))
@@ -435,7 +469,7 @@ impl Render for Desktop {
             .child(navigation)
             .child(self.status.clone())
             .child(Input::new(&self.input))
-            .child(controls)
+            .child(actions)
             .child(div().id("host-projection").flex_1().min_h_0().overflow_y_scroll().child(body))
     }
 }
@@ -447,7 +481,7 @@ fn main() {
             |window, cx| {
                 let input=cx.new(|cx| InputState::new(window,cx).placeholder("Ask VIVIM or describe a Host command"));
                 let view=cx.new(|cx| {
-                    let mut view=Desktop {input,panel:Panel::Overview,status:"Not yet observed".into(),overview:None,visual:None,vec_view:None,visual_status:"Not yet observed".into(),visual_guard:RevisionGuard::default(),wiki_guard:WikiRevisionGuard::default(),detail:String::new(),
+                    let mut view=Desktop {input,panel:Panel::Overview,viewport_px:1000,status:"Not yet observed".into(),overview:None,visual:None,vec_view:None,visual_status:"Not yet observed".into(),visual_guard:RevisionGuard::default(),wiki_guard:WikiRevisionGuard::default(),detail:String::new(),
                         review:None,last_plan:None,busy:false,uncertain:false,
                         graph_detail:String::new(),graph_status:"Graph not yet queried".into(),graph_busy:false};
                     view.refresh(cx);view.start_observer(cx);view

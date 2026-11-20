@@ -11,11 +11,13 @@ impl From<VisualError> for ReadError {
         match e {VisualError::InvalidProjection=>Self::InvalidProjection,VisualError::Unavailable=>Self::Unavailable}
     }
 }
-pub fn read()->Result<Option<Visual>,ReadError>{
+/// Request a genuine Host-planned viewport, never a locally approximated layout.
+pub fn read_at(viewport_px:u32)->Result<Option<Visual>,ReadError>{
+    if !(240..=3840).contains(&viewport_px){return Err(ReadError::InvalidInput)}
     let client=Client::builder().no_proxy().redirect(reqwest::redirect::Policy::none()).timeout(Duration::from_secs(8))
         .connect_timeout(Duration::from_secs(2)).build().map_err(|_|ReadError::Unavailable)?;
     validate_health(&get(&client,Endpoint::Health,None)?)?;
-    let response=client.get(format!("{BASE}/api/host/control/native-ui-view?viewportPx=1000"))
+    let response=client.get(format!("{BASE}/api/host/control/native-ui-view?viewportPx={viewport_px}"))
         .bearer_auth(owner_token()?).send().map_err(|_|ReadError::Offline)?;
     match response.status().as_u16(){200=>{},401|403=>return Err(ReadError::OwnerRequired),_=>return Err(ReadError::Unavailable)}
     let mut bytes=Vec::new();response.take(LIMIT+1).read_to_end(&mut bytes).map_err(|_|ReadError::Unavailable)?;
