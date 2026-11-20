@@ -11,6 +11,7 @@ pub mod wire;
 pub mod visual;
 pub mod vec;
 pub mod command_program;
+pub mod context_grounding;
 mod lineage;
 
 pub const SCHEMA: &str = "vivim.native-program/1";
