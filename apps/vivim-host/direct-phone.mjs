@@ -277,7 +277,9 @@ export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'wo
       try {
         if (req.method === 'GET') {
           const device = authorizeDevice(req, 'control:read');
-          json(res, 200, await shares.list(device.deviceId));
+          const listed = await shares.list(device.deviceId);
+          authorizeDevice(req, 'control:read');
+          json(res, 200, listed);
         } else if (req.method === 'POST') {
           if (req.headers.origin !== origin || req.headers['x-vivim-share'] !== '1')
             throw failure(403, 'ORIGIN_OR_CSRF');
@@ -323,7 +325,12 @@ export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'wo
           res.setHeader('content-disposition', "attachment; filename*=UTF-8''" + encodeURIComponent(info.name).replace(/['()*]/g, c => '%' + c.charCodeAt(0).toString(16).toUpperCase()));
           res.setHeader('content-length', String(info.bytes));
           res.writeHead(200);
-          await pipeline(createReadStream(info.file), res);
+          const streamGuard = createMediaStreamGrantGuard({
+            validateGrant: args => enrollment.validateGrant(args),
+            grantId: req.headers['x-vivim-grant-id'],
+            sessionId: req.headers['x-vivim-device-session']
+          });
+          await pipeline(createReadStream(info.file), streamGuard, res);
         } else {
           res.setHeader('allow', 'GET, PUT, DELETE'); json(res, 405, { code: 'METHOD' });
         }
