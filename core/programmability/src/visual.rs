@@ -1,11 +1,12 @@
 //! Shared, pure native visual projection admission, independent of renderer and transport.
 //! @hq:type vivim.native-ui-view@1
 //! @hq:capability vivim.native-visual-validation@1
+//! @hq:capability vivim.native-visual-delta@1
 //! @hq:consumes vivim.ui-render-plan@1
 //! @hq:consumes vivim.ui-surface@1
 //! Source validation and revision fencing do not confer execution authority.
 use serde_json::Value;
-use std::collections::{BTreeMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashSet};
 use sha2::{Digest, Sha256};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -153,6 +154,53 @@ pub fn parse(v:&Value)->Result<Option<Visual>,VisualError>{
         background:color(&theme["background"])?,secondary:color(&theme["secondary"])?,accent:color(&theme["accent"])?,
         fingerprint:serde_json::to_string(source).map_err(|_|VisualError::InvalidProjection)?,binding_watermarks}))
 }
+/// Derived invalidation candidates over accepted native projections. No effects,
+/// persistent graph writes or claim that GPUI has reused actual GPU resources.
+#[derive(Clone,Debug,Default,PartialEq,Eq)]
+pub struct VisualDelta {
+    pub added:BTreeSet<String>, pub changed:BTreeSet<String>, pub removed:BTreeSet<String>,
+    pub changed_bindings:BTreeSet<String>, pub theme_changed:bool, pub revision_changed:bool,
+}
+impl VisualDelta {
+    pub fn is_empty(&self)->bool{
+        self.added.is_empty()&&self.changed.is_empty()&&self.removed.is_empty()
+            &&self.changed_bindings.is_empty()&&!self.theme_changed&&!self.revision_changed
+    }
+}
+fn flatten<'a>(node:&'a Node,parent:Option<&'a str>,out:&mut BTreeMap<&'a str,(&'a Node,Option<&'a str>)>){
+    out.insert(&node.id,(node,parent));
+    for child in &node.children{flatten(child,Some(&node.id),out);}
+}
+fn same_local(a:&Node,b:&Node)->bool{
+    if !a.children.iter().map(|n|&n.id).eq(b.children.iter().map(|n|&n.id)){return false}
+    let mut a=a.clone();let mut b=b.clone();a.children.clear();b.children.clear();a==b
+}
+pub fn visual_delta(previous:Option<&Visual>,next:Option<&Visual>)->Result<VisualDelta,VisualError>{
+    if let (Some(a),Some(b))=(previous,next){
+        if a.surface_id!=b.surface_id||a.revision>b.revision||
+            (a.revision==b.revision&&a.fingerprint!=b.fingerprint){return invalid()}
+    }
+    let mut before=BTreeMap::new();let mut after=BTreeMap::new();
+    if let Some(v)=previous{flatten(&v.root,None,&mut before)}
+    if let Some(v)=next{flatten(&v.root,None,&mut after)}
+    let mut d=VisualDelta::default();
+    for (id,(node,parent)) in &after{
+        match before.get(id){
+            None=>{d.added.insert((*id).to_owned());}
+            Some((old,old_parent))=>{
+                if old_parent!=parent||!same_local(old,node){d.changed.insert((*id).to_owned());}
+            }
+        }
+    }
+    for id in before.keys(){if !after.contains_key(id){d.removed.insert((*id).to_owned());}}
+    let a=previous.map(|v|&v.binding_watermarks);let b=next.map(|v|&v.binding_watermarks);
+    let keys:BTreeSet<_>=a.into_iter().flat_map(|m|m.keys()).chain(b.into_iter().flat_map(|m|m.keys())).collect();
+    for key in keys{if a.and_then(|m|m.get(key))!=b.and_then(|m|m.get(key)){d.changed_bindings.insert(key.clone());}}
+    d.theme_changed=previous.map(|v|(v.background,v.secondary,v.accent))!=next.map(|v|(v.background,v.secondary,v.accent));
+    d.revision_changed=previous.map(|v|v.revision)!=next.map(|v|v.revision);
+    Ok(d)
+}
+
 #[derive(Default)]
 pub struct RevisionGuard{ high:Option<(String,u64,String)>, bindings:BTreeMap<String,(u64,String)> }
 impl RevisionGuard{
@@ -211,6 +259,19 @@ mod tests{
         assert!(guard.accept(Some(conflict)).is_err());
         view.binding_watermarks.insert("personal.open-tasks".into(),(8,"c".into()));
         assert!(guard.accept(Some(view)).is_ok());
+    }
+    #[test]fn visual_delta_is_stable_and_binding_sensitive(){
+        let old=parse(&fixture()).unwrap().unwrap();
+        assert!(visual_delta(Some(&old),Some(&old)).unwrap().is_empty());
+        let mut new=old.clone();
+        new.binding_watermarks.insert("personal.open-tasks".into(),(2,"digest".into()));
+        new.root.items.push("Changed read-only data".into());
+        let d=visual_delta(Some(&old),Some(&new)).unwrap();
+        assert!(d.changed.contains("root"));
+        assert!(d.changed_bindings.contains("personal.open-tasks"));
+        assert!(!d.revision_changed);
+        assert!(visual_delta(Some(&new),None).unwrap().removed.contains("root"));
+        new.revision=1;assert!(visual_delta(Some(&old),Some(&new)).is_err());
     }
     #[test]fn no_committed_surface_is_not_a_blank_success(){assert!(parse(&json!({"schema":"vivim.native-ui-view/1","authority":"none","state":"absent"})).unwrap().is_none());}
 }
