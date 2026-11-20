@@ -8,6 +8,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 pub mod wire;
+pub mod visual;
 mod lineage;
 
 pub const SCHEMA: &str = "vivim.native-program/1";

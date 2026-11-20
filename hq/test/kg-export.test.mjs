@@ -196,3 +196,21 @@ test('hq kg export CLI writes the exchange and reports counts', () => {
     try { rmSync(ws, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 }); } catch { /* leftover temp: spawned CLI child may hold index.db on Windows */ }
   }
 });
+
+
+test('native graph exchange includes Rust header and JS semantic anchors without promoting them',()=>{
+  const ws=makeWorkspace();
+  try{
+    writeFileSync(join(ws,'demo','src','one.mjs'),'// @hq:capability vivim.native-visual-validation@1\nexport function alpha(){return 1;}\n');
+    writeFileSync(join(ws,'demo','src','native.rs'),'//! @hq:consumes vivim.native-visual-validation@1\npub fn main() { let _ = r#"// @hq:capability forged.raw@1"#; }\n');
+    const out=join(ws,'.hq','semantic-exchange.jsonl');
+    const db=indexWorkspace(ws);exportGraphExchange({db,outPath:out});db.close();
+    const {rows}=parseExchange(out);
+    const anchor=rows.filter(r=>r.kind==='semantic-file-anchor'&&r.metadata.semantic_id==='vivim.native-visual-validation@1');
+    assert.equal(anchor.length,2);
+    assert.equal(rows.filter(r=>r.kind==='semantic-id'&&r.metadata.semantic_id==='vivim.native-visual-validation@1').length,1);
+    assert.ok(!rows.some(r=>r.metadata?.semantic_id==='forged.raw@1'));
+    assert.equal(rows.filter(r=>r.relation==='references-semantic-id').length,2);
+    assert.ok(buildGraphIndex(out).nodeCount>=5);
+  }finally{rmSync(ws,{recursive:true,force:true,maxRetries:5,retryDelay:200});}
+});

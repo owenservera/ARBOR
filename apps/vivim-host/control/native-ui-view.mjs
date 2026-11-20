@@ -1,3 +1,7 @@
+// @hq:capability vivim.native-ui-projection@1
+// @hq:emits vivim.native-ui-view@1
+// @hq:consumes vivim.ui-render-plan@1
+// @hq:consumes vivim.ui-surface@1
 // A native consumer of the existing committed PWA visual contract.
 // No draft surface is represented as a committed revision. No effects or grants.
 import {committedHostSurface} from '../../mobile-relay/generative-ui/host-revision-guard.mjs';

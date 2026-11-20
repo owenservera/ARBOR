@@ -1,3 +1,6 @@
+//! @hq:capability vivim.gpui-control-client@1
+//! @hq:consumes vivim.control-plan@1
+//! @hq:consumes vivim.control-receipt@1
 //! Native client for the existing Host control contract. Planning is not approval.
 use super::{BASE, LIMIT, Endpoint, ReadError, get, owner_token, validate_health};
 use reqwest::blocking::Client;

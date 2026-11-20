@@ -21,8 +21,22 @@ import { isSensitiveSourcePath } from './search.mjs';
 
 // The existing v2 scanner is a JS-style lexer, not a universal language parser.
 // Do not treat JSX markup, Python strings, Rust raw strings, etc. as JS comments.
-const supportsV2 = entry => /\.(?:mjs|cjs|js|mts|cts|ts)$/i.test(entry.rel)
-  && (entry.lang === 'javascript' || entry.lang === 'typescript');
+const rustHeader = entry => /\.rs$/i.test(entry.rel) && entry.lang === 'rust';
+const supportsV2 = entry => rustHeader(entry) ||
+  (/\.(?:mjs|cjs|js|mts|cts|ts)$/i.test(entry.rel)
+  && (entry.lang === 'javascript' || entry.lang === 'typescript'));
+// Rust observation is deliberately file-header-only: contiguous leading
+// line comments and whitespace. Do not feed raw strings, lifetimes, block
+// comments, macro bodies or arbitrary Rust syntax to the JS comment lexer.
+function annotationText(entry,text){
+  if(!rustHeader(entry))return text;
+  const lines=[];
+  for(const line of text.split('\n')){
+    if(/^\s*(?:\/\/.*)?$/.test(line)){lines.push(line);continue;}
+    break;
+  }
+  return lines.join('\n');
+}
 
 const DEFAULT_OPTIONS = {
   force: false,
@@ -364,7 +378,7 @@ export function indexProject({ root, db, project, options = {} }) {
     const stmts = prepareStatements(db);
     // Backfill existing database files on the first successful v2 index only.
     const v2Key = 'annotation_v2:' + projectRow.id + ':' + absPath;
-    const backfillV2 = getMeta(db, v2Key) !== '2';
+    const backfillV2 = getMeta(db, v2Key) !== '3';
 
     const existing = new Map();
     for (const row of stmts.filesForProject.all(projectRow.id)) existing.set(row.path, row);
@@ -415,7 +429,7 @@ export function indexProject({ root, db, project, options = {} }) {
           imports = extract.imports(lang, text) || [];
           annotations = extract.annotations(lang, text) || [];
           if (supportsV2(entry) && text.includes('@hq:')) {
-            const parsed = parseAnnotationV2(text, {
+            const parsed = parseAnnotationV2(annotationText(entry,text), {
               projectId: String(projectRow.id), path: entry.rel, contentHash: hash,
               registry: { lookup: id => getSemanticId(db, id) },
             });
@@ -550,7 +564,7 @@ export function indexProject({ root, db, project, options = {} }) {
     // Zero-delta reindex on an unchanged tree: counts already correct,
     // indexed_at stays — nothing happened worth churning derived pages for.
 
-    if (backfillV2 && errors.length === 0) setMeta(db, v2Key, '2');
+    if (backfillV2 && errors.length === 0) setMeta(db, v2Key, '3');
     return stmts.projectById.get(projectRow.id);
   });
 

@@ -1,3 +1,7 @@
+//! @hq:capability vivim.gpui-desktop@1
+//! @hq:consumes vivim.gpui-projection-client@1
+//! @hq:consumes vivim.gpui-control-client@1
+//! @hq:consumes vivim.native-visual-validation@1
 use gpui::{AnyElement, App, Application, Bounds, Context, Entity, Window, WindowBounds, WindowOptions, div, prelude::*, px, rgb, size};
 use gpui_component::{Root, input::{Input, InputState}, button::{Button, ButtonVariants}};
 use vivim_gpui_desktop::{Overview, read_overview, control::{self, Review}, visual::{self, Visual, Node, RevisionGuard}};
@@ -35,7 +39,7 @@ impl Desktop {
                     Ok(data) => { view.status = "Host overview · source-backed".into(); view.overview = Some(data); }
                     Err(error) => { view.status = error.label().into(); view.overview = None; view.review = None; }
                 }
-                match visual.and_then(|v| view.visual_guard.accept(v)) {
+                match visual.and_then(|v| view.visual_guard.accept(v).map_err(Into::into)) {
                     Ok(Some(v)) => { view.visual_status = format!("Committed {} · revision {} · read-only",v.surface_id,v.revision); view.visual=Some(v); }
                     Ok(None) => {view.visual_status="No committed visual surface".into();}
                     Err(e) => {view.visual_status=e.label().into(); view.visual=None;}

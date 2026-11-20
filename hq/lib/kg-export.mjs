@@ -100,7 +100,7 @@ function currentUniverse(db) {
     const rootPath = `${project.name}/${f.path}`.replace(/\\/g, '/');
     if (rootPath.length > 256) continue;
     const id = nodeId(project.name, f.path);
-    byFileId.set(f.id, { id, rootPath });
+    byFileId.set(f.id, { id, rootPath, hash:f.hash, project:project.name });
     nodes.push({
       type: 'node',
       id,
@@ -131,6 +131,35 @@ function currentUniverse(db) {
     seenEdges.add(id);
     edges.push({ type: 'edge', id, from: from.id, to: to.id, relation: 'imports', weight: 1, metadata: {} });
   }
+  // Semantic observations are data, not registry promotions or verified runtime
+  // behavior. Keep path-stable file anchors and shared versioned identities.
+  const groups=new Map(), semantic=new Map();
+  const tagRows=db.prepare("SELECT file_id,kind,ref,line FROM annotations WHERE kind IN ('v2:type','v2:capability','v2:contract','v2:emits','v2:consumes','v2:action') AND ref IS NOT NULL ORDER BY file_id,kind,ref,line").all();
+  for(const row of tagRows){
+    const file=byFileId.get(row.file_id);
+    if(!file||typeof row.ref!=='string'||row.ref.length>180||! /^[a-z0-9][a-z0-9._-]*@\d+(?:\.\d+)*$/.test(row.ref)||!Number.isSafeInteger(row.line)||row.line<1)continue;
+    const tag=row.kind.slice(3);
+    const key=JSON.stringify([file.id,tag,row.ref]);
+    if(!groups.has(key))groups.set(key,{file,tag,ref:row.ref,lines:[]});
+    groups.get(key).lines.push(row.line);
+  }
+  const graphId=(kind,...parts)=>'hqg1:'+sha256([kind,...parts].join('\u0000'));
+  for(const [key,g] of [...groups].sort(([a],[b])=>a<b?-1:a>b?1:0)){
+    const semId=graphId('semantic-id',g.ref), anchorId=graphId('semantic-file-anchor',key);
+    if(!semantic.has(semId)){
+      semantic.set(semId,{type:'node',id:semId,kind:'semantic-id',title:g.ref,metadata:{
+        semantic_id:g.ref,status:'observed-reference',domain:'development',content_sha256:sha256(g.ref)}});
+    }
+    const lines=[...g.lines].sort((a,b)=>a-b);
+    nodes.push({type:'node',id:anchorId,kind:'semantic-file-anchor',title:g.ref,metadata:{
+      semantic_id:g.ref,source_path:g.file.rootPath,content_sha256:g.file.hash,project:g.file.project,
+      annotation_kind:g.tag,status:lines.length===1?'indexed-not-live-checked':'ambiguous',
+      occurrence_count:lines.length,first_line:lines[0],anchor_digest:sha256(JSON.stringify([key,g.file.hash,lines])),
+      domain:'development'}});
+    edges.push({type:'edge',id:graphId('has-semantic-anchor',g.file.id,anchorId),from:g.file.id,to:anchorId,relation:'has-semantic-anchor',weight:1,metadata:{}});
+    edges.push({type:'edge',id:graphId('references-semantic-id',anchorId,semId),from:anchorId,to:semId,relation:'references-semantic-id',weight:1,metadata:{}});
+  }
+  nodes.push(...[...semantic.values()].sort((a,b)=>a.id.localeCompare(b.id)));
   return { nodes, edges };
 }
 
@@ -226,8 +255,10 @@ export function exportGraphExchange({ db, outPath, statePath = null }) {
     const entries = {};
     for (const node of nodes) {
       const meta = node.metadata;
-      entries[meta.source_path] = { id: node.id, content_sha256: meta.content_sha256 };
-      if (previous && previous[meta.source_path]?.content_sha256 === meta.content_sha256) {
+      const key=node.kind==='source-file'?meta.source_path:'@hq-semantic/'+node.id;
+      const digest=node.kind==='semantic-file-anchor'?meta.anchor_digest:meta.content_sha256;
+      entries[key] = { id: node.id, content_sha256: digest };
+      if (previous && previous[key]?.content_sha256 === digest) {
         unchangedNodes += 1;
       }
     }

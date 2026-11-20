@@ -1,3 +1,5 @@
+//! @hq:capability vivim.gpui-host-overview@1
+//! @hq:consumes vivim.host-pwa-view@1
 //! Native adapter for the canonical VIVIM Host. No local journal or dispatcher.
 pub mod control;
 pub mod visual;

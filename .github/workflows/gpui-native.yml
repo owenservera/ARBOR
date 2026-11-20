@@ -4,6 +4,9 @@ on:
     branches: [main]
     paths:
       - 'native/gpui-desktop/**'
+      - 'core/programmability/**'
+      - 'hq/lib/kg-export.mjs'
+      - 'hq/lib/indexer.mjs'
       - 'apps/vivim-host/control/native-ui-view.mjs'
       - 'apps/vivim-host/server.mjs'
       - 'apps/vivim-host/test/native-ui-view.test.mjs'
@@ -21,6 +24,8 @@ jobs:
         with:
           persist-credentials: false
       - uses: dtolnay/rust-toolchain@stable
+      - name: Shared Rust validation tests
+        run: cargo test -p vivim-programmability-core
       - name: Native contract tests
         run: cargo test --manifest-path native/gpui-desktop/Cargo.toml --lib
       - name: Compile native desktop
