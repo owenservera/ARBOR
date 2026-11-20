@@ -1235,12 +1235,12 @@ export function extractImports(lang, text) {
     for (let i = 0; i < lines.length; i++) {
       const t = code[i];
       if (!t || !t.trim()) continue;
-      let m = /^\s*(?:pub\s+)?use\s+([^;]+);?/.exec(t);
+      let m = /^\s*(?:pub(?:\([^)]*\))?\s+)?use\s+([^;]+);?/.exec(t);
       if (m) {
         out.push({ specifier: m[1].trim(), kind: 'use', line: i + 1 });
         continue;
       }
-      m = /^\s*(?:pub\s+)?mod\s+([A-Za-z_]\w*)\s*;/.exec(t);
+      m = /^\s*(?:pub(?:\([^)]*\))?\s+)?mod\s+([A-Za-z_]\w*)\s*;/.exec(t);
       if (m) out.push({ specifier: m[1], kind: 'mod', line: i + 1 });
     }
     return finalizeImports(out);
