@@ -1,6 +1,7 @@
 //! @hq:capability vivim.gpui-desktop@1
 //! @hq:consumes vivim.gpui-projection-client@1
 //! @hq:consumes vivim.gpui-control-client@1
+//! @hq:consumes vivim.rust-control-plan-presentation@1
 //! @hq:consumes vivim.native-visual-validation@1
 //! @hq:consumes vivim.native-visual-delta@1
 //! @hq:consumes vivim.native-vec-visual-ir@1

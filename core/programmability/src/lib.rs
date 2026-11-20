@@ -11,6 +11,7 @@ pub mod wire;
 pub mod visual;
 pub mod wiki_read;
 pub mod development_projection;
+pub mod control_plan_presentation;
 pub mod vec;
 pub mod command_program;
 pub mod context_grounding;

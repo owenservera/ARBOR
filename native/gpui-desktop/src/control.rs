@@ -1,10 +1,12 @@
 //! @hq:capability vivim.gpui-control-client@1
 //! @hq:consumes vivim.control-plan@1
 //! @hq:consumes vivim.control-receipt@1
+//! @hq:consumes vivim.rust-control-plan-presentation@1
 //! Native client for the existing Host control contract. Planning is not approval.
 use super::{BASE, LIMIT, Endpoint, ReadError, get, owner_token, validate_health};
 use reqwest::blocking::Client;
 use serde_json::{Value, json};
+use vivim_programmability_core::control_plan_presentation;
 use std::{io::Read, time::Duration};
 
 const CONTROL: &str = "/api/host/control/";
@@ -59,9 +61,10 @@ fn parse_review(p: Value) -> Result<Review, ReadError> {
         Some("done"|"clarification_required"|"incomplete"|"interpretation_required"|"refused"|"unavailable") => None,
         _ => return Err(ReadError::InvalidProjection),
     };
-    // Preserve exact args, resolved meaning, preview, risk, digest and expiry.
-    // Never truncate an approval preview or infer an alternative action.
-    let detail = serde_json::to_string_pretty(&p).map_err(|_| ReadError::InvalidProjection)?;
+    // Rust adds a source-backed review summary but preserves all plan values.
+    // Neither the summary nor the source text can grant an approval.
+    let detail = control_plan_presentation::format_review(&p)
+        .ok_or(ReadError::InvalidProjection)?;
     Ok(Review {detail, approval})
 }
 
