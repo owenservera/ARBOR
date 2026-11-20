@@ -7,6 +7,8 @@
 //! @hq:consumes vivim.rust-wiki-read-model@1
 //! @hq:consumes hqkg.development-query@1
 use std::time::Duration;
+use serde_json::json;
+use vivim_programmability_core::navigation;
 use vivim_programmability_core::visual::visual_delta;
 use vivim_programmability_core::wiki_read::RevisionGuard as WikiRevisionGuard;
 use vivim_programmability_core::vec::{self, View as VecView, Element as VecElement};
@@ -14,7 +16,18 @@ use gpui::{AnyElement, App, Application, Bounds, Context, Entity, Window, Window
 use gpui_component::{Root, input::{Input, InputState}, button::{Button, ButtonVariants}};
 use vivim_gpui_desktop::{Overview, read_overview, read_development, control::{self, Review}, visual::{self, Visual, RevisionGuard}};
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Panel { Overview, Wiki, Visual, Graph, Control }
+impl Panel {
+    fn label(self)->&'static str {
+        match self {
+            Self::Overview=>"Overview",Self::Wiki=>"Wiki",Self::Visual=>"Build",
+            Self::Graph=>"Knowledge graph",Self::Control=>"Host decisions",
+        }
+    }
+}
 struct Desktop {
+    panel: Panel,
     input: Entity<InputState>,
     status: String,
     overview: Option<Overview>,
@@ -34,6 +47,11 @@ struct Desktop {
     uncertain: bool,
 }
 impl Desktop {
+    fn select_panel(&mut self, panel:Panel, cx:&mut Context<Self>){
+        self.panel=panel;
+        self.status=format!("{} · local native view only",panel.label());
+        cx.notify();
+    }
     // Weak entity lifetime stops the observer when its workspace closes.
     // All refreshes are GET-only. Neither polling nor readback can approve.
     fn start_observer(&self,cx:&mut Context<Self>){
@@ -113,6 +131,17 @@ impl Desktop {
     fn submit(&mut self, cx: &mut Context<Self>) {
         if self.busy || self.uncertain { return; }
         let text = self.input.read(cx).value().to_string();
+        // Exact navigation is compiled by the same Rust core as PWA/Host.
+        // Selecting a local panel is not a Host command or an approval.
+        let destination=navigation::destination(&json!({"text":text}));
+        let panel=match destination["destination"].as_str(){
+            Some("today")=>Some(Panel::Overview),
+            Some("wiki")=>Some(Panel::Wiki),
+            Some("build")=>Some(Panel::Visual),
+            Some("control")=>Some(Panel::Control),
+            _=>None,
+        };
+        if let Some(panel)=panel {self.select_panel(panel,cx);return;}
         self.review = None;
         self.detail.clear();
         self.busy = true;
@@ -287,8 +316,9 @@ impl Render for Desktop {
         let mut body = div().flex().flex_col().gap_3();
         if let Some(data) = &self.overview {
             body = body.child(format!("Host observed: {}", data.observed_at))
-                .child(format!("Active devices: {}", data.active_devices))
-                .child(div().text_lg().child(format!("Wiki · revision {}", data.wiki_revision)));
+                .child(format!("Active devices: {}", data.active_devices));
+            if matches!(self.panel, Panel::Overview|Panel::Wiki) {
+            body=body.child(div().text_lg().child(format!("Wiki · revision {}", data.wiki_revision)));
             body=body.child(div().text_sm().child(format!(
                 "{} source-backed Wiki pages · {} displayed",data.wiki_page_total,data.wiki_content.len()
             )));
@@ -341,12 +371,16 @@ impl Render for Desktop {
                     "{} additional Wiki pages not displayed",data.wiki_page_total-data.wiki_content.len()
                 ));
             }
+            }
+            if matches!(self.panel,Panel::Overview|Panel::Control){
             body = body.child(div().text_lg().child("Recent Host decisions"))
                 .child(div().text_sm().child(
                     "Copy a ctl- plan ID into the command field and choose Inspect Host plan ID. This never retries execution."
                 ));
             for row in &data.recent { body = body.child(div().p_1().child(row.clone())); }
+            }
         }
+        if matches!(self.panel,Panel::Overview|Panel::Visual){
         body=body.child(div().text_lg().child("Committed TierFlow surface")).child(self.visual_status.clone());
         if let Some(v)=&self.vec_view{
             body=body.child(div().child(format!("Rust VEC · {} components · {} charts · {} preview-only actions",
@@ -354,12 +388,16 @@ impl Render for Desktop {
                 .child(div().p_3().bg(rgb(rgb_hex(&v.background))).text_color(rgb(rgb_hex(&v.foreground)))
                     .child(mount_node(&v.root,v)));
         }
+        }
         let mut controls=div().flex().flex_wrap().gap_2()
             .child(Button::new("refresh").label("Refresh Host").on_click(cx.listener(|v,_,_,cx|v.refresh(cx))))
-            .child(Button::new("plan").label("Review command").on_click(cx.listener(|v,_,_,cx|v.submit(cx))))
-            .child(Button::new("graph-symbol").label("Find graph symbol").on_click(cx.listener(|v,_,_,cx|v.inspect_graph("symbols",cx))))
-            .child(Button::new("graph-file").label("Compute graph file ID").on_click(cx.listener(|v,_,_,cx|v.inspect_graph("compute",cx))))
-            .child(Button::new("graph-wiring").label("Find potential wiring").on_click(cx.listener(|v,_,_,cx|v.inspect_graph("wiring",cx))));
+            .child(Button::new("plan").label("Review command").on_click(cx.listener(|v,_,_,cx|v.submit(cx))));
+        if matches!(self.panel,Panel::Overview|Panel::Graph){
+            controls=controls
+                .child(Button::new("graph-symbol").label("Find graph symbol").on_click(cx.listener(|v,_,_,cx|v.inspect_graph("symbols",cx))))
+                .child(Button::new("graph-file").label("Compute graph file ID").on_click(cx.listener(|v,_,_,cx|v.inspect_graph("compute",cx))))
+                .child(Button::new("graph-wiring").label("Find potential wiring").on_click(cx.listener(|v,_,_,cx|v.inspect_graph("wiring",cx))));
+        }
         if !self.busy && self.review.as_ref().is_some_and(Review::needs_approval) && !self.uncertain {
             controls=controls.child(Button::new("approve").primary().label("Approve exact displayed Host plan")
                 .on_click(cx.listener(|v,_,_,cx|v.approve(cx))))
@@ -369,18 +407,32 @@ impl Render for Desktop {
         }
         controls=controls.child(Button::new("inspect").label("Inspect Host plan ID · read only")
             .on_click(cx.listener(|v,_,_,cx|v.inspect(cx))));
-        body=body.child(div().text_lg().child("Development graph · source-backed only"))
-            .child(self.graph_status.clone());
-        if !self.graph_detail.is_empty(){
-            body=body.child(div().p_3().bg(rgb(0x202b3a)).child(self.graph_detail.clone()));
+        if matches!(self.panel,Panel::Overview|Panel::Graph){
+            body=body.child(div().text_lg().child("Development graph · source-backed only"))
+                .child(self.graph_status.clone());
+            if !self.graph_detail.is_empty(){
+                body=body.child(div().p_3().bg(rgb(0x202b3a)).child(self.graph_detail.clone()));
+            }
         }
-        if !self.detail.is_empty() {
+        if matches!(self.panel,Panel::Overview|Panel::Control) && !self.detail.is_empty() {
             body=body.child(div().text_lg().child("Canonical Host response"))
                 .child(div().p_3().bg(rgb(0x202b3a)).child(self.detail.clone()));
         }
+        let navigation=div().flex().flex_wrap().gap_2()
+            .child(Button::new("panel-overview").label("Overview")
+                .on_click(cx.listener(|v,_,_,cx|v.select_panel(Panel::Overview,cx))))
+            .child(Button::new("panel-wiki").label("Wiki")
+                .on_click(cx.listener(|v,_,_,cx|v.select_panel(Panel::Wiki,cx))))
+            .child(Button::new("panel-build").label("Build")
+                .on_click(cx.listener(|v,_,_,cx|v.select_panel(Panel::Visual,cx))))
+            .child(Button::new("panel-graph").label("Graph")
+                .on_click(cx.listener(|v,_,_,cx|v.select_panel(Panel::Graph,cx))))
+            .child(Button::new("panel-decisions").label("Decisions")
+                .on_click(cx.listener(|v,_,_,cx|v.select_panel(Panel::Control,cx))));
         div().size_full().bg(rgb(0x151b24)).text_color(rgb(0xe6edf3))
             .flex().flex_col().p_5().gap_3()
             .child(div().text_xl().child("VIVIM · Native workspace"))
+            .child(navigation)
             .child(self.status.clone())
             .child(Input::new(&self.input))
             .child(controls)
@@ -395,7 +447,7 @@ fn main() {
             |window, cx| {
                 let input=cx.new(|cx| InputState::new(window,cx).placeholder("Ask VIVIM or describe a Host command"));
                 let view=cx.new(|cx| {
-                    let mut view=Desktop {input,status:"Not yet observed".into(),overview:None,visual:None,vec_view:None,visual_status:"Not yet observed".into(),visual_guard:RevisionGuard::default(),wiki_guard:WikiRevisionGuard::default(),detail:String::new(),
+                    let mut view=Desktop {input,panel:Panel::Overview,status:"Not yet observed".into(),overview:None,visual:None,vec_view:None,visual_status:"Not yet observed".into(),visual_guard:RevisionGuard::default(),wiki_guard:WikiRevisionGuard::default(),detail:String::new(),
                         review:None,last_plan:None,busy:false,uncertain:false,
                         graph_detail:String::new(),graph_status:"Graph not yet queried".into(),graph_busy:false};
                     view.refresh(cx);view.start_observer(cx);view
