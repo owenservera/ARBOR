@@ -238,6 +238,19 @@ export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'wo
   const pairing = pairingStore ?? createPairingStore({ dataRoot });
   const enrollment = createEnrollment({ dataRoot, origin, user });
   const shares = createPrivateShares({ dataRoot });
+  // Host-owned lifecycle maintenance: expired bytes disappear even when nobody
+  // creates another share. The timer is unref'd and is stopped on Host close.
+  let shareMaintenanceRunning = false;
+  const maintainShares = async () => {
+    if (shareMaintenanceRunning) return;
+    shareMaintenanceRunning = true;
+    try { await shares.prune(); }
+    catch (error) { console.error('[shares] maintenance unavailable:', String(error.code || error.message)); }
+    finally { shareMaintenanceRunning = false; }
+  };
+  void maintainShares();
+  const shareMaintenanceTimer = setInterval(maintainShares, 15 * 60 * 1000);
+  shareMaintenanceTimer.unref?.();
   // Tailscale authenticates the network user, not the installed phone. All
   // privileged operations additionally require the owner's approved device grant.
   const authorizeDevice = (req, scope) => {
@@ -249,7 +262,7 @@ export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'wo
     return grant;
   };
 
-  return async function directPhone(req, res) {
+  const handleDirectPhone = async function directPhone(req, res) {
     const remote = req.socket.remoteAddress;
     if (!['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(remote) || req.headers.host !== url.host || req.headers['x-forwarded-proto'] !== 'https' || req.headers['tailscale-user-login'] !== user) { json(res, 403, { error: 'Forbidden' }); return; }
     res.setHeader('content-security-policy', "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; media-src 'self' blob:; frame-src 'none'; object-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'");
@@ -780,4 +793,6 @@ export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'wo
     try { const content = await readPhoneAsset(asset); res.setHeader('content-type', asset[1]); res.writeHead(200); res.end(req.method === 'HEAD' ? undefined : content); }
     catch { json(res, 503, { error: 'Mobile UI unavailable' }); }
   };
+  handleDirectPhone.close = () => clearInterval(shareMaintenanceTimer);
+  return handleDirectPhone;
 }
