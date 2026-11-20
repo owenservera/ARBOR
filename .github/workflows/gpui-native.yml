@@ -5,6 +5,8 @@ on:
     paths:
       - 'native/gpui-desktop/**'
       - 'core/programmability/**'
+      - 'native/hqkg/**'
+      - 'hq/test/kg-export.test.mjs'
       - 'hq/lib/kg-export.mjs'
       - 'hq/lib/indexer.mjs'
       - 'apps/vivim-host/control/native-ui-view.mjs'
@@ -26,6 +28,8 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - name: Shared Rust validation tests
         run: cargo test -p vivim-programmability-core
+      - name: Semantic graph query and importer contracts
+        run: cargo test -p hq-knowledge-graph --features importer --test semantic_source --test import
       - name: Native contract tests
         run: cargo test --manifest-path native/gpui-desktop/Cargo.toml --lib
       - name: Compile native desktop
@@ -41,4 +45,4 @@ jobs:
         with:
           node-version: '24'
       - name: Canonical native and workspace projections
-        run: node --experimental-strip-types --test apps/vivim-host/test/native-ui-view.test.mjs apps/mobile-relay/test/workspace-live-data.test.mjs
+        run: node --experimental-strip-types --test apps/vivim-host/test/native-ui-view.test.mjs apps/mobile-relay/test/workspace-live-data.test.mjs hq/test/kg-export.test.mjs

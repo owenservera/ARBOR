@@ -1,7 +1,7 @@
 //! Small CLI for persisted graph nodes and edges, paths and optional database queries.
 use hqkg::{DatabaseKind, DatabaseSpec, Edge, Error, Graph, Journal, Node, NodeKind, Result};
 fn usage() -> &'static str {
-    "hqkg <journal> init|stats|nodes|edges|add-node <id> <kind> <title>|add-edge <id> <from> <relation> <to>|path <from> <to>|search <text>|rank|db-add <id> <sqlite|postgres> <locator> [CREDENTIAL_ENV]|db-query <id> <max_rows> <SELECT...>\nExamples:\n  hqkg ./graph.hqj init\n  hqkg ./graph.hqj add-node research:1 document 'source paper'\n  hqkg ./graph.hqj db-add db:local sqlite ./example.db\n  cargo run --features sqlite -- ./graph.hqj db-query db:local 20 'SELECT * FROM example'"
+    "hqkg <journal> init|stats|nodes|edges|add-node <id> <kind> <title>|add-edge <id> <from> <relation> <to>|path <from> <to>|search <text>|semantic-sources <name@version>|semantic-impact <name@version> <depth>|rank|db-add <id> <sqlite|postgres> <locator> [CREDENTIAL_ENV]|db-query <id> <max_rows> <SELECT...>\nExamples:\n  hqkg ./graph.hqj init\n  hqkg ./graph.hqj add-node research:1 document 'source paper'\n  hqkg ./graph.hqj db-add db:local sqlite ./example.db\n  cargo run --features sqlite -- ./graph.hqj db-query db:local 20 'SELECT * FROM example'"
 }
 fn command(args: &[String]) -> Result<()> {
     if args.len() < 2 {
@@ -65,6 +65,21 @@ fn command(args: &[String]) -> Result<()> {
             for n in g.search(&args[2], 100) {
                 println!("{}\t{}", n.id, n.title);
             }
+        }
+        "semantic-sources" => {
+            if args.len()!=3{return Err(Error::Invalid(usage().into()))}
+            let report=hqkg::semantic_source::sources(&g,&args[2])?;
+            println!("epoch={} authority=annotation-occurrence-only matches={}",report.epoch,report.anchors.len());
+            for row in report.anchors {
+                println!("{}\t{}\t{}\t{}\t{}\t{}",row.path,row.first_line,row.annotation_kind,row.state,row.content_digest,row.anchor_id);
+            }
+        }
+        "semantic-impact" => {
+            if args.len()!=4{return Err(Error::Invalid(usage().into()))}
+            let depth=args[3].parse().map_err(|_|Error::Invalid("invalid depth".into()))?;
+            let report=hqkg::semantic_source::impact(&g,&args[2],depth)?;
+            println!("epoch={} authority=static-impact-only truncated={} files={}",report.epoch,report.truncated,report.files.len());
+            for (path,depth) in report.files {println!("{depth}\t{path}");}
         }
         "rank" => {
             let mut ranks = g.page_rank(40, 0.85)?.into_iter().collect::<Vec<_>>();

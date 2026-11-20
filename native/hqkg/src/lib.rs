@@ -24,6 +24,7 @@ pub mod invalidate;
 pub mod observability;
 pub mod reconcile;
 pub mod scoped_graph;
+pub mod semantic_source;
 pub mod typed_dag;
 pub mod utility_adapter;
 #[cfg(feature = "importer")]

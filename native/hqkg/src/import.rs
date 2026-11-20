@@ -442,16 +442,23 @@ impl Exchange {
         Ok(counts)
     }
     pub fn verify_source_projection(&self, graph: &Graph) -> Result<()> {
-        let node_ids: BTreeSet<&str> = self.nodes.keys().map(String::as_str).collect();
-        for id in node_ids {
-            if graph.node(id).is_none() {
-                return Err(Error::Corrupt(format!("missing imported node {id}")));
+        for (id, expected) in &self.nodes {
+            let actual = graph.node(id).ok_or_else(||Error::Corrupt(format!("missing imported node {id}")))?;
+            // Version is assigned by Graph; compare every imported content field.
+            if actual.kind!=expected.kind||actual.title!=expected.title||actual.properties!=expected.properties||actual.sources!=expected.sources{
+                return Err(Error::Corrupt(format!("imported node content mismatch {id}")));
             }
         }
-        for id in self.edges.keys() {
-            if graph.edge(id).is_none() {
-                return Err(Error::Corrupt(format!("missing imported edge {id}")));
+        for (id, expected) in &self.edges {
+            if graph.edge(id)!=Some(expected) {
+                return Err(Error::Corrupt(format!("imported edge content mismatch {id}")));
             }
+        }
+        for id in &self.tombstones{
+            if graph.node(id).is_some(){return Err(Error::Corrupt(format!("tombstoned node remains {id}")))}
+        }
+        if self.manifest.reconcile_edges && graph.edges().any(|e|e.properties.get(OWNER_KEY)==Some(&self.manifest.source)&&!self.edges.contains_key(&e.id)){
+            return Err(Error::Corrupt("stale owned edge remains after import".into()));
         }
         Ok(())
     }

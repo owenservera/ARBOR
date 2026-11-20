@@ -135,10 +135,7 @@ impl Desktop {
 // Native mapping of already-validated TierFlow structure. Inert buttons are
 // labels, not Host actions. Grid uses canonical column count; no claim of
 // pixel-level parity or font/animation parity.
-fn ink(c:u32)->u32{
-    let channel=|shift|{let s=((c>>shift)&255u32) as f32/255.;if s<=0.04045{s/12.92}else{((s+0.055)/1.055).powf(2.4)}};
-    if 0.2126*channel(16)+0.7152*channel(8)+0.0722*channel(0)>0.179{0x000000}else{0xffffff}
-}
+use vivim_programmability_core::visual::contrast_ink as ink;
 fn mount_node(n:&Node,theme:&Visual)->AnyElement{
     let is_card=matches!(n.kind.as_str(),"card"|"profile-card"|"project-card");
     let bg=n.background.or(if is_card{Some(theme.secondary)}else{None});
@@ -154,7 +151,16 @@ fn mount_node(n:&Node,theme:&Visual)->AnyElement{
         el=el.child(div().child(text));
     }
     if let Some(detail)=&n.detail{el=el.child(div().child(detail.clone()));}
-    for item in &n.items{el=el.child(div().p_1().child(item.clone()));}
+    if n.kind=="chart"{
+        for bar in &n.bars{
+            // Shared Rust geometry; flex weights are proportional to full signed range.
+            let track=div().flex().h(px(10.)).bg(rgb(theme.secondary))
+                .child(div().flex_basis(px(0.)).flex_grow(bar.start as f32))
+                .child(div().flex_basis(px(0.)).flex_grow(bar.extent as f32).bg(rgb(theme.accent)))
+                .child(div().flex_basis(px(0.)).flex_grow((1.-bar.start-bar.extent).max(0.) as f32));
+            el=el.child(div().child(format!("{} · {}",bar.label,bar.value))).child(track);
+        }
+    }else{for item in &n.items{el=el.child(div().p_1().child(item.clone()));}}
     if n.kind=="grid"{
         for row in n.children.chunks(n.columns as usize){
             let mut line=div().flex().gap_2();

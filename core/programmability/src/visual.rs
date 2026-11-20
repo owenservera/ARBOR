@@ -10,6 +10,21 @@ use std::collections::HashSet;
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum VisualError { InvalidProjection, Unavailable }
 
+/// WCAG contrast choice, shared by native renderer and future Rust consumers.
+pub fn contrast_ink(c:u32)->u32{
+    let channel=|shift|{let s=((c>>shift)&255u32) as f32/255.;if s<=0.04045{s/12.92}else{((s+0.055)/1.055).powf(2.4)}};
+    if 0.2126*channel(16)+0.7152*channel(8)+0.0722*channel(0)>0.179{0}else{0xffffff}
+}
+/// Signed chart geometry uses a shared zero axis, including zero-only data.
+#[derive(Debug,Clone,PartialEq)]
+pub struct ChartBar {pub label:String,pub value:f64,pub zero:f64,pub start:f64,pub extent:f64}
+pub fn chart_bars(values:&[(String,f64)])->Result<Vec<ChartBar>,VisualError>{
+    if values.len()>16||values.iter().any(|(_,v)|!v.is_finite()||v.abs()>1e9){return Err(VisualError::InvalidProjection)}
+    let min=values.iter().fold(0.0_f64,|a,(_,v)|a.min(*v));let max=values.iter().fold(0.0_f64,|a,(_,v)|a.max(*v));
+    let range=max-min;let zero=if range==0.{0.5}else{-min/range};
+    Ok(values.iter().map(|(label,value)|{let extent=if range==0.{0.}else{value.abs()/range};ChartBar{label:label.clone(),value:*value,zero,start:if *value<0.{zero-extent}else{zero},extent}}).collect())
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct Visual {
     pub surface_id:String,
@@ -26,7 +41,7 @@ pub struct Node {
     pub detail:Option<String>, pub horizontal:bool, pub columns:u64,
     pub background:Option<u32>, pub padding:Option<f32>, pub gap:Option<f32>,
     pub radius:Option<f32>, pub font_size:Option<f32>,pub border:Option<u32>,pub border_width:Option<f32>,
-    pub children:Vec<Node>,pub items:Vec<String>,
+    pub children:Vec<Node>,pub items:Vec<String>,pub bars:Vec<ChartBar>,
 }
 fn invalid<T>()->Result<T,VisualError>{Err(VisualError::InvalidProjection)}
 fn str_at<'a>(v:&'a Value,k:&str)->Result<&'a str,VisualError>{
@@ -69,6 +84,7 @@ fn node(source:&Value,plan:&Value,identities:&Value,bindings:&Value,seen:&mut Ha
     let plan_children=plan["children"].as_array().ok_or(VisualError::InvalidProjection)?;
     let mut children=Vec::new();
     let mut items=Vec::new();
+    let mut values=Vec::new();
     let structured=matches!(kind,"collection"|"timeline"|"chart");
     if structured {
         let rows=props["items"].as_array().ok_or(VisualError::InvalidProjection)?;
@@ -76,7 +92,7 @@ fn node(source:&Value,plan:&Value,identities:&Value,bindings:&Value,seen:&mut Ha
         for(i,row)in rows.iter().enumerate(){
             let label=str_at(row,"label")?;
             if plan_children[i]["id"]!=format!("{id}.item{i}")||plan_children[i]["text"]!=label{return invalid()}
-            let detail=if kind=="chart"{row["value"].as_f64().map(|v|v.to_string())}
+            let detail=if kind=="chart"{let value=row["value"].as_f64().ok_or(VisualError::InvalidProjection)?;values.push((label.to_owned(),value));Some(value.to_string())}
                 else{row["detail"].as_str().map(str::to_owned)};
             items.push(match detail{Some(d)=>format!("{label} · {d}"),None=>label.to_owned()});
         }
@@ -97,7 +113,7 @@ fn node(source:&Value,plan:&Value,identities:&Value,bindings:&Value,seen:&mut Ha
         columns,background:optional_color(pres,"background")?,padding:number(pres,"paddingPx",0,24)?,
         gap,radius:number(pres,"radiusPx",0,24)?,font_size:number(pres,"fontSizePx",13,32)?,
         border:optional_color(pres,"borderColor")?,border_width:number(pres,"borderWidthPx",0,4)?,
-        children,items})
+        children,items,bars:chart_bars(&values)?})
 }
 pub fn parse(v:&Value)->Result<Option<Visual>,VisualError>{
     if v["schema"]!="vivim.native-ui-view/1"||v["authority"]!="none"{return invalid()}
@@ -141,6 +157,12 @@ mod tests{
        "tree":{"id":"root","type":"stack","props":{"direction":"vertical"},"children":[]}},
        "identities":{"root":"vivim.component.stack@1"},
        "plan":{"schema":"vivim.ui-render-plan/1","revision":2,"status":"ok","root":{"id":"render_root","children":[{"id":"root","layout":{"columns":1},"children":[]}]},"trace":[{"id":"root","sourceId":"root","outcome":"rendered"}]}})}
+    #[test]fn chart_zero_axis_and_contrast(){
+        assert_eq!(contrast_ink(0xffffff),0);assert_eq!(contrast_ink(0),0xffffff);
+        let b=chart_bars(&[("negative".into(),-10.),("positive".into(),30.)]).unwrap();
+        assert_eq!(b[0].zero,0.25);assert_eq!(b[0].start,0.);assert_eq!(b[1].extent,0.75);
+        assert!(chart_bars(&[("invalid".into(),f64::NAN)]).is_err());
+    }
     #[test]fn source_plan_trace_match(){let p=parse(&fixture()).unwrap().unwrap();assert_eq!(p.revision,2);assert_eq!(p.root.id,"root");}
     #[test]fn rejects_conflicting_plan(){let mut f=fixture();f["plan"]["revision"]=json!(3);assert!(parse(&f).is_err());}
     #[test]fn rejects_missing_trace(){let mut f=fixture();f["plan"]["trace"]=json!([]);assert!(parse(&f).is_err());}
