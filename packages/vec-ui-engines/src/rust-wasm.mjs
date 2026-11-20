@@ -68,4 +68,12 @@ export function rustUiValue(type,value,choices){
 export function rustTokenPackage(input){
   return invoke('ui-token-pack',input);
 }
+export function rustNavigation(text){
+  const value=invoke('local-navigation',{text});
+  if(!value||value.schema!=='vivim.local-destination/1'||
+    value.authority!=='none'||!(value.destination===null||
+      ['today','wiki','world','build','talk','control','me','pocket','shares'].includes(value.destination)))
+    return undefined;
+  return value.destination;
+}
 export function nativeBrowserKernelReady(){return instance!==null;}
