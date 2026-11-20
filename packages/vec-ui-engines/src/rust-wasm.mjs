@@ -110,12 +110,14 @@ export function rustWikiSearch(wiki,query){
   const value=invoke('wiki-source-search',{wiki,query});
   if(!value||value.schema!=='vivim.wiki-source-search/1'||
     value.outcome!=='computed'||value.authority!=='none'||
-    value.scope!=='bounded-source-preview'||
+    value.scope!=='bounded-source-index'||
     value.executionAuthorized!==false||value.effectPerformed!==false||
     !Number.isSafeInteger(value.wikiRevision)||value.wikiRevision<0||
     typeof value.wikiDigest!=='string'||!/^[0-9a-f]{64}$/.test(value.wikiDigest)||
     !Number.isSafeInteger(value.scannedPages)||value.scannedPages<0||
     !Number.isSafeInteger(value.totalPages)||value.totalPages<value.scannedPages||
+    !Number.isSafeInteger(value.indexedSections)||value.indexedSections<0||value.indexedSections>512||
+    typeof value.indexTruncated!=='boolean'||
     !Number.isSafeInteger(value.matches)||value.matches<0||
     !Array.isArray(value.results)||value.results.length>24||
     value.results.length>value.matches||

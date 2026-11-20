@@ -751,7 +751,8 @@ function renderWiki() {
           (!S.wikiStamp||found.wikiDigest===S.wikiStamp.digest)){
         searchCard.append(el('p','ux-note',
           found.matches+' bounded matches · '+found.scannedPages+' of '+found.totalPages+
-          ' pages scanned · section previews only'));
+          ' pages · '+found.indexedSections+' sections indexed'+
+          (found.indexTruncated?' · some source omitted by indexing bounds':' · complete within index')));
         for(const hit of found.results){
           const label=hit.page+(hit.section?' / '+hit.section:'')+
             (hit.excerpt?' · '+hit.excerpt:'');

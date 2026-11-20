@@ -384,6 +384,9 @@ impl Render for Desktop {
                     revision:data.wiki_revision,digest:data.wiki_digest.clone(),
                     pages_total:data.wiki_page_total,pages:data.wiki_content.clone(),
                     captures:data.wiki_captures.clone(),
+                    search_index:data.wiki_search_index.clone(),
+                    indexed_pages:data.wiki_indexed_pages,
+                    index_truncated:data.wiki_index_truncated,
                 };
                 if let Some(found)=wiki_read::search_view(&read,query,24) {
                     body=body.child(div().text_lg().child(format!(
@@ -391,8 +394,11 @@ impl Render for Desktop {
                         found.matches,query
                     )));
                     body=body.child(div().text_sm().child(format!(
-                        "Read-only source revision {} · {} of {} pages scanned; only admitted section previews are searched",
-                        found.revision,found.scanned_pages,found.pages_total
+                        "Read-only Wiki rev {} · {} of {} pages indexed · {} sections · {}",
+                        found.revision,found.scanned_pages,found.pages_total,
+                        found.indexed_sections,
+                        if found.index_truncated{"bounded index: some source omitted"}
+                        else{"indexed source complete"}
                     )));
                     for hit in &found.hits {
                         body=body.child(div().p_2().bg(rgb(0x202b3a))

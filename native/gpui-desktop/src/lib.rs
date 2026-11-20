@@ -6,7 +6,7 @@ pub mod control;
 pub mod visual;
 use reqwest::blocking::Client;
 use serde_json::Value;
-use vivim_programmability_core::wiki_read::{self, Page as WikiPage, Captures as WikiCaptures};
+use vivim_programmability_core::wiki_read::{self, Page as WikiPage, Captures as WikiCaptures, SearchDocument as WikiSearchDocument};
 use std::{path::{Path, PathBuf}, time::Duration, io::Read};
 
 const BASE: &str = "http://127.0.0.1:43187";
@@ -23,6 +23,9 @@ pub struct Overview {
     pub wiki_digest: String,
     pub wiki_page_total: usize,
     pub wiki_captures: Option<WikiCaptures>,
+    pub wiki_search_index: Vec<WikiSearchDocument>,
+    pub wiki_indexed_pages: usize,
+    pub wiki_index_truncated: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -83,6 +86,9 @@ pub fn project(pwa: &Value, wiki: &Value) -> Result<Overview, ReadError> {
         wiki_revision: read.revision, wiki_pages, wiki_content: read.pages,
         wiki_digest: read.digest, wiki_page_total: read.pages_total,
         wiki_captures: read.captures,
+        wiki_search_index: read.search_index,
+        wiki_indexed_pages: read.indexed_pages,
+        wiki_index_truncated: read.index_truncated,
     })
 }
 
