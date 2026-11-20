@@ -81,7 +81,7 @@ export function studioConversationPort(runtime) {
 //   submit(id,{key,prompt,confirm,expectedRevision}) -> snapshot [POST /.../turns]
 //   get(id) -> conversation snapshot                       [GET /conversations/:id]
 // It must not use the relay or an independently attached CDP client.
-export function createStudioBootstrapOwnerAdapter({conversation, store, verifyOwner, verifyApproval, now=Date.now}={}) {
+export function createStudioBootstrapOwnerAdapter({conversation, store, verifyOwner, verifyApproval, revocations, now=Date.now}={}) {
   if (!conversation?.create || !conversation?.submit || !conversation?.get || !store?.read || !store?.reserve || !store?.update
       || typeof verifyOwner!=='function' || typeof verifyApproval!=='function') throw codeError('BOOTSTRAP_ADAPTER_DEPENDENCY');
   let busy=false;
@@ -128,6 +128,12 @@ export function createStudioBootstrapOwnerAdapter({conversation, store, verifyOw
       const approval=await verifyApproval({worldId:packet.worldId,generationId:packet.generationId,pass:packet.pass,
         requestId:packet.requestId,promptDigest:packet.promptDigest,provider:packet.provider,authorizationRef:packet.authorizationRef});
       validateApproval(approval,packet,now);
+      // Revoked data is excluded: a revoked request never reaches the store reserve, the Studio
+      // conversation binding, or the single Studio submit. Checked immediately after Host
+      // authorization, before any side effect.
+      if (revocations?.isRevoked && await revocations.isRevoked(packet.requestId)) {
+        return receipt(packet,'revoked',{journalState:'revoked',submitted:'no',reason:'REVOKED'});
+      }
       const record={schema:BOOTSTRAP_OWNER_ADAPTER_SCHEMA,requestId:packet.requestId,worldId:packet.worldId,
         generationId:packet.generationId,pass:packet.pass,provider:'chatgpt',promptDigest:packet.promptDigest,
         approvalRef:packet.authorizationRef,turnKey:`bootstrap-${packet.requestId}`,

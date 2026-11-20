@@ -7,12 +7,12 @@
   "audience": "agent",
   "project": "arbor",
   "generatedAt": "2026-11-14T00:00:00.000Z",
-  "status": "fresh",
+  "status": "stale",
   "budget": {
     "maxTokens": 5000,
     "reserved": 800,
     "capacity": 4120,
-    "used": 437,
+    "used": 442,
     "estimator": "utf8-bytes/3"
   },
   "reprogramming": {
@@ -27,9 +27,11 @@
     "nlclCatalog": {
       "ref": "apps/vivim-host/control/action-catalog.v1.json",
       "schema": "vivim.control-action-catalog/1",
-      "version": 9
+      "version": 15
     },
-    "surfaceDrift": []
+    "surfaceDrift": [
+      "apps/vivim-host/public/demo/demo.html"
+    ]
   },
   "sources": [
     {
@@ -38,12 +40,12 @@
       "path": "apps/vivim-host/public/demo/demo.html",
       "kind": "code",
       "lang": "html",
-      "sha256": "f3860f1216ad80d74a280866c2dce6e26bd8a5ee54722a4c05edfd98aec6a70e",
+      "sha256": "923f3efddc237e3fb0ac0bae9a1c34db6bb05f1dcdba8706b9fc1ded6c9c73a8",
       "lines": [
         2,
         17
       ],
-      "estimatedTokens": 437,
+      "estimatedTokens": 442,
       "score": 1,
       "reason": "rdcb|file-surface|vlang-surface-header",
       "authority": "project_observed",
@@ -53,7 +55,7 @@
           2,
           17
         ],
-        "text": "<!-- @vlang:surface apps/vivim-host/public/demo/demo.html\n     @vlang:surface-desc: Static shell of the ARBOR baseline demo walkthrough — the reprogrammable\n     @vlang:surface-desc: surface is static copy (eyebrows, headings, serve-info text), section\n     @vlang:surface-desc: structure inside .demo-* containers, and button labels. NL-driven\n     @vlang:surface-desc: change accepts none of: renaming #demo-* ids consumed by\n     @vlang:surface-desc: controller.js bindShell, script/style injection (CSP C4), or changing\n     @vlang:surface-desc: the /mobile/?host-preview=1 iframe target. The fixture feed and\n     @vlang:surface-desc: decision controls stay read-only shells; POST /demo/feedback remains\n     @vlang:surface-desc: the only writable surface of the whole /demo tree.\n     @vlang:surface-desc: NLCL linkage: no action in control/action-catalog.v1.json v7 targets\n     @vlang:surface-desc: this file yet — actionIds stays empty until one is catalogued.\n     @vlang:id: demo-shell demo-progress demo-strip demo-step-badge demo-phone\n     @vlang:id: demo-live-preview demo-acceptance demo-feed demo-notes demo-tags\n     @vlang:id: demo-btn-approve demo-btn-revise demo-decision-chip demo-journal\n     @vlang:id: demo-serve-info demo-status demo-submit demo-approve-all\n     @vlang:action: -->"
+        "text": "<!-- @vlang:surface apps/vivim-host/public/demo/demo.html\r\n     @vlang:surface-desc: Static shell of the ARBOR baseline demo walkthrough — the reprogrammable\r\n     @vlang:surface-desc: surface is static copy (eyebrows, headings, serve-info text), section\r\n     @vlang:surface-desc: structure inside .demo-* containers, and button labels. NL-driven\r\n     @vlang:surface-desc: change accepts none of: renaming #demo-* ids consumed by\r\n     @vlang:surface-desc: controller.js bindShell, script/style injection (CSP C4), or changing\r\n     @vlang:surface-desc: the /mobile/?host-preview=1 iframe target. The fixture feed and\r\n     @vlang:surface-desc: decision controls stay read-only shells; POST /demo/feedback remains\r\n     @vlang:surface-desc: the only writable surface of the whole /demo tree.\r\n     @vlang:surface-desc: NLCL linkage: no action in control/action-catalog.v1.json v7 targets\r\n     @vlang:surface-desc: this file yet — actionIds stays empty until one is catalogued.\r\n     @vlang:id: demo-shell demo-progress demo-strip demo-step-badge demo-phone\r\n     @vlang:id: demo-live-preview demo-acceptance demo-feed demo-notes demo-tags\r\n     @vlang:id: demo-btn-approve demo-btn-revise demo-decision-chip demo-journal\r\n     @vlang:id: demo-serve-info demo-status demo-submit demo-approve-all\r\n     @vlang:action: -->"
       },
       "fileSurface": {
         "ref": "apps/vivim-host/data/demo-baseline/file-surface.v1.json",
@@ -80,7 +82,7 @@
         ]
       },
       "nlclActionIds": [],
-      "digest": "d1b5e3aa599d8dc649f2ade951291081bd96ddfff8289582f427564b44d3e05a"
+      "digest": "8da1f5d527b45d30e665bd9741ee328aab79d0688d242bc22991220c3a549b90"
     }
   ],
   "omissions": [],
@@ -93,5 +95,5 @@
     "evidence": "file-surface.v1 + action-catalog.v1"
   },
   "authority": "read_only_projection",
-  "digest": "ca96b8af9580ccb000853db16a76fe175b8df38dae52b99662ef98bb6fbc8417"
+  "digest": "fea4ba5c075ef38ef8e4774d969552157a036f78f95e3367f410dfd7b9871bfd"
 }

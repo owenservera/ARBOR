@@ -1,0 +1,2631 @@
+{
+ "schema": "arbor-transient-stable-id-row-patch/2",
+ "source_head": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+ "last_readable_ledger_commit": "038854852ab5e9ed387e86bea6c518d6ff919da7",
+ "last_readable_ledger_blob": "74805dc33430f54b8ee779cc05b71757560ae4de",
+ "lane": "D",
+ "rows": [
+  {
+   "stable_id": "AT-9237D196A64F",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "",
+   "lane": "D",
+   "batch": "D-F01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L1",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "AUDIT FINDING — OPEN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-9237D196A64F",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-7C4B79E118BA",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "readGraphContext @ L270",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L270",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "AUDIT FINDING — OPEN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-7C4B79E118BA",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-6F900CCB9B2C",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "renderWikiContext @ L589",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L589",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "AUDIT FINDING — OPEN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-6F900CCB9B2C",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-54329206E20F",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "validWikiContext @ L660",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L660",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "AUDIT FINDING — OPEN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-54329206E20F",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-C85AAF41487E",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "pair @ L41",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L41",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-C85AAF41487E",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-8DA86F6C77EE",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "lsGet @ L46",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L46",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-8DA86F6C77EE",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-78C49FD7FC80",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "lsSet @ L47",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L47",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-78C49FD7FC80",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-76D8AF5BD066",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "tsOf @ L49",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L49",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-76D8AF5BD066",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-D7087971FA7C",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "MAXTEXT @ L50",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L50",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-D7087971FA7C",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-B97142852A34",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "composerScope @ L137",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L137",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-B97142852A34",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-8ED19B44DDA5",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "classifyDraftUi @ L144",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L144",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-8ED19B44DDA5",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-0CE8E0AE8DE4",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "saveNativePending @ L155",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L155",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-0CE8E0AE8DE4",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-F96DC41E9395",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "saveConvs @ L157",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L157",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-F96DC41E9395",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-548A6D371062",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "providers @ L158",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L158",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-548A6D371062",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-A17DA4C6D862",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "curConv @ L159",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L159",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-A17DA4C6D862",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-A97A62482340",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "msgsOf @ L160",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L160",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-A97A62482340",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-EA17F6662F67",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "isPend @ L161",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L161",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-EA17F6662F67",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-F7176A0E96FD",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "pending @ L162",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L162",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-F7176A0E96FD",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-24A572D6ADFD",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "mkPrefix @ L163",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L163",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-24A572D6ADFD",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-77D49911B03D",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "stripPrefix @ L166",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L166",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-77D49911B03D",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-75D8D130E4B1",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "targetLabel @ L167",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L167",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-75D8D130E4B1",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-9CB7AB782CEC",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "setConn @ L170",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L170",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-9CB7AB782CEC",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-5F7FEF8E026F",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "expandDock @ L204",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L204",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-5F7FEF8E026F",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-C9AAB2B3BB00",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "switchChatTarget @ L210",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L210",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-C9AAB2B3BB00",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-1C77E9BFFBD0",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "focusPreview @ L220",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L220",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-1C77E9BFFBD0",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-23FF33CC2E4C",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "normalizeConv @ L356",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L356",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-23FF33CC2E4C",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-A2930C3C5CAF",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "newConv @ L367",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L367",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-A2930C3C5CAF",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-E54CA167D573",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "ensureActive @ L376",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L376",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-E54CA167D573",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-68E764A8A627",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "selectConv @ L381",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L381",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-68E764A8A627",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-7D2F310998DD",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "deleteConv @ L382",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L382",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-7D2F310998DD",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-D046B1D4CD4E",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "mergeServerConvs @ L388",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L388",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-D046B1D4CD4E",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-1867C954007C",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "surfaceContext @ L433",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L433",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-1867C954007C",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-19FB7C0A8335",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "clearWikiSources @ L487",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L487",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-19FB7C0A8335",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-C11A1F934D72",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "ingestWikiSources @ L491",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L491",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-C11A1F934D72",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-D4ED74DF266F",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "readWikiSource @ L498",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L498",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-D4ED74DF266F",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-A3A1F44C0EAF",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "renderWikiSources @ L513",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L513",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-A3A1F44C0EAF",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-0A30BCF66721",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "clearWiki @ L526",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L526",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-0A30BCF66721",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-2497212CB712",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "semanticRows @ L532",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L532",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-2497212CB712",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-6264570CDD96",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "renderSemanticKnowledge @ L573",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L573",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-6264570CDD96",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-8C1F9A25B77F",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "validAppliedEffects @ L647",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L647",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-8C1F9A25B77F",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-3947E89018CE",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "validEntry @ L661",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L661",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-3947E89018CE",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-2DD800A4C95F",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "refreshWiki @ L768",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L768",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-2DD800A4C95F",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-550795A15D58",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "isInvalidDeviceSession @ L842",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L842",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-550795A15D58",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-E3802992E70B",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "clearPrivatePhoneState @ L848",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L848",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-E3802992E70B",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-839D7FE7AF09",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "requestPwaInstall @ L890",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L890",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-839D7FE7AF09",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-C3234B83B895",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "stopMediaPlayer @ L904",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L904",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-C3234B83B895",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-BDDA8EA7B626",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "ensureMediaPlayer @ L931",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L931",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-BDDA8EA7B626",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-C8DFC5028DF9",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "openMediaPlayer @ L962",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L962",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-C8DFC5028DF9",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-7D917EC885DC",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "refreshMedia @ L1019",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L1019",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-7D917EC885DC",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-A113059B1040",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "openVivimDraft @ L1072",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L1072",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-A113059B1040",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-7EAF407E3C5A",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "updateSend @ L1207",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L1207",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-7EAF407E3C5A",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-12B02B5E844B",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "autogrow @ L1215",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L1215",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-12B02B5E844B",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-591260775D7D",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "acknowledgeRenderedReply @ L1220",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L1220",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-591260775D7D",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-C37A696590CC",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "installHostMenu @ L1336",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L1336",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-C37A696590CC",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-320734CF2E1A",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "toggleHostMenu @ L1371",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L1371",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-320734CF2E1A",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-DE223C998E37",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "refreshHostPreview @ L1401",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L1401",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-DE223C998E37",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-7133DFF521D7",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "startHostPreview @ L1439",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L1439",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-7133DFF521D7",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-3DA9F6B07379",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "nativeSessions @ L1496",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L1496",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-3DA9F6B07379",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-CE47ACDEB561",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "nativeRefresh @ L1508",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L1508",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-CE47ACDEB561",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-FB89229D800F",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "nativeSend @ L1531",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L1531",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-FB89229D800F",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-1533250B0AE6",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "send @ L1549",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L1549",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-1533250B0AE6",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-B8E9CC3A3556",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "schedule @ L1590",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L1590",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-B8E9CC3A3556",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-04869BDF1482",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "refresh @ L1605",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L1605",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-04869BDF1482",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-58BA4CD57306",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "refreshBuildInspector @ L1637",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L1637",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-58BA4CD57306",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-33F75F0964F9",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "updateBuildSelection @ L1644",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L1644",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-33F75F0964F9",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-DB321F51B397",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "mountBuild @ L1651",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L1651",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-DB321F51B397",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-E39800B27B1A",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "canCapture @ L1711",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L1711",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-E39800B27B1A",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-00FA9B41AC05",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "launcherContext @ L1726",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L1726",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-00FA9B41AC05",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-39677897A763",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "launcherActivate @ L1742",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L1742",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-39677897A763",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-5AD390C9A1AB",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "scheduleBuild @ L1765",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L1765",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-5AD390C9A1AB",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-135BA4B3D376",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "refreshBuildBindings @ L1770",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L1770",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-135BA4B3D376",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-1AE51A09F342",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "authorized @ L1774",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L1774",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-1AE51A09F342",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-142EA100EB4C",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "pollBuild @ L1798",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L1798",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-142EA100EB4C",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-AD6FB6D1A527",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "start @ L1888",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L1888",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-AD6FB6D1A527",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-45865F3ECDB8",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "runStart @ L1897",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L1897",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-45865F3ECDB8",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-D66049DC590F",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "$ @ L22",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L22",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-D66049DC590F",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-A1F5115C3E6C",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "el @ L44",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L44",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-A1F5115C3E6C",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-BF43D7FA1A73",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "esc @ L45",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L45",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-BF43D7FA1A73",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-2BCECF3733A7",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "hex16 @ L48",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L48",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-2BCECF3733A7",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-B2A75B30CC18",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "inline @ L53",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L53",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-B2A75B30CC18",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-6B23A8BF9E5F",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "emph @ L55",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L55",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-6B23A8BF9E5F",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-460B92C92032",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "md @ L65",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L65",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-460B92C92032",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-39695F7595EF",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "fp @ L70",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L70",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-39695F7595EF",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-5C2873D41DDD",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "fl @ L71",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L71",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-5C2873D41DDD",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-6D1F02F015E9",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "toast @ L169",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L169",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-6D1F02F015E9",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-4FBB45DE1947",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "updateDock @ L180",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L180",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-4FBB45DE1947",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-B4389E468FA4",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "renderFocusPanel @ L226",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L226",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-B4389E468FA4",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-2AAF192023EF",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "openFocusPanel @ L312",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L312",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-2AAF192023EF",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-4AE269DDB45A",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "closeFocusPanel @ L320",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L320",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-4AE269DDB45A",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-5BD0DDA5C8B9",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "mountUniversalDock @ L325",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L325",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-5BD0DDA5C8B9",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-3E5BD9546106",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "renderTabs @ L409",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L409",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-3E5BD9546106",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-0F649ECB0158",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "goTab @ L462",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L462",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-0F649ECB0158",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-2CC716BF6CF2",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "renderWiki @ L678",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L678",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-2CC716BF6CF2",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-1EF967698ED6",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "renderSurfaces @ L1081",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L1081",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-1EF967698ED6",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-EAB9C738D80F",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "renderList @ L1126",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L1126",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-EAB9C738D80F",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-201CD3048FA7",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "fmtSize @ L1147",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L1147",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-201CD3048FA7",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-D8946F761312",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "renderComposer @ L1148",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L1148",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-D8946F761312",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-7B838BD00795",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "dots @ L1216",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L1216",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-7B838BD00795",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-0F27DD95D9D8",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "renderMsgs @ L1237",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L1237",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-0F27DD95D9D8",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-4B1236A1C1BC",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "renderDebug @ L1317",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L1317",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-4B1236A1C1BC",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-B278BA95A5C2",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "renderAll @ L1327",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L1327",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-B278BA95A5C2",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-380E64DE766A",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "closeDrawer @ L1330",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L1330",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-380E64DE766A",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-3CF1CF36FBD7",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "openDebug @ L1331",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L1331",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-3CF1CF36FBD7",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-8255B464BFDF",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "closeDebug @ L1332",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L1332",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-8255B464BFDF",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-FD1E1F45FDE9",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "renderHostPreviewActivity @ L1378",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L1378",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-FD1E1F45FDE9",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-283F4295B8BF",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "renderNative @ L1473",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L1473",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-283F4295B8BF",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-258DB1B1178A",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "mountCompose @ L1677",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L1677",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-258DB1B1178A",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-C928EA53F3A8",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "showBrowserPairHelp @ L1821",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L1821",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-C928EA53F3A8",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-3508CD7FAB2E",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "showPairingState @ L1843",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L1843",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-3508CD7FAB2E",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-1D43930AB068",
+   "path": "apps/mobile-relay/app.js",
+   "symbol": "showOfflineShell @ L1873",
+   "lane": "D",
+   "batch": "D-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/app.js#L1873",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "21466411b50655fc6b8f7890e21c0ec9949f2423",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-1D43930AB068",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-70393C0BD9D1",
+   "path": "apps/mobile-relay/goal-wiki.test.mjs",
+   "symbol": "",
+   "lane": "D",
+   "batch": "D-F01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/goal-wiki.test.mjs#L1",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "278cf38e7c9dff1ff7429f687a0d994ed57d1e83",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "INVENTORIED — NOT DISPOSITIONED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-70393C0BD9D1",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-34F0BF4A9826",
+   "path": "apps/mobile-relay/goal1-wiki-chat-regression.test.mjs",
+   "symbol": "",
+   "lane": "D",
+   "batch": "D-F01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/goal1-wiki-chat-regression.test.mjs#L1",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "991942deb443c755dd481fced9a2431a6819fc68",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "INVENTORIED — NOT DISPOSITIONED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-34F0BF4A9826",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-7435DF1954D2",
+   "path": "apps/mobile-relay/goal1-wiki-tab-open.test.mjs",
+   "symbol": "",
+   "lane": "D",
+   "batch": "D-F01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/goal1-wiki-tab-open.test.mjs#L1",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "b91addf1fa5e1e64de3832209cb343b5b7adedd7",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "INVENTORIED — NOT DISPOSITIONED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-7435DF1954D2",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-D76D82E8B54A",
+   "path": "apps/mobile-relay/wiki-receipt-refresh.test.mjs",
+   "symbol": "",
+   "lane": "D",
+   "batch": "D-F01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/mobile-relay/wiki-receipt-refresh.test.mjs#L1",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "6279424ee7e5a4f243d7f3da4a93058f1e032fdd",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "INVENTORIED — NOT DISPOSITIONED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-D76D82E8B54A",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  }
+ ]
+}

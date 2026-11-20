@@ -1,0 +1,27 @@
+{
+  "unit": "VERIFY:D07:native-hq-parity",
+  "round": null,
+  "workflow": "arbor-area-a",
+  "runId": "dwfrun-ffd84dea-f28a-4418-88c8-5a3b10d3d9a1",
+  "wave": "P1",
+  "note": "workflow:arbor-area-a run:dwfrun-ffd84dea-f28a-4418-88c8-5a3b10d3d9a1 wave:P1",
+  "changes": [
+    {
+      "id": "AT-CA4B634F9B3A",
+      "field": "Review HEAD",
+      "from": "",
+      "to": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+      "evidence": "gate node --test hq/test/graph.test.mjs exit 0 @ 94c2195"
+    },
+    {
+      "id": "AT-CA4B634F9B3A",
+      "field": "Runtime test",
+      "from": "",
+      "to": "UNRUN",
+      "evidence": "gate node --test hq/test/graph.test.mjs exit 0 @ 94c2195"
+    }
+  ],
+  "discoveries": [],
+  "status": "pending",
+  "implementationCommit": null
+}

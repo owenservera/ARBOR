@@ -1486,7 +1486,7 @@
         "layer": "L2",
         "title": "Truth and queue repair",
         "description": "Repair the two WIKI-BASELINE verifier assumptions, classify Batch-1 evidence separately from execution, reconcile conflicting beta/release ledgers without falsely changing observed gates, and align the single roadmap owner.",
-        "status": "gated",
+        "status": "queued",
         "sources": [
           "docs/product/roadmap/ACCELERATION-R002.md",
           "scripts/batch-evidence/WIKI-BASELINE.mjs",
@@ -1537,7 +1537,7 @@
         "layer": "L2",
         "title": "One-command live Host and acceptance runner",
         "description": "Run the existing production Host plus chat, Wiki and relevant context in one reproducible local invocation; collect exact command, environment, exit codes, failures and receipts without synthetic pass claims.",
-        "status": "built",
+        "status": "queued",
         "sources": [
           "docs/product/roadmap/ACCELERATION-R002.md",
           "scripts/",
@@ -1582,7 +1582,7 @@
         "layer": "L2",
         "title": "Canonical stateful chat-to-Wiki projection",
         "description": "Use the existing Host-controlled journal and revision authority for chat, Wiki edits and both displays; separate source-of-truth from derived display caches, persist revisions, require authorized mutations.",
-        "status": "built",
+        "status": "queued",
         "sources": [
           "docs/product/roadmap/ACCELERATION-R002.md",
           "apps/vivim-host/",
@@ -1628,7 +1628,7 @@
         "layer": "L2",
         "title": "Demo feedback-to-work-order compiler",
         "description": "Compile failed evidence, user visual feedback and demo verdicts into a source-pinned, acceptance-linked, minimum-scope work order in the existing product roadmap.",
-        "status": "built",
+        "status": "queued",
         "sources": [
           "docs/product/roadmap/ACCELERATION-R002.md",
           "docs/product/roadmap/",
@@ -1673,7 +1673,7 @@
         "layer": "L2",
         "title": "Narrow realtime NL to VLang/VEC visual compiler",
         "description": "Compile three bounded natural language intents through the existing NLCL and VLang/VEC surfaces into typed, guarded visual updates to the second-screen Wiki; no new interpreter or graph store.",
-        "status": "built",
+        "status": "queued",
         "sources": [
           "docs/product/roadmap/ACCELERATION-R002.md",
           "apps/vivim-host/control/",
@@ -1721,7 +1721,7 @@
         "layer": "L2",
         "title": "Authorized build, verify, demonstrate and requeue",
         "description": "Connect the existing keeper/demo execution contracts to a cycle that selects a ready work order, executes only allowed scoped work, independently verifies, shows product proof and proposes the next batch.",
-        "status": "built",
+        "status": "queued",
         "sources": [
           "docs/product/roadmap/ACCELERATION-R002.md",
           ".coordination/",
@@ -1763,7 +1763,7 @@
         "layer": "L2",
         "title": "Incremental RDCB context with reuse receipts",
         "description": "Reuse native HQKG/Rust and existing deterministic RDCB generator to cache source/revision-scoped context and invalidate only changed dependencies; attach the selected context to work orders.",
-        "status": "built",
+        "status": "queued",
         "sources": [
           "docs/product/roadmap/ACCELERATION-R002.md",
           "apps/vivim-host/control/",
@@ -1835,7 +1835,7 @@
           "Overlapping writer scopes block or serialize without silent clobbering; stale expected SHA refuses publish.",
           "Every resulting claim links executed test receipts and exact commit SHA; no simulated worker success."
         ],
-        "verification": "RECEIPT_GATED_GATE0",
+        "verification": "UNRUN",
         "ownerAcceptance": "PENDING",
         "execution": "NOT_STARTED",
         "releaseClaim": false
@@ -1876,7 +1876,7 @@
           "Paired session revocation immediately removes private context and write ability; stale permissions cannot publish.",
           "No claim of device acceptance from desktop fixtures; APK remains deferred and Windows install an independent stream."
         ],
-        "verification": "RECEIPT_GATED_GATE0",
+        "verification": "UNRUN",
         "ownerAcceptance": "PENDING",
         "execution": "NOT_STARTED",
         "releaseClaim": false
@@ -2340,10 +2340,10 @@
   },
   "buildQueue": [
     {
-      "itemId": "A00",
-      "order": 1,
-      "status": "gated",
-      "lane": "B",
+        "itemId": "A00",
+        "order": 1,
+        "status": "queued",
+        "lane": "B",
       "dependsOn": [],
       "priority": 1,
       "accelerationScore": 89,
@@ -2353,10 +2353,10 @@
       "rewalk": "pending"
     },
     {
-      "itemId": "A01",
-      "order": 2,
-      "status": "gated",
-      "lane": "C",
+        "itemId": "A01",
+        "order": 2,
+        "status": "queued",
+        "lane": "C",
       "dependsOn": [],
       "priority": 2,
       "accelerationScore": 95,
@@ -2366,10 +2366,10 @@
       "rewalk": "pending"
     },
     {
-      "itemId": "A02",
-      "order": 3,
-      "status": "gated",
-      "lane": "A",
+        "itemId": "A02",
+        "order": 3,
+        "status": "queued",
+        "lane": "A",
       "dependsOn": [],
       "priority": 3,
       "accelerationScore": 96,
@@ -2379,10 +2379,10 @@
       "rewalk": "pending"
     },
     {
-      "itemId": "A03",
-      "order": 4,
-      "status": "gated",
-      "lane": "B",
+        "itemId": "A03",
+        "order": 4,
+        "status": "queued",
+        "lane": "B",
       "dependsOn": [
         "A00"
       ],
@@ -2393,10 +2393,10 @@
       "note": "Demo feedback-to-work-order compiler — preparatory source integrated only, activation blocked by A00 independent acceptance."
     },
     {
-      "itemId": "A04",
-      "order": 5,
-      "status": "gated",
-      "lane": "A",
+        "itemId": "A04",
+        "order": 5,
+        "status": "queued",
+        "lane": "A",
       "dependsOn": [
         "A02"
       ],
@@ -2407,19 +2407,19 @@
       "note": "Narrow realtime NL to VLang/VEC visual compiler — preparatory source integrated only, activation blocked by A02 independent acceptance."
     },
     {
-      "itemId": "A05",
-      "order": 6,
-      "status": "queued",
-      "lane": "B",
-      "dependsOn": [
-        "A01",
-        "A02",
-        "A03"
-      ],
-      "priority": 6,
-      "accelerationScore": 94,
-      "verification": "RECEIPT_VERIFICATION_FAILED",
-      "ownerAcceptance": "PENDING",
+        "itemId": "A05",
+        "order": 6,
+        "status": "queued",
+        "lane": "B",
+        "dependsOn": [
+          "A01",
+          "A02",
+          "A03"
+        ],
+        "priority": 6,
+        "accelerationScore": 94,
+        "verification": "UNRUN",
+        "ownerAcceptance": "PENDING",
       "note": "Authorized build, verify, demonstrate and requeue — Connect the existing keeper/demo execution contracts to a cycle that selects a ready work order, executes only allowed scoped work, independently verifies, shows product proof and proposes the next batch."
     },
     {

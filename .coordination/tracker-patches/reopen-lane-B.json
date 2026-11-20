@@ -1,0 +1,1021 @@
+{
+ "schema": "arbor-transient-stable-id-row-patch/2",
+ "source_head": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+ "last_readable_ledger_commit": "038854852ab5e9ed387e86bea6c518d6ff919da7",
+ "last_readable_ledger_blob": "74805dc33430f54b8ee779cc05b71757560ae4de",
+ "lane": "B",
+ "rows": [
+  {
+   "stable_id": "AT-4BF6BC95F4EC",
+   "path": "apps/vivim-host/server.mjs",
+   "symbol": "",
+   "lane": "B",
+   "batch": "B-F01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L1",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "8411cc1bc390d0a4bd3a82b9bec050364a34489c",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "AUDIT FINDING — OPEN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-4BF6BC95F4EC",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-E63E924C3EB7",
+   "path": "apps/vivim-host/control/journal.mjs",
+   "symbol": "",
+   "lane": "B",
+   "batch": "B-F01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/control/journal.mjs#L1",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "b9739a00c8345a0513dba32ddc0361e96bb9b16f",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-E63E924C3EB7",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-1D41E00C6496",
+   "path": "harness/src/context/dcb-sources.mjs",
+   "symbol": "",
+   "lane": "B",
+   "batch": "B-F01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/harness/src/context/dcb-sources.mjs#L1",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "c1156c628c4c0276e6b00060a2be102e0a0c9a38",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-1D41E00C6496",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-BEB57E2A22C7",
+   "path": "apps/vivim-host/bootstrap/worker-supervisor.mjs",
+   "symbol": "",
+   "lane": "B",
+   "batch": "B-F01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/bootstrap/worker-supervisor.mjs#L1",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "86a4bf8598d8c51db490daa60f504877e2d39e47",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-BEB57E2A22C7",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-57918B172821",
+   "path": "apps/vivim-host/control/hvi-native-guide.json",
+   "symbol": "",
+   "lane": "B",
+   "batch": "B-F01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/control/hvi-native-guide.json#L1",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "7cc846e2c5fcfc520eefd9c64f681c3ca6edade2",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-57918B172821",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-91886B58F339",
+   "path": "apps/vivim-host/conversations/bridge-evidence.mjs",
+   "symbol": "",
+   "lane": "B",
+   "batch": "B-F01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/conversations/bridge-evidence.mjs#L1",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "3984a12745032b7625a15c5e6325a16b6f55cc68",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-91886B58F339",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-D4FE78FC0EA9",
+   "path": "apps/vivim-host/conversations/live-projection.mjs",
+   "symbol": "",
+   "lane": "B",
+   "batch": "B-F01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/conversations/live-projection.mjs#L1",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "64008f6e9726f459e9dd10983696b7ae966b5e0e",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-D4FE78FC0EA9",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-8990DEA9794C",
+   "path": "apps/vivim-host/conversations/studio-journal-evidence.mjs",
+   "symbol": "",
+   "lane": "B",
+   "batch": "B-F01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/conversations/studio-journal-evidence.mjs#L1",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "0bb6ec0430aa7a309f10acfe23be9153ff4bca63",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-8990DEA9794C",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-CF53D5862720",
+   "path": "apps/vivim-host/public/host.js",
+   "symbol": "",
+   "lane": "B",
+   "batch": "B-F01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/public/host.js#L1",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "090e8a53c95b851e65ed5ee7946aafd9f042fa9d",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-CF53D5862720",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-F4361C6F5D6C",
+   "path": "apps/vivim-host/public/pages/wiki.css",
+   "symbol": "",
+   "lane": "B",
+   "batch": "B-F01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/public/pages/wiki.css#L1",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "46bb67e20bac18757ad78d4cf580a7d2fc925b24",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-F4361C6F5D6C",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-34285F271418",
+   "path": "harness/src/dev/bootstrap.mjs",
+   "symbol": "",
+   "lane": "B",
+   "batch": "B-F01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/harness/src/dev/bootstrap.mjs#L1",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "a91e92c2e515c27647188265f80b5172c9e82fcd",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-34285F271418",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-CDC13B279CE2",
+   "path": "apps/vivim-host/server.mjs",
+   "symbol": "tokenFor @ L200",
+   "lane": "B",
+   "batch": "B-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L200",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "8411cc1bc390d0a4bd3a82b9bec050364a34489c",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-CDC13B279CE2",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-736BDC4F2798",
+   "path": "apps/vivim-host/server.mjs",
+   "symbol": "ownerAuthorized @ L775",
+   "lane": "B",
+   "batch": "B-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L775",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "8411cc1bc390d0a4bd3a82b9bec050364a34489c",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-736BDC4F2798",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-6423F300C362",
+   "path": "apps/vivim-host/server.mjs",
+   "symbol": "studioDataDir @ L99",
+   "lane": "B",
+   "batch": "B-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L99",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "8411cc1bc390d0a4bd3a82b9bec050364a34489c",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-6423F300C362",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-491E1310EB86",
+   "path": "apps/vivim-host/server.mjs",
+   "symbol": "manifestFile @ L110",
+   "lane": "B",
+   "batch": "B-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L110",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "8411cc1bc390d0a4bd3a82b9bec050364a34489c",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-491E1310EB86",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-CBF12E635901",
+   "path": "apps/vivim-host/server.mjs",
+   "symbol": "manifestComplete @ L117",
+   "lane": "B",
+   "batch": "B-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L117",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "8411cc1bc390d0a4bd3a82b9bec050364a34489c",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-CBF12E635901",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-18F1FA21E691",
+   "path": "apps/vivim-host/server.mjs",
+   "symbol": "runCommand @ L127",
+   "lane": "B",
+   "batch": "B-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L127",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "8411cc1bc390d0a4bd3a82b9bec050364a34489c",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-18F1FA21E691",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-68FE7A5AD612",
+   "path": "apps/vivim-host/server.mjs",
+   "symbol": "onboardingState @ L137",
+   "lane": "B",
+   "batch": "B-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L137",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "8411cc1bc390d0a4bd3a82b9bec050364a34489c",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-68FE7A5AD612",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-16AD38EA98AB",
+   "path": "apps/vivim-host/server.mjs",
+   "symbol": "bridgeSnapshot @ L149",
+   "lane": "B",
+   "batch": "B-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L149",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "8411cc1bc390d0a4bd3a82b9bec050364a34489c",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-16AD38EA98AB",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-CEB6E9CBC063",
+   "path": "apps/vivim-host/server.mjs",
+   "symbol": "hostSnapshot @ L169",
+   "lane": "B",
+   "batch": "B-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L169",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "8411cc1bc390d0a4bd3a82b9bec050364a34489c",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-CEB6E9CBC063",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-7DD9F1E3705D",
+   "path": "apps/vivim-host/server.mjs",
+   "symbol": "createHostServer @ L191",
+   "lane": "B",
+   "batch": "B-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L191",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "8411cc1bc390d0a4bd3a82b9bec050364a34489c",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-7DD9F1E3705D",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-DCDFBC846794",
+   "path": "apps/vivim-host/server.mjs",
+   "symbol": "runtimeFor @ L196",
+   "lane": "B",
+   "batch": "B-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L196",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "8411cc1bc390d0a4bd3a82b9bec050364a34489c",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-DCDFBC846794",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-47379B512B9E",
+   "path": "apps/vivim-host/server.mjs",
+   "symbol": "controlFor @ L213",
+   "lane": "B",
+   "batch": "B-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L213",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "8411cc1bc390d0a4bd3a82b9bec050364a34489c",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-47379B512B9E",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-522054257334",
+   "path": "apps/vivim-host/server.mjs",
+   "symbol": "BOOTSTRAP_BODY_LIMIT @ L533",
+   "lane": "B",
+   "batch": "B-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L533",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "8411cc1bc390d0a4bd3a82b9bec050364a34489c",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-522054257334",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-4142563B6CAC",
+   "path": "apps/vivim-host/server.mjs",
+   "symbol": "sendJson @ L548",
+   "lane": "B",
+   "batch": "B-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L548",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "8411cc1bc390d0a4bd3a82b9bec050364a34489c",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-4142563B6CAC",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-2761E94934AF",
+   "path": "apps/vivim-host/server.mjs",
+   "symbol": "readJsonBody @ L553",
+   "lane": "B",
+   "batch": "B-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L553",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "8411cc1bc390d0a4bd3a82b9bec050364a34489c",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-2761E94934AF",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-180996BE26DC",
+   "path": "apps/vivim-host/server.mjs",
+   "symbol": "handleBootstrap @ L578",
+   "lane": "B",
+   "batch": "B-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L578",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "8411cc1bc390d0a4bd3a82b9bec050364a34489c",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-180996BE26DC",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-06C2B35D101D",
+   "path": "apps/vivim-host/server.mjs",
+   "symbol": "APK_REGISTER_BODY_LIMIT @ L673",
+   "lane": "B",
+   "batch": "B-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L673",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "8411cc1bc390d0a4bd3a82b9bec050364a34489c",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-06C2B35D101D",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-479D1BCFA872",
+   "path": "apps/vivim-host/server.mjs",
+   "symbol": "apkSlug @ L675",
+   "lane": "B",
+   "batch": "B-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L675",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "8411cc1bc390d0a4bd3a82b9bec050364a34489c",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-479D1BCFA872",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-D189A608E0F6",
+   "path": "apps/vivim-host/server.mjs",
+   "symbol": "handleDataIntelligence @ L681",
+   "lane": "B",
+   "batch": "B-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L681",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "8411cc1bc390d0a4bd3a82b9bec050364a34489c",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-D189A608E0F6",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-0CE3D79696CF",
+   "path": "apps/vivim-host/server.mjs",
+   "symbol": "handleApk @ L698",
+   "lane": "B",
+   "batch": "B-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L698",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "8411cc1bc390d0a4bd3a82b9bec050364a34489c",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-0CE3D79696CF",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-A8E5EF4B023D",
+   "path": "apps/vivim-host/server.mjs",
+   "symbol": "handleControl @ L788",
+   "lane": "B",
+   "batch": "B-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L788",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "8411cc1bc390d0a4bd3a82b9bec050364a34489c",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-A8E5EF4B023D",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-8FFE2F565EBB",
+   "path": "apps/vivim-host/server.mjs",
+   "symbol": "developmentPort @ L832",
+   "lane": "B",
+   "batch": "B-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L832",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "8411cc1bc390d0a4bd3a82b9bec050364a34489c",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-8FFE2F565EBB",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-4CFFFBF02BAC",
+   "path": "apps/vivim-host/server.mjs",
+   "symbol": "readStudioOutcomes @ L850",
+   "lane": "B",
+   "batch": "B-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L850",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "8411cc1bc390d0a4bd3a82b9bec050364a34489c",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-4CFFFBF02BAC",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-D82851E4115C",
+   "path": "apps/vivim-host/server.mjs",
+   "symbol": "interpret @ L987",
+   "lane": "B",
+   "batch": "B-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L987",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "8411cc1bc390d0a4bd3a82b9bec050364a34489c",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-D82851E4115C",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-3FC39F9310B0",
+   "path": "apps/vivim-host/server.mjs",
+   "symbol": "stillOwner @ L1006",
+   "lane": "B",
+   "batch": "B-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L1006",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "8411cc1bc390d0a4bd3a82b9bec050364a34489c",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-3FC39F9310B0",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-21AB879B15CF",
+   "path": "apps/vivim-host/server.mjs",
+   "symbol": "handleOnboarding @ L1054",
+   "lane": "B",
+   "batch": "B-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L1054",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "8411cc1bc390d0a4bd3a82b9bec050364a34489c",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-21AB879B15CF",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-6C9CB0748F7E",
+   "path": "apps/vivim-host/server.mjs",
+   "symbol": "sameOrigin @ L1058",
+   "lane": "B",
+   "batch": "B-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L1058",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "8411cc1bc390d0a4bd3a82b9bec050364a34489c",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-6C9CB0748F7E",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-55B43ECDD928",
+   "path": "apps/vivim-host/server.mjs",
+   "symbol": "isInside @ L1059",
+   "lane": "B",
+   "batch": "B-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L1059",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "8411cc1bc390d0a4bd3a82b9bec050364a34489c",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-55B43ECDD928",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-95BAEBEC6C0E",
+   "path": "apps/vivim-host/server.mjs",
+   "symbol": "requireOwnerMutation @ L1064",
+   "lane": "B",
+   "batch": "B-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L1064",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "8411cc1bc390d0a4bd3a82b9bec050364a34489c",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-95BAEBEC6C0E",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-F71D56F11974",
+   "path": "apps/vivim-host/server.mjs",
+   "symbol": "SECURITY @ L46",
+   "lane": "B",
+   "batch": "B-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L46",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "8411cc1bc390d0a4bd3a82b9bec050364a34489c",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-F71D56F11974",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-0903280A4B65",
+   "path": "apps/vivim-host/server.mjs",
+   "symbol": "send @ L1056",
+   "lane": "B",
+   "batch": "B-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L1056",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "8411cc1bc390d0a4bd3a82b9bec050364a34489c",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-0903280A4B65",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-7CBAD4E52B82",
+   "path": "apps/vivim-host/server.mjs",
+   "symbol": "fail @ L1057",
+   "lane": "B",
+   "batch": "B-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/server.mjs#L1057",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "8411cc1bc390d0a4bd3a82b9bec050364a34489c",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CALLER REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-7CBAD4E52B82",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-3F21D5F6F738",
+   "path": "apps/vivim-host/test/control-http.test.mjs",
+   "symbol": "",
+   "lane": "B",
+   "batch": "B-F01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/apps/vivim-host/test/control-http.test.mjs#L1",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "b151c45ba47f86f5f792e651047ac6a91b7f4fd1",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "INVENTORIED — NOT DISPOSITIONED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-3F21D5F6F738",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  }
+ ]
+}

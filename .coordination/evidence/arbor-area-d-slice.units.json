@@ -24,7 +24,6 @@
       ],
       "acceptance": "Same committed source usable in UI and instruction; revoked grant clears displayed data.",
       "done": true,
-      "implRows": 0,
       "targets": {
         "Target Rust": 1,
         "Target Host": 1,
@@ -43,7 +42,7 @@
         "EXTEND"
       ],
       "currentStates": [
-        "IMPLEMENTED ù RUNTIME UNRUN"
+        "AUDIT FINDING — OPEN"
       ],
       "granularities": [
         "File"
@@ -122,7 +121,6 @@
       ],
       "acceptance": "Prove real caller or deliberate internal/dev status; Same committed source usable in UI and instruction; revoked grant clears displayed data.",
       "done": true,
-      "implRows": 0,
       "targets": {
         "Target Host": 6,
         "Target PWA": 6
@@ -141,7 +139,7 @@
         "KEEP_UI"
       ],
       "currentStates": [
-        "IMPLEMENTED ù RUNTIME UNRUN"
+        "CALLER REVIEW REQUIRED"
       ],
       "granularities": [
         "Symbol"
@@ -232,7 +230,6 @@
       ],
       "acceptance": "Inspect source and actual callers; record disposition and evidence; verify applicable acceptance checks.",
       "done": true,
-      "implRows": 0,
       "targets": {},
       "reachabilityBlank": 0,
       "evidenceGrades": [
@@ -245,7 +242,7 @@
         "FIRST PASS — REVIEW REQUIRED"
       ],
       "currentStates": [
-        "IMPLEMENTED ù RUNTIME UNRUN"
+        "INVENTORIED — NOT DISPOSITIONED"
       ],
       "granularities": [
         "File"
@@ -318,8 +315,7 @@
         "?"
       ],
       "acceptance": "Works offline where applicable and renders authorized current Host state.",
-      "done": true,
-      "implRows": 0,
+      "done": false,
       "targets": {
         "Target Host": 2,
         "Target PWA": 2,

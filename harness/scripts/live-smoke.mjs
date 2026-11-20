@@ -13,8 +13,8 @@ const providers = process.argv.slice(2);
 if (!providers.length) { console.error('usage: live-smoke.mjs <provider...>'); process.exit(2); }
 for (const id of providers) if (!CONSENTED.has(id)) { console.error(`provider not covered by owner consent: ${id}`); process.exit(2); }
 
-const router = await createRouter();
 const approvals = createApprovals({ dir: resolve(runtime, 'approvals'), print: () => {} });
+const router = await createRouter({ approvals });
 for (const id of providers) {
   const started = Date.now();
   const { requestId } = await router.ask({ provider: id, prompt: PROMPT, threadUrl: 'new' });

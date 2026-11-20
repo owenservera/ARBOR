@@ -28,7 +28,6 @@
       ],
       "acceptance": "Installed runtime launches all required binaries without Cargo/Bun/Git; no debug fallback.",
       "done": true,
-      "implRows": 0,
       "targets": {
         "Target Rust": 1,
         "Target Host": 1,
@@ -47,7 +46,8 @@
         "VERIFY_PACKAGE"
       ],
       "currentStates": [
-        "IMPLEMENTED ù RUNTIME UNRUN"
+        "AUDIT FINDING — OPEN",
+        "REVIEW REQUIRED"
       ],
       "granularities": [
         "File"
@@ -129,7 +129,6 @@
       ],
       "acceptance": "Installed Windows app starts Host, discovers approved binaries and detects dead process; clean restart.",
       "done": true,
-      "implRows": 0,
       "targets": {
         "Target Rust": 1,
         "Target Host": 2,
@@ -147,7 +146,7 @@
         "EXTEND"
       ],
       "currentStates": [
-        "IMPLEMENTED ù RUNTIME UNRUN"
+        "AUDIT FINDING — OPEN"
       ],
       "granularities": [
         "File",
@@ -260,7 +259,6 @@
       ],
       "acceptance": "Runs as optional developer validation; product can start without it.",
       "done": false,
-      "implRows": 0,
       "targets": {
         "Target Host": 2
       },
@@ -389,7 +387,6 @@
       ],
       "acceptance": "Runs as optional developer validation; product can start without it.",
       "done": false,
-      "implRows": 0,
       "targets": {
         "Target Host": 2,
         "Target PWA": 2,
@@ -532,7 +529,6 @@
       ],
       "acceptance": "Runs as optional developer validation; product can start without it.",
       "done": true,
-      "implRows": 0,
       "targets": {
         "Target HQ": 2,
         "Target Rust": 2,
@@ -559,7 +555,6 @@
       ],
       "currentStates": [
         "REVIEW REQUIRED",
-        "IMPLEMENTED ù RUNTIME UNRUN",
         "INVENTORIED — NOT DISPOSITIONED"
       ],
       "granularities": [
@@ -667,7 +662,6 @@
       ],
       "acceptance": "Frozen build/package works from clean checkout; approved permissions only.",
       "done": false,
-      "implRows": 0,
       "targets": {},
       "reachabilityBlank": 0,
       "evidenceGrades": [
@@ -756,7 +750,6 @@
       ],
       "acceptance": "Schema roundtrip passes real caller and rejects invalid fields.",
       "done": false,
-      "implRows": 0,
       "targets": {},
       "reachabilityBlank": 0,
       "evidenceGrades": [
@@ -856,7 +849,6 @@
       ],
       "acceptance": "Runs as optional developer validation; product can start without it.",
       "done": false,
-      "implRows": 0,
       "targets": {},
       "reachabilityBlank": 0,
       "evidenceGrades": [
@@ -951,7 +943,6 @@
       ],
       "acceptance": "No production import or runtime read of this evidence artifact.",
       "done": false,
-      "implRows": 0,
       "targets": {},
       "reachabilityBlank": 0,
       "evidenceGrades": [
@@ -1038,7 +1029,6 @@
       ],
       "acceptance": "Frozen build/package works from clean checkout; approved permissions only.",
       "done": true,
-      "implRows": 0,
       "targets": {
         "Target Host": 1,
         "Target Tauri": 1
@@ -1128,7 +1118,6 @@
       ],
       "acceptance": "Inspect source and actual callers; record disposition and evidence; verify applicable acceptance checks.",
       "done": false,
-      "implRows": 0,
       "targets": {},
       "reachabilityBlank": 0,
       "evidenceGrades": [
@@ -1215,7 +1204,6 @@
       ],
       "acceptance": "Inspect source and actual callers; record disposition and evidence; verify applicable acceptance checks.",
       "done": false,
-      "implRows": 0,
       "targets": {},
       "reachabilityBlank": 0,
       "evidenceGrades": [
@@ -1302,7 +1290,6 @@
       ],
       "acceptance": "Inspect source and actual callers; record disposition and evidence; verify applicable acceptance checks.",
       "done": false,
-      "implRows": 0,
       "targets": {},
       "reachabilityBlank": 0,
       "evidenceGrades": [
@@ -1389,7 +1376,6 @@
       ],
       "acceptance": "Inspect source and actual callers; record disposition and evidence; verify applicable acceptance checks.",
       "done": false,
-      "implRows": 0,
       "targets": {},
       "reachabilityBlank": 0,
       "evidenceGrades": [

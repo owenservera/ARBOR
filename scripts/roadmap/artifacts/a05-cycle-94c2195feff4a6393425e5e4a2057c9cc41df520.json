@@ -1,0 +1,87 @@
+{
+  "schema": "arbor.item-receipt/1",
+  "itemId": "A05",
+  "cycle": "build-verify-demo-requeue",
+  "status": "blocked",
+  "verification": "INDEPENDENT_REFUSED",
+  "note": "Authorized build, verify, demonstrate and requeue — cycle connected; acceptance stays with the independent verifier and owner gate",
+  "commitSha": "94c2195feff4a6393425e5e4a2057c9cc41df520",
+  "committedRevision": "94c2195feff4a6393425e5e4a2057c9cc41df520",
+  "gate": {
+    "command": "bun scripts/roadmap/a05-cycle.mjs",
+    "exit": 1,
+    "note": "fail-closed when keeper gate blocks"
+  },
+  "evidence": {
+    "kind": "build",
+    "changedPaths": [
+      "scripts/roadmap/a05-cycle.mjs"
+    ],
+    "confirmedDefects": [],
+    "independentVerification": "NOT_RUN",
+    "ownerAcceptance": "PENDING",
+    "acceptanceEvidenceClaimed": false
+  },
+  "checks": [
+    {
+      "stage": "select",
+      "ok": false,
+      "reason": "dependencies not independently accepted: A01,A02,A03",
+      "at": "2026-11-20T18:05:08.481Z"
+    },
+    {
+      "stage": "execute",
+      "ok": false,
+      "skipped": true,
+      "reason": "dependencies not independently accepted: A01,A02,A03",
+      "at": "2026-11-20T18:05:08.481Z"
+    },
+    {
+      "stage": "verify",
+      "ok": false,
+      "reason": "independent verifier refuses acceptance: BLOCKED_UNVERIFIED",
+      "at": "2026-11-20T18:05:08.485Z"
+    },
+    {
+      "stage": "demo",
+      "ok": false,
+      "skipped": true,
+      "at": "2026-11-20T18:05:08.485Z"
+    },
+    {
+      "stage": "requeue",
+      "ok": true,
+      "at": "2026-11-20T18:05:08.486Z"
+    }
+  ],
+  "execution": {
+    "skipped": true
+  },
+  "demo": {
+    "mode": "none",
+    "skipped": true,
+    "reason": "dependencies not independently accepted: A01,A02,A03"
+  },
+  "requeue": {
+    "nextBatch": null,
+    "reason": "dependencies not independently accepted: A01,A02,A03"
+  },
+  "truth": {
+    "releaseReady": false,
+    "disposition": "BLOCKED_UNVERIFIED",
+    "blockers": [
+      "PROPOSAL_GATES_UNRUN",
+      "RELEASE_NOT_ACCEPTED",
+      "CI_STARTUP_FAILURE_ZERO_JOBS",
+      "PHYSICAL_DEVICE_EVIDENCE_UNRUN"
+    ]
+  },
+  "runtime": {
+    "gate": "bun 1.4.2",
+    "node": "v24.22.1"
+  },
+  "durationMs": 1848,
+  "startedAt": "2026-11-20T18:05:07.683Z",
+  "finishedAt": "2026-11-20T18:05:09.531Z",
+  "emittedBy": "Fixer r1-3"
+}

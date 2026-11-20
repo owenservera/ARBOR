@@ -70,7 +70,6 @@ for (const r of mine) {
   const eg = at(r, "Evidence grade"); if (eg) u.grades.add(eg);
   const a = at(r, "Acceptance evidence required"); if (a) u.acc.set(a, (u.acc.get(a) || 0) + 1);
   if (at(r, "Production reachability") === "") u.reachBlank += 1;
-  if (at(r, "Current state").indexOf("IMPLEMENTED") === 0) u.impl = (u.impl || 0) + 1;
   for (const t of TARGETS) { const v = at(r, t); if (isSet(v)) u.targets[t] = (u.targets[t] || 0) + 1; }
   if (u.detail.length < 40) u.detail.push({
     id: at(r, "ID"), path: p, symbol: at(r, "Symbol / occurrence"),
@@ -185,16 +184,18 @@ const blobs = [];
 // NEVER the slice's own output or lane claim files (they would self-match every row).
 const SKIP = /-slice\.json$|-slice\.units\.json$|-claims\.json$/;
 const scan = (dir) => { try { for (const f of fs.readdirSync(dir)) { if (SKIP.test(f)) continue; try { blobs.push(fs.readFileSync(dir + "/" + f, "utf8")); } catch (e) {} } } catch (e) {} };
-scan(".coordination/evidence");
-scan("docs/product/roadmap/receipts");
-scan("scripts/roadmap/artifacts");
-try { blobs.push(require("child_process").execSync("git log --oneline -200", { encoding: "utf8", cwd: "C:/0-BlackBoxProject-0/ARBOR" })); } catch (e) {}
+// Only receipt/evidence files that carry a PASS marker prove completion. Path
+// changes, git-log subjects and slice/claim files never close a unit.
+const PASSMARK = /exit 0|VERIFIED|RECEIPT/i;
+const scan2 = (dir) => { try { for (const f of fs.readdirSync(dir)) { if (SKIP.test(f)) continue; try { const c = fs.readFileSync(dir + "/" + f, "utf8"); if (PASSMARK.test(c)) blobs.push(c); } catch (e) {} } } catch (e) {} };
+scan2(".coordination/evidence");
+scan2("docs/product/roadmap/receipts");
+scan2("scripts/roadmap/artifacts");
 for (const u of out) {
   const needles = [u.ledgerKey].concat(u.rowIds).filter(Boolean);
   const hits = needles.filter((n) => blobs.some((b) => b.indexOf(n) >= 0));
-  u.done = hits.length > 0 || (u.rowIds.length > 0 && (u.impl || 0) === u.rowIds.length);
+  u.done = hits.length > 0;
   u.doneEvidence = hits.slice(0, 3);
-  if (u.done && u.doneEvidence.length === 0) u.doneEvidence = ["all " + u.rowIds.length + " rows Current state IMPLEMENTED in reconciled ledger"];
 }
 const payload = { lane: lane, laneRows: mine.length, nextRows: mine.filter((r) => at(r, "Phase decision") === "NEXT").length, verifyRows: mine.filter((r) => at(r, "Phase decision") === "VERIFY").length, units: out };
 fs.mkdirSync(pathmod.dirname(outPath), { recursive: true });
@@ -218,7 +219,7 @@ const compact = {
     return {
       id: u.id, phase: u.phase, priority: u.priority, rowCount: u.rowCount, rowIds: u.rowIds,
       paths: u.paths, closures: u.closures, nextPackages: u.nextPackages, packageOwners: u.packageOwners,
-      acceptance: u.acceptance, done: u.done, implRows: u.impl || 0, targets: u.targets, reachabilityBlank: u.reachabilityBlank,
+      acceptance: u.acceptance, done: u.done, targets: u.targets, reachabilityBlank: u.reachabilityBlank,
       evidenceGrades: u.evidenceGrades, runtimeTests: u.runtimeTests,
       // the decision intel the master already holds, carried at unit level
       dispositions: uniq(d, "Disposition", 4, 120),

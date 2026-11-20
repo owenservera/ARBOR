@@ -1,0 +1,239 @@
+{
+ "schema": "arbor-transient-stable-id-row-patch/2",
+ "source_head": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+ "last_readable_ledger_commit": "038854852ab5e9ed387e86bea6c518d6ff919da7",
+ "last_readable_ledger_blob": "74805dc33430f54b8ee779cc05b71757560ae4de",
+ "lane": "E",
+ "rows": [
+  {
+   "stable_id": "AT-2F5E0A90D419",
+   "path": "src-tauri/src/main.rs",
+   "symbol": "",
+   "lane": "E",
+   "batch": "E-F01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/src-tauri/src/main.rs#L1",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "669d8d4890bea508d7ecee998fe4acdbf58a412e",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "AUDIT FINDING — OPEN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-2F5E0A90D419",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-8C8649232072",
+   "path": "src-tauri/src/main.rs",
+   "symbol": "app_version @ L141",
+   "lane": "E",
+   "batch": "E-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/src-tauri/src/main.rs#L141",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "669d8d4890bea508d7ecee998fe4acdbf58a412e",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "AUDIT FINDING — OPEN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-8C8649232072",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-0A6ABCF6F615",
+   "path": "src-tauri/src/main.rs",
+   "symbol": "host_is_running @ L136",
+   "lane": "E",
+   "batch": "E-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/src-tauri/src/main.rs#L136",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "669d8d4890bea508d7ecee998fe4acdbf58a412e",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "AUDIT FINDING — OPEN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-0A6ABCF6F615",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-CE1EAA2642DA",
+   "path": "tools/packaging/prepare-host-runtime.mjs",
+   "symbol": "",
+   "lane": "E",
+   "batch": "E-F01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/tools/packaging/prepare-host-runtime.mjs#L1",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "03739ce10ec3c6b72a1a9f8552ac658779f3cda2",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "AUDIT FINDING — OPEN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-CE1EAA2642DA",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-42FA50004175",
+   "path": "src-tauri/src/main.rs",
+   "symbol": "validate_native_program @ L147",
+   "lane": "E",
+   "batch": "E-S01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/src-tauri/src/main.rs#L147",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "669d8d4890bea508d7ecee998fe4acdbf58a412e",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "CONNECTION PRESENT — UNVERIFIED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-42FA50004175",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-7AE45AD102EA",
+   "path": "package.json",
+   "symbol": "",
+   "lane": "E",
+   "batch": "E-F01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/package.json#L1",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "48697bc17c8fb968a45bc81a72346b56b05f51b8",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-7AE45AD102EA",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-ECAA652669CD",
+   "path": "scripts/acceleration/live-host-check.mjs",
+   "symbol": "",
+   "lane": "E",
+   "batch": "E-F01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/scripts/acceleration/live-host-check.mjs#L1",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "0fb6e2aafb885a7f2eab506fdff744db048229d1",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-ECAA652669CD",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-63C8101506CA",
+   "path": "scripts/test-manifest.json",
+   "symbol": "",
+   "lane": "E",
+   "batch": "E-F01",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/scripts/test-manifest.json#L1",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "c0ea574f8596a5d4ef296452ef74970c32078a62",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "REVIEW REQUIRED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-63C8101506CA",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-99A5AF37971B",
+   "path": "docs/product/roadmap/ACCELERATION-R002.md",
+   "symbol": "",
+   "lane": "E",
+   "batch": "E-F02",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/docs/product/roadmap/ACCELERATION-R002.md#L1",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "59f095330ce04497cb3558bd84a953cad79c2211",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "INVENTORIED — NOT DISPOSITIONED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-99A5AF37971B",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  },
+  {
+   "stable_id": "AT-5E7965C7F65F",
+   "path": "scripts/acceleration/live-host-check.test.mjs",
+   "symbol": "",
+   "lane": "E",
+   "batch": "E-F03",
+   "source_url": "https://github.com/owenservera/ARBOR/blob/e07e61385a53f30890b4a7f7441fe25d22a79b1c/scripts/acceleration/live-host-check.test.mjs#L1",
+   "source_anchors": "reopen: path-touched-only closure unsupported; previous state restored",
+   "source_blob_sha": "eddd2343a4176bd1f23935476c6f8be5fed3951d",
+   "expected_old_fields": {
+    "Current state": "IMPLEMENTED ù RUNTIME UNRUN",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "changed_fields": {
+    "Current state": "INVENTORIED — NOT DISPOSITIONED",
+    "Review HEAD": "e07e61385a53f30890b4a7f7441fe25d22a79b1c",
+    "Runtime test": "UNRUN"
+   },
+   "append_evidence": "REOPEN-20261120-94c2195-AT-5E7965C7F65F",
+   "review_completed": "2026-11-20 reopen pass: path-touched-only closures unsupported, previous states restored from reconcile history",
+   "evidence_scope": "reopen of 2026-11-20 path-touched reconcile; receipt-backed work stays closed via slice evidence hits"
+  }
+ ]
+}

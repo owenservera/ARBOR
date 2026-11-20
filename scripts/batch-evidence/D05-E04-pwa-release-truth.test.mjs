@@ -34,8 +34,9 @@ const Ajv = require(require.resolve('ajv', { paths: [ajvRoot] }));
 
 function validate(schema, data) {
   const ajv = new Ajv({ allErrors: true, strict: false, validateSchema: false });
-  const ok = ajv.compile(schema)(data);
-  return { ok, errors: ajv.errors };
+  const valid = ajv.compile(schema);
+  const ok = valid(data);
+  return { ok, errors: valid.errors };
 }
 
 // Schema for arbor.w01f.source-truth/1, matching capability-spaces/source-truth.v1.json.
@@ -100,8 +101,8 @@ const sourceLockSchema = {
       additionalProperties: false,
       required: ['A', 'B', 'C', 'D', 'E', 'F'],
       properties: {
-        A: { type: 'array' }, B: { type: 'array' }, C: { type: 'array' },
-        D: { type: 'array' }, E: { type: 'array' }, F: { type: 'array' },
+        A: { type: 'string' }, B: { type: 'string' }, C: { type: 'string' },
+        D: { type: 'string' }, E: { type: 'string' }, F: { type: 'string' },
       },
     },
     mergeCommits: {

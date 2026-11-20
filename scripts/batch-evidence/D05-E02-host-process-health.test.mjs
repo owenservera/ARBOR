@@ -11,7 +11,8 @@ import { PACKAGED_BINARIES } from '../../tools/packaging/prepare-host-runtime.mj
 // ============================================================================
 // scripts/batch-evidence/D05-E02-host-process-health.test.mjs
 // Unit NEXT:D05-E02-host-process-health (ledger rows AT-2F5E0A90D419 and
-// AT-0A6ABCF6F615, both owned by src-tauri/src/main.rs).
+// AT-0A6ABCF6F615 owned by src-tauri/src/main.rs; AT-8FE2BBFEBCDD owned by
+// src-tauri/capabilities/default.json).
 //
 // Acceptance under test:
 //   * host_is_running reports REAL child liveness (try_wait), never retained
@@ -33,6 +34,8 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = join(HERE, '..', '..');
 const MAIN_RS = join(REPO_ROOT, 'src-tauri', 'src', 'main.rs');
 const SOURCE = readFileSync(MAIN_RS, 'utf8');
+const DEFAULT_JSON = join(REPO_ROOT, 'src-tauri', 'capabilities', 'default.json');
+const CAP = JSON.parse(readFileSync(DEFAULT_JSON, 'utf8'));
 
 function functionBody(name) {
   const start = SOURCE.indexOf(`fn ${name}`);
@@ -119,6 +122,31 @@ test('health identity rejects an unrelated listener on the Host port', () => {
   const identity = functionBody('is_host_status');
   assert.match(identity, /HOST_STATUS_SCHEMA/, 'identity must check the Host status schema');
   assert.match(identity, /"online"/, 'identity must require an online host state');
+});
+
+test('default capability is required by the main-window build and production closure', () => {
+  assert.equal(CAP.identifier, 'default', 'default capability must keep the identifier the build closure resolves');
+  assert.deepEqual(CAP.windows, ['main'],
+    'default capability must be bound to the main window, the window the Tauri build opens in dev and production');
+  assert.equal(CAP.local !== false, true,
+    'with no remote stanza the capability serves bundled local app resources only');
+});
+
+test('default capability carries only approved permissions', () => {
+  assert.deepEqual(CAP.permissions, [
+    'core:default',
+    'core:window:allow-show',
+    'core:window:allow-hide',
+    'core:window:allow-set-focus',
+    'core:window:allow-start-dragging',
+    'core:window:allow-internal-toggle-maximize',
+  ], 'no privileged or remote-origin permission beyond the approved set');
+});
+
+test('default capability has no remote/service-port grant', () => {
+  assert.equal(Object.prototype.hasOwnProperty.call(CAP, 'remote'), false,
+    'default capability must not declare remote origins — http://127.0.0.1:* was a service-port wildcard on localhost');
+  assert.equal(CAP.remote?.urls, undefined, 'no remote.urls service-port entries may exist');
 });
 
 test('the Rust process-health suite compiles and every declared test passes', () => {

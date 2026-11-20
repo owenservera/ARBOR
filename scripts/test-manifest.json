@@ -1913,10 +1913,16 @@
     "runtime": "node",
 	    "gate": "studio-suite"
 	},
-	{
-	    "path": "scripts/batch-evidence/tauri-schema-permissions.test.mjs",
-	    "root": "scripts/batch-evidence",
-	    "runtime": "node24-ajv",
-	    "gate": "roadmap-acceleration"
-	}
+		{
+		    "path": "scripts/batch-evidence/tauri-schema-permissions.test.mjs",
+		    "root": "scripts/batch-evidence",
+		    "runtime": "node24-ajv",
+		    "gate": "roadmap-acceleration"
+		},
+		{
+		    "path": "scripts/roadmap/a05-evidence-artifact-reachability.test.mjs",
+		    "root": "scripts/roadmap",
+		    "runtime": "node24-ajv",
+		    "gate": "roadmap-acceleration"
+		}
 ]
