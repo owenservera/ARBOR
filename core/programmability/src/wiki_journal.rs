@@ -115,3 +115,81 @@ pub fn captures(input:&Value)->Value {
         "items":projected
     })
 }
+
+
+// Read-only committed Wiki source chronology, reconstructed from compact Host
+// journal identities. The Host hashes source content before transport; Rust
+// owns current/superseded classification, windowing, and result projection.
+// @hq:capability vivim.rust-wiki-change-projection@1
+pub fn changes(input:&Value)->Value {
+    let refuse=||json!({
+        "schema":"vivim.wiki-changes-projection/1","outcome":"refused",
+        "code":"INVALID_WIKI_CHANGES_SOURCE",
+        "authority":"none","executionAuthorized":false,"effectPerformed":false
+    });
+    if input["schema"]!="vivim.wiki-change-source/1"||
+       !input["currentOnly"].is_boolean(){return refuse()}
+    let Some(entries)=input["entries"].as_array()else{return refuse()};
+    if entries.len()>8192{return refuse()}
+    let current_only=input["currentOnly"]==true;
+    let mut latest=std::collections::HashMap::new();
+    let mut identified=Vec::new();
+    for entry in entries {
+        let Some(page)=entry["page"].as_str().filter(|s|!s.is_empty())
+            else{return refuse()};
+        let Some(section)=entry["section"].as_str().filter(|s|!s.is_empty())
+            else{return refuse()};
+        let Some(revision)=entry["expectedRevision"].as_u64()
+            else{return refuse()};
+        if revision==u64::MAX{return refuse()}
+        if !matches!(entry["action"].as_str(),Some("set-section"|"capture-note"|"capture-task")){
+            return refuse()
+        }
+        let Some(digest)=entry["contentDigest"].as_str().filter(|s|
+            s.len()==64&&s.bytes().all(|b|b.is_ascii_digit()||(b'a'..=b'f').contains(&b)))
+            else{return refuse()};
+        let _=digest;
+        let key=(page.to_owned(),section.to_owned());
+        latest.insert(key,revision+1);
+        if entry["entryId"].is_null()&&entry["sequence"].is_null(){continue}
+        if !entry["entryId"].as_str().is_some_and(uuid)||
+           !entry["sequence"].as_u64().is_some_and(|n|n>0&&n<=9_007_199_254_740_991)||
+           !entry["receivedAt"].as_str().is_some_and(|s|!s.is_empty()){
+            return refuse()
+        }
+        identified.push(entry);
+    }
+    let selected:Vec<&Value>=identified.into_iter().filter(|entry|{
+        !current_only||latest.get(&(entry["page"].as_str().unwrap().to_owned(),
+            entry["section"].as_str().unwrap().to_owned()))
+            ==entry["expectedRevision"].as_u64().and_then(|revision|revision.checked_add(1)).as_ref()
+    }).collect();
+    let total=selected.len();
+    let mut projected=Vec::new();
+    for entry in selected.iter().skip(total.saturating_sub(24)) {
+        let page=entry["page"].as_str().unwrap();
+        let section=entry["section"].as_str().unwrap();
+        let revision=entry["expectedRevision"].as_u64().unwrap();
+        let current=latest.get(&(page.to_owned(),section.to_owned()))==Some(&(revision+1));
+        let mut item=json!({
+            "source":"host-product-journal","entryId":entry["entryId"],
+            "sequence":entry["sequence"],"receivedAt":entry["receivedAt"],
+            "kind":"committed-wiki-edit","contentDigest":entry["contentDigest"],
+            "previousWikiRevision":revision,"wikiRevision":revision+1,
+            "status":if current{"current-section-revision"}else{"superseded-section-revision"},
+            "relationship":{"kind":"mutated-section","page":page,"section":section}
+        });
+        if let Some(kind)=entry["action"].as_str().unwrap().strip_prefix("capture-"){
+            item["captureKind"]=json!(kind);
+        }
+        if !entry["sequenceBinding"].is_null(){
+            item["sequenceBinding"]=entry["sequenceBinding"].clone();
+        }
+        projected.push(item);
+    }
+    json!({
+        "schema":"vivim.wiki-changes-projection/1","outcome":"computed",
+        "authority":"none","executionAuthorized":false,"effectPerformed":false,
+        "total":total,"omitted":total.saturating_sub(projected.len()),"items":projected
+    })
+}

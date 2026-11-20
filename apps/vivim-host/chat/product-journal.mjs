@@ -359,8 +359,42 @@ function projectWikiChanges(records, { currentOnly = false } = {}) {
   return { total: selected.length, omitted: selected.length - items.length, items };
 }
 
+// Rust reconstructs the current/superseded Wiki lineage and recent/source-current
+// windows from replay-admitted journal identities; no private text leaves Host.
+async function nativeWikiChanges(records,{currentOnly=false}={}){
+  const entries=records.filter(e=>e?.kind==='wiki-edit').map(e=>({
+    page:e.edit.page,section:e.edit.section,action:e.edit.action,
+    expectedRevision:e.expectedRevision,entryId:e.entryId??null,
+    sequence:e.sequence??null,receivedAt:e.receivedAt??null,
+    contentDigest:createHash('sha256').update(e.edit.content,'utf8').digest('hex'),
+    sequenceBinding:e.sequenceBinding??null
+  }));
+  const native=await runNativeProductPure('wiki-change-projection',{
+    schema:'vivim.wiki-change-source/1',currentOnly,entries
+  });
+  if(native.state==='unavailable')return projectWikiChanges(records,{currentOnly});
+  const view=native.result;
+  requireShape(native.state==='computed'&&view?.schema==='vivim.wiki-changes-projection/1'&&
+    view.outcome==='computed'&&view.authority==='none'&&
+    view.executionAuthorized===false&&view.effectPerformed===false&&
+    Number.isSafeInteger(view.total)&&view.total>=0&&view.total<=entries.length&&
+    Number.isSafeInteger(view.omitted)&&view.omitted>=0&&
+    Array.isArray(view.items)&&view.items.length<=24&&
+    view.total===view.omitted+view.items.length&&
+    view.items.every(row=>row?.source==='host-product-journal'&&
+      row.kind==='committed-wiki-edit'&&typeof row.entryId==='string'&&
+      /^[a-f0-9]{64}$/.test(row.contentDigest??'')&&
+      entries.some(entry=>entry.entryId===row.entryId&&entry.sequence===row.sequence&&
+        entry.contentDigest===row.contentDigest&&entry.page===row.relationship?.page&&
+        entry.section===row.relationship?.section&&
+        entry.expectedRevision===row.previousWikiRevision&&
+        row.wikiRevision===entry.expectedRevision+1)),
+    'Invalid native Wiki change projection',503);
+  return {total:view.total,omitted:view.omitted,items:view.items};
+}
+
 // A read model only: user statements and committed Wiki effects remain separate.
-export function projectWikiContext(records, wikiRevision = null, wiki = null, nativeTargets = null, targetSource = null) {
+export function projectWikiContext(records, wikiRevision = null, wiki = null, nativeTargets = null, targetSource = null, nativeChanges = null) {
   const observed = records.filter(e => e?.kind === 'chat-send' &&
     (e.actor === 'human' || e.actor === 'owner-browser') &&
     typeof e.entryId === 'string' && Number.isSafeInteger(e.sequence));
@@ -368,7 +402,7 @@ export function projectWikiContext(records, wikiRevision = null, wiki = null, na
   const context = {
     schema: 'vivim.wiki-context/1', state: 'source-backed',
     revision: records.length, wikiRevision, totalObserved: observed.length,
-    wikiChanges: projectWikiChanges(records),
+    wikiChanges: nativeChanges??projectWikiChanges(records),
     wikiStructure: projectWikiStructure(records,wiki),
     omitted: observed.length - latest.length,
     nativeTargets: targetSource??(nativeTargets===null?'javascript-compatibility':'rust-source-backed'),
@@ -526,6 +560,7 @@ export function createProductJournal({ dataRoot, seedState, seedWiki }) {
   async function readWikiContext() {
     const current=await snapshot(); // validated committed journal replay
     requireShape(!current.tornTail,'Wiki context unavailable: torn journal tail',503);
+    const nativeChanges=await nativeWikiChanges(current.records);
     const latest=current.records.filter(e=>e?.kind==='chat-send'&&
       (e.actor==='human'||e.actor==='owner-browser')&&
       typeof e.entryId==='string'&&Number.isSafeInteger(e.sequence)).slice(-24);
@@ -540,7 +575,7 @@ export function createProductJournal({ dataRoot, seedState, seedWiki }) {
         args:{target:e.intent?.candidate?.args?.target??null}}}));
     if(!intents.some(row=>row.outcome==='candidate'&&row.candidate.actionId==='wiki.section.edit'))
       return projectWikiContext(current.records,current.wikiRevision,current.wiki,
-        Array(latest.length).fill(null),'no-targets-to-resolve');
+        Array(latest.length).fill(null),'no-targets-to-resolve',nativeChanges);
     const native=await runNativeProductPure('wiki-target-batch',{wiki:{pages},intents});
     let targets=null;
     const result=native?.result;
@@ -557,7 +592,7 @@ export function createProductJournal({ dataRoot, seedState, seedWiki }) {
           intents[i]?.candidate?.actionId==='wiki.section.edit';
       }))targets=result.results;
     return projectWikiContext(current.records,current.wikiRevision,current.wiki,targets,
-      targets===null?'rust-unavailable-javascript-compatibility':'rust-source-backed');
+      targets===null?'rust-unavailable-javascript-compatibility':'rust-source-backed',nativeChanges);
   }
   // Owner-local native input. Use the same validated committed snapshot and
   // D4 identities, never the demo seed, unverified chat or client-supplied facts.
@@ -589,10 +624,12 @@ export function createProductJournal({ dataRoot, seedState, seedWiki }) {
     requireShape(!current.tornTail, 'Native context unavailable: torn journal tail', 503);
     // Native ingestion needs only committed changes and structure, never the
     // private observation graph or its presentation relationships.
+    const recentChanges=await nativeWikiChanges(current.records);
     const context = nativeOnly ? {wikiRevision:current.wikiRevision,
-      wikiChanges:projectWikiChanges(current.records),
+      wikiChanges:recentChanges,
       wikiStructure:projectWikiStructure(current.records,current.wiki)} :
-      projectWikiContext(current.records, current.wikiRevision, current.wiki);
+      projectWikiContext(current.records, current.wikiRevision, current.wiki,
+        null,null,recentChanges);
     // Capture creation is also page provenance, even after its content section is edited.
     // Keep the page identity tied to the original committed journal entry, not a mutable title.
     const capturePages=current.records.filter(e=>e.kind==='wiki-edit'&&['capture-note','capture-task'].includes(e.edit.action)&&
@@ -600,7 +637,7 @@ export function createProductJournal({ dataRoot, seedState, seedWiki }) {
       page:e.edit.page,kind:e.edit.action==='capture-task'?'task':'note',entryId:e.entryId,
       wikiRevision:e.expectedRevision+1,receivedAt:e.receivedAt,
       contentDigest:createHash('sha256').update(e.edit.content,'utf8').digest('hex')}));
-    const changes = projectWikiChanges(current.records, { currentOnly: true });
+    const changes = await nativeWikiChanges(current.records, { currentOnly: true });
     // Native adapter accepts a bounded input. Preserve current section owners and linked pages
     // first, then fill the remainder with recent capture identities; the durable journal is unchanged.
     const priority=new Set([...changes.items.map(e=>e.relationship.page),...(context.wikiStructure?.links??[]).flatMap(e=>[e.edit.from,e.edit.to])]);
@@ -621,7 +658,7 @@ export function createProductJournal({ dataRoot, seedState, seedWiki }) {
     const current = await snapshot();
     requireShape(!current.tornTail, 'Wiki context unavailable: torn journal tail', 503);
     const { wiki } = current;
-    const changes = projectWikiChanges(current.records);
+    const changes = await nativeWikiChanges(current.records);
     const structure=projectWikiStructure(current.records,wiki);
     // Retain only Wiki-scoped structure provenance; no global sequence, receipts
     // or owner-private chat observations are returned to the paired device.
