@@ -21,6 +21,7 @@ import { createMediaPlaybackService, parseMediaRange } from './media/playback.mj
 import { createMediaStreamGrantGuard } from './media/stream-guard.mjs';
 import { projectChatProviders } from './chat/provider-projection.mjs';
 import { controlErrorStatus } from './control/http-status.mjs';
+import { createPrivateShares } from './shares/private-shares.mjs';
 
 const root = fileURLToPath(new URL('../mobile-relay/', import.meta.url));
 const assets = new Map(Object.entries({
@@ -235,6 +236,7 @@ export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'wo
   const apk = apkRegistry ?? createApkRegistry({ dataRoot });
   const pairing = pairingStore ?? createPairingStore({ dataRoot });
   const enrollment = createEnrollment({ dataRoot, origin, user });
+  const shares = createPrivateShares({ dataRoot });
   // Tailscale authenticates the network user, not the installed phone. All
   // privileged operations additionally require the owner's approved device grant.
   const authorizeDevice = (req, scope) => {
@@ -254,6 +256,69 @@ export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'wo
     if (rawPath === '/mobile') { res.writeHead(308, { location: '/mobile/' }); res.end(); return; }
     if (!rawPath.startsWith('/mobile/')) { json(res, 404, { error: 'Not found' }); return; }
     const route = rawPath.slice('/mobile/'.length);
+    // Private OpenSend-style file shares. Only approved Direct devices may
+    // upload, inspect, or retrieve content; no public sharing ingress is opened.
+    if (route === 'api/shares') {
+      res.setHeader('cache-control', 'private, no-store');
+      try {
+        if (req.method === 'GET') {
+          const device = authorizeDevice(req, 'control:read');
+          json(res, 200, await shares.list(device.deviceId));
+        } else if (req.method === 'POST') {
+          if (req.headers.origin !== origin || req.headers['x-vivim-share'] !== '1')
+            throw failure(403, 'ORIGIN_OR_CSRF');
+          const device = authorizeDevice(req, 'control:execute');
+          const options = await readBody(req);
+          const created = await shares.reserve(options, device.deviceId);
+          authorizeDevice(req, 'control:execute');
+          json(res, 201, created);
+        } else {
+          res.setHeader('allow', 'GET, POST'); json(res, 405, { code: 'METHOD' });
+        }
+      } catch (cause) {
+        json(res, cause.status || 503, { code: cause.code || 'SHARE_UNAVAILABLE' });
+      }
+      return;
+    }
+    const shareRoute = /^api\/shares\/([a-f0-9]{32})(?:\/(content|meta|download))?$/.exec(route);
+    if (shareRoute) {
+      const [, shareId, operation] = shareRoute;
+      res.setHeader('cache-control', 'private, no-store');
+      try {
+        const writing = req.method === 'PUT' || req.method === 'DELETE';
+        if (writing && (req.headers.origin !== origin || req.headers['x-vivim-share'] !== '1'))
+          throw failure(403, 'ORIGIN_OR_CSRF');
+        const device = authorizeDevice(req, writing ? 'control:execute' : 'control:read');
+        if (operation === 'content' && req.method === 'PUT') {
+          const ready = await shares.finish(shareId, req.headers['x-vivim-share-token'], device.deviceId, req);
+          authorizeDevice(req, 'control:execute');
+          json(res, 200, ready);
+        } else if (!operation && req.method === 'DELETE') {
+          const revoked = await shares.revoke(shareId, device.deviceId);
+          authorizeDevice(req, 'control:execute');
+          json(res, 200, revoked);
+        } else if (operation === 'meta' && req.method === 'GET') {
+          const info = await shares.inspect(shareId, req.headers['x-vivim-share-token'], req.headers['x-vivim-passcode']);
+          authorizeDevice(req, 'control:read');
+          json(res, 200, info);
+        } else if (operation === 'download' && req.method === 'GET') {
+          const info = await shares.download(shareId, req.headers['x-vivim-share-token'], req.headers['x-vivim-passcode']);
+          authorizeDevice(req, 'control:read');
+          res.setHeader('x-content-type-options', 'nosniff');
+          res.setHeader('content-type', 'application/octet-stream');
+          res.setHeader('content-disposition', "attachment; filename*=UTF-8''" + encodeURIComponent(info.name));
+          res.setHeader('content-length', String(info.bytes));
+          res.writeHead(200);
+          await pipeline(createReadStream(info.file), res);
+        } else {
+          res.setHeader('allow', 'GET, PUT, DELETE'); json(res, 405, { code: 'METHOD' });
+        }
+      } catch (cause) {
+        if (res.headersSent) res.destroy();
+        else json(res, cause.status || 503, { code: cause.code || 'SHARE_UNAVAILABLE' });
+      }
+      return;
+    }
     // The existing Host journal is the only Wiki authority. Never expose it to
     // an unpaired phone, cloud relay or a device without control:read.
     if (route === 'api/wiki') {
