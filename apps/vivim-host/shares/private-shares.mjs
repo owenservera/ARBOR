@@ -85,6 +85,7 @@ export function createPrivateShares({ dataRoot }) {
     }
   }
   async function reserve(input, ownerDeviceId) {
+    return locked('reserve', async () => {
     if (!HEX.test(text(ownerDeviceId))) throw err(403, 'SHARE_OWNER_INVALID');
     if (!input || typeof input !== 'object' || Array.isArray(input) ||
         Object.keys(input).some(key => !['name','mime','bytes','expiresInHours','maxDownloads','passcode'].includes(key)))
@@ -110,8 +111,13 @@ export function createPrivateShares({ dataRoot }) {
       passSalt: salt, passHash: passcode ? scryptSync(passcode, Buffer.from(salt,'hex'), 32).toString('hex') : null
     };
     await ensure();
+    const existing = (await list(ownerDeviceId)).items.filter(x => !x.revokedAt && Date.parse(x.expiresAt) > Date.now());
+    const allocated = existing.reduce((sum, x) => sum + x.bytes, 0);
+    if (existing.length >= 100 || allocated + bytes > 250 * 1024 * 1024)
+      throw err(507, 'SHARE_STORAGE_QUOTA_REACHED');
     await writeFile(recordPath(id), JSON.stringify(row), { flag: 'wx', mode: 0o600 });
     return { ...publicRow(row), capability };
+    });
   }
   async function finish(id, capability, ownerDeviceId, request) {
     return locked(id, async () => {
