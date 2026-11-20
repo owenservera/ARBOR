@@ -15,6 +15,7 @@ pub mod context_grounding;
 pub mod wiki_target;
 pub mod recovery_diagnosis;
 pub mod ui_value;
+pub mod product_kernel;
 mod lineage;
 
 pub const SCHEMA: &str = "vivim.native-program/1";
