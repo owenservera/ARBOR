@@ -2,6 +2,7 @@
 // @hq:capability vivim.rust-browser-kernel@1
 // @hq:consumes vivim.rust-wiki-source-stamp@1
 // @hq:consumes vivim.rust-wiki-source-search@1
+// @hq:consumes vivim.rust-wiki-source-transition@1
 // No interpreted source, dynamic code, Host grants or effect APIs.
 const SCHEMA='vivim.product-pure-response/1';
 const WASM_URL='/mobile/wasm/vivim_programmability_core.wasm';
@@ -126,5 +127,13 @@ export function rustWikiSearch(wiki,query){
       typeof row.excerpt!=='string'||Array.from(row.excerpt).length>240))
     return undefined;
   return value;
+}
+export function rustWikiSourceTransition(previous,current){
+  const result=invoke('wiki-source-transition',{previous:previous??null,current});
+  if(!result||result.schema!=='vivim.wiki-source-transition/1'||
+    result.authority!=='none'||result.executionAuthorized!==false||
+    result.effectPerformed!==false||!['accepted','refused'].includes(result.outcome))
+    return undefined;
+  return result.outcome==='accepted';
 }
 export function nativeBrowserKernelReady(){return instance!==null;}

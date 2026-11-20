@@ -1,6 +1,7 @@
 //! Bounded source-backed Wiki read model for native desktop projections.
 //! @hq:capability vivim.rust-wiki-read-model@1
 //! @hq:capability vivim.rust-wiki-source-stamp@1
+//! @hq:capability vivim.rust-wiki-source-transition@1
 //! @hq:consumes vivim.host-wiki-projection@1
 //! An observation is neither a journal writer nor an approval to edit.
 use serde_json::{json, Value};
@@ -117,17 +118,56 @@ pub fn read(wiki: &Value) -> Result<WikiRead, ReadError> {
 pub struct RevisionGuard { last: Option<(u64, String)> }
 impl RevisionGuard {
     pub fn accept(&mut self, revision: u64, digest: &str) -> Result<(), ReadError> {
-        if digest.len() != 64 || !digest.bytes().all(|b| b.is_ascii_hexdigit()) {
+        if !valid_digest(digest) {
             return Err(ReadError::InvalidProjection);
         }
         if let Some((previous_revision, previous_digest)) = &self.last {
-            if revision < *previous_revision ||
-                (revision == *previous_revision && digest != previous_digest) {
-                return Err(ReadError::RevisionConflict);
-            }
+            compare_source(Some((*previous_revision,previous_digest.as_str())),
+                (revision,digest))?;
         }
         self.last = Some((revision, digest.to_owned()));
         Ok(())
+    }
+}
+
+/// Portable revision transition check for native desktop and browser clients.
+/// Callers retain the identity fence only within their current authorized session.
+fn valid_digest(value:&str)->bool {
+    value.len()==64 &&
+        value.bytes().all(|b|b.is_ascii_digit()||(b'a'..=b'f').contains(&b))
+}
+fn compare_source(previous:Option<(u64,&str)>, next:(u64,&str))->Result<(),ReadError>{
+    if !valid_digest(next.1){return Err(ReadError::InvalidProjection);}
+    if let Some((revision,digest))=previous {
+        if !valid_digest(digest){return Err(ReadError::InvalidProjection);}
+        if next.0<revision||(next.0==revision&&next.1!=digest){
+            return Err(ReadError::RevisionConflict);
+        }
+    }
+    Ok(())
+}
+pub fn source_transition(input:&Value)->Value{
+    let refused=|code:&str|json!({
+        "schema":"vivim.wiki-source-transition/1","outcome":"refused",
+        "code":code,"authority":"none","executionAuthorized":false,
+        "effectPerformed":false
+    });
+    let current=&input["current"];
+    let Some(revision)=current["revision"].as_u64()else{return refused("INVALID_CURRENT");};
+    let Some(digest)=current["digest"].as_str()else{return refused("INVALID_CURRENT");};
+    let previous=&input["previous"];
+    let previous=if previous.is_null(){None}else{
+        let Some(old_revision)=previous["revision"].as_u64()else{return refused("INVALID_PREVIOUS");};
+        let Some(old_digest)=previous["digest"].as_str()else{return refused("INVALID_PREVIOUS");};
+        Some((old_revision,old_digest))
+    };
+    match compare_source(previous,(revision,digest)){
+        Ok(())=>json!({
+            "schema":"vivim.wiki-source-transition/1","outcome":"accepted",
+            "authority":"none","executionAuthorized":false,"effectPerformed":false
+        }),
+        Err(ReadError::RevisionConflict)=>refused("SOURCE_REVISION_CONFLICT"),
+        Err(ReadError::InvalidProjection)=>refused("INVALID_SOURCE_IDENTITY"),
     }
 }
 

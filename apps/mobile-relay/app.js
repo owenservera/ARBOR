@@ -21,14 +21,17 @@ import { mountLocalNotes } from './ux/local-notes-ui.mjs';
 import { mountVoiceCapture } from './ux/voice-capture.mjs';
 // @hq:consumes vivim.rust-wiki-source-stamp@1
 // @hq:consumes vivim.rust-wiki-source-search@1
+// @hq:consumes vivim.rust-wiki-source-transition@1
 // The browser keeps its current Wiki UI; Rust supplies optional source identity
 // from the same local WASM kernel used for VEC and other pure operations.
-let rustWikiSourceStamp=null,rustWikiSearch=null;
+let rustWikiSourceStamp=null,rustWikiSearch=null,rustWikiSourceTransition=null;
+let wikiSourceFence=null; // session-keyed and memory-only; a read never becomes a grant
 if(typeof window!=='undefined'){
   void import('./vec-engines/rust-wasm.mjs')
     .then(module=>{
       rustWikiSourceStamp=module.rustWikiSourceStamp;
       rustWikiSearch=module.rustWikiSearch;
+      rustWikiSourceTransition=module.rustWikiSourceTransition;
       return module.initializeRustUiEngine();
     }).catch(()=>{});
 }
@@ -904,17 +907,24 @@ async function refreshWiki() {
     // Native and PWA share one pure Rust source digest. Unlike a revision,
     // the digest catches divergent pages under the same Host revision.
     // Missing WASM does not create an alternative Wiki authority.
+    const fenceKey=HOST_PREVIEW?'host-owner-preview':session?.['x-vivim-device-session'];
+    // Never share source monotonicity across unrelated paired-device sessions.
+    if(wikiSourceFence && wikiSourceFence.key!==fenceKey)wikiSourceFence=null;
     const nativeStamp=rustWikiSourceStamp?.(wiki);
-    if(S.wikiStamp&&nativeStamp&&(
-      nativeStamp.revision<S.wikiStamp.revision||
-      nativeStamp.revision===S.wikiStamp.revision&&nativeStamp.digest!==S.wikiStamp.digest)){
-      clearWikiSources('Wiki source identity conflict');
-      S.wikiContext=null;
-      S.wikiContextError='Wiki source identity conflict; private context cleared.';
-      renderWiki();return;
+    const validStamp=!!nativeStamp && nativeStamp.revision===wiki.revision &&
+      nativeStamp.pagesTotal===Object.keys(wiki.pages).length;
+    const accepted=validStamp &&
+      rustWikiSourceTransition?.(wikiSourceFence?.stamp??null,nativeStamp)===true;
+    if(wikiSourceFence && !accepted){
+      // A transient loss of WASM must not erase the last known source identity.
+      clearWiki('Wiki source identity unavailable or revision conflict');return;
     }
+    if(validStamp && !accepted){
+      clearWiki('Rust Wiki source identity validation unavailable');return;
+    }
+    if(accepted)wikiSourceFence={key:fenceKey,stamp:nativeStamp};
     if(HOST_PREVIEW)ingestWikiSources(sourceSurface);
-    S.wiki = wiki; S.wikiStamp=nativeStamp??null; S.wikiError = ''; S.wikiContext = context; S.wikiContextError = contextError; renderWiki();
+    S.wiki = wiki; S.wikiStamp=accepted?nativeStamp:null; S.wikiError = ''; S.wikiContext = context; S.wikiContextError = contextError; renderWiki();
   } catch (error) {
     if (sequence === wikiReadSequence && S.tab === 'wiki')
       clearWiki(error?.message || 'Wiki unavailable');
@@ -931,6 +941,7 @@ function isInvalidDeviceSession(code) {
 // A lost grant must clear *all* private phone projections, not just hide tabs.
 // Session restoration must start from new device proof; no offline replay.
 function clearPrivatePhoneState() {
+  wikiSourceFence=null;
   buildBindingSequence++;
   shellPresentation.clear();
   dockAssist?.reset();compose?.resetAssist?.();capabilityLauncher?.close();
