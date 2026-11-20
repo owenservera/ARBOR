@@ -7,6 +7,7 @@
 //! @hq:consumes vivim.rust-wiki-read-model@1
 //! @hq:consumes vivim.rust-wiki-source-search@1
 //! @hq:consumes hqkg.development-query@1
+//! @hq:consumes vivim.rust-development-projection@1
 use std::time::Duration;
 use serde_json::json;
 use vivim_programmability_core::navigation;
@@ -470,7 +471,9 @@ impl Render for Desktop {
         if matches!(self.panel,Panel::Overview|Panel::Graph){
             controls=controls
                 .child(Button::new("graph-symbol").label("Find graph symbol").on_click(cx.listener(|v,_,_,cx|v.inspect_graph("symbols",cx))))
+                .child(Button::new("graph-sources").label("Find semantic anchors").on_click(cx.listener(|v,_,_,cx|v.inspect_graph("sources",cx))))
                 .child(Button::new("graph-file").label("Compute graph file ID").on_click(cx.listener(|v,_,_,cx|v.inspect_graph("compute",cx))))
+                .child(Button::new("graph-impact").label("Source impact").on_click(cx.listener(|v,_,_,cx|v.inspect_graph("impact",cx))))
                 .child(Button::new("graph-wiring").label("Find potential wiring").on_click(cx.listener(|v,_,_,cx|v.inspect_graph("wiring",cx))));
         }
         if !self.busy && self.review.as_ref().is_some_and(Review::needs_approval) && !self.uncertain {
