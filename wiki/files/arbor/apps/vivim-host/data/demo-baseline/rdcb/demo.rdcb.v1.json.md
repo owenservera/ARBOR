@@ -1,0 +1,125 @@
+# File: apps/vivim-host/data/demo-baseline/rdcb/demo.rdcb.v1.json
+
+> Generated 2026-11-19 · JSON · arbor
+
+## Metadata
+
+| Field | Value |
+| --- | --- |
+| Project | [arbor](../../../../../../../projects/arbor.md) |
+| Path | apps/vivim-host/data/demo-baseline/rdcb/demo.rdcb.v1.json |
+| Language | JSON |
+| Kind | config |
+| Size | 4760 B |
+| Lines | 97 |
+| Hash | 5757e5dda6cc |
+| Test | no |
+| Generated | no |
+| Component | vivim-host |
+
+## Symbols
+
+_No symbols._
+
+## Imports
+
+_No imports._
+
+## Dependents
+
+_No dependents._
+
+## Annotations
+
+_No annotations._
+
+## Excerpt
+
+```json
+{
+  "schema": "vivim.rdcb/1",
+  "protocol": "hq.dcb-protocol/1",
+  "inherits": "hq.context-bundle/1",
+  "trigger": "edit.pre",
+  "task": "RDCB v1 — reprogramming context for apps/vivim-host/public/demo/demo.html",
+  "audience": "agent",
+  "project": "arbor",
+  "generatedAt": "2026-11-14T00:00:00.000Z",
+  "status": "fresh",
+  "budget": {
+    "maxTokens": 5000,
+    "reserved": 800,
+    "capacity": 4120,
+    "used": 437,
+    "estimator": "utf8-bytes/3"
+  },
+  "reprogramming": {
+    "corpusScope": "vlang-surface-headers",
+    "vlangExecution": false,
+    "fileSurfaceRegistry": {
+      "ref": "apps/vivim-host/data/demo-baseline/file-surface.v1.json",
+      "schema": "vivim.file-surface/1",
+      "generatorVersion": "file-surface-gen/1 stage-a",
+      "recordCount": 3
+    },
+    "nlclCatalog": {
+      "ref": "apps/vivim-host/control/action-catalog.v1.json",
+      "schema": "vivim.control-action-catalog/1",
+      "version": 9
+    },
+    "surfaceDrift": []
+  },
+  "sources": [
+    {
+      "ref": "arbor:apps/vivim-host/public/demo/demo.html",
+      "project": "arbor",
+      "path": "apps/vivim-host/public/demo/demo.html",
+      "kind": "code",
+      "lang": "html",
+      "sha256": "f3860f1216ad80d74a280866c2dce6e26bd8a5ee54722a4c05edfd98aec6a70e",
+      "lines": [
+        2,
+        17
+      ],
+      "estimatedTokens": 437,
+      "score": 1,
+      "reason": "rdcb|file-surface|vlang-surface-header",
+      "authority": "project_observed",
+      "excerpt": {
+        "kind": "vlang-surface-header",
+        "lines": [
+          2,
+          17
+        ],
+        "text": "<!-- @vlang:surface apps/vivim-host/public/demo/demo.html\n     @vlang:surface-desc: Static shell of the ARBOR baseline demo walkthrough — the reprogrammable\n     @vlang:surface-desc: surface is static copy (eyebrows, headings, serve-info text), section\n     @vlang:surface-desc: structure inside .demo-* containers, and button labels. NL-driven\n     @vlang:surface-desc: change accepts none of: renaming #demo-* ids consumed by\n     @vlang:surface-desc: controller.js bindShell, script/style injection (CSP C4), or changing\n     @vlang:surface-desc: the /mobile/?host-preview=1 iframe target. The fixture feed and\n     @vlang:surface-desc: decision controls stay read-only shells; POST /demo/feedback remains\n     @vlang:surface-desc: the only writable surface of the whole /demo tree.\n     @vlang:surface-desc: NLCL linkage: no action in control/action-catalog.v1.json v7 targets\n     @vlang:surface-desc: this file yet — actionIds stays empty until one is catalogued.\n     @vlang:id: demo-shell demo-progress demo-strip demo-step-badge demo-phone\n     @vlang:id: demo-live-preview demo-acceptance demo-feed demo-notes demo-tags\n     @vlang:id: demo-btn-approve demo-btn-revise demo-decision-chip demo-journal\n     @vlang:id: demo-serve-info demo-status demo-submit demo-approve-all\n     @vlang:action: -->"
+      },
+      "fileSurface": {
+        "ref": "apps/vivim-host/data/demo-baseline/file-surface.v1.json",
+        "surface": "Static shell of the ARBOR baseline demo walkthrough — the reprogrammable\nsurface is static copy (eyebrows, headings, serve-info text), section\nstructure inside .demo-* containers, and button labels. NL-driven\nchange accepts none of: renaming #demo-* ids consumed by\ncontroller.js bindShell, script/style injection (CSP C4), or changing\nthe /mobile/?host-preview=1 iframe target. The fixture feed and\ndecision controls stay read-only shells; POST /demo/feedback remains\nthe only writable surface of the whole /demo tree.\nNLCL linkage: no action in control/action-catalog.v1.json v7 targets\nthis file yet — actionIds stays empty until one is catalogued.",
+        "commentIds": [
+          "demo-shell",
+          "demo-progress",
+          "demo-strip",
+          "demo-step-badge",
+          "demo-phone",
+          "demo-live-preview",
+          "demo-acceptance",
+          "demo-feed",
+          "demo-notes",
+          "demo-tags",
+          "demo-btn-approve",
+          "demo-btn-revise",
+          "demo-decision-chip",
+          "demo-journal",
+          "demo-serve-info",
+          "demo-status",
+          "demo-submit",
+          "demo-approve-all"
+        ]
+```
+
+_First 80 of 98 lines._
+
+---
+
+[HQ wiki](../../../../../../../index.md) · [Symbols](../../../../../../../symbols.md) · [Dependency graph](../../../../../../../graph.md) · [Documentation](../../../../../../../docs.md) · [Changes](../../../../../../../changes.md) · [Open tasks](../../../../../../../todos.md) · [Deprecated](../../../../../../../deprecated.md) · [Agent annotation protocol](../../../../../../../protocol.md) · [Glossary](../../../../../../../glossary.md) · [Using HQ](../../../../../../../context.md) · [Capabilities](../../../../../../../capabilities.md) · [Search index](../../../../../../../search.json) · [Browser view](../../../../../../../index.html)

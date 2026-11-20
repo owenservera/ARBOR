@@ -5,6 +5,22 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, RwLock};
 use std::time::Instant;
 
+/// Marker interface of a trusted, deterministic, effect-free transform engine.
+/// This is a Rust integration contract, not a sandbox and not a grant.
+pub const PURE_INTERFACE: &str = "hqkg.transform.pure/1";
+/// Registry slot occupied by the native VLANG pure transform engine.
+pub const PURE_ENGINE_SLOT: &str = "vlang.pure";
+/// Operations the pure engine serves: one per pure `TransformKind` of
+/// core/programmability. Effect candidates are deliberately absent.
+pub const PURE_OPERATIONS: &[&str] = &[
+    "normalize",
+    "select-context",
+    "interpret",
+    "compile",
+    "evaluate",
+    "project",
+];
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct EngineDescriptor {
     pub slot: String,
@@ -147,6 +163,104 @@ impl EngineRegistry {
             .map_err(|_| Error::Conflict("registry poisoned".into()))?;
         Ok(map.get(slot).map(|g| g.generation))
     }
+}
+
+/// Actual pure transform engine behind `PURE_ENGINE_SLOT`.
+///
+/// It decodes the length-framed request the typed DAG builds and returns a
+/// deterministic canonical fingerprint. No storage, clock, provider, network or
+/// effect, and no IO error path, so scheduler retries, cancellation and
+/// generation leases stay trivially bounded.
+pub struct PureTransformEngine {
+    implementation: String,
+}
+impl PureTransformEngine {
+    pub fn new(implementation: &str) -> Self {
+        Self {
+            implementation: implementation.into(),
+        }
+    }
+    pub fn implementation(&self) -> &str {
+        &self.implementation
+    }
+}
+impl ComputeEngine for PureTransformEngine {
+    fn descriptor(&self) -> EngineDescriptor {
+        EngineDescriptor::new(
+            PURE_ENGINE_SLOT,
+            &self.implementation,
+            PURE_INTERFACE,
+            PURE_OPERATIONS,
+        )
+    }
+    fn execute(&self, request: &EngineRequest) -> Result<EngineOutput> {
+        let operation = request.operation.as_str();
+        if !PURE_OPERATIONS.contains(&operation) {
+            return Err(Error::Unsupported(format!(
+                "operation {operation} is not a pure transform"
+            )));
+        }
+        let fields = decode_fields(&request.data)?;
+        let canonical = fields.join("\u{1f}");
+        Ok(EngineOutput {
+            data: format!(
+                "{PURE_INTERFACE} {operation} fields={} fingerprint={}",
+                fields.len(),
+                fnv1a_hex(canonical.as_bytes())
+            ),
+        })
+    }
+}
+
+/// Register the real pure transform engine in an existing registry, so the DAG
+/// executor, scheduler, cancellation and generation leases are reused as-is.
+/// `expected` is the compare-and-swap guard for replacement.
+pub fn install_pure_engine(
+    registry: &EngineRegistry,
+    implementation: &str,
+    expected: Option<u64>,
+) -> Result<SwapReceipt> {
+    registry.install(
+        Arc::new(PureTransformEngine::new(implementation)),
+        expected,
+    )
+}
+
+/// Inverse of the typed DAG's length framing: `len:bytes` repeated.
+fn decode_fields(data: &str) -> Result<Vec<&str>> {
+    let bytes = data.as_bytes();
+    let mut fields = Vec::new();
+    let mut offset = 0usize;
+    while offset < bytes.len() {
+        let relative = bytes[offset..]
+            .iter()
+            .position(|b| *b == b':')
+            .ok_or_else(|| Error::Invalid("malformed transform frame".into()))?;
+        let colon = offset + relative;
+        let len: usize = data[offset..colon]
+            .parse()
+            .map_err(|_| Error::Invalid("malformed transform frame length".into()))?;
+        let start = colon + 1;
+        let end = start
+            .checked_add(len)
+            .ok_or_else(|| Error::Invalid("transform frame overflow".into()))?;
+        if end > bytes.len() || !data.is_char_boundary(start) || !data.is_char_boundary(end) {
+            return Err(Error::Invalid("truncated transform frame".into()));
+        }
+        fields.push(&data[start..end]);
+        offset = end;
+    }
+    Ok(fields)
+}
+
+/// FNV-1a over the canonical field sequence: std-only and deterministic.
+fn fnv1a_hex(bytes: &[u8]) -> String {
+    let mut hash: u64 = 0xcbf2_9ce4_8422_2325;
+    for byte in bytes {
+        hash ^= u64::from(*byte);
+        hash = hash.wrapping_mul(0x0000_0100_0000_01b3);
+    }
+    format!("{hash:016x}")
 }
 
 /// Cooperative cancellation across synchronous task boundaries. This cannot

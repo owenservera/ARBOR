@@ -47,5 +47,5 @@
     "Trusted Host injects exact allowlist, read-only Git adapter and live callbacks",
     "Native tool resolves pins and source manifests, runs G1 typed HQ engine, projects bounded summary"
   ],
-  "pending": "Canonical Host dispatcher execution is not wired: the Host control plane is synchronous by construction and this engine is async, so the catalog row stays enforcement_missing with a null executor. The development-source grant service and the HQ MCP registration are implemented. Remote security acceptance and live Host serving are still pending. Dispatch remediation documented: (a) async-aware control plane or (b) extend BOOTSTRAP_ACTIONS allowlist."
+  "pending": "Canonical Host dispatcher execution IS wired at the pinned source: the catalog row versions.compare.pinned is readiness=source_wired, createExecutors registers it (apps/vivim-host/control/dispatcher.mjs, HVI_ACTION) and execute() reaches it only after the owner approval and the journal claim. It runs through the existing development read port (apps/vivim-host/control/development-read-port.mjs compare) against a revocable, expiring source grant, and it delegates to the existing typed HVI capability (createHviHostReadPort). Remote security acceptance and live product serving are still pending; no alternate send path or auto-approve path exists."
 }

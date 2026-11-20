@@ -1,0 +1,125 @@
+# File: apps/vivim-host/data/demo-baseline/rdcb/poll-round.rdcb.v1.json
+
+> Generated 2026-11-19 · JSON · arbor
+
+## Metadata
+
+| Field | Value |
+| --- | --- |
+| Project | [arbor](../../../../../../../projects/arbor.md) |
+| Path | apps/vivim-host/data/demo-baseline/rdcb/poll-round.rdcb.v1.json |
+| Language | JSON |
+| Kind | config |
+| Size | 3970 B |
+| Lines | 85 |
+| Hash | 5512150acf72 |
+| Test | no |
+| Generated | no |
+| Component | vivim-host |
+
+## Symbols
+
+_No symbols._
+
+## Imports
+
+_No imports._
+
+## Dependents
+
+_No dependents._
+
+## Annotations
+
+_No annotations._
+
+## Excerpt
+
+```json
+{
+  "schema": "vivim.rdcb/1",
+  "protocol": "hq.dcb-protocol/1",
+  "inherits": "hq.context-bundle/1",
+  "trigger": "edit.pre",
+  "task": "RDCB v1 — reprogramming context for apps/vivim-host/public/demo/poll-round.mjs",
+  "audience": "agent",
+  "project": "arbor",
+  "generatedAt": "2026-11-14T00:00:00.000Z",
+  "status": "stale",
+  "budget": {
+    "maxTokens": 5000,
+    "reserved": 800,
+    "capacity": 4120,
+    "used": 326,
+    "estimator": "utf8-bytes/3"
+  },
+  "reprogramming": {
+    "corpusScope": "vlang-surface-headers",
+    "vlangExecution": false,
+    "fileSurfaceRegistry": {
+      "ref": "apps/vivim-host/data/demo-baseline/file-surface.v1.json",
+      "schema": "vivim.file-surface/1",
+      "generatorVersion": "file-surface-gen/1 stage-a",
+      "recordCount": 3
+    },
+    "nlclCatalog": {
+      "ref": "apps/vivim-host/control/action-catalog.v1.json",
+      "schema": "vivim.control-action-catalog/1",
+      "version": 9
+    },
+    "surfaceDrift": [
+      "apps/vivim-host/public/demo/poll-round.mjs"
+    ]
+  },
+  "sources": [
+    {
+      "ref": "arbor:apps/vivim-host/public/demo/poll-round.mjs",
+      "project": "arbor",
+      "path": "apps/vivim-host/public/demo/poll-round.mjs",
+      "kind": "code",
+      "lang": "javascript",
+      "sha256": "affd34919bbf447b9f76ca80446f737de2bb1abd0845dae115d194381708c7ba",
+      "lines": [
+        1,
+        12
+      ],
+      "estimatedTokens": 326,
+      "score": 1,
+      "reason": "rdcb|file-surface|vlang-surface-header",
+      "authority": "project_observed",
+      "excerpt": {
+        "kind": "vlang-surface-header",
+        "lines": [
+          1,
+          12
+        ],
+        "text": "/* @vlang:surface apps/vivim-host/public/demo/poll-round.mjs\r\n   @vlang:surface-desc: One-shot CLI poll of the demo feedback inbox — the reprogrammable\r\n   @vlang:surface-desc: surface is the CLI contract only: filter flags (--last, --since) and\r\n   @vlang:surface-desc: their semantics, stdout JSON formatting, and validation/exit messages.\r\n   @vlang:surface-desc: NL-driven change accepts none of: network fetch (disk read only, C9),\r\n   @vlang:surface-desc: drift of the {round, approveAll, verdicts, receivedAt} entry schema\r\n   @vlang:surface-desc: shared with POST /demo/feedback, or watcher/daemon modes (one-shot by\r\n   @vlang:surface-desc: design). node:fs/path/url only; no other imports.\r\n   @vlang:surface-desc: NLCL linkage: no action in control/action-catalog.v1.json v7 targets\r\n   @vlang:surface-desc: this file yet — actionIds stays empty until one is catalogued.\r\n   @vlang:id: arg-parser round-entry-schema output-format exit-codes\r\n   @vlang:action: */"
+      },
+      "fileSurface": {
+        "ref": "apps/vivim-host/data/demo-baseline/file-surface.v1.json",
+        "surface": "One-shot CLI poll of the demo feedback inbox — the reprogrammable\nsurface is the CLI contract only: filter flags (--last, --since) and\ntheir semantics, stdout JSON formatting, and validation/exit messages.\nNL-driven change accepts none of: network fetch (disk read only, C9),\ndrift of the {round, approveAll, verdicts, receivedAt} entry schema\nshared with POST /demo/feedback, or watcher/daemon modes (one-shot by\ndesign). node:fs only; no other imports.\nNLCL linkage: no action in control/action-catalog.v1.json v7 targets\nthis file yet — actionIds stays empty until one is catalogued.",
+        "commentIds": [
+          "arg-parser",
+          "round-entry-schema",
+          "output-format",
+          "exit-codes"
+        ]
+      },
+      "nlclActionIds": [],
+      "digest": "807624011fcafffb1bef22de794e18aaaafd7ca0c1ee7935ca65b8e8ed72606b"
+    }
+  ],
+  "omissions": [],
+  "symbols": [],
+  "decisions": [],
+  "canon": [],
+  "sessions": [],
+  "labels": {
+    "aperture": "Reprogram",
+```
+
+_First 80 of 86 lines._
+
+---
+
+[HQ wiki](../../../../../../../index.md) · [Symbols](../../../../../../../symbols.md) · [Dependency graph](../../../../../../../graph.md) · [Documentation](../../../../../../../docs.md) · [Changes](../../../../../../../changes.md) · [Open tasks](../../../../../../../todos.md) · [Deprecated](../../../../../../../deprecated.md) · [Agent annotation protocol](../../../../../../../protocol.md) · [Glossary](../../../../../../../glossary.md) · [Using HQ](../../../../../../../context.md) · [Capabilities](../../../../../../../capabilities.md) · [Search index](../../../../../../../search.json) · [Browser view](../../../../../../../index.html)

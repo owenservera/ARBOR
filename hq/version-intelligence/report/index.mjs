@@ -9,7 +9,9 @@ import { createHash } from 'node:crypto';
 export const COMPARISON_SCHEMA = 'arbor.hvi.version-comparison/1';
 export const REPORT_SCHEMA = 'arbor.hvi.report/1';
 const HEX40 = /^[a-f0-9]{40}$/;
-const ID = /^[a-zA-Z0-9][a-zA-Z0-9._:/@#-]{0,191}$/;
+// Source evidence IDs embed a full repository path (git:repo@sha:path#blob), so the
+// bound must cover real path lengths and the punctuation real paths may contain.
+const ID = /^[a-zA-Z0-9][a-zA-Z0-9._:/@#+(),' -]{0,1399}$/;
 const REPO = /^[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+$/;
 const SOURCE_STATES = new Set(['EXACT_BLOB', 'SAME_PATH_CHANGED', 'EXACT_RELOCATION', 'SPLIT_CANDIDATE', 'COMBINE_CANDIDATE', 'SIMILARITY_CANDIDATE', 'MISSING_AT_TARGET', 'NEW_AT_TARGET', 'UNOBSERVABLE']);
 const CAPABILITY_STATES = new Set(['PRESENT_EQUIVALENT_CONFIRMED', 'PRESENT_CHANGED', 'IMPORTED_NOT_WIRED', 'SOURCE_WIRED_UNVERIFIED', 'RUNTIME_VERIFIED', 'DESIGN_ONLY', 'RESEARCH_IMPLEMENTED', 'INTENTIONALLY_EXCLUDED', 'BLOCKED', 'UNKNOWN']);

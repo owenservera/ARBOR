@@ -160,12 +160,19 @@ function validSnapshot(s, threadKey) {
 /** Read-only, checksum-validated evidence for a Studio conversation's exact thread.
  * This function has NO admit/drive/lock/send behavior. It never trusts the
  * denormalized journal object embedded in a conversation snapshot.
+ *
+ * The result carries its SOURCE IDENTITY (source name, exact journal file, envelope
+ * checksum, revision) and EXPLICIT gaps for every unresolved turn of this conversation:
+ * a turn whose delivery is not positively observed is reported as such (never promoted),
+ * an uncertain turn is flagged TURN_UNCERTAIN, a delivered turn without an observed reply
+ * is REPLY_NOT_OBSERVED and without terminal completion COMPLETION_UNKNOWN.
  */
 export function readThreadTurnJournalEvidence({dataDir,namespace,origin,thread,conversationId,io=fs}={}) {
   const threadKey=canonicalThreadKey({namespace,origin,thread});
   if(typeof dataDir!=='string'||!path.isAbsolute(dataDir) ||
      !id(conversationId))throw error('INVALID_JOURNAL_READ_SCOPE');
   const file=path.join(dataDir,hash(threadKey)+'.turn-journal.json');
+  const base={source:'thread-turn-journal',file,checksum:null,revision:null,turns:[],gaps:[{code:'JOURNAL_MISSING'}]};
   let raw;
   try {
     const stat=io.lstatSync(file);
@@ -173,7 +180,7 @@ export function readThreadTurnJournalEvidence({dataDir,namespace,origin,thread,c
       throw error('CORRUPT_OR_UNREADABLE_JOURNAL');
     raw=io.readFileSync(file,'utf8');
   } catch(e) {
-    if(e.code==='ENOENT')return {state:'missing',source:'thread-turn-journal',turns:[]};
+    if(e.code==='ENOENT')return {...base,state:'missing'};
     if(e.code==='CORRUPT_OR_UNREADABLE_JOURNAL')throw e;
     throw error('CORRUPT_OR_UNREADABLE_JOURNAL');
   }
@@ -183,11 +190,18 @@ export function readThreadTurnJournalEvidence({dataDir,namespace,origin,thread,c
      hash(JSON.stringify(envelope.snapshot)??'')!==envelope.checksum ||
      !validSnapshot(envelope.snapshot,threadKey))
     throw error('CORRUPT_OR_UNREADABLE_JOURNAL');
-  return {state:'verified',source:'thread-turn-journal',
+  // A thread may have multiple conversation owners; isolate exact owner.
+  const mine=envelope.snapshot.turns.filter(t=>t.conversationId===conversationId);
+  const gaps=[];
+  for(const t of mine) {
+    if(t.delivery.state!=='observed')gaps.push({code:'DELIVERY_NOT_OBSERVED',turnId:t.id,phase:t.phase,reason:t.reason??null});
+    else if(t.reply.state!=='observed')gaps.push({code:'REPLY_NOT_OBSERVED',turnId:t.id});
+    else if(t.completion.state!=='complete')gaps.push({code:'COMPLETION_UNKNOWN',turnId:t.id});
+    if(t.phase==='unknown')gaps.push({code:'TURN_UNCERTAIN',turnId:t.id,reason:t.reason??null});
+  }
+  return {state:'verified',source:'thread-turn-journal',file,checksum:envelope.checksum,
     revision:envelope.snapshot.revision,
-    // A thread may have multiple conversation owners; isolate exact owner.
-    turns:envelope.snapshot.turns.filter(t=>t.conversationId===conversationId)
-      .map(t=>({id:t.id,key:t.key,payloadDigest:t.payloadDigest,revision:t.revision,phase:t.phase,
+    turns:mine.map(t=>({id:t.id,key:t.key,payloadDigest:t.payloadDigest,revision:t.revision,phase:t.phase,
         dispatchAuthorized:['dispatching','delivered'].includes(t.phase),
         deliveryObserved:t.delivery.state==='observed',
         replyObserved:t.reply.state==='observed',
@@ -199,7 +213,8 @@ export function readThreadTurnJournalEvidence({dataDir,namespace,origin,thread,c
         // Digest only, never the reply body. Used to bind the exact message
         // rendered on the phone to the Studio-observed assistant response.
         replyContentDigest:t.reply.state==='observed' ?
-          (t.reply.evidence?.contentDigest??null) : null}))};
+          (t.reply.evidence?.contentDigest??null) : null})),
+    gaps};
 }
 
 // @serves 022,023,094,096

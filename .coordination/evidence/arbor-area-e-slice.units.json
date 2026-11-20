@@ -1,0 +1,1444 @@
+{
+  "lane": "E",
+  "laneRows": 1053,
+  "nextRows": 27,
+  "verifyRows": 26,
+  "units": [
+    {
+      "id": "NEXT:D05-E01-reproducible-packaging",
+      "phase": "NEXT",
+      "priority": "P0",
+      "rowCount": 2,
+      "rowIds": [
+        "AT-CE1EAA2642DA",
+        "AT-7AE45AD102EA"
+      ],
+      "paths": [
+        "tools/packaging/prepare-host-runtime.mjs",
+        "package.json"
+      ],
+      "closures": [
+        "BUILD/VERIFICATION"
+      ],
+      "nextPackages": [
+        "D05"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "Installed runtime launches all required binaries without Cargo/Bun/Git; no debug fallback.",
+      "done": false,
+      "targets": {
+        "Target Rust": 1,
+        "Target Host": 1,
+        "Target Tauri": 1
+      },
+      "reachabilityBlank": 0,
+      "evidenceGrades": [
+        "DIRECT / SEARCH",
+        "TREE / PROVISIONAL"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "PACKAGE",
+        "VERIFY_PACKAGE"
+      ],
+      "currentStates": [
+        "AUDIT FINDING — OPEN",
+        "REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "File"
+      ],
+      "subsystems": [
+        "Tauri / Packaging",
+        "Development / History"
+      ],
+      "shouldIntegrate": [
+        "Yes",
+        "Conditional"
+      ],
+      "reviewBases": [
+        "E-F01 fresh pinned source anchors; partial caller trace"
+      ],
+      "decisionConfidences": [
+        "SOURCE SUPPORTED PARTIAL; runtime UNRUN"
+      ],
+      "boundaryOwners": [
+        "E / packaging",
+        "E / workspace"
+      ],
+      "topLevelStates": [
+        "TOP LEVEL — SOURCE SUPPORTED"
+      ],
+      "evidenceTiers": [
+        "PINNED SOURCE — TOP-LEVEL"
+      ],
+      "reviewPackages": [
+        "D05"
+      ],
+      "reviewRoles": [
+        "Release staging",
+        "Root test/build commands"
+      ],
+      "laneReviewNeeds": [
+        "REVALIDATE — prior decision, do not silently overwrite"
+      ],
+      "knownMissing": [
+        "bun.lock absent from tracked root",
+        "studio/test/unit/**/*.test.mjs absent"
+      ],
+      "remainingEvidence": [
+        "Complete caller/dependency/registration traversal and actual applicable acceptance; Reuse staging; retain signature/hash...",
+        "Complete caller/dependency/registration traversal and actual applicable acceptance; Commit genuine lock; verify test dis..."
+      ],
+      "dispositionRounds": [
+        "FB02"
+      ],
+      "resolvedActions": [
+        "CHANGE"
+      ],
+      "revisedShouldWire": [
+        "Reuse existing owner/parent boundary; see depths",
+        "No new direct product wiring; dev/contract boundary"
+      ],
+      "fileClasses": [
+        "Build / packaging / tooling"
+      ]
+    },
+    {
+      "id": "NEXT:D05-E02-host-process-health",
+      "phase": "NEXT",
+      "priority": "P0",
+      "rowCount": 2,
+      "rowIds": [
+        "AT-2F5E0A90D419",
+        "AT-0A6ABCF6F615"
+      ],
+      "paths": [
+        "src-tauri/src/main.rs"
+      ],
+      "closures": [],
+      "nextPackages": [
+        "D05"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "Installed Windows app starts Host, discovers approved binaries and detects dead process; clean restart.",
+      "done": false,
+      "targets": {
+        "Target Rust": 1,
+        "Target Host": 2,
+        "Target Tauri": 2
+      },
+      "reachabilityBlank": 2,
+      "evidenceGrades": [
+        "DIRECT / SEARCH",
+        "SYMBOL / DIRECT"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "EXTEND"
+      ],
+      "currentStates": [
+        "AUDIT FINDING — OPEN"
+      ],
+      "granularities": [
+        "File",
+        "Symbol"
+      ],
+      "subsystems": [
+        "Tauri / Packaging"
+      ],
+      "shouldIntegrate": [
+        "Yes"
+      ],
+      "reviewBases": [
+        "E-F01 fresh pinned source anchors; partial caller trace",
+        "E retry: pinned source anchors; selected caller trace; runtime UNRUN"
+      ],
+      "decisionConfidences": [
+        "SOURCE SUPPORTED PARTIAL; runtime UNRUN",
+        "PARTIAL SOURCE SUPPORTED - runtime UNRUN"
+      ],
+      "boundaryOwners": [
+        "E / Tauri",
+        "E Tauri / B Host"
+      ],
+      "topLevelStates": [
+        "TOP LEVEL — SOURCE SUPPORTED",
+        "PENDING"
+      ],
+      "evidenceTiers": [
+        "PRIOR PINNED SOURCE — TOP-LEVEL"
+      ],
+      "reviewPackages": [
+        "D05"
+      ],
+      "reviewRoles": [],
+      "laneReviewNeeds": [
+        "REVALIDATE — prior decision, do not silently overwrite",
+        "PENDING — initial disposition"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [
+        "Complete caller/dependency/registration traversal and actual applicable acceptance; Distinguish missing bundle from dev ...",
+        "Check child try_wait and authenticated actual Host identity/health; restart only owned child; preserve owner data."
+      ],
+      "dispositionRounds": [
+        "FB01"
+      ],
+      "resolvedActions": [
+        "CHANGE"
+      ],
+      "revisedShouldWire": [
+        "Reuse existing owner/parent boundary; see depths",
+        "Reuse existing owner/boundary only; no new authority"
+      ],
+      "fileClasses": [
+        "Runtime / executable candidate"
+      ]
+    },
+    {
+      "id": "NEXT:D05-E03-test-discovery",
+      "phase": "NEXT",
+      "priority": "P1",
+      "rowCount": 16,
+      "rowIds": [
+        "AT-9E2A0E5442F3",
+        "AT-D14176E1C3A3",
+        "AT-A33664F0A400",
+        "AT-DB6AD47A6071",
+        "AT-ED9761ACB141",
+        "AT-10D914D12D6A",
+        "AT-7132D3DC3965",
+        "AT-DDF574DA92A8",
+        "AT-1C283D04FA81",
+        "AT-1B76E56EE3D9",
+        "AT-93C9F8F5C0C2",
+        "AT-4BBFDEDFB859",
+        "AT-B58B481FCCF1",
+        "AT-0CDF21D5CCC2",
+        "AT-B1F35EF77E3A",
+        "AT-BBA1785DED35"
+      ],
+      "paths": [
+        "integration/scripts/pwa-run-now.mjs",
+        "scripts/batch-evidence/A02.mjs",
+        "scripts/batch-evidence/CHAT-BOX-BASELINE.mjs",
+        "scripts/batch-evidence/RDCB-BASELINE.mjs",
+        "scripts/batch-evidence/RDCB-REUSE.mjs",
+        "scripts/batch-evidence/WIKI-BASELINE.mjs",
+        "scripts/feedback-loop/compile.mjs",
+        "scripts/feedback-loop/compiler.mjs",
+        "scripts/lib/test-manifest.mjs",
+        "scripts/roadmap/a05-cycle.mjs",
+        "scripts/test-gate.mjs",
+        ".github/workflows/hvi-g1-node24-synthetic.yml",
+        ".github/workflows/pwa-main.yml",
+        ".github/workflows/vec-ui-engines.yml",
+        "docs/data-intelligence/schemas/data-asset.v1.schema.json",
+        "docs/data-intelligence/schemas/utility-assessment.v1.schema.json"
+      ],
+      "closures": [
+        "TEST/PROOF",
+        "FURTHER TRACE",
+        "EXISTING BOUNDARY"
+      ],
+      "nextPackages": [
+        "D14",
+        "D15"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "Runs as optional developer validation; product can start without it.",
+      "done": false,
+      "targets": {
+        "Target Host": 2
+      },
+      "reachabilityBlank": 0,
+      "evidenceGrades": [
+        "TREE / PROVISIONAL",
+        "TREE / PATH ONLY"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "KEEP_DEV_TOOL",
+        "FIRST PASS — REVIEW REQUIRED"
+      ],
+      "currentStates": [
+        "REVIEW REQUIRED",
+        "INVENTORIED — NOT DISPOSITIONED"
+      ],
+      "granularities": [
+        "File"
+      ],
+      "subsystems": [
+        "Development / History"
+      ],
+      "shouldIntegrate": [
+        "No",
+        "Undetermined"
+      ],
+      "reviewBases": [
+        "E final source anchors; partial caller trace",
+        "E-F01 fresh pinned source anchors; partial caller trace",
+        "E retry: pinned source anchors; selected caller trace; runtime UNRUN"
+      ],
+      "decisionConfidences": [
+        "PARTIAL SOURCE SUPPORTED; runtime UNRUN",
+        "SOURCE SUPPORTED PARTIAL; runtime UNRUN",
+        "PARTIAL SOURCE SUPPORTED - runtime UNRUN"
+      ],
+      "boundaryOwners": [
+        "E / E verification / D PWA",
+        "E / actor parity evidence",
+        "E / chat acceptance",
+        "E / context verification"
+      ],
+      "topLevelStates": [
+        "TOP LEVEL — SOURCE SUPPORTED",
+        "TOP LEVEL — PROVISIONAL / VERIFY"
+      ],
+      "evidenceTiers": [
+        "PINNED SOURCE — TOP-LEVEL",
+        "TREE / PATH — UNVERIFIED BODY"
+      ],
+      "reviewPackages": [
+        "D14",
+        "D15"
+      ],
+      "reviewRoles": [
+        "PWA smoke runner",
+        "Build / developer tool candidate",
+        "Test manifest loader",
+        "Test gate runner"
+      ],
+      "laneReviewNeeds": [
+        "REVALIDATE — prior decision, do not silently overwrite",
+        "VERIFY — source / callers"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [
+        "Reconcile unique declared suites with canonical test registration and correct runtime; preserve source checks and explic...",
+        "Complete caller/dependency/registration traversal and actual applicable acceptance; Test same authorized effects and den...",
+        "Complete caller/dependency/registration traversal and actual applicable acceptance; Isolated authenticated current typed...",
+        "Complete caller/dependency/registration traversal and actual applicable acceptance; Verify real authorized bounded conte..."
+      ],
+      "dispositionRounds": [
+        "FB02"
+      ],
+      "resolvedActions": [
+        "REUSE",
+        "CHANGE"
+      ],
+      "revisedShouldWire": [
+        "No new direct product connection; preserve dev boundary",
+        "No new direct product wiring; dev/contract boundary",
+        "No new direct product wiring",
+        "Reuse existing owner/boundary only; no new authority"
+      ],
+      "fileClasses": [
+        "Build / packaging / tooling",
+        "Contract / schema / registry"
+      ]
+    },
+    {
+      "id": "NEXT:D05-E04-pwa-release-truth",
+      "phase": "NEXT",
+      "priority": "P1",
+      "rowCount": 7,
+      "rowIds": [
+        "AT-E5390FC20B14",
+        "AT-FA09F1DAC396",
+        "AT-8FEA0343C488",
+        "AT-D1BD68C37DA0",
+        "AT-5805C6491C2A",
+        "AT-6F249D66DA07",
+        "AT-EEFBB135393A"
+      ],
+      "paths": [
+        "src-tauri/resources/vivim-release.manifest.json",
+        "src-tauri/tauri.conf.json",
+        "demo/host-legacy/poll-round.mjs",
+        "integration/beta-gates.json",
+        "integration/scripts/w01g-r001-source-closure.mjs",
+        "scripts/batch-evidence/A00.mjs",
+        "scripts/roadmap/evidence-truth.mjs"
+      ],
+      "closures": [
+        "FURTHER TRACE",
+        "EXISTING BOUNDARY"
+      ],
+      "nextPackages": [
+        "D15",
+        "D14"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "Runs as optional developer validation; product can start without it.",
+      "done": false,
+      "targets": {
+        "Target Host": 2,
+        "Target PWA": 2,
+        "Target Tauri": 2
+      },
+      "reachabilityBlank": 1,
+      "evidenceGrades": [
+        "TREE / PROVISIONAL"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "VERIFY_PACKAGE",
+        "ISOLATE_FIXTURE",
+        "KEEP_DEV_TOOL"
+      ],
+      "currentStates": [
+        "REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "File"
+      ],
+      "subsystems": [
+        "Tauri / Packaging",
+        "Development / History"
+      ],
+      "shouldIntegrate": [
+        "Conditional",
+        "No"
+      ],
+      "reviewBases": [
+        "E-F01 fresh pinned source anchors; partial caller trace",
+        "E retry: pinned source anchors; selected caller trace; runtime UNRUN"
+      ],
+      "decisionConfidences": [
+        "SOURCE SUPPORTED PARTIAL; runtime UNRUN",
+        "PARTIAL SOURCE SUPPORTED - runtime UNRUN"
+      ],
+      "boundaryOwners": [
+        "E / packaging",
+        "E Tauri / B Host",
+        "E development evidence / B product journal",
+        "E / release"
+      ],
+      "topLevelStates": [
+        "TOP LEVEL — SOURCE INSPECTED / VERIFY",
+        "TOP LEVEL — SOURCE SUPPORTED",
+        "PENDING",
+        "TOP LEVEL — PROVISIONAL / VERIFY"
+      ],
+      "evidenceTiers": [
+        "PINNED SOURCE — TOP-LEVEL",
+        "TREE / PATH — UNVERIFIED BODY"
+      ],
+      "reviewPackages": [
+        "D15",
+        "D14"
+      ],
+      "reviewRoles": [
+        "APK bundle placeholder",
+        "Tauri runtime bundle",
+        "Configuration or data candidate",
+        "Build / developer tool candidate"
+      ],
+      "laneReviewNeeds": [
+        "VERIFY — source / callers",
+        "REVALIDATE — prior decision, do not silently overwrite",
+        "PENDING — initial disposition"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [
+        "Complete caller/dependency/registration traversal and actual applicable acceptance; Isolate optional APK; PWA-only MSI w...",
+        "Separate optional APK artifact from required MSI; verify real bundled Host origin/auth, no duplicate dev start; installe...",
+        "Use explicit isolated current receipt input and label archival seed as synthetic; stop implicit fallback for acceptance;...",
+        "Complete caller/dependency/registration traversal and actual applicable acceptance; Consolidate evidence-derived status;..."
+      ],
+      "dispositionRounds": [
+        "FB02"
+      ],
+      "resolvedActions": [
+        "CHANGE",
+        "REUSE"
+      ],
+      "revisedShouldWire": [
+        "Reuse existing owner/parent boundary; see depths",
+        "Reuse existing owner/boundary only; no new authority",
+        "No new direct product wiring",
+        "No new direct product wiring; dev/contract boundary"
+      ],
+      "fileClasses": [
+        "Runtime config / data candidate",
+        "Build / packaging / tooling",
+        "Fixture / demo / prototype"
+      ]
+    },
+    {
+      "id": "VERIFY:D05-E03-test-discovery",
+      "phase": "VERIFY",
+      "priority": "P1",
+      "rowCount": 11,
+      "rowIds": [
+        "AT-32A6B5EDD761",
+        "AT-FEDA67E7D14F",
+        "AT-553F1CA79490",
+        "AT-4D881A13FD01",
+        "AT-ECAA652669CD",
+        "AT-2C2AA4E0369A",
+        "AT-66195FCFD943",
+        "AT-1FCA30141B65",
+        "AT-63C8101506CA",
+        "AT-35E98C2AC135",
+        "AT-002A7F9E274B"
+      ],
+      "paths": [
+        "contracts/hq-version-intelligence/types.d.ts",
+        "contracts/interop/v1/protocol.schema.json",
+        "contracts/interop/v1/types.rs",
+        "contracts/interop/v1/types.ts",
+        "scripts/acceleration/live-host-check.mjs",
+        "scripts/batch-evidence/A07.mjs",
+        "scripts/lib/test-cache.mjs",
+        "scripts/lib/test-receipt.mjs",
+        "scripts/test-manifest.json",
+        ".github/workflows/acceleration-r002-w1-b.yml",
+        ".github/workflows/hvi-native-synthetic.yml"
+      ],
+      "closures": [
+        "FURTHER TRACE",
+        "EXISTING BOUNDARY",
+        "BUILD/VERIFICATION"
+      ],
+      "nextPackages": [
+        "D15",
+        "D14",
+        "D05"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "Runs as optional developer validation; product can start without it.",
+      "done": false,
+      "targets": {
+        "Target HQ": 2,
+        "Target Rust": 2,
+        "Target Host": 2,
+        "Target Studio": 1,
+        "Target PWA": 2,
+        "Target VLANG": 2,
+        "Target TierFlow": 1,
+        "Target Harness": 1,
+        "Target AutoWiki": 1
+      },
+      "reachabilityBlank": 0,
+      "evidenceGrades": [
+        "TREE / PROVISIONAL",
+        "TREE / PATH ONLY"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "ALIGN_CONTRACT",
+        "KEEP_DEV_TOOL",
+        "FIRST PASS — REVIEW REQUIRED"
+      ],
+      "currentStates": [
+        "REVIEW REQUIRED",
+        "INVENTORIED — NOT DISPOSITIONED"
+      ],
+      "granularities": [
+        "File"
+      ],
+      "subsystems": [
+        "Contracts",
+        "Development / History"
+      ],
+      "shouldIntegrate": [
+        "Conditional",
+        "No",
+        "Undetermined"
+      ],
+      "reviewBases": [
+        "E retry: pinned source anchors; selected caller trace; runtime UNRUN",
+        "E final source anchors; partial caller trace",
+        "E-F01 fresh pinned source anchors; partial caller trace"
+      ],
+      "decisionConfidences": [
+        "PARTIAL SOURCE SUPPORTED - runtime UNRUN",
+        "PARTIAL SOURCE SUPPORTED; runtime UNRUN",
+        "SOURCE SUPPORTED PARTIAL; runtime UNRUN"
+      ],
+      "boundaryOwners": [
+        "E contracts / A HVI; B Host retains authorization",
+        "E / Interop contract; A-D consumers",
+        "E interop / A native and B Host",
+        "E / verification"
+      ],
+      "topLevelStates": [
+        "TOP LEVEL — PROVISIONAL / VERIFY",
+        "TOP LEVEL — SOURCE SUPPORTED"
+      ],
+      "evidenceTiers": [
+        "TREE / PATH — UNVERIFIED BODY",
+        "PINNED SOURCE — TOP-LEVEL"
+      ],
+      "reviewPackages": [
+        "D15",
+        "D14",
+        "D05"
+      ],
+      "reviewRoles": [
+        "Contract / schema candidate",
+        "Interop Rust types",
+        "Build / developer tool candidate",
+        "Central test manifest"
+      ],
+      "laneReviewNeeds": [
+        "VERIFY — source / callers",
+        "REVALIDATE — prior decision, do not silently overwrite"
+      ],
+      "knownMissing": [
+        "42 test files missing from central manifest (not necessarily all runners)"
+      ],
+      "remainingEvidence": [
+        "Check actual TS consumers and maintain explicit v1/v2 boundary; do not use types as runtime validation.",
+        "Trace schema references and compare actual Rust/TS/JS encodings; reject unsupported version, unknown fields and owner mi...",
+        "Inspect actual native owner types and reuse compatible vocabulary or generated mirror only if required; roundtrip JSON a...",
+        "Trace actual imports and compile tests; align with canonical native/JS data adapters, avoid duplicate transport grammar."
+      ],
+      "dispositionRounds": [
+        "FB02"
+      ],
+      "resolvedActions": [
+        "VERIFY"
+      ],
+      "revisedShouldWire": [
+        "Reuse existing owner/boundary only; no new authority",
+        "Reuse existing owner/contract; no widened effect authority",
+        "Reuse existing owner/parent boundary; see depths",
+        "No new direct product wiring; dev/contract boundary"
+      ],
+      "fileClasses": [
+        "Contract / schema / registry",
+        "Build / packaging / tooling"
+      ]
+    },
+    {
+      "id": "VERIFY:CONSOLIDATE:src-tauri/gen/schemas",
+      "phase": "VERIFY",
+      "priority": "P1",
+      "rowCount": 4,
+      "rowIds": [
+        "AT-5262C33DBBD2",
+        "AT-ED120D585F6D",
+        "AT-BC62FCEC9ECD",
+        "AT-D4B4C5F178B5"
+      ],
+      "paths": [
+        "src-tauri/gen/schemas/acl-manifests.json",
+        "src-tauri/gen/schemas/capabilities.json",
+        "src-tauri/gen/schemas/desktop-schema.json",
+        "src-tauri/gen/schemas/windows-schema.json"
+      ],
+      "closures": [
+        "FURTHER TRACE"
+      ],
+      "nextPackages": [
+        "D15"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "Frozen build/package works from clean checkout; approved permissions only.",
+      "done": false,
+      "targets": {},
+      "reachabilityBlank": 0,
+      "evidenceGrades": [
+        "TREE / PROVISIONAL"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "VERIFY_PACKAGE"
+      ],
+      "currentStates": [
+        "REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "File"
+      ],
+      "subsystems": [
+        "Tauri / Packaging"
+      ],
+      "shouldIntegrate": [
+        "Conditional"
+      ],
+      "reviewBases": [
+        "TREE / PATH — UNVERIFIED BODY"
+      ],
+      "decisionConfidences": [
+        "LOW — provisional top-level role"
+      ],
+      "boundaryOwners": [
+        "Tauri / Packaging"
+      ],
+      "topLevelStates": [
+        "TOP LEVEL — PROVISIONAL / VERIFY"
+      ],
+      "evidenceTiers": [
+        "TREE / PATH — UNVERIFIED BODY"
+      ],
+      "reviewPackages": [
+        "D15"
+      ],
+      "reviewRoles": [
+        "Configuration or data candidate"
+      ],
+      "laneReviewNeeds": [
+        "VERIFY — source / callers"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [
+        "Inspect body, imports, reverse consumers and execution owner at pinned source; confirm with actual tests."
+      ],
+      "dispositionRounds": [
+        "FB02"
+      ],
+      "resolvedActions": [
+        "VERIFY"
+      ],
+      "revisedShouldWire": [
+        "Undecided pending evidence"
+      ],
+      "fileClasses": [
+        "Runtime config / data candidate"
+      ]
+    },
+    {
+      "id": "VERIFY:D05-E04-pwa-release-truth",
+      "phase": "VERIFY",
+      "priority": "P1",
+      "rowCount": 2,
+      "rowIds": [
+        "AT-6B5027C05E11",
+        "AT-975FA3A44709"
+      ],
+      "paths": [
+        "capability-spaces/source-truth.v1.json",
+        "integration/source-lock.json"
+      ],
+      "closures": [
+        "FURTHER TRACE"
+      ],
+      "nextPackages": [
+        "D15"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "Schema roundtrip passes real caller and rejects invalid fields.",
+      "done": false,
+      "targets": {},
+      "reachabilityBlank": 0,
+      "evidenceGrades": [
+        "TREE / PROVISIONAL",
+        "TREE / PATH ONLY"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "ALIGN_CONTRACT",
+        "FIRST PASS — REVIEW REQUIRED"
+      ],
+      "currentStates": [
+        "REVIEW REQUIRED",
+        "INVENTORIED — NOT DISPOSITIONED"
+      ],
+      "granularities": [
+        "File"
+      ],
+      "subsystems": [
+        "Contracts",
+        "Development / History"
+      ],
+      "shouldIntegrate": [
+        "Conditional",
+        "Undetermined"
+      ],
+      "reviewBases": [
+        "E-F01 fresh pinned source anchors; partial caller trace"
+      ],
+      "decisionConfidences": [
+        "SOURCE SUPPORTED PARTIAL; runtime UNRUN"
+      ],
+      "boundaryOwners": [
+        "E / capability evidence",
+        "E / provenance"
+      ],
+      "topLevelStates": [
+        "TOP LEVEL — SOURCE INSPECTED / VERIFY",
+        "TOP LEVEL — PROVISIONAL / VERIFY"
+      ],
+      "evidenceTiers": [
+        "PINNED SOURCE — TOP-LEVEL",
+        "TREE / PATH — UNVERIFIED BODY"
+      ],
+      "reviewPackages": [
+        "D15"
+      ],
+      "reviewRoles": [
+        "Capability census",
+        "Configuration or data candidate"
+      ],
+      "laneReviewNeeds": [
+        "VERIFY — source / callers"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [
+        "Complete caller/dependency/registration traversal and actual applicable acceptance; Trace every live assertion to execut...",
+        "Complete caller/dependency/registration traversal and actual applicable acceptance; Verify consumers/source hashes; immu..."
+      ],
+      "dispositionRounds": [
+        "FB02"
+      ],
+      "resolvedActions": [
+        "VERIFY"
+      ],
+      "revisedShouldWire": [
+        "No new direct product wiring; dev/contract boundary"
+      ],
+      "fileClasses": [
+        "Contract / schema / registry",
+        "Runtime config / data candidate"
+      ]
+    },
+    {
+      "id": "VERIFY:D05-E01-reproducible-packaging",
+      "phase": "VERIFY",
+      "priority": "P1",
+      "rowCount": 2,
+      "rowIds": [
+        "AT-D0D7C8C05B02",
+        "AT-1509A983D318"
+      ],
+      "paths": [
+        "integration/scripts/w01g-r001-windows.ps1",
+        ".github/workflows/w01g-reproducibility.yml"
+      ],
+      "closures": [
+        "FURTHER TRACE"
+      ],
+      "nextPackages": [
+        "D15"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "Runs as optional developer validation; product can start without it.",
+      "done": false,
+      "targets": {},
+      "reachabilityBlank": 0,
+      "evidenceGrades": [
+        "TREE / PROVISIONAL",
+        "TREE / PATH ONLY"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "KEEP_DEV_TOOL",
+        "FIRST PASS — REVIEW REQUIRED"
+      ],
+      "currentStates": [
+        "REVIEW REQUIRED",
+        "INVENTORIED — NOT DISPOSITIONED"
+      ],
+      "granularities": [
+        "File"
+      ],
+      "subsystems": [
+        "Development / History"
+      ],
+      "shouldIntegrate": [
+        "No",
+        "Undetermined"
+      ],
+      "reviewBases": [
+        "E-F01 fresh pinned source anchors; partial caller trace"
+      ],
+      "decisionConfidences": [
+        "SOURCE SUPPORTED PARTIAL; runtime UNRUN"
+      ],
+      "boundaryOwners": [
+        "E / Windows CI",
+        "E / CI"
+      ],
+      "topLevelStates": [
+        "TOP LEVEL — PROVISIONAL / VERIFY"
+      ],
+      "evidenceTiers": [
+        "TREE / PATH — UNVERIFIED BODY"
+      ],
+      "reviewPackages": [
+        "D15"
+      ],
+      "reviewRoles": [
+        "Build / developer tool candidate"
+      ],
+      "laneReviewNeeds": [
+        "VERIFY — source / callers"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [
+        "Complete caller/dependency/registration traversal and actual applicable acceptance; Run clean checkout with no owner sta...",
+        "Complete caller/dependency/registration traversal and actual applicable acceptance; Separate lock generation from verifi..."
+      ],
+      "dispositionRounds": [
+        "FB02"
+      ],
+      "resolvedActions": [
+        "VERIFY"
+      ],
+      "revisedShouldWire": [
+        "No new direct product wiring; dev/contract boundary"
+      ],
+      "fileClasses": [
+        "Build / packaging / tooling"
+      ]
+    },
+    {
+      "id": "VERIFY:CONSOLIDATE:scripts/roadmap/artifacts",
+      "phase": "VERIFY",
+      "priority": "P3",
+      "rowCount": 2,
+      "rowIds": [
+        "AT-1525B34F627A",
+        "AT-EF13B50CB62B"
+      ],
+      "paths": [
+        "scripts/roadmap/artifacts/a05-cycle-6abe8e8d6b1b98c7f90a761e4aab321a0451ac05.json",
+        "scripts/roadmap/artifacts/a05-cycle-a59f587f65b4d38a5ab03af47f44fb9ef065155b.json"
+      ],
+      "closures": [
+        "FURTHER TRACE"
+      ],
+      "nextPackages": [
+        "D15"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "No production import or runtime read of this evidence artifact.",
+      "done": false,
+      "targets": {},
+      "reachabilityBlank": 0,
+      "evidenceGrades": [
+        "TREE / PROVISIONAL"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "ARCHIVE_EVIDENCE"
+      ],
+      "currentStates": [
+        "REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "File"
+      ],
+      "subsystems": [
+        "Development / History"
+      ],
+      "shouldIntegrate": [
+        "No"
+      ],
+      "reviewBases": [
+        "TREE / PATH — UNVERIFIED BODY"
+      ],
+      "decisionConfidences": [
+        "LOW — provisional top-level role"
+      ],
+      "boundaryOwners": [
+        "Development / History"
+      ],
+      "topLevelStates": [
+        "TOP LEVEL — PROVISIONAL / VERIFY"
+      ],
+      "evidenceTiers": [
+        "TREE / PATH — UNVERIFIED BODY"
+      ],
+      "reviewPackages": [
+        "D15"
+      ],
+      "reviewRoles": [
+        "Build / developer tool candidate"
+      ],
+      "laneReviewNeeds": [
+        "VERIFY — source / callers"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [
+        "Inspect body, imports, reverse consumers and execution owner at pinned source; confirm with actual tests."
+      ],
+      "dispositionRounds": [
+        "FB02"
+      ],
+      "resolvedActions": [
+        "VERIFY"
+      ],
+      "revisedShouldWire": [
+        "Undecided pending evidence"
+      ],
+      "fileClasses": [
+        "Build / packaging / tooling"
+      ]
+    },
+    {
+      "id": "VERIFY:D05-E02-host-process-health",
+      "phase": "VERIFY",
+      "priority": "P1",
+      "rowCount": 1,
+      "rowIds": [
+        "AT-8FE2BBFEBCDD"
+      ],
+      "paths": [
+        "src-tauri/capabilities/default.json"
+      ],
+      "closures": [
+        "EXISTING BOUNDARY"
+      ],
+      "nextPackages": [
+        "D14"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "Frozen build/package works from clean checkout; approved permissions only.",
+      "done": false,
+      "targets": {
+        "Target Host": 1,
+        "Target Tauri": 1
+      },
+      "reachabilityBlank": 0,
+      "evidenceGrades": [
+        "TREE / PROVISIONAL"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "VERIFY_PACKAGE"
+      ],
+      "currentStates": [
+        "REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "File"
+      ],
+      "subsystems": [
+        "Tauri / Packaging"
+      ],
+      "shouldIntegrate": [
+        "Conditional"
+      ],
+      "reviewBases": [
+        "E final source anchors; partial caller trace"
+      ],
+      "decisionConfidences": [
+        "PARTIAL SOURCE SUPPORTED; runtime UNRUN"
+      ],
+      "boundaryOwners": [
+        "E / Tauri / B security"
+      ],
+      "topLevelStates": [
+        "TOP LEVEL — SOURCE SUPPORTED"
+      ],
+      "evidenceTiers": [
+        "PINNED SOURCE — TOP-LEVEL"
+      ],
+      "reviewPackages": [
+        "D14"
+      ],
+      "reviewRoles": [
+        "Tauri permission scope"
+      ],
+      "laneReviewNeeds": [
+        "REVALIDATE — prior decision, do not silently overwrite"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [
+        "Verify exact trusted Host origin/port and native command grants; unrelated loopback web content cannot obtain privileged..."
+      ],
+      "dispositionRounds": [
+        "FB02"
+      ],
+      "resolvedActions": [
+        "VERIFY"
+      ],
+      "revisedShouldWire": [
+        "Reuse existing owner/contract; no widened effect authority"
+      ],
+      "fileClasses": [
+        "Runtime config / data candidate"
+      ]
+    },
+    {
+      "id": "VERIFY:E-verify-repository-exclusions",
+      "phase": "VERIFY",
+      "priority": "P2",
+      "rowCount": 1,
+      "rowIds": [
+        "AT-BC37D034BAD5"
+      ],
+      "paths": [
+        ".gitignore"
+      ],
+      "closures": [
+        "FURTHER TRACE"
+      ],
+      "nextPackages": [
+        "D15"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "Inspect source and actual callers; record disposition and evidence; verify applicable acceptance checks.",
+      "done": false,
+      "targets": {},
+      "reachabilityBlank": 0,
+      "evidenceGrades": [
+        "TREE / PATH ONLY"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "FIRST PASS — REVIEW REQUIRED"
+      ],
+      "currentStates": [
+        "INVENTORIED — NOT DISPOSITIONED"
+      ],
+      "granularities": [
+        "File"
+      ],
+      "subsystems": [
+        "Development / History"
+      ],
+      "shouldIntegrate": [
+        "Undetermined"
+      ],
+      "reviewBases": [
+        "E-F01 fresh pinned source anchors; partial caller trace"
+      ],
+      "decisionConfidences": [
+        "SOURCE SUPPORTED PARTIAL; runtime UNRUN"
+      ],
+      "boundaryOwners": [
+        "E / repository"
+      ],
+      "topLevelStates": [
+        "TOP LEVEL — PROVISIONAL / VERIFY"
+      ],
+      "evidenceTiers": [
+        "TREE / PATH — UNVERIFIED BODY"
+      ],
+      "reviewPackages": [
+        "D15"
+      ],
+      "reviewRoles": [
+        "Build / developer tool candidate"
+      ],
+      "laneReviewNeeds": [
+        "VERIFY — source / callers"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [
+        "Complete caller/dependency/registration traversal and actual applicable acceptance; Verify nested rules and private-reso..."
+      ],
+      "dispositionRounds": [
+        "FB02"
+      ],
+      "resolvedActions": [
+        "VERIFY"
+      ],
+      "revisedShouldWire": [
+        "No new direct product wiring; dev/contract boundary"
+      ],
+      "fileClasses": [
+        "Build / packaging / tooling"
+      ]
+    },
+    {
+      "id": "VERIFY:CONSOLIDATE:contracts/hq-version-intelligence",
+      "phase": "VERIFY",
+      "priority": "P2",
+      "rowCount": 1,
+      "rowIds": [
+        "AT-98B69E81075B"
+      ],
+      "paths": [
+        "contracts/hq-version-intelligence/README.md"
+      ],
+      "closures": [
+        "FURTHER TRACE"
+      ],
+      "nextPackages": [
+        "D15"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "Inspect source and actual callers; record disposition and evidence; verify applicable acceptance checks.",
+      "done": false,
+      "targets": {},
+      "reachabilityBlank": 0,
+      "evidenceGrades": [
+        "TREE / PATH ONLY"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "FIRST PASS — REVIEW REQUIRED"
+      ],
+      "currentStates": [
+        "INVENTORIED — NOT DISPOSITIONED"
+      ],
+      "granularities": [
+        "File"
+      ],
+      "subsystems": [
+        "Contracts"
+      ],
+      "shouldIntegrate": [
+        "Undetermined"
+      ],
+      "reviewBases": [
+        "TREE / PATH — UNVERIFIED BODY"
+      ],
+      "decisionConfidences": [
+        "LOW — provisional top-level role"
+      ],
+      "boundaryOwners": [
+        "Contracts"
+      ],
+      "topLevelStates": [
+        "TOP LEVEL — PROVISIONAL / VERIFY"
+      ],
+      "evidenceTiers": [
+        "TREE / PATH — UNVERIFIED BODY"
+      ],
+      "reviewPackages": [
+        "D15"
+      ],
+      "reviewRoles": [
+        "Contract / schema candidate"
+      ],
+      "laneReviewNeeds": [
+        "VERIFY — source / callers"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [
+        "Inspect body, imports, reverse consumers and execution owner at pinned source; confirm with actual tests."
+      ],
+      "dispositionRounds": [
+        "FB02"
+      ],
+      "resolvedActions": [
+        "VERIFY"
+      ],
+      "revisedShouldWire": [
+        "Undecided pending evidence"
+      ],
+      "fileClasses": [
+        "Contract / schema / registry"
+      ]
+    },
+    {
+      "id": "VERIFY:CONSOLIDATE:scripts/feedback-loop",
+      "phase": "VERIFY",
+      "priority": "P2",
+      "rowCount": 1,
+      "rowIds": [
+        "AT-BBF3195EB190"
+      ],
+      "paths": [
+        "scripts/feedback-loop/README.md"
+      ],
+      "closures": [
+        "FURTHER TRACE"
+      ],
+      "nextPackages": [
+        "D15"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "Inspect source and actual callers; record disposition and evidence; verify applicable acceptance checks.",
+      "done": false,
+      "targets": {},
+      "reachabilityBlank": 0,
+      "evidenceGrades": [
+        "TREE / PATH ONLY"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "FIRST PASS — REVIEW REQUIRED"
+      ],
+      "currentStates": [
+        "INVENTORIED — NOT DISPOSITIONED"
+      ],
+      "granularities": [
+        "File"
+      ],
+      "subsystems": [
+        "Development / History"
+      ],
+      "shouldIntegrate": [
+        "Undetermined"
+      ],
+      "reviewBases": [
+        "TREE / PATH — UNVERIFIED BODY"
+      ],
+      "decisionConfidences": [
+        "LOW — provisional top-level role"
+      ],
+      "boundaryOwners": [
+        "Development / History"
+      ],
+      "topLevelStates": [
+        "TOP LEVEL — PROVISIONAL / VERIFY"
+      ],
+      "evidenceTiers": [
+        "TREE / PATH — UNVERIFIED BODY"
+      ],
+      "reviewPackages": [
+        "D15"
+      ],
+      "reviewRoles": [
+        "Build / developer tool candidate"
+      ],
+      "laneReviewNeeds": [
+        "VERIFY — source / callers"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [
+        "Inspect body, imports, reverse consumers and execution owner at pinned source; confirm with actual tests."
+      ],
+      "dispositionRounds": [
+        "FB02"
+      ],
+      "resolvedActions": [
+        "VERIFY"
+      ],
+      "revisedShouldWire": [
+        "Undecided pending evidence"
+      ],
+      "fileClasses": [
+        "Build / packaging / tooling"
+      ]
+    },
+    {
+      "id": "VERIFY:CONSOLIDATE:src-tauri",
+      "phase": "VERIFY",
+      "priority": "P2",
+      "rowCount": 1,
+      "rowIds": [
+        "AT-91FED938C12E"
+      ],
+      "paths": [
+        "src-tauri/Cargo.lock"
+      ],
+      "closures": [
+        "FURTHER TRACE"
+      ],
+      "nextPackages": [
+        "D15"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "Inspect source and actual callers; record disposition and evidence; verify applicable acceptance checks.",
+      "done": false,
+      "targets": {},
+      "reachabilityBlank": 0,
+      "evidenceGrades": [
+        "TREE / PATH ONLY"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "FIRST PASS — REVIEW REQUIRED"
+      ],
+      "currentStates": [
+        "INVENTORIED — NOT DISPOSITIONED"
+      ],
+      "granularities": [
+        "File"
+      ],
+      "subsystems": [
+        "Tauri / Packaging"
+      ],
+      "shouldIntegrate": [
+        "Undetermined"
+      ],
+      "reviewBases": [
+        "TREE / PATH — UNVERIFIED BODY"
+      ],
+      "decisionConfidences": [
+        "LOW — provisional top-level role"
+      ],
+      "boundaryOwners": [
+        "Tauri / Packaging"
+      ],
+      "topLevelStates": [
+        "TOP LEVEL — PROVISIONAL / VERIFY"
+      ],
+      "evidenceTiers": [
+        "TREE / PATH — UNVERIFIED BODY"
+      ],
+      "reviewPackages": [
+        "D15"
+      ],
+      "reviewRoles": [
+        "Build / developer tool candidate"
+      ],
+      "laneReviewNeeds": [
+        "VERIFY — source / callers"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [
+        "Inspect body, imports, reverse consumers and execution owner at pinned source; confirm with actual tests."
+      ],
+      "dispositionRounds": [
+        "FB02"
+      ],
+      "resolvedActions": [
+        "VERIFY"
+      ],
+      "revisedShouldWire": [
+        "Undecided pending evidence"
+      ],
+      "fileClasses": [
+        "Build / packaging / tooling"
+      ]
+    }
+  ]
+}

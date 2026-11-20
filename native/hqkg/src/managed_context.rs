@@ -1,11 +1,11 @@
 //! Shared managed context projection. Native retrieval is reused by both
 //! existing CLIs; neither creates a second graph or authorizes Host effects.
 use crate::{Error, Graph, Journal, JournalStatus, Result};
-use crate::context_retrieval::{retrieve, ContextRequest};
+use crate::context_retrieval::{query_scoped, ScopedQuery};
 use crate::scoped_graph;
 use crate::typed_dag::{GraphDomain, Namespace};
 use serde_json::{json, Value};
-use std::{collections::BTreeSet, fs, path::Path};
+use std::{collections::BTreeMap, fs, path::Path};
 
 const SCHEMA: &str = "vivim.hqkg-chat-context/1";
 const MAX_JOURNAL_BYTES: u64 = 64 * 1024 * 1024;
@@ -39,6 +39,9 @@ pub fn check_managed_head(journal: &Path, expected: &JournalStatus) -> Result<()
 }
 
 // Project the actual replayed durable graph, not the requested input packet.
+// Candidate selection is relevance-driven, not recency-driven: every context
+// node of this view stays retrievable, and the scoped query budget bounds the
+// output rather than the reachable set.
 pub fn project_managed_graph(graph: &Graph, scope: &str, epoch:u64, view:&str) -> Result<Value> {
     let (ns,prefix)=scope_prefix(scope,view)?;
     graph.check_indexes()?;
@@ -49,6 +52,7 @@ pub fn project_managed_graph(graph: &Graph, scope: &str, epoch:u64, view:&str) -
         return Err(Error::Conflict("managed graph scope or epoch mismatch".into()));
     }
     let mut candidates = Vec::new();
+    let mut orders: BTreeMap<String,u64> = BTreeMap::new();
     for node in graph.nodes() {
         let kind = node.properties.get("vivim.context.kind").map(String::as_str);
         if !node.id.starts_with(&format!("{prefix}vivim-context-")) ||
@@ -57,35 +61,14 @@ pub fn project_managed_graph(graph: &Graph, scope: &str, epoch:u64, view:&str) -
         }
         let order = node.properties.get("vivim.context.order")
             .and_then(|v| v.parse::<u64>().ok()).ok_or_else(|| Error::Corrupt("context order".into()))?;
-        candidates.push((order, node.id.clone()));
+        orders.insert(node.id.clone(), order);
+        candidates.push(node.id.clone());
     }
-    candidates.sort_by(|a,b| b.0.cmp(&a.0).then(a.1.cmp(&b.1)));
     let total = candidates.len();
-    let seeds: Vec<String> = candidates.into_iter().take(MAX_ITEMS).map(|(_, id)| id).collect();
-    let included: BTreeSet<String> = seeds.iter().cloned().collect();
-    let mut items = Vec::new();
-    let mut tokens = 0;
-    let mut exhausted = total > MAX_ITEMS;
-    if !seeds.is_empty() {
-        let excluded = graph.nodes().filter(|n| !included.contains(&n.id)).map(|n| n.id.clone()).collect();
-        let bundle = retrieve(graph, &ContextRequest { seeds, budget_tokens: 320,
-            excluded, watermark: None })?;
-        if bundle.stale_count != 0 || bundle.epoch != epoch { return Err(Error::Conflict("stale managed context".into())); }
-        tokens = bundle.tokens_used;
-        exhausted |= bundle.budget_exhausted;
-        for item in bundle.items {
-            let node = graph.node(&item.id).ok_or_else(|| Error::Corrupt("context source missing".into()))?;
-            let p = &node.properties;
-            let revision = p.get("hqkg.provenance.revision").and_then(|v| v.parse::<u64>().ok())
-                .ok_or_else(|| Error::Corrupt("context revision".into()))?;
-            let source_revision = p.get("vivim.context.sourceRevision").and_then(|v| v.parse::<u64>().ok());
-            items.push(json!({"title":safe_title(&item.title),"depth":item.depth,"revision":revision,
-                "sourceCount":item.sources.len(),"estimatedTokens":item.tokens,
-                "kind":p.get("vivim.context.kind"),"sourceRef":p.get("vivim.context.sourceRef"),
-                "sourceDigest":p.get("hqkg.provenance.digest"),"sourceRevision":source_revision,
-                "summary":p.get("vivim.context.summary")}));
-        }
-    }
+    // One bounded relationship scan feeds both relevance and the emitted page
+    // relationships; every relationship keeps its revision and digest.
+    let mut inbound: BTreeMap<String,u64> = candidates.iter().map(|id| (id.clone(),0)).collect();
+    let mut outbound: BTreeMap<String,u64> = candidates.iter().map(|id| (id.clone(),0)).collect();
     let mut page_relationships = Vec::new();
     for edge in graph.edges() {
         if !edge.id.starts_with(&format!("{prefix}vivim-context-p-")) ||
@@ -100,6 +83,8 @@ pub fn project_managed_graph(graph: &Graph, scope: &str, epoch:u64, view:&str) -
                 return Err(Error::Corrupt("Wiki link endpoint invalid".into()));
             }
         }
+        if let Some(count)=outbound.get_mut(edge.from.as_str()) { *count+=1; }
+        if let Some(count)=inbound.get_mut(edge.to.as_str()) { *count+=1; }
         let revision = edge.properties.get("hqkg.provenance.revision").and_then(|s| s.parse::<u64>().ok())
             .ok_or_else(|| Error::Corrupt("Wiki link revision missing".into()))?;
         page_relationships.push(json!({
@@ -112,6 +97,36 @@ pub fn project_managed_graph(graph: &Graph, scope: &str, epoch:u64, view:&str) -
         return Err(Error::Corrupt("Wiki link bound exceeded".into()));
     }
     page_relationships.sort_by(|a,b| a["id"].as_str().cmp(&b["id"].as_str()));
+    // Relevance decides seed order: pages other pages point at (inbound
+    // relationships) are the most relevant, then pages that point at others,
+    // then recency. Newest-eight selection and excluded-node traversal are gone.
+    candidates.sort_by(|a,b| inbound[b.as_str()].cmp(&inbound[a.as_str()])
+        .then(outbound[b.as_str()].cmp(&outbound[a.as_str()]))
+        .then(orders[b.as_str()].cmp(&orders[a.as_str()])).then(a.cmp(b)));
+    let mut items = Vec::new();
+    let mut tokens = 0;
+    if !candidates.is_empty() {
+        // Only out-of-view graph nodes stay excluded; every candidate is a
+        // seed, so an older source is retrievable on its own relevance.
+        let excluded = graph.nodes().filter(|n| !orders.contains_key(&n.id)).map(|n| n.id.clone()).collect();
+        let bundle = query_scoped(graph, &ScopedQuery { seeds: candidates, scope: prefix.clone(),
+            budget_tokens: 320, max_items: MAX_ITEMS, excluded, watermark: None })?;
+        if bundle.stale_count != 0 || bundle.epoch != epoch { return Err(Error::Conflict("stale managed context".into())); }
+        tokens = bundle.tokens_used;
+        for item in bundle.items {
+            let node = graph.node(&item.id).ok_or_else(|| Error::Corrupt("context source missing".into()))?;
+            let p = &node.properties;
+            let revision = p.get("hqkg.provenance.revision").and_then(|v| v.parse::<u64>().ok())
+                .ok_or_else(|| Error::Corrupt("context revision".into()))?;
+            let source_revision = p.get("vivim.context.sourceRevision").and_then(|v| v.parse::<u64>().ok());
+            items.push(json!({"title":safe_title(&item.title),"depth":item.depth,"revision":revision,
+                "sourceCount":item.sources.len(),"estimatedTokens":item.tokens,
+                "kind":p.get("vivim.context.kind"),"sourceRef":p.get("vivim.context.sourceRef"),
+                "sourceDigest":p.get("hqkg.provenance.digest"),"sourceRevision":source_revision,
+                "summary":p.get("vivim.context.summary")}));
+        }
+    }
+    let exhausted = total > items.len();
     Ok(json!({"schema":SCHEMA,"state":"source-backed","core":"hqkg","authority":"read-only",
         "seed":format!("managed:{view}"),"epoch":epoch,"tokensUsed":tokens,"budgetTokens":320,
         "budgetExhausted":exhausted,"staleCount":0,"totalRetrieved":total,"items":items,

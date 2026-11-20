@@ -15,6 +15,14 @@ pub const MAX_STEPS: usize = 64;
 pub const MAX_INPUTS: usize = 64;
 pub const MAX_DEPENDENCIES: usize = 64;
 
+/// Contract identifiers of the existing HQKG typed DAG this translation targets
+/// (`native/hqkg/src/typed_dag.rs` + `native/hqkg/src/engine.rs`). This crate
+/// stays dependency-free, so the literals are mirrored here and asserted equal
+/// on both sides by their tests.
+pub const HQKG_DAG_CONTRACT: &str = "hqkg.typed-dag/1";
+pub const HQKG_PURE_INTERFACE: &str = "hqkg.transform.pure/1";
+pub const HQKG_PURE_ENGINE_SLOT: &str = "vlang.pure";
+
 /// Classification is ordered, so allowed disclosure never expands implicitly.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub enum DataClass { Public, Internal, Private, Sensitive, Secret }
@@ -228,6 +236,120 @@ pub fn validate_program(program: &Program, policy: &PolicyLimits) -> Result<Vali
     })
 }
 
+impl TransformKind {
+    /// Operation the existing HQKG pure engine serves for this kind.
+    /// `None` for effect candidates: an effect is never a pure transform.
+    pub fn pure_operation(&self) -> Option<&'static str> {
+        Some(match self {
+            TransformKind::Normalize => "normalize",
+            TransformKind::SelectContext => "select-context",
+            TransformKind::Interpret => "interpret",
+            TransformKind::Compile => "compile",
+            TransformKind::Evaluate => "evaluate",
+            TransformKind::Project => "project",
+            TransformKind::EffectCandidate => return None,
+        })
+    }
+}
+
+/// Inert identity of a validated program; the native DAG must execute exactly
+/// this program revision.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ProgramIdentity {
+    pub id: String,
+    pub revision: u64,
+    pub policy_revision: u64,
+}
+
+/// Validated source reference in the HQKG `SourceBinding` shape.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct PureSourceBinding {
+    pub id: String,
+    pub revision: u64,
+    pub digest: String,
+    /// Where the identity was asserted. This crate cannot verify provenance.
+    pub provenance: String,
+}
+
+/// One validated typed step translated to the HQKG `TransformStep` shape.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct PureTransformStep {
+    pub id: String,
+    pub engine: String,
+    pub operation: String,
+    pub input: String,
+    pub sources: Vec<PureSourceBinding>,
+    pub after: Vec<String>,
+    pub retry_io: u8,
+}
+
+/// Field-for-field translation of a validated program into the plan the
+/// existing native DAG executes. Namespace and revision token are bound by the
+/// native caller; identity, step order and dependencies are exactly the
+/// validated ones. No step is executable as an effect.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct PureTransformProgram {
+    pub contract: &'static str,
+    pub interface: &'static str,
+    pub identity: ProgramIdentity,
+    pub steps: Vec<PureTransformStep>,
+}
+
+/// Validate first, then translate. The policy validator above is unchanged;
+/// this only projects an already-validated program onto the existing HQKG pure
+/// contract, in stable topological order.
+pub fn to_pure_transform_program(
+    program: &Program,
+    policy: &PolicyLimits,
+) -> Result<PureTransformProgram, Refusal> {
+    let validated = validate_program(program, policy)?;
+    let by_id: BTreeMap<&str, &TransformStep> =
+        program.steps.iter().map(|s| (s.id.as_str(), s)).collect();
+    let mut steps = Vec::with_capacity(validated.ordered_step_ids.len());
+    for id in &validated.ordered_step_ids {
+        let step = *by_id
+            .get(id.as_str())
+            .ok_or(Refusal::MissingDependency)?;
+        let operation = step
+            .kind
+            .pure_operation()
+            .ok_or(Refusal::EffectCandidateDisabled)?;
+        let provenance = format!("native-program/{}@{}", program.id, program.revision);
+        let mut sources = Vec::with_capacity(step.inputs.len());
+        for source in &step.inputs {
+            sources.push(PureSourceBinding {
+                id: source.source_id.clone(),
+                revision: source.revision,
+                digest: source.digest.clone(),
+                provenance: provenance.clone(),
+            });
+        }
+        let mut after = step.dependencies.clone();
+        after.sort();
+        after.dedup();
+        steps.push(PureTransformStep {
+            id: step.id.clone(),
+            engine: HQKG_PURE_ENGINE_SLOT.into(),
+            operation: operation.into(),
+            input: operation.into(),
+            sources,
+            after,
+            // Pure engines do no IO; there is nothing to retry.
+            retry_io: 0,
+        });
+    }
+    Ok(PureTransformProgram {
+        contract: HQKG_DAG_CONTRACT,
+        interface: HQKG_PURE_INTERFACE,
+        identity: ProgramIdentity {
+            id: validated.program_id.clone(),
+            revision: validated.program_revision,
+            policy_revision: validated.policy_revision,
+        },
+        steps,
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -311,5 +433,48 @@ mod tests {
     fn malformed_sha_refused() {
         let mut s=step("a",&[]);s.inputs[0].digest="notahash".into();
         assert_eq!(validate_program(&program(vec![s]),&limits()).unwrap_err(),Refusal::InvalidDigest);
+    }
+    #[test]
+    fn pure_translation_preserves_identity_and_dependencies() {
+        let p=program(vec![step("publish",&["transform"]),step("transform",&["read"]),step("read",&[])]);
+        let pure=to_pure_transform_program(&p,&limits()).unwrap();
+        assert_eq!(pure.contract,"hqkg.typed-dag/1");
+        assert_eq!(pure.interface,"hqkg.transform.pure/1");
+        assert_eq!(pure.identity,ProgramIdentity{id:"mission".into(),revision:1,policy_revision:2});
+        assert_eq!(pure.steps.iter().map(|s|s.id.as_str()).collect::<Vec<_>>(),vec!["read","transform","publish"]);
+        assert_eq!(pure.steps[2].after,vec!["transform"]);
+        assert!(pure.steps.iter().all(|s|s.engine=="vlang.pure"));
+        assert!(pure.steps.iter().all(|s|s.operation=="evaluate"));
+        assert!(pure.steps.iter().all(|s|s.input=="evaluate"));
+        assert!(pure.steps.iter().all(|s|s.retry_io==0));
+        assert_eq!(pure.steps[0].sources[0].provenance,"native-program/mission@1");
+        // Authoring order must not change the validated plan.
+        let reordered=program(vec![step("read",&[]),step("transform",&["read"]),step("publish",&["transform"])]);
+        assert_eq!(pure,to_pure_transform_program(&reordered,&limits()).unwrap());
+    }
+    #[test]
+    fn effect_candidates_never_become_pure_steps() {
+        let mut s=step("publish",&[]);s.kind=TransformKind::EffectCandidate;
+        let mut l=limits();l.allow_effect_candidates=true;
+        let p=program(vec![s]);
+        // The policy validator is untouched and still accepts it ...
+        assert!(validate_program(&p,&l).is_ok());
+        // ... but an effect is never executable as a pure transform.
+        assert_eq!(to_pure_transform_program(&p,&l).unwrap_err(),Refusal::EffectCandidateDisabled);
+    }
+    #[test]
+    fn unvalidated_programs_are_not_translated() {
+        let cyclic=program(vec![step("a",&["b"]),step("b",&["a"])]);
+        assert_eq!(to_pure_transform_program(&cyclic,&limits()).unwrap_err(),Refusal::CyclicDependency);
+        let mut bad=step("a",&[]);bad.inputs[0].digest="nope".into();
+        assert_eq!(to_pure_transform_program(&program(vec![bad]),&limits()).unwrap_err(),Refusal::InvalidDigest);
+    }
+    #[test]
+    fn pure_contract_literals_match_the_hqkg_engine_contract() {
+        assert_eq!(HQKG_PURE_ENGINE_SLOT,"vlang.pure");
+        assert_eq!(HQKG_PURE_INTERFACE,"hqkg.transform.pure/1");
+        assert_eq!(HQKG_DAG_CONTRACT,"hqkg.typed-dag/1");
+        assert_eq!(TransformKind::EffectCandidate.pure_operation(),None);
+        assert_eq!(TransformKind::SelectContext.pure_operation(),Some("select-context"));
     }
 }

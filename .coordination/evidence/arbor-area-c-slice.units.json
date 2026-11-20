@@ -1,0 +1,2443 @@
+{
+  "lane": "C",
+  "laneRows": 1189,
+  "nextRows": 52,
+  "verifyRows": 135,
+  "units": [
+    {
+      "id": "NEXT:CONSOLIDATE:studio/src/studio",
+      "phase": "NEXT",
+      "priority": "P0",
+      "rowCount": 4,
+      "rowIds": [
+        "AT-64713736D0D1",
+        "AT-ECC846F6B5BA",
+        "AT-EE5630007A77",
+        "AT-5E05C518128E"
+      ],
+      "paths": [
+        "studio/src/studio/server.mjs",
+        "studio/src/studio/core-runtime-bridge.mjs",
+        "studio/src/studio/integration-hub.mjs",
+        "studio/src/studio/world-control-lineage.mjs"
+      ],
+      "closures": [],
+      "nextPackages": [
+        "D06"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "Prove real caller or deliberate internal/dev status; Real product caller and consumer proven; no duplicated Host effect path.",
+      "done": false,
+      "targets": {
+        "Target Rust": 4,
+        "Target Host": 4,
+        "Target Studio": 4,
+        "Target PWA": 4,
+        "Target VLANG": 4,
+        "Target Harness": 4,
+        "Target AutoWiki": 4
+      },
+      "reachabilityBlank": 4,
+      "evidenceGrades": [
+        "DECLARATION / PROPOSED"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "TRACE_AND_DISPOSE",
+        "PRESERVE_AUTHORITY",
+        "TRACE_AND_CONNECT",
+        "EXTEND"
+      ],
+      "currentStates": [
+        "CALLER REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "Symbol"
+      ],
+      "subsystems": [
+        "Studio"
+      ],
+      "shouldIntegrate": [
+        "Conditional",
+        "No",
+        "Yes"
+      ],
+      "reviewBases": [
+        "BODY / SPECIFIC BOUNDARY"
+      ],
+      "decisionConfidences": [
+        "MEDIUM — evidence-backed proposal"
+      ],
+      "boundaryOwners": [],
+      "topLevelStates": [
+        "PRIOR DISPOSITION"
+      ],
+      "evidenceTiers": [],
+      "reviewPackages": [],
+      "reviewRoles": [],
+      "laneReviewNeeds": [
+        "REVALIDATE — prior decision, do not silently overwrite"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [
+        "Fix or retire missing companion protocol through current source-closure unit; prove token/origin and no alternate effect...",
+        "Verify exact snapshot and intent digest; unknown never permits retry.",
+        "Trace actual route/tool registration, source identities, replay fence and proposal promotion; no synthetic claims or eff...",
+        "Join only verified receipt identity, revision and digest; no write authority."
+      ],
+      "dispositionRounds": [
+        "DR03"
+      ],
+      "resolvedActions": [
+        "REUSE"
+      ],
+      "revisedShouldWire": [
+        "Yes — reuse through parent"
+      ],
+      "fileClasses": [
+        "Runtime / executable candidate"
+      ]
+    },
+    {
+      "id": "NEXT:CONSOLIDATE:studio/src/capture",
+      "phase": "NEXT",
+      "priority": "P1",
+      "rowCount": 15,
+      "rowIds": [
+        "AT-E929419568A1",
+        "AT-92E28A235075",
+        "AT-FE689541D023",
+        "AT-8BFD21C9B97A",
+        "AT-BAF544DC961B",
+        "AT-01DA126BB60C",
+        "AT-350367E1921C",
+        "AT-23A2D6EA855F",
+        "AT-711075873844",
+        "AT-26C4980936C0",
+        "AT-0A5B86C9F345",
+        "AT-0659BAC21F42",
+        "AT-B928FF3C7DBF",
+        "AT-EF73D7025414",
+        "AT-B3473FF2DC59"
+      ],
+      "paths": [
+        "studio/src/capture/conversation-browser-adapter.mjs",
+        "studio/src/capture/conversation-evidence.mjs",
+        "studio/src/capture/conversation-runtime.mjs",
+        "studio/src/capture/conversation-thread.mjs",
+        "studio/src/capture/thread-turn-journal.mjs"
+      ],
+      "closures": [],
+      "nextPackages": [
+        "D06"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "Actual evidence retrievable with source identity, explicit gaps and revocation; no uncertain delivery promoted to success.",
+      "done": false,
+      "targets": {
+        "Target Rust": 15,
+        "Target Host": 15,
+        "Target Studio": 15,
+        "Target PWA": 15,
+        "Target VLANG": 15,
+        "Target Harness": 15,
+        "Target AutoWiki": 15
+      },
+      "reachabilityBlank": 15,
+      "evidenceGrades": [
+        "DECLARATION / PROPOSED"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "TRACE_AND_DISPOSE",
+        "EXTEND"
+      ],
+      "currentStates": [
+        "CALLER REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "Symbol"
+      ],
+      "subsystems": [
+        "Studio"
+      ],
+      "shouldIntegrate": [
+        "Conditional",
+        "Yes"
+      ],
+      "reviewBases": [
+        "BODY / SPECIFIC BOUNDARY"
+      ],
+      "decisionConfidences": [
+        "MEDIUM — evidence-backed proposal"
+      ],
+      "boundaryOwners": [],
+      "topLevelStates": [
+        "PRIOR DISPOSITION"
+      ],
+      "evidenceTiers": [],
+      "reviewPackages": [],
+      "reviewRoles": [],
+      "laneReviewNeeds": [
+        "REVALIDATE — prior decision, do not silently overwrite"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [
+        "Trace last beforeEffect, owner/thread and positive not-dispatched evidence; no resend unknown.",
+        "Test corrupt/missing sources, path containment, digest attribution and bounded disclosure.",
+        "Trace submit, lease, journal and readback; DCB exact source grant and invalidation.",
+        "Verify exact thread/origin and adapter scope; retain caps and distinguish absence from empty transcript."
+      ],
+      "dispositionRounds": [
+        "DR03"
+      ],
+      "resolvedActions": [
+        "REUSE"
+      ],
+      "revisedShouldWire": [
+        "Yes — reuse through parent"
+      ],
+      "fileClasses": [
+        "Runtime / executable candidate"
+      ]
+    },
+    {
+      "id": "NEXT:CONSOLIDATE:studio/src/replay",
+      "phase": "NEXT",
+      "priority": "P1",
+      "rowCount": 2,
+      "rowIds": [
+        "AT-68A38A37C7E6",
+        "AT-13116F29C99D"
+      ],
+      "paths": [
+        "studio/src/replay/derive.mjs"
+      ],
+      "closures": [],
+      "nextPackages": [
+        "D06"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "Replay parity on saved session, digest equality and benchmark.",
+      "done": false,
+      "targets": {
+        "Target Rust": 2,
+        "Target Host": 2,
+        "Target Studio": 2,
+        "Target PWA": 2,
+        "Target VLANG": 2,
+        "Target Harness": 2,
+        "Target AutoWiki": 2
+      },
+      "reachabilityBlank": 2,
+      "evidenceGrades": [
+        "DECLARATION / PROPOSED"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "ASSESS_REUSE"
+      ],
+      "currentStates": [
+        "CALLER REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "Symbol"
+      ],
+      "subsystems": [
+        "Studio"
+      ],
+      "shouldIntegrate": [
+        "Conditional"
+      ],
+      "reviewBases": [
+        "BODY / SPECIFIC BOUNDARY"
+      ],
+      "decisionConfidences": [
+        "MEDIUM — evidence-backed proposal"
+      ],
+      "boundaryOwners": [],
+      "topLevelStates": [
+        "PRIOR DISPOSITION"
+      ],
+      "evidenceTiers": [],
+      "reviewPackages": [],
+      "reviewRoles": [],
+      "laneReviewNeeds": [
+        "REVALIDATE — prior decision, do not silently overwrite"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [
+        "Verify recorded source revision and deterministic replay, accepted evidence, receipt scope and no raw disclosure."
+      ],
+      "dispositionRounds": [
+        "DR03"
+      ],
+      "resolvedActions": [
+        "REUSE"
+      ],
+      "revisedShouldWire": [
+        "Yes — reuse through parent"
+      ],
+      "fileClasses": [
+        "Runtime / executable candidate"
+      ]
+    },
+    {
+      "id": "NEXT:D05-C-COMPANION-CLOSURE",
+      "phase": "NEXT",
+      "priority": "P1",
+      "rowCount": 4,
+      "rowIds": [
+        "AT-064E27ADD42E",
+        "AT-B983DD8AB550",
+        "AT-8188A8C5A4B6",
+        "AT-2A852AD382E9"
+      ],
+      "paths": [
+        "studio/src/studio/browser-companion/ingress.mjs",
+        "studio/src/studio/browser-companion/web-memory-core.mjs",
+        "studio/src/studio/server.mjs",
+        "studio/bin/commands/companion.mjs"
+      ],
+      "closures": [],
+      "nextPackages": [
+        "D05"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "Host-authorized operation and evidence binding; revoked data excluded; no native direct browser.",
+      "done": false,
+      "targets": {
+        "Target Rust": 3,
+        "Target Host": 4,
+        "Target Studio": 4,
+        "Target HQ": 2,
+        "Target AutoWiki": 2,
+        "Target Tauri": 2,
+        "Target PWA": 1,
+        "Target Harness": 1
+      },
+      "reachabilityBlank": 4,
+      "evidenceGrades": [
+        "TREE / PROVISIONAL"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "KEEP_ADAPTER",
+        "TRACE_AND_WIRE",
+        "KEEP_CLI"
+      ],
+      "currentStates": [
+        "REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "File"
+      ],
+      "subsystems": [
+        "Studio"
+      ],
+      "shouldIntegrate": [
+        "Conditional"
+      ],
+      "reviewBases": [
+        "C-F01 selective source evidence at pinned commit; no runtime acceptance"
+      ],
+      "decisionConfidences": [
+        "HIGH on cited concrete source defect; product runtime UNRUN",
+        "MEDIUM — bounded source-supported finding; runtime and exhaustive caller verification pending"
+      ],
+      "boundaryOwners": [
+        "Studio browser observation ingress; Rust durable visit owner",
+        "Studio browser runtime; Host sole effect authority"
+      ],
+      "topLevelStates": [
+        "TOP LEVEL — SOURCE SUPPORTED",
+        "PRIOR DISPOSITION",
+        "TOP LEVEL — PROVISIONAL / VERIFY"
+      ],
+      "evidenceTiers": [
+        "BODY ANCHORS + SELECTED CALLER / DEPENDENCY; runtime UNRUN; exhaustive caller audit pending"
+      ],
+      "reviewPackages": [
+        "D05",
+        "D15"
+      ],
+      "reviewRoles": [],
+      "laneReviewNeeds": [
+        "REVALIDATE — prior decision, do not silently overwrite",
+        "VERIFY — source / callers"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [
+        "Production import/start succeeds; sanitize schema-compatible URLs; missing or mismatched Rust receipt never ACKs; identi...",
+        "Packaged actual Rust binary discovery; valid receipt; timeout-after-persistence and restart retry by identical event IDs...",
+        "Import actual server, start/stop with authorized local configuration and no missing module; no duplicate runtime registr...",
+        "CLI import and actual pairing/revoke flows work or retire together with unsupported companion; old credentials invalidat..."
+      ],
+      "dispositionRounds": [
+        "FB01",
+        "DR03"
+      ],
+      "resolvedActions": [
+        "CHANGE",
+        "REUSE"
+      ],
+      "revisedShouldWire": [
+        "Yes — repair existing source/authority seam",
+        "Yes — reuse through existing parent"
+      ],
+      "fileClasses": [
+        "Runtime / executable candidate"
+      ]
+    },
+    {
+      "id": "NEXT:D05-E-STUDIO-TEST-CLOSURE",
+      "phase": "NEXT",
+      "priority": "P1",
+      "rowCount": 3,
+      "rowIds": [
+        "AT-1D20C5400F2F",
+        "AT-159DD7770243",
+        "AT-E4347D147969"
+      ],
+      "paths": [
+        "studio/package.json",
+        "studio/scripts/e2e.mjs",
+        "studio/scripts/gate.mjs"
+      ],
+      "closures": [
+        "BUILD/VERIFICATION",
+        "FURTHER TRACE"
+      ],
+      "nextPackages": [
+        "D05"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "Production works with scripts/evaluation artifacts absent; real test can still run.",
+      "done": false,
+      "targets": {
+        "Target Studio": 1
+      },
+      "reachabilityBlank": 0,
+      "evidenceGrades": [
+        "TREE / PROVISIONAL"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "VERIFY_PACKAGE",
+        "KEEP_DEV_TOOL"
+      ],
+      "currentStates": [
+        "REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "File"
+      ],
+      "subsystems": [
+        "Studio"
+      ],
+      "shouldIntegrate": [
+        "Conditional",
+        "No"
+      ],
+      "reviewBases": [
+        "C-F01 selective source evidence at pinned commit; no runtime acceptance",
+        "C-F01 continuation at pinned source blob; selected body/content anchors and dependency analysis; no runtime acceptance"
+      ],
+      "decisionConfidences": [
+        "HIGH on cited concrete source defect; product runtime UNRUN",
+        "HIGH on concrete source finding, runtime UNRUN"
+      ],
+      "boundaryOwners": [
+        "Studio package; E release truth",
+        "E release/test registration; Studio test consumer"
+      ],
+      "topLevelStates": [
+        "TOP LEVEL — SOURCE SUPPORTED",
+        "TOP LEVEL — PROVISIONAL / VERIFY"
+      ],
+      "evidenceTiers": [
+        "MANIFEST + COMPLETE TREE + ROOT MANIFEST; test UNRUN",
+        "SELECTED EXECUTABLE BODY ANCHORS + SPECIFIC CALLER / REGISTRATION; runtime UNRUN"
+      ],
+      "reviewPackages": [
+        "D05",
+        "D15"
+      ],
+      "reviewRoles": [
+        "Studio test commands",
+        "Build / developer tool candidate"
+      ],
+      "laneReviewNeeds": [
+        "REVALIDATE — prior decision, do not silently overwrite",
+        "VERIFY — source / callers"
+      ],
+      "knownMissing": [
+        "studio/test/unit/ absent"
+      ],
+      "remainingEvidence": [
+        "Select actual Studio tests from canonical manifest; execute real unit tests with nonzero discovery; never replace with e...",
+        "Discover actual nonempty suites; verify missing test/browser fails honestly; retain security and negative tests. Verify ..."
+      ],
+      "dispositionRounds": [
+        "FB02"
+      ],
+      "resolvedActions": [
+        "CHANGE"
+      ],
+      "revisedShouldWire": [
+        "Yes — repair existing source/authority seam",
+        "Yes — repair existing source seam"
+      ],
+      "fileClasses": [
+        "Build / packaging / tooling"
+      ]
+    },
+    {
+      "id": "NEXT:D06-B-ALTERNATE-SEND-AUTHORITY",
+      "phase": "NEXT",
+      "priority": "P1",
+      "rowCount": 11,
+      "rowIds": [
+        "AT-542247A785F9",
+        "AT-A5A083002C42",
+        "AT-992F392E829F",
+        "AT-F132BEC11C0B",
+        "AT-893EC1E74318",
+        "AT-4F643F9FB31F",
+        "AT-7B97C2417DDF",
+        "AT-EF2929B1C9C7",
+        "AT-B350AC2F6ECB",
+        "AT-A12E1D47CC1E",
+        "AT-ECC68F3A92E1"
+      ],
+      "paths": [
+        "studio/src/recipes/service.mjs",
+        "studio/src/studio/atom-dispatch.mjs",
+        "studio/src/studio/conversation-tools.mjs",
+        "studio/src/studio/personal-app-ai-design.mjs",
+        "studio/src/studio/personal-app-routes.mjs",
+        "studio/src/studio/recipe-routes.mjs",
+        "studio/bin/commands/atoms.mjs",
+        "studio/bin/commands/chat.mjs",
+        "studio/bin/commands/recipes.mjs",
+        "studio/bin/commands/run.mjs",
+        "studio/bin/lib/dev-auto-approve.mjs"
+      ],
+      "closures": [],
+      "nextPackages": [
+        "D06"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "Real product caller and consumer proven; no duplicated Host effect path.",
+      "done": false,
+      "targets": {
+        "Target Rust": 5,
+        "Target Host": 11,
+        "Target Studio": 11,
+        "Target PWA": 11,
+        "Target VLANG": 11,
+        "Target Harness": 11
+      },
+      "reachabilityBlank": 3,
+      "evidenceGrades": [
+        "TREE / PROVISIONAL"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "KEEP_AND_CONNECT",
+        "TRACE_AND_WIRE",
+        "KEEP_CLI"
+      ],
+      "currentStates": [
+        "REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "File"
+      ],
+      "subsystems": [
+        "Studio"
+      ],
+      "shouldIntegrate": [
+        "Conditional"
+      ],
+      "reviewBases": [
+        "C-F01 continuation at pinned source blob; selected body/content anchors and dependency analysis; no runtime acceptance",
+        "C-F01 selective source evidence at pinned commit; no runtime acceptance"
+      ],
+      "decisionConfidences": [
+        "HIGH on concrete source finding, runtime UNRUN",
+        "MEDIUM — bounded source-supported finding; runtime and exhaustive caller verification pending"
+      ],
+      "boundaryOwners": [
+        "Host sole effect authority; existing Studio executor",
+        "Host effect authority; Studio existing actuator"
+      ],
+      "topLevelStates": [
+        "TOP LEVEL — PROVISIONAL / VERIFY",
+        "PRIOR DISPOSITION",
+        "TOP LEVEL — SOURCE SUPPORTED"
+      ],
+      "evidenceTiers": [
+        "SELECTED EXECUTABLE BODY ANCHORS + SPECIFIC CALLER / REGISTRATION; runtime UNRUN",
+        "BODY ANCHORS + SELECTED CALLER / DEPENDENCY; runtime UNRUN; exhaustive caller audit pending"
+      ],
+      "reviewPackages": [
+        "D15",
+        "D14"
+      ],
+      "reviewRoles": [],
+      "laneReviewNeeds": [
+        "VERIFY — source / callers",
+        "REVALIDATE — prior decision, do not silently overwrite"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [
+        "Trace registered entry to exact Host grant and existing Studio owner; missing/stale grant causes no effect; one durable ...",
+        "Actual tool entry binds exact approval; no direct caller bypass; pending/uncertain outcome classified without resend.; f...",
+        "Both CLI live send paths use actual Host effect approval; denied/expired grant fails before typing; uncertainty never au...",
+        "Production flags or environment cannot synthesize Host approval; explicit scoped dev mode cannot access real owner effec..."
+      ],
+      "dispositionRounds": [
+        "FB01",
+        "DR03"
+      ],
+      "resolvedActions": [
+        "CHANGE",
+        "REUSE"
+      ],
+      "revisedShouldWire": [
+        "Yes — repair existing source seam",
+        "Yes — reuse through existing parent",
+        "Yes — repair existing source/authority seam"
+      ],
+      "fileClasses": [
+        "Runtime / executable candidate"
+      ]
+    },
+    {
+      "id": "NEXT:D06-C-VERIFIED-TURN-PROJECTION",
+      "phase": "NEXT",
+      "priority": "P1",
+      "rowCount": 10,
+      "rowIds": [
+        "AT-0E3AD934FCA3",
+        "AT-A9BF3795ADC9",
+        "AT-084CBD8B36C4",
+        "AT-F7C0966A3204",
+        "AT-41CC4A30C0E6",
+        "AT-8CB3FB9FE71E",
+        "AT-0F17B908477A",
+        "AT-3225CEAEB471",
+        "AT-B89FD690C767",
+        "AT-FCBE51FA2B34"
+      ],
+      "paths": [
+        "studio/src/capture/conversation-evidence.mjs",
+        "studio/src/capture/conversation-runtime.mjs",
+        "studio/src/capture/conversation-service.mjs",
+        "studio/src/capture/harness-runs.mjs",
+        "studio/src/capture/thread-turn-journal.mjs",
+        "studio/src/studio/core-runtime-bridge.mjs",
+        "studio/src/studio/harness-api.mjs",
+        "studio/src/studio/intent-bindings.mjs",
+        "studio/src/studio/relay-journal-correlation.mjs",
+        "studio/src/studio/uncertain-step-reconciler.mjs"
+      ],
+      "closures": [],
+      "nextPackages": [
+        "D06"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "Real product caller and consumer proven; no duplicated Host effect path.",
+      "done": false,
+      "targets": {
+        "Target Rust": 8,
+        "Target Host": 10,
+        "Target Studio": 10,
+        "Target PWA": 10,
+        "Target HQ": 8,
+        "Target VLANG": 10,
+        "Target Harness": 10,
+        "Target AutoWiki": 10,
+        "Target Tauri": 2
+      },
+      "reachabilityBlank": 10,
+      "evidenceGrades": [
+        "TREE / PROVISIONAL"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "TRACE_AND_WIRE"
+      ],
+      "currentStates": [
+        "REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "File"
+      ],
+      "subsystems": [
+        "Studio"
+      ],
+      "shouldIntegrate": [
+        "Yes",
+        "Conditional"
+      ],
+      "reviewBases": [
+        "C-F01 selective source evidence at pinned commit; no runtime acceptance"
+      ],
+      "decisionConfidences": [
+        "MEDIUM — bounded source-supported finding; runtime and exhaustive caller verification pending"
+      ],
+      "boundaryOwners": [
+        "Studio journal owner; Host verified read projection",
+        "Studio browser runtime; Host sole effect authority",
+        "Studio journal/runtime owner; Host effects"
+      ],
+      "topLevelStates": [
+        "PRIOR DISPOSITION",
+        "TOP LEVEL — SOURCE SUPPORTED"
+      ],
+      "evidenceTiers": [
+        "BODY ANCHORS + SELECTED CALLER / DEPENDENCY; runtime UNRUN; exhaustive caller audit pending"
+      ],
+      "reviewPackages": [
+        "D06"
+      ],
+      "reviewRoles": [],
+      "laneReviewNeeds": [
+        "REVALIDATE — prior decision, do not silently overwrite"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [
+        "Missing/corrupt source yields explicit gap; evidence digest tied to turn and session; Host reads without second writer.;...",
+        "Real Host-approved request reaches existing service, durable result observed by existing projection; ambiguous send neve...",
+        "Restart after pre-dispatch, partial typing and lost ack; exact existing journal recovery; no duplicate send or writer.; ...",
+        "Crash/restart preserves fence, exact-key retry only after proven non-dispatch and owner authorization.; full independent..."
+      ],
+      "dispositionRounds": [
+        "DR03",
+        "FB01"
+      ],
+      "resolvedActions": [
+        "REUSE"
+      ],
+      "revisedShouldWire": [
+        "Yes — reuse through existing parent"
+      ],
+      "fileClasses": [
+        "Runtime / executable candidate"
+      ]
+    },
+    {
+      "id": "NEXT:D12-B-DCB-GRANT",
+      "phase": "NEXT",
+      "priority": "P1",
+      "rowCount": 3,
+      "rowIds": [
+        "AT-568D338CA21E",
+        "AT-8F1CF77AA389",
+        "AT-6EDF8FA6931E"
+      ],
+      "paths": [
+        "studio/src/agents/dcb-context-runtime.mjs",
+        "studio/src/studio/conversation-api.mjs"
+      ],
+      "closures": [],
+      "nextPackages": [
+        "D12"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "Actual conversation uses native relevant candidate under disclosure rules; no silent stale fallback.",
+      "done": false,
+      "targets": {
+        "Target Rust": 3,
+        "Target Host": 3,
+        "Target Studio": 3,
+        "Target PWA": 3,
+        "Target HQ": 3,
+        "Target VLANG": 3,
+        "Target Harness": 3,
+        "Target AutoWiki": 3
+      },
+      "reachabilityBlank": 2,
+      "evidenceGrades": [
+        "DIRECT / SEARCH",
+        "TREE / PROVISIONAL",
+        "DECLARATION / PROPOSED"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "EXTEND",
+        "TRACE_AND_WIRE"
+      ],
+      "currentStates": [
+        "AUDIT FINDING — OPEN",
+        "REVIEW REQUIRED",
+        "CALLER REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "File",
+        "Symbol"
+      ],
+      "subsystems": [
+        "Studio"
+      ],
+      "shouldIntegrate": [
+        "Yes",
+        "Conditional"
+      ],
+      "reviewBases": [
+        "C-F01 selective source evidence at pinned commit; no runtime acceptance",
+        "Pinned source segment and lexical refs; runtime UNRUN."
+      ],
+      "decisionConfidences": [
+        "MEDIUM — bounded source-supported finding; runtime and exhaustive caller verification pending",
+        "Static provisional; no runtime proof."
+      ],
+      "boundaryOwners": [
+        "Host disclosure authority; Studio facade"
+      ],
+      "topLevelStates": [
+        "TOP LEVEL — SOURCE SUPPORTED",
+        "PRIOR DISPOSITION",
+        "SYMBOL_STATIC_PROVISIONAL"
+      ],
+      "evidenceTiers": [
+        "BODY ANCHORS + SELECTED CALLER / DEPENDENCY; runtime UNRUN; exhaustive caller audit pending",
+        "Source anchor; bounded lexical evidence"
+      ],
+      "reviewPackages": [
+        "D12"
+      ],
+      "reviewRoles": [],
+      "laneReviewNeeds": [
+        "REVALIDATE — prior decision, do not silently overwrite"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [
+        "Use authentic Host grant evidence; revoke and revalidate exact target and revision; no disclosure without proof; no dire...",
+        "Existing Host grant + allowed source/destination/revision makes authorized candidate possible; deny missing/revoked proo...",
+        "Current scoped grant permits; missing/expired/mismatched grant denies. Full caller/runtime closure open."
+      ],
+      "dispositionRounds": [
+        "FB01",
+        "DR03",
+        "C-S01"
+      ],
+      "resolvedActions": [
+        "REUSE",
+        "CHANGE"
+      ],
+      "revisedShouldWire": [
+        "Yes — reuse through existing parent",
+        "Yes — repair existing source/authority seam",
+        "Yes—parent repair"
+      ],
+      "fileClasses": [
+        "Runtime / executable candidate"
+      ]
+    },
+    {
+      "id": "VERIFY:D06-B-ALTERNATE-SEND-AUTHORITY",
+      "phase": "VERIFY",
+      "priority": "P1",
+      "rowCount": 40,
+      "rowIds": [
+        "AT-2E3DD7031B99",
+        "AT-7ED4120E0EEB",
+        "AT-4B01B36240CD",
+        "AT-51E3FA2B3546",
+        "AT-EA569BD90D95",
+        "AT-DD257647E7A5",
+        "AT-B29F1F71FA87",
+        "AT-6ACCDA1FB0C5",
+        "AT-E1EE02604FDF",
+        "AT-F30CB5C76B56",
+        "AT-E23347ABB0E8",
+        "AT-2A43503F3B00",
+        "AT-368E307C528A",
+        "AT-6FBD268EC436",
+        "AT-63BD58BFB0F3",
+        "AT-2BA9D52FCC86",
+        "AT-55D31F6B4055",
+        "AT-542A76E7BD7E",
+        "AT-F7A403FA27C1",
+        "AT-6561BD4C9D8C",
+        "AT-1CAF7A1E716F",
+        "AT-FB4995FAD00A",
+        "AT-D68292BD6DAF",
+        "AT-0A671A1F63B8",
+        "AT-33F6E044195C",
+        "AT-9FC2D90679DA",
+        "AT-8EE0B570BDF9",
+        "AT-4071F9DA5E29",
+        "AT-8E12102FCA11",
+        "AT-0704AB6501BB",
+        "AT-EF3FB99B4F52",
+        "AT-9A3B2D837E40",
+        "AT-68436EA7DC88",
+        "AT-4DE953D27142",
+        "AT-F683E1F99E9B",
+        "AT-557F9751460F",
+        "AT-93F66A2E5E0B",
+        "AT-A36E2D95F252",
+        "AT-DEA3BDBD444F",
+        "AT-2D5B305DF5A9"
+      ],
+      "paths": [
+        "studio/src/studio/agent-actions.mjs",
+        "studio/src/studio/ai-orchestrator.mjs",
+        "studio/src/studio/atoms/act.mjs",
+        "studio/src/studio/atoms/auth.mjs",
+        "studio/src/studio/atoms/clipboard.mjs",
+        "studio/src/studio/atoms/consent.mjs",
+        "studio/src/studio/atoms/dom.mjs",
+        "studio/src/studio/atoms/download.mjs",
+        "studio/src/studio/atoms/form.mjs",
+        "studio/src/studio/atoms/frame.mjs",
+        "studio/src/studio/atoms/media.mjs",
+        "studio/src/studio/atoms/nav.mjs",
+        "studio/src/studio/atoms/net.mjs",
+        "studio/src/studio/atoms/read.mjs",
+        "studio/src/studio/atoms/safe.mjs",
+        "studio/src/studio/atoms/screen.mjs",
+        "studio/src/studio/atoms/state.mjs",
+        "studio/src/studio/atoms/table.mjs",
+        "studio/src/studio/atoms/trace.mjs",
+        "studio/src/studio/atoms/type.mjs",
+        "studio/src/studio/atoms/upload.mjs",
+        "studio/src/studio/atoms/wait.mjs",
+        "studio/src/studio/atoms/window.mjs",
+        "studio/src/studio/bootstrap-owner-adapter.mjs",
+        "studio/src/studio/channels/claude.mjs",
+        "studio/src/studio/channels/gemini.mjs",
+        "studio/src/studio/chat-channel.mjs",
+        "studio/src/studio/compare-routes.mjs",
+        "studio/src/studio/compare-service.mjs",
+        "studio/src/studio/drive-api.mjs",
+        "studio/src/studio/orchestrator-routes.mjs",
+        "studio/src/studio/relay-agent.mjs",
+        "studio/src/studio/ui/drive.html",
+        "studio/src/studio/ui/drive.mjs",
+        "studio/bin/commands/ask.mjs",
+        "studio/bin/commands/bridge.mjs",
+        "studio/bin/commands/drive.mjs",
+        "studio/bin/commands/relay.mjs",
+        "studio/bin/lib/relay-chat-studio.mjs",
+        "studio/bin/relay-chat-mvp.mjs"
+      ],
+      "closures": [],
+      "nextPackages": [
+        "D06"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "Host-authorized operation and evidence binding; revoked data excluded; no native direct browser.",
+      "done": false,
+      "targets": {
+        "Target Rust": 28,
+        "Target Host": 40,
+        "Target Studio": 40,
+        "Target PWA": 40,
+        "Target VLANG": 40,
+        "Target Harness": 40
+      },
+      "reachabilityBlank": 5,
+      "evidenceGrades": [
+        "TREE / PROVISIONAL"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "TRACE_AND_WIRE",
+        "KEEP_ADAPTER",
+        "KEEP_UI",
+        "KEEP_CLI"
+      ],
+      "currentStates": [
+        "REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "File"
+      ],
+      "subsystems": [
+        "Studio"
+      ],
+      "shouldIntegrate": [
+        "Conditional",
+        "No"
+      ],
+      "reviewBases": [
+        "C-F01 continuation at pinned source blob; selected body/content anchors and dependency analysis; no runtime acceptance",
+        "C-F01 selective source evidence at pinned commit; no runtime acceptance"
+      ],
+      "decisionConfidences": [
+        "PROVISIONAL — explicit unresolved caller or behavior evidence",
+        "MEDIUM — bounded source-supported finding; runtime and exhaustive caller verification pending"
+      ],
+      "boundaryOwners": [
+        "Host sole effect authority; existing Studio executor",
+        "Host effect authority; Studio existing actuator"
+      ],
+      "topLevelStates": [
+        "TOP LEVEL — SOURCE INSPECTED / VERIFY",
+        "PRIOR DISPOSITION",
+        "TOP LEVEL — PROVISIONAL / VERIFY",
+        "TOP LEVEL — SOURCE SUPPORTED"
+      ],
+      "evidenceTiers": [
+        "SELECTED EXECUTABLE BODY ANCHORS; caller not established; runtime UNRUN",
+        "BODY/DECLARATION ANCHORS; reachability/authority unresolved; runtime UNRUN",
+        "DECLARATION / DOCUMENT CONTENT + SELECTED DEPENDENCY REFERENCES; runtime UNRUN",
+        "SELECTED EXECUTABLE BODY ANCHORS + SELECTED DEPENDENCY REFERENCES; runtime UNRUN"
+      ],
+      "reviewPackages": [
+        "D15",
+        "D14"
+      ],
+      "reviewRoles": [],
+      "laneReviewNeeds": [
+        "VERIFY — source / callers",
+        "REVALIDATE — prior decision, do not silently overwrite"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [
+        "Trace registered entry to exact Host grant and existing Studio owner; missing/stale grant causes no effect; one durable ...",
+        "Prove plan-bound approval covers each child exact effect; authorization missing or revoked denies; no independent schedu...",
+        "Trace actual authenticated request through exact Host-approved job, including denied scope.; full independent reverse-ca...",
+        "Every provider child send bound to approved exact plan, including retries; uncertain result stays uncertain.; full indep..."
+      ],
+      "dispositionRounds": [
+        "FB01",
+        "DR03"
+      ],
+      "resolvedActions": [
+        "VERIFY"
+      ],
+      "revisedShouldWire": [
+        "Conditional — incomplete evidence; no NEXT promotion",
+        "Conditional — unresolved evidence; no NEXT promotion"
+      ],
+      "fileClasses": [
+        "Runtime / executable candidate"
+      ]
+    },
+    {
+      "id": "VERIFY:CONSOLIDATE:studio/src/studio",
+      "phase": "VERIFY",
+      "priority": "P0",
+      "rowCount": 23,
+      "rowIds": [
+        "AT-96B4FAEEC75E",
+        "AT-AFEFA0CF7682",
+        "AT-63EB18BA1100",
+        "AT-ACD94468A610",
+        "AT-5D75E8F0186E",
+        "AT-01F8D8735AFF",
+        "AT-76211FE52332",
+        "AT-9553A75E74AF",
+        "AT-AAD89964B908",
+        "AT-1C0DA1006B7F",
+        "AT-DF58C6E6E589",
+        "AT-AC8F4128C97C",
+        "AT-BE39295816BF",
+        "AT-05ABB2F2927D",
+        "AT-A898E8ED7A5C",
+        "AT-A37E92B36D19",
+        "AT-901ADBB7431B",
+        "AT-974E532A7BB1",
+        "AT-30E7778E2C4C",
+        "AT-68370A4CEE09",
+        "AT-46F218E9BBE0",
+        "AT-F6B7566554D5",
+        "AT-CA7DED5EAD61"
+      ],
+      "paths": [
+        "studio/src/studio/server.mjs",
+        "studio/src/studio/atom-dispatch.mjs",
+        "studio/src/studio/core-runtime-bridge.mjs",
+        "studio/src/studio/adapter-improvement-pipeline.mjs",
+        "studio/src/studio/adapter-learning-pipeline.mjs",
+        "studio/src/studio/ai-orchestrator.mjs",
+        "studio/src/studio/ai-router.mjs",
+        "studio/src/studio/integration-hub.mjs",
+        "studio/src/studio/personal-app-service.mjs",
+        "studio/src/studio/relay-agent.mjs"
+      ],
+      "closures": [],
+      "nextPackages": [
+        "D15",
+        "D14"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "Prove real caller or deliberate internal/dev status; Real product caller and consumer proven; no duplicated Host effect path.",
+      "done": false,
+      "targets": {
+        "Target Host": 13,
+        "Target Studio": 13
+      },
+      "reachabilityBlank": 23,
+      "evidenceGrades": [
+        "DECLARATION / PROPOSED"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "TRACE_AND_DISPOSE",
+        "PRESERVE_AUTHORITY",
+        "KEEP_AND_CONNECT",
+        "EXTEND"
+      ],
+      "currentStates": [
+        "CALLER REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "Symbol"
+      ],
+      "subsystems": [
+        "Studio"
+      ],
+      "shouldIntegrate": [
+        "Conditional",
+        "No",
+        "Yes"
+      ],
+      "reviewBases": [
+        "BODY / SPECIFIC BOUNDARY",
+        "C-S01: bounded pinned source anchor and selected module context; runtime UNRUN",
+        "C-S02: bounded pinned source anchor and selected module context; runtime UNRUN"
+      ],
+      "decisionConfidences": [
+        "LOW — unresolved caller",
+        "PROVISIONAL STATIC — actual source window; runtime UNRUN."
+      ],
+      "boundaryOwners": [],
+      "topLevelStates": [
+        "PRIOR DISPOSITION",
+        "PENDING"
+      ],
+      "evidenceTiers": [],
+      "reviewPackages": [],
+      "reviewRoles": [],
+      "laneReviewNeeds": [
+        "VERIFY — source / callers",
+        "PENDING — initial disposition",
+        "REVALIDATE — prior decision, do not silently overwrite"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [
+        "Fix or retire missing companion protocol through current source-closure unit; prove token/origin and no alternate effect...",
+        "Fix donor import via existing registered port; trace exact grant, page/intent and receipt; no Boolean-as-authority.",
+        "Verify exact snapshot and intent digest; unknown never permits retry.",
+        "Check real accepted source, promotion CAS, independent holdout and revoke; no synthetic or send grant."
+      ],
+      "dispositionRounds": [
+        "DR03"
+      ],
+      "resolvedActions": [
+        "VERIFY"
+      ],
+      "revisedShouldWire": [
+        "Conditional — verify before wiring",
+        "Undetermined pending precise authority/caller evidence"
+      ],
+      "fileClasses": [
+        "Runtime / executable candidate"
+      ]
+    },
+    {
+      "id": "VERIFY:C-RETAIN-INTEGRATION-PORT",
+      "phase": "VERIFY",
+      "priority": "P1",
+      "rowCount": 22,
+      "rowIds": [
+        "AT-35C67655B86A",
+        "AT-6BF3D0692F79",
+        "AT-FDF947FBB3F5",
+        "AT-D4A8BB293F11",
+        "AT-411B601F02BB",
+        "AT-EFAC72E4291B",
+        "AT-D7912E0414E9",
+        "AT-FD2CE25635E2",
+        "AT-DA7E1A197734",
+        "AT-C61C03058EB4",
+        "AT-D3B731EEBD71",
+        "AT-7CC7E7B56A50",
+        "AT-19594B3CF181",
+        "AT-5B153D155797",
+        "AT-8B0CA52A2F9B",
+        "AT-91B2C668D16C",
+        "AT-588E5E31686C",
+        "AT-5C9C6DF6C3CB",
+        "AT-C23BF0D2AAC4",
+        "AT-35FA3D54F313",
+        "AT-699579231862",
+        "AT-30ACE194548B"
+      ],
+      "paths": [
+        "studio/src/studio/personal-app-blueprint.mjs",
+        "studio/src/studio/ui/chat.html",
+        "studio/src/studio/ui/chat.mjs",
+        "studio/src/studio/ui/index.html",
+        "studio/src/studio/ui/mobile-sw.js",
+        "studio/src/studio/ui/mobile.html",
+        "studio/src/studio/ui/mobile.mjs",
+        "studio/src/studio/ui/platform.mjs",
+        "studio/bin/commands/tools.mjs",
+        "studio/scripts/always-on.mjs",
+        "studio/scripts/install-autostart.ps1",
+        "studio/scripts/transcript-intake.mjs",
+        "studio/scripts/windows/VIVIM.ps1",
+        "studio/scripts/windows/install-cli.ps1",
+        "studio/scripts/windows/install-shortcut.ps1",
+        "studio/scripts/windows/launcher-helper.mjs",
+        "studio/scripts/windows/resolve-start-config.mjs",
+        "studio/scripts/windows/vivim-cli.ps1",
+        "studio/scripts/mobile-tunnel.sh",
+        "studio/scripts/windows/Stop-VIVIM.cmd",
+        "studio/scripts/windows/VIVIM.cmd",
+        "studio/src/studio/ui/manifest.webmanifest"
+      ],
+      "closures": [
+        "FURTHER TRACE"
+      ],
+      "nextPackages": [
+        "D14"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "Production works with scripts/evaluation artifacts absent; real test can still run.",
+      "done": false,
+      "targets": {
+        "Target Host": 22,
+        "Target Studio": 22,
+        "Target Harness": 22,
+        "Target PWA": 8
+      },
+      "reachabilityBlank": 0,
+      "evidenceGrades": [
+        "TREE / PROVISIONAL",
+        "TREE / PATH ONLY"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "TRACE_AND_WIRE",
+        "KEEP_UI",
+        "KEEP_CLI",
+        "KEEP_DEV_TOOL"
+      ],
+      "currentStates": [
+        "REVIEW REQUIRED",
+        "INVENTORIED — NOT DISPOSITIONED"
+      ],
+      "granularities": [
+        "File"
+      ],
+      "subsystems": [
+        "Studio"
+      ],
+      "shouldIntegrate": [
+        "Conditional",
+        "No",
+        "Undetermined"
+      ],
+      "reviewBases": [
+        "C-F01 continuation at pinned source blob; selected body/content anchors and dependency analysis; no runtime acceptance"
+      ],
+      "decisionConfidences": [
+        "PROVISIONAL — explicit unresolved caller or behavior evidence"
+      ],
+      "boundaryOwners": [
+        "Existing Studio integration/transport or local service; Host for effects"
+      ],
+      "topLevelStates": [
+        "TOP LEVEL — PROVISIONAL / VERIFY"
+      ],
+      "evidenceTiers": [
+        "SELECTED EXECUTABLE BODY ANCHORS + SELECTED DEPENDENCY REFERENCES; runtime UNRUN",
+        "DECLARATION / DOCUMENT CONTENT + SELECTED DEPENDENCY REFERENCES; runtime UNRUN",
+        "DECLARATION / DOCUMENT CONTENT; caller not established; runtime UNRUN",
+        "SELECTED EXECUTABLE BODY ANCHORS + SPECIFIC CALLER / REGISTRATION; runtime UNRUN"
+      ],
+      "reviewPackages": [
+        "D15"
+      ],
+      "reviewRoles": [
+        "Build / developer tool candidate",
+        "Configuration or data candidate"
+      ],
+      "laneReviewNeeds": [
+        "VERIFY — source / callers"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [
+        "Resolve actual callers and registration; retain typed errors, existing owner and explicit unavailable behavior. Verify e..."
+      ],
+      "dispositionRounds": [
+        "FB01",
+        "FB02"
+      ],
+      "resolvedActions": [
+        "VERIFY"
+      ],
+      "revisedShouldWire": [
+        "Conditional — incomplete evidence; no NEXT promotion"
+      ],
+      "fileClasses": [
+        "Runtime / executable candidate",
+        "Build / packaging / tooling",
+        "Runtime config / data candidate"
+      ]
+    },
+    {
+      "id": "VERIFY:D01-A-GRAPH-COMPUTE-CONVERGENCE",
+      "phase": "VERIFY",
+      "priority": "P1",
+      "rowCount": 17,
+      "rowIds": [
+        "AT-8DD6EB636748",
+        "AT-28F1BD69EC01",
+        "AT-7745EF3342D7",
+        "AT-FDE19959B34C",
+        "AT-DE363581490D",
+        "AT-ED773E094B46",
+        "AT-414A87A86A2F",
+        "AT-F577FC93814D",
+        "AT-B7265E811D46",
+        "AT-A4730632490B",
+        "AT-6156925737C6",
+        "AT-511671A3CEEA",
+        "AT-A77EE22A3894",
+        "AT-3FDB92FE1675",
+        "AT-575E50716024",
+        "AT-B0EE6FC1BEE2",
+        "AT-47BE59982F2C"
+      ],
+      "paths": [
+        "studio/src/intel/graph-analytics.mjs",
+        "studio/src/intel/graph.mjs",
+        "studio/scripts/source-index.mjs"
+      ],
+      "closures": [
+        "FURTHER TRACE"
+      ],
+      "nextPackages": [
+        "D01"
+      ],
+      "packageOwners": [
+        "A"
+      ],
+      "acceptance": "Prove real caller or deliberate internal/dev status; Real source/result identity retained through native query or pure run; stale/revoked source rejected.",
+      "done": false,
+      "targets": {
+        "Target Rust": 17,
+        "Target Host": 17,
+        "Target Studio": 17,
+        "Target HQ": 17,
+        "Target VLANG": 17,
+        "Target AutoWiki": 17
+      },
+      "reachabilityBlank": 2,
+      "evidenceGrades": [
+        "TREE / PROVISIONAL",
+        "DECLARATION / PROPOSED"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "TRACE_AND_WIRE",
+        "KEEP_DEV_TOOL",
+        "TRACE_AND_DISPOSE",
+        "ASSESS_REUSE"
+      ],
+      "currentStates": [
+        "REVIEW REQUIRED",
+        "CALLER REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "File",
+        "Symbol"
+      ],
+      "subsystems": [
+        "Studio"
+      ],
+      "shouldIntegrate": [
+        "Yes",
+        "No",
+        "Conditional"
+      ],
+      "reviewBases": [
+        "C-F01 selective source evidence at pinned commit; no runtime acceptance",
+        "C-F01 continuation at pinned source blob; selected body/content anchors and dependency analysis; no runtime acceptance",
+        "Pinned source segment and lexical refs; runtime UNRUN."
+      ],
+      "decisionConfidences": [
+        "MEDIUM — bounded source-supported finding; runtime and exhaustive caller verification pending",
+        "PROVISIONAL — explicit unresolved caller or behavior evidence",
+        "Static provisional; no runtime proof."
+      ],
+      "boundaryOwners": [
+        "Studio portable compute; A canonical native compute if justified",
+        "A existing HQKG graph engine; Studio read/compute source"
+      ],
+      "topLevelStates": [
+        "TOP LEVEL — SOURCE INSPECTED / VERIFY",
+        "TOP LEVEL — SOURCE SUPPORTED",
+        "TOP LEVEL — PROVISIONAL / VERIFY",
+        "SYMBOL_STATIC_PROVISIONAL"
+      ],
+      "evidenceTiers": [
+        "BODY/DECLARATION ANCHORS; reachability/authority unresolved; runtime UNRUN",
+        "SELECTED EXECUTABLE BODY ANCHORS; caller not established; runtime UNRUN",
+        "Source anchor; bounded lexical evidence"
+      ],
+      "reviewPackages": [
+        "D15",
+        "D01"
+      ],
+      "reviewRoles": [
+        "Build / developer tool candidate"
+      ],
+      "laneReviewNeeds": [
+        "VERIFY — source / callers",
+        "REVALIDATE — prior decision, do not silently overwrite",
+        "PENDING — initial disposition"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [
+        "Inspect actual callers, compare native equivalents and quantitative benefit before reuse/consolidation.; full independen...",
+        "Document graph identity/revision/temporal semantics and real consumers; parity benchmark, no second durable graph.; full...",
+        "Preserve graph revision, identity, evidence and invalidation; compare native equivalence/benefit; no duplicate durable g...",
+        "Trace actual caller and applicable authority/persistence or read contract. Full caller/runtime closure open."
+      ],
+      "dispositionRounds": [
+        "FB01",
+        "FB02",
+        "C-S01"
+      ],
+      "resolvedActions": [
+        "VERIFY"
+      ],
+      "revisedShouldWire": [
+        "Conditional — unresolved evidence; no NEXT promotion",
+        "Conditional — incomplete evidence; no NEXT promotion",
+        "Unknown—verify"
+      ],
+      "fileClasses": [
+        "Runtime / executable candidate",
+        "Build / packaging / tooling"
+      ]
+    },
+    {
+      "id": "VERIFY:CONSOLIDATE:studio/src/capture",
+      "phase": "VERIFY",
+      "priority": "P1",
+      "rowCount": 8,
+      "rowIds": [
+        "AT-7AD4C309F836",
+        "AT-FC5240F95745",
+        "AT-6CEE19358975",
+        "AT-4EA170FCBBA0",
+        "AT-60919E195CBA",
+        "AT-6E5790E19DE9",
+        "AT-CFF8D51EF4C2",
+        "AT-108D206AAF26"
+      ],
+      "paths": [
+        "studio/src/capture/conversation-service.mjs",
+        "studio/src/capture/conversation-browser-adapter.mjs",
+        "studio/src/capture/conversation-evidence.mjs",
+        "studio/src/capture/conversation-runtime.mjs",
+        "studio/src/capture/thread-turn-journal.mjs"
+      ],
+      "closures": [],
+      "nextPackages": [
+        "D14",
+        "D15"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "Prove real caller or deliberate internal/dev status; Real product caller and consumer proven; no duplicated Host effect path.",
+      "done": false,
+      "targets": {
+        "Target Studio": 8,
+        "Target Host": 5
+      },
+      "reachabilityBlank": 8,
+      "evidenceGrades": [
+        "DECLARATION / PROPOSED"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "TRACE_AND_DISPOSE",
+        "REVIEW_BOUND"
+      ],
+      "currentStates": [
+        "CALLER REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "Symbol"
+      ],
+      "subsystems": [
+        "Studio"
+      ],
+      "shouldIntegrate": [
+        "Conditional"
+      ],
+      "reviewBases": [
+        "C-S02: bounded pinned source anchor and selected module context; runtime UNRUN",
+        "C-S01: bounded pinned source anchor and selected module context; runtime UNRUN",
+        "BODY / SPECIFIC BOUNDARY"
+      ],
+      "decisionConfidences": [
+        "PROVISIONAL STATIC — actual source window; runtime UNRUN.",
+        "LOW — unresolved caller"
+      ],
+      "boundaryOwners": [],
+      "topLevelStates": [
+        "PRIOR DISPOSITION"
+      ],
+      "evidenceTiers": [],
+      "reviewPackages": [],
+      "reviewRoles": [],
+      "laneReviewNeeds": [
+        "REVALIDATE — prior decision, do not silently overwrite",
+        "VERIFY — source / callers"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [
+        "Validate durable pre-effect attempt, exact revision/owner, restart and at-most-once.",
+        "Trace last beforeEffect, owner/thread and positive not-dispatched evidence; no resend unknown.",
+        "Test corrupt/missing sources, path containment, digest attribution and bounded disclosure.",
+        "Trace submit, lease, journal and readback; DCB exact source grant and invalidation."
+      ],
+      "dispositionRounds": [
+        "DR03"
+      ],
+      "resolvedActions": [
+        "VERIFY"
+      ],
+      "revisedShouldWire": [
+        "Undetermined pending precise authority/caller evidence",
+        "Conditional — verify before wiring"
+      ],
+      "fileClasses": [
+        "Runtime / executable candidate"
+      ]
+    },
+    {
+      "id": "VERIFY:D06-C-WORLD-READ-PROJECTION",
+      "phase": "VERIFY",
+      "priority": "P1",
+      "rowCount": 6,
+      "rowIds": [
+        "AT-6EB3D591FAA5",
+        "AT-DC5107D1CA74",
+        "AT-138C56657706",
+        "AT-7F31EEC8EEA3",
+        "AT-D0563EE8B872",
+        "AT-983AAA7A0BBD"
+      ],
+      "paths": [
+        "studio/src/intelligence/world-evolution.mjs",
+        "studio/src/studio/personal-app-content.mjs",
+        "studio/src/studio/personal-app-service.mjs",
+        "studio/src/studio/world-relations.mjs",
+        "studio/src/studio/world-transfer.mjs",
+        "studio/src/studio/world-service.mjs"
+      ],
+      "closures": [],
+      "nextPackages": [
+        "D06"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "Real source/result identity retained through native query or pure run; stale/revoked source rejected.",
+      "done": false,
+      "targets": {
+        "Target Rust": 6,
+        "Target Host": 6,
+        "Target Studio": 6,
+        "Target PWA": 6,
+        "Target HQ": 6,
+        "Target VLANG": 6,
+        "Target TierFlow": 5,
+        "Target AutoWiki": 6,
+        "Target Harness": 1
+      },
+      "reachabilityBlank": 0,
+      "evidenceGrades": [
+        "TREE / PROVISIONAL",
+        "DECLARATION / PROPOSED"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "TRACE_AND_WIRE",
+        "TRACE_AND_DISPOSE"
+      ],
+      "currentStates": [
+        "REVIEW REQUIRED",
+        "CALLER REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "File",
+        "Symbol"
+      ],
+      "subsystems": [
+        "Studio"
+      ],
+      "shouldIntegrate": [
+        "Yes",
+        "Conditional"
+      ],
+      "reviewBases": [
+        "C-F01 continuation at pinned source blob; selected body/content anchors and dependency analysis; no runtime acceptance",
+        "Pinned source segment and lexical refs; runtime UNRUN."
+      ],
+      "decisionConfidences": [
+        "PROVISIONAL — explicit unresolved caller or behavior evidence",
+        "Static provisional; no runtime proof."
+      ],
+      "boundaryOwners": [
+        "Host World authority; Studio projection consumer",
+        "Host World authority; Studio read projection"
+      ],
+      "topLevelStates": [
+        "TOP LEVEL — PROVISIONAL / VERIFY",
+        "TOP LEVEL — SOURCE SUPPORTED",
+        "SYMBOL_STATIC_PROVISIONAL"
+      ],
+      "evidenceTiers": [
+        "SELECTED EXECUTABLE BODY ANCHORS; caller not established; runtime UNRUN",
+        "SELECTED EXECUTABLE BODY ANCHORS + SELECTED DEPENDENCY REFERENCES; runtime UNRUN",
+        "Source anchor; bounded lexical evidence"
+      ],
+      "reviewPackages": [
+        "D15",
+        "D01",
+        "D14",
+        "D06"
+      ],
+      "reviewRoles": [],
+      "laneReviewNeeds": [
+        "VERIFY — source / callers",
+        "REVALIDATE — prior decision, do not silently overwrite",
+        "PENDING — initial disposition"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [
+        "Verify authorized source lineage/revision, stable IDs, invalidation and readback; no competing World writer. Verify exha...",
+        "Trace actual caller and applicable authority/persistence or read contract. Full caller/runtime closure open."
+      ],
+      "dispositionRounds": [
+        "FB01",
+        "C-S01"
+      ],
+      "resolvedActions": [
+        "VERIFY"
+      ],
+      "revisedShouldWire": [
+        "Conditional — incomplete evidence; no NEXT promotion",
+        "Unknown—verify"
+      ],
+      "fileClasses": [
+        "Runtime / executable candidate"
+      ]
+    },
+    {
+      "id": "VERIFY:C-RETAIN-ADAPTER-EVIDENCE",
+      "phase": "VERIFY",
+      "priority": "P1",
+      "rowCount": 5,
+      "rowIds": [
+        "AT-F29899595878",
+        "AT-8224A0B16EFD",
+        "AT-1383C8242134",
+        "AT-EC5A1CD7A574",
+        "AT-2D414F800C08"
+      ],
+      "paths": [
+        "studio/src/intel/learn.mjs",
+        "studio/src/studio/adapter-factory-service.mjs"
+      ],
+      "closures": [],
+      "nextPackages": [
+        "D14"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "Training/evaluation fixtures match actual current implementation; no new duplicate model or invented Rust driver.",
+      "done": false,
+      "targets": {
+        "Target Host": 5,
+        "Target Studio": 5
+      },
+      "reachabilityBlank": 0,
+      "evidenceGrades": [
+        "DECLARATION / PROPOSED"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "TRACE_AND_DISPOSE",
+        "ASSESS_REUSE"
+      ],
+      "currentStates": [
+        "CALLER REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "Symbol"
+      ],
+      "subsystems": [
+        "Studio"
+      ],
+      "shouldIntegrate": [
+        "Conditional"
+      ],
+      "reviewBases": [
+        "Pinned source segment and lexical refs; runtime UNRUN."
+      ],
+      "decisionConfidences": [
+        "Static provisional; no runtime proof."
+      ],
+      "boundaryOwners": [
+        "Studio learned read adapter/versioned owner"
+      ],
+      "topLevelStates": [
+        "SYMBOL_STATIC_PROVISIONAL"
+      ],
+      "evidenceTiers": [
+        "Source anchor; bounded lexical evidence"
+      ],
+      "reviewPackages": [
+        "D14"
+      ],
+      "reviewRoles": [],
+      "laneReviewNeeds": [
+        "PENDING — initial disposition"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [
+        "Trace actual caller and applicable authority/persistence or read contract. Full caller/runtime closure open."
+      ],
+      "dispositionRounds": [
+        "C-S01"
+      ],
+      "resolvedActions": [
+        "VERIFY"
+      ],
+      "revisedShouldWire": [
+        "Unknown—verify"
+      ],
+      "fileClasses": [
+        "Runtime / executable candidate"
+      ]
+    },
+    {
+      "id": "VERIFY:D02-A-PERSONAL-MEMORY-RETRIEVAL",
+      "phase": "VERIFY",
+      "priority": "P1",
+      "rowCount": 4,
+      "rowIds": [
+        "AT-FBB8EC0891A7",
+        "AT-D10515FDDF35",
+        "AT-58154411AE55",
+        "AT-E2F821B8877F"
+      ],
+      "paths": [
+        "studio/src/agents/personal-ai-baseline.mjs",
+        "studio/src/intel/search.mjs",
+        "studio/src/agents/personal-agent-service.mjs"
+      ],
+      "closures": [],
+      "nextPackages": [
+        "D02"
+      ],
+      "packageOwners": [
+        "A"
+      ],
+      "acceptance": "Real product caller and consumer proven; no duplicated Host effect path.",
+      "done": false,
+      "targets": {
+        "Target Rust": 4,
+        "Target Host": 4,
+        "Target Studio": 4,
+        "Target HQ": 4,
+        "Target VLANG": 4,
+        "Target AutoWiki": 4,
+        "Target PWA": 2,
+        "Target Harness": 2
+      },
+      "reachabilityBlank": 1,
+      "evidenceGrades": [
+        "TREE / PROVISIONAL",
+        "DECLARATION / PROPOSED"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "TRACE_AND_WIRE",
+        "TRACE_AND_DISPOSE",
+        "EXTEND"
+      ],
+      "currentStates": [
+        "REVIEW REQUIRED",
+        "CALLER REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "File",
+        "Symbol"
+      ],
+      "subsystems": [
+        "Studio"
+      ],
+      "shouldIntegrate": [
+        "Conditional",
+        "Yes"
+      ],
+      "reviewBases": [
+        "C-F01 continuation at pinned source blob; selected body/content anchors and dependency analysis; no runtime acceptance",
+        "C-F01 selective source evidence at pinned commit; no runtime acceptance",
+        "Pinned source segment and lexical refs; runtime UNRUN."
+      ],
+      "decisionConfidences": [
+        "PROVISIONAL — explicit unresolved caller or behavior evidence",
+        "MEDIUM — bounded source-supported finding; runtime and exhaustive caller verification pending",
+        "Static provisional; no runtime proof."
+      ],
+      "boundaryOwners": [
+        "Existing Personal Agent service; A authorized native retrieval",
+        "Studio portable compute; A canonical native compute if justified",
+        "Existing Personal Agent memory store; Host disclosure authority"
+      ],
+      "topLevelStates": [
+        "TOP LEVEL — PROVISIONAL / VERIFY",
+        "TOP LEVEL — SOURCE INSPECTED / VERIFY",
+        "SYMBOL_STATIC_PROVISIONAL"
+      ],
+      "evidenceTiers": [
+        "SELECTED EXECUTABLE BODY ANCHORS; caller not established; runtime UNRUN",
+        "BODY/DECLARATION ANCHORS; reachability/authority unresolved; runtime UNRUN",
+        "Source anchor; bounded lexical evidence"
+      ],
+      "reviewPackages": [
+        "D15",
+        "D02"
+      ],
+      "reviewRoles": [],
+      "laneReviewNeeds": [
+        "VERIFY — source / callers",
+        "PENDING — initial disposition"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [
+        "Use stable owner identity and revision; verify bounded retrieval, redaction, invalidation and private-by-default readbac...",
+        "Identify scope/consumer and rank semantics; native retrieval parity, no private cross-scope leak.; full independent reve...",
+        "Trace actual caller and applicable authority/persistence or read contract. Full caller/runtime closure open."
+      ],
+      "dispositionRounds": [
+        "FB01",
+        "C-S01"
+      ],
+      "resolvedActions": [
+        "VERIFY"
+      ],
+      "revisedShouldWire": [
+        "Conditional — incomplete evidence; no NEXT promotion",
+        "Conditional — unresolved evidence; no NEXT promotion",
+        "Unknown—verify"
+      ],
+      "fileClasses": [
+        "Runtime / executable candidate"
+      ]
+    },
+    {
+      "id": "VERIFY:CONSOLIDATE:studio/src/agents",
+      "phase": "VERIFY",
+      "priority": "P1",
+      "rowCount": 3,
+      "rowIds": [
+        "AT-01DFDE688370",
+        "AT-04D0C51BBE2D",
+        "AT-758823278AF6"
+      ],
+      "paths": [
+        "studio/src/agents/dcb-definition-store.mjs",
+        "studio/src/agents/personal-agent-work.mjs"
+      ],
+      "closures": [],
+      "nextPackages": [],
+      "packageOwners": [],
+      "acceptance": "Prove real caller or deliberate internal/dev status; Real product caller and consumer proven; no duplicated Host effect path.",
+      "done": false,
+      "targets": {},
+      "reachabilityBlank": 3,
+      "evidenceGrades": [
+        "DECLARATION / PROPOSED"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "TRACE_AND_DISPOSE"
+      ],
+      "currentStates": [
+        "CALLER REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "Symbol"
+      ],
+      "subsystems": [
+        "Studio"
+      ],
+      "shouldIntegrate": [
+        "Conditional"
+      ],
+      "reviewBases": [
+        "C-S01: bounded pinned source anchor and selected module context; runtime UNRUN"
+      ],
+      "decisionConfidences": [
+        "PROVISIONAL STATIC — actual source window; runtime UNRUN."
+      ],
+      "boundaryOwners": [],
+      "topLevelStates": [
+        "PENDING"
+      ],
+      "evidenceTiers": [],
+      "reviewPackages": [],
+      "reviewRoles": [],
+      "laneReviewNeeds": [
+        "PENDING — initial disposition"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [
+        "Trace exact verified owner, expiry and revision; Host grant remains separate from definition metadata.",
+        "Verify idempotency, state transition and retained source references; no duplicate task writer."
+      ],
+      "dispositionRounds": [],
+      "resolvedActions": [
+        "VERIFY"
+      ],
+      "revisedShouldWire": [
+        "Undetermined pending precise authority/caller evidence"
+      ],
+      "fileClasses": [
+        "Runtime / executable candidate"
+      ]
+    },
+    {
+      "id": "VERIFY:D03-A-NATIVE-PROBE",
+      "phase": "VERIFY",
+      "priority": "P1",
+      "rowCount": 2,
+      "rowIds": [
+        "AT-737285551A6C",
+        "AT-01FB2DD77D85"
+      ],
+      "paths": [
+        "studio/src/studio/ui/native-bridge.mjs",
+        "studio/src/studio/ui/world-view.mjs"
+      ],
+      "closures": [],
+      "nextPackages": [
+        "D03"
+      ],
+      "packageOwners": [
+        "A"
+      ],
+      "acceptance": "Real Studio operation uses source-backed typed request instead.",
+      "done": false,
+      "targets": {
+        "Target Rust": 2,
+        "Target Host": 2,
+        "Target Studio": 2,
+        "Target PWA": 2,
+        "Target HQ": 2,
+        "Target VLANG": 2,
+        "Target Tauri": 2
+      },
+      "reachabilityBlank": 1,
+      "evidenceGrades": [
+        "SYMBOL / DIRECT",
+        "TREE / PROVISIONAL"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "ISOLATE_FIXTURE",
+        "KEEP_UI"
+      ],
+      "currentStates": [
+        "DISPOSITION PROPOSED",
+        "REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "Symbol",
+        "File"
+      ],
+      "subsystems": [
+        "Studio"
+      ],
+      "shouldIntegrate": [
+        "No"
+      ],
+      "reviewBases": [
+        "Pinned source segment and lexical refs; runtime UNRUN.",
+        "C-F01 selective source evidence at pinned commit; no runtime acceptance"
+      ],
+      "decisionConfidences": [
+        "Static provisional; no runtime proof.",
+        "MEDIUM — bounded source-supported finding; runtime and exhaustive caller verification pending"
+      ],
+      "boundaryOwners": [
+        "A native compute owner; Studio/Tauri read consumer"
+      ],
+      "topLevelStates": [
+        "SYMBOL_STATIC_PROVISIONAL",
+        "TOP LEVEL — PROVISIONAL / VERIFY"
+      ],
+      "evidenceTiers": [
+        "Source anchor; bounded lexical evidence",
+        "BODY/DECLARATION ANCHORS; reachability/authority unresolved; runtime UNRUN"
+      ],
+      "reviewPackages": [
+        "D03",
+        "D15"
+      ],
+      "reviewRoles": [],
+      "laneReviewNeeds": [
+        "PENDING — initial disposition",
+        "VERIFY — source / callers"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [
+        "Trace actual caller and applicable authority/persistence or read contract. Full caller/runtime closure open.",
+        "Actual probe invocation visible in real UI, truthful absence when Tauri unavailable, no effect authority.; full independ..."
+      ],
+      "dispositionRounds": [
+        "C-S01",
+        "FB01"
+      ],
+      "resolvedActions": [
+        "VERIFY"
+      ],
+      "revisedShouldWire": [
+        "Unknown—verify",
+        "Conditional — unresolved evidence; no NEXT promotion"
+      ],
+      "fileClasses": [
+        "Runtime / executable candidate"
+      ]
+    },
+    {
+      "id": "VERIFY:C-RETAIN-BROWSER-CUSTODY",
+      "phase": "VERIFY",
+      "priority": "P2",
+      "rowCount": 2,
+      "rowIds": [
+        "AT-FB204E70B697",
+        "AT-954B71CBAD76"
+      ],
+      "paths": [
+        "studio/scripts/chrome-cdp.ps1",
+        "studio/scripts/focus-chrome.ps1"
+      ],
+      "closures": [
+        "FURTHER TRACE"
+      ],
+      "nextPackages": [
+        "D14"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "Production works with scripts/evaluation artifacts absent; real test can still run.",
+      "done": false,
+      "targets": {
+        "Target Host": 2,
+        "Target Studio": 2,
+        "Target Harness": 2
+      },
+      "reachabilityBlank": 0,
+      "evidenceGrades": [
+        "TREE / PROVISIONAL"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "KEEP_DEV_TOOL"
+      ],
+      "currentStates": [
+        "REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "File"
+      ],
+      "subsystems": [
+        "Studio"
+      ],
+      "shouldIntegrate": [
+        "No"
+      ],
+      "reviewBases": [
+        "C-F01 continuation at pinned source blob; selected body/content anchors and dependency analysis; no runtime acceptance"
+      ],
+      "decisionConfidences": [
+        "PROVISIONAL — explicit unresolved caller or behavior evidence"
+      ],
+      "boundaryOwners": [
+        "Studio browser owner / dedicated profile and lease; Host effect authority"
+      ],
+      "topLevelStates": [
+        "TOP LEVEL — PROVISIONAL / VERIFY"
+      ],
+      "evidenceTiers": [
+        "SELECTED EXECUTABLE BODY ANCHORS; caller not established; runtime UNRUN"
+      ],
+      "reviewPackages": [
+        "D15"
+      ],
+      "reviewRoles": [
+        "Build / developer tool candidate"
+      ],
+      "laneReviewNeeds": [
+        "VERIFY — source / callers"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [
+        "Verify selected dedicated profile/session/target, lease and cleanup; deny mismatched origin/revoked authorization; no ne..."
+      ],
+      "dispositionRounds": [
+        "FB02"
+      ],
+      "resolvedActions": [
+        "VERIFY"
+      ],
+      "revisedShouldWire": [
+        "Conditional — incomplete evidence; no NEXT promotion"
+      ],
+      "fileClasses": [
+        "Build / packaging / tooling"
+      ]
+    },
+    {
+      "id": "VERIFY:D05-E-STUDIO-TEST-CLOSURE",
+      "phase": "VERIFY",
+      "priority": "P2",
+      "rowCount": 1,
+      "rowIds": [
+        "AT-69F3FF41AEA1"
+      ],
+      "paths": [
+        "studio/scripts/local-verify.mjs"
+      ],
+      "closures": [
+        "FURTHER TRACE"
+      ],
+      "nextPackages": [
+        "D05"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "Production works with scripts/evaluation artifacts absent; real test can still run.",
+      "done": false,
+      "targets": {},
+      "reachabilityBlank": 0,
+      "evidenceGrades": [
+        "TREE / PROVISIONAL"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "KEEP_DEV_TOOL"
+      ],
+      "currentStates": [
+        "REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "File"
+      ],
+      "subsystems": [
+        "Studio"
+      ],
+      "shouldIntegrate": [
+        "No"
+      ],
+      "reviewBases": [
+        "C-F01 continuation at pinned source blob; selected body/content anchors and dependency analysis; no runtime acceptance"
+      ],
+      "decisionConfidences": [
+        "PROVISIONAL — explicit unresolved caller or behavior evidence"
+      ],
+      "boundaryOwners": [
+        "E release/test registration; Studio test consumer"
+      ],
+      "topLevelStates": [
+        "TOP LEVEL — PROVISIONAL / VERIFY"
+      ],
+      "evidenceTiers": [
+        "SELECTED EXECUTABLE BODY ANCHORS; caller not established; runtime UNRUN"
+      ],
+      "reviewPackages": [
+        "D15"
+      ],
+      "reviewRoles": [
+        "Build / developer tool candidate"
+      ],
+      "laneReviewNeeds": [
+        "VERIFY — source / callers"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [
+        "Discover actual nonempty suites; verify missing test/browser fails honestly; retain security and negative tests. Verify ..."
+      ],
+      "dispositionRounds": [
+        "FB02"
+      ],
+      "resolvedActions": [
+        "VERIFY"
+      ],
+      "revisedShouldWire": [
+        "Conditional — incomplete evidence; no NEXT promotion"
+      ],
+      "fileClasses": [
+        "Build / packaging / tooling"
+      ]
+    },
+    {
+      "id": "VERIFY:D06-C-VERIFIED-TURN-PROJECTION",
+      "phase": "VERIFY",
+      "priority": "P1",
+      "rowCount": 1,
+      "rowIds": [
+        "AT-A8736FE8FE80"
+      ],
+      "paths": [
+        "studio/src/capture/conversation-service.mjs"
+      ],
+      "closures": [],
+      "nextPackages": [
+        "D06"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "Prove real caller or deliberate internal/dev status; Real product caller and consumer proven; no duplicated Host effect path.",
+      "done": false,
+      "targets": {
+        "Target Host": 1,
+        "Target Studio": 1,
+        "Target PWA": 1,
+        "Target VLANG": 1,
+        "Target Harness": 1,
+        "Target AutoWiki": 1,
+        "Target Tauri": 1
+      },
+      "reachabilityBlank": 0,
+      "evidenceGrades": [
+        "DECLARATION / PROPOSED"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "TRACE_AND_DISPOSE"
+      ],
+      "currentStates": [
+        "CALLER REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "Symbol"
+      ],
+      "subsystems": [
+        "Studio"
+      ],
+      "shouldIntegrate": [
+        "Conditional"
+      ],
+      "reviewBases": [
+        "Pinned source segment and lexical refs; runtime UNRUN."
+      ],
+      "decisionConfidences": [
+        "Static provisional; no runtime proof."
+      ],
+      "boundaryOwners": [
+        "Studio browser runtime; Host sole effect authority"
+      ],
+      "topLevelStates": [
+        "SYMBOL_STATIC_PROVISIONAL"
+      ],
+      "evidenceTiers": [
+        "Source anchor; bounded lexical evidence"
+      ],
+      "reviewPackages": [
+        "D06"
+      ],
+      "reviewRoles": [],
+      "laneReviewNeeds": [
+        "REVALIDATE — prior decision, do not silently overwrite"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [
+        "Trace actual caller and applicable authority/persistence or read contract. Full caller/runtime closure open."
+      ],
+      "dispositionRounds": [
+        "C-S01"
+      ],
+      "resolvedActions": [
+        "VERIFY"
+      ],
+      "revisedShouldWire": [
+        "Unknown—verify"
+      ],
+      "fileClasses": [
+        "Runtime / executable candidate"
+      ]
+    },
+    {
+      "id": "VERIFY:D12-B-DCB-GRANT",
+      "phase": "VERIFY",
+      "priority": "P1",
+      "rowCount": 1,
+      "rowIds": [
+        "AT-5D42C823E6E2"
+      ],
+      "paths": [
+        "studio/src/studio/conversation-api.mjs"
+      ],
+      "closures": [],
+      "nextPackages": [
+        "D12"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "Prove real caller or deliberate internal/dev status; Real product caller and consumer proven; no duplicated Host effect path.",
+      "done": false,
+      "targets": {
+        "Target Rust": 1,
+        "Target Host": 1,
+        "Target Studio": 1,
+        "Target PWA": 1,
+        "Target HQ": 1,
+        "Target VLANG": 1,
+        "Target Harness": 1,
+        "Target AutoWiki": 1
+      },
+      "reachabilityBlank": 0,
+      "evidenceGrades": [
+        "DECLARATION / PROPOSED"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "TRACE_AND_DISPOSE"
+      ],
+      "currentStates": [
+        "CALLER REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "Symbol"
+      ],
+      "subsystems": [
+        "Studio"
+      ],
+      "shouldIntegrate": [
+        "Conditional"
+      ],
+      "reviewBases": [
+        "Pinned source segment and lexical refs; runtime UNRUN."
+      ],
+      "decisionConfidences": [
+        "Static provisional; no runtime proof."
+      ],
+      "boundaryOwners": [
+        "Host disclosure authority; Studio facade"
+      ],
+      "topLevelStates": [
+        "SYMBOL_STATIC_PROVISIONAL"
+      ],
+      "evidenceTiers": [
+        "Source anchor; bounded lexical evidence"
+      ],
+      "reviewPackages": [
+        "D12"
+      ],
+      "reviewRoles": [],
+      "laneReviewNeeds": [
+        "REVALIDATE — prior decision, do not silently overwrite"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [
+        "Trace actual caller and applicable authority/persistence or read contract. Full caller/runtime closure open."
+      ],
+      "dispositionRounds": [
+        "C-S01"
+      ],
+      "resolvedActions": [
+        "VERIFY"
+      ],
+      "revisedShouldWire": [
+        "Unknown—verify"
+      ],
+      "fileClasses": [
+        "Runtime / executable candidate"
+      ]
+    }
+  ]
+}

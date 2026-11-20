@@ -1,0 +1,99 @@
+# File: apps/mobile-relay/test/generative-ui.test.mjs
+
+> Generated 2026-11-19 · JavaScript · arbor
+
+## Metadata
+
+| Field | Value |
+| --- | --- |
+| Project | [arbor](../../../../../projects/arbor.md) |
+| Path | apps/mobile-relay/test/generative-ui.test.mjs |
+| Language | JavaScript |
+| Kind | source |
+| Size | 7762 B |
+| Lines | 41 |
+| Hash | 12c4552c3645 |
+| Test | yes |
+| Generated | no |
+| Component | mobile-relay |
+
+## Symbols
+
+| Symbol | Kind | Line | Exported | Signature |
+| --- | --- | --- | --- | --- |
+| initial | function | 6 | no | const initial=()=&gt;createSurface({surfaceId:&#39;my-space&#39;}); |
+| op | const | 7 | no | const op=(o,s=initial())=&gt;({schema:&#39;vivim.ui-proposal/1&#39;,surfaceId:s.surfaceId,baseRevision:s.revision, operations:[{opId:&#39;op.one&#39;,...o}],explanation:&#39;Preview change&#39;,assumptions:[],unknowns:[]}); |
+| card | function | 9 | no | const card=(id=&#39;item1&#39;)=&gt;({id,type:&#39;card&#39;,props:{title:&#39;Known topic&#39;,description:&#39;Grounded summary&#39;},children:[]}); |
+| apply | const | 10 | no | const apply=(o,s=initial(),refs=[])=&gt;compileUiProposal({proposal:op(o,s),surface:s,approvedRefs:refs}); |
+| FakeNode | class | 36 | no | class FakeNode{constructor(tag,ownerDocument){this.tag=tag;this.ownerDocument=ownerDocument;this.style={};this.children=[];this.attrs={};this.events={};this.textContent=&#39;&#39;;}appendChild(x){this.childr… |
+| doc | const | 37 | no | const doc={createElement(tag){return new FakeNode(tag,doc);}};const mount=new FakeNode(&#39;main&#39;,doc);let intent=null; |
+| s | const | 38 | no | const s=apply({type:&#39;insert&#39;,parentId:&#39;root&#39;,component:{id:&#39;b&#39;,type:&#39;button&#39;,props:{label:&#39;Preview&#39;,intent:&#39;preview-only&#39;},children:[]}}).surface; |
+| out | const | 39 | no | const out=renderSurface(mount,s,{onIntent:v=&gt;intent=v}); |
+
+## Imports
+
+| Specifier | Kind | Line | Resolved |
+| --- | --- | --- | --- |
+| node:test | import | 1 | external |
+| node:assert/strict | import | 2 | external |
+| ../generative-ui/catalog.mjs | import | 3 | [apps/mobile-relay/generative-ui/catalog.mjs](../generative-ui/catalog.mjs.md) |
+| ../generative-ui/compiler.mjs | import | 4 | [apps/mobile-relay/generative-ui/compiler.mjs](../generative-ui/compiler.mjs.md) |
+| ../generative-ui/renderer.mjs | import | 5 | [apps/mobile-relay/generative-ui/renderer.mjs](../generative-ui/renderer.mjs.md) |
+
+## Dependents
+
+_No dependents._
+
+## Annotations
+
+_No annotations._
+
+## Excerpt
+
+````javascript
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {createSurface,validateSurface,projectSurface,CATALOG_VERSION,MAX} from '../generative-ui/catalog.mjs';
+import {compileUiProposal} from '../generative-ui/compiler.mjs';
+import {renderSurface} from '../generative-ui/renderer.mjs';
+const initial=()=>createSurface({surfaceId:'my-space'});
+const op=(o,s=initial())=>({schema:'vivim.ui-proposal/1',surfaceId:s.surfaceId,baseRevision:s.revision,
+  operations:[{opId:'op.one',...o}],explanation:'Preview change',assumptions:[],unknowns:[]});
+const card=(id='item1')=>({id,type:'card',props:{title:'Known topic',description:'Grounded summary'},children:[]});
+const apply=(o,s=initial(),refs=[])=>compileUiProposal({proposal:op(o,s),surface:s,approvedRefs:refs});
+test('blank provisional surface is stable and catalog versioned',()=>{const a=initial();assert.equal(a.tree.id,'root');assert.equal(a.revision,0);assert.equal(a.catalogVersion,CATALOG_VERSION);});
+test('valid insert returns a preview without persisting or incrementing revision',()=>{const p=apply({type:'insert',parentId:'root',component:card()});assert.equal(p.surface.tree.children[0].id,'item1');assert.equal(p.surface.revision,0);assert.equal(p.persisted,false);});
+test('identical model proposals compile deterministically',()=>{const a=apply({type:'insert',parentId:'root',component:card()});const b=apply({type:'insert',parentId:'root',component:card()});assert.equal(a.previewDigest,b.previewDigest);});
+test('unknown component rejected',()=>assert.throws(()=>apply({type:'insert',parentId:'root',component:{id:'evil',type:'html',props:{html:'unsafe'},children:[]}}),/UI_REJECTED/));
+test('remote URLs, HTML and scripts cannot enter text fields',()=>{for(const text of ['https://bad.test','<script>alert(1)</script>','javascript:alert(1)','data:text/html','onerror=alert(1)'])assert.throws(()=>apply({type:'insert',parentId:'root',component:{id:'n',type:'text',props:{value:text},children:[]}}),/UI_REJECTED/);});
+test('unknown property and executable handler rejected',()=>assert.throws(()=>apply({type:'insert',parentId:'root',component:{id:'b',type:'button',props:{label:'Go',intent:'preview-only',onClick:'doBad()'},children:[]}}),/UI_REJECTED/));
+test('semantic button intent is allowlisted',()=>assert.throws(()=>apply({type:'insert',parentId:'root',component:{id:'b',type:'button',props:{label:'Go',intent:'send-provider-prompt'},children:[]}}),/UI_REJECTED/));
+test('invented data/evidence references rejected',()=>assert.throws(()=>apply({type:'insert',parentId:'root',component:{id:'p',type:'profile-card',props:{title:'Identity',sourceRef:'clm-madeup'},children:[]}}),/UI_REJECTED/));
+test('locally approved evidence reference accepted',()=>assert.equal(apply({type:'insert',parentId:'root',component:{id:'p',type:'profile-card',props:{title:'Evidence',sourceRef:'clm-approved'},children:[]}},initial(),['clm-approved']).surface.tree.children[0].props.sourceRef,'clm-approved'));
+test('duplicate component ids rejected',()=>assert.throws(()=>apply({type:'insert',parentId:'root',component:{id:'root',type:'card',props:{title:'Bad'},children:[]}}),/UI_REJECTED/));
+test('duplicate op ids rejected',()=>{const p=op({type:'insert',parentId:'root',component:card()});p.operations.push({...p.operations[0]});assert.throws(()=>compileUiProposal({proposal:p,surface:initial()}),/UI_REJECTED/)});
+test('root cannot be removed',()=>assert.throws(()=>apply({type:'remove',componentId:'root'}),/UI_REJECTED/));
+test('stale revision cannot preview',()=>{const p=op({type:'set-theme',theme:initial().theme});p.baseRevision=8;assert.throws(()=>compileUiProposal({proposal:p,surface:initial()}),/UI_REJECTED/)});
+test('unknown top-level fields rejected',()=>{const p=op({type:'set-theme',theme:initial().theme});p.js='alert(1)';assert.throws(()=>compileUiProposal({proposal:p,surface:initial()}),/UI_REJECTED/)});
+test('Markdown fence and truncated JSON rejected',()=>{for(const bad of ['```json\n{}\n```','{"schema":'])assert.throws(()=>compileUiProposal({proposal:bad,surface:initial()}),/UI_REJECTED/)});
+test('proposal size limit enforced',()=>assert.throws(()=>compileUiProposal({proposal:'x'.repeat(MAX.bytes+1),surface:initial()}),/UI_REJECTED/));
+test('invalid theme color rejected, original remains unchanged',()=>{const s=initial();const prior=JSON.stringify(s);const theme={...s.theme,background:'url(https://bad)'};assert.throws(()=>apply({type:'set-theme',theme},s),/UI_REJECTED/);assert.equal(JSON.stringify(s),prior);});
+test('replace props uses closed schema',()=>{const s=apply({type:'insert',parentId:'root',component:card()}).surface;const p=apply({type:'replace-props',componentId:'item1',props:{description:'Updated'}},s);assert.equal(p.surface.tree.children[0].props.title,'Known topic');assert.equal(p.surface.tree.children[0].props.description,'Updated');});
+test('move cycle is refused',()=>{let s=apply({type:'insert',parentId:'root',component:{id:'container',type:'stack',props:{},children:[card('kid')]}}).surface;assert.throws(()=>apply({type:'move',componentId:'container',parentId:'kid'},s),/UI_REJECTED/);});
+test('cannot move parent into descendant',()=>{let s=apply({type:'insert',parentId:'root',component:{id:'a',type:'stack',props:{},children:[{id:'b',type:'stack',props:{},children:[]}]}}).surface;assert.throws(()=>apply({type:'move',componentId:'a',parentId:'b'},s),/UI_REJECTED/);});
+test('reject overdepth and too many nodes',()=>{let nested=card('z');for(let i=0;i<10;i++)nested={id:'n'+i,type:'stack',props:{},children:[nested]};assert.throws(()=>apply({type:'insert',parentId:'root',component:nested}),/UI_REJECTED/);});
+test('private PC component pruned from phone projection and present on PC',()=>{const refs=['viw-1'];const p=apply({type:'insert',parentId:'root',component:{id:'deep.private',type:'card',visibility:'pc-private',props:{title:'Relationships',sourceRef:'viw-1'},children:[]}},initial(),refs);assert.equal(projectSurface(p.surface,{audience:'phone',refs:new Set(refs)}).tree.children.length,0);assert.equal(projectSurface(p.surface,{audience:'pc',refs:new Set(refs)}).tree.children.length,1);});
+test('private component cannot be silently removed',()=>{const refs=['viw-1'];const s=apply({type:'insert',parentId:'root',component:{id:'deep.private',type:'card',visibility:'pc-private',props:{title:'Relationships',sourceRef:'viw-1'},children:[]}},initial(),refs).surface;assert.throws(()=>apply({type:'remove',componentId:'deep.private'},s,refs),/UI_REJECTED/);});
+test('data-only chart rejects nonnumeric/huge values',()=>assert.throws(()=>apply({type:'insert',parentId:'root',component:{id:'c',type:'chart',props:{title:'Values',items:[{label:'One',value:'alert(1)'}]},children:[]}}),/UI_REJECTED/));
+test('safe renderer uses text nodes and emits semantic intent only',()=>{
+  class FakeNode{constructor(tag,ownerDocument){this.tag=tag;this.ownerDocument=ownerDocument;this.style={};this.children=[];this.attrs={};this.events={};this.textContent='';}appendChild(x){this.children.push(x);}replaceChildren(...xs){this.children=xs;}setAttribute(k,v){this.attrs[k]=v;}addEventListener(k,fn){this.events[k]=fn;}}
+  const doc={createElement(tag){return new FakeNode(tag,doc);}};const mount=new FakeNode('main',doc);let intent=null;
+  const s=apply({type:'insert',parentId:'root',component:{id:'b',type:'button',props:{label:'Preview',intent:'preview-only'},children:[]}}).surface;
+  const out=renderSurface(mount,s,{onIntent:v=>intent=v});
+  assert.equal(out.rendered,true);const button=mount.children[0].children[0].children[0];assert.equal(button.tag,'button');button.events.click();assert.equal(intent.intent,'preview-only');assert.equal(intent.surfaceId,'my-space');
+});
+````
+
+---
+
+[HQ wiki](../../../../../index.md) · [Symbols](../../../../../symbols.md) · [Dependency graph](../../../../../graph.md) · [Documentation](../../../../../docs.md) · [Changes](../../../../../changes.md) · [Open tasks](../../../../../todos.md) · [Deprecated](../../../../../deprecated.md) · [Agent annotation protocol](../../../../../protocol.md) · [Glossary](../../../../../glossary.md) · [Using HQ](../../../../../context.md) · [Capabilities](../../../../../capabilities.md) · [Search index](../../../../../search.json) · [Browser view](../../../../../index.html)

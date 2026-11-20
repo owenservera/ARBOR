@@ -1,0 +1,101 @@
+# File: native/hqkg/tests/fixtures/web-memory-revision/revocation-cases.json
+
+> Generated 2026-11-19 · JSON · arbor
+
+## Metadata
+
+| Field | Value |
+| --- | --- |
+| Project | [arbor](../../../../../../../projects/arbor.md) |
+| Path | native/hqkg/tests/fixtures/web-memory-revision/revocation-cases.json |
+| Language | JSON |
+| Kind | config |
+| Size | 2779 B |
+| Lines | 58 |
+| Hash | 2cdf1f979844 |
+| Test | yes |
+| Generated | no |
+| Component | native |
+
+## Symbols
+
+_No symbols._
+
+## Imports
+
+_No imports._
+
+## Dependents
+
+_No dependents._
+
+## Annotations
+
+_No annotations._
+
+## Excerpt
+
+```json
+{
+  "schema": "vivim.web-memory-revision/1",
+  "description": "Argv contract of `hqkg-web-feed <journal> revoke`. Driven against the real binary by tests/web_feed_process.rs::the_revoke_argv_contract_matches_the_fixture. Each case starts from a journal holding two observed visits of installation 12345678-1234-4234-8234-123456789012 (event ids 00000001-... and 00000002-...). `rowsAfter` is the number of rows a later `query` must still return: a revoked visit is absent from query output.",
+  "installationId": "12345678-1234-4234-8234-123456789012",
+  "cases": [
+    {
+      "name": "revoke-full-visit-id",
+      "argv": ["revoke", "--id", "web:visit:12345678-1234-4234-8234-123456789012:00000001-1234-4234-8234-123456789012"],
+      "expect": { "exit": 0, "revoked": 1, "already": 0, "unknown": 0, "rowsAfter": 1 }
+    },
+    {
+      "name": "revoke-bare-event-id",
+      "argv": ["revoke", "--id", "00000002-1234-4234-8234-123456789012"],
+      "expect": { "exit": 0, "revoked": 1, "already": 0, "unknown": 0, "rowsAfter": 1 }
+    },
+    {
+      "name": "revoke-with-reason",
+      "argv": ["revoke", "--id", "00000002-1234-4234-8234-123456789012", "--reason", "owner request"],
+      "expect": { "exit": 0, "revoked": 1, "already": 0, "unknown": 0, "rowsAfter": 1 }
+    },
+    {
+      "name": "revoke-unknown-event-id",
+      "argv": ["revoke", "--id", "99999999-1234-4234-8234-123456789012"],
+      "expect": { "exit": 0, "revoked": 0, "already": 0, "unknown": 1, "rowsAfter": 2 }
+    },
+    {
+      "name": "revoke-already-revoked",
+      "preRevoke": ["revoke", "--id", "web:visit:12345678-1234-4234-8234-123456789012:00000001-1234-4234-8234-123456789012"],
+      "argv": ["revoke", "--id", "web:visit:12345678-1234-4234-8234-123456789012:00000001-1234-4234-8234-123456789012"],
+      "expect": { "exit": 0, "revoked": 0, "already": 1, "unknown": 0, "rowsAfter": 1 }
+    },
+    {
+      "name": "revoke-requires-an-id",
+      "argv": ["revoke", "--reason", "owner request"],
+      "expect": { "exit": 2, "rowsAfter": 2 }
+    },
+    {
+      "name": "revoke-rejects-an-unknown-flag",
+      "argv": ["revoke", "--exec", "x"],
+      "expect": { "exit": 2, "rowsAfter": 2 }
+    },
+    {
+      "name": "revoke-rejects-a-duplicate-flag",
+      "argv": ["revoke", "--id", "00000001-1234-4234-8234-123456789012", "--id", "00000002-1234-4234-8234-123456789012"],
+      "expect": { "exit": 2, "rowsAfter": 2 }
+    },
+    {
+      "name": "revoke-rejects-a-malformed-id",
+      "argv": ["revoke", "--id", "not-a-uuid"],
+      "expect": { "exit": 2, "rowsAfter": 2 }
+    },
+    {
+      "name": "revoke-rejects-a-flag-without-a-value",
+      "argv": ["revoke", "--id"],
+      "expect": { "exit": 2, "rowsAfter": 2 }
+    }
+  ]
+}
+```
+
+---
+
+[HQ wiki](../../../../../../../index.md) · [Symbols](../../../../../../../symbols.md) · [Dependency graph](../../../../../../../graph.md) · [Documentation](../../../../../../../docs.md) · [Changes](../../../../../../../changes.md) · [Open tasks](../../../../../../../todos.md) · [Deprecated](../../../../../../../deprecated.md) · [Agent annotation protocol](../../../../../../../protocol.md) · [Glossary](../../../../../../../glossary.md) · [Using HQ](../../../../../../../context.md) · [Capabilities](../../../../../../../capabilities.md) · [Search index](../../../../../../../search.json) · [Browser view](../../../../../../../index.html)

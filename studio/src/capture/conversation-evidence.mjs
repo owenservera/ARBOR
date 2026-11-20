@@ -178,8 +178,13 @@ function turnProjection(turn) {
     payloadDigest: j?.payloadDigest ?? turn?.payloadDigest ?? null, revision: j?.revision ?? null, phase: j?.phase ?? turn?.phase ?? null,
     reason: j?.reason ?? turn?.reason ?? null, createdAt: j?.createdAt ?? turn?.createdAt ?? null, updatedAt: j?.updatedAt ?? turn?.updatedAt ?? null,
     boundary: j?.boundary ?? turn?.boundary ?? null,
+    // The snapshot fallback keeps the attempt's own delivery state: an uncertain/unknown
+    // send is never rewritten into an observed one here.
     delivery: j?.delivery ?? (turn?.send?.evidence ? { state: turn.send.state, evidence: turn.send.evidence } : null) ?? null,
-    reply: j?.reply ?? (turn?.reply?.evidence ? { state: 'observed', evidence: turn.reply.evidence } : null) ?? null,
+    // Same for the reply: only an actually observed reply is projected as 'observed'; a
+    // partial ('streaming')/waiting reply keeps its own state instead of being promoted.
+    reply: j?.reply ?? (turn?.reply?.evidence
+      ? { state: turn.reply.state === 'ready' ? 'observed' : (turn.reply.state ?? 'unknown'), evidence: turn.reply.evidence } : null) ?? null,
     readiness: j?.readiness ?? turn?.readiness ?? null, completion: j?.completion ?? turn?.completion ?? null };
 }
 
@@ -188,6 +193,12 @@ function deriveGaps({ view, journal, journalState, sessions }) {
   const turns = journal?.turns ?? view?.attempts ?? [];
   for (const turn of turns) {
     const t = turnProjection(turn);
+    // A turn whose phase claims delivered/observed but whose delivery is not positively
+    // observed is an explicit gap, never a silent success.
+    if (['delivered', 'observed'].includes(t.phase) && t.delivery?.state !== 'observed') {
+      gaps.push({ code: 'DELIVERY_NOT_OBSERVED', turnId: t.id, phase: t.phase, deliveryState: t.delivery?.state ?? null });
+    }
+    if (t.phase === 'unknown') gaps.push({ code: 'TURN_UNCERTAIN', turnId: t.id, reason: t.reason ?? null });
     if (t.delivery?.state === 'observed' && !t.reply?.evidence) gaps.push({ code: 'REPLY_NOT_OBSERVED', turnId: t.id, sessionId: t.boundary?.sessionId ?? null });
     if (t.reply?.evidence && t.completion?.state !== 'complete') gaps.push({ code: 'REPLY_COMPLETION_UNKNOWN', turnId: t.id,
       sessionId: t.reply.evidence.sessionId ?? t.boundary?.sessionId ?? null, chars: t.reply.evidence.chars ?? null,
@@ -202,6 +213,10 @@ function deriveGaps({ view, journal, journalState, sessions }) {
   if (!turns.length && !view?.sessionId) gaps.push({ code: 'NO_CAPTURED_TURN_OR_SESSION' });
   if (journalState !== 'referenced') gaps.push({ code: 'JOURNAL_REFERENCE_UNAVAILABLE', reason: journalState });
   if (view?.capture?.state && !['idle', 'stopped'].includes(view.capture.state)) gaps.push({ code: 'CAPTURE_NOT_IDLE_AT_PRESERVATION', state: view.capture.state });
+  // Revocation is explicit: an invalidated observed-prefix adoption is recorded as a gap,
+  // never silently dropped from the checkpoint.
+  if (view?.prefix?.state === 'invalidated') gaps.push({ code: 'PREFIX_REVOKED', prefixId: view.prefix.prefixId ?? null,
+    reason: view.prefix.reason ?? null, invalidatedAt: view.prefix.invalidatedAt ?? null });
   return gaps;
 }
 
@@ -280,6 +295,12 @@ export function captureConversationEvidence({ directory, id, view, journal = nul
       site: view.site ?? null, sessionId: view.sessionId ?? null, identity: view.identity ?? null,
       binding: view.binding ? { targetId: view.binding.targetId ?? null, origin: view.binding.origin ?? null,
         ownedByStudio: view.binding.ownedByStudio ?? null, thread: view.binding.thread ?? null } : null,
+      // Bounded prefix record incl. revocation (state 'invalidated' + reason + invalidatedAt):
+      // the checkpoint must show a revoked adoption explicitly, not omit it.
+      prefix: view.prefix ? { state: view.prefix.state ?? null, reason: view.prefix.reason ?? null,
+        prefixId: view.prefix.prefixId ?? null, invalidatedAt: view.prefix.invalidatedAt ?? null,
+        adoptedAt: view.prefix.adoptedAt ?? null, threadRef: view.prefix.thread?.ref ?? null,
+        target: view.prefix.target ? { targetId: view.prefix.target.targetId ?? null, origin: view.prefix.target.origin ?? null } : null } : null,
       capture: view.capture ?? null, finish: view.finish ?? null, diagnostic: view.diagnostic ?? null, uncertainty: view.diagnostic?.uncertainty ?? null,
       writer: view.writer ?? null, limitations: Array.isArray(view.limitations) ? view.limitations.slice(0, 20) : [] },
     journal: { ...journalPointer, revision: journal?.revision ?? null, threadKey: journal?.threadKey ?? null,
@@ -319,4 +340,57 @@ export function captureConversationEvidence({ directory, id, view, journal = nul
   return { file, revision, preservedAt: at, fingerprint, trigger, turns: turns.length, sessions: sessions.length,
     gaps: gaps.map((g) => g.code), failures: failures.length,
     coverage: { ui: checkpoint.coverage.ui.state, knowledge: checkpoint.coverage.knowledge.state, outcome: checkpoint.coverage.outcome.state } };
+}
+
+/**
+ * Read-only retrieval of a preserved checkpoint. This is the read half of the evidence
+ * contract: without it the checkpoint above is write-only and no actual evidence is
+ * retrievable. The result always carries its SOURCE IDENTITY (source name, schema,
+ * version, exact file, sha256 of the persisted bytes, bytes, revision, fingerprint) plus
+ * the EXPLICIT gaps/failures and the prefix REVOCATION recorded at preservation time.
+ *
+ * Per-turn `deliveryObserved`/`replyObserved` are recomputed from the persisted states, so
+ * an uncertain/unknown delivery can never be surfaced as observed (success) by this read.
+ *
+ * States: 'verified' | 'missing' | 'unreadable' (never throws for absent/corrupt files).
+ */
+export const EVIDENCE_SOURCE = 'conversation-evidence-checkpoint';
+export function readConversationEvidence({ directory, id, io = fs, maxBytes = EVIDENCE_LIMITS.maxHashBytes } = {}) {
+  if (typeof directory !== 'string' || !directory) throw Object.assign(new Error('EVIDENCE_DIRECTORY_REQUIRED'), { code: 'EVIDENCE_DIRECTORY_REQUIRED' });
+  if (!ID_RE.test(id ?? '')) throw Object.assign(new Error('INVALID_CONVERSATION_ID'), { code: 'INVALID_CONVERSATION_ID' });
+  const file = evidenceFileFor(directory, id);
+  const base = { source: EVIDENCE_SOURCE, schema: EVIDENCE_SCHEMA, version: EVIDENCE_VERSION, file, conversationId: id };
+  const unavailable = (state, reason) => ({ ...base, state, reason, sha256: null, bytes: null, revision: null,
+    turns: [], sessions: [], gaps: [{ code: 'EVIDENCE_CHECKPOINT_UNAVAILABLE', reason }], failures: [],
+    coverage: null, revocation: { prefix: null }, history: [] });
+  let stat;
+  try { stat = io.lstatSync(file); }
+  catch (e) { return unavailable(e?.code === 'ENOENT' ? 'missing' : 'unreadable', e?.code === 'ENOENT' ? 'MISSING' : 'UNREADABLE'); }
+  if (!stat.isFile() || stat.isSymbolicLink() || stat.size > maxBytes) return unavailable('unreadable', 'UNSAFE_OR_OVERSIZED');
+  let raw;
+  try { raw = io.readFileSync(file); }
+  catch (e) { return unavailable('unreadable', String(e?.code ?? 'READ_FAILED')); }
+  let parsed;
+  try { parsed = JSON.parse(raw.toString('utf8')); }
+  catch { return unavailable('unreadable', 'CORRUPT_JSON'); }
+  if (!parsed || parsed.schema !== EVIDENCE_SCHEMA || parsed.version !== EVIDENCE_VERSION || parsed.conversationId !== id
+    || !Number.isSafeInteger(parsed.revision) || parsed.revision < 1) return unavailable('unreadable', 'INCOMPATIBLE_CHECKPOINT');
+  const turns = (Array.isArray(parsed.turns) ? parsed.turns : []).map((t) => ({
+    ...t,
+    // Honest flags recomputed from the persisted delivery/reply states: only a positively
+    // observed delivery/reply counts as observed; uncertain stays uncertain.
+    deliveryObserved: t?.delivery?.state === 'observed',
+    replyObserved: t?.reply?.state === 'observed',
+  }));
+  const prefix = parsed.conversation?.prefix ?? null;
+  return { ...base, state: 'verified', sha256: sha256(raw), bytes: stat.size, revision: parsed.revision,
+    trigger: parsed.trigger ?? null, preservedAt: parsed.preservedAt ?? null, fingerprint: parsed.fingerprint ?? null,
+    turns,
+    sessions: Array.isArray(parsed.sessions) ? parsed.sessions : [],
+    gaps: Array.isArray(parsed.gaps) ? parsed.gaps : [],
+    failures: Array.isArray(parsed.failures) ? parsed.failures : [],
+    coverage: parsed.coverage ?? null,
+    revocation: { prefix: prefix ? { state: prefix.state ?? null, reason: prefix.reason ?? null, prefixId: prefix.prefixId ?? null,
+      invalidatedAt: prefix.invalidatedAt ?? null, adoptedAt: prefix.adoptedAt ?? null, threadRef: prefix.threadRef ?? null } : null },
+    history: Array.isArray(parsed.history) ? parsed.history : [] };
 }

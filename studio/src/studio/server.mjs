@@ -131,7 +131,11 @@ export async function startStudio({ paths, profileStore, familyStore, cdpPort = 
       const profile = profileName ? profileStore.load(storageName(profileName, 'profile'))
         : session.kv.get('PROFILE_SNAPSHOT') ?? profileStore.load(session.meta.profile?.name ?? 'generic');
       const result = await derive(session, profile, famOpt);
-      hub.publish('session.derived', { id: session.id, records: result.records, knowledge: result.knowledge, recordCounts: result.recordCounts, familyCounts: result.familyCounts }, session.id);
+      // The verified derived outcome is published through the EXISTING hub event feed (the same
+      // reader the UI/Host consumes) — never a parallel process or second store. knowledgeStatus
+      // is read back from the session's own kv (single persistence owner) so the event carries
+      // the exact persisted outcome marker (status/completedAt/entityCount), not a re-summary.
+      hub.publish('session.derived', { id: session.id, records: result.records, knowledge: result.knowledge, recordCounts: result.recordCounts, familyCounts: result.familyCounts, knowledgeStatus: session.kv.get('KNOWLEDGE_STATUS', null) }, session.id);
       return result;
     } finally { deriving.delete(session.id); }
   }

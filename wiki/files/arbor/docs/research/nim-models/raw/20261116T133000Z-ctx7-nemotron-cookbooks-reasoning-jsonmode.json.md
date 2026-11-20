@@ -1,0 +1,58 @@
+# File: docs/research/nim-models/raw/20261116T133000Z-ctx7-nemotron-cookbooks-reasoning-jsonmode.json
+
+> Generated 2026-11-19 · JSON · arbor
+
+## Metadata
+
+| Field | Value |
+| --- | --- |
+| Project | [arbor](../../../../../../projects/arbor.md) |
+| Path | docs/research/nim-models/raw/20261116T133000Z-ctx7-nemotron-cookbooks-reasoning-jsonmode.json |
+| Language | JSON |
+| Kind | config |
+| Size | 3610 B |
+| Lines | 15 |
+| Hash | 35e6b312697b |
+| Test | no |
+| Generated | no |
+| Component | docs |
+
+## Symbols
+
+_No symbols._
+
+## Imports
+
+_No imports._
+
+## Dependents
+
+_No dependents._
+
+## Annotations
+
+_No annotations._
+
+## Excerpt
+
+```json
+{
+  "type": "context7-query-docs",
+  "libraryId": "/nvidia-nemo/nemotron",
+  "query": "Nemotron model cards: tool calling / function calling support per model, agentic capabilities, structured output support, recommended system prompt / chat template, reasoning toggle for reasoning models (nano-omni-reasoning), and which Nemotron models support vision (Super-VL) vs text-only",
+  "language": "python",
+  "pulledAt": "2026-11-16T13:30:00Z",
+  "response": "### Call Nano Omni with reasoning and JSON mode options\n\nSource: https://github.com/nvidia-nemo/nemotron/blob/main/usage-cookbook/Nemotron-3-Nano-Omni/doc-intelligence-with-parse/doc_intelligence_cookbook.ipynb\n\n`chat_template_kwargs={'enable_thinking': True}` toggles think-before-answer — the kwarg name is mandatory; `thinking` is silently ignored by the chat template, which leaves reasoning ON by default. For direct transcription calls (reasoning=\"off\") a `/no_think` system message is ALSO injected as belt-and-suspenders. Sampling best-practices: thinking mode uses top_p=0.95; instruct mode uses top_k=1. json_mode sets `\"response_format\": {\"type\": \"json_object\"}`. Request fields: model, messages, max_tokens, temperature, stream, chat_template_kwargs, top_p/top_k.\n\n--------------------------------\n\n### Toggle reasoning on/off with chat_template_kwargs\n\nSource: https://github.com/nvidia-nemo/nemotron/blob/main/usage-cookbook/Nemotron-3.5-Lightning/sglang_cookbook.ipynb\n\nReasoning is on (default); response includes `reasoning_content` when enabled. Reasoning off via extra_body `{\"chat_template_kwargs\": {\"enable_thinking\": False, \"force_nonempty_content\": True}}`. Sampling in cookbook: temperature=1.0, top_p=0.95, max_tokens=4096.\n\n--------------------------------\n\n### Nemotron 3.5 Super VL model card (spec table)\n\nSource: https://github.com/nvidia-nemo/nemotron/blob/main/src/nemotron/recipes/super35/README.md\n\n120B total / 12B active hybrid Mamba-Transformer LatentMoE VLM; C-RADIO encoder + VL projector; temporal video embedder (image/video stack, no audio); one recursively shared MTP head; context up to 1M tokens; checkpoints Base-BF16/BF16/NVFP4; HF ids nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-{Base-BF16,BF16,NVFP4}.\n\n--------------------------------\n\n### Reasoning mode with /think\n\nSource: https://github.com/nvidia-nemo/nemotron/blob/main/usage-cookbook/Nemotron-Nano-9B-v2/transformers_cookbook.ipynb\n\nNemotron Nano supports two reasoning modes: ON (default) and OFF. Toggle via /think or /no_think in the system message.\n\n--------------------------------\n\n### Call Nemotron Nano 2 VL with images, videos, and text\n\nSource: https://github.com/nvidia-nemo/nemotron/blob/main/usage-cookbook/Nemotron-Nano2-VL/build_general_usage_cookbook.ipynb\n\nmodel 'nvidia/nvidia-nemotron-nano-12b-v2-vl'; reasoning_mode toggles /think vs /no_think system message; content parts image_url/video_url/text; streaming; reasoning_content delta.",
+  "sourceUrls": [
+    "https://github.com/nvidia-nemo/nemotron/blob/main/usage-cookbook/Nemotron-3-Nano-Omni/doc-intelligence-with-parse/doc_intelligence_cookbook.ipynb",
+    "https://github.com/nvidia-nemo/nemotron/blob/main/usage-cookbook/Nemotron-3.5-Lightning/sglang_cookbook.ipynb",
+    "https://github.com/nvidia-nemo/nemotron/blob/main/src/nemotron/recipes/super35/README.md",
+    "https://github.com/nvidia-nemo/nemotron/blob/main/usage-cookbook/Nemotron-Nano-9B-v2/transformers_cookbook.ipynb",
+    "https://github.com/nvidia-nemo/nemotron/blob/main/usage-cookbook/Nemotron-Nano2-VL/build_general_usage_cookbook.ipynb"
+  ]
+}
+```
+
+---
+
+[HQ wiki](../../../../../../index.md) · [Symbols](../../../../../../symbols.md) · [Dependency graph](../../../../../../graph.md) · [Documentation](../../../../../../docs.md) · [Changes](../../../../../../changes.md) · [Open tasks](../../../../../../todos.md) · [Deprecated](../../../../../../deprecated.md) · [Agent annotation protocol](../../../../../../protocol.md) · [Glossary](../../../../../../glossary.md) · [Using HQ](../../../../../../context.md) · [Capabilities](../../../../../../capabilities.md) · [Search index](../../../../../../search.json) · [Browser view](../../../../../../index.html)

@@ -4,11 +4,16 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { createHash, randomBytes } from 'node:crypto';
-import { createBridgeEvidence } from './bridge-evidence.mjs';
+import { createBridgeEvidence, knowledgeRow, knowledgeEnvelope } from './bridge-evidence.mjs';
 import { createStudioJournalEvidence } from './studio-journal-evidence.mjs';
 import { createPhoneDeliveryAcks } from './phone-delivery-acks.mjs';
 
 export const LIVE_SCHEMA='vivim.live-state/1';
+// Stages that assert forward progress. `send.uncertain` and the failure stages
+// are deliberately excluded: they are quarantine signals, never evidence that a
+// provider accepted or delivered anything.
+const FORWARD_KINDS=['transport.queued','bridge.claimed','send.authorized','send.observed','reply.observed','delivery.acked'];
+const QUARANTINED_PHASES=new Set(['uncertain','failed_before_send','failed_after_send']);
 const ID=/^[a-zA-Z][a-zA-Z0-9._:-]{0,119}$/;
 const CMD=/^cmd-[0-9a-f]{16}$/;
 const DIGEST=/^[a-f0-9]{64}$/;
@@ -155,6 +160,33 @@ export function createLiveStateProjection({dir,worldId,verifyObservation,now=()=
       revision:events.length,total:rows.length,omitted:Math.max(0,rows.length-16),items:rows.slice(0,16)};
   }
   function studioOutcomes(){const {events,state}=validatedEvents();return outcomeProjection(events,state);}
+  // Incremental native-knowledge projection of the verified live-state log.
+  // One row per (message, stage) proof, keyed by that proof's exact source
+  // identity, revision and evidence digest; the log is re-read per call so a
+  // replay yields the same rows. A message whose current phase is uncertain or
+  // a post-send failure contributes no forward row and is reported as a scoped
+  // tombstone, so the graph can never present it as a completed exchange.
+  function nativeKnowledge(){
+    const {events,state}=validatedEvents();
+    const latest=new Map();
+    for(const e of events)if(e.messageId)latest.set(e.messageId+'\u0000'+e.kind,e);
+    const items=[],tombstones=[];
+    for(const m of state.messages.values()){
+      if(QUARANTINED_PHASES.has(m.phase))
+        tombstones.push({sourceRef:m.id,stage:'message.evidence',reason:'quarantined-'+m.phase});
+      for(const stage of FORWARD_KINDS){
+        const proof=m.proofs[stage];if(!proof)continue;
+        const event=latest.get(m.id+'\u0000'+stage);if(!event)continue;
+        items.push(knowledgeRow({stage,source:proof.source,ledger:'host-live-state',
+          sourceRef:proof.ref,sourceRevision:proof.revision,digest:proof.evidenceDigest,
+          order:Date.parse(event.observedAt),
+          semanticId:'vivim:conversation:'+m.conversationId+':'+m.id+':'+stage,
+          title:'Live '+stage+' · '+m.id,
+          summary:'Hash-linked live-state '+stage+' evidence, revision '+proof.revision}));
+      }
+    }
+    return knowledgeEnvelope({revision:events.length,items,tombstones});
+  }
   function snapshot(){
     const {events,state}=validatedEvents();return {schema:LIVE_SCHEMA,worldId,revision:events.length,
       cursor:{sequence:events.length,digest:events.at(-1)?.digest??'0'.repeat(64)},
@@ -206,7 +238,7 @@ export function createLiveStateProjection({dir,worldId,verifyObservation,now=()=
         }))
       })) };
   }
-  return {schema:LIVE_SCHEMA,worldId,record,snapshot,changesSince,worldTimeline,messageState,studioOutcomes};
+  return {schema:LIVE_SCHEMA,worldId,record,snapshot,changesSince,worldTimeline,messageState,studioOutcomes,nativeKnowledge};
 }
 
 /**
@@ -359,6 +391,21 @@ export function createSourceVerifiedLiveProjection({dataRoot,worldId,verifyOther
   const verifiedReplyDisplays=()=>new Set(studioJournal.links()
     .filter(link=>link.stages.replyDisplayMatchesJournal===true)
     .map(link=>link.commandId));
-  return {...projection,recordAcceptedRelay,recordBridgeTransition,
+  // Single Host-facing incremental-knowledge view. It merges the three
+  // source-side projections (bridge ledger, Studio journal, live-state log) by
+  // stable row id, so a record seen through two sources stays one node and a
+  // replay is byte-identical. Everything is re-derived per call: withdrawn or
+  // revoked evidence is absent from `items` and only its identity is tombstoned.
+  function nativeKnowledge(){
+    const live=projection.nativeKnowledge();
+    const bridgeRows=bridge.nativeKnowledge();
+    const studioRows=studioJournal.nativeKnowledge();
+    return knowledgeEnvelope({revision:live.revision,
+      items:[...bridgeRows.items,...studioRows.items,...live.items],
+      tombstones:[...bridgeRows.tombstones,...studioRows.tombstones,...live.tombstones],
+      omitted:(bridgeRows.omitted??0)+(studioRows.omitted??0)+(live.omitted??0),
+      extra:{worldId,sources:['bridge','studio-journal','live-state'],liveRevision:live.revision}});
+  }
+  return {...projection,nativeKnowledge,recordAcceptedRelay,recordBridgeTransition,
     reconcileBridgeClaims,reconcileStudioJournal,recordPhoneDelivery,verifiedReplyDisplays};
 }

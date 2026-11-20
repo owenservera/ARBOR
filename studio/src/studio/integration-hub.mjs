@@ -37,6 +37,22 @@ const timeQuery = { at: { description: 'Epoch milliseconds or ISO timestamp', ty
 const sessionQuery = { ...pagination, site: str, origin: str, status: str, profile: str, q: str };
 const objectSchema = (properties = {}, required = []) => ({ type: 'object', properties, ...(required.length ? { required } : {}) });
 
+export const KNOWLEDGE_STATUS_SCHEMA = 'capture-studio.knowledge-status/1';
+// Read guard over the ONE knowledge store: the session's own kv, written by replay/derive.mjs
+// (KNOWLEDGE_STATUS + MODEL — single persistence owner). Producer -> consumer chain:
+// session kv -> this guard -> graphOf and the knowledge/entities/graph/learning routes below.
+// No second store, no cross-scope read; a marker from a foreign schema is refused, not consumed.
+export function knowledgeView(s) {
+  const outcome = s.kv.get('KNOWLEDGE_STATUS', null);
+  const model = s.kv.get('MODEL', null);
+  if (outcome && outcome.status !== 'complete') throw problem(409, `Knowledge is ${outcome.status}; stale derived outputs are unavailable`, 'KNOWLEDGE_UNAVAILABLE');
+  if (outcome && outcome.schema !== undefined && outcome.schema !== KNOWLEDGE_STATUS_SCHEMA)
+    throw problem(409, 'Knowledge status marker has an unrecognized schema; derive first', 'KNOWLEDGE_UNAVAILABLE');
+  if (!model || model.error) throw problem(409, 'Session has no successful derived knowledge; derive first', 'KNOWLEDGE_UNAVAILABLE');
+  return { outcome: outcome ?? { status: 'legacy-unverified' }, model,
+    source: { owner: 'studio-session-kv', keys: ['KNOWLEDGE_STATUS', 'MODEL'], schema: outcome?.schema ?? null } };
+}
+
 export function createIntegrationHub({ paths, profileStore, learner, recorder, conversationRuntime, harnessApi, deriveSession, previewRecord, previewEvent, getPort, getAccessMode = () => 'local', cdpPort, deriving = new Set(), invalidateReplay = () => {}, adapterFactory = null, learningPipeline = null }) {
   const feed = new EventFeed();
   const webhooks = new Webhooks(feed, { forbiddenPorts: () => [getPort(), cdpPort] });
@@ -64,13 +80,7 @@ export function createIntegrationHub({ paths, profileStore, learner, recorder, c
     if (conversationRuntime?.isSessionActive(s.id)) throw problem(409, 'Finish conversation capture before replaying or rebuilding this session', 'SESSION_ACTIVE');
     if (['recording', 'stopping'].includes(recorder.state) && recorder.session?.id === s.id) throw problem(409, 'Stop capture before replaying or rebuilding this session', 'SESSION_ACTIVE');
   };
-  const knowledge = (s) => {
-    const outcome = s.kv.get('KNOWLEDGE_STATUS', null);
-    const model = s.kv.get('MODEL', null);
-    if (outcome && outcome.status !== 'complete') throw problem(409, `Knowledge is ${outcome.status}; stale derived outputs are unavailable`, 'KNOWLEDGE_UNAVAILABLE');
-    if (!model || model.error) throw problem(409, 'Session has no successful derived knowledge; derive first', 'KNOWLEDGE_UNAVAILABLE');
-    return { outcome: outcome ?? { status: 'legacy-unverified' }, model };
-  };
+  const knowledge = (s) => knowledgeView(s);
   const graphOf = (s, at) => {
     const { outcome } = knowledge(s);
     const stored = s.kv.get('GRAPH', null);

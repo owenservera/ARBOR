@@ -1,0 +1,105 @@
+# File: apps/vivim-host/test/chat-rust-context.test.mjs
+
+> Generated 2026-11-19 · JavaScript · arbor
+
+## Metadata
+
+| Field | Value |
+| --- | --- |
+| Project | [arbor](../../../../../projects/arbor.md) |
+| Path | apps/vivim-host/test/chat-rust-context.test.mjs |
+| Language | JavaScript |
+| Kind | source |
+| Size | 2742 B |
+| Lines | 51 |
+| Hash | c82c10fc3991 |
+| Test | yes |
+| Generated | no |
+| Component | vivim-host |
+
+## Symbols
+
+| Symbol | Kind | Line | Exported | Signature |
+| --- | --- | --- | --- | --- |
+| config | const | 4 | no | const config={VIVIM_CHAT_CORE_BIN:&#39;/opt/hqkg-chat-context&#39;,VIVIM_CHAT_CORE_JOURNAL:&#39;/tmp/context.hqj&#39;,VIVIM_CHAT_CORE_SEED:&#39;world:local&#39;}; |
+| response | const | 5 | no | const response={ |
+| calls | variable | 18 | no | let calls=0; |
+| data | const | 27 | no | const data=await fn(&#39;talk&#39;); |
+| wikiContext | const | 34 | no | const wikiContext=await fn(&#39;wiki&#39;); |
+| error | const | 49 | no | const error=createRustChatContext({env:config,execute:async()=&gt;{throw Error(&#39;offline&#39;)}}); |
+
+## Imports
+
+| Specifier | Kind | Line | Resolved |
+| --- | --- | --- | --- |
+| node:test | import | 1 | external |
+| node:assert/strict | import | 2 | external |
+| ../chat/rust-context.mjs | import | 3 | [apps/vivim-host/chat/rust-context.mjs](../chat/rust-context.mjs.md) |
+
+## Dependents
+
+_No dependents._
+
+## Annotations
+
+_No annotations._
+
+## Excerpt
+
+```javascript
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {createRustChatContext,CHAT_CONTEXT_SCHEMA} from '../chat/rust-context.mjs';
+const config={VIVIM_CHAT_CORE_BIN:'/opt/hqkg-chat-context',VIVIM_CHAT_CORE_JOURNAL:'/tmp/context.hqj',VIVIM_CHAT_CORE_SEED:'world:local'};
+const response={
+ schema:CHAT_CONTEXT_SCHEMA,state:'source-backed',core:'hqkg',authority:'read-only',
+ seed:'world:local',epoch:4,tokensUsed:22,budgetTokens:320,staleCount:0,
+ totalRetrieved:1,budgetExhausted:false,
+ items:[{title:'World',depth:0,revision:3,sourceCount:1,estimatedTokens:22,
+  unsafeInternalPath:'/private/root',secret:'not-disclosed'}]
+};
+test('no binary configured means unavailable, with no fake core context',async()=>{
+ const fn=createRustChatContext({env:{},execute:()=>{throw Error('must not run')}});
+ assert.equal((await fn('world')).state,'unavailable');
+ assert.equal((await fn('world')).reason,'RUST_CORE_NOT_CONFIGURED');
+});
+test('only fixed focus names, absolute Host-configured paths and bounded native response',async()=>{
+ let calls=0;
+ const fn=createRustChatContext({env:config,execute:async (bin,args,opts)=>{
+   calls++;
+   assert.equal(bin,config.VIVIM_CHAT_CORE_BIN);
+   assert.deepEqual(args,['/tmp/context.hqj','world:local','320']);
+   assert.equal(opts.shell,false);
+   assert.equal(opts.timeout,2500);
+   return {stdout:JSON.stringify(response)};
+ }});
+ const data=await fn('talk');
+ assert.equal(data.state,'source-backed');
+ assert.equal(data.focus,'talk');
+ assert.equal(data.items[0].title,'World');
+ assert.equal(JSON.stringify(data).includes('not-disclosed'),false);
+ assert.equal(JSON.stringify(data).includes('/private/root'),false);
+ assert.equal(calls,1);
+ const wikiContext=await fn('wiki');
+ assert.equal(wikiContext.state,'source-backed');
+ assert.equal(wikiContext.focus,'wiki');
+ assert.equal(wikiContext.authority,'read-only');
+ assert.equal(calls,2);
+ assert.equal((await fn('../../etc/passwd')).reason,'FOCUS_INVALID');
+ assert.equal(calls,2);
+});
+test('invalid, stale, oversized, unreadable or untrusted Rust output fails closed',async()=>{
+ for(const output of [null,{...response,staleCount:1},{...response,authority:'execute'},
+   {...response,epoch:-1},{...response,items:[{...response.items[0],title:'A\nB'}]},
+   {...response,budgetTokens:999},{...response,items:Array(12).fill(response.items[0])}]){
+   const fn=createRustChatContext({env:config,execute:async()=>({stdout:JSON.stringify(output)})});
+   assert.equal((await fn('today')).state,'unavailable');
+ }
+ const error=createRustChatContext({env:config,execute:async()=>{throw Error('offline')}});
+ assert.equal((await error('talk')).reason,'RUST_CORE_READ_FAILED');
+});
+```
+
+---
+
+[HQ wiki](../../../../../index.md) · [Symbols](../../../../../symbols.md) · [Dependency graph](../../../../../graph.md) · [Documentation](../../../../../docs.md) · [Changes](../../../../../changes.md) · [Open tasks](../../../../../todos.md) · [Deprecated](../../../../../deprecated.md) · [Agent annotation protocol](../../../../../protocol.md) · [Glossary](../../../../../glossary.md) · [Using HQ](../../../../../context.md) · [Capabilities](../../../../../capabilities.md) · [Search index](../../../../../search.json) · [Browser view](../../../../../index.html)

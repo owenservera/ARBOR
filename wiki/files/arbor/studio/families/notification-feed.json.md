@@ -1,0 +1,85 @@
+# File: studio/families/notification-feed.json
+
+> Generated 2026-11-19 · JSON · arbor
+
+## Metadata
+
+| Field | Value |
+| --- | --- |
+| Project | [arbor](../../../../projects/arbor.md) |
+| Path | studio/families/notification-feed.json |
+| Language | JSON |
+| Kind | config |
+| Size | 2763 B |
+| Lines | 42 |
+| Hash | b86571dc6cf0 |
+| Test | no |
+| Generated | no |
+| Component | studio |
+
+## Symbols
+
+_No symbols._
+
+## Imports
+
+_No imports._
+
+## Dependents
+
+_No dependents._
+
+## Annotations
+
+_No annotations._
+
+## Excerpt
+
+```json
+{
+  "name": "notification-feed",
+  "version": 1,
+  "description": "Pushed alerts and inbox-style notification streams: unread counters, read/seen state and per-notification subjects delivered over a long-lived connection or poll.",
+  "members": [],
+  "requires": ["notification_shape"],
+  "detect": [
+    { "signal": "notification_shape", "weight": 0.4, "label": "unread/read/seen notification fields" },
+    { "signal": "transport", "any": ["WEBSOCKET", "HTTP_SSE", "EVENT_SOURCE", "HTTP_NDJSON"], "weight": 0.2, "label": "a push connection" },
+    { "signal": "long_poll", "minDurationMs": 10000, "minRequests": 2, "weight": 0.2, "label": "requests held open for a long time (long polling)" },
+    { "signal": "event_type", "names": ["notification", "alert", "notice", "badge", "inbox", "mention", "toast"], "weight": 0.25, "label": "notification event vocabulary" },
+    { "signal": "collection", "minItems": 2, "weight": 0.15, "label": "a list of notification records" },
+    { "signal": "heartbeat", "minCount": 2, "weight": 0.1, "label": "keepalives on the push channel" },
+    { "signal": "identity_graph", "weight": 0.1, "label": "notifications reference a subject object" }
+  ],
+  "entities": {
+    "notification": {
+      "key": "id",
+      "revisions": "final_and_history",
+      "openFields": true,
+      "fields": {
+        "id": { "type": "id", "required": true, "names": ["id", "notification_id", "uuid", "key"] },
+        "kind": { "type": "string", "names": ["type", "kind", "category", "event", "reason", "verb"] },
+        "title": { "type": "string", "names": ["title", "subject", "headline", "summary"] },
+        "body": { "type": "text", "names": ["body", "message", "text", "description", "content"], "prefer": "longest" },
+        "url": { "type": "url", "names": ["url", "link", "href", "target_url", "deep_link"] },
+        "actor": { "type": "string", "names": ["actor", "sender", "from", "user", "author"] },
+        "subject_id": { "type": "id", "names": ["subject_id", "target_id", "object_id", "item_id", "thread_id"] },
+        "read": { "type": "boolean", "names": ["read", "is_read", "seen", "is_seen", "acknowledged"] },
+        "read_at": { "type": "time", "names": ["read_at", "seen_at", "acknowledged_at"] },
+        "created_at": { "type": "time", "names": ["created_at", "timestamp", "ts", "time", "at", "sent_at"] }
+      }
+    },
+    "counter": {
+      "fields": {
+        "scope": { "type": "string", "names": ["scope", "channel", "category", "type", "inbox"] },
+        "unread": { "type": "number", "names": ["unread", "unread_count", "badge", "count", "total_unread"] },
+        "at": { "type": "time", "names": ["timestamp", "ts", "updated_at", "at"] }
+      }
+    }
+  }
+}
+```
+
+---
+
+[HQ wiki](../../../../index.md) · [Symbols](../../../../symbols.md) · [Dependency graph](../../../../graph.md) · [Documentation](../../../../docs.md) · [Changes](../../../../changes.md) · [Open tasks](../../../../todos.md) · [Deprecated](../../../../deprecated.md) · [Agent annotation protocol](../../../../protocol.md) · [Glossary](../../../../glossary.md) · [Using HQ](../../../../context.md) · [Capabilities](../../../../capabilities.md) · [Search index](../../../../search.json) · [Browser view](../../../../index.html)

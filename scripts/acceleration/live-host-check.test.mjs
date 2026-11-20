@@ -10,7 +10,11 @@ test('Acceleration R002 W1/B: single-command isolated Host acceptance', async t 
   });
   t.diagnostic('HOST_RECEIPT=' + JSON.stringify(receipt));
   await t.test('runtime and branch pin', () => {
-    assert.match(receipt.node, /^v24\./, 'A01 acceptance must execute on Node 24');
+    // Runtime floor, not a pin (owner directive 2026-11-18): this repo runs under bun, whose
+    // node-compat reports v26.x; the check itself asserts >=24 semantics or bun.
+    assert.match(receipt.node, /^v(\d+)\./, 'receipt must name the runtime version');
+    const runtimeMajor = Number(String(receipt.node).match(/^v(\d+)\./)[1]);
+    assert.ok(runtimeMajor >= 24 || receipt.environment?.bun, 'A01 acceptance must execute on Node >=24 or bun');
     assert.match(receipt.sha || '', /^[a-f0-9]{40}$/);
     assert.equal(receipt.sourceProbe.exitCode, 0);
   });

@@ -16,12 +16,16 @@ const invalid = code => Object.assign(new Error(code), { code });
  * Project Host journal and personal rule *metadata* into the existing Personal
  * World graph. Phrases, arguments, user contents, tokens and approval bodies
  * are never copied. IDs are intentionally scoped/hashed; this is a read-model.
+ * Receipt references are EXACT (the Host journal stores one receipt per plan,
+ * named by the plan id, with status applied|failed) and never become an
+ * execution claim: executionVerified stays false on every node.
  * Reader freshness and authentication remain the trusted Host's responsibility.
  */
 export function projectControlLineageSnapshot({plans=[], rules=[], journalAvailable=true,
   rulesAvailable=true, journalTruncated=false, rulesTruncated=false}={}) {
   if (!Array.isArray(plans) || !Array.isArray(rules) || plans.length>100 || rules.length>500)
     throw invalid('CONTROL_LINEAGE_BOUNDS');
+  const RECEIPT_STATES = new Set(['applied','failed']);
   const nodes = new Map(), edges = new Map();
   function node(kind, sourceId, attributes) {
     const id = nodeId(kind,sourceId);
@@ -42,10 +46,21 @@ export function projectControlLineageSnapshot({plans=[], rules=[], journalAvaila
       typeof p.source!=='string' || p.source.length>64 ||
       (p.createdAt!=null && (typeof p.createdAt!=='string'||!Number.isFinite(Date.parse(p.createdAt)))) ||
       seenPlans.has(p.planId)) throw invalid('CONTROL_LINEAGE_BAD_PLAN');
+    // Canonical receipt reference: the Host journal's state IS the receipt status whenever a
+    // receipt exists (journal get(): state = receipt ? receipt.status : ...), and the receipt
+    // file is named by the plan id. An explicitly supplied receipt must match that exactly.
+    let receipt=null;
+    if (p.receipt!=null) {
+      if (typeof p.receipt!=='object' || Array.isArray(p.receipt) || p.receipt.id!==p.planId
+        || !RECEIPT_STATES.has(p.receipt.status) || p.receipt.status!==p.state)
+        throw invalid('CONTROL_LINEAGE_BAD_PLAN');
+      receipt={id:p.receipt.id,status:p.receipt.status};
+    } else if (RECEIPT_STATES.has(p.state)) receipt={id:p.planId,status:p.state};
     seenPlans.add(p.planId);
     const program=node('control-plan',p.planId,{
       state:p.state,risk:p.risk,origin:'host-control-journal',
       executionVerified:false,owner:'host-control',
+      receipt,
       createdAt:p.createdAt??null,
     });
     const action=node('control-action',p.actionId,{

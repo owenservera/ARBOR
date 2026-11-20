@@ -1,0 +1,96 @@
+# File: studio/families/realtime-collab.json
+
+> Generated 2026-11-19 · JSON · arbor
+
+## Metadata
+
+| Field | Value |
+| --- | --- |
+| Project | [arbor](../../../../projects/arbor.md) |
+| Path | studio/families/realtime-collab.json |
+| Language | JSON |
+| Kind | config |
+| Size | 3566 B |
+| Lines | 53 |
+| Hash | 09a2f3371b7b |
+| Test | no |
+| Generated | no |
+| Component | studio |
+
+## Symbols
+
+_No symbols._
+
+## Imports
+
+_No imports._
+
+## Dependents
+
+_No dependents._
+
+## Annotations
+
+_No annotations._
+
+## Excerpt
+
+```json
+{
+  "name": "realtime-collab",
+  "version": 1,
+  "description": "Multi-user live surfaces: chat rooms, boards, documents and dashboards where a socket carries presence, typing/cursor state and small ordered edit operations from several participants.",
+  "members": [],
+  "requires": ["transport"],
+  "detect": [
+    { "signal": "transport", "any": ["WEBSOCKET", "HTTP_SSE"], "weight": 0.25, "label": "a persistent push connection" },
+    { "signal": "bidirectional_frames", "minFrames": 6, "weight": 0.2, "label": "frames exchanged in both directions" },
+    { "signal": "presence_shape", "weight": 0.3, "label": "presence, typing or cursor state" },
+    { "signal": "app_protocol", "names": ["socket.io", "engine.io", "phoenix", "actioncable", "stomp", "centrifugo-like", "signalr", "sockjs", "graphql-ws", "pusher"], "weight": 0.2, "label": "a known realtime framing protocol" },
+    { "signal": "channels", "minChannels": 2, "weight": 0.15, "label": "several channels or topics multiplexed" },
+    { "signal": "heartbeat", "minCount": 3, "weight": 0.1, "label": "keepalive heartbeats on the connection" },
+    { "signal": "delta_dialect", "any": ["ot-ops", "json-patch", "path-ops", "array-splice", "json-merge-patch"], "weight": 0.2, "label": "edits delivered as operations" },
+    { "signal": "many_small_updates", "minEvents": 30, "maxAvgBytes": 600, "weight": 0.15, "label": "many small ordered updates" },
+    { "signal": "event_type_variety", "minTypes": 4, "weight": 0.1, "label": "a rich event vocabulary" }
+  ],
+  "entities": {
+    "participant": {
+      "key": "id",
+      "fields": {
+        "id": { "type": "id", "required": true, "names": ["id", "user_id", "userId", "client_id", "session_id", "actor_id", "peer_id"] },
+        "name": { "type": "string", "names": ["name", "display_name", "username", "nickname", "handle"] },
+        "online": { "type": "boolean", "names": ["online", "is_online", "connected", "active"] },
+        "state": { "type": "string", "names": ["state", "presence", "status", "activity"] },
+        "last_seen": { "type": "time", "names": ["last_seen", "last_active", "updated_at", "timestamp"] }
+      }
+    },
+    "room": {
+      "key": "id",
+      "fields": {
+        "id": { "type": "id", "names": ["id", "room_id", "channel", "channel_id", "topic", "document_id", "board_id"] },
+        "name": { "type": "string", "names": ["name", "title", "label"] },
+        "members": { "type": "number", "names": ["member_count", "members", "participants", "subscribers"] }
+      }
+    },
+    "operation": {
+      "key": "id",
+      "parent": { "entity": "room", "field": "room_id" },
+      "revisions": "all",
+      "fields": {
+        "id": { "type": "id", "names": ["id", "op_id", "ref", "msg_id", "message_id", "seq", "revision"] },
+        "room_id": { "type": "id", "names": ["room_id", "channel", "channel_id", "topic", "document_id"] },
+        "actor_id": { "type": "id", "names": ["user_id", "actor_id", "client_id", "author_id", "sender"] },
+        "kind": { "type": "string", "names": ["type", "event", "op", "action", "kind"] },
+        "path": { "type": "string", "names": ["path", "p", "pointer", "field", "target"] },
+        "sequence": { "type": "number", "names": ["seq", "sequence", "revision", "version", "offset"] },
+        "text": { "type": "text", "names": ["text", "body", "content", "value", "insert", "message"], "prefer": "longest" },
+        "at": { "type": "time", "names": ["timestamp", "ts", "created_at", "time", "at"] }
+      }
+    }
+  }
+}
+```
+
+---
+
+[HQ wiki](../../../../index.md) · [Symbols](../../../../symbols.md) · [Dependency graph](../../../../graph.md) · [Documentation](../../../../docs.md) · [Changes](../../../../changes.md) · [Open tasks](../../../../todos.md) · [Deprecated](../../../../deprecated.md) · [Agent annotation protocol](../../../../protocol.md) · [Glossary](../../../../glossary.md) · [Using HQ](../../../../context.md) · [Capabilities](../../../../capabilities.md) · [Search index](../../../../search.json) · [Browser view](../../../../index.html)

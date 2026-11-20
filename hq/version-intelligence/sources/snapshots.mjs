@@ -4,6 +4,7 @@ import {
   SOURCE_SCHEMA, MANIFEST_SCHEMA, assertSha, canonicalRepo, safePath, safeRef,
   digest, gitBlobSha, sensitivePath, checkCancel, fail, SourceError,
 } from './common.mjs';
+import { assertVerifiedAdapter } from './adapters.mjs';
 
 export const DEFAULT_LIMITS = Object.freeze({
   maxEntries: 50000, maxPages: 1000, pageSize: 500, maxDepth: 64,
@@ -20,8 +21,11 @@ function limitsFor(input = {}) {
   return out;
 }
 async function authorized(adapter, authorize, operation, scope, context = {}) {
-  if (scope !== 'development' || adapter?.authorizedDevelopmentSource !== true ||
-      typeof authorize !== 'function') fail('SOURCE_UNAUTHORIZED', 'development_grant_required');
+  if (scope !== 'development' || typeof authorize !== 'function') {
+    fail('SOURCE_UNAUTHORIZED', 'development_grant_required');
+  }
+  // A partial or caller-forged boolean adapter is never authority.
+  assertVerifiedAdapter(adapter);
   // It is the trusted caller's responsibility to re-evaluate live Host grants.
   // No cached boolean grants or source registry records constitute permission.
   if (await authorize({ operation, scope: 'development', ...context }) !== true) {
@@ -112,6 +116,43 @@ export async function verifyPin(pin, { adapter, authorize, manifest, checkRef = 
     }
   }
   return true;
+}
+
+/**
+ * Live composition of a registered, approved repository selection:
+ * exact repo identity -> immutable pin -> verified snapshot.
+ * The registry is the caller's existing approved-repository list; this module
+ * keeps no registry of its own. Ref movement, a wrong SHA, a revoked grant or an
+ * unregistered repository all fail closed before any comparison is possible.
+ */
+export async function acquirePinnedSnapshot(source, {
+  adapter, authorize, approvedRepositories, limits, inspectContent = false, signal, acquiredAt,
+} = {}) {
+  assertVerifiedAdapter(adapter);
+  if (!Array.isArray(approvedRepositories) || approvedRepositories.length === 0 ||
+      approvedRepositories.length > 16) fail('SOURCE_UNAUTHORIZED', 'registered_repository_required');
+  const provider = source?.provider ?? 'github';
+  const repoIdentity = canonicalRepo(source?.repo, provider);
+  const approved = approvedRepositories.map(repo => canonicalRepo(repo, provider));
+  if (!approved.includes(repoIdentity)) fail('SOURCE_UNAUTHORIZED', 'repository_not_registered');
+  // Only development-scope acquisition exists; the live grant callback decides access.
+  const pin = await resolvePin({ ...source, provider, repoIdentity, approvedScope: 'development' },
+    { adapter, authorize, acquiredAt });
+  // Detect a ref that moved between resolution and acquisition.
+  await verifyPin(pin, { adapter, authorize, checkRef: true });
+  const manifest = await snapshotAt(pin, { adapter, authorize, limits, inspectContent, signal });
+  // Bind the acquired bytes to the same commit/tree and re-check the live ref.
+  await verifyPin(pin, { adapter, authorize, manifest, checkRef: true });
+  return Object.freeze({
+    pin, manifest,
+    receipt: Object.freeze({
+      pinId: pin.pinId, repoIdentity: pin.repoIdentity, provider: pin.provider,
+      requestedRef: pin.requestedRef, resolvedCommitSha: pin.resolvedCommitSha,
+      rootTreeSha: pin.rootTreeSha, subPath: pin.subPath,
+      manifestDigest: manifest.manifestDigest, completeness: manifest.completeness,
+      verifiedAdapter: adapter.kind,
+    }),
+  });
 }
 
 function normalizedEntry(record, pin, lim) {

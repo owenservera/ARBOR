@@ -1,0 +1,91 @@
+# File: studio/src/studio/ui/mobile.html
+
+> Generated 2026-11-19 · HTML · arbor
+
+## Metadata
+
+| Field | Value |
+| --- | --- |
+| Project | [arbor](../../../../../../projects/arbor.md) |
+| Path | studio/src/studio/ui/mobile.html |
+| Language | HTML |
+| Kind | source |
+| Size | 6534 B |
+| Lines | 48 |
+| Hash | d2e3bce6b6ab |
+| Test | no |
+| Generated | no |
+| Component | studio |
+
+## Symbols
+
+_No symbols._
+
+## Imports
+
+_No imports._
+
+## Dependents
+
+_No dependents._
+
+## Annotations
+
+_No annotations._
+
+## Excerpt
+
+```html
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#5145c8">
+<link rel="manifest" href="/mobile.webmanifest" crossorigin="use-credentials">
+<title>VIVIM — My Mobile World</title>
+<script type="module" src="/ui/mobile.mjs"></script>
+<style>
+:root { color-scheme: light; --bg:#f4f5f8; --card:#fff; --ink:#172338; --muted:#58687d; --line:#dce3eb; --violet:#5145c8; --tint:#eeecff; --error:#a12830; --ok:#1e7159; --on-accent:#fff; --ask-a:#4a3fbe; --ask-b:#7a63e8; --ask-ink:#fff; font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif }
+@media(prefers-color-scheme:dark){:root{color-scheme:dark;--bg:#111722;--card:#1b2533;--ink:#f3f6fc;--muted:#b8c5d8;--line:#354154;--violet:#b6abff;--tint:#302d53;--error:#ff919c;--ok:#77d9b9;--on-accent:#15132d;--ask-a:#262048;--ask-b:#3d317f;--ask-ink:#f6f4ff}}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg);color:var(--ink)}body{padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+button,a,input,textarea{font:inherit}button,input,textarea{border:1px solid var(--line);border-radius:12px}button,a.action{min-height:44px;cursor:pointer;padding:10px 14px;background:var(--card);color:var(--ink)}button.primary,a.action{background:var(--violet);color:var(--on-accent);border-color:var(--violet)}button[disabled]{opacity:.45;cursor:not-allowed}
+a{color:var(--violet)}a.action{text-decoration:none;display:inline-flex;align-items:center}button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--violet);outline-offset:2px}
+#mobileRoot{max-width:700px;min-height:100dvh;margin:auto;padding:16px clamp(12px,4vw,24px) 40px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}.brand{font-size:20px;letter-spacing:.08em;font-weight:800}.eyebrow{text-transform:uppercase;letter-spacing:.1em;font-weight:700;font-size:11px;color:var(--muted)}
+.top-actions,.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.top-actions button{padding:8px;font-size:13px}
+.row button[aria-pressed=true]{background:var(--violet);color:var(--on-accent);border-color:var(--violet)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:18px;margin:14px 0;box-shadow:0 3px 12px #0000000a}.hero{background:linear-gradient(140deg,var(--tint),var(--card) 70%);padding:24px 18px}
+h1{font-size:clamp(24px,5vw,34px);line-height:1.18;letter-spacing:-.04em;margin:9px 0}h2{font-size:20px;line-height:1.3;margin:0 0 10px}h3{font-size:16px;margin:0 0 6px}p{margin:7px 0 12px}.muted{color:var(--muted);font-size:14px}.notice{padding:12px 14px;border-radius:12px;background:var(--tint);margin:10px 0;overflow-wrap:anywhere}.error{color:var(--error)}.good{color:var(--ok)}
+.tabs{display:flex;gap:9px;overflow-x:auto;padding:5px 0 12px;scrollbar-width:thin}.tabs button{white-space:nowrap;flex:none;border-radius:99px}.tabs button[aria-selected=true]{background:var(--violet);border-color:var(--violet);color:var(--on-accent)}
+.screen{min-height:250px}.tile{display:block;width:100%;text-align:left;margin:9px 0;padding:16px;border-radius:14px}.item{border:1px solid var(--line);padding:14px;margin:10px 0;border-radius:14px}.item p{overflow-wrap:anywhere;white-space:pre-wrap}.item strong{overflow-wrap:anywhere}.item label{display:flex;align-items:start;gap:12px}.item input[type=checkbox]{width:22px;height:22px;flex:none;accent-color:var(--violet)}
+.field{display:block;font-weight:600;margin:12px 0 4px}.field-input{width:100%;padding:12px;color:var(--ink);background:var(--card)}textarea.field-input{min-height:96px;resize:vertical}.stack>*{margin-top:8px}.footer{font-size:12px;color:var(--muted);border-top:1px solid var(--line);padding-top:16px;margin-top:24px}
+/* Ask my AI */
+.ask-card{display:flex;flex-direction:column;gap:3px;width:100%;text-align:left;padding:20px 18px;border:0;border-radius:20px;color:var(--ask-ink);background:linear-gradient(150deg,var(--ask-a),var(--ask-b));box-shadow:0 12px 26px #2b24701f;margin:16px 0}
+.ask-card .eyebrow{color:inherit;opacity:.75}.ask-title{font-size:22px;font-weight:800;letter-spacing:-.02em;line-height:1.2}.ask-sub{font-size:14px;font-weight:500;opacity:.92}
+.seg{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px;padding:4px;border:1px solid var(--line);border-radius:14px;background:var(--bg)}
+.seg button{flex:1 1 30%;min-height:44px;border:0;background:transparent;color:var(--muted);font-weight:600;border-radius:10px}
+.seg button[aria-pressed=true]{background:var(--card);color:var(--ink);box-shadow:0 1px 4px #00000014}
+.bubbles{display:flex;flex-direction:column;gap:10px;margin:12px 0 4px}
+.bubble{max-width:88%;padding:12px 14px;border-radius:16px;overflow-wrap:anywhere;white-space:pre-wrap}
+.bubble p{margin:0}.bubble.you{align-self:flex-end;background:var(--violet);color:var(--on-accent);border-bottom-right-radius:6px}
+.bubble.ai{align-self:flex-start;background:var(--tint);color:var(--ink);border-bottom-left-radius:6px}
+.bubble .who{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;opacity:.7;margin-bottom:5px}
+.typing{display:inline-flex;align-items:center;gap:5px;min-height:22px}.typing i{width:7px;height:7px;border-radius:50%;background:currentColor;opacity:.4;animation:askdot 1.2s infinite ease-in-out}
+.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+@keyframes askdot{0%,80%,100%{opacity:.25;transform:translateY(0)}40%{opacity:.9;transform:translateY(-3px)}}
+.ask-composer{position:sticky;bottom:0;margin-top:14px;padding:14px;border-radius:18px;box-shadow:0 -6px 22px #00000010}
+.ask-composer .field{margin-top:0}.ask-composer textarea.field-input{min-height:84px}
+.ask-actions{display:flex;gap:8px;align-items:center;margin-top:8px}.ask-actions button{flex:none}.ask-actions button.primary{flex:1}
+@media(min-width:620px){#mobileRoot{padding-top:26px}.card{padding:24px}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}.typing i{animation:none!important;opacity:.6}}
+</style>
+</head>
+<body><main id="mobileRoot"><p>Opening VIVIM… If this page stays here, connect to the same WiFi as your PC, keep VIVIM open there, then reload.</p><noscript>VIVIM needs JavaScript enabled to connect to your PC.</noscript></main></body>
+</html>
+```
+
+---
+
+[HQ wiki](../../../../../../index.md) · [Symbols](../../../../../../symbols.md) · [Dependency graph](../../../../../../graph.md) · [Documentation](../../../../../../docs.md) · [Changes](../../../../../../changes.md) · [Open tasks](../../../../../../todos.md) · [Deprecated](../../../../../../deprecated.md) · [Agent annotation protocol](../../../../../../protocol.md) · [Glossary](../../../../../../glossary.md) · [Using HQ](../../../../../../context.md) · [Capabilities](../../../../../../capabilities.md) · [Search index](../../../../../../search.json) · [Browser view](../../../../../../index.html)

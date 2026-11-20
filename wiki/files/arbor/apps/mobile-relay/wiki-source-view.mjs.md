@@ -1,0 +1,152 @@
+# File: apps/mobile-relay/wiki-source-view.mjs
+
+> Generated 2026-11-19 · JavaScript · arbor
+
+## Metadata
+
+| Field | Value |
+| --- | --- |
+| Project | [arbor](../../../../projects/arbor.md) |
+| Path | apps/mobile-relay/wiki-source-view.mjs |
+| Language | JavaScript |
+| Kind | source |
+| Size | 5588 B |
+| Lines | 83 |
+| Hash | 3584e191f847 |
+| Test | no |
+| Generated | no |
+| Component | mobile-relay |
+
+## Symbols
+
+| Symbol | Kind | Line | Exported | Signature |
+| --- | --- | --- | --- | --- |
+| hash | function | 3 | no | const hash=value=&gt;typeof value===&#39;string&#39;&amp;&amp;/^[a-f0-9]{64}$/.test(value); |
+| anchorId | function | 4 | no | const anchorId=value=&gt;typeof value===&#39;string&#39;&amp;&amp;/^hq:file-anchor:[a-f0-9]{64}$/.test(value); |
+| label | function | 5 | no | const label=value=&gt;typeof value===&#39;string&#39;?value:&#39;unavailable&#39;; |
+| sourceCards | function | 6 | yes | export function sourceCards(surface){ |
+| seen | const | 9 | no | const seen=new Set(),cards=[]; |
+| a | const | 14 | no | const a=annotation?.semanticAnchor,e=annotation?.evidence; |
+| fresh | const | 20 | no | const fresh=file.freshness===&#39;indexed&#39;&amp;&amp;file.sourceDigest===file.currentDigest; |
+| conflict | const | 21 | no | const conflict=!!e?.conflict\|\|a.state===&#39;ambiguous&#39;\|\|annotation.resolution===&#39;invalid_kind&#39;; |
+| state | const | 22 | no | const state=!fresh?&#39;stale&#39;:conflict?&#39;contradicted&#39;:annotation.resolution===&#39;deprecated&#39;?&#39;deprecated&#39;: |
+| sameSourceCard | function | 33 | yes | export function sameSourceCard(current,old){ |
+| matchesSourceContext | function | 38 | yes | export function matchesSourceContext(card,value){ |
+| bundle | const | 39 | no | const bundle=value?.context,a=value?.anchor; |
+| exactSourceContextUrl | function | 50 | yes | export function exactSourceContextUrl(card){ |
+| reconcileSourceCards | function | 56 | yes | export function reconcileSourceCards(container,cards,{createElement,onRead}){ |
+| existing | const | 57 | no | const existing=new Map(Array.from(container.children).map(node=&gt;[node.dataset?.anchorId,node])); |
+| next | const | 58 | no | const next=[]; |
+| signature | const | 60 | no | const signature=JSON.stringify(card); |
+| node | variable | 61 | no | let node=existing.get(card.id); |
+| add | function | 64 | no | const add=(tag,text)=&gt;{const el=createElement(tag);el.textContent=text;node.appendChild(el);return el;}; |
+| button | const | 70 | no | const button=add(&#39;button&#39;,&#39;Read verified source context&#39;);button.type=&#39;button&#39;; |
+| retained | const | 77 | no | const retained=new Set(next); |
+| current | const | 80 | no | const current=container.children[i]??null; |
+
+## Imports
+
+_No imports._
+
+## Dependents
+
+| File | Specifier |
+| --- | --- |
+| [apps/mobile-relay/app.js](./app.js.md) | ./wiki-source-view.mjs |
+| [apps/mobile-relay/test/wiki-source-view.test.mjs](./test/wiki-source-view.test.mjs.md) | ../wiki-source-view.mjs |
+| [apps/vivim-host/test/wiki-visual-contract.test.mjs](../vivim-host/test/wiki-visual-contract.test.mjs.md) | ../../mobile-relay/wiki-source-view.mjs |
+
+## Annotations
+
+_No annotations._
+
+## Excerpt
+
+```javascript
+// Read-only view adapter for the existing owner-authorized HQ file-surface.
+// No local file access, mutation, grant creation, persistent cache or inference.
+const hash=value=>typeof value==='string'&&/^[a-f0-9]{64}$/.test(value);
+const anchorId=value=>typeof value==='string'&&/^hq:file-anchor:[a-f0-9]{64}$/.test(value);
+const label=value=>typeof value==='string'?value:'unavailable';
+export function sourceCards(surface){
+  if(surface?.schema!=='vivim.file-surface/1'||surface.authority!=='read_only_projection'||
+      !Array.isArray(surface.files)||surface.files.length>48)return [];
+  const seen=new Set(),cards=[];
+  for(const file of surface.files){
+    if(typeof file?.project!=='string'||typeof file.path!=='string'||file.sourceId!==file.project+':'+file.path||
+       !hash(file.sourceDigest)||!hash(file.currentDigest)||!Array.isArray(file.annotations)||file.annotations.length>64)continue;
+    for(const annotation of file.annotations){
+      const a=annotation?.semanticAnchor,e=annotation?.evidence;
+      if(!anchorId(a?.anchorId)||!hash(a.fingerprint)||a.contentHash!==file.sourceDigest||
+        a.semanticId!==annotation.semanticId||a.annotationKind!==annotation.kind||
+        !Array.isArray(a.lines)||!a.lines.includes(annotation.line)||!Number.isSafeInteger(annotation.line)||
+        seen.has(a.anchorId))continue;
+      seen.add(a.anchorId);
+      const fresh=file.freshness==='indexed'&&file.sourceDigest===file.currentDigest;
+      const conflict=!!e?.conflict||a.state==='ambiguous'||annotation.resolution==='invalid_kind';
+      const state=!fresh?'stale':conflict?'contradicted':annotation.resolution==='deprecated'?'deprecated':
+        e?.assurance==='verified'&&a.state==='indexed'&&e.claim==='annotation-occurrence'?'verified-occurrence':'unverified';
+      cards.push({id:a.anchorId,fingerprint:a.fingerprint,project:file.project,path:file.path,
+        sourceId:file.sourceId,sourceDigest:file.sourceDigest,line:annotation.line,semanticId:annotation.semanticId,
+        kind:annotation.kind,resolution:annotation.resolution,state,
+        origin:label(e?.origin),assurance:label(e?.assurance),readable:state==='verified-occurrence',
+        authority:'read_only_projection'});
+    }
+  }
+  return cards.sort((a,b)=>a.id<b.id?-1:a.id>b.id?1:0);
+}
+export function sameSourceCard(current,old){
+  return !!(current&&old&&current.readable&&old.readable&&current.id===old.id&&
+    current.fingerprint===old.fingerprint&&current.sourceId===old.sourceId&&
+    current.sourceDigest===old.sourceDigest&&current.line===old.line&&current.resolution===old.resolution);
+}
+export function matchesSourceContext(card,value){
+  const bundle=value?.context,a=value?.anchor;
+  return !!(card?.readable&&value?.schema==='vivim.source-context/1'&&value.status==='indexed'&&
+    value.sourceId===card.sourceId&&value.sourceDigest===card.sourceDigest&&
+    a?.anchorId===card.id&&a.fingerprint===card.fingerprint&&a.line===card.line&&
+    a.semanticId===card.semanticId&&a.resolution===card.resolution&&a.authority==='read_only_projection'&&
+    bundle?.schema==='hq.context-bundle/1'&&bundle.authority==='read_only_projection'&&
+    hash(bundle.digest)&&typeof bundle.fragment==='string'&&bundle.fragment.length<=64000&&
+    Array.isArray(bundle.sources)&&bundle.sources.length===1&&bundle.sources[0].ref===card.sourceId&&
+    bundle.sources[0].contentHash===card.sourceDigest&&bundle.sources[0].semanticReferences?.some(r=>
+      r.semanticAnchor?.anchorId===card.id&&r.semanticAnchor.fingerprint===card.fingerprint&&r.line===card.line));
+}
+export function exactSourceContextUrl(card){
+  return '/api/file-surface/context?project='+encodeURIComponent(card.project)+'&path='+encodeURIComponent(card.path)+
+    '&anchor='+encodeURIComponent(card.id)+'&fingerprint='+encodeURIComponent(card.fingerprint);
+}
+// Reconcile only affected cards. Replacing one card does not disturb open
+// details on unchanged cards. Host authorization failure supplies no cards.
+export function reconcileSourceCards(container,cards,{createElement,onRead}){
+  const existing=new Map(Array.from(container.children).map(node=>[node.dataset?.anchorId,node]));
+  const next=[];
+  for(const card of cards.slice(0,256)){
+    const signature=JSON.stringify(card);
+    let node=existing.get(card.id);
+    if(!node||node.dataset.signature!==signature){
+      node=createElement('details');node.dataset.anchorId=card.id;node.dataset.signature=signature;
+      const add=(tag,text)=>{const el=createElement(tag);el.textContent=text;node.appendChild(el);return el;};
+      add('summary',card.semanticId+' · '+card.state);
+      add('p',card.kind+' · '+card.project+'/'+card.path+':'+card.line);
+      add('p',card.origin+' / '+card.assurance+' · registry '+card.resolution+' · read only');
+      add('p','Anchor '+card.id+' · fingerprint '+card.fingerprint);
+      if(card.readable){
+        const button=add('button','Read verified source context');button.type='button';
+        button.addEventListener('click',()=>onRead(card));
+      }else add('p','Source context unavailable until current, unambiguous evidence is indexed.');
+    }
+    next.push(node);
+  }
+  // Never detach unchanged siblings merely because another card changed.
+  const retained=new Set(next);
+  for(const node of Array.from(container.children))if(!retained.has(node))container.removeChild(node);
+  for(let i=0;i<next.length;i++){
+    const current=container.children[i]??null;
+```
+
+_First 80 of 84 lines._
+
+---
+
+[HQ wiki](../../../../index.md) · [Symbols](../../../../symbols.md) · [Dependency graph](../../../../graph.md) · [Documentation](../../../../docs.md) · [Changes](../../../../changes.md) · [Open tasks](../../../../todos.md) · [Deprecated](../../../../deprecated.md) · [Agent annotation protocol](../../../../protocol.md) · [Glossary](../../../../glossary.md) · [Using HQ](../../../../context.md) · [Capabilities](../../../../capabilities.md) · [Search index](../../../../search.json) · [Browser view](../../../../index.html)

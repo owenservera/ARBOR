@@ -41,6 +41,10 @@ nav a { white-space: nowrap; }
 .section .body { color: var(--text); white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13px; margin: 7px 0; }
 .section .meta, .record-meta { font: 10px/1.5 ui-monospace, monospace; color: var(--muted); overflow-wrap: anywhere; }
 .section button { padding: 4px 10px; font-size: 12px; }
+/* Revision projection: only a section the newer revision actually rewrote is highlighted
+   (dataset.changedRevision carries the revision number); untouched DOM is never rebuilt. */
+.section.changed { border-color: var(--warn); background: #2a2312; box-shadow: 0 0 0 1px var(--warn); }
+.section.changed h4 { color: var(--warn); }
 .empty { color: var(--muted); font-size: 13px; }
 .queue-summary { color: var(--accent); margin: 0 0 10px; font-size: 12px; }
 .table-scroll { width: 100%; overflow-x: auto; }

@@ -47,9 +47,11 @@ test('existing PWA Wiki tab re-reads only while visible', () => {
   const listeners = {};
   const S = { tab: 'talk' };
   let reads = 0;
-  new Function('document', 'S', 'refreshWiki', match[0])(
+  // the listener body (app.js:2158-2161) also resets the module-scope dockAssist/compose
+  // (app.js:136 / :1676), so the harness must bind them alongside document/S/refreshWiki
+  new Function('document', 'S', 'refreshWiki', 'dockAssist', 'compose', match[0])(
     { addEventListener: (name, fn) => { listeners[name] = fn; } },
-    S, () => { reads++; });
+    S, () => { reads++; }, { reset() {} }, { resetAssist() {} });
   const listener = listeners['vivim:wiki-committed'];
   assert.equal(typeof listener, 'function');
   listener();

@@ -1,0 +1,4001 @@
+{
+  "lane": "B",
+  "laneRows": 675,
+  "nextRows": 48,
+  "verifyRows": 128,
+  "units": [
+    {
+      "id": "NEXT:B-F01-B01",
+      "phase": "NEXT",
+      "priority": "P0",
+      "rowCount": 13,
+      "rowIds": [
+        "AT-D68C01D5FB47",
+        "AT-D7737CC0A646",
+        "AT-D693F4AFFE8D",
+        "AT-A1953F72809C",
+        "AT-8255EF123104",
+        "AT-430FC711A497",
+        "AT-C062898E6A35",
+        "AT-7AD4746E44A6",
+        "AT-2563EC207E6A",
+        "AT-CEA535AC0938",
+        "AT-F4671F461297",
+        "AT-66F274D9ADFB",
+        "AT-99124D1838DA"
+      ],
+      "paths": [
+        "apps/vivim-host/direct-phone.mjs",
+        "apps/vivim-host/control/dispatcher.mjs",
+        "harness/src/interface/router.mjs",
+        "harness/bin/wh-mcp.mjs",
+        "harness/bin/wh.mjs",
+        "harness/src/interface/dev-auto-approve.mjs",
+        "harness/src/interface/server.mjs"
+      ],
+      "closures": [
+        "CONFIRMED SOURCE REPAIR"
+      ],
+      "nextPackages": [
+        "D06",
+        "D03",
+        "D14",
+        "D02"
+      ],
+      "packageOwners": [
+        "?",
+        "A"
+      ],
+      "acceptance": "No production dependency on coordination/smoke tool; any real use through existing Host.",
+      "done": false,
+      "targets": {
+        "Target Host": 13,
+        "Target PWA": 13,
+        "Target Harness": 13
+      },
+      "reachabilityBlank": 0,
+      "evidenceGrades": [
+        "DIRECT / SEARCH",
+        "TREE / PROVISIONAL",
+        "DECLARATION / PROPOSED"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "EXTEND",
+        "KEEP_AUTHORITY",
+        "KEEP_ADAPTER",
+        "KEEP_DEV_TOOL"
+      ],
+      "currentStates": [
+        "AUDIT FINDING — OPEN",
+        "REVIEW REQUIRED",
+        "CALLER REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "File",
+        "Symbol"
+      ],
+      "subsystems": [
+        "Host",
+        "Harness"
+      ],
+      "shouldIntegrate": [
+        "Yes",
+        "Conditional",
+        "No"
+      ],
+      "reviewBases": [
+        "PINNED EXECUTABLE BODY + CONCRETE CALLER/REGISTRATION GAP",
+        "BODY+CALLER SOURCE (selected anchors)",
+        "PINNED SYMBOL WINDOW + LOCAL REFERENCES + MODULE CONSUMER EVIDENCE"
+      ],
+      "decisionConfidences": [
+        "HIGH source-level defect; live behavior UNRUN",
+        "HIGH source-level defect; runtime unverified",
+        "HIGH — source path defect; runtime UNRUN"
+      ],
+      "boundaryOwners": [
+        "Harness",
+        "Host control dispatcher",
+        "Host Direct device transport"
+      ],
+      "topLevelStates": [
+        "PRIOR DISPOSITION",
+        "TOP LEVEL — SOURCE INSPECTED / VERIFY",
+        "TOP LEVEL — PROVISIONAL / VERIFY",
+        "REVIEWED — SOURCE DISPOSITION"
+      ],
+      "evidenceTiers": [
+        "PINNED SOURCE — TOP-LEVEL",
+        "TREE / PATH — UNVERIFIED BODY",
+        "SOURCE DEFECT"
+      ],
+      "reviewPackages": [
+        "D15",
+        "B-F01-B01"
+      ],
+      "reviewRoles": [
+        "createExecutors — Host control dispatcher",
+        "runRead — Host control dispatcher",
+        "execute — Host control dispatcher",
+        "plan — Host control dispatcher"
+      ],
+      "laneReviewNeeds": [
+        "REVALIDATE — prior decision, do not silently overwrite",
+        "VERIFY — source / callers"
+      ],
+      "knownMissing": [
+        "Executor registry includes privacy.hard_no.list returning owner exclusions (L233), alongside owner/device/Wiki effects. ...",
+        "L532-550 runs R0 executors on ready plans; privacy.hard_no.list returns owner exclusions (L126-128,233) without a unifor...",
+        "L670-699 checks special cases then returns receipt at L696 before general source-channel/R2 checks (L735-759). Apply uni...",
+        "L562-578 special-cases rules/programs/HVI but ordinary ready reads run immediately; mobile control:read admits the path ..."
+      ],
+      "remainingEvidence": [
+        "Implement within existing dedup unit only after approval; run exact positive and negative product tests.",
+        "Verify complete reverse caller closure and actual registration/configuration/packaging as applicable; run exact product ...",
+        "Runtime/device acceptance UNRUN; Wrong audience/actor/device refuses before receipt data; revoked grant and stale meanin...",
+        "Runtime/device acceptance UNRUN; Cross-device reads/replays denied; revoke midflight; valid phone read/execute through s..."
+      ],
+      "dispositionRounds": [
+        "DR01",
+        "FB01",
+        "B-S01-R01"
+      ],
+      "resolvedActions": [
+        "CHANGE"
+      ],
+      "revisedShouldWire": [
+        "YES",
+        "YES — within existing unit"
+      ],
+      "fileClasses": [
+        "Runtime / executable candidate"
+      ]
+    },
+    {
+      "id": "NEXT:B-F01-B02",
+      "phase": "NEXT",
+      "priority": "P0",
+      "rowCount": 13,
+      "rowIds": [
+        "AT-FB04F2D30BED",
+        "AT-FB0C6E6ECE69",
+        "AT-50CBBDE264E9",
+        "AT-C9B4726A4824",
+        "AT-E658AA1D8E3C",
+        "AT-89D83426FAF5",
+        "AT-5985AB943973",
+        "AT-80F23495E6AD",
+        "AT-F3D84F00A06E",
+        "AT-7926D5803AC2",
+        "AT-1D3AB4FA4D02",
+        "AT-029E61AD9681",
+        "AT-9FA8AEC5468B"
+      ],
+      "paths": [
+        "apps/vivim-host/chat/product-journal.mjs",
+        "apps/vivim-host/chat/rust-context.mjs"
+      ],
+      "closures": [
+        "CONFIRMED SOURCE REPAIR"
+      ],
+      "nextPackages": [
+        "D01",
+        "D05"
+      ],
+      "packageOwners": [
+        "A",
+        "?"
+      ],
+      "acceptance": "More than 72 sources and older relationships remain retrievable; no deletion on omission.",
+      "done": false,
+      "targets": {
+        "Target Rust": 13,
+        "Target Host": 13,
+        "Target Studio": 2,
+        "Target PWA": 13,
+        "Target HQ": 2,
+        "Target VLANG": 13,
+        "Target AutoWiki": 13
+      },
+      "reachabilityBlank": 0,
+      "evidenceGrades": [
+        "DIRECT / SEARCH",
+        "SYMBOL / DIRECT",
+        "DECLARATION / PROPOSED"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "EXTEND",
+        "REVIEW_BOUND",
+        "TRACE_AND_CONNECT"
+      ],
+      "currentStates": [
+        "AUDIT FINDING — OPEN",
+        "CALLER REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "File",
+        "Symbol"
+      ],
+      "subsystems": [
+        "Host"
+      ],
+      "shouldIntegrate": [
+        "Yes",
+        "Conditional"
+      ],
+      "reviewBases": [
+        "BODY+CALLER SOURCE (selected anchors)",
+        "PINNED SYMBOL WINDOW + LOCAL REFERENCES + MODULE CONSUMER EVIDENCE"
+      ],
+      "decisionConfidences": [
+        "HIGH source-level defect; runtime unverified",
+        "HIGH — source defect, runtime UNRUN"
+      ],
+      "boundaryOwners": [
+        "Host durable product journal",
+        "Host native adapter / HQKG pure compute"
+      ],
+      "topLevelStates": [
+        "PRIOR DISPOSITION",
+        "REVIEWED — SOURCE DISPOSITION"
+      ],
+      "evidenceTiers": [
+        "SOURCE DEFECT"
+      ],
+      "reviewPackages": [
+        "B-F01-B02"
+      ],
+      "reviewRoles": [
+        "readNativeKnowledge — Host durable product journal",
+        "projectWikiChanges — Host durable product journal",
+        "projectAppliedControlEffects — Host durable product journal",
+        "appendEntries — Host durable product journal"
+      ],
+      "laneReviewNeeds": [
+        "REVALIDATE — prior decision, do not silently overwrite"
+      ],
+      "knownMissing": [
+        "L533-548 selects last 24 changes and max 256 capture pages; native/hqkg/src/bin/hqkg-personal.rs:197-214 deletes absent ...",
+        "L310 slices currentOnly selection to last 24 even when native ingestion consumes it; separate complete revisioned delta ...",
+        "L356 takes recent(100), then projects only matching applied receipts; durable native source cannot treat bounded recent ...",
+        "L589 permanently rejects writes above fixed lifetime capacity; keep serialized CAS, O_NOFOLLOW, exact fsync/readback and..."
+      ],
+      "remainingEvidence": [
+        "Verify complete reverse caller closure and actual registration/configuration/packaging as applicable; run exact product ...",
+        "Runtime/device acceptance UNRUN; Restart + CAS/torn-tail/sequence readback; older valid Wiki source remains recoverable ...",
+        "Runtime/device acceptance UNRUN; Turnover >256 captures and >100 receipts, explicit tombstones, source drift, restart, b..."
+      ],
+      "dispositionRounds": [
+        "DR01",
+        "B-S01-R01"
+      ],
+      "resolvedActions": [
+        "CHANGE"
+      ],
+      "revisedShouldWire": [
+        "YES",
+        "YES — within existing unit"
+      ],
+      "fileClasses": [
+        "Runtime / executable candidate"
+      ]
+    },
+    {
+      "id": "NEXT:B-F01-B14",
+      "phase": "NEXT",
+      "priority": "P0",
+      "rowCount": 3,
+      "rowIds": [
+        "AT-4BF6BC95F4EC",
+        "AT-BEB57E2A22C7",
+        "AT-7DD9F1E3705D"
+      ],
+      "paths": [
+        "apps/vivim-host/server.mjs",
+        "apps/vivim-host/bootstrap/worker-supervisor.mjs"
+      ],
+      "closures": [
+        "CONFIRMED SOURCE REPAIR"
+      ],
+      "nextPackages": [
+        "D09"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "Packaged PWA invokes typed operation with grant; result persists/reads back via existing authority.",
+      "done": false,
+      "targets": {
+        "Target Rust": 2,
+        "Target Host": 3,
+        "Target PWA": 3,
+        "Target Tauri": 3,
+        "Target Studio": 1
+      },
+      "reachabilityBlank": 0,
+      "evidenceGrades": [
+        "DIRECT / SEARCH",
+        "TREE / PROVISIONAL",
+        "DECLARATION / PROPOSED"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "EXTEND",
+        "TRACE_AND_DISPOSE"
+      ],
+      "currentStates": [
+        "AUDIT FINDING — OPEN",
+        "REVIEW REQUIRED",
+        "CALLER REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "File",
+        "Symbol"
+      ],
+      "subsystems": [
+        "Host"
+      ],
+      "shouldIntegrate": [
+        "Yes",
+        "Conditional"
+      ],
+      "reviewBases": [
+        "PINNED EXECUTABLE BODY + CONCRETE CALLER/REGISTRATION GAP",
+        "PINNED SYMBOL WINDOW + LOCAL REFERENCES + MODULE CONSUMER EVIDENCE"
+      ],
+      "decisionConfidences": [
+        "HIGH source-level defect; live behavior UNRUN",
+        "HIGH — source path defect; runtime UNRUN"
+      ],
+      "boundaryOwners": [
+        "Host",
+        "Host composition and HTTP boundary"
+      ],
+      "topLevelStates": [
+        "PRIOR DISPOSITION",
+        "TOP LEVEL — SOURCE SUPPORTED",
+        "REVIEWED — SOURCE DISPOSITION"
+      ],
+      "evidenceTiers": [
+        "PINNED SOURCE — TOP-LEVEL",
+        "SOURCE DEFECT"
+      ],
+      "reviewPackages": [
+        "D09",
+        "B-F01-B14"
+      ],
+      "reviewRoles": [
+        "createHostServer — Host composition and HTTP boundary"
+      ],
+      "laneReviewNeeds": [
+        "REVALIDATE — prior decision, do not silently overwrite",
+        "PENDING — initial disposition"
+      ],
+      "knownMissing": [
+        "L205-209 starts worker before takeover and ignores result. Also local /api/mutate chat append (L376-414) and raw product..."
+      ],
+      "remainingEvidence": [
+        "Implement within existing dedup unit only after approval; run exact positive and negative product tests.",
+        "Runtime/device acceptance UNRUN; Concurrent startup, lease rejection, owner-only raw journal/source, real HVI configurat..."
+      ],
+      "dispositionRounds": [
+        "DR02",
+        "FB01",
+        "B-S01-R01"
+      ],
+      "resolvedActions": [
+        "CHANGE"
+      ],
+      "revisedShouldWire": [
+        "YES",
+        "YES — within existing unit"
+      ],
+      "fileClasses": [
+        "Runtime / executable candidate"
+      ]
+    },
+    {
+      "id": "NEXT:CONSOLIDATE:apps/vivim-host/control",
+      "phase": "NEXT",
+      "priority": "P0",
+      "rowCount": 4,
+      "rowIds": [
+        "AT-E455BCFBBD2C",
+        "AT-0B1D10559FB7",
+        "AT-38DB99248ADE",
+        "AT-2D025215ED50"
+      ],
+      "paths": [
+        "apps/vivim-host/control/native-program.mjs",
+        "apps/vivim-host/control/wiki-read-program.mjs",
+        "apps/vivim-host/control/hvi-capability.mjs",
+        "apps/vivim-host/control/live-source-surface.mjs"
+      ],
+      "closures": [],
+      "nextPackages": [
+        "D03",
+        "D07"
+      ],
+      "packageOwners": [
+        "A"
+      ],
+      "acceptance": "Actual Host operation uses existing capability with verified source pin; no parallel interpreter.",
+      "done": false,
+      "targets": {
+        "Target Rust": 4,
+        "Target Host": 4,
+        "Target Studio": 4,
+        "Target PWA": 4,
+        "Target VLANG": 4,
+        "Target AutoWiki": 2,
+        "Target HQ": 2
+      },
+      "reachabilityBlank": 4,
+      "evidenceGrades": [
+        "DIRECT / SEARCH",
+        "TREE / PROVISIONAL"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "EXTEND",
+        "TRACE_AND_WIRE"
+      ],
+      "currentStates": [
+        "AUDIT FINDING — OPEN",
+        "REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "File"
+      ],
+      "subsystems": [
+        "Host"
+      ],
+      "shouldIntegrate": [
+        "Yes",
+        "Conditional"
+      ],
+      "reviewBases": [
+        "BODY / BOUNDARY",
+        "MODULE SOURCE / SYMBOL CLASSIFICATION"
+      ],
+      "decisionConfidences": [
+        "MEDIUM — package proposal",
+        "MEDIUM — source boundary; individual caller pending"
+      ],
+      "boundaryOwners": [],
+      "topLevelStates": [
+        "PRIOR DISPOSITION"
+      ],
+      "evidenceTiers": [],
+      "reviewPackages": [],
+      "reviewRoles": [],
+      "laneReviewNeeds": [
+        "REVALIDATE — prior decision, do not silently overwrite"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [],
+      "dispositionRounds": [
+        "DR01",
+        "DR02"
+      ],
+      "resolvedActions": [
+        "CHANGE",
+        "REUSE"
+      ],
+      "revisedShouldWire": [
+        "Yes — change parent path",
+        "Via existing parent; no independent port"
+      ],
+      "fileClasses": [
+        "Runtime / executable candidate"
+      ]
+    },
+    {
+      "id": "NEXT:B-F01-B04",
+      "phase": "NEXT",
+      "priority": "P1",
+      "rowCount": 1,
+      "rowIds": [
+        "AT-1D41E00C6496"
+      ],
+      "paths": [
+        "harness/src/context/dcb-sources.mjs"
+      ],
+      "closures": [],
+      "nextPackages": [
+        "D12"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "Actual source revision/consent changes affect only eligible bundle; no stale or leaked data.",
+      "done": false,
+      "targets": {
+        "Target Rust": 1,
+        "Target Host": 1,
+        "Target Studio": 1,
+        "Target HQ": 1,
+        "Target VLANG": 1,
+        "Target Harness": 1
+      },
+      "reachabilityBlank": 0,
+      "evidenceGrades": [
+        "TREE / PROVISIONAL"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "TRACE_AND_WIRE"
+      ],
+      "currentStates": [
+        "REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "File"
+      ],
+      "subsystems": [
+        "Harness"
+      ],
+      "shouldIntegrate": [
+        "Yes"
+      ],
+      "reviewBases": [
+        "BODY+CALLER SOURCE (selected anchors)"
+      ],
+      "decisionConfidences": [
+        "HIGH source-level defect; runtime unverified"
+      ],
+      "boundaryOwners": [
+        "Harness"
+      ],
+      "topLevelStates": [
+        "TOP LEVEL — SOURCE SUPPORTED"
+      ],
+      "evidenceTiers": [
+        "PINNED SOURCE — TOP-LEVEL"
+      ],
+      "reviewPackages": [
+        "D12"
+      ],
+      "reviewRoles": [],
+      "laneReviewNeeds": [
+        "REVALIDATE — prior decision, do not silently overwrite"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [
+        "Verify complete reverse caller closure and actual registration/configuration/packaging as applicable; run exact product ..."
+      ],
+      "dispositionRounds": [
+        "FB01"
+      ],
+      "resolvedActions": [
+        "CHANGE"
+      ],
+      "revisedShouldWire": [
+        "YES"
+      ],
+      "fileClasses": [
+        "Runtime / executable candidate"
+      ]
+    },
+    {
+      "id": "NEXT:B-F01-B06",
+      "phase": "NEXT",
+      "priority": "P1",
+      "rowCount": 3,
+      "rowIds": [
+        "AT-DDC9409F21E2",
+        "AT-08786C77E075",
+        "AT-8FFE2F565EBB"
+      ],
+      "paths": [
+        "apps/vivim-host/control/development-read-port.mjs",
+        "apps/vivim-host/server.mjs"
+      ],
+      "closures": [
+        "CONFIRMED SOURCE REPAIR"
+      ],
+      "nextPackages": [
+        "D07"
+      ],
+      "packageOwners": [
+        "A"
+      ],
+      "acceptance": "Register and compare actual authorized sources without installing Git/Cargo for customer.",
+      "done": false,
+      "targets": {
+        "Target Rust": 1,
+        "Target Host": 3,
+        "Target HQ": 3,
+        "Target VLANG": 2
+      },
+      "reachabilityBlank": 0,
+      "evidenceGrades": [
+        "DIRECT / SEARCH",
+        "SYMBOL / DIRECT",
+        "DECLARATION / PROPOSED"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "EXTEND"
+      ],
+      "currentStates": [
+        "AUDIT FINDING — OPEN",
+        "CALLER REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "File",
+        "Symbol"
+      ],
+      "subsystems": [
+        "Host"
+      ],
+      "shouldIntegrate": [
+        "Yes"
+      ],
+      "reviewBases": [
+        "PINNED EXECUTABLE BODY + CONCRETE CALLER/REGISTRATION GAP",
+        "PINNED SYMBOL WINDOW + LOCAL REFERENCES + MODULE CONSUMER EVIDENCE"
+      ],
+      "decisionConfidences": [
+        "HIGH source-level defect; live behavior UNRUN",
+        "HIGH — source defect, runtime UNRUN",
+        "HIGH — source path defect; runtime UNRUN"
+      ],
+      "boundaryOwners": [
+        "Host-authorized HQ/HVI read port",
+        "Host composition and HTTP boundary"
+      ],
+      "topLevelStates": [
+        "PRIOR DISPOSITION",
+        "REVIEWED — SOURCE DISPOSITION"
+      ],
+      "evidenceTiers": [
+        "SOURCE DEFECT"
+      ],
+      "reviewPackages": [
+        "B-F01-B06"
+      ],
+      "reviewRoles": [
+        "createDevelopmentReadPort — Host-authorized HQ/HVI read port",
+        "developmentPort — Host composition and HTTP boundary"
+      ],
+      "laneReviewNeeds": [
+        "REVALIDATE — prior decision, do not silently overwrite"
+      ],
+      "knownMissing": [
+        "L20-22 requires approved hviRepositories and adapter, while server normal main passes only roots/dataDir (L833,1235-1264...",
+        "L832-836 default configuration supplies roots/dataDir; normal CLI L1258-1264 supplies no developmentSources. development..."
+      ],
+      "remainingEvidence": [
+        "Implement within existing dedup unit only after approval; run exact positive and negative product tests.",
+        "Runtime/device acceptance UNRUN; Register approved repository, index and compare real pinned snapshots; missing adapter ...",
+        "Runtime/device acceptance UNRUN; Concurrent startup, lease rejection, owner-only raw journal/source, real HVI configurat..."
+      ],
+      "dispositionRounds": [
+        "DR01",
+        "B-S01-R01"
+      ],
+      "resolvedActions": [
+        "CHANGE"
+      ],
+      "revisedShouldWire": [
+        "YES",
+        "YES — within existing unit"
+      ],
+      "fileClasses": [
+        "Runtime / executable candidate"
+      ]
+    },
+    {
+      "id": "NEXT:CONSOLIDATE:apps/vivim-host/chat",
+      "phase": "NEXT",
+      "priority": "P1",
+      "rowCount": 1,
+      "rowIds": [
+        "AT-0DB43FCE7E16"
+      ],
+      "paths": [
+        "apps/vivim-host/chat/wiki-semantics.mjs"
+      ],
+      "closures": [],
+      "nextPackages": [
+        "D01"
+      ],
+      "packageOwners": [
+        "A"
+      ],
+      "acceptance": "Committed source change appears in relevant native query; revoked data absent.",
+      "done": false,
+      "targets": {
+        "Target Rust": 1,
+        "Target Host": 1,
+        "Target PWA": 1,
+        "Target VLANG": 1,
+        "Target AutoWiki": 1
+      },
+      "reachabilityBlank": 1,
+      "evidenceGrades": [
+        "TREE / PROVISIONAL"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "TRACE_AND_WIRE"
+      ],
+      "currentStates": [
+        "REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "File"
+      ],
+      "subsystems": [
+        "Host"
+      ],
+      "shouldIntegrate": [
+        "Yes"
+      ],
+      "reviewBases": [
+        "PINNED SOURCE — TOP-LEVEL"
+      ],
+      "decisionConfidences": [
+        "MEDIUM — top-level source boundary; runtime unrun"
+      ],
+      "boundaryOwners": [
+        "Host"
+      ],
+      "topLevelStates": [
+        "TOP LEVEL — SOURCE SUPPORTED"
+      ],
+      "evidenceTiers": [
+        "PINNED SOURCE — TOP-LEVEL"
+      ],
+      "reviewPackages": [
+        "D01"
+      ],
+      "reviewRoles": [],
+      "laneReviewNeeds": [
+        "REVALIDATE — prior decision, do not silently overwrite"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [],
+      "dispositionRounds": [
+        "FB01"
+      ],
+      "resolvedActions": [
+        "REUSE"
+      ],
+      "revisedShouldWire": [
+        "Yes — reuse through parent"
+      ],
+      "fileClasses": [
+        "Runtime / executable candidate"
+      ]
+    },
+    {
+      "id": "NEXT:CONSOLIDATE:apps/vivim-host/conversations",
+      "phase": "NEXT",
+      "priority": "P1",
+      "rowCount": 3,
+      "rowIds": [
+        "AT-91886B58F339",
+        "AT-D4FE78FC0EA9",
+        "AT-8990DEA9794C"
+      ],
+      "paths": [
+        "apps/vivim-host/conversations/bridge-evidence.mjs",
+        "apps/vivim-host/conversations/live-projection.mjs",
+        "apps/vivim-host/conversations/studio-journal-evidence.mjs"
+      ],
+      "closures": [],
+      "nextPackages": [
+        "D06"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "Committed source change appears in relevant native query; revoked data absent.",
+      "done": false,
+      "targets": {
+        "Target Rust": 3,
+        "Target Host": 3,
+        "Target PWA": 3,
+        "Target VLANG": 3,
+        "Target AutoWiki": 3
+      },
+      "reachabilityBlank": 3,
+      "evidenceGrades": [
+        "TREE / PROVISIONAL"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "TRACE_AND_WIRE"
+      ],
+      "currentStates": [
+        "REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "File"
+      ],
+      "subsystems": [
+        "Host"
+      ],
+      "shouldIntegrate": [
+        "Yes"
+      ],
+      "reviewBases": [
+        "PRIOR PINNED SOURCE — TOP-LEVEL"
+      ],
+      "decisionConfidences": [
+        "MEDIUM — top-level source boundary; runtime unrun"
+      ],
+      "boundaryOwners": [
+        "Host"
+      ],
+      "topLevelStates": [
+        "TOP LEVEL — SOURCE SUPPORTED"
+      ],
+      "evidenceTiers": [
+        "PRIOR PINNED SOURCE — TOP-LEVEL"
+      ],
+      "reviewPackages": [
+        "D06"
+      ],
+      "reviewRoles": [],
+      "laneReviewNeeds": [
+        "REVALIDATE — prior decision, do not silently overwrite"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [],
+      "dispositionRounds": [
+        "FB01"
+      ],
+      "resolvedActions": [
+        "REUSE"
+      ],
+      "revisedShouldWire": [
+        "Yes — reuse through parent"
+      ],
+      "fileClasses": [
+        "Runtime / executable candidate"
+      ]
+    },
+    {
+      "id": "NEXT:CONSOLIDATE:harness/src/context",
+      "phase": "NEXT",
+      "priority": "P1",
+      "rowCount": 6,
+      "rowIds": [
+        "AT-F1E898DDF5DC",
+        "AT-43AF03F5D91F",
+        "AT-08B8E02D9671",
+        "AT-EC6E7690BF9C",
+        "AT-5A2A5D3525DC",
+        "AT-9582E1649EAA"
+      ],
+      "paths": [
+        "harness/src/context/dcb-composer.mjs",
+        "harness/src/context/dcb-invalidation.mjs",
+        "harness/src/context/dcb-dispatch-gate.mjs",
+        "harness/src/context/dcb-maintenance.mjs",
+        "harness/src/context/dcb-source-selection.mjs",
+        "harness/src/context/dcb-v2-planner.mjs"
+      ],
+      "closures": [],
+      "nextPackages": [
+        "D12",
+        "D04",
+        "D02"
+      ],
+      "packageOwners": [
+        "?",
+        "A"
+      ],
+      "acceptance": "Actual source revision/consent changes affect only eligible bundle; no stale or leaked data.",
+      "done": false,
+      "targets": {
+        "Target Rust": 6,
+        "Target Host": 6,
+        "Target VLANG": 6,
+        "Target Harness": 6
+      },
+      "reachabilityBlank": 6,
+      "evidenceGrades": [
+        "DIRECT / SEARCH",
+        "TREE / PROVISIONAL"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "EXTEND",
+        "TRACE_AND_WIRE"
+      ],
+      "currentStates": [
+        "AUDIT FINDING — OPEN",
+        "REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "File"
+      ],
+      "subsystems": [
+        "Harness"
+      ],
+      "shouldIntegrate": [
+        "Yes"
+      ],
+      "reviewBases": [
+        "PRIOR PINNED SOURCE — TOP-LEVEL",
+        "PINNED SOURCE — TOP-LEVEL"
+      ],
+      "decisionConfidences": [
+        "MEDIUM — top-level source boundary; runtime unrun"
+      ],
+      "boundaryOwners": [
+        "Harness"
+      ],
+      "topLevelStates": [
+        "TOP LEVEL — SOURCE SUPPORTED"
+      ],
+      "evidenceTiers": [
+        "PRIOR PINNED SOURCE — TOP-LEVEL",
+        "PINNED SOURCE — TOP-LEVEL"
+      ],
+      "reviewPackages": [
+        "D12",
+        "D04",
+        "D02"
+      ],
+      "reviewRoles": [],
+      "laneReviewNeeds": [
+        "REVALIDATE — prior decision, do not silently overwrite"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [],
+      "dispositionRounds": [
+        "FB01"
+      ],
+      "resolvedActions": [
+        "REUSE"
+      ],
+      "revisedShouldWire": [
+        "Yes — reuse through parent"
+      ],
+      "fileClasses": [
+        "Runtime / executable candidate"
+      ]
+    },
+    {
+      "id": "NEXT:B-F01-B08",
+      "phase": "NEXT",
+      "priority": "P2",
+      "rowCount": 1,
+      "rowIds": [
+        "AT-34285F271418"
+      ],
+      "paths": [
+        "harness/src/dev/bootstrap.mjs"
+      ],
+      "closures": [],
+      "nextPackages": [
+        "D08"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "No production dependency on coordination/smoke tool; any real use through existing Host.",
+      "done": false,
+      "targets": {
+        "Target Host": 1,
+        "Target Studio": 1,
+        "Target PWA": 1,
+        "Target Harness": 1
+      },
+      "reachabilityBlank": 0,
+      "evidenceGrades": [
+        "TREE / PROVISIONAL"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "KEEP_DEV_TOOL"
+      ],
+      "currentStates": [
+        "REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "File"
+      ],
+      "subsystems": [
+        "Harness"
+      ],
+      "shouldIntegrate": [
+        "Conditional"
+      ],
+      "reviewBases": [
+        "BODY+CALLER SOURCE (selected anchors)"
+      ],
+      "decisionConfidences": [
+        "HIGH source-level defect; runtime unverified"
+      ],
+      "boundaryOwners": [
+        "Harness"
+      ],
+      "topLevelStates": [
+        "TOP LEVEL — PROVISIONAL / VERIFY"
+      ],
+      "evidenceTiers": [
+        "TREE / PATH — UNVERIFIED BODY"
+      ],
+      "reviewPackages": [
+        "D15"
+      ],
+      "reviewRoles": [],
+      "laneReviewNeeds": [
+        "VERIFY — source / callers"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [
+        "Verify complete reverse caller closure and actual registration/configuration/packaging as applicable; run exact product ..."
+      ],
+      "dispositionRounds": [
+        "FB01"
+      ],
+      "resolvedActions": [
+        "CHANGE"
+      ],
+      "revisedShouldWire": [
+        "YES"
+      ],
+      "fileClasses": [
+        "Runtime / executable candidate"
+      ]
+    },
+    {
+      "id": "VERIFY:CONSOLIDATE:apps/vivim-host/control",
+      "phase": "VERIFY",
+      "priority": "P0",
+      "rowCount": 16,
+      "rowIds": [
+        "AT-8CCDB739F328",
+        "AT-E63E924C3EB7",
+        "AT-8986B8D4C8AE",
+        "AT-BAF8D20F26A3",
+        "AT-A540C93E1CEB",
+        "AT-1D7DBD704D2F",
+        "AT-7A304FF48BD4",
+        "AT-5FE2AF8E4B2A",
+        "AT-790C986BD0CB",
+        "AT-57918B172821",
+        "AT-794F51915175",
+        "AT-6D99037D09AC",
+        "AT-2D33059B30E9",
+        "AT-20C7F02FDEFE",
+        "AT-78BBF21D0E01",
+        "AT-BF1DE9BFA061"
+      ],
+      "paths": [
+        "apps/vivim-host/control/browser-session.mjs",
+        "apps/vivim-host/control/journal.mjs",
+        "apps/vivim-host/control/action-catalog.v1.json",
+        "apps/vivim-host/control/bootstrap-actions.mjs",
+        "apps/vivim-host/control/cli.mjs",
+        "apps/vivim-host/control/command-intent.d.ts",
+        "apps/vivim-host/control/corpus.v1.json",
+        "apps/vivim-host/control/file-surface-gen.mjs",
+        "apps/vivim-host/control/http-status.mjs",
+        "apps/vivim-host/control/hvi-native-guide.json",
+        "apps/vivim-host/control/lexicon.mjs",
+        "apps/vivim-host/control/personal-correction.mjs",
+        "apps/vivim-host/control/personal-semantic-observer.mjs",
+        "apps/vivim-host/control/rdcb-cache.mjs",
+        "apps/vivim-host/control/rdcb-gen.mjs",
+        "apps/vivim-host/control/heldout.v1.json"
+      ],
+      "closures": [
+        "FURTHER TRACE"
+      ],
+      "nextPackages": [
+        "D15"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "Actual Host operation uses existing capability with verified source pin; no parallel interpreter.",
+      "done": false,
+      "targets": {
+        "Target Host": 11
+      },
+      "reachabilityBlank": 11,
+      "evidenceGrades": [
+        "TREE / PROVISIONAL"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "KEEP_AUTHORITY",
+        "TRACE_AND_WIRE",
+        "ISOLATE_FIXTURE"
+      ],
+      "currentStates": [
+        "REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "File"
+      ],
+      "subsystems": [
+        "Host"
+      ],
+      "shouldIntegrate": [
+        "Conditional",
+        "No"
+      ],
+      "reviewBases": [
+        "TREE / PATH — UNVERIFIED BODY",
+        "PINNED SOURCE — TOP-LEVEL"
+      ],
+      "decisionConfidences": [
+        "LOW — top-level proposal only",
+        "LOW — provisional top-level role",
+        "MEDIUM — unresolved ownership/caller"
+      ],
+      "boundaryOwners": [
+        "Host"
+      ],
+      "topLevelStates": [
+        "TOP LEVEL — PROVISIONAL / VERIFY",
+        "TOP LEVEL — SOURCE INSPECTED / VERIFY"
+      ],
+      "evidenceTiers": [
+        "TREE / PATH — UNVERIFIED BODY",
+        "PINNED SOURCE — TOP-LEVEL"
+      ],
+      "reviewPackages": [
+        "D15"
+      ],
+      "reviewRoles": [
+        "Contract / schema candidate",
+        "Configuration or data candidate"
+      ],
+      "laneReviewNeeds": [
+        "VERIFY — source / callers"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [
+        "Inspect body, imports, reverse consumers and execution owner at pinned source; confirm with actual tests."
+      ],
+      "dispositionRounds": [
+        "FB01",
+        "FB02"
+      ],
+      "resolvedActions": [
+        "VERIFY"
+      ],
+      "revisedShouldWire": [
+        "Conditional — evidence pending",
+        "Undecided pending evidence",
+        "No new connection — retirement review"
+      ],
+      "fileClasses": [
+        "Runtime / executable candidate",
+        "Contract / schema / registry",
+        "Runtime config / data candidate"
+      ]
+    },
+    {
+      "id": "VERIFY:CONSOLIDATE:apps/vivim-host/public",
+      "phase": "VERIFY",
+      "priority": "P1",
+      "rowCount": 11,
+      "rowIds": [
+        "AT-7072DC402E10",
+        "AT-53D8B3AC1775",
+        "AT-CF53D5862720",
+        "AT-B59DD9DD34E4",
+        "AT-7B97A0FF2CE7",
+        "AT-A18D8CACFA67",
+        "AT-B7EC34DBA160",
+        "AT-52FE7A50A4B5",
+        "AT-A020883044DC",
+        "AT-76FF6C6ED90F",
+        "AT-FE5EF84616E2"
+      ],
+      "paths": [
+        "apps/vivim-host/public/control-panel.js",
+        "apps/vivim-host/public/host.css",
+        "apps/vivim-host/public/host.js",
+        "apps/vivim-host/public/index.html",
+        "apps/vivim-host/public/mobile-first.css",
+        "apps/vivim-host/public/mobile-first.html",
+        "apps/vivim-host/public/mobile-first.js",
+        "apps/vivim-host/public/onboarding.html",
+        "apps/vivim-host/public/onboarding.js",
+        "apps/vivim-host/public/qrcode.js",
+        "apps/vivim-host/public/vivim-tokens.css"
+      ],
+      "closures": [],
+      "nextPackages": [
+        "D15"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "Owner UI renders live committed state and actual error.",
+      "done": false,
+      "targets": {
+        "Target Host": 11
+      },
+      "reachabilityBlank": 11,
+      "evidenceGrades": [
+        "TREE / PROVISIONAL"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "KEEP_UI"
+      ],
+      "currentStates": [
+        "REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "File"
+      ],
+      "subsystems": [
+        "Host"
+      ],
+      "shouldIntegrate": [
+        "No"
+      ],
+      "reviewBases": [
+        "TREE / PATH — UNVERIFIED BODY"
+      ],
+      "decisionConfidences": [
+        "LOW — top-level proposal only"
+      ],
+      "boundaryOwners": [
+        "Host"
+      ],
+      "topLevelStates": [
+        "TOP LEVEL — PROVISIONAL / VERIFY"
+      ],
+      "evidenceTiers": [
+        "TREE / PATH — UNVERIFIED BODY"
+      ],
+      "reviewPackages": [
+        "D15"
+      ],
+      "reviewRoles": [],
+      "laneReviewNeeds": [
+        "VERIFY — source / callers"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [],
+      "dispositionRounds": [
+        "FB01"
+      ],
+      "resolvedActions": [
+        "VERIFY"
+      ],
+      "revisedShouldWire": [
+        "Conditional — evidence pending"
+      ],
+      "fileClasses": [
+        "Runtime / executable candidate"
+      ]
+    },
+    {
+      "id": "VERIFY:CONSOLIDATE:harness/src/providers",
+      "phase": "VERIFY",
+      "priority": "P1",
+      "rowCount": 9,
+      "rowIds": [
+        "AT-A7706297C2F9",
+        "AT-E7D02EE5911C",
+        "AT-9413C9696F8C",
+        "AT-8D443D89B02F",
+        "AT-420A1F4E9244",
+        "AT-3513AD0E8C78",
+        "AT-373C2C7BCF7E",
+        "AT-C0758AE93F64",
+        "AT-D138454121B0"
+      ],
+      "paths": [
+        "harness/src/providers/chatgpt.mjs",
+        "harness/src/providers/claude.mjs",
+        "harness/src/providers/deepseek.mjs",
+        "harness/src/providers/gemini.mjs",
+        "harness/src/providers/grok.mjs",
+        "harness/src/providers/index.mjs",
+        "harness/src/providers/kimi.mjs",
+        "harness/src/providers/qwen.mjs",
+        "harness/src/providers/zai.mjs"
+      ],
+      "closures": [],
+      "nextPackages": [
+        "D15"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "Existing web provider path works and records evidence; no provider API or authority bypass.",
+      "done": false,
+      "targets": {
+        "Target Harness": 9
+      },
+      "reachabilityBlank": 9,
+      "evidenceGrades": [
+        "TREE / PROVISIONAL"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "KEEP_ADAPTER"
+      ],
+      "currentStates": [
+        "REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "File"
+      ],
+      "subsystems": [
+        "Harness"
+      ],
+      "shouldIntegrate": [
+        "Conditional"
+      ],
+      "reviewBases": [
+        "TREE / PATH — UNVERIFIED BODY"
+      ],
+      "decisionConfidences": [
+        "LOW — top-level proposal only"
+      ],
+      "boundaryOwners": [
+        "Harness"
+      ],
+      "topLevelStates": [
+        "TOP LEVEL — PROVISIONAL / VERIFY"
+      ],
+      "evidenceTiers": [
+        "TREE / PATH — UNVERIFIED BODY"
+      ],
+      "reviewPackages": [
+        "D15"
+      ],
+      "reviewRoles": [],
+      "laneReviewNeeds": [
+        "VERIFY — source / callers"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [],
+      "dispositionRounds": [
+        "FB01"
+      ],
+      "resolvedActions": [
+        "VERIFY"
+      ],
+      "revisedShouldWire": [
+        "Conditional — evidence pending"
+      ],
+      "fileClasses": [
+        "Runtime / executable candidate"
+      ]
+    },
+    {
+      "id": "VERIFY:CONSOLIDATE:harness/src/interface",
+      "phase": "VERIFY",
+      "priority": "P1",
+      "rowCount": 8,
+      "rowIds": [
+        "AT-69D7E729D9A7",
+        "AT-7AF8DCC81740",
+        "AT-2EFE92E61484",
+        "AT-2574075AD8D6",
+        "AT-887D106F3E35",
+        "AT-F0DEDA0026E4",
+        "AT-FEDBB8A913FD",
+        "AT-C26CB4706CC2"
+      ],
+      "paths": [
+        "harness/src/interface/approval.mjs",
+        "harness/src/interface/intelligent-model-router.mjs",
+        "harness/src/interface/deps.mjs",
+        "harness/src/interface/intent.mjs",
+        "harness/src/interface/launch.mjs",
+        "harness/src/interface/prefs.mjs",
+        "harness/src/interface/standing.mjs",
+        "harness/src/interface/target.mjs"
+      ],
+      "closures": [],
+      "nextPackages": [
+        "D15"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "No production dependency on coordination/smoke tool; any real use through existing Host.",
+      "done": false,
+      "targets": {
+        "Target Harness": 8
+      },
+      "reachabilityBlank": 8,
+      "evidenceGrades": [
+        "TREE / PROVISIONAL"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "KEEP_ADAPTER",
+        "KEEP_DEV_TOOL"
+      ],
+      "currentStates": [
+        "REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "File"
+      ],
+      "subsystems": [
+        "Harness"
+      ],
+      "shouldIntegrate": [
+        "Conditional"
+      ],
+      "reviewBases": [
+        "TREE / PATH — UNVERIFIED BODY",
+        "PRIOR PINNED SOURCE — TOP-LEVEL"
+      ],
+      "decisionConfidences": [
+        "LOW — top-level proposal only",
+        "MEDIUM — unresolved ownership/caller"
+      ],
+      "boundaryOwners": [
+        "Harness"
+      ],
+      "topLevelStates": [
+        "TOP LEVEL — PROVISIONAL / VERIFY",
+        "TOP LEVEL — SOURCE INSPECTED / VERIFY"
+      ],
+      "evidenceTiers": [
+        "TREE / PATH — UNVERIFIED BODY",
+        "PRIOR PINNED SOURCE — TOP-LEVEL"
+      ],
+      "reviewPackages": [
+        "D15"
+      ],
+      "reviewRoles": [],
+      "laneReviewNeeds": [
+        "VERIFY — source / callers"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [],
+      "dispositionRounds": [
+        "FB01"
+      ],
+      "resolvedActions": [
+        "VERIFY"
+      ],
+      "revisedShouldWire": [
+        "Conditional — evidence pending"
+      ],
+      "fileClasses": [
+        "Runtime / executable candidate"
+      ]
+    },
+    {
+      "id": "VERIFY:CONSOLIDATE:harness/src/core",
+      "phase": "VERIFY",
+      "priority": "P1",
+      "rowCount": 7,
+      "rowIds": [
+        "AT-9D1B319D9B80",
+        "AT-0A9BA1346DC0",
+        "AT-AA6D27400368",
+        "AT-076A1EAAFF2A",
+        "AT-FDC646541029",
+        "AT-0F235745C911",
+        "AT-3C43479A296E"
+      ],
+      "paths": [
+        "harness/src/core/cdp.mjs",
+        "harness/src/core/journal.mjs",
+        "harness/src/core/models.mjs",
+        "harness/src/core/reply.mjs",
+        "harness/src/core/send.mjs",
+        "harness/src/core/tab-lifecycle.mjs",
+        "harness/src/core/tabs.mjs"
+      ],
+      "closures": [],
+      "nextPackages": [
+        "D15"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "Existing web provider path works and records evidence; no provider API or authority bypass.",
+      "done": false,
+      "targets": {
+        "Target Harness": 7
+      },
+      "reachabilityBlank": 7,
+      "evidenceGrades": [
+        "TREE / PROVISIONAL"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "KEEP_ADAPTER"
+      ],
+      "currentStates": [
+        "REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "File"
+      ],
+      "subsystems": [
+        "Harness"
+      ],
+      "shouldIntegrate": [
+        "Conditional"
+      ],
+      "reviewBases": [
+        "TREE / PATH — UNVERIFIED BODY",
+        "PINNED SOURCE — TOP-LEVEL"
+      ],
+      "decisionConfidences": [
+        "LOW — top-level proposal only",
+        "MEDIUM — unresolved ownership/caller"
+      ],
+      "boundaryOwners": [
+        "Harness"
+      ],
+      "topLevelStates": [
+        "TOP LEVEL — PROVISIONAL / VERIFY",
+        "TOP LEVEL — SOURCE INSPECTED / VERIFY"
+      ],
+      "evidenceTiers": [
+        "TREE / PATH — UNVERIFIED BODY",
+        "PINNED SOURCE — TOP-LEVEL"
+      ],
+      "reviewPackages": [
+        "D15"
+      ],
+      "reviewRoles": [],
+      "laneReviewNeeds": [
+        "VERIFY — source / callers"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [],
+      "dispositionRounds": [
+        "FB01"
+      ],
+      "resolvedActions": [
+        "VERIFY"
+      ],
+      "revisedShouldWire": [
+        "Conditional — evidence pending"
+      ],
+      "fileClasses": [
+        "Runtime / executable candidate"
+      ]
+    },
+    {
+      "id": "VERIFY:B-F01-B04",
+      "phase": "VERIFY",
+      "priority": "P1",
+      "rowCount": 6,
+      "rowIds": [
+        "AT-AC5BB3BA01A5",
+        "AT-AA4E6CC017BD",
+        "AT-EE5A4961A4E1",
+        "AT-E06E3639717D",
+        "AT-EE9A19416783",
+        "AT-68CF31E619A1"
+      ],
+      "paths": [
+        "harness/src/context/dcb-invalidation.mjs",
+        "harness/src/context/dcb-graph-lineage.mjs",
+        "harness/src/context/dcb-lifecycle.mjs",
+        "harness/src/context/dcb-observation-intake.mjs",
+        "harness/src/context/dcb-policy-eval.mjs"
+      ],
+      "closures": [
+        "PROVISIONAL"
+      ],
+      "nextPackages": [
+        "D04",
+        "D06",
+        "D14"
+      ],
+      "packageOwners": [
+        "A",
+        "?"
+      ],
+      "acceptance": "Prove real caller or deliberate internal/dev status; Actual source revision/consent changes affect only eligible bundle; no stale or leaked data.",
+      "done": false,
+      "targets": {},
+      "reachabilityBlank": 0,
+      "evidenceGrades": [
+        "SYMBOL / DIRECT",
+        "DECLARATION / PROPOSED"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "EXTEND",
+        "TRACE_AND_DISPOSE"
+      ],
+      "currentStates": [
+        "AUDIT FINDING — OPEN",
+        "CALLER REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "Symbol"
+      ],
+      "subsystems": [
+        "Harness"
+      ],
+      "shouldIntegrate": [
+        "Yes",
+        "Conditional"
+      ],
+      "reviewBases": [
+        "PINNED SYMBOL WINDOW + LOCAL REFERENCES + MODULE CONSUMER EVIDENCE"
+      ],
+      "decisionConfidences": [
+        "PROVISIONAL — caller/registration closure unproved"
+      ],
+      "boundaryOwners": [
+        "DCB pure invalidation plan; Host event owner",
+        "DCB read-only lineage projection",
+        "DCB definition contracts and incumbent VersionedStore",
+        "DCB inert observation delta; Host commit authority"
+      ],
+      "topLevelStates": [
+        "REVIEWED — PROVISIONAL"
+      ],
+      "evidenceTiers": [
+        "SOURCE / CLOSURE UNKNOWN"
+      ],
+      "reviewPackages": [
+        "B-F01-B04"
+      ],
+      "reviewRoles": [
+        "planDcbInvalidations — DCB pure invalidation plan; Host event owner",
+        "projectDcbGraphLineage — DCB read-only lineage projection",
+        "dcbMaterializationInput — DCB definition contracts and incumbent VersionedStore",
+        "planDcbObservationIntegration — DCB inert observation delta; Host commit authority"
+      ],
+      "laneReviewNeeds": [
+        "PENDING — initial disposition"
+      ],
+      "knownMissing": [
+        "Live registration/consumer unproved; do not promote."
+      ],
+      "remainingEvidence": [
+        "Prove actual registered caller; Changed leaf invalidates correct ancestors/descendants; revoked grants block; unrelated ...",
+        "Prove actual registered caller; Exact owner/revision/edges; source drift and cross-owner denial; prove live graph consum...",
+        "Prove actual registered caller; Revision CAS and restart, monotonic expiry, terminal retirement, same-owner acyclic comp...",
+        "Prove actual registered caller; Reject unproved owner corrections, stale or revoked source resurrection; prove canonical..."
+      ],
+      "dispositionRounds": [
+        "B-S01-R01"
+      ],
+      "resolvedActions": [
+        "VERIFY"
+      ],
+      "revisedShouldWire": [
+        "VERIFY — no new wiring authorized"
+      ],
+      "fileClasses": [
+        "Runtime / executable candidate"
+      ]
+    },
+    {
+      "id": "VERIFY:CONSOLIDATE:apps/vivim-host/public/pages",
+      "phase": "VERIFY",
+      "priority": "P1",
+      "rowCount": 6,
+      "rowIds": [
+        "AT-C001672D57FC",
+        "AT-AB76066DFB85",
+        "AT-AAC7CF4414C2",
+        "AT-F4361C6F5D6C",
+        "AT-39F94458D3EC",
+        "AT-B3CE51E5F4A3"
+      ],
+      "paths": [
+        "apps/vivim-host/public/pages/chat.css",
+        "apps/vivim-host/public/pages/chat.html",
+        "apps/vivim-host/public/pages/chat.js",
+        "apps/vivim-host/public/pages/wiki.css",
+        "apps/vivim-host/public/pages/wiki.html",
+        "apps/vivim-host/public/pages/wiki.js"
+      ],
+      "closures": [],
+      "nextPackages": [
+        "D15"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "Owner UI renders live committed state and actual error.",
+      "done": false,
+      "targets": {
+        "Target Host": 6
+      },
+      "reachabilityBlank": 6,
+      "evidenceGrades": [
+        "TREE / PROVISIONAL"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "KEEP_UI"
+      ],
+      "currentStates": [
+        "REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "File"
+      ],
+      "subsystems": [
+        "Host"
+      ],
+      "shouldIntegrate": [
+        "No"
+      ],
+      "reviewBases": [
+        "TREE / PATH — UNVERIFIED BODY"
+      ],
+      "decisionConfidences": [
+        "LOW — top-level proposal only"
+      ],
+      "boundaryOwners": [
+        "Host"
+      ],
+      "topLevelStates": [
+        "TOP LEVEL — PROVISIONAL / VERIFY"
+      ],
+      "evidenceTiers": [
+        "TREE / PATH — UNVERIFIED BODY"
+      ],
+      "reviewPackages": [
+        "D15"
+      ],
+      "reviewRoles": [],
+      "laneReviewNeeds": [
+        "VERIFY — source / callers"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [],
+      "dispositionRounds": [
+        "FB01"
+      ],
+      "resolvedActions": [
+        "VERIFY"
+      ],
+      "revisedShouldWire": [
+        "Conditional — evidence pending"
+      ],
+      "fileClasses": [
+        "Runtime / executable candidate"
+      ]
+    },
+    {
+      "id": "VERIFY:CONSOLIDATE:apps/vivim-host",
+      "phase": "VERIFY",
+      "priority": "P1",
+      "rowCount": 4,
+      "rowIds": [
+        "AT-38DB68964984",
+        "AT-C0CCC5CF01E0",
+        "AT-B07920C7E268",
+        "AT-98548F1E0D14"
+      ],
+      "paths": [
+        "apps/vivim-host/insights.mjs",
+        "apps/vivim-host/phone-sessions.mjs",
+        "apps/vivim-host/receipt-runner.mjs",
+        "apps/vivim-host/vercel.json"
+      ],
+      "closures": [
+        "FURTHER TRACE"
+      ],
+      "nextPackages": [
+        "D15"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "Production call chain and error handling verified at current revision.",
+      "done": false,
+      "targets": {
+        "Target Host": 3
+      },
+      "reachabilityBlank": 3,
+      "evidenceGrades": [
+        "TREE / PROVISIONAL"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "TRACE_AND_WIRE",
+        "VERIFY_PACKAGE"
+      ],
+      "currentStates": [
+        "REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "File"
+      ],
+      "subsystems": [
+        "Host"
+      ],
+      "shouldIntegrate": [
+        "Conditional"
+      ],
+      "reviewBases": [
+        "TREE / PATH — UNVERIFIED BODY"
+      ],
+      "decisionConfidences": [
+        "LOW — top-level proposal only",
+        "LOW — provisional top-level role"
+      ],
+      "boundaryOwners": [
+        "Host"
+      ],
+      "topLevelStates": [
+        "TOP LEVEL — PROVISIONAL / VERIFY"
+      ],
+      "evidenceTiers": [
+        "TREE / PATH — UNVERIFIED BODY"
+      ],
+      "reviewPackages": [
+        "D15"
+      ],
+      "reviewRoles": [
+        "Build / developer tool candidate"
+      ],
+      "laneReviewNeeds": [
+        "VERIFY — source / callers"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [
+        "Inspect body, imports, reverse consumers and execution owner at pinned source; confirm with actual tests."
+      ],
+      "dispositionRounds": [
+        "FB01",
+        "FB02"
+      ],
+      "resolvedActions": [
+        "VERIFY"
+      ],
+      "revisedShouldWire": [
+        "Conditional — evidence pending",
+        "Undecided pending evidence"
+      ],
+      "fileClasses": [
+        "Runtime / executable candidate",
+        "Build / packaging / tooling"
+      ]
+    },
+    {
+      "id": "VERIFY:CONSOLIDATE:harness/scripts",
+      "phase": "VERIFY",
+      "priority": "P2",
+      "rowCount": 4,
+      "rowIds": [
+        "AT-E2129A7AD9E6",
+        "AT-8E409DE0A081",
+        "AT-A8856BE10F1C",
+        "AT-0A2659B07C40"
+      ],
+      "paths": [
+        "harness/scripts/discover.mjs",
+        "harness/scripts/live-smoke.mjs",
+        "harness/scripts/signin-check.mjs",
+        "harness/scripts/lab-up-linux.sh"
+      ],
+      "closures": [
+        "FURTHER TRACE"
+      ],
+      "nextPackages": [
+        "D15"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "No production dependency on coordination/smoke tool; any real use through existing Host.",
+      "done": false,
+      "targets": {},
+      "reachabilityBlank": 0,
+      "evidenceGrades": [
+        "TREE / PROVISIONAL",
+        "TREE / PATH ONLY"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "KEEP_DEV_TOOL",
+        "FIRST PASS — REVIEW REQUIRED"
+      ],
+      "currentStates": [
+        "REVIEW REQUIRED",
+        "INVENTORIED — NOT DISPOSITIONED"
+      ],
+      "granularities": [
+        "File"
+      ],
+      "subsystems": [
+        "Harness"
+      ],
+      "shouldIntegrate": [
+        "Conditional",
+        "Undetermined"
+      ],
+      "reviewBases": [
+        "TREE / PATH — UNVERIFIED BODY"
+      ],
+      "decisionConfidences": [
+        "LOW — provisional top-level role"
+      ],
+      "boundaryOwners": [
+        "Harness"
+      ],
+      "topLevelStates": [
+        "TOP LEVEL — PROVISIONAL / VERIFY"
+      ],
+      "evidenceTiers": [
+        "TREE / PATH — UNVERIFIED BODY"
+      ],
+      "reviewPackages": [
+        "D15"
+      ],
+      "reviewRoles": [
+        "Build / developer tool candidate"
+      ],
+      "laneReviewNeeds": [
+        "VERIFY — source / callers"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [
+        "Inspect body, imports, reverse consumers and execution owner at pinned source; confirm with actual tests."
+      ],
+      "dispositionRounds": [
+        "FB02"
+      ],
+      "resolvedActions": [
+        "VERIFY"
+      ],
+      "revisedShouldWire": [
+        "Undecided pending evidence"
+      ],
+      "fileClasses": [
+        "Build / packaging / tooling"
+      ]
+    },
+    {
+      "id": "VERIFY:CONSOLIDATE:harness/src/build",
+      "phase": "VERIFY",
+      "priority": "P2",
+      "rowCount": 4,
+      "rowIds": [
+        "AT-E7EE2916B630",
+        "AT-55D96FE41C4D",
+        "AT-3F3E0E9E47EB",
+        "AT-867F21C8BC04"
+      ],
+      "paths": [
+        "harness/src/build/build.mjs",
+        "harness/src/build/cli.mjs",
+        "harness/src/build/review-cli.mjs",
+        "harness/src/build/review.mjs"
+      ],
+      "closures": [],
+      "nextPackages": [
+        "D15"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "No production dependency on coordination/smoke tool; any real use through existing Host.",
+      "done": false,
+      "targets": {
+        "Target Harness": 4
+      },
+      "reachabilityBlank": 4,
+      "evidenceGrades": [
+        "TREE / PROVISIONAL"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "KEEP_DEV_TOOL"
+      ],
+      "currentStates": [
+        "REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "File"
+      ],
+      "subsystems": [
+        "Harness"
+      ],
+      "shouldIntegrate": [
+        "Conditional"
+      ],
+      "reviewBases": [
+        "TREE / PATH — UNVERIFIED BODY"
+      ],
+      "decisionConfidences": [
+        "LOW — top-level proposal only"
+      ],
+      "boundaryOwners": [
+        "Harness"
+      ],
+      "topLevelStates": [
+        "TOP LEVEL — PROVISIONAL / VERIFY"
+      ],
+      "evidenceTiers": [
+        "TREE / PATH — UNVERIFIED BODY"
+      ],
+      "reviewPackages": [
+        "D15"
+      ],
+      "reviewRoles": [],
+      "laneReviewNeeds": [
+        "VERIFY — source / callers"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [],
+      "dispositionRounds": [
+        "FB01"
+      ],
+      "resolvedActions": [
+        "VERIFY"
+      ],
+      "revisedShouldWire": [
+        "Conditional — evidence pending"
+      ],
+      "fileClasses": [
+        "Runtime / executable candidate"
+      ]
+    },
+    {
+      "id": "VERIFY:CONSOLIDATE:apps/vivim-host/bootstrap",
+      "phase": "VERIFY",
+      "priority": "P0",
+      "rowCount": 3,
+      "rowIds": [
+        "AT-1FD47C89CCA7",
+        "AT-528371762B69",
+        "AT-32905A955CB3"
+      ],
+      "paths": [
+        "apps/vivim-host/bootstrap/owner-auth.mjs",
+        "apps/vivim-host/bootstrap/capability-activation.mjs",
+        "apps/vivim-host/bootstrap/web-memory.mjs"
+      ],
+      "closures": [],
+      "nextPackages": [
+        "D15"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "Actual Host operation uses existing capability with verified source pin; no parallel interpreter.",
+      "done": false,
+      "targets": {
+        "Target Host": 3
+      },
+      "reachabilityBlank": 3,
+      "evidenceGrades": [
+        "TREE / PROVISIONAL"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "KEEP_AUTHORITY",
+        "TRACE_AND_WIRE"
+      ],
+      "currentStates": [
+        "REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "File"
+      ],
+      "subsystems": [
+        "Host"
+      ],
+      "shouldIntegrate": [
+        "Conditional"
+      ],
+      "reviewBases": [
+        "TREE / PATH — UNVERIFIED BODY"
+      ],
+      "decisionConfidences": [
+        "LOW — top-level proposal only"
+      ],
+      "boundaryOwners": [
+        "Host"
+      ],
+      "topLevelStates": [
+        "TOP LEVEL — PROVISIONAL / VERIFY"
+      ],
+      "evidenceTiers": [
+        "TREE / PATH — UNVERIFIED BODY"
+      ],
+      "reviewPackages": [
+        "D15"
+      ],
+      "reviewRoles": [],
+      "laneReviewNeeds": [
+        "VERIFY — source / callers"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [],
+      "dispositionRounds": [
+        "FB01"
+      ],
+      "resolvedActions": [
+        "VERIFY"
+      ],
+      "revisedShouldWire": [
+        "Conditional — evidence pending"
+      ],
+      "fileClasses": [
+        "Runtime / executable candidate"
+      ]
+    },
+    {
+      "id": "VERIFY:CONSOLIDATE:apps/vivim-host/grokbot",
+      "phase": "VERIFY",
+      "priority": "P1",
+      "rowCount": 3,
+      "rowIds": [
+        "AT-43C0C9C18EE1",
+        "AT-272DDC9EF69B",
+        "AT-783FFBA1B9B0"
+      ],
+      "paths": [
+        "apps/vivim-host/grokbot/linux-preflight.mjs",
+        "apps/vivim-host/grokbot/run.mjs",
+        "apps/vivim-host/grokbot/worker.mjs"
+      ],
+      "closures": [],
+      "nextPackages": [
+        "D15"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "Actual user operation follows existing grant and verified result, no native direct effect.",
+      "done": false,
+      "targets": {
+        "Target Host": 3
+      },
+      "reachabilityBlank": 3,
+      "evidenceGrades": [
+        "TREE / PROVISIONAL"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "KEEP_AUTHORITY"
+      ],
+      "currentStates": [
+        "REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "File"
+      ],
+      "subsystems": [
+        "Host"
+      ],
+      "shouldIntegrate": [
+        "Conditional"
+      ],
+      "reviewBases": [
+        "TREE / PATH — UNVERIFIED BODY"
+      ],
+      "decisionConfidences": [
+        "LOW — top-level proposal only"
+      ],
+      "boundaryOwners": [
+        "Host"
+      ],
+      "topLevelStates": [
+        "TOP LEVEL — PROVISIONAL / VERIFY"
+      ],
+      "evidenceTiers": [
+        "TREE / PATH — UNVERIFIED BODY"
+      ],
+      "reviewPackages": [
+        "D15"
+      ],
+      "reviewRoles": [],
+      "laneReviewNeeds": [
+        "VERIFY — source / callers"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [],
+      "dispositionRounds": [
+        "FB01"
+      ],
+      "resolvedActions": [
+        "VERIFY"
+      ],
+      "revisedShouldWire": [
+        "Conditional — evidence pending"
+      ],
+      "fileClasses": [
+        "Runtime / executable candidate"
+      ]
+    },
+    {
+      "id": "VERIFY:CONSOLIDATE:apps/vivim-host/media",
+      "phase": "VERIFY",
+      "priority": "P1",
+      "rowCount": 3,
+      "rowIds": [
+        "AT-511A194F196F",
+        "AT-D7FD15047AC6",
+        "AT-2F2424FB7244"
+      ],
+      "paths": [
+        "apps/vivim-host/media/library-summary.mjs",
+        "apps/vivim-host/media/playback.mjs",
+        "apps/vivim-host/media/stream-guard.mjs"
+      ],
+      "closures": [],
+      "nextPackages": [
+        "D15"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "Actual user operation follows existing grant and verified result, no native direct effect.",
+      "done": false,
+      "targets": {
+        "Target Host": 3
+      },
+      "reachabilityBlank": 3,
+      "evidenceGrades": [
+        "TREE / PROVISIONAL"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "KEEP_AUTHORITY"
+      ],
+      "currentStates": [
+        "REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "File"
+      ],
+      "subsystems": [
+        "Host"
+      ],
+      "shouldIntegrate": [
+        "Conditional"
+      ],
+      "reviewBases": [
+        "TREE / PATH — UNVERIFIED BODY"
+      ],
+      "decisionConfidences": [
+        "LOW — top-level proposal only"
+      ],
+      "boundaryOwners": [
+        "Host"
+      ],
+      "topLevelStates": [
+        "TOP LEVEL — PROVISIONAL / VERIFY"
+      ],
+      "evidenceTiers": [
+        "TREE / PATH — UNVERIFIED BODY"
+      ],
+      "reviewPackages": [
+        "D15"
+      ],
+      "reviewRoles": [],
+      "laneReviewNeeds": [
+        "VERIFY — source / callers"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [],
+      "dispositionRounds": [
+        "FB01"
+      ],
+      "resolvedActions": [
+        "VERIFY"
+      ],
+      "revisedShouldWire": [
+        "Conditional — evidence pending"
+      ],
+      "fileClasses": [
+        "Runtime / executable candidate"
+      ]
+    },
+    {
+      "id": "VERIFY:CONSOLIDATE:apps/vivim-host/onboarding",
+      "phase": "VERIFY",
+      "priority": "P1",
+      "rowCount": 3,
+      "rowIds": [
+        "AT-7AA0CA89D3C1",
+        "AT-A1C9073CDBF5",
+        "AT-2EC5B97C5A48"
+      ],
+      "paths": [
+        "apps/vivim-host/onboarding/environment.mjs",
+        "apps/vivim-host/onboarding/service.mjs",
+        "apps/vivim-host/onboarding/studio-port.mjs"
+      ],
+      "closures": [],
+      "nextPackages": [
+        "D15"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "Actual user operation follows existing grant and verified result, no native direct effect.",
+      "done": false,
+      "targets": {
+        "Target Host": 3
+      },
+      "reachabilityBlank": 3,
+      "evidenceGrades": [
+        "TREE / PROVISIONAL"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "KEEP_AUTHORITY"
+      ],
+      "currentStates": [
+        "REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "File"
+      ],
+      "subsystems": [
+        "Host"
+      ],
+      "shouldIntegrate": [
+        "Conditional"
+      ],
+      "reviewBases": [
+        "TREE / PATH — UNVERIFIED BODY"
+      ],
+      "decisionConfidences": [
+        "LOW — top-level proposal only"
+      ],
+      "boundaryOwners": [
+        "Host"
+      ],
+      "topLevelStates": [
+        "TOP LEVEL — PROVISIONAL / VERIFY"
+      ],
+      "evidenceTiers": [
+        "TREE / PATH — UNVERIFIED BODY"
+      ],
+      "reviewPackages": [
+        "D15"
+      ],
+      "reviewRoles": [],
+      "laneReviewNeeds": [
+        "VERIFY — source / callers"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [],
+      "dispositionRounds": [
+        "FB01"
+      ],
+      "resolvedActions": [
+        "VERIFY"
+      ],
+      "revisedShouldWire": [
+        "Conditional — evidence pending"
+      ],
+      "fileClasses": [
+        "Runtime / executable candidate"
+      ]
+    },
+    {
+      "id": "VERIFY:CONSOLIDATE:harness/src/agents",
+      "phase": "VERIFY",
+      "priority": "P2",
+      "rowCount": 3,
+      "rowIds": [
+        "AT-964FF9CD1891",
+        "AT-35900E68067C",
+        "AT-6DA050A07DD1"
+      ],
+      "paths": [
+        "harness/src/agents/cli.mjs",
+        "harness/src/agents/roles.mjs",
+        "harness/src/agents/roundrobin.mjs"
+      ],
+      "closures": [],
+      "nextPackages": [
+        "D15"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "No production dependency on coordination/smoke tool; any real use through existing Host.",
+      "done": false,
+      "targets": {
+        "Target Harness": 3
+      },
+      "reachabilityBlank": 3,
+      "evidenceGrades": [
+        "TREE / PROVISIONAL"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "KEEP_DEV_TOOL"
+      ],
+      "currentStates": [
+        "REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "File"
+      ],
+      "subsystems": [
+        "Harness"
+      ],
+      "shouldIntegrate": [
+        "Conditional"
+      ],
+      "reviewBases": [
+        "TREE / PATH — UNVERIFIED BODY"
+      ],
+      "decisionConfidences": [
+        "LOW — top-level proposal only"
+      ],
+      "boundaryOwners": [
+        "Harness"
+      ],
+      "topLevelStates": [
+        "TOP LEVEL — PROVISIONAL / VERIFY"
+      ],
+      "evidenceTiers": [
+        "TREE / PATH — UNVERIFIED BODY"
+      ],
+      "reviewPackages": [
+        "D15"
+      ],
+      "reviewRoles": [],
+      "laneReviewNeeds": [
+        "VERIFY — source / callers"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [],
+      "dispositionRounds": [
+        "FB01"
+      ],
+      "resolvedActions": [
+        "VERIFY"
+      ],
+      "revisedShouldWire": [
+        "Conditional — evidence pending"
+      ],
+      "fileClasses": [
+        "Runtime / executable candidate"
+      ]
+    },
+    {
+      "id": "VERIFY:CONSOLIDATE:apps/vivim-host/apk",
+      "phase": "VERIFY",
+      "priority": "P2",
+      "rowCount": 3,
+      "rowIds": [
+        "AT-F5D723063B0E",
+        "AT-529191CEBF83",
+        "AT-02AF45D12296"
+      ],
+      "paths": [
+        "apps/vivim-host/apk/enrollment.mjs",
+        "apps/vivim-host/apk/pairing.mjs",
+        "apps/vivim-host/apk/registry.mjs"
+      ],
+      "closures": [],
+      "nextPackages": [
+        "D15"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "PWA works without APK; later APK acceptance separate.",
+      "done": false,
+      "targets": {
+        "Target Host": 3
+      },
+      "reachabilityBlank": 3,
+      "evidenceGrades": [
+        "TREE / PROVISIONAL"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "DEFER_APK"
+      ],
+      "currentStates": [
+        "REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "File"
+      ],
+      "subsystems": [
+        "Host"
+      ],
+      "shouldIntegrate": [
+        "No"
+      ],
+      "reviewBases": [
+        "TREE / PATH — UNVERIFIED BODY"
+      ],
+      "decisionConfidences": [
+        "LOW — top-level proposal only"
+      ],
+      "boundaryOwners": [
+        "Host"
+      ],
+      "topLevelStates": [
+        "TOP LEVEL — PROVISIONAL / VERIFY"
+      ],
+      "evidenceTiers": [
+        "TREE / PATH — UNVERIFIED BODY"
+      ],
+      "reviewPackages": [
+        "D15"
+      ],
+      "reviewRoles": [],
+      "laneReviewNeeds": [
+        "VERIFY — source / callers"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [],
+      "dispositionRounds": [
+        "FB01"
+      ],
+      "resolvedActions": [
+        "VERIFY"
+      ],
+      "revisedShouldWire": [
+        "Conditional — evidence pending"
+      ],
+      "fileClasses": [
+        "Runtime / executable candidate"
+      ]
+    },
+    {
+      "id": "VERIFY:B-F01-B03",
+      "phase": "VERIFY",
+      "priority": "P1",
+      "rowCount": 2,
+      "rowIds": [
+        "AT-9A6063657BB3",
+        "AT-8080FB40A499"
+      ],
+      "paths": [
+        "apps/vivim-host/control/command-context-grounding.mjs",
+        "apps/vivim-host/control/command-program.mjs"
+      ],
+      "closures": [
+        "PROVISIONAL"
+      ],
+      "nextPackages": [
+        "D12"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "Ambiguous/stale reference rejected or clarified; exact revision pinned.",
+      "done": false,
+      "targets": {
+        "Target Host": 2,
+        "Target VLANG": 2
+      },
+      "reachabilityBlank": 0,
+      "evidenceGrades": [
+        "SYMBOL / DIRECT"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "WIRE"
+      ],
+      "currentStates": [
+        "AUDIT FINDING — OPEN"
+      ],
+      "granularities": [
+        "Symbol"
+      ],
+      "subsystems": [
+        "Host"
+      ],
+      "shouldIntegrate": [
+        "Yes"
+      ],
+      "reviewBases": [
+        "PINNED SYMBOL WINDOW + LOCAL REFERENCES + MODULE CONSUMER EVIDENCE"
+      ],
+      "decisionConfidences": [
+        "PROVISIONAL — production/caller closure unresolved"
+      ],
+      "boundaryOwners": [
+        "Host inert reference grounding",
+        "Host inert command DAG compiler"
+      ],
+      "topLevelStates": [
+        "REVIEWED — PROVISIONAL"
+      ],
+      "evidenceTiers": [
+        "SOURCE / CLOSURE UNKNOWN"
+      ],
+      "reviewPackages": [
+        "B-F01-B03"
+      ],
+      "reviewRoles": [
+        "groundCommandReferences — Host inert reference grounding",
+        "compileCommandProgram — Host inert command DAG compiler"
+      ],
+      "laneReviewNeeds": [
+        "REVALIDATE — prior decision, do not silently overwrite"
+      ],
+      "knownMissing": [
+        "Production caller/registration not established; do not promote."
+      ],
+      "remainingEvidence": [
+        "Exact live registration/caller and acceptance; Prove actual registered consumer and revisions; ambiguity/stale/no author...",
+        "Exact live registration/caller and acceptance; Prove caller and native reuse; cycles, stale catalog, invalid args and no..."
+      ],
+      "dispositionRounds": [
+        "B-S01-R01"
+      ],
+      "resolvedActions": [
+        "VERIFY"
+      ],
+      "revisedShouldWire": [
+        "VERIFY — no new wiring authorized"
+      ],
+      "fileClasses": [
+        "Runtime / executable candidate"
+      ]
+    },
+    {
+      "id": "VERIFY:CONSOLIDATE:apps/vivim-host/chat",
+      "phase": "VERIFY",
+      "priority": "P1",
+      "rowCount": 2,
+      "rowIds": [
+        "AT-F89B6DFD39E7",
+        "AT-FA3953AA7B91"
+      ],
+      "paths": [
+        "apps/vivim-host/chat/baseline-state.mjs",
+        "apps/vivim-host/chat/product-baseline.mjs"
+      ],
+      "closures": [],
+      "nextPackages": [
+        "D15"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "Committed source change appears in relevant native query; revoked data absent.",
+      "done": false,
+      "targets": {
+        "Target Host": 2
+      },
+      "reachabilityBlank": 2,
+      "evidenceGrades": [
+        "TREE / PROVISIONAL"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "TRACE_AND_WIRE"
+      ],
+      "currentStates": [
+        "REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "File"
+      ],
+      "subsystems": [
+        "Host"
+      ],
+      "shouldIntegrate": [
+        "Yes"
+      ],
+      "reviewBases": [
+        "PINNED SOURCE — TOP-LEVEL"
+      ],
+      "decisionConfidences": [
+        "MEDIUM — unresolved ownership/caller"
+      ],
+      "boundaryOwners": [
+        "Host"
+      ],
+      "topLevelStates": [
+        "TOP LEVEL — SOURCE INSPECTED / VERIFY"
+      ],
+      "evidenceTiers": [
+        "PINNED SOURCE — TOP-LEVEL"
+      ],
+      "reviewPackages": [
+        "D15"
+      ],
+      "reviewRoles": [],
+      "laneReviewNeeds": [
+        "VERIFY — source / callers"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [],
+      "dispositionRounds": [
+        "FB01"
+      ],
+      "resolvedActions": [
+        "VERIFY"
+      ],
+      "revisedShouldWire": [
+        "No new connection — retirement review",
+        "Conditional — evidence pending"
+      ],
+      "fileClasses": [
+        "Runtime / executable candidate"
+      ]
+    },
+    {
+      "id": "VERIFY:CONSOLIDATE:apps/vivim-host/data-intelligence",
+      "phase": "VERIFY",
+      "priority": "P1",
+      "rowCount": 2,
+      "rowIds": [
+        "AT-78226BDF0D35",
+        "AT-7648B5839527"
+      ],
+      "paths": [
+        "apps/vivim-host/data-intelligence/catalog.mjs",
+        "apps/vivim-host/data-intelligence/journal-adapter.mjs"
+      ],
+      "closures": [],
+      "nextPackages": [
+        "D15"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "Committed source change appears in relevant native query; revoked data absent.",
+      "done": false,
+      "targets": {
+        "Target Host": 2
+      },
+      "reachabilityBlank": 2,
+      "evidenceGrades": [
+        "TREE / PROVISIONAL"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "TRACE_AND_WIRE"
+      ],
+      "currentStates": [
+        "REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "File"
+      ],
+      "subsystems": [
+        "Host"
+      ],
+      "shouldIntegrate": [
+        "Yes"
+      ],
+      "reviewBases": [
+        "TREE / PATH — UNVERIFIED BODY"
+      ],
+      "decisionConfidences": [
+        "LOW — top-level proposal only"
+      ],
+      "boundaryOwners": [
+        "Host"
+      ],
+      "topLevelStates": [
+        "TOP LEVEL — PROVISIONAL / VERIFY"
+      ],
+      "evidenceTiers": [
+        "TREE / PATH — UNVERIFIED BODY"
+      ],
+      "reviewPackages": [
+        "D15"
+      ],
+      "reviewRoles": [],
+      "laneReviewNeeds": [
+        "VERIFY — source / callers"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [],
+      "dispositionRounds": [
+        "FB01"
+      ],
+      "resolvedActions": [
+        "VERIFY"
+      ],
+      "revisedShouldWire": [
+        "Conditional — evidence pending"
+      ],
+      "fileClasses": [
+        "Runtime / executable candidate"
+      ]
+    },
+    {
+      "id": "VERIFY:CONSOLIDATE:harness/bin",
+      "phase": "VERIFY",
+      "priority": "P2",
+      "rowCount": 2,
+      "rowIds": [
+        "AT-7FC364C77538",
+        "AT-1CEFE7615B5A"
+      ],
+      "paths": [
+        "harness/bin/prov.mjs",
+        "harness/bin/share-feed.mjs"
+      ],
+      "closures": [],
+      "nextPackages": [
+        "D15"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "No production dependency on coordination/smoke tool; any real use through existing Host.",
+      "done": false,
+      "targets": {
+        "Target Harness": 2
+      },
+      "reachabilityBlank": 2,
+      "evidenceGrades": [
+        "TREE / PROVISIONAL"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "KEEP_DEV_TOOL"
+      ],
+      "currentStates": [
+        "REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "File"
+      ],
+      "subsystems": [
+        "Harness"
+      ],
+      "shouldIntegrate": [
+        "Conditional"
+      ],
+      "reviewBases": [
+        "TREE / PATH — UNVERIFIED BODY"
+      ],
+      "decisionConfidences": [
+        "LOW — top-level proposal only"
+      ],
+      "boundaryOwners": [
+        "Harness"
+      ],
+      "topLevelStates": [
+        "TOP LEVEL — PROVISIONAL / VERIFY"
+      ],
+      "evidenceTiers": [
+        "TREE / PATH — UNVERIFIED BODY"
+      ],
+      "reviewPackages": [
+        "D15"
+      ],
+      "reviewRoles": [],
+      "laneReviewNeeds": [
+        "VERIFY — source / callers"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [],
+      "dispositionRounds": [
+        "FB01"
+      ],
+      "resolvedActions": [
+        "VERIFY"
+      ],
+      "revisedShouldWire": [
+        "Conditional — evidence pending"
+      ],
+      "fileClasses": [
+        "Runtime / executable candidate"
+      ]
+    },
+    {
+      "id": "VERIFY:CONSOLIDATE:harness/src/dev",
+      "phase": "VERIFY",
+      "priority": "P2",
+      "rowCount": 2,
+      "rowIds": [
+        "AT-ED6646533FD8",
+        "AT-87EAFFC888BD"
+      ],
+      "paths": [
+        "harness/src/dev/cli.mjs",
+        "harness/src/dev/workspace.mjs"
+      ],
+      "closures": [],
+      "nextPackages": [
+        "D15"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "No production dependency on coordination/smoke tool; any real use through existing Host.",
+      "done": false,
+      "targets": {
+        "Target Harness": 2
+      },
+      "reachabilityBlank": 2,
+      "evidenceGrades": [
+        "TREE / PROVISIONAL"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "KEEP_DEV_TOOL"
+      ],
+      "currentStates": [
+        "REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "File"
+      ],
+      "subsystems": [
+        "Harness"
+      ],
+      "shouldIntegrate": [
+        "Conditional"
+      ],
+      "reviewBases": [
+        "TREE / PATH — UNVERIFIED BODY"
+      ],
+      "decisionConfidences": [
+        "LOW — top-level proposal only"
+      ],
+      "boundaryOwners": [
+        "Harness"
+      ],
+      "topLevelStates": [
+        "TOP LEVEL — PROVISIONAL / VERIFY"
+      ],
+      "evidenceTiers": [
+        "TREE / PATH — UNVERIFIED BODY"
+      ],
+      "reviewPackages": [
+        "D15"
+      ],
+      "reviewRoles": [],
+      "laneReviewNeeds": [
+        "VERIFY — source / callers"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [],
+      "dispositionRounds": [
+        "FB01"
+      ],
+      "resolvedActions": [
+        "VERIFY"
+      ],
+      "revisedShouldWire": [
+        "Conditional — evidence pending"
+      ],
+      "fileClasses": [
+        "Runtime / executable candidate"
+      ]
+    },
+    {
+      "id": "VERIFY:CONSOLIDATE:harness/src/onboarding",
+      "phase": "VERIFY",
+      "priority": "P2",
+      "rowCount": 2,
+      "rowIds": [
+        "AT-B6FCFDBCC625",
+        "AT-227C67B8BA13"
+      ],
+      "paths": [
+        "harness/src/onboarding/compare-runner.mjs",
+        "harness/src/onboarding/grant.mjs"
+      ],
+      "closures": [],
+      "nextPackages": [
+        "D15"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "No production dependency on coordination/smoke tool; any real use through existing Host.",
+      "done": false,
+      "targets": {
+        "Target Harness": 2
+      },
+      "reachabilityBlank": 2,
+      "evidenceGrades": [
+        "TREE / PROVISIONAL"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "KEEP_DEV_TOOL"
+      ],
+      "currentStates": [
+        "REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "File"
+      ],
+      "subsystems": [
+        "Harness"
+      ],
+      "shouldIntegrate": [
+        "Conditional"
+      ],
+      "reviewBases": [
+        "PINNED SOURCE — TOP-LEVEL",
+        "TREE / PATH — UNVERIFIED BODY"
+      ],
+      "decisionConfidences": [
+        "MEDIUM — unresolved ownership/caller",
+        "LOW — top-level proposal only"
+      ],
+      "boundaryOwners": [
+        "Harness"
+      ],
+      "topLevelStates": [
+        "TOP LEVEL — SOURCE INSPECTED / VERIFY",
+        "TOP LEVEL — PROVISIONAL / VERIFY"
+      ],
+      "evidenceTiers": [
+        "PINNED SOURCE — TOP-LEVEL",
+        "TREE / PATH — UNVERIFIED BODY"
+      ],
+      "reviewPackages": [
+        "D15"
+      ],
+      "reviewRoles": [],
+      "laneReviewNeeds": [
+        "VERIFY — source / callers"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [],
+      "dispositionRounds": [
+        "FB01"
+      ],
+      "resolvedActions": [
+        "VERIFY"
+      ],
+      "revisedShouldWire": [
+        "Conditional — evidence pending"
+      ],
+      "fileClasses": [
+        "Runtime / executable candidate"
+      ]
+    },
+    {
+      "id": "VERIFY:CONSOLIDATE:harness/src/context",
+      "phase": "VERIFY",
+      "priority": "P1",
+      "rowCount": 1,
+      "rowIds": [
+        "AT-99E7E49F1574"
+      ],
+      "paths": [
+        "harness/src/context/dcb-flavors.mjs"
+      ],
+      "closures": [],
+      "nextPackages": [
+        "D15"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "Actual source revision/consent changes affect only eligible bundle; no stale or leaked data.",
+      "done": false,
+      "targets": {
+        "Target Harness": 1
+      },
+      "reachabilityBlank": 1,
+      "evidenceGrades": [
+        "TREE / PROVISIONAL"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "TRACE_AND_WIRE"
+      ],
+      "currentStates": [
+        "REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "File"
+      ],
+      "subsystems": [
+        "Harness"
+      ],
+      "shouldIntegrate": [
+        "Yes"
+      ],
+      "reviewBases": [
+        "TREE / PATH — UNVERIFIED BODY"
+      ],
+      "decisionConfidences": [
+        "LOW — top-level proposal only"
+      ],
+      "boundaryOwners": [
+        "Harness"
+      ],
+      "topLevelStates": [
+        "TOP LEVEL — PROVISIONAL / VERIFY"
+      ],
+      "evidenceTiers": [
+        "TREE / PATH — UNVERIFIED BODY"
+      ],
+      "reviewPackages": [
+        "D15"
+      ],
+      "reviewRoles": [],
+      "laneReviewNeeds": [
+        "VERIFY — source / callers"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [],
+      "dispositionRounds": [
+        "FB01"
+      ],
+      "resolvedActions": [
+        "VERIFY"
+      ],
+      "revisedShouldWire": [
+        "Conditional — evidence pending"
+      ],
+      "fileClasses": [
+        "Runtime / executable candidate"
+      ]
+    },
+    {
+      "id": "VERIFY:CONSOLIDATE:apps/vivim-host/conversations",
+      "phase": "VERIFY",
+      "priority": "P1",
+      "rowCount": 1,
+      "rowIds": [
+        "AT-6A6C4F61C313"
+      ],
+      "paths": [
+        "apps/vivim-host/conversations/phone-delivery-acks.mjs"
+      ],
+      "closures": [],
+      "nextPackages": [
+        "D15"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "Committed source change appears in relevant native query; revoked data absent.",
+      "done": false,
+      "targets": {
+        "Target Host": 1
+      },
+      "reachabilityBlank": 1,
+      "evidenceGrades": [
+        "TREE / PROVISIONAL"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "TRACE_AND_WIRE"
+      ],
+      "currentStates": [
+        "REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "File"
+      ],
+      "subsystems": [
+        "Host"
+      ],
+      "shouldIntegrate": [
+        "Yes"
+      ],
+      "reviewBases": [
+        "TREE / PATH — UNVERIFIED BODY"
+      ],
+      "decisionConfidences": [
+        "LOW — top-level proposal only"
+      ],
+      "boundaryOwners": [
+        "Host"
+      ],
+      "topLevelStates": [
+        "TOP LEVEL — PROVISIONAL / VERIFY"
+      ],
+      "evidenceTiers": [
+        "TREE / PATH — UNVERIFIED BODY"
+      ],
+      "reviewPackages": [
+        "D15"
+      ],
+      "reviewRoles": [],
+      "laneReviewNeeds": [
+        "VERIFY — source / callers"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [],
+      "dispositionRounds": [
+        "FB01"
+      ],
+      "resolvedActions": [
+        "VERIFY"
+      ],
+      "revisedShouldWire": [
+        "Conditional — evidence pending"
+      ],
+      "fileClasses": [
+        "Runtime / executable candidate"
+      ]
+    },
+    {
+      "id": "VERIFY:CONSOLIDATE:apps/vivim-host/corpus",
+      "phase": "VERIFY",
+      "priority": "P1",
+      "rowCount": 1,
+      "rowIds": [
+        "AT-CC942AC53101"
+      ],
+      "paths": [
+        "apps/vivim-host/corpus/host-integration.mjs"
+      ],
+      "closures": [],
+      "nextPackages": [
+        "D15"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "Committed source change appears in relevant native query; revoked data absent.",
+      "done": false,
+      "targets": {
+        "Target Host": 1
+      },
+      "reachabilityBlank": 1,
+      "evidenceGrades": [
+        "TREE / PROVISIONAL"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "TRACE_AND_WIRE"
+      ],
+      "currentStates": [
+        "REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "File"
+      ],
+      "subsystems": [
+        "Host"
+      ],
+      "shouldIntegrate": [
+        "Yes"
+      ],
+      "reviewBases": [
+        "TREE / PATH — UNVERIFIED BODY"
+      ],
+      "decisionConfidences": [
+        "LOW — top-level proposal only"
+      ],
+      "boundaryOwners": [
+        "Host"
+      ],
+      "topLevelStates": [
+        "TOP LEVEL — PROVISIONAL / VERIFY"
+      ],
+      "evidenceTiers": [
+        "TREE / PATH — UNVERIFIED BODY"
+      ],
+      "reviewPackages": [
+        "D15"
+      ],
+      "reviewRoles": [],
+      "laneReviewNeeds": [
+        "VERIFY — source / callers"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [],
+      "dispositionRounds": [
+        "FB01"
+      ],
+      "resolvedActions": [
+        "VERIFY"
+      ],
+      "revisedShouldWire": [
+        "Conditional — evidence pending"
+      ],
+      "fileClasses": [
+        "Runtime / executable candidate"
+      ]
+    },
+    {
+      "id": "VERIFY:CONSOLIDATE:apps/vivim-host/corpus/intake",
+      "phase": "VERIFY",
+      "priority": "P1",
+      "rowCount": 1,
+      "rowIds": [
+        "AT-0BC08B07F926"
+      ],
+      "paths": [
+        "apps/vivim-host/corpus/intake/host-intake.mjs"
+      ],
+      "closures": [],
+      "nextPackages": [
+        "D15"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "Committed source change appears in relevant native query; revoked data absent.",
+      "done": false,
+      "targets": {
+        "Target Host": 1
+      },
+      "reachabilityBlank": 1,
+      "evidenceGrades": [
+        "TREE / PROVISIONAL"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "TRACE_AND_WIRE"
+      ],
+      "currentStates": [
+        "REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "File"
+      ],
+      "subsystems": [
+        "Host"
+      ],
+      "shouldIntegrate": [
+        "Yes"
+      ],
+      "reviewBases": [
+        "TREE / PATH — UNVERIFIED BODY"
+      ],
+      "decisionConfidences": [
+        "LOW — top-level proposal only"
+      ],
+      "boundaryOwners": [
+        "Host"
+      ],
+      "topLevelStates": [
+        "TOP LEVEL — PROVISIONAL / VERIFY"
+      ],
+      "evidenceTiers": [
+        "TREE / PATH — UNVERIFIED BODY"
+      ],
+      "reviewPackages": [
+        "D15"
+      ],
+      "reviewRoles": [],
+      "laneReviewNeeds": [
+        "VERIFY — source / callers"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [],
+      "dispositionRounds": [
+        "FB01"
+      ],
+      "resolvedActions": [
+        "VERIFY"
+      ],
+      "revisedShouldWire": [
+        "Conditional — evidence pending"
+      ],
+      "fileClasses": [
+        "Runtime / executable candidate"
+      ]
+    },
+    {
+      "id": "VERIFY:CONSOLIDATE:apps/vivim-host/corpus/transport",
+      "phase": "VERIFY",
+      "priority": "P1",
+      "rowCount": 1,
+      "rowIds": [
+        "AT-FACBBC431CB3"
+      ],
+      "paths": [
+        "apps/vivim-host/corpus/transport/protocol.mjs"
+      ],
+      "closures": [],
+      "nextPackages": [
+        "D15"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "Committed source change appears in relevant native query; revoked data absent.",
+      "done": false,
+      "targets": {
+        "Target Host": 1
+      },
+      "reachabilityBlank": 1,
+      "evidenceGrades": [
+        "TREE / PROVISIONAL"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "TRACE_AND_WIRE"
+      ],
+      "currentStates": [
+        "REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "File"
+      ],
+      "subsystems": [
+        "Host"
+      ],
+      "shouldIntegrate": [
+        "Yes"
+      ],
+      "reviewBases": [
+        "TREE / PATH — UNVERIFIED BODY"
+      ],
+      "decisionConfidences": [
+        "LOW — top-level proposal only"
+      ],
+      "boundaryOwners": [
+        "Host"
+      ],
+      "topLevelStates": [
+        "TOP LEVEL — PROVISIONAL / VERIFY"
+      ],
+      "evidenceTiers": [
+        "TREE / PATH — UNVERIFIED BODY"
+      ],
+      "reviewPackages": [
+        "D15"
+      ],
+      "reviewRoles": [],
+      "laneReviewNeeds": [
+        "VERIFY — source / callers"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [],
+      "dispositionRounds": [
+        "FB01"
+      ],
+      "resolvedActions": [
+        "VERIFY"
+      ],
+      "revisedShouldWire": [
+        "Conditional — evidence pending"
+      ],
+      "fileClasses": [
+        "Runtime / executable candidate"
+      ]
+    },
+    {
+      "id": "VERIFY:CONSOLIDATE:apps/vivim-host/recovery",
+      "phase": "VERIFY",
+      "priority": "P1",
+      "rowCount": 1,
+      "rowIds": [
+        "AT-D4D79C0857B7"
+      ],
+      "paths": [
+        "apps/vivim-host/recovery/intelligence.d.ts"
+      ],
+      "closures": [
+        "FURTHER TRACE"
+      ],
+      "nextPackages": [
+        "D15"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "Actual native fault and verified recovery observable; no extra runtime gate.",
+      "done": false,
+      "targets": {},
+      "reachabilityBlank": 0,
+      "evidenceGrades": [
+        "TREE / PROVISIONAL"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "EXTEND"
+      ],
+      "currentStates": [
+        "REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "File"
+      ],
+      "subsystems": [
+        "Host"
+      ],
+      "shouldIntegrate": [
+        "Yes"
+      ],
+      "reviewBases": [
+        "TREE / PATH — UNVERIFIED BODY"
+      ],
+      "decisionConfidences": [
+        "LOW — provisional top-level role"
+      ],
+      "boundaryOwners": [
+        "Host"
+      ],
+      "topLevelStates": [
+        "TOP LEVEL — PROVISIONAL / VERIFY"
+      ],
+      "evidenceTiers": [
+        "TREE / PATH — UNVERIFIED BODY"
+      ],
+      "reviewPackages": [
+        "D15"
+      ],
+      "reviewRoles": [
+        "Contract / schema candidate"
+      ],
+      "laneReviewNeeds": [
+        "VERIFY — source / callers"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [
+        "Inspect body, imports, reverse consumers and execution owner at pinned source; confirm with actual tests."
+      ],
+      "dispositionRounds": [
+        "FB02"
+      ],
+      "resolvedActions": [
+        "VERIFY"
+      ],
+      "revisedShouldWire": [
+        "Undecided pending evidence"
+      ],
+      "fileClasses": [
+        "Contract / schema / registry"
+      ]
+    },
+    {
+      "id": "VERIFY:CONSOLIDATE:apps/vivim-host/runtime",
+      "phase": "VERIFY",
+      "priority": "P1",
+      "rowCount": 1,
+      "rowIds": [
+        "AT-B31364D4C3A2"
+      ],
+      "paths": [
+        "apps/vivim-host/runtime/supervisor.mjs"
+      ],
+      "closures": [],
+      "nextPackages": [
+        "D15"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "Actual native fault and verified recovery observable; no extra runtime gate.",
+      "done": false,
+      "targets": {
+        "Target Host": 1
+      },
+      "reachabilityBlank": 1,
+      "evidenceGrades": [
+        "TREE / PROVISIONAL"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "EXTEND"
+      ],
+      "currentStates": [
+        "REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "File"
+      ],
+      "subsystems": [
+        "Host"
+      ],
+      "shouldIntegrate": [
+        "Yes"
+      ],
+      "reviewBases": [
+        "PINNED SOURCE — TOP-LEVEL"
+      ],
+      "decisionConfidences": [
+        "MEDIUM — unresolved ownership/caller"
+      ],
+      "boundaryOwners": [
+        "Host"
+      ],
+      "topLevelStates": [
+        "TOP LEVEL — SOURCE INSPECTED / VERIFY"
+      ],
+      "evidenceTiers": [
+        "PINNED SOURCE — TOP-LEVEL"
+      ],
+      "reviewPackages": [
+        "D15"
+      ],
+      "reviewRoles": [],
+      "laneReviewNeeds": [
+        "VERIFY — source / callers"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [],
+      "dispositionRounds": [
+        "FB01"
+      ],
+      "resolvedActions": [
+        "VERIFY"
+      ],
+      "revisedShouldWire": [
+        "Conditional — evidence pending"
+      ],
+      "fileClasses": [
+        "Runtime / executable candidate"
+      ]
+    },
+    {
+      "id": "VERIFY:B-F01-B01",
+      "phase": "VERIFY",
+      "priority": "P2",
+      "rowCount": 1,
+      "rowIds": [
+        "AT-17F83C1DFBB3"
+      ],
+      "paths": [
+        "apps/vivim-host/direct-phone.mjs"
+      ],
+      "closures": [
+        "PROVISIONAL"
+      ],
+      "nextPackages": [
+        "D06"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "Caller trace confirms stable value and contract compatibility; no new runtime port.",
+      "done": false,
+      "targets": {},
+      "reachabilityBlank": 0,
+      "evidenceGrades": [
+        "DECLARATION / PROPOSED"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "KEEP_CONTRACT"
+      ],
+      "currentStates": [
+        "CALLER REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "Symbol"
+      ],
+      "subsystems": [
+        "Host"
+      ],
+      "shouldIntegrate": [
+        "No"
+      ],
+      "reviewBases": [
+        "PINNED SYMBOL WINDOW + LOCAL REFERENCES + MODULE CONSUMER EVIDENCE"
+      ],
+      "decisionConfidences": [
+        "PROVISIONAL — caller/registration closure unproved"
+      ],
+      "boundaryOwners": [
+        "Host Direct device transport"
+      ],
+      "topLevelStates": [
+        "REVIEWED — PROVISIONAL"
+      ],
+      "evidenceTiers": [
+        "SOURCE / CLOSURE UNKNOWN"
+      ],
+      "reviewPackages": [
+        "B-F01-B01"
+      ],
+      "reviewRoles": [
+        "PHONE_ASSETS — Host Direct device transport"
+      ],
+      "laneReviewNeeds": [
+        "PENDING — initial disposition"
+      ],
+      "knownMissing": [
+        "Live registration/consumer unproved; do not promote."
+      ],
+      "remainingEvidence": [
+        "Prove actual registered caller; Cross-device reads/replays denied; revoke midflight; valid phone read/execute through sa..."
+      ],
+      "dispositionRounds": [
+        "B-S01-R01"
+      ],
+      "resolvedActions": [
+        "VERIFY"
+      ],
+      "revisedShouldWire": [
+        "VERIFY — no new wiring authorized"
+      ],
+      "fileClasses": [
+        "Runtime / executable candidate"
+      ]
+    },
+    {
+      "id": "VERIFY:B-F01-B17",
+      "phase": "VERIFY",
+      "priority": "P1",
+      "rowCount": 1,
+      "rowIds": [
+        "AT-98B7D722AFCE"
+      ],
+      "paths": [
+        "harness/src/interface/intelligent-model-router.mjs"
+      ],
+      "closures": [
+        "PROVISIONAL"
+      ],
+      "nextPackages": [
+        "D15"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "Prove real caller or deliberate internal/dev status; Existing web provider path works and records evidence; no provider API or authority bypass.",
+      "done": false,
+      "targets": {},
+      "reachabilityBlank": 0,
+      "evidenceGrades": [
+        "DECLARATION / PROPOSED"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "TRACE_AND_DISPOSE"
+      ],
+      "currentStates": [
+        "CALLER REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "Symbol"
+      ],
+      "subsystems": [
+        "Harness"
+      ],
+      "shouldIntegrate": [
+        "Conditional"
+      ],
+      "reviewBases": [
+        "PINNED SYMBOL WINDOW + LOCAL REFERENCES + MODULE CONSUMER EVIDENCE"
+      ],
+      "decisionConfidences": [
+        "PROVISIONAL — caller/registration closure unproved"
+      ],
+      "boundaryOwners": [
+        "Harness recommendation/ranking; Host/browser admission remains separate"
+      ],
+      "topLevelStates": [
+        "REVIEWED — PROVISIONAL"
+      ],
+      "evidenceTiers": [
+        "SOURCE / CLOSURE UNKNOWN"
+      ],
+      "reviewPackages": [
+        "B-F01-B17"
+      ],
+      "reviewRoles": [
+        "clamp — Harness recommendation/ranking; Host/browser admission remains separate"
+      ],
+      "laneReviewNeeds": [
+        "PENDING — initial disposition"
+      ],
+      "knownMissing": [
+        "Live registration/consumer unproved; do not promote."
+      ],
+      "remainingEvidence": [
+        "Prove actual registered caller; Owner rule precedence and unavailable-rule block, verified current model readiness, no f..."
+      ],
+      "dispositionRounds": [
+        "B-S01-R01"
+      ],
+      "resolvedActions": [
+        "VERIFY"
+      ],
+      "revisedShouldWire": [
+        "VERIFY — no new wiring authorized"
+      ],
+      "fileClasses": [
+        "Runtime / executable candidate"
+      ]
+    },
+    {
+      "id": "VERIFY:D05-TEST-MANIFEST-CLOSURE",
+      "phase": "VERIFY",
+      "priority": "P1",
+      "rowCount": 14,
+      "rowIds": [
+        "AT-56F193FD6099",
+        "AT-8C9F76AD7A42",
+        "AT-AA32022B31BF",
+        "AT-A7C6C022F158",
+        "AT-706A8D16E271",
+        "AT-20EB4F90BDFD",
+        "AT-A2A9FC2A0A4A",
+        "AT-4F6E3AD9D84E",
+        "AT-4C47196B0BBC",
+        "AT-47B60E2E6F5E",
+        "AT-1F5EE67561AF",
+        "AT-7F688C6A1755",
+        "AT-DC5EF0234EF3",
+        "AT-F506238A4A01"
+      ],
+      "paths": [
+        "apps/vivim-host/test/chat-command-surface.test.mjs",
+        "apps/vivim-host/test/control-wiki-execution.test.mjs",
+        "apps/vivim-host/test/control-wiki-phone.test.mjs",
+        "apps/vivim-host/test/development-read-port.test.mjs",
+        "apps/vivim-host/test/live-source-surface.test.mjs",
+        "apps/vivim-host/test/native-capture-wiring.test.mjs",
+        "apps/vivim-host/test/native-knowledge-integration.test.mjs",
+        "apps/vivim-host/test/native-program.test.mjs",
+        "apps/vivim-host/test/physical-host-pwa-acceptance.test.mjs",
+        "apps/vivim-host/test/request-context.test.mjs",
+        "apps/vivim-host/test/vlang-command-compilation.test.mjs",
+        "apps/vivim-host/test/wiki-capture.test.mjs",
+        "apps/vivim-host/test/wiki-control-persistence.test.mjs",
+        "apps/vivim-host/test/wiki-living-knowledge.test.mjs"
+      ],
+      "closures": [
+        "TEST/PROOF"
+      ],
+      "nextPackages": [
+        "D05"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "Inspect source and actual callers; record disposition and evidence; verify applicable acceptance checks.",
+      "done": false,
+      "targets": {},
+      "reachabilityBlank": 0,
+      "evidenceGrades": [
+        "TREE / PATH ONLY"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "FIRST PASS — REVIEW REQUIRED"
+      ],
+      "currentStates": [
+        "INVENTORIED — NOT DISPOSITIONED"
+      ],
+      "granularities": [
+        "File"
+      ],
+      "subsystems": [
+        "Host"
+      ],
+      "shouldIntegrate": [
+        "Undetermined"
+      ],
+      "reviewBases": [
+        "PINNED TREE + TEST MANIFEST",
+        "PINNED SOURCE + MANIFEST"
+      ],
+      "decisionConfidences": [
+        "HIGH — registration only; provisional test disposition",
+        "HIGH — test scope and registration; execution unrun"
+      ],
+      "boundaryOwners": [
+        "Host"
+      ],
+      "topLevelStates": [
+        "TOP LEVEL — MANIFEST SUPPORTED / BODY PENDING",
+        "TOP LEVEL — SOURCE INSPECTED / VERIFY"
+      ],
+      "evidenceTiers": [
+        "PINNED TREE + TEST MANIFEST",
+        "PINNED SOURCE + MANIFEST"
+      ],
+      "reviewPackages": [
+        "D05"
+      ],
+      "reviewRoles": [
+        "Test-only candidate",
+        "Test-only source"
+      ],
+      "laneReviewNeeds": [
+        "VERIFY — source / callers"
+      ],
+      "knownMissing": [],
+      "remainingEvidence": [
+        "Test body and assertion quality not reviewed; runtime UNRUN.",
+        "Actual test execution; verify environment prerequisites and any skipped tests."
+      ],
+      "dispositionRounds": [
+        "FB02"
+      ],
+      "resolvedActions": [
+        "VERIFY"
+      ],
+      "revisedShouldWire": [
+        "Undecided pending evidence"
+      ],
+      "fileClasses": [
+        "Test / benchmark / example"
+      ]
+    }
+  ]
+}

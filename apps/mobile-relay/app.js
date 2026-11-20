@@ -858,6 +858,11 @@ function clearPrivatePhoneState() {
   S.paired = false; S.cmds = []; S.statusObj = null; S.manifest = null;
   vivimChat.redact();
   S.files = []; N.messages = []; N.sessions = []; N.session = '';
+  // The native panel's own pending record is private phone state too: a lost
+  // grant must erase it from memory and from sessionStorage, so no queued or
+  // uncertain native text is displayed (or restored) after revocation.
+  N.pending = null; N.note = ''; N.sending = false;
+  clearTimeout(N.timer); N.timer = 0; saveNativePending();
   $('text').value = ''; $('dbg').hidden = true;
   S.media = { state: 'not-authorized' }; S.mediaAt = 0; S.mediaOffset = 0; S.mediaLoading = false;
   S.sigs.ux = null; S.sigs.msgs = null; S.sigs.list = null;
@@ -1458,7 +1463,7 @@ async function startHostPreview() {
   $('app').hidden = false;
   S.paired = false;
   S.cmds = []; S.convs = []; S.active = null; S.statusObj = null;
-  S.tab = 'talk'; N.target = 'vivim'; N.pending = null;
+  S.tab = 'talk'; N.target = 'vivim'; N.pending = null; saveNativePending();
   $('talk-target').value = 'vivim';
   S.device = { status: 'preview', scopes: [] };
   $('control-text').disabled = true;

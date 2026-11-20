@@ -1,0 +1,125 @@
+# File: apps/vivim-host/public/pages/wiki.css
+
+> Generated 2026-11-19 · CSS · arbor
+
+## Metadata
+
+| Field | Value |
+| --- | --- |
+| Project | [arbor](../../../../../../projects/arbor.md) |
+| Path | apps/vivim-host/public/pages/wiki.css |
+| Language | CSS |
+| Kind | source |
+| Size | 9826 B |
+| Lines | 106 |
+| Hash | d91e8f6747b5 |
+| Test | no |
+| Generated | no |
+| Component | vivim-host |
+
+## Symbols
+
+_No symbols._
+
+## Imports
+
+_No imports._
+
+## Dependents
+
+_No dependents._
+
+## Annotations
+
+_No annotations._
+
+## Excerpt
+
+```css
+[hidden] { display: none !important; }
+:root { color-scheme: dark; --bg: #0b1017; --panel: #121b27; --border: #2b3b50; --text: #e9f0fa; --muted: #a5b7cc; --accent: #84d7e1; --warn: #ffd18a; --danger: #ff9f9f; }
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; background: radial-gradient(ellipse at top left, #152a3c, var(--bg) 50%); color: var(--text); font: 14px/1.55 system-ui, sans-serif; }
+button, textarea, input { font: inherit; }
+a { color: var(--accent); text-underline-offset: 3px; }
+button { cursor: pointer; border: 1px solid var(--accent); border-radius: 8px; padding: 8px 13px; background: #193443; color: #e4faff; font-weight: 650; }
+button:hover { background: #245061; }
+button:disabled { opacity: .55; cursor: not-allowed; }
+:focus-visible { outline: 3px solid var(--warn); outline-offset: 3px; }
+.topbar { padding: 21px max(18px, calc((100vw - 1400px) / 2)); display: flex; gap: 24px; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); }
+.brand h1 { margin: 2px 0; font-size: clamp(23px, 3vw, 30px); letter-spacing: -.03em; }
+.eyebrow { margin: 0; font: 700 10px/1.5 ui-monospace, monospace; letter-spacing: .15em; color: var(--accent); }
+.subtitle { margin: 0; color: var(--muted); font-size: 12px; }
+nav { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+nav a { white-space: nowrap; }
+.signal { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; max-width: 1440px; margin: 14px auto 6px; padding: 0 20px; }
+.signal-pill { display: inline-flex; align-items: center; border: 1px solid var(--border); border-radius: 999px; background: #132234; padding: 4px 10px; font: 11px/1.45 ui-monospace, monospace; color: var(--text); }
+.signal-pill.subtle { color: var(--muted); }
+.signal-status { color: var(--muted); font-size: 12px; }
+.dashboard { display: grid; grid-template-columns: minmax(0, 1.18fr) minmax(0, 1fr); align-items: start; gap: 18px; max-width: 1440px; padding: 16px 20px 80px; margin: 0 auto; }
+.block { min-width: 0; padding: 20px; border: 1px solid var(--border); border-radius: 16px; background: var(--panel); box-shadow: 0 8px 35px #0002; }
+.wiki-panel { grid-row: span 2; }
+.wiki-command-form { display: grid; gap: 8px; margin: 0 0 18px; padding: 12px; border: 1px solid var(--border); border-radius: 10px; background: #0d1722; }
+.wiki-command-form label { font-size: 12px; font-weight: 650; color: var(--muted); }
+.wiki-command-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.wiki-command-row input { min-width: 0; flex: 1 1 220px; color: var(--text); background: #0b121b; border: 1px solid #557187; border-radius: 8px; padding: 9px 12px; }
+.wiki-command-form .source-meta { margin: 0; }
+.section-heading { display: flex; justify-content: space-between; align-items: start; gap: 12px; flex-wrap: wrap; }
+.section-heading h2 { margin: 3px 0; font-size: 19px; }
+.section-heading a { font-size: 11px; }
+.source-meta { margin: 7px 0 18px; overflow-wrap: anywhere; font: 11px/1.6 ui-monospace, monospace; color: var(--muted); }
+.source-meta.error { color: var(--danger); }
+.source-meta.stale { color: var(--warn); }
+.stack { display: grid; gap: 14px; }
+.page { background: #0d1722; border: 1px solid var(--border); padding: 15px; border-radius: 12px; min-width: 0; }
+.page h3 { font-size: 15px; margin: 0 0 12px; }
+.section { padding: 11px; margin: 10px 0 0; border: 1px solid #304257; border-radius: 9px; background: #152130; }
+.section-head { display: flex; gap: 8px; justify-content: space-between; align-items: center; }
+.section h4 { margin: 0; font-size: 13px; }
+.section .body { color: var(--text); white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13px; margin: 7px 0; }
+.section .meta, .record-meta { font: 10px/1.5 ui-monospace, monospace; color: var(--muted); overflow-wrap: anywhere; }
+.section button { padding: 4px 10px; font-size: 12px; }
+/* Revision projection: only a section the newer revision actually rewrote is highlighted
+   (dataset.changedRevision carries the revision number); untouched DOM is never rebuilt. */
+.section.changed { border-color: var(--warn); background: #2a2312; box-shadow: 0 0 0 1px var(--warn); }
+.section.changed h4 { color: var(--warn); }
+.empty { color: var(--muted); font-size: 13px; }
+.queue-summary { color: var(--accent); margin: 0 0 10px; font-size: 12px; }
+.table-scroll { width: 100%; overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 12px; }
+th { text-align: left; font: 10px/1.3 ui-monospace, monospace; color: var(--muted); text-transform: uppercase; }
+th, td { padding: 8px 6px; border-bottom: 1px solid var(--border); vertical-align: top; }
+td:first-child { font-family: ui-monospace, monospace; color: var(--accent); white-space: nowrap; }
+.status { border: 1px solid #51677f; border-radius: 5px; padding: 1px 5px; display: inline-block; font: 10px/1.6 ui-monospace, monospace; }
+.status.in-progress { color: var(--warn); }
+.status.queued { color: #a9bde0; }
+.status.accepted { color: #a6ecbe; }
+.record { background: #0d1722; padding: 10px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 8px; }
+.record summary { cursor: pointer; font: 12px/1.5 ui-monospace, monospace; color: var(--accent); overflow-wrap: anywhere; }
+.record .body { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12px; color: var(--muted); }
+.editor-shell { position: fixed; bottom: 0; right: 0; width: min(740px, 100vw); max-height: 90dvh; overflow-y: auto; z-index: 5; background: #101c2a; border: 2px solid #5ba6b7; border-radius: 15px 0 0 0; box-shadow: -8px -8px 55px #000a; }
+.edit { display: grid; gap: 9px; padding: 20px; }
+.editor-heading { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; align-items: center; }
+.editor-heading h2 { margin: 0; font-size: 19px; }
+.edit label { color: var(--muted); font-size: 12px; font-weight: 700; }
+.edit textarea { color: var(--text); background: #0b121b; border: 1px solid #557187; padding: 12px; border-radius: 9px; width: 100%; resize: vertical; min-height: 120px; }
+.preview { padding: 12px; background: #0b1620; border: 1px solid var(--border); border-radius: 9px; }
+.preview h3, .preview h4 { margin: 5px 0; }
+.preview p { margin: 2px 0 8px; color: var(--muted); font-size: 12px; }
+.diff-grid { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 10px; }
+.diff-grid > div { min-width: 0; }
+pre { color: var(--text); white-space: pre-wrap; overflow-wrap: anywhere; font: 11px/1.6 ui-monospace, monospace; background: #0e1f2c; border: 1px solid var(--border); border-radius: 8px; padding: 9px; max-height: 160px; overflow-y: auto; }
+.line-diff { max-height: 190px; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.ghost { background: transparent; border-color: #647b94; color: var(--text); }
+#edit-status { color: var(--warn); font-size: 12px; margin: 0; min-height: 20px; }
+@media (max-width: 920px) { .dashboard { grid-template-columns: minmax(0,1fr); } .wiki-panel { grid-row: auto; } }
+@media (max-width: 600px) { .topbar { align-items: start; flex-direction: column; padding: 16px; gap: 13px; } .dashboard { padding: 12px 12px 80px; gap: 12px; } .block { padding: 14px; } .signal { padding: 0 12px; } .diff-grid { grid-template-columns: 1fr; } .editor-shell { max-height: 92dvh; border-radius: 12px 12px 0 0; } .edit { padding: 14px; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; } }
+```
+
+_First 80 of 107 lines._
+
+---
+
+[HQ wiki](../../../../../../index.md) · [Symbols](../../../../../../symbols.md) · [Dependency graph](../../../../../../graph.md) · [Documentation](../../../../../../docs.md) · [Changes](../../../../../../changes.md) · [Open tasks](../../../../../../todos.md) · [Deprecated](../../../../../../deprecated.md) · [Agent annotation protocol](../../../../../../protocol.md) · [Glossary](../../../../../../glossary.md) · [Using HQ](../../../../../../context.md) · [Capabilities](../../../../../../capabilities.md) · [Search index](../../../../../../search.json) · [Browser view](../../../../../../index.html)

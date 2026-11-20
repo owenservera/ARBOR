@@ -1,0 +1,60 @@
+# File: scripts/feedback-loop/fixtures/wiki-baseline.failed.json
+
+> Generated 2026-11-19 · JSON · arbor
+
+## Metadata
+
+| Field | Value |
+| --- | --- |
+| Project | [arbor](../../../../../projects/arbor.md) |
+| Path | scripts/feedback-loop/fixtures/wiki-baseline.failed.json |
+| Language | JSON |
+| Kind | config |
+| Size | 1237 B |
+| Lines | 17 |
+| Hash | d47c1d2a159d |
+| Test | yes |
+| Generated | no |
+| Component | scripts |
+
+## Symbols
+
+_No symbols._
+
+## Imports
+
+_No imports._
+
+## Dependents
+
+_No dependents._
+
+## Annotations
+
+_No annotations._
+
+## Excerpt
+
+```json
+{
+  "ok": false,
+  "item": "WIKI-BASELINE",
+  "checks": [
+    {"name":"catalog-wiki-actions","pass":true,"detail":"wiki actions present=7/7 missing=none"},
+    {"name":"catalog-baseline-caps","pass":true,"detail":"baseline capabilities present=5/5"},
+    {"name":"file-surface-registry","pass":true,"detail":"apps/vivim-host/data/demo-baseline/file-surface.v1.json exists=true"},
+    {"name":"roadmap-readthrough","pass":true,"detail":"status=200 L2=89"},
+    {"name":"wiki-readthrough","pass":true,"detail":"status=200 revision=1 pages=2"},
+    {"name":"journal-readthrough","pass":true,"detail":"status=200 lines=1"},
+    {"name":"wiki-page-renders","pass":false,"detail":"status=200 markers=file-surface:true roadmapItem:false"},
+    {"name":"wiki-edit-mutates","pass":true,"detail":"status=200 kind=wiki-edit actor=ai receivedAt=true"},
+    {"name":"wiki-edit-journal-record","pass":false,"detail":"journal tail contains the wiki-edit entry verbatim (page=Main section=HowTo)=false"},
+    {"name":"wiki-source-unchanged","pass":true,"detail":"read-through source of truth unchanged by journal-only edit (before==after body)=true"}
+  ],
+  "digest":"242a8d1b8f00e64ae59e9a8de55ae30cd75ea72c9b355a907d3a6e5b4fb42dc4"
+}
+```
+
+---
+
+[HQ wiki](../../../../../index.md) · [Symbols](../../../../../symbols.md) · [Dependency graph](../../../../../graph.md) · [Documentation](../../../../../docs.md) · [Changes](../../../../../changes.md) · [Open tasks](../../../../../todos.md) · [Deprecated](../../../../../deprecated.md) · [Agent annotation protocol](../../../../../protocol.md) · [Glossary](../../../../../glossary.md) · [Using HQ](../../../../../context.md) · [Capabilities](../../../../../capabilities.md) · [Search index](../../../../../search.json) · [Browser view](../../../../../index.html)

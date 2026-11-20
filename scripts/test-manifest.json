@@ -1722,6 +1722,12 @@
     "gate": "roadmap-acceleration"
   },
   {
+    "path": "scripts/batch-evidence/D05-E02-host-process-health.test.mjs",
+    "root": "scripts/batch-evidence",
+    "runtime": "node24-ajv",
+    "gate": "roadmap-acceleration"
+  },
+  {
     "path": "scripts/batch-evidence/wiki-evidence-regression.test.mjs",
     "root": "scripts/batch-evidence",
     "runtime": "node24-ajv",

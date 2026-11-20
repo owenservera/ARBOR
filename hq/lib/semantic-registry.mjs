@@ -67,15 +67,28 @@ export function annotationResolution(db,id,kind){
   const expected=['emits','consumes'].includes(kind)?['event','type','schema']:[kind];
   return {entry,resolution:!entry?'unknown':!expected.includes(entry.kind)?'invalid_kind':entry.status};
 }
+/**
+ * semanticAnchorChanges — diff two index-time anchor projections.
+ *
+ * Identity is the anchor's stable id; a change record carries the content
+ * revision it was computed against (`contentHash`) and the one it replaces
+ * (`previousContentHash`), so a revision-fenced consumer can pin a tombstone to
+ * the bytes that were actually scanned instead of re-deriving them. Unchanged
+ * anchors produce nothing, so only dependent outputs are invalidated.
+ *
+ * Malformed input fails closed as an empty delta; this never throws.
+ */
 export function semanticAnchorChanges(previous,current){
-  const before=new Map(previous.map(a=>[a.anchorId,a]));
-  const after=new Map(current.map(a=>[a.anchorId,a]));
+  const anchors=value=>Array.isArray(value)?value.filter(a=>a&&typeof a.anchorId==='string'&&a.anchorId):[];
+  const before=new Map(anchors(previous).map(a=>[a.anchorId,a]));
+  const after=new Map(anchors(current).map(a=>[a.anchorId,a]));
   return [...new Set([...before.keys(),...after.keys()])].sort(compare).flatMap(anchorId=>{
     const old=before.get(anchorId),next=after.get(anchorId);
     if(old?.fingerprint===next?.fingerprint)return [];
     return [{anchorId,semanticId:(next??old).semanticId,annotationKind:(next??old).annotationKind,
       change:!old?'added':!next?'removed':'changed',previousFingerprint:old?.fingerprint??null,
-      fingerprint:next?.fingerprint??null,state:next?.state??'removed'}];
+      fingerprint:next?.fingerprint??null,previousContentHash:old?.contentHash??null,
+      contentHash:next?.contentHash??null,state:next?.state??'removed'}];
   });
 }
 

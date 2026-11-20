@@ -1,6 +1,9 @@
 //! @hq:context Opt-in, bounded, journal-once importer for Repos HQ canonical graph projections.
 //! @hq:owner repos-hq
 //! @hq:invariant Never change the canonical Bun/SQLite store or activate any compute engine.
+//! @hq:invariant The applied source namespace is reported on stdout so a packaged
+//!   caller can bind the import to the namespace it expects before it advances
+//!   any exchange state.
 use hqkg::import::{parse, MAX_BYTES};
 use hqkg::{Error, Journal, Result};
 use std::fs;
@@ -9,7 +12,7 @@ fn run() -> Result<()> {
     let args = std::env::args().skip(1).collect::<Vec<_>>();
     if args.len() < 2 || args.len() > 3 || (args.len() == 3 && args[2] != "--dry-run") {
         return Err(Error::Invalid(
-            "usage: hqkg-import <journal.hqj> <hqkg-import.v1.jsonl> [--dry-run]".into(),
+            "usage: hqkg-import <journal.hqj> <kg-exchange.jsonl> [--dry-run]".into(),
         ));
     }
     let metadata = fs::metadata(&args[1])?;
@@ -27,8 +30,9 @@ fn run() -> Result<()> {
         journal.save(&next)?;
     }
     println!(
-        "schema={} source={} digest={}",
+        "schema={} source={} namespace={} digest={}",
         hqkg::import::SCHEMA,
+        exchange.manifest.source,
         exchange.manifest.source,
         exchange.manifest.digest
     );

@@ -143,8 +143,18 @@ export async function runHostLoopCheck({ command = 'node scripts/acceleration/li
     return JSON.parse(r.text);
   };
   try {
-    check('Node 24 runtime required for acceptance', () => {
-      assert.equal(Number(process.versions.node.split('.')[0]), 24, 'Observed ' + process.version + '; Node24 required');
+    // Runtime gate (2026-11-18, owner directive "remove stupid artificial gates"): assert the
+    // RUNTIME CAPABILITY that the checks actually need (Node >= 24 semantics), not an exact version
+    // string. Bun runs this whole repo (owner rule: bun first) and reports its node-compat version
+    // (v26.3.0 under bun 1.4.2), so an exact "== 24" equality failed 100% of gate runs under bun
+    // while every behavioral check passed. This is a floor, not a pin.
+    check('Node >=24 runtime (or bun, which runs this repo)', () => {
+      const underBun = Boolean(process.versions.bun);
+      const nodeMajor = Number(process.versions.node.split('.')[0]);
+      assert.ok(
+        underBun || nodeMajor >= 24,
+        (underBun ? `bun ${process.versions.bun} (node-compat ${process.version})` : process.version) + ' is below Node 24 semantics',
+      );
     });
     check('real checked-out Git commit is pinned', () => {
       assert.equal(git.exitCode, 0, git.stderrExcerpt);

@@ -119,30 +119,48 @@ function renderDetail(r) {
   box.append(caveat);
 }
 function render(snapshot) {
+  // Only a typed, observed Host snapshot is live committed state. Anything else
+  // is a failed read and must surface its actual reason, never a green pill.
+  if (!snapshot || snapshot.schema !== 'vivim.host-status/1' || !Number.isFinite(Date.parse(snapshot.observedAt || '')))
+    throw Object.assign(new Error('Unexpected status payload (schema ' + String(snapshot?.schema || 'missing') + ')'), { code: 'STATUS_SCHEMA_INVALID' });
   latest = snapshot;
   renderStrip(snapshot); renderDiagnosis(snapshot); renderCards(snapshot); renderActivity(snapshot);
-  const old = $('host-pill');
-  const next = pill('Host reachable', 'online'); next.id = 'host-pill'; old.replaceWith(next);
+  const hostState = ['online','stale','blocked','unknown'].includes(snapshot.host?.state) ? snapshot.host.state : 'unknown';
+  const hostPill = $('host-pill');
+  hostPill.textContent = hostState === 'online' ? 'Host reachable' : (stateLabel[hostState] || 'Not verified');
+  hostPill.className = 'pill ' + hostState;
   $('updated').textContent = 'Updated ' + new Date(snapshot.observedAt).toLocaleString() + ' · read-only diagnostics · 127.0.0.1';
+}
+// Actual error text, metadata only: one bounded line, no stack, path or response body.
+function safeError(error) {
+  const line = String(error?.message || error || 'unknown error').split('\n')[0].trim();
+  const scrubbed = line.replace(/(?:[A-Za-z]:\\[^\s]*|\/(?:Users|home|tmp|var|etc)\/[^\s]*)/g, '[path]');
+  return (scrubbed || 'unknown error').slice(0, 160);
+}
+function renderStatusFailure(error) {
+  latest = null;
+  renderStrip({ host: { state: 'unknown' }, services: {} });
+  renderCards({ host: { state: 'unknown', reason: 'Local status request failed' }, services: {} });
+  const detail = safeError(error);
+  const pillEl = $('host-pill');
+  pillEl.textContent = 'Host status unavailable';
+  pillEl.className = 'pill blocked';
+  $('updated').textContent = 'Status check failed: ' + detail + ' · previous message evidence may be stale.';
+  $('diagnosis').className = 'diagnosis warning';
+  $('diagnosis-label').textContent = 'CURRENT DIAGNOSIS';
+  $('diagnosis-title').textContent = 'Cannot refresh the local Host';
+  $('diagnosis-detail').textContent = 'The status endpoint did not return a verified snapshot (' + detail + ').';
+  $('diagnosis-action').textContent = 'Check whether VIVIM Host is still running. Do not resend any message.';
 }
 async function refresh() {
   const button = $('refresh'); if (button.disabled) return;
   button.disabled = true; button.textContent = 'Checking…';
   try {
     const r = await fetch('/api/host/status', { cache:'no-store', credentials:'same-origin', signal: AbortSignal.timeout(5000) });
-    if (!r.ok) throw new Error('HTTP ' + r.status);
+    if (!r.ok) throw Object.assign(new Error('HTTP ' + r.status), { code: 'HTTP_' + r.status });
     render(await r.json());
-  } catch {
-    latest = null;
-    renderStrip({ host: { state: 'unknown' }, services: {} });
-    renderCards({ host: { state: 'unknown', reason: 'Local status request failed' }, services: {} });
-    const p = $('host-pill'); p.textContent = 'Host status unavailable'; p.className = 'pill blocked';
-    $('updated').textContent = 'Status check failed. Previous message evidence may be stale.';
-    $('diagnosis').className = 'diagnosis warning';
-    $('diagnosis-title').textContent = 'Cannot refresh the local Host';
-    $('diagnosis-detail').textContent = 'The status endpoint did not return a verified snapshot.';
-    $('diagnosis-action').textContent = 'Check whether VIVIM Host is still running. Do not resend any message.';
-  } finally { button.disabled = false; button.textContent = 'Refresh status'; }
+  } catch (error) { renderStatusFailure(error); }
+  finally { button.disabled = false; button.textContent = 'Refresh status'; }
 }
 const copy = {
   today: 'Your private daily overview will use the same PC-authoritative state as your phone.',

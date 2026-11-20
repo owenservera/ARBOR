@@ -4,6 +4,11 @@
 //! JSON mapping onto the pilot's ContextBundleRequest/Receipt contracts stays
 //! on the Bun side.
 //!
+//! `query_scoped` is the same retrieval with an authorized id scope and an
+//! explicit relevance order for the seeds. It reuses the bounded BFS, budget
+//! prefix, exclusion and edge projection of `retrieve`; it never builds a
+//! second graph or a second traversal.
+//!
 //! @hq:owner hq-agent
 //! @hq:task OVN-B lane 4
 //! @hq:see doc:OVN-B lane 5 (no stale-hit acceptance) — `stale` is surfaced,
@@ -51,6 +56,31 @@ pub struct ContextItem {
     pub watermark_version: Option<u64>,
 }
 
+/// A relevance-ordered retrieval inside one authorized id scope.
+///
+/// `seeds` are ordered by the caller's relevance judgement (most relevant
+/// first), not by recency. Every seed and every traversed id must start with
+/// `scope`; ids outside it are never visited, never returned and never used as
+/// edge endpoints. `max_items` is an output bound only — traversal still runs
+/// over the whole scoped horizon, and `budget_tokens` is applied to the
+/// relevance-ordered result.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ScopedQuery {
+    /// Relevance-ordered seeds. Duplicates collapse to the first position.
+    pub seeds: Vec<String>,
+    /// Authorized id prefix. Empty is rejected.
+    pub scope: String,
+    /// Hard upper bound on estimated tokens of the returned items; must be >= 1.
+    pub budget_tokens: u64,
+    /// Maximum returned items; must be >= 1.
+    pub max_items: usize,
+    /// Excluded entity ids: they and their subtrees are skipped, and no edge
+    /// touching an excluded id is ever emitted.
+    pub excluded: BTreeSet<String>,
+    /// Caller's last-seen id -> version, as in [`ContextRequest`].
+    pub watermark: Option<BTreeMap<String, u64>>,
+}
+
 /// An incident edge retained only when both endpoints were retrieved.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ContextEdge {
@@ -93,13 +123,36 @@ fn estimate_tokens(node: &Node) -> u64 {
 /// Rank rule (deterministic): depth from the nearest seed ascending, then node
 /// version descending (richest history first), then id ascending as the final
 /// tie-break. Same input graph + request therefore always yields the same order.
-fn ranked_ids(graph: &Graph, depth: &BTreeMap<String, usize>) -> Vec<String> {
+///
+/// When `seed_order` is supplied, depth-0 seeds are emitted in that relevance
+/// order first; every other node keeps the rule above. This keeps seed
+/// relevance separate from recency without changing `retrieve`.
+fn ranked_ids(
+    graph: &Graph,
+    depth: &BTreeMap<String, usize>,
+    seed_order: Option<&BTreeMap<String, usize>>,
+) -> Vec<String> {
     let mut ranked: Vec<(usize, u64, String)> = depth
         .iter()
         .map(|(id, d)| (*d, graph.node(id).map_or(0, |n| n.version), id.clone()))
         .collect();
     ranked.sort_by(|a, b| a.0.cmp(&b.0).then(b.1.cmp(&a.1)).then(a.2.cmp(&b.2)));
-    ranked.into_iter().map(|(_, _, id)| id).collect()
+    let ranked: Vec<String> = ranked.into_iter().map(|(_, _, id)| id).collect();
+    let order = match seed_order {
+        Some(order) => order,
+        None => return ranked,
+    };
+    let mut seeds: Vec<String> = ranked
+        .iter()
+        .filter(|id| depth.get(id.as_str()) == Some(&0) && order.contains_key(id.as_str()))
+        .cloned()
+        .collect();
+    seeds.sort_by_key(|id| order[id.as_str()]);
+    let rest = ranked
+        .into_iter()
+        .filter(|id| !(depth.get(id.as_str()) == Some(&0) && order.contains_key(id.as_str())));
+    seeds.extend(rest);
+    seeds
 }
 
 /// Retrieve a provenance-carrying, token-bounded context bundle for the seeds.
@@ -110,6 +163,57 @@ fn ranked_ids(graph: &Graph, depth: &BTreeMap<String, usize>) -> Vec<String> {
 /// capped at [`MAX_DEPTH`]. Excluded ids are never visited and never appear as
 /// edge endpoints.
 pub fn retrieve(graph: &Graph, request: &ContextRequest) -> Result<ContextBundle> {
+    retrieve_inner(graph, request, None, None)
+}
+
+/// Scoped, relevance-ordered retrieval.
+///
+/// Fails closed on an empty scope, an empty seed list, a zero budget, a zero
+/// `max_items`, a seed outside `scope`, an excluded seed or an unknown seed.
+/// Selection runs the same bounded multi-source BFS as [`retrieve`] but never
+/// leaves `scope`, and the returned items are the relevance-ordered prefix that
+/// fits both `budget_tokens` and `max_items`.
+pub fn query_scoped(graph: &Graph, query: &ScopedQuery) -> Result<ContextBundle> {
+    if query.scope.is_empty() {
+        return Err(Error::Invalid("scoped query needs a non-empty scope".into()));
+    }
+    if query.max_items == 0 {
+        return Err(Error::Invalid("max_items must be at least 1".into()));
+    }
+    // First occurrence wins, so the caller's relevance order is the rank.
+    let mut order: BTreeMap<String, usize> = BTreeMap::new();
+    for (index, seed) in query.seeds.iter().enumerate() {
+        order.entry(seed.clone()).or_insert(index);
+    }
+    let request = ContextRequest {
+        seeds: query.seeds.clone(),
+        budget_tokens: query.budget_tokens,
+        excluded: query.excluded.clone(),
+        watermark: query.watermark.clone(),
+    };
+    let mut bundle = retrieve_inner(graph, &request, Some(&query.scope), Some(&order))?;
+    if bundle.items.len() > query.max_items {
+        bundle.items.truncate(query.max_items);
+        let selected: BTreeSet<&str> = bundle.items.iter().map(|i| i.id.as_str()).collect();
+        bundle
+            .edges
+            .retain(|e| selected.contains(e.from.as_str()) && selected.contains(e.to.as_str()));
+        bundle.tokens_used = bundle.items.iter().map(|i| i.tokens).sum();
+        bundle.stale_count = bundle.items.iter().filter(|i| i.stale).count();
+        // A ranked candidate was dropped by the output bound, not by the graph.
+        bundle.budget_exhausted = true;
+    }
+    Ok(bundle)
+}
+
+/// Shared bounded retrieval. `scope` restricts seeds and traversal to one
+/// authorized id prefix; `seed_order` ranks depth-0 seeds by caller relevance.
+fn retrieve_inner(
+    graph: &Graph,
+    request: &ContextRequest,
+    scope: Option<&str>,
+    seed_order: Option<&BTreeMap<String, usize>>,
+) -> Result<ContextBundle> {
     if request.seeds.is_empty() {
         return Err(Error::Invalid(
             "context request needs at least one seed".into(),
@@ -118,9 +222,15 @@ pub fn retrieve(graph: &Graph, request: &ContextRequest) -> Result<ContextBundle
     if request.budget_tokens == 0 {
         return Err(Error::Invalid("budget_tokens must be at least 1".into()));
     }
+    let in_scope = |id: &str| scope.map_or(true, |prefix| id.starts_with(prefix));
     for seed in &request.seeds {
         if request.excluded.contains(seed) {
             return Err(Error::Invalid(format!("seed {seed} is also excluded")));
+        }
+        if !in_scope(seed) {
+            return Err(Error::Invalid(format!(
+                "seed {seed} is outside the authorized scope"
+            )));
         }
         if graph.node(seed).is_none() {
             return Err(Error::Missing(seed.clone()));
@@ -146,7 +256,7 @@ pub fn retrieve(graph: &Graph, request: &ContextRequest) -> Result<ContextBundle
             neighbours.insert(edge.from.clone());
         }
         for next in neighbours {
-            if request.excluded.contains(&next) {
+            if request.excluded.contains(&next) || !in_scope(&next) {
                 continue;
             }
             if !depth.contains_key(&next) {
@@ -160,7 +270,7 @@ pub fn retrieve(graph: &Graph, request: &ContextRequest) -> Result<ContextBundle
     let mut items: Vec<ContextItem> = Vec::new();
     let mut used: u64 = 0;
     let mut budget_exhausted = false;
-    for id in ranked_ids(graph, &depth) {
+    for id in ranked_ids(graph, &depth, seed_order) {
         let node = match graph.node(&id) {
             Some(n) => n,
             None => {

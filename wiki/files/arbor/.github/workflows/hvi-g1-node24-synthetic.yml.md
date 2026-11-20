@@ -1,0 +1,84 @@
+# File: .github/workflows/hvi-g1-node24-synthetic.yml
+
+> Generated 2026-11-19 · YAML · arbor
+
+## Metadata
+
+| Field | Value |
+| --- | --- |
+| Project | [arbor](../../../../projects/arbor.md) |
+| Path | .github/workflows/hvi-g1-node24-synthetic.yml |
+| Language | YAML |
+| Kind | config |
+| Size | 2017 B |
+| Lines | 41 |
+| Hash | 8087e5e9ce86 |
+| Test | no |
+| Generated | no |
+| Component | .github |
+
+## Symbols
+
+_No symbols._
+
+## Imports
+
+_No imports._
+
+## Dependents
+
+_No dependents._
+
+## Annotations
+
+_No annotations._
+
+## Excerpt
+
+```yaml
+name: HVI G1 Node24 Synthetic Integration
+on:
+  push:
+    branches:
+      - integrate/p5-hq-version-intelligence-r001
+  pull_request:
+    paths:
+      - 'hq/version-intelligence/**'
+      - 'hq/catalogue-identity/**'
+      - 'contracts/hq-version-intelligence/**'
+      - 'tests/hq-version-intelligence/**'
+      - '.github/workflows/hvi-g1-node24-synthetic.yml'
+permissions:
+  contents: read
+jobs:
+  synthetic-node24:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install isolated schema validator
+        run: npm install --prefix tests/hq-version-intelligence --ignore-scripts --no-audit --no-fund
+      - name: Syntax checks of integrated source
+        run: |
+          node --version
+          node --check hq/version-intelligence/sources/snapshots.mjs
+          node --check hq/version-intelligence/compare/index.mjs
+          node --check hq/version-intelligence/parity/atlas.mjs
+          node --check hq/version-intelligence/report/index.mjs
+          node --check hq/version-intelligence/integration/index.mjs
+          node --check hq/version-intelligence/integration/source-manifest-adapter.mjs
+          node --check hq/version-intelligence/integration/comparison-report-adapter.mjs
+          node --check hq/version-intelligence/integration/parity-evidence-adapter.mjs
+      - name: A–F and G1 combined tests — synthetic fixtures only
+        run: |
+          node --test hq/version-intelligence/sources/snapshots.test.mjs hq/version-intelligence/identity/test/identity.test.mjs hq/catalogue-identity/test/crosswalk.test.mjs hq/version-intelligence/compare/index.test.mjs hq/version-intelligence/parity/atlas.test.mjs hq/version-intelligence/report/test/report.test.mjs tests/hq-version-intelligence/*.test.mjs
+      - name: Existing HQ catalogue boundary
+        run: node --test hq/test/catalogue-delta.test.mjs
+```
+
+---
+
+[HQ wiki](../../../../index.md) · [Symbols](../../../../symbols.md) · [Dependency graph](../../../../graph.md) · [Documentation](../../../../docs.md) · [Changes](../../../../changes.md) · [Open tasks](../../../../todos.md) · [Deprecated](../../../../deprecated.md) · [Agent annotation protocol](../../../../protocol.md) · [Glossary](../../../../glossary.md) · [Using HQ](../../../../context.md) · [Capabilities](../../../../capabilities.md) · [Search index](../../../../search.json) · [Browser view](../../../../index.html)

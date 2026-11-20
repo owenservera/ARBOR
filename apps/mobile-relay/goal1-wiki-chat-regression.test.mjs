@@ -13,7 +13,15 @@ function extractFn(src, name) {
   let start = src.indexOf('function ' + name + '(');
   assert.notEqual(start, -1, name + '() not found');
   if (src.slice(Math.max(0, start - 6), start) === 'async ') start -= 6;
-  let i = src.indexOf('{', start), depth = 0;
+  // the body brace is the first '{' at paren depth 0 — a naive indexOf('{') would
+  // stop inside a default parameter like `options = {}` (chat.js:86)
+  let i = src.indexOf('(', start), parens = 0;
+  for (; i < src.length; i++) {
+    if (src[i] === '(') parens++;
+    else if (src[i] === ')') parens--;
+    else if (src[i] === '{' && parens === 0) break;
+  }
+  let depth = 0;
   for (let j = i; j < src.length; j++) {
     if (src[j] === '{') depth++;
     else if (src[j] === '}') { depth--; if (depth === 0) return src.slice(start, j + 1); }
@@ -27,6 +35,10 @@ test('Wiki is selected in the actual phone tab and refreshed', () => {
   const sandbox = {
     S: { tab: 'talk' }, TABS: ['talk', 'wiki'], HOST_PREVIEW: false,
     dockExpanded: false, chatContextEpoch: 0, chatContext: null,
+    // app.js module-scope names goTab touches (app.js:136 let dockAssist, :1676 let compose,
+    // plus the guarded clearWikiSources/build/$ /schedule/refreshHostPreview branches at :467-484)
+    dockAssist: { reset() {} }, compose: { resetAssist() {} },
+    clearWikiSources() {}, build: null, $: () => null, schedule() {}, refreshHostPreview() {},
     closeDrawer() {}, renderTabs() { calls.push('tabs'); },
     renderSurfaces() { calls.push('surface'); },
     refreshWiki() { calls.push('wiki'); },
@@ -54,13 +66,17 @@ function makeChatHarness({ fail = false } = {}) {
       ? { ok: false, status: 500, json: async () => ({ error: 'Product projection unavailable' }) }
       : { ok: true, status: 200, json: async () => ({ revision: 7, wikiRevision: 3, chat: [] }) },
     setInterval: () => 1, clearInterval() {},
+    // chat.js:86 helper is `json`; refresh() (chat.js:155-167) closes over json/STATE_URL/rev/log
+    // and the render helpers element/messageNode/intentNode (chat.js:41/148/140)
     rev: els.rev, log: els.log, POLL_MS: 1500, STATE_URL: '/api/state', MUTATE_URL: '/api/mutate',
+    element: (tag, className, value) => ({ tag, className: className || '', textContent: value ?? '', children: [], append() {} }),
+    messageNode: () => ({}), intentNode: () => ({}),
   };
   sandbox.globalThis = sandbox;
   vm.createContext(sandbox);
-  const prelude = 'var fetchJson, refresh;\n(async () => {\n';
-  const epilogue = '\nfetchJson = fetchJson; refresh = refresh; globalThis.refresh = refresh;\n})();';
-  vm.runInContext(prelude + extractFn(chatSrc, 'fetchJson') + '\n' + extractFn(chatSrc, 'refresh') + epilogue, sandbox, { filename: 'chat-slice.js' });
+  const prelude = 'var json, refresh;\n(async () => {\n';
+  const epilogue = '\njson = json; refresh = refresh; globalThis.refresh = refresh;\n})();';
+  vm.runInContext(prelude + extractFn(chatSrc, 'json') + '\n' + extractFn(chatSrc, 'refresh') + epilogue, sandbox, { filename: 'chat-slice.js' });
   return { sandbox, els, ready: new Promise(r => setImmediate(r)) };
 }
 

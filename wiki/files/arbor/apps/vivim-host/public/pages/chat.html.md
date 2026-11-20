@@ -1,0 +1,94 @@
+# File: apps/vivim-host/public/pages/chat.html
+
+> Generated 2026-11-19 · HTML · arbor
+
+## Metadata
+
+| Field | Value |
+| --- | --- |
+| Project | [arbor](../../../../../../projects/arbor.md) |
+| Path | apps/vivim-host/public/pages/chat.html |
+| Language | HTML |
+| Kind | source |
+| Size | 2969 B |
+| Lines | 51 |
+| Hash | 39f48b76681d |
+| Test | no |
+| Generated | no |
+| Component | vivim-host |
+
+## Symbols
+
+_No symbols._
+
+## Imports
+
+_No imports._
+
+## Dependents
+
+_No dependents._
+
+## Annotations
+
+_No annotations._
+
+## Excerpt
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VIVIM — chat</title>
+<link rel="stylesheet" href="/chat.css">
+</head>
+<body>
+<header>
+  <h1>VIVIM chat</h1>
+  <a href="/wiki">wiki</a>
+  <a href="/host/control">Host Control</a>
+  <span class="rev" id="rev"></span>
+</header>
+<main id="log" aria-label="Persisted chat messages" aria-live="polite"></main>
+<section id="control-surface" aria-labelledby="control-title">
+  <div class="control-head">
+    <h2 id="control-title">Host command</h2>
+    <span id="control-status" role="status">Checking owner session…</span>
+    <button id="control-logout" type="button" hidden>Lock</button>
+  </div>
+  <div class="control-note">Chat text is saved as a message, not an executed command. Host changes require a separate plan and explicit approval.</div>
+  <div id="control-result" role="region" aria-label="Command preview and result" aria-live="polite"></div>
+  <div id="control-recent" aria-label="Recent Host command decisions"></div>
+  <details class="control-card">
+    <summary>Teach VIVIM a reusable phrase</summary>
+    <p>Desktop owner only. Save a command, read sequence or change sequence. Saving never runs the target command.</p>
+    <form id="teach-rule-form">
+      <p>After a successful Wiki page creation, use its receipt to teach a named command with one fresh page-slug argument. Enter a single lowercase alias, then review and approve the meaning. Every reuse needs its own approval.</p>
+      <label for="teach-phrase">Your phrase or reusable command name</label>
+      <input id="teach-phrase" maxlength="200" required autocomplete="off" placeholder="e.g. morning briefing">
+      <label for="teach-command">Existing command</label>
+      <textarea id="teach-command" maxlength="1000" required autocomplete="off" rows="5" placeholder="e.g. list wiki pages"></textarea>
+      <label><input id="teach-share-phone" type="checkbox"> Share this program with paired phones (current device grants still required)</label>
+      <button id="teach-program-example" type="button" class="secondary">Draft a parameterized Wiki sequence</button>
+      <p>Use one lowercase alias and a page slug to invoke a parameterized sequence. Review and approve each change sequence separately.</p>
+      <button type="submit">Review meaning</button>
+    </form>
+    <button id="show-rules" type="button" class="secondary">Show saved meanings</button>
+    <div id="learned-rules" aria-live="polite"></div>
+  </details>
+</section>
+<div id="composer-assist" class="composer-assist" hidden></div>
+<form id="f">
+  <textarea id="t" autocomplete="off" maxlength="1000" rows="2" aria-label="Talk to VIVIM" placeholder="Say something or ask VIVIM to change your PC"></textarea>
+  <button id="send" type="submit">send</button>
+</form>
+<script type="module" src="/chat.js"></script>
+</body>
+</html>
+```
+
+---
+
+[HQ wiki](../../../../../../index.md) · [Symbols](../../../../../../symbols.md) · [Dependency graph](../../../../../../graph.md) · [Documentation](../../../../../../docs.md) · [Changes](../../../../../../changes.md) · [Open tasks](../../../../../../todos.md) · [Deprecated](../../../../../../deprecated.md) · [Agent annotation protocol](../../../../../../protocol.md) · [Glossary](../../../../../../glossary.md) · [Using HQ](../../../../../../context.md) · [Capabilities](../../../../../../capabilities.md) · [Search index](../../../../../../search.json) · [Browser view](../../../../../../index.html)

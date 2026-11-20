@@ -1,0 +1,389 @@
+{
+  "lane": "D",
+  "laneRows": 748,
+  "nextRows": 13,
+  "verifyRows": 0,
+  "units": [
+    {
+      "id": "NEXT:D02.context-existing-read-port",
+      "phase": "NEXT",
+      "priority": "P1",
+      "rowCount": 1,
+      "rowIds": [
+        "AT-9237D196A64F"
+      ],
+      "paths": [
+        "apps/mobile-relay/app.js"
+      ],
+      "closures": [],
+      "nextPackages": [
+        "D02"
+      ],
+      "packageOwners": [
+        "A"
+      ],
+      "acceptance": "Same committed source usable in UI and instruction; revoked grant clears displayed data.",
+      "done": false,
+      "targets": {
+        "Target Rust": 1,
+        "Target Host": 1,
+        "Target PWA": 1,
+        "Target VLANG": 1,
+        "Target AutoWiki": 1
+      },
+      "reachabilityBlank": 1,
+      "evidenceGrades": [
+        "DIRECT / SEARCH"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "EXTEND"
+      ],
+      "currentStates": [
+        "AUDIT FINDING — OPEN"
+      ],
+      "granularities": [
+        "File"
+      ],
+      "subsystems": [
+        "PWA"
+      ],
+      "shouldIntegrate": [
+        "Yes"
+      ],
+      "reviewBases": [
+        "D-F01 selected executable ranges; selected body + caller evidence; runtime UNRUN"
+      ],
+      "decisionConfidences": [
+        "MEDIUM — selected source evidence, not exhaustive reverse callers; runtime UNRUN"
+      ],
+      "boundaryOwners": [
+        "PWA"
+      ],
+      "topLevelStates": [
+        "TOP LEVEL — SOURCE SUPPORTED"
+      ],
+      "evidenceTiers": [
+        "PRIOR PINNED SOURCE — TOP-LEVEL"
+      ],
+      "reviewPackages": [
+        "D02"
+      ],
+      "reviewRoles": [],
+      "laneReviewNeeds": [
+        "REVALIDATE — prior decision, do not silently overwrite"
+      ],
+      "knownMissing": [
+        "Trace actual Host route and whether scoped context is consumed by instruction/planning; inspect markdown escaping; absen..."
+      ],
+      "remainingEvidence": [
+        "Trace actual Host route and whether scoped context is consumed by instruction/planning; inspect markdown escaping; absen..."
+      ],
+      "dispositionRounds": [
+        "FB01"
+      ],
+      "resolvedActions": [
+        "REUSE"
+      ],
+      "revisedShouldWire": [
+        "Yes — reuse existing port"
+      ],
+      "fileClasses": [
+        "Runtime / executable candidate"
+      ]
+    },
+    {
+      "id": "NEXT:D14.device-pairing",
+      "phase": "NEXT",
+      "priority": "P1",
+      "rowCount": 6,
+      "rowIds": [
+        "AT-0CE8E0AE8DE4",
+        "AT-F96DC41E9395",
+        "AT-E3802992E70B",
+        "AT-CE47ACDEB561",
+        "AT-FB89229D800F",
+        "AT-283F4295B8BF"
+      ],
+      "paths": [
+        "apps/mobile-relay/app.js"
+      ],
+      "closures": [
+        "SOURCE_DEFECT_WITH_RUNTIME_UNRUN"
+      ],
+      "nextPackages": [
+        "D14"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "Prove real caller or deliberate internal/dev status; Same committed source usable in UI and instruction; revoked grant clears displayed data.",
+      "done": false,
+      "targets": {
+        "Target Host": 6,
+        "Target PWA": 6
+      },
+      "reachabilityBlank": 0,
+      "evidenceGrades": [
+        "DECLARATION / PROPOSED"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "TRACE_AND_DISPOSE",
+        "KEEP_GUARD",
+        "EXTEND",
+        "KEEP_UI"
+      ],
+      "currentStates": [
+        "CALLER REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "Symbol"
+      ],
+      "subsystems": [
+        "PWA"
+      ],
+      "shouldIntegrate": [
+        "Conditional",
+        "No"
+      ],
+      "reviewBases": [
+        "PINNED SOURCE + SELECTED ACTUAL CALLERS / MOUNT / REGISTRATION; runtime UNRUN",
+        "PINNED SOURCE ANCHOR + SELECTED STATIC REFERENCES; runtime UNRUN"
+      ],
+      "decisionConfidences": [
+        "SOURCE_DEFECT_CONFIRMED; runtime UNRUN",
+        "SOURCE_DEFECT_CONFIRMED; runtime unverified"
+      ],
+      "boundaryOwners": [
+        "PWA"
+      ],
+      "topLevelStates": [
+        "D-V01 STATIC DISPOSITION; runtime UNRUN",
+        "D-S01 STATIC PROVISIONAL"
+      ],
+      "evidenceTiers": [
+        "PINNED SOURCE + SELECTED COUNTERPARTS",
+        "PINNED SYMBOL ANCHOR; SELECTED RANGE"
+      ],
+      "reviewPackages": [
+        "D14"
+      ],
+      "reviewRoles": [
+        "callable/class"
+      ],
+      "laneReviewNeeds": [
+        "PENDING — initial disposition"
+      ],
+      "knownMissing": [
+        "actual PWA/Host mismatch; Existing D14.device-pairing: revoke/re-pair including cross-owner, restart persistence, discar...",
+        "Pending prompt payload not cleared by grant invalidation; refer Host/B for owner-scoped receipt/status lookup."
+      ],
+      "remainingEvidence": [
+        "Existing D14.device-pairing: revoke/re-pair including cross-owner, restart persistence, discard private prompt/title, in...",
+        "Real grant-revoke/re-pair negative test, same owner and cross-owner restore, no lost-ACK resend."
+      ],
+      "dispositionRounds": [
+        "D-V01",
+        "D-S01"
+      ],
+      "resolvedActions": [
+        "CHANGE"
+      ],
+      "revisedShouldWire": [
+        "Yes - existing unit",
+        "Yes"
+      ],
+      "fileClasses": [
+        "Runtime / executable candidate"
+      ]
+    },
+    {
+      "id": "NEXT:D14.wiki-source-card",
+      "phase": "NEXT",
+      "priority": "P1",
+      "rowCount": 4,
+      "rowIds": [
+        "AT-70393C0BD9D1",
+        "AT-34F0BF4A9826",
+        "AT-7435DF1954D2",
+        "AT-D76D82E8B54A"
+      ],
+      "paths": [
+        "apps/mobile-relay/goal-wiki.test.mjs",
+        "apps/mobile-relay/goal1-wiki-chat-regression.test.mjs",
+        "apps/mobile-relay/goal1-wiki-tab-open.test.mjs",
+        "apps/mobile-relay/wiki-receipt-refresh.test.mjs"
+      ],
+      "closures": [
+        "SOURCE_DEFECT_WITH_RUNTIME_UNRUN"
+      ],
+      "nextPackages": [
+        "D14"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "Inspect source and actual callers; record disposition and evidence; verify applicable acceptance checks.",
+      "done": false,
+      "targets": {},
+      "reachabilityBlank": 0,
+      "evidenceGrades": [
+        "TREE / PATH ONLY"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "FIRST PASS — REVIEW REQUIRED"
+      ],
+      "currentStates": [
+        "INVENTORIED — NOT DISPOSITIONED"
+      ],
+      "granularities": [
+        "File"
+      ],
+      "subsystems": [
+        "PWA"
+      ],
+      "shouldIntegrate": [
+        "Undetermined"
+      ],
+      "reviewBases": [
+        "PINNED SOURCE + SELECTED ACTUAL CALLERS / MOUNT / REGISTRATION; runtime UNRUN"
+      ],
+      "decisionConfidences": [
+        "SOURCE_DEFECT_CONFIRMED; runtime UNRUN"
+      ],
+      "boundaryOwners": [],
+      "topLevelStates": [
+        "D-V01 STATIC DISPOSITION; runtime UNRUN"
+      ],
+      "evidenceTiers": [
+        "PINNED SOURCE + SELECTED COUNTERPARTS"
+      ],
+      "reviewPackages": [
+        "D14"
+      ],
+      "reviewRoles": [],
+      "laneReviewNeeds": [
+        "PENDING — initial disposition"
+      ],
+      "knownMissing": [
+        "test registration/coverage; Reconcile all four omitted regression files in one D14.wiki-source-card unit with Lane E; ch..."
+      ],
+      "remainingEvidence": [
+        "Reconcile all four omitted regression files in one D14.wiki-source-card unit with Lane E; choose correct runtime and val..."
+      ],
+      "dispositionRounds": [
+        "D-V01"
+      ],
+      "resolvedActions": [
+        "CHANGE"
+      ],
+      "revisedShouldWire": [
+        "No new product wire; correct proof/docs"
+      ],
+      "fileClasses": [
+        "Test / benchmark / example"
+      ]
+    },
+    {
+      "id": "NEXT:D15.relay-boundary",
+      "phase": "NEXT",
+      "priority": "P1",
+      "rowCount": 2,
+      "rowIds": [
+        "AT-2B76317A1310",
+        "AT-9C89B527984B"
+      ],
+      "paths": [
+        "apps/mobile-relay/grokbot.html",
+        "apps/mobile-relay/grokbot.js"
+      ],
+      "closures": [
+        "SOURCE_DEFECT_WITH_RUNTIME_UNRUN"
+      ],
+      "nextPackages": [
+        "D15"
+      ],
+      "packageOwners": [
+        "?"
+      ],
+      "acceptance": "Works offline where applicable and renders authorized current Host state.",
+      "done": false,
+      "targets": {
+        "Target Host": 2,
+        "Target PWA": 2,
+        "Target Harness": 2
+      },
+      "reachabilityBlank": 0,
+      "evidenceGrades": [
+        "TREE / PROVISIONAL"
+      ],
+      "runtimeTests": [
+        "UNRUN"
+      ],
+      "dispositions": [
+        "KEEP_UI",
+        "KEEP_TRANSPORT"
+      ],
+      "currentStates": [
+        "REVIEW REQUIRED"
+      ],
+      "granularities": [
+        "File"
+      ],
+      "subsystems": [
+        "PWA"
+      ],
+      "shouldIntegrate": [
+        "No"
+      ],
+      "reviewBases": [
+        "PINNED SOURCE + SELECTED ACTUAL CALLERS / MOUNT / REGISTRATION; runtime UNRUN"
+      ],
+      "decisionConfidences": [
+        "SOURCE_DEFECT_CONFIRMED; runtime UNRUN"
+      ],
+      "boundaryOwners": [
+        "PWA"
+      ],
+      "topLevelStates": [
+        "D-V01 STATIC DISPOSITION; runtime UNRUN"
+      ],
+      "evidenceTiers": [
+        "PINNED SOURCE + SELECTED COUNTERPARTS"
+      ],
+      "reviewPackages": [
+        "D15"
+      ],
+      "reviewRoles": [],
+      "laneReviewNeeds": [
+        "VERIFY — source / callers"
+      ],
+      "knownMissing": [
+        "actual PWA/Host mismatch; Existing D15.relay-boundary: adopt authorized PWA transport/session or retire separate nonesse..."
+      ],
+      "remainingEvidence": [
+        "Existing D15.relay-boundary: adopt authorized PWA transport/session or retire separate nonessential page. Active read/wr..."
+      ],
+      "dispositionRounds": [
+        "D-V01"
+      ],
+      "resolvedActions": [
+        "CHANGE"
+      ],
+      "revisedShouldWire": [
+        "Yes - existing unit"
+      ],
+      "fileClasses": [
+        "Runtime / executable candidate"
+      ]
+    }
+  ]
+}

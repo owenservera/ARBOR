@@ -143,12 +143,16 @@ function usage() {
 }
 function main(args) {
   if (args.length===1 && ['--help','-h'].includes(args[0])) { console.log(usage());return 0; }
-  if (args.length>1 || (args.length===1 && !['--focused','--full'].includes(args[0]))) {
+  const permitDirty = args.includes('--permit-dirty');
+  const positional = args.filter((a) => a !== '--permit-dirty');
+  if (positional.length>1 || (positional.length===1 && !['--focused','--full'].includes(positional[0]))) {
     console.error(usage());return 2;
   }
-  const profile=args[0]==='--full'?'full':'focused';
+  const profile=positional[0]==='--full'?'full':'focused';
   try {
-    const r=runR004({profile});
+    // --permit-dirty: run the focused suites on a working tree that lane agents are editing.
+    // The receipt still records the real git status; only the preflight refusal is waived.
+    const r=runR004({profile,permitDirty});
     console.log(JSON.stringify({schema:SCHEMA,sourceSha:r.receipt.sourceSha,
       profile,decision:r.status,exitCode:r.exitCode,receiptPath:r.receiptPath,
       tasks:r.receipt.tasks.map(x=>({id:x.id,status:x.status,exitCode:x.exitCode}))},null,2));

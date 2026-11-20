@@ -292,42 +292,42 @@ export async function runRefreshPipeline({
       wiki.error = errorMessage(error);
     }
 
-    // 2b. Knowledge-graph sync: export the current universe, feed the native
-    // importer, and advance the delta base on verified acknowledgment. Uses the
-    // existing pipeline (no new scheduler); cargo absence or import failure
-    // degrades gracefully — the exchange is still written, the state stays at
-    // its acknowledged base, tombstones are re-emitted on the next sync.
+    // 2b. Knowledge-graph sync: export the current universe, feed the packaged
+    // native importer, and advance the delta base on verified acknowledgment.
+    // Uses the existing pipeline (no new scheduler). The importer is the frozen
+    // package's own binary — Cargo is never spawned here; the explicitly
+    // selected `HQKG_IMPORT_MODE=cargo` development fallback is resolved by
+    // kg-export.mjs. An unavailable or failing importer degrades gracefully: the
+    // exchange is still written, the state stays at its acknowledged base, and
+    // tombstones are re-emitted on the next sync.
     let kg = { imported: false, reason: null };
     try {
       const kgModule = await import('./kg-export.mjs');
-      const export_ = kgModule.exportGraphExchange({
-        db,
-        outPath: join(root, '.hq', 'kg-exchange.jsonl'),
-        statePath: join(root, '.hq', 'kg-export-state.json'),
-      });
+      const outPath = join(root, '.hq', 'kg-exchange.jsonl');
+      const statePath = join(root, '.hq', 'kg-export-state.json');
+      const export_ = kgModule.exportGraphExchange({ db, outPath, statePath });
       kg.exported = true;
       kg.stats = export_.stats;
       kg.digest = export_.digest;
-      const { spawnSync } = await import('node:child_process');
-      const crateDir = join(dirname(dirname(fileURLToPath(import.meta.url))), 'research', 'rust-knowledge-graph');
-      const imp = spawnSync('cargo', ['run', '--quiet', '--features', 'importer', '--bin', 'hqkg-import', '--',
-        join(root, '.hq', 'kg-journal.hqj'), export_.outPath],
-      { cwd: crateDir, encoding: 'utf8', windowsHide: true, maxBuffer: 16 * 1024 * 1024 });
-      const epochLine = (imp.stdout ?? '').split('\n').find((l) => l.startsWith('epoch before='));
-      const epochBefore = epochLine ? Number(/before=(\d+)/.exec(epochLine)?.[1]) : null;
-      const epochAfter = epochLine ? Number(/after=(\d+)/.exec(epochLine)?.[1]) : null;
-      if (imp.status !== 0 || epochAfter == null || epochAfter < epochBefore) {
+      const imp = kgModule.importGraphExchange({
+        root,
+        journal: join(root, '.hq', 'kg-journal.hqj'),
+        exchange: outPath,
+        namespace: kgModule.SOURCE_NAMESPACE,
+      });
+      kg.mode = imp.mode;
+      if (!imp.ok) {
         kg.imported = false;
-        kg.reason = imp.status !== 0 ? `importer_exit_${imp.status}` : 'epoch_regression';
+        kg.reason = imp.reason;
       } else {
         const ack = kgModule.acknowledgeGraphExport({
-          statePath: join(root, '.hq', 'kg-export-state.json'),
+          statePath,
           digest: export_.digest,
-          acknowledgment: { epochBefore, epochAfter },
+          acknowledgment: { epochBefore: imp.epochBefore, epochAfter: imp.epochAfter, stats: imp.statsLine ?? undefined },
         });
         kg.imported = true;
-        kg.epochBefore = epochBefore;
-        kg.epochAfter = epochAfter;
+        kg.epochBefore = imp.epochBefore;
+        kg.epochAfter = imp.epochAfter;
         kg.acked = ack.acked;
         if (!ack.acked) kg.reason = ack.reason;
       }
@@ -384,7 +384,7 @@ export async function runRefreshPipeline({
       skipped: false, heldBy: lockState?.heldBy ?? null,
       spaces: perSpace,
       wiki: { written: wiki.written || 0, skipped: wiki.skipped || 0, total: wiki.total || 0, error: wiki.error || null },
-      kg: { exported: kg.exported === true, imported: kg.imported === true, acked: kg.acked === true, reason: kg.reason ?? null, stats: kg.stats ?? null, epochBefore: kg.epochBefore ?? null, epochAfter: kg.epochAfter ?? null },
+      kg: { exported: kg.exported === true, imported: kg.imported === true, acked: kg.acked === true, reason: kg.reason ?? null, mode: kg.mode ?? null, stats: kg.stats ?? null, epochBefore: kg.epochBefore ?? null, epochAfter: kg.epochAfter ?? null },
       staleCount, stale: stale.slice(0, 20),
       gateOk: staleCount === 0 && !wiki.error,
       durationMs,

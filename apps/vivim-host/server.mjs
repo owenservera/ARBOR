@@ -202,10 +202,19 @@ export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path
     token = loadOwnerToken({ dataRoot }).token;
     return token;
   };
-  const supervisor = createWorkerSupervisor({ dataRoot });
+  const supervisor = createWorkerSupervisor({
+    dataRoot,
+    // Feed the supervisor the Host's existing read-only native worker probe
+    // (diagnostics.mjs). Roles without a probe stay "missing evidence", which is
+    // never reported as a worker failure.
+    diagnostics: role => (role === 'relay' || role === 'chatWorker') ? workerHealth(dataRoot, role) : null,
+  });
   if (worker) {
-    worker.start();
-    supervisor.takeover('bootstrap', process.pid);
+    // Lease admission precedes the poller. Only the admitted Host may run the
+    // bootstrap command loop: a role already owned by another live Host must not
+    // start a second poller, and an uncertain lease is never implicitly resumed.
+    const admitted = supervisor.takeover('bootstrap', process.pid);
+    if (admitted.state === 'started') worker.start();
   }
   // One Host-owned control dispatcher for desktop text, phone text and GUI (UTC03).
   let control = null;

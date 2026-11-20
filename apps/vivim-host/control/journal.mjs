@@ -53,6 +53,11 @@ export function createControlJournal({ dataRoot }) {
     },
     get,
     approve(id, approval) {
+      // An owner decision is bound to the RECORDED plan digest, not merely to a
+      // previous approval file: the first write must already match the plan.
+      const plan = readJson(file(id, 'plan.json'));
+      if (!plan) throw fail('CONTROL_PLAN_UNKNOWN');
+      if (!approval || approval.planDigest !== plan.planDigest) throw fail('CONTROL_APPROVAL_CONFLICT');
       const created = createExclusive(file(id, 'approved.json'), JSON.stringify(approval));
       const stored = created ? approval : readJson(file(id, 'approved.json'));
       if (!stored) throw fail('CONTROL_APPROVAL_MISSING');

@@ -1,0 +1,74 @@
+# File: .coordination/workflows/arbor-integration-design-r002.md
+
+> Generated 2026-11-19 · Markdown · arbor
+
+## Metadata
+
+| Field | Value |
+| --- | --- |
+| Project | [arbor](../../../../projects/arbor.md) |
+| Path | .coordination/workflows/arbor-integration-design-r002.md |
+| Language | Markdown |
+| Kind | doc |
+| Size | 6135 B |
+| Lines | 31 |
+| Hash | f8fad4bd472f |
+| Test | no |
+| Generated | no |
+| Component | .coordination |
+
+## Symbols
+
+_No symbols._
+
+## Imports
+
+_No imports._
+
+## Dependents
+
+_No dependents._
+
+## Annotations
+
+_No annotations._
+
+## Excerpt
+
+```markdown
+# arbor-integration — design R002 (continuous, ledger-driven)
+
+Supersedes the R001 sketch. Built on the installed dynamic-workflows facade (skill loaded 2026-11-19) and the fleet pattern in `.zcode/workflows/arbor-product.dwf.ts`. Every claim below was checked against the actual facade; where the ERA-2 request exceeds the runtime, the constraint is stated instead of papered over.
+
+## What changed from R001 (accepted ERA-2 revisions)
+
+1. **Tracker is the work inventory.** `.coordination/ARBOR-MASTER-INTEGRATION-TRACKER.csv` (canonical: `vivim-labs/ARBOR-DEEP-DISPOSITION/*.csv.gz`, pinned to ARBOR HEAD) is the primary source. `MASTER-INTEGRATION-PLAN-v1.md` + QW1–B8 become **seed priorities** — a planner subagent (MiniMax-M3) derives the live unit list each run from stable IDs, dedup keys, dependencies, priority, evidence and completion receipts. No hard-coded `UNITS` universe.
+2. **Seven internal modes**, one script, `args.mode`: `sync | discover | plan | build | verify | reconcile | optimize | full` (default `full`). `full` = sync → plan → build+verify (concurrent) → reconcile → optimize → report. Continuous operation = repeated bounded `full` runs relaunched from the persistent ledger (below), not an unbounded in-process loop.
+3. **No arbitrary caps.** `args.maxUnits` default null = "until no actionable unit remains", with a runtime safety valve of 50 units per run (the facade kills unbounded loops, so remaining work resumes on the next launch — this is the resumable-run model, not a policy ceiling). Model health is rolling: the probe picks among the five families by recent errors, and a role whose models are all hot falls back down its chain instead of stalling.
+4. **Verification derived from the unit, not one universal gate.** Per-component profiles: Rust → `cargo test -p hqkg`; Host → focused `node --test` + r004 `--focused` (retained where applicable); PWA → mobile-relay `node --test`; TierFlow → `bun test packages/tierflow`; HQ → hq tests; Studio → studio `npm test`; cross-system → real HTTP through the isolated scratch Host (existing `scripts/life/scratch-host.mjs` pattern). Broad regression (`test:gate`) runs on dependency impact and at reconcile, not per unit.
+5. **Repair loops per unit**, not one-shot: builder → verifier → if FAIL, one repair ask carrying the verifier's exact failure; max 3 repairs; identical repeated failure ⇒ unit marked `REPLAN` and isolated — other units continue. A deterministic red test is never overridden by the planner.
+6. **Tracker feedback loop.** Each unit emits `.coordination/tracker-deltas/<unit>-<run.id>.json` — stable-ID-keyed field changes + new discoveries, each with evidence and the source SHA. RECONCILE mode runs ONE merge operator (subagent + python over the freshest Labs CSV, keyed by stable ID, preserving unrelated lanes' rows), writes the merged CSV + gz locally, and records a proposal. Pushing to the Labs remote stays owner-gated (external effect).
+7. **Continuous discovery.** Every builder/verifier is asked to note artificial gates, dead capabilities, duplicate engines, synthetic production dependencies and missing feedback loops in its unit delta (`discoveries[]`) without expanding its edit scope. DISCOVER mode runs a dedicated fan-out (Ling triage + Ernie trace) over subsystems.
+8. **Concurrency with honest attribution.** Default `args.concurrency` 3 (raised to 5 only when PLAN proves disjoint owned paths). Each unit carries an owned-path manifest; the script snapshots path→blob hashes at unit start; after the build, a changed non-owned path is recorded `EXTERNAL_CONCURRENT` (not a violation), an edit to a non-owned path claimed by the builder is a real `SLOT_VIOLATION` for that unit only, and RECONCILE commits ONLY the unit's owned paths (`git add <owned>` path-scoped, no branch, no PR, no force-push, no working-tree cleanup).
+9. **Resume, not new infrastructure.** Completion state = receipts on disk (`.coordination/evidence/`, `docs/product/roadmap/receipts/`) + implementation commits in `git log`. A relaunched run reads them in SYNC/PLAN and skips done units. No new queue/DB/scheduler; the HQ work-order binding (`workflow:arbor-integration`) is registered by workflow-keeper per its own conventions.
+10. **Honest limits of this runtime** (not design choices): the CreateWorkflow confirmation dialog cannot be removed — every launch is owner-gated (standing scope reduces ceremony, not the dialog); model errors are retried by the runtime; `world.run` commands are fixed literals (git/node/bun/cargo only); browser E2E stays a recorded human step where no supported automation exists in-repo.
+
+## Model routing (unchanged R001 ruling, adaptive)
+
+Builder `new-provider/mistralai/mistral-large-4-1t-a52b` (fallback MiniMax-M3) · Planner/Synthesizer `minimax-m-plan/MiniMax-M3` · Verifier `minimax-m-plan/MiniMax-M3.1-Flash$max` (fallback MiniMax-M3) · Triage `openrouter-2/inclusionai/ling-3.2-flash:free` · Trace/docs `openrouter-2/baidu/ernie-5.5-flash-preview:free`. Rolling 10-min `model_usage` probe demotes a hot lead to its fallback.
+
+## Script shape (single file, `args.mode`)
+
+`sync` (git fetch Labs + extract CSV + pin SHAs) → `discover` (fan-out) → `plan` (M3 derives typed `WorkUnit[]` from CSV+receipts, seed table as tiebreak only) → `build`/`verify` per unit in bounded concurrent waves (repair loop, per-component gate via `world.run`, slot attribution) → `reconcile` (delta merge + path-scoped commit + completion update) → `optimize` (retro over receipts) → `artifact.markdown` + `WorkflowReport` return with verified/notCovered (always: BROWSER_E2E, device, owner/release acceptance).
+
+## Verification of this design
+
+1. `EvalWorkflowSnippet` rehearses the fixed logic (probe parse, seed-priority selection, attribution predicate) before authoring.
+2. `SaveWorkflow` — zero compile diagnostics.
+3. First launch: `mode=discover` (read-only) — proves routing + tracker sync without touching code.
+4. Then `mode=full` bounded runs; each launch's confirmation dialog is the owner gate; receipts accumulate into resumability.
+```
+
+---
+
+[HQ wiki](../../../../index.md) · [Symbols](../../../../symbols.md) · [Dependency graph](../../../../graph.md) · [Documentation](../../../../docs.md) · [Changes](../../../../changes.md) · [Open tasks](../../../../todos.md) · [Deprecated](../../../../deprecated.md) · [Agent annotation protocol](../../../../protocol.md) · [Glossary](../../../../glossary.md) · [Using HQ](../../../../context.md) · [Capabilities](../../../../capabilities.md) · [Search index](../../../../search.json) · [Browser view](../../../../index.html)

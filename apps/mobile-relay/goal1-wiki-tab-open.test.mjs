@@ -31,6 +31,10 @@ test('Wiki navigation stays inside the PWA and refreshes actual Host state', () 
   const sandbox = {
     S: { tab: 'talk' }, TABS: ['talk', 'wiki'], HOST_PREVIEW: false,
     dockExpanded: false, chatContextEpoch: 0, chatContext: null,
+    // app.js module-scope names goTab touches (app.js:136 let dockAssist, :1676 let compose,
+    // plus the guarded clearWikiSources/build/$ /schedule/refreshHostPreview branches at :467-484)
+    dockAssist: { reset() {} }, compose: { resetAssist() {} },
+    clearWikiSources() {}, build: null, $: () => null, schedule() {}, refreshHostPreview() {},
     closeDrawer() {}, renderTabs() { events.push('tabs'); },
     renderSurfaces() { events.push('surface'); }, refreshWiki() { events.push('read'); },
     refreshMedia() {}, playerActive: false, stopMediaPlayer() {},
@@ -44,7 +48,8 @@ test('Wiki navigation stays inside the PWA and refreshes actual Host state', () 
 });
 
 test('Wiki projection is read-only, scoped, and renders text safely', () => {
-  assert.match(app, /fetch\(HOST_PREVIEW \? '\/api\/wiki' : '\/mobile\/api\/wiki'/);
+  // app.js:788 and app.js:1783 fetch the Host control wiki route under HOST_PREVIEW
+  assert.match(app, /fetch\(HOST_PREVIEW\s*\?\s*'\/api\/host\/control\/wiki-view'\s*:\s*'\/mobile\/api\/wiki'/);
   assert.match(app, /control:read/);
   assert.match(functionSource(app, 'renderWiki'), /replaceChildren/);
   assert.doesNotMatch(functionSource(app, 'renderWiki'), /innerHTML|insertAdjacentHTML/);

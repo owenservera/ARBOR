@@ -2,7 +2,7 @@
 // CONTRACT (hq/CONTRACT.md): one transaction per project, rows replaced per
 // file, FTS populated from file text, imports resolved after parsing.
 // Writes only to the SQLite database it is given.
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, statSync } from 'node:fs';
 import { isAbsolute, join, posix, resolve } from 'node:path';
 import { nowISO, sha256, toPosix } from './util.mjs';
 import { transaction, getMeta, setMeta } from './schema.mjs';
@@ -56,6 +56,28 @@ function errorMessage(error) {
   return error && error.message ? String(error.message) : String(error);
 }
 
+// isWalkOmitted — did the bounded walk skip a file that is still on disk?
+//
+// discoverFiles (walk.mjs) drops every file over `maxFileBytes` without a trace,
+// so "absent from the walk" is not proof that a path was deleted: it is equally
+// consistent with a source that grew past the cap, or with a cap that was
+// lowered since the last run. A tombstone is a claim that the source is gone,
+// and only the filesystem can prove that. Callers use this to keep such rows
+// instead of deleting them, and to report the run as an incomplete scan.
+function isWalkOmitted(row, maxFileBytes, projectRoot) {
+  const cap = Number(maxFileBytes);
+  if (!Number.isFinite(cap) || cap <= 0) return false;
+  const stored = typeof row?.abs_path === 'string' ? row.abs_path : '';
+  const abs = stored || (typeof row?.path === 'string' ? resolve(projectRoot, row.path) : '');
+  if (!abs) return false;
+  try {
+    if (!existsSync(abs)) return false;
+    return statSync(abs).size > cap;
+  } catch {
+    return false;
+  }
+}
+
 // countLines — newline count, ignoring a single trailing newline.
 function countLines(text) {
   if (!text) return 0;
@@ -99,7 +121,7 @@ function upsertProject(db, { name, path, git }) {
 
 function prepareStatements(db) {
   return {
-    filesForProject: db.prepare('SELECT id, path, size, mtime_ms, hash, kind, is_generated FROM files WHERE project_id = ?'),
+    filesForProject: db.prepare('SELECT id, path, abs_path, size, mtime_ms, hash, kind, is_generated FROM files WHERE project_id = ?'),
     allFiles: db.prepare('SELECT id, path FROM files WHERE project_id = ?'),
     countFiles: db.prepare('SELECT count(*) AS c FROM files WHERE project_id = ?'),
     countSymbols: db.prepare('SELECT count(*) AS c FROM symbols WHERE project_id = ?'),
@@ -300,6 +322,7 @@ export function indexProject({ root, db, project, options = {} }) {
     annotations: 0,
     semanticChanges: [],
     semanticChangeComplete: false,
+    incomplete: [],
     fts: 0,
     errors,
     ms: 0,
@@ -474,10 +497,23 @@ export function indexProject({ root, db, project, options = {} }) {
     }
 
     // Remove rows for files that disappeared from disk.
+    //
+    // A path the bounded walk never returned is not necessarily deleted: walk.mjs
+    // silently drops files over `maxFileBytes`, so a source that grew past the cap
+    // (or a cap lowered since the last run) looks identical to a removed file.
+    // Such a row is kept and the run is reported incomplete; deleting it would
+    // tombstone a live source and its semantic anchors in the native graph.
     const stale = [...existing.values()]
       .filter((row) => !seen.has(row.path))
       .sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
     for (const row of stale) {
+      if (isWalkOmitted(row, opts.maxFileBytes, absPath)) {
+        result.incomplete.push({ project: projectRow.name, path: row.path, reason: 'over_file_cap' });
+        continue;
+      }
+      // Reaching here means the file is not on disk at all: the deletion is
+      // proven by the filesystem, not inferred from the walk, so its tombstone
+      // is safe to emit even in a run that omitted other files.
       changes(row.path,anchors(row),[]);
       stmts.deleteFts.run(row.id);
       stmts.deleteFile.run(row.id);
@@ -519,7 +555,10 @@ export function indexProject({ root, db, project, options = {} }) {
   });
 
   result.project = finalRow;
-  result.semanticChangeComplete = errors.length === 0;
+  // A run that could not read every file, or that the bounded walk could not see
+  // every file of, is not a complete scan: it may not publish semantic deltas as
+  // complete (see result.incomplete).
+  result.semanticChangeComplete = errors.length === 0 && result.incomplete.length === 0;
   result.ms = Date.now() - started;
   return result;
 }
@@ -537,13 +576,18 @@ export function indexWorkspace({ root, db, projects = [], options = {} }) {
   const list = Array.isArray(projects) ? projects : [];
   const rows = [];
   const errors = [];
-  const totals = { files: 0, symbols: 0, imports: 0, annotations: 0, errors: 0 };
+  const totals = { files: 0, symbols: 0, imports: 0, annotations: 0, incomplete: 0, errors: 0 };
 
   for (const project of list) {
     const name = String(project?.name || project?.id || '');
     try {
       const result = indexProject({ root, db, project, options });
       for (const error of result.errors) errors.push(error);
+      // An omitted file is not an error: the read never failed, the bounded walk
+      // simply could not see the path. It is reported separately so `errors`
+      // keeps meaning "something went wrong", and `semanticChangeComplete`
+      // still goes false for the run.
+      const incomplete = Array.isArray(result.incomplete) ? result.incomplete : [];
       rows.push({
         name: result.project?.name ?? name,
         added: result.added,
@@ -555,6 +599,7 @@ export function indexWorkspace({ root, db, projects = [], options = {} }) {
         annotations: result.annotations,
         semanticChanges:result.semanticChanges,
         semanticChangeComplete:result.semanticChangeComplete,
+        incomplete,
         ms: result.ms,
       });
       const row = db.prepare('SELECT id, file_count, symbol_count FROM projects WHERE name = ?').get(result.project?.name ?? name);
@@ -566,11 +611,12 @@ export function indexWorkspace({ root, db, projects = [], options = {} }) {
         const annotations = db.prepare('SELECT count(*) AS c FROM annotations WHERE project_id = ?').get(row.id);
         totals.annotations += Number(annotations?.c || 0);
       }
+      totals.incomplete += incomplete.length;
     } catch (error) {
       errors.push({ project: name, path: String(project?.abs || project?.path || ''), message: errorMessage(error) });
       rows.push({
         name, added: 0, changed: 0, unchanged: 0, removed: 0, symbols: 0, imports: 0,
-        annotations: 0, semanticChanges: [], semanticChangeComplete: false, ms: 0,
+        annotations: 0, semanticChanges: [], semanticChangeComplete: false, incomplete: [], ms: 0,
       });
     }
   }

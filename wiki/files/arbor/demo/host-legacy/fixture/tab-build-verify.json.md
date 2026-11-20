@@ -1,0 +1,67 @@
+# File: demo/host-legacy/fixture/tab-build-verify.json
+
+> Generated 2026-11-19 · JSON · arbor
+
+## Metadata
+
+| Field | Value |
+| --- | --- |
+| Project | [arbor](../../../../../projects/arbor.md) |
+| Path | demo/host-legacy/fixture/tab-build-verify.json |
+| Language | JSON |
+| Kind | config |
+| Size | 1282 B |
+| Lines | 24 |
+| Hash | 8cb95e6a5dda |
+| Test | yes |
+| Generated | no |
+| Component | demo |
+
+## Symbols
+
+_No symbols._
+
+## Imports
+
+_No imports._
+
+## Dependents
+
+_No dependents._
+
+## Annotations
+
+_No annotations._
+
+## Excerpt
+
+```json
+{
+  "schema": "vivim.demo-step/1",
+  "itemId": "A05",
+  "screen": "Build",
+  "currentState": "Build applies proposals via sendProposal/onApplied (app.js:1192-1228), renderWorld shows running/queued/queue counts (render.mjs:231-245), nextAction (model.mjs:379-395) and footer (render.mjs:199-205) drive navigation, and goTab (app.js:359-378) switches tabs.",
+  "proposedUpgrade": "verify mode — committed revision + test receipts + commit SHA proof, next batch via footer next action, Running lane queue counts",
+  "acceptanceQuestion": "Does Build show product proof (committed revision + test receipts + commit SHA) after a scoped repair, propose the next batch via the footer next action, and update Running lane queue counts while keeping unattended actions within preauthorized boundaries?",
+  "mockData": {
+    "proposalId": "prop_001",
+    "applied": true,
+    "proof": {
+      "committedRevision": 9,
+      "surfaceId": "vivim.ui-surface/1",
+      "testReceipts": ["scripts/acceleration/live-host-check.test.mjs"],
+      "commitSHA": "3dae90c"
+    },
+    "nextBatch": {
+      "label": "Build something",
+      "tab": "build",
+      "detail": "Next scoped repair ready"
+    },
+    "queue": { "queued": 1, "claimed": 0, "done": 4, "failed": 0 }
+  }
+}
+```
+
+---
+
+[HQ wiki](../../../../../index.md) · [Symbols](../../../../../symbols.md) · [Dependency graph](../../../../../graph.md) · [Documentation](../../../../../docs.md) · [Changes](../../../../../changes.md) · [Open tasks](../../../../../todos.md) · [Deprecated](../../../../../deprecated.md) · [Agent annotation protocol](../../../../../protocol.md) · [Glossary](../../../../../glossary.md) · [Using HQ](../../../../../context.md) · [Capabilities](../../../../../capabilities.md) · [Search index](../../../../../search.json) · [Browser view](../../../../../index.html)

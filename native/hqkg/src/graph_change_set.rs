@@ -41,6 +41,18 @@ pub enum ChangeOp {
         reason: String,
         ts: u64,
     },
+    /// Revision-fenced removal: remove `entity_id` only when its recorded
+    /// `hqkg.provenance.revision` is at or below `max_revision`. A source that
+    /// has already moved past the fence is held — the tombstone is still
+    /// recorded and the op counts as skipped, but the newer source survives.
+    /// This is the op an authorized delta ingest uses, so a stale or replayed
+    /// tombstone cannot regress a record that was updated after it was issued.
+    RemoveNodeFenced {
+        entity_id: String,
+        max_revision: u64,
+        reason: String,
+        ts: u64,
+    },
     /// Hard-remove the edge and record a tombstone.
     RemoveEdge {
         entity_id: String,
@@ -106,6 +118,23 @@ impl GraphChangeSet {
     pub fn remove_edge(mut self, entity_id: &str, reason: &str, ts: u64) -> Self {
         self.ops.push(ChangeOp::RemoveEdge {
             entity_id: entity_id.into(),
+            reason: reason.into(),
+            ts,
+        });
+        self
+    }
+    /// Revision-fenced variant of [`Self::remove_node`]. The op is a no-op
+    /// against a source whose provenance revision is newer than `max_revision`.
+    pub fn remove_node_fenced(
+        mut self,
+        entity_id: &str,
+        max_revision: u64,
+        reason: &str,
+        ts: u64,
+    ) -> Self {
+        self.ops.push(ChangeOp::RemoveNodeFenced {
+            entity_id: entity_id.into(),
+            max_revision,
             reason: reason.into(),
             ts,
         });
@@ -195,6 +224,43 @@ fn snapshot_incident(graph: &Graph, id: &str) -> Result<Vec<Edge>> {
     Ok(out)
 }
 
+/// Remove one entity and its incident edges, recording the deletion. Shared by
+/// the plain and the revision-fenced remove ops so both leave exactly the same
+/// tombstone, invalidation set and counters.
+fn remove_entity(
+    graph: &mut Graph,
+    entity_id: &str,
+    reason: &str,
+    ts: u64,
+    report: &mut ApplyReport,
+) -> Result<()> {
+    // Tombstones are records, not erases: record before touching the
+    // graph so even a skip leaves the deletion statement behind.
+    report.tombstones.push(Tombstone {
+        entity_id: entity_id.into(),
+        reason: reason.into(),
+        ts,
+    });
+    if graph.node(entity_id).is_none() {
+        report.skipped += 1;
+        report.invalidation_set.insert(entity_id.into());
+        return Ok(());
+    }
+    for e in snapshot_incident(graph, entity_id)? {
+        report.invalidation_set.insert(e.id.clone());
+        if e.from != entity_id {
+            report.invalidation_set.insert(e.from.clone());
+        }
+        if e.to != entity_id {
+            report.invalidation_set.insert(e.to.clone());
+        }
+    }
+    graph.remove_node(entity_id)?;
+    report.invalidation_set.insert(entity_id.into());
+    report.applied += 1;
+    Ok(())
+}
+
 /// Apply one op against the graph, mutating the report as it goes.
 fn apply_op(graph: &mut Graph, op: &ChangeOp, report: &mut ApplyReport) -> Result<()> {
     match op {
@@ -221,30 +287,36 @@ fn apply_op(graph: &mut Graph, op: &ChangeOp, report: &mut ApplyReport) -> Resul
             ts,
         } => {
             check_id(entity_id, "RemoveNode")?;
-            // Tombstones are records, not erases: record before touching the
-            // graph so even a skip leaves the deletion statement behind.
-            report.tombstones.push(Tombstone {
-                entity_id: entity_id.clone(),
-                reason: reason.clone(),
-                ts: *ts,
+            return remove_entity(graph, entity_id, reason, *ts, report);
+        }
+        ChangeOp::RemoveNodeFenced {
+            entity_id,
+            max_revision,
+            reason,
+            ts,
+        } => {
+            check_id(entity_id, "RemoveNodeFenced")?;
+            // Fail closed: an entity with no parsable provenance revision is
+            // treated as newer than the fence and is never removed by it.
+            let beyond_fence = graph.node(entity_id).map_or(false, |node| {
+                node.properties
+                    .get("hqkg.provenance.revision")
+                    .and_then(|v| v.parse::<u64>().ok())
+                    .map_or(true, |revision| revision > *max_revision)
             });
-            if graph.node(entity_id).is_none() {
+            if beyond_fence {
+                report.tombstones.push(Tombstone {
+                    entity_id: entity_id.clone(),
+                    reason: format!(
+                        "{reason} (held: source revision beyond fence {max_revision})"
+                    ),
+                    ts: *ts,
+                });
                 report.skipped += 1;
                 report.invalidation_set.insert(entity_id.clone());
                 return Ok(());
             }
-            for e in snapshot_incident(graph, entity_id)? {
-                report.invalidation_set.insert(e.id.clone());
-                if e.from != *entity_id {
-                    report.invalidation_set.insert(e.from.clone());
-                }
-                if e.to != *entity_id {
-                    report.invalidation_set.insert(e.to.clone());
-                }
-            }
-            graph.remove_node(entity_id)?;
-            report.invalidation_set.insert(entity_id.clone());
-            report.applied += 1;
+            return remove_entity(graph, entity_id, reason, *ts, report);
         }
         ChangeOp::RemoveEdge {
             entity_id,

@@ -1,0 +1,153 @@
+# File: packages/tierflow/src/visual-runtime/final-wave/integration/runner.ts
+
+> Generated 2026-11-19 · TypeScript · arbor
+
+## Metadata
+
+| Field | Value |
+| --- | --- |
+| Project | [arbor](../../../../../../../../projects/arbor.md) |
+| Path | packages/tierflow/src/visual-runtime/final-wave/integration/runner.ts |
+| Language | TypeScript |
+| Kind | source |
+| Size | 5113 B |
+| Lines | 91 |
+| Hash | 2357ab7ed510 |
+| Test | no |
+| Generated | no |
+| Component | tierflow |
+
+## Symbols
+
+| Symbol | Kind | Line | Exported | Signature |
+| --- | --- | --- | --- | --- |
+| LaneImportSpec | interface | 12 | yes | export interface LaneImportSpec { |
+| ImportResult | interface | 20 | yes | export interface ImportResult { |
+| HEX64 | const | 26 | no | const HEX64=/^[0-9a-f]{64}$/; |
+| PATH | const | 27 | no | const PATH=/^src\\/visual-runtime\\/final-wave\\/lane-([a-h])\\/[A-Za-z0-9_-]+(?:\\/[A-Za-z0-9_-]+)*\\.ts$/; |
+| ROOT | const | 29 | no | const ROOT=fileURLToPath(new URL(&#39;../../../../&#39;, import.meta.url)); |
+| importPinnedLaneModules | function | 31 | yes | export async function importPinnedLaneModules(specs:readonly LaneImportSpec[]):Promise&lt;ImportResult[]&gt; { |
+| output | const | 32 | no | const output:ImportResult[]=[]; |
+| seen | const | 33 | no | const seen=new Set&lt;Lane&gt;(); |
+| m | const | 39 | no | const m=PATH.exec(spec.path); |
+| full | const | 44 | no | const full=resolve(ROOT,spec.path); |
+| actual | const | 45 | no | const actual=await realpath(full); |
+| source | const | 49 | no | const source=await readFile(actual); |
+| sha | const | 50 | no | const sha=createHash(&#39;sha256&#39;).update(source).digest(&#39;hex&#39;); |
+| Integration4Observation | interface | 64 | yes | export interface Integration4Observation{ |
+| observeRealIntegration4 | function | 78 | yes | export async function observeRealIntegration4(input:Integration4Input):Promise&lt;Integration4Observation&gt;{ |
+| measured | const | 79 | no | const measured=await composeIntegration4(input); |
+| issues | const | 85 | no | const issues=measured.lanes.filter(l=&gt;l.status!==&#39;composed&#39;).map(l=&gt;`${l.lane}:${l.code??l.status}`); |
+
+## Imports
+
+| Specifier | Kind | Line | Resolved |
+| --- | --- | --- | --- |
+| node:crypto | import | 5 | external |
+| node:fs/promises | import | 6 | external |
+| node:url | import | 7 | external |
+| node:path | import | 8 | external |
+| ../../integration-4/compose.ts | import | 9 | [packages/tierflow/src/visual-runtime/integration-4/compose.ts](../../integration-4/compose.ts.md) |
+| ../lane-h/verification.ts | import | 10 | [packages/tierflow/src/visual-runtime/final-wave/lane-h/verification.ts](../lane-h/verification.ts.md) |
+
+## Dependents
+
+| File | Specifier |
+| --- | --- |
+| [packages/tierflow/src/visual-runtime/final-wave/integration/master.ts](./master.ts.md) | ./runner.ts |
+| [packages/tierflow/tests/visual-runtime/final-wave/integration/i4-real-import.test.ts](../../../../tests/visual-runtime/final-wave/integration/i4-real-import.test.ts.md) | ../../../../src/visual-runtime/final-wave/integration/runner.ts |
+
+## Annotations
+
+_No annotations._
+
+## Excerpt
+
+```typescript
+/**
+ * Final Wave H: source-pinned, READ-ONLY lane import preflight and REAL Integration 4 composition.
+ * Nothing here writes files, publishes UI, calls Host actions, or signs a release.
+ */
+import { createHash } from 'node:crypto';
+import { readFile, realpath } from 'node:fs/promises';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { resolve, sep } from 'node:path';
+import { composeIntegration4, type Integration4Input } from '../../integration-4/compose.ts';
+import { LANES, type Lane } from '../lane-h/verification.ts';
+
+export interface LaneImportSpec {
+  readonly lane:Lane;
+  /** Exact repo-relative source path in its authorized lane; no barrel/autodiscovery. */
+  readonly path:string;
+  readonly exportedFunction:string;
+  /** SHA-256 of exact source bytes (not commit SHA). */
+  readonly sha256:string;
+}
+export interface ImportResult {
+  readonly lane:Lane;
+  readonly status:'imported'|'blocked'|'unrun';
+  readonly code:string;
+  readonly sha256:string|null;
+}
+const HEX64=/^[0-9a-f]{64}$/;
+const PATH=/^src\/visual-runtime\/final-wave\/lane-([a-h])\/[A-Za-z0-9_-]+(?:\/[A-Za-z0-9_-]+)*\.ts$/;
+const EXPORT=/^[A-Za-z_$][A-Za-z_$0-9]*$/;
+const ROOT=fileURLToPath(new URL('../../../../', import.meta.url));
+/** No imports before path, realpath, exact byte SHA and export pin preflight. */
+export async function importPinnedLaneModules(specs:readonly LaneImportSpec[]):Promise<ImportResult[]> {
+  const output:ImportResult[]=[];
+  const seen=new Set<Lane>();
+  for(const spec of specs){
+    if(!LANES.includes(spec.lane) || seen.has(spec.lane)) {
+      output.push({lane:spec.lane,status:'blocked',code:'DUPLICATE_OR_UNKNOWN_LANE',sha256:null});continue;
+    }
+    seen.add(spec.lane);
+    const m=PATH.exec(spec.path);
+    if(!m || m[1]!==spec.lane.toLowerCase() || !HEX64.test(spec.sha256) || !EXPORT.test(spec.exportedFunction)){
+      output.push({lane:spec.lane,status:'blocked',code:'UNSAFE_OR_UNPINNED_IMPORT',sha256:null});continue;
+    }
+    try {
+      const full=resolve(ROOT,spec.path);
+      const actual=await realpath(full);
+      if(!actual.startsWith(resolve(ROOT,'src/visual-runtime/final-wave',`lane-${spec.lane.toLowerCase()}`)+sep)) {
+        output.push({lane:spec.lane,status:'blocked',code:'SYMLINK_ESCAPE',sha256:null});continue;
+      }
+      const source=await readFile(actual);
+      const sha=createHash('sha256').update(source).digest('hex');
+      if(sha!==spec.sha256){output.push({lane:spec.lane,status:'blocked',code:'SOURCE_HASH_MISMATCH',sha256:sha});continue;}
+      const module:Record<string,unknown>=await import(pathToFileURL(actual).href);
+      output.push({lane:spec.lane,status:typeof module[spec.exportedFunction]==='function'?'imported':'blocked',
+        code:typeof module[spec.exportedFunction]==='function'?'SOURCE_PINNED_EXPORT_PRESENT':'EXPORT_NOT_FUNCTION',sha256:sha});
+    } catch(_error){output.push({lane:spec.lane,status:'unrun',code:'MODULE_NOT_ACCESSIBLE_OR_LOAD_FAILED',sha256:null});}
+  }
+  for(const lane of LANES) if(!seen.has(lane)) output.push({lane,status:'unrun',code:'NO_LANE_SOURCE_MANIFEST',sha256:null});
+  return output;
+}
+/**
+ * One uniform observation shape for every outcome, so a caller never has to
+ * narrow a union to learn whether an issue exists.
+ */
+export interface Integration4Observation{
+  readonly status:'BLOCKED'|'FIXTURE_ONLY';
+  readonly evidenceClass:string;
+  /** Lane-level measured issues. Always present; empty only when nothing blocked. */
+  readonly issues:readonly string[];
+  readonly phase:string|null;
+  readonly code:string|null;
+  readonly document:Readonly<{documentId:string;revision:number;documentDigest:string;workspaceRef:string}>|null;
+  readonly effectInvoked:false;
+  readonly automaticRetryAllowed:false;
+  readonly deviceAcceptance:'UNRUN';
+  readonly hostAcceptance:'UNRUN';
+}
+/** The existing Integration 4 owns module composition; do not clone or fake its lanes. */
+export async function observeRealIntegration4(input:Integration4Input):Promise<Integration4Observation>{
+  const measured=await composeIntegration4(input);
+  if(!measured.ok) return Object.freeze({status:'BLOCKED' as const,evidenceClass:'real-modules-synthetic-external-fixtures' as const,
+```
+
+_First 80 of 91 lines._
+
+---
+
+[HQ wiki](../../../../../../../../index.md) · [Symbols](../../../../../../../../symbols.md) · [Dependency graph](../../../../../../../../graph.md) · [Documentation](../../../../../../../../docs.md) · [Changes](../../../../../../../../changes.md) · [Open tasks](../../../../../../../../todos.md) · [Deprecated](../../../../../../../../deprecated.md) · [Agent annotation protocol](../../../../../../../../protocol.md) · [Glossary](../../../../../../../../glossary.md) · [Using HQ](../../../../../../../../context.md) · [Capabilities](../../../../../../../../capabilities.md) · [Search index](../../../../../../../../search.json) · [Browser view](../../../../../../../../index.html)

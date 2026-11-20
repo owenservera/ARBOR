@@ -1,0 +1,125 @@
+# File: apps/vivim-host/public/pages/wiki.html
+
+> Generated 2026-11-19 · HTML · arbor
+
+## Metadata
+
+| Field | Value |
+| --- | --- |
+| Project | [arbor](../../../../../../projects/arbor.md) |
+| Path | apps/vivim-host/public/pages/wiki.html |
+| Language | HTML |
+| Kind | source |
+| Size | 6218 B |
+| Lines | 95 |
+| Hash | 2c2618e8d9b4 |
+| Test | no |
+| Generated | no |
+| Component | vivim-host |
+
+## Symbols
+
+_No symbols._
+
+## Imports
+
+_No imports._
+
+## Dependents
+
+_No dependents._
+
+## Annotations
+
+_No annotations._
+
+## Excerpt
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VIVIM — realtime wiki</title>
+<link rel="stylesheet" href="/wiki.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <p class="eyebrow">ARBOR · HOST / SCREEN TWO</p>
+    <h1>VIVIM realtime wiki</h1>
+    <p class="subtitle">Source-backed projection, not an independent publisher</p>
+  </div>
+  <nav aria-label="Product pages">
+    <a href="/chat">Chat <span aria-hidden="true">↗</span></a>
+    <a href="/host/control">Host Control <span aria-hidden="true">↗</span></a>
+    <button type="button" id="refresh-now">Refresh sources</button>
+  </nav>
+</header>
+<div class="signal" aria-label="Source synchronization">
+  <span class="signal-pill" id="rev">Wiki revision: loading</span>
+  <span class="signal-pill" id="state-rev">Chat state: loading</span>
+  <span class="signal-pill" id="source-mode">Awaiting Host sources</span>
+  <span class="signal-pill subtle" id="vec-mode" data-vec-schema="vivim.vec-compile/0.1" data-vec-domain="wiki" data-vec-product="wiki-projection" data-vec-outcome="unsupported">VEC/0.1 · read-only projection (compiler not connected)</span>
+  <span class="signal-status" id="sync-status" role="status" aria-live="polite">Connecting to Host…</span>
+</div>
+<main id="content" class="dashboard">
+  <section class="block wiki-panel" aria-labelledby="wiki-heading">
+    <div class="section-heading"><div><p class="eyebrow">01 / LIVE WORKSPACE</p><h2 id="wiki-heading">Intelligent Wiki</h2></div><a href="/api/wiki">Host Wiki source</a></div>
+    <p class="source-meta" id="wiki-source">/api/wiki · waiting for first read</p>
+    <form id="wiki-command-form" class="wiki-command-form" aria-label="Natural-language Wiki edit">
+      <label for="wiki-command">Edit an existing Wiki section using natural language</label>
+      <div class="wiki-command-row">
+        <input id="wiki-command" type="text" maxlength="1000" autocomplete="off" spellcheck="false" placeholder="edit wiki section main/about saying Voice notes are now our active priority">
+        <button id="wiki-command-run" type="submit">Interpret</button>
+      </div>
+      <div id="composer-assist" class="composer-assist" hidden></div>
+  <p id="wiki-command-status" class="source-meta" role="status" aria-live="polite">Interpretation only. Review and owner confirmation are required before any edit.</p>
+    </form>
+    <div id="wiki-view" class="stack"><p class="empty">Loading Wiki sections…</p></div>
+  </section>
+  <section class="block context-panel" aria-labelledby="context-heading">
+    <div class="section-heading"><div><p class="eyebrow">02 / OWNER-PRIVATE KNOWLEDGE</p><h2 id="context-heading">Current user context</h2></div></div>
+    <p class="source-meta" id="context-source">Owner authorization required · journal-backed user observations</p>
+    <div id="context-view" class="stack"><p class="empty">Checking owner access…</p></div>
+  </section>
+  <section class="block surface-panel" aria-labelledby="surface-heading">
+    <div class="section-heading"><div><p class="eyebrow">03 / LIVE SOURCE INDEX</p><h2 id="surface-heading">VLang file surfaces</h2></div><a href="/api/file-surface">Host file-surface source</a></div>
+    <p class="source-meta" id="surface-source">vivim.file-surface/1 · owner-authorized HQ source (read only)</p>
+    <form id="surface-search" class="wiki-command-form">
+      <label for="surface-query">Find a path, symbol, or semantic ID</label>
+      <input id="surface-query" type="search" maxlength="240" placeholder="vivim.command-intent@0.1">
+      <button type="submit">Search source and context</button>
+    </form>
+    <button id="surface-reindex" type="button">Refresh approved source index</button>
+    <p id="surface-reindex-status" class="source-meta" role="status" aria-live="polite"></p>
+    <div id="surface-view"><p class="empty">Loading indexed file surfaces…</p></div>
+    <div id="surface-context-view" aria-live="polite"><p class="empty">Search annotated source or select a file to read verified context.</p></div>
+  </section>
+  <section class="block journal-panel" aria-labelledby="journal-heading">
+    <div class="section-heading"><div><p class="eyebrow">04 / APPEND-ONLY HISTORY</p><h2 id="journal-heading">Host journal</h2></div><a href="/api/journal">Host journal source</a></div>
+    <p class="source-meta" id="journal-source">/api/journal · waiting</p>
+    <div id="journal-view"><p class="empty">Loading recent entries…</p></div>
+  </section>
+</main>
+<section class="editor-shell" id="edit-shell" hidden aria-label="Wiki section editor">
+  <form id="edit" class="edit" aria-labelledby="editor-heading">
+    <div class="editor-heading"><div><p class="eyebrow">HUMAN REVIEW · HOST-OWNED MUTATION</p><h2 id="editor-heading">Edit <span id="edit-target"></span></h2></div><span id="edit-rev" class="signal-pill"></span></div>
+    <p id="edit-command-context" class="source-meta" hidden></p>
+    <label for="edit-content">Proposed section content</label>
+    <textarea id="edit-content" rows="7" spellcheck="true" maxlength="3000"></textarea>
+    <div id="edit-preview" class="preview" hidden>
+      <h3>Review before sending to Host</h3>
+      <p id="edit-preview-meta"></p>
+      <div class="diff-grid">
+        <div><h4>Current (Host baseline)</h4><pre id="edit-before"></pre></div>
+        <div><h4>Proposed change</h4><pre id="edit-after"></pre></div>
+      </div>
+```
+
+_First 80 of 96 lines._
+
+---
+
+[HQ wiki](../../../../../../index.md) · [Symbols](../../../../../../symbols.md) · [Dependency graph](../../../../../../graph.md) · [Documentation](../../../../../../docs.md) · [Changes](../../../../../../changes.md) · [Open tasks](../../../../../../todos.md) · [Deprecated](../../../../../../deprecated.md) · [Agent annotation protocol](../../../../../../protocol.md) · [Glossary](../../../../../../glossary.md) · [Using HQ](../../../../../../context.md) · [Capabilities](../../../../../../capabilities.md) · [Search index](../../../../../../search.json) · [Browser view](../../../../../../index.html)

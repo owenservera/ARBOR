@@ -1,0 +1,44 @@
+# File: demo/host-legacy/qa/life/a00-state-before.json
+
+> Generated 2026-11-19 · JSON · arbor
+
+## Metadata
+
+| Field | Value |
+| --- | --- |
+| Project | [arbor](../../../../../../projects/arbor.md) |
+| Path | demo/host-legacy/qa/life/a00-state-before.json |
+| Language | JSON |
+| Kind | config |
+| Size | 6356 B |
+| Lines | 1 |
+| Hash | a050fc32b1bf |
+| Test | no |
+| Generated | no |
+| Component | demo |
+
+## Symbols
+
+_No symbols._
+
+## Imports
+
+_No imports._
+
+## Dependents
+
+_No dependents._
+
+## Annotations
+
+_No annotations._
+
+## Excerpt
+
+```json
+{"schemaVersion":1,"chat":[{"actor":"owner-browser","who":"user","text":"Hello VIVIM","schemaVersion":1,"at":"2026-11-16T21:53:27.660Z","intent":{"schema":"vivim.control-language/1","input":"Hello VIVIM","feedback":{"status":"unknown","confidence":0,"canonical":null,"reading":null,"nlclVersion":"0.1.0","worldV":40820841925,"tokens":[{"text":"Hello","start":0,"end":5,"kind":"word"},{"text":"VIVIM","start":6,"end":11,"kind":"word"}],"suggestions":[{"kind":"teach","text":"teach hello means <verb>","display":"teach \"hello\"","detail":"make this word mean a command"},{"kind":"example","text":"status","display":"status","detail":"Show VIVIM status"},{"kind":"example","text":"show paired phones","display":"show paired phones","detail":"Summarize paired phones"},{"kind":"example","text":"revoke phone grant 0123456789abcdef0123456789abcdef","display":"revoke phone grant 0123456789abcdef0123456789abcdef","detail":"Revoke paired phone access"},{"kind":"example","text":"summarize my personal context","display":"summarize my personal context","detail":"Summarize my personal context"},{"kind":"example","text":"list my saved preferences","display":"list my saved preferences","detail":"List my saved preferences"},{"kind":"example","text":"remember that I prefer compact layouts","display":"remember that I prefer compact layouts","detail":"Remember my preference"}],"gaps":[{"kind":"unknown-word","text":"\"hello\" is not a command","hint":"pick a suggestion, or teach it a meaning"}]},"outcome":"interpretation_required"},"revision":1},{"actor":"owner-browser","who":"user","text":"show status","schemaVersion":1,"at":"2026-11-16T22:27:36.398Z","intent":{"schema":"vivim.control-language/1","input":"show status","feedback":{"status":"ambiguous","confidence":0.69,"canonical":"/summary","reading":"Summarize paired phone grants","nlclVersion":"0.1.0","worldV":40820841925,"tokens":[{"text":"show","start":0,"end":4,"kind":"word","role":"verb"},{"text":"status","start":5,"end":11,"kind":"word"}],"suggestions":[{"kind":"symbol","text":"/summary","display":"/summary","detail":"the symbolic form — same command, learnable shorthand"}],"gaps":[]},"outcome":"candidate","candidate":{"actionId":"vivim.status.show","args":{}}},"revision":2},{"actor":"human","who":"user","text":"verify A00 journey check-in","schemaVersion":1,"at":"2026-11-16T22:31:41.911Z","intent":{"schema":"vivim.control-language/1","input":"verify A00 journey check-in","feedback":{"status":"unknown","confidence":0,"canonical":null,"reading":null,"nlclVersion":"0.1.0","worldV":40820841925,"tokens":[{"text":"verify","start":0,"end":6,"kind":"word"},{"text":"A00","start":7,"end":10,"kind":"word"},{"text":"journey","start":11,"end":18,"kind":"word"},{"text":"check-in","start":19,"end":27,"kind":"word"}],"suggestions":[{"kind":"teach","text":"teach verify means <verb>","display":"teach \"verify\"","detail":"make this word mean a command"},{"kind":"example","text":"status","display":"status","detail":"Show VIVIM status"},{"kind":"example","text":"show paired phones","display":"show paired phones","detail":"Summarize paired phones"},{"kind":"example","text":"revoke phone grant 0123456789abcdef0123456789abcdef","display":"revoke phone grant 0123456789abcdef0123456789abcdef","detail":"Revoke paired phone access"},{"kind":"example","text":"summarize my personal context","display":"summarize my personal context","detail":"Summarize my personal context"},{"kind":"example","text":"list my saved preferences","display":"list my saved preferences","detail":"List my saved preferences"},{"kind":"example","text":"remember that I prefer compact layouts","display":"remember that I prefer compact layouts","detail":"Remember my preference"}],"gaps":[{"kind":"unknown-word","text":"\"verify\" is not a command","hint":"pick a suggestion, or teach it a meaning"}]},"outcome":"interpretation_required"},"revision":3},{"actor":"human","who":"user","text":"journey r1 verify check-in A00","schemaVersion":1,"at":"2026-11-16T22:55:20.428Z","intent":{"schema":"vivim.control-language/1","input":"journey r1 verify check-in A00","feedback":{"status":"unknown","confidence":0,"canonical":null,"reading":null,"nlclVersion":"0.1.0","worldV":40820841925,"tokens":[{"text":"journey","start":0,"end":7,"kind":"word"},{"text":"r1","start":8,"end":10,"kind":"word"},{"text":"verify","start":11,"end":17,"kind":"word"},{"text":"check-in","start":18,"end":26,"kind":"word"},{"text":"A00","start":27,"end":30,"kind":"word"}],"suggestions":[{"kind":"teach","text":"teach journey means <verb>","display":"teach \"journey\"","detail":"make this word mean a command"},{"kind":"example","text":"status","display":"status","detail":"Show VIVIM status"},{"kind":"example","text":"show paired phones","display":"show paired phones","detail":"Summarize paired phones"},{"kind":"example","text":"revoke phone grant 0123456789abcdef0123456789abcdef","display":"revoke phone grant 0123456789abcdef0123456789abcdef","detail":"Revoke paired phone access"},{"kind":"example","text":"summarize my personal context","display":"summarize my personal context","detail":"Summarize my personal context"},{"kind":"example","text":"list my saved preferences","display":"list my saved preferences","detail":"List my saved preferences"},{"kind":"example","text":"remember that I prefer compact layouts","display":"remember that I prefer compact layouts","detail":"Remember my preference"}],"gaps":[{"kind":"unknown-word","text":"\"journey\" is not a command","hint":"pick a suggestion, or teach it a meaning"}]},"outcome":"interpretation_required"},"revision":4},{"actor":"human","who":"user","text":"show status","schemaVersion":1,"at":"2026-11-16T22:56:22.076Z","intent":{"schema":"vivim.control-language/1","input":"show status","feedback":{"status":"ambiguous","confidence":0.69,"canonical":"/summary","reading":"Summarize paired phone grants","nlclVersion":"0.1.0","worldV":40820841925,"tokens":[{"text":"show","start":0,"end":4,"kind":"word","role":"verb"},{"text":"status","start":5,"end":11,"kind":"word"}],"suggestions":[{"kind":"symbol","text":"/summary","display":"/summary","detail":"the symbolic form — same command, learnable shorthand"}],"gaps":[]},"outcome":"candidate","candidate":{"actionId":"vivim.status.show","args":{}}},"revision":5}],"wikiRevision":1,"revision":5,"at":"2026-11-16T22:56:22.076Z"}
+```
+
+---
+
+[HQ wiki](../../../../../../index.md) · [Symbols](../../../../../../symbols.md) · [Dependency graph](../../../../../../graph.md) · [Documentation](../../../../../../docs.md) · [Changes](../../../../../../changes.md) · [Open tasks](../../../../../../todos.md) · [Deprecated](../../../../../../deprecated.md) · [Agent annotation protocol](../../../../../../protocol.md) · [Glossary](../../../../../../glossary.md) · [Using HQ](../../../../../../context.md) · [Capabilities](../../../../../../capabilities.md) · [Search index](../../../../../../search.json) · [Browser view](../../../../../../index.html)

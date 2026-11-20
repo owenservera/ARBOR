@@ -1064,31 +1064,26 @@ async function cmdKg(positional, flags) {
       `KG export: ${result.stats.nodes} nodes, ${result.stats.edges} edges, ${result.stats.tombstones} tombstones -> ${outPath} (state advances on ack)`);
     return 0;
   }
-  // sync: export -> native import -> verified acknowledgment -> state advance.
+  // sync: export -> packaged native import -> verified acknowledgment -> state advance.
+  // The importer is the frozen package's own binary, resolved in-process by
+  // kg-export.mjs. This CLI stays the development interface; a product surface
+  // calls the same capability without a shell. Cargo runs only when
+  // HQKG_IMPORT_MODE=cargo explicitly selects the development fallback.
   const journal = resolve(String(flags.journal ?? join(root, '.hq', 'kg-journal.hqj')));
-  const probe = spawnSync('cargo', ['--version'], { encoding: 'utf8', windowsHide: true });
-  if (probe.error || probe.status !== 0) {
-    emit(flags, { schema: 'hq.kg-sync/1', ...result, imported: false, reason: 'cargo_unavailable' },
-      `KG sync BLOCKED: cargo unavailable — exchange exported, state NOT advanced (tombstones preserved for retry)`);
+  const imp = kg.importGraphExchange({ root, journal, exchange: outPath, namespace: kg.SOURCE_NAMESPACE });
+  if (!imp.ok) {
+    const detail = imp.reason === 'importer_not_packaged'
+      ? `importer unavailable: packaged ${kg.IMPORTER_BIN} not found in ${kg.PACKAGED_NATIVE_BIN_DIR} (set ${kg.IMPORTER_BIN_DIR_ENV} or select ${kg.IMPORT_MODE_ENV}=cargo for development)`
+      : `importer ${imp.reason}${imp.status == null ? '' : ` (exit ${imp.status})`}`;
+    emit(flags, { schema: 'hq.kg-sync/1', ...result, imported: false,
+      reason: imp.reason === 'importer_not_packaged' ? 'importer_unavailable' : imp.reason,
+      importer: imp.mode, importExit: imp.status, stderr: imp.stderrTail },
+    `KG sync BLOCKED: ${detail} — state NOT advanced (tombstones preserved for retry)`);
     return 1;
   }
-  const imp = spawnSync('cargo', ['run', '--quiet', '--features', 'importer', '--bin', 'hqkg-import', '--',
-    journal, outPath], { cwd: resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', 'research', 'rust-knowledge-graph'), encoding: 'utf8', windowsHide: true, maxBuffer: 16 * 1024 * 1024 });
-  const epochLine = (imp.stdout ?? '').split('\n').find((l) => l.startsWith('epoch before='));
-  const statsLine = (imp.stdout ?? '').split('\n').find((l) => l.startsWith('node inserted='));
-  const epochAfter = epochLine ? Number(/after=(\d+)/.exec(epochLine)?.[1]) : null;
-  const epochBefore = epochLine ? Number(/before=(\d+)/.exec(epochLine)?.[1]) : null;
-  // A no-op replay (nothing changed) legitimately reports no epoch advance;
-  // failure is already covered by the importer's exit code.
-  if (imp.status !== 0 || !epochLine || epochAfter == null || epochAfter < epochBefore) {
-    emit(flags, { schema: 'hq.kg-sync/1', ...result, imported: false, reason: 'import_failed', importExit: imp.status,
-      stderr: (imp.stderr ?? '').split('\n').slice(-3).join('\n') },
-      `KG sync BLOCKED: importer exit ${imp.status} — state NOT advanced (tombstones preserved for retry)`);
-    return 1;
-  }
-  const ack = statePath ? kg.acknowledgeGraphExport({ statePath, digest: result.digest, acknowledgment: { epochBefore, epochAfter, stats: statsLine } }) : { acked: false, reason: 'no_state_tracking' };
-  emit(flags, { schema: 'hq.kg-sync/1', ...result, imported: true, epochBefore, epochAfter, ack },
-    `KG sync: ${result.stats.nodes} nodes, ${result.stats.edges} edges, ${result.stats.tombstones} tombstones; epoch ${epochBefore}->${epochAfter}; state ${ack.acked ? 'advanced' : `NOT advanced (${ack.reason})`}`);
+  const ack = statePath ? kg.acknowledgeGraphExport({ statePath, digest: result.digest, acknowledgment: { epochBefore: imp.epochBefore, epochAfter: imp.epochAfter, stats: imp.statsLine ?? undefined } }) : { acked: false, reason: 'no_state_tracking' };
+  emit(flags, { schema: 'hq.kg-sync/1', ...result, imported: true, importer: imp.mode, epochBefore: imp.epochBefore, epochAfter: imp.epochAfter, ack },
+    `KG sync: ${result.stats.nodes} nodes, ${result.stats.edges} edges, ${result.stats.tombstones} tombstones; epoch ${imp.epochBefore}->${imp.epochAfter}; state ${ack.acked ? 'advanced' : `NOT advanced (${ack.reason})`}`);
   return ack.acked || !statePath ? 0 : 1;
 }
 

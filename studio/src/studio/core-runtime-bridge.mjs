@@ -123,7 +123,10 @@ export function reconcileLifecycle({run,stepKey,journal,binding,baseline,origin:
   const step=run.steps.filter(s=>s.key===stepKey);
   if(step.length!==1 || !str(stepKey)) return {...result,effect:{...result.effect,reason:'STEP_NOT_UNIQUE'}};
   const effect=reconcileUncertainStep({run,stepKey,journal,intentBinding:binding});
-  result.effect={verdict:effect.verdict,reason:effect.reason,retryAuthorized:false};
+  // The injected reconciler stays authoritative for effect uncertainty, but this projection only
+  // carries an 'executed' verdict once the durable binding<->journal join below is proven; without
+  // that join an uncertain step is never promoted to success here, and retry stays unauthorized.
+  result.effect={verdict:effect.verdict==='executed'?'still_unknown':effect.verdict,reason:effect.reason,retryAuthorized:false};
   // If the step is already succeeded, Round 7 correctly abstains. Journal evidence must still
   // be verified in the canonical owner; this bridge only projects explicitly proven correlation.
   const s=step[0], b=binding;
@@ -139,6 +142,8 @@ export function reconcileLifecycle({run,stepKey,journal,binding,baseline,origin:
   const t=matches[0];
   if(t.conversationId!==b.conversationId || t.payloadDigest!==b.journalPayloadDigest || !str(t.id) || !t.boundary)
     return {...result,effect:{...result.effect,reason:'JOURNAL_INTENT_OR_BOUNDARY_MISMATCH'}};
+  // Durable binding<->journal join proven: only now may a positive reconciler verdict surface.
+  if(effect.verdict==='executed') result.effect={verdict:'executed',reason:effect.reason,retryAuthorized:false};
   // Foreign origin, target or remounted thread cannot be accepted by the projection.
   if(attachment?.schema!==BRIDGE_SCHEMA || attachment.adapter.origin!==expectedOrigin
     || attachment.attachment.origin!==expectedOrigin || baseline?.origin!==expectedOrigin

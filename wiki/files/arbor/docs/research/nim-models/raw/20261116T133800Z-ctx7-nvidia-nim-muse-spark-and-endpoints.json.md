@@ -1,0 +1,57 @@
+# File: docs/research/nim-models/raw/20261116T133800Z-ctx7-nvidia-nim-muse-spark-and-endpoints.json
+
+> Generated 2026-11-19 · JSON · arbor
+
+## Metadata
+
+| Field | Value |
+| --- | --- |
+| Project | [arbor](../../../../../../projects/arbor.md) |
+| Path | docs/research/nim-models/raw/20261116T133800Z-ctx7-nvidia-nim-muse-spark-and-endpoints.json |
+| Language | JSON |
+| Kind | config |
+| Size | 3214 B |
+| Lines | 14 |
+| Hash | f5683c0defb0 |
+| Test | no |
+| Generated | no |
+| Component | docs |
+
+## Symbols
+
+_No symbols._
+
+## Imports
+
+_No imports._
+
+## Dependents
+
+_No dependents._
+
+## Annotations
+
+_No annotations._
+
+## Excerpt
+
+```json
+{
+  "type": "context7-query-docs",
+  "libraryId": "/websites/nvidia_nim",
+  "query": "muse-spark-open model on NIM get-started page: what the model is, provider, params, license, context, reasoning levels, greedy-decoding looping known behavior, /v1/messages endpoint; also NIM LLM endpoint list (OpenAI + Anthropic compatible) and model-free NIM (SGLang) validated models",
+  "language": "python",
+  "pulledAt": "2026-11-16T13:38:00Z",
+  "response": "### Get Started with Muse Spark Open\nSource: https://docs.nvidia.com/nim/large-language-models/latest/get-started/advanced/get-started-muse-spark-open.html\nMuse Spark Open is a mixture-of-experts (MoE) causal language model with 42B active parameters, built for multimodal reasoning. It accepts text, image, video, and audio input through perception encoders, generates text output, and supports a 1M-token context window.\n\n### POST /v1/messages\nSource: same page\nAnthropic-compatible endpoint /v1/messages. model e.g. \"meta-models/Muse-Spark-Open-816B-A42B-NVFP4\". `thinking` block: if omitted, reasoning is disabled. `output_config.effort` accepts low/medium/high/xhigh.\n\n### Configure Reasoning (muse-spark)\nreasoning_effort: low/medium/high/xhigh, default xhigh; disable via reasoning_effort \"none\" or chat_template_kwargs {\"enable_thinking\": false}; reasoning_content in non-streaming responses; reasoning tokens count toward max_tokens; small max_tokens at xhigh can yield only reasoning (finish_reason length, empty content); KNOWN BEHAVIOR: temperature 0 + xhigh can loop reasoning until max_tokens with empty content (greedy decoding artifact, not a NIM/cache defect); model card recommends temperature 1.0, top_p 1.0, top_k disabled; for tests needing temperature 0 use reasoning_effort medium or lower.\n\n### Interact with the API (nemotron-3.5-super-vl page)\nSource: https://docs.nvidia.com/nim/large-language-models/latest/get-started/advanced/get-started-nemotron-3.5-super-vl.html\nNIM exposes OpenAI-compatible endpoints: /v1/chat/completions, /v1/completions, /v1/responses; Anthropic-compatible: /v1/messages, /v1/messages/count_tokens. All support streaming. Shared /v1/messages examples use 64/256-token budgets which this model can spend entirely on reasoning (stop_reason max_tokens); set max_tokens >= 4096 for those examples.\n\n### Model-Free NIM > SGLang\nSource: https://docs.nvidia.com/nim/large-language-models/latest/reference/support-matrix.html\nnvidia/sglang-model-free-nim validated for GLM-5.3, Qwen3.8-2.4T-A95B; experimental variant validated for Muse Spark Open.",
+  "sourceUrls": [
+    "https://docs.nvidia.com/nim/large-language-models/latest/get-started/advanced/get-started-muse-spark-open.html",
+    "https://docs.nvidia.com/nim/large-language-models/latest/get-started/advanced/get-started-nemotron-3.5-super-vl.html",
+    "https://docs.nvidia.com/nim/large-language-models/latest/reference/support-matrix.html"
+  ],
+  "note": "Muse Spark Open (meta-models/Muse-Spark-Open-816B-A42B-NVFP4) is the 'Muse' family member with an official NIM page; the install's meta/muse-glimmer-30b has no official card in pulled sources -> [unverified-source-skipped]; local usage: 1 call, 1 invalid_request error."
+}
+```
+
+---
+
+[HQ wiki](../../../../../../index.md) · [Symbols](../../../../../../symbols.md) · [Dependency graph](../../../../../../graph.md) · [Documentation](../../../../../../docs.md) · [Changes](../../../../../../changes.md) · [Open tasks](../../../../../../todos.md) · [Deprecated](../../../../../../deprecated.md) · [Agent annotation protocol](../../../../../../protocol.md) · [Glossary](../../../../../../glossary.md) · [Using HQ](../../../../../../context.md) · [Capabilities](../../../../../../capabilities.md) · [Search index](../../../../../../search.json) · [Browser view](../../../../../../index.html)

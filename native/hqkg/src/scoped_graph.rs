@@ -51,7 +51,11 @@ pub fn qualified_id(ns: &Namespace, local: &str) -> Result<String> {
     }
     Ok(id)
 }
-fn assert_scoped(ns: &Namespace, id: &str) -> Result<()> {
+/// The single namespace boundary for graph identities. Every authorized
+/// mutation path — the scoped apply below and the host-facing delta ingest —
+/// routes its entity ids through this, so an id outside the caller's namespace
+/// is refused in exactly one place.
+pub fn assert_in_namespace(ns: &Namespace, id: &str) -> Result<()> {
     if !id.starts_with(&prefix(ns)?) || id.len() > 256 {
         return Err(Error::Conflict(
             "graph identity outside requested namespace".into(),
@@ -114,12 +118,31 @@ pub fn edge(
     to: &str,
     provenance: &Provenance,
 ) -> Result<Edge> {
-    assert_scoped(ns, from)?;
-    assert_scoped(ns, to)?;
+    assert_in_namespace(ns, from)?;
+    assert_in_namespace(ns, to)?;
     let mut e = Edge::new(&qualified_id(ns, local)?, from, relation, to);
     stamp_properties(&mut e.properties, ns, provenance)?;
     Ok(e)
 }
+/// Validate that every record already held in `graph` belongs to `ns` and
+/// carries a well-formed scoped provenance record. This is the namespace
+/// lifecycle check: it is what makes an unscoped or foreign graph fail closed
+/// before any authorized change is applied, and it is reusable by callers that
+/// must fence a namespace without applying a change set.
+pub fn validate_scope(graph: &Graph, ns: &Namespace) -> Result<()> {
+    for n in graph.nodes() {
+        assert_in_namespace(ns, &n.id)?;
+        valid_record(&n.properties, ns)?;
+    }
+    for e in graph.edges() {
+        assert_in_namespace(ns, &e.id)?;
+        assert_in_namespace(ns, &e.from)?;
+        assert_in_namespace(ns, &e.to)?;
+        valid_record(&e.properties, ns)?;
+    }
+    Ok(())
+}
+
 /// Stages the existing change-set algorithm on a cloned graph and ledger.
 /// This prevents partial in-memory mutations on validation or apply error;
 /// durability still requires the owner's accepted graph-journal transaction.
@@ -141,20 +164,11 @@ pub fn apply_scoped(
         return Err(Error::Conflict("change-set id is outside namespace".into()));
     }
     // An unscoped or foreign graph must be migrated by its owner explicitly.
-    for n in graph.nodes() {
-        assert_scoped(ns, &n.id)?;
-        valid_record(&n.properties, ns)?;
-    }
-    for e in graph.edges() {
-        assert_scoped(ns, &e.id)?;
-        assert_scoped(ns, &e.from)?;
-        assert_scoped(ns, &e.to)?;
-        valid_record(&e.properties, ns)?;
-    }
+    validate_scope(graph, ns)?;
     for op in &changes.ops {
         match op {
             ChangeOp::PutNode(n) => {
-                assert_scoped(ns, &n.id)?;
+                assert_in_namespace(ns, &n.id)?;
                 valid_record(&n.properties, ns)?;
                 if !n
                     .properties
@@ -167,21 +181,23 @@ pub fn apply_scoped(
                 }
             }
             ChangeOp::PutEdge(e) => {
-                assert_scoped(ns, &e.id)?;
-                assert_scoped(ns, &e.from)?;
-                assert_scoped(ns, &e.to)?;
+                assert_in_namespace(ns, &e.id)?;
+                assert_in_namespace(ns, &e.from)?;
+                assert_in_namespace(ns, &e.to)?;
                 valid_record(&e.properties, ns)?;
             }
-            ChangeOp::RemoveNode { entity_id, .. } | ChangeOp::RemoveEdge { entity_id, .. } => {
-                assert_scoped(ns, entity_id)?;
+            ChangeOp::RemoveNode { entity_id, .. }
+            | ChangeOp::RemoveNodeFenced { entity_id, .. }
+            | ChangeOp::RemoveEdge { entity_id, .. } => {
+                assert_in_namespace(ns, entity_id)?;
             }
             ChangeOp::MergeNodes {
                 duplicate_id,
                 canonical_id,
                 ..
             } => {
-                assert_scoped(ns, duplicate_id)?;
-                assert_scoped(ns, canonical_id)?;
+                assert_in_namespace(ns, duplicate_id)?;
+                assert_in_namespace(ns, canonical_id)?;
             }
             ChangeOp::SplitNode {
                 source_id,
@@ -189,8 +205,8 @@ pub fn apply_scoped(
                 edge_ids,
                 ..
             } => {
-                assert_scoped(ns, source_id)?;
-                assert_scoped(ns, &new_node.id)?;
+                assert_in_namespace(ns, source_id)?;
+                assert_in_namespace(ns, &new_node.id)?;
                 valid_record(&new_node.properties, ns)?;
                 if !new_node
                     .properties
@@ -202,7 +218,7 @@ pub fn apply_scoped(
                     ));
                 }
                 for id in edge_ids {
-                    assert_scoped(ns, id)?;
+                    assert_in_namespace(ns, id)?;
                 }
             }
         }

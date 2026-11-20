@@ -33,6 +33,50 @@ fn run_packet(file:&Path,packet:Value) -> (bool,Value) {
     let out=child.wait_with_output().unwrap();
     (out.status.success(),serde_json::from_slice(&out.stdout).unwrap())
 }
+// Durable delta ingestion: each record carries its own put/delete operation and
+// the batch names the source revision it was projected from.
+fn delta(file:&Path,scope:&str,base:u64,deltas:Vec<Value>) -> (bool,Value) {
+    run_packet(file,json!({"schema":"vivim.hqkg-personal/1","scope":scope,"op":"sync-context",
+        "baseRevision":base,"nodes":[],"relationships":[],"deltas":deltas}))
+}
+fn put(record:Value) -> Value {
+    let mut d=record; d["op"]=json!("put"); d
+}
+fn tombstone(id:&str,kind:&str,revision:u64) -> Value {
+    json!({"op":"delete","kind":kind,"id":id,"revision":revision})
+}
+fn query(file:&Path,scope:&str) -> Vec<Value> {
+    let (ok,packet)=run_packet(file,json!({"schema":"vivim.hqkg-personal/1","scope":scope,"op":"query"}));
+    assert!(ok,"{packet}");
+    packet["nodes"].as_array().unwrap().clone()
+}
+fn qualified_id(file:&Path,scope:&str,source_ref:&str) -> String {
+    query(file,scope).into_iter()
+        .find(|n|n["properties"]["vivim.context.sourceRef"]==source_ref)
+        .unwrap_or_else(||panic!("missing managed source {source_ref}"))["id"]
+        .as_str().unwrap().to_string()
+}
+fn node_id(file:&Path,scope:&str,source_ref:&str) -> String {
+    local(&qualified_id(file,scope,source_ref)).to_string()
+}
+// The delta protocol names records by their in-namespace local identity, exactly
+// like the existing erase operations; the qualified id is the durable identity.
+fn local(id:&str)->&str {
+    match id.find("vivim-context-") {
+        Some(at)=>&id[at..],
+        None=>id,
+    }
+}
+// A distinct managed Wiki observation per index, so a batch can carry far more
+// records than one bounded read window will ever return.
+fn wiki_record(index:usize,revision:u64) -> Value {
+    json!({"id":format!("vivim-context-w-{:064x}",index as u64+1),"kind":"wiki",
+        "sourceRef":format!("page-{index}"),
+        "semanticId":format!("wiki:section:Page/{index}"),
+        "digest":format!("{:064x}",index as u64+1),
+        "revision":revision,"sourceRevision":revision,"order":index as u64+1,
+        "title":format!("Wiki: Page/{index}"),"summary":format!("Committed text {index}")})
+}
 fn read(file:&Path,scope:&str,epoch:u64,view:&str) -> Option<Value> {
     let out=Command::new(env!("CARGO_BIN_EXE_hqkg-chat-context"))
         .arg(file).arg("--managed").arg(scope).arg(epoch.to_string()).arg(view).output().unwrap();
@@ -194,4 +238,151 @@ fn combined_sync_read_matches_standalone_durable_projection_and_rejects_unsafe_v
     let mut f=fs::OpenOptions::new().append(true).open(&file).unwrap();
     f.write_all(b"HQ").unwrap(); f.sync_all().unwrap(); drop(f);
     assert!(!run_packet(&file,req("wiki",&next)).0);
+}
+
+#[test]
+fn delta_batches_ingest_past_the_bounded_read_window_without_dropping_older_sources() {
+    let temp=Temp::new(); let file=temp.journal();
+    let first:Vec<Value>=(0..40).map(|i|wiki_record(i,1)).collect();
+    let second:Vec<Value>=(40..80).map(|i|wiki_record(i,1)).collect();
+    // 80 authorized sources across two batches: durable ingestion is not capped at
+    // the size of one bounded read window.
+    let (ok,a)=delta(&file,SCOPE,0,first.iter().cloned().map(put).collect());
+    assert!(ok,"{a}"); assert_eq!(a["mode"],"delta"); assert_eq!(a["ingested"],40);
+    assert_eq!(a["tombstoned"],0);
+    assert_eq!(Journal::new(&file).load().unwrap().node_count(),40);
+    let (ok,b)=delta(&file,SCOPE,1,second.iter().cloned().map(put).collect());
+    assert!(ok,"{b}"); assert_eq!(b["ingested"],40);
+    let epoch=b["epoch"].as_u64().unwrap();
+    assert_eq!(Journal::new(&file).load().unwrap().node_count(),80);
+    // The second batch carries only records 40..80, so if omission were deletion
+    // the first forty would be gone. They are still durable and still ranked.
+    let phone=read(&file,SCOPE,epoch,"wiki").unwrap();
+    assert_eq!(phone["totalRetrieved"],80);
+    let window=phone["items"].as_array().unwrap().len();
+    assert!(window>=1 && window<=8,"read window stays bounded: {window}");
+    assert!(window<80,"bounded retrieval returns a window, never the durable set");
+    let older=node_id(&file,SCOPE,"page-0");
+    assert!(query(&file,SCOPE).iter().any(|n|local(n["id"].as_str().unwrap())==older &&
+        n["properties"]["vivim.context.summary"]=="Committed text 0"));
+    // The old source is still updatable after the window moved on.
+    let (ok,c)=delta(&file,SCOPE,1,vec![put(wiki_record(0,2))]);
+    assert!(ok,"{c}"); assert_eq!(c["tombstoned"],0);
+    let updated:Vec<Value>=query(&file,SCOPE).into_iter()
+        .filter(|n|local(n["id"].as_str().unwrap())==older).collect();
+    assert_eq!(updated.len(),1);
+    assert_eq!(updated[0]["properties"]["hqkg.provenance.revision"],"2");
+    // A batch that claims to be projected from an older source than the one
+    // already durable is refused, not applied.
+    let current=fs::read(&file).unwrap();
+    assert!(!delta(&file,SCOPE,0,second.iter().cloned().map(put).collect()).0);
+    assert_eq!(fs::read(&file).unwrap(),current);
+}
+
+#[test]
+fn explicit_tombstones_remove_one_source_and_replay_is_a_byte_identical_no_op() {
+    let temp=Temp::new(); let file=temp.journal();
+    let rows:Vec<Value>=(0..3).map(|i|wiki_record(i,1)).collect();
+    let (ok,a)=delta(&file,SCOPE,0,rows.iter().cloned().map(put).collect());
+    assert!(ok,"{a}");
+    let before=fs::read(&file).unwrap();
+    // Replaying an already-current batch stages nothing and writes nothing.
+    let (ok,again)=delta(&file,SCOPE,1,rows.iter().cloned().map(put).collect());
+    assert!(ok,"{again}"); assert_eq!(again["changed"],false);
+    assert_eq!(fs::read(&file).unwrap(),before);
+    // An explicit tombstone removes exactly its own source.
+    let victim=node_id(&file,SCOPE,"page-1");
+    let (ok,d)=delta(&file,SCOPE,1,vec![tombstone(&victim,"wiki",1)]);
+    assert!(ok,"{d}"); assert_eq!(d["tombstoned"],1);
+    let after=fs::read(&file).unwrap();
+    assert_eq!(Journal::new(&file).load().unwrap().node_count(),2);
+    assert!(!query(&file,SCOPE).iter().any(|n|local(n["id"].as_str().unwrap())==victim));
+    assert!(query(&file,SCOPE).iter().any(|n|n["properties"]["vivim.context.sourceRef"]=="page-0"));
+    // Replay is idempotent: the source is already gone, nothing is written.
+    let (ok,replay)=delta(&file,SCOPE,1,vec![tombstone(&victim,"wiki",1)]);
+    assert!(ok,"{replay}"); assert_eq!(replay["changed"],false);
+    assert_eq!(replay["tombstoned"],0);
+    assert_eq!(fs::read(&file).unwrap(),after);
+    // A tombstone older than the source it names cannot remove it: the newer
+    // source is held and the graph is left byte-identical.
+    let survivor=node_id(&file,SCOPE,"page-2");
+    let (ok,updated)=delta(&file,SCOPE,1,vec![put(wiki_record(2,2))]);
+    assert!(ok,"{updated}");
+    let current=fs::read(&file).unwrap();
+    let (ok,stale)=delta(&file,SCOPE,2,vec![tombstone(&survivor,"wiki",1)]);
+    assert!(!ok,"stale tombstone refused: {stale}");
+    assert!(stale["error"].as_str().unwrap().contains("STALE_CONTEXT_SOURCE"));
+    assert_eq!(fs::read(&file).unwrap(),current);
+    assert_eq!(Journal::new(&file).load().unwrap().node_count(),2);
+}
+
+#[test]
+fn delta_tombstones_cannot_reach_another_namespace_or_a_non_context_record() {
+    let temp=Temp::new(); let file=temp.journal();
+    let other=temp.0.join("other.hqj");
+    let other_scope="b".repeat(64);
+    let other_scope=other_scope.as_str();
+    let (ok,a)=delta(&file,SCOPE,0,vec![put(wiki_record(0,1))]);
+    assert!(ok,"{a}");
+    let (ok,b)=delta(&other,other_scope,0,vec![put(wiki_record(0,1))]);
+    assert!(ok,"{b}");
+    let own=fs::read(&file).unwrap();
+    let foreign=fs::read(&other).unwrap();
+    let foreign_id=qualified_id(&other,other_scope,"page-0");
+    // A tombstone naming a qualified identity from another namespace is refused:
+    // the namespace boundary is checked before any op is built.
+    let (ok,cross)=delta(&file,SCOPE,1,vec![tombstone(&foreign_id,"wiki",1)]);
+    assert!(!ok,"cross-namespace tombstone refused: {cross}");
+    assert_eq!(fs::read(&file).unwrap(),own);
+    assert_eq!(fs::read(&other).unwrap(),foreign);
+    assert_eq!(Journal::new(&other).load().unwrap().node_count(),1);
+    assert_eq!(Journal::new(&file).load().unwrap().node_count(),1);
+    // A tombstone may only name a managed context record, never another node in
+    // the same namespace (commit markers, other capabilities' records).
+    let (ok,marker)=delta(&file,SCOPE,1,vec![tombstone("commit-abc","wiki",1)]);
+    assert!(!ok,"non-context tombstone refused: {marker}");
+    // A kind that disagrees with the identity prefix is refused too.
+    let (ok,mismatch)=delta(&file,SCOPE,1,vec![tombstone(&node_id(&file,SCOPE,"page-0"),"effect",1)]);
+    assert!(!ok,"kind/identity mismatch refused: {mismatch}");
+    assert_eq!(fs::read(&file).unwrap(),own);
+}
+
+#[test]
+fn delta_ingestion_requires_a_base_revision() {
+    let temp=Temp::new(); let file=temp.journal();
+    // A delta batch that does not name the source revision it came from is
+    // refused outright: the fence is not optional on this path.
+    let (ok,no_base)=run_packet(&file,json!({"schema":"vivim.hqkg-personal/1","scope":SCOPE,
+        "op":"sync-context","nodes":[],"deltas":vec![put(wiki_record(0,1))]}));
+    assert!(!ok,"delta without baseRevision accepted: {no_base}");
+    let (ok,a)=delta(&file,SCOPE,0,vec![put(wiki_record(0,1))]);
+    assert!(ok,"{a}");
+    // base 0 means "nothing projected yet" and is now behind the durable head.
+    assert!(!delta(&file,SCOPE,0,vec![put(wiki_record(1,1))]).0);
+    // A batch at the current head is accepted.
+    let (ok,b)=delta(&file,SCOPE,1,vec![put(wiki_record(1,1))]);
+    assert!(ok,"{b}");
+    assert_eq!(Journal::new(&file).load().unwrap().node_count(),2);
+}
+
+#[test]
+fn delta_ingestion_and_a_complete_projection_converge_on_the_same_durable_graph() {
+    let temp=Temp::new(); let file=temp.journal();
+    let rows:Vec<Value>=(0..3).map(|i|wiki_record(i,2)).collect();
+    let (ok,a)=delta(&file,SCOPE,0,rows.iter().cloned().map(put).collect());
+    assert!(ok,"{a}");
+    let bytes=fs::read(&file).unwrap();
+    // Re-sending the same sources as a complete projection changes nothing: the
+    // delta path is the same durable graph, not a second one.
+    let (ok,b)=sync(&file,SCOPE,rows.clone());
+    assert!(ok,"{b}"); assert_eq!(b["mode"],"projection");
+    assert_eq!(b["changed"],false);
+    assert_eq!(fs::read(&file).unwrap(),bytes);
+    // Restart parity: a fresh process reads the same head the delta wrote.
+    let graph=Journal::new(&file).load().unwrap();
+    assert_eq!(graph.node_count(),3);
+    let status=Journal::new(&file).status().unwrap();
+    assert_eq!(graph.epoch(),status.epoch);
+    assert_eq!(status.trailing_bytes,0);
+    assert_eq!(status.total_bytes,bytes.len() as u64);
 }

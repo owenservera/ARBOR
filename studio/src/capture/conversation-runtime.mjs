@@ -13,7 +13,7 @@ import { isPrefixCode, prefixId, preimageDigest, resolvePromptTier, checkPrefixP
 import { acquireDriveLease } from './drive-lease.mjs';
 import { parseThread, threadSupported, THREAD_REF_PATTERN, TRANSCRIPT_LIMITS } from './conversation-thread.mjs';
 import { buildCapabilityCapsule } from './conversation-capsule.mjs';
-import { captureConversationEvidence } from './conversation-evidence.mjs';
+import { captureConversationEvidence, readConversationEvidence } from './conversation-evidence.mjs';
 import { readChatIndex } from './chatgpt-chat-index-reader.mjs';
 import { ownedFreshTargetIds } from './conversation-ownership.mjs';
 import { DCB_HOST_FACADE_SCHEMA } from '../agents/dcb-context-runtime.mjs';
@@ -36,7 +36,7 @@ async function boundedReplyWait(promise, ms) {
 
 export function createConversationRuntime({ paths, profileStore, familyStore, port = 9222, dependencies = {} } = {}) {
   const d = { listTargets, getAdapter, createAdapter: createConversationBrowserAdapter, acquireLease: acquireDriveLease,
-    listSessions, readChatIndex, captureEvidence: captureConversationEvidence,
+    listSessions, readChatIndex, captureEvidence: captureConversationEvidence, readEvidence: readConversationEvidence,
     ownerIsAlive: (pid) => { try { process.kill(pid, 0); return true; } catch (e) { return e.code !== 'ESRCH'; } },
     maxDurationMs: 15 * 60 * 1000, maxBytes: 256 * 1024 * 1024, replyObservationMs: 125000, replyFinalizationMs: 10000, sleep, prefixStabilityMs: 1500, ...dependencies };
   const directory = path.join(paths.root, 'conversations');
@@ -163,9 +163,21 @@ export function createConversationRuntime({ paths, profileStore, familyStore, po
         catch (e) { journalError = { code: e?.code ?? 'JOURNAL_UNAVAILABLE', message: String(e?.message ?? e).slice(0, 300) }; }
         const out = await d.captureEvidence({ directory, id: entry.service.id, view: snapshot, journal, journalError,
           trigger, paths, timeline: entry.evidenceTimeline ?? [] });
-        entry.evidence = { state: 'preserved', revision: out.revision, at: out.preservedAt ?? at, trigger,
-          file: out.file, skipped: out.skipped === true, turns: out.turns, sessions: out.sessions,
-          gaps: out.gaps ?? [], failures: out.failures ?? 0 };
+        // Read the persisted checkpoint back: the summary below is only trustworthy when the
+        // actual evidence is retrievable with its source identity (file + sha256 + revision).
+        // A missing/unreadable read-back is reported as-is and never promoted to verified.
+        let read = null;
+        try { read = await d.readEvidence({ directory, id: entry.service.id, io: d.io ?? undefined }); }
+        catch (e) { read = { state: 'unreadable', reason: e?.code ?? 'READ_FAILED', source: 'conversation-evidence-checkpoint' }; }
+        const verified = read?.state === 'verified';
+        const gaps = verified ? (Array.isArray(read.gaps) ? read.gaps : []) : (out.gaps ?? []);
+        entry.evidence = { state: 'preserved', verified, readState: read?.state ?? null, readReason: read?.reason ?? null,
+          source: read?.source ?? null, file: out.file, sha256: verified ? read.sha256 : null, readBytes: verified ? read.bytes : null,
+          revision: out.revision, at: out.preservedAt ?? at, trigger,
+          skipped: out.skipped === true, turns: out.turns, sessions: out.sessions,
+          gaps, failures: out.failures ?? 0, revocation: read?.revocation ?? null };
+        noteEvidence(entry, 'evidence-checkpoint', { trigger, readState: read?.state ?? null, verified,
+          sha256: verified ? read.sha256 : null, gaps: gaps.length, revokedPrefix: read?.revocation?.prefix?.state ?? null });
       } catch (e) {
         entry.evidence = { state: 'failed', code: /^[A-Z][A-Z0-9_]{0,79}$/.test(e?.code ?? '') ? e.code : 'EVIDENCE_WRITE_FAILED',
           message: String(e?.message ?? e).slice(0, 300), at, trigger };
@@ -205,7 +217,10 @@ export function createConversationRuntime({ paths, profileStore, familyStore, po
       writer: { active: !!(entry.lease || entry.leaseReleaseError), releaseError: entry.leaseReleaseError ?? null },
       diagnostic: { finishPhase: s.finish.phase, finishError: s.finish.error ?? null, uncertainty: s.uncertainty },
       // Additive local evidence summary. null means no checkpoint was attempted yet; failed means the
-      // last best-effort write did not land (the capture lifecycle itself is unaffected).
+      // last best-effort write did not land (the capture lifecycle itself is unaffected). When present,
+      // verified/readState/sha256/gaps/revocation carry the READ-BACK of the persisted checkpoint: verified
+      // is true only when the actual evidence was retrieved with its source identity, and an uncertain
+      // delivery is never reported as observed.
       evidence: entry.evidence ?? null,
       reply, capture, limitations: [...s.limitations, ...(entry.recovered ? ['Recovered snapshot only; interrupted capture ownership requires reconciliation, never automatic replay'] : []),
         ...(pending ? ['Stored snapshot read without recovery; the owning process is gone, so its state is stale until an explicit reconcile, finish or recover'] : [])] };

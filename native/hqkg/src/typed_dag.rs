@@ -9,8 +9,9 @@ use crate::engine::{Budget, CancellationToken, EngineRegistry, Scheduler, Task};
 use crate::{Error, Result};
 use std::collections::{BTreeMap, BTreeSet};
 
+pub use crate::engine::{PURE_ENGINE_SLOT, PURE_INTERFACE, PURE_OPERATIONS};
+
 pub const CONTRACT: &str = "hqkg.typed-dag/1";
-pub const PURE_INTERFACE: &str = "hqkg.transform.pure/1";
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum GraphDomain {
@@ -42,6 +43,121 @@ impl Namespace {
 pub struct RevisionToken {
     pub namespace: Namespace,
     pub graph_epoch: u64,
+}
+
+/// Inert identity of a program that already passed core/programmability policy
+/// validation. It is carried into the DAG so cached and materialized outputs
+/// stay bound to the exact program revision. Never a grant.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ProgramIdentity {
+    pub id: String,
+    pub revision: u64,
+    pub policy_revision: u64,
+}
+impl ProgramIdentity {
+    pub fn new(id: &str, revision: u64, policy_revision: u64) -> Result<Self> {
+        valid_id(id, 128)?;
+        if revision == 0 || policy_revision == 0 {
+            return Err(Error::Invalid(
+                "program identity revision must be non-zero".into(),
+            ));
+        }
+        Ok(Self {
+            id: id.into(),
+            revision,
+            policy_revision,
+        })
+    }
+    pub fn validate(&self) -> Result<()> {
+        Self::new(&self.id, self.revision, self.policy_revision).map(|_| ())
+    }
+    /// Deterministic stamp framed into every step input, so the cache key,
+    /// materialized stamp and engine fingerprint all bind to this revision.
+    pub fn stamp(&self) -> String {
+        format!("{}@{}#{}", self.id, self.revision, self.policy_revision)
+    }
+}
+
+/// A program whose typed steps already passed policy validation and were
+/// translated to the HQKG `TransformPlan` shape (see
+/// `core/programmability::to_pure_transform_program`).
+///
+/// Binding it to a namespace and revision token is what the DAG executes. The
+/// pure interface and operation allowlist are re-checked here, so a non-pure
+/// engine or an effect step can never reach `DagExecutor`.
+#[derive(Clone, Debug)]
+pub struct ValidatedPureProgram {
+    pub identity: ProgramIdentity,
+    pub namespace: Namespace,
+    pub expected: RevisionToken,
+    pub steps: Vec<TransformStep>,
+}
+impl ValidatedPureProgram {
+    pub fn new(
+        identity: ProgramIdentity,
+        namespace: Namespace,
+        expected: RevisionToken,
+        steps: Vec<TransformStep>,
+    ) -> Result<Self> {
+        identity.validate()?;
+        if expected.namespace != namespace || expected.graph_epoch == 0 {
+            return Err(Error::Conflict(
+                "revision token does not match program namespace".into(),
+            ));
+        }
+        if steps.is_empty() {
+            return Err(Error::Invalid("empty validated pure program".into()));
+        }
+        for step in &steps {
+            if step.engine != PURE_ENGINE_SLOT {
+                return Err(Error::Unsupported(format!(
+                    "validated pure program requires engine {PURE_ENGINE_SLOT}, got {}",
+                    step.engine
+                )));
+            }
+            if !PURE_OPERATIONS.contains(&step.operation.as_str()) {
+                return Err(Error::Unsupported(format!(
+                    "operation {} is not a pure transform",
+                    step.operation
+                )));
+            }
+        }
+        let program = Self {
+            identity,
+            namespace,
+            expected,
+            steps,
+        };
+        // Reuse the executor's own plan validation: ids, source revisions,
+        // duplicates, missing dependencies and cycles are rejected before any
+        // engine is pinned or run.
+        validate(
+            &program.plan(),
+            &program.expected,
+            Budget {
+                max_tasks: 10_000,
+                ..Budget::default()
+            },
+        )?;
+        Ok(program)
+    }
+    /// The plan the existing `DagExecutor` runs. Program identity is framed into
+    /// every step input so identity travels with the data through the DAG.
+    pub fn plan(&self) -> TransformPlan {
+        let mut steps = self.steps.clone();
+        for step in &mut steps {
+            let mut framed = String::new();
+            field(&mut framed, "vlang.program-identity");
+            field(&mut framed, &self.identity.stamp());
+            field(&mut framed, &step.input);
+            step.input = framed;
+        }
+        TransformPlan {
+            namespace: self.namespace.clone(),
+            expected: self.expected.clone(),
+            steps,
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -305,6 +421,20 @@ pub struct DagExecutor<'a> {
 impl<'a> DagExecutor<'a> {
     pub fn new(registry: &'a EngineRegistry) -> Self {
         Self { registry }
+    }
+    /// Execute a validated pure program through the existing executor, cache,
+    /// scheduler, cancellation token and generation leases. Identity and
+    /// dependency order are the validated ones; nothing here is effect
+    /// authorized.
+    pub fn run_validated(
+        &self,
+        program: &ValidatedPureProgram,
+        actual: &RevisionToken,
+        cache: &mut IncrementalCache,
+        budget: Budget,
+        cancel: &CancellationToken,
+    ) -> Result<DagReport> {
+        self.run(&program.plan(), actual, cache, budget, cancel)
     }
     /// All-or-nothing cache commit. A failed/cancelled plan retains the prior cache.
     /// Dependencies pass their actual output as length-framed input to downstream steps.

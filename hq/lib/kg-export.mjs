@@ -1,7 +1,7 @@
 // hq/lib/kg-export.mjs — deterministic HQKGX1 producer over the operational index.
 // @hq:context The single HQ -> Rust graph transport: reads the Bun/SQLite index (the
 //   only ingestion authority) and emits a repos-hq.hqkg-exchange/1 JSONL file the
-//   native importer (research/rust-knowledge-graph/src/import.rs) accepts verbatim.
+//   native importer (native/hqkg/src/import.rs) accepts verbatim.
 // @hq:owner agent-platform-ceo
 // @hq:task priority-1 automatic graph ingestion (post-merge convergence campaign)
 // @hq:invariant Data-only: never writes the index, never mutates source files, never
@@ -13,14 +13,20 @@
 //   one new node; a deletion is a tombstone only.
 // @hq:invariant Personal data must not enter HQ: file paths and content digests only —
 //   no file contents, no notes, no receipts, no session data are exported.
-// @hq:see hq/lib/schema.mjs · research/rust-knowledge-graph/src/import.rs ·
+// @hq:see hq/lib/schema.mjs · native/hqkg/src/import.rs ·
 //   hq/lib/wiki-runtime/graph-index.mjs (consumer-side admission mirror)
 import { createHash } from 'node:crypto';
+import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync, renameSync, rmSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 export const EXCHANGE_SCHEMA = 'repos-hq.hqkg-exchange/1';
 export const AUTHORITY = 'data-only; no executable code or provider actions';
+// The one source namespace every HQ exchange is produced and imported under.
+// `importGraphExchange` binds an import to it and refuses a mismatch, so a
+// packaged product can never apply another producer's projection by accident.
+export const SOURCE_NAMESPACE = 'repos-hq.index';
 const MAX_BYTES = 128 * 1024 * 1024;
 const MAX_NODES = 250_000;
 const MAX_EDGES = 1_000_000;
@@ -190,7 +196,7 @@ export function exportGraphExchange({ db, outPath, statePath = null }) {
   const manifest = {
     type: 'manifest',
     schema: EXCHANGE_SCHEMA,
-    source: 'repos-hq.index',
+    source: SOURCE_NAMESPACE,
     authority: AUTHORITY,
     // The exporter emits the complete current universe: edges it omits are
     // deletions, so a reconcile-capable importer must drop source-owned edges
@@ -322,4 +328,188 @@ export function lastGraphExport(statePath) {
   } catch {
     return null;
   }
+}
+
+// ---------------------------------------------------------------------------
+// Packaged importer resolution and execution — the product path, without Cargo.
+//
+// The producer above is pure data; this is the only place that knows how the
+// native importer is located and run. Product callers (the refresh pipeline,
+// `hq kg sync`, and any Host service that needs the same capability) call
+// importGraphExchange in-process; none of them spawn a shell or Cargo.
+//
+// `HQKG_IMPORT_MODE=cargo` is the development fallback and is only ever used
+// when it is selected explicitly. `VIVIM_HQKG_BIN_DIR` is the explicit
+// developer override for a locally built binary (the same convention the
+// native graph tests use). Neither is consulted implicitly: an un-packaged
+// runtime reports `importer_not_packaged` and leaves the exchange state alone.
+// ---------------------------------------------------------------------------
+
+export const IMPORTER_BIN = 'hqkg-import';
+export const IMPORT_MODE_ENV = 'HQKG_IMPORT_MODE';
+export const IMPORTER_BIN_DIR_ENV = 'VIVIM_HQKG_BIN_DIR';
+/** Repo-relative directory a source checkout stages native binaries into. */
+export const PACKAGED_NATIVE_BIN_DIR = 'src-tauri/resources/runtime/native/bin';
+/** Runtime-relative directory a frozen package keeps its native binaries in. */
+export const RUNTIME_NATIVE_BIN_DIR = 'native/bin';
+const IMPORTER_MAX_BUFFER = 16 * 1024 * 1024;
+const IMPORTER_TIMEOUT_MS = 120_000;
+// The staged runtime root: this module ships at <runtime>/hq/lib/kg-export.mjs,
+// so the frozen package's native/bin sits two levels up. A source checkout
+// resolves the same name through PACKAGED_NATIVE_BIN_DIR instead.
+const RUNTIME_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
+
+function binaryNames(name, platform) {
+  return platform === 'win32' ? [`${name}.exe`, name] : [name, `${name}.exe`];
+}
+
+function firstExistingFile(dir, names) {
+  if (typeof dir !== 'string' || dir.length === 0) return null;
+  for (const name of names) {
+    const candidate = join(dir, name);
+    if (existsSync(candidate)) return candidate;
+  }
+  return null;
+}
+
+/**
+ * Resolve the native importer without spawning anything.
+ *
+ * @param {{root: string, env?: object, platform?: string, runtimeRoot?: string}} args
+ * @returns {{mode: string, available: boolean, program: string|null,
+ *   args: string[], cwd: string|null, source: string, reason: string|null}}
+ */
+export function resolveGraphImporter({ root, env = process.env, platform = process.platform, runtimeRoot = RUNTIME_ROOT } = {}) {
+  if (typeof root !== 'string' || root.length === 0) throw new TypeError('root_required');
+  const base = resolve(root);
+  const mode = String(env[IMPORT_MODE_ENV] ?? 'packaged').trim().toLowerCase();
+  if (mode === 'cargo') {
+    // Explicit development selection only. `--manifest-path` makes the call
+    // independent of the caller's working directory.
+    const crateDir = join(base, 'native', 'hqkg');
+    const manifest = join(crateDir, 'Cargo.toml');
+    const available = existsSync(manifest);
+    return {
+      mode: 'cargo', available, program: available ? 'cargo' : null,
+      args: available ? ['run', '--quiet', '--manifest-path', manifest, '--features', 'importer', '--bin', IMPORTER_BIN, '--'] : [],
+      cwd: crateDir, source: `${IMPORT_MODE_ENV}=cargo`,
+      reason: available ? null : 'cargo_manifest_missing',
+    };
+  }
+  if (mode !== 'packaged') {
+    return { mode, available: false, program: null, args: [], cwd: null, source: `${IMPORT_MODE_ENV}=${mode}`, reason: `unsupported_import_mode_${mode}` };
+  }
+  const names = binaryNames(IMPORTER_BIN, platform);
+  const overrideDir = env[IMPORTER_BIN_DIR_ENV];
+  const override = firstExistingFile(overrideDir, names);
+  if (override) {
+    return { mode: 'packaged', available: true, program: override, args: [], cwd: null, source: `${IMPORTER_BIN_DIR_ENV}=${overrideDir}`, reason: null };
+  }
+  // A frozen package first (the product's own layout), then a source checkout
+  // that has been staged by tools/packaging/prepare-host-runtime.mjs --stage.
+  const candidates = [
+    { dir: join(runtimeRoot, ...RUNTIME_NATIVE_BIN_DIR.split('/')), source: `packaged:${RUNTIME_NATIVE_BIN_DIR}` },
+    { dir: join(base, ...PACKAGED_NATIVE_BIN_DIR.split('/')), source: `packaged:${PACKAGED_NATIVE_BIN_DIR}` },
+  ];
+  for (const candidate of candidates) {
+    const found = firstExistingFile(candidate.dir, names);
+    if (found) {
+      return { mode: 'packaged', available: true, program: found, args: [], cwd: null, source: candidate.source, reason: null };
+    }
+  }
+  return {
+    mode: 'packaged', available: false, program: null, args: [], cwd: null,
+    source: candidates[0].source, reason: 'importer_not_packaged',
+  };
+}
+
+function field(text, key) {
+  const match = new RegExp(`(?:^|\\s)${key}=([^\\s]+)`).exec(text);
+  return match ? match[1] : null;
+}
+
+function counter(text, label) {
+  const match = new RegExp(`(?:^|\\s)${label}=(\\d+)`).exec(text);
+  return match ? Number(match[1]) : null;
+}
+
+/** Parse the importer's stdout contract (schema line, stats line, epoch line). */
+export function parseImporterOutput(stdout) {
+  const lines = String(stdout ?? '').split(/\r?\n/).filter((line) => line.length > 0);
+  const head = lines.find((line) => line.startsWith('schema=')) ?? null;
+  const statsLine = lines.find((line) => line.startsWith('node inserted=')) ?? null;
+  const epochLine = lines.find((line) => line.startsWith('epoch before=')) ?? null;
+  return {
+    schema: head ? field(head, 'schema') : null,
+    // The importer's own report of the source namespace it applied under.
+    namespace: head ? (field(head, 'namespace') ?? field(head, 'source')) : null,
+    digest: head ? field(head, 'digest') : null,
+    epochBefore: epochLine ? counter(epochLine, 'before') : null,
+    epochAfter: epochLine ? counter(epochLine, 'after') : null,
+    dryRun: epochLine ? field(epochLine, 'dry_run') : null,
+    wroteSnapshot: epochLine ? field(epochLine, 'wrote_snapshot') : null,
+    statsLine,
+    nodesInserted: statsLine ? counter(statsLine, 'inserted') : null,
+    nodesDeleted: statsLine ? counter(statsLine, 'deleted') : null,
+  };
+}
+
+/**
+ * Import one exchange with the packaged native importer and report a verified
+ * result. Never advances exporter state: the caller commits the delta base with
+ * acknowledgeGraphExport only when `ok` is true.
+ *
+ * @param {{
+ *   root: string,
+ *   journal: string,
+ *   exchange: string,
+ *   namespace?: string|null,
+ *   env?: object,
+ *   platform?: string,
+ *   spawn?: Function,
+ * }} args
+ */
+export function importGraphExchange({
+  root, journal, exchange, namespace = SOURCE_NAMESPACE,
+  env = process.env, platform = process.platform, runtimeRoot = RUNTIME_ROOT, spawn = spawnSync,
+} = {}) {
+  if (typeof journal !== 'string' || journal.length === 0) throw new TypeError('journal_required');
+  if (typeof exchange !== 'string' || exchange.length === 0) throw new TypeError('exchange_required');
+  const resolved = resolveGraphImporter({ root, env, platform, runtimeRoot });
+  if (!resolved.available) {
+    return {
+      ok: false, mode: resolved.mode, reason: resolved.reason ?? 'importer_unavailable',
+      importer: resolved.source, program: null, status: null,
+      epochBefore: null, epochAfter: null, namespace: null, namespaceOk: null,
+      digest: null, statsLine: null, stderrTail: null,
+    };
+  }
+  const result = spawn(resolved.program, [...resolved.args, journal, exchange], {
+    cwd: resolved.cwd ?? undefined,
+    encoding: 'utf8', windowsHide: true, maxBuffer: IMPORTER_MAX_BUFFER, timeout: IMPORTER_TIMEOUT_MS,
+  }) ?? {};
+  const stdout = typeof result.stdout === 'string' ? result.stdout : '';
+  const stderr = typeof result.stderr === 'string' ? result.stderr : '';
+  const parsed = parseImporterOutput(stdout);
+  const status = Number.isInteger(result.status) ? result.status : null;
+  const spawnError = result.error ? String(result.error.message ?? result.error) : null;
+  // A replay with nothing to do legitimately reports no epoch advance; a
+  // regression never does. Namespace binding is checked against the importer's
+  // own report, so a packaged product cannot apply another producer's exchange.
+  const epochOk = parsed.epochAfter != null && (parsed.epochBefore == null || parsed.epochAfter >= parsed.epochBefore);
+  const namespaceOk = namespace == null || parsed.namespace == null ? null : parsed.namespace === namespace;
+  const ok = !spawnError && status === 0 && epochOk && namespaceOk !== false;
+  const reason = ok ? null
+    : spawnError ? 'importer_spawn_failed'
+      : status !== 0 ? `importer_exit_${status}`
+        : !epochOk ? 'epoch_regression'
+          : 'namespace_mismatch';
+  return {
+    ok, mode: resolved.mode, importer: resolved.source, program: resolved.program,
+    status, reason, epochBefore: parsed.epochBefore, epochAfter: parsed.epochAfter,
+    namespace: parsed.namespace, namespaceOk, digest: parsed.digest,
+    statsLine: parsed.statsLine, nodesInserted: parsed.nodesInserted, nodesDeleted: parsed.nodesDeleted,
+    wroteSnapshot: parsed.wroteSnapshot === 'true',
+    stderrTail: stderr.trim().length > 0 ? stderr.trim().split(/\r?\n/).slice(-3).join('\n') : null,
+  };
 }
