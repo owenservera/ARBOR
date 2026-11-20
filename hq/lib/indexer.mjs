@@ -508,6 +508,9 @@ export function indexProject({ root, db, project, options = {} }) {
     // Backfill existing database files on the first successful v2 index only.
     const v2Key = 'annotation_v2:' + projectRow.id + ':' + absPath;
     const backfillV2 = getMeta(db, v2Key) !== '3';
+    // Re-extract existing Rust mod/use records once after resolver expansion.
+    const rustIndexKey='rust_local_imports_v2:'+projectRow.id+':'+absPath;
+    const refreshRustIndex=getMeta(db,rustIndexKey)!=='2';
 
     const existing = new Map();
     for (const row of stmts.filesForProject.all(projectRow.id)) existing.set(row.path, row);
@@ -523,6 +526,7 @@ export function indexProject({ root, db, project, options = {} }) {
       const prev = existing.get(entry.rel) || null;
 
       const refreshV2 = backfillV2 && supportsV2(entry);
+      const refreshRust=refreshRustIndex&&entry.lang==='rust';
       if (!opts.force && !refreshV2 && prev && !isSourceLang(entry.lang) && prev.size === entry.size && prev.mtime_ms === entry.mtimeMs) {
         result.unchanged++;
         continue;
@@ -538,7 +542,7 @@ export function indexProject({ root, db, project, options = {} }) {
       const buffer = Buffer.isBuffer(data) ? data : Buffer.from(String(data), 'utf8');
       const hash = sha256(buffer);
 
-      if (!opts.force && !refreshV2 && prev && prev.hash === hash) {
+      if (!opts.force && !refreshV2 && !refreshRust && prev && prev.hash === hash) {
         stmts.updateStat.run(entry.size, entry.mtimeMs, prev.id);
         result.unchanged++;
         continue;
@@ -698,6 +702,7 @@ export function indexProject({ root, db, project, options = {} }) {
     // indexed_at stays — nothing happened worth churning derived pages for.
 
     if (backfillV2 && errors.length === 0) setMeta(db, v2Key, '3');
+    if (refreshRustIndex && errors.length === 0 && result.incomplete.length === 0) setMeta(db,rustIndexKey,'2');
     return stmts.projectById.get(projectRow.id);
   });
 
