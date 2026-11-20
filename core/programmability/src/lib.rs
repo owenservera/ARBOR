@@ -17,6 +17,7 @@ pub mod control_planning;
 pub mod wiki_write_recipe;
 pub mod wiki_read_recipe;
 pub mod command_ai_guard;
+pub mod control_lexicon;
 pub mod development_projection;
 pub mod control_plan_presentation;
 pub mod vec;

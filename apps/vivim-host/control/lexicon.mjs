@@ -5,6 +5,7 @@
 import { mkdirSync, readFileSync, renameSync, writeFileSync, linkSync, unlinkSync } from 'node:fs';
 import { randomBytes } from 'node:crypto';
 import path from 'node:path';
+import { runNativeProductPureSync } from './native-product-pure-sync.mjs';
 
 export const LEXICON_SCHEMA = 'vivim.control-lexicon/1';
 const WORD = /^[a-z][a-z0-9-]{1,39}$/;
@@ -53,6 +54,32 @@ export function createLexiconStore({ dataRoot, catalog, now = () => new Date().t
     }
   }
   const word = w => { const v = String(w ?? '').trim().toLowerCase(); if (!WORD.test(v)) throw fail('CONTROL_WORD_INVALID'); return v; };
+  // The native reducer computes the exact next version; Host retains the
+  // existing locked compare-and-save, ownership and effect journal authority.
+  function nativeTransition(mode,current,word,actionId,at,planId){
+    const response=runNativeProductPureSync('control-lexicon-transition',{
+      schema:'vivim.control-lexicon-transition-input/1',mode,current,word,
+      actionId:actionId??null,at,planId,reserved:[...reserved],spoken:[...spoken]
+    });
+    if(!response)return null;
+    if(response.outcome==='refused'){
+      if(!['CONTROL_WORD_INVALID','CONTROL_WORD_RESERVED',
+        'CONTROL_TEACH_TARGET_INVALID','CONTROL_LEXICON_FULL',
+        'CONTROL_WORD_UNKNOWN'].includes(response.code))
+        throw fail('CONTROL_LEXICON_NATIVE_INVALID');
+      throw fail(response.code);
+    }
+    const next=response.next,result=response.result;
+    if(response.outcome!=='projected'||response.authority!=='none'||
+      response.executionAuthorized!==false||response.effectPerformed!==false||
+      next?.schema!==LEXICON_SCHEMA||next.version!==current.version+1||
+      !Array.isArray(next.entries)||next.entries.length>MAX_ENTRIES||
+      !Array.isArray(next.history)||next.history.length>MAX_HISTORY||
+      result?.word!==word||result?.version!==next.version)
+      throw fail('CONTROL_LEXICON_NATIVE_INVALID');
+    return {next,result};
+  }
+
   return {
     schema: LEXICON_SCHEMA, file,
     entries: () => load().entries.map(e => ({ word: e.word, actionId: e.actionId })),
@@ -62,9 +89,11 @@ export function createLexiconStore({ dataRoot, catalog, now = () => new Date().t
       if (reserved.has(v)) throw fail('CONTROL_WORD_RESERVED');
       if (!spoken.has(actionId)) throw fail('CONTROL_TEACH_TARGET_INVALID');
       const cur = load();
+      const at=now();
+      const native=nativeTransition('teach',cur,v,actionId,at,planId);
+      if(native){save(native.next,cur.version);return native.result;}
       if (cur.entries.length >= MAX_ENTRIES && !cur.entries.some(e => e.word === v)) throw fail('CONTROL_LEXICON_FULL');
       const previous = cur.entries.find(e => e.word === v) ?? null;
-      const at = now();
       const next = { ...cur, version: cur.version + 1,
         entries: [...cur.entries.filter(e => e.word !== v), { word: v, actionId, at, planId }].sort((a, b) => a.word.localeCompare(b.word)),
         history: [...cur.history, { op: 'teach', word: v, actionId, previous: previous?.actionId ?? null, at, planId }].slice(-MAX_HISTORY) };
@@ -74,9 +103,11 @@ export function createLexiconStore({ dataRoot, catalog, now = () => new Date().t
     forget({ word: w, planId = null }) {
       const v = word(w);
       const cur = load();
+      const at = now();
+      const native=nativeTransition('forget',cur,v,null,at,planId);
+      if(native){save(native.next,cur.version);return native.result;}
       const existing = cur.entries.find(e => e.word === v);
       if (!existing) throw fail('CONTROL_WORD_UNKNOWN');
-      const at = now();
       const next = { ...cur, version: cur.version + 1, entries: cur.entries.filter(e => e.word !== v),
         history: [...cur.history, { op: 'forget', word: v, actionId: existing.actionId, at, planId }].slice(-MAX_HISTORY) };
       save(next, cur.version);
