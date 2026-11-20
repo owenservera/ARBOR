@@ -1,3 +1,10 @@
+// Optional Rust/WASM source digest, compared with the incumbent SHA-256
+// before any revised proposal or source identity can be admitted.
+let rustDigest=null;
+if(typeof window!=='undefined'){
+  void import('/mobile/vec-engines/rust-wasm.mjs')
+    .then(module=>{rustDigest=module.rustDigest;}).catch(()=>{});
+}
 // Synchronous SHA-256 for bounded declarative UI data in Node and browser.
 // A digest is NOT a Host approval, signature or authorization.
 const K=Object.freeze([
@@ -37,7 +44,10 @@ export function sha256Hex(text){
   const round=[a,b,c,d,e,f,g,z];
   for(let i=0;i<8;i++)hash[i]=(hash[i]+round[i])>>>0;
  }
- return hash.map(x=>x.toString(16).padStart(8,'0')).join('');
+ const result=hash.map(x=>x.toString(16).padStart(8,'0')).join('');
+ const native=rustDigest?.(text);
+ if(native!==undefined&&native!==result)throw Error('RUST_DIGEST_MISMATCH');
+ return native??result;
 }
 export const digestJson=value=>sha256Hex(JSON.stringify(value));
 export const utf8Length=value=>new TextEncoder().encode(value).byteLength;
