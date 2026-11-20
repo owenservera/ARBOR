@@ -22,9 +22,10 @@ import { mountVoiceCapture } from './ux/voice-capture.mjs';
 // @hq:consumes vivim.rust-wiki-source-stamp@1
 // @hq:consumes vivim.rust-wiki-source-search@1
 // @hq:consumes vivim.rust-wiki-source-transition@1
+// @hq:consumes vivim.rust-wiki-source-delta@1
 // The browser keeps its current Wiki UI; Rust supplies optional source identity
 // from the same local WASM kernel used for VEC and other pure operations.
-let rustWikiSourceStamp=null,rustWikiSearch=null,rustWikiSourceTransition=null;
+let rustWikiSourceStamp=null,rustWikiSearch=null,rustWikiSourceTransition=null,rustWikiSourceDelta=null;
 let wikiSourceFence=null; // session-keyed and memory-only; a read never becomes a grant
 if(typeof window!=='undefined'){
   void import('./vec-engines/rust-wasm.mjs')
@@ -32,6 +33,7 @@ if(typeof window!=='undefined'){
       rustWikiSourceStamp=module.rustWikiSourceStamp;
       rustWikiSearch=module.rustWikiSearch;
       rustWikiSourceTransition=module.rustWikiSourceTransition;
+      rustWikiSourceDelta=module.rustWikiSourceDelta;
       return module.initializeRustUiEngine();
     }).catch(()=>{});
 }
@@ -548,7 +550,7 @@ function renderWikiSources(){
 }
 function clearWiki(reason = 'Wiki unavailable') {
   wikiReadSequence++;clearWikiSources(reason); wikiSearchQuery='';
-  S.wiki = null; S.wikiStamp=null; S.wikiError = reason;
+  S.wiki = null; S.wikiStamp=null; S.wikiDelta=null; S.wikiError = reason;
   S.wikiContext = null; S.wikiContextError = reason;
   if (S.tab === 'wiki') renderWiki();
 }
@@ -710,6 +712,18 @@ function renderWiki() {
   head.append(refresh);
   if(S.wikiStamp){
     head.append(el('p','ux-note','Rust source identity · '+S.wikiStamp.digest.slice(0,12)+' · observation only'));
+  }
+  if(S.wikiDelta?.to?.revision===S.wiki?.revision){
+    const diff=S.wikiDelta;
+    head.append(el('p','ux-note',diff.outcome==='baseline'?
+      'Rust Wiki changes · first authorized source observation':
+      'Rust Wiki changes · '+diff.changedPages+' pages · '+diff.changedSections+
+      ' sections · '+diff.changedLinks+' link sets · '+diff.totalEvents+' events'));
+    for(const event of diff.events.slice(0,12))
+      head.append(el('p','ux-note',event.kind+' · '+event.page+
+        (event.section?' / '+event.section:'')));
+    if(diff.omittedEvents)
+      head.append(el('p','ux-note',diff.omittedEvents+' additional changes not displayed'));
   }
   const contextButton = el('button', 'btn sm', 'Source context');
   contextButton.type = 'button';
@@ -922,9 +936,15 @@ async function refreshWiki() {
     if(validStamp && !accepted){
       clearWiki('Rust Wiki source identity validation unavailable');return;
     }
+    const nativeDelta=accepted?rustWikiSourceDelta?.(S.wiki??null,wiki):null;
+    const matchingDelta=!!nativeDelta&&nativeDelta.to.revision===wiki.revision&&
+      nativeDelta.to.digest===nativeStamp.digest&&
+      (!S.wikiStamp||nativeDelta.from?.digest===S.wikiStamp.digest);
     if(accepted)wikiSourceFence={key:fenceKey,stamp:nativeStamp};
     if(HOST_PREVIEW)ingestWikiSources(sourceSurface);
-    S.wiki = wiki; S.wikiStamp=accepted?nativeStamp:null; S.wikiError = ''; S.wikiContext = context; S.wikiContextError = contextError; renderWiki();
+    S.wiki = wiki; S.wikiStamp=accepted?nativeStamp:null;
+    S.wikiDelta=matchingDelta?nativeDelta:null; S.wikiError = '';
+    S.wikiContext = context; S.wikiContextError = contextError; renderWiki();
   } catch (error) {
     if (sequence === wikiReadSequence && S.tab === 'wiki')
       clearWiki(error?.message || 'Wiki unavailable');

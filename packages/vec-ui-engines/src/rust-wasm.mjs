@@ -3,6 +3,7 @@
 // @hq:consumes vivim.rust-wiki-source-stamp@1
 // @hq:consumes vivim.rust-wiki-source-search@1
 // @hq:consumes vivim.rust-wiki-source-transition@1
+// @hq:consumes vivim.rust-wiki-source-delta@1
 // No interpreted source, dynamic code, Host grants or effect APIs.
 const SCHEMA='vivim.product-pure-response/1';
 const WASM_URL='/mobile/wasm/vivim_programmability_core.wasm';
@@ -135,5 +136,28 @@ export function rustWikiSourceTransition(previous,current){
     result.effectPerformed!==false||!['accepted','refused'].includes(result.outcome))
     return undefined;
   return result.outcome==='accepted';
+}
+// Full Host-observed source delta; no content or writable state is emitted.
+export function rustWikiSourceDelta(previous,current){
+  const value=invoke('wiki-source-delta',{previous:previous??null,current});
+  if(!value||value.schema!=='vivim.wiki-source-delta/1'||
+    !['baseline','unchanged','changed'].includes(value.outcome)||
+    value.authority!=='none'||value.executionAuthorized!==false||
+    value.effectPerformed!==false||
+    !value.to||!Number.isSafeInteger(value.to.revision)||value.to.revision<0||
+    !Number.isSafeInteger(value.to.pagesTotal)||value.to.pagesTotal<0||
+    typeof value.to.digest!=='string'||!/^[a-f0-9]{64}$/.test(value.to.digest)||
+    (previous!=null&&(!value.from||!Number.isSafeInteger(value.from.revision)||
+      typeof value.from.digest!=='string'||!/^[a-f0-9]{64}$/.test(value.from.digest)))||
+    !['changedPages','addedPages','removedPages','changedSections','changedLinks','totalEvents','omittedEvents']
+      .every(key=>Number.isSafeInteger(value[key])&&value[key]>=0)||
+    !Array.isArray(value.events)||value.events.length>48||
+    value.totalEvents!==value.events.length+value.omittedEvents||
+    value.events.some(event=>!['page-added','page-removed','section-added','section-removed',
+      'section-changed','links-changed'].includes(event?.kind)||
+      typeof event.page!=='string'||event.page.length>160||
+      (event.section!==undefined&&(typeof event.section!=='string'||event.section.length>160))))
+    return undefined;
+  return value;
 }
 export function nativeBrowserKernelReady(){return instance!==null;}

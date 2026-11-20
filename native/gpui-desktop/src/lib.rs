@@ -22,6 +22,8 @@ pub struct Overview {
     pub wiki_pages: Vec<String>,
     pub wiki_content: Vec<WikiPage>,
     pub wiki_digest: String,
+    /// Owner-authorized in-process source for exact Rust deltas, never a client grant.
+    pub wiki_source: Value,
     pub wiki_page_total: usize,
     pub wiki_captures: Option<WikiCaptures>,
     pub wiki_search_index: Vec<WikiSearchDocument>,
@@ -85,7 +87,7 @@ pub fn project(pwa: &Value, wiki: &Value) -> Result<Overview, ReadError> {
     Ok(Overview {
         observed_at: bounded_text(observed_at), recent, active_devices,
         wiki_revision: read.revision, wiki_pages, wiki_content: read.pages,
-        wiki_digest: read.digest, wiki_page_total: read.pages_total,
+        wiki_digest: read.digest, wiki_source: wiki.clone(), wiki_page_total: read.pages_total,
         wiki_captures: read.captures,
         wiki_search_index: read.search_index,
         wiki_indexed_pages: read.indexed_pages,

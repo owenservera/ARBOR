@@ -7,6 +7,7 @@
 //! @hq:consumes vivim.native-vec-visual-ir@1
 //! @hq:consumes vivim.rust-wiki-read-model@1
 //! @hq:consumes vivim.rust-wiki-source-search@1
+//! @hq:consumes vivim.rust-wiki-source-delta@1
 //! @hq:consumes hqkg.development-query@1
 //! @hq:consumes vivim.rust-development-projection@1
 use std::time::Duration;
@@ -41,6 +42,8 @@ struct Desktop {
     visual_status: String,
     visual_guard: RevisionGuard,
     wiki_guard: WikiRevisionGuard,
+    wiki_delta: String,
+    wiki_events: Vec<String>,
     detail: String,
     graph_detail: String,
     graph_status: String,
@@ -122,6 +125,36 @@ impl Desktop {
                             view.overview=None;view.review=None;view.visual=None;view.vec_view=None;
                             cx.notify();return;
                         }
+                        let delta=wiki_read::source_delta(&json!({
+                            "previous":view.overview.as_ref().map(|old|&old.wiki_source),
+                            "current":&data.wiki_source
+                        }));
+                        let outcome=delta["outcome"].as_str();
+                        if !matches!(outcome,Some("baseline"|"unchanged"|"changed")){
+                            view.visual_status="Rust Wiki change projection refused".into();
+                            view.overview=None;view.review=None;view.visual=None;view.vec_view=None;
+                            cx.notify();return;
+                        }
+                        view.wiki_delta=match outcome{
+                            Some("baseline")=>"First authorized Wiki observation".into(),
+                            Some("unchanged")=>format!("Wiki source unchanged · revision {}",data.wiki_revision),
+                            _=>format!(
+                                "Rust Wiki changes · {} pages · {} sections · {} link sets · {} events",
+                                delta["changedPages"].as_u64().unwrap_or(0),
+                                delta["changedSections"].as_u64().unwrap_or(0),
+                                delta["changedLinks"].as_u64().unwrap_or(0),
+                                delta["totalEvents"].as_u64().unwrap_or(0)
+                            ),
+                        };
+                        view.wiki_events=delta["events"].as_array().map(|events|
+                            events.iter().take(12).map(|event|format!(
+                                "{} · {}{}",
+                                event["kind"].as_str().unwrap_or("change"),
+                                event["page"].as_str().unwrap_or("unknown"),
+                                event["section"].as_str().map(|section|format!(" / {section}"))
+                                    .unwrap_or_default()
+                            )).collect()
+                        ).unwrap_or_default();
                         if view.overview.as_ref()!=Some(&data){view.overview=Some(data);}
                     }
                     Err(error) => { view.visual_status=error.label().into(); view.overview = None; view.review = None; view.visual=None; view.vec_view=None; cx.notify(); return; }
@@ -357,6 +390,10 @@ impl Render for Desktop {
                 .child(format!("Active devices: {}", data.active_devices));
             if matches!(self.panel, Panel::Overview|Panel::Wiki) {
             body=body.child(div().text_lg().child(format!("Wiki · revision {}", data.wiki_revision)));
+            body=body.child(div().text_sm().child(self.wiki_delta.clone()));
+            for item in &self.wiki_events {
+                body=body.child(div().text_sm().child(item.clone()));
+            }
             body=body.child(div().text_sm().child(format!(
                 "{} source-backed Wiki pages · {} displayed",data.wiki_page_total,data.wiki_content.len()
             )));
@@ -546,7 +583,7 @@ fn main() {
             |window, cx| {
                 let input=cx.new(|cx| InputState::new(window,cx).placeholder("Ask VIVIM or describe a Host command"));
                 let view=cx.new(|cx| {
-                    let mut view=Desktop {input,panel:Panel::Overview,viewport_px:1000,wiki_query:None,status:"Not yet observed".into(),overview:None,visual:None,vec_view:None,visual_status:"Not yet observed".into(),visual_guard:RevisionGuard::default(),wiki_guard:WikiRevisionGuard::default(),detail:String::new(),
+                    let mut view=Desktop {input,panel:Panel::Overview,viewport_px:1000,wiki_query:None,status:"Not yet observed".into(),overview:None,visual:None,vec_view:None,visual_status:"Not yet observed".into(),visual_guard:RevisionGuard::default(),wiki_guard:WikiRevisionGuard::default(),wiki_delta:"Not yet observed".into(),wiki_events:Vec::new(),detail:String::new(),
                         review:None,last_plan:None,busy:false,uncertain:false,
                         graph_detail:String::new(),graph_status:"Graph not yet queried".into(),graph_busy:false};
                     view.refresh(cx);view.start_observer(cx);view

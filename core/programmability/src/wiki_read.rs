@@ -371,3 +371,126 @@ pub fn source_search(input: &Value) -> Value {
         "executionAuthorized":false,"effectPerformed":false
     })
 }
+
+
+// Exact, bounded revision-to-revision Wiki change projection over Host-observed
+// source. Never turns an observed change into an authorization or journal event.
+// @hq:capability vivim.rust-wiki-source-delta@1
+const MAX_SOURCE_DELTA_EVENTS:usize=48;
+fn complete_delta_pages(wiki:&Value)->Option<&serde_json::Map<String,Value>>{
+    let pages=wiki["pages"].as_object()?;
+    for (name,page) in pages {
+        if !name_ok(name){return None}
+        let sections=page["sections"].as_object()?;
+        for (title,body) in sections {
+            if !name_ok(title)||!body.is_string(){return None}
+        }
+        if let Some(links)=page.get("links") {
+            if !links.as_array()?.iter().all(|target|
+                target.as_str().is_some_and(name_ok)){return None}
+        }
+    }
+    Some(pages)
+}
+pub fn source_delta(input:&Value)->Value{
+    let refused=|code:&str|json!({
+        "schema":"vivim.wiki-source-delta/1","outcome":"refused",
+        "code":code,"authority":"none","executionAuthorized":false,
+        "effectPerformed":false
+    });
+    let current=&input["current"];
+    let Ok(next)=read(current)else{return refused("INVALID_CURRENT_SOURCE")};
+    let Some(current_pages)=complete_delta_pages(current)
+        else{return refused("INVALID_CURRENT_SOURCE")};
+    let current_stamp=json!({"revision":next.revision,"digest":next.digest,
+        "pagesTotal":next.pages_total});
+    let previous=&input["previous"];
+    if previous.is_null(){
+        return json!({
+            "schema":"vivim.wiki-source-delta/1","outcome":"baseline",
+            "from":null,"to":current_stamp,"changedPages":0,
+            "addedPages":0,"removedPages":0,"changedSections":0,
+            "changedLinks":0,"totalEvents":0,"omittedEvents":0,"events":[],
+            "authority":"none","executionAuthorized":false,"effectPerformed":false
+        });
+    }
+    let Ok(old)=read(previous)else{return refused("INVALID_PREVIOUS_SOURCE")};
+    let Some(old_pages)=complete_delta_pages(previous)
+        else{return refused("INVALID_PREVIOUS_SOURCE")};
+    if let Err(reason)=compare_source(
+        Some((old.revision,&old.digest)),(next.revision,&next.digest)){
+        return refused(match reason {
+            ReadError::RevisionConflict=>"SOURCE_REVISION_CONFLICT",
+            ReadError::InvalidProjection=>"INVALID_SOURCE_IDENTITY",
+        })
+    }
+    let previous_stamp=json!({"revision":old.revision,"digest":old.digest,
+        "pagesTotal":old.pages_total});
+    let mut changed_pages=0usize;
+    let mut added_pages=0usize;
+    let mut removed_pages=0usize;
+    let mut changed_sections=0usize;
+    let mut changed_links=0usize;
+    let mut total_events=0usize;
+    let mut events=Vec::new();
+    // Only source names and change kinds leave Rust, never private section text.
+    let mut record=|kind:&str,page:&str,section:Option<&str>|{
+        total_events+=1;
+        if events.len()<MAX_SOURCE_DELTA_EVENTS {
+            let mut row=json!({"kind":kind,"page":page});
+            if let Some(section)=section{row["section"]=json!(section)}
+            events.push(row);
+        }
+    };
+    let pages:std::collections::BTreeSet<&str>=old_pages.keys()
+        .chain(current_pages.keys()).map(String::as_str).collect();
+    for page in pages {
+        match (old_pages.get(page),current_pages.get(page)){
+            (None,Some(_))=>{
+                changed_pages+=1;added_pages+=1;
+                record("page-added",page,None);
+            },
+            (Some(_),None)=>{
+                changed_pages+=1;removed_pages+=1;
+                record("page-removed",page,None);
+            },
+            (Some(before),Some(after))=>{
+                let mut changed=false;
+                if before.get("links")!=after.get("links"){
+                    changed=true;changed_links+=1;
+                    record("links-changed",page,None);
+                }
+                // complete_delta_pages checked every page's section map.
+                let left=before["sections"].as_object().expect("validated sections");
+                let right=after["sections"].as_object().expect("validated sections");
+                let sections:std::collections::BTreeSet<&str>=left.keys()
+                    .chain(right.keys()).map(String::as_str).collect();
+                for section in sections {
+                    let kind=match (left.get(section),right.get(section)){
+                        (None,Some(_))=>Some("section-added"),
+                        (Some(_),None)=>Some("section-removed"),
+                        (Some(a),Some(b)) if a!=b=>Some("section-changed"),
+                        _=>None,
+                    };
+                    if let Some(kind)=kind{
+                        changed=true;changed_sections+=1;
+                        record(kind,page,Some(section));
+                    }
+                }
+                if changed{changed_pages+=1}
+            },
+            _=>{},
+        }
+    }
+    json!({
+        "schema":"vivim.wiki-source-delta/1",
+        "outcome":if total_events==0{"unchanged"}else{"changed"},
+        "from":previous_stamp,"to":current_stamp,
+        "changedPages":changed_pages,"addedPages":added_pages,
+        "removedPages":removed_pages,"changedSections":changed_sections,
+        "changedLinks":changed_links,"totalEvents":total_events,
+        "omittedEvents":total_events.saturating_sub(events.len()),
+        "events":events,"authority":"none","executionAuthorized":false,
+        "effectPerformed":false
+    })
+}
