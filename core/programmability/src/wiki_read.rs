@@ -1,8 +1,9 @@
 //! Bounded source-backed Wiki read model for native desktop projections.
 //! @hq:capability vivim.rust-wiki-read-model@1
+//! @hq:capability vivim.rust-wiki-source-stamp@1
 //! @hq:consumes vivim.host-wiki-projection@1
 //! An observation is neither a journal writer nor an approval to edit.
-use serde_json::Value;
+use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 
 const SHOWN_PAGES: usize = 40;
@@ -90,5 +91,30 @@ impl RevisionGuard {
         }
         self.last = Some((revision, digest.to_owned()));
         Ok(())
+    }
+}
+
+/// Portable identity of the real Host Wiki pages, not a signature or grant.
+/// The full source is hashed even when the display model is truncated.
+pub fn source_stamp(input: &Value) -> Value {
+    match read(&input["wiki"]) {
+        Ok(view) => json!({
+            "schema": "vivim.wiki-source-stamp/1",
+            "state": "computed",
+            "revision": view.revision,
+            "digest": view.digest,
+            "pagesTotal": view.pages_total,
+            "authority": "none",
+            "executionAuthorized": false,
+            "effectPerformed": false
+        }),
+        Err(_) => json!({
+            "schema": "vivim.wiki-source-stamp/1",
+            "state": "refused",
+            "code": "INVALID_WIKI_SOURCE",
+            "authority": "none",
+            "executionAuthorized": false,
+            "effectPerformed": false
+        })
     }
 }

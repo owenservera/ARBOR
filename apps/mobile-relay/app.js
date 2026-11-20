@@ -19,6 +19,17 @@ import { inspectShell, selectShell } from './ux/shell-inspection.mjs';
 import { createShellPresentation } from './ux/shell-presentation.mjs';
 import { mountLocalNotes } from './ux/local-notes-ui.mjs';
 import { mountVoiceCapture } from './ux/voice-capture.mjs';
+// @hq:consumes vivim.rust-wiki-source-stamp@1
+// The browser keeps its current Wiki UI; Rust supplies optional source identity
+// from the same local WASM kernel used for VEC and other pure operations.
+let rustWikiSourceStamp=null;
+if(typeof window!=='undefined'){
+  void import('./vec-engines/rust-wasm.mjs')
+    .then(module=>{
+      rustWikiSourceStamp=module.rustWikiSourceStamp;
+      return module.initializeRustUiEngine();
+    }).catch(()=>{});
+}
 const $ = id => document.getElementById(id);
 const api = transport.request;
 const shellPresentation=createShellPresentation(document.body);
@@ -89,7 +100,7 @@ const S = {
   statusAt: 0, statusObj: null, timer: 0, busy: false, sigs: {}, shownConv: null,
   conn: { label: '', tone: 'ok' }, device: { status: null, scopes: null },
   media: { state: 'idle' }, mediaAt: 0, mediaOffset: 0, mediaLoading: false, nextBatch: null,
-  wiki: null, wikiError: 'Wiki not loaded', wikiContext: null, wikiContextError: ''
+  wiki: null, wikiStamp: null, wikiError: 'Wiki not loaded', wikiContext: null, wikiContextError: ''
 };
 let buildBindingSequence=0;
 let combinedInbox = true; // UI-only inbox aggregation; never fan-out or a provider target.
@@ -530,7 +541,7 @@ function renderWikiSources(){
   return wikiSourcePanel;
 }
 function clearWiki(reason = 'Wiki unavailable') {
-  wikiReadSequence++;clearWikiSources(reason); S.wiki = null; S.wikiError = reason;
+  wikiReadSequence++;clearWikiSources(reason); S.wiki = null; S.wikiStamp=null; S.wikiError = reason;
   S.wikiContext = null; S.wikiContextError = reason;
   if (S.tab === 'wiki') renderWiki();
 }
@@ -690,6 +701,9 @@ function renderWiki() {
   const refresh = el('button', 'btn sm', 'Refresh Wiki');
   refresh.type = 'button'; refresh.addEventListener('click', () => { void refreshWiki(); });
   head.append(refresh);
+  if(S.wikiStamp){
+    head.append(el('p','ux-note','Rust source identity · '+S.wikiStamp.digest.slice(0,12)+' · observation only'));
+  }
   const contextButton = el('button', 'btn sm', 'Source context');
   contextButton.type = 'button';
   contextButton.disabled = HOST_PREVIEW || !transport.direct || !S.paired ||
@@ -834,8 +848,20 @@ async function refreshWiki() {
       clearWikiSources('Wiki revision regressed');S.wikiContext = null; S.wikiContextError = 'Wiki revision regressed; private context cleared.';
       renderWiki(); return;
     }
+    // Native and PWA share one pure Rust source digest. Unlike a revision,
+    // the digest catches divergent pages under the same Host revision.
+    // Missing WASM does not create an alternative Wiki authority.
+    const nativeStamp=rustWikiSourceStamp?.(wiki);
+    if(S.wikiStamp&&nativeStamp&&(
+      nativeStamp.revision<S.wikiStamp.revision||
+      nativeStamp.revision===S.wikiStamp.revision&&nativeStamp.digest!==S.wikiStamp.digest)){
+      clearWikiSources('Wiki source identity conflict');
+      S.wikiContext=null;
+      S.wikiContextError='Wiki source identity conflict; private context cleared.';
+      renderWiki();return;
+    }
     if(HOST_PREVIEW)ingestWikiSources(sourceSurface);
-    S.wiki = wiki; S.wikiError = ''; S.wikiContext = context; S.wikiContextError = contextError; renderWiki();
+    S.wiki = wiki; S.wikiStamp=nativeStamp??null; S.wikiError = ''; S.wikiContext = context; S.wikiContextError = contextError; renderWiki();
   } catch (error) {
     if (sequence === wikiReadSequence && S.tab === 'wiki')
       clearWiki(error?.message || 'Wiki unavailable');

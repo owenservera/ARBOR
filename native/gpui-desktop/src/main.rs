@@ -4,6 +4,7 @@
 //! @hq:consumes vivim.native-visual-validation@1
 //! @hq:consumes vivim.native-visual-delta@1
 //! @hq:consumes vivim.native-vec-visual-ir@1
+//! @hq:consumes vivim.rust-wiki-read-model@1
 //! @hq:consumes hqkg.development-query@1
 use std::time::Duration;
 use vivim_programmability_core::visual::visual_delta;

@@ -1,5 +1,6 @@
 // Same compiled Rust domain kernel as desktop and Host, run locally in PWA.
 // @hq:capability vivim.rust-browser-kernel@1
+// @hq:consumes vivim.rust-wiki-source-stamp@1
 // No interpreted source, dynamic code, Host grants or effect APIs.
 const SCHEMA='vivim.product-pure-response/1';
 const WASM_URL='/mobile/wasm/vivim_programmability_core.wasm';
@@ -90,5 +91,17 @@ export function rustDigest(text){
     typeof value.digest!=='string'||!/^[a-f0-9]{64}$/.test(value.digest))
     return undefined;
   return value.digest;
+}
+// Inert source identity of a Host-authorized Wiki response. No persistence.
+export function rustWikiSourceStamp(wiki){
+  const value=invoke('wiki-source-stamp',{wiki});
+  if(!value||value.schema!=='vivim.wiki-source-stamp/1'||
+    value.state!=='computed'||value.authority!=='none'||
+    value.executionAuthorized!==false||value.effectPerformed!==false||
+    !Number.isSafeInteger(value.revision)||value.revision<0||
+    !Number.isSafeInteger(value.pagesTotal)||value.pagesTotal<0||
+    typeof value.digest!=='string'||!/^[a-f0-9]{64}$/.test(value.digest))
+    return undefined;
+  return {revision:value.revision,digest:value.digest,pagesTotal:value.pagesTotal};
 }
 export function nativeBrowserKernelReady(){return instance!==null;}
