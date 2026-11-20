@@ -38,11 +38,31 @@ function checkActive(row) {
   if (Date.parse(row.expiresAt) <= Date.now()) throw err(410, 'SHARE_EXPIRED');
   if (row.state !== 'ready') throw err(409, 'SHARE_NOT_READY');
 }
-function checkPasscode(row, supplied) {
+async function checkPasscode(row, supplied, persist) {
   if (!row.passHash) return;
-  if (!text(supplied) || text(supplied).length > 128) throw err(401, 'SHARE_PASSCODE_REQUIRED');
-  const derived = scryptSync(text(supplied), Buffer.from(row.passSalt, 'hex'), 32);
-  if (!timingSafeEqual(derived, Buffer.from(row.passHash, 'hex'))) throw err(403, 'SHARE_PASSCODE_INVALID');
+  if (Date.parse(row.passcodeBlockedUntil || '') > Date.now())
+    throw err(429, 'SHARE_PASSCODE_RATE_LIMITED');
+  const candidate = text(supplied);
+  if (!candidate) throw err(401, 'SHARE_PASSCODE_REQUIRED');
+  const validLength = candidate.length <= 128;
+  const valid = validLength && timingSafeEqual(
+    scryptSync(candidate, Buffer.from(row.passSalt, 'hex'), 32),
+    Buffer.from(row.passHash, 'hex')
+  );
+  if (!valid) {
+    row.failedPasscodes = (Number.isSafeInteger(row.failedPasscodes) ? row.failedPasscodes : 0) + 1;
+    if (row.failedPasscodes >= 5) {
+      row.passcodeBlockedUntil = new Date(Date.now() + 15 * 60_000).toISOString();
+      row.failedPasscodes = 0;
+    }
+    await persist(row);
+    throw err(403, 'SHARE_PASSCODE_INVALID');
+  }
+  if (row.failedPasscodes || row.passcodeBlockedUntil) {
+    row.failedPasscodes = 0;
+    row.passcodeBlockedUntil = null;
+    await persist(row);
+  }
 }
 export function createPrivateShares({ dataRoot }) {
   if (!dataRoot) throw new TypeError('dataRoot required');
@@ -213,7 +233,7 @@ export function createPrivateShares({ dataRoot }) {
     return locked(id, async () => {
       const row = await read(id);
       if (!tokenEquals(capability, row.tokenDigest)) throw err(404, 'SHARE_NOT_FOUND');
-      checkActive(row); checkPasscode(row, passcode);
+      checkActive(row); await checkPasscode(row, passcode, save);
       row.views += 1;
       await save(row);
       return publicRow(row);
@@ -223,7 +243,7 @@ export function createPrivateShares({ dataRoot }) {
     return locked(id, async () => {
       const row = await read(id);
       if (!tokenEquals(capability, row.tokenDigest)) throw err(404, 'SHARE_NOT_FOUND');
-      checkActive(row); checkPasscode(row, passcode);
+      checkActive(row); await checkPasscode(row, passcode, save);
       if (row.downloads >= row.maxDownloads) throw err(410, 'SHARE_DOWNLOAD_LIMIT_REACHED');
       const info = await stat(contentPath(id)).catch(() => null);
       if (!info?.isFile() || info.size !== row.bytes) throw err(503, 'SHARE_CONTENT_UNAVAILABLE');
