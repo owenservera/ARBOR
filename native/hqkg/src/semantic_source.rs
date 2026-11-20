@@ -99,3 +99,39 @@ pub fn impact(graph:&Graph, semantic_id:&str, depth:usize)->Result<Impact>{
     files.sort_by(|a,b|a.1.cmp(&b.1).then(a.0.cmp(&b.0)));
     Ok(Impact{epoch:graph.epoch(),files,truncated})
 }
+
+/// Exact source symbol group. Multiple declarations are never resolved to one.
+#[derive(Debug,PartialEq,Eq)]
+pub struct IndexedSymbol {
+    pub id:String,pub path:String,pub name:String,pub kind:String,
+    pub first_line:u64,pub occurrence_count:u64,pub state:String,pub content_digest:String,
+}
+pub fn symbols(graph:&Graph,name:&str)->Result<Vec<IndexedSymbol>>{
+    if name.is_empty()||name.len()>180||name.chars().any(char::is_control){
+        return Err(Error::Invalid("invalid symbol name".into()))
+    }
+    let mut found=Vec::new();
+    for n in graph.nodes().filter(|n|owned(&n.properties)&&n.kind.as_str()=="source-symbol"&&prop(n,"symbol_name")==Some(name)){
+        if found.len()>=MAX_MATCHES{return Err(Error::Invalid("symbol query match limit exceeded".into()))}
+        let parents:Vec<_>=graph.incoming(&n.id,Some("contains-indexed-symbol"))?.into_iter().filter(|e|owned(&e.properties)).collect();
+        if parents.len()!=1{return Err(Error::Corrupt("symbol source linkage missing or ambiguous".into()))}
+        let f=graph.node(&parents[0].from).ok_or_else(||Error::Corrupt("missing symbol source".into()))?;
+        let path=prop(n,"source_path").unwrap_or("");
+        let digest=prop(n,"content_sha256").unwrap_or("");
+        let kind=prop(n,"symbol_kind").unwrap_or("");
+        let state=prop(n,"status").unwrap_or("");
+        let count=prop(n,"occurrence_count").and_then(|v|v.parse::<u64>().ok()).unwrap_or(0);
+        let line=prop(n,"first_line").and_then(|v|v.parse::<u64>().ok()).unwrap_or(0);
+        if !owned(&f.properties)||f.kind.as_str()!="source-file"||path.is_empty()
+            ||prop(f,"source_path")!=Some(path)||prop(f,"content_sha256")!=Some(digest)
+            ||digest.len()!=64||!digest.bytes().all(|b|b.is_ascii_digit()||(b'a'..=b'f').contains(&b))
+            ||kind.is_empty()||count==0||line==0||
+            (if count==1{state!="indexed-not-live-checked"}else{state!="ambiguous"}){
+            return Err(Error::Corrupt("symbol provenance mismatch".into()))
+        }
+        found.push(IndexedSymbol{id:n.id.clone(),path:path.into(),name:name.into(),kind:kind.into(),
+            first_line:line,occurrence_count:count,state:state.into(),content_digest:digest.into()});
+    }
+    found.sort_by(|a,b|(&a.path,&a.kind,&a.id).cmp(&(&b.path,&b.kind,&b.id)));
+    Ok(found)
+}

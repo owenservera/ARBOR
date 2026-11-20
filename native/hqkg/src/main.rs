@@ -1,7 +1,7 @@
 //! Small CLI for persisted graph nodes and edges, paths and optional database queries.
 use hqkg::{DatabaseKind, DatabaseSpec, Edge, Error, Graph, Journal, Node, NodeKind, Result};
 fn usage() -> &'static str {
-    "hqkg <journal> init|stats|nodes|edges|add-node <id> <kind> <title>|add-edge <id> <from> <relation> <to>|path <from> <to>|search <text>|semantic-sources <name@version>|semantic-impact <name@version> <depth>|rank|db-add <id> <sqlite|postgres> <locator> [CREDENTIAL_ENV]|db-query <id> <max_rows> <SELECT...>\nExamples:\n  hqkg ./graph.hqj init\n  hqkg ./graph.hqj add-node research:1 document 'source paper'\n  hqkg ./graph.hqj db-add db:local sqlite ./example.db\n  cargo run --features sqlite -- ./graph.hqj db-query db:local 20 'SELECT * FROM example'"
+    "hqkg <journal> init|stats|nodes|edges|add-node <id> <kind> <title>|add-edge <id> <from> <relation> <to>|path <from> <to>|search <text>|symbol-sources <exact-name>|semantic-sources <name@version>|semantic-impact <name@version> <depth>|rank|db-add <id> <sqlite|postgres> <locator> [CREDENTIAL_ENV]|db-query <id> <max_rows> <SELECT...>\nExamples:\n  hqkg ./graph.hqj init\n  hqkg ./graph.hqj add-node research:1 document 'source paper'\n  hqkg ./graph.hqj db-add db:local sqlite ./example.db\n  cargo run --features sqlite -- ./graph.hqj db-query db:local 20 'SELECT * FROM example'"
 }
 fn command(args: &[String]) -> Result<()> {
     if args.len() < 2 {
@@ -64,6 +64,14 @@ fn command(args: &[String]) -> Result<()> {
             }
             for n in g.search(&args[2], 100) {
                 println!("{}\t{}", n.id, n.title);
+            }
+        }
+        "symbol-sources" => {
+            if args.len()!=3{return Err(Error::Invalid(usage().into()))}
+            let rows=hqkg::semantic_source::symbols(&g,&args[2])?;
+            println!("epoch={} authority=indexed-symbol-occurrence-only matches={}",g.epoch(),rows.len());
+            for row in rows {
+                println!("{}\t{}\t{}\t{}\t{}\t{}\t{}",row.path,row.first_line,row.kind,row.state,row.occurrence_count,row.content_digest,row.id);
             }
         }
         "semantic-sources" => {

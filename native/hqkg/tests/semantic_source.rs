@@ -36,3 +36,16 @@ fn fixture()->Exchange{
     let mut e=fixture();e.nodes.get_mut("a").unwrap().properties.insert("content_sha256".into(),"b".repeat(64));
     let mut g=Graph::new();e.apply(&mut g).unwrap();assert!(sources(&g,"vivim.native-visual-validation@1").is_err());
 }
+
+#[test]fn symbol_lookup_preserves_ambiguous_group(){
+    let mut e=fixture();
+    let mut n=Node::new("symbol",NodeKind::Other("source-symbol".into()),"validate");
+    for(k,v)in[("hqkg.exchange.source","repos-hq.index"),("source_path","arbor/core.rs"),("symbol_name","validate"),("symbol_kind","function"),("status","ambiguous"),("first_line","4"),("occurrence_count","2")]{n.properties.insert(k.into(),v.into());}
+    n.properties.insert("content_sha256".into(),"a".repeat(64));e.nodes.insert(n.id.clone(),n);
+    let mut edge=Edge::new("symbol-edge","f","contains-indexed-symbol","symbol");
+    edge.properties.insert("hqkg.exchange.source".into(),"repos-hq.index".into());e.edges.insert(edge.id.clone(),edge);
+    let mut g=Graph::new();e.apply(&mut g).unwrap();
+    let rows=hqkg::semantic_source::symbols(&g,"validate").unwrap();
+    assert_eq!(rows.len(),1);assert_eq!(rows[0].occurrence_count,2);assert_eq!(rows[0].state,"ambiguous");
+    assert!(hqkg::semantic_source::symbols(&g,"missing").unwrap().is_empty());
+}

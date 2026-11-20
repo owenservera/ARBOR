@@ -54,20 +54,20 @@ test('first export emits a deterministic admitted universe with content claims',
     const first = exportOf(ws, db, outPath, statePath);
     db.close();
 
-    assert.equal(first.stats.nodes, 2);
-    assert.equal(first.stats.edges, 1);
+    assert.ok(first.stats.nodes >= 4);
+    assert.ok(first.stats.edges >= 3);
     assert.equal(first.stats.tombstones, 0);
     // Wiki admission (the exact checker buildWiki consumes) must accept it.
     const index = buildGraphIndex(outPath);
-    assert.equal(index.nodeCount, 2);
-    assert.equal(index.edgeCount, 1);
+    assert.equal(index.nodeCount, first.stats.nodes);
+    assert.equal(index.edgeCount, first.stats.edges);
     // The wiki join key resolves for the indexed file: path + '\0' + content hash.
     const raw = parseExchange(outPath);
-    const oneNode = raw.rows.find((r) => r.type === 'node' && r.metadata.source_path === 'demo/src/one.mjs');
+    const oneNode = raw.rows.find((r) => r.kind === 'source-file' && r.metadata.source_path === 'demo/src/one.mjs');
     assert.ok(oneNode, 'node for demo/src/one.mjs present');
     assert.match(oneNode.id, /^hqg1:[a-f0-9]{64}$/);
     assert.match(oneNode.metadata.content_sha256, /^[a-f0-9]{64}$/);
-    const edge = raw.rows.find((r) => r.type === 'edge');
+    const edge = raw.rows.find((r) => r.type === 'edge' && r.relation === 'imports');
     assert.equal(edge.relation, 'imports');
     assert.equal(edge.from, raw.rows.find((r) => r.type === 'node' && r.metadata.source_path === 'demo/src/two.mjs').id);
     assert.equal(edge.to, oneNode.id);
@@ -99,7 +99,7 @@ test('mutation updates the node in place; deletion emits a tombstone; rename is 
     let db2 = indexWorkspace(ws);
     const second = exportOf(ws, db2, outPath, statePath);
     db2.close();
-    assert.equal(second.stats.nodes, 2, 'mutation does not change the node universe');
+    assert.equal(second.stats.nodes, first.stats.nodes, 'mutation does not change the node universe');
     assert.equal(second.stats.tombstones, 0);
     // The importer acknowledged this exchange: state may advance.
     assert.equal(acknowledgeGraphExport({ statePath, digest: second.digest, acknowledgment: { epochBefore: 3, epochAfter: 4 } }).acked, true);
@@ -113,11 +113,11 @@ test('mutation updates the node in place; deletion emits a tombstone; rename is 
     db2 = indexWorkspace(ws);
     const third = exportOf(ws, db2, outPath, statePath);
     db2.close();
-    assert.equal(third.stats.nodes, 1);
-    assert.equal(third.stats.tombstones, 1);
-    assert.deepEqual(third.tombstonedPaths, ['demo/src/two.mjs']);
+    assert.equal(third.stats.nodes, first.stats.nodes-2);
+    assert.equal(third.stats.tombstones, 2);
+    assert.deepEqual(third.tombstonedPaths.filter(x=>!x.startsWith('@hq-')), ['demo/src/two.mjs']);
     const thirdRaw = parseExchange(outPath);
-    const tomb = thirdRaw.rows.find((r) => r.type === 'tombstone');
+    const tomb = thirdRaw.rows.find((r) => r.type === 'tombstone'&&r.id===twoBefore.id);
     assert.equal(tomb.id, twoBefore.id, 'tombstone targets the exact former identity');
     assert.ok(!thirdRaw.rows.some((r) => r.type === 'node' && r.metadata.source_path === 'demo/src/two.mjs'));
     assert.equal(acknowledgeGraphExport({ statePath, digest: third.digest, acknowledgment: { epochBefore: 4, epochAfter: 5 } }).acked, true);
@@ -128,9 +128,9 @@ test('mutation updates the node in place; deletion emits a tombstone; rename is 
     db2 = indexWorkspace(ws);
     const fourth = exportOf(ws, db2, outPath, statePath);
     db2.close();
-    assert.equal(fourth.stats.nodes, 1);
-    assert.equal(fourth.stats.tombstones, 1);
-    assert.deepEqual(fourth.tombstonedPaths, ['demo/src/one.mjs']);
+    assert.equal(fourth.stats.nodes, third.stats.nodes);
+    assert.equal(fourth.stats.tombstones, 2);
+    assert.deepEqual(fourth.tombstonedPaths.filter(x=>!x.startsWith('@hq-')), ['demo/src/one.mjs']);
     const fourthRaw = parseExchange(outPath);
     const renamed = fourthRaw.rows.find((r) => r.type === 'node' && r.metadata.source_path === 'demo/src/three.mjs');
     assert.ok(renamed, 'renamed file gets a fresh identity');
@@ -166,7 +166,7 @@ test('acknowledgment gating: unacked tombstones survive, stale digests refused, 
     db2 = indexWorkspace(ws);
     const failedImport = exportOf(ws, db2, outPath, statePath);
     db2.close();
-    assert.equal(failedImport.stats.tombstones, 1, 'tombstone re-emitted while unacked');
+    assert.equal(failedImport.stats.tombstones, 2, 'file and symbol tombstones re-emitted while unacked');
     assert.equal(acknowledgeGraphExport({ statePath, digest: '0'.repeat(64) }).acked, false, 'wrong digest refused');
     assert.equal(acknowledgeGraphExport({ statePath, digest: failedImport.digest, acknowledgment: { epochBefore: 7, epochAfter: 5 } }).acked, false, 'epoch regression refused');
     assert.equal(acknowledgeGraphExport({ statePath, digest: failedImport.digest, acknowledgment: { epochBefore: 7, epochAfter: 9 } }).acked, true, 'verified acknowledgment commits');
@@ -189,8 +189,8 @@ test('hq kg export CLI writes the exchange and reports counts', () => {
     });
     const payload = JSON.parse(out);
     assert.equal(payload.schema, 'hq.kg-export/1');
-    assert.equal(payload.stats.nodes, 2);
-    assert.equal(payload.stats.edges, 1);
+    assert.ok(payload.stats.nodes >= 4);
+    assert.ok(payload.stats.edges >= 3);
     assert.ok(existsSync(join(ws, '.hq', 'kg-exchange.jsonl')));
   } finally {
     try { rmSync(ws, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 }); } catch { /* leftover temp: spawned CLI child may hold index.db on Windows */ }
@@ -218,5 +218,23 @@ test('native graph exchange includes Rust header and JS semantic anchors without
       assert.ok(rows.some(r=>r.id===edge.metadata.anchor_id&&r.kind==='semantic-file-anchor'));
     }
     assert.ok(buildGraphIndex(out).nodeCount>=5);
+  }finally{rmSync(ws,{recursive:true,force:true,maxRetries:5,retryDelay:200});}
+});
+
+test('symbol graph identity survives line shifts and deletion is acknowledgment fenced',()=>{
+  const ws=makeWorkspace();
+  try{
+    const out=join(ws,'.hq','symbol-exchange.jsonl'),state=join(ws,'.hq','symbol-state.json');
+    const exportNow=()=>{const db=indexWorkspace(ws);try{return exportGraphExchange({db,outPath:out,statePath:state});}finally{db.close();}};
+    const find=()=>parseExchange(out).rows.find(r=>r.kind==='source-symbol'&&r.metadata.symbol_name==='alpha');
+    let first=exportNow(),old=find();assert.ok(old);assert.equal(old.metadata.first_line,1);
+    assert.equal(acknowledgeGraphExport({statePath:state,digest:first.digest}).acked,true);
+    writeFileSync(join(ws,'demo','src','one.mjs'),'\n\nexport function alpha(){return 2;}\n');
+    let second=exportNow(),next=find();assert.equal(next.id,old.id);assert.equal(next.metadata.first_line,3);
+    assert.notEqual(next.metadata.anchor_digest,old.metadata.anchor_digest);
+    assert.equal(acknowledgeGraphExport({statePath:state,digest:second.digest}).acked,true);
+    writeFileSync(join(ws,'demo','src','one.mjs'),'// declaration removed\n');
+    exportNow();assert.ok(parseExchange(out).rows.some(r=>r.type==='tombstone'&&r.id===old.id));
+    exportNow();assert.ok(parseExchange(out).rows.some(r=>r.type==='tombstone'&&r.id===old.id));
   }finally{rmSync(ws,{recursive:true,force:true,maxRetries:5,retryDelay:200});}
 });

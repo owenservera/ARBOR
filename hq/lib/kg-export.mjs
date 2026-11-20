@@ -145,6 +145,31 @@ function currentUniverse(db) {
     groups.get(key).lines.push(row.line);
   }
   const graphId=(kind,...parts)=>'hqg1:'+sha256([kind,...parts].join('\u0000'));
+  // File/name/kind groups preserve identity across line shifts. Multiple
+  // declarations of the same name/kind are explicitly ambiguous: the current
+  // index does not prove qualified AST ownership or call-site resolution.
+  const symbolGroups=new Map();
+  for(const row of db.prepare('SELECT file_id,name,kind,line,end_line,exported FROM symbols ORDER BY file_id,name,kind,line,end_line').all()){
+    const file=byFileId.get(row.file_id);
+    if(!file||typeof row.name!=='string'||row.name.length>180||! /^[A-Za-z_$][A-Za-z0-9_$:.]*$/.test(row.name)
+       ||typeof row.kind!=='string'||! /^[a-zA-Z][a-zA-Z0-9_-]{0,63}$/.test(row.kind)
+       ||!Number.isSafeInteger(row.line)||row.line<1)continue;
+    const key=JSON.stringify([file.id,row.name,row.kind]);
+    if(!symbolGroups.has(key))symbolGroups.set(key,{file,name:row.name,kind:row.kind,occurrences:[]});
+    symbolGroups.get(key).occurrences.push([row.line,Number.isSafeInteger(row.end_line)&&row.end_line>=row.line?row.end_line:row.line,row.exported===1]);
+  }
+  for(const [key,g] of [...symbolGroups].sort(([a],[b])=>a<b?-1:a>b?1:0)){
+    const id=graphId('indexed-symbol',key);
+    const count=g.occurrences.length;
+    nodes.push({type:'node',id,kind:'source-symbol',title:g.name,metadata:{
+      source_path:g.file.rootPath,content_sha256:g.file.hash,project:g.file.project,
+      symbol_name:g.name,symbol_kind:g.kind,status:count===1?'indexed-not-live-checked':'ambiguous',
+      first_line:g.occurrences[0][0],occurrence_count:count,exported:g.occurrences.some(x=>x[2]),
+      anchor_digest:sha256(JSON.stringify([key,g.file.hash,g.occurrences])),domain:'development'
+    }});
+    edges.push({type:'edge',id:graphId('contains-indexed-symbol',g.file.id,id),from:g.file.id,to:id,
+      relation:'contains-indexed-symbol',weight:1,metadata:{evidence_class:'indexed-symbol-occurrence'}});
+  }
   for(const [key,g] of [...groups].sort(([a],[b])=>a<b?-1:a>b?1:0)){
     const semId=graphId('semantic-id',g.ref), anchorId=graphId('semantic-file-anchor',key);
     if(!semantic.has(semId)){
@@ -263,8 +288,8 @@ export function exportGraphExchange({ db, outPath, statePath = null }) {
     const entries = {};
     for (const node of nodes) {
       const meta = node.metadata;
-      const key=node.kind==='source-file'?meta.source_path:'@hq-semantic/'+node.id;
-      const digest=node.kind==='semantic-file-anchor'?meta.anchor_digest:meta.content_sha256;
+      const key=node.kind==='source-file'?meta.source_path:(node.kind==='source-symbol'?'@hq-symbol/':'@hq-semantic/')+node.id;
+      const digest=meta.anchor_digest??meta.content_sha256;
       entries[key] = { id: node.id, content_sha256: digest };
       if (previous && previous[key]?.content_sha256 === digest) {
         unchangedNodes += 1;
