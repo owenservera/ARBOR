@@ -46,6 +46,10 @@ test('Direct PWA private share: grant, origin, upload, download limit and revoke
     origin,'x-vivim-share':'1','content-type':'application/json'
   },body:createBody})).status,401);
   assert.equal((await call('/mobile/private-shares-ui.mjs')).status,200);
+  const shell=await call('/mobile/');
+  assert.equal(shell.status,200);
+  assert.match(shell.headers['content-security-policy'], /img-src[^;]*blob:/);
+  assert.match(shell.headers['content-security-policy'], /frame-src blob:/);
   const {publicKey,privateKey}=generateKeyPairSync('ec',{namedCurve:'prime256v1'});
   const publicKeyPem=publicKey.export({type:'spki',format:'pem'});
   const challenge=parse(await call('/mobile/api/enrollment/start',{
