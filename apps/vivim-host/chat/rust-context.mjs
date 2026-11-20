@@ -93,7 +93,7 @@ function regularFile(file) {
 }
 
 export function resolveBundledRustBinary(name,{repoRoot=DEFAULT_ROOT,isFile=regularFile,platform=process.platform}={}) {
-  if(!['hqkg-personal','hqkg-chat-context','hqkg-web-feed','vivim-program-validate','vivim-vec-project'].includes(name))return null;
+  if(!['hqkg-personal','hqkg-chat-context','hqkg-web-feed','vivim-program-validate','vivim-vec-project','vivim-product-pure'].includes(name))return null;
   const ext = platform === 'win32' ? '.exe' : '';
   const dirs = [path.join(repoRoot,'native','bin'), path.join(repoRoot,'target','release'),
     path.join(repoRoot,'target','debug'), path.join(repoRoot,'native','hqkg','target','release'),
