@@ -1,4 +1,6 @@
 // Host-owned private file-share store inspired by the MIT-licensed adcar/opensend.
+// @hq:context Host-owned private file sharing, expiry, passcode and download receipts.
+// @hq:invariant Never expose file bytes without Direct identity and a live device grant.
 // A share is NOT a public web endpoint: Direct/Tailscale and a live device grant
 // are required by the caller before this module is reached.
 import path from 'node:path';
