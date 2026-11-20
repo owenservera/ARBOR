@@ -8,6 +8,7 @@ pub const MAX_WIRE_BYTES:usize=512*1024;
 // The Host durable journal is bounded at 8 MiB. Only this native-only replay
 // operation can use a larger transport frame; browser ABI remains 512 KiB.
 pub const MAX_JOURNAL_WIRE_BYTES:usize=12*1024*1024;
+pub const MAX_CHANGE_WIRE_BYTES:usize=4*1024*1024;
 pub fn refuse(op:&str,code:&str)->Value{
     json!({"schema":RESPONSE_SCHEMA,"state":"refused","operation":op,
         "code":code,"authority":"none","executionAuthorized":false,"effectPerformed":false})
@@ -58,9 +59,11 @@ pub fn dispatch_json(raw:&str)->String{
         Ok(request)=>request,Err(_)=>return refuse("","INVALID_JSON").to_string()
     };
     let operation=request["operation"].as_str().unwrap_or("");
-    let limit=if operation=="wiki-journal-replay"{
-        MAX_JOURNAL_WIRE_BYTES
-    }else{MAX_WIRE_BYTES};
+    let limit=match operation {
+        "wiki-journal-replay"=>MAX_JOURNAL_WIRE_BYTES,
+        "wiki-change-projection"=>MAX_CHANGE_WIRE_BYTES,
+        _=>MAX_WIRE_BYTES,
+    };
     if raw.len()>limit{return refuse(operation,"INPUT_TOO_LARGE").to_string()}
     let wire=dispatch(&request).to_string();
     if wire.len()>limit{refuse(operation,"NATIVE_RESULT_TOO_LARGE").to_string()}

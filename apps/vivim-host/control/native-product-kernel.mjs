@@ -6,17 +6,22 @@ import {resolveBundledRustBinary} from '../chat/rust-context.mjs';
 
 const MAX_WIRE=512*1024;
 const MAX_JOURNAL_WIRE=12*1024*1024;
-const wireLimit=operation=>operation==='wiki-journal-replay'?MAX_JOURNAL_WIRE:MAX_WIRE;
+const MAX_WIKI_CHANGES_WIRE=4*1024*1024;
+const isJournal=operation=>operation==='wiki-journal-replay'||operation==='wiki-change-projection';
+const wireLimit=operation=>operation==='wiki-journal-replay'?MAX_JOURNAL_WIRE:
+  operation==='wiki-change-projection'?MAX_WIKI_CHANGES_WIRE:MAX_WIRE;
 const MAX_PENDING=32;
 const DEADLINE_MS=4000;
-let active=null;
+// Large read-model work must not block the short-lived command fence lane.
+const activeByLane=new Map();
 let sequence=0;
 class NativeKernel {
-  constructor(binary){this.binary=binary;this.child=null;this.buf=Buffer.alloc(0);this.pending=new Map();}
+  constructor(binary){this.binary=binary;this.child=null;this.parts=[];this.frameBytes=0;this.pending=new Map();}
   discard(code){
     const child=this.child;
     this.child=null;
-    this.buf=Buffer.alloc(0);
+    this.parts=[];
+    this.frameBytes=0;
     if(child){try{child.kill();}catch{/* already terminated */}}
     for(const pending of this.pending.values()){
       clearTimeout(pending.timer);
@@ -30,14 +35,17 @@ class NativeKernel {
     for(let offset=0;offset<payload.length;){
       const at=payload.indexOf(10,offset);
       const end=at<0?payload.length:at+1;
-      if(this.buf.length+end-offset>MAX_JOURNAL_WIRE+512){
+      const len=end-offset;
+      if(this.frameBytes+len>MAX_JOURNAL_WIRE+512){
         this.discard('RUST_KERNEL_FRAME_LIMIT');return;
       }
-      this.buf=Buffer.concat([this.buf,payload.subarray(offset,end)]);
+      this.parts.push(payload.subarray(offset,end));
+      this.frameBytes+=len;
       offset=end;
       if(at<0)break;
-      const frame=this.buf.subarray(0,this.buf.length-1);
-      this.buf=Buffer.alloc(0);
+      const frame=Buffer.concat(this.parts,this.frameBytes).subarray(0,this.frameBytes-1);
+      this.parts=[];
+      this.frameBytes=0;
       let response;
       try{response=JSON.parse(frame.toString('utf8'));}catch{
         this.discard('RUST_KERNEL_INVALID_JSON');return;
@@ -77,7 +85,7 @@ class NativeKernel {
     return new Promise((resolve,reject)=>{
       const timer=setTimeout(()=>{
         if(this.pending.has(id))this.discard('RUST_KERNEL_TIMEOUT');
-      },operation==='wiki-journal-replay'?12000:DEADLINE_MS);
+      },isJournal(operation)?12000:DEADLINE_MS);
       this.pending.set(id,{resolve,reject,timer,operation});
       try{this.child.stdin.write(frame+'\n');}
       catch{this.discard('RUST_KERNEL_PIPE_FAILED');}
@@ -87,10 +95,17 @@ class NativeKernel {
 export async function callNativeProductKernel(operation,input){
   const binary=resolveBundledRustBinary('vivim-product-pure');
   if(!binary)throw Object.assign(Error('NATIVE_NOT_PACKAGED'),{code:'NATIVE_NOT_PACKAGED'});
-  if(active&&active.binary!==binary){active.discard('RUST_KERNEL_BINARY_REPLACED');active=null;}
-  if(!active)active=new NativeKernel(binary);
+  const lane=isJournal(operation)?'journal':'control';
+  let active=activeByLane.get(lane);
+  if(active&&active.binary!==binary){
+    active.discard('RUST_KERNEL_BINARY_REPLACED');
+    activeByLane.delete(lane);
+    active=null;
+  }
+  if(!active){active=new NativeKernel(binary);activeByLane.set(lane,active);}
   return active.request(operation,input);
 }
 export function closeNativeProductKernel(){
-  if(active){active.discard('RUST_KERNEL_CLOSED');active=null;}
+  for(const active of activeByLane.values())active.discard('RUST_KERNEL_CLOSED');
+  activeByLane.clear();
 }
