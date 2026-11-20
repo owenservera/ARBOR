@@ -1,5 +1,6 @@
 //! Native adapter for the canonical VIVIM Host. No local journal or dispatcher.
 pub mod control;
+pub mod visual;
 use reqwest::blocking::Client;
 use serde_json::Value;
 use std::{path::{Path, PathBuf}, time::Duration, io::Read};

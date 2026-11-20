@@ -862,6 +862,28 @@ async function handleControl(req, res, pathname, host, controlFor, tokenFor, uiS
       worldId:runtimeFor().worldId,verifyObservation:()=>false}).studioOutcomes();}
     catch{return {schema:'vivim.studio-outcomes/1',state:'unavailable',items:[]};}
   }
+  // Native renderer consumes the SAME validated TierFlow render plan as the PWA.
+  // There is no new writer, phone grant, or renderer-side compiler authority.
+  if (route === 'native-ui-view') {
+    if (req.method !== 'GET') { sendJson(res,405,{code:'METHOD'});return; }
+    if (req.headers.origin !== undefined && !sameOrigin) {sendJson(res,403,{code:'ORIGIN'});return;}
+    res.setHeader('cache-control','private, no-store');
+    try {
+      const {projectNativeUi}=await import('./control/native-ui-view.mjs');
+      const url=new URL(req.url,'http://'+host);
+      const width=url.searchParams.get('viewportPx')??'1000';
+      if(!/^\d{3,4}$/.test(width)||Number(width)<240||Number(width)>3840){sendJson(res,400,{code:'INVALID_VIEWPORT'});return;}
+      const result=projectNativeUi(runtimeFor().projection(),Number(width));
+      let currentOwner=null;try{currentOwner=tokenFor();}catch{}
+      if(!(currentOwner&&verifyOwnerToken(req.headers.authorization,currentOwner))&&!uiSessions.authorized(req,{mutate:false})){
+        sendJson(res,401,{code:'OWNER_AUTH'});return;
+      }
+      sendJson(res,200,result);
+    } catch {
+      sendJson(res,503,{schema:'vivim.native-ui-view/1',state:'unavailable',code:'NATIVE_UI_VIEW_UNAVAILABLE'});
+    }
+    return;
+  }
   if(route==='wiki-view'){
     if(req.method!=='GET'){sendJson(res,405,{code:'METHOD'});return;}
     if(req.headers.origin!==undefined&&!sameOrigin){sendJson(res,403,{code:'ORIGIN'});return;}

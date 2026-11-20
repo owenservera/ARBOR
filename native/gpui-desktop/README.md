@@ -18,6 +18,8 @@ production root lock and default build. This initial crate does not yet have a
 generated lockfile. Generate and review it on the Windows build machine.
 
 ## Implemented source
+- Owner-authorized native visual GET uses the same canonical TierFlow plan and committed Host surface as PWA. No blank draft substitution. Native client validates source/plan identities, complete trace, revision and monotonic head during the session; preview actions are inert.
+- Native layout maps stack/grid/card/text and structured rows, source colors and bounded presentation. Fixed 1000px plan viewport for now, no pixel/font/animation or interactive parity claim; live binding rows are explicitly unavailable.
 - Loopback-only client with no redirects or proxies, bounded response size,
   timeouts and existing native owner-token convention.
 - Canonical GET Host status, private PWA projection, private Wiki projection.
