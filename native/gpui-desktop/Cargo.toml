@@ -1,0 +1,22 @@
+[package]
+name = "vivim-gpui-desktop"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+# Keep the experimental GPU dependency graph outside the production workspace lock.
+[workspace]
+
+[features]
+default = []
+desktop = ["dep:gpui"]
+
+[dependencies]
+serde_json = "1"
+reqwest = { version = "0.12", default-features = false, features = ["blocking", "json"] }
+gpui = { version = "=0.2.2", optional = true }
+
+[[bin]]
+name = "vivim-gpui-desktop"
+path = "src/main.rs"
+required-features = ["desktop"]
