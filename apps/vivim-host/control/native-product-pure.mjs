@@ -7,7 +7,7 @@ import {resolveBundledRustBinary} from '../chat/rust-context.mjs';
 export const NATIVE_PURE_SCHEMA='vivim.product-pure-response/1';
 const REQUEST_SCHEMA='vivim.product-pure-request/1';
 const OPERATIONS=new Set(['command-program','context-grounding','wiki-target',
-  'recovery-diagnosis','recovery-diagnosis-batch','ui-value']);
+  'recovery-diagnosis','recovery-diagnosis-batch','wiki-target-batch','ui-value']);
 const LIMIT=512*1024;
 const unavailable=(operation,code)=>({schema:NATIVE_PURE_SCHEMA,
   state:'unavailable',operation,code,authority:'none',

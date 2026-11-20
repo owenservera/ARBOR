@@ -24,6 +24,8 @@ fn dispatch(raw:&Value)->Value{
             vivim_programmability_core::context_grounding::resolve(&raw["input"]),
         "wiki-target"=>
             vivim_programmability_core::wiki_target::resolve(&raw["input"]),
+        "wiki-target-batch"=>
+            vivim_programmability_core::wiki_target::resolve_batch(&raw["input"]),
         "recovery-diagnosis"=>
             vivim_programmability_core::recovery_diagnosis::diagnose(&raw["input"]["finding"]),
         "recovery-diagnosis-batch"=>

@@ -30,3 +30,19 @@ pub fn resolve(input:&Value)->Value{
     if !sections[section].is_string(){return Value::Null}
     json!({"page":page,"section":section})
 }
+
+/// Resolve a bounded set of journal interpretations in one native invocation.
+/// The input Wiki contains only page/section identity and value types.
+pub fn resolve_batch(input:&Value)->Value{
+    let Some(intents)=input["intents"].as_array()else{
+        return json!({"error":"WIKI_TARGETS_INVALID"})
+    };
+    if intents.len()>24||!input["wiki"]["pages"].is_object(){
+        return json!({"error":"WIKI_TARGETS_INVALID"})
+    }
+    let results:Vec<Value>=intents.iter().map(|intent|resolve(&json!({
+        "wiki":input["wiki"],"intent":intent
+    }))).collect();
+    json!({"schema":"vivim.native-wiki-targets/1","results":results,"authority":"none",
+        "executionAuthorized":false,"effectPerformed":false})
+}
