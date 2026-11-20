@@ -3,6 +3,7 @@
 //! @hq:capability vivim.native-vec-visual-ir@1
 //! @hq:consumes vivim.native-visual-validation@1
 //! @hq:consumes vivim.ui-render-plan@1
+//! @hq:consumes vivim.rust-ui-value@1
 use crate::visual::{self, Visual, Node, VisualError};
 use serde::Serialize;
 use serde_json::{Value,json};
@@ -50,6 +51,12 @@ pub struct View{
     pub execution_authorized:bool,pub effect_performed:bool,
 }
 fn hex(n:u32)->String{format!("#{n:06x}")}
+// The same typed color grammar now backs VEC native style serialization.
+fn typed_color(rgb:u32)->Result<String,VisualError>{
+    let checked=crate::ui_value::validate(&json!({"type":"color","value":hex(rgb)}));
+    if checked["ok"]!=true{return Err(VisualError::InvalidProjection)}
+    checked["value"].as_str().map(str::to_owned).ok_or(VisualError::InvalidProjection)
+}
 fn scalar(v:f32)->bool{v.is_finite()&&v>=0.&&v<=128.}
 fn element(node:&Node,view:&Visual,seen:&mut BTreeSet<String>,
            actions:&mut Vec<String>,charts:&mut usize,depth:usize)->Result<Element,VisualError>{
@@ -70,8 +77,9 @@ fn element(node:&Node,view:&Visual,seen:&mut BTreeSet<String>,
         ||node.radius.is_some_and(|x|!scalar(x))
         ||node.font_size.is_some_and(|x|!scalar(x)){return Err(VisualError::InvalidProjection)}
     let style=Style{
-        background:bg.map(hex),foreground:bg.map(|x|hex(visual::contrast_ink(x))),
-        border_color:if border_width>0.{Some(hex(node.border.unwrap_or(view.accent)))}else{None},
+        background:bg.map(typed_color).transpose()?,
+        foreground:bg.map(|x|typed_color(visual::contrast_ink(x))).transpose()?,
+        border_color:if border_width>0.{Some(typed_color(node.border.unwrap_or(view.accent))?)}else{None},
         border_width_px:border_width,padding_px:padding,gap_px:gap,
         radius_px:node.radius,font_size_px:node.font_size,
     };
@@ -104,8 +112,8 @@ pub fn compile(view:&Visual)->Result<View,VisualError>{
         surface_id:view.surface_id.clone(),revision:view.revision,
         design_digest:format!("{:x}",Sha256::digest(view.fingerprint.as_bytes())),
         binding_watermarks:view.binding_watermarks.clone(),
-        background:hex(view.background),foreground:hex(visual::contrast_ink(view.background)),
-        secondary:hex(view.secondary),accent:hex(view.accent),
+        background:typed_color(view.background)?,foreground:typed_color(visual::contrast_ink(view.background))?,
+        secondary:typed_color(view.secondary)?,accent:typed_color(view.accent)?,
         root,node_count:seen.len(),chart_count:charts,preview_action_ids:actions,
         live_binding_ids:view.binding_watermarks.keys().cloned().collect(),
         execution_authorized:false,effect_performed:false})
