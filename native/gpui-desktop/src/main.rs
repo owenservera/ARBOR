@@ -2,7 +2,7 @@
 //! @hq:consumes vivim.gpui-projection-client@1
 //! @hq:consumes vivim.gpui-control-client@1
 //! @hq:consumes vivim.native-visual-validation@1
-use gpui::{AnyElement, App, Application, Bounds, Context, Entity, Window, WindowBounds, WindowOptions, div, prelude::*, px, rgb, size};
+use gpui::{AnyElement, App, Application, Bounds, Context, Entity, Window, WindowBounds, WindowOptions, div, prelude::*, px, relative, rgb, size};
 use gpui_component::{Root, input::{Input, InputState}, button::{Button, ButtonVariants}};
 use vivim_gpui_desktop::{Overview, read_overview, control::{self, Review}, visual::{self, Visual, Node, RevisionGuard}};
 
@@ -153,11 +153,12 @@ fn mount_node(n:&Node,theme:&Visual)->AnyElement{
     if let Some(detail)=&n.detail{el=el.child(div().child(detail.clone()));}
     if n.kind=="chart"{
         for bar in &n.bars{
-            // Shared Rust geometry; flex weights are proportional to full signed range.
-            let track=div().flex().h(px(10.)).bg(rgb(theme.secondary))
-                .child(div().flex_basis(px(0.)).flex_grow(bar.start as f32))
-                .child(div().flex_basis(px(0.)).flex_grow(bar.extent as f32).bg(rgb(theme.accent)))
-                .child(div().flex_basis(px(0.)).flex_grow((1.-bar.start-bar.extent).max(0.) as f32));
+            // Shared Rust geometry; segment widths are proportional to the signed range.
+            let track=div().relative().w_full().flex().h(px(10.)).bg(rgb(theme.secondary))
+                .child(div().flex_none().w(relative(bar.start as f32)))
+                .child(div().flex_none().w(relative(bar.extent as f32)).bg(rgb(theme.accent)))
+                .child(div().flex_none().w(relative((1.-bar.start-bar.extent).max(0.) as f32)))
+                .child(div().absolute().top_0().bottom_0().left(relative(bar.zero as f32)).w(px(1.)).bg(rgb(ink(theme.secondary))));
             el=el.child(div().child(format!("{} · {}",bar.label,bar.value))).child(track);
         }
     }else{for item in &n.items{el=el.child(div().p_1().child(item.clone()));}}

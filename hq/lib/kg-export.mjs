@@ -131,6 +131,7 @@ function currentUniverse(db) {
     seenEdges.add(id);
     edges.push({ type: 'edge', id, from: from.id, to: to.id, relation: 'imports', weight: 1, metadata: {} });
   }
+  // @hq:type hq.semantic-file-anchor@1
   // Semantic observations are data, not registry promotions or verified runtime
   // behavior. Keep path-stable file anchors and shared versioned identities.
   const groups=new Map(), semantic=new Map();
