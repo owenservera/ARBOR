@@ -1,4 +1,8 @@
+// @hq:context Authenticated Direct Host transport into native private shares.
+// @hq:owner host-direct-phone
 // @hq:capability vivim.private-shares-host-port@1
+// @hq:consumes vivim.private-shares-native@1
+// @hq:contract vivim.private-shares-request/1
 // Host transport only. All share policy, persistence, cryptography, expiry,
 // limits, and download admission execute in the packaged Rust private-share core.
 // There is deliberately no JS share-engine fallback. Device grant and Direct
