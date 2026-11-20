@@ -2,6 +2,9 @@
 //! @hq:consumes vivim.gpui-projection-client@1
 //! @hq:consumes vivim.gpui-control-client@1
 //! @hq:consumes vivim.native-visual-validation@1
+//! @hq:consumes vivim.native-visual-delta@1
+use std::time::Duration;
+use vivim_programmability_core::visual::visual_delta;
 use gpui::{AnyElement, App, Application, Bounds, Context, Entity, Window, WindowBounds, WindowOptions, div, prelude::*, px, relative, rgb, size};
 use gpui_component::{Root, input::{Input, InputState}, button::{Button, ButtonVariants}};
 use vivim_gpui_desktop::{Overview, read_overview, control::{self, Review}, visual::{self, Visual, Node, RevisionGuard}};
@@ -21,13 +24,24 @@ struct Desktop {
     uncertain: bool,
 }
 impl Desktop {
+    // Weak entity lifetime stops the observer when its workspace closes.
+    // All refreshes are GET-only. Neither polling nor readback can approve.
+    fn start_observer(&self,cx:&mut Context<Self>){
+        cx.spawn(async move |this,cx|{
+            loop{
+                cx.background_executor().timer(Duration::from_secs(15)).await;
+                if this.update(cx,|view,cx|{
+                    if !view.busy&&!view.review.as_ref().is_some_and(Review::needs_approval){
+                        view.refresh(cx);
+                    }
+                }).is_err(){break}
+            }
+        }).detach();
+    }
     fn refresh(&mut self, cx: &mut Context<Self>) {
         if self.busy { return; }
         self.busy = true;
-        self.overview = None;
-        self.visual = None;
-        self.visual_status = "Reading committed visual revision…".into();
-        self.status = "Reading canonical Host…".into();
+        self.visual_status = "Checking Host · displayed observations may be stale".into();
         cx.notify();
         let work = cx.background_executor().spawn(async move { (read_overview(), visual::read()) });
         cx.spawn(async move |this, cx| {
@@ -36,13 +50,21 @@ impl Desktop {
                 view.busy = false;
                 let (overview, visual) = result;
                 match overview {
-                    Ok(data) => { view.status = "Host overview · source-backed".into(); view.overview = Some(data); }
-                    Err(error) => { view.status = error.label().into(); view.overview = None; view.review = None; }
+                    Ok(data) => { if view.overview.as_ref()!=Some(&data){view.overview=Some(data);} }
+                    Err(error) => { view.visual_status=error.label().into(); view.overview = None; view.review = None; view.visual=None; cx.notify(); return; }
                 }
                 match visual.and_then(|v| view.visual_guard.accept(v).map_err(Into::into)) {
-                    Ok(Some(v)) => { view.visual_status = format!("Committed {} · revision {} · read-only",v.surface_id,v.revision); view.visual=Some(v); }
-                    Ok(None) => {view.visual_status="No committed visual surface".into();}
-                    Err(e) => {view.visual_status=e.label().into(); view.visual=None;}
+                    Ok(next) => {
+                        match visual_delta(view.visual.as_ref(),next.as_ref()){
+                            Ok(delta)=>{
+                                let summary=next.as_ref().map(|v|format!("Committed {} · revision {} · read-only · {} changed / {} added / {} removed",v.surface_id,v.revision,delta.changed.len(),delta.added.len(),delta.removed.len())).unwrap_or_else(||"No committed visual surface".into());
+                                if !delta.is_empty(){view.visual=next;}
+                                view.visual_status=summary;
+                            }
+                            Err(_)=>{view.visual=None;view.visual_status="Visual revision conflict".into();}
+                        }
+                    }
+                    Err(e) => {view.visual_status=e.label().into(); view.visual=None;view.review=None;}
                 }
                 cx.notify();
             });
@@ -102,6 +124,8 @@ impl Desktop {
                     }
                 }
                 cx.notify();
+                // Refresh authoritative state after an applied receipt; preserve receipt status.
+                if !view.uncertain {view.refresh(cx);}
             });
         }).detach();
     }
@@ -226,7 +250,7 @@ fn main() {
                 let view=cx.new(|cx| {
                     let mut view=Desktop {input,status:"Not yet observed".into(),overview:None,visual:None,visual_status:"Not yet observed".into(),visual_guard:RevisionGuard::default(),detail:String::new(),
                         review:None,last_plan:None,busy:false,uncertain:false};
-                    view.refresh(cx);view
+                    view.refresh(cx);view.start_observer(cx);view
                 });
                 cx.new(|cx|Root::new(view,window,cx))
             }).expect("Unable to open VIVIM GPUI window");

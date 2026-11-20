@@ -44,3 +44,5 @@ generated lockfile. Generate and review it on the Windows build machine.
    decision. PWA mobile remains unchanged.
 
 No build or GPU/device runtime evidence is claimed by this source change.
+
+The native window now polls the authenticated read projections every 15 seconds while idle, skips pending approvals, retains read-only receipt status, and refreshes immediately after a known execution outcome. The shared Rust delta reports changed/added/removed UI nodes; it does not yet prove retained GPU element reuse or server push.
