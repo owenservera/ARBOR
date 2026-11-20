@@ -29,6 +29,19 @@ const canonical=v=>Array.isArray(v)?v.map(canonical):record(v)?
 const CATALOG_13_DIGEST='422f499257f8828ffe22779a896008549966fdcc89bdcdaa2dc89803de7ae967';
 export function compatibleRuleCatalog(rule,catalog){
   if(rule.catalogVersion===catalog.version)return true;
+  // Ordinary same-revision reads stay local. A stale owner-reviewed command
+  // crosses catalog revisions ONLY when the Rust kernel verifies the exact
+  // fingerprinted additive predecessor. Older installations use the matching
+  // incumbent check below; neither path grants execution authority.
+  const native=runNativeProductPureSync('control-catalog-compatibility',{
+    schema:'vivim.control-catalog-compatibility-input/1',
+    ruleCatalogVersion:rule.catalogVersion,actionId:rule.actionId,catalog
+  });
+  if(native){
+    return native.authority==='none'&&native.executionAuthorized===false&&
+      native.effectPerformed===false&&native.outcome==='compatible'&&
+      native.compatible===true;
+  }
   if(catalog.version===15&&[13,14].includes(rule.catalogVersion)&&rule.actionId!=='program.write_wiki'){
     const prior={...catalog,version:14,actions:catalog.actions.filter(a=>a.id!=='program.write_wiki')};
     return catalog.actions.length===38&&sha256Hex(JSON.stringify(canonical(prior)))==='c2c2e6d53a709beca16fb81052206c7ea14bd52a010d996088b662083f24d504'&&compatibleRuleCatalog(rule,prior);
