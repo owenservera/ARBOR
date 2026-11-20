@@ -3,6 +3,7 @@ import { constants } from 'node:fs';
 import { mkdir, readFile, lstat, open } from 'node:fs/promises';
 import { randomUUID, createHash } from 'node:crypto';
 import { projectWikiSemantics, resolveSemanticWikiTarget, projectWikiStructure, resolveSemanticWikiPages } from './wiki-semantics.mjs';
+import {runNativeProductPure} from '../control/native-product-pure.mjs';
 import path from 'node:path';
 import { loadProductBaseline } from './product-baseline.mjs';
 
@@ -322,7 +323,7 @@ function projectWikiChanges(records, { currentOnly = false } = {}) {
 }
 
 // A read model only: user statements and committed Wiki effects remain separate.
-export function projectWikiContext(records, wikiRevision = null, wiki = null) {
+export function projectWikiContext(records, wikiRevision = null, wiki = null, nativeTargets = null) {
   const observed = records.filter(e => e?.kind === 'chat-send' &&
     (e.actor === 'human' || e.actor === 'owner-browser') &&
     typeof e.entryId === 'string' && Number.isSafeInteger(e.sequence));
@@ -333,11 +334,12 @@ export function projectWikiContext(records, wikiRevision = null, wiki = null) {
     wikiChanges: projectWikiChanges(records),
     wikiStructure: projectWikiStructure(records,wiki),
     omitted: observed.length - latest.length,
-    items: latest.map(e => {
+    nativeTargets: nativeTargets===null?'legacy-unavailable':'rust-source-backed',
+    items: latest.map((e,index) => {
       const outcome = typeof e.intent?.outcome === 'string' ? e.intent.outcome.slice(0, 64) : null;
       const actionId = typeof e.intent?.candidate?.actionId === 'string'
         ? e.intent.candidate.actionId.slice(0, 128) : null;
-      const target = resolveSemanticWikiTarget(wiki, e.intent);
+      const target = nativeTargets===null?resolveSemanticWikiTarget(wiki,e.intent):nativeTargets[index];
       const pageTargets = resolveSemanticWikiPages(wiki,e.intent);
       return {
         source: 'host-product-journal', entryId: e.entryId, sequence: e.sequence,
@@ -485,9 +487,36 @@ export function createProductJournal({ dataRoot, seedState, seedWiki }) {
   async function readRecords() { return (await snapshot()).records; }
   async function readProjection() { return (await snapshot()).projection; }
   async function readWikiContext() {
-    const current = await snapshot(); // validates committed records and deterministic replay
-    requireShape(!current.tornTail, 'Wiki context unavailable: torn journal tail', 503);
-    return projectWikiContext(current.records, current.wikiRevision, current.wiki);
+    const current=await snapshot(); // validated committed journal replay
+    requireShape(!current.tornTail,'Wiki context unavailable: torn journal tail',503);
+    const latest=current.records.filter(e=>e?.kind==='chat-send'&&
+      (e.actor==='human'||e.actor==='owner-browser')&&
+      typeof e.entryId==='string'&&Number.isSafeInteger(e.sequence)).slice(-24);
+    // Send identity and value *types* only. No private section text, credentials,
+    // conversation messages or mutable client-supplied Wiki snapshots.
+    const pages=Object.fromEntries(Object.entries(current.wiki?.pages??{}).map(
+      ([page,data])=>[page,{sections:Object.fromEntries(Object.entries(data?.sections??{})
+        .map(([section,value])=>[section,typeof value==='string'?'':null]))}]
+    ));
+    const intents=latest.map(e=>({outcome:e.intent?.outcome??null,
+      candidate:{actionId:e.intent?.candidate?.actionId??null,
+        args:{target:e.intent?.candidate?.args?.target??null}}}));
+    const native=await runNativeProductPure('wiki-target-batch',{wiki:{pages},intents});
+    let targets=null;
+    const result=native?.result;
+    if(native?.state==='computed'&&result?.schema==='vivim.native-wiki-targets/1'&&
+      result.authority==='none'&&result.executionAuthorized===false&&
+      result.effectPerformed===false&&Array.isArray(result.results)&&
+      result.results.length===latest.length&&result.results.every((target,i)=>{
+        if(target===null)return true;
+        if(!target||typeof target!=='object'||Array.isArray(target)||
+          typeof target.page!=='string'||typeof target.section!=='string'||
+          typeof current.wiki?.pages?.[target.page]?.sections?.[target.section]!=='string')
+          return false;
+        return intents[i]?.outcome==='candidate'&&
+          intents[i]?.candidate?.actionId==='wiki.section.edit';
+      }))targets=result.results;
+    return projectWikiContext(current.records,current.wikiRevision,current.wiki,targets);
   }
   // Owner-local native input. Use the same validated committed snapshot and
   // D4 identities, never the demo seed, unverified chat or client-supplied facts.
