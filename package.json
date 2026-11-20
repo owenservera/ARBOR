@@ -25,6 +25,7 @@
     "test:interop": "node --test tests/compatibility/wave1f.test.mjs tests/privacy/w01-f-source-lint.test.mjs",
     "test:mobile": "cd apps/mobile-relay && node --test test/*.test.mjs",
     "test:tierflow": "cd packages/tierflow && bun test tests/visual-runtime",
-    "test:rust": "cargo test --workspace"
+    "test:rust": "cargo test --workspace",
+    "build:rust:pwa": "node tools/packaging/build-product-wasm.mjs"
   }
 }
