@@ -12,6 +12,34 @@ const incomingCapability = shareHash?.[1] || null;
 let created = null;
 let inspected = null;
 let previewUrl = null;
+let droppedFile = null;
+const dropzone = $('share-drop');
+function selectionLabel(file) {
+  const label = $('share-selected-name');
+  if (label) label.textContent = file
+    ? file.name + ' · ' + Math.ceil(file.size / 1024) + ' KB'
+    : 'Maximum 10 MB · Direct Host only';
+}
+if (dropzone) {
+  const inhibit = e => { e.preventDefault(); e.stopPropagation(); };
+  dropzone.addEventListener('dragover', e => {
+    inhibit(e); dropzone.classList.add('dragging');
+  });
+  dropzone.addEventListener('dragleave', e => {
+    inhibit(e); dropzone.classList.remove('dragging');
+  });
+  dropzone.addEventListener('drop', e => {
+    inhibit(e); dropzone.classList.remove('dragging');
+    const selected = e.dataTransfer?.files?.[0];
+    if (!selected) return;
+    droppedFile = selected;
+    selectionLabel(selected);
+  });
+}
+fileInput?.addEventListener('change', () => {
+  droppedFile = null;
+  selectionLabel(fileInput.files?.[0] || null);
+});
 if (shareHash) history.replaceState(null, '', location.pathname + location.search);
 if (button) button.hidden = !transport?.direct || new URLSearchParams(location.search).get('host-preview') === '1';
 
@@ -153,7 +181,7 @@ if (button && dialog) {
     if (pane) { pane.replaceChildren(); pane.hidden = true; }
   });
   $('share-create')?.addEventListener('click', async () => {
-    const upload = fileInput?.files?.[0];
+    const upload = droppedFile || fileInput?.files?.[0];
     if (!upload) { message('Choose a file to share.'); return; }
     const action = $('share-create'); action.disabled = true; output.value = ''; created = null;
     try {
