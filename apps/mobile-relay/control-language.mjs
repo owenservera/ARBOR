@@ -29,10 +29,20 @@ const LOCAL_NAVIGATION = Object.freeze({
   'show private shares': 'shares', 'show my shares': 'shares',
   'share a file': 'shares', 'open file sharing': 'shares'
 });
+// The PWA consults the same Rust local-navigation interpreter as the Host
+// when its on-device WASM kernel has been staged and admitted.
+let rustLocalDestination=null;
+if(typeof window!=='undefined'){
+  void import('/mobile/vec-engines/rust-wasm.mjs')
+    .then(module=>{rustLocalDestination=module.rustNavigation;}).catch(()=>{});
+}
 export function resolveLocalDestination(input) {
   if (typeof input !== 'string') return null;
   const normalized = input.trim().toLowerCase().replace(/\s+/g, ' ');
-  return Object.hasOwn(LOCAL_NAVIGATION, normalized) ? LOCAL_NAVIGATION[normalized] : null;
+  const existing=Object.hasOwn(LOCAL_NAVIGATION,normalized)?LOCAL_NAVIGATION[normalized]:null;
+  const rust=rustLocalDestination?.(input);
+  // Never silently change a navigation target during the Rust cutover.
+  return rust===undefined||rust===existing?existing:null;
 }
 // An inert precedence rule over existing compiler results, not another interpreter.
 export function resolveProductRoute(text,{hostMeaning,compileUi=null,hostRequired=true}={}) {
