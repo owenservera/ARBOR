@@ -271,6 +271,50 @@ mod vec_revision_tests{
         assert_eq!(value["effectPerformed"],false);
         assert!(value.get("bindingWatermarks").is_none());
     }
+    fn real_host_projection()->Value{
+        json!({"schema":"vivim.native-ui-view/1","state":"source-backed",
+            "authority":"none",
+            "source":{"schema":"vivim.ui-surface/1","catalogVersion":1,
+                "surfaceId":"my-space","revision":2,
+                "theme":{"background":"#111722","secondary":"#243146","accent":"#78b8f6"},
+                "tree":{"id":"root","type":"stack",
+                    "props":{"direction":"vertical"},"children":[]}},
+            "identities":{"root":"vivim.component.stack@1"},
+            "plan":{"schema":"vivim.ui-render-plan/1","revision":2,
+                "status":"ok","root":{"id":"render_root",
+                    "children":[{"id":"root","layout":{"columns":1},"children":[]}]},
+                "trace":[{"id":"root","sourceId":"root","outcome":"rendered"}]}})
+    }
+    #[test]fn native_json_delta_respects_host_source_revision_and_inert_actions(){
+        let before=real_host_projection();
+        let mut after=before.clone();
+        after["source"]["revision"]=json!(3);
+        after["plan"]["revision"]=json!(3);
+        let delta=diff_projections(&before,&after).unwrap();
+        assert_eq!(delta["schema"],DELTA_SCHEMA);
+        assert_eq!(delta["surfaceId"],"my-space");
+        assert_eq!(delta["fromRevision"],2);
+        assert_eq!(delta["toRevision"],3);
+        assert_eq!(delta["revisionChanged"],true);
+        assert_eq!(delta["repaintRequired"],true);
+        assert!(delta.get("authorization").is_none());
+        assert!(delta.get("execute").is_none());
+        let mut foreign=after.clone();
+        foreign["source"]["surfaceId"]=json!("other-space");
+        assert!(diff_projections(&before,&foreign).is_err());
+        let mut rollback=before.clone();
+        rollback["source"]["revision"]=json!(1);
+        rollback["plan"]["revision"]=json!(1);
+        assert!(diff_projections(&before,&rollback).is_err());
+        let absent=json!({"schema":"vivim.native-ui-view/1",
+            "authority":"none","state":"absent"});
+        let cleared=diff_projections(&after,&absent).unwrap();
+        assert_eq!(cleared["removed"],json!(["root"]));
+        assert!(cleared["toRevision"].is_null());
+        let mut mismatched=after.clone();
+        mismatched["plan"]["revision"]=json!(4);
+        assert!(diff_projections(&before,&mismatched).is_err());
+    }
     #[test]fn foreign_visual_source_cannot_be_repainted_as_a_delta(){
         let prior=compile(&observed()).unwrap();
         let mut foreign=observed();
