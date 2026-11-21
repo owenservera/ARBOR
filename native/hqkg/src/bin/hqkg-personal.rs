@@ -270,6 +270,21 @@ fn sync_context(v: &Value, ns: &Namespace, journal: &Journal, g: &mut Graph,
         }
         _ => return Err("active context scope requires bounded managed read".into()),
     };
+    // Only this exact Host-provided complete Wiki-section inventory is allowed
+    // to reconcile omission, including after a cold restart. Bounded source
+    // deltas alone never infer deletion. Reconciliation requires an explicit
+    // current Wiki high-water, a native journal epoch CAS, and a scoped read.
+    let complete_wiki_revision=match v.get("completeWikiRevision") {
+        None=>None,
+        Some(value)=>{
+            let revision=value.as_u64().ok_or("invalid complete Wiki revision")?;
+            if revision==0 || view.is_none() || deltas.is_none() ||
+                v.get("baseEpoch").is_none() || active_ids.is_none() {
+                return Err("complete Wiki inventory requires epoch-fenced scoped delta read".into());
+            }
+            Some(revision)
+        }
+    };
     let active_relationships:Option<BTreeSet<String>>=match v.get("activeRelationshipIds") {
         None => None,
         Some(Value::Array(ids)) if view.is_some() && active_ids.is_some() && ids.len()<=24 => {
@@ -530,9 +545,45 @@ fn sync_context(v: &Value, ns: &Namespace, journal: &Journal, g: &mut Graph,
             }
         }
     }
-    // Only a complete projection reconciles omission. A delta batch never infers
-    // a deletion from a record it does not carry: that is exactly the failure
-    // this ingestion path exists to remove.
+    // An explicit *complete Wiki-section inventory* is different from a
+    // bounded delta. The Host replays and validates the entire product journal,
+    // then binds all surviving current sections to activeIds and the source Wiki
+    // high-water. This handles a page or section deleted while Host was down:
+    // the old section must not persist forever just because the process forgot
+    // its last RAM snapshot. Never target historical D4 effects, Wiki page
+    // structure, unrelated namespace nodes, or newer source revisions.
+    let mut reconciled_sections=0usize;
+    if let Some(wiki_revision)=complete_wiki_revision {
+        let current=active_ids.as_ref().ok_or("missing complete Wiki inventory")?;
+        for old in g.nodes() {
+            if !old.id.starts_with(&managed_prefix) ||
+                old.properties.get("vivim.context.kind").map(String::as_str)!=Some("wiki") ||
+                !old.properties.get("vivim.context.semanticId")
+                    .is_some_and(|s|s.starts_with("wiki:section:")) ||
+                deleted.contains(&old.id) {
+                continue;
+            }
+            let local=old.id.strip_prefix(&prefix)
+                .ok_or("invalid complete Wiki inventory scope")?;
+            if current.contains(local) {continue;}
+            let old_revision=old.properties.get("hqkg.provenance.revision")
+                .and_then(|s|s.parse::<u64>().ok())
+                .ok_or("invalid historical Wiki section revision")?;
+            if old_revision>wiki_revision {
+                return Err("STALE_CONTEXT_SOURCE complete Wiki inventory".into());
+            }
+            let prior_digest=old.properties.get("hqkg.provenance.digest")
+                .ok_or("invalid historical Wiki section digest")?;
+            let exact=json!({"kind":"wiki","id":local,
+                "revision":old_revision,"digest":prior_digest});
+            let (next,deleted_one)=stage_tombstone(g,ns,changes,&exact)?;
+            changes=next;
+            if deleted_one {reconciled_sections+=1;}
+        }
+    }
+    // Only a complete projection reconciles generic omission. A bounded
+    // delta never infers deletion: the inventory above is separately
+    // authorized, revision-fenced, and limited to current Wiki sections.
     if deltas.is_none() {
         for old in g.edges() {
             if old.id.starts_with(&format!("{prefix}vivim-context-p-")) &&
@@ -559,6 +610,31 @@ fn sync_context(v: &Value, ns: &Namespace, journal: &Journal, g: &mut Graph,
     if changed {
         scoped_graph::apply_scoped(g, ns, &RevisionToken { namespace: ns.clone(), graph_epoch: epoch },
             &changes, &mut ApplyLedger::new()).map_err(err)?;
+    }
+    // Validate proposed active-source and link identities against the *new
+    // in-memory graph* before any checked journal write or compaction. A bad
+    // retrieval scope may never commit source changes then fail after saving.
+    if view.is_some() {
+        if let Some(ids)=&active_ids {
+            for local in ids {
+                let id=scoped_graph::qualified_id(ns,local).map_err(err)?;
+                let node=g.node(&id).ok_or("active context source missing from projected graph")?;
+                if !matches!(node.properties.get("vivim.context.kind").map(String::as_str),
+                    Some("wiki"|"effect")) {
+                    return Err("invalid projected active source kind".into());
+                }
+            }
+        }
+        if let Some(ids)=&active_relationships {
+            for local in ids {
+                let id=scoped_graph::qualified_id(ns,local).map_err(err)?;
+                let edge=g.edge(&id).ok_or("active Wiki link missing from projected graph")?;
+                if edge.properties.get("vivim.context.kind").map(String::as_str)
+                    !=Some("wiki-page-link") {
+                    return Err("invalid projected active Wiki link kind".into());
+                }
+            }
+        }
     }
     let mut compacted=false;
     if changed || before == 0 {
@@ -599,7 +675,8 @@ fn sync_context(v: &Value, ns: &Namespace, journal: &Journal, g: &mut Graph,
         "syncedRelationships":page_edges.len(),"changed":changed,
         "compacted":compacted,
         "mode":if deltas.is_some(){"delta"}else{"projection"},
-        "ingested":ingested,"tombstoned":tombstoned});
+        "ingested":ingested,"tombstoned":tombstoned,
+        "reconciledSections":reconciled_sections});
     if let Some(view)=view {
         check_managed_head(journal.path(),&status).map_err(quarantine)?;
         if let Some(ids)=&active_ids {
