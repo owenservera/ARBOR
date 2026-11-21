@@ -610,7 +610,7 @@ function validWikiSourceShape(wiki) {
       !wiki.pages||typeof wiki.pages!=='object'||Array.isArray(wiki.pages))
     return false;
   const nameOK=name=>typeof name==='string'&&name.length>0&&
-    [...name].length<=160&&!/[\\u0000-\\u001f\\u007f-\\u009f]/.test(name);
+    [...name].length<=160&&!/[\u0000-\u001f\u007f-\u009f]/.test(name);
   return Object.entries(wiki.pages).every(([pageName,page])=>
     nameOK(pageName)&&page&&typeof page==='object'&&!Array.isArray(page)&&
     page.sections&&typeof page.sections==='object'&&!Array.isArray(page.sections)&&
