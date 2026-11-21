@@ -2,9 +2,10 @@
 
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
-use std::sync::Arc;
+use std::sync::{Arc, atomic::{AtomicBool,AtomicU8,Ordering}};
 use std::thread;
 use std::time::{Duration, Instant};
+use std::net::{TcpStream,SocketAddr};
 
 use tauri::{Manager, State};
 
@@ -62,9 +63,30 @@ enum ChildState {
     Exited,
 }
 
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+enum Readiness { NotChecked, Starting, Owned, Attached, Failed, Stopped }
+impl Readiness {
+    fn as_str(self) -> &'static str {
+        match self {
+            Self::NotChecked => "not_checked", Self::Starting => "starting",
+            Self::Owned => "ready_owned", Self::Attached => "ready_existing",
+            Self::Failed => "failed", Self::Stopped => "stopped",
+        }
+    }
+}
+
+// A native shell supervises only the single child it spawned. The Host
+// remains the sole authority for effects, owner data and durable receipts.
+const MAX_AUTO_RECOVERIES: u8 = 2;
 struct HostProcess {
     child: std::sync::Mutex<Option<Child>>,
     exit_code: std::sync::Mutex<Option<i32>>,
+    // Serializes setup, explicit restart, crash recovery and exit cleanup.
+    lifecycle: std::sync::Mutex<()>,
+    readiness: std::sync::Mutex<Readiness>,
+    last_error: std::sync::Mutex<Option<String>>,
+    auto_recoveries: AtomicU8,
+    shutting_down: AtomicBool,
 }
 
 impl Default for HostProcess {
@@ -126,6 +148,11 @@ impl HostProcess {
         Self {
             child: std::sync::Mutex::new(None),
             exit_code: std::sync::Mutex::new(None),
+            lifecycle: std::sync::Mutex::new(()),
+            readiness: std::sync::Mutex::new(Readiness::NotChecked),
+            last_error: std::sync::Mutex::new(None),
+            auto_recoveries: AtomicU8::new(0),
+            shutting_down: AtomicBool::new(false),
         }
     }
 
@@ -316,6 +343,91 @@ impl HostProcess {
         false
     }
 
+    fn health_online() -> bool {
+        let client = match reqwest::blocking::Client::builder()
+            .no_proxy()
+            .redirect(reqwest::redirect::Policy::none())
+            .timeout(Duration::from_millis(1250))
+            .connect_timeout(Duration::from_millis(500))
+            .build() {
+                Ok(client) => client,
+                Err(_) => return false,
+            };
+        Self::probe_health(&client)
+    }
+
+    /// Refuse to launch a second Host when the fixed loopback port is already
+    /// held by something that failed the Host schema/online identity check.
+    fn listener_occupied() -> bool {
+        let addr = SocketAddr::from(([127, 0, 0, 1], 43187));
+        TcpStream::connect_timeout(&addr, Duration::from_millis(300)).is_ok()
+    }
+
+    fn wait_owned_healthy(&self, timeout: Duration) -> bool {
+        let deadline=Instant::now()+timeout;
+        while Instant::now()<deadline && !self.shutting_down.load(Ordering::Acquire) {
+            if Self::health_online() { return true; }
+            if self.probe_child()!=ChildState::Running { return false; }
+            thread::sleep(Duration::from_millis(300));
+        }
+        false
+    }
+
+    fn set_readiness(&self, value:Readiness, error:Option<String>) {
+        *self.readiness.lock().unwrap()=value;
+        *self.last_error.lock().unwrap()=error;
+    }
+
+    /// Caller holds lifecycle. A healthy existing Host is attached but never
+    /// adopted as a child. Failed owned starts are terminated/reaped, and all
+    /// retries are bounded. This is process health only, never Host approval.
+    fn ensure_ready_locked(&self, app:&tauri::AppHandle, max_attempts:u8) -> Result<(),String> {
+        if self.shutting_down.load(Ordering::Acquire) {
+            return Err("Native shell is shutting down".into());
+        }
+        self.set_readiness(Readiness::Starting,None);
+        if Self::health_online() {
+            let owned=self.probe_child()==ChildState::Running;
+            if !owned { self.stop_owned(); }
+            self.set_readiness(if owned {Readiness::Owned}else{Readiness::Attached},None);
+            return Ok(());
+        }
+        if Self::listener_occupied() {
+            let error="Host port occupied by an unverified or unavailable listener; refusing duplicate Host".to_owned();
+            self.set_readiness(Readiness::Failed,Some(error.clone()));
+            return Err(error);
+        }
+        // Never spawn over a still-running owned process whose health is
+        // degraded: it may have an in-flight Host effect or uncertain receipt.
+        if self.probe_child()==ChildState::Running {
+            let error="Owned Host process is running but unhealthy; manual recovery required".to_owned();
+            self.set_readiness(Readiness::Failed,Some(error.clone()));
+            return Err(error);
+        }
+        let mut last_error=String::from("Host launch did not complete");
+        for attempt in 0..max_attempts {
+            if self.shutting_down.load(Ordering::Acquire) { break; }
+            match Self::start(app) {
+                Ok(child)=>{
+                    self.store_child(child);
+                    if self.wait_owned_healthy(Duration::from_secs(10)) {
+                        self.set_readiness(Readiness::Owned,None);
+                        return Ok(());
+                    }
+                    last_error=format!("Host child failed to become healthy (attempt {} of {})",attempt+1,max_attempts);
+                    self.stop_owned();
+                }
+                Err(error)=>{
+                    last_error=format!("Host child could not start: {error}");
+                }
+            }
+            // A competing listener may have arrived after the first spawn.
+            if Self::listener_occupied() {break;}
+        }
+        self.set_readiness(Readiness::Failed,Some(last_error.clone()));
+        Err(last_error)
+    }
+
     /// Observe the child through the OS, never through handle presence alone.
     /// `Ok(None)` means alive; `Ok(Some)` means exited and reaped, and the handle
     /// keeps the cached status so repeated probes report the same exit.
@@ -351,6 +463,7 @@ impl HostProcess {
     /// owns so a second setup pass cannot leak a live process.
     fn store_child(&self, child: Child) {
         self.stop_owned();
+        *self.exit_code.lock().unwrap() = None;
         *self.child.lock().unwrap() = Some(child);
     }
 
@@ -360,6 +473,10 @@ impl HostProcess {
             ChildState::Exited => "exited",
             ChildState::NotStarted => "not_started",
         };
+        let healthy=Self::health_online();
+        let readiness=*self.readiness.lock().unwrap();
+        let effective_ready=healthy &&
+            matches!(readiness,Readiness::Owned|Readiness::Attached);
         let approved = approved_binaries(&runtime.root);
         let missing: Vec<&str> = approved
             .iter()
@@ -370,6 +487,13 @@ impl HostProcess {
             "schema": "vivim.native-host-status/1",
             "child": child,
             "exitCode": *self.exit_code.lock().unwrap(),
+            "readiness": readiness.as_str(),
+            "verifiedHostOnline": healthy,
+            "ready": effective_ready,
+            "ownedChild": child=="running",
+            "autoRecoveryAttempts": self.auto_recoveries.load(Ordering::Relaxed),
+            "autoRecoveryLimit": MAX_AUTO_RECOVERIES,
+            "lastStartError": self.last_error.lock().unwrap().clone(),
             "runtime": runtime.mode.as_str(),
             "runtimeRoot": runtime.root.display().to_string(),
             "server": runtime.server.display().to_string(),
@@ -384,8 +508,9 @@ impl HostProcess {
 
 /// Real child state, not retained handle presence.
 #[tauri::command]
-fn host_is_running(state: State<'_, Arc<HostProcess>>) -> bool {
-    state.probe_child() == ChildState::Running
+fn host_is_running(_state: State<'_, Arc<HostProcess>>) -> bool {
+    // Includes a verified existing Host we deliberately did not spawn.
+    HostProcess::health_online()
 }
 
 /// Native supervisor view: real child state, runtime origin and approved
@@ -421,23 +546,24 @@ async fn host_restart(
     }
 }
 
-fn restart_blocking(app: &tauri::AppHandle, state: &HostProcess) -> serde_json::Value {
-    state.stop_owned();
-    match HostProcess::start(app) {
-        Ok(child) => {
-            state.store_child(child);
-            let healthy = HostProcess::wait_healthy(Duration::from_secs(20));
-            let mut payload = state.status_payload(&HostProcess::resolve_runtime(app));
-            payload["ok"] = serde_json::json!(healthy);
-            payload
-        }
-        Err(error) => {
-            let mut payload = state.status_payload(&HostProcess::resolve_runtime(app));
-            payload["ok"] = serde_json::json!(false);
-            payload["error"] = serde_json::json!(error.to_string());
-            payload
-        }
+fn reconcile_blocking(app:&tauri::AppHandle, state:&HostProcess,
+                      stop_owned:bool, attempts:u8) -> serde_json::Value {
+    let _lifecycle=state.lifecycle.lock().unwrap();
+    if stop_owned {
+        // An explicit restart may stop only our own process, never an existing
+        // independent Host. Its journal and durable receipts stay untouched.
+        state.stop_owned();
+        state.auto_recoveries.store(0,Ordering::Release);
     }
+    let result=state.ensure_ready_locked(app,attempts);
+    let mut payload=state.status_payload(&HostProcess::resolve_runtime(app));
+    payload["ok"]=serde_json::json!(result.is_ok());
+    if let Err(error)=result {payload["error"]=serde_json::json!(error);}
+    payload
+}
+
+fn restart_blocking(app: &tauri::AppHandle, state: &HostProcess) -> serde_json::Value {
+    reconcile_blocking(app,state,true,2)
 }
 
 #[tauri::command]
@@ -458,39 +584,45 @@ fn main() {
             let handle = app.handle().clone();
             let window = app.get_webview_window("main").unwrap();
 
-            // Start the VIVIM Node host as a detached child (survives window close).
-            match HostProcess::start(app.handle()) {
-                Ok(child) => {
-                    handle.state::<Arc<HostProcess>>().store_child(child);
-                    let runtime = HostProcess::resolve_runtime(app.handle());
-                    if runtime.mode == RuntimeMode::Packaged {
-                        let missing = missing_approved_binaries(&runtime.root);
-                        if !missing.is_empty() {
-                            eprintln!(
-                                "VIVIM packaged runtime missing approved binaries: {}",
-                                missing.join(", ")
-                            );
-                        }
+            // Do not block the GUI thread for a Host boot timeout. There is
+            // one serialized supervisor for this shell; it never owns an
+            // already-running Host and never starts a second background Host.
+            let state=handle.state::<Arc<HostProcess>>().inner().clone();
+            thread::spawn(move || {
+                let report=reconcile_blocking(&handle,&state,false,2);
+                if report["ok"]==true {
+                    let destination=HostProcess::desktop_launch_url()
+                        .unwrap_or_else(||"http://127.0.0.1:43187/".to_string());
+                    let script=format!("location.href = {};",
+                        serde_json::to_string(&destination).unwrap());
+                    let _=window.eval(&script);
+                    let _=window.set_focus();
+                } else {
+                    eprintln!("VIVIM Host startup not ready: {}",report["error"]);
+                }
+
+                // Crash recovery is deliberately narrow. Only an owned child
+                // observed exited by the OS is restarted, at most twice per
+                // shell lifetime. A live but unhealthy Host is *not* killed
+                // automatically: it may still be processing an effect.
+                loop {
+                    thread::sleep(Duration::from_secs(3));
+                    if state.shutting_down.load(Ordering::Acquire) {break;}
+                    if state.probe_child()!=ChildState::Exited {continue;}
+                    let used=state.auto_recoveries.load(Ordering::Acquire);
+                    if used>=MAX_AUTO_RECOVERIES {
+                        state.set_readiness(Readiness::Failed,
+                            Some("Owned Host exhausted bounded crash recovery".into()));
+                        break;
                     }
-                    // Wait for the host to answer before showing the webview.
-                    let healthy = HostProcess::wait_healthy(Duration::from_secs(20));
-                    if healthy {
-                        let destination = HostProcess::desktop_launch_url()
-                            .unwrap_or_else(|| "http://127.0.0.1:43187/".to_string());
-                        // serde_json produces a safely quoted JavaScript string.
-                        let script = format!(
-                            "location.href = {};",
-                            serde_json::to_string(&destination).unwrap()
-                        );
-                        let _ = window.eval(&script);
-                        let _ = window.set_focus();
-                    } else {
-                        eprintln!("VIVIM host did not become healthy at {}", HOST_HEALTH);
+                    state.auto_recoveries.fetch_add(1,Ordering::AcqRel);
+                    let recovery=reconcile_blocking(&handle,&state,false,1);
+                    if recovery["ok"]!=true {
+                        eprintln!("VIVIM Host crash recovery refused: {}",recovery["error"]);
+                        break;
                     }
                 }
-                Err(e) => eprintln!("VIVIM host start failed: {}", e),
-            }
-
+            });
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -500,8 +632,17 @@ fn main() {
             app_version,
             validate_native_program
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|handle,event| {
+            if let tauri::RunEvent::Exit = event {
+                let state=handle.state::<Arc<HostProcess>>();
+                state.shutting_down.store(true,Ordering::Release);
+                let _lifecycle=state.lifecycle.lock().unwrap();
+                state.stop_owned();
+                state.set_readiness(Readiness::Stopped,None);
+            }
+        });
 }
 
 #[cfg(test)]
@@ -678,6 +819,10 @@ mod tests {
             state.status_payload(&runtime)["schema"],
             serde_json::json!("vivim.native-host-status/1")
         );
+        assert_eq!(state.status_payload(&runtime)["autoRecoveryLimit"],
+            serde_json::json!(MAX_AUTO_RECOVERIES));
+        assert_eq!(state.status_payload(&runtime)["readiness"],
+            serde_json::json!("not_checked"));
 
         if let Some(child) = state.child.lock().unwrap().as_mut() {
             let _ = child.kill();
@@ -689,6 +834,18 @@ mod tests {
             ),
             "status payload must flip to exited once the child dies"
         );
+    }
+
+    #[test]
+    fn readiness_and_shutdown_do_not_imply_host_authority() {
+        let state=HostProcess::new();
+        assert_eq!(state.readiness.lock().unwrap().as_str(),"not_checked");
+        state.set_readiness(Readiness::Failed,Some("not ready".into()));
+        assert_eq!(state.readiness.lock().unwrap().as_str(),"failed");
+        assert_eq!(state.last_error.lock().unwrap().as_deref(),Some("not ready"));
+        state.shutting_down.store(true,Ordering::Release);
+        assert!(state.shutting_down.load(Ordering::Acquire));
+        assert_eq!(MAX_AUTO_RECOVERIES,2);
     }
 
     #[test]
