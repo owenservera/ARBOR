@@ -211,7 +211,8 @@ export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path
     readComposerObservations: () => composerBridge.observation(),
     readStatus: () => hostSnapshot({dataRoot,bootstrap:runtimeFor()})
   });
-  const composerBridge=createHostComposerBridge({readSnapshot:()=>liveSystem.snapshot()});
+  const composerBridge=createHostComposerBridge({readSnapshot:()=>liveSystem.snapshot(),
+    onVerifiedSnapshot:state=>liveSystemMirror.publish(state)});
   const tokenFor = () => {
     if (token) return token;
     token = loadOwnerToken({ dataRoot }).token;
