@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
-import {mkdtempSync,rmSync} from 'node:fs';
+import {mkdtempSync,rmSync,readFileSync,writeFileSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {createHostServer} from '../server.mjs';
@@ -134,4 +134,59 @@ test('real Rust Host Control plan -> one-use Direct phone draft -> source receip
   assert.equal((await phone('POST','/mobile/api/first-contact/composer/ack',{
     sessionId:SID,correlationId:CORRELATION,stage:'applied-local'
   })).status,409);
+
+  // The owner-editable JSON is deliberately separate from refreshable current.
+  const mirrorFile=path.join(root,'live-system','owner.current.json');
+  const proposalFile=path.join(root,'live-system','owner.proposal.json');
+  assert.equal(JSON.parse(readFileSync(mirrorFile,'utf8')).regions
+    .find(r=>r.id==='phone.composer').data.draft,'Hello world');
+  const rebase=await owner('POST','/api/host/live-system/proposal/rebase',{
+    expectedSequence:final.body.revision,discardPending:true
+  });
+  assert.equal(rebase.status,200,JSON.stringify(rebase.body));
+  assert.equal(rebase.body.state,'rebased');
+  const edited=JSON.parse(readFileSync(proposalFile,'utf8'));
+  edited.regions.find(r=>r.id==='phone.composer').data.draft='File target';
+  writeFileSync(proposalFile,JSON.stringify(edited)+'\n');
+  // A normal state refresh may never destroy an operator's pending JSON edit.
+  const refreshed=await owner('GET','/api/host/live-system');
+  assert.equal(refreshed.status,200);
+  assert.equal(JSON.parse(readFileSync(proposalFile,'utf8')).regions
+    .find(r=>r.id==='phone.composer').data.draft,'File target');
+  assert.equal(refreshed.body.regions.find(r=>r.id==='phone.composer').data.draft,'Hello world');
+  const fileStage=await owner('POST','/api/host/live-system/composer/stage-file',{confirm:true});
+  assert.equal(fileStage.status,202,JSON.stringify(fileStage.body));
+  assert.equal(fileStage.body.origin,'owner-file-proposal');
+  assert.equal(fileStage.body.executionAuthorized,false);
+  const filePlan=await owner('POST','/api/host/control/plan',{
+    actionId:'pwa.composer.draft.set',args:{stage_id:fileStage.body.stageId}
+  });
+  assert.equal(filePlan.status,200,JSON.stringify(filePlan.body));
+  assert.equal(filePlan.body.risk,'R1');
+  const fileExecution=owner('POST','/api/host/control/execute',{
+    planId:filePlan.body.planId,planDigest:filePlan.body.planDigest
+  });
+  const fileDelivery=await phone('GET',
+    '/mobile/api/first-contact/composer/next?sessionId='+SID+'&wait=2000');
+  assert.equal(fileDelivery.status,200,JSON.stringify(fileDelivery.body));
+  assert.equal(fileDelivery.body.schema,'vivim.agent-composer-delivery/1');
+  assert.equal(fileDelivery.body.candidate.oldValue,'Hello world');
+  assert.equal(fileDelivery.body.candidate.newValue,'File target');
+  const fileCorr=fileDelivery.body.candidate.correlationId;
+  const fileObserved=await phone('POST','/mobile/api/first-contact/composer/observe',{
+    sessionId:SID,revision:3,text:'File target',mode:'vivim',visible:true,
+    composing:false,correlationId:fileCorr
+  });
+  assert.equal(fileObserved.status,200);
+  const fileAck=await phone('POST','/mobile/api/first-contact/composer/ack',{
+    sessionId:SID,correlationId:fileCorr,stage:'applied-local'
+  });
+  assert.equal(fileAck.status,200,JSON.stringify(fileAck.body));
+  const fileReceipt=await fileExecution;
+  assert.equal(fileReceipt.status,200,JSON.stringify(fileReceipt.body));
+  assert.equal(fileReceipt.body.status,'applied');
+  assert.equal(fileReceipt.body.result.draftSent,false);
+  // ACK path wrote a fresh canonical mirror before the Host receipt.
+  assert.equal(JSON.parse(readFileSync(mirrorFile,'utf8')).regions
+    .find(r=>r.id==='phone.composer').data.draft,'File target');
 });
