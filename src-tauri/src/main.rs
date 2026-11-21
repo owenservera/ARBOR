@@ -87,6 +87,9 @@ struct HostProcess {
     readiness: std::sync::Mutex<Readiness>,
     last_error: std::sync::Mutex<Option<String>>,
     auto_recoveries: AtomicU8,
+    // True only after a one-use, Host-minted URL was submitted to the webview.
+    // This does NOT attest that the page finished loading or grant authority.
+    owner_session_launch_requested: AtomicBool,
     shutting_down: AtomicBool,
 }
 
@@ -186,6 +189,7 @@ impl HostProcess {
             readiness: std::sync::Mutex::new(Readiness::NotChecked),
             last_error: std::sync::Mutex::new(None),
             auto_recoveries: AtomicU8::new(0),
+            owner_session_launch_requested: AtomicBool::new(false),
             shutting_down: AtomicBool::new(false),
         }
     }
@@ -534,6 +538,7 @@ impl HostProcess {
             "ownedChild": child=="running",
             "autoRecoveryAttempts": self.auto_recoveries.load(Ordering::Relaxed),
             "autoRecoveryLimit": MAX_AUTO_RECOVERIES,
+            "ownerSessionLaunchRequested": self.owner_session_launch_requested.load(Ordering::Acquire),
             "lastStartError": self.last_error.lock().unwrap().clone(),
             "runtime": runtime.mode.as_str(),
             "runtimeRoot": runtime.root.display().to_string(),
@@ -625,6 +630,7 @@ fn reconcile_blocking(app:&tauri::AppHandle, state:&HostProcess,
 
 fn restart_blocking(app: &tauri::AppHandle, state: &HostProcess) -> serde_json::Value {
     let _lifecycle=state.lifecycle.lock().unwrap();
+    state.owner_session_launch_requested.store(false,Ordering::Release);
     // Never terminate a process during shutdown or take ownership of one
     // that was started by another shell. Explicit restart stops only our own
     // child; no Host effect or receipt is replayed by the native shell.
@@ -661,10 +667,44 @@ fn restart_blocking(app: &tauri::AppHandle, state: &HostProcess) -> serde_json::
             }
         }
     };
+    let host_started=result.is_ok();
+    // The original webview control cookie was bound to the prior Host process.
+    // Never report a usable restart without asking the new Host to mint a
+    // fresh one-time owner session. This is NOT an approval/execute retry.
+    let session_requested=host_started && present_owner_session(app,state);
     let mut payload=state.status_payload(&HostProcess::resolve_runtime(app));
-    payload["ok"]=serde_json::json!(result.is_ok());
+    payload["ok"]=serde_json::json!(host_started&&session_requested);
+    payload["hostRestarted"]=serde_json::json!(host_started);
     if let Err(error)=result {payload["error"]=serde_json::json!(error);}
+    else if !session_requested {
+        payload["error"]=serde_json::json!("Host restarted, but owner UI session launch unavailable");
+    }
     payload
+}
+
+/// Request only the existing owner-authorized, one-use browser session.
+/// Navigating the companion UI is not a World effect and never replays an
+/// uncertain command, plan or receipt. The Host remains the only issuer.
+fn present_owner_session(app:&tauri::AppHandle,state:&HostProcess)->bool {
+    state.owner_session_launch_requested.store(false,Ordering::Release);
+    if state.shutting_down.load(Ordering::Acquire) {return false;}
+    let Some(window)=app.get_webview_window("main") else {return false;};
+    let Some(destination)=HostProcess::desktop_launch_url() else {
+        *state.last_error.lock().unwrap()=
+            Some("Host online but owner session could not be minted".into());
+        return false;
+    };
+    if state.shutting_down.load(Ordering::Acquire) {return false;}
+    let script=format!("location.href = {};",
+        serde_json::to_string(&destination).expect("session URL serializes"));
+    let requested=window.eval(&script).is_ok();
+    if requested {let _=window.set_focus();}
+    state.owner_session_launch_requested.store(requested,Ordering::Release);
+    if !requested {
+        *state.last_error.lock().unwrap()=
+            Some("Host session minted but webview navigation failed".into());
+    }
+    requested
 }
 
 #[tauri::command]
@@ -683,7 +723,6 @@ fn main() {
         .manage(Arc::new(HostProcess::new()))
         .setup(|app| {
             let handle = app.handle().clone();
-            let window = app.get_webview_window("main").unwrap();
 
             // Do not block the GUI thread for a Host boot timeout. There is
             // one serialized supervisor for this shell; it never owns an
@@ -692,14 +731,7 @@ fn main() {
             thread::spawn(move || {
                 let report=reconcile_blocking(&handle,&state,false,2);
                 if report["ok"]==true {
-                    if let Some(destination)=HostProcess::desktop_launch_url() {
-                        let script=format!("location.href = {};",
-                            serde_json::to_string(&destination).unwrap());
-                        let _=window.eval(&script);
-                        let _=window.set_focus();
-                    } else {
-                        // Do not substitute an uncredentialed control URL when
-                        // the Host refused the exact owner browser session.
+                    if !present_owner_session(&handle,&state) {
                         eprintln!("VIVIM Host online but owner UI session unavailable");
                     }
                 } else {
@@ -714,6 +746,7 @@ fn main() {
                     thread::sleep(Duration::from_secs(3));
                     if state.shutting_down.load(Ordering::Acquire) {break;}
                     if state.probe_child()!=ChildState::Exited {continue;}
+                    state.owner_session_launch_requested.store(false,Ordering::Release);
                     let used=state.auto_recoveries.load(Ordering::Acquire);
                     if used>=MAX_AUTO_RECOVERIES {
                         state.set_readiness(Readiness::Failed,
@@ -725,6 +758,12 @@ fn main() {
                     if recovery["ok"]!=true {
                         eprintln!("VIVIM Host crash recovery refused: {}",recovery["error"]);
                         break;
+                    }
+                    // A recovered Host has no obligation to retain the prior
+                    // process's transient browser code/cookie. Re-establish
+                    // owner navigation, but never replay the original effect.
+                    if !present_owner_session(&handle,&state) {
+                        eprintln!("VIVIM Host recovered but owner UI session unavailable");
                     }
                 }
             });
@@ -747,6 +786,7 @@ fn main() {
                 // Closing a companion window cannot abort a Host effect.
                 // Manual restart is the only shell path which stops the child.
                 state.relinquish_owned();
+                state.owner_session_launch_requested.store(false,Ordering::Release);
                 state.set_readiness(Readiness::Stopped,None);
             }
         });
@@ -967,6 +1007,8 @@ mod tests {
             serde_json::json!(MAX_AUTO_RECOVERIES));
         assert_eq!(state.status_payload(&runtime)["readiness"],
             serde_json::json!("not_checked"));
+        assert_eq!(state.status_payload(&runtime)["ownerSessionLaunchRequested"],
+            serde_json::json!(false));
 
         if let Some(child) = state.child.lock().unwrap().as_mut() {
             let _ = child.kill();
