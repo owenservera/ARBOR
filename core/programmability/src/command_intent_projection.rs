@@ -9,6 +9,25 @@ const SCHEMA: &str = "vivim.command-intent-projection/1";
 const INPUT: &str = "vivim.command-intent-projection-input/1";
 const INTENT: &str = "vivim.command-intent/0.1";
 const LANGUAGE: &str = "vivim.control-language/1";
+const MAX_SAFE: u64 = 9_007_199_254_740_991;
+
+fn catalog_id(id: &str) -> bool {
+    let b = id.as_bytes();
+    (3..=96).contains(&b.len()) && b[0].is_ascii_lowercase() &&
+        b[1..].iter().all(|x| x.is_ascii_lowercase() || x.is_ascii_digit() ||
+            matches!(*x, b'.' | b'_' | b'-'))
+}
+fn catalog_arg_key(key: &str) -> bool {
+    let b = key.as_bytes();
+    (1..=96).contains(&b.len()) && b[0].is_ascii_lowercase() &&
+        b[1..].iter().all(|x| x.is_ascii_lowercase() || x.is_ascii_digit() ||
+            matches!(*x, b'.' | b'_' | b'-'))
+}
+fn valid_readiness(value: &Value) -> bool {
+    matches!(value.as_str(),
+        Some("adapter_pending" | "enforcement_missing" | "unsupported" |
+            "source_wired" | "verified"))
+}
 
 fn result(intent: Value) -> Value {
     json!({"schema": SCHEMA, "outcome": "projected", "intent": intent,
@@ -39,7 +58,7 @@ fn safe_text(value: &Value) -> bool {
 fn valid_specs(value: &Value) -> bool {
     let Some(specs) = value.as_object() else { return false };
     specs.iter().all(|(key, spec)| {
-        if key.is_empty() || key.len() > 96 { return false }
+        if !catalog_arg_key(key) { return false }
         match spec["type"].as_str() {
             Some("enum") => spec["values"].as_array().is_some_and(|values| {
                 !values.is_empty() && values.len() <= 256 &&
@@ -47,7 +66,7 @@ fn valid_specs(value: &Value) -> bool {
             }),
             Some("string") => matches!(
                 (spec["min"].as_u64(), spec["max"].as_u64()),
-                (Some(min), Some(max)) if min <= max && max <= 65536
+                (Some(min), Some(max)) if min >= 1 && min <= max && max <= 8000
             ),
             _ => false,
         }
@@ -58,9 +77,9 @@ fn action_catalog(actions: &Value) -> Option<BTreeMap<String, &Value>> {
     if entries.is_empty() || entries.len() > 512 { return None }
     let mut by_id = BTreeMap::new();
     for action in entries {
-        let id = action["id"].as_str().filter(|id| !id.is_empty() && id.len() <= 96)?;
+        let id = action["id"].as_str().filter(|id| catalog_id(id))?;
         if !safe_text(&action["title"]) || !safe_text(&action["owner"])
-            || !safe_text(&action["readiness"]) || !valid_risk(&action["risk"])
+            || !valid_readiness(&action["readiness"]) || !valid_risk(&action["risk"])
             || !valid_specs(&action["args"]) { return None }
         if let Some(scopes) = action.get("requiredScopes") {
             if !scopes.as_array().is_some_and(|a| a.len() <= 64 && a.iter().all(safe_text)) {
@@ -147,12 +166,31 @@ fn check_reading(reading: &Value, source: &Value, personal: &Value, baseline: &V
           reading["input"].as_str() == source["text"].as_str().map(str::trim)) {
         return false
     }
+    let Some(baseline_outcome) = baseline.as_str() else { return false };
+    if !matches!(baseline_outcome, "refused" | "clarification_required" |
+        "incomplete" | "candidate" | "interpretation_required" | "empty") {
+        return false
+    }
     let Some(outcome) = reading["outcome"].as_str() else { return false };
     if !matches!(outcome, "refused" | "clarification_required" | "incomplete" |
         "candidate" | "interpretation_required" | "empty") { return false }
     if let Some(feedback) = reading.get("feedback") {
         if !feedback.is_object() { return false }
+        if let Some(version) = feedback.get("nlclVersion") {
+            if !version.as_str().is_some_and(|s| !s.is_empty() && s.len() <= 128) {
+                return false
+            }
+        }
+        if let Some(confidence) = feedback.get("confidence") {
+            if !confidence.is_null() && !confidence.as_f64().is_some_and(
+                |n| n.is_finite() && (0.0..=1.0).contains(&n)) {
+                return false
+            }
+        }
         if let Some(version) = feedback.get("worldV") {
+            if !version.is_null() && !version.as_u64().is_some_and(|v| v <= MAX_SAFE) {
+                return false
+            }
             if version.is_number() && version != &source["worldRevision"] &&
                 source.get("worldRevision").is_some() { return false }
         }
@@ -184,8 +222,8 @@ pub fn project(request: &Value) -> Value {
         || !source["text"].as_str().is_some_and(|s| {
             !s.trim().is_empty() && s.encode_utf16().count() <= 1000
         })
-        || !request["catalogVersion"].as_u64().is_some_and(|v| v > 0)
-        || !request["worldRevision"].is_number()
+        || !request["catalogVersion"].as_u64().is_some_and(|v| v > 0 && v <= MAX_SAFE)
+        || !request["worldRevision"].as_u64().is_some_and(|v| v <= MAX_SAFE)
         || (source.get("catalogRevision").is_some()
             && source["catalogRevision"] != request["catalogVersion"])
         || (source.get("worldRevision").is_some()
