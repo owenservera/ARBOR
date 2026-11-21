@@ -187,6 +187,7 @@ export function toCommandIntent(input, { catalog, world, personalRules = [], per
       scope: input.scope ?? 'text'
     },
     catalogVersion: catalog.version, worldRevision: world.v,
+    ...(world.kernel?.nlclVersion !== undefined ? {worldNlclVersion: world.kernel.nlclVersion} : {}),
     catalogActions: boundedCatalogProjection(catalog), reading: meaning, baselineOutcome: baseline.outcome,
     personalProvenance
     }, { failClosedIfPackaged: true });
@@ -254,7 +255,8 @@ export function validateAiCommandCandidate(input, { catalog, world, personalRule
     input:{text:input.text,scope:input.scope??'text',audience:input.audience??'owner',
       catalogRevision:input.catalogRevision??null,worldRevision:input.worldRevision??null},
     proposal,reading,action:action??null,catalogActions:catalog.actions,
-    catalogVersion:catalog.version,worldRevision:world.v
+    catalogVersion:catalog.version,worldRevision:world.v,
+    ...(world.kernel?.nlclVersion !== undefined ? {worldNlclVersion:world.kernel.nlclVersion} : {})
     }, { failClosedIfPackaged: true });
   } catch {
     return refuse(input, 'NATIVE_INTENT_INVALID', 'Native AI candidate binding unavailable.');

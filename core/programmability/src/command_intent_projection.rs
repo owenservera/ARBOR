@@ -200,7 +200,7 @@ fn intent_with_meta(outcome: &str, mut fields: Value, meta: &Value) -> Value {
     intent["provenance"] = meta["provenance"].clone();
     intent
 }
-fn personal_provenance_valid(personal: &Value, catalog_version: &Value) -> bool {
+pub(crate) fn personal_provenance_valid(personal: &Value, catalog_version: &Value) -> bool {
     if personal.is_null() { return true }
     let Some(fields) = personal.as_object() else { return false };
     // Provenance is evidence of a past Host binder decision, never a grant.
@@ -280,9 +280,11 @@ fn check_reading(reading: &Value, source: &Value, personal: &Value,
         if !modifiers.as_array().is_some_and(|m| m.len() <= 32 &&
             m.iter().all(safe_text)) { return false }
     }
-    if outcome == "candidate" && personal.is_null() &&
-        (!reading["candidate"].is_object() || reading.get("refusal").is_some() ||
-         reading.get("missing").is_some() || reading.get("choices").is_some()) {
+    if outcome == "candidate" && (!reading["candidate"].as_object()
+        .is_some_and(|fields| fields.keys().all(|key|
+            matches!(key.as_str(), "actionId" | "args"))) ||
+        (personal.is_null() && (reading.get("refusal").is_some() ||
+         reading.get("missing").is_some() || reading.get("choices").is_some()))) {
         // A canonical NLCL candidate never coexists with a refusal or
         // unresolved slots. The personal resolver has separate precedence.
         return false
@@ -324,8 +326,17 @@ pub fn project(request: &Value) -> Value {
     };
     let reading = &request["reading"];
     let personal = &request["personalProvenance"];
+    // The authoritative WorldModel's compiler version is independent of the
+    // reading's self-reported feedback. Older unversioned callers retain
+    // source-compatible parity until their native wire migrates.
+    let world_language = request.get("worldNlclVersion");
+    if world_language.is_some_and(|v| !v.as_str().is_some_and(
+        |s| !s.is_empty() && s.len() <= 128)) {
+        return invalid(source)
+    }
     if !check_reading(reading, source, personal, &request["baselineOutcome"],
         &request["catalogVersion"]) ||
+        world_language.is_some_and(|v| reading["feedback"]["nlclVersion"] != *v) ||
         reading["feedback"]["worldV"].as_i64().is_some_and(|v| {
             request["worldRevision"].as_i64() != Some(v)
         }) {

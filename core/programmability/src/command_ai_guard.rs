@@ -4,7 +4,8 @@
 //! NLCL reading. No authorization, model transport, grants or effects.
 use serde_json::{json,Value};
 use crate::command_intent_projection::{
-    valid_catalog_action, checked_args, catalog_entry, valid_source_snapshot
+    valid_catalog_action, checked_args, catalog_entry, valid_source_snapshot,
+    personal_provenance_valid
 };
 
 const SCHEMA:&str="vivim.command-ai-proposal-guard/1";
@@ -66,6 +67,9 @@ pub fn validate(input:&Value)->Value{
     let feedback=&reading["language"]["feedback"];
     if !feedback.is_object() ||
         !feedback["nlclVersion"].as_str().is_some_and(|s|!s.is_empty()&&s.len()<=128) ||
+        input.get("worldNlclVersion").is_some_and(|v|
+            !v.as_str().is_some_and(|s|!s.is_empty()&&s.len()<=128) ||
+            *v != feedback["nlclVersion"]) ||
         !feedback["confidence"].as_f64().is_some_and(|n|n.is_finite()&&(0.0..=1.0).contains(&n)) ||
         feedback["worldV"]!=input["worldRevision"] ||
         reading["provenance"]["engineVersion"]!=feedback["nlclVersion"] ||
@@ -98,6 +102,22 @@ pub fn validate(input:&Value)->Value{
     if !matches!(outcome,"candidate"|"clarification_required"|
         "interpretation_required"|"refused")||
         matches!(outcome,"refused"|"clarification_required"){
+        return refused(source,"UNSAFE_OR_UNRESOLVED_TEXT",
+            "Owner text must be clarified before proposing an action.")
+    }
+    let personal=reading["language"].get("personalRule").unwrap_or(&Value::Null);
+    let method=reading["provenance"]["method"].as_str();
+    // Only the incumbent language compiler or a Host-bound accepted personal
+    // rule may produce a candidate. Ambiguity and refusals never become AI
+    // proposals and an unverified personal rule is not an authorization.
+    let accepted_method=if personal.is_null(){
+        method==Some("deterministic-nlcl")
+    } else {
+        outcome=="candidate" && method==Some("accepted-personal-rule") &&
+        personal["method"]=="accepted-personal-rule" &&
+        personal_provenance_valid(personal,&input["catalogVersion"])
+    };
+    if !accepted_method || (outcome=="interpretation_required" && !personal.is_null()){
         return refused(source,"UNSAFE_OR_UNRESOLVED_TEXT",
             "Owner text must be clarified before proposing an action.")
     }

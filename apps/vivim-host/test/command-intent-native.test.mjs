@@ -414,3 +414,58 @@ test('native AI guard refuses forged Host projections and malformed catalog meta
     'UNSAFE_OR_UNRESOLVED_TEXT');
   bad({reading: {...reading, risk: 'R0'}}, 'UNSAFE_OR_UNRESOLVED_TEXT');
 });
+
+test('native world compiler stamp and owner-language method are checked against real NLCL', t => {
+  if (!hasBinary()) {
+    t.diagnostic('Rust binary unavailable: independent language stamp checks unrun.');
+    return;
+  }
+  const owner = corpus.cases.find(c => c.text === 'Set my theme to dusk');
+  assert.ok(owner?.actionId && owner.args);
+  const world = buildControlWorld(catalog);
+  const source = {text: owner.text, scope: 'text', audience: 'owner'};
+  const nlcl = interpretControl(owner.text, {catalog, world});
+  const reading = toCommandIntent(source, {catalog, world});
+  assert.equal(nlcl.feedback.nlclVersion, world.kernel.nlclVersion,
+    'Host world and NLCL use the same real compiled version');
+  const projection = {
+    schema: 'vivim.command-intent-projection-input/1',
+    input: source, catalogVersion: catalog.version, worldRevision: world.v,
+    worldNlclVersion: world.kernel.nlclVersion,
+    catalogActions: catalog.actions, reading: nlcl,
+    baselineOutcome: nlcl.outcome, personalProvenance: null
+  };
+  const ai = {
+    schema: 'vivim.command-ai-proposal-guard-input/1',
+    input: {...source, catalogRevision: null, worldRevision: null},
+    proposal: {actionId: owner.actionId, args: owner.args},
+    reading, action: catalog.actions.find(a => a.id === owner.actionId),
+    catalogActions: catalog.actions,
+    catalogVersion: catalog.version, worldRevision: world.v,
+    worldNlclVersion: world.kernel.nlclVersion
+  };
+  const validProjection = runNativeProductPureSync('command-intent-projection', projection);
+  const validAi = runNativeProductPureSync('command-ai-guard', ai);
+  assert.equal(validProjection?.intent?.outcome, 'candidate');
+  assert.equal(validAi?.intent?.outcome, 'candidate');
+  const badProjection = runNativeProductPureSync('command-intent-projection', {
+    ...projection, worldNlclVersion: 'stale-compiler'
+  });
+  assert.equal(badProjection?.intent?.refusal?.code, 'INVALID_READING');
+  for (const mutation of [
+    {worldNlclVersion: 'stale-compiler'},
+    {reading: {...reading, provenance: {...reading.provenance, method:'bounded-ai-proposal'}}},
+    {reading: {...reading, language: {...reading.language,
+      personalRule: {method:'accepted-personal-rule',ruleId:'rule:stale',ruleRevision:0,
+        catalogRevision:catalog.version,semanticScope:{surface:'text'}}},
+      provenance: {...reading.provenance, method:'accepted-personal-rule',
+        personalRule: {method:'accepted-personal-rule',ruleId:'rule:stale',ruleRevision:0,
+          catalogRevision:catalog.version,semanticScope:{surface:'text'}}}}}
+  ]) {
+    const native = runNativeProductPureSync('command-ai-guard', {...ai,...mutation});
+    assert.equal(native?.intent?.outcome, 'refused');
+    assert.equal(native.intent.refusal.code, 'UNSAFE_OR_UNRESOLVED_TEXT');
+    assert.equal(native.executionAuthorized, false);
+    assert.equal(native.effectPerformed, false);
+  }
+});
