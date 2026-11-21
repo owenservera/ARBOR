@@ -399,7 +399,7 @@ fn sync_context(v: &Value, ns: &Namespace, journal: &Journal, g: &mut Graph,
     if let Some(base)=base_revision.filter(|_|v.get("baseEpoch").is_none()) {
         let head=g.nodes()
             .filter(|n|n.id.starts_with(&managed_prefix) &&
-                matches!(n.properties.get("vivim.context.kind").map(String::as_str),Some("wiki"|"effect")))
+                matches!(n.properties.get("vivim.context.kind").map(String::as_str),Some("wiki"|"effect"|"tombstone")))
             .filter_map(|n|n.properties.get("hqkg.provenance.revision").and_then(|r|r.parse::<u64>().ok()))
             .max().unwrap_or(0);
         if base<head { return Err("STALE_CONTEXT_SOURCE".into()); }
