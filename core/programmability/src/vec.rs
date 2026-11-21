@@ -241,8 +241,15 @@ pub fn diff(previous:Option<&View>,next:Option<&View>)->Result<Delta,VisualError
 /// Both projections must independently pass the incumbent Host visual
 /// admission before a delta can be interpreted by a renderer.
 pub fn diff_projections(previous:&Value,next:&Value)->Result<Value,VisualError>{
-    let before=visual::parse(previous)?.map(|v|compile(&v)).transpose()?;
-    let after=visual::parse(next)?.map(|v|compile(&v)).transpose()?;
+    // Explicit null denotes no previously observed projection, never an
+    // implicitly authorized empty Host surface. A source-backed next value
+    // must still pass the existing visual plan/trace admission.
+    let compile_input=|value:&Value|->Result<Option<View>,VisualError>{
+        if value.is_null(){return Ok(None)}
+        visual::parse(value)?.map(|v|compile(&v)).transpose()
+    };
+    let before=compile_input(previous)?;
+    let after=compile_input(next)?;
     serde_json::to_value(diff(before.as_ref(),after.as_ref())?)
         .map_err(|_|VisualError::InvalidProjection)
 }
@@ -292,6 +299,12 @@ mod vec_revision_tests{
         after["plan"]["revision"]=json!(3);
         let delta=diff_projections(&before,&after).unwrap();
         assert_eq!(delta["schema"],DELTA_SCHEMA);
+        let initial=diff_projections(&Value::Null,&before).unwrap();
+        assert_eq!(initial["fromRevision"],Value::Null);
+        assert_eq!(initial["toRevision"],2);
+        assert_eq!(initial["added"],json!(["root"]));
+        let removed=diff_projections(&before,&Value::Null).unwrap();
+        assert_eq!(removed["removed"],json!(["root"]));
         assert_eq!(delta["surfaceId"],"my-space");
         assert_eq!(delta["fromRevision"],2);
         assert_eq!(delta["toRevision"],3);
