@@ -950,8 +950,10 @@ fn main() {
             move |window, cx| {
                 let supervisor = Arc::clone(&supervisor);
                 let input=cx.new(|cx| InputState::new(window,cx).placeholder("Ask VIVIM or describe a Host command"));
+                // Capture the viewport value, not the mutable Window borrowed again by Root.
+                let initial_viewport_px=viewport_for_window(window);
                 let view=cx.new(move |cx| {
-                    let mut view=Desktop {supervisor, input,panel:Panel::Overview,viewport_px:viewport_for_window(window),
+                    let mut view=Desktop {supervisor, input,panel:Panel::Overview,viewport_px:initial_viewport_px,
                         viewport_epoch:0,source_epoch:0,presentation_epoch:0,read_busy:false,refresh_pending:false,
                         coherence_retry_ready:true,
                         source_status:"Host source not yet observed".into(),
@@ -959,10 +961,14 @@ fn main() {
                         review:None,last_plan:None,busy:false,uncertain:false,
                         graph_detail:String::new(),graph_status:"Graph not yet queried".into(),graph_busy:false,graph_pending:false,
                         graph_query:None,graph_guard:DevelopmentRevisionGuard::default()};
+                    view.refresh(cx);view.start_observer(cx);view
+                });
+                // Register after construction so the Window reborrow is never moved into
+                // the Desktop entity's 'move' initializer closure.
+                view.update(cx,|_,cx|{
                     cx.observe_window_bounds(window, |view: &mut Desktop,window,cx|{
                         view.set_viewport(viewport_for_window(window),cx);
                     }).detach();
-                    view.refresh(cx);view.start_observer(cx);view
                 });
                 cx.new(|cx|Root::new(view,window,cx))
             }).expect("Unable to open VIVIM GPUI window");
