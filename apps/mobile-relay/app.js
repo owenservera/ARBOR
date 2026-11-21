@@ -2788,6 +2788,37 @@ if (!HOST_PREVIEW && 'serviceWorker' in navigator) {
 }
 mountUniversalDock();
 mountFirstWiki();
+// A visual acknowledgment is shown ONLY after the existing Host has verified
+// the source revision and Control receipt. This dot is not a synthetic touch,
+// authority claim, chat send or record of the private draft text.
+let agentDraftPulseTimer = null;
+function showVerifiedAgentDraftPulse() {
+  const field = $('text');
+  if (!field?.isConnected) return;
+  let marker = document.getElementById('vivim-agent-draft-verified');
+  if (!marker) {
+    marker = document.createElement('span');
+    marker.id = 'vivim-agent-draft-verified';
+    marker.setAttribute('role', 'status');
+    marker.setAttribute('aria-live', 'polite');
+    document.body.append(marker);
+  }
+  const rect = field.getBoundingClientRect();
+  const left = Math.max(8, Math.min(rect.left, window.innerWidth - 184));
+  const top = Math.max(8, rect.top - 34);
+  marker.textContent = '● Agent draft verified';
+  marker.style.cssText = 'position:fixed;left:' + left + 'px;top:' + top +
+    'px;z-index:3000;pointer-events:none;border-radius:999px;' +
+    'background:#123b32;color:#dcffed;padding:6px 10px;font:600 12px system-ui;' +
+    'box-shadow:0 2px 9px #0005;max-width:180px;';
+  marker.hidden = false;
+  if (agentDraftPulseTimer !== null) clearTimeout(agentDraftPulseTimer);
+  agentDraftPulseTimer = setTimeout(() => {
+    marker.hidden = true;
+    agentDraftPulseTimer = null;
+  }, 2500);
+}
+
 if (FIRST_CONTACT) {
   // Owner-Tailscale composer is an observed, approval-fenced document slice,
   // not a second send channel. Same existing #text and Wiki input listeners.
@@ -2798,6 +2829,7 @@ if (FIRST_CONTACT) {
       field: $('text'),
       active: () => N.target === 'vivim' && S.tab === 'talk' &&
         !HOST_PREVIEW && transport.direct,
+      onVerified: () => showVerifiedAgentDraftPulse(),
       maxLength: () => $('text').maxLength > 0 ? $('text').maxLength : 1000
     });
   }).catch(()=>{ /* unavailable bridge never enables remote draft edits */ });
