@@ -1,22 +1,46 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Craft Intelligence — VIVIM Studio</title>
+<title>Application Intelligence — VIVIM Studio</title>
 <style>
 :root{color-scheme:light dark;font-family:system-ui,sans-serif;font-size:14px}
-body{max-width:1120px;margin:0 auto;padding:24px;background:Canvas;color:CanvasText}
+body{max-width:1180px;margin:0 auto;padding:20px;background:Canvas;color:CanvasText}
 header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
-a{color:LinkText}button{font:inherit;padding:7px 12px;cursor:pointer}
+a{color:LinkText}button,select{font:inherit;padding:7px 12px}button{cursor:pointer}
 .card{border:1px solid GrayText;border-radius:9px;padding:15px;margin:15px 0}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:14px}
 .metrics{display:flex;gap:25px;flex-wrap:wrap}.metric b{display:block;font-size:1.6rem}
 table{border-collapse:collapse;width:100%}th,td{text-align:left;border-bottom:1px solid GrayText;padding:8px}
-small{opacity:.8}#notice{font-weight:600}code{overflow-wrap:anywhere}
+.scroll{max-height:340px;overflow:auto}small,.muted{opacity:.8}#notice{font-weight:600}code{overflow-wrap:anywhere}
+label{display:inline-flex;align-items:center;gap:8px}#origin{overflow-wrap:anywhere}
+.note{border-left:3px solid GrayText;padding:8px 12px}#deltaEmpty{display:none}
 </style></head><body>
-<header><h1>Craft Intelligence <small>read-only</small></h1><a href="/">Back to Studio</a></header>
-<p>Source-qualified, bounded application observations from the local Craft research bridge. No control can be clicked, approved or activated from this view.</p>
-<div class="card"><button id="reload">Refresh evidence</button> <span id="notice" role="status">Loading…</span><p id="target"></p><p id="origin"></p></div>
-<section class="card"><h2>Observed coverage</h2><div class="metrics" id="metrics"></div><p id="source"></p></section>
-<section class="card"><h2>Control roles</h2><table><thead><tr><th>Role</th><th>Count</th></tr></thead><tbody id="roles"></tbody></table></section>
-<section class="card"><h2>Evidence operations</h2><table><thead><tr><th>Operation</th><th>Records</th></tr></thead><tbody id="operations"></tbody></table></section>
-<section class="card"><h2>Studio/Harness reconciliation</h2><p id="recon"></p><table><thead><tr><th>Owner</th><th>Feature</th><th>Observation status</th></tr></thead><tbody id="features"></tbody></table></section>
+<header><h1>Application Intelligence <small>read-only</small></h1><a href="/">Back to Studio</a></header>
+<p>Source-qualified Craft Anything observations, not live application capabilities. This view never drives a browser, activates an adapter or grants an effect.</p>
+<div class="card">
+  <label for="targetSelect">Target <select id="targetSelect" aria-label="Choose configured application"><option value="">No targets configured</option></select></label>
+  <button id="reload">Refresh evidence</button>
+  <p id="notice" role="status" aria-live="polite">Loading…</p>
+  <p id="target"></p><p id="origin"></p>
+  <p id="source" class="muted"></p>
+</div>
+<section class="card"><h2>Observed coverage</h2><div class="metrics" id="metrics"></div></section>
+<div class="cards">
+  <section class="card"><h2>Control roles</h2><div class="scroll"><table><thead><tr><th>Role</th><th>Count</th></tr></thead><tbody id="roles"></tbody></table></div></section>
+  <section class="card"><h2>Evidence operations</h2><div class="scroll"><table><thead><tr><th>Operation</th><th>Records</th></tr></thead><tbody id="operations"></tbody></table></div></section>
+  <section class="card"><h2>Observed state types</h2><div class="scroll"><table><thead><tr><th>Observation</th><th>Count</th></tr></thead><tbody id="kinds"></tbody></table></div></section>
+  <section class="card"><h2>Evidence quality</h2><div class="scroll"><table><thead><tr><th>Confidence</th><th>Records</th></tr></thead><tbody id="confidence"></tbody></table></div></section>
+</div>
+<section class="card"><h2>Studio/Harness reconciliation</h2><p id="recon" class="note"></p>
+  <div class="scroll"><table><thead><tr><th>Owner</th><th>Feature</th><th>Observation status</th><th>Evidence refs</th></tr></thead><tbody id="features"></tbody></table></div>
+</section>
+<section class="card"><h2>Evidence lineage</h2><p class="muted">IDs, known operations and coverage only; raw capture text and selectors stay in the private research workspace.</p>
+  <div class="scroll"><table><thead><tr><th>Evidence ID</th><th>Operation</th><th>Confidence</th><th>Coverage</th><th>Limits</th></tr></thead><tbody id="evidence"></tbody></table></div>
+</section>
+<section class="card"><h2>Capture-to-capture comparison</h2><p class="muted">Changes in observation counts are not evidence that a website feature is gone or broken.</p>
+  <p id="deltaStatus" role="status"></p>
+  <div id="deltaData" hidden><div class="metrics" id="deltaMetrics"></div>
+    <div class="scroll"><table><thead><tr><th>Role</th><th>Before</th><th>After</th><th>Delta</th></tr></thead><tbody id="deltaRoles"></tbody></table></div>
+  </div>
+</section>
 <script type="module" src="/ui/craft-intel.mjs"></script>
 </body></html>
