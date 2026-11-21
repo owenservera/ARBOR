@@ -74,6 +74,10 @@ export function mountFirstContactComposer({field,active,maxLength,onVerified}:Co
   const currentFence=()=>!dirty&&eligible()&&!composing?fence:null;
   const adapter=createComposerDraftAdapter({
     field,currentFence,maxLength,
+    // 225 ms exceeds the Wiki's 180 ms debounce: intermediate updates are
+    // visible and each pause can refresh suggestions before the final ACK.
+    // One Host approval/receipt still governs the entire edit.
+    typingIntervalMs:225,
     isAuthorizedDelivery:async(message:any)=>authDelivery===message&&
       message?.sessionId===ID&&message?.localRevision===revision&&
       message?.actorId==='desktop-owner'&&eligible()&&!dirty,
