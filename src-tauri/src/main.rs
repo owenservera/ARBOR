@@ -463,8 +463,13 @@ impl HostProcess {
         };
         let healthy=Self::health_online();
         let readiness=*self.readiness.lock().unwrap();
-        let effective_ready=healthy &&
-            matches!(readiness,Readiness::Owned|Readiness::Attached);
+        // A cached readiness cannot outlive the owned child it describes.
+        // An attached external Host remains separately reported as unowned.
+        let effective_ready=healthy && match readiness {
+            Readiness::Owned => child=="running",
+            Readiness::Attached => child!="running",
+            _ => false,
+        };
         let approved = approved_binaries(&runtime.root);
         let missing: Vec<&str> = approved
             .iter()
