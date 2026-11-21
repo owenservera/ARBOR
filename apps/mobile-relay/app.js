@@ -308,7 +308,8 @@ function renderFocusPanel() {
 async function readGraphContext() {
   const focus=S.tab;
   const device=transport.deviceHeaders?.();
-  if(HOST_PREVIEW||!transport.direct||!S.paired||!device){
+  if(HOST_PREVIEW||!transport.direct||!S.paired||!device||
+      !device['x-vivim-device-session']||!device['x-vivim-grant-id']){
     // Gated read: say so in the UI instead of silently repainting the panel.
     chatContext={state:'unavailable',reason:'Verified Host context needs a paired phone on a Direct PC connection.'};
     toast('Read verified context: pair this phone over Direct to load Host context.');
@@ -1173,7 +1174,8 @@ async function openMediaPlayer(mediaId, title) {
   if (S.tab !== 'world' || HOST_PREVIEW || !S.paired || !transport.direct ||
       !/^[a-f0-9]{32}$/.test(mediaId || '')) return;
   const device = transport.deviceHeaders?.();
-  if (!device || playerActive) return;
+  if (!device||!device['x-vivim-device-session']||
+      !device['x-vivim-grant-id']||playerActive) return;
   playerActive = true;
   const epoch = ++playerEpoch;
   const controller = new AbortController();
@@ -2403,7 +2405,9 @@ $('text').addEventListener('keydown', e => {
 $('dock-provider-refresh').addEventListener('click', async () => {
   if(providerRefreshBusy||HOST_PREVIEW||!transport.direct||!S.paired)return;
   const headers=transport.deviceHeaders?.();
-  if(!headers){toast('Approve this phone on your PC first.');return}
+  if(!headers||!headers['x-vivim-device-session']||!headers['x-vivim-grant-id']){
+    toast('Approve this phone on your PC first.');return;
+  }
   providerRefreshBusy=true;$('dock-provider-refresh').disabled=true;
   $('dock-provider-refresh').textContent='Checking browser accounts…';
   try{
