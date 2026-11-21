@@ -57,15 +57,21 @@ export function createHostComposerBridge({readSnapshot,compute=runNativeProductP
       viewRevision:region.viewRevision,regionId:'phone.composer'};
   }
   function observation(){
-    const item=active();
+    const item=selected&&sessions.get(selected);
     if(!item)return [];
+    const stale=clock()-item.seenAt>=FRESH_MS;
+    if(stale&&!item.stale){
+      // Disconnect changes editability and MUST advance source revision;
+      // otherwise Rust correctly rejects the same-revision writable change.
+      item.stale=true;item.sourceRevision=++sourceRevision;
+    }
     return [{
       id:'phone.composer',kind:'input',sourceId:'host.first-contact-composer',
-      sourceRevision:item.sourceRevision,observedAtMs:item.seenAt,
-      freshness:'current',exposure:'owner',
+      sourceRevision:item.sourceRevision,observedAtMs:clock(),
+      freshness:stale?'stale':'current',exposure:'owner',
       data:{draft:item.text,sessionId:item.sessionId,target:item.mode,
         visible:item.visible,composing:item.composing,localRevision:item.revision},
-      writable:item.visible&&!item.composing&&!paused?[{
+      writable:!stale&&item.visible&&!item.composing&&!paused?[{
         pointer:'/draft',primitive:'text',actionId:ACTION}]:[]
     }];
   }
@@ -196,7 +202,12 @@ export function createHostComposerBridge({readSnapshot,compute=runNativeProductP
       correlationId:body.correlationId,sourceRevision:phone.sourceRevision};
   }
   function setPaused(next){
+    const prior=paused;
     paused=next===true;
+    if(prior!==paused&&selected&&sessions.has(selected)){
+      const item=sessions.get(selected);
+      item.sourceRevision=++sourceRevision; // writability is source-backed
+    }
     // A paused operator must not leave an undelivered edit authorized.
     if(paused&&inflight){const job=inflight;inflight=null;
       clearTimeout(job.timer);job.reject(fail(job.delivered?'COMPOSER_OUTCOME_UNCERTAIN':'COMPOSER_PAUSED',job.delivered?503:423));}
