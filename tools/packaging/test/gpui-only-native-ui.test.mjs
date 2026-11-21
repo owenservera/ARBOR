@@ -29,5 +29,6 @@ test('native-only PowerShell launcher fails closed if the GPUI binary is missing
   assert.match(launcher,/GPUI_ONLY_UNAVAILABLE/);
   assert.match(launcher,/Start-Process -FilePath \$exe/);
   assert.match(launcher,/vivim-gpui-desktop\.exe/);
-  assert.doesNotMatch(launcher,/msedge|chrome|--app=|webview|Start-Process -FilePath ['"]?https?:/i);
+  const executableLines=launcher.split(/\r?\n/).filter(line=>!line.trimStart().startsWith('#')).join('\n');
+  assert.doesNotMatch(executableLines,/msedge|chrome|--app=|webview|Start-Process -FilePath ['"]?https?:/i);
 });
