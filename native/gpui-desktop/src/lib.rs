@@ -5,7 +5,9 @@
 pub mod control;
 pub mod visual;
 use reqwest::blocking::Client;
-use serde_json::Value;
+use serde_json::{Value,json};
+use sha2::{Sha256,Digest};
+use std::collections::BTreeMap;
 use vivim_programmability_core::wiki_read::{self, Page as WikiPage, Captures as WikiCaptures, SearchDocument as WikiSearchDocument};
 use vivim_programmability_core::development_projection::{self,ProjectionError};
 use std::{path::{Path, PathBuf}, time::Duration, io::Read};
@@ -22,6 +24,9 @@ pub struct Overview {
     pub wiki_pages: Vec<String>,
     pub wiki_content: Vec<WikiPage>,
     pub wiki_digest: String,
+    /// SHA256 of the canonical owner-authorized PWA snapshot, not a
+    /// transactional watermark shared by the independently read sources.
+    pub host_snapshot_digest: String,
     /// Owner-authorized in-process source for exact Rust deltas, never a client grant.
     pub wiki_source: Value,
     pub wiki_page_total: usize,
@@ -33,7 +38,7 @@ pub struct Overview {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ReadError {
-    Offline, OwnerRequired, Unavailable, InvalidProjection, InvalidInput,
+    Offline, OwnerRequired, Unavailable, InvalidProjection, InvalidInput, SnapshotChanged,
 }
 
 /// A single validated, owner-authorized HQKG response. The epoch is supplied
@@ -43,32 +48,42 @@ pub struct DevelopmentRead {
     pub epoch: u64,
     pub operation: String,
     pub requested_key: String,
+    /// SHA256 of the validated query's substantive source response.
+    pub source_digest: String,
     pub text: String,
 }
 
-/// An inert in-memory fence, not a new graph or journal. Unavailability does
-/// not erase the last witnessed graph epoch.
+/// Bounded, inert per-query fence on the existing HQKG journal epoch.
+/// An epoch is graph-global, but output identity is per operation and key.
+/// No additional graph database, storage, journal, or network request exists.
 #[derive(Default)]
 pub struct DevelopmentRevisionGuard {
     high_epoch: Option<u64>,
-    last: Option<DevelopmentRead>,
+    by_query: BTreeMap<(String,String),(u64,String,String)>,
 }
 impl DevelopmentRevisionGuard {
     pub fn accept(&mut self, next: &DevelopmentRead) -> Result<(), ReadError> {
         if self.high_epoch.is_some_and(|epoch| next.epoch < epoch) {
             return Err(ReadError::InvalidProjection);
         }
-        if let Some(previous) = &self.last {
-            if previous.epoch == next.epoch
-                && previous.operation == next.operation
-                && previous.requested_key == next.requested_key
-                && previous.text != next.text
-            {
+        let key=(next.operation.clone(),next.requested_key.clone());
+        let text_digest=format!("{:x}",Sha256::digest(next.text.as_bytes()));
+        if let Some((epoch,digest,text))=self.by_query.get(&key) {
+            if *epoch==next.epoch
+                && (digest!=&next.source_digest || text!=&text_digest) {
                 return Err(ReadError::InvalidProjection);
             }
         }
-        self.high_epoch = Some(next.epoch);
-        self.last = Some(next.clone());
+        if self.high_epoch.is_some_and(|epoch| next.epoch > epoch) {
+            // Old-epoch data is rejected by high_epoch even after eviction.
+            self.by_query.clear();
+        }
+        self.high_epoch=Some(next.epoch);
+        if !self.by_query.contains_key(&key) && self.by_query.len()>=32 {
+            // A bounded session fence: never claim unbounded query history.
+            self.by_query.pop_first();
+        }
+        self.by_query.insert(key,(next.epoch,next.source_digest.clone(),text_digest));
         Ok(())
     }
 }
@@ -80,8 +95,14 @@ impl ReadError {
             Self::Unavailable => "Host projection unavailable",
             Self::InvalidProjection => "Invalid Host projection",
             Self::InvalidInput => "Invalid command or plan identity",
+            Self::SnapshotChanged => "Host sources changed during readback",
         }
     }
+}
+
+fn source_sha256(value:&Value)->Result<String,ReadError>{
+    let bytes=serde_json::to_vec(value).map_err(|_|ReadError::InvalidProjection)?;
+    Ok(format!("{:x}",Sha256::digest(&bytes)))
 }
 
 fn bounded_text(s: &str) -> String {
@@ -121,8 +142,10 @@ pub fn project(pwa: &Value, wiki: &Value) -> Result<Overview, ReadError> {
         }).collect::<Result<Vec<_>, ReadError>>()?;
     let read = wiki_read::read(wiki).map_err(|_| ReadError::InvalidProjection)?;
     let wiki_pages = read.pages.iter().map(|page| page.name.clone()).collect();
+    let host_snapshot_digest=source_sha256(snapshot)?;
     Ok(Overview {
         observed_at: bounded_text(observed_at), recent, active_devices,
+        host_snapshot_digest,
         wiki_revision: read.revision, wiki_pages, wiki_content: read.pages,
         wiki_digest: read.digest, wiki_source: wiki.clone(), wiki_page_total: read.pages_total,
         wiki_captures: read.captures,
@@ -187,9 +210,22 @@ pub fn read_overview() -> Result<Overview, ReadError> {
         .build().map_err(|_| ReadError::Unavailable)?;
     validate_health(&get(&client, Endpoint::Health, None)?)?;
     let token = owner_token()?;
+    // Bracket a non-transactional Host summary GET between two authorized
+    // Wiki reads. This proves only that the Wiki projection did not change
+    // over this read window, not that all Host systems share a transaction.
+    let before = get(&client, Endpoint::Wiki, Some(&token))?;
     let pwa = get(&client, Endpoint::Pwa, Some(&token))?;
-    let wiki = get(&client, Endpoint::Wiki, Some(&token))?;
-    project(&pwa, &wiki)
+    let after = get(&client, Endpoint::Wiki, Some(&token))?;
+    project_bracketed(&pwa,&before,&after)
+}
+
+/// Conservatively refuse mixed Wiki observations, rather than presenting a
+/// newer Host summary alongside a falsely coherent old Wiki state.
+pub fn project_bracketed(pwa:&Value,before:&Value,after:&Value)->Result<Overview,ReadError>{
+    // Exact equality is deliberate: a version-equivalent but changed source
+    // object must not be silently treated as the same authorized readback.
+    if before != after {return Err(ReadError::SnapshotChanged);}
+    project(pwa,after)
 }
 
 /// Owner-only development graph read, from the same Host endpoint used by PWA.
@@ -228,7 +264,15 @@ pub fn project_development(operation:&str,key:&str,data:&Value)->Result<Developm
         ProjectionError::InvalidProjection=>ReadError::InvalidProjection,
     })?;
     let epoch=data["epoch"].as_u64().ok_or(ReadError::InvalidProjection)?;
-    Ok(DevelopmentRead{epoch,operation:operation.to_owned(),requested_key:key.to_owned(),text})
+    // The journal epoch and stable substantive response identify the read.
+    // Request time or other transient transport metadata are not part of it.
+    let substantive=json!({
+        "state":data["state"],"result":data["result"],
+        "outputs":data["outputs"],"computation":data["computation"]
+    });
+    let source_digest=source_sha256(&substantive)?;
+    Ok(DevelopmentRead{epoch,operation:operation.to_owned(),
+        requested_key:key.to_owned(),source_digest,text})
 }
 
 #[cfg(test)]
@@ -248,6 +292,7 @@ mod tests {
         let result = project(&pwa(), &json!({"revision":7,"pages":{"work":{"sections":{}}}})).unwrap();
         assert_eq!(result.wiki_revision,7);
         assert_eq!(result.active_devices,2);
+        assert_eq!(result.host_snapshot_digest.len(),64);
         assert_eq!(result.wiki_pages, vec!["work".to_string()]);
         assert_eq!(result.recent, vec!["wiki.page.create · applied".to_string()]);
     }
@@ -255,6 +300,14 @@ mod tests {
         let mut p = pwa(); p["state"] = json!("unavailable");
         assert_eq!(project(&p, &json!({})), Err(ReadError::Unavailable));
         assert_eq!(project(&pwa(), &json!({"revision":-1,"pages":{}})), Err(ReadError::InvalidProjection));
+    }
+    #[test] fn bracket_rejects_mid_read_wiki_mutation() {
+        let one=json!({"revision":7,"pages":{"work":{"sections":{}}}});
+        let mut next=one.clone();
+        next["revision"]=json!(8);
+        assert_eq!(project_bracketed(&pwa(),&one,&next),Err(ReadError::SnapshotChanged));
+        let accepted=project_bracketed(&pwa(),&one,&one).unwrap();
+        assert_eq!(accepted.wiki_revision,7);
     }
     #[test] fn development_epoch_fence_rejects_rollback_and_same_epoch_conflict() {
         let source=json!({
@@ -273,10 +326,34 @@ mod tests {
         let mut conflict=first.clone();
         conflict.text.push_str(" altered");
         assert_eq!(guard.accept(&conflict),Err(ReadError::InvalidProjection));
+        let another=project_development("symbols","other",&source).unwrap();
+        assert!(guard.accept(&another).is_ok());
+        // Switching queries must not forget a previously seen same-epoch
+        // query: otherwise an A/B/A read could accept contradictory source.
+        assert_eq!(guard.accept(&conflict),Err(ReadError::InvalidProjection));
         let mut advance=source;
         advance["epoch"]=json!(8);
         let newer=project_development("symbols","work",&advance).unwrap();
         assert!(guard.accept(&newer).is_ok());
+        assert!(guard.accept(&first).is_err());
+    }
+    #[test] fn source_digest_detects_same_epoch_changed_graph_payload() {
+        let source=json!({
+            "schema":"hqkg.development-query/1","authority":"read-only",
+            "operation":"symbols","epoch":7,"state":"indexed-snapshot",
+            "result":{"symbols":[]}
+        });
+        let mut guard=DevelopmentRevisionGuard::default();
+        let one=project_development("symbols","work",&source).unwrap();
+        guard.accept(&one).unwrap();
+        let mut changed=source;
+        changed["result"]["symbols"]=json!([{
+            "name":"x","path":"path","line":1,
+            "id":"id","fileId":"file"
+        }]);
+        let two=project_development("symbols","work",&changed).unwrap();
+        assert_ne!(one.source_digest,two.source_digest);
+        assert!(guard.accept(&two).is_err());
     }
     #[test] fn only_fixed_read_paths() {
         for e in [Endpoint::Health, Endpoint::Pwa, Endpoint::Wiki] {
