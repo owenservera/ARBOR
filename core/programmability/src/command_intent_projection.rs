@@ -174,7 +174,43 @@ fn intent_with_meta(outcome: &str, mut fields: Value, meta: &Value) -> Value {
     intent["provenance"] = meta["provenance"].clone();
     intent
 }
-fn check_reading(reading: &Value, source: &Value, personal: &Value, baseline: &Value) -> bool {
+fn personal_provenance_valid(personal: &Value, catalog_version: &Value) -> bool {
+    if personal.is_null() { return true }
+    let Some(fields) = personal.as_object() else { return false };
+    // Provenance is evidence of a past Host binder decision, never a grant.
+    if fields.contains_key("authorization") || fields.contains_key("approval") ||
+        fields.contains_key("authority") || fields.contains_key("executionAuthorized") ||
+        fields.contains_key("effectPerformed") {
+        return false
+    }
+    match personal["method"].as_str() {
+        Some("accepted-personal-rule") => {
+            personal["ruleId"].as_str().is_some_and(|s|
+                s.starts_with("rule:") && (6..=85).contains(&s.len()) &&
+                s.as_bytes()[5..].iter().all(|c| c.is_ascii_lowercase() ||
+                    c.is_ascii_digit() || matches!(*c, b'.' | b'_' | b'-'))) &&
+            personal["ruleRevision"].as_u64().is_some_and(|v| v > 0 && v <= MAX_SAFE) &&
+            personal["catalogRevision"] == *catalog_version &&
+            personal["semanticScope"].as_object().is_some_and(|scope| {
+                scope.len() <= 4 && scope.iter().all(|(key, value)| {
+                    matches!(key.as_str(), "surface" | "workspaceId" | "activity" | "providerId") &&
+                    value.as_str().is_some_and(|v| !v.is_empty() && v.len() <= 128)
+                })
+            })
+        },
+        Some("personal-rule-conflict") => personal["ruleIds"].as_array().is_some_and(|ids| {
+            !ids.is_empty() && ids.len() <= 500 && ids.iter().all(|id|
+                id.as_str().is_some_and(|s| s.starts_with("rule:") &&
+                    (6..=85).contains(&s.len()))) &&
+            ids.windows(2).all(|pair| pair[0].as_str() < pair[1].as_str())
+        }),
+        Some("personal-rule-refusal") => personal["reason"].as_str()
+            .is_some_and(|s| !s.is_empty() && s.len() <= 128),
+        _ => false,
+    }
+}
+fn check_reading(reading: &Value, source: &Value, personal: &Value,
+    baseline: &Value, catalog_version: &Value) -> bool {
     if reading["schema"] != LANGUAGE ||
         !(reading["input"] == source["text"] ||
           reading["input"].as_str() == source["text"].as_str().map(js_trim)) {
@@ -227,7 +263,10 @@ fn check_reading(reading: &Value, source: &Value, personal: &Value, baseline: &V
         return false
     }
     if !personal.is_null() {
-        if baseline.as_str() != Some("interpretation_required") { return false }
+        if baseline.as_str() != Some("interpretation_required") ||
+            !personal_provenance_valid(personal, catalog_version) {
+            return false
+        }
         match personal["method"].as_str() {
             Some("accepted-personal-rule") if outcome == "candidate" => (),
             Some("personal-rule-conflict") if outcome == "clarification_required" => (),
@@ -267,7 +306,8 @@ pub fn project(request: &Value) -> Value {
     };
     let reading = &request["reading"];
     let personal = &request["personalProvenance"];
-    if !check_reading(reading, source, personal, &request["baselineOutcome"]) ||
+    if !check_reading(reading, source, personal, &request["baselineOutcome"],
+        &request["catalogVersion"]) ||
         reading["feedback"]["worldV"].as_i64().is_some_and(|v| {
             request["worldRevision"].as_i64() != Some(v)
         }) {

@@ -276,6 +276,28 @@ test('accepted, conflicting and invalid existing Host personal meanings preserve
       assert.deepEqual(native.intent, JSON.parse(JSON.stringify(incumbent)),
         'Full native personal-rule provenance parity: ' + name);
       compared++;
+
+      // The actual Host-selected provenance is admitted. Forging its
+      // selected revision or attaching an approval claim is not.
+      const corrupted = name === 'accepted'
+        ? {...personalProvenance, ruleRevision: 0}
+        : name === 'conflict'
+          ? {...personalProvenance, ruleIds: [...personalProvenance.ruleIds].reverse()}
+          : {...personalProvenance, authority: 'owner'};
+      const malformed = runNativeProductPureSync('command-intent-projection', {
+        schema: 'vivim.command-intent-projection-input/1',
+        input: {text: phrase, scope: 'text', audience: 'owner'},
+        catalogVersion: catalog.version, worldRevision: world.v,
+        catalogActions: catalog.actions.map(({id, title, args, risk, owner, readiness, requiredScopes}) =>
+          ({id, title, args, risk, owner, readiness,
+            ...(requiredScopes !== undefined ? {requiredScopes} : {})})),
+        reading, baselineOutcome: baseline.outcome, personalProvenance: corrupted
+      });
+      assert.ok(malformed, 'native malformed personal provenance response');
+      assert.equal(malformed.intent.outcome, 'refused', name);
+      assert.equal(malformed.intent.refusal.code, 'INVALID_READING', name);
+      assert.equal(malformed.executionAuthorized, false);
+      assert.equal(malformed.effectPerformed, false);
     }
   }
   if (!compared) t.diagnostic('Personal Host cases exercised; native parity unrun without binary.');
