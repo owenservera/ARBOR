@@ -299,6 +299,26 @@ test('accepted, conflicting and invalid existing Host personal meanings preserve
       assert.equal(malformed.intent.refusal.code, 'INVALID_READING', name);
       assert.equal(malformed.executionAuthorized, false);
       assert.equal(malformed.effectPerformed, false);
+      // Mutate real Host-resolved provenance rather than inventing rules.
+      const additional = name === 'accepted'
+        ? {personalProvenance: {...personalProvenance, ruleId: 'rule:Invalid!'}}
+        : name === 'conflict'
+          ? {personalProvenance: {...personalProvenance, ruleIds: ['rule:Invalid!']}}
+          : {reading: {...reading, refusal: {...reading.refusal, code: 'CONTRADICTORY_RULE'}}};
+      const wire = {
+        schema: 'vivim.command-intent-projection-input/1',
+        input: {text: phrase, scope: 'text', audience: 'owner'},
+        catalogVersion: catalog.version, worldRevision: world.v,
+        worldNlclVersion: world.kernel.nlclVersion,
+        catalogActions: catalog.actions.map(({id, title, args, risk, owner, readiness, requiredScopes}) =>
+          ({id, title, args, risk, owner, readiness,
+            ...(requiredScopes !== undefined ? {requiredScopes} : {})})),
+        reading, baselineOutcome: baseline.outcome, personalProvenance
+      };
+      const mismatch = runNativeProductPureSync('command-intent-projection',
+        {...wire, ...additional});
+      assert.equal(mismatch?.intent?.refusal?.code, 'INVALID_READING',
+        'native refuses altered personal source for ' + name);
     }
   }
   if (!compared) t.diagnostic('Personal Host cases exercised; native parity unrun without binary.');
