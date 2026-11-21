@@ -5,7 +5,7 @@ use crate::context_retrieval::{query_scoped, ScopedQuery};
 use crate::scoped_graph;
 use crate::typed_dag::{GraphDomain, Namespace};
 use serde_json::{json, Value};
-use std::{collections::BTreeMap, fs, path::Path};
+use std::{collections::{BTreeMap, BTreeSet}, fs, path::Path};
 
 const SCHEMA: &str = "vivim.hqkg-chat-context/1";
 const MAX_JOURNAL_BYTES: u64 = 64 * 1024 * 1024;
@@ -43,6 +43,17 @@ pub fn check_managed_head(journal: &Path, expected: &JournalStatus) -> Result<()
 // node of this view stays retrievable, and the scoped query budget bounds the
 // output rather than the reachable set.
 pub fn project_managed_graph(graph: &Graph, scope: &str, epoch:u64, view:&str) -> Result<Value> {
+    project_managed_graph_selected(graph,scope,epoch,view,None)
+}
+
+/// Limit retrieval to the exact currently verified Host source identities.
+/// The complete durable graph is never rewritten just to change the read window.
+/// This is a selection fence, not a grant: scope, namespace and source admission
+/// remain mandatory, and only graph-backed records can be returned.
+pub fn project_managed_graph_selected(
+    graph: &Graph, scope: &str, epoch:u64, view:&str,
+    active: Option<&BTreeSet<String>>
+) -> Result<Value> {
     let (ns,prefix)=scope_prefix(scope,view)?;
     graph.check_indexes()?;
     if graph.epoch()!=epoch ||
@@ -56,7 +67,8 @@ pub fn project_managed_graph(graph: &Graph, scope: &str, epoch:u64, view:&str) -
     for node in graph.nodes() {
         let kind = node.properties.get("vivim.context.kind").map(String::as_str);
         if !node.id.starts_with(&format!("{prefix}vivim-context-")) ||
-            !(kind == Some("wiki") || (view == "owner" && kind == Some("effect"))) {
+            !(kind == Some("wiki") || (view == "owner" && kind == Some("effect"))) ||
+            active.is_some_and(|ids| !ids.contains(node.id.strip_prefix(&prefix).unwrap_or(""))) {
             continue;
         }
         let order = node.properties.get("vivim.context.order")
@@ -73,6 +85,11 @@ pub fn project_managed_graph(graph: &Graph, scope: &str, epoch:u64, view:&str) -
     for edge in graph.edges() {
         if !edge.id.starts_with(&format!("{prefix}vivim-context-p-")) ||
             edge.properties.get("vivim.context.kind").map(String::as_str) != Some("wiki-page-link") {
+            continue;
+        }
+        // A stale page-link edge cannot bring an inactive source back into a
+        // phone or owner context view by its relationship endpoints.
+        if active.is_some() && (!orders.contains_key(&edge.from) || !orders.contains_key(&edge.to)) {
             continue;
         }
         let from = graph.node(&edge.from).ok_or_else(|| Error::Corrupt("Wiki link endpoint missing".into()))?;

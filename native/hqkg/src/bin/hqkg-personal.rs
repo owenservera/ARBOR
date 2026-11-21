@@ -17,7 +17,7 @@
 use hqkg::{Error, Graph, Journal, Node, NodeKind};
 use hqkg::graph_change_set::{ApplyLedger, GraphChangeSet};
 use hqkg::scoped_graph::{self, Provenance};
-use hqkg::managed_context::{check_managed_head, project_managed_graph};
+use hqkg::managed_context::{check_managed_head, project_managed_graph_selected};
 use hqkg::typed_dag::{GraphDomain, Namespace, RevisionToken};
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
@@ -224,6 +224,30 @@ fn sync_context(v: &Value, ns: &Namespace, journal: &Journal, g: &mut Graph,
     if deltas.is_some() && base_revision.is_none() {
         return Err("delta ingestion requires baseRevision".into());
     }
+    // The Host's last verified durable epoch is an optional exact CAS fence.
+    // Legacy delta tools retain their source-revision fence; the live Host
+    // supplies both so concurrent readers cannot silently overwrite a view.
+    if let Some(value)=v.get("baseEpoch") {
+        if deltas.is_none() || value.as_u64()!=Some(g.epoch()) {
+            return Err("STALE_CONTEXT_EPOCH".into());
+        }
+    }
+    let active_ids:Option<BTreeSet<String>>=match v.get("activeIds") {
+        None => None,
+        Some(Value::Array(ids)) if view.is_some() && ids.len()<=4096 => {
+            let mut selected=BTreeSet::new();
+            for value in ids {
+                let id=value.as_str().ok_or("invalid active context id")?;
+                let valid=id.strip_prefix("vivim-context-w-")
+                    .or_else(||id.strip_prefix("vivim-context-e-"));
+                if !valid.is_some_and(hex) || !selected.insert(id.to_string()) {
+                    return Err("invalid active context source identity".into());
+                }
+            }
+            Some(selected)
+        }
+        _ => return Err("active context scope requires bounded managed read".into()),
+    };
     let nodes = v["nodes"].as_array().ok_or("context nodes required")?;
     if nodes.len() > MAX_CONTEXT_RECORDS { return Err("POLICY_LIMIT context nodes".into()); }
     let prefix = scoped_graph::prefix(ns).map_err(err)?;
@@ -321,10 +345,50 @@ fn sync_context(v: &Value, ns: &Namespace, journal: &Journal, g: &mut Graph,
     // Only Host-supplied evidence over two selected managed Wiki page nodes.
     // Omitted or removed structure is reconciled in the same change set.
     let mut page_edges = BTreeSet::new();
-    if let Some(value) = v.get("relationships") {
-        let relationships = value.as_array().ok_or("invalid Wiki relationships")?;
-        if relationships.len() > 24 { return Err("POLICY_LIMIT Wiki relationships".into()); }
-        for item in relationships {
+    let mut relationship_puts:Vec<&Value>=Vec::new();
+    if let Some(value)=v.get("relationships") {
+        let relations=value.as_array().ok_or("invalid Wiki relationships")?;
+        relationship_puts.extend(relations.iter());
+    }
+    // Unlike a complete projection, a delta never treats omission as deletion.
+    // Every removed link carries its old digest and revision fence.
+    let mut removed_page_edges=BTreeSet::new();
+    if let Some(value)=v.get("relationshipDeltas") {
+        if deltas.is_none() { return Err("Wiki relationship deltas require source deltas".into()); }
+        let changes_list=value.as_array().ok_or("invalid Wiki relationship deltas")?;
+        if changes_list.len()>24 { return Err("POLICY_LIMIT Wiki relationship deltas".into()); }
+        for change in changes_list {
+            match text(change,"op")? {
+                "put" => relationship_puts.push(change),
+                "delete" => {
+                    let local=text(change,"id")?;
+                    if !local.strip_prefix("vivim-context-p-").is_some_and(hex) {
+                        return Err("invalid Wiki relationship tombstone".into());
+                    }
+                    let revision=change["revision"].as_u64().ok_or("invalid link tombstone revision")?;
+                    let digest=text(change,"digest")?;
+                    if revision==0 || !hex(digest) {return Err("invalid link tombstone provenance".into());}
+                    let id=scoped_graph::qualified_id(ns,local).map_err(err)?;
+                    if !removed_page_edges.insert(id.clone()) {
+                        return Err("duplicate Wiki relationship tombstone".into());
+                    }
+                    if let Some(old)=g.edge(&id) {
+                        let old_revision=old.properties.get("hqkg.provenance.revision")
+                            .and_then(|s|s.parse::<u64>().ok()).ok_or("invalid prior link revision")?;
+                        if old.properties.get("vivim.context.kind").map(String::as_str)!=Some("wiki-page-link") ||
+                            old_revision>revision ||
+                            old.properties.get("hqkg.provenance.digest").map(String::as_str)!=Some(digest) {
+                            return Err("STALE_CONTEXT_SOURCE Wiki relationship".into());
+                        }
+                        changes=changes.remove_edge(&id,"Host committed Wiki link invalidation",revision);
+                    }
+                }
+                _ => return Err("invalid Wiki relationship delta op".into()),
+            }
+        }
+    }
+    if relationship_puts.len()>24 { return Err("POLICY_LIMIT Wiki relationships".into()); }
+    for item in relationship_puts {
             let id = text(item, "id")?;
             let from = text(item, "from")?;
             let to = text(item, "to")?;
@@ -335,7 +399,9 @@ fn sync_context(v: &Value, ns: &Namespace, journal: &Journal, g: &mut Graph,
                 serde_json::to_string(&[from,to]).map_err(err)?.as_bytes()));
             if id != canonical_id.as_str() ||
                 !wiki_page_nodes.get(from).map_or(false,|r| *r>=revision) ||
-                !wiki_page_nodes.get(to).map_or(false,|r| *r>=revision) || from == to ||
+                !wiki_page_nodes.get(to).map_or(false,|r| *r>=revision) ||
+                deleted.contains(&scoped_graph::qualified_id(ns,from).map_err(err)?) ||
+                deleted.contains(&scoped_graph::qualified_id(ns,to).map_err(err)?) || from == to ||
                 text(item, "kind")? != "wiki-page-link" || !hex(digest) || revision == 0 ||
                 source.len() != 36 || !source.bytes().all(|b| b.is_ascii_hexdigit() || b == b'-') {
                 return Err("invalid Wiki page relationship".into());
@@ -346,7 +412,9 @@ fn sync_context(v: &Value, ns: &Namespace, journal: &Journal, g: &mut Graph,
             let mut edge = scoped_graph::edge(ns,id,&from,"wiki-page-link",&to,&provenance).map_err(err)?;
             edge.properties.insert("vivim.context.kind".into(),"wiki-page-link".into());
             edge.properties.insert("vivim.context.sourceRef".into(),source.into());
-            if !page_edges.insert(edge.id.clone()) { return Err("duplicate Wiki relationship".into()); }
+            if !page_edges.insert(edge.id.clone()) || removed_page_edges.contains(&edge.id) {
+                return Err("duplicate Wiki relationship".into());
+            }
             if let Some(old) = g.edge(&edge.id) {
                 if old.properties.get("vivim.context.kind").map(String::as_str) != Some("wiki-page-link") ||
                     old.from != edge.from || old.to != edge.to {
@@ -360,6 +428,22 @@ fn sync_context(v: &Value, ns: &Namespace, journal: &Journal, g: &mut Graph,
                 if old == &edge { continue; }
             }
             changes = changes.put_edge(edge);
+    }
+    // Updating a Wiki section invalidates any previously linked D4 receipt
+    // whose exact entry/revision no longer identifies that current section.
+    // Historical receipt nodes remain untouched: only the relationship loses
+    // its claim to current Wiki lineage.
+    if deltas.is_some() {
+        for edge in g.edges().filter(|e|e.id.starts_with(&format!("{prefix}vivim-context-l-")) &&
+            e.properties.get("vivim.context.kind").map(String::as_str)==Some("effect-wiki-link")) {
+            let Some(updated)=records.iter().find(|r|r.node.id==edge.to) else {continue};
+            let effect=g.node(&edge.from).ok_or("missing linked D4 receipt")?;
+            let linked_ref=effect.properties.get("vivim.context.wikiEntryId").map(String::as_str);
+            let linked_revision=effect.properties.get("vivim.context.wikiRevision")
+                .and_then(|s|s.parse::<u64>().ok());
+            if linked_ref!=Some(updated.source_ref.as_str()) || linked_revision!=Some(updated.revision) {
+                changes=changes.remove_edge(&edge.id,"D4 Wiki source superseded",updated.revision);
+            }
         }
     }
     // Only a complete projection reconciles omission. A delta batch never infers
@@ -413,7 +497,16 @@ fn sync_context(v: &Value, ns: &Namespace, journal: &Journal, g: &mut Graph,
         "ingested":ingested,"tombstoned":tombstoned});
     if let Some(view)=view {
         check_managed_head(journal.path(),&status).map_err(quarantine)?;
-        packet["context"]=project_managed_graph(&durable,scope,status.epoch,view).map_err(quarantine)?;
+        if let Some(ids)=&active_ids {
+            for local in ids {
+                let id=scoped_graph::qualified_id(ns,local).map_err(err)?;
+                let node=durable.node(&id).ok_or("active context source missing from durable graph")?;
+                if !matches!(node.properties.get("vivim.context.kind").map(String::as_str),Some("wiki"|"effect")) {
+                    return Err("invalid active context source kind".into());
+                }
+            }
+        }
+        packet["context"]=project_managed_graph_selected(&durable,scope,status.epoch,view,active_ids.as_ref()).map_err(quarantine)?;
         // Preserve the standalone reader's final on-disk epoch/length check.
         let after=journal.status().map_err(quarantine)?;
         if after.epoch!=status.epoch || after.total_bytes!=status.total_bytes || after.trailing_bytes!=0 {

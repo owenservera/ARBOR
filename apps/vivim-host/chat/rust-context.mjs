@@ -112,7 +112,7 @@ export function resolveRustContextRuntime({env=process.env,repoRoot=DEFAULT_ROOT
 // as owner-authored content; receipts are historical applied effects only.
 // An unverified chat observation is intentionally never ingested.
 export function buildNativeKnowledge(snapshot, effects) {
-  if (!snapshot || !Array.isArray(snapshot.changes?.items) || snapshot.changes.items.length > 24 ||
+  if (!snapshot || !Array.isArray(snapshot.changes?.items) || snapshot.changes.items.length > 4096 ||
       effects?.state !== 'source-backed' || !Array.isArray(effects.items) || effects.items.length > 24)
     throw Error('NATIVE_SOURCE_UNAVAILABLE');
   const rows = [];
@@ -271,11 +271,13 @@ function managedReader({env,dataRoot,productJournal,control,executePersonal,repo
   const scope=root && digest(['vivim-host-personal/1',root]);
   let queue=Promise.resolve();
   const inflight=new Map();
+  // Only a verified durable readback can establish a delta base.
+  let last=null;
   async function snapshot() {
-    const current=await productJournal.readNativeKnowledge({nativeOnly:true});
+    const current=await productJournal.readNativeKnowledge({nativeOnly:true,completeSources:true});
     const effects=projectAppliedControlEffects(control(),current.context.wikiChanges,current.context.wikiStructure);
     const rows=buildNativeKnowledge(current,effects);
-    return {rows,relationships:buildNativeRelationships(current,rows)};
+    return {rows,relationships:buildNativeRelationships(current,rows),wikiRevision:current.context.wikiRevision};
   }
   async function read(view) {
     if (!root || typeof journal!=='string' || !path.isAbsolute(journal))
@@ -292,14 +294,44 @@ function managedReader({env,dataRoot,productJournal,control,executePersonal,repo
       // One invocation performs both operations against the existing durable graph.
       for (let attempt=0;attempt<2;attempt++) {
         const projection=await snapshot(),{rows,relationships}=projection,fingerprint=digest(projection);
-        const packet=await nativePacket(await executePersonal(runtime.personal,journal,{
-          schema:PERSONAL_SCHEMA,scope,op:'sync-context-read',view,nodes:rows,relationships
-        }));
+        if(rows.length>512 || rows.length+relationships.length>4096)
+          return unavailable('RUST_CORE_SOURCE_LIMIT');
+        const nowRows=new Map(rows.map(row=>[row.id,row]));
+        const nowLinks=new Map(relationships.map(link=>[link.id,link]));
+        const delta=last!==null;
+        const puts=delta?rows.filter(row=>!last.rows.has(row.id)||
+          digest(last.rows.get(row.id))!==digest(row)):rows;
+        // A missing historical receipt or bounded page projection is not a
+        // revocation. Only complete committed section evidence permits a tombstone.
+        const deletes=delta?[...last.rows.values()].filter(row=>
+          row.kind==='wiki'&&row.semanticId.startsWith('wiki:section:')&&!nowRows.has(row.id))
+          .map(row=>({op:'delete',kind:'wiki',id:row.id,revision:row.revision,digest:row.digest})):[];
+        const linkPuts=delta?relationships.filter(link=>!last.links.has(link.id)||
+          digest(last.links.get(link.id))!==digest(link)):relationships;
+        const linkDeletes=delta?[...last.links.values()].filter(link=>!nowLinks.has(link.id))
+          .map(link=>({op:'delete',id:link.id,revision:link.revision,digest:link.digest})):[];
+        const packetInput=delta?{
+          schema:PERSONAL_SCHEMA,scope,op:'sync-context-read',view,nodes:[],
+          deltas:[...puts.map(row=>({...row,op:'put'})),...deletes],
+          baseRevision:Math.max(0,...[...last.rows.values(),...rows].map(row=>row.revision)),
+          baseEpoch:last.epoch,relationships:linkPuts,relationshipDeltas:linkDeletes,
+          activeIds:rows.map(row=>row.id)
+        }:{
+          schema:PERSONAL_SCHEMA,scope,op:'sync-context-read',view,nodes:rows,
+          relationships,activeIds:rows.map(row=>row.id)
+        };
+        if(delta&&(packetInput.deltas.length>512||linkPuts.length+linkDeletes.length>24))
+          return unavailable('RUST_CORE_SOURCE_LIMIT');
+        const packet=await nativePacket(await executePersonal(runtime.personal,journal,packetInput));
         if (packet?.schema!==PERSONAL_SCHEMA || packet.scope!==scope ||
             packet.op!=='sync-context-read' || !safeUInt(packet.epoch) ||
-            !safeUInt(packet.bytes) || packet.synced!==rows.length || packet.syncedRelationships!==relationships.length ||
-            typeof packet.changed!=='boolean')
-          return unavailable('RUST_CORE_CONTRACT_INVALID');
+            !safeUInt(packet.bytes) || packet.synced!==puts.length ||
+            packet.syncedRelationships!==linkPuts.length ||
+            (delta&&(packet.mode!=='delta'||packet.ingested!==puts.length||
+              packet.tombstoned!==deletes.length)) ||
+            typeof packet.changed!=='boolean') {
+          last=null; return unavailable('RUST_CORE_CONTRACT_INVALID');
+        }
         const result=packet.context;
         if (result?.schema!==CHAT_CONTEXT_SCHEMA || result.core!=='hqkg' ||
             result.state!=='source-backed' || result.authority!=='read-only' ||
@@ -334,23 +366,28 @@ function managedReader({env,dataRoot,productJournal,control,executePersonal,repo
             return unavailable('RUST_CORE_CONTRACT_INVALID');
           seen.add(item.sourceRef); sum+=item.estimatedTokens;
           items.push({title:item.title,summary:item.summary,kind:item.kind,
+            sourceRef:item.sourceRef,sourceDigest:item.sourceDigest,
             depth:item.depth,revision:item.revision,sourceRevision:item.sourceRevision,
             sourceCount:item.sourceCount,estimatedTokens:item.estimatedTokens});
         }
         if (sum!==result.tokensUsed) return unavailable('RUST_CORE_CONTRACT_INVALID');
-        if (digest(await snapshot())!==fingerprint) continue;
+        if (digest(await snapshot())!==fingerprint) {last=null;continue;}
+        last={epoch:packet.epoch,rows:nowRows,links:nowLinks};
         return {schema:CHAT_CONTEXT_SCHEMA,state:'source-backed',core:'hqkg',
           authority:'read-only',epoch:result.epoch,tokensUsed:result.tokensUsed,
           budgetTokens:320,staleCount:0,budgetExhausted:result.budgetExhausted,
           totalRetrieved:result.totalRetrieved,items,
+          sourceHighWater:{wikiRevision:projection.wikiRevision,graphEpoch:packet.epoch},
           ...(relationships.length?{syncedRelationships:relationships.length,
             pageRelationships:relationships.map(({from,to,kind,sourceRef,revision,digest:sourceDigest})=>({
               from:rows.find(row=>row.id===from).semanticId,to:rows.find(row=>row.id===to).semanticId,
               kind,sourceRef,revision,sourceDigest}))}:{}),
           note:'Committed Wiki content and historical effects are advisory; Host retains effect authority.'};
       }
+      last=null;
       return unavailable('RUST_CORE_SOURCE_CHANGED');
     } catch (error) {
+      last=null;
       return unavailable(['RUST_CORE_RECOVERY_REQUIRED','RUST_CORE_CAPACITY_HELD',
         'RUST_CORE_INGEST_FAILED'].includes(error?.code) ? error.code : 'RUST_CORE_READ_FAILED');
     }

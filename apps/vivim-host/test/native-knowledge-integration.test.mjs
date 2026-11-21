@@ -119,13 +119,28 @@ test('managed reads share one native invocation per concurrent authorized view a
   const {journal,dataRoot,edit}=await setup(t);
   await edit('Current owner text',1);
   const packets=[];
+  const durable=new Map();
   const result=packet=>{
-    const visible=packet.nodes.filter(row=>packet.view==='owner'||row.kind==='wiki');
+    if(Array.isArray(packet.deltas)){
+      for(const delta of packet.deltas){
+        if(delta.op==='put')durable.set(delta.id,delta);
+        else if(delta.op==='delete')durable.delete(delta.id);
+      }
+    }else{
+      durable.clear();
+      for(const row of packet.nodes)durable.set(row.id,row);
+    }
+    const active=new Set(packet.activeIds??[...durable.keys()]);
+    const visible=[...durable.values()].filter(row=>
+      active.has(row.id)&&(packet.view==='owner'||row.kind==='wiki'));
     const items=visible.slice(0,1).map(row=>({title:row.title,summary:row.summary,kind:row.kind,
       sourceRef:row.sourceRef,sourceDigest:row.digest,sourceRevision:row.sourceRevision,
       revision:row.revision,depth:0,sourceCount:1,estimatedTokens:30}));
     return {stdout:JSON.stringify({schema:'vivim.hqkg-personal/1',scope:packet.scope,op:packet.op,
-      epoch:7,bytes:2000,synced:packet.nodes.length,syncedRelationships:packet.relationships.length,changed:false,
+      epoch:7,bytes:2000,synced:packet.deltas?packet.deltas.filter(d=>d.op==='put').length:packet.nodes.length,
+      syncedRelationships:packet.relationships.length,changed:false,
+      ...(packet.deltas?{mode:'delta',ingested:packet.deltas.filter(d=>d.op==='put').length,
+        tombstoned:packet.deltas.filter(d=>d.op==='delete').length}:{}),
       context:{schema:'vivim.hqkg-chat-context/1',state:'source-backed',core:'hqkg',authority:'read-only',
         seed:'managed:'+packet.view,epoch:7,staleCount:0,budgetTokens:320,tokensUsed:items.length*30,
         budgetExhausted:false,totalRetrieved:visible.length,items,pageRelationships:packet.relationships}})};
@@ -172,4 +187,30 @@ test('combined native read detects source edits during execution and retries fro
   assert.equal(out.state,'source-backed',out.reason);
   assert.equal(calls,2);
   assert.equal(out.items[0].summary,'Changed while native read was running');
+});
+
+
+test('native ingestion receives every current committed section beyond presentation window',async t=>{
+  const {journal}=await setup(t);
+  let revision=1;
+  for(let i=0;i<28;i++){
+    const page='Source'+i;
+    await journal.append({kind:'wiki-structure',actor:'owner-browser',schemaVersion:1,
+      expectedRevision:revision++,edit:{action:'create-page',page}});
+    await journal.append({kind:'wiki-edit',actor:'owner-browser',schemaVersion:1,
+      expectedRevision:revision++,edit:{action:'set-section',page,section:'About',
+        content:'Owner committed section '+i}});
+  }
+  const projected=await journal.readNativeKnowledge({nativeOnly:true});
+  const complete=await journal.readNativeKnowledge({nativeOnly:true,completeSources:true});
+  assert.ok(projected.changes.items.length<=24,'presentation remains bounded');
+  assert.equal(complete.changes.items.length,28);
+  assert.equal(complete.changes.omitted,0);
+  const rows=buildNativeKnowledge(complete,emptyEffects);
+  const sectionRows=rows.filter(row=>row.semanticId.startsWith('wiki:section:'));
+  assert.equal(sectionRows.length,28);
+  assert.ok(sectionRows.some(row=>row.semanticId==='wiki:section:Source0/About'&&
+    row.summary==='Owner committed section 0'));
+  assert.ok(sectionRows.some(row=>row.semanticId==='wiki:section:Source27/About'));
+  assert.ok(sectionRows.every(row=>row.sourceRef&&row.digest&&row.sourceRevision>0));
 });

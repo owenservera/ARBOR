@@ -386,3 +386,75 @@ fn delta_ingestion_and_a_complete_projection_converge_on_the_same_durable_graph(
     assert_eq!(status.trailing_bytes,0);
     assert_eq!(status.total_bytes,bytes.len() as u64);
 }
+
+
+#[test]
+fn scoped_active_source_read_and_epoch_fenced_delta_preserve_unselected_history() {
+    let temp=Temp::new(); let file=temp.journal();
+    let a=wiki_record(0,1); let b=wiki_record(1,1);
+    let (ok,first)=sync(&file,SCOPE,vec![a.clone(),b.clone()]);
+    assert!(ok,"{first}");
+    let epoch=first["epoch"].as_u64().unwrap();
+    let req=|base:u64,active:Vec<Value>,deltas:Vec<Value>|json!({
+        "schema":"vivim.hqkg-personal/1","scope":SCOPE,"op":"sync-context-read",
+        "view":"wiki","nodes":[],"relationships":[],"baseRevision":2,
+        "baseEpoch":base,"deltas":deltas,"activeIds":active
+    });
+    let active=vec![b["id"].clone()];
+    let bytes=fs::read(&file).unwrap();
+    let (ok,selected)=run_packet(&file,req(epoch,active.clone(),vec![]));
+    assert!(ok,"{selected}");
+    assert_eq!(selected["mode"],"delta");
+    assert_eq!(selected["context"]["totalRetrieved"],1);
+    assert_eq!(selected["context"]["items"][0]["sourceRef"],"page-1");
+    assert_eq!(Journal::new(&file).load().unwrap().node_count(),2);
+    assert_eq!(fs::read(&file).unwrap(),bytes,"read selection must not write");
+    let mut updated=wiki_record(1,2);
+    updated["summary"]=json!("Verified revision two");
+    let (ok,stale)=run_packet(&file,req(epoch+1,active.clone(),vec![put(updated.clone())]));
+    assert!(!ok,"stale graph epoch must refuse: {stale}");
+    assert_eq!(fs::read(&file).unwrap(),bytes);
+    let (ok,current)=run_packet(&file,req(epoch,active.clone(),vec![put(updated.clone())]));
+    assert!(ok,"{current}");
+    assert_eq!(current["ingested"],1);
+    assert_eq!(current["context"]["totalRetrieved"],1);
+    assert_eq!(current["context"]["items"][0]["summary"],"Verified revision two");
+    assert_eq!(Journal::new(&file).load().unwrap().node_count(),2);
+    let old_active=vec![a["id"].clone()];
+    let (ok,historical)=run_packet(&file,req(current["epoch"].as_u64().unwrap(),old_active,vec![]));
+    assert!(ok,"{historical}");
+    assert_eq!(historical["context"]["items"][0]["sourceRef"],"page-0");
+    let (ok,invalid)=run_packet(&file,req(current["epoch"].as_u64().unwrap(),vec![json!("foreign:node")],vec![]));
+    assert!(!ok,"foreign active source must be refused: {invalid}");
+}
+
+#[test]
+fn explicit_link_invalidation_removes_only_committed_page_relationship() {
+    let temp=Temp::new(); let file=temp.journal();
+    let mut a=wiki_record(0,3); a["semanticId"]=json!("wiki:page:Alpha");
+    let mut b=wiki_record(1,3); b["semanticId"]=json!("wiki:page:Beta");
+    let from=a["id"].as_str().unwrap(); let to=b["id"].as_str().unwrap();
+    let id=format!("vivim-context-p-{:x}",Sha256::digest(
+        serde_json::to_string(&[from,to]).unwrap().as_bytes()));
+    let link=json!({"id":id,"from":from,"to":to,"kind":"wiki-page-link",
+        "sourceRef":ENTRY,"revision":3,"digest":"a".repeat(64)});
+    let rows=vec![a.clone(),b.clone()];
+    let (ok,first)=sync_with_relationships(&file,SCOPE,rows.clone(),vec![link.clone()]);
+    assert!(ok,"{first}");
+    let epoch=first["epoch"].as_u64().unwrap();
+    let del=json!({"op":"delete","id":link["id"],"revision":3,"digest":link["digest"]});
+    let packet=json!({"schema":"vivim.hqkg-personal/1","scope":SCOPE,
+        "op":"sync-context-read","view":"wiki","nodes":[],"relationships":[],
+        "baseRevision":3,"baseEpoch":epoch,"deltas":[],
+        "activeIds":[a["id"],b["id"]],"relationshipDeltas":[del]});
+    let (ok,removed)=run_packet(&file,packet);
+    assert!(ok,"{removed}");
+    assert_eq!(removed["context"]["pageRelationships"],json!([]));
+    assert_eq!(Journal::new(&file).load().unwrap().edge_count(),0);
+    let bytes=fs::read(&file).unwrap();
+    let (ok,stale)=run_packet(&file,json!({"schema":"vivim.hqkg-personal/1",
+        "scope":SCOPE,"op":"sync-context","nodes":[],"relationships":[],
+        "baseRevision":3,"baseEpoch":epoch,"deltas":[]}));
+    assert!(!ok,"old link revision frame must be refused: {stale}");
+    assert_eq!(fs::read(&file).unwrap(),bytes);
+}

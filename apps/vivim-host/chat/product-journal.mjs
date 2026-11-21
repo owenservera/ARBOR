@@ -484,6 +484,34 @@ function projectWikiChanges(records, { currentOnly = false } = {}) {
   return { total: selected.length, omitted: selected.length - items.length, items };
 }
 
+// Complete current-section evidence is a separate, owner-local ingestion port.
+// Presentation still uses the bounded recent Wiki window. Every candidate came
+// from the already replay-validated committed product journal; structural moves
+// or deletes cannot resurrect a section absent from the current Wiki snapshot.
+function projectCompleteWikiChanges(records,wiki) {
+  const latest=new Map();
+  for(const entry of records)if(entry.kind==='wiki-edit')
+    latest.set(JSON.stringify([entry.edit.page,entry.edit.section]),entry);
+  const items=[];
+  for(const entry of latest.values()){
+    const {page,section,content,action}=entry.edit;
+    if(wiki.pages?.[page]?.sections?.[section]!==content)continue;
+    requireShape(typeof entry.entryId==='string' && Number.isSafeInteger(entry.sequence) &&
+      Number.isSafeInteger(entry.expectedRevision) && entry.expectedRevision>=0 &&
+      typeof entry.receivedAt==='string','Unidentified committed Wiki source',503);
+    items.push({source:'host-product-journal',entryId:entry.entryId,sequence:entry.sequence,
+      receivedAt:entry.receivedAt,kind:'committed-wiki-edit',
+      contentDigest:createHash('sha256').update(content,'utf8').digest('hex'),
+      previousWikiRevision:entry.expectedRevision,wikiRevision:entry.expectedRevision+1,
+      status:'current-section-revision',
+      ...(action==='capture-note'||action==='capture-task'?{captureKind:action.slice(8)}:{}),
+      ...(entry.sequenceBinding?{sequenceBinding:entry.sequenceBinding}:{}),
+      relationship:{kind:'mutated-section',page,section},content});
+  }
+  items.sort((a,b)=>a.sequence-b.sequence);
+  return {total:items.length,omitted:0,items};
+}
+
 // Rust reconstructs the current/superseded Wiki lineage and recent/source-current
 // windows from replay-admitted journal identities; no private text leaves Host.
 async function nativeWikiChanges(records,{currentOnly=false}={}){
@@ -746,7 +774,7 @@ export function createProductJournal({ dataRoot, seedState, seedWiki }) {
     return {schema:'vivim.wiki-program-evidence/1',authority:'host-product-journal',wikiRevision:current.wikiRevision,
       items:targets.map(({page,section})=>({page,section,source:byId.get(selected.get(JSON.stringify([page,section])))??null}))};
   }
-  async function readNativeKnowledge({nativeOnly=false}={}) {
+  async function readNativeKnowledge({nativeOnly=false,completeSources=false}={}) {
     const current = await snapshot();
     requireShape(!current.tornTail, 'Native context unavailable: torn journal tail', 503);
     // Native ingestion needs only committed changes and structure, never the
@@ -764,7 +792,9 @@ export function createProductJournal({ dataRoot, seedState, seedWiki }) {
       page:e.edit.page,kind:e.edit.action==='capture-task'?'task':'note',entryId:e.entryId,
       wikiRevision:e.expectedRevision+1,receivedAt:e.receivedAt,
       contentDigest:createHash('sha256').update(e.edit.content,'utf8').digest('hex')}));
-    const changes = await nativeWikiChanges(current.records, { currentOnly: true });
+    const changes = completeSources
+      ? projectCompleteWikiChanges(current.records,current.wiki)
+      : await nativeWikiChanges(current.records, { currentOnly: true });
     // Native adapter accepts a bounded input. Preserve current section owners and linked pages
     // first, then fill the remainder with recent capture identities; the durable journal is unchanged.
     const priority=new Set([...changes.items.map(e=>e.relationship.page),...(context.wikiStructure?.links??[]).flatMap(e=>[e.edit.from,e.edit.to])]);
