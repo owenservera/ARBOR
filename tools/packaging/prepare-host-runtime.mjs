@@ -125,7 +125,7 @@ function resolveRelative(fromFile,specifier,base){
   ...['index.mjs','index.js','index.ts'].map(n=>path.join(target,n))];
  return probes.find(c=>{try{return existsSync(c)&&lstatSync(c).isFile();}catch{return false;}})??null;
 }
-export function importClosure(entryFile,base){
+export function importClosure(entryFile,base,{unresolved=null}={}){
  const seen=new Set(),queue=[entryFile];
  while(queue.length){
   const file=queue.pop();
@@ -141,6 +141,10 @@ export function importClosure(entryFile,base){
   for(const pattern of patterns)for(const match of source.matchAll(pattern)){
    const resolved=resolveRelative(file,match[1],base);
    if(resolved&&!resolved.includes(path.sep+'node_modules'+path.sep))queue.push(resolved);
+   else if(!resolved&&unresolved){
+    const sourcePath=path.relative(base,file).split(path.sep).join('/');
+    unresolved.add(sourcePath+' -> '+match[1]);
+   }
   }
  }
  return seen;
@@ -152,6 +156,16 @@ export function runtimeImportClosure(base=root,entry=HOST_ENTRY){
  return [...importClosure(entryFile,base)]
   .map(f=>path.relative(base,f).split(path.sep).join('/'))
   .sort();
+}
+/// Source closure can be incomplete even when all the existing visited files
+/// look healthy: the old scanner silently ignored unresolved relative imports.
+/// Keep this a read-only scan of the *actual staged Host* entrypoint.
+export function runtimeImportProblems(base=root,entry=HOST_ENTRY){
+ const entryFile=path.join(base,entry);
+ if(!existsSync(entryFile))return ['Host entry not present: '+entry];
+ const unresolved=new Set();
+ importClosure(entryFile,base,{unresolved});
+ return [...unresolved].sort();
 }
 // True when a repo-relative path is inside the frozen staged payload.
 export function stagedCoverage(rel){
@@ -201,6 +215,8 @@ export function verifyStagedRuntime(base,{manifest=null,requireManifest=false}={
  for(const file of STAGED_TOP_FILES)if(!existsSync(path.join(base,file)))problems.push('missing staged file: '+file);
  const closure=runtimeImportClosure(base);
  for(const file of closure)if(!existsSync(path.join(base,file)))problems.push('missing runtime closure file: '+file);
+ if(requireManifest)for(const missing of runtimeImportProblems(base))
+   problems.push('missing runtime relative import: '+missing);
  if(!existsSync(path.join(base,'node.exe')))problems.push('missing bundled node.exe');
  const binDir=path.join(base,'native','bin');
  for(const name of PACKAGED_BINARIES){
