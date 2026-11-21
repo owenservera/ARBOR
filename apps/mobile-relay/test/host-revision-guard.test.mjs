@@ -66,3 +66,24 @@ test('no executable command or effect capability escapes the surface guard', () 
   assert.deepEqual(Object.keys(value).sort(), ['changed','reason','state','surface']);
   assert.equal('execute' in guard,false); assert.equal('grant' in guard,false);
 });
+
+
+test('explicit authenticated visual scope isolates new grants but retains same-grant high marks',()=>{
+  const guard=createHostRevisionGuard();
+  assert.equal(guard.bindScope('session-a:grant-a').state,'changed');
+  assert.equal(guard.observe(host(8)).state,'ready');
+  assert.equal(guard.disconnect().state,'blocked');
+  assert.equal(guard.bindScope('session-a:grant-a').state,'unchanged');
+  assert.equal(guard.observe(host(7)).reason,'ROLLBACK_PROOF_REQUIRED');
+  assert.equal(guard.observe(host(9,'foreign-space')).reason,'SCOPE_CHANGED');
+  assert.equal(guard.bindScope('session-b:grant-b').state,'changed');
+  assert.equal(guard.status().highRevision,null);
+  assert.equal(guard.observe(host(1)).state,'ready','new Host grant has independent revision domain');
+  assert.equal(guard.observe(host(0)).reason,'ROLLBACK_PROOF_REQUIRED');
+  guard.clearScope();
+  assert.equal(guard.observe(host(2)).reason,'SOURCE_SCOPE_UNAVAILABLE');
+  assert.equal(guard.bindScope('session-b:grant-b').state,'changed');
+  assert.equal(guard.observe(host(2)).state,'ready');
+  assert.equal(guard.bindScope('').state,'refused');
+  assert.equal(guard.status().highRevision,2);
+});
