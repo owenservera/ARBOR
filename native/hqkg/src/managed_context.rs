@@ -79,6 +79,41 @@ pub fn project_managed_graph_selected(
         candidates.push(node.id.clone());
     }
     let total = candidates.len();
+    // The bounded display (eight items) is not sufficient to attest to the
+    // thousands of admitted source records below it. Hash *every* selected
+    // durable source, including current semantic identity, owner receipt body
+    // fingerprint, revision and source digest. The Host reconstructs this
+    // manifest directly from its committed sources and requires an exact hash.
+    // BTreeMap order is canonical qualified-ID order; every ID shares one
+    // namespace prefix, so the Host's local-ID order is identical.
+    let manifest:Vec<Value>=orders.keys().map(|id| {
+        let node=graph.node(id).ok_or_else(||
+            Error::Corrupt("active context manifest node missing".into()))?;
+        let p=&node.properties;
+        let local=id.strip_prefix(&prefix).ok_or_else(||
+            Error::Corrupt("active context manifest scope mismatch".into()))?;
+        let revision=p.get("hqkg.provenance.revision")
+            .and_then(|s|s.parse::<u64>().ok()).ok_or_else(||
+                Error::Corrupt("active context manifest revision missing".into()))?;
+        let source_revision=p.get("vivim.context.sourceRevision")
+            .and_then(|s|s.parse::<u64>().ok());
+        let wiki_revision=p.get("vivim.context.wikiRevision")
+            .and_then(|s|s.parse::<u64>().ok());
+        Ok(json!([
+            local,p.get("vivim.context.kind"),
+            p.get("vivim.context.sourceRef"),
+            p.get("hqkg.provenance.digest"),
+            revision,source_revision,orders[id],node.title.as_str(),
+            p.get("vivim.context.summary"),
+            p.get("vivim.context.semanticId"),
+            p.get("vivim.context.actionId"),
+            p.get("vivim.context.receiptDigest"),
+            p.get("vivim.context.wikiEntryId"),wiki_revision
+        ]))
+    }).collect::<Result<Vec<_>>>()?;
+    let manifest_bytes=serde_json::to_vec(&manifest)
+        .map_err(|e|Error::Invalid(format!("active context manifest encoding: {e}")))?;
+    let manifest_digest=format!("{:x}",Sha256::digest(&manifest_bytes));
     // One bounded relationship scan feeds both relevance and the emitted page
     // relationships; every relationship keeps its revision and digest.
     let mut inbound: BTreeMap<String,u64> = candidates.iter().map(|id| (id.clone(),0)).collect();
@@ -218,6 +253,7 @@ pub fn project_managed_graph_selected(
     let mut result=json!({"schema":SCHEMA,"state":"source-backed","core":"hqkg","authority":"read-only",
         "seed":format!("managed:{view}"),"epoch":epoch,"tokensUsed":tokens,"budgetTokens":320,
         "budgetExhausted":exhausted,"staleCount":0,"totalRetrieved":total,"items":items,
+        "activeSourcesTotal":total,"activeSourcesDigest":manifest_digest,
         "pageRelationships":page_relationships});
     if view=="owner" {
         result["effectRelationships"]=json!(effect_relationships);
