@@ -1521,3 +1521,26 @@ fn original_d4_wiki_commit_requires_a_fingerprinted_matching_receipt_revision() 
         .find(|item|item["kind"]=="effect").unwrap()
         ["receiptWikiOrigin"]["entryId"],ENTRY);
 }
+
+
+#[test]
+fn typed_source_admission_refuses_d4_fields_on_wiki_and_noncanonical_receipt_origin() {
+    let temp=Temp::new();let file=temp.journal();
+    let mut injected=wiki(ENTRY,2,"Committed");
+    injected["receiptWikiOrigin"]=json!({"kind":"committed-wiki-origin",
+        "entryId":ENTRY,"wikiRevision":2});
+    let (ok,rejected)=sync(&file,SCOPE,vec![injected]);
+    assert!(!ok,"Wiki source may not carry receipt-only provenance: {rejected}");
+    let before=fs::read(&file).unwrap_or_default();
+    let mut invalid=effect();
+    invalid["receiptDigest"]=json!("f".repeat(64));
+    invalid["wikiLink"]=Value::Null;
+    invalid["receiptWikiOrigin"]=json!({
+        "kind":"committed-wiki-origin",
+        "entryId":"AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA",
+        "wikiRevision":2
+    });
+    let (ok,rejected)=sync(&file,SCOPE,vec![invalid]);
+    assert!(!ok,"noncanonical historical Wiki entry UUID must be refused: {rejected}");
+    assert_eq!(fs::read(&file).unwrap_or_default(),before);
+}
