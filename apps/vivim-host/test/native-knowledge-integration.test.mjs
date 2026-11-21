@@ -745,3 +745,38 @@ test('empty committed Wiki inventory plans a fenced cleanup after restart',()=>{
     id:lastRow.id,revision:8,digest:lastRow.digest});
 });
 
+test('managed Host readback requires the native durable deletion-fence manifest',async t=>{
+  const {journal,dataRoot,edit}=await setup(t);
+  await edit('Actual committed Wiki evidence',1);
+  const [row]=buildNativeKnowledge(await journal.readNativeKnowledge(),emptyEffects);
+  assert.ok(row?.sourceRef);
+  const make=valid=>createRustChatContext({
+    env:{},dataRoot,productJournal:journal,control:()=>controls,isFile:()=>true,
+    executePersonal:async(_binary,_journal,packet)=>({stdout:JSON.stringify({
+      schema:'vivim.hqkg-personal/1',scope:packet.scope,op:packet.op,
+      epoch:1,bytes:100,mode:'projection',synced:packet.nodes.length,
+      syncedRelationships:0,changed:true,compacted:false,reconciledSections:0,
+      context:{
+        schema:'vivim.hqkg-chat-context/1',state:'source-backed',
+        core:'hqkg',authority:'read-only',seed:'managed:wiki',
+        epoch:1,tokensUsed:20,budgetTokens:320,staleCount:0,
+        totalRetrieved:1,budgetExhausted:false,
+        items:[{kind:row.kind,title:row.title,summary:row.summary,
+          sourceRef:row.sourceRef,sourceDigest:row.digest,
+          sourceRevision:row.sourceRevision,revision:row.revision,
+          depth:0,sourceCount:1,estimatedTokens:20}],
+        pageRelationships:[],activeSourcesTotal:1,
+        activeSourcesDigest:nativeActiveSourceManifestDigest([row]),
+        ...(valid?{deletionFencesTotal:0,
+          deletionFencesDigest:EMPTY_FENCE_DIGEST}:{})
+      }
+    })})
+  });
+  const invalid=await make(false)('wiki');
+  assert.equal(invalid.reason,'RUST_CORE_CONTRACT_INVALID');
+  const valid=await make(true)('wiki');
+  assert.equal(valid.state,'source-backed',valid.reason);
+  assert.equal(valid.sourceHighWater.durableDeletionFences,0);
+  assert.equal(valid.sourceHighWater.durableDeletionFencesDigest,EMPTY_FENCE_DIGEST);
+  assert.equal(valid.items[0].summary,'Actual committed Wiki evidence');
+});
