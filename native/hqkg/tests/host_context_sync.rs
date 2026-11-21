@@ -1365,3 +1365,32 @@ fn non_cas_delta_cannot_ignore_high_water_when_only_deletion_fences_remain() {
     assert_eq!(read(&file,SCOPE,accepted["epoch"].as_u64().unwrap(),"wiki")
         .unwrap()["totalRetrieved"],1);
 }
+
+#[test]
+fn stable_managed_identity_cannot_be_rebound_to_another_semantic_source() {
+    let temp=Temp::new();let file=temp.journal();
+    let wiki_source=wiki(ENTRY,2,"Committed source");
+    let legacy_receipt=effect(); // Historical D4 projection without a fingerprint.
+    let (ok,first)=sync(&file,SCOPE,vec![wiki_source.clone(),legacy_receipt.clone()]);
+    assert!(ok,"{first}");
+    let original=fs::read(&file).unwrap();
+    let mut displaced=wiki(NEXT,3,"A different section is not the same source");
+    displaced["semanticId"]=json!("wiki:section:Private/Elsewhere");
+    let (ok,bad_wiki)=delta(&file,SCOPE,3,vec![put(displaced)]);
+    assert!(!ok,"Wiki semantic identity illegally changed: {bad_wiki}");
+    assert!(bad_wiki["error"].as_str().unwrap().contains("semantic identity changed"));
+    assert_eq!(fs::read(&file).unwrap(),original);
+    let mut displaced_receipt=legacy_receipt;
+    displaced_receipt["semanticId"]=json!("receipt:ctl-ffffffffffffffff");
+    let (ok,bad_receipt)=delta(&file,SCOPE,3,vec![put(displaced_receipt)]);
+    assert!(!ok,"legacy receipt semantic identity illegally changed: {bad_receipt}");
+    assert!(bad_receipt["error"].as_str().unwrap().contains("semantic identity changed"));
+    assert_eq!(fs::read(&file).unwrap(),original);
+    let (ok,valid_wiki)=delta(&file,SCOPE,3,vec![put(wiki(NEXT,3,"Updated content"))]);
+    assert!(ok,"valid same-semantic Wiki revision should advance: {valid_wiki}");
+    let graph=Journal::new(&file).load().unwrap();
+    assert!(graph.nodes().any(|n|
+        n.properties.get("vivim.context.sourceRef").map(String::as_str)==Some(NEXT)));
+    assert!(graph.nodes().any(|n|
+        n.properties.get("vivim.context.sourceRef").map(String::as_str)==Some("ctl-0123456789abcdef")));
+}
