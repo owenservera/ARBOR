@@ -41,7 +41,7 @@ test('TierFlow Build shares exact Wiki source admission and rejects same-revisio
     sha256Hex,rustWikiSourceStamp:null,rustUiEngineStatus:null,rustWikiSourceTransition:null,
     AbortSignal:{timeout:()=>({})},
     fetch:async()=>({ok:true,json:async()=>wiki})
-  },['wikiSourceStampFallback','verifyWikiSourceStamp','refreshBuildBindings']);
+  },['validWikiSourceShape','wikiSourceStampFallback','verifyWikiSourceStamp','refreshBuildBindings']);
   await env.refreshBuildBindings({});
   assert.equal(painted.at(-1).data.wikiRevision,4);
   assert.equal(env.buildWikiSourceFence.stamp.revision,4);
@@ -58,6 +58,13 @@ test('TierFlow Build shares exact Wiki source admission and rejects same-revisio
   assert.equal(env.buildWikiSourceFence.stamp.revision,1);
   assert.ok(!JSON.stringify(env.buildWikiSourceFence).includes(grant),
     'source watermark must not retain raw grant credentials');
+  wiki={revision:2,pages:{Main:{sections:{Info:{malformed:'not a string'}}}}};
+  await env.refreshBuildBindings({});
+  assert.equal(painted.at(-1).data,null,'malformed Wiki pages must not mix with valid Studio rows');
+  assert.equal(env.buildWikiSourceFence.stamp.revision,1);
+  wiki={revision:2,pages:{Main:{sections:{Info:'Valid next revision'}}}};
+  await env.refreshBuildBindings({});
+  assert.equal(painted.at(-1).data.wikiRevision,2);
 });
 
 test('Build source admission does not advance when TierFlow refuses to repaint',async()=>{
@@ -73,7 +80,7 @@ test('Build source admission does not advance when TierFlow refuses to repaint',
     sha256Hex,rustWikiSourceStamp:null,rustUiEngineStatus:null,rustWikiSourceTransition:null,
     AbortSignal:{timeout:()=>({})},
     fetch:async()=>({ok:true,json:async()=>wiki})
-  },['wikiSourceStampFallback','verifyWikiSourceStamp','refreshBuildBindings']);
+  },['validWikiSourceShape','wikiSourceStampFallback','verifyWikiSourceStamp','refreshBuildBindings']);
   await env.refreshBuildBindings({});
   assert.equal(env.buildWikiSourceFence,null,'failed paint must not advance source watermark');
   allowPaint=true;await env.refreshBuildBindings({});
