@@ -29,3 +29,29 @@ test('shipped Rust WASM accepts first-contact text without granting any effect',
     native.vivim_kernel_free(p,bytes.length);
   }
 });
+
+test('shipped Rust WASM searches Host Wiki and returns source-identified bounded matches',async()=>{
+  const {instance}=await WebAssembly.instantiate(wasm,{});
+  const native=instance.exports,encoder=new TextEncoder(),decoder=new TextDecoder();
+  const wiki={revision:7,pages:{
+    'ARBOR Architecture':{sections:{'Rust Core':'The shared Rust core owns semantic fabric.'},links:[]},
+    'Onboarding':{sections:{'First Contact':'Open the PWA with one composer.'},links:[]}
+  }};
+  const bytes=encoder.encode(JSON.stringify({schema:'vivim.product-pure-request/1',
+    operation:'wiki-source-search',input:{wiki,query:'Rust'}}));
+  const p=native.vivim_kernel_alloc(bytes.length);
+  new Uint8Array(native.memory.buffer,p,bytes.length).set(bytes);
+  const packed=native.vivim_kernel_dispatch(p,bytes.length);
+  const out=Number(packed&0xffffffffn),len=Number(packed>>32n);
+  const result=JSON.parse(decoder.decode(new Uint8Array(native.memory.buffer,out,len)));
+  native.vivim_kernel_free(out,len);native.vivim_kernel_free(p,bytes.length);
+  assert.equal(result.executionAuthorized,false);
+  assert.equal(result.effectPerformed,false);
+  assert.equal(result.result.schema,'vivim.wiki-source-search/1');
+  assert.equal(result.result.outcome,'computed');
+  assert.equal(result.result.wikiRevision,7);
+  assert.match(result.result.wikiDigest,/^[a-f0-9]{64}$/);
+  assert.equal(result.result.matches,1);
+  assert.equal(result.result.results[0].page,'ARBOR Architecture');
+  assert.equal(result.result.results[0].section,'Rust Core');
+});

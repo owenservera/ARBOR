@@ -37,3 +37,54 @@ test('typing searches only an authorized, source-admitted Wiki with no effect or
   assert.match(app,/window\.addEventListener\('vivim:paired',\(\)=>resetFirstWiki\(\)\)/);
   assert.match(app,/if\(document\.hidden\)resetFirstWiki\(\)/);
 });
+
+test('Wiki results occupy the visible phone area above the composer and clear after send',()=>{
+  assert.match(app,/insertBefore\(firstWikiPanel,\$\('chat-composer'\)\)/);
+  assert.match(html,/#first-wiki \{/);
+  assert.match(app,/if \(FIRST_CONTACT\) resetFirstWiki\(\)/);
+});
+
+test('real PWA Wiki rows expand source only while the exact device grant is live',async()=>{
+  const vm=await import('node:vm');
+  function functionSource(source,name){
+    const start=source.indexOf('function '+name+'(');
+    assert.notEqual(start,-1);
+    let depth=0,begin=source.indexOf('{',start);
+    for(let at=begin;at<source.length;at++){
+      if(source[at]==='{')depth++;
+      if(source[at]==='}'&&--depth===0)return source.slice(start,at+1);
+    }
+    throw Error('Unbalanced source function');
+  }
+  function node(tag,klass,text=''){
+    return {
+      tag,klass,textContent:text,children:[],hidden:true,open:false,events:{},
+      append(...children){this.children.push(...children)},
+      replaceChildren(...children){this.children=[...children]},
+      addEventListener(name,fn){this.events[name]=fn},
+      querySelector(selector){return this.children.find(c=>'.'+c.klass===selector)||null}
+    };
+  }
+  const wiki={revision:2,pages:{'ARBOR':{sections:{
+    'Rust Core':'<img src=x onerror=alert(1)> Rust code remains plain text'
+  },links:[]}}};
+  const source={wiki,stamp:{revision:2,digest:'a'.repeat(64)}};
+  const panel=node('aside','first-wiki');let grant='grant-a';
+  const env={firstWikiPanel:panel,firstWikiGrant:'grant-a',
+    firstWikiSource:source,firstWikiHighWater:source.stamp,
+    firstWikiScope:()=>({key:grant}),
+    rustWikiSearch:()=>({wikiRevision:2,wikiDigest:'a'.repeat(64),
+      matches:1,results:[{page:'ARBOR',section:'Rust Core',excerpt:'Rust code'}]}),
+    el:node,Array};
+  vm.createContext(env);
+  vm.runInContext(functionSource(app,'renderFirstWiki'),env);
+  env.renderFirstWiki('Rust',source);
+  assert.equal(panel.hidden,false);
+  const row=panel.children[1];
+  assert.equal(row.tag,'details');
+  row.open=true;row.events.toggle();
+  assert.equal(row.children.find(c=>c.klass==='first-wiki-detail').textContent,
+    wiki.pages.ARBOR.sections['Rust Core']);
+  grant='grant-b';row.open=true;row.events.toggle();
+  assert.equal(row.open,false,'old Wiki result cannot expand after a grant switch');
+});

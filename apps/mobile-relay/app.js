@@ -1476,9 +1476,32 @@ function renderFirstWiki(text,source) {
     return;
   }
   for(const item of found.results.slice(0,6)){
-    const row=el('article','first-wiki-item');
-    row.append(el('strong','',item.page+(item.section?' / '+item.section:'')));
+    // Only Rust-returned page/section keys may select already-authorized
+    // Host Wiki source. The browser expands textContent, never HTML.
+    const row=el('details','first-wiki-item');
+    const heading=el('summary','',item.page+(item.section?' / '+item.section:''));
+    row.append(heading);
     if(item.excerpt)row.append(el('p','',item.excerpt));
+    row.addEventListener('toggle',()=>{
+      if(!row.open)return;
+      if(firstWikiScope()?.key!==firstWikiGrant||firstWikiSource!==source||
+          firstWikiHighWater?.digest!==source.stamp.digest||
+          firstWikiHighWater?.revision!==source.stamp.revision){
+        row.open=false;return;
+      }
+      const page=source.wiki.pages[item.page];
+      const body=item.section?page?.sections?.[item.section]:null;
+      const content=typeof body==='string'?body:
+        page&&typeof page.sections==='object'?
+          Object.keys(page.sections).slice(0,12).map(section=>'• '+section).join('\n'):'';
+      const view=el('pre','first-wiki-detail');
+      view.textContent=Array.from(content).slice(0,1600).join('')+
+        (Array.from(content).length>1600?'\n…':'');
+      row.querySelector('.first-wiki-detail')?.remove();
+      row.querySelector('.first-wiki-proof')?.remove();
+      row.append(view,el('small','first-wiki-proof',
+        'Read only · Host Wiki revision '+source.stamp.revision));
+    });
     firstWikiPanel.append(row);
   }
   if(found.indexTruncated)firstWikiPanel.append(el('small','',
@@ -1543,7 +1566,9 @@ function mountFirstWiki(){
   firstWikiPanel.setAttribute('aria-label','Live source-backed Wiki suggestions');
   firstWikiPanel.setAttribute('aria-live','polite');
   firstWikiPanel.hidden=true;
-  $('v-talk').querySelector('.chat').append(firstWikiPanel);
+  // Suggestions belong above the composer, inside the flex viewport.
+  // Appending after it can render them below the phone's clipped screen.
+  $('v-talk').querySelector('.chat').insertBefore(firstWikiPanel,$('chat-composer'));
   $('text').addEventListener('input',scheduleFirstWiki);
   window.addEventListener('vivim:paired',()=>resetFirstWiki());
   document.addEventListener('vivim:wiki-committed',()=>{
@@ -1932,7 +1957,10 @@ async function send() {
     }
     // Submit exclusively to the Host plan boundary. Never route to a provider.
     void vivimChat.send(body);
-    if (field.value.trim() === body) { field.value = ''; autogrow(); }
+    if (field.value.trim() === body) {
+      field.value = ''; autogrow();
+      if (FIRST_CONTACT) resetFirstWiki();
+    }
     updateSend();
     return;
   }
