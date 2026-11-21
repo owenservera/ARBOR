@@ -34,6 +34,8 @@ test('owner-only live-system GET uses real journal source and native Rust comput
   assert.equal(first.body.state,'source-backed');
   assert.equal(first.body.authority,'read-only-projection');
   assert.equal(first.body.effectPerformed,false);
+  assert.equal(first.body.coverage?.complete,false);
+  assert.ok(first.body.coverage?.missingCapabilities.includes('pwa.full-surface'));
   assert.equal(first.body.executionAuthorized,false);
   assert.deepEqual(first.body.regions.map(x=>x.id),['host.health','wiki.summary']);
   assert.ok(first.body.regions.every(x=>x.exposure==='owner'));
