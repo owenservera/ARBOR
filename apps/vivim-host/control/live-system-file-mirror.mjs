@@ -37,6 +37,8 @@ export function createLiveSystemFileMirror({
     throw fail('LIVE_MIRROR_DEPENDENCY');
   const dir=path.join(dataRoot,'live-system');
   const file=path.join(dir,'owner.current.json');
+  // Human/agent edit proposals must never share the refreshable read-only export.
+  const proposalFile=path.join(dir,'owner.proposal.json');
   let canonical=null;
   let work=Promise.resolve();
   async function prepare(){
@@ -68,6 +70,15 @@ export function createLiveSystemFileMirror({
     const operation=work.then(async()=>{
       const {state,bytes}=safeView(view);
       await writeAtomic(bytes);
+      // Create the editable baseline once. Repeated GETs are not allowed to
+      // overwrite an in-progress proposal; Rust rejects stale proposal fences.
+      let proposal;
+      try { proposal=await open(proposalFile,'wx',0o600); }
+      catch(error) { if(error?.code!=='EEXIST')throw error; }
+      if(proposal){
+        try { await proposal.writeFile(bytes); await proposal.sync(); }
+        finally { await proposal.close(); }
+      }
       canonical=state;
       return {state:'written',schema:FILE_SCHEMA,sequence:state.sequence};
     });
@@ -83,10 +94,10 @@ export function createLiveSystemFileMirror({
     if(!canonical)throw fail('LIVE_MIRROR_NOT_PUBLISHED');
     await prepare();
     let st;
-    try{st=await lstat(file)}catch{throw fail('LIVE_MIRROR_FILE_MISSING')}
+    try{st=await lstat(proposalFile)}catch{throw fail('LIVE_MIRROR_FILE_MISSING')}
     if(!st.isFile()||st.isSymbolicLink()||st.size>MAX_FILE)
       throw fail('LIVE_MIRROR_FILE_INVALID');
-    const fd=await open(file,constants.O_RDONLY|(constants.O_NOFOLLOW||0));
+    const fd=await open(proposalFile,constants.O_RDONLY|(constants.O_NOFOLLOW||0));
     let bytes;try{
       const opened=await fd.stat();
       if(!opened.isFile()||opened.size>MAX_FILE)throw fail('LIVE_MIRROR_FILE_INVALID');
@@ -119,5 +130,5 @@ export function createLiveSystemFileMirror({
     work=operation.then(()=>{},()=>{});
     return operation;
   }
-  return Object.freeze({file,publish,admitEdited});
+  return Object.freeze({file,proposalFile,publish,admitEdited});
 }
