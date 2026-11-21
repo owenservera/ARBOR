@@ -75,7 +75,7 @@ test('owner-only live-system GET uses real journal source and native Rust comput
   assert.equal(unchanged.body.state,'refused');
   const edited=JSON.parse(readFileSync(mirrorFile,'utf8'));
   edited.regions.find(r=>r.id==='wiki.summary').data.pageCount=999;
-  writeFileSync(mirrorFile,JSON.stringify(edited)+'\n');
+  writeFileSync(path.join(root,'live-system','owner.proposal.json'),JSON.stringify(edited)+'\n');
   const refused=await req('POST',headers,admission);
   assert.equal(refused.status,200);
   assert.equal(refused.body.state,'refused');
