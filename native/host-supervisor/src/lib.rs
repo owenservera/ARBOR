@@ -2,6 +2,7 @@
 use reqwest::blocking::Client;
 use serde_json::Value;
 use sha2::{Digest, Sha256};
+use hmac::{Hmac, Mac};
 use std::{
     collections::HashSet,
     fs::{self, File},
@@ -159,6 +160,57 @@ pub fn health_online()->bool {
     if response.take(262145).read_to_end(&mut bytes).is_err()||bytes.len()>262144{return false}
     serde_json::from_slice::<Value>(&bytes).is_ok_and(|v|valid_health(&v))
 }
+
+/// Fresh nonce proof before a native client transmits a permanent owner bearer.
+/// This is read-only disclosure preflight, NOT complete OS process attestation.
+pub const OWNER_PROOF_SCHEMA: &str = "vivim.host-owner-proof/1";
+fn lowercase_hex(bytes: &[u8]) -> String {
+    bytes.iter().map(|byte| format!("{byte:02x}")).collect()
+}
+fn decode_hex_32(input: &str) -> Option<[u8; 32]> {
+    if input.len() != 64 { return None; }
+    let mut output = [0_u8; 32];
+    fn nibble(b: u8) -> Option<u8> {
+        match b {
+            b'0'..=b'9' => Some(b - b'0'),
+            b'a'..=b'f' => Some(b - b'a' + 10),
+            _ => None,
+        }
+    }
+    for (i, pair) in input.as_bytes().chunks_exact(2).enumerate() {
+        output[i] = (nibble(pair[0])? << 4) | nibble(pair[1])?;
+    }
+    Some(output)
+}
+pub fn owner_proof_matches(challenge: &str, token: &str, mac: &str) -> bool {
+    if token.len() < 32 || decode_hex_32(challenge).is_none() { return false; }
+    let Some(digest) = decode_hex_32(mac) else { return false; };
+    let Ok(mut verifier) = Hmac::<Sha256>::new_from_slice(token.as_bytes()) else { return false; };
+    verifier.update(OWNER_PROOF_SCHEMA.as_bytes());
+    verifier.update(b"\n");
+    verifier.update(challenge.as_bytes());
+    verifier.verify_slice(&digest).is_ok()
+}
+pub fn verify_host_owner(client: &Client, owner_token: &str) -> bool {
+    if owner_token.len() < 32 { return false; }
+    let mut nonce = [0_u8; 32];
+    if getrandom::fill(&mut nonce).is_err() { return false; }
+    let challenge = lowercase_hex(&nonce);
+    let url = format!("http://127.0.0.1:43187/api/host/native-owner-proof?challenge={challenge}");
+    let Ok(response) = client.get(url).header("accept", "application/json").send() else {
+        return false;
+    };
+    if response.status().as_u16() != 200 { return false; }
+    let mut bytes = Vec::new();
+    if response.take(4097).read_to_end(&mut bytes).is_err() || bytes.len() > 4096 {
+        return false;
+    }
+    let Ok(reply) = serde_json::from_slice::<Value>(&bytes) else { return false; };
+    reply["schema"] == OWNER_PROOF_SCHEMA &&
+        reply["challenge"].as_str() == Some(challenge.as_str()) &&
+        reply["mac"].as_str().is_some_and(|mac| owner_proof_matches(&challenge, owner_token, mac))
+}
+
 pub fn listener_occupied()->bool {
     TcpStream::connect_timeout(&SocketAddr::from(([127,0,0,1],PORT)),
         Duration::from_millis(300)).is_ok()
@@ -274,6 +326,17 @@ mod tests {
             assert!(valid_rel(path).is_none(),"{path}");
         }
         assert!(valid_rel("native/bin/hqkg-import.exe").is_some());
+    }
+    #[test] fn hmac_matches_host_protocol_and_fails_closed() {
+        let challenge = "ab".repeat(32);
+        let token = "owner-proof-test-secret-0123456789-abcdefghijklmnopqrstuvwxyz";
+        let good = "fc438125c163da8107b5a391e62157b8819ed152da83ddd60b7a4a81892ab9eb";
+        assert!(owner_proof_matches(&challenge, token, good));
+        assert!(!owner_proof_matches(&challenge, "different-owner-proof-key-0123456789abcdef", good));
+        assert!(!owner_proof_matches(&"ba".repeat(32), token, good));
+        assert!(!owner_proof_matches(&challenge, token, &good.to_ascii_uppercase()));
+        assert!(!owner_proof_matches(&challenge, token, "short"));
+        assert!(!owner_proof_matches(&challenge[..63], token, good));
     }
     #[test] fn inert_state_does_not_start_effects(){
         let s=HostSupervisor::new().snapshot();
