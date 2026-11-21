@@ -22,6 +22,7 @@ import { createMediaStreamGrantGuard } from './media/stream-guard.mjs';
 import { projectChatProviders } from './chat/provider-projection.mjs';
 import { controlErrorStatus } from './control/http-status.mjs';
 import { createPrivateShares } from './shares/private-shares.mjs';
+import { createFirstContactObservations } from './first-contact-observation.mjs';
 
 const root = fileURLToPath(new URL('../mobile-relay/', import.meta.url));
 const assets = new Map(Object.entries({
@@ -163,6 +164,8 @@ export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'wo
   let url;
   try { url = new URL(origin); } catch { throw new TypeError('Direct phone origin must be an HTTPS origin'); }
   if (url.protocol !== 'https:' || url.origin !== origin || url.username || url.password || !user || typeof user !== 'string' || user.trim() !== user) throw new TypeError('Direct phone requires an exact HTTPS origin and user');
+  const firstContactObservations=createFirstContactObservations(dataRoot);
+  let observationLastAt=0;
   const bridge = createBridgeStore({ root: dataRoot });
   // Source-backed metadata projection; bridge remains the sole queue authority.
   const live = createSourceVerifiedLiveProjection({dataRoot,worldId});
@@ -340,6 +343,29 @@ export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'wo
       } catch (cause) {
         if (res.headersSent) res.destroy();
         else json(res, cause.status || 503, { code: cause.code || 'SHARE_UNAVAILABLE' });
+      }
+      return;
+    }
+    // Owner-only, bounded diagnostics for the first-contact phone projection.
+    // These events are read-only observations: no input text, tokens, approval,
+    // source contents or commands are accepted or written to the diagnostic file.
+    if (route === 'api/first-contact/observe') {
+      res.setHeader('cache-control','private, no-store');
+      if(req.method!=='POST'){res.setHeader('allow','POST');json(res,405,{code:'METHOD'});return;}
+      if(req.headers.origin!==origin||req.headers['x-vivim-first-contact']!=='1'){
+        json(res,403,{code:'ORIGIN_OR_CSRF'});return;
+      }
+      try{
+        const observation=await readBody(req);
+        const now=Date.now();
+        // Cap anonymous browser observation throughput; the outer Direct
+        // handler already proved the Tailscale owner's identity.
+        if(now-observationLastAt<80){json(res,429,{code:'OBSERVATION_RATE_LIMIT'});return;}
+        await firstContactObservations.append(observation);
+        observationLastAt=now;
+        res.writeHead(204);res.end();
+      }catch(error){
+        json(res,error.status||503,{code:error.status===400?'OBSERVATION_INVALID':'OBSERVATION_UNAVAILABLE'});
       }
       return;
     }
