@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
-import {mkdtempSync,rmSync,mkdirSync,writeFileSync} from 'node:fs';
+import {mkdtempSync,rmSync,mkdirSync,writeFileSync,readFileSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {createHostServer} from '../server.mjs';
@@ -14,13 +14,14 @@ test('owner-only live-system GET uses real journal source and native Rust comput
   const host=createHostServer({dataRoot:root,bootstrap:runtime,ownerToken:KEY,
     onboarding:{phoneSeen:()=>{},primary:()=>null,providerSnapshot:()=>[]}});
   await new Promise(ok=>host.listen(0,'127.0.0.1',ok));
-  t.after(async()=>{await new Promise(ok=>host.close(ok));runtime.close();
+  t.after(async()=>{host.closeAllConnections();await new Promise(ok=>host.close(ok));runtime.close();
     rmSync(root,{recursive:true,force:true});});
-  const req=(method='GET',extra={})=>new Promise((resolve,reject)=>{
+  const req=(method='GET',extra={},uri='/api/host/live-system')=>new Promise((resolve,reject)=>{
     const request=http.request({host:'127.0.0.1',port:host.address().port,
-      path:'/api/host/live-system',method,headers:{host:'127.0.0.1:'+host.address().port,...extra}},
+      path:uri,method,headers:{host:'127.0.0.1:'+host.address().port,...extra}},
       response=>{let body='';response.on('data',c=>body+=c);response.on('end',()=>
         resolve({status:response.statusCode,body:body?JSON.parse(body):null}));});
+    request.setTimeout(5000,()=>request.destroy(Error('LIVE_HTTP_TIMEOUT')));
     request.on('error',reject);request.end();
   });
   assert.equal((await req()).status,401);
@@ -32,6 +33,11 @@ test('owner-only live-system GET uses real journal source and native Rust comput
   assert.equal(first.status,200,JSON.stringify(first.body));
   assert.equal(first.body.schema,'vivim.host-live-system/1');
   assert.equal(first.body.state,'source-backed');
+  assert.equal(first.body.mirror?.state,'written');
+  const mirrorFile=path.join(root,'live-system','owner.current.json');
+  const mirror=JSON.parse(readFileSync(mirrorFile,'utf8'));
+  assert.equal(mirror.schema,'vivim.live-system-state/1');
+  assert.equal(mirror.sequence,first.body.revision);
   assert.equal(first.body.authority,'read-only-projection');
   assert.equal(first.body.effectPerformed,false);
   assert.equal(first.body.coverage?.complete,false);
@@ -60,4 +66,19 @@ test('owner-only live-system GET uses real journal source and native Rust comput
   assert.equal(live.body.regions.find(x=>x.id==='pwa.input').data.length,5);
   assert.equal(live.body.regions.find(x=>x.id==='pwa.view').data.matches,2);
   assert.ok(!JSON.stringify(live.body).includes('ownerToken'));
+  const admission='/api/host/live-system/admit-file';
+  assert.equal((await req('POST',{authorization:'Bearer '+KEY},admission)).status,403);
+  const headers={authorization:'Bearer '+KEY,origin:'http://127.0.0.1:'+host.address().port,
+    'x-vivim-control':'1'};
+  const unchanged=await req('POST',headers,admission);
+  assert.equal(unchanged.status,200);
+  assert.equal(unchanged.body.state,'refused');
+  const edited=JSON.parse(readFileSync(mirrorFile,'utf8'));
+  edited.regions.find(r=>r.id==='wiki.summary').data.pageCount=999;
+  writeFileSync(mirrorFile,JSON.stringify(edited)+'\n');
+  const refused=await req('POST',headers,admission);
+  assert.equal(refused.status,200);
+  assert.equal(refused.body.state,'refused');
+  assert.equal(refused.body.effectPerformed,false);
+  assert.equal(refused.body.executionAuthorized,false);
 });
