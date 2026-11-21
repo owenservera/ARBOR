@@ -517,3 +517,99 @@ mod canonical_catalog_tests {
         }
     }
 }
+
+
+#[cfg(test)]
+mod personal_source_binding_tests {
+    use super::{personal_provenance_valid, valid_source_snapshot};
+    use serde_json::{json, Value};
+
+    // These source values come from the checked-in Host catalog and the
+    // quazzlememo owner command in the existing personal-semantics integration
+    // tests. No second rule store, grammar or product registry is constructed.
+    #[test]
+    fn host_context_revisions_and_ecmascript_whitespace_remain_source_bound() {
+        let catalog: Value = serde_json::from_str(include_str!(
+            "../../../apps/vivim-host/control/action-catalog.v1.json"
+        )).expect("existing Host catalog");
+        let revision = &catalog["version"];
+        let world = json!(1);
+        let owner = json!({"text":"Set my theme to dusk","scope":"text",
+            "audience":"owner","catalogRevision":revision,"worldRevision":world});
+        assert!(valid_source_snapshot(&owner, revision, &world, false));
+        assert!(!valid_source_snapshot(&json!({"text":"\u{FEFF}","scope":"text"}),
+            revision, &world, false));
+        let mut stale = owner.clone();
+        stale["worldRevision"] = json!(2);
+        assert!(!valid_source_snapshot(&stale, revision, &world, false));
+        let mut malformed = owner.clone();
+        malformed["scope"] = json!("remote-root");
+        assert!(!valid_source_snapshot(&malformed, revision, &world, false));
+        let mut nullish = owner.clone();
+        nullish["worldRevision"] = Value::Null;
+        assert!(valid_source_snapshot(&nullish, revision, &world, true));
+        assert!(!valid_source_snapshot(&nullish, revision, &world, false));
+    }
+
+    #[test]
+    fn accepted_personal_provenance_requires_exact_source_invocation_and_schema() {
+        let catalog: Value = serde_json::from_str(include_str!(
+            "../../../apps/vivim-host/control/action-catalog.v1.json"
+        )).expect("existing Host catalog");
+        let revision = &catalog["version"];
+        let text = json!("quazzlememo");
+        let basic = json!({"method":"accepted-personal-rule",
+            "ruleId":"rule:quazzlememo","ruleRevision":1,
+            "catalogRevision":revision,"semanticScope":{"surface":"text"}});
+        assert!(personal_provenance_valid(&basic, revision, &text));
+
+        let mut recipe = basic.clone();
+        recipe["reuse"] = json!("typed-write-recipe");
+        recipe["invocation"] = text.clone();
+        assert!(personal_provenance_valid(&recipe, revision, &text));
+        recipe["invocation"] = json!("not the owner invocation");
+        assert!(!personal_provenance_valid(&recipe, revision, &text));
+        recipe["invocation"] = text.clone();
+        recipe["templateSchema"] = json!("unexpected schema");
+        assert!(!personal_provenance_valid(&recipe, revision, &text));
+
+        let mut template = basic.clone();
+        template["reuse"] = json!("parameterized-template");
+        template["invocation"] = text.clone();
+        template["templateSchema"] = json!("vivim.personal-command-template/1");
+        assert!(personal_provenance_valid(&template, revision, &text));
+        template["templateSchema"] = json!("unknown-template");
+        assert!(!personal_provenance_valid(&template, revision, &text));
+
+        let mut forged = basic.clone();
+        forged["semanticScope"]["surface"] = json!("remote-root");
+        assert!(!personal_provenance_valid(&forged, revision, &text));
+        forged = basic.clone();
+        forged["approval"] = json!("owner");
+        assert!(!personal_provenance_valid(&forged, revision, &text));
+        forged = basic.clone();
+        forged["ruleId"] = json!("rule:Invalid!");
+        assert!(!personal_provenance_valid(&forged, revision, &text));
+    }
+
+    #[test]
+    fn existing_personal_conflict_and_refusal_contracts_reject_extra_claims() {
+        let revision = json!(1);
+        let text = json!("quazzlememo");
+        let conflict = json!({"method":"personal-rule-conflict",
+            "ruleIds":["rule:other","rule:quazzlememo"]});
+        assert!(personal_provenance_valid(&conflict, &revision, &text));
+        let mut unsafe_conflict = conflict.clone();
+        unsafe_conflict["ruleIds"] = json!(["rule:quazzlememo","rule:other"]);
+        assert!(!personal_provenance_valid(&unsafe_conflict, &revision, &text));
+        let mut malformed = conflict.clone();
+        malformed["ruleIds"] = json!(["rule:Invalid!"]);
+        assert!(!personal_provenance_valid(&malformed, &revision, &text));
+        let refusal = json!({"method":"personal-rule-refusal",
+            "reason":"STALE_CATALOG_RULE"});
+        assert!(personal_provenance_valid(&refusal, &revision, &text));
+        let mut forged = refusal.clone();
+        forged["executionAuthorized"] = json!(true);
+        assert!(!personal_provenance_valid(&forged, &revision, &text));
+    }
+}
