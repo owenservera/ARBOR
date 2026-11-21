@@ -113,3 +113,60 @@ test('stale Build status cannot repaint a new grant or clear its newer surface',
   assert.deepEqual(cleared,['bindings','surface','shell'],
     'uncontested stale read must redact source instead of repainting');
 });
+
+
+test('general PWA status/command refresh cannot promote an old grant response',async()=>{
+  let grant='grant-a';const pending={},actions=[];
+  const env=install({
+    HOST_PREVIEW:false,phoneRefreshEpoch:0,S:{paired:true,busy:false,statusAt:0,
+      statusObj:null,cmds:[],tab:'today',timer:0},N:{target:'vivim'},
+    transport:{direct:true,deviceHeaders:()=>({
+      'x-vivim-device-session':'session','x-vivim-grant-id':grant
+    })},
+    api:op=>new Promise(resolve=>{pending[op]=resolve}),
+    clearTimeout(){},shellPresentation:{clear:()=>actions.push('shell-cleared')},
+    clearPrivatePhoneState(){env.phoneRefreshEpoch++;env.S.paired=false;
+      env.S.busy=false;env.S.statusObj=null;actions.push('old-source-redacted')},
+    build:{clearBindingScope(){},clear(){}},window:{dispatchEvent:()=>actions.push('bootstrap')},
+    mergeServerConvs(){actions.push('merged')},ensureActive(){},setConn(){},
+    renderAll(){actions.push('render')},refreshWiki(){},schedule(){actions.push('scheduled')}
+  },['refresh']);
+  const old=env.refresh();
+  grant='grant-b';
+  pending.commands({commands:[{id:'old-private-command'}]});
+  pending.status({snapshot:{manifest:{source:'grant-a'}}});
+  await old;
+  assert.equal(env.S.statusObj,null,'old status must not overwrite a new device scope');
+  assert.deepEqual(env.S.cmds,[],'old commands must not be shown');
+  assert.deepEqual(actions,['old-source-redacted']);
+  assert.equal(env.S.busy,false);
+});
+
+test('active device-grant switch on startup redacts previous phone projections before session render',async()=>{
+  let grant='grant-b';const calls=[];
+  const oldScope=sha256Hex(JSON.stringify(['phone-source','session','grant-a']));
+  const slots=new Map();
+  const dom=id=>{if(!slots.has(id))slots.set(id,{hidden:false});return slots.get(id)};
+  const env=install({
+    HOST_PREVIEW:false,activePhoneSourceScope:oldScope,phoneRefreshEpoch:0,
+    S:{paired:true,device:{},statusObj:{private:'old'},busy:false,timer:0},
+    transport:{direct:true,deviceHeaders:()=>({
+      'x-vivim-device-session':'session','x-vivim-grant-id':grant
+    })},
+    navigator:{onLine:true},location:{hash:''},parsePairFragment:()=>({type:'none'}),
+    $:dom,resumeDeviceSession:async()=>({status:'active',scopes:['control:read']}),
+    clearPrivatePhoneState(){calls.push('redact');env.S.statusObj=null;env.S.paired=false;
+      env.phoneRefreshEpoch++},
+    api:async()=>({paired:true}),document:{body:{classList:{toggle(){},remove(){}}}},
+    sha256Hex,approvalPoll:null,clearTimeout(){},setConn(){},
+    renderAll(){calls.push('render')},refresh(){calls.push('read-new')},
+    window:{dispatchEvent(){calls.push('paired-event')}},
+    CustomEvent:class {constructor(type,options){this.type=type;this.detail=options.detail}}
+  },['runStart']);
+  await env.runStart();
+  assert.deepEqual(calls,['redact','paired-event','render','read-new']);
+  assert.equal(env.S.statusObj,null,'old owner snapshot was removed before the new read');
+  assert.equal(env.S.paired,true);
+  assert.equal(env.activePhoneSourceScope,
+    sha256Hex(JSON.stringify(['phone-source','session',grant])));
+});
