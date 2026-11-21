@@ -23,6 +23,36 @@ pub fn aligned_wiki_bindings(wiki_revision:u64,visual:&Visual)->Result<usize,Rea
     Ok(aligned)
 }
 
+/// All purely native validation precedes the shared revision guard's commit.
+/// The Host owns visual source and effects; this is only an inert projection.
+pub struct PreparedVisual {
+    pub source: Option<Visual>,
+    pub vec_view: Option<vivim_programmability_core::vec::View>,
+    pub visual_delta: vivim_programmability_core::visual::VisualDelta,
+    pub vec_delta: vivim_programmability_core::vec::Delta,
+    pub aligned_wiki_bindings: usize,
+}
+pub fn prepare_visual(
+    previous: Option<&Visual>,
+    previous_vec: Option<&vivim_programmability_core::vec::View>,
+    source: Option<Visual>,
+    wiki_revision: u64,
+) -> Result<PreparedVisual, ReadError> {
+    let aligned_wiki_bindings=match source.as_ref() {
+        Some(source)=>aligned_wiki_bindings(wiki_revision,source)?,
+        None=>0,
+    };
+    let visual_delta=vivim_programmability_core::visual::visual_delta(
+        previous,source.as_ref()
+    )?;
+    let vec_view=source.as_ref().map(vivim_programmability_core::vec::compile)
+        .transpose()?;
+    let vec_delta=vivim_programmability_core::vec::diff(
+        previous_vec,vec_view.as_ref()
+    )?;
+    Ok(PreparedVisual{source,vec_view,visual_delta,vec_delta,aligned_wiki_bindings})
+}
+
 impl From<VisualError> for ReadError {
     fn from(e:VisualError)->Self {
         match e {VisualError::InvalidProjection=>Self::InvalidProjection,VisualError::Unavailable=>Self::Unavailable}
@@ -68,6 +98,48 @@ mod coherence_tests {
         assert_eq!(parse_at(240,&json!({"state":"source-backed","plan":{}})),
             Err(ReadError::InvalidProjection));
         assert_eq!(parse_at(239,&stale),Err(ReadError::InvalidInput));
+    }
+    #[test]
+    fn complete_visual_preflight_rejects_bad_vec_without_admitting_it() {
+        let mut source=Visual{
+            surface_id:"real".into(),revision:2,
+            background:0x151b24,secondary:0x202b3a,accent:0x78b8f6,
+            root:Node{
+                id:"root".into(),component:"vivim.component.stack@1".into(),
+                kind:"stack".into(),label:None,detail:None,
+                horizontal:false,columns:1,background:None,padding:None,
+                gap:None,radius:None,font_size:None,border:None,border_width:None,
+                children:Vec::new(),items:Vec::new(),bars:Vec::new()
+            },
+            fingerprint:"real Host design".into(),
+            binding_watermarks:Default::default(),
+        };
+        let good=prepare_visual(None,None,Some(source.clone()),7).unwrap();
+        assert!(good.vec_view.is_some());
+        assert_eq!(good.aligned_wiki_bindings,0);
+        let previous=good.vec_view.as_ref().unwrap();
+        source.root.kind="unsupported-component".into();
+        assert!(matches!(prepare_visual(None,Some(previous),Some(source),7),
+            Err(ReadError::InvalidProjection)));
+    }
+    #[test]
+    fn preflight_fences_personal_wiki_revision_before_vec_compile() {
+        let mut source=Visual{
+            surface_id:"real".into(),revision:2,
+            background:0x151b24,secondary:0x202b3a,accent:0x78b8f6,
+            root:Node{
+                id:"root".into(),component:"vivim.component.stack@1".into(),
+                kind:"stack".into(),label:None,detail:None,
+                horizontal:false,columns:1,background:None,padding:None,
+                gap:None,radius:None,font_size:None,border:None,border_width:None,
+                children:Vec::new(),items:Vec::new(),bars:Vec::new()
+            },
+            fingerprint:"real Host design".into(),
+            binding_watermarks:Default::default(),
+        };
+        source.binding_watermarks.insert("personal.open-tasks".into(),(8,"source".into()));
+        assert!(matches!(prepare_visual(None,None,Some(source),7),
+            Err(ReadError::SnapshotChanged)));
     }
     #[test]
     fn cross_source_revision_mismatch_is_not_empty_or_accepted() {

@@ -13,9 +13,8 @@
 use std::time::Duration;
 use serde_json::json;
 use vivim_programmability_core::navigation;
-use vivim_programmability_core::visual::visual_delta;
 use vivim_programmability_core::wiki_read::{self, RevisionGuard as WikiRevisionGuard};
-use vivim_programmability_core::vec::{self, View as VecView, Element as VecElement};
+use vivim_programmability_core::vec::{View as VecView, Element as VecElement};
 use gpui::{AnyElement, App, Application, Bounds, Context, Entity, Window, WindowBounds, WindowOptions, div, prelude::*, px, relative, rgb, size};
 
 // GPUI 0.2.2 drawable viewport logical pixels, minus workspace padding.
@@ -227,70 +226,56 @@ impl Desktop {
                         cx.notify();return;
                     }
                 }
-                // Personal live bindings derive from the same committed Host
-                // Wiki revision. Reject cross-request races BEFORE advancing
-                // the native revision guard. Other bindings are independent
-                // domains and cannot be asserted globally coherent.
-                let mut aligned_wiki_bindings=0usize;
-                let checked=visual.and_then(|candidate|{
-                    if let Some(ref visual)=candidate {
-                        let wiki_revision=view.overview.as_ref()
-                            .ok_or(ReadError::Unavailable)?.wiki_revision;
-                        aligned_wiki_bindings=visual::aligned_wiki_bindings(wiki_revision,visual)?;
-                    }
-                    Ok(candidate)
+                // First prepare the entire inert Rust visual + VEC transition.
+                // Only then advance the long-lived native revision/watermark
+                // guard: a failed compilation must never become admitted state.
+                let wiki_revision=view.overview.as_ref().map(|data|data.wiki_revision)
+                    .expect("overview accepted above");
+                let prepared=visual.and_then(|candidate|visual::prepare_visual(
+                    view.visual.as_ref(),view.vec_view.as_ref(),candidate,wiki_revision
+                ));
+                let admitted=prepared.and_then(|prepared|{
+                    view.visual_guard.accept(prepared.source.clone())
+                        .map_err(ReadError::from)?;
+                    Ok(prepared)
                 });
-                match checked.and_then(|v| view.visual_guard.accept(v).map_err(Into::into)) {
-                    Ok(next) => {
-                        match visual_delta(view.visual.as_ref(),next.as_ref()){
-                            Ok(delta)=>{
-                                if delta.is_empty(){
-                                    view.visual_status=next.as_ref().map(|v|format!(
-                                        "Committed {} · revision {} · VEC design SHA256 {} · unchanged · {}",
-                                        v.surface_id,v.revision,
-                                        view.vec_view.as_ref().map(|ir|ir.design_digest.as_str()).unwrap_or("not compiled"),
-                                        if aligned_wiki_bindings>0 {"Wiki-backed bindings revision-aligned"}
-                                        else {"cross-source alignment unproven (no personal binding)"}
-                                    )).unwrap_or_else(||"Host online · no committed visual surface".into());
-                                }else{
-                                    match next.as_ref().map(vec::compile).transpose(){
-                                        Ok(compiled)=>match vec::diff(view.vec_view.as_ref(),compiled.as_ref()){
-                                            Ok(changes)=>{
-                                                view.visual_status=next.as_ref().map(|v|format!(
-                                                    "Committed {} · rev {} · VEC design SHA256 {} · Rust VEC: +{} / ~{} / -{} / {} moved / {} reordered / {} bindings{} · {}",
-                                                    v.surface_id,v.revision,
-                                                    compiled.as_ref().map(|ir|ir.design_digest.as_str()).unwrap_or("not compiled"),
-                                                    changes.added.len(),changes.updated.len(),
-                                                    changes.removed.len(),changes.moved.len(),changes.reordered.len(),
-                                                    changes.changed_bindings.len(),if changes.theme_changed{" · theme changed"}else{""},
-                                                    if aligned_wiki_bindings>0 {"Wiki-backed binding revisions aligned"}
-                                                    else {"cross-source alignment unproven (no personal binding)"}
-                                                )).unwrap_or_else(||"Host online · no committed visual surface".into());
-                                                // Retain revision and binding fences even if no redraw is required.
-                                                view.visual=next;view.vec_view=compiled;
-                                            }
-                                            Err(_)=>{
-                                                view.visual=None;view.vec_view=None;
-                                                view.visual_status="VEC revision or design digest conflict".into();
-                                            }
-                                        },
-                                        Err(_)=>{
-                                            view.visual=None;view.vec_view=None;
-                                            view.visual_status="VEC compilation rejected the admitted visual".into();
-                                        }
-                                    }
-                                }
-                            }
-                            Err(_)=>{view.visual=None;view.vec_view=None;view.visual_status="Visual revision conflict".into();}
-                        }
-                    }
-                    Err(e) => {
-                        view.visual_status=if e==ReadError::SnapshotChanged {
-                            "TierFlow viewport admission or Wiki-backed source revision disagrees with this read · visual withheld".into()
+                match admitted {
+                    Ok(next)=>{
+                        let coherent=if next.aligned_wiki_bindings>0 {
+                            format!("{} personal binding revisions match Wiki rev {} (content identity independently validated only)",
+                                next.aligned_wiki_bindings,wiki_revision)
                         } else {
-                            format!("{} · visual unavailable, not an empty surface",e.label())
+                            "no personal binding revisions available to cross-check".into()
                         };
-                        view.visual=None;view.vec_view=None;
+                        view.visual_status=match next.source.as_ref() {
+                            None=>"Host online · no committed visual surface · not unavailable".into(),
+                            Some(source)=>format!(
+                                "Committed {} · revision {} · VEC design SHA256 {} ·                                  +{} / ~{} / -{} / {} moved / {} reordered / {} binding changes                                  · {} · {}",
+                                source.surface_id,source.revision,
+                                next.vec_view.as_ref().map(|v|v.design_digest.as_str())
+                                    .unwrap_or("not compiled"),
+                                next.vec_delta.added.len(),next.vec_delta.updated.len(),
+                                next.vec_delta.removed.len(),next.vec_delta.moved.len(),
+                                next.vec_delta.reordered.len(),next.vec_delta.changed_bindings.len(),
+                                if next.vec_delta.repaint_required || !next.visual_delta.is_empty() {
+                                    "Rust VEC changed"
+                                } else {"Rust VEC unchanged"},
+                                coherent
+                            )
+                        };
+                        // Retain compiled revision, binding and design identity
+                        // even if the GPU redraw itself can be skipped.
+                        view.visual=next.source;
+                        view.vec_view=next.vec_view;
+                    }
+                    Err(e)=>{
+                        view.visual_status=if e==ReadError::SnapshotChanged {
+                            "TierFlow viewport admission or personal Wiki revision disagrees with this read · visual withheld".into()
+                        } else {
+                            format!("{} · VEC validation failed or visual unavailable; not an empty surface",e.label())
+                        };
+                        view.visual=None;
+                        view.vec_view=None;
                     }
                 }
                 cx.notify();
