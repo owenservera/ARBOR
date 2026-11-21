@@ -507,6 +507,7 @@ test('rollback rejects forged event metadata before owner verification',t=>{
     row=>{row.version=3},
     row=>{row.before.id='rule:other'},
     row=>{row.before.revision=2},
+    row=>{delete row.before},
     row=>{row.after.revision=3},
     row=>{row.ownerReceiptId={unbound:true}},
   ];
