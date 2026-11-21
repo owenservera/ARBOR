@@ -78,6 +78,8 @@ test('real PWA Wiki HTTP projection rejects rollback and revocation, without sto
   };
   vm.createContext(env);
   vm.runInContext(functionSource(app, 'wikiSourceStampFallback'), env);
+  vm.runInContext(functionSource(app, 'validWikiSourceShape'), env);
+  vm.runInContext(functionSource(app, 'verifyWikiSourceStamp'), env);
   vm.runInContext(functionSource(app, 'refreshWiki'), env);
   await env.refreshWiki();
   assert.equal(env.S.wiki.revision, 3);
@@ -184,9 +186,9 @@ test('portable Wiki source digest preserves Rust map order for numeric and Unico
   const numeric=JSON.parse('{"2":{"sections":{"S":"two"}},"10":{"sections":{"S":"ten"}}}');
   const mark=env.wikiSourceStampFallback({revision:9,pages:numeric});
   assert.equal(mark.digest,sha256Hex('{"10":{"sections":{"S":"ten"}},"2":{"sections":{"S":"two"}}}'));
-  const unicode={'\\uE000':{sections:{S:'private'}},'\\u{10000}':{sections:{S:'supplementary'}}};
-  const pages={'\\uE000':unicode['\\uE000'],'\\u{10000}':unicode['\\u{10000}']};
-  const expected='{"\\uE000":{"sections":{"S":"private"}},"\\u{10000}":{"sections":{"S":"supplementary"}}}';
+  const unicode={'\uE000':{sections:{S:'private'}},'\u{10000}':{sections:{S:'supplementary'}}};
+  const pages={'\uE000':unicode['\uE000'],'\u{10000}':unicode['\u{10000}']};
+  const expected='{"\uE000":{"sections":{"S":"private"}},"\u{10000}":{"sections":{"S":"supplementary"}}}';
   assert.equal(env.wikiSourceStampFallback({revision:9,pages}).digest,sha256Hex(expected));
 });
 
