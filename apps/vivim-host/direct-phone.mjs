@@ -343,8 +343,27 @@ export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'wo
       }
       return;
     }
-    // The existing Host journal is the only Wiki authority. Never expose it to
-    // an unpaired phone, cloud relay or a device without control:read.
+    // First-customer read-only Wiki. The Direct handler has already verified:
+    // loopback Tailscale Serve, HTTPS origin, exact Host and the configured
+    // owner login. No device grant is needed for this one inert read, while
+    // every other private phone operation retains its own device scope.
+    // No cloud route or bearer-less write is introduced.
+    if (route === 'api/first-contact/wiki') {
+      res.setHeader('cache-control', 'private, no-store');
+      if (req.method !== 'GET') {
+        res.setHeader('allow', 'GET');
+        json(res, 405, { code: 'METHOD' }); return;
+      }
+      try {
+        if (typeof wikiProjection !== 'function') throw failure(503, 'WIKI_UNAVAILABLE');
+        const wiki = await wikiProjection();
+        json(res, 200, wiki);
+      } catch (error) {
+        json(res, error.status || 503, { code: 'WIKI_UNAVAILABLE' });
+      }
+      return;
+    }
+    // Existing device-granted Wiki API remains unchanged for full phone use.
     if (route === 'api/wiki') {
       if (req.method !== 'GET') {
         res.setHeader('allow', 'GET');
