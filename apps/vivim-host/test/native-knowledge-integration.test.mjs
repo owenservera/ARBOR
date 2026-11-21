@@ -23,6 +23,7 @@ async function setup(t) {
 }
 const controls={recent:()=>[],status:()=>null};
 const emptyEffects={state:'source-backed',items:[]};
+const EMPTY_FENCE_DIGEST=createHash('sha256').update('[]').digest('hex');
 function nativeActiveSourceManifestDigest(rows) {
   const proof=rows.slice().sort((a,b)=>a.id.localeCompare(b.id)).map(row=>[
     row.id,row.kind,row.sourceRef,row.digest,
@@ -226,6 +227,7 @@ test('managed reads share one native invocation per concurrent authorized view a
         budgetExhausted:false,totalRetrieved:visible.length,items,pageRelationships:packet.relationships,
         activeSourcesTotal:visible.length,
         activeSourcesDigest:nativeActiveSourceManifestDigest(visible),
+        deletionFencesTotal:0,deletionFencesDigest:EMPTY_FENCE_DIGEST,
         ...(packet.view==='owner'?{effectRelationships:[],effectRelationshipsTotal:0,
           effectRelationshipsDigest:createHash('sha256').update('[]').digest('hex'),
           omittedEffectRelationships:0}:{})}})};
@@ -281,7 +283,8 @@ test('combined native read detects source edits during execution and retries fro
         context:{schema:'vivim.hqkg-chat-context/1',state:'source-backed',core:'hqkg',authority:'read-only',
           seed:'managed:'+p.view,epoch,tokensUsed:40,budgetTokens:320,staleCount:0,budgetExhausted:false,
           totalRetrieved:1,pageRelationships:[],items:[{...row,sourceDigest:row.digest,sourceCount:1,depth:0,estimatedTokens:40}],
-          activeSourcesTotal:1,activeSourcesDigest:nativeActiveSourceManifestDigest([row])}})};
+          activeSourcesTotal:1,activeSourcesDigest:nativeActiveSourceManifestDigest([row]),
+          deletionFencesTotal:0,deletionFencesDigest:EMPTY_FENCE_DIGEST}})};
     }});
   const out=await managed('wiki');
   assert.equal(out.state,'source-backed',out.reason);
@@ -346,10 +349,13 @@ test('restart probes durable epoch before source writes and fenced complete inve
           core:'hqkg',authority:'read-only',seed:'managed:wiki',epoch:6,
           tokensUsed:20,budgetTokens:320,staleCount:0,budgetExhausted:false,
           totalRetrieved:1,items:[item],pageRelationships:[],
-          activeSourcesTotal:1,activeSourcesDigest:nativeActiveSourceManifestDigest([row])}})};
+          activeSourcesTotal:1,activeSourcesDigest:nativeActiveSourceManifestDigest([row]),
+          deletionFencesTotal:0,deletionFencesDigest:EMPTY_FENCE_DIGEST}})};
     }});
   const out=await managed('wiki');
   assert.equal(out.state,'source-backed',out.reason);
+  assert.equal(out.sourceHighWater.durableDeletionFences,0);
+  assert.equal(out.sourceHighWater.durableDeletionFencesDigest,EMPTY_FENCE_DIGEST);
   assert.equal(out.items[0].summary,'Current committed section');
   assert.equal(out.ingestionStats.reconciledWikiSections,0);
   assert.equal(sent.length,2,'cold restart requires epoch read then mutation');
@@ -596,6 +602,7 @@ test('alternating phone and owner reads retain verified receipts without repeate
         items:[],pageRelationships:[],
         activeSourcesTotal:visible.length,
         activeSourcesDigest:nativeActiveSourceManifestDigest(visible),
+        deletionFencesTotal:0,deletionFencesDigest:EMPTY_FENCE_DIGEST,
         ...(packet.view==='owner'?{effectRelationships:links.slice(0,24),
           effectRelationshipsTotal:links.length,
           omittedEffectRelationships:Math.max(0,links.length-24),
