@@ -376,6 +376,74 @@ mod tests {
         replace["candidate"]["scope"] = json!({"workspaceId":"other"});
         assert_eq!(reduce(&replace)["code"], "PERSONAL_STORE_CONFLICT");
     }
+
+    #[test]
+    fn full_store_allows_replacement_but_refuses_new_rule_identity() {
+        let mut occupied = current();
+        occupied["version"] = json!(12);
+        let rows: Vec<Value> = (0..MAX_RULES)
+            .map(|i| {
+                let mut item = rule(&format!("rule:item{i}"), 1, "accepted");
+                item["phrase"] = json!(format!("distinct phrase {i}"));
+                item
+            })
+            .collect();
+        occupied["entries"] = Value::Array(rows);
+        let mut remember = input("remember", occupied.clone());
+        remember["ruleId"] = json!("rule:item0");
+        remember["candidate"] = rule("rule:validation", 1, "accepted");
+        remember["candidate"]["phrase"] = json!("distinct phrase 0");
+        remember["matchingRuleIds"] = json!(["rule:item0"]);
+        remember["previous"] = occupied["entries"][0].clone();
+        remember["entryOrder"] = Value::Array(
+            occupied["entries"].as_array().unwrap().iter()
+                .map(|row| row["id"].clone()).collect());
+        let replacement = reduce(&remember);
+        assert_eq!(replacement["outcome"], "projected");
+        assert_eq!(replacement["next"]["version"], 13);
+        assert_eq!(replacement["rule"]["revision"], 2);
+        assert_eq!(replacement["next"]["entries"].as_array().unwrap().len(), MAX_RULES);
+
+        let mut add = input("remember", occupied);
+        add["candidate"] = rule("rule:validation", 1, "accepted");
+        add["candidate"]["phrase"] = json!("new and distinct phrase");
+        add["ruleId"] = json!("rule:new");
+        add["matchingRuleIds"] = json!([]);
+        assert_eq!(reduce(&add)["code"], "PERSONAL_STORE_CONFLICT");
+    }
+
+    #[test]
+    fn max_safe_revisions_refuse_overflow_without_a_write_or_grant() {
+        let mut at_limit = current();
+        at_limit["version"] = json!(MAX_SAFE);
+        let mut proposal = input("propose", at_limit);
+        proposal["candidate"] = rule("rule:a", 1, "proposed");
+        assert_eq!(reduce(&proposal)["code"], "PERSONAL_STORE_NATIVE_INVALID");
+
+        let mut just_below = current();
+        just_below["version"] = json!(MAX_SAFE - 1);
+        let mut allowed = input("propose", just_below);
+        allowed["candidate"] = rule("rule:a", 1, "proposed");
+        let next = reduce(&allowed);
+        assert_eq!(next["outcome"], "projected");
+        assert_eq!(next["next"]["version"], MAX_SAFE);
+        assert_eq!(next["executionAuthorized"], false);
+
+        let mut transition = input("transition", next["next"].clone());
+        transition["ruleId"] = json!("rule:a");
+        transition["previous"] = next["rule"].clone();
+        transition["nextState"] = json!("accepted");
+        assert_eq!(reduce(&transition)["code"], "PERSONAL_STORE_NATIVE_INVALID");
+
+        let mut high_revision = input("transition", next["next"].clone());
+        high_revision["current"]["version"] = json!(MAX_SAFE - 1);
+        high_revision["expectedVersion"] = json!(MAX_SAFE - 1);
+        high_revision["current"]["entries"][0]["revision"] = json!(MAX_SAFE);
+        high_revision["previous"] = high_revision["current"]["entries"][0].clone();
+        high_revision["ruleId"] = json!("rule:a");
+        high_revision["nextState"] = json!("accepted");
+        assert_eq!(reduce(&high_revision)["code"], "PERSONAL_STORE_INVALID_TRANSITION");
+    }
     #[test]
     fn history_is_bounded_and_order_is_exact() {
         let mut q = input("propose", current());

@@ -110,17 +110,55 @@ export function createPersonalRuleStore({
   } = {}) {
     const at = now();
     const next = record(current, rule, mode, previous, ownerReceiptId, at);
-    const native = nativeReducer('personal-rule-transition', {
+    const input = {
       schema: 'vivim.personal-rule-transition-input/1',
       mode, current, expectedVersion: current.version,
       previous: previous ?? null, candidate, ruleId, nextState, toRevision,
       ownerReceiptId, at, matchingRuleIds, entryOrder: next.entries.map(x => x.id),
-    });
+    };
+    // The shared synchronous binary has a strict 512 KiB request AND response
+    // frame. Long-lived owner histories are valid Host data and may exceed it.
+    // A provably oversized frame is unavailable to this ABI, not a failed
+    // native computation: retain the incumbent locked, verified Host reducer.
+    // Leave 4 KiB for envelope/key-order/serialization differences.
+    const maxFrame = 512 * 1024 - 4096;
+    let nativeEligible;
+    try {
+      const requestWire = JSON.stringify({
+        schema:'vivim.product-pure-request/1',
+        operation:'personal-rule-transition', input,
+      });
+      const responseWire = JSON.stringify({
+        schema:'vivim.product-pure-response/1',
+        state:'computed',operation:'personal-rule-transition',
+        authority:'none',executionAuthorized:false,effectPerformed:false,
+        result:{schema:'vivim.personal-rule-transition/1',
+          outcome:'projected',next,rule,authority:'none',
+          executionAuthorized:false,effectPerformed:false},
+      });
+      nativeEligible = Buffer.byteLength(requestWire, 'utf8') <= maxFrame &&
+        Buffer.byteLength(responseWire, 'utf8') <= maxFrame;
+    } catch {
+      throw fail('PERSONAL_STORE_NATIVE_MISMATCH');
+    }
+    let native = null;
+    if (nativeEligible) {
+      try {
+        native = nativeReducer('personal-rule-transition', input,
+          { failClosedIfPackaged: true });
+      } catch {
+        // A packaged native kernel that fails its transport, schema or compute
+        // contract is NOT the same as an absent kernel. Only true unavailability
+        // can use the legacy Host path; never write after a native fault.
+        throw fail('PERSONAL_STORE_NATIVE_MISMATCH');
+      }
+    }
     if (native !== null) {
       // Serialization normalization reproduces the existing on-disk shape
       // (including omitted undefined optional fields). No record is migrated.
       const normalized = value => JSON.parse(JSON.stringify(value));
-      if (native.schema !== 'vivim.personal-rule-transition/1' ||
+      if (!native || typeof native !== 'object' || Array.isArray(native) ||
+          native.schema !== 'vivim.personal-rule-transition/1' ||
           native.outcome !== 'projected' || native.authority !== 'none' ||
           native.executionAuthorized !== false || native.effectPerformed !== false ||
           !isDeepStrictEqual(native.rule, normalized(rule)) ||

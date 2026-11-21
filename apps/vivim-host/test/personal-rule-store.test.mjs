@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, rmSync, readFileSync, writeFileSync, unlinkSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
@@ -327,4 +327,91 @@ test('packaged Rust personal-rule reducer agrees with actual Host persisted tran
     assert.deepEqual(native.rule,rule);
     assert.deepEqual(native.next,next);
   }
+});
+
+test('packaged native error fails closed before any Host disk mutation',t=>{
+  const attempts=[];
+  const reducer=(operation,input,options)=>{
+    attempts.push({operation,mode:input.mode,options});
+    throw Object.assign(new Error('NATIVE_PRODUCT_PURE_INVALID'),
+      {code:'NATIVE_PRODUCT_PURE_INVALID'});
+  };
+  const {store}=withStore(t,()=>true,reducer);
+  assert.throws(()=>store.propose(proposal(0)),/PERSONAL_STORE_NATIVE_MISMATCH/);
+  assert.equal(store.snapshot().version,0);
+  assert.equal(store.history().length,0);
+  assert.equal(attempts.length,1);
+  assert.equal(attempts[0].operation,'personal-rule-transition');
+  assert.deepEqual(attempts[0].options,{failClosedIfPackaged:true});
+  assert.throws(()=>readFileSync(store.file,'utf8'),/ENOENT/);
+});
+test('native invalid or missing result never grants write authority',t=>{
+  let nativeResult;
+  const reducer=(operation,input,options)=>{
+    assert.equal(operation,'personal-rule-transition');
+    assert.deepEqual(options,{failClosedIfPackaged:true});
+    return nativeResult;
+  };
+  const {store}=withStore(t,()=>true,reducer);
+  nativeResult=undefined;
+  assert.throws(()=>store.propose(proposal(0)),/PERSONAL_STORE_NATIVE_MISMATCH/);
+  nativeResult={schema:'vivim.personal-rule-transition/1',
+    outcome:'projected',authority:'owner',executionAuthorized:true,
+    effectPerformed:false,next:{},rule:{}};
+  assert.throws(()=>store.propose(proposal(0)),/PERSONAL_STORE_NATIVE_MISMATCH/);
+  nativeResult=null; // permitted only when the transport reports no kernel
+  const p=store.propose(proposal(0));
+  assert.equal(p.state,'proposed');
+  assert.equal(store.snapshot().version,1);
+});
+test('second Host instance cannot overwrite concurrent committed CAS state',t=>{
+  const {dataRoot,store}=withStore(t);
+  const another=createPersonalRuleStore({dataRoot,catalog});
+  const p=store.propose(proposal(0));
+  const before=readFileSync(store.file,'utf8');
+  assert.throws(()=>another.propose({...proposal(0),phrase:'late writer'}),
+    /PERSONAL_STORE_STALE/);
+  assert.equal(readFileSync(store.file,'utf8'),before);
+  assert.equal(another.snapshot().entries[0].id,p.ruleId);
+});
+test('existing Host lock refuses concurrent writers without mutating records',t=>{
+  const {store}=withStore(t);
+  const p=store.propose(proposal(0));
+  const before=readFileSync(store.file,'utf8');
+  writeFileSync(store.file+'.lock','busy',{mode:0o600});
+  assert.throws(()=>store.propose(proposal(1)),/PERSONAL_STORE_BUSY/);
+  assert.equal(readFileSync(store.file,'utf8'),before);
+  assert.equal(readFileSync(store.file+'.lock','utf8'),'busy');
+  unlinkSync(store.file+'.lock');
+  assert.equal(store.snapshot().version,1);
+  assert.equal(store.snapshot().entries[0].id,p.ruleId);
+});
+
+test('full history beyond the native 512 KiB frame remains writable under Host CAS',t=>{
+  const nativeCalls=[];
+  const nativeReducer=(op,input,options)=>{
+    nativeCalls.push({op,mode:input.mode,options});
+    return null; // the installed native kernel is optional for this test
+  };
+  const {store}=withStore(t,verify,nativeReducer);
+  const longPhrase='p'.repeat(200);
+  const longScope={workspaceId:'w'.repeat(128),activity:'a'.repeat(128),
+    providerId:'d'.repeat(128),surface:'desktop'};
+  const proposalResult=store.propose({...proposal(0),
+    phrase:longPhrase,scope:longScope});
+  let state='accepted';
+  for(let version=1;version<=330;version++){
+    store.transition({ruleId:proposalResult.ruleId,nextState:state,
+      expectedVersion:version,
+      approval:boundApproval(store,proposalResult.ruleId,state)});
+    state=state==='accepted'?'suspended':'accepted';
+  }
+  assert.equal(store.snapshot().version,331);
+  assert.equal(store.history().length,331);
+  assert.equal(store.snapshot().entries[0].revision,331);
+  assert.ok(Buffer.byteLength(readFileSync(store.file,'utf8'),'utf8')>512*1024);
+  assert.ok(nativeCalls.length>0);
+  assert.ok(nativeCalls.length<331,
+    'oversized transport must bypass native rather than reject Host writes');
+  assert.ok(nativeCalls.every(row=>row.options.failClosedIfPackaged===true));
 });
