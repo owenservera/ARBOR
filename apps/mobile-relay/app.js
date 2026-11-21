@@ -1445,7 +1445,25 @@ function renderComposer() {
 // provider session or uncontrolled effect is introduced.
 let firstWikiPanel=null,firstWikiTimer=0,firstWikiEpoch=0,firstWikiSource=null,
     firstWikiGrant=null,firstWikiLoad=null,firstWikiAbort=null,
-    firstWikiAt=0,firstWikiHighWater=null;
+    firstWikiAt=0,firstWikiHighWater=null,firstWikiLastInputObs=0;
+function observeFirstWiki(stage,fields={}){
+  if(!FIRST_CONTACT||!transport.direct)return;
+  // Projection/transport trace ONLY. Do not record the typed words, Wiki
+  // sections, credentials, device identifiers or arbitrary error messages.
+  const event={stage,...fields};
+  void fetch('/mobile/api/first-contact/observe',{
+    method:'POST',credentials:'same-origin',cache:'no-store',
+    headers:{'content-type':'application/json','x-vivim-first-contact':'1'},
+    body:JSON.stringify(event)
+  }).catch(()=>{});
+}
+function firstWikiNotice(message,code=''){
+  if(!firstWikiPanel)return;
+  firstWikiPanel.hidden=false;
+  firstWikiPanel.replaceChildren(el('p','first-wiki-label',message));
+  if(code)firstWikiPanel.dataset.state=code;
+}
+
 function resetFirstWiki() {
   firstWikiEpoch++;clearTimeout(firstWikiTimer);firstWikiTimer=0;
   firstWikiAbort?.abort();firstWikiAbort=null;firstWikiLoad=null;
@@ -1471,15 +1489,23 @@ function renderFirstWiki(text,source) {
   if(!text||!source){firstWikiPanel.hidden=true;return;}
   const found=rustWikiSearch?.(source.wiki,text.slice(0,160));
   if(found?.wikiRevision!==source.stamp.revision||
-      found?.wikiDigest!==source.stamp.digest){firstWikiPanel.hidden=true;return;}
+      found?.wikiDigest!==source.stamp.digest){
+    firstWikiNotice('Rust Wiki search unavailable · source not admitted','rust-error');
+    observeFirstWiki('rust-error',{code:'RUST_SOURCE_MISMATCH'});
+    return;
+  }
+  observeFirstWiki('rust-ok',{matches:found.matches,revision:found.wikiRevision});
   firstWikiPanel.hidden=false;
   const heading=el('p','first-wiki-label',
     'WIKI · '+found.matches+' matches · revision '+found.wikiRevision);
   firstWikiPanel.append(heading);
   if(!found.results.length){
-    firstWikiPanel.append(el('p','first-wiki-empty','No matching committed Wiki entries.'));
+    firstWikiPanel.append(el('p','first-wiki-empty',
+      'No matching Host Wiki entries yet. ARBOR source-code indexing is the next connection.'));
+    observeFirstWiki('render-empty',{matches:0,revision:found.wikiRevision});
     return;
   }
+  observeFirstWiki('render-matches',{matches:found.matches,revision:found.wikiRevision});
   for(const item of found.results.slice(0,6)){
     // Only Rust-returned page/section keys may select already-authorized
     // Host Wiki source. The browser expands textContent, never HTML.
@@ -1514,8 +1540,18 @@ function renderFirstWiki(text,source) {
 }
 async function refreshFirstWiki(){
   const text=$('text').value.trim(),scope=firstWikiScope();
-  if(!text||!scope||coreUiStatus().state!=='ready'||!rustWikiSearch||
-      !rustWikiSourceStamp){resetFirstWiki();return;}
+  if(!text){resetFirstWiki();return;}
+  if(!scope){firstWikiNotice('Read-only Wiki connection unavailable','source-error');
+    observeFirstWiki('source-error',{code:'WIKI_SCOPE_UNAVAILABLE'});return;}
+  if(coreUiStatus().state!=='ready'||!rustWikiSearch||!rustWikiSourceStamp){
+    firstWikiNotice('Rust Wiki engine not ready · checking…','wasm-error');
+    const ok=await initializeRustUiEngine();
+    if(!ok){
+      firstWikiNotice('Rust Wiki engine unavailable · '+coreUiStatus().code,'wasm-error');
+      observeFirstWiki('wasm-error',{code:'WASM_NOT_READY'});return;
+    }
+    observeFirstWiki('wasm-ready');
+  }
   if(firstWikiGrant!==scope.key){
     resetFirstWiki();firstWikiGrant=scope.key;firstWikiSource=null;
   }
@@ -1525,7 +1561,9 @@ async function refreshFirstWiki(){
   if(firstWikiSource&&Date.now()-firstWikiAt<8000){
     if(current())renderFirstWiki(text,firstWikiSource);return;
   }
-  firstWikiSource=null;firstWikiPanel.hidden=true;
+  firstWikiSource=null;
+  firstWikiNotice('Reading current Host Wiki…','search-start');
+  observeFirstWiki('search-start',{length:Math.min(text.length,1000)});
   if(!firstWikiLoad){
     firstWikiAbort=new AbortController();
     const abort=firstWikiAbort;
@@ -1550,19 +1588,32 @@ async function refreshFirstWiki(){
     const source=await firstWikiLoad;
     if(firstWikiScope()?.key!==scope.key)return;
     firstWikiSource=source;firstWikiAt=Date.now();firstWikiHighWater=source.stamp;
-    if(current())renderFirstWiki(text,source);
-  }catch {
+    if(current()){
+      observeFirstWiki('source-ok',{revision:source.stamp.revision});
+      renderFirstWiki(text,source);
+    }
+  }catch(error){
     if(current()&&firstWikiPanel){
-      firstWikiPanel.hidden=false;firstWikiPanel.replaceChildren(
-        el('p','first-wiki-empty','Wiki unavailable or no authorized source. No cached results shown.'));
+      firstWikiNotice('Wiki read unavailable. Retry by typing again.','source-error');
+      observeFirstWiki('source-error',{code:
+        error?.message==='WIKI_SOURCE_INVALID'?'WIKI_SOURCE_INVALID':
+        error?.message==='WIKI_RUST_PROOF_REQUIRED'?'WIKI_RUST_PROOF_REQUIRED':
+        'WIKI_FETCH_UNAVAILABLE'});
     }
   }
 }
 function scheduleFirstWiki(){
   if(!FIRST_CONTACT)return;
   clearTimeout(firstWikiTimer);
-  if(!$('text').value.trim()){resetFirstWiki();return;}
-  firstWikiTimer=setTimeout(()=>{void refreshFirstWiki();},240);
+  const len=Array.from($('text').value.trim()).length;
+  if(!len){resetFirstWiki();return;}
+  // Text stays on the phone: record only an input length, never the words.
+  if(Date.now()-firstWikiLastInputObs>450){
+    firstWikiLastInputObs=Date.now();
+    observeFirstWiki('input',{length:Math.min(len,1000)});
+  }
+  firstWikiNotice('Searching Wiki…','typing');
+  firstWikiTimer=setTimeout(()=>{void refreshFirstWiki();},180);
 }
 function mountFirstWiki(){
   if(!FIRST_CONTACT)return;
@@ -1587,10 +1638,9 @@ function mountFirstWiki(){
 function updateSend() {
   if (HOST_PREVIEW || (!S.paired && !FIRST_CONTACT)) { $('send').disabled = true; return; }
   if (FIRST_CONTACT) {
-    const projected = rustFirstContact({ text: $('text').value });
-    $('send').disabled = N.target !== 'vivim' || (S.paired && vivimChat.busy()) ||
-      projected?.schema !== 'vivim.first-contact/1' || projected.state !== 'admitted' ||
-      projected.executionAuthorized !== false || projected.effectPerformed !== false;
+    // This first-customer surface is Wiki-as-you-type. Host effects and
+    // provider sends are NOT bound to this read-only composer.
+    $('send').disabled=true;
     return;
   }
   $('send').disabled = N.target === 'vivim'
@@ -1951,6 +2001,10 @@ async function send() {
   }
   if (N.target === 'vivim') {
     const field = $('text'), body = field.value.trim();
+    if (FIRST_CONTACT) {
+      observeFirstWiki('read-only-send-blocked',{length:Math.min(body.length,1000)});
+      void refreshFirstWiki();return;
+    }
     if (!body || body.length > 1000 || (S.paired && vivimChat.busy())) return;
     if (FIRST_CONTACT) {
       const admitted = rustFirstContact({text:field.value});
@@ -2736,7 +2790,7 @@ mountUniversalDock();
 mountFirstWiki();
 if (FIRST_CONTACT) {
   $('text').placeholder = 'Ask anything…';
-  $('text').setAttribute('enterkeyhint','send');
+  $('text').setAttribute('enterkeyhint','done');
   void initializeRustUiEngine().then(ok => {
     if (ok) {
       const view = rustFirstContact({text:''});
@@ -2747,8 +2801,12 @@ if (FIRST_CONTACT) {
       }
     }
     updateSend();
-    if (!ok || coreUiStatus().state !== 'ready')
-      $('connection-announcer').textContent = 'Rust core unavailable; no command can be sent.';
+    observeFirstWiki(ok?'wasm-ready':'wasm-error',
+      ok?{}:{code:'WASM_NOT_READY'});
+    if (!ok || coreUiStatus().state !== 'ready') {
+      $('connection-announcer').textContent = 'Rust Wiki engine unavailable.';
+      if($('text').value.trim())scheduleFirstWiki();
+    } else if($('text').value.trim())scheduleFirstWiki();
   });
 }
 $('native-session').hidden = N.target !== 'phone';
