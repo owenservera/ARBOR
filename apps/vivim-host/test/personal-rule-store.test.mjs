@@ -738,3 +738,50 @@ test('a verifier cannot approve mutations without a concrete Host receipt ID',t=
   assert.equal(readFileSync(store.file,'utf8'),committed);
   assert.equal(store.snapshot().version,1);
 });
+
+test('native reducer cannot mutate the catalog after owner approval',t=>{
+  const localCatalog=structuredClone(catalog);
+  const dataRoot=mkdtempSync(path.join(os.tmpdir(),'vivim-personal-native-catalog-'));
+  t.after(()=>rmSync(dataRoot,{recursive:true,force:true}));
+  const store=createPersonalRuleStore({dataRoot,catalog:localCatalog,
+    verifyOwnerApproval:()=>true,
+    nativeReducer:()=>{
+      localCatalog.actions[1].language.verbs.push('injected-verb');
+      return null; // Explicitly unavailable binary cannot bypass source CAS.
+    }});
+  assert.throws(()=>store.propose(proposal(0)),/PERSONAL_STORE_STALE/);
+  assert.equal(store.snapshot().version,0);
+  assert.throws(()=>readFileSync(store.file,'utf8'),/ENOENT/);
+});
+
+test('approved receipt identifiers remain exact and bounded in Host history',t=>{
+  const {store}=withStore(t,()=>true);
+  const p=store.propose(proposal(0));
+  const before=readFileSync(store.file,'utf8');
+  for(const receiptId of ['r'.repeat(101),'🦀'.repeat(51)]){
+    assert.throws(()=>store.transition({ruleId:p.ruleId,nextState:'accepted',
+      expectedVersion:1,approval:{receiptId}}),
+      /PERSONAL_STORE_OWNER_APPROVAL_REQUIRED/);
+    assert.equal(readFileSync(store.file,'utf8'),before);
+  }
+  const receiptId='🦀'.repeat(50); // JS length 100
+  store.transition({ruleId:p.ruleId,nextState:'accepted',expectedVersion:1,
+    approval:{receiptId}});
+  const written=JSON.parse(readFileSync(store.file,'utf8'));
+  assert.equal(written.history[1].ownerReceiptId,receiptId);
+  assert.equal(written.history[1].ownerReceiptId.length,100);
+  assert.equal(written.entries[0].revision,2);
+});
+
+test('malformed JSON store entries reject with typed corruption error',t=>{
+  const {store}=withStore(t);
+  const p=store.propose(proposal(0));
+  const original=JSON.parse(readFileSync(store.file,'utf8'));
+  for(const broken of [null, false, 42, 'rule:a']){
+    const changed=structuredClone(original);
+    changed.entries[0]=broken;
+    writeFileSync(store.file,JSON.stringify(changed,null,2),{mode:0o600});
+    assert.throws(()=>store.snapshot(),/PERSONAL_STORE_CORRUPT/);
+  }
+  assert.equal(p.state,'proposed');
+});
