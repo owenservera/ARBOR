@@ -143,6 +143,8 @@ test('mounted first-contact Wiki survives universal dock reparenting and both in
   assert.match(app,/\$\('app'\)\.append\(\$\('chat-composer'\)\)/);
   appRoot.append(composer);
   assert.equal(composer.parentNode,appRoot);
+  assert.throws(()=>chat.insertBefore(element(),composer),/NotFoundError/,
+    'the previous Wiki mounting operation throws after composer relocation');
   const textInput=new EventTarget();
   const document=new EventTarget(),window=new EventTarget();
   const talk={querySelector:selector=>selector==='.chat'?chat:null};
