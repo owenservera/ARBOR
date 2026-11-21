@@ -14,7 +14,7 @@ const FROZEN=path.join(ROOT,'native','gpui-desktop','resources','runtime');
 const SCHEMA='arbor.gpui-local-integration/1';
 export const LOCAL_STEPS=Object.freeze([
   {id:'owner-proof-host',exe:'node',args:['--test','apps/vivim-host/test/native-owner-proof.test.mjs'],ms:120000},
-  {id:'native-packaging-contracts',exe:'node',args:['--test','tools/packaging/test/bundle-gpui-desktop.test.mjs','tools/packaging/test/stage-gpui-runtime.test.mjs'],ms:120000},
+  {id:'native-packaging-contracts',exe:'node',args:['--test','tools/packaging/test/bundle-gpui-desktop.test.mjs','tools/packaging/test/stage-gpui-runtime.test.mjs','tools/packaging/test/build-gpui-installer.test.mjs','tools/packaging/test/gpui-local-integration.test.mjs'],ms:120000},
   {id:'supervisor-native-rust',exe:'cargo',args:['test','-p','vivim-host-supervisor','--locked'],requiresRootLock:true,ms:600000},
   {id:'legacy-tauri-native-rust',exe:'cargo',args:['test','-p','vivim-host','--bin','vivim-host','--locked'],requiresRootLock:true,ms:600000},
   {id:'gpui-adapters-native-rust',exe:'cargo',args:['test','--manifest-path',GPUI,'--lib','--locked'],requiresGpuiLock:true,ms:600000},
