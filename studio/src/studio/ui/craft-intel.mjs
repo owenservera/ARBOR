@@ -24,7 +24,7 @@ async function refresh(){
     put('notice','External evidence only — no effect authority');
     put('target','Target: '+data.target.siteId);
     put('origin','Origin: '+data.target.origin);
-    put('source','Native evidence check: '+(data.source.nativeVerified?'verified':'UNVERIFIED')+
+    put('source','Native verification reported by Labs (not Studio-attested): '+(data.source.nativeVerified?'verified':'UNVERIFIED')+
       ' · Scope: '+data.source.coverage+' · Bundle: '+(data.source.bundleDigest||'unspecified'));
     const metrics=$('metrics');metrics.replaceChildren();
     for(const [key,count] of Object.entries(data.counts)){
