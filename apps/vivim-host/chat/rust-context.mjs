@@ -439,15 +439,22 @@ function managedReader({env,dataRoot,productJournal,control,executePersonal,repo
     const rows=buildNativeKnowledge(current,effects);
     if(current.changes.omitted!==0 ||
       !safeUInt(current.context.wikiRevision) ||
-      current.context.wikiRevision===0)
+      current.context.wikiRevision===0 ||
+      !safeUInt(current.sourceStamp?.journalEntries) ||
+      !SHA.test(current.sourceStamp?.committedJournalDigest??'') ||
+      current.sourceStamp.wikiRevision!==current.context.wikiRevision)
       throw Error('NATIVE_WIKI_SOURCE_INCOMPLETE');
     return {rows,relationships:buildNativeRelationships(current,rows),
       wikiRevision:current.context.wikiRevision,
+      sourceStamp:current.sourceStamp,
       ...(view==='owner'?{
         effectScannedPlans:effects.scannedPlans,
+        effectIndexedPlans:effects.items.length,
         latestIngestedReceiptAt:effects.items[0]?.receivedAt??null,
         receiptScanDigest:digest(summaries.map(s=>[
-          s.planId,s.actionId,s.risk,s.state,s.createdAt]))
+          s.planId,s.actionId,s.risk,s.state,s.createdAt])),
+        receiptEvidenceDigest:digest(effects.items.map(e=>[
+          e.planId,e.planDigest,e.receiptDigest,e.actionId,e.sourceRevision]))
       }:{})};
   }
   async function read(view) {
@@ -627,8 +634,12 @@ function managedReader({env,dataRoot,productJournal,control,executePersonal,repo
           totalRetrieved:result.totalRetrieved,items,
           sourceHighWater:{wikiRevision:projection.wikiRevision,graphEpoch:packet.epoch,
             ...(view==='owner'?{
+              productJournalEntries:projection.sourceStamp.journalEntries,
+              productJournalDigest:projection.sourceStamp.committedJournalDigest,
               scannedAppliedPlans:projection.effectScannedPlans,
+              indexedAppliedReceipts:projection.effectIndexedPlans,
               receiptScanDigest:projection.receiptScanDigest,
+              receiptEvidenceDigest:projection.receiptEvidenceDigest,
               latestIngestedReceiptAt:projection.latestIngestedReceiptAt
             }:{})},
           ingestionStats:{nativeBatches:plan.stages.length+1,
