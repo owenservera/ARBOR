@@ -96,16 +96,34 @@ impl Default for HostProcess {
     }
 }
 
-/// A staged bundle only counts as packaged when it can actually launch the Host:
-/// the staged node.exe and the Host entry point must both be present.
+/// This is a bounded structural admission, not a replacement for the
+/// packaging tool's full SHA256 manifest verification or installer signing.
+/// Never classify the generated resource placeholder as a release runtime.
 fn packaged_runtime(root: &Path) -> Option<PathBuf> {
-    let node = root.join("node.exe");
-    let server = root.join("apps").join("vivim-host").join("server.mjs");
-    if node.is_file() && server.is_file() {
-        Some(root.to_path_buf())
-    } else {
-        None
+    let manifest_path = root.join("runtime.manifest.json");
+    let metadata = std::fs::metadata(&manifest_path).ok()?;
+    if !metadata.is_file() || metadata.len() > 16 * 1024 * 1024 {
+        return None;
     }
+    let bytes = std::fs::read(&manifest_path).ok()?;
+    let manifest: serde_json::Value = serde_json::from_slice(&bytes).ok()?;
+    if manifest["schema"] != "arbor.host-runtime-manifest/1" {
+        return None;
+    }
+    let entries = manifest["files"].as_array()?;
+    let required = std::iter::once("node.exe".to_string())
+        .chain(std::iter::once("apps/vivim-host/server.mjs".to_string()))
+        .chain(APPROVED_BINARIES.iter().map(|bin| format!("native/bin/{bin}.exe")));
+    if !required.into_iter().all(|rel| {
+        let present = entries.iter().any(|file| file["path"].as_str() == Some(&rel));
+        present && root.join(&rel).is_file()
+    }) {
+        return None;
+    }
+    if root.join("ARBOR-RUNTIME-PLACEHOLDER.txt").exists() {
+        return None;
+    }
+    Some(root.to_path_buf())
 }
 
 /// Approved native binaries present under the runtime's frozen `native/bin` tree.
@@ -201,13 +219,25 @@ impl HostProcess {
         }
     }
 
+    fn classify_launch_runtime(
+        packaged: Option<PathBuf>, root: PathBuf, allow_workspace: bool
+    ) -> HostRuntime {
+        let mut runtime = Self::classify_runtime(packaged, root);
+        // A release MSI must never silently execute arbitrary workspace Node
+        // source if its packaged runtime is missing, partial or unverified.
+        if !allow_workspace && runtime.mode == RuntimeMode::Workspace {
+            runtime.mode = RuntimeMode::Missing;
+        }
+        runtime
+    }
+
     fn resolve_runtime(app: &tauri::AppHandle) -> HostRuntime {
         let packaged = app
             .path()
             .resolve("runtime", tauri::path::BaseDirectory::Resource)
             .ok()
             .and_then(|root| packaged_runtime(&root));
-        Self::classify_runtime(packaged, Self::repo_root())
+        Self::classify_launch_runtime(packaged, Self::repo_root(), cfg!(debug_assertions))
     }
 
     fn start(
@@ -229,20 +259,8 @@ impl HostProcess {
             .stdout(Stdio::null())
             .stderr(Stdio::null())
             .current_dir(&runtime.root);
-        if runtime.mode == RuntimeMode::Packaged {
-            if let Ok(apk) = app
-                .path()
-                .resolve("vivim.apk", tauri::path::BaseDirectory::Resource)
-            {
-                command.env("VIVIM_BUNDLED_APK", apk);
-            }
-            if let Ok(manifest) = app
-                .path()
-                .resolve("vivim-release.manifest.json", tauri::path::BaseDirectory::Resource)
-            {
-                command.env("VIVIM_BUNDLED_APK_MANIFEST", manifest);
-            }
-        }
+        // PWA first: the native shell does not discover, provision or launch
+        // an APK, even if an unrelated resource file happens to exist.
         Ok(command.spawn()?)
     }
 
@@ -816,12 +834,33 @@ mod tests {
         assert_eq!(state.probe_child(), ChildState::NotStarted);
     }
 
+    fn stage_manifest_contract(root: &Path) {
+        let paths: Vec<String> = std::iter::once("node.exe".to_string())
+            .chain(std::iter::once("apps/vivim-host/server.mjs".to_string()))
+            .chain(APPROVED_BINARIES.iter().map(|bin| format!("native/bin/{bin}.exe")))
+            .collect();
+        for rel in &paths { touch(&root.join(rel)); }
+        let files: Vec<_> = paths.iter()
+            .map(|p| serde_json::json!({"path":p,"bytes":0,"sha256":"0".repeat(64)}))
+            .collect();
+        std::fs::write(root.join("runtime.manifest.json"),
+            serde_json::json!({"schema":"arbor.host-runtime-manifest/1","files":files}).to_string())
+            .unwrap();
+    }
+
     #[test]
-    fn packaged_runtime_requires_node_and_host_entry() {
+    fn packaged_runtime_requires_complete_staged_manifest_and_binaries() {
         let bundle = scratch_dir("bundle");
         touch(&bundle.join("node.exe"));
         touch(&bundle.join("apps/vivim-host/server.mjs"));
+        assert_eq!(packaged_runtime(&bundle), None);
+        stage_manifest_contract(&bundle);
         assert_eq!(packaged_runtime(&bundle), Some(bundle.clone()));
+        std::fs::remove_file(bundle.join("native/bin/hqkg-import.exe")).unwrap();
+        assert_eq!(packaged_runtime(&bundle), None);
+        touch(&bundle.join("native/bin/hqkg-import.exe"));
+        touch(&bundle.join("ARBOR-RUNTIME-PLACEHOLDER.txt"));
+        assert_eq!(packaged_runtime(&bundle), None);
 
         let partial = scratch_dir("partial");
         touch(&partial.join("node.exe"));
@@ -834,8 +873,7 @@ mod tests {
     #[test]
     fn runtime_classification_distinguishes_packaged_workspace_and_missing() {
         let bundle = scratch_dir("classify-packaged");
-        touch(&bundle.join("node.exe"));
-        touch(&bundle.join("apps/vivim-host/server.mjs"));
+        stage_manifest_contract(&bundle);
         let runtime = HostProcess::classify_runtime(packaged_runtime(&bundle), scratch_dir("unused"));
         assert_eq!(runtime.mode, RuntimeMode::Packaged);
         assert_eq!(runtime.node, bundle.join("node.exe"));
@@ -848,6 +886,12 @@ mod tests {
         touch(&workspace.join("apps/vivim-host/server.mjs"));
         let runtime = HostProcess::classify_runtime(None, workspace.clone());
         assert_eq!(runtime.mode, RuntimeMode::Workspace);
+        assert_eq!(HostProcess::classify_launch_runtime(None, workspace.clone(), true).mode,
+            RuntimeMode::Workspace);
+        assert_eq!(HostProcess::classify_launch_runtime(None, workspace, false).mode,
+            RuntimeMode::Missing);
+        assert_eq!(HostProcess::classify_launch_runtime(Some(bundle), scratch_dir("other"),
+            false).mode, RuntimeMode::Packaged);
 
         let missing = scratch_dir("classify-missing");
         let runtime = HostProcess::classify_runtime(None, missing);
