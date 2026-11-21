@@ -54,6 +54,7 @@ pub fn dispatch(request:&Value)->Value{
         "control-catalog-compatibility"=>crate::control_catalog_compat::assess(input),
         "semantic-observation"=>crate::semantic_observation::aggregate(input),
         "live-system"=>crate::live_system::dispatch(input),
+        "agent-composer"=>crate::agent_composer::dispatch(input),
         "development-projection"=>crate::development_projection::project(input),
         "control-plan-preview"=>crate::control_plan_presentation::project(input),
         "control-receipt-preview"=>crate::control_plan_presentation::receipt_project(input),
