@@ -1423,3 +1423,71 @@ fn legacy_applied_receipt_metadata_is_immutable_during_body_fingerprint_upgrade(
     assert_eq!(owner["effectRelationshipsTotal"],1);
     assert_eq!(owner["effectRelationships"][0]["receiptDigest"],"f".repeat(64));
 }
+
+
+#[test]
+fn superseded_d4_receipt_preserves_immutable_original_wiki_origin_without_live_edge() {
+    let temp=Temp::new(); let file=temp.journal();
+    let original=wiki(ENTRY,2,"Committed first section");
+    let mut applied=effect();
+    applied["receiptDigest"]=json!("f".repeat(64));
+    applied["receiptWikiOrigin"]=json!({
+        "kind":"committed-wiki-origin","entryId":ENTRY,"wikiRevision":2
+    });
+    let (ok,initial)=sync(&file,SCOPE,vec![original.clone(),applied.clone()]);
+    assert!(ok,"{initial}");
+    let first_epoch=initial["epoch"].as_u64().unwrap();
+    let first=read(&file,SCOPE,first_epoch,"owner").unwrap();
+    assert_eq!(first["effectRelationshipsTotal"],1);
+    assert_eq!(first["items"].as_array().unwrap().iter().find(|item|
+        item["kind"]=="effect").unwrap()["receiptWikiOrigin"]["entryId"],ENTRY);
+    let revised=wiki(NEXT,3,"Superseded live section");
+    let mut historical=applied.clone();
+    historical["wikiLink"]=Value::Null;
+    let (ok,changed)=run_packet(&file,json!({
+        "schema":"vivim.hqkg-personal/1","scope":SCOPE,
+        "op":"sync-context-read","view":"owner",
+        "nodes":[],"relationships":[],"baseRevision":3,
+        "baseEpoch":first_epoch,"deltas":[put(revised.clone()),put(historical.clone())],
+        "activeIds":[revised["id"],historical["id"]],
+        "activeRelationshipIds":[],"completeWikiRevision":3
+    }));
+    assert!(ok,"{changed}");
+    let epoch=changed["epoch"].as_u64().unwrap();
+    assert_eq!(changed["context"]["effectRelationshipsTotal"],0);
+    assert_eq!(changed["context"]["totalRetrieved"],2);
+    let old=changed["context"]["items"].as_array().unwrap().iter().find(|item|
+        item["kind"]=="effect").unwrap();
+    assert_eq!(old["receiptWikiOrigin"],json!({"kind":"committed-wiki-origin",
+        "entryId":ENTRY,"wikiRevision":2}));
+    let graph=Journal::new(&file).load().unwrap();
+    assert_eq!(graph.node_count(),2);
+    assert_eq!(graph.edge_count(),0);
+    let preserved=fs::read(&file).unwrap();
+    let (ok,replay)=run_packet(&file,json!({
+        "schema":"vivim.hqkg-personal/1","scope":SCOPE,
+        "op":"sync-context","nodes":[],"relationships":[],
+        "baseRevision":3,"baseEpoch":epoch,"deltas":[put(historical.clone())]
+    }));
+    assert!(ok,"replaying an unchanged superseded receipt must be a no-op: {replay}");
+    assert_eq!(replay["changed"],false);
+    assert_eq!(fs::read(&file).unwrap(),preserved);
+    let mut forged=historical.clone();
+    forged["receiptWikiOrigin"]["entryId"]=json!(NEXT);
+    let (ok,denied)=run_packet(&file,json!({
+        "schema":"vivim.hqkg-personal/1","scope":SCOPE,
+        "op":"sync-context","nodes":[],"relationships":[],
+        "baseRevision":3,"baseEpoch":epoch,"deltas":[put(forged)]
+    }));
+    assert!(!ok,"the immutable receipt body cannot be rebound to another Wiki commit: {denied}");
+    assert_eq!(fs::read(&file).unwrap(),preserved);
+    let mut erased=historical.clone();
+    erased.as_object_mut().unwrap().remove("receiptWikiOrigin");
+    let (ok,denied)=run_packet(&file,json!({
+        "schema":"vivim.hqkg-personal/1","scope":SCOPE,
+        "op":"sync-context","nodes":[],"relationships":[],
+        "baseRevision":3,"baseEpoch":epoch,"deltas":[put(erased)]
+    }));
+    assert!(!ok,"the original applied Wiki origin must not be stripped: {denied}");
+    assert_eq!(fs::read(&file).unwrap(),preserved);
+}
