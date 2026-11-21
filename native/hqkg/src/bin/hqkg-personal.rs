@@ -280,15 +280,25 @@ fn sync_context(v: &Value, ns: &Namespace, journal: &Journal, g: &mut Graph,
     let mut wanted = BTreeSet::new();
     let mut wiki_nodes = BTreeMap::new();
     let mut wiki_page_nodes = BTreeMap::new();
-    // A delta batch may link pages it does not itself carry, so page revisions
-    // are seeded from the durable graph; a complete projection stays batch-local.
+    // A delta can link a newly applied D4 receipt to a Wiki source that was
+    // committed in a previous batch. Reuse the durable, namespace-validated
+    // source index; never require the Wiki section to be resent just to link it.
+    // Complete projections remain batch-local by design.
     if deltas.is_some() {
         for n in g.nodes() {
-            if n.id.starts_with(&managed_prefix) &&
-                n.properties.get("vivim.context.kind").map(String::as_str)==Some("wiki") &&
-                n.properties.get("vivim.context.semanticId").map_or(false,|s|s.starts_with("wiki:page:")) {
-                let revision=n.properties.get("hqkg.provenance.revision")
-                    .and_then(|r|r.parse::<u64>().ok()).ok_or("invalid prior source revision")?;
+            if !n.id.starts_with(&managed_prefix) ||
+                n.properties.get("vivim.context.kind").map(String::as_str)!=Some("wiki") {
+                continue;
+            }
+            let revision=n.properties.get("hqkg.provenance.revision")
+                .and_then(|r|r.parse::<u64>().ok()).ok_or("invalid prior source revision")?;
+            let source_ref=n.properties.get("vivim.context.sourceRef")
+                .ok_or("invalid durable Wiki source identity")?;
+            if wiki_nodes.insert(source_ref.clone(),(n.id.clone(),revision)).is_some() {
+                return Err("duplicate durable Wiki source identity".into());
+            }
+            if n.properties.get("vivim.context.semanticId")
+                .map_or(false,|s|s.starts_with("wiki:page:")) {
                 if let Some(local)=n.id.strip_prefix(&prefix) {
                     wiki_page_nodes.insert(local.to_string(),revision);
                 }
@@ -308,6 +318,14 @@ fn sync_context(v: &Value, ns: &Namespace, journal: &Journal, g: &mut Graph,
                 "delete" | "revoke" => {
                     let local=scoped_graph::qualified_id(ns,text(d,"id")?).map_err(err)?;
                     if !deleted.insert(local.clone()) { return Err("duplicate managed context delta".into()); }
+                    if let Some(old)=g.node(&local) {
+                        if old.properties.get("vivim.context.kind").map(String::as_str)==Some("wiki") {
+                            let old_ref=old.properties.get("vivim.context.sourceRef")
+                                .ok_or("invalid durable Wiki source identity")?;
+                            wiki_nodes.remove(old_ref);
+                            wiki_page_nodes.remove(local.strip_prefix(&prefix).unwrap_or(""));
+                        }
+                    }
                     let (next,applied)=stage_tombstone(g,ns,changes,d)?;
                     changes=next;
                     if applied { tombstoned+=1; }
@@ -326,9 +344,19 @@ fn sync_context(v: &Value, ns: &Namespace, journal: &Journal, g: &mut Graph,
         if !wanted.insert(record.node.id.clone()) { return Err("duplicate context identity".into()); }
         if deleted.contains(&record.node.id) { return Err("duplicate managed context delta".into()); }
         if record.page { wiki_page_nodes.insert(record.local.clone(),record.revision); }
-        if record.kind=="wiki" &&
-            wiki_nodes.insert(record.source_ref.clone(),(record.node.id.clone(),record.revision)).is_some() {
-            return Err("duplicate Wiki source identity".into());
+        if record.kind=="wiki" {
+            // A revised section replaces the prior entry identity at the same
+            // stable node ID. The old source can no longer authorize a D4 edge.
+            if let Some(old)=g.node(&record.node.id) {
+                let old_ref=old.properties.get("vivim.context.sourceRef")
+                    .ok_or("invalid durable Wiki source identity")?;
+                if old_ref!=&record.source_ref { wiki_nodes.remove(old_ref); }
+            }
+            if wiki_nodes.get(&record.source_ref)
+                .is_some_and(|(id,_)|id!=&record.node.id) {
+                return Err("duplicate Wiki source identity".into());
+            }
+            wiki_nodes.insert(record.source_ref.clone(),(record.node.id.clone(),record.revision));
         }
         changes=stage_record(g,changes,record)?;
         ingested+=1;

@@ -513,3 +513,41 @@ fn multi_batch_ingestion_keeps_over_five_hundred_sources_and_reads_one_epoch() {
     assert!(!ok,"epoch mismatch should refuse: {stale}");
     assert_eq!(fs::read(&file).unwrap(),bytes);
 }
+
+
+#[test]
+fn delayed_d4_receipt_delta_links_an_unchanged_durable_wiki_source() {
+    let temp=Temp::new();let file=temp.journal();
+    // The Wiki edit is already committed before the D4 receipt becomes visible.
+    let (ok,first)=sync(&file,SCOPE,vec![wiki(ENTRY,2,"Committed Wiki source")]);
+    assert!(ok,"{first}");
+    assert_eq!(Journal::new(&file).load().unwrap().edge_count(),0);
+    let (ok,late)=delta(&file,SCOPE,2,vec![put(effect())]);
+    assert!(ok,"{late}");
+    assert_eq!(late["ingested"],1);
+    let graph=Journal::new(&file).load().unwrap();
+    assert_eq!(graph.node_count(),2);
+    assert_eq!(graph.edge_count(),1,"late receipt must link to existing committed source");
+    let link=graph.edges().next().unwrap();
+    assert_eq!(link.relation,"committed-wiki-change");
+    assert_eq!(link.properties.get("vivim.context.kind").map(String::as_str),Some("effect-wiki-link"));
+    let bytes=fs::read(&file).unwrap();
+    let (ok,replay)=delta(&file,SCOPE,2,vec![put(effect())]);
+    assert!(ok,"{replay}");
+    assert_eq!(replay["changed"],false);
+    assert_eq!(fs::read(&file).unwrap(),bytes);
+    // Replacing the section revokes only the current-lineage edge. The
+    // historical effect and its applied receipt identity stay durable.
+    let (ok,changed)=delta(&file,SCOPE,3,vec![put(wiki(NEXT,3,"Next committed source"))]);
+    assert!(ok,"{changed}");
+    let graph=Journal::new(&file).load().unwrap();
+    assert_eq!(graph.node_count(),2);
+    assert_eq!(graph.edge_count(),0,"superseded source must invalidate D4 link");
+    assert!(graph.nodes().any(|n|
+        n.properties.get("vivim.context.sourceRef").map(String::as_str)==Some("ctl-0123456789abcdef")));
+    let bytes=fs::read(&file).unwrap();
+    let (ok,stale)=delta(&file,SCOPE,3,vec![put(effect())]);
+    assert!(ok,"historical receipt can remain immutable: {stale}");
+    assert_eq!(stale["changed"],false);
+    assert_eq!(fs::read(&file).unwrap(),bytes);
+}
