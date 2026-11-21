@@ -2113,7 +2113,9 @@ async function pollBuild() {
     if(observed?.state==='ready')void refreshBuildBindings(st?.snapshot);
   } catch (e) {
     if(!current()){redact();return;}
-    redact();
+    // Transient status outages remove renderable state but retain the
+    // same-grant high-water mark. Only a real scope change resets history.
+    build?.clear();shellPresentation.clear();buildKey='';
     if (e && (e.status === 401 || e.status === 403)) return;
   }
   if (current()) scheduleBuild();
