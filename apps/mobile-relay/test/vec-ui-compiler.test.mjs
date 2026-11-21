@@ -124,3 +124,14 @@ test('VEC runtime status is read-only and never an effect grant', async()=>{
   assert.notEqual(status.state,'executed');
   assert.notEqual(status.state,'persisted');
 });
+
+test('malformed adapter classification is refused without native WASM',()=>{
+  for(const code of [{fake:'grant'},0,false,'','x'.repeat(129),'\u0000']) {
+    const result=createVecCompiler({adapters:{ui:()=>({outcome:'candidate',code})}})
+      .compile({domain:'ui',text:'Add card'});
+    assert.equal(result.code,'ADAPTER_INVALID_RESULT');
+    assert.equal(result.authorization,'none');
+    assert.equal(result.executed,false);
+    assert.equal(result.persisted,false);
+  }
+});

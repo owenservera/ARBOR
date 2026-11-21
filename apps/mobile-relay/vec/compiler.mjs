@@ -43,6 +43,18 @@ const fail = (domain, outcome, code) => ({
   outcome, code, authorization: 'none', executed: false, persisted: false
 });
 
+// Count UTF-8 code bytes without depending on runtime-specific encoders.
+// A lone surrogate cannot be sent as a canonical Rust UTF-8 string.
+function codeBytes(value){
+  let bytes=0;
+  for(const ch of value){
+    const point=ch.codePointAt(0);
+    if(point>=0xd800&&point<=0xdfff)return Infinity;
+    bytes+=point<0x80?1:point<0x800?2:point<0x10000?3:4;
+  }
+  return bytes;
+}
+
 /** Register only trusted first-party adapters; wiki and command keep their incumbent
  * owners until source parity is independently established. No fallback silently runs. */
 // Rust admission is authoritative when available. A comparison with the
@@ -83,6 +95,13 @@ export function createVecCompiler({adapters={}}={}){
       if(!plain(result)||!STATES.has(result.outcome))
         return admitOrFallback({...input,adapterResult:result},fail(domain,'refused','ADAPTER_INVALID_RESULT'));
       const {outcome,code,proposal,preview,summary,detail}=result;
+      // Match Rust admission even when browser WASM is missing. Only bounded,
+      // control-free machine codes may leave the trusted adapter boundary.
+      if(code!==undefined&&code!==null&&
+        (typeof code!=='string'||code.length===0||codeBytes(code)>128||
+         /\p{Cc}/u.test(code)))
+        return admitOrFallback({...input,adapterResult:result},
+          fail(domain,'refused','ADAPTER_INVALID_RESULT'));
       const sourceSemanticIds=outcome==='candidate'&&plain(proposal)&&
         proposal.schema===PRODUCT_SCHEMAS[domain]
         ?[semanticId(VEC_COMPILE_SCHEMA),semanticId(PRODUCT_SCHEMAS[domain])]:null;
