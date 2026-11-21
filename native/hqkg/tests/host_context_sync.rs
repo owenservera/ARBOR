@@ -1193,3 +1193,59 @@ fn torn_managed_journal_holds_replay_until_explicit_verified_prefix_repair() {
     assert!(!ok,"recovered journal forgot source tombstone: {stale}");
     assert_eq!(fs::read(&file).unwrap(),bytes);
 }
+
+#[test]
+fn explicit_section_delete_in_complete_delta_uses_inventory_high_water_atomically() {
+    let temp=Temp::new();let file=temp.journal();
+    let old=wiki_record(0,2);
+    let (ok,first)=sync(&file,SCOPE,vec![old.clone()]);
+    assert!(ok,"{first}");
+    let packet=json!({
+        "schema":"vivim.hqkg-personal/1","scope":SCOPE,
+        "op":"sync-context-read","view":"wiki",
+        "nodes":[],"relationships":[],"baseRevision":9,
+        "baseEpoch":first["epoch"],"deltas":[{
+            "op":"delete","kind":"wiki","id":old["id"],
+            "revision":2,"digest":old["digest"]}],
+        "activeIds":[],"activeRelationshipIds":[],"completeWikiRevision":9
+    });
+    let (ok,deleted)=run_packet(&file,packet);
+    assert!(ok,"{deleted}");
+    assert_eq!(deleted["tombstoned"],1);
+    assert_eq!(deleted["reconciledSections"],0);
+    let guard=Journal::new(&file).load().unwrap().nodes().next().unwrap().clone();
+    assert_eq!(guard.properties.get("hqkg.provenance.revision").map(String::as_str),
+        Some("9"),"same-batch explicit delete must inherit proven Wiki high-water");
+    let stable=fs::read(&file).unwrap();
+    let (ok,stale)=delta(&file,SCOPE,9,vec![put(wiki_record(0,3))]);
+    assert!(!ok,"delayed revision three resurrected deleted section: {stale}");
+    assert_eq!(fs::read(&file).unwrap(),stable);
+}
+
+#[test]
+fn complete_section_inventory_cannot_over_fence_bounded_page_tombstones() {
+    let temp=Temp::new();let file=temp.journal();
+    let mut page=wiki_record(0,2);
+    page["semanticId"]=json!("wiki:page:Main");
+    let (ok,first)=sync(&file,SCOPE,vec![page.clone()]);
+    assert!(ok,"{first}");
+    let (ok,deleted)=run_packet(&file,json!({
+        "schema":"vivim.hqkg-personal/1","scope":SCOPE,
+        "op":"sync-context-read","view":"wiki",
+        "nodes":[],"relationships":[],"baseRevision":9,
+        "baseEpoch":first["epoch"],"deltas":[{
+            "op":"delete","kind":"wiki","id":page["id"],
+            "revision":2,"digest":page["digest"]}],
+        "activeIds":[],"activeRelationshipIds":[],"completeWikiRevision":9
+    }));
+    assert!(ok,"{deleted}");
+    let guard=Journal::new(&file).load().unwrap().nodes().next().unwrap().clone();
+    assert_eq!(guard.properties.get("hqkg.provenance.revision").map(String::as_str),
+        Some("2"),"Wiki section inventory is not a complete page inventory");
+    let mut newer=wiki_record(0,3);
+    newer["semanticId"]=json!("wiki:page:Main");
+    let (ok,restored)=delta(&file,SCOPE,9,vec![put(newer)]);
+    assert!(ok,"{restored}");
+    assert_eq!(read(&file,SCOPE,restored["epoch"].as_u64().unwrap(),"wiki")
+        .unwrap()["activeSourcesTotal"],1);
+}
