@@ -657,9 +657,9 @@ function managedReader({env,dataRoot,productJournal,control,executePersonal,repo
           totalRetrieved:result.totalRetrieved,items,
           sourceHighWater:{wikiRevision:projection.wikiRevision,graphEpoch:packet.epoch,
             activeSourcesDigest:result.activeSourcesDigest,
-            durableDeletionFences:result.deletionFencesTotal,
-            durableDeletionFencesDigest:result.deletionFencesDigest,
             ...(view==='owner'?{
+              durableDeletionFences:result.deletionFencesTotal,
+              durableDeletionFencesDigest:result.deletionFencesDigest,
               productJournalEntries:projection.sourceStamp.journalEntries,
               productJournalDigest:projection.sourceStamp.committedJournalDigest,
               scannedAppliedPlans:projection.effectScannedPlans,
