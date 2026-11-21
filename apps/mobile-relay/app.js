@@ -2112,14 +2112,24 @@ async function pollBuild() {
         'phone-visual-source',grant['x-vivim-device-session'],grant['x-vivim-grant-id']]))) {
       redact();return;
     }
-    S.statusObj = st; S.statusAt = Date.now();
-    const rev = st && st.snapshot && st.snapshot.bootstrap ? st.snapshot.bootstrap.uiRevision : null;
-    // Always inspect the Host full snapshot. Comparing just a numeric revision
-    // would conceal same-revision conflicts and an unproved rollback.
-    const observed = build.setSurface(rev, st?.snapshot?.bootstrap);
-    shellPresentation.observe(rev??null);
-    buildKey = observed?.state === 'ready' ? String(rev.surfaceId) + ':' + String(rev.revision) : '';
-    if(observed?.state==='ready')void refreshBuildBindings(st?.snapshot);
+    const bootstrap=st?.snapshot?.bootstrap;
+    const rev=bootstrap?.uiRevision??null;
+    // Check the complete Host-committed revision BEFORE promoting this status
+    // snapshot. A delayed rollback cannot replace the app's newer read model.
+    const observed=build.setSurface(rev,bootstrap);
+    const genuineEmpty=rev===null&&observed?.reason==='NO_COMMITTED_SURFACE'&&
+      bootstrap?.schema==='vivim.bootstrap-phone/1'&&bootstrap?.state==='ready'&&
+      Object.hasOwn(bootstrap,'uiRevision')&&bootstrap.uiRevision===null&&
+      build.revisionState()?.highRevision===null;
+    if(observed?.state==='ready'||genuineEmpty){
+      S.statusObj=st;S.statusAt=Date.now();
+      shellPresentation.observe(rev??null);
+      buildKey=observed?.state==='ready'?String(rev.surfaceId)+':'+String(rev.revision):'';
+      if(observed?.state==='ready')void refreshBuildBindings(st?.snapshot);
+    }else{
+      // Never silently re-admit old Host content into Talk/Me/Build.
+      shellPresentation.clear();buildKey='';
+    }
   } catch (e) {
     if(!current()){redact();return;}
     // Transient status outages remove renderable state but retain the
