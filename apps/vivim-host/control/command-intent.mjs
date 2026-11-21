@@ -253,7 +253,7 @@ export function validateAiCommandCandidate(input, { catalog, world, personalRule
     schema:'vivim.command-ai-proposal-guard-input/1',
     input:{text:input.text,scope:input.scope??'text',audience:input.audience??'owner',
       catalogRevision:input.catalogRevision??null,worldRevision:input.worldRevision??null},
-    proposal,reading,action:action??null,
+    proposal,reading,action:action??null,catalogActions:catalog.actions,
     catalogVersion:catalog.version,worldRevision:world.v
     }, { failClosedIfPackaged: true });
   } catch {

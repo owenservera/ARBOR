@@ -124,7 +124,8 @@ test('AI proposal is inert and cannot contradict real owner text', () => {
       schema: 'vivim.command-ai-proposal-guard-input/1',
       input: {text: ownerText, scope: 'text', audience: 'owner',
         catalogRevision: null, worldRevision: null},
-      proposal, reading, action, catalogVersion: catalog.version, worldRevision: world.v
+      proposal, reading, action, catalogActions: catalog.actions,
+      catalogVersion: catalog.version, worldRevision: world.v
     });
     if (hasBinary()) assert.ok(native, 'staged Rust binary must support command-ai-guard');
     if (native) {
@@ -160,7 +161,7 @@ test('all real NLCL cases preserve the native AI guard decision and its provenan
       schema: 'vivim.command-ai-proposal-guard-input/1',
       input: {text: entry.text, scope: 'text', audience: 'owner',
         catalogRevision: null, worldRevision: null},
-      proposal, reading, action,
+      proposal, reading, action, catalogActions: catalog.actions,
       catalogVersion: catalog.version, worldRevision: world.v
     });
     if (hasBinary()) assert.ok(native, 'packaged binary must support AI guard: ' + entry.text);
@@ -198,8 +199,8 @@ test('zero-argument native AI proposals accept nullish arguments like Host', () 
       schema: 'vivim.command-ai-proposal-guard-input/1',
       input: {text: entry.text, scope: 'text', audience: 'owner',
         catalogRevision: null, worldRevision: null},
-      proposal, reading, action, catalogVersion: catalog.version,
-      worldRevision: world.v
+      proposal, reading, action, catalogActions: catalog.actions,
+      catalogVersion: catalog.version, worldRevision: world.v
     });
     if (hasBinary()) assert.ok(native, 'native zero-arg proposal must be available');
     if (native) {
@@ -378,7 +379,8 @@ test('native AI guard refuses forged Host projections and malformed catalog meta
     schema: 'vivim.command-ai-proposal-guard-input/1',
     input: {text: owner.text, scope: 'text', audience: 'owner',
       catalogRevision: null, worldRevision: null},
-    reading, action, proposal, catalogVersion: catalog.version,
+    reading, action, proposal, catalogActions: catalog.actions,
+    catalogVersion: catalog.version,
     worldRevision: world.v
   };
   const bad = (change, expected) => {
@@ -402,4 +404,13 @@ test('native AI guard refuses forged Host projections and malformed catalog meta
     'UNSAFE_OR_UNRESOLVED_TEXT');
   bad({action: {...action, risk: 'R9'}}, 'AI_ACTION_NOT_ALLOWED');
   bad({action: {...action, readiness: 'already_applied'}}, 'AI_ACTION_NOT_ALLOWED');
+  bad({catalogActions: catalog.actions.map(a => a.id === owner.actionId
+    ? {...a, risk: 'R3'} : a)}, 'AI_ACTION_NOT_ALLOWED');
+  bad({catalogActions: [...catalog.actions, action]}, 'AI_ACTION_NOT_ALLOWED');
+  bad({input: {...original.input, worldRevision: world.v + 1}},
+    'UNSAFE_OR_UNRESOLVED_TEXT');
+  bad({reading: {...reading, language: {...reading.language,
+    feedback: {...reading.language.feedback, worldV: world.v + 1}}}},
+    'UNSAFE_OR_UNRESOLVED_TEXT');
+  bad({reading: {...reading, risk: 'R0'}}, 'UNSAFE_OR_UNRESOLVED_TEXT');
 });

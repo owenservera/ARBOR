@@ -3,7 +3,9 @@
 //! The Host supplies fresh source text, canonical action and a newly computed
 //! NLCL reading. No authorization, model transport, grants or effects.
 use serde_json::{json,Value};
-use crate::command_intent_projection::{valid_catalog_action, checked_args};
+use crate::command_intent_projection::{
+    valid_catalog_action, checked_args, catalog_entry, valid_source_snapshot
+};
 
 const SCHEMA:&str="vivim.command-ai-proposal-guard/1";
 const INTENT:&str="vivim.command-intent/0.1";
@@ -55,6 +57,23 @@ pub fn validate(input:&Value)->Value{
         }
     }
     let reading=&input["reading"];
+    if !valid_source_snapshot(source,&input["catalogVersion"],&input["worldRevision"],true){
+        return refused(source,"UNSAFE_OR_UNRESOLVED_TEXT",
+            "Owner text must be clarified before proposing an action.")
+    }
+    // NLCL's compiler/world/confidence stamps must match projected provenance.
+    // This is inert consistency validation, never independent text parsing.
+    let feedback=&reading["language"]["feedback"];
+    if !feedback.is_object() ||
+        !feedback["nlclVersion"].as_str().is_some_and(|s|!s.is_empty()&&s.len()<=128) ||
+        !feedback["confidence"].as_f64().is_some_and(|n|n.is_finite()&&(0.0..=1.0).contains(&n)) ||
+        feedback["worldV"]!=input["worldRevision"] ||
+        reading["provenance"]["engineVersion"]!=feedback["nlclVersion"] ||
+        reading["provenance"]["confidence"]!=feedback["confidence"] ||
+        reading["language"].get("personalRule")!=reading["provenance"].get("personalRule"){
+        return refused(source,"UNSAFE_OR_UNRESOLVED_TEXT",
+            "Owner text must be clarified before proposing an action.")
+    }
     // The Host supplies the freshly compiled owner reading; this is still
     // untrusted at the Rust entry point. A model-supplied or stale projection
     // cannot carry a forged grant, substitute a different surface, or impersonate
@@ -93,7 +112,8 @@ pub fn validate(input:&Value)->Value{
     let action=&input["action"];
     if action["id"]!=action_id||action["aiCandidate"]==false||
         !action.get("aiCandidate").map_or(true, Value::is_boolean)||
-        !valid_catalog_action(action){
+        !valid_catalog_action(action) ||
+        catalog_entry(&input["catalogActions"],action_id)!=Some(action){
         return refused(source,"AI_ACTION_NOT_ALLOWED",
             "AI may only propose catalog-approved action IDs.")
     }
@@ -115,13 +135,20 @@ pub fn validate(input:&Value)->Value{
         return refused(source,"CONFLICTING_ARGUMENTS",
             "AI proposal changes arguments already resolved from owner text.")
     }
+    // A matching action ID cannot carry forged risk, scopes or readiness.
+    let expected_scopes=action.get("requiredScopes").cloned().unwrap_or_else(||json!([]));
+    if outcome=="candidate" && (reading["args"]!=args ||
+        reading["risk"]!=action["risk"] ||
+        reading["requiredScopes"]!=expected_scopes ||
+        reading["owner"]!=action["owner"] ||
+        reading["readiness"]!=action["readiness"]){
+        return refused(source,"UNSAFE_OR_UNRESOLVED_TEXT",
+            "Owner text must be clarified before proposing an action.")
+    }
     let Some(version)=input["catalogVersion"].as_u64()else{
         return refused(source,"INVALID_CONTEXT","Invalid or stale command context.")
     };
-    let Some(world)=input["worldRevision"].as_f64()else{
-        return refused(source,"INVALID_CONTEXT","Invalid or stale command context.")
-    };
-    if !world.is_finite(){return refused(source,"INVALID_CONTEXT","Invalid or stale command context.")}
+    let world=&input["worldRevision"]; // exact safe integer, not float recoding
     let rationale=proposal.get("rationale").unwrap_or(&Value::Null);
     let uncertainty=proposal.get("uncertainty").unwrap_or(&Value::Null);
     let scopes=action["requiredScopes"].as_array().cloned().unwrap_or_default();

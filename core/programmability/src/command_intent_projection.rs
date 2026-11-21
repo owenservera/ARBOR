@@ -25,6 +25,22 @@ fn js_trim(text: &str) -> &str {
     text.trim_matches(js_whitespace)
 }
 
+// Host-compatible context validation shared by both inert native projections.
+// The AI wire uses null for omitted source revisions, unlike the NLCL wire.
+pub(crate) fn valid_source_snapshot(source:&Value,catalog:&Value,world:&Value,nullish:bool)->bool {
+    source.is_object() &&
+    source["text"].as_str().is_some_and(|s|
+        !js_trim(s).is_empty() && s.encode_utf16().count()<=1000) &&
+    catalog.as_u64().is_some_and(|v|v>0 && v<=MAX_SAFE) &&
+    world.as_u64().is_some_and(|v|v<=MAX_SAFE) &&
+    source.get("catalogRevision").is_none_or(|v|(nullish&&v.is_null())||v==catalog) &&
+    source.get("worldRevision").is_none_or(|v|(nullish&&v.is_null())||v==world) &&
+    source.get("audience").is_none_or(|v|v.as_str().is_some_and(
+        |s|s.encode_utf16().count()<=64)) &&
+    source.get("scope").is_none_or(|v|matches!(v.as_str(),
+        Some("text"|"desktop"|"mobile"|"visual")))
+}
+
 fn catalog_id(id: &str) -> bool {
     let b = id.as_bytes();
     (3..=96).contains(&b.len()) && b[0].is_ascii_lowercase() &&
@@ -90,6 +106,11 @@ fn valid_specs(value: &Value) -> bool {
 // another permissive interpreter or a second action registry.
 pub(crate) fn valid_catalog_action(action: &Value) -> bool {
     action_catalog(&Value::Array(vec![action.clone()])).is_some()
+}
+// Reuse the full catalog's duplicate-ID and shape rejection for AI binding.
+pub(crate) fn catalog_entry<'a>(actions:&'a Value,id:&str)->Option<&'a Value>{
+    let by_id=action_catalog(actions)?;
+    by_id.get(id).copied()
 }
 fn action_catalog(actions: &Value) -> Option<BTreeMap<String, &Value>> {
     let entries = actions.as_array()?;
@@ -216,6 +237,10 @@ fn personal_provenance_valid(personal: &Value, catalog_version: &Value) -> bool 
 }
 fn check_reading(reading: &Value, source: &Value, personal: &Value,
     baseline: &Value, catalog_version: &Value) -> bool {
+    if ["authorization","approval","authority","executionAuthorized",
+        "effectPerformed"].iter().any(|k|reading.get(*k).is_some()){
+        return false
+    }
     if reading["schema"] != LANGUAGE ||
         !(reading["input"] == source["text"] ||
           reading["input"].as_str() == source["text"].as_str().map(js_trim)) {
@@ -289,20 +314,8 @@ fn check_reading(reading: &Value, source: &Value, personal: &Value,
 /// admitting it. Caller-supplied catalog data is never an execution grant.
 pub fn project(request: &Value) -> Value {
     let source = &request["input"];
-    if request["schema"] != INPUT || !source.is_object()
-        || !source["text"].as_str().is_some_and(|s| {
-            !js_trim(s).is_empty() && s.encode_utf16().count() <= 1000
-        })
-        || !request["catalogVersion"].as_u64().is_some_and(|v| v > 0 && v <= MAX_SAFE)
-        || !request["worldRevision"].as_u64().is_some_and(|v| v <= MAX_SAFE)
-        || (source.get("catalogRevision").is_some()
-            && source["catalogRevision"] != request["catalogVersion"])
-        || (source.get("worldRevision").is_some()
-            && source["worldRevision"] != request["worldRevision"])
-        || !source.get("audience").map_or(true, |v| v.as_str().is_some_and(
-            |s| s.encode_utf16().count() <= 64))
-        || !source.get("scope").map_or(true, |v| matches!(v.as_str(),
-            Some("text" | "desktop" | "mobile" | "visual")))
+    if request["schema"] != INPUT ||
+        !valid_source_snapshot(source,&request["catalogVersion"],&request["worldRevision"],false)
     {
         return invalid(source)
     }
