@@ -91,7 +91,8 @@ test('stale Build status cannot repaint a new grant or clear its newer surface',
     })},
     api:()=>new Promise(resolve=>pending.push(resolve)),
     build:{setSurface:(revision)=>{painted.push(revision.revision);return {state:'ready'};},
-      clear(){cleared.push('surface')},clearBindingScope(){cleared.push('bindings')}},
+      setVisualSourceScope:()=>true,
+      clear(){cleared.push('surface')},clearVisualSourceScope(){cleared.push('bindings','surface')}},
     shellPresentation:{observe(){},clear(){cleared.push('shell')}},
     refreshBuildBindings(){},scheduleBuild(){}
   },['pollBuild']);
@@ -127,7 +128,8 @@ test('general PWA status/command refresh cannot promote an old grant response',a
     clearTimeout(){},shellPresentation:{clear:()=>actions.push('shell-cleared')},
     clearPrivatePhoneState(){env.phoneRefreshEpoch++;env.S.paired=false;
       env.S.busy=false;env.S.statusObj=null;actions.push('old-source-redacted')},
-    build:{clearBindingScope(){},clear(){}},window:{dispatchEvent:()=>actions.push('bootstrap')},
+    build:{setVisualSourceScope:()=>true,clearBindingScope(){},clear(){}},
+    window:{dispatchEvent:()=>actions.push('bootstrap')},
     mergeServerConvs(){actions.push('merged')},ensureActive(){},setConn(){},
     renderAll(){actions.push('render')},refreshWiki(){},schedule(){actions.push('scheduled')}
   },['refresh']);
