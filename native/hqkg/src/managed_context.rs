@@ -44,7 +44,7 @@ pub fn check_managed_head(journal: &Path, expected: &JournalStatus) -> Result<()
 // corrupted or cross-kind fence must never be silently skipped because it is
 // not itself eligible for the eight-item presentation window. Hash the whole
 // fence set independently from the currently selected source manifest.
-fn deletion_fence_manifest(graph: &Graph, prefix: &str) -> Result<(usize,String)> {
+pub fn deletion_fence_manifest(graph: &Graph, prefix: &str) -> Result<(usize,String)> {
     let mut proof=Vec::new();
     for node in graph.nodes().filter(|n|
         n.id.starts_with(&format!("{prefix}vivim-context-t-")) ||
