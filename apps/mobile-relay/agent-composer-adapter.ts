@@ -144,7 +144,9 @@ export function createComposerDraftAdapter(options: ComposerBinding) {
         const maxLength = options.maxLength();
         if (!Number.isInteger(maxLength) || maxLength < 1 || maxLength > 4000)
           return refusal('BAD_COMPOSER_LIMIT', correlation);
-        if (candidate.newValue.length > maxLength || candidate.newValue.includes('\0'))
+        if (candidate.newValue.length > maxLength ||
+            new TextEncoder().encode(candidate.newValue).byteLength > maxLength ||
+            candidate.newValue.includes('\0'))
           return refusal('DRAFT_TOO_LARGE', correlation);
         if (field.value !== candidate.oldValue) return refusal('HUMAN_DRAFT_CONFLICT', correlation);
         if (field.value === candidate.newValue) return refusal('NO_CHANGE', correlation);
