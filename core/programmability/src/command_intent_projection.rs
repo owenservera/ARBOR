@@ -86,6 +86,11 @@ fn valid_specs(value: &Value) -> bool {
         }
     })
 }
+// Shared with the native AI guard: one catalog shape validator, never
+// another permissive interpreter or a second action registry.
+pub(crate) fn valid_catalog_action(action: &Value) -> bool {
+    action_catalog(&Value::Array(vec![action.clone()])).is_some()
+}
 fn action_catalog(actions: &Value) -> Option<BTreeMap<String, &Value>> {
     let entries = actions.as_array()?;
     if entries.is_empty() || entries.len() > 512 { return None }

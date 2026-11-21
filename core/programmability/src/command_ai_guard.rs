@@ -3,7 +3,8 @@
 //! The Host supplies fresh source text, canonical action and a newly computed
 //! NLCL reading. No authorization, model transport, grants or effects.
 use serde_json::{json,Value};
-use crate::wiki_write_recipe::{valid_args,fingerprint};
+use crate::wiki_write_recipe::valid_args;
+use crate::command_intent_projection::valid_catalog_action;
 
 const SCHEMA:&str="vivim.command-ai-proposal-guard/1";
 const INTENT:&str="vivim.command-intent/0.1";
@@ -55,6 +56,23 @@ pub fn validate(input:&Value)->Value{
         }
     }
     let reading=&input["reading"];
+    // The Host supplies the freshly compiled owner reading; this is still
+    // untrusted at the Rust entry point. A model-supplied or stale projection
+    // cannot carry a forged grant, substitute a different surface, or impersonate
+    // another catalog/world snapshot.
+    if reading["schema"]!=INTENT ||
+        reading["provenance"]["authority"]!="none" ||
+        reading["provenance"]["catalogRevision"]!=input["catalogVersion"] ||
+        reading["provenance"]["worldRevision"]!=input["worldRevision"] ||
+        reading["provenance"]["audience"]!=source["audience"] ||
+        reading["provenance"]["surface"]!=source["scope"] ||
+        reading.get("authorization").is_some() ||
+        reading.get("approval").is_some() ||
+        reading.get("executionAuthorized").is_some_and(|v|v!=false) ||
+        reading.get("effectPerformed").is_some_and(|v|v!=false) {
+        return refused(source,"UNSAFE_OR_UNRESOLVED_TEXT",
+            "Owner text must be clarified before proposing an action.")
+    }
     let Some(outcome)=reading["outcome"].as_str()else{
         return refused(source,"UNSAFE_OR_UNRESOLVED_TEXT",
             "Owner text must be clarified before proposing an action.")
@@ -74,7 +92,9 @@ pub fn validate(input:&Value)->Value{
             "AI proposal conflicts with the deterministic reading.")
     }
     let action=&input["action"];
-    if action["id"]!=action_id||action["aiCandidate"]==false{
+    if action["id"]!=action_id||action["aiCandidate"]==false||
+        !action.get("aiCandidate").map_or(true, Value::is_boolean)||
+        !valid_catalog_action(action){
         return refused(source,"AI_ACTION_NOT_ALLOWED",
             "AI may only propose catalog-approved action IDs.")
     }

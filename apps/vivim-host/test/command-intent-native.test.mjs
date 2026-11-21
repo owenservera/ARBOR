@@ -360,3 +360,46 @@ test('native projection rejects stale and contradictory real Host snapshots', t 
     reading: { ...reading, outcome: 'refused', refusal: undefined } },
     'INVALID_READING');
 });
+
+
+test('native AI guard refuses forged Host projections and malformed catalog metadata', t => {
+  if (!hasBinary()) {
+    t.diagnostic('Rust binary not packaged: direct source-binding rejection checks unrun.');
+    return;
+  }
+  const owner = corpus.cases.find(c => c.text === 'Set my theme to dusk');
+  assert.ok(owner?.actionId && owner.args);
+  const world = buildControlWorld(catalog);
+  const input = {text: owner.text, scope: 'text'};
+  const reading = toCommandIntent(input, {catalog, world});
+  const action = catalog.actions.find(a => a.id === owner.actionId);
+  const proposal = {actionId: owner.actionId, args: owner.args};
+  const original = {
+    schema: 'vivim.command-ai-proposal-guard-input/1',
+    input: {text: owner.text, scope: 'text', audience: 'owner',
+      catalogRevision: null, worldRevision: null},
+    reading, action, proposal, catalogVersion: catalog.version,
+    worldRevision: world.v
+  };
+  const bad = (change, expected) => {
+    const result = runNativeProductPureSync('command-ai-guard',
+      {...original, ...change});
+    assert.ok(result, 'packaged native guard must answer invalid source metadata');
+    assert.equal(result.outcome, 'projected');
+    assert.equal(result.intent.outcome, 'refused');
+    assert.equal(result.intent.refusal.code, expected);
+    assert.equal(result.authority, 'none');
+    assert.equal(result.executionAuthorized, false);
+    assert.equal(result.effectPerformed, false);
+  };
+  bad({reading: {...reading, provenance: {...reading.provenance,
+    worldRevision: world.v + 1}}}, 'UNSAFE_OR_UNRESOLVED_TEXT');
+  bad({reading: {...reading, provenance: {...reading.provenance,
+    catalogRevision: catalog.version - 1}}}, 'UNSAFE_OR_UNRESOLVED_TEXT');
+  bad({reading: {...reading, provenance: {...reading.provenance,
+    authority: 'owner'}}}, 'UNSAFE_OR_UNRESOLVED_TEXT');
+  bad({reading: {...reading, executionAuthorized: true}},
+    'UNSAFE_OR_UNRESOLVED_TEXT');
+  bad({action: {...action, risk: 'R9'}}, 'AI_ACTION_NOT_ALLOWED');
+  bad({action: {...action, readiness: 'already_applied'}}, 'AI_ACTION_NOT_ALLOWED');
+});
