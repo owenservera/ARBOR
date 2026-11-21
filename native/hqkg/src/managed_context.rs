@@ -39,6 +39,60 @@ pub fn check_managed_head(journal: &Path, expected: &JournalStatus) -> Result<()
     Ok(())
 }
 
+// A compacted journal carries each managed deletion fence as native graph
+// metadata. Validate every fence before serving any source projection; a
+// corrupted or cross-kind fence must never be silently skipped because it is
+// not itself eligible for the eight-item presentation window. Hash the whole
+// fence set independently from the currently selected source manifest.
+fn deletion_fence_manifest(graph: &Graph, prefix: &str) -> Result<(usize,String)> {
+    let mut proof=Vec::new();
+    for node in graph.nodes().filter(|n|n.id.starts_with(&format!("{prefix}vivim-context-t-"))) {
+        let p=&node.properties;
+        let invalid=||Error::Corrupt("invalid durable managed deletion fence".into());
+        let local=p.get("vivim.context.deletedId").ok_or_else(invalid)?;
+        let kind=p.get("vivim.context.deletedKind").ok_or_else(invalid)?;
+        let good_id=match kind.as_str() {
+            "wiki"=>local.strip_prefix("vivim-context-w-"),
+            "effect"=>local.strip_prefix("vivim-context-e-"),
+            _=>None,
+        };
+        if !good_id.is_some_and(|part|part.len()==64 &&
+            part.bytes().all(|b|b.is_ascii_digit() || (b'a'..=b'f').contains(&b))) ||
+            node.id != format!("{prefix}vivim-context-t-{:x}",Sha256::digest(local.as_bytes())) ||
+            p.get("vivim.context.kind").map(String::as_str)!=Some("tombstone") {
+            return Err(invalid());
+        }
+        let high=p.get("hqkg.provenance.revision")
+            .and_then(|v|v.parse::<u64>().ok()).ok_or_else(invalid)?;
+        let deleted=p.get("vivim.context.deletedRevision")
+            .and_then(|v|v.parse::<u64>().ok()).ok_or_else(invalid)?;
+        let source_ref=p.get("vivim.context.sourceRef").ok_or_else(invalid)?;
+        let source=p.get("hqkg.provenance.source").ok_or_else(invalid)?;
+        let digest=p.get("hqkg.provenance.digest").ok_or_else(invalid)?;
+        let expected_source=if kind=="wiki"{"host-product-journal:"}
+            else {"host-control-receipt:"};
+        if high==0 || deleted==0 || high<deleted ||
+            source!=&format!("{expected_source}{source_ref}") ||
+            digest.len()!=64 ||
+            !digest.bytes().all(|b|b.is_ascii_digit() || (b'a'..=b'f').contains(&b)) {
+            return Err(invalid());
+        }
+        if let Some(live)=graph.node(&format!("{prefix}{local}")) {
+            let revision=live.properties.get("hqkg.provenance.revision")
+                .and_then(|v|v.parse::<u64>().ok()).ok_or_else(invalid)?;
+            if kind=="effect" || revision<=high ||
+                live.properties.get("vivim.context.kind")!=Some(kind) {
+                return Err(invalid());
+            }
+        }
+        proof.push(json!([local,kind,source_ref,digest,high,deleted,
+            p.get("vivim.context.receiptDigest")]));
+    }
+    let encoded=serde_json::to_vec(&proof)
+        .map_err(|e|Error::Invalid(format!("deletion fence proof encoding: {e}")))?;
+    Ok((proof.len(),format!("{:x}",Sha256::digest(&encoded))))
+}
+
 // Project the actual replayed durable graph, not the requested input packet.
 // Candidate selection is relevance-driven, not recency-driven: every context
 // node of this view stays retrievable, and the scoped query budget bounds the
@@ -64,6 +118,8 @@ pub fn project_managed_graph_selected(
         graph.edges().any(|e| !e.id.starts_with(&prefix)) {
         return Err(Error::Conflict("managed graph scope or epoch mismatch".into()));
     }
+    let (deletion_fences_total,deletion_fences_digest)=
+        deletion_fence_manifest(graph,&prefix)?;
     let mut candidates = Vec::new();
     let mut orders: BTreeMap<String,u64> = BTreeMap::new();
     for node in graph.nodes() {
@@ -254,6 +310,8 @@ pub fn project_managed_graph_selected(
         "seed":format!("managed:{view}"),"epoch":epoch,"tokensUsed":tokens,"budgetTokens":320,
         "budgetExhausted":exhausted,"staleCount":0,"totalRetrieved":total,"items":items,
         "activeSourcesTotal":total,"activeSourcesDigest":manifest_digest,
+        "deletionFencesTotal":deletion_fences_total,
+        "deletionFencesDigest":deletion_fences_digest,
         "pageRelationships":page_relationships});
     if view=="owner" {
         result["effectRelationships"]=json!(effect_relationships);
