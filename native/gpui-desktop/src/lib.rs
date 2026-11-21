@@ -10,7 +10,7 @@ use sha2::{Sha256,Digest};
 use std::collections::BTreeMap;
 use vivim_programmability_core::wiki_read::{self, Page as WikiPage, Captures as WikiCaptures, SearchDocument as WikiSearchDocument};
 use vivim_programmability_core::development_projection::{self,ProjectionError};
-use std::{path::{Path, PathBuf}, time::Duration, io::Read};
+use std::{time::Duration, io::Read};
 
 const BASE: &str = "http://127.0.0.1:43187";
 const LIMIT: u64 = 4 * 1024 * 1024;
@@ -195,28 +195,10 @@ pub fn owner_control_session_url() -> Result<String, ReadError> {
         .map_err(|_|ReadError::OwnerRequired)
 }
 
-// Same owner-token path convention as the existing Tauri native shell.
-fn owner_dir() -> Option<PathBuf> {
-    if let Some(p) = std::env::var_os("VIVIM_HOST_DATA_DIR").or_else(|| std::env::var_os("CAPTURE_STUDIO_HOME")) {
-        return Some(p.into());
-    }
-    if cfg!(windows) {
-        std::env::var_os("LOCALAPPDATA").map(|p| PathBuf::from(p).join("AION").join("capture-studio"))
-    } else {
-        std::env::var_os("XDG_DATA_HOME").filter(|p| Path::new(p).is_absolute())
-            .map(|p| PathBuf::from(p).join("aion-capture-studio"))
-            .or_else(|| std::env::var_os("HOME").map(|p| PathBuf::from(p).join(".local/share/aion-capture-studio")))
-    }
-}
+// Reuse the canonical native Host owner capability loader, never a second
+// Windows/Unix token path, and never an alternate approval authority.
 fn owner_token() -> Result<String, ReadError> {
-    if let Ok(t) = std::env::var("VIVIM_BOOTSTRAP_TOKEN") {
-        if t.len() >= 32 { return Ok(t); }
-    }
-    let dir = owner_dir().ok_or(ReadError::OwnerRequired)?;
-    let t = std::fs::read_to_string(dir.join("bootstrap/owner-token")).map_err(|_| ReadError::OwnerRequired)?;
-    let t = t.trim();
-    if t.len() < 32 { return Err(ReadError::OwnerRequired); }
-    Ok(t.to_owned())
+    vivim_host_supervisor::read_owner_token().map_err(|_|ReadError::OwnerRequired)
 }
 
 #[derive(Clone, Copy)]
