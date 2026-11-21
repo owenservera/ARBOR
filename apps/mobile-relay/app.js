@@ -14,6 +14,7 @@ import { renderToday, renderWorld, renderMe } from './ux/render.mjs';
 import { createControlChat } from './control-chat.mjs';
 import { initializeRustUiEngine, rustUiEngineStatus as coreUiStatus, rustFirstContact } from './vec-engines/rust-wasm.mjs';
 import { mountComposerAssist } from './composer-assist.mjs';
+import { mountFirstContactComposer } from './first-contact-composer.ts';
 import { sourceCards, sameSourceCard, matchesSourceContext, exactSourceContextUrl, reconcileSourceCards } from './wiki-source-view.mjs';
 import { deriveReadiness, safeReadinessReport } from './ux/readiness.mjs';
 import { mountCapabilityLauncher } from './ux/launcher-ui.mjs';
