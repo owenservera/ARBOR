@@ -183,6 +183,13 @@ fn stage_record(g: &Graph, ns: &Namespace, changes: GraphChangeSet, record: &Con
         if old.properties.get("vivim.context.kind").map(String::as_str) != Some(record.kind.as_str()) {
             return Err("managed context identity conflict".into());
         }
+        // The deterministic Host ID is stable across Wiki content revisions:
+        // a different page/section or receipt semantic key may never reuse an
+        // existing graph identity simply by presenting a larger revision.
+        if old.properties.get("vivim.context.semanticId") !=
+            node.properties.get("vivim.context.semanticId") {
+            return Err("STALE_CONTEXT_SOURCE managed semantic identity changed".into());
+        }
         let old_revision = old.properties.get("hqkg.provenance.revision")
             .and_then(|v| v.parse::<u64>().ok()).ok_or("invalid prior source revision")?;
         let old_digest = old.properties.get("hqkg.provenance.digest").map(String::as_str);
