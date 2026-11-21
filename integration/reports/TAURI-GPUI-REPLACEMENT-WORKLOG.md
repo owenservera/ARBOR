@@ -148,6 +148,7 @@ Real behavior observed | protected data preserved? | failure / next handoff
 | `28fd77e6fbab` | Tauri now calls shared full SHA256 frozen-runtime verifier; Rust staged-manifest tests updated for real empty-file digest; shared verifier tightened | SOURCE_PRESENT; Cargo tests UNRUN |
 | `1dbb7dfc9c2c` | Neutral `--stage-gpui` frozen runtime path reuses canonical Host staging logic; test covers Tauri/GPUI destinations | SOURCE_PRESENT; staging UNRUN |
 | `b9e509ef93ac` | Correct literal `--stage-gpui` path selection after refactor | SOURCE_PRESENT; staging UNRUN |
+| `a9c161ac70b8` | Frozen packaging now explicitly requires both root lockfiles and uses `cargo build --locked --release` for each native executable | SOURCE_PRESENT; packaging UNRUN |
 
 **Status updates:**
 - R01 PARTIAL: shared native supervisor exists; Tauri still has lifecycle implementation and has not delegated its process state machine.
