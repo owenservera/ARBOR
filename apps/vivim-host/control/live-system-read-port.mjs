@@ -30,11 +30,12 @@ export function createLiveSystemReadPort({
   compute = runNativeProductPure,
   readWiki,
   readStatus,
+  readPhoneObservations = async () => [],
   clock = () => Date.now(),
   epoch = 'host.' + randomBytes(12).toString('hex')
 } = {}) {
   if(typeof compute !== 'function' || typeof readWiki !== 'function' ||
-     typeof readStatus !== 'function' ||
+     typeof readStatus !== 'function' || typeof readPhoneObservations !== 'function' ||
      typeof epoch !== 'string' || !/^[a-zA-Z0-9._:-]{1,128}$/.test(epoch))
     throw fail('LIVE_SYSTEM_DEPENDENCY');
   let state = null;
@@ -90,13 +91,24 @@ export function createLiveSystemReadPort({
     current = healthReply?.state;
     if(current?.schema !== 'vivim.live-system-state/1')
       throw fail('LIVE_SYSTEM_STATE_INVALID');
+    const phoneObservations=await readPhoneObservations();
+    if(!Array.isArray(phoneObservations) || phoneObservations.length>2 ||
+       phoneObservations.some(o=>!['pwa.input','pwa.view'].includes(o?.id) ||
+         o?.exposure!=='owner' || o?.writable?.length!==0))
+      throw fail('LIVE_SYSTEM_PHONE_OBSERVATION_INVALID');
+    for(const observation of phoneObservations){
+      const reply=await computeRust('integrate',{state:current,observation,
+        correlationId:'read.phone'});
+      current=reply?.state;
+      if(current?.schema!=='vivim.live-system-state/1') throw fail('LIVE_SYSTEM_STATE_INVALID');
+    }
     // Enforce the same source-side owner allowlist even if a future region is
     // added to the Rust state. The route rechecks owner authorization.
     const safe = await computeRust('project', {state: current,
-      maxExposure: 'owner', allowedIds: ['host.health', 'wiki.summary']});
+      maxExposure: 'owner', allowedIds: ['host.health', 'wiki.summary','pwa.input','pwa.view']});
     if(safe?.schema !== 'vivim.live-system-state/1' || safe.epoch !== epoch ||
        !Array.isArray(safe.regions) ||
-       safe.regions.some(r => !['host.health', 'wiki.summary'].includes(r.id)))
+       safe.regions.some(r => !['host.health', 'wiki.summary','pwa.input','pwa.view'].includes(r.id)))
       throw fail('LIVE_SYSTEM_STATE_INVALID');
     state = current;
     lastHealth = fingerprint;
