@@ -673,3 +673,37 @@ fn delinked_historical_receipt_retains_its_node_but_drops_old_d4_edge() {
     assert_eq!(again["changed"],false);
     assert_eq!(fs::read(&file).unwrap(),bytes);
 }
+
+
+#[test]
+fn verified_compaction_keeps_managed_epoch_and_receipt_lineage_readable() {
+    let temp=Temp::new();let file=temp.journal();
+    let current=wiki(ENTRY,2,"Committed section");
+    let applied=effect();
+    let (ok,first)=sync(&file,SCOPE,vec![current.clone(),applied.clone()]);
+    assert!(ok,"{first}");
+    let epoch=first["epoch"].as_u64().unwrap();
+    let old_bytes=first["bytes"].as_u64().unwrap();
+    let receipt=Journal::new(&file).compact_verified(old_bytes,epoch).unwrap();
+    assert_eq!(receipt.epoch,epoch);
+    let status=Journal::new(&file).status().unwrap();
+    assert_eq!(status.epoch,epoch);
+    assert_eq!(status.total_bytes,receipt.new_bytes);
+    assert_eq!(status.trailing_bytes,0);
+    let (ok,out)=run_packet(&file,json!({
+        "schema":"vivim.hqkg-personal/1","scope":SCOPE,
+        "op":"sync-context-read","view":"owner",
+        "nodes":[],"relationships":[],"baseRevision":2,"baseEpoch":epoch,
+        "deltas":[],"activeIds":[current["id"],applied["id"]],
+        "activeRelationshipIds":[]
+    }));
+    assert!(ok,"{out}");
+    assert_eq!(out["changed"],false);
+    assert_eq!(out["epoch"],epoch);
+    assert_eq!(out["context"]["totalRetrieved"],2);
+    assert_eq!(out["context"]["effectRelationshipsTotal"],1);
+    assert_eq!(out["context"]["omittedEffectRelationships"],0);
+    assert_eq!(out["context"]["effectRelationships"].as_array().unwrap().len(),1);
+    assert_eq!(Journal::new(&file).load().unwrap().node_count(),2);
+    assert_eq!(Journal::new(&file).load().unwrap().edge_count(),1);
+}

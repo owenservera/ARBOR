@@ -30,6 +30,11 @@ const MIB: u64 = 1024 * 1024;
 // `managed_context`, so ingestion is deliberately independent of the read window.
 const MAX_CONTEXT_RECORDS: usize = 512;
 const MAX_CONTEXT_DELTAS: usize = 512;
+const MAX_MANAGED_JOURNAL_BYTES: u64 = 48*MIB;
+fn managed_append_requires_compaction(current_bytes:u64,next_payload_bytes:u64)->bool {
+    current_bytes>0 &&
+        current_bytes.saturating_add(20).saturating_add(next_payload_bytes)>MAX_MANAGED_JOURNAL_BYTES
+}
 fn text<'a>(v: &'a Value, key: &str) -> Result<&'a str, String> { v[key].as_str().ok_or_else(|| format!("missing {key}")) }
 fn hex(s: &str) -> bool { s.len()==64 && s.bytes().all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b)) }
 fn err(e: impl std::fmt::Display) -> String { e.to_string() }
@@ -538,13 +543,33 @@ fn sync_context(v: &Value, ns: &Namespace, journal: &Journal, g: &mut Graph,
         scoped_graph::apply_scoped(g, ns, &RevisionToken { namespace: ns.clone(), graph_epoch: epoch },
             &changes, &mut ApplyLedger::new()).map_err(err)?;
     }
+    let mut compacted=false;
     if changed || before == 0 {
         let bytes = hqkg::serialize(g).map_err(err)?;
         if bytes.len() as u64 > 16*MIB || g.node_count() > 20000 || g.edge_count() > 50000 {
             return Err("CAPACITY_HELD graph".into());
         }
-        if before + 20 + bytes.len() as u64 > 48*MIB { return Err("COMPACTION_REQUIRED".into()); }
-        journal.save_checked(g, before, epoch).map_err(quarantine)?;
+        let mut checked_bytes=before;
+        if managed_append_requires_compaction(before,bytes.len() as u64) {
+            // Native HQKG saves a verified full snapshot per batch; many
+            // legitimate small deltas eventually fill the append-only journal
+            // even when the live graph itself is well below 16 MiB.
+            // Compact the *previous durable head*, not the uncommitted graph,
+            // through the existing epoch+byte-CAS recovery-safe engine.
+            // A crash here leaves the previous graph (not a partial new batch).
+            let receipt=journal.compact_verified(before,epoch).map_err(quarantine)?;
+            if receipt.old_bytes!=before || receipt.epoch!=epoch ||
+                receipt.new_bytes==0 {
+                return Err("RECOVERY_REQUIRED invalid managed compaction receipt".into());
+            }
+            checked_bytes=receipt.new_bytes;
+            compacted=true;
+        }
+        if checked_bytes.saturating_add(20).saturating_add(bytes.len() as u64)>
+            MAX_MANAGED_JOURNAL_BYTES {
+            return Err("COMPACTION_REQUIRED".into());
+        }
+        journal.save_checked(g,checked_bytes,epoch).map_err(quarantine)?;
     }
     let (durable,status)=journal.load_with_status().map_err(quarantine)?;
     if status.trailing_bytes != 0 || status.epoch != g.epoch() {
@@ -555,6 +580,7 @@ fn sync_context(v: &Value, ns: &Namespace, journal: &Journal, g: &mut Graph,
     let mut packet=json!({"schema":"vivim.hqkg-personal/1","scope":scope,"op":v["op"],
         "epoch":status.epoch,"bytes":status.total_bytes,"synced":wanted.len(),
         "syncedRelationships":page_edges.len(),"changed":changed,
+        "compacted":compacted,
         "mode":if deltas.is_some(){"delta"}else{"projection"},
         "ingested":ingested,"tombstoned":tombstoned});
     if let Some(view)=view {
@@ -719,3 +745,17 @@ fn run() -> Result<Value, String> {
     Ok(json!({"schema":"vivim.hqkg-personal/1","scope":scope,"epoch":g.epoch(),"bytes":s.total_bytes,"verificationDigest":format!("{:x}",Sha256::digest(&bytes)),"marker":{"opId":id,"payloadDigest":payload}}))
 }
 fn main() {match run(){Ok(v)=>println!("{v}"),Err(e)=>{println!("{}",json!({"schema":"vivim.hqkg-personal/1","error":e}));std::process::exit(1);}}}
+
+#[cfg(test)]
+mod managed_compaction_cadence_tests {
+    use super::*;
+    #[test]
+    fn append_threshold_is_bounded_and_overflow_safe() {
+        assert!(!managed_append_requires_compaction(0,MAX_MANAGED_JOURNAL_BYTES));
+        assert!(!managed_append_requires_compaction(
+            MAX_MANAGED_JOURNAL_BYTES-20-100,100));
+        assert!(managed_append_requires_compaction(
+            MAX_MANAGED_JOURNAL_BYTES-20-100,101));
+        assert!(managed_append_requires_compaction(u64::MAX,100));
+    }
+}

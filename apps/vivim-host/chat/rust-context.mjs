@@ -388,19 +388,25 @@ function managedReader({env,dataRoot,productJournal,control,executePersonal,repo
   let last=null;
   async function snapshot(view) {
     const current=await productJournal.readNativeKnowledge({nativeOnly:true,completeSources:true});
-    const effects=view==='owner'
-      ?projectAppliedControlEffects(control(),
+    const dispatcher=view==='owner'?control():null;
+    const summaries=dispatcher?await discoverOwnerControlReceipts(root,dispatcher):[];
+    const effects=dispatcher
+      ?projectAppliedControlEffects(dispatcher,
         {items:current.context.committedHistory.items},
         current.context.wikiStructure,{
-          complete:true,
-          summaries:await discoverOwnerControlReceipts(root,control()),
+          complete:true,summaries,
           historicalStructureItems:current.context.committedHistory.structureItems
         })
       :{state:'source-backed',items:[]};
     const rows=buildNativeKnowledge(current,effects);
     return {rows,relationships:buildNativeRelationships(current,rows),
       wikiRevision:current.context.wikiRevision,
-      ...(view==='owner'?{effectScannedPlans:effects.scannedPlans}:{})};
+      ...(view==='owner'?{
+        effectScannedPlans:effects.scannedPlans,
+        latestIngestedReceiptAt:effects.items[0]?.receivedAt??null,
+        receiptScanDigest:digest(summaries.map(s=>[
+          s.planId,s.actionId,s.risk,s.state,s.createdAt]))
+      }:{})};
   }
   async function read(view) {
     if (!root || typeof journal!=='string' || !path.isAbsolute(journal))
@@ -437,6 +443,7 @@ function managedReader({env,dataRoot,productJournal,control,executePersonal,repo
         // acknowledged epoch fences the next batch. No context is published
         // until the final retrieval and Host source recheck both succeed.
         let nativeEpoch=last?.epoch??null;
+        let compactions=0;
         const invoke=async(input,expectedWrites,expectedLinks,expectedTombstones)=>{
           const request={...input,...(nativeEpoch!==null?{baseEpoch:nativeEpoch}:{})};
           const response=await nativePacket(await executePersonal(runtime.personal,journal,request));
@@ -447,9 +454,11 @@ function managedReader({env,dataRoot,productJournal,control,executePersonal,repo
             response.syncedRelationships!==expectedLinks||
             (response.mode==='delta'&&
               (response.ingested!==expectedWrites||response.tombstoned!==expectedTombstones))||
-            typeof response.changed!=='boolean')
+            typeof response.changed!=='boolean'||
+            (response.compacted!==undefined&&typeof response.compacted!=='boolean'))
             throw Object.assign(Error('RUST_CORE_CONTRACT_INVALID'),
               {code:'RUST_CORE_CONTRACT_INVALID'});
+          if(response.compacted===true)compactions++;
           nativeEpoch=response.epoch;
           return response;
         };
@@ -560,7 +569,13 @@ function managedReader({env,dataRoot,productJournal,control,executePersonal,repo
           budgetTokens:320,staleCount:0,budgetExhausted:result.budgetExhausted,
           totalRetrieved:result.totalRetrieved,items,
           sourceHighWater:{wikiRevision:projection.wikiRevision,graphEpoch:packet.epoch,
-            ...(view==='owner'?{scannedAppliedPlans:projection.effectScannedPlans}:{})},
+            ...(view==='owner'?{
+              scannedAppliedPlans:projection.effectScannedPlans,
+              receiptScanDigest:projection.receiptScanDigest,
+              latestIngestedReceiptAt:projection.latestIngestedReceiptAt
+            }:{})},
+          ingestionStats:{nativeBatches:plan.stages.length+1,
+            nativeCompactions:compactions},
           ...(view==='owner'?{effectRelationships,
             effectRelationshipsTotal:result.effectRelationshipsTotal,
             effectRelationshipsDigest:result.effectRelationshipsDigest}:{}),

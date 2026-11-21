@@ -155,6 +155,12 @@ test('managed reads share one native invocation per concurrent authorized view a
   assert.equal(talk.state,'source-backed',talk.reason);
   assert.equal(wiki.state,'source-backed',wiki.reason);
   assert.equal(owner.state,'source-backed',owner.reason);
+  assert.equal(owner.sourceHighWater.scannedAppliedPlans,0);
+  assert.equal(owner.sourceHighWater.receiptScanDigest,
+    createHash('sha256').update('[]').digest('hex'));
+  assert.equal(owner.sourceHighWater.latestIngestedReceiptAt,null);
+  assert.equal(owner.ingestionStats.nativeBatches,1);
+  assert.equal(owner.ingestionStats.nativeCompactions,0);
   assert.equal(talk.focus,'talk');assert.equal(wiki.focus,'wiki');
   assert.equal(talk.items[0].summary,'Current owner text');
   assert.deepEqual(packets.map(p=>[p.op,p.view]),[['sync-context-read','wiki'],['sync-context-read','owner']]);
