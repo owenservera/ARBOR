@@ -7,7 +7,7 @@ class ComposerField extends EventTarget {
   value=''; disabled=false; readOnly=false; isConnected=true; maxLength=1000;
   focus(){}
 }
-function browser(t,{initial='before',onObserve=async()=>{},onVerified=()=>{}}={}){
+function browser(t,{initial='before',onObserve=async()=>{},onVerified=()=>{},typingIntervalMs}={}){
   const old=Object.fromEntries(['document','navigator','window','fetch','setInterval','clearInterval'].map(k=>[k,globalThis[k]]));
   t.after(()=>{for(const [k,v] of Object.entries(old)){if(v===undefined)delete globalThis[k];else Object.defineProperty(globalThis,k,{value:v,writable:true,configurable:true});}});
   const document=new EventTarget(); document.visibilityState='visible';
@@ -44,7 +44,7 @@ function browser(t,{initial='before',onObserve=async()=>{},onVerified=()=>{}}={}
     }
     throw Error('Unexpected fetch '+url);
   },writable:true,configurable:true});
-  const result=mountFirstContactComposer({field,active:()=>true,maxLength:()=>1000,onVerified});
+  const result=mountFirstContactComposer({field,active:()=>true,maxLength:()=>1000,onVerified,typingIntervalMs});
   async function idle(){await nextTurn();await nextTurn();}
   async function tick(){for(const {f,ms} of [...intervals.values()])if(ms===750)f();await idle();}
   return {field,result,tick,idle,observe:()=>observed,ackCount:()=>ackCount,
@@ -134,4 +134,38 @@ test('unmount cancels callbacks and creates a fresh source identity on remount',
   const mounted=mountFirstContactComposer({field:b.field,active:()=>true,maxLength:()=>1000});
   assert.notEqual(mounted.sessionId,original);
   mounted.dispose();
+});
+
+test('approved agent typing advances through the SAME Wiki input listener before one Host ACK',async t=>{
+  const b=browser(t,{typingIntervalMs:5});await b.idle();
+  const previews=[];let sends=0,verified=0;
+  b.field.addEventListener('input',()=>previews.push(b.field.value));
+  b.field.addEventListener('submit',()=>sends++);
+  b.enqueue({newValue:'agent draft with live wiki suggestions'});
+  await b.tick();
+  await new Promise(resolve=>setTimeout(resolve,100));
+  assert.equal(b.field.value,'agent draft with live wiki suggestions');
+  assert.ok(previews.length>=2,'AutoWiki receives multiple normal input frames');
+  assert.equal(previews.at(-1),b.field.value);
+  assert.equal(new Set(previews).size,previews.length);
+  assert.equal(b.ackCount(),1,'one source-backed Host acknowledgement for the edit');
+  assert.equal(sends,0,'visual typing never submits a command');
+  b.result.dispose();
+});
+
+test('human edits during animated agent delivery stop the remaining frames and prevent ACK',async t=>{
+  const b=browser(t,{typingIntervalMs:20});await b.idle();
+  let edited=false;
+  b.field.addEventListener('input',()=>{
+    if(edited)return;
+    edited=true;
+    b.field.value='HUMAN WINS';
+    b.field.dispatchEvent(new Event('input'));
+  });
+  b.enqueue({newValue:'agent draft with live wiki suggestions'});
+  await b.tick();
+  await new Promise(resolve=>setTimeout(resolve,80));
+  assert.equal(b.field.value,'HUMAN WINS');
+  assert.equal(b.ackCount(),0);
+  b.result.dispose();
 });
