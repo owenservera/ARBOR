@@ -117,7 +117,7 @@ export function resolveRustContextRuntime({env=process.env,repoRoot=DEFAULT_ROOT
 // as owner-authored content; receipts are historical applied effects only.
 // An unverified chat observation is intentionally never ingested.
 export function buildNativeKnowledge(snapshot, effects) {
-  if (!snapshot || !Array.isArray(snapshot.changes?.items) || snapshot.changes.items.length > 4096 ||
+  if (!snapshot || !Array.isArray(snapshot.changes?.items) || snapshot.changes.items.length > MAX_CONTEXT_SOURCES ||
       effects?.state !== 'source-backed' || !Array.isArray(effects.items) || effects.items.length > MAX_CONTEXT_SOURCES)
     throw Error('NATIVE_SOURCE_UNAVAILABLE');
   const rows = [];
