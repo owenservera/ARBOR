@@ -1279,3 +1279,57 @@ fn phone_wiki_deletion_proof_does_not_disclose_owner_receipt_revocation() {
     assert_eq!(wiki["activeSourcesDigest"],owner["activeSourcesDigest"],
         "the one committed Wiki source remains the same for both views");
 }
+
+#[test]
+fn wiki_read_preflight_rejects_owner_selection_before_persisting_candidate() {
+    let temp=Temp::new();let file=temp.journal();
+    let wiki_source=wiki(ENTRY,2,"Committed source");
+    let receipt=effect();
+    let (ok,first)=sync(&file,SCOPE,vec![wiki_source.clone(),receipt.clone()]);
+    assert!(ok,"{first}");
+    let before=fs::read(&file).unwrap();
+    // This packet proposes a genuine additional source put but attempts to
+    // select an owner-only receipt as a phone Wiki item. Both the view and
+    // staged readback must be valid before any journal frame is committed.
+    let next=wiki_record(1,3);
+    let (ok,refused)=run_packet(&file,json!({
+        "schema":"vivim.hqkg-personal/1","scope":SCOPE,
+        "op":"sync-context-read","view":"wiki",
+        "nodes":[],"relationships":[],"baseRevision":3,
+        "baseEpoch":first["epoch"],"deltas":[put(next.clone())],
+        "activeIds":[wiki_source["id"],receipt["id"],next["id"]],
+        "activeRelationshipIds":[]
+    }));
+    assert!(!ok,"phone Wiki selected an owner-only receipt: {refused}");
+    assert!(refused["error"].as_str().unwrap().contains("active source kind"));
+    assert_eq!(fs::read(&file).unwrap(),before,
+        "invalid read scope must not persist the otherwise valid source put");
+    let graph=Journal::new(&file).load().unwrap();
+    assert_eq!(graph.node_count(),2);
+    assert_eq!(graph.epoch(),first["epoch"].as_u64().unwrap());
+}
+
+#[test]
+fn failed_scoped_read_never_compacts_or_advances_a_durable_graph_head() {
+    let temp=Temp::new();let file=temp.journal();
+    let one=wiki(ENTRY,2,"Committed source");
+    let (ok,first)=sync(&file,SCOPE,vec![one.clone()]);
+    assert!(ok,"{first}");
+    let prior=fs::read(&file).unwrap();
+    let mut next=wiki_record(3,3);
+    next["summary"]=json!("Second committed section");
+    // A proposed read that includes a nonexistent selected source is not
+    // allowed to publish its changed Wiki node even if it is otherwise valid.
+    let unknown=format!("vivim-context-w-{}", "e".repeat(64));
+    let (ok,refused)=run_packet(&file,json!({
+        "schema":"vivim.hqkg-personal/1","scope":SCOPE,
+        "op":"sync-context-read","view":"wiki",
+        "nodes":[],"relationships":[],"baseRevision":3,
+        "baseEpoch":first["epoch"],"deltas":[put(next)],
+        "activeIds":[one["id"],unknown],"activeRelationshipIds":[]
+    }));
+    assert!(!ok,"invalid active selection must fail before save: {refused}");
+    assert_eq!(fs::read(&file).unwrap(),prior);
+    assert_eq!(Journal::new(&file).status().unwrap().epoch,
+        first["epoch"].as_u64().unwrap());
+}
