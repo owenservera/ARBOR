@@ -41,14 +41,14 @@ impl Snapshot {
     }
 }
 struct Inner { child: Option<Child>, status: Snapshot }
-pub struct HostSupervisor { inner: Mutex<Inner>, started: AtomicBool }
+pub struct HostSupervisor { inner: Mutex<Inner>, lifecycle: Mutex<()>, started: AtomicBool }
 impl Default for HostSupervisor { fn default() -> Self { Self::new() } }
 impl HostSupervisor {
     pub fn new() -> Self {
         Self { inner: Mutex::new(Inner {
             child: None, status: Snapshot {readiness:Readiness::NotChecked,
                 origin:None,pid:None,recoveries:0,error:None}
-        }), started:AtomicBool::new(false)}
+        }), lifecycle:Mutex::new(()), started:AtomicBool::new(false)}
     }
     pub fn snapshot(&self) -> Snapshot {
         self.inner.lock().expect("Host state poisoned").status.clone()
@@ -62,6 +62,12 @@ impl HostSupervisor {
     /// Start or attach only; never kill an unhealthy living child.
     /// This is a blocking method and must never be called on the GPUI UI thread.
     pub fn reconcile(&self) -> Result<(),String> {
+        let _lifecycle=self.lifecycle.lock().expect("Host lifecycle poisoned");
+        self.reconcile_locked()
+    }
+    // Called only with the native lifecycle lock, shared by manual retry,
+    // initial startup, and the bounded automatic recovery observer.
+    fn reconcile_locked(&self) -> Result<(),String> {
         {
             let mut s=self.inner.lock().expect("Host state poisoned");
             if let Some(child)=s.child.as_mut() {
@@ -118,14 +124,17 @@ impl HostSupervisor {
     /// whose OS exit is observed; never retry an action or kill a live Host.
     pub fn run(self: Arc<Self>) {
         if self.started.swap(true,Ordering::AcqRel) { return; }
-        if self.reconcile().is_err() { return; }
+        // Do not discard the observer after initial startup failure: a later
+        // explicit native retry must still be monitored for owned-child exit.
+        let _ = self.reconcile();
         loop {
             thread::sleep(Duration::from_secs(3));
-            // An attached Host is not our child. Do not restart it if it
-            // disappears; clearly invalidate readiness instead.
-            if self.snapshot().readiness==Readiness::Attached && !health_online(){
+            // Serialize observations with owner-initiated reconnect. Otherwise
+            // an observed old exit could kill or supersede a newly spawned child.
+            let _lifecycle=self.lifecycle.lock().expect("Host lifecycle poisoned");
+            if self.snapshot().readiness == Readiness::Attached && !health_online() {
                 self.fail("Previously attached Host is now offline; no owned restart".into());
-                return;
+                continue;
             }
             let recover={
                 let mut s=self.inner.lock().expect("Host state poisoned");
@@ -133,16 +142,23 @@ impl HostSupervisor {
                     .and_then(|c|c.try_wait().ok()).flatten().is_some();
                 if !exited { false }
                 else {
-                    s.child.take();s.status.pid=None;
+                    s.child.take();
+                    s.status.pid=None;
                     if s.status.recoveries>=MAX_RECOVERIES {
                         s.status.readiness=Readiness::Exhausted;
                         s.status.error=Some("Owned Host exhausted bounded crash recovery".into());
-                        return;
+                        false
+                    } else {
+                        s.status.recoveries+=1;
+                        true
                     }
-                    s.status.recoveries+=1;true
                 }
             };
-            if recover && self.reconcile().is_err() { return; }
+            if recover {
+                // Restart only after confirmed OS child exit. Never auto-repeat
+                // a Host decision, plan, receipt or uncertain effect.
+                let _ = self.reconcile_locked();
+            }
         }
     }
 }
