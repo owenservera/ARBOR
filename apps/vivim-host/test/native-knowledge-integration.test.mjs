@@ -498,6 +498,12 @@ test('D4 historical receipts survive supersession without acquiring live Wiki ed
   assert.equal(byPlan.get('ctl-0000000000000002').wikiLink.entryId,history.items[1].entryId);
   const rows=buildNativeKnowledge(snap,complete);
   assert.equal(rows.filter(row=>row.kind==='effect').length,2);
+  const invalidOrigin={...complete,items:complete.items.map(item=>({
+    ...item,...(item.receiptWikiOrigin?{
+      receiptWikiOrigin:{...item.receiptWikiOrigin,entryId:'a'.repeat(36)}
+    }:{})
+  }))};
+  assert.throws(()=>buildNativeKnowledge(snap,invalidOrigin),/NATIVE_EFFECT_ORIGIN_INVALID/);
   assert.equal(rows.find(row=>row.semanticId==='receipt:ctl-0000000000000001').wikiLink,null);
   assert.deepEqual(rows.find(row=>row.semanticId==='receipt:ctl-0000000000000001')
     .receiptWikiOrigin,byPlan.get('ctl-0000000000000001').receiptWikiOrigin);
