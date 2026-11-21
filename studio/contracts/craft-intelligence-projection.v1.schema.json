@@ -1,0 +1,43 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://vivim.live/schemas/studio-craft-intelligence/1",
+  "title":"Inert Studio read projection for external Craft investigation evidence",
+  "type":"object","additionalProperties":false,
+  "required":["schema","status","target","source","counts","roles","operations","observationKinds","confidence","coverage","evidence","reconciliation","authority","note"],
+  "properties":{
+    "schema":{"const":"vivim.studio-craft-intelligence/1"},
+    "status":{"const":"external-evidence-readonly"},
+    "target":{"type":"object","additionalProperties":false,"required":["siteId","origin"],"properties":{
+      "siteId":{"type":"string"},"origin":{"type":"string"}}},
+    "source":{"type":"object","additionalProperties":false,"required":["producer","bundleDigest","nativeVerified","verificationAuthority","coverage"],"properties":{
+      "producer":{"const":"craft-anything"},"bundleDigest":{"type":["string","null"]},
+      "nativeVerified":{"type":"boolean"},"verificationAuthority":{"const":"unattested-external-report"},
+      "coverage":{"const":"bounded-observations-only"}}},
+    "counts":{"type":"object","additionalProperties":false,"required":["evidence","controls","observations","states","unknowns"],"properties":{
+      "evidence":{"type":"integer","minimum":0,"maximum":2500},
+      "controls":{"type":"integer","minimum":0,"maximum":5000},
+      "observations":{"type":"integer","minimum":0,"maximum":10000},
+      "states":{"type":"integer","minimum":0,"maximum":10000},
+      "unknowns":{"type":"integer","minimum":0,"maximum":2500}}},
+    "roles":{"type":"array","maxItems":5000,"items":{"type":"object","required":["role","count"],"properties":{"role":{"type":"string"},"count":{"type":"integer"}}}},
+    "operations":{"type":"array","maxItems":2500,"items":{"type":"object","required":["operation","count"],"properties":{"operation":{"type":"string"},"count":{"type":"integer"}}}},
+    "observationKinds":{"type":"array","maxItems":8,"items":{"type":"object","required":["kind","count"],"properties":{"kind":{"type":"string"},"count":{"type":"integer"}}}},
+    "confidence":{"type":"array","maxItems":4,"items":{"type":"object","required":["confidence","count"],"properties":{"confidence":{"enum":["observed","derived","inferred","unknown"]},"count":{"type":"integer"}}}},
+    "coverage":{"type":"array","maxItems":3,"items":{"type":"object","required":["coverage","count"],"properties":{"coverage":{"enum":["complete","partial","unknown"]},"count":{"type":"integer"}}}},
+    "evidence":{"type":"array","maxItems":2500,"items":{"type":"object","additionalProperties":false,"required":["evidenceId","operation","confidence","coverage","limitations","cleanRoom"],"properties":{
+      "evidenceId":{"type":"string","pattern":"^ev_[a-f0-9]{64}$"},
+      "operation":{"type":"string"},"confidence":{"enum":["observed","derived","inferred","unknown"]},
+      "coverage":{"enum":["complete","partial","unknown"]},"limitations":{"type":"integer","minimum":0,"maximum":25},
+      "cleanRoom":{"type":"boolean"}}}},
+    "reconciliation":{"type":"object","additionalProperties":false,"required":["status","sourceDivergences","unmappedCount","features"],"properties":{
+      "status":{"enum":["not-provided","source-reconciled-not-runtime-verified"]},
+      "sourceDivergences":{"type":"integer"},"unmappedCount":{"type":"integer"},
+      "features":{"type":"array","maxItems":400,"items":{"type":"object","additionalProperties":false,"required":["owner","featureId","observationStatus","evidenceCount"],"properties":{
+        "owner":{"enum":["studio","harness","unknown"]},"featureId":{"type":"string"},
+        "observationStatus":{"enum":["label-correspondence-unverified","not-observed-in-scoped-capture","unknown"]},
+        "evidenceCount":{"type":"integer","minimum":0}}}}}},
+    "authority":{"type":"object","additionalProperties":false,"required":["executionAuthorized","activationPermitted","sendPermission"],"properties":{
+      "executionAuthorized":{"const":false},"activationPermitted":{"const":false},"sendPermission":{"const":false}}},
+    "note":{"type":"string"}
+  }
+}
