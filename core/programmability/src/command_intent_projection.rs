@@ -188,26 +188,27 @@ fn check_reading(reading: &Value, source: &Value, personal: &Value, baseline: &V
     let Some(outcome) = reading["outcome"].as_str() else { return false };
     if !matches!(outcome, "refused" | "clarification_required" | "incomplete" |
         "candidate" | "interpretation_required" | "empty") { return false }
-    if let Some(feedback) = reading.get("feedback") {
-        if !feedback.is_object() { return false }
-        if let Some(version) = feedback.get("nlclVersion") {
-            if !version.as_str().is_some_and(|s| !s.is_empty() && s.len() <= 128) {
-                return false
-            }
-        }
-        if let Some(confidence) = feedback.get("confidence") {
-            if !confidence.is_null() && !confidence.as_f64().is_some_and(
-                |n| n.is_finite() && (0.0..=1.0).contains(&n)) {
-                return false
-            }
-        }
-        if let Some(version) = feedback.get("worldV") {
-            if !version.is_null() && !version.as_u64().is_some_and(|v| v <= MAX_SAFE) {
-                return false
-            }
-            if version.is_number() && version != &source["worldRevision"] &&
-                source.get("worldRevision").is_some() { return false }
-        }
+    // The incumbent NLCL always stamps every returned reading with the
+    // compiler version, bounded confidence, and the exact Host world revision.
+    // Missing evidence is not a validated reading. Do not infer provenance.
+    let Some(feedback) = reading.get("feedback").and_then(Value::as_object) else {
+        return false
+    };
+    if !feedback.get("nlclVersion").and_then(Value::as_str)
+        .is_some_and(|s| !s.is_empty() && s.len() <= 128) {
+        return false
+    }
+    if !feedback.get("confidence").and_then(Value::as_f64)
+        .is_some_and(|n| n.is_finite() && (0.0..=1.0).contains(&n)) {
+        return false
+    }
+    let Some(world_stamp) = feedback.get("worldV").and_then(Value::as_u64)
+        .filter(|v| *v <= MAX_SAFE) else {
+        return false
+    };
+    if source.get("worldRevision").is_some() &&
+        source["worldRevision"].as_u64() != Some(world_stamp) {
+        return false
     }
     if let Some(modifiers) = reading.get("ignoredModifiers") {
         if !modifiers.as_array().is_some_and(|m| m.len() <= 32 &&

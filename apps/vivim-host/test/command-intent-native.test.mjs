@@ -26,6 +26,12 @@ test('real NLCL golden cases retain their expected Host intents and native parit
     const input = { text: entry.text, scope: 'text' };
     const reading = interpretControl(entry.text, { catalog, world });
     assert.equal(reading.outcome, entry.outcome, 'NLCL golden reading: ' + entry.text);
+    assert.equal(reading.feedback?.worldV, world.v, 'NLCL world stamp: ' + entry.text);
+    assert.ok(typeof reading.feedback?.nlclVersion === 'string' &&
+      reading.feedback.nlclVersion.length > 0, 'NLCL compiler provenance: ' + entry.text);
+    assert.ok(Number.isFinite(reading.feedback?.confidence) &&
+      reading.feedback.confidence >= 0 && reading.feedback.confidence <= 1,
+      'bounded NLCL confidence: ' + entry.text);
     const intent = toCommandIntent(input, { catalog, world });
     assert.equal(intent.schema, 'vivim.command-intent/0.1', entry.text);
     assert.equal(intent.provenance.authority, 'none', entry.text);
@@ -167,6 +173,11 @@ test('native projection rejects stale and contradictory real Host snapshots', t 
     feedback: { ...reading.feedback, worldV: world.v + 1 } } }, 'INVALID_READING');
   refuse({ ...request, reading: { ...reading,
     feedback: { ...reading.feedback, confidence: 'certain' } } }, 'INVALID_READING');
+  refuse({ ...request, reading: { ...reading, feedback: undefined } }, 'INVALID_READING');
+  refuse({ ...request, reading: { ...reading,
+    feedback: { ...reading.feedback, worldV: null } } }, 'INVALID_READING');
+  refuse({ ...request, reading: { ...reading,
+    feedback: { ...reading.feedback, nlclVersion: '' } } }, 'INVALID_READING');
   refuse({ ...request, catalogActions: catalog.actions.map(action =>
     action.id === sourceCase.actionId ? { ...action, readiness: 'unknown' } : action) },
     'INVALID_CONTEXT');
