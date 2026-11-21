@@ -354,8 +354,8 @@ test('restart probes durable epoch before source writes and fenced complete inve
     }});
   const out=await managed('wiki');
   assert.equal(out.state,'source-backed',out.reason);
-  assert.equal(out.sourceHighWater.durableDeletionFences,0);
-  assert.equal(out.sourceHighWater.durableDeletionFencesDigest,EMPTY_FENCE_DIGEST);
+  assert.equal(Object.hasOwn(out.sourceHighWater,'durableDeletionFences'),false);
+  assert.equal(Object.hasOwn(out.sourceHighWater,'durableDeletionFencesDigest'),false);
   assert.equal(out.items[0].summary,'Current committed section');
   assert.equal(out.ingestionStats.reconciledWikiSections,0);
   assert.equal(sent.length,2,'cold restart requires epoch read then mutation');
@@ -615,6 +615,8 @@ test('alternating phone and owner reads retain verified receipts without repeate
   assert.equal(first.state,'source-backed',first.reason);
   assert.equal(first.effectRelationshipsTotal,1);
   assert.equal(first.effectRelationships.length,1);
+  assert.equal(first.sourceHighWater.durableDeletionFences,0);
+  assert.equal(first.sourceHighWater.durableDeletionFencesDigest,EMPTY_FENCE_DIGEST);
   assert.equal(first.sourceHighWater.scannedAppliedPlans,1);
   assert.equal(first.sourceHighWater.indexedAppliedReceipts,1);
   assert.equal(first.sourceHighWater.productJournalEntries,1);
@@ -624,6 +626,8 @@ test('alternating phone and owner reads retain verified receipts without repeate
   assert.equal(phone.state,'source-backed',phone.reason);
   assert.equal(Object.hasOwn(phone,'effectRelationships'),false);
   assert.equal(Object.hasOwn(phone.sourceHighWater,'productJournalDigest'),false);
+  assert.equal(Object.hasOwn(phone.sourceHighWater,'durableDeletionFences'),false);
+  assert.equal(Object.hasOwn(phone.sourceHighWater,'durableDeletionFencesDigest'),false);
   assert.equal(Object.hasOwn(phone.sourceHighWater,'receiptEvidenceDigest'),false);
   assert.equal(phone.totalRetrieved,1);
   const again=await managed('wiki',{owner:true});
@@ -776,7 +780,7 @@ test('managed Host readback requires the native durable deletion-fence manifest'
   assert.equal(invalid.reason,'RUST_CORE_CONTRACT_INVALID');
   const valid=await make(true)('wiki');
   assert.equal(valid.state,'source-backed',valid.reason);
-  assert.equal(valid.sourceHighWater.durableDeletionFences,0);
-  assert.equal(valid.sourceHighWater.durableDeletionFencesDigest,EMPTY_FENCE_DIGEST);
+  assert.equal(Object.hasOwn(valid.sourceHighWater,'durableDeletionFences'),false);
+  assert.equal(Object.hasOwn(valid.sourceHighWater,'durableDeletionFencesDigest'),false);
   assert.equal(valid.items[0].summary,'Actual committed Wiki evidence');
 });
