@@ -414,77 +414,77 @@ body.host-preview #grokbot-direct-link{display:none!important}
 /* First-customer slice: only the paired, Rust-admitted Host composer.
    The old full PWA remains available without ?first=1. Authentication,
    approval buttons and Host receipts are never hidden during actual plans. */
-body.first-contact.paired { --bg:#111214; --s1:#111214; background:#111214; }
-body.first-contact.paired #top,
-body.first-contact.paired #grokbot-direct-link,
-body.first-contact.paired #v-talk #drawer,
-body.first-contact.paired #v-talk #scrim,
-body.first-contact.paired #v-talk .chathead,
-body.first-contact.paired #v-talk .chat > .pad,
-body.first-contact.paired #msgs > .vivim-intro,
-body.first-contact.paired #msgs > .vivim-shared-programs,
-body.first-contact.paired #msgs > .vivim-programs,
-body.first-contact.paired #msgs > section.vivim-plan,
-body.first-contact.paired #chat-composer > :not(.row),
-body.first-contact.paired #chat-composer .row > :not(#text):not(#send) {
+body.first-contact { --bg:#111214; --s1:#111214; background:#111214; }
+body.first-contact #top,
+body.first-contact #grokbot-direct-link,
+body.first-contact #v-talk #drawer,
+body.first-contact #v-talk #scrim,
+body.first-contact #v-talk .chathead,
+body.first-contact #v-talk .chat > .pad,
+body.first-contact #msgs > .vivim-intro,
+body.first-contact #msgs > .vivim-shared-programs,
+body.first-contact #msgs > .vivim-programs,
+body.first-contact #msgs > section.vivim-plan,
+body.first-contact #chat-composer > :not(.row),
+body.first-contact #chat-composer .row > :not(#text):not(#send) {
   display:none!important;
 }
-body.first-contact.paired #app > :not(#v-talk):not(#chat-composer) {display:none!important}
-body.first-contact.paired #app {min-height:0;background:#111214}
-body.first-contact.paired #v-talk,
-body.first-contact.paired #v-talk .chat {flex:1;min-height:0}
-body.first-contact.paired #msgs {padding:20px 14px;gap:12px}
-body.first-contact.paired #msgs > .m.a .badge {display:none!important}
-body.first-contact.paired #chat-composer {
+body.first-contact #app > :not(#v-talk):not(#chat-composer) {display:none!important}
+body.first-contact #app {min-height:0;background:#111214}
+body.first-contact #v-talk,
+body.first-contact #v-talk .chat {flex:1;min-height:0}
+body.first-contact #msgs {padding:20px 14px;gap:12px}
+body.first-contact #msgs > .m.a .badge {display:none!important}
+body.first-contact #chat-composer {
   background:#111214;border:0;box-shadow:none;
   padding:12px max(16px,env(safe-area-inset-right,0px))
     calc(16px + env(safe-area-inset-bottom,0px));
 }
-body.first-contact.paired #chat-composer .row {
+body.first-contact #chat-composer .row {
   width:100%;max-width:760px;margin:0 auto;align-items:center;gap:6px;
   background:#212327;border:1px solid #50525a;border-radius:22px;padding:5px 6px 5px 8px;
 }
-body.first-contact.paired #text {
+body.first-contact #text {
   min-height:46px;max-height:160px;background:transparent;border:0;
   box-shadow:none;outline:none;border-radius:16px;padding:12px;font-size:16px;
 }
-body.first-contact.paired #text:focus-visible {outline:0}
-body.first-contact.paired #chat-composer .row:focus-within {border-color:#8e929a}
-body.first-contact.paired #send {
+body.first-contact #text:focus-visible {outline:0}
+body.first-contact #chat-composer .row:focus-within {border-color:#8e929a}
+body.first-contact #send {
   width:38px;height:38px;border-radius:50%;background:#eee;color:#111;border:0;
 }
-body.first-contact.paired #send:disabled {visibility:hidden}
+body.first-contact #send:disabled {visibility:hidden}
 @media(min-width:820px) {
-  body.first-contact.paired #msgs {width:100%;max-width:790px;margin:0 auto}
+  body.first-contact #msgs {width:100%;max-width:790px;margin:0 auto}
 }
-body.first-contact.paired #first-wiki {
+body.first-contact #first-wiki {
   flex:none;max-height:min(44dvh,350px);overflow-y:auto;
   margin:0 14px 4px;padding:10px 14px;background:#181a1e;
   border:1px solid #41444b;border-radius:14px;
 }
-body.first-contact.paired #first-wiki .first-wiki-label {
+body.first-contact #first-wiki .first-wiki-label {
   margin:0 0 8px;color:#9ea2ac;font:600 11px/1.4 ui-monospace,monospace;
   letter-spacing:.06em;
 }
-body.first-contact.paired #first-wiki .first-wiki-item {
+body.first-contact #first-wiki .first-wiki-item {
   border-top:1px solid #353740;padding:9px 2px;overflow-wrap:anywhere;
 }
-body.first-contact.paired #first-wiki .first-wiki-item summary {
+body.first-contact #first-wiki .first-wiki-item summary {
   cursor:pointer;font-size:13px;font-weight:650;line-height:1.5;
   color:#e6e8ed;list-style-position:inside;overflow-wrap:anywhere;
 }
-body.first-contact.paired #first-wiki .first-wiki-item[open] summary {margin-bottom:7px}
-body.first-contact.paired #first-wiki .first-wiki-detail {
+body.first-contact #first-wiki .first-wiki-item[open] summary {margin-bottom:7px}
+body.first-contact #first-wiki .first-wiki-detail {
   margin:9px 0;padding:10px;background:#22252b;border-radius:9px;
   white-space:pre-wrap;overflow-wrap:anywhere;font:12px/1.5 ui-monospace,monospace;
   max-height:180px;overflow-y:auto;
 }
-body.first-contact.paired #first-wiki .first-wiki-item p {
+body.first-contact #first-wiki .first-wiki-item p {
   color:#afb2b9;font-size:12px;line-height:1.45;margin:4px 0 0;
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
 }
-body.first-contact.paired #first-wiki .first-wiki-empty {color:#aeb2bc;font-size:12px;margin:4px}
-body.first-contact.paired #first-wiki small {color:#9ea2ac;font-size:11px}
+body.first-contact #first-wiki .first-wiki-empty {color:#aeb2bc;font-size:12px;margin:4px}
+body.first-contact #first-wiki small {color:#9ea2ac;font-size:11px}
 </style>
 </head>
 <body>
