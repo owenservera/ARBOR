@@ -537,3 +537,90 @@ test('remember refuses malformed receipt in the pending Host write',t=>{
   assert.equal(store.snapshot().version,0);
   assert.throws(()=>readFileSync(store.file,'utf8'),/ENOENT/);
 });
+
+test('native adapter cannot mutate Host-owned expected record references',t=>{
+  const reducer=(operation,input)=>{
+    assert.equal(operation,'personal-rule-transition');
+    // Simulate a faulty adapter that mutates every object it receives,
+    // then reports the explicit legacy-unavailable result.
+    if(input.mode==='propose')input.candidate.args.preset='dawn';
+    if(input.mode==='transition'){
+      input.current.entries[0].args.preset='dawn';
+      input.previous.args.preset='dawn';
+    }
+    return null;
+  };
+  const {store}=withStore(t,()=>true,reducer);
+  const proposed=store.propose(proposal(0));
+  assert.equal(store.snapshot().entries[0].args.preset,'dusk');
+  store.transition({ruleId:proposed.ruleId,nextState:'accepted',
+    expectedVersion:1,approval:{receiptId:'owner-proof'}});
+  const saved=JSON.parse(readFileSync(store.file,'utf8'));
+  assert.equal(saved.entries[0].args.preset,'dusk');
+  assert.equal(saved.history[0].after.args.preset,'dusk');
+  assert.equal(saved.history[1].before.args.preset,'dusk');
+  assert.equal(saved.history[1].after.args.preset,'dusk');
+});
+
+test('forged native result metadata cannot authorize an otherwise matching state',t=>{
+  const reducer=(operation,input)=>{
+    assert.equal(operation,'personal-rule-transition');
+    const rule=input.candidate;
+    const event={version:1,ruleId:rule.id,revision:rule.revision,
+      op:'propose',before:null,after:rule,at:input.at,
+      ownerReceiptId:input.ownerReceiptId};
+    return {schema:'vivim.personal-rule-transition/1',
+      outcome:'projected',authority:'none',executionAuthorized:false,
+      effectPerformed:false,rule,
+      next:{...input.current,version:1,entries:[rule],history:[event]},
+      grant:'owner'};
+  };
+  const {store}=withStore(t,()=>true,reducer);
+  assert.throws(()=>store.propose(proposal(0)),/PERSONAL_STORE_NATIVE_MISMATCH/);
+  assert.equal(store.snapshot().version,0);
+  assert.throws(()=>readFileSync(store.file,'utf8'),/ENOENT/);
+});
+
+test('rollback rejects revision-metadata conflict and duplicate history versions',t=>{
+  let verifierCalls=0;
+  const {store}=withStore(t,()=>{verifierCalls++;return true});
+  const p=store.propose(proposal(0));
+  store.transition({ruleId:p.ruleId,nextState:'accepted',
+    expectedVersion:1,approval:{receiptId:'owner-accept'}});
+  const original=JSON.parse(readFileSync(store.file,'utf8'));
+  const scenarios=[
+    [row=>{row.revision=1},1],
+    [row=>{row.version=1},2],
+    [row=>{row.before=null},2],
+    [row=>{row.op='propose'},2],
+  ];
+  for(const [mutate,toRevision] of scenarios){
+    const changed=structuredClone(original);
+    mutate(changed.history[1]);
+    writeFileSync(store.file,JSON.stringify(changed,null,2),{mode:0o600});
+    const before=readFileSync(store.file,'utf8');
+    assert.throws(()=>store.rollback({ruleId:p.ruleId,toRevision,
+      expectedVersion:2,approval:{receiptId:'owner-rollback'}}),
+      /PERSONAL_STORE_UNKNOWN_REVISION/);
+    assert.equal(readFileSync(store.file,'utf8'),before);
+    assert.equal(store.snapshot().version,2);
+  }
+  assert.equal(verifierCalls,1,'rollbacks never reached the owner verifier');
+});
+
+test('reviewed remember subjects are detached from caller-owned objects',t=>{
+  const {store}=withStore(t,(_approval,reviewed)=>{
+    reviewed.rule.args.preset='dawn';
+    return true;
+  });
+  const snap=store.snapshot();
+  const subject={operation:'remember',catalogVersion:catalog.version,
+    storeVersion:snap.version,storeDigest:snap.digest,
+    rule:{phrase:'quazzlememo',actionId:'ui.theme.set_preset',
+      args:{preset:'dusk'},scope:{}},previousId:null,previousDigest:null};
+  assert.throws(()=>store.remember({subject,approval:{receiptId:'trusted'}}),
+    /PERSONAL_STORE_APPROVAL_CHANGED/);
+  assert.equal(subject.rule.args.preset,'dusk',
+    'a verifier cannot mutate the original owner-reviewed candidate');
+  assert.equal(store.snapshot().version,0);
+});
