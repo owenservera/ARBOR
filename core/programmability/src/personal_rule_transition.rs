@@ -757,7 +757,8 @@ mod tests {
         corrupt["entries"][0]["revision"] = json!(4);
         let mut rollback = input("rollback", corrupt);
         rollback["ruleId"] = json!("rule:a");
-        rollback["previous"] = rollback["current"]["entries"][0].clone();
+        let live = rollback["current"]["entries"][0].clone();
+        rollback["previous"] = live;
         rollback["toRevision"] = json!(2);
         assert_eq!(reduce(&rollback)["code"], "PERSONAL_STORE_UNKNOWN_REVISION");
     }
