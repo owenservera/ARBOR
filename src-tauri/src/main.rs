@@ -291,37 +291,7 @@ impl HostProcess {
     /// protected owner capability from the native desktop process. We NEVER inject
     /// the permanent owner capability into the webview or any URL.
     fn desktop_launch_url() -> Option<String> {
-        let token = match std::env::var("VIVIM_BOOTSTRAP_TOKEN") {
-            Ok(v) if v.len() >= 32 => Some(v),
-            _ => {
-                let dir = std::env::var_os("VIVIM_HOST_DATA_DIR")
-                    .or_else(|| std::env::var_os("CAPTURE_STUDIO_HOME"))
-                    .map(PathBuf::from)
-                    .or_else(|| {
-                        if cfg!(windows) {
-                            std::env::var_os("LOCALAPPDATA").map(|x| {
-                                PathBuf::from(x).join("AION").join("capture-studio")
-                            })
-                        } else {
-                            std::env::var_os("XDG_DATA_HOME")
-                                .filter(|x| Path::new(x).is_absolute())
-                                .map(|x| PathBuf::from(x).join("aion-capture-studio"))
-                                .or_else(|| {
-                                    std::env::var_os("HOME").map(|x| {
-                                        PathBuf::from(x)
-                                            .join(".local")
-                                            .join("share")
-                                            .join("aion-capture-studio")
-                                    })
-                                })
-                        }
-                    })?;
-                std::fs::read_to_string(dir.join("bootstrap").join("owner-token"))
-                    .ok()
-                    .map(|s| s.trim().to_string())
-                    .filter(|s| s.len() >= 32)
-            }
-        }?;
+        let token = vivim_host_supervisor::read_owner_token().ok()?;
         let client = reqwest::blocking::Client::builder()
             .no_proxy().redirect(reqwest::redirect::Policy::none())
             .connect_timeout(Duration::from_secs(1))
