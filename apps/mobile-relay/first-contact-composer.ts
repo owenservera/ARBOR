@@ -12,6 +12,7 @@ type Config = {
   active:()=>boolean;
   maxLength:()=>number;
   onVerified?:(correlationId:string)=>void;
+  typingIntervalMs?:number;
 };
 const ENDPOINT='/mobile/api/first-contact/composer/';
 const validFence=(o:any):o is {
@@ -21,7 +22,7 @@ const validFence=(o:any):o is {
   o.state==='observed'&&typeof o.epoch==='string'&&
   Number.isSafeInteger(o.systemSequence)&&Number.isSafeInteger(o.viewRevision)&&
   Number.isSafeInteger(o.sourceRevision)&&o.regionId==='phone.composer';
-export function mountFirstContactComposer({field,active,maxLength,onVerified}:Config){
+export function mountFirstContactComposer({field,active,maxLength,onVerified,typingIntervalMs}:Config){
   // Every browser document is an independent source, including repeat mounts.
   const ID=Array.from(crypto.getRandomValues(new Uint8Array(16)),
     b=>b.toString(16).padStart(2,'0')).join('');
@@ -74,10 +75,9 @@ export function mountFirstContactComposer({field,active,maxLength,onVerified}:Co
   const currentFence=()=>!dirty&&eligible()&&!composing?fence:null;
   const adapter=createComposerDraftAdapter({
     field,currentFence,maxLength,
-    // 225 ms exceeds the Wiki's 180 ms debounce: intermediate updates are
-    // visible and each pause can refresh suggestions before the final ACK.
-    // One Host approval/receipt still governs the entire edit.
-    typingIntervalMs:225,
+    // Production uses 225 ms > Wiki's 180 ms debounce. Test and other
+    // consumers may retain atomic updates; one Host receipt spans all frames.
+    typingIntervalMs,
     isAuthorizedDelivery:async(message:any)=>authDelivery===message&&
       message?.sessionId===ID&&message?.localRevision===revision&&
       message?.actorId==='desktop-owner'&&eligible()&&!dirty,
