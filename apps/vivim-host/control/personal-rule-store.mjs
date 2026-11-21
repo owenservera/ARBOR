@@ -168,7 +168,11 @@ export function createPersonalRuleStore({
         throw fail('PERSONAL_STORE_INVALID_TRANSITION');
       const temp = file + '.' + process.pid + '.' + randomBytes(6).toString('hex') + '.tmp';
       try {
-        writeFileSync(temp, JSON.stringify(next, null, 2), { mode: 0o600 });
+        // Flush the prepared file before atomic rename. Host owns durability;
+        // the pure native reducer never touches disk. Directory sync remains
+        // platform-specific and is not asserted here.
+        writeFileSync(temp, JSON.stringify(next, null, 2),
+          { mode: 0o600, flush: true });
         // Verify exactly what would be committed BEFORE the atomic rename.
         // A corrupt/truncated temporary write must never replace the last
         // known-good owner-reviewed file.
