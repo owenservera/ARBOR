@@ -590,7 +590,8 @@ fn owner_lineage_digest_covers_all_thirty_active_edges_not_only_display_rows() {
     assert_eq!(owner["omittedEffectRelationships"],6);
     let shown=owner["effectRelationships"].as_array().unwrap();
     assert_eq!(shown.len(),24);
-    assert!(shown.windows(2).all(|w|w[0]["id"]<=w[1]["id"]));
+    assert!(shown.windows(2).all(|w|
+        w[0]["id"].as_str().unwrap()<=w[1]["id"].as_str().unwrap()));
     let mut proof=Vec::new();
     for edge in graph.edges() {
         let receipt=graph.node(&edge.from).unwrap();
