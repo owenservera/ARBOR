@@ -29,7 +29,7 @@ const assets = new Map(Object.entries({
   '': ['index.html', 'text/html; charset=utf-8'],
   'index.html': ['index.html', 'text/html; charset=utf-8'],
   'app.js': ['app.js', 'text/javascript; charset=utf-8'],
-  'first-contact-composer.mjs': ['first-contact-composer.mjs', 'text/javascript; charset=utf-8'],
+  'first-contact-composer.ts': ['first-contact-composer.ts', 'text/javascript; charset=utf-8'],
   'agent-composer-adapter.ts': ['agent-composer-adapter.ts', 'text/javascript; charset=utf-8'],
   // app.js imports these two canonical Today/World/Me modules; Direct must serve them.
   'ux/model.mjs': ['ux/model.mjs', 'text/javascript; charset=utf-8'],
