@@ -295,7 +295,8 @@ fn explicit_tombstones_remove_one_source_and_replay_is_a_byte_identical_no_op() 
     let (ok,d)=delta(&file,SCOPE,1,vec![tombstone(&victim,"wiki",1)]);
     assert!(ok,"{d}"); assert_eq!(d["tombstoned"],1);
     let after=fs::read(&file).unwrap();
-    assert_eq!(Journal::new(&file).load().unwrap().node_count(),2);
+    assert_eq!(Journal::new(&file).load().unwrap().node_count(),3,
+        "two surviving Wiki sources plus one durable deletion fence");
     assert!(!query(&file,SCOPE).iter().any(|n|local(n["id"].as_str().unwrap())==victim));
     assert!(query(&file,SCOPE).iter().any(|n|n["properties"]["vivim.context.sourceRef"]=="page-0"));
     // Replay is idempotent: the source is already gone, nothing is written.
@@ -313,7 +314,7 @@ fn explicit_tombstones_remove_one_source_and_replay_is_a_byte_identical_no_op() 
     assert!(!ok,"stale tombstone refused: {stale}");
     assert!(stale["error"].as_str().unwrap().contains("STALE_CONTEXT_SOURCE"));
     assert_eq!(fs::read(&file).unwrap(),current);
-    assert_eq!(Journal::new(&file).load().unwrap().node_count(),2);
+    assert_eq!(Journal::new(&file).load().unwrap().node_count(),3);
 }
 
 #[test]
@@ -797,7 +798,8 @@ fn cold_restart_complete_wiki_inventory_prunes_only_missing_sections() {
     assert_eq!(pruned["context"]["totalRetrieved"],3);
     assert_eq!(pruned["context"]["effectRelationshipsTotal"],1);
     let graph=Journal::new(&file).load().unwrap();
-    assert_eq!(graph.node_count(),3);
+    assert_eq!(graph.node_count(),4,
+        "three active sources plus a persisted deletion high-water");
     assert_eq!(graph.edge_count(),1);
     assert!(graph.nodes().any(|n|n.properties.get("vivim.context.kind")
         .map(String::as_str)==Some("effect")));
@@ -958,9 +960,12 @@ fn empty_complete_inventory_recovers_after_every_section_disappears() {
     assert_eq!(empty["context"]["activeSourcesTotal"],0);
     assert_eq!(empty["context"]["items"],json!([]));
     let graph=Journal::new(&file).load().unwrap();
-    assert_eq!(graph.node_count(),1,"historical applied receipt is preserved");
-    assert!(graph.nodes().all(|n|n.properties.get("vivim.context.kind")
-        .map(String::as_str)==Some("effect")));
+    assert_eq!(graph.node_count(),3,
+        "historical applied receipt and both durable deletion fences");
+    assert_eq!(graph.nodes().filter(|n|n.properties.get("vivim.context.kind")
+        .map(String::as_str)==Some("effect")).count(),1);
+    assert_eq!(graph.nodes().filter(|n|n.properties.get("vivim.context.kind")
+        .map(String::as_str)==Some("tombstone")).count(),2);
 }
 
 #[test]
