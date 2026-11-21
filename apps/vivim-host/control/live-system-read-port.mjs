@@ -94,7 +94,10 @@ export function createLiveSystemReadPort({
     const phoneObservations=await readPhoneObservations();
     if(!Array.isArray(phoneObservations) || phoneObservations.length>2 ||
        phoneObservations.some(o=>!['pwa.input','pwa.view'].includes(o?.id) ||
-         o?.exposure!=='owner' || o?.writable?.length!==0))
+         o?.sourceId!=='host.first-contact-observer' ||
+         (o.id==='pwa.input'&&o.kind!=='input') ||
+         (o.id==='pwa.view'&&o.kind!=='visual') ||
+         o?.exposure!=='owner' || !Array.isArray(o?.writable) || o.writable.length!==0))
       throw fail('LIVE_SYSTEM_PHONE_OBSERVATION_INVALID');
     for(const observation of phoneObservations){
       const reply=await computeRust('integrate',{state:current,observation,
@@ -112,8 +115,15 @@ export function createLiveSystemReadPort({
       throw fail('LIVE_SYSTEM_STATE_INVALID');
     state = current;
     lastHealth = fingerprint;
+    // A partial source projection must never masquerade as a complete active
+    // system mirror; full DOM, effects, graph and capture wiring remain open.
+    const observedRegions=safe.regions.map(r=>r.id);
     return {schema: PUBLIC_SCHEMA, state: 'source-backed', revision: safe.sequence,
-      epoch: safe.epoch, regions: safe.regions, authority: 'read-only-projection',
+      epoch: safe.epoch, regions: safe.regions,
+      coverage:{complete:false, observedRegions, missingCapabilities:[
+        'pwa.full-surface','pwa.command-dispatch','screen-capture',
+        'execution.state','authority.state','hqkg.full-graph','studio.state']},
+      authority: 'read-only-projection',
       executionAuthorized: false, effectPerformed: false};
   }
   // In-memory serialization protects revision fences without introducing a
