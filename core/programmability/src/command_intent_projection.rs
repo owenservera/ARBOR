@@ -234,8 +234,9 @@ pub(crate) fn personal_provenance_valid(
             personal["semanticScope"].as_object().is_some_and(|scope| {
                 scope.len() <= 4 && scope.iter().all(|(key, value)| {
                     matches!(key.as_str(), "surface" | "workspaceId" | "activity" | "providerId") &&
-                    value.as_str().is_some_and(|v| !v.is_empty() && v.len() <= 128 &&
-                        (key != "surface" || matches!(v, "text" | "desktop" | "mobile" | "visual")))
+                    value.as_str().is_some_and(|v| !v.is_empty() && v.encode_utf16().count() <= 128 &&
+                        (key.as_str() != "surface" ||
+                            matches!(v, "text" | "desktop" | "mobile" | "visual")))
                 })
             }) &&
             match fields.get("reuse") {
@@ -589,6 +590,12 @@ mod personal_source_binding_tests {
         assert!(!personal_provenance_valid(&forged, revision, &text));
         forged = basic.clone();
         forged["ruleId"] = json!("rule:Invalid!");
+        assert!(!personal_provenance_valid(&forged, revision, &text));
+        forged = basic.clone();
+        forged["semanticScope"]["workspaceId"] = json!("é".repeat(100));
+        assert!(personal_provenance_valid(&forged, revision, &text),
+            "Host scope limits use UTF-16 code units, not UTF-8 bytes");
+        forged["semanticScope"]["workspaceId"] = json!("é".repeat(129));
         assert!(!personal_provenance_valid(&forged, revision, &text));
     }
 
