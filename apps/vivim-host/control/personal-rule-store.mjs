@@ -351,17 +351,18 @@ export function createPersonalRuleStore({
       // Both metadata and after-rule identity can claim a historical
       // revision. If they disagree, the revision is ambiguous; never select
       // the apparently valid copy while ignoring a conflicting event.
-      const matches = current.history.filter(h => h.ruleId === ruleId &&
+      const matches = current.history.filter(h =>
+        (h.ruleId === ruleId || h.after?.id === ruleId) &&
         (h.revision === toRevision || h.after?.revision === toRevision));
       const past = matches.length === 1 ? matches[0].after : null;
       const selected = matches[0];
-      const index = current.history.indexOf(selected);
-      const historicalVersion = selected?.version;
-      const versionOrderValid = index >= 0 &&
-        current.history.filter(h => h.version === historicalVersion).length === 1 &&
-        (index === 0 || current.history[index - 1].version === historicalVersion - 1) &&
-        (index === current.history.length - 1 ||
-          current.history[index + 1].version === historicalVersion + 1);
+      // Bounded history is a suffix of Host CAS writes, one row per version.
+      // Validate ALL retained versions rather than only neighbors of the
+      // selected row: a forged gap anywhere invalidates rollback provenance.
+      const firstVersion = current.version - current.history.length + 1;
+      const versionOrderValid = Number.isSafeInteger(firstVersion) &&
+        firstVersion >= 1 && current.history.every((h, index) =>
+          h.version === firstVersion + index);
       // History is legacy-compatible and not rewritten on read. However a
       // malformed historical row must never make rollback change identities.
       if (!past || !versionOrderValid ||
