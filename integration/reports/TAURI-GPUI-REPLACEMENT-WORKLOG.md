@@ -170,3 +170,50 @@ cargo check --manifest-path native/gpui-desktop/Cargo.toml --features desktop
 node --test tools/packaging/test/stage-gpui-runtime.test.mjs tools/packaging/test/bundle-gpui-desktop.test.mjs
 ```
 Only after genuine root `Cargo.lock` and `bun.lock` are generated, reviewed and committed, stage/build/verify the native distribution using the GPUI README commands. Never mark release PASS on a source-only commit.
+
+
+## 10. Direct implementation continuation — source-grounded (2026-11-21)
+
+This update records **real source commits**, not a proposed plan. Concurrent Studio/Craft commits were preserved on shared `main`; no branch/PR/force push or GitHub Actions use.
+
+| Workstream | Implemented native/product source | Representative commits | Verification |
+|---|---|---|---|
+| HMAC Host identity preflight | `apps/vivim-host/bootstrap/native-owner-proof.mjs`; read-only `GET /api/host/native-owner-proof`; Node HTTP contract tests | `9e010ec59005`, `8e4749817de5` | JS static parse PASS; Node live test UNRUN |
+| Shared cryptographic proof | `native/host-supervisor` uses OS random nonce, HMAC-SHA256 verification, bounded body; fixed-vector and refusal tests | `57266a311ccf`, `c1cd3349f941` | Source present; cargo UNRUN |
+| No premature bearer disclosure | GPUI Wiki/graph, visual and command paths, plus Tauri one-use session, demand proof before bearer | `90794a1427bc`, `77640515d827`, `d48472c7a74b`, `e4876f37c093` | Source present; runtime UNRUN |
+| Native lifecycle coherence | Serialized Host supervisor start/attach/recovery, preserved monitoring after manual retry, GPU-window reconnect, cold-start fast refresh | `509f2b3b45d7`, `0865fc6f77ea` | Source present; Windows UNRUN |
+| Credential convergence | Shared bounded native owner capability loader and symlink/Unix permission checks, used by GPUI and Tauri | `a2e50b464834`, `4fe9c8588630`, `dd5c8df2b5e1` | Source present; Windows ACL check remains required |
+| Existing control UX handoff | Shared Host-issued single-use browser session, native GPUI launch for controls, pairing and onboarding | `078310c6b9e3`, `cf88fd51146c`, `5d9f97024950` | Source present; browser acceptance UNRUN |
+| Native desktop entry | `package.json` defaults desktop to GPUI; Tauri explicitly legacy; owner session code shape tests | `3829f0b52f4d`, `8b84c97e9712` | Source present; GPUI compile UNRUN |
+| Local verification | `gpui-local-integration.mjs` records exact Node/Rust/PWA commands + statuses; lockfile/Windows preflight; integration regression tests | `066898202250`, `2b2d0b949078`, `5e121d766bee` | Script static parse PASS; execution UNRUN |
+| Windows installer | New per-user Inno Setup recipe + builder for already-verified GPUI portable source; compiler and installer-argument tests | `0376bcfe56fe`, `6dc8e24d3992`, `f230e6cf9ac5`, `4407c6085f30` | Source present; compile/sign/upgrade UNRUN |
+| Owner-verified startup | Owned and attached Host readiness now requires HMAC proof, not just public health JSON | `e89a80c21851` | Source present; OS PID binding still UNRUN/OPEN |
+| Documentation | GPUI README current commands, lifecycle, handoff and installer truth | `d58d24fdac0e` | Source present |
+
+### Revised work item status
+
+- **R01 PARTIAL:** shared native lifecycle and credential/HMAC utilities exist. Legacy Tauri still has its own Host process supervisor, so the source is not fully extracted into one implementation.
+- **R02 SOURCE_IMPL / LIVE_UNRUN:** GPUI cold starts or attaches, serializes retry/monitor, and exposes reconnect UI. GPU/Windows process acceptance not demonstrated.
+- **R03 PARTIAL:** native bearer clients prove shared secret with fresh HMAC before dispatch. This is NOT an OS PID/socket binding and cannot exclude all proxy and TOCTOU attacks. Windows ACL re-attestation and end-to-end proof still required.
+- **R04 SOURCE_IMPL / BUILD_UNRUN:** neutral Host runtime staging, portable bundler, and independent installer source exist. Root Cargo/Bun locks and GPUI own Cargo lock must be generated and checked by the actual Windows build owner.
+- **R05/R06 PARTIAL:** existing native VEC/Wiki/HQKG and Host plan/approve/receipt paths now require authenticated source; real cross-lane acceptance remains unrun.
+- **R07 PARTIAL:** native window/viewport/input and source projections present. Pixel, keyboard, touch, accessibility and GPU acceptance remain unrun.
+- **R08 PARTIAL:** GPUI now opens Host-issued one-use owner browser session for existing pairing/onboarding/admin functions; physical browser and device acceptance remain unrun.
+- **R09 OPEN:** optional Tauri Studio `__TAURI__` inert validation bridge still exists. General Studio browser/Host data paths remain; do not claim full optional IPC parity.
+- **R10 SOURCE_IMPL / RELEASE_UNRUN:** per-user Inno Setup installer source is not a signed or upgraded production build. Tauri is explicitly retained as fallback.
+- **R11 COMMANDS_AVAILABLE / UNRUN:** execute `bun run desktop:test:local` on Windows. The runner records PASS/FAIL/UNRUN rather than substituting source evidence for compilation.
+- **R12/R13 UNRUN:** foreign listener/replay, real Host authority, Windows GPU, signed release, actual phone pairing and upgrade must be physically exercised.
+- **R14 BLOCKED:** do not remove Tauri until release/runtime/security and owner acceptance are evidenced.
+
+### Native commands
+
+```powershell
+bun run desktop
+bun run desktop:test:local
+# Genuine root Cargo.lock, bun.lock, GPUI Cargo.lock and verified Node24
+# are required before release staging:
+bun run desktop:portable
+node tools/packaging/build-gpui-installer.mjs --portable C:\vivim-gpui-portable --iscc "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+```
+
+**No recorded runtime PASS, signed MSI/installer acceptance, installed binary, or physical pairing acceptance is claimed from these commits.** GitHub Actions remains disabled by owner instruction.
