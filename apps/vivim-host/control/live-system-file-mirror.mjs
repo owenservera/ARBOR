@@ -49,7 +49,7 @@ export function createLiveSystemFileMirror({
     const st=await lstat(dir);
     if(!st.isDirectory()||st.isSymbolicLink())throw fail('LIVE_MIRROR_UNSAFE_DIRECTORY');
   }
-  async function writeAtomic(bytes){
+  async function writeAtomic(bytes,target=file){
     await prepare();
     const tmp=path.join(dir,'.owner.'+randomBytes(12).toString('hex')+'.tmp');
     let handle;
@@ -60,7 +60,7 @@ export function createLiveSystemFileMirror({
       await handle.close();handle=null;
       // Rename over the old projection. A crash can leave a stray temp file,
       // never a partially overwritten canonical JSON document.
-      await rename(tmp,file);
+      await rename(tmp,target);
     } finally {
       if(handle)await handle.close();
       // Stray temps are not necessary for reconstruction; avoid deleting an
@@ -88,13 +88,29 @@ export function createLiveSystemFileMirror({
     work=operation.then(()=>{},()=>{});
     return operation;
   }
-  function admitEdited() {
+  function rebaseProposal({expectedSequence,discardPending}={}) {
+    const operation=work.then(async()=>{
+      if(!canonical||!boundedInt(expectedSequence)||expectedSequence!==canonical.sequence)
+        throw fail('LIVE_MIRROR_STALE');
+      if(discardPending!==true)throw fail('LIVE_MIRROR_REBASE_REQUIRES_DISCARD');
+      const bytes=Buffer.from(JSON.stringify(canonical,null,2)+'\n','utf8');
+      if(bytes.length>MAX_FILE)throw fail('LIVE_MIRROR_SIZE_LIMIT');
+      await writeAtomic(bytes,proposalFile);
+      return {schema:FILE_SCHEMA,state:'rebased',sequence:canonical.sequence,
+        executionAuthorized:false,effectPerformed:false};
+    });
+    work=operation.then(()=>{},()=>{});
+    return operation;
+  }
+  function admitEdited({correlationId='file.edit'}={}) {
     // Serialize reads against snapshot exports. The file cannot race a Host
     // writer while admission is constructing the exact canonical comparison.
     const operation=work.then(async()=>{
     // No caller-selected path, no browser-visible filesystem API. This is
     // inert admission against the LAST Host-emitted canonical state.
     if(!canonical)throw fail('LIVE_MIRROR_NOT_PUBLISHED');
+    if(typeof correlationId!=='string'||!/^[a-zA-Z0-9._:-]{1,128}$/.test(correlationId))
+      throw fail('LIVE_MIRROR_CORRELATION_INVALID');
     await prepare();
     let st;
     try{st=await lstat(proposalFile)}catch{throw fail('LIVE_MIRROR_FILE_MISSING')}
@@ -112,7 +128,7 @@ export function createLiveSystemFileMirror({
     if(!own(edited)||edited.schema!==FILE_SCHEMA)
       throw fail('LIVE_MIRROR_INVALID_DOCUMENT');
     const response=await compute('live-system',{schema:'vivim.live-system-request/1',
-      operation:'admit-edit',state:canonical,edited,correlationId:'file.edit'});
+      operation:'admit-edit',state:canonical,edited,correlationId});
     if(response?.schema!=='vivim.product-pure-response/1'||
        response.operation!=='live-system'||
        response.authority!=='none'||response.executionAuthorized!==false||
@@ -133,5 +149,5 @@ export function createLiveSystemFileMirror({
     work=operation.then(()=>{},()=>{});
     return operation;
   }
-  return Object.freeze({file,proposalFile,publish,admitEdited});
+  return Object.freeze({file,proposalFile,publish,rebaseProposal,admitEdited});
 }
