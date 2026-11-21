@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { buildControlWorld, interpretControl } from '../../mobile-relay/control-language.mjs';
 import { toCommandIntent, validateAiCommandCandidate } from '../control/command-intent.mjs';
+import { resolvePersonalSemantics, PERSONAL_RULE_SCHEMA } from '../control/personal-semantics.mjs';
 import { runNativeProductPureSync } from '../control/native-product-pure-sync.mjs';
 import { resolveBundledRustBinary } from '../chat/rust-context.mjs';
 
@@ -207,6 +208,78 @@ test('zero-argument native AI proposals accept nullish arguments like Host', () 
       assert.deepEqual(native.intent, JSON.parse(JSON.stringify(incumbent)));
     }
   }
+});
+
+
+test('accepted, conflicting and invalid existing Host personal meanings preserve native provenance', t => {
+  // Reuse the quazzlememo personal-rule contract exercised by the existing
+  // personal-semantics-integration test; no second binder or NLCL parser.
+  const phrase = 'quazzlememo';
+  const rule = (overrides = {}) => ({
+    schema: PERSONAL_RULE_SCHEMA, id: 'rule:quazzlememo', revision: 1,
+    phrase, actionId: 'ui.theme.set_preset', args: {preset: 'dusk'},
+    scope: {}, state: 'accepted', source: 'explicit-owner',
+    catalogVersion: catalog.version, ...overrides
+  });
+  const world = buildControlWorld(catalog);
+  const input = {text: phrase, scope: 'text'};
+  const baseline = interpretControl(phrase, {catalog, world});
+  assert.equal(baseline.outcome, 'interpretation_required');
+
+  let compared = 0;
+  for (const [name, rules, expected] of [
+    ['accepted', [rule()], 'candidate'],
+    ['conflict', [rule(), rule({id: 'rule:other', args: {preset: 'dawn'}})],
+      'clarification_required'],
+    ['invalid', [rule({args: {preset: 'not-in-catalog'}})], 'refused']
+  ]) {
+    const resolved = resolvePersonalSemantics({
+      text: phrase, baseline, rules, catalog, scope: {surface: 'text'}
+    });
+    let reading = baseline;
+    let personalProvenance = null;
+    if (resolved.outcome === 'candidate') {
+      reading = {...baseline, outcome: 'candidate', candidate: resolved.candidate};
+      personalProvenance = resolved.provenance;
+    } else if (resolved.outcome === 'clarification_required') {
+      reading = {...baseline, outcome: 'clarification_required',
+        question: resolved.reason === 'TEMPLATE_PARAMETER_REQUIRED'
+          ? 'Supply one new lowercase Wiki page slug after the learned command name.'
+          : 'Conflicting accepted personal meanings. Please specify the action.',
+        choices: []};
+      personalProvenance = {method: 'personal-rule-conflict', ruleIds: resolved.ruleIds};
+    } else if (resolved.outcome === 'refused') {
+      reading = {...baseline, outcome: 'refused',
+        refusal: {code: resolved.reason, message: 'Personal rule invalid or stale.'}};
+      personalProvenance = {method: 'personal-rule-refusal', reason: resolved.reason};
+    } else {
+      assert.fail('Unexpected real personal-rule resolution outcome for ' + name);
+    }
+    const incumbent = toCommandIntent(input, {catalog, world, personalRules: rules});
+    assert.equal(incumbent.outcome, expected, name);
+    assert.equal(incumbent.provenance.authority, 'none', name);
+    assert.deepEqual(incumbent.language.personalRule, personalProvenance, name);
+    const native = runNativeProductPureSync('command-intent-projection', {
+      schema: 'vivim.command-intent-projection-input/1',
+      input: {text: phrase, scope: 'text', audience: 'owner'},
+      catalogVersion: catalog.version, worldRevision: world.v,
+      catalogActions: catalog.actions.map(({id, title, args, risk, owner, readiness, requiredScopes}) =>
+        ({id, title, args, risk, owner, readiness,
+          ...(requiredScopes !== undefined ? {requiredScopes} : {})})),
+      reading, baselineOutcome: baseline.outcome, personalProvenance
+    });
+    if (hasBinary()) assert.ok(native, 'Native personal intent projection required: ' + name);
+    if (native) {
+      assert.equal(native.authority, 'none', name);
+      assert.equal(native.executionAuthorized, false, name);
+      assert.equal(native.effectPerformed, false, name);
+      assert.deepEqual(native.intent, JSON.parse(JSON.stringify(incumbent)),
+        'Full native personal-rule provenance parity: ' + name);
+      compared++;
+    }
+  }
+  if (!compared) t.diagnostic('Personal Host cases exercised; native parity unrun without binary.');
+  else assert.equal(compared, 3, 'all three personal-rule paths must match native');
 });
 
 test('native projection rejects stale and contradictory real Host snapshots', t => {
