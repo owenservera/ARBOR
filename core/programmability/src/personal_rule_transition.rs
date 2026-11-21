@@ -391,12 +391,12 @@ mod tests {
         json!({"schema":STORE,"version":0,"entries":[],"history":[]})
     }
     fn input(mode: &str, current: Value) -> Value {
+        let receipt = if mode == "propose" { Value::Null }
+            else { json!("owner:receipt") };
         json!({"schema":INPUT,"mode":mode,"expectedVersion":current["version"],
             "current":current,"previous":null,"candidate":null,
             "ruleId":null,"nextState":null,"toRevision":null,
-            "entryOrder":["rule:a"],
-            "ownerReceiptId":if mode == "propose" { Value::Null }
-                else { json!("owner:receipt") },
+            "entryOrder":["rule:a"],"ownerReceiptId":receipt,
             "at":"2026-11-21T00:00:00.000Z"})
     }
     #[test]
