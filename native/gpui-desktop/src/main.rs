@@ -28,7 +28,7 @@ fn viewport_for_window(window: &Window) -> u32 {
 }
 
 use gpui_component::{Root, input::{Input, InputState}, button::{Button, ButtonVariants}};
-use vivim_gpui_desktop::{Overview, ReadError, DevelopmentRevisionGuard, read_overview, read_development, control::{self, Review}, visual::{self, Visual, RevisionGuard}};
+use vivim_gpui_desktop::{Overview, ReadError, ObservationTicket, passive_read_allowed, DevelopmentRevisionGuard, read_overview, read_development, control::{self, Review}, visual::{self, Visual, RevisionGuard}};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Panel { Overview, Wiki, Visual, Graph, Control }
@@ -110,9 +110,13 @@ impl Desktop {
         }).detach();
     }
     fn select_panel(&mut self, panel:Panel, cx:&mut Context<Self>){
+        let changed=self.panel!=panel;
         self.panel=panel;
         self.status=format!("{} · local native view only",panel.label());
         cx.notify();
+        // A panel switch is an explicit freshness request, but still cannot
+        // read through a Host approval, command or uncertain receipt.
+        if changed {self.refresh(cx);}
     }
     fn retry_transient_source_drift(&mut self, cx: &mut Context<Self>) {
         // One bounded retry after a torn Wiki bracket or mismatched TierFlow
@@ -125,8 +129,8 @@ impl Desktop {
             let _=this.update(cx,|view,cx|{
                 if view.viewport_epoch==viewport_epoch &&
                     view.source_epoch==source_epoch &&
-                    !view.busy && !view.uncertain &&
-                    !view.review.as_ref().is_some_and(Review::needs_approval) {
+                    passive_read_allowed(view.busy,view.uncertain,
+                        view.review.as_ref().is_some_and(Review::needs_approval)) {
                     view.refresh(cx);
                 }
             });
@@ -142,8 +146,8 @@ impl Desktop {
                     // The existing 15-second observation tick is the upper
                     // bound on retry re-arming for a perpetually changing Host.
                     view.coherence_retry_ready=true;
-                    if !view.busy && !view.uncertain
-                        && !view.review.as_ref().is_some_and(Review::needs_approval){
+                    if passive_read_allowed(view.busy,view.uncertain,
+                        view.review.as_ref().is_some_and(Review::needs_approval)){
                         view.refresh(cx);
                     }
                 }).is_err(){break}
@@ -153,7 +157,8 @@ impl Desktop {
     fn refresh(&mut self, cx: &mut Context<Self>) {
         // Read-only observation is never a substitute for explicit owner
         // review, and does not share the in-flight command/receipt flag.
-        if self.busy || self.uncertain || self.review.as_ref().is_some_and(Review::needs_approval) {return;}
+        if !passive_read_allowed(self.busy,self.uncertain,
+            self.review.as_ref().is_some_and(Review::needs_approval)) {return;}
         // Refresh the last explicitly selected graph query, never invent a new
         // query or poll its source while an approval is pending.
         self.refresh_graph(cx);
@@ -163,9 +168,12 @@ impl Desktop {
         self.source_status="Checking owner-authorized Host source · previous read may be stale".into();
         self.visual_status="Checking Host visual · previous admission may be stale".into();
         cx.notify();
-        let viewport_px=self.viewport_px;
-        let epoch=self.viewport_epoch;
-        let source_epoch=self.source_epoch;
+        let ticket=ObservationTicket{
+            viewport_px:self.viewport_px,
+            viewport_epoch:self.viewport_epoch,
+            source_epoch:self.source_epoch
+        };
+        let viewport_px=ticket.viewport_px;
         // These GET-only requests can finish independently. Neither invokes
         // planning, execution, approval, or a provider transport.
         let overview_job=cx.background_executor().spawn(async {read_overview()});
@@ -184,8 +192,7 @@ impl Desktop {
                 }
                 // Compare a monotonically increasing resize identity, not
                 // just width: A -> B -> A still invalidates the first A read.
-                if view.viewport_epoch!=epoch || view.viewport_px!=viewport_px
-                    || view.source_epoch!=source_epoch {
+                if !ticket.matches(view.viewport_px,view.viewport_epoch,view.source_epoch) {
                     // The last resize or Host effect invalidated both results.
                     // A queued refresh replaces this stale response entirely.
                     if std::mem::take(&mut view.refresh_pending) {view.refresh(cx);}
@@ -280,7 +287,7 @@ impl Desktop {
                         view.visual_status=match next.source.as_ref() {
                             None=>"Host online · no committed visual surface · not unavailable".into(),
                             Some(source)=>format!(
-                                "Committed {} · revision {} · VEC design SHA256 {} ·                                  +{} / ~{} / -{} / {} moved / {} reordered / {} binding changes                                  · {} · {}",
+                                "Committed {} · revision {} · VEC design SHA256 {} · +{} / ~{} / -{} / {} moved / {} reordered / {} binding changes · {} · {}",
                                 source.surface_id,source.revision,
                                 next.vec_view.as_ref().map(|v|v.design_digest.as_str())
                                     .unwrap_or("not compiled"),
@@ -411,13 +418,16 @@ impl Desktop {
         self.request_graph(operation,key,cx);
     }
     fn refresh_graph(&mut self,cx:&mut Context<Self>){
+        // Hidden graph tabs retain their last exact query but never spend
+        // background GETs on unread results.
+        if !matches!(self.panel,Panel::Overview|Panel::Graph){return;}
         if let Some((operation,key))=self.graph_query.clone() {
             self.request_graph(operation,key,cx);
         }
     }
     fn request_graph(&mut self,operation:&'static str,key:String,cx:&mut Context<Self>){
-        if self.graph_busy||self.busy||self.uncertain
-            ||self.review.as_ref().is_some_and(Review::needs_approval){return;}
+        if self.graph_busy || !passive_read_allowed(self.busy,self.uncertain,
+            self.review.as_ref().is_some_and(Review::needs_approval)){return;}
         self.graph_busy=true;
         self.graph_status=format!("Refreshing owner-authorized graph {operation} for “{key}” · previous read may be stale");
         cx.notify();

@@ -36,6 +36,27 @@ pub struct Overview {
     pub wiki_index_truncated: bool,
 }
 
+/// The GPUI-only identity of one authorized read attempt. This does not
+/// carry an owner credential, action grant or Host revision identity.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ObservationTicket {
+    pub viewport_px: u32,
+    pub viewport_epoch: u64,
+    pub source_epoch: u64,
+}
+impl ObservationTicket {
+    pub fn matches(&self, width:u32, viewport_epoch:u64, source_epoch:u64)->bool {
+        self.viewport_px==width &&
+            self.viewport_epoch==viewport_epoch &&
+            self.source_epoch==source_epoch
+    }
+}
+/// Passive observation never runs while a command/receipt, uncertain effect
+/// or pending exact Host approval is in flight.
+pub fn passive_read_allowed(busy:bool, uncertain:bool, approval_pending:bool)->bool {
+    !busy && !uncertain && !approval_pending
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ReadError {
     Offline, OwnerRequired, Unavailable, InvalidProjection, InvalidInput, SnapshotChanged,
@@ -288,6 +309,19 @@ mod tests {
         json!({"schema":"vivim.host-pwa-view/1","state":"source-backed","observedAt":"2026-11-20T00:00:00Z",
             "snapshot":{"control":{"schema":"vivim.control-recent/1","recent":[{"actionId":"wiki.page.create","state":"applied"}]},
             "devices":{"schema":"vivim.device-counts/1","active":2}}})
+    }
+    #[test] fn read_ticket_refuses_resize_a_b_a_and_host_effect_overlap() {
+        let request=ObservationTicket{viewport_px:960,viewport_epoch:8,source_epoch:3};
+        assert!(request.matches(960,8,3));
+        assert!(!request.matches(720,8,3));
+        assert!(!request.matches(960,10,3)); // A -> B -> A
+        assert!(!request.matches(960,8,4)); // Host effect began
+    }
+    #[test] fn passive_observation_never_crosses_owner_approval() {
+        assert!(passive_read_allowed(false,false,false));
+        assert!(!passive_read_allowed(true,false,false));
+        assert!(!passive_read_allowed(false,true,false));
+        assert!(!passive_read_allowed(false,false,true));
     }
     #[test] fn rejects_unrelated_listener() {
         assert_eq!(validate_health(&json!({"host":{"state":"online"}})), Err(ReadError::Offline));
