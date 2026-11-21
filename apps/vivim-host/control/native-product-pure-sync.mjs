@@ -15,6 +15,7 @@ const operations=Object.freeze({
   'wiki-write-recipe':'vivim.wiki-write-recipe-native/1',
   'wiki-read-recipe':'vivim.wiki-read-recipe-native/1',
   'command-ai-guard':'vivim.command-ai-proposal-guard/1',
+  'command-intent-projection':'vivim.command-intent-projection/1',
   'control-lexicon-transition':'vivim.control-lexicon-transition/1',
   'personal-rule-selection':'vivim.personal-rule-selection/1',
   'control-catalog-compatibility':'vivim.control-catalog-compatibility/1',

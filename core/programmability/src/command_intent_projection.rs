@@ -142,7 +142,9 @@ fn intent_with_meta(outcome: &str, mut fields: Value, meta: &Value) -> Value {
     intent
 }
 fn check_reading(reading: &Value, source: &Value, personal: &Value, baseline: &Value) -> bool {
-    if reading["schema"] != LANGUAGE || reading["input"] != source["text"] {
+    if reading["schema"] != LANGUAGE ||
+        !(reading["input"] == source["text"] ||
+          reading["input"].as_str() == source["text"].as_str().map(str::trim)) {
         return false
     }
     let Some(outcome) = reading["outcome"].as_str() else { return false };
@@ -156,14 +158,14 @@ fn check_reading(reading: &Value, source: &Value, personal: &Value, baseline: &V
             m.iter().all(safe_text)) { return false }
     }
     if !personal.is_null() {
-        if baseline != "interpretation_required" { return false }
+        if baseline.as_str() != Some("interpretation_required") { return false }
         match personal["method"].as_str() {
             Some("accepted-personal-rule") if outcome == "candidate" => (),
             Some("personal-rule-conflict") if outcome == "clarification_required" => (),
             Some("personal-rule-refusal") if outcome == "refused" => (),
             _ => return false,
         }
-    } else if baseline != reading["outcome"] {
+    } else if baseline.as_str() != reading["outcome"].as_str() {
         return false
     }
     true

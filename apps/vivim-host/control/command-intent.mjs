@@ -20,6 +20,19 @@ function refuse(input, code, message, extra = {}) {
 function canonical(actionId, args) {
   return '/' + actionId + Object.keys(args).sort().map(k => ' ' + k + '=' + JSON.stringify(args[k])).join('');
 }
+
+function sameJsonMeaning(left, right) {
+  const normalize = value => {
+    if (Array.isArray(value)) return '[' + value.map(item =>
+      item === undefined ? 'null' : normalize(item)).join(',') + ']';
+    if (isRecord(value)) return '{' + Object.keys(value).sort()
+      .filter(key => value[key] !== undefined)
+      .map(key => JSON.stringify(key) + ':' + normalize(value[key])).join(',') + '}';
+    return JSON.stringify(value);
+  };
+  try { return normalize(left) === normalize(right); } catch { return false; }
+}
+
 // Rendering only: this is not a parser. The Host must compile the returned
 // sentence and compare its resolved meaning before claiming round-trip proof.
 export function wikiApprovalSentence(actionId,args) {
@@ -111,6 +124,10 @@ export function toCommandIntent(input, { catalog, world, personalRules = [], per
       personalProvenance = { method: 'personal-rule-refusal', reason: resolved.reason };
     }
   }
+  // The Host has already run the one NLCL grammar and, if applicable,
+  // the accepted personal-rule binder. A native binary never receives a
+  // model-supplied "reading" or bypasses this authoritative interpretation.
+  function incumbentProjection() {
   const meta = { language: { feedback: meaning.feedback,
     ...(meaning.ignoredModifiers ? { ignoredModifiers: meaning.ignoredModifiers } : {}),
     ...(personalProvenance ? { personalRule: personalProvenance } : {}) }, provenance: {
@@ -147,6 +164,33 @@ export function toCommandIntent(input, { catalog, world, personalRules = [], per
   const args = checkedArgs(action, meaning.candidate.args);
   if (!args) return refuse(input, 'INVALID_ARGS', 'Candidate does not satisfy the catalog.');
   return { schema: COMMAND_INTENT_SCHEMA, outcome: 'candidate', ...actionShape(action, args), ...meta };
+  }
+  const incumbent = incumbentProjection();
+  const native = runNativeProductPureSync('command-intent-projection', {
+    schema: 'vivim.command-intent-projection-input/1',
+    input: {
+      text: input.text,
+      ...(input.catalogRevision !== undefined ? { catalogRevision: input.catalogRevision } : {}),
+      ...(input.worldRevision !== undefined ? { worldRevision: input.worldRevision } : {}),
+      audience: input.audience ?? 'owner',
+      scope: input.scope ?? 'text'
+    },
+    catalogVersion: catalog.version, worldRevision: world.v,
+    catalogActions: catalog.actions, reading: meaning, baselineOutcome: baseline.outcome,
+    personalProvenance
+  });
+  if (!native) return incumbent; // No binary / older native kernel.
+  // Compute and compare against the existing Host projection until the real
+  // corpus proves exact parity. A present but mismatching native result is
+  // refused, not silently trusted or silently downgraded to a new meaning.
+  if (native.schema === 'vivim.command-intent-projection/1' &&
+    native.outcome === 'projected' && native.authority === 'none' &&
+    native.executionAuthorized === false && native.effectPerformed === false &&
+    native.intent?.schema === COMMAND_INTENT_SCHEMA &&
+    allowedOutcomes.has(native.intent.outcome) &&
+    native.intent.provenance?.authority === 'none' &&
+    sameJsonMeaning(native.intent, incumbent)) return native.intent;
+  return refuse(input, 'NATIVE_INTENT_INVALID', 'Native command intent differs from the Host reading.');
 }
 
 /**
@@ -169,31 +213,8 @@ export function validateAiCommandCandidate(input, { catalog, world, personalRule
   // NLCL owns the interpretation. Rust checks the exact owner-text reading
   // against the model's bounded proposal and current Host catalog action.
   const action=check.actions.get(proposal.actionId);
-  const native=runNativeProductPureSync('command-ai-guard',{
-    schema:'vivim.command-ai-proposal-guard-input/1',
-    input:{text:input.text,scope:input.scope??'text',audience:input.audience??'owner',
-      catalogRevision:input.catalogRevision??null,worldRevision:input.worldRevision??null},
-    proposal,reading,action:action??null,
-    catalogVersion:catalog.version,worldRevision:world.v
-  });
-  if(native){
-    const intent=native.intent;
-    if(native.outcome==='projected'&&native.authority==='none'&&
-      native.executionAuthorized===false&&native.effectPerformed===false&&
-      intent?.schema===COMMAND_INTENT_SCHEMA&&
-      (intent.outcome==='refused'&&typeof intent.refusal?.code==='string'&&
-        intent.provenance?.authority==='none'||
-        intent.outcome==='candidate'&&intent.actionId===proposal.actionId&&
-        intent.risk===action?.risk&&intent.owner===action?.owner&&
-        intent.readiness===action?.readiness&&
-        intent.canonical===canonical(proposal.actionId,intent.args)&&
-        intent.provenance?.method==='bounded-ai-proposal'&&
-        intent.provenance?.worldRevision===world.v&&
-        intent.provenance?.catalogRevision===catalog.version&&
-        intent.provenance?.authority==='none'))
-      return intent;
-    return refuse(input,'NATIVE_INTENT_INVALID','Native AI candidate binding invalid.');
-  }
+
+  function incumbentAiProjection() {
   if (!allowedOutcomes.has(reading.outcome) || reading.outcome === 'refused' ||
       reading.outcome === 'clarification_required')
     return refuse(input, 'UNSAFE_OR_UNRESOLVED_TEXT', 'Owner text must be clarified before proposing an action.');
@@ -209,4 +230,23 @@ export function validateAiCommandCandidate(input, { catalog, world, personalRule
     ...actionShape(action, args),
     provenance: { ...provenance(input, catalog, world, 'bounded-ai-proposal', null),
       rationale: proposal.rationale ?? null, uncertainty: proposal.uncertainty ?? null } };
+  }
+  const incumbent = incumbentAiProjection();
+  const native=runNativeProductPureSync('command-ai-guard',{
+    schema:'vivim.command-ai-proposal-guard-input/1',
+    input:{text:input.text,scope:input.scope??'text',audience:input.audience??'owner',
+      catalogRevision:input.catalogRevision??null,worldRevision:input.worldRevision??null},
+    proposal,reading,action:action??null,
+    catalogVersion:catalog.version,worldRevision:world.v
+  });
+  if (!native) return incumbent;
+  // Exact source action, normalized args, risk, scope, readiness and
+  // provenance must agree with the legacy Host decision, including refusal.
+  if (native.schema === 'vivim.command-ai-proposal-guard/1' &&
+    native.outcome === 'projected' && native.authority === 'none' &&
+    native.executionAuthorized === false && native.effectPerformed === false &&
+    native.intent?.schema === COMMAND_INTENT_SCHEMA &&
+    native.intent.provenance?.authority === 'none' &&
+    sameJsonMeaning(native.intent, incumbent)) return native.intent;
+  return refuse(input, 'NATIVE_INTENT_INVALID', 'Native AI candidate binding invalid.');
 }
