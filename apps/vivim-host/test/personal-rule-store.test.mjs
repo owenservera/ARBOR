@@ -823,3 +823,40 @@ test('rollback refuses forged after-rule identity behind unrelated history metad
   assert.equal(readFileSync(store.file,'utf8'),bytes);
   assert.equal(store.snapshot().version,2);
 });
+
+test('rollback requires continuous per-rule history and live revision identity',t=>{
+  let checks=0;
+  const {store}=withStore(t,()=>{checks++;return true});
+  const p=store.propose(proposal(0));
+  store.transition({ruleId:p.ruleId,nextState:'accepted',
+    expectedVersion:1,approval:{receiptId:'accepted-proof'}});
+  store.transition({ruleId:p.ruleId,nextState:'suspended',
+    expectedVersion:2,approval:{receiptId:'suspended-proof'}});
+  const base=JSON.parse(readFileSync(store.file,'utf8'));
+  for(const edit of [
+    data=>{
+      // The rollback target r3 remains unmodified. A much older event
+      // claims the same rule at r9, breaking the retained revision chain.
+      data.history[0].revision=9;
+      data.history[0].after.revision=9;
+    },
+    data=>{
+      // Replacing only live state must not make historical rollback valid.
+      data.entries[0].revision=4;
+    },
+    data=>{
+      data.history[0].ruleId='rule:foreign';
+    },
+  ]){
+    const bad=structuredClone(base);
+    edit(bad);
+    writeFileSync(store.file,JSON.stringify(bad,null,2),{mode:0o600});
+    const saved=readFileSync(store.file,'utf8');
+    assert.throws(()=>store.rollback({ruleId:p.ruleId,toRevision:3,
+      expectedVersion:3,approval:{receiptId:'rollback-proof'}}),
+      /PERSONAL_STORE_UNKNOWN_REVISION/);
+    assert.equal(readFileSync(store.file,'utf8'),saved);
+    assert.equal(store.snapshot().version,3);
+  }
+  assert.equal(checks,2,'corrupt rollback never reaches owner verifier');
+});
