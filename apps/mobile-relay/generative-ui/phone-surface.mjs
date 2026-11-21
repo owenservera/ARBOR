@@ -15,6 +15,7 @@ let surface = null;
 let pending = false;
 let handleStatus = () => {};
 let clearBuildSurface = () => {};
+let repaintGeneration=0;
 
 function locate(node, id) {
   if (node.id === id) return node;
@@ -50,10 +51,20 @@ export async function sendProposal() {
 }
 
 async function repaint() {
+  const generation=repaintGeneration;
+  const grant=transport.direct?transport.deviceHeaders?.():null;
+  const current=()=>generation===repaintGeneration&&(!transport.direct||
+    !!grant&&transport.deviceHeaders?.()?.['x-vivim-device-session']===grant['x-vivim-device-session']&&
+    transport.deviceHeaders?.()?.['x-vivim-grant-id']===grant['x-vivim-grant-id']);
+  if(!current()){clearBuildSurface();return;}
   try {
     const status = await transport.request('status');
+    // In-flight old-grant results must not repaint or clear a new surface.
+    if(!current())return;
     handleStatus(status);
-  } catch { clearBuildSurface(); /* offline or unauthorized projections must not remain actionable */ }
+  } catch {
+    if(current())clearBuildSurface(); // offline/unauthorized; do not keep actionable UI
+  }
 }
 
 export function mountBuildSurface(mount, { onCommit = () => {}, semantic = null, readOnly = false, onInstances=()=>{}, onSelection=()=>{} } = {}) {
@@ -170,6 +181,21 @@ export function mountBuildSurface(mount, { onCommit = () => {}, semantic = null,
     event.preventDefault();event.stopPropagation();
     selectInstance(target,surface.revision,'tap');
   },true);
+  function setVisualSourceScope(identity){
+    const state=revisionGuard.bindScope(identity);
+    if(state.state==='refused')return false;
+    if(state.state==='changed'){
+      repaintGeneration++;
+      bindingFence.clearScope();
+      clear(); // new grant must never inherit selected TierFlow nodes
+    }
+    return true;
+  }
+  function clearVisualSourceScope(){
+    repaintGeneration++;
+    revisionGuard.clearScope();bindingFence.clearScope();
+    clear();
+  }
   function setBindingScope(identity){
     const state=bindingFence.bindScope(identity);
     if(state.state==='refused')return false;
@@ -203,7 +229,8 @@ export function mountBuildSurface(mount, { onCommit = () => {}, semantic = null,
       return true;
     }catch{clear();return false;}
   }
-  return { render, setSurface, setLiveData, setBindingScope, clearBindingScope,
+  return { render, setSurface, setLiveData, setVisualSourceScope, clearVisualSourceScope,
+    setBindingScope, clearBindingScope,
     clear, listInstances, selectInstance, selectedInstance, setInspecting, surface: () => surface,
     draftSurface: () => initialDraft, pending: () => pending,
     revisionState: () => revisionGuard.status(),
