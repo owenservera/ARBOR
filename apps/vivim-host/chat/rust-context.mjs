@@ -332,10 +332,12 @@ function managedReader({env,dataRoot,productJournal,control,executePersonal,repo
             Number.MAX_SAFE_INTEGER,
           ...(last?{baseEpoch:last.epoch}:{}),
           relationships:linkPuts,relationshipDeltas:linkDeletes,
-          activeIds:rows.map(row=>row.id)
+          activeIds:rows.map(row=>row.id),
+          activeRelationshipIds:relationships.map(link=>link.id)
         }:{
           schema:PERSONAL_SCHEMA,scope,op:'sync-context-read',view,nodes:rows,
-          relationships,activeIds:rows.map(row=>row.id)
+          relationships,activeIds:rows.map(row=>row.id),
+          activeRelationshipIds:relationships.map(link=>link.id)
         };
         if(delta&&(packetInput.deltas.length>512||linkPuts.length+linkDeletes.length>24))
           return unavailable('RUST_CORE_SOURCE_LIMIT');

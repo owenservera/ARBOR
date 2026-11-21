@@ -43,7 +43,7 @@ pub fn check_managed_head(journal: &Path, expected: &JournalStatus) -> Result<()
 // node of this view stays retrievable, and the scoped query budget bounds the
 // output rather than the reachable set.
 pub fn project_managed_graph(graph: &Graph, scope: &str, epoch:u64, view:&str) -> Result<Value> {
-    project_managed_graph_selected(graph,scope,epoch,view,None)
+    project_managed_graph_selected(graph,scope,epoch,view,None,None)
 }
 
 /// Limit retrieval to the exact currently verified Host source identities.
@@ -52,7 +52,8 @@ pub fn project_managed_graph(graph: &Graph, scope: &str, epoch:u64, view:&str) -
 /// remain mandatory, and only graph-backed records can be returned.
 pub fn project_managed_graph_selected(
     graph: &Graph, scope: &str, epoch:u64, view:&str,
-    active: Option<&BTreeSet<String>>
+    active: Option<&BTreeSet<String>>,
+    active_links: Option<&BTreeSet<String>>
 ) -> Result<Value> {
     let (ns,prefix)=scope_prefix(scope,view)?;
     graph.check_indexes()?;
@@ -90,6 +91,10 @@ pub fn project_managed_graph_selected(
         // A stale page-link edge cannot bring an inactive source back into a
         // phone or owner context view by its relationship endpoints.
         if active.is_some() && (!orders.contains_key(&edge.from) || !orders.contains_key(&edge.to)) {
+            continue;
+        }
+        if active_links.is_some_and(|ids|
+            !ids.contains(edge.id.strip_prefix(&prefix).unwrap_or(""))) {
             continue;
         }
         let from = graph.node(&edge.from).ok_or_else(|| Error::Corrupt("Wiki link endpoint missing".into()))?;

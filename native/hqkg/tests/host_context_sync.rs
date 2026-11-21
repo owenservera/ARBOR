@@ -442,11 +442,22 @@ fn explicit_link_invalidation_removes_only_committed_page_relationship() {
     let (ok,first)=sync_with_relationships(&file,SCOPE,rows.clone(),vec![link.clone()]);
     assert!(ok,"{first}");
     let epoch=first["epoch"].as_u64().unwrap();
+    // A restart may still have a durable historic relationship outside the
+    // current bounded Host link projection. Selection never exposes it.
+    let masked=json!({"schema":"vivim.hqkg-personal/1","scope":SCOPE,
+        "op":"sync-context-read","view":"wiki","nodes":[],"relationships":[],
+        "baseRevision":3,"baseEpoch":epoch,"deltas":[],
+        "activeIds":[a["id"],b["id"]],"activeRelationshipIds":[]});
+    let (ok,readback)=run_packet(&file,masked);
+    assert!(ok,"{readback}");
+    assert_eq!(readback["context"]["pageRelationships"],json!([]));
+    assert_eq!(Journal::new(&file).load().unwrap().edge_count(),1,
+        "read selection cannot remove the durable relationship");
     let del=json!({"op":"delete","id":link["id"],"revision":3,"digest":link["digest"]});
     let packet=json!({"schema":"vivim.hqkg-personal/1","scope":SCOPE,
         "op":"sync-context-read","view":"wiki","nodes":[],"relationships":[],
         "baseRevision":3,"baseEpoch":epoch,"deltas":[],
-        "activeIds":[a["id"],b["id"]],"relationshipDeltas":[del]});
+        "activeIds":[a["id"],b["id"]],"activeRelationshipIds":[],"relationshipDeltas":[del]});
     let (ok,removed)=run_packet(&file,packet);
     assert!(ok,"{removed}");
     assert_eq!(removed["context"]["pageRelationships"],json!([]));

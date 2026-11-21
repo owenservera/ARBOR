@@ -248,6 +248,21 @@ fn sync_context(v: &Value, ns: &Namespace, journal: &Journal, g: &mut Graph,
         }
         _ => return Err("active context scope requires bounded managed read".into()),
     };
+    let active_relationships:Option<BTreeSet<String>>=match v.get("activeRelationshipIds") {
+        None => None,
+        Some(Value::Array(ids)) if view.is_some() && active_ids.is_some() && ids.len()<=24 => {
+            let mut selected=BTreeSet::new();
+            for value in ids {
+                let id=value.as_str().ok_or("invalid active Wiki link id")?;
+                if !id.strip_prefix("vivim-context-p-").is_some_and(hex) ||
+                    !selected.insert(id.to_string()) {
+                    return Err("invalid active Wiki relationship identity".into());
+                }
+            }
+            Some(selected)
+        }
+        _ => return Err("active Wiki link selection requires scoped context read".into()),
+    };
     let nodes = v["nodes"].as_array().ok_or("context nodes required")?;
     if nodes.len() > MAX_CONTEXT_RECORDS { return Err("POLICY_LIMIT context nodes".into()); }
     let prefix = scoped_graph::prefix(ns).map_err(err)?;
@@ -506,7 +521,17 @@ fn sync_context(v: &Value, ns: &Namespace, journal: &Journal, g: &mut Graph,
                 }
             }
         }
-        packet["context"]=project_managed_graph_selected(&durable,scope,status.epoch,view,active_ids.as_ref()).map_err(quarantine)?;
+        if let Some(ids)=&active_relationships {
+            for local in ids {
+                let id=scoped_graph::qualified_id(ns,local).map_err(err)?;
+                let edge=durable.edge(&id).ok_or("active Wiki link missing from durable graph")?;
+                if edge.properties.get("vivim.context.kind").map(String::as_str)!=Some("wiki-page-link") {
+                    return Err("invalid active Wiki link kind".into());
+                }
+            }
+        }
+        packet["context"]=project_managed_graph_selected(&durable,scope,status.epoch,
+            view,active_ids.as_ref(),active_relationships.as_ref()).map_err(quarantine)?;
         // Preserve the standalone reader's final on-disk epoch/length check.
         let after=journal.status().map_err(quarantine)?;
         if after.epoch!=status.epoch || after.total_bytes!=status.total_bytes || after.trailing_bytes!=0 {
