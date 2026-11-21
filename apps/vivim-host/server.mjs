@@ -39,6 +39,7 @@ import { createLiveSourceSurface } from './control/live-source-surface.mjs';
 import { createLiveSystemReadPort } from './control/live-system-read-port.mjs';
 import { createFirstContactLiveSource } from './control/first-contact-live-source.mjs';
 import { createLiveSystemFileMirror } from './control/live-system-file-mirror.mjs';
+import { createHostComposerBridge } from './control/agent-composer-bridge.mjs';
 import { createDevelopmentReadPort } from './control/development-read-port.mjs';
 import { attachRequestContext } from './control/request-context.mjs';
 import { composerResponse, needsWikiDraftContext } from '../mobile-relay/composer-assist.mjs';
@@ -207,8 +208,10 @@ export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path
   const liveSystem = createLiveSystemReadPort({
     readWiki: () => productJournal.readProjection(),
     readPhoneObservations: () => firstContactSource.read(),
+    readComposerObservations: () => composerBridge.observation(),
     readStatus: () => hostSnapshot({dataRoot,bootstrap:runtimeFor()})
   });
+  const composerBridge=createHostComposerBridge({readSnapshot:()=>liveSystem.snapshot()});
   const tokenFor = () => {
     if (token) return token;
     token = loadOwnerToken({ dataRoot }).token;
@@ -231,7 +234,7 @@ export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path
   // One Host-owned control dispatcher for desktop text, phone text and GUI (UTC03).
   let control = null;
   const uiSessions = createControlBrowserSessions();
-  const controlFor = () => (control ??= createControlDispatcher({ dataRoot, runtime: runtimeFor(), devices: enrollment, productJournal }));
+  const controlFor = () => (control ??= createControlDispatcher({ dataRoot, runtime: runtimeFor(), devices: enrollment, productJournal, composerBridge }));
   const nativeContext = createRustChatContext({dataRoot:path.resolve(dataRoot),productJournal,control:controlFor});
   // APK07 release registry, shared with the Direct phone handler so a release registered on
   // the PC is immediately downloadable by the phone (same dataRoot/apk-artifacts).
@@ -287,6 +290,7 @@ export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path
       return onboardingService.providerSnapshot();
     },
     control: controlFor, wikiProjection: () => productJournal.readPhoneWiki(),
+    composerBridge,
     apkRegistry: apk, pairingStore: pairing,
     onPhoneSeen: () => onboardingService.phoneSeen(),
     primary: () => onboardingService.primary()
@@ -497,6 +501,34 @@ export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path
         // No credentials, local paths, exception text or old source content in failure responses.
         sendJson(res, 503, context ? { schema: 'vivim.source-context/1', status: 'unavailable', context: null }
           : indexing ? { status: 'unavailable', code: 'HQ_UNAVAILABLE' } : empty);
+      }
+      return;
+    }
+    if(pathname.startsWith('/api/host/live-system/composer/')){
+      const command=pathname.slice('/api/host/live-system/composer/'.length);
+      const allowed={stage:'POST',pause:'POST',status:'GET'};
+      if(!Object.hasOwn(allowed,command)){sendJson(res,404,{code:'NOT_FOUND'});return;}
+      if(req.method!==allowed[command]){
+        res.setHeader('allow',allowed[command]);sendJson(res,405,{code:'METHOD'});return;
+      }
+      if(String(req.headers.origin||'').toLowerCase()!=='http://'+host ||
+         (req.method==='POST'&&req.headers['x-vivim-control']!=='1')){
+        sendJson(res,403,{code:'ORIGIN_OR_CSRF'});return;
+      }
+      if(!ownerAuthorized(req,res,tokenFor))return;
+      res.setHeader('cache-control','private, no-store');
+      try{
+        if(command==='status'){sendJson(res,200,composerBridge.status());return;}
+        const body=await readJsonBody(req,8192);
+        if(command==='pause'){
+          if(Object.keys(body).length!==1||typeof body.paused!=='boolean')
+            {sendJson(res,400,{code:'COMPOSER_CONTROL_INVALID'});return;}
+          sendJson(res,200,composerBridge.setPaused(body.paused));return;
+        }
+        sendJson(res,202,await composerBridge.stage(body));
+      }catch(error){
+        sendJson(res,[400,409,423,503].includes(error?.status)?error.status:503,{
+          code:error?.code||'COMPOSER_UNAVAILABLE',executionAuthorized:false,effectPerformed:false});
       }
       return;
     }
