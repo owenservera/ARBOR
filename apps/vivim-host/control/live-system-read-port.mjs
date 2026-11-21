@@ -31,11 +31,13 @@ export function createLiveSystemReadPort({
   readWiki,
   readStatus,
   readPhoneObservations = async () => [],
+  readComposerObservations = async () => [],
   clock = () => Date.now(),
   epoch = 'host.' + randomBytes(12).toString('hex')
 } = {}) {
   if(typeof compute !== 'function' || typeof readWiki !== 'function' ||
      typeof readStatus !== 'function' || typeof readPhoneObservations !== 'function' ||
+     typeof readComposerObservations !== 'function' ||
      typeof epoch !== 'string' || !/^[a-zA-Z0-9._:-]{1,128}$/.test(epoch))
     throw fail('LIVE_SYSTEM_DEPENDENCY');
   let state = null;
@@ -105,10 +107,28 @@ export function createLiveSystemReadPort({
       current=reply?.state;
       if(current?.schema!=='vivim.live-system-state/1') throw fail('LIVE_SYSTEM_STATE_INVALID');
     }
+    // Real #text composer observations originate inside the authenticated
+    // Direct phone handler, not from the first-contact diagnostic log. The
+    // owner-only projection may carry draft text; diagnostics never may.
+    const composerObservations=await readComposerObservations();
+    if(!Array.isArray(composerObservations)||composerObservations.length>1||
+       composerObservations.some(o=>o?.id!=='phone.composer'||o.kind!=='input'||
+         o.sourceId!=='host.first-contact-composer'||o.exposure!=='owner'||
+         !Array.isArray(o.writable)||o.writable.some(f=>
+           f.pointer!=='/draft'||f.primitive!=='text'||
+           f.actionId!=='pwa.composer.draft.set')))
+      throw fail('LIVE_COMPOSER_OBSERVATION_INVALID');
+    for(const observation of composerObservations){
+      const response=await computeRust('integrate',{state:current,
+        observation,correlationId:'read.composer'});
+      current=response?.state;
+      if(current?.schema!=='vivim.live-system-state/1')
+        throw fail('LIVE_SYSTEM_STATE_INVALID');
+    }
     // Enforce the same source-side owner allowlist even if a future region is
     // added to the Rust state. The route rechecks owner authorization.
     const safe = await computeRust('project', {state: current,
-      maxExposure: 'owner', allowedIds: ['host.health', 'wiki.summary','pwa.input','pwa.view']});
+      maxExposure: 'owner', allowedIds: ['host.health', 'wiki.summary','pwa.input','pwa.view','phone.composer']});
     if(safe?.schema !== 'vivim.live-system-state/1' || safe.epoch !== epoch ||
        !Array.isArray(safe.regions) ||
        safe.regions.some(r => !['host.health', 'wiki.summary','pwa.input','pwa.view'].includes(r.id)))
