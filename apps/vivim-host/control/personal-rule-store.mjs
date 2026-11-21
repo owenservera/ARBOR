@@ -45,9 +45,14 @@ const validHistoryEvent = (row, ruleId, revision, storeVersion, catalog) => (
   ['propose', 'remember', 'transition', 'rollback'].includes(row.op) &&
   row.after?.id === ruleId && row.after?.revision === revision &&
   validatePersonalRule(row.after, catalog).ok &&
-  (row.before === null ||
-    (row.before?.id === ruleId && Number.isSafeInteger(row.before?.revision) &&
-      row.before.revision < revision && validatePersonalRule(row.before, catalog).ok))
+  (row.op !== 'propose' || row.after.state === 'proposed') &&
+  (row.op !== 'remember' || row.after.state === 'accepted') &&
+  (row.before === null
+    ? (revision === 1 && ['propose', 'remember'].includes(row.op))
+    : (row.before?.id === ruleId && Number.isSafeInteger(row.before?.revision) &&
+      row.before.revision === revision - 1 &&
+      ['remember', 'transition', 'rollback'].includes(row.op) &&
+      validatePersonalRule(row.before, catalog).ok))
 );
 const nextRuleRevision = rule => {
   if (!Number.isSafeInteger(rule.revision) || rule.revision < 1 ||
@@ -164,10 +169,16 @@ export function createPersonalRuleStore({
     // Leave 4 KiB for envelope/key-order/serialization differences.
     const maxFrame = 512 * 1024 - 4096;
     let nativeEligible;
+    let nativeInput;
     try {
+      // The adapter receives a detached JSON transport frame. It cannot
+      // mutate Host's locked snapshot, calculated rule, or expected history
+      // and then make a corrupted native result appear equal to itself.
+      // JSON serialization retains legacy object insertion order.
+      nativeInput = JSON.parse(JSON.stringify(input));
       const requestWire = JSON.stringify({
         schema:'vivim.product-pure-request/1',
-        operation:'personal-rule-transition', input,
+        operation:'personal-rule-transition', input:nativeInput,
       });
       const responseWire = JSON.stringify({
         schema:'vivim.product-pure-response/1',
@@ -185,7 +196,7 @@ export function createPersonalRuleStore({
     let native = null;
     if (nativeEligible) {
       try {
-        native = nativeReducer('personal-rule-transition', input,
+        native = nativeReducer('personal-rule-transition', nativeInput,
           { failClosedIfPackaged: true });
       } catch {
         // A packaged native kernel that fails its transport, schema or compute
@@ -288,13 +299,25 @@ export function createPersonalRuleStore({
       // A revision is only a rollback target when its historical identity
       // is unique. Ambiguous/duplicated history cannot be used to rewrite an
       // owner-reviewed rule, even if each individual row looks valid.
+      // Both metadata and after-rule identity can claim a historical
+      // revision. If they disagree, the revision is ambiguous; never select
+      // the apparently valid copy while ignoring a conflicting event.
       const matches = current.history.filter(h => h.ruleId === ruleId &&
-        h.after?.revision === toRevision);
+        (h.revision === toRevision || h.after?.revision === toRevision));
       const past = matches.length === 1 ? matches[0].after : null;
+      const selected = matches[0];
+      const index = current.history.indexOf(selected);
+      const historicalVersion = selected?.version;
+      const versionOrderValid = index >= 0 &&
+        current.history.filter(h => h.version === historicalVersion).length === 1 &&
+        (index === 0 || current.history[index - 1].version === historicalVersion - 1) &&
+        (index === current.history.length - 1 ||
+          current.history[index + 1].version === historicalVersion + 1);
       // History is legacy-compatible and not rewritten on read. However a
       // malformed historical row must never make rollback change identities.
-      if (!past || !validHistoryEvent(matches[0], ruleId, toRevision,
-          current.version, catalog) || toRevision > old.revision)
+      if (!past || !versionOrderValid ||
+          !validHistoryEvent(selected, ruleId, toRevision,
+            current.version, catalog) || toRevision > old.revision)
         throw fail('PERSONAL_STORE_UNKNOWN_REVISION');
       const approvalSubject = { ruleId, ruleDigest: digest(old), nextState: past.state,
         rollbackTo: toRevision, storeVersion: current.version, catalogVersion: catalog.version };
