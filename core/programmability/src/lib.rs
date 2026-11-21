@@ -39,6 +39,7 @@ pub mod vec_admission;
 pub mod source_digest;
 pub mod live_surface;
 pub mod live_system;
+pub mod agent_composer;
 #[cfg(target_arch="wasm32")]
 pub mod browser_abi;
 mod lineage;
