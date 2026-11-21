@@ -14,7 +14,6 @@ import { renderToday, renderWorld, renderMe } from './ux/render.mjs';
 import { createControlChat } from './control-chat.mjs';
 import { initializeRustUiEngine, rustUiEngineStatus as coreUiStatus, rustFirstContact } from './vec-engines/rust-wasm.mjs';
 import { mountComposerAssist } from './composer-assist.mjs';
-import { mountFirstContactComposer } from './first-contact-composer.ts';
 import { sourceCards, sameSourceCard, matchesSourceContext, exactSourceContextUrl, reconcileSourceCards } from './wiki-source-view.mjs';
 import { deriveReadiness, safeReadinessReport } from './ux/readiness.mjs';
 import { mountCapabilityLauncher } from './ux/launcher-ui.mjs';
@@ -2792,12 +2791,16 @@ mountFirstWiki();
 if (FIRST_CONTACT) {
   // Owner-Tailscale composer is an observed, approval-fenced document slice,
   // not a second send channel. Same existing #text and Wiki input listeners.
-  mountFirstContactComposer({
-    field: $('text'),
-    active: () => N.target === 'vivim' && S.tab === 'talk' &&
-      !HOST_PREVIEW && transport.direct,
-    maxLength: () => $('text').maxLength > 0 ? $('text').maxLength : 1000
-  });
+  // Dynamic import preserves the unchanged Cloud/mobile shell: the
+  // owner-only .ts assets are fetched solely on the Direct first-contact URL.
+  void import('./first-contact-composer.ts').then(({mountFirstContactComposer})=>{
+    mountFirstContactComposer({
+      field: $('text'),
+      active: () => N.target === 'vivim' && S.tab === 'talk' &&
+        !HOST_PREVIEW && transport.direct,
+      maxLength: () => $('text').maxLength > 0 ? $('text').maxLength : 1000
+    });
+  }).catch(()=>{ /* unavailable bridge never enables remote draft edits */ });
 }
 if (FIRST_CONTACT) {
   $('text').placeholder = 'Ask anything…';
