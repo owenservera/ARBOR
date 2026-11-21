@@ -28,7 +28,7 @@ fn viewport_for_window(window: &Window) -> u32 {
     viewport_for_width(f32::from(window.viewport_size().width))
 }
 
-use gpui_component::{Root, input::{Input, InputState}, button::{Button, ButtonVariants}};
+use gpui_component::{Root, StyledExt, input::{Input, InputState}, button::{Button, ButtonVariants}};
 use vivim_gpui_desktop::{Overview, ReadError, ObservationTicket, passive_read_allowed, DevelopmentRevisionGuard, read_overview, read_development, control::{self, Review}, visual::{self, Visual, RevisionGuard}};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -959,7 +959,7 @@ fn main() {
                         review:None,last_plan:None,busy:false,uncertain:false,
                         graph_detail:String::new(),graph_status:"Graph not yet queried".into(),graph_busy:false,graph_pending:false,
                         graph_query:None,graph_guard:DevelopmentRevisionGuard::default()};
-                    cx.observe_window_bounds(window, |view,window,cx|{
+                    cx.observe_window_bounds(window, |view: &mut Desktop,window,cx|{
                         view.set_viewport(viewport_for_window(window),cx);
                     }).detach();
                     view.refresh(cx);view.start_observer(cx);view
