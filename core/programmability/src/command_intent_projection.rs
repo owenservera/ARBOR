@@ -210,7 +210,9 @@ fn valid_personal_rule_id(value: &Value) -> bool {
     })
 }
 
-pub(crate) fn personal_provenance_valid(personal: &Value, catalog_version: &Value) -> bool {
+pub(crate) fn personal_provenance_valid(
+    personal: &Value, catalog_version: &Value, source_text: &Value
+) -> bool {
     if personal.is_null() { return true }
     let Some(fields) = personal.as_object() else { return false };
     // Provenance is evidence of a past Host binder decision, never a grant.
@@ -221,23 +223,44 @@ pub(crate) fn personal_provenance_valid(personal: &Value, catalog_version: &Valu
     }
     match personal["method"].as_str() {
         Some("accepted-personal-rule") => {
+            // These are the complete fields emitted by the incumbent Host binder.
+            // Recipe/template reuse is only descriptive, not a permission token.
+            fields.keys().all(|key| matches!(key.as_str(),
+                "method" | "ruleId" | "ruleRevision" | "catalogRevision" |
+                "semanticScope" | "reuse" | "invocation" | "templateSchema")) &&
             valid_personal_rule_id(&personal["ruleId"]) &&
             personal["ruleRevision"].as_u64().is_some_and(|v| v > 0 && v <= MAX_SAFE) &&
             personal["catalogRevision"] == *catalog_version &&
             personal["semanticScope"].as_object().is_some_and(|scope| {
                 scope.len() <= 4 && scope.iter().all(|(key, value)| {
                     matches!(key.as_str(), "surface" | "workspaceId" | "activity" | "providerId") &&
-                    value.as_str().is_some_and(|v| !v.is_empty() && v.len() <= 128)
+                    value.as_str().is_some_and(|v| !v.is_empty() && v.len() <= 128 &&
+                        (key != "surface" || matches!(v, "text" | "desktop" | "mobile" | "visual")))
                 })
-            })
+            }) &&
+            match fields.get("reuse") {
+                None => !fields.contains_key("invocation") && !fields.contains_key("templateSchema"),
+                Some(reuse) => match reuse.as_str() {
+                    Some("typed-write-recipe") =>
+                        personal.get("invocation") == Some(source_text) &&
+                        !fields.contains_key("templateSchema"),
+                    Some("parameterized-template") =>
+                        personal.get("invocation") == Some(source_text) &&
+                        personal["templateSchema"] == "vivim.personal-command-template/1",
+                    _ => false,
+                },
+            }
         },
-        Some("personal-rule-conflict") => personal["ruleIds"].as_array().is_some_and(|ids| {
-            !ids.is_empty() && ids.len() <= 500 &&
-            ids.iter().all(valid_personal_rule_id) &&
-            ids.windows(2).all(|pair| pair[0].as_str() < pair[1].as_str())
-        }),
-        Some("personal-rule-refusal") => personal["reason"].as_str()
-            .is_some_and(|s| !s.is_empty() && s.len() <= 128),
+        Some("personal-rule-conflict") =>
+            fields.keys().all(|key| matches!(key.as_str(), "method" | "ruleIds")) &&
+            personal["ruleIds"].as_array().is_some_and(|ids| {
+                !ids.is_empty() && ids.len() <= 500 &&
+                ids.iter().all(valid_personal_rule_id) &&
+                ids.windows(2).all(|pair| pair[0].as_str() < pair[1].as_str())
+            }),
+        Some("personal-rule-refusal") =>
+            fields.keys().all(|key| matches!(key.as_str(), "method" | "reason")) &&
+            personal["reason"].as_str().is_some_and(|s| !s.is_empty() && s.len() <= 128),
         _ => false,
     }
 }
@@ -302,7 +325,7 @@ fn check_reading(reading: &Value, source: &Value, personal: &Value,
     }
     if !personal.is_null() {
         if baseline.as_str() != Some("interpretation_required") ||
-            !personal_provenance_valid(personal, catalog_version) {
+            !personal_provenance_valid(personal, catalog_version, &source["text"]) {
             return false
         }
         match personal["method"].as_str() {
@@ -373,18 +396,16 @@ pub fn project(request: &Value) -> Value {
             };
             let mut alternatives = vec![];
             let mut rank = 0;
-            for (i, id) in choices.iter().enumerate() {
-                let Some(id) = id.as_str() else {
-                    return refusal(source, "INVALID_READING", "Host reading is malformed or contradictory.")
+            // The Host takes the first eight raw choices and filters out
+            // unknown IDs. It does not promote later choices to fill holes.
+            // Match that precedence exactly, including non-string entries.
+            for id in choices.iter().take(8) {
+                let Some(action) = id.as_str().and_then(|id| actions.get(id)) else {
+                    continue
                 };
-                let Some(action) = actions.get(id) else {
-                    return refusal(source, "UNKNOWN_ACTION", "Action not in the Host catalog.")
-                };
-                if i < 8 {
-                    rank = rank.max(risk_rank(&action["risk"]));
-                    alternatives.push(json!({"actionId": id, "title": action["title"],
-                        "risk": action["risk"]}));
-                }
+                rank = rank.max(risk_rank(&action["risk"]));
+                alternatives.push(json!({"actionId": action["id"], "title": action["title"],
+                    "risk": action["risk"]}));
             }
             let risk = ["R0", "R1", "R2", "R3"][rank];
             intent_with_meta("clarification_required", json!({
@@ -399,11 +420,9 @@ pub fn project(request: &Value) -> Value {
                 return refusal(source, "INVALID_READING", "Host reading is malformed or contradictory.")
             }
             let mut alternatives = vec![];
-            if let Some(id) = reading["candidate"]["actionId"].as_str() {
-                let Some(action) = actions.get(id) else {
-                    return refusal(source, "UNKNOWN_ACTION", "Action not in the Host catalog.")
-                };
-                alternatives.push(json!({"actionId": id, "title": action["title"],
+            if let Some(action) = reading["candidate"]["actionId"].as_str()
+                .and_then(|id| actions.get(id)) {
+                alternatives.push(json!({"actionId": action["id"], "title": action["title"],
                     "risk": action["risk"]}));
             }
             intent_with_meta("clarification_required", json!({
