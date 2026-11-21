@@ -2,7 +2,7 @@
 // Browser/phone and desktop share the exact same NLCL world; Host owns effects.
 import { interpretControl } from '../../mobile-relay/control-language.mjs';
 import { resolvePersonalSemantics } from './personal-semantics.mjs';
-import { runNativeProductPureSync } from './native-product-pure-sync.mjs';
+import { runNativeProductPureSync, hasNativeProductPureBinary } from './native-product-pure-sync.mjs';
 
 // @hq:type vivim.command-intent@0.1
 export const COMMAND_INTENT_SCHEMA = 'vivim.command-intent/0.1';
@@ -19,6 +19,15 @@ function refuse(input, code, message, extra = {}) {
 }
 function canonical(actionId, args) {
   return '/' + actionId + Object.keys(args).sort().map(k => ' ' + k + '=' + JSON.stringify(args[k])).join('');
+}
+
+// Only the catalog fields consulted by the native projector cross the local
+// subprocess boundary. NLCL itself still receives the full Host catalog.
+function boundedCatalogProjection(catalog) {
+  return catalog.actions.map(({ id, title, args, risk, requiredScopes, owner, readiness }) => ({
+    id, title, args, risk, owner, readiness,
+    ...(Array.isArray(requiredScopes) ? { requiredScopes } : {})
+  }));
 }
 
 function sameJsonMeaning(left, right) {
@@ -176,10 +185,15 @@ export function toCommandIntent(input, { catalog, world, personalRules = [], per
       scope: input.scope ?? 'text'
     },
     catalogVersion: catalog.version, worldRevision: world.v,
-    catalogActions: catalog.actions, reading: meaning, baselineOutcome: baseline.outcome,
+    catalogActions: boundedCatalogProjection(catalog), reading: meaning, baselineOutcome: baseline.outcome,
     personalProvenance
   });
-  if (!native) return incumbent; // No binary / older native kernel.
+  // An unpackaged workspace retains the incumbent JS behavior. A binary that
+  // exists but fails to answer is not equivalent to an absent binary: it must
+  // fail closed rather than silently hiding a kernel/schema/timeout defect.
+  if (!native) return hasNativeProductPureBinary()
+    ? refuse(input, 'NATIVE_INTENT_INVALID', 'Native command intent is unavailable.')
+    : incumbent;
   // Compute and compare against the existing Host projection until the real
   // corpus proves exact parity. A present but mismatching native result is
   // refused, not silently trusted or silently downgraded to a new meaning.
@@ -239,7 +253,9 @@ export function validateAiCommandCandidate(input, { catalog, world, personalRule
     proposal,reading,action:action??null,
     catalogVersion:catalog.version,worldRevision:world.v
   });
-  if (!native) return incumbent;
+  if (!native) return hasNativeProductPureBinary()
+    ? refuse(input, 'NATIVE_INTENT_INVALID', 'Native AI candidate binding unavailable.')
+    : incumbent;
   // Exact source action, normalized args, risk, scope, readiness and
   // provenance must agree with the legacy Host decision, including refusal.
   if (native.schema === 'vivim.command-ai-proposal-guard/1' &&

@@ -4,15 +4,11 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { buildControlWorld, interpretControl } from '../../mobile-relay/control-language.mjs';
 import { toCommandIntent, validateAiCommandCandidate } from '../control/command-intent.mjs';
-import { runNativeProductPureSync } from '../control/native-product-pure-sync.mjs';
-import { resolveBundledRustBinary } from '../chat/rust-context.mjs';
+import { runNativeProductPureSync, hasNativeProductPureBinary } from '../control/native-product-pure-sync.mjs';
 
 const catalog = JSON.parse(readFileSync(new URL('../control/action-catalog.v1.json', import.meta.url), 'utf8'));
 const corpus = JSON.parse(readFileSync(new URL('../control/corpus.v1.json', import.meta.url), 'utf8'));
-const hasBinary = () => {
-  try { return !!resolveBundledRustBinary('vivim-product-pure'); }
-  catch { return false; }
-};
+const hasBinary = () => hasNativeProductPureBinary();
 
 test('real NLCL golden cases retain their expected Host intents and native parity', t => {
   let compared = 0;
@@ -48,7 +44,10 @@ test('real NLCL golden cases retain their expected Host intents and native parit
       schema: 'vivim.command-intent-projection-input/1',
       input: { text: entry.text, scope: 'text', audience: 'owner' },
       catalogVersion: catalog.version, worldRevision: world.v,
-      catalogActions: catalog.actions, reading, baselineOutcome: reading.outcome,
+      catalogActions: catalog.actions.map(({id, title, args, risk, owner, readiness, requiredScopes}) =>
+        ({id, title, args, risk, owner, readiness,
+          ...(Array.isArray(requiredScopes) ? {requiredScopes} : {})})),
+      reading, baselineOutcome: reading.outcome,
       personalProvenance: null
     });
     if (hasBinary()) assert.ok(native, 'staged binary must implement native command intent: ' + entry.text);
@@ -114,7 +113,10 @@ test('native projection rejects stale and contradictory real Host snapshots', t 
     schema: 'vivim.command-intent-projection-input/1',
     input: { text: sourceCase.text, scope: 'text', audience: 'owner' },
     catalogVersion: catalog.version, worldRevision: world.v,
-    catalogActions: catalog.actions, reading, baselineOutcome: reading.outcome,
+    catalogActions: catalog.actions.map(({id, title, args, risk, owner, readiness, requiredScopes}) =>
+      ({id, title, args, risk, owner, readiness,
+        ...(Array.isArray(requiredScopes) ? {requiredScopes} : {})})),
+    reading, baselineOutcome: reading.outcome,
     personalProvenance: null
   };
   const refuse = (data, code) => {

@@ -22,6 +22,13 @@ const operations=Object.freeze({
   'control-catalog-compatibility':'vivim.control-catalog-compatibility/1',
   'semantic-observation':'vivim.semantic-observation/1'
 });
+// Packaged binary presence is separate from a successful native response.
+// Callers requiring fail-closed semantics may use this after a null result;
+// other compatibility consumers retain their existing fallback contract.
+export function hasNativeProductPureBinary(){
+  try { return !!resolveBundledRustBinary('vivim-product-pure'); }
+  catch { return false; }
+}
 export function runNativeProductPureSync(operation,input){
   if(!Object.hasOwn(operations,operation)||input===null||typeof input!=='object')
     return null;
