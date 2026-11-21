@@ -24,8 +24,10 @@ function validData(data, catalog) {
     !Number.isSafeInteger(data.version) || data.version < 0 ||
     !Array.isArray(data.entries) || data.entries.length > MAX_RULES ||
     !Array.isArray(data.history) || data.history.length > MAX_HISTORY ||
-    new Set(data.entries.map(x => x.id)).size !== data.entries.length ||
+    // Validate before reading identities: null/corrupt entries must produce
+    // a typed corruption error rather than throwing during x.id access.
     data.entries.some(x => !validatePersonalRule(x, catalog).ok) ||
+    new Set(data.entries.map(x => x.id)).size !== data.entries.length ||
     data.history.some(h => !h || typeof h !== 'object' || typeof h.ruleId !== 'string' ||
       typeof h.at !== 'string' || !Number.isSafeInteger(h.version))) return false;
   return true;
@@ -101,6 +103,7 @@ export function createPersonalRuleStore({
     // Host approval is always tied to an actual journal receipt. A test or
     // integration verifier returning true is not itself a receipt identity.
     if (typeof receiptId !== 'string' || receiptId.length === 0 ||
+        receiptId.length > 100 ||
         !approval || verifyOwnerApproval(approval, reviewed) !== true)
       throw fail('PERSONAL_STORE_OWNER_APPROVAL_REQUIRED');
     if (JSON.stringify(reviewed) !== subjectBytes ||
@@ -128,6 +131,10 @@ export function createPersonalRuleStore({
       try { linkSync(tempLock, lockFile); acquired = true; }
       catch (e) { if (e.code === 'EEXIST') throw fail('PERSONAL_STORE_BUSY'); throw e; }
       const current = read();
+      // Catalog dependencies and ordering are part of the owner-reviewed
+      // source: an injected native adapter can mutate them AFTER the approval
+      // callback, so pin throughout the entire locked transaction.
+      const catalogBytes = JSON.stringify(catalog);
       // Preserve JSON property order: legacy scope-order digests are
       // significant even when deep structural equality says otherwise.
       const currentBytes = JSON.stringify(current);
@@ -159,6 +166,7 @@ export function createPersonalRuleStore({
         // rename. A verifier, injected adapter, or writer ignoring our lock
         // cannot cause a stale snapshot to silently clobber newer source data.
         if (JSON.stringify(current) !== currentBytes ||
+            JSON.stringify(catalog) !== catalogBytes ||
             JSON.stringify(read()) !== currentBytes)
           throw fail('PERSONAL_STORE_STALE');
         renameSync(temp, file);
@@ -325,7 +333,9 @@ export function createPersonalRuleStore({
         ...(nextState === 'accepted' ? { source: 'explicit-owner' } : {}) };
       return projected(current, changed, 'transition', old, {
         ruleId, nextState,
-        ownerReceiptId:typeof receiptId === 'string' ? receiptId.slice(0, 100) : null,
+        // Persist precisely the receipt verified by Host. Never truncate
+        // identity: an altered ID cannot bind the journal evidence.
+        ownerReceiptId:receiptId,
       });
     }, expectedVersion);
     return resultShape(next, changed);
@@ -366,7 +376,9 @@ export function createPersonalRuleStore({
       changed = { ...past, revision };
       return projected(current, changed, 'rollback', old, {
         ruleId, toRevision,
-        ownerReceiptId:typeof receiptId === 'string' ? receiptId.slice(0, 100) : null,
+        // Persist precisely the receipt verified by Host. Never truncate
+        // identity: an altered ID cannot bind the journal evidence.
+        ownerReceiptId:receiptId,
       });
     }, expectedVersion);
     return resultShape(next, changed);
