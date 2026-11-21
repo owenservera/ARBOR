@@ -1453,12 +1453,17 @@ function resetFirstWiki() {
   if(firstWikiPanel){firstWikiPanel.hidden=true;firstWikiPanel.replaceChildren();}
 }
 function firstWikiScope(){
-  if(!FIRST_CONTACT||!S.paired||!transport.direct||
-      !S.device.scopes?.includes('control:read'))return null;
+  if(!FIRST_CONTACT||!transport.direct)return null;
+  // The server authenticates the exact Tailscale owner for this single
+  // read-only Wiki route. The browser never invents or persists a grant.
+  if(!S.paired)return {headers:{},
+    key:'tailnet-owner-first-contact',url:'/mobile/api/first-contact/wiki'};
+  if(!S.device.scopes?.includes('control:read'))return null;
   const headers=transport.deviceHeaders?.();
   if(!headers?.['x-vivim-device-session']||!headers?.['x-vivim-grant-id'])return null;
   return {headers,key:sha256Hex(JSON.stringify([
-    'first-wiki',headers['x-vivim-device-session'],headers['x-vivim-grant-id']]))};
+    'first-wiki',headers['x-vivim-device-session'],headers['x-vivim-grant-id']])),
+    url:'/mobile/api/wiki'};
 }
 function renderFirstWiki(text,source) {
   if(!firstWikiPanel)return;
@@ -1525,7 +1530,7 @@ async function refreshFirstWiki(){
     firstWikiAbort=new AbortController();
     const abort=firstWikiAbort;
     firstWikiLoad=(async()=>{
-      const response=await fetch('/mobile/api/wiki',{
+      const response=await fetch(scope.url,{
         method:'GET',credentials:'same-origin',cache:'no-store',
         headers:scope.headers,signal:abort.signal
       });
@@ -1580,10 +1585,10 @@ function mountFirstWiki(){
 }
 
 function updateSend() {
-  if (HOST_PREVIEW || !S.paired) { $('send').disabled = true; return; }
+  if (HOST_PREVIEW || (!S.paired && !FIRST_CONTACT)) { $('send').disabled = true; return; }
   if (FIRST_CONTACT) {
     const projected = rustFirstContact({ text: $('text').value });
-    $('send').disabled = N.target !== 'vivim' || vivimChat.busy() ||
+    $('send').disabled = N.target !== 'vivim' || (S.paired && vivimChat.busy()) ||
       projected?.schema !== 'vivim.first-contact/1' || projected.state !== 'admitted' ||
       projected.executionAuthorized !== false || projected.effectPerformed !== false;
     return;
@@ -1936,7 +1941,7 @@ async function nativeSend() {
 /* ---------- send ---------- */
 async function send() {
   dockAssist?.reset();
-  if (!S.paired && !HOST_PREVIEW) {
+  if (!S.paired && !HOST_PREVIEW && !FIRST_CONTACT) {
     toast('This phone is offline or unpaired. No message was sent.');
     return;
   }
@@ -1946,7 +1951,7 @@ async function send() {
   }
   if (N.target === 'vivim') {
     const field = $('text'), body = field.value.trim();
-    if (!body || body.length > 1000 || vivimChat.busy()) return;
+    if (!body || body.length > 1000 || (S.paired && vivimChat.busy())) return;
     if (FIRST_CONTACT) {
       const admitted = rustFirstContact({text:field.value});
       if (admitted?.schema !== 'vivim.first-contact/1' || admitted.state !== 'admitted' ||
@@ -1954,6 +1959,14 @@ async function send() {
         toast('Rust core unavailable or unable to admit this text. Nothing was sent.');
         updateSend(); return;
       }
+    }
+    // Before device enrollment, Enter means read the authenticated owner Wiki,
+    // not send a command. The Host still requires device approval for effects.
+    if (FIRST_CONTACT && !S.paired) {
+      await refreshFirstWiki();
+      const first=firstWikiPanel?.querySelector('details.first-wiki-item');
+      if(first&&!first.open){first.open=true;first.dispatchEvent(new Event('toggle'));}
+      return;
     }
     // Submit exclusively to the Host plan boundary. Never route to a provider.
     void vivimChat.send(body);
@@ -2436,7 +2449,18 @@ async function runStart() {
         showPairingState(device.status);
         setConn(device.status === 'pending' ? 'PC approval required' :
           device.status === 'revoked' ? 'Device grant revoked' : 'Device not paired', true);
-        $('pairbox').hidden = false; $('app').hidden = true;
+        if (FIRST_CONTACT) {
+          // Tailnet-owner Wiki is deliberately useful before device pairing.
+          // No signed-in AI, Host command, control effect or grant is unlocked.
+          $('pairbox').hidden = true; $('app').hidden = false;
+          document.body.classList.remove('paired');
+          S.paired = false; S.tab = 'talk'; N.target = 'vivim';
+          $('talk-target').value = 'vivim';
+          renderComposer(); updateSend();
+          setConn('Wiki · read only', false);
+        } else {
+          $('pairbox').hidden = false; $('app').hidden = true;
+        }
         if (device.status === 'pending' && !approvalPoll) {
           approvalPoll = setTimeout(() => { approvalPoll = null; start(); }, 5000);
         }
