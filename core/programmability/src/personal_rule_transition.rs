@@ -101,7 +101,7 @@ fn valid_history_target(row: &Value, id: &str, to: u64, version: u64,
     if !valid_rule(after) || after["id"] != id || after["revision"] != to {
         return false;
     }
-    let before = &row["before"];
+    let Some(before) = row.get("before") else { return false };
     before.is_null() || (valid_rule(before)
         && before["id"] == id
         && before["revision"].as_u64().is_some_and(|n| n < to))
