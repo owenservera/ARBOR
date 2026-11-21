@@ -96,3 +96,23 @@ test('unsupported or malformed inputs never become executable plans', () => {
   assert.equal(compiler().compile({ domain: 'ui', text: 'Add a card called A', context: { bogus: 'no surface' } }).outcome, 'refused');
   assert.throws(() => createVecCompiler({ adapters: { ui: null } }), /INVALID_ADAPTERS/);
 });
+
+test('refusals never call adapters and source IDs only come from reviewed schema',()=>{
+  let calls=0;
+  const c=createVecCompiler({adapters:{ui:()=>{calls++;return {outcome:'candidate'};}}});
+  assert.equal(c.compile({domain:'ui',text:'\u0000'}).code,'INVALID_INPUT');
+  assert.equal(c.compile({domain:'ui',text:'okay',context:null}).code,'INVALID_CONTEXT');
+  assert.equal(c.compile({domain:'unknown',text:'okay'}).code,'UNKNOWN_DOMAIN');
+  assert.equal(calls,0);
+  const accepted=createVecCompiler({adapters:{ui:()=>({
+    outcome:'candidate',code:'PURE_UI_PREVIEW',proposal:{schema:'vivim.ui-proposal/1'},
+    sourceSemanticIds:['untrusted'],authorization:'approved',executed:true,persisted:true
+  })}}).compile({domain:'ui',text:'Add card'});
+  assert.deepEqual(accepted.sourceSemanticIds,['vivim.vec-compile@0.1','vivim.ui-proposal@1']);
+  assert.equal(accepted.authorization,'none');
+  assert.equal(accepted.executed,false);
+  const unreviewed=createVecCompiler({adapters:{ui:()=>({
+    outcome:'candidate',proposal:{schema:'other.schema/1'},sourceSemanticIds:['untrusted']
+  })}}).compile({domain:'ui',text:'Add card'});
+  assert.equal(Object.hasOwn(unreviewed,'sourceSemanticIds'),false);
+});

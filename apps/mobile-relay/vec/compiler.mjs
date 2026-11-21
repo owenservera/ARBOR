@@ -15,11 +15,16 @@ const PRODUCT_SCHEMAS = Object.freeze({
   wiki: 'hq.wiki-program/1', command: 'vivim.command-intent/0.1', ui: 'vivim.ui-proposal/1'
 });
 // Rust/WASM admits the exact same inert VEC envelope when installed.
-let rustAdmission=null;
+let rustAdmission=null, rustStatus=null;
+export function vecAdmissionRuntimeStatus(){
+  return rustStatus?.() ?? {state:'unavailable',code:typeof window==='undefined'?'NON_BROWSER_RUNTIME':'WASM_NOT_INITIALIZED',fallback:'trusted-js'};
+}
+
 if(typeof window!=='undefined'){
   void import('/mobile/vec-engines/rust-wasm.mjs')
     .then(module=>{
       rustAdmission=module.rustVecAdmission;
+      rustStatus=module.rustUiEngineStatus;
       return module.initializeRustUiEngine();
     }).catch(()=>{});
 }
@@ -40,45 +45,50 @@ const fail = (domain, outcome, code) => ({
 
 /** Register only trusted first-party adapters; wiki and command keep their incumbent
  * owners until source parity is independently established. No fallback silently runs. */
-export function createVecCompiler({ adapters = {} } = {}) {
-  if (!plain(adapters) || Object.keys(adapters).some(k => !VEC_DOMAINS.includes(k) || typeof adapters[k] !== 'function'))
+// Rust admission is authoritative when available. A comparison with the
+// incumbent pure fallback is retained until real deployed input parity closes.
+function admitOrFallback(input,legacy){
+  const native=rustAdmission?.(input);
+  if(native===undefined)return legacy;
+  if(JSON.stringify(canonical(native))!==JSON.stringify(canonical(legacy)))
+    return fail(VEC_DOMAINS.includes(input.domain)?input.domain:null,'refused','RUST_VEC_ADMISSION_MISMATCH');
+  return native;
+}
+/** Trusted adapters remain the only grammar owners; no Host write or grant. */
+export function createVecCompiler({adapters={}}={}){
+  if(!plain(adapters)||Object.keys(adapters).some(k=>!VEC_DOMAINS.includes(k)||typeof adapters[k]!=='function'))
     throw new TypeError('VEC_INVALID_ADAPTERS');
-  const installed = Object.freeze({ ...adapters });
+  const installed=Object.freeze({...adapters});
   return Object.freeze({
-    compile({ domain, text, context = {} } = {}) {
-      if (!VEC_DOMAINS.includes(domain)) return fail(null, 'refused', 'UNKNOWN_DOMAIN');
-      if (typeof text !== 'string' || !text.trim() || text.length > 4096 || /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(text))
-        return fail(domain, 'refused', 'INVALID_INPUT');
-      if (!plain(context)) return fail(domain, 'refused', 'INVALID_CONTEXT');
-      if (!Object.hasOwn(installed, domain))
-        return { ...fail(domain, 'unsupported', 'LEGACY_OWNER_NOT_MIGRATED'), legacyOwner:
-          PRODUCT_SCHEMAS[domain] };
-      try {
-        const result = installed[domain]({ ...context, text });
-        if (!plain(result) || !STATES.has(result.outcome)) return fail(domain, 'refused', 'ADAPTER_INVALID_RESULT');
-        // Explicitly overwrite any caller-supplied "authorized", "persisted" or "executed" claim.
-        const { outcome, code, proposal, preview, summary, detail } = result;
-        // Emit only identities of actual first-party, schema-matching candidates.
-        // Never forward source IDs (or authority flags) supplied by an adapter.
-        const sourceSemanticIds = outcome === 'candidate' && plain(proposal) &&
-          proposal.schema === PRODUCT_SCHEMAS[domain]
-          ? [semanticId(VEC_COMPILE_SCHEMA), semanticId(PRODUCT_SCHEMAS[domain])] : null;
-        const js={ ...fail(domain, outcome, code ?? 'NONE'),
-          ...(sourceSemanticIds ? { sourceSemanticIds } : {}),
-          ...(proposal === undefined ? {} : { proposal }),
-          ...(preview === undefined ? {} : { preview }),
-          ...(summary === undefined ? {} : { summary }),
-          ...(detail === undefined ? {} : { detail }) };
-        const native=rustAdmission?.({
-          domain,text,contextValid:true,adapterInstalled:true,adapterResult:result
-        });
-        if(native===undefined)return js;
-        if(JSON.stringify(canonical(native))!==JSON.stringify(canonical(js)))
-          return fail(domain,'refused','RUST_VEC_ADMISSION_MISMATCH');
-        return native;
-      } catch {
-        return fail(domain, 'refused', 'ADAPTER_FAILURE');
-      }
+    compile({domain,text,context={}}={}){
+      const input={domain,text,contextValid:plain(context),
+        adapterInstalled:Object.hasOwn(installed,domain)};
+      if(!VEC_DOMAINS.includes(domain))
+        return admitOrFallback(input,fail(null,'refused','UNKNOWN_DOMAIN'));
+      if(typeof text!=='string'||!text.trim()||text.length>4096||
+          /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(text))
+        return admitOrFallback(input,fail(domain,'refused','INVALID_INPUT'));
+      if(!plain(context))
+        return admitOrFallback(input,fail(domain,'refused','INVALID_CONTEXT'));
+      if(!input.adapterInstalled)
+        return admitOrFallback(input,{...fail(domain,'unsupported','LEGACY_OWNER_NOT_MIGRATED'),
+          legacyOwner:PRODUCT_SCHEMAS[domain]});
+      let result;
+      try{result=installed[domain]({...context,text});}
+      catch{return admitOrFallback({...input,adapterFailed:true},fail(domain,'refused','ADAPTER_FAILURE'));}
+      if(!plain(result)||!STATES.has(result.outcome))
+        return admitOrFallback({...input,adapterResult:result},fail(domain,'refused','ADAPTER_INVALID_RESULT'));
+      const {outcome,code,proposal,preview,summary,detail}=result;
+      const sourceSemanticIds=outcome==='candidate'&&plain(proposal)&&
+        proposal.schema===PRODUCT_SCHEMAS[domain]
+        ?[semanticId(VEC_COMPILE_SCHEMA),semanticId(PRODUCT_SCHEMAS[domain])]:null;
+      const legacy={...fail(domain,outcome,code??'NONE'),
+        ...(sourceSemanticIds?{sourceSemanticIds}:{}),
+        ...(proposal===undefined?{}:{proposal}),
+        ...(preview===undefined?{}:{preview}),
+        ...(summary===undefined?{}:{summary}),
+        ...(detail===undefined?{}:{detail})};
+      return admitOrFallback({...input,adapterResult:result},legacy);
     }
   });
 }

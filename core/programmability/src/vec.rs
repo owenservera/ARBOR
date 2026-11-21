@@ -34,6 +34,9 @@ pub struct Element{
     /// A button is a display-only preview here, not an executable action.
     pub preview_only:bool,
 }
+#[derive(Clone,Debug,Serialize,PartialEq,Eq)]
+#[serde(rename_all="camelCase")]
+pub struct BindingRevision {pub id:String,pub revision:u64,pub digest:String}
 #[derive(Clone,Debug,Serialize,PartialEq)]
 #[serde(rename_all="camelCase")]
 pub struct View{
@@ -44,6 +47,8 @@ pub struct View{
     /// Per-binding revision/digest metadata retained only in native memory.
     #[serde(skip_serializing)]
     pub binding_watermarks:BTreeMap<String,(u64,String)>,
+    /// Source revision and digest only, never the bound content or an approval.
+    pub binding_revisions:Vec<BindingRevision>,
     pub background:String,pub foreground:String,
     pub secondary:String,pub accent:String,
     pub root:Element,pub node_count:usize,pub chart_count:usize,
@@ -108,10 +113,12 @@ fn element(node:&Node,view:&Visual,seen:&mut BTreeSet<String>,
 pub fn compile(view:&Visual)->Result<View,VisualError>{
     let mut seen=BTreeSet::new();let mut actions=Vec::new();let mut charts=0;
     let root=element(&view.root,view,&mut seen,&mut actions,&mut charts,0)?;
+    let binding_revisions=view.binding_watermarks.iter().map(|(id,(revision,digest))|
+        BindingRevision{id:id.clone(),revision:*revision,digest:digest.clone()}).collect();
     Ok(View{schema:SCHEMA,state:"compiled",authority:"none",
         surface_id:view.surface_id.clone(),revision:view.revision,
         design_digest:format!("{:x}",Sha256::digest(view.fingerprint.as_bytes())),
-        binding_watermarks:view.binding_watermarks.clone(),
+        binding_watermarks:view.binding_watermarks.clone(),binding_revisions,
         background:typed_color(view.background)?,foreground:typed_color(visual::contrast_ink(view.background))?,
         secondary:typed_color(view.secondary)?,accent:typed_color(view.accent)?,
         root,node_count:seen.len(),chart_count:charts,preview_action_ids:actions,
@@ -204,4 +211,42 @@ pub fn diff(previous:Option<&View>,next:Option<&View>)->Result<Delta,VisualError
         !out.added.is_empty()||!out.removed.is_empty()||!out.updated.is_empty()||
         !out.moved.is_empty()||!out.changed_bindings.is_empty();
     Ok(out)
+}
+
+#[cfg(test)]
+mod vec_revision_tests{
+    use super::*;
+    fn observed()->Visual{
+        Visual{surface_id:"my-space".into(),revision:7,background:0x111722,
+            secondary:0x243146,accent:0x78b8f6,fingerprint:"host-design".into(),
+            root:Node{id:"root".into(),component:"vivim.component.stack@1".into(),
+                kind:"stack".into(),label:None,detail:None,horizontal:false,columns:1,
+                background:None,padding:None,gap:None,radius:None,font_size:None,
+                border:None,border_width:None,children:vec![],items:vec![],bars:vec![]},
+            binding_watermarks:BTreeMap::from([
+                ("personal.open-tasks".into(),(11,"a".repeat(64)))])}
+    }
+    #[test]fn ir_exports_revision_stamps_without_host_authority(){
+        let ir=compile(&observed()).unwrap();
+        let value=serde_json::to_value(&ir).unwrap();
+        assert_eq!(value["bindingRevisions"][0]["id"],"personal.open-tasks");
+        assert_eq!(value["bindingRevisions"][0]["revision"],11);
+        assert_eq!(value["bindingRevisions"][0]["digest"],"a".repeat(64));
+        assert_eq!(value["background"],"#111722");
+        assert_eq!(value["executionAuthorized"],false);
+        assert_eq!(value["effectPerformed"],false);
+        assert!(value.get("bindingWatermarks").is_none());
+    }
+    #[test]fn live_revisions_invalidate_without_design_changes(){
+        let old=compile(&observed()).unwrap();
+        let mut next=observed();
+        next.binding_watermarks.insert("personal.open-tasks".into(),(12,"b".repeat(64)));
+        let updated=compile(&next).unwrap();
+        let change=diff(Some(&old),Some(&updated)).unwrap();
+        assert_eq!(change.changed_bindings,vec!["personal.open-tasks"]);
+        assert!(!change.revision_changed);
+        assert!(change.repaint_required);
+        let mut stale=updated.clone();stale.revision=6;
+        assert!(diff(Some(&updated),Some(&stale)).is_err());
+    }
 }

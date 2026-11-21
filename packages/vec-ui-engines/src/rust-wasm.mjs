@@ -1,70 +1,89 @@
-// Same compiled Rust domain kernel as desktop and Host, run locally in PWA.
+// Existing shared Rust product kernel, no second visual compiler or Host effect APIs.
 // @hq:capability vivim.rust-browser-kernel@1
 // @hq:consumes vivim.rust-wiki-source-stamp@1
 // @hq:consumes vivim.rust-wiki-source-search@1
 // @hq:consumes vivim.rust-wiki-source-transition@1
 // @hq:consumes vivim.rust-wiki-source-delta@1
 // @hq:consumes vivim.rust-control-receipt-presentation@1
-// No interpreted source, dynamic code, Host grants or effect APIs.
 const SCHEMA='vivim.product-pure-response/1';
 const WASM_URL='/mobile/wasm/vivim_programmability_core.wasm';
-const MAX=512*1024;
-let instance=null,attempt=null;
+const MAX=512*1024, MAX_MODULE_BYTES=12*1024*1024,MAX_MEMORY=64*1024*1024;
+let instance=null,attempt=null,reason='WASM_NOT_INITIALIZED',lastOperation='NOT_RUN';
 const utf8=new TextEncoder(),decode=new TextDecoder('utf-8',{fatal:true});
 function admit(exports){
   return exports?.memory instanceof WebAssembly.Memory&&
     ['vivim_kernel_alloc','vivim_kernel_free','vivim_kernel_dispatch']
       .every(name=>typeof exports[name]==='function');
 }
+const region=(native,pointer,length)=>Number.isSafeInteger(pointer)&&Number.isSafeInteger(length)&&
+  pointer>0&&length>0&&length<=MAX&&native.memory.buffer.byteLength<=MAX_MEMORY&&
+  pointer+length<=native.memory.buffer.byteLength;
+function unavailable(code){instance=null;reason=code;return null;}
+export function rustUiEngineStatus(){
+  return {state:instance?'ready':'unavailable',code:instance?'NONE':reason,
+    fallback:instance?'none':'trusted-js',lastOperation};
+}
 export async function initializeRustUiEngine(){
-  if(typeof window==='undefined'||typeof WebAssembly==='undefined'||typeof fetch!=='function')
-    return false;
+  if(typeof window==='undefined'||typeof WebAssembly==='undefined'||typeof fetch!=='function'){
+    reason='NON_BROWSER_RUNTIME';return false;
+  }
   if(instance)return true;
   if(attempt)return attempt;
   attempt=(async()=>{
     try{
       const response=await fetch(WASM_URL,{credentials:'same-origin',cache:'no-cache'});
-      if(!response.ok||Number(response.headers.get('content-length')??0)>12*1024*1024)return false;
+      if(!response.ok){reason='WASM_FETCH_UNAVAILABLE';return false;}
+      const declared=Number(response.headers.get('content-length')??0);
+      if(!Number.isSafeInteger(declared)||declared<0||declared>MAX_MODULE_BYTES){
+        reason='WASM_MODULE_OVERSIZED';return false;
+      }
       const bytes=await response.arrayBuffer();
-      if(bytes.byteLength<8||bytes.byteLength>12*1024*1024)return false;
+      if(bytes.byteLength<8||bytes.byteLength>MAX_MODULE_BYTES){
+        reason='WASM_MODULE_INVALID_SIZE';return false;
+      }
       const output=await WebAssembly.instantiate(bytes,{});
       const native=output.instance?.exports??output.exports;
-      if(!admit(native))return false;
-      instance=native;return true;
-    }catch{return false;}
+      if(!admit(native)){reason='WASM_ABI_UNAVAILABLE';return false;}
+      if(native.memory.buffer.byteLength>MAX_MEMORY){reason='WASM_MEMORY_LIMIT';return false;}
+      instance=native;reason='NONE';return true;
+    }catch{reason='WASM_INITIALIZATION_FAILED';return false;}
   })();
   return attempt;
 }
 function invoke(operation,input){
   const native=instance;
-  if(!native)return null;
+  if(!native){lastOperation='UNAVAILABLE';return null;}
   let request;
   try{request=utf8.encode(JSON.stringify({
     schema:'vivim.product-pure-request/1',operation,input
-  }));}catch{return null;}
-  if(request.byteLength<1||request.byteLength>MAX)return null;
-  const pointer=native.vivim_kernel_alloc(request.byteLength);
-  if(!pointer)return null;
-  let outputPointer=0,outputLength=0;
+  }));}catch{lastOperation='INVALID_INPUT';return null;}
+  if(request.byteLength<1||request.byteLength>MAX){
+    lastOperation='REQUEST_TOO_LARGE';return null;
+  }
+  if(native.memory.buffer.byteLength>MAX_MEMORY)return unavailable('WASM_MEMORY_LIMIT');
+  let pointer=0,outputPointer=0,outputLength=0;
   try{
+    pointer=native.vivim_kernel_alloc(request.byteLength);
+    if(!region(native,pointer,request.byteLength))return unavailable('WASM_INPUT_POINTER_INVALID');
     new Uint8Array(native.memory.buffer,pointer,request.byteLength).set(request);
     const packed=native.vivim_kernel_dispatch(pointer,request.byteLength);
-    if(typeof packed!=='bigint')return null;
+    if(typeof packed!=='bigint')return unavailable('WASM_ABI_RESPONSE_INVALID');
     outputPointer=Number(packed&0xffffffffn);
     outputLength=Number(packed>>32n);
-    if(!outputPointer||!outputLength||outputLength>MAX)return null;
-    const reply=JSON.parse(decode.decode(new Uint8Array(
-      native.memory.buffer,outputPointer,outputLength
-    )));
+    if(!region(native,outputPointer,outputLength))return unavailable('WASM_OUTPUT_POINTER_INVALID');
+    const reply=JSON.parse(decode.decode(new Uint8Array(native.memory.buffer,outputPointer,outputLength)));
     if(reply?.schema!==SCHEMA||reply.state!=='computed'||
       reply.operation!==operation||reply.authority!=='none'||
-      reply.executionAuthorized!==false||reply.effectPerformed!==false)return null;
+      reply.executionAuthorized!==false||reply.effectPerformed!==false)
+      return unavailable('WASM_RESPONSE_INVALID');
+    lastOperation='COMPUTED';
     return reply.result??null;
-  }catch{return null;}
+  }catch{return unavailable('WASM_DISPATCH_FAILED');}
   finally{
-    if(outputPointer&&outputLength&&outputLength<=MAX)
-      native.vivim_kernel_free(outputPointer,outputLength);
-    native.vivim_kernel_free(pointer,request.byteLength);
+    try{
+      if(region(native,outputPointer,outputLength))native.vivim_kernel_free(outputPointer,outputLength);
+      if(region(native,pointer,request.byteLength))native.vivim_kernel_free(pointer,request.byteLength);
+    }catch{unavailable('WASM_RELEASE_FAILED');}
   }
 }
 export function rustUiValue(type,value,choices){

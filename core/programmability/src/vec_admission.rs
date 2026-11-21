@@ -41,6 +41,9 @@ pub fn admit(input:&Value)->Value{
         let mut out=fail(Some(domain),"unsupported","LEGACY_OWNER_NOT_MIGRATED");
         out["legacyOwner"]=json!(product_schema);return out;
     }
+    if input["adapterFailed"]==true {
+        return fail(Some(domain),"refused","ADAPTER_FAILURE")
+    }
     let result=&input["adapterResult"];
     let Some(object)=result.as_object()else{
         return fail(Some(domain),"refused","ADAPTER_INVALID_RESULT")
@@ -49,9 +52,21 @@ pub fn admit(input:&Value)->Value{
     if !matches!(outcome,Some("candidate"|"clarification_required"|"unsupported"|"refused")){
         return fail(Some(domain),"refused","ADAPTER_INVALID_RESULT")
     }
+    let code=match object.get("code"){
+        None|Some(Value::Null)=>"NONE",
+        Some(Value::String(code)) if !code.is_empty()&&code.len()<=128&&
+            !code.chars().any(char::is_control)=>code.as_str(),
+        _=>return fail(Some(domain),"refused","ADAPTER_INVALID_RESULT"),
+    };
+    for key in ["proposal","preview","summary","detail"]{
+        if let Some(value)=object.get(key){
+            if serde_json::to_vec(value).map_or(true,|bytes|bytes.len()>256*1024){
+                return fail(Some(domain),"refused","ADAPTER_INVALID_RESULT")
+            }
+        }
+    }
     let outcome=outcome.unwrap();
-    let mut out=fail(Some(domain),outcome,"NONE");
-    if let Some(code)=object.get("code"){if !code.is_null(){out["code"]=code.clone()}}
+    let mut out=fail(Some(domain),outcome,code);
     let valid_candidate=outcome=="candidate"&&
         object.get("proposal").is_some_and(|p|p.is_object()&&p["schema"]==product_schema);
     if valid_candidate{
@@ -63,4 +78,36 @@ pub fn admit(input:&Value)->Value{
         if let Some(value)=object.get(key){out[key]=value.clone()}
     }
     out
+}
+
+#[cfg(test)]
+mod tests{
+    use super::*;
+    #[test]fn identities_are_earned_not_adapter_supplied(){
+        let input=json!({"domain":"ui","text":"Add card","contextValid":true,"adapterInstalled":true,
+          "adapterResult":{"outcome":"candidate","code":"PURE_UI_PREVIEW",
+          "authorization":"approved","executed":true,"persisted":true,
+          "sourceSemanticIds":["spoofed"],"proposal":{"schema":"vivim.ui-proposal/1"}}});
+        let actual=admit(&input);
+        assert_eq!(actual["sourceSemanticIds"],json!(["vivim.vec-compile@0.1","vivim.ui-proposal@1"]));
+        assert_eq!(actual["authorization"],"none");
+        assert_eq!(actual["executed"],false);
+        assert_eq!(actual["persisted"],false);
+    }
+    #[test]fn malformed_and_failed_adapters_never_gain_authority(){
+        let mut input=json!({"domain":"wiki","text":"project","contextValid":true,"adapterInstalled":false});
+        assert_eq!(admit(&input)["legacyOwner"],"hq.wiki-program/1");
+        input["adapterInstalled"]=json!(true);
+        input["adapterFailed"]=json!(true);
+        assert_eq!(admit(&input)["code"],"ADAPTER_FAILURE");
+        input["adapterFailed"]=json!(false);
+        input["adapterResult"]=json!({"outcome":"candidate","code":{"grant":true}});
+        assert_eq!(admit(&input)["code"],"ADAPTER_INVALID_RESULT");
+        input["domain"]=json!("unknown");
+        assert_eq!(admit(&input)["code"],"UNKNOWN_DOMAIN");
+    }
+    #[test]fn input_limit_is_utf16_to_match_browser(){
+        let input=json!({"domain":"ui","text":"😀".repeat(2049),"contextValid":true,"adapterInstalled":true});
+        assert_eq!(admit(&input)["code"],"INVALID_INPUT");
+    }
 }
