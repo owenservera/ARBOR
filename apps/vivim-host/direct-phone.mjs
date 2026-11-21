@@ -370,9 +370,15 @@ export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'wo
         if(op==='observe'){json(res,200,await composerBridge.observeWithFence(await readBody(req)));return;}
         if(op==='ack'){json(res,200,await composerBridge.acknowledge(await readBody(req)));return;}
         const params=new URL(req.url,origin).searchParams;
-        if(params.size!==1||params.getAll('sessionId').length!==1)
+        if(params.size<1||params.size>2||params.getAll('sessionId').length!==1||
+           [...params.keys()].some(key=>!['sessionId','wait'].includes(key))||
+           params.getAll('wait').length>1)
           throw failure(400,'COMPOSER_SESSION_INVALID');
-        json(res,200,composerBridge.delivery(params.get('sessionId')));
+        const rawWait=params.get('wait');
+        if(rawWait!==null&&!/^(0|[1-9][0-9]{0,4})$/.test(rawWait))
+          throw failure(400,'COMPOSER_POLL_INVALID');
+        const waitMs=rawWait===null?15000:Number(rawWait);
+        json(res,200,await composerBridge.nextDelivery(params.get('sessionId'),waitMs));
       }catch(error){
         json(res,[400,403,409,423,503].includes(error?.status)?error.status:503,{
           code:error?.code||error?.message||'COMPOSER_UNAVAILABLE'});
