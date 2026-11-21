@@ -98,3 +98,20 @@ test('Tailscale owner first-contact is a usable read-only composer without devic
   assert.match(app,/\/\/ Submit exclusively to the Host plan boundary/);
   assert.match(html,/body\.first-contact #chat-composer/);
 });
+
+test('Wiki-first typing automatically updates without submitting a command',()=>{
+  assert.match(app,/function scheduleFirstWiki\(\)/);
+  assert.match(app,/addEventListener\('input',scheduleFirstWiki\)/);
+  assert.match(app,/firstWikiTimer=setTimeout\(\(\)=>\{void refreshFirstWiki\(\);\},180\)/);
+  assert.match(app,/firstWikiNotice\('Searching Wiki…','typing'\)/);
+  assert.match(app,/firstWikiNotice\('Wiki read unavailable/);
+  assert.match(app,/No matching Host Wiki entries yet/);
+  assert.match(html,/body\.first-contact #send \{display:none!important\}/);
+  assert.match(app,/if \(FIRST_CONTACT\) \{\s*observeFirstWiki\('read-only-send-blocked'/);
+});
+test('client observations are bounded metadata, with no raw typed words',()=>{
+  assert.match(app,/function observeFirstWiki\(stage,fields=\{\}\)/);
+  assert.match(app,/fetch\('\/mobile\/api\/first-contact\/observe'/);
+  assert.match(app,/observeFirstWiki\('input',\{length:Math\.min\(len,1000\)\}\)/);
+  assert.doesNotMatch(app,/observeFirstWiki\('input',\{text:/);
+});
