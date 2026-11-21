@@ -29,6 +29,8 @@ const assets = new Map(Object.entries({
   '': ['index.html', 'text/html; charset=utf-8'],
   'index.html': ['index.html', 'text/html; charset=utf-8'],
   'app.js': ['app.js', 'text/javascript; charset=utf-8'],
+  'first-contact-composer.mjs': ['first-contact-composer.mjs', 'text/javascript; charset=utf-8'],
+  'agent-composer-adapter.ts': ['agent-composer-adapter.ts', 'text/javascript; charset=utf-8'],
   // app.js imports these two canonical Today/World/Me modules; Direct must serve them.
   'ux/model.mjs': ['ux/model.mjs', 'text/javascript; charset=utf-8'],
   'ux/mission-experience.mjs': ['ux/mission-experience.mjs', 'text/javascript; charset=utf-8'],
@@ -160,7 +162,8 @@ async function readBody(req) {
 }
 
 export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'world-local', projection, control = null, apkRegistry = null, pairingStore = null, onPhoneSeen = () => {}, primary = () => null, providerSnapshot = () => [], providerRefresh = null,
-  webMemory = null, mediaPlayback = null, chatContext = null, wikiProjection = null }) {
+  webMemory = null, mediaPlayback = null, chatContext = null, wikiProjection = null,
+  composerBridge = null }) {
   let url;
   try { url = new URL(origin); } catch { throw new TypeError('Direct phone origin must be an HTTPS origin'); }
   if (url.protocol !== 'https:' || url.origin !== origin || url.username || url.password || !user || typeof user !== 'string' || user.trim() !== user) throw new TypeError('Direct phone requires an exact HTTPS origin and user');
@@ -343,6 +346,36 @@ export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'wo
       } catch (cause) {
         if (res.headersSent) res.destroy();
         else json(res, cause.status || 503, { code: cause.code || 'SHARE_UNAVAILABLE' });
+      }
+      return;
+    }
+    // Agent draft delivery is NEVER a direct phone command or a browser grant.
+    // Owner Tailscale identity is verified by the outer Direct handler; only an
+    // approved, claimed desktop Host Control plan can make a one-shot delivery.
+    if(route.startsWith('api/first-contact/composer/')){
+      const op=route.slice('api/first-contact/composer/'.length);
+      const allowed={observe:'POST',next:'GET',ack:'POST'};
+      res.setHeader('cache-control','private, no-store');
+      if(!Object.hasOwn(allowed,op)){json(res,404,{code:'NOT_FOUND'});return;}
+      if(req.method!==allowed[op]){
+        res.setHeader('allow',allowed[op]);json(res,405,{code:'METHOD'});return;
+      }
+      if(req.headers['x-vivim-composer']!=='1'||
+         (req.method==='POST'&&req.headers.origin!==origin)||
+         (req.headers['sec-fetch-site']&&req.headers['sec-fetch-site']!=='same-origin')){
+        json(res,403,{code:'ORIGIN_OR_CSRF'});return;
+      }
+      try{
+        if(!composerBridge)throw failure(503,'COMPOSER_UNAVAILABLE');
+        if(op==='observe'){json(res,200,await composerBridge.observeWithFence(await readBody(req)));return;}
+        if(op==='ack'){json(res,200,await composerBridge.acknowledge(await readBody(req)));return;}
+        const params=new URL(req.url,origin).searchParams;
+        if(params.size!==1||params.getAll('sessionId').length!==1)
+          throw failure(400,'COMPOSER_SESSION_INVALID');
+        json(res,200,composerBridge.delivery(params.get('sessionId')));
+      }catch(error){
+        json(res,[400,403,409,423,503].includes(error?.status)?error.status:503,{
+          code:error?.code||error?.message||'COMPOSER_UNAVAILABLE'});
       }
       return;
     }
