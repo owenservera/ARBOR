@@ -37,6 +37,11 @@ fn managed_append_requires_compaction(current_bytes:u64,next_payload_bytes:u64)-
 }
 fn text<'a>(v: &'a Value, key: &str) -> Result<&'a str, String> { v[key].as_str().ok_or_else(|| format!("missing {key}")) }
 fn hex(s: &str) -> bool { s.len()==64 && s.bytes().all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b)) }
+fn canonical_journal_uuid(s: &str) -> bool {
+    s.len()==36 && s.bytes().enumerate().all(|(i,b)|
+        if matches!(i,8|13|18|23) { b==b'-' }
+        else { b.is_ascii_digit() || (b'a'..=b'f').contains(&b) })
+}
 fn err(e: impl std::fmt::Display) -> String { e.to_string() }
 // Engine Corrupt results mean the managed journal needs explicit recovery; the Host
 // classifies on the RECOVERY_REQUIRED prefix (never auto-repairs or steals locks).
@@ -105,8 +110,9 @@ fn context_record(ns: &Namespace, n: &Value) -> Result<ContextRecord, String> {
     }
     node.properties.insert("vivim.context.semanticId".into(), semantic_id.into());
     let page = kind == "wiki" && semantic_id.starts_with("wiki:page:");
-    if kind=="wiki" && n.get("receiptDigest").is_some() {
-        return Err("Wiki source cannot carry a D4 receipt digest".into());
+    if kind=="wiki" && (n.get("receiptDigest").is_some() ||
+        n.get("receiptWikiOrigin").is_some() || n.get("wikiLink").is_some()) {
+        return Err("Wiki source cannot carry D4 receipt-only fields".into());
     }
     let mut link = None;
     if kind != "wiki" {
@@ -128,9 +134,7 @@ fn context_record(ns: &Namespace, n: &Value) -> Result<ContextRecord, String> {
                 .ok_or("invalid original receipt Wiki revision")?;
             if !matches!(action_id,"wiki.section.edit"|"wiki.capture.save") ||
                 text(value,"kind")?!="committed-wiki-origin" ||
-                entry.len()!=36 ||
-                !entry.bytes().all(|b|b.is_ascii_hexdigit()||b==b'-') ||
-                revision==0 {
+                !canonical_journal_uuid(entry) || revision==0 {
                 return Err("invalid immutable receipt Wiki origin".into());
             }
             node.properties.insert("vivim.context.receiptOriginEntryId".into(),entry.into());
