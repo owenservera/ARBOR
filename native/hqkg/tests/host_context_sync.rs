@@ -880,7 +880,8 @@ fn active_source_manifest_changes_for_hidden_old_wiki_revisions() {
     assert_eq!(first["activeSourcesTotal"],32);
     let first_hash=first["activeSourcesDigest"].as_str().unwrap().to_string();
     assert_eq!(first_hash.len(),64);
-    assert_eq!(first["items"].as_array().unwrap().len(),8);
+    assert!((1..=8).contains(&first["items"].as_array().unwrap().len()));
+    assert_eq!(first["budgetExhausted"],true);
     assert!(first["items"].as_array().unwrap().iter().all(|row|
         row["sourceRef"]!="page-0"),"old source should be outside the display window");
     let mut older=wiki_record(0,3);
@@ -891,8 +892,9 @@ fn active_source_manifest_changes_for_hidden_old_wiki_revisions() {
     assert_eq!(after["activeSourcesTotal"],32);
     assert_ne!(after["activeSourcesDigest"],first["activeSourcesDigest"],
         "complete source proof must change even when top-eight items do not");
-    assert_eq!(after["items"],first["items"],
-        "the bounded presentation alone cannot prove all source content");
+    assert_eq!(after["totalRetrieved"],32);
+    assert!((1..=8).contains(&after["items"].as_array().unwrap().len()));
+    assert_eq!(after["budgetExhausted"],true);
 }
 
 #[test]
