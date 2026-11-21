@@ -45,6 +45,8 @@ struct Desktop {
     panel: Panel,
     viewport_px: u32,
     viewport_epoch: u64,
+    // Invalidates reads crossing a Host effect without weakening revision guards.
+    source_epoch: u64,
     read_busy: bool,
     refresh_pending: bool,
     source_status: String,
@@ -136,6 +138,7 @@ impl Desktop {
         cx.notify();
         let viewport_px=self.viewport_px;
         let epoch=self.viewport_epoch;
+        let source_epoch=self.source_epoch;
         // These GET-only requests can finish independently. Neither invokes
         // planning, execution, approval, or a provider transport.
         let overview_job=cx.background_executor().spawn(async {read_overview()});
@@ -147,8 +150,12 @@ impl Desktop {
                 view.read_busy=false;
                 // Compare a monotonically increasing resize identity, not
                 // just width: A -> B -> A still invalidates the first A read.
-                if view.viewport_epoch!=epoch || view.viewport_px!=viewport_px {
-                    view.refresh_pending=false; // the resize debounce owns the next fetch
+                if view.viewport_epoch!=epoch || view.viewport_px!=viewport_px
+                    || view.source_epoch!=source_epoch {
+                    // The resize debounce may already have fired while the
+                    // old read was in progress. Re-request the latest identity
+                    // only when no Host decision is currently executing.
+                    if std::mem::take(&mut view.refresh_pending) {view.refresh(cx);}
                     return;
                 }
                 if std::mem::take(&mut view.refresh_pending) {
@@ -289,6 +296,15 @@ impl Desktop {
         self.last_plan=Some(key.id().to_owned());
         self.review=None;
         self.busy=true;
+        self.source_epoch=self.source_epoch.wrapping_add(1);
+        // No in-flight GET from before the effect is evidence of its outcome.
+        self.overview=None;
+        self.visual=None;
+        self.vec_view=None;
+        self.graph_detail.clear();
+        self.source_status="Host effect pending · source readback invalidated".into();
+        self.visual_status="Host effect pending · visual admission invalidated".into();
+        self.graph_status="Graph readback invalidated by Host effect".into();
         self.status="Awaiting Host receipt. Never retry a lost response.".into();
         cx.notify();
         let work=cx.background_executor().spawn(async move {control::execute(key)});
@@ -299,7 +315,9 @@ impl Desktop {
                 // Old overview is not evidence of the just-completed command.
                 view.overview=None;
                 view.visual=None;
-                view.visual_status="Refresh to observe the current Host revision".into();
+                view.vec_view=None;
+                view.source_status="Awaiting fresh authoritative Host readback".into();
+                view.visual_status="Awaiting fresh Host visual admission".into();
                 match result {
                     Ok(receipt)=>{
                         view.uncertain=receipt.status=="uncertain";
@@ -324,11 +342,19 @@ impl Desktop {
         self.graph_status=format!("Reading owner-authorized graph {operation} for exact query “{key}”…");
         self.graph_detail.clear();
         cx.notify();
-        let work=cx.background_executor().spawn(async move{read_development(operation,&key)});
+        let source_epoch=self.source_epoch;
+        let query_key=key.clone();
+        let work=cx.background_executor().spawn(async move{read_development(operation,&query_key)});
         cx.spawn(async move |this,cx|{
             let result=work.await;
             let _=this.update(cx,|view,cx|{
                 view.graph_busy=false;
+                if view.source_epoch!=source_epoch {
+                    view.graph_status="Discarded graph read predating the Host effect".into();
+                    view.graph_detail.clear();
+                    cx.notify();
+                    return;
+                }
                 match result{
                     Ok(data)=>{
                         view.graph_status=format!("Source-backed HQKG · {operation} · query “{key}” · read only");
@@ -646,7 +672,7 @@ fn main() {
                 let input=cx.new(|cx| InputState::new(window,cx).placeholder("Ask VIVIM or describe a Host command"));
                 let view=cx.new(|cx| {
                     let mut view=Desktop {input,panel:Panel::Overview,viewport_px:viewport_for_window(window),
-                        viewport_epoch:0,read_busy:false,refresh_pending:false,
+                        viewport_epoch:0,source_epoch:0,read_busy:false,refresh_pending:false,
                         source_status:"Host source not yet observed".into(),
                         wiki_query:None,status:"Not yet observed".into(),overview:None,visual:None,vec_view:None,visual_status:"Not yet observed".into(),visual_guard:RevisionGuard::default(),wiki_guard:WikiRevisionGuard::default(),wiki_delta:"Not yet observed".into(),wiki_events:Vec::new(),detail:String::new(),
                         review:None,last_plan:None,busy:false,uncertain:false,
