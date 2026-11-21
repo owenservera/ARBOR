@@ -54,3 +54,16 @@ The native window now polls the authenticated read projections every 15 seconds 
 The GPUI process starts `native/host-supervisor` on a native background thread. It refuses occupied foreign ports, honors an existing Host, bounds recovery of an OS-observed exited *owned* Host (two attempts), and never kills a living unhealthy Host or replays effects. A release binary refuses source workspace fallback and verifies the entire frozen runtime manifest by SHA256 before running the bundled Node and nine Rust executables. GPUI shows supervisor status in its native UI.
 
 **Still outstanding:** the Tauri shell has its legacy supervisor until shared lifecycle migration is verified; an adjacent GPUI release runtime, signed installer, and physical Windows acceptance are not yet present. Schema-valid attached Host status is not strong process attestation. Do not call this cutover complete.
+
+
+### Portable Windows GPUI bundle
+
+The source now includes a **Tauri-independent portable bundle assembly** (not an MSI or signed release). It consumes a *real*, already-frozen runtime and a built Windows release executable:
+
+\`\`\`powershell
+cargo build --manifest-path native/gpui-desktop/Cargo.toml --features desktop --release
+node tools/packaging/bundle-gpui-desktop.mjs --bundle --runtime C:\\verified-host-runtime --binary native/gpui-desktop/target/release/vivim-gpui-desktop.exe --out C:\\vivim-gpui-portable
+node tools/packaging/bundle-gpui-desktop.mjs --verify --out C:\\vivim-gpui-portable
+\`\`\`
+
+The adjacent runtime/ tree is mandatory. The packager refuses nonexistent/fake executables, invalid manifests, symlinks in frozen staging, existing outputs, and non-Windows bundling. It copies no owner data. **No installer acceptance or signed distribution has been performed.** The frozen-runtime producer remains an independent pending step; a future neutral staging mode should remove the legacy Tauri resource-path coupling entirely.
