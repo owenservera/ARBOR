@@ -257,6 +257,47 @@ pub fn mint_owner_ui_session(owner_token: &str) -> Result<String, String> {
     }
     Ok(format!("http://127.0.0.1:43187/#control-session={code}"))
 }
+/// Read the one existing Host owner capability from its canonical environment
+/// or private-file location. Never creates, transmits, persists or logs a token.
+pub fn read_owner_token() -> Result<String,String> {
+    if let Ok(token)=std::env::var("VIVIM_BOOTSTRAP_TOKEN") {
+        if (32..=4096).contains(&token.len()) {return Ok(token);}
+    }
+    let root=std::env::var_os("VIVIM_HOST_DATA_DIR")
+        .or_else(||std::env::var_os("CAPTURE_STUDIO_HOME"))
+        .map(PathBuf::from).or_else(||{
+            if cfg!(windows){
+                std::env::var_os("LOCALAPPDATA")
+                    .map(|p|PathBuf::from(p).join("AION").join("capture-studio"))
+            } else {
+                std::env::var_os("XDG_DATA_HOME").filter(|p|Path::new(p).is_absolute())
+                    .map(|p|PathBuf::from(p).join("aion-capture-studio"))
+                    .or_else(||std::env::var_os("HOME")
+                        .map(|p|PathBuf::from(p).join(".local/share/aion-capture-studio")))
+            }
+        }).ok_or("Owner capability directory unavailable")?;
+    let path=root.join("bootstrap").join("owner-token");
+    let metadata=fs::symlink_metadata(&path)
+        .map_err(|_|"Owner capability file unavailable")?;
+    if !metadata.is_file()||metadata.file_type().is_symlink()||metadata.len()>4096{
+        return Err("Owner capability must be a bounded regular private file".into());
+    }
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        if metadata.permissions().mode() & 0o077 != 0 {
+            return Err("Owner capability file permissions too broad".into());
+        }
+    }
+    let token=fs::read_to_string(&path)
+        .map_err(|_|"Owner capability file unreadable")?;
+    let token=token.trim();
+    if !(32..=4096).contains(&token.len()) {
+        return Err("Owner capability file content invalid".into());
+    }
+    Ok(token.to_owned())
+}
+
 pub fn valid_owner_session_code(code:&str)->bool{
     code.len()==64&&code.bytes().all(|b|b.is_ascii_digit()||(b'a'..=b'f').contains(&b))
 }
