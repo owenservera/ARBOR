@@ -240,12 +240,21 @@ pub fn reduce(input: &Value) -> Value {
                 .filter(|n| *n > 0 && *n <= MAX_SAFE) else {
                 return refused("PERSONAL_STORE_UNKNOWN_REVISION");
             };
-            let Some(past) = current["history"].as_array()
-                .and_then(|history| history.iter().rev()
-                    .find(|h| h["ruleId"] == id && h["after"]["revision"] == to))
-                .map(|h| &h["after"])
-                .filter(|r| valid_rule(r) && r["id"] == id)
+            // History revision identity must be unique. A corrupt second
+            // snapshot at the same revision is never a rollback candidate.
+            let Some(history) = current["history"].as_array()
+            else { return refused("PERSONAL_STORE_NATIVE_INVALID"); };
+            let mut candidates = history.iter().rev()
+                .filter(|h| h["ruleId"] == id && h["after"]["revision"] == to);
+            let Some(first) = candidates.next()
             else { return refused("PERSONAL_STORE_UNKNOWN_REVISION"); };
+            if candidates.next().is_some() {
+                return refused("PERSONAL_STORE_UNKNOWN_REVISION");
+            }
+            let past = &first["after"];
+            if !valid_rule(past) || past["id"] != id {
+                return refused("PERSONAL_STORE_UNKNOWN_REVISION");
+            }
             let Some(revision) = next_revision(old) else {
                 return refused("PERSONAL_STORE_INVALID_TRANSITION");
             };
@@ -315,6 +324,20 @@ mod tests {
         let mut wrong = first["next"].clone();
         wrong["history"][0]["after"]["id"] = json!("rule:b");
         let mut rollback = input("rollback", wrong);
+        rollback["ruleId"] = json!("rule:a");
+        rollback["previous"] = first["rule"].clone();
+        rollback["toRevision"] = json!(1);
+        assert_eq!(reduce(&rollback)["code"], "PERSONAL_STORE_UNKNOWN_REVISION");
+    }
+    #[test]
+    fn rollback_rejects_duplicate_historical_rule_revision() {
+        let mut q = input("propose", current());
+        q["candidate"] = rule("rule:a", 1, "proposed");
+        let first = reduce(&q);
+        let mut corrupt = first["next"].clone();
+        let duplicated = corrupt["history"][0].clone();
+        corrupt["history"].as_array_mut().unwrap().push(duplicated);
+        let mut rollback = input("rollback", corrupt);
         rollback["ruleId"] = json!("rule:a");
         rollback["previous"] = first["rule"].clone();
         rollback["toRevision"] = json!(1);

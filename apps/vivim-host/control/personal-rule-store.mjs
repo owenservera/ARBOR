@@ -244,8 +244,12 @@ export function createPersonalRuleStore({
     const next = locked(current => {
       const old = current.entries.find(r => r.id === ruleId);
       if (!old) throw fail('PERSONAL_STORE_UNKNOWN_RULE');
-      const past = [...current.history].reverse().find(h => h.ruleId === ruleId &&
-        h.after?.revision === toRevision)?.after;
+      // A revision is only a rollback target when its historical identity
+      // is unique. Ambiguous/duplicated history cannot be used to rewrite an
+      // owner-reviewed rule, even if each individual row looks valid.
+      const matches = current.history.filter(h => h.ruleId === ruleId &&
+        h.after?.revision === toRevision);
+      const past = matches.length === 1 ? matches[0].after : null;
       // History is legacy-compatible and not rewritten on read. However a
       // malformed historical row must never make rollback change identities.
       if (!past || past.id !== ruleId || !validatePersonalRule(past, catalog).ok)

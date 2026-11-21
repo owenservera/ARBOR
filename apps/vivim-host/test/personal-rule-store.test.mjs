@@ -415,3 +415,47 @@ test('full history beyond the native 512 KiB frame remains writable under Host C
     'oversized transport must bypass native rather than reject Host writes');
   assert.ok(nativeCalls.every(row=>row.options.failClosedIfPackaged===true));
 });
+
+test('duplicated rollback revision refuses without checking approval or writing',t=>{
+  let approvals=0;
+  const {store}=withStore(t,()=>{approvals++;return true});
+  const p=store.propose(proposal(0));
+  const current=JSON.parse(readFileSync(store.file,'utf8'));
+  current.history.push({...current.history[0]});
+  writeFileSync(store.file,JSON.stringify(current,null,2),{mode:0o600});
+  const saved=readFileSync(store.file,'utf8');
+  assert.throws(()=>store.rollback({ruleId:p.ruleId,toRevision:1,
+    expectedVersion:1,approval:{receiptId:'owner'}}),
+    /PERSONAL_STORE_UNKNOWN_REVISION/);
+  assert.equal(approvals,0);
+  assert.equal(readFileSync(store.file,'utf8'),saved);
+  assert.equal(store.snapshot().version,1);
+});
+test('Host accepts an exactly matching inert native projection, never as approval',t=>{
+  let attempts=0;
+  const reducer=(operation,input,options)=>{
+    attempts++;
+    assert.equal(operation,'personal-rule-transition');
+    assert.deepEqual(options,{failClosedIfPackaged:true});
+    if(input.mode!=='propose')return null;
+    const rule=input.candidate;
+    const history={version:input.current.version+1,ruleId:rule.id,
+      revision:rule.revision,op:'propose',before:null,after:rule,
+      ownerReceiptId:input.ownerReceiptId,at:input.at};
+    const next={...input.current,version:input.current.version+1,
+      entries:[...input.current.entries,rule],
+      history:[...input.current.history,history].slice(-500)};
+    return {schema:'vivim.personal-rule-transition/1',outcome:'projected',
+      next,rule,authority:'none',executionAuthorized:false,effectPerformed:false};
+  };
+  const {store}=withStore(t,()=>false,reducer);
+  const proposed=store.propose(proposal(0));
+  assert.equal(proposed.state,'proposed');
+  assert.equal(proposed.version,1);
+  assert.equal(attempts,1);
+  assert.throws(()=>store.transition({ruleId:proposed.ruleId,nextState:'accepted',
+    expectedVersion:1,approval:{approved:true}}),
+    /PERSONAL_STORE_OWNER_APPROVAL_REQUIRED/);
+  assert.equal(attempts,1);
+  assert.equal(store.snapshot().version,1);
+});
