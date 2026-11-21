@@ -61,3 +61,18 @@ node --test apps/vivim-host/test/agent-composer-bridge.test.mjs apps/vivim-host/
 ```
 
 No deployment, service restart, real phone interaction, screenshot capture, or autonomous Send has been performed in the final coding round.
+
+## New tracked feature — AV-001: live agent typing and truthful tap dots (DESIGN ONLY)
+
+**Owner requirement:** On the *real first-contact phone PWA*, visibly watch an authorized agent update the existing textarea step-by-step, and see a short-lived touch dot only at the actual on-device target when a permitted agent UI activation is dispatched. This is a temporary human supervision/confirmation loop, not proof that ChatGPT is already connected to the phone.
+
+**Design / new-agent handoff:** [OW-20261121-PWA-LIVE-AGENT-VISIBILITY-DESIGN.md](OW-20261121-PWA-LIVE-AGENT-VISIBILITY-DESIGN.md). Also tracked as **AV-01–AV-08** in [FIRST-CUSTOMER-TRACKER.md](../FIRST-CUSTOMER-TRACKER.md).
+
+| Scope | Status (2026-11-21) | Source / required next step |
+| --- | --- | --- |
+| Progressive visible typing in real `#text` | **OPEN / DESIGN READY** | Existing `first-contact-composer.ts` currently performs one-shot write; add bounded grapheme-safe visible frames with human takeover and final-only Rust/Host receipt |
+| Dot for actual authorized agent tap | **OPEN / DESIGN READY / BLOCKED on UI target action** | Existing composer receipt does not grant click authority. First add semantic/layout-fenced Host Control UI activation; then render phone-local dot on dispatch only |
+| Typed action/gesture provenance and source/receipt evidence | **PARTIAL / DESIGN READY** | Compose source and Host effect receipt exist; no visual-frame proof or general tap-source proof yet |
+| Android owner confirms typing/tap on unchanged Direct URL | **UNRUN** | Real paired Android browser, positive/negative tests and correlated Host receipts required |
+
+**Ledger relationship:** original Labs wiring IDs **11–18** (input/geometry/accessibility), **26–29** (Control/device authority) and **47–58** (source/receipts/real acceptance). Its canonical local `WIRING-LEDGER.md` was not edited because it is not accessible in the connected GitHub `vivim-labs` tree. This section and the first-customer tracker are the actionable GitHub-side entries pending explicit reconciliation. **No feature source code was changed in this documentation task.**
