@@ -247,6 +247,19 @@ const hub = createIntegrationHub({ paths, profileStore, learner, recorder, conve
         // not `no-store`) so repeat loads cost a 304. Never user data.
         return staticFile(res, { path: UI, contentType: 'text/html; charset=utf-8', cacheControl: 'no-cache', headers: { 'x-content-type-options': 'nosniff', 'content-security-policy': "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' data:" } });
       }
+      if (['/craft-intel','/ui/craft-intel.mjs'].includes(url.pathname)) {
+        if (req.method !== 'GET') { res.setHeader('allow','GET'); return send(res,405,{error:'GET required'}); }
+        const script=url.pathname.endsWith('.mjs');
+        return staticFile(res,{
+          path:new URL(script?'./ui/craft-intel.mjs':'./ui/craft-intel.html',import.meta.url),
+          contentType:script?'text/javascript; charset=utf-8':'text/html; charset=utf-8',
+          cacheControl:'no-cache',
+          headers:{
+            'x-content-type-options':'nosniff',
+            'content-security-policy':"default-src 'none'; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'"
+          }
+        });
+      }
       if (url.pathname === '/live/view') { await hub.handle(req, res, new URL('/api/v1/live/view', url), {}); return; }
       if (url.pathname === '/live/view.mjs') {
         if (req.method !== 'GET') { res.setHeader('allow', 'GET'); return send(res, 405, { error: 'GET required' }); }
