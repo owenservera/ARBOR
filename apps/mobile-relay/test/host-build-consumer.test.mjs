@@ -130,3 +130,14 @@ test('Wiki authorization scopes are tracked without relying on optional WASM ava
   assert.ok(app.indexOf('wikiReadScope=fenceKey')<
     app.indexOf('if (S.wiki && wiki.revision < S.wiki.revision)'));
 });
+
+test('Build composer suggestion scope follows the admitted live-source revision',()=>{
+  const app=readFileSync(new URL('../app.js',import.meta.url),'utf8');
+  const start=app.indexOf('function composerScope()');
+  const end=app.indexOf('function classifyDraftUi',start);
+  const body=app.slice(start,end);
+  assert.ok(start>=0&&end>start);
+  assert.match(body,/build\?\.bindingRevisions\?\.\(\)/);
+  assert.match(body,/sourceVersions/);
+  assert.doesNotMatch(body,/sourceVersions=.*\.digest/);
+});

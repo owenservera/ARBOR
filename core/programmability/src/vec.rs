@@ -143,7 +143,7 @@ pub const DELTA_SCHEMA:&str="vivim.vec-change-set/1";
 #[serde(rename_all="camelCase")]
 pub struct BindingTransition {
     pub id:String,pub from_revision:Option<u64>,pub to_revision:Option<u64>,
-    pub to_digest:Option<String>,
+    pub from_digest:Option<String>,pub to_digest:Option<String>,
 }
 #[derive(Clone,Debug,Serialize,PartialEq,Eq)]
 #[serde(rename_all="camelCase")]
@@ -226,7 +226,7 @@ pub fn diff(previous:Option<&View>,next:Option<&View>)->Result<Delta,VisualError
             out.changed_bindings.push(id.clone());
             out.binding_transitions.push(BindingTransition{
                 id,from_revision:before.map(|v|v.0),to_revision:after.map(|v|v.0),
-                to_digest:after.map(|v|v.1.clone())
+                from_digest:before.map(|v|v.1.clone()),to_digest:after.map(|v|v.1.clone())
             });
         }
     }
@@ -270,9 +270,12 @@ mod vec_revision_tests{
         assert_eq!(change.binding_transitions.len(),1);
         assert_eq!(change.binding_transitions[0].from_revision,Some(11));
         assert_eq!(change.binding_transitions[0].to_revision,Some(12));
+        assert_eq!(change.binding_transitions[0].from_digest.as_deref(),Some("a".repeat(64).as_str()));
         assert_eq!(change.binding_transitions[0].to_digest.as_deref(),Some("b".repeat(64).as_str()));
         let wire=serde_json::to_value(&change).unwrap();
         assert_eq!(wire["bindingTransitions"][0]["toRevision"],12);
+        assert_eq!(wire["bindingTransitions"][0]["fromDigest"],"a".repeat(64));
+        assert_eq!(wire["bindingTransitions"][0]["toDigest"],"b".repeat(64));
         assert!(wire.get("boundContent").is_none());
         assert!(!change.revision_changed);
         assert!(change.repaint_required);

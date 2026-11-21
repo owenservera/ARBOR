@@ -168,7 +168,13 @@ function composerScope(){
   const headers=transport.deviceHeaders?.();
   const session=headers?.['x-vivim-device-session'];if(!session)return null;
   const revision=build?.surface()?.revision??S.statusObj?.snapshot?.bootstrap?.uiRevision?.revision??0;
-  return [session,headers['x-vivim-grant-id'],S.tab,revision,S.wiki?.revision??0].join(':');
+  // Invalidate phone-side 2-TAB suggestions when authorized live data changes
+  // without a design revision change. Include source revisions only, never
+  // Wiki text, source digests, private pages or an effect credential.
+  const sourceVersions=(build?.bindingRevisions?.()??[])
+    .map(row=>row.id+'@'+row.revision).join(',');
+  return [session,headers['x-vivim-grant-id'],S.tab,revision,
+    S.wiki?.revision??0,sourceVersions].join(':');
 }
 function classifyDraftUi(request){
   const surface=build?.surface()??build?.draftSurface()??buildSurfaceFromBootstrap(S.statusObj?.snapshot?.bootstrap);
