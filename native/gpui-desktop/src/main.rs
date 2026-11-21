@@ -11,7 +11,7 @@
 //! @hq:consumes hqkg.development-query@1
 //! @hq:consumes vivim.rust-development-projection@1
 use std::{time::Duration, sync::Arc};
-use vivim_host_supervisor::HostSupervisor;
+use vivim_host_supervisor::{HostSupervisor, Readiness};
 use serde_json::json;
 use vivim_programmability_core::navigation;
 use vivim_programmability_core::wiki_read::{self, RevisionGuard as WikiRevisionGuard};
@@ -79,6 +79,30 @@ struct Desktop {
     uncertain: bool,
 }
 impl Desktop {
+    /// Manual source-safe reconnect. It does not kill a live Host or retry an
+    /// effect, and shares one serialized supervisor with automatic recovery.
+    fn reconnect_host(&mut self,cx:&mut Context<Self>) {
+        if !passive_read_allowed(self.busy,self.uncertain,
+            self.review.as_ref().is_some_and(Review::needs_approval)) {
+            self.status="Host reconnect blocked during an approval or uncertain effect".into();
+            cx.notify();return;
+        }
+        self.status="Checking native Host lifecycle".into();
+        cx.notify();
+        let supervisor=Arc::clone(&self.supervisor);
+        let job=cx.background_executor().spawn(async move { supervisor.reconcile() });
+        cx.spawn(async move |this,cx| {
+            let result=job.await;
+            let _=this.update(cx,|view,cx|{
+                view.status=match result {
+                    Ok(())=>"Host attached or started · refreshing owner-authorized sources".into(),
+                    Err(error)=>format!("Native Host unavailable · {error}"),
+                };
+                view.refresh(cx);
+                cx.notify();
+            });
+        }).detach();
+    }
     fn find_wiki(&mut self,cx:&mut Context<Self>){
         let raw=self.input.read(cx).value().to_string();
         let query=raw.trim();
@@ -155,6 +179,30 @@ impl Desktop {
     // Weak entity lifetime stops the observer when its workspace closes.
     // All refreshes are GET-only. Neither polling nor readback can approve.
     fn start_observer(&self,cx:&mut Context<Self>){
+        // Cold native launch is asynchronous: refresh promptly when the owned
+        // Host becomes ready rather than waiting the full periodic 15 seconds.
+        let supervisor=Arc::clone(&self.supervisor);
+        cx.spawn(async move |this,cx|{
+            for _ in 0..24 {
+                cx.background_executor().timer(Duration::from_millis(500)).await;
+                match supervisor.snapshot().readiness {
+                    Readiness::Owned|Readiness::Attached => {
+                        let _=this.update(cx,|view,cx|{
+                            view.status="Native Host ready · reading canonical projections".into();
+                            view.refresh(cx);cx.notify();
+                        });
+                        break;
+                    }
+                    Readiness::Failed|Readiness::Exhausted => {
+                        let _=this.update(cx,|view,cx|{
+                            view.status=supervisor.snapshot().label();cx.notify();
+                        });
+                        break;
+                    }
+                    _=>{}
+                }
+            }
+        }).detach();
         cx.spawn(async move |this,cx|{
             loop{
                 cx.background_executor().timer(Duration::from_secs(15)).await;
@@ -812,6 +860,7 @@ impl Render for Desktop {
         }
         let mut controls=div().flex().flex_wrap().gap_2()
             .child(Button::new("refresh").label("Refresh Host").on_click(cx.listener(|v,_,_,cx|v.refresh(cx))))
+            .child(Button::new("host-reconnect").label("Reconnect Host").on_click(cx.listener(|v,_,_,cx|v.reconnect_host(cx))))
             .child(Button::new("plan").label("Review command").on_click(cx.listener(|v,_,_,cx|v.submit(cx))));
         if matches!(self.panel,Panel::Overview|Panel::Graph){
             controls=controls
