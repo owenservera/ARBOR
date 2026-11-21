@@ -22,31 +22,37 @@ const operations=Object.freeze({
   'control-catalog-compatibility':'vivim.control-catalog-compatibility/1',
   'semantic-observation':'vivim.semantic-observation/1'
 });
-// Packaged binary presence is separate from a successful native response.
-// Callers requiring fail-closed semantics may use this after a null result;
-// other compatibility consumers retain their existing fallback contract.
-export function hasNativeProductPureBinary(){
-  try { return !!resolveBundledRustBinary('vivim-product-pure'); }
-  catch { return false; }
-}
-export function runNativeProductPureSync(operation,input){
+// Existing consumers retain null-on-unavailable compatibility. An opt-in
+// caller can require a valid response once a packaged binary was resolved;
+// resolution and failure are distinguished inside the same call (no TOCTOU
+// availability probe). This option never authorizes an effect.
+export function runNativeProductPureSync(operation,input,{failClosedIfPackaged=false}={}){
+
   if(!Object.hasOwn(operations,operation)||input===null||typeof input!=='object')
     return null;
   let binary;
   try{binary=resolveBundledRustBinary('vivim-product-pure');}catch{return null}
   if(!binary)return null;
+  const failed=()=>{
+    if(failClosedIfPackaged)
+      throw Object.assign(Error('NATIVE_PRODUCT_PURE_INVALID'),{code:'NATIVE_PRODUCT_PURE_INVALID'});
+    return null;
+  };
   let wire;
-  try{wire=JSON.stringify({schema:'vivim.product-pure-request/1',operation,input})}catch{return null}
-  if(typeof wire!=='string'||Buffer.byteLength(wire,'utf8')>LIMIT)return null;
-  const reply=spawnSync(binary,[],{input:wire,encoding:'utf8',shell:false,
-    windowsHide:true,timeout:1200,maxBuffer:LIMIT});
+  try{wire=JSON.stringify({schema:'vivim.product-pure-request/1',operation,input})}catch{return failed()}
+  if(typeof wire!=='string'||Buffer.byteLength(wire,'utf8')>LIMIT)return failed();
+  let reply;
+  try {
+    reply=spawnSync(binary,[],{input:wire,encoding:'utf8',shell:false,
+      windowsHide:true,timeout:1200,maxBuffer:LIMIT});
+  } catch { return failed(); }
   if(reply.error||reply.status!==0||typeof reply.stdout!=='string'||
-    Buffer.byteLength(reply.stdout,'utf8')>LIMIT)return null;
-  let result;try{result=JSON.parse(reply.stdout)}catch{return null}
+    Buffer.byteLength(reply.stdout,'utf8')>LIMIT)return failed();
+  let result;try{result=JSON.parse(reply.stdout)}catch{return failed()}
   if(result?.schema!=='vivim.product-pure-response/1'||result.operation!==operation||
     result.state!=='computed'||result.authority!=='none'||
     result.executionAuthorized!==false||result.effectPerformed!==false||
     result.result?.schema!==operations[operation]||
-    result.result?.executionAuthorized!==false)return null;
+    result.result?.executionAuthorized!==false)return failed();
   return result.result;
 }

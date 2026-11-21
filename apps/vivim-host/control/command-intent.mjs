@@ -2,7 +2,7 @@
 // Browser/phone and desktop share the exact same NLCL world; Host owns effects.
 import { interpretControl } from '../../mobile-relay/control-language.mjs';
 import { resolvePersonalSemantics } from './personal-semantics.mjs';
-import { runNativeProductPureSync, hasNativeProductPureBinary } from './native-product-pure-sync.mjs';
+import { runNativeProductPureSync } from './native-product-pure-sync.mjs';
 
 // @hq:type vivim.command-intent@0.1
 export const COMMAND_INTENT_SCHEMA = 'vivim.command-intent/0.1';
@@ -26,7 +26,7 @@ function canonical(actionId, args) {
 function boundedCatalogProjection(catalog) {
   return catalog.actions.map(({ id, title, args, risk, requiredScopes, owner, readiness }) => ({
     id, title, args, risk, owner, readiness,
-    ...(Array.isArray(requiredScopes) ? { requiredScopes } : {})
+    ...(requiredScopes !== undefined ? { requiredScopes } : {})
   }));
 }
 
@@ -175,7 +175,9 @@ export function toCommandIntent(input, { catalog, world, personalRules = [], per
   return { schema: COMMAND_INTENT_SCHEMA, outcome: 'candidate', ...actionShape(action, args), ...meta };
   }
   const incumbent = incumbentProjection();
-  const native = runNativeProductPureSync('command-intent-projection', {
+  let native;
+  try {
+    native = runNativeProductPureSync('command-intent-projection', {
     schema: 'vivim.command-intent-projection-input/1',
     input: {
       text: input.text,
@@ -187,13 +189,12 @@ export function toCommandIntent(input, { catalog, world, personalRules = [], per
     catalogVersion: catalog.version, worldRevision: world.v,
     catalogActions: boundedCatalogProjection(catalog), reading: meaning, baselineOutcome: baseline.outcome,
     personalProvenance
-  });
-  // An unpackaged workspace retains the incumbent JS behavior. A binary that
-  // exists but fails to answer is not equivalent to an absent binary: it must
-  // fail closed rather than silently hiding a kernel/schema/timeout defect.
-  if (!native) return hasNativeProductPureBinary()
-    ? refuse(input, 'NATIVE_INTENT_INVALID', 'Native command intent is unavailable.')
-    : incumbent;
+    }, { failClosedIfPackaged: true });
+  } catch {
+    return refuse(input, 'NATIVE_INTENT_INVALID', 'Native command intent is unavailable.');
+  }
+  // Null now means only absent binary; a present-but-broken binary throws.
+  if (!native) return incumbent;
   // Compute and compare against the existing Host projection until the real
   // corpus proves exact parity. A present but mismatching native result is
   // refused, not silently trusted or silently downgraded to a new meaning.
@@ -246,16 +247,19 @@ export function validateAiCommandCandidate(input, { catalog, world, personalRule
       rationale: proposal.rationale ?? null, uncertainty: proposal.uncertainty ?? null } };
   }
   const incumbent = incumbentAiProjection();
-  const native=runNativeProductPureSync('command-ai-guard',{
+  let native;
+  try {
+    native=runNativeProductPureSync('command-ai-guard',{
     schema:'vivim.command-ai-proposal-guard-input/1',
     input:{text:input.text,scope:input.scope??'text',audience:input.audience??'owner',
       catalogRevision:input.catalogRevision??null,worldRevision:input.worldRevision??null},
     proposal,reading,action:action??null,
     catalogVersion:catalog.version,worldRevision:world.v
-  });
-  if (!native) return hasNativeProductPureBinary()
-    ? refuse(input, 'NATIVE_INTENT_INVALID', 'Native AI candidate binding unavailable.')
-    : incumbent;
+    }, { failClosedIfPackaged: true });
+  } catch {
+    return refuse(input, 'NATIVE_INTENT_INVALID', 'Native AI candidate binding unavailable.');
+  }
+  if (!native) return incumbent;
   // Exact source action, normalized args, risk, scope, readiness and
   // provenance must agree with the legacy Host decision, including refusal.
   if (native.schema === 'vivim.command-ai-proposal-guard/1' &&

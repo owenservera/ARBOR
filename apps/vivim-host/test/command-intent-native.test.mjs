@@ -4,11 +4,15 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { buildControlWorld, interpretControl } from '../../mobile-relay/control-language.mjs';
 import { toCommandIntent, validateAiCommandCandidate } from '../control/command-intent.mjs';
-import { runNativeProductPureSync, hasNativeProductPureBinary } from '../control/native-product-pure-sync.mjs';
+import { runNativeProductPureSync } from '../control/native-product-pure-sync.mjs';
+import { resolveBundledRustBinary } from '../chat/rust-context.mjs';
 
 const catalog = JSON.parse(readFileSync(new URL('../control/action-catalog.v1.json', import.meta.url), 'utf8'));
 const corpus = JSON.parse(readFileSync(new URL('../control/corpus.v1.json', import.meta.url), 'utf8'));
-const hasBinary = () => hasNativeProductPureBinary();
+const hasBinary = () => {
+  try { return !!resolveBundledRustBinary('vivim-product-pure'); }
+  catch { return false; }
+};
 
 test('real NLCL golden cases retain their expected Host intents and native parity', t => {
   let compared = 0;
@@ -46,7 +50,7 @@ test('real NLCL golden cases retain their expected Host intents and native parit
       catalogVersion: catalog.version, worldRevision: world.v,
       catalogActions: catalog.actions.map(({id, title, args, risk, owner, readiness, requiredScopes}) =>
         ({id, title, args, risk, owner, readiness,
-          ...(Array.isArray(requiredScopes) ? {requiredScopes} : {})})),
+          ...(requiredScopes !== undefined ? {requiredScopes} : {})})),
       reading, baselineOutcome: reading.outcome,
       personalProvenance: null
     });
@@ -98,6 +102,31 @@ test('AI proposal is inert and cannot contradict real owner text', () => {
   assert.equal(compound.outcome, 'refused');
   assert.equal(compound.refusal.code, 'UNSAFE_OR_UNRESOLVED_TEXT');
   assert.equal(compound.provenance.authority, 'none');
+
+  // Compare the native AI guard's entire inert wire projection, not only
+  // its refusal code, against the real recomputed Host decision.
+  for (const [ownerText, proposal, incumbent] of [
+    [sourceCase.text, {actionId: sourceCase.actionId, args: sourceCase.args}, accepted],
+    [sourceCase.text, {actionId: sourceCase.actionId,
+      args: {...sourceCase.args, preset: alternative}}, conflict],
+    [compoundCase.text, {actionId: sourceCase.actionId, args: sourceCase.args}, compound]
+  ]) {
+    const reading = toCommandIntent({text: ownerText, scope: 'text'}, context);
+    const action = catalog.actions.find(a => a.id === proposal.actionId);
+    const native = runNativeProductPureSync('command-ai-guard', {
+      schema: 'vivim.command-ai-proposal-guard-input/1',
+      input: {text: ownerText, scope: 'text', audience: 'owner',
+        catalogRevision: null, worldRevision: null},
+      proposal, reading, action, catalogVersion: catalog.version, worldRevision: world.v
+    });
+    if (hasBinary()) assert.ok(native, 'staged Rust binary must support command-ai-guard');
+    if (native) {
+      assert.equal(native.executionAuthorized, false);
+      assert.equal(native.effectPerformed, false);
+      assert.deepEqual(native.intent, JSON.parse(JSON.stringify(incumbent)),
+        'native AI guard must equal the complete Host projection');
+    }
+  }
 });
 
 test('native projection rejects stale and contradictory real Host snapshots', t => {
@@ -115,7 +144,7 @@ test('native projection rejects stale and contradictory real Host snapshots', t 
     catalogVersion: catalog.version, worldRevision: world.v,
     catalogActions: catalog.actions.map(({id, title, args, risk, owner, readiness, requiredScopes}) =>
       ({id, title, args, risk, owner, readiness,
-        ...(Array.isArray(requiredScopes) ? {requiredScopes} : {})})),
+        ...(requiredScopes !== undefined ? {requiredScopes} : {})})),
     reading, baselineOutcome: reading.outcome,
     personalProvenance: null
   };

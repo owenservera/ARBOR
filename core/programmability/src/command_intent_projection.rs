@@ -365,3 +365,30 @@ mod host_whitespace_tests {
         assert!(!safe_text(&json!("theme\u{FEFF}")));
     }
 }
+
+#[cfg(test)]
+mod canonical_catalog_tests {
+    use super::{action_catalog, checked_args};
+    use serde_json::{json, Value};
+
+    #[test]
+    fn native_projector_accepts_real_host_catalog_without_external_registry() {
+        let catalog: Value = serde_json::from_str(include_str!(
+            "../../../apps/vivim-host/control/action-catalog.v1.json"
+        )).expect("checked-in Host action catalog JSON");
+        assert!(catalog["version"].as_u64().is_some_and(|v| v > 0));
+        let rows = catalog["actions"].as_array().expect("real Host actions");
+        let actions = action_catalog(&catalog["actions"])
+            .expect("canonical Host action metadata must be accepted by native projector");
+        assert_eq!(actions.len(), rows.len());
+        for action in rows {
+            let id = action["id"].as_str().expect("Host action id");
+            assert_eq!(actions.get(id).map(|a| a["risk"].clone()), Some(action["risk"].clone()));
+            assert_eq!(actions.get(id).map(|a| a["readiness"].clone()),
+                Some(action["readiness"].clone()));
+            if action["args"].as_object().is_some_and(|a| a.is_empty()) {
+                assert_eq!(checked_args(action, &json!({})), Some(json!({})));
+            }
+        }
+    }
+}
