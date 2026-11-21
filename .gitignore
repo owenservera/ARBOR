@@ -24,3 +24,8 @@ write_test.txt
 /repro*.mjs
 apps/vivim-host/data/demo-baseline/rdcb/.cache/
 .tmp-a00/
+
+# Generated local native builds and GPUI distribution artifacts
+**/target/
+native/gpui-desktop/resources/
+native/gpui-desktop/dist/

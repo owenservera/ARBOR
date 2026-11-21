@@ -18,6 +18,19 @@ const resources=path.join(root,'src-tauri','resources');
 const runtime=path.join(resources,'runtime');
 const stage=path.join(resources,'.runtime-stage-'+process.pid);
 const previous=path.join(resources,'.runtime-previous-'+process.pid);
+// One canonical frozen payload packager. The GPUI destination is intentionally
+// independent of Tauri's resource directory; no duplicate staging engine.
+export function stagingPaths(mode) {
+ const resourceRoot=mode==='--stage-gpui'
+   ? path.join(root,'native','gpui-desktop','resources')
+   : resources;
+ return {
+   resources:resourceRoot,
+   runtime:path.join(resourceRoot,'runtime'),
+   stage:path.join(resourceRoot,'.runtime-stage-'+process.pid),
+   previous:path.join(resourceRoot,'.runtime-previous-'+process.pid)
+ };
+}
 // Frozen staging contract. STAGED_DIRS are workspace trees copied verbatim;
 // STAGED_TOP_FILES are single product files the Host reads at runtime.
 export const STAGED_DIRS=['apps/vivim-host','apps/mobile-relay','studio','harness','hq','packages/tierflow','packages/vec-ui-engines','contracts'];
@@ -53,11 +66,15 @@ export const RUNTIME_PLACEHOLDER='ARBOR-RUNTIME-PLACEHOLDER.txt';
 const dirs=STAGED_DIRS;
 const topFiles=STAGED_TOP_FILES;
 const refuse=s=>{throw new Error('PACKAGING_REFUSED: '+s);};
-function checkInputs({requireLock=true}={}){
- for(const p of [...topFiles.filter(p=>requireLock||p!=='bun.lock'),'src-tauri/tauri.conf.json',...dirs])if(!existsSync(path.join(root,p)))refuse('missing '+p);
- const c=JSON.parse(readFileSync(path.join(root,'src-tauri/tauri.conf.json'),'utf8'));
- for(const p of Object.keys(c.bundle?.resources||{}))if(/\.apk$/i.test(p))refuse('PWA-first still mandates APK: '+p);
- if(!Object.keys(c.bundle?.resources||{}).includes('resources/runtime/'))refuse('Missing required resources/runtime/ in Tauri config');
+function checkInputs({requireLock=true,requireTauri=true}={}){
+ const required=[...topFiles.filter(p=>requireLock||p!=='bun.lock'),
+   ...(requireTauri?['src-tauri/tauri.conf.json']:[]),...dirs];
+ for(const p of required)if(!existsSync(path.join(root,p)))refuse('missing '+p);
+ if(requireTauri){
+  const c=JSON.parse(readFileSync(path.join(root,'src-tauri/tauri.conf.json'),'utf8'));
+  for(const p of Object.keys(c.bundle?.resources||{}))if(/\.apk$/i.test(p))refuse('PWA-first still mandates APK: '+p);
+  if(!Object.keys(c.bundle?.resources||{}).includes('resources/runtime/'))refuse('Missing required resources/runtime/ in Tauri config');
+ }
 }
 const forbidden=name=>/(^\.env(?:\.|$)|owner-token|\.sqlite(?:3)?(?:-|$|\.)|\.db$|\.pem$|\.p12$|\.key$|\.log$|\.tap$|\.zip$|\.apk$|\.exe$)/i.test(name);
 const excluded=new Set(['.git','node_modules','target','coverage','test','tests','fixtures','.cache','dist']);
@@ -304,9 +321,9 @@ export function verifyStagedRuntime(base,{manifest=null,requireManifest=false}={
 
 export function main(argv){
 const mode=argv[0]||'--check';
-if(!['--check','--prepare','--verify','--stage','--lock'].includes(mode))refuse('Usage: node tools/packaging/prepare-host-runtime.mjs --check|--prepare|--verify [--dir <runtime>]|--stage|--lock');
+if(!['--check','--prepare','--verify','--stage','--stage-gpui','--lock'].includes(mode))refuse('Usage: node tools/packaging/prepare-host-runtime.mjs --check|--prepare|--verify [--dir <runtime>]|--stage|--stage-gpui|--lock');
 const rest=argv.slice(1);
-const usage='Usage: node tools/packaging/prepare-host-runtime.mjs --check|--prepare|--verify [--dir <runtime>]|--stage|--lock';
+const usage='Usage: node tools/packaging/prepare-host-runtime.mjs --check|--prepare|--verify [--dir <runtime>]|--stage|--stage-gpui|--lock';
 if(mode==='--verify'){
  if(rest.length!==0&&!(rest.length===2&&rest[0]==='--dir'&&rest[1]))
   refuse(usage);
@@ -340,34 +357,37 @@ if(mode==='--lock'){
   note:'No build or binary trust acceptance implied; a missing lockfile blocks --stage'}));
  if(missingLocks.length>0)process.exit(1);
 }else{
-checkInputs({requireLock:true});
+const location=stagingPaths(mode);
+const targetRuntime=location.runtime, targetStage=location.stage, targetPrevious=location.previous;
+if(mode==='--targetStage-gpui')mkdirSync(location.resources,{recursive:true});
+checkInputs({requireLock:true,requireTauri:mode!=='--targetStage-gpui'});
  const binary=nodeBinary();
- if(existsSync(stage)||existsSync(previous))refuse('Existing staging/rollback directory requires manual inspection');
- mkdirSync(stage,{recursive:true});
+ if(existsSync(targetStage)||existsSync(targetPrevious))refuse('Existing staging/rollback directory requires manual inspection');
+ mkdirSync(targetStage,{recursive:true});
  try{
-  for(const p of dirs){const to=path.join(stage,p);mkdirSync(path.dirname(to),{recursive:true});cpSync(path.join(root,p),to,{recursive:true,filter:safeFilter});}
-  for(const p of topFiles){const to=path.join(stage,p);mkdirSync(path.dirname(to),{recursive:true});copyFileSync(path.join(root,p),to);}
-  copyFileSync(binary,path.join(stage,'node.exe'));
-  // Build and stage the existing Rust CLIs once at packaging time. The Host
-  // discovers these exact bundled executables without Cargo or environment at runtime.
+  for(const p of dirs){const to=path.join(targetStage,p);mkdirSync(path.dirname(to),{recursive:true});cpSync(path.join(root,p),to,{recursive:true,filter:safeFilter});}
+  for(const p of topFiles){const to=path.join(targetStage,p);mkdirSync(path.dirname(to),{recursive:true});copyFileSync(path.join(root,p),to);}
+  copyFileSync(binary,path.join(targetStage,'node.exe'));
+  // Build and targetStage the existing Rust CLIs once at packaging time. The Host
+  // discovers these exact bundled executables without Cargo or environment at targetRuntime.
   for(const plan of CARGO_BUILDS)run('cargo',cargoArgs(plan,path.join(root,'target')),root);
- const nativeDir=path.join(stage,'native','bin');
+ const nativeDir=path.join(targetStage,'native','bin');
   mkdirSync(nativeDir,{recursive:true});
   for(const name of PACKAGED_BINARIES)
     copyFileSync(path.join(root,'target','release',name+'.exe'),path.join(nativeDir,name+'.exe'));
-  run('bun',['install','--production','--frozen-lockfile','--ignore-scripts'],stage);
-  run(path.join(stage,'node.exe'),['--check',path.join(stage,'apps/vivim-host/server.mjs')],stage);
-  // Freeze the staged payload and verify it before it replaces the live runtime.
-  writeFrozenManifest(stage);
-  const report=verifyStagedRuntime(stage,{manifest:JSON.parse(readFileSync(path.join(stage,RUNTIME_MANIFEST_NAME),'utf8')),requireManifest:true});
-  if(!report.ok)refuse('staged runtime failed verification: '+report.problems.join('; '));
-  if(existsSync(runtime))renameSync(runtime,previous);
-  try{renameSync(stage,runtime);}catch(e){if(existsSync(previous))renameSync(previous,runtime);throw e;}
-  if(existsSync(previous))rmSync(previous,{recursive:true,force:true});
-  console.log(JSON.stringify({status:'STAGED_NOT_ACCEPTED',runtime,nodeSha256:process.env.ARBOR_NODE24_SHA256,apk:'DEFERRED',
+  run('bun',['install','--production','--frozen-lockfile','--ignore-scripts'],targetStage);
+  run(path.join(targetStage,'node.exe'),['--check',path.join(targetStage,'apps/vivim-host/server.mjs')],targetStage);
+  // Freeze the staged payload and verify it before it replaces the live targetRuntime.
+  writeFrozenManifest(targetStage);
+  const report=verifyStagedRuntime(targetStage,{manifest:JSON.parse(readFileSync(path.join(targetStage,RUNTIME_MANIFEST_NAME),'utf8')),requireManifest:true});
+  if(!report.ok)refuse('staged targetRuntime failed verification: '+report.problems.join('; '));
+  if(existsSync(targetRuntime))renameSync(targetRuntime,targetPrevious);
+  try{renameSync(targetStage,targetRuntime);}catch(e){if(existsSync(targetPrevious))renameSync(targetPrevious,targetRuntime);throw e;}
+  if(existsSync(targetPrevious))rmSync(targetPrevious,{recursive:true,force:true});
+  console.log(JSON.stringify({status:'STAGED_NOT_ACCEPTED',runtime:targetRuntime,nodeSha256:process.env.ARBOR_NODE24_SHA256,apk:'DEFERRED',
    manifestFiles:report.checks.manifestFilesVerified,runtimeClosureFiles:report.checks.runtimeClosureFiles,
    note:'Cargo/Bun/security/device acceptance still required'}));
- }catch(e){if(existsSync(stage))rmSync(stage,{recursive:true,force:true});throw e;}
+ }catch(e){if(existsSync(targetStage))rmSync(targetStage,{recursive:true,force:true});throw e;}
 }
 }
 }
