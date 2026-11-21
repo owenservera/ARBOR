@@ -7,7 +7,7 @@ class ComposerField extends EventTarget {
   value=''; disabled=false; readOnly=false; isConnected=true; maxLength=1000;
   focus(){}
 }
-function browser(t,{initial='before',onObserve=async()=>{}}={}){
+function browser(t,{initial='before',onObserve=async()=>{},onVerified=()=>{}}={}){
   const old=Object.fromEntries(['document','navigator','window','fetch','setInterval','clearInterval'].map(k=>[k,globalThis[k]]));
   t.after(()=>{for(const [k,v] of Object.entries(old)){if(v===undefined)delete globalThis[k];else Object.defineProperty(globalThis,k,{value:v,writable:true,configurable:true});}});
   const document=new EventTarget(); document.visibilityState='visible';
@@ -44,7 +44,7 @@ function browser(t,{initial='before',onObserve=async()=>{}}={}){
     }
     throw Error('Unexpected fetch '+url);
   },writable:true,configurable:true});
-  const result=mountFirstContactComposer({field,active:()=>true,maxLength:()=>1000});
+  const result=mountFirstContactComposer({field,active:()=>true,maxLength:()=>1000,onVerified});
   async function idle(){await nextTurn();await nextTurn();}
   async function tick(){for(const {f,ms} of [...intervals.values()])if(ms===750)f();await idle();}
   return {field,result,tick,idle,observe:()=>observed,ackCount:()=>ackCount,
@@ -70,6 +70,18 @@ test('source-backed PWA delivery updates EXISTING field, emits input, never Send
   assert.equal(sendCount,0);
   assert.equal(b.ackCount(),1);
   assert.equal(b.observe().text,'agent draft');
+  b.result.dispose();
+});
+test('verified activity fires only after Host source ACK, not on rejected delivery',async t=>{
+  let count=0;
+  const b=browser(t,{onVerified:()=>{count++;}});
+  await b.idle();
+  b.enqueue({expectedSourceRevision:99999});
+  await b.tick();
+  assert.equal(count,0,'a rejected delivery must not show a verified indicator');
+  b.enqueue();await b.tick();
+  assert.equal(count,1,'the Host ACK is the only indicator trigger');
+  assert.equal(b.ackCount(),1);
   b.result.dispose();
 });
 test('host delivery with stale epoch or source fence cannot edit the textarea',async t=>{
