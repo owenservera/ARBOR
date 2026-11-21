@@ -197,7 +197,7 @@ export function buildNativeKnowledge(snapshot, effects) {
     if(receiptWikiOrigin && (
       !['wiki.section.edit','wiki.capture.save'].includes(e.actionId) ||
       receiptWikiOrigin.kind!=='committed-wiki-origin' ||
-      !/^[0-9a-f-]{36}$/.test(receiptWikiOrigin.entryId??'') ||
+      !/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/.test(receiptWikiOrigin.entryId??'') ||
       !safeUInt(receiptWikiOrigin.wikiRevision)||receiptWikiOrigin.wikiRevision===0 ||
       receiptWikiOrigin.wikiRevision!==e.sourceRevision))
       throw Error('NATIVE_EFFECT_ORIGIN_INVALID');
