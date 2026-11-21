@@ -1,6 +1,6 @@
 # VIVIM GPUI desktop — native Host interaction
 
-GPUI is the intended native Windows desktop replacement. It can now start or attach to the canonical Host via the shared native supervisor. Tauri stays as fallback pending real Windows installer and lifecycle acceptance.
+GPUI is the **only supported UI entrypoint for this Windows desktop launch**. It starts or attaches to the canonical Host using the shared native supervisor, without launching a browser UI. Tauri source may remain in the repository for migration/rollback engineering, but the GPUI-only launcher neither starts it nor falls back to it. Native Windows GPU and installer acceptance are tracked separately.
 The canonical Host remains the only state/effect authority. No provider calls, extra grants, local journal, fake UI data, or new execution endpoints are introduced. The Host exposes one new read-only owner-proof endpoint to authenticate native transports. Native commands reuse the existing owner-authorized control plan/execute/inspect endpoints.
 
 ## Run from repository root
