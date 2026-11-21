@@ -18,6 +18,7 @@ const operations=Object.freeze({
   'command-intent-projection':'vivim.command-intent-projection/1',
   'control-lexicon-transition':'vivim.control-lexicon-transition/1',
   'personal-rule-selection':'vivim.personal-rule-selection/1',
+  'personal-rule-transition':'vivim.personal-rule-transition/1',
   'control-catalog-compatibility':'vivim.control-catalog-compatibility/1',
   'semantic-observation':'vivim.semantic-observation/1'
 });

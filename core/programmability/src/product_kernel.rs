@@ -49,6 +49,7 @@ pub fn dispatch(request:&Value)->Value{
         "command-intent-projection"=>crate::command_intent_projection::project(input),
         "control-lexicon-transition"=>crate::control_lexicon::transition(input),
         "personal-rule-selection"=>crate::personal_rule_selection::select(input),
+        "personal-rule-transition"=>crate::personal_rule_transition::reduce(input),
         "control-catalog-compatibility"=>crate::control_catalog_compat::assess(input),
         "semantic-observation"=>crate::semantic_observation::aggregate(input),
         "development-projection"=>crate::development_projection::project(input),
