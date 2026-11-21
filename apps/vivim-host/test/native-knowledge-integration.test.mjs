@@ -720,3 +720,21 @@ test('native readback rejects a stale source hidden outside the eight-item prese
   assert.equal(result.reason,'RUST_CORE_CONTRACT_INVALID');
   assert.equal(probes,1,'bad full-source readback must not be reissued');
 });
+
+test('empty committed Wiki inventory plans a fenced cleanup after restart',()=>{
+  const scope='c'.repeat(64);
+  const lastRow={id:'vivim-context-w-'+'1'.repeat(64),kind:'wiki',
+    semanticId:'wiki:section:Main/Deleted',sourceRef:'committed-entry',
+    digest:'d'.repeat(64),revision:8,sourceRevision:8,order:8,
+    title:'Wiki: Main/Deleted',summary:'Previously committed'};
+  const plan=planNativeContextSync({scope,view:'wiki',rows:[],
+    relationships:[],last:{rows:new Map([[lastRow.id,lastRow]]),links:new Map()},
+    hasGraph:true,completeWikiRevision:9});
+  assert.equal(plan.delta,true);
+  assert.equal(plan.finalPacket.completeWikiRevision,9);
+  assert.deepEqual(plan.finalPacket.activeIds,[]);
+  assert.equal(plan.finalPacket.deltas.length,1);
+  assert.deepEqual(plan.finalPacket.deltas[0],{op:'delete',kind:'wiki',
+    id:lastRow.id,revision:8,digest:lastRow.digest});
+});
+
