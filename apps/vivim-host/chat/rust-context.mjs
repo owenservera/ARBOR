@@ -247,7 +247,9 @@ function runPersonal(binary, journal, packet) {
         try { reason=JSON.parse(stdout)?.error; } catch {}
         const code=typeof reason==='string' && reason.startsWith('RECOVERY_REQUIRED')
           ? 'RUST_CORE_RECOVERY_REQUIRED' : typeof reason==='string' &&
-          /^(CAPACITY_HELD|COMPACTION_REQUIRED)/.test(reason) ? 'RUST_CORE_CAPACITY_HELD' : 'RUST_CORE_INGEST_FAILED';
+          /^(CAPACITY_HELD|COMPACTION_REQUIRED)/.test(reason) ? 'RUST_CORE_CAPACITY_HELD' :
+          /^STALE_CONTEXT_(EPOCH|SOURCE)/.test(reason??'') ?
+            'RUST_CORE_SOURCE_CHANGED' : 'RUST_CORE_INGEST_FAILED';
         reject(Object.assign(Error(code),{code})); return;
       }
       resolve({stdout});
@@ -275,7 +277,7 @@ function managedReader({env,dataRoot,productJournal,control,executePersonal,repo
   let last=null;
   async function snapshot() {
     const current=await productJournal.readNativeKnowledge({nativeOnly:true,completeSources:true});
-    const effects=projectAppliedControlEffects(control(),current.context.wikiChanges,current.context.wikiStructure);
+    const effects=projectAppliedControlEffects(control(),{items:current.changes.items},current.context.wikiStructure);
     const rows=buildNativeKnowledge(current,effects);
     return {rows,relationships:buildNativeRelationships(current,rows),wikiRevision:current.context.wikiRevision};
   }
@@ -294,27 +296,42 @@ function managedReader({env,dataRoot,productJournal,control,executePersonal,repo
       // One invocation performs both operations against the existing durable graph.
       for (let attempt=0;attempt<2;attempt++) {
         const projection=await snapshot(),{rows,relationships}=projection,fingerprint=digest(projection);
+        if(!rows.some(row=>view==='owner'||row.kind==='wiki'))
+          return unavailable('RUST_CORE_SOURCE_UNAVAILABLE');
         if(rows.length>512 || rows.length+relationships.length>4096)
           return unavailable('RUST_CORE_SOURCE_LIMIT');
+        // On process restart an existing HQKG graph may contain older valid
+        // receipts outside the current D4 presentation window. Bootstrap by
+        // idempotent puts, never a full omission-reconciling replacement.
+        let hasGraph=false;
+        try {
+          const st=await lstat(journal);
+          if(!st.isFile()||st.isSymbolicLink())return unavailable('RUST_CORE_UNSAFE_JOURNAL');
+          hasGraph=true;
+        } catch(error) {
+          if(error?.code!=='ENOENT')return unavailable('RUST_CORE_UNSAFE_JOURNAL');
+        }
         const nowRows=new Map(rows.map(row=>[row.id,row]));
         const nowLinks=new Map(relationships.map(link=>[link.id,link]));
-        const delta=last!==null;
-        const puts=delta?rows.filter(row=>!last.rows.has(row.id)||
+        const delta=last!==null||hasGraph;
+        const puts=last?rows.filter(row=>!last.rows.has(row.id)||
           digest(last.rows.get(row.id))!==digest(row)):rows;
         // A missing historical receipt or bounded page projection is not a
         // revocation. Only complete committed section evidence permits a tombstone.
-        const deletes=delta?[...last.rows.values()].filter(row=>
+        const deletes=last?[...last.rows.values()].filter(row=>
           row.kind==='wiki'&&row.semanticId.startsWith('wiki:section:')&&!nowRows.has(row.id))
           .map(row=>({op:'delete',kind:'wiki',id:row.id,revision:row.revision,digest:row.digest})):[];
-        const linkPuts=delta?relationships.filter(link=>!last.links.has(link.id)||
+        const linkPuts=last?relationships.filter(link=>!last.links.has(link.id)||
           digest(last.links.get(link.id))!==digest(link)):relationships;
-        const linkDeletes=delta?[...last.links.values()].filter(link=>!nowLinks.has(link.id))
+        const linkDeletes=last?[...last.links.values()].filter(link=>!nowLinks.has(link.id))
           .map(link=>({op:'delete',id:link.id,revision:link.revision,digest:link.digest})):[];
         const packetInput=delta?{
           schema:PERSONAL_SCHEMA,scope,op:'sync-context-read',view,nodes:[],
           deltas:[...puts.map(row=>({...row,op:'put'})),...deletes],
-          baseRevision:Math.max(0,...[...last.rows.values(),...rows].map(row=>row.revision)),
-          baseEpoch:last.epoch,relationships:linkPuts,relationshipDeltas:linkDeletes,
+          baseRevision:last?Math.max(0,...[...last.rows.values(),...rows].map(row=>row.revision)):
+            Number.MAX_SAFE_INTEGER,
+          ...(last?{baseEpoch:last.epoch}:{}),
+          relationships:linkPuts,relationshipDeltas:linkDeletes,
           activeIds:rows.map(row=>row.id)
         }:{
           schema:PERSONAL_SCHEMA,scope,op:'sync-context-read',view,nodes:rows,
@@ -322,7 +339,18 @@ function managedReader({env,dataRoot,productJournal,control,executePersonal,repo
         };
         if(delta&&(packetInput.deltas.length>512||linkPuts.length+linkDeletes.length>24))
           return unavailable('RUST_CORE_SOURCE_LIMIT');
-        const packet=await nativePacket(await executePersonal(runtime.personal,journal,packetInput));
+        let packet;
+        try {
+          packet=await nativePacket(await executePersonal(runtime.personal,journal,packetInput));
+        } catch(error) {
+          // Another authorized Host writer may have advanced the same graph.
+          // Discard the in-memory epoch and retry as non-deleting bootstrap,
+          // never as an unfenced stale delta.
+          if(error?.code==='RUST_CORE_SOURCE_CHANGED'&&last!==null) {
+            last=null;continue;
+          }
+          throw error;
+        }
         if (packet?.schema!==PERSONAL_SCHEMA || packet.scope!==scope ||
             packet.op!=='sync-context-read' || !safeUInt(packet.epoch) ||
             !safeUInt(packet.bytes) || packet.synced!==puts.length ||

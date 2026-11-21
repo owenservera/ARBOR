@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, rm, mkdir, writeFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import os from 'node:os';
 import path from 'node:path';
@@ -213,4 +213,41 @@ test('native ingestion receives every current committed section beyond presentat
     row.summary==='Owner committed section 0'));
   assert.ok(sectionRows.some(row=>row.semanticId==='wiki:section:Source27/About'));
   assert.ok(sectionRows.every(row=>row.sourceRef&&row.digest&&row.sourceRevision>0));
+});
+
+
+test('restart against an existing HQKG journal bootstraps with puts, never omission deletes',async t=>{
+  const {journal,dataRoot,edit}=await setup(t);
+  await edit('Current committed section',1);
+  const hq=path.join(dataRoot,'hqkg');
+  await mkdir(hq,{recursive:true});
+  // A pre-existing journal is enough to choose the conservative delta mode.
+  // Native correctness/readback is separately covered by the Rust CLI tests.
+  await writeFile(path.join(hq,'personal.hqj'),'existing-native-journal');
+  let sent;
+  const managed=createRustChatContext({env:{},dataRoot,productJournal:journal,control:()=>controls,
+    isFile:()=>true,executePersonal:async(_bin,_journal,packet)=>{
+      sent=packet;
+      const row=packet.deltas.find(d=>d.op==='put');
+      const item={title:row.title,summary:row.summary,kind:row.kind,
+        sourceRef:row.sourceRef,sourceDigest:row.digest,sourceRevision:row.sourceRevision,
+        revision:row.revision,depth:0,sourceCount:1,estimatedTokens:20};
+      return {stdout:JSON.stringify({schema:'vivim.hqkg-personal/1',scope:packet.scope,
+        op:packet.op,epoch:5,bytes:1234,mode:'delta',ingested:packet.deltas.length,
+        tombstoned:0,synced:packet.deltas.length,syncedRelationships:0,changed:true,
+        context:{schema:'vivim.hqkg-chat-context/1',state:'source-backed',
+          core:'hqkg',authority:'read-only',seed:'managed:wiki',epoch:5,
+          tokensUsed:20,budgetTokens:320,staleCount:0,budgetExhausted:false,
+          totalRetrieved:1,items:[item],pageRelationships:[]}})};
+    }});
+  const out=await managed('wiki');
+  assert.equal(out.state,'source-backed',out.reason);
+  assert.equal(out.items[0].summary,'Current committed section');
+  assert.equal(sent.op,'sync-context-read');
+  assert.deepEqual(sent.nodes,[]);
+  assert.equal(sent.deltas.length,1);
+  assert.equal(sent.deltas[0].op,'put');
+  assert.equal(sent.baseRevision,Number.MAX_SAFE_INTEGER);
+  assert.equal(Object.hasOwn(sent,'baseEpoch'),false);
+  assert.deepEqual(sent.activeIds,[sent.deltas[0].id]);
 });
