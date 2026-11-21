@@ -44,7 +44,10 @@ pub fn check_managed_head(journal: &Path, expected: &JournalStatus) -> Result<()
 // corrupted or cross-kind fence must never be silently skipped because it is
 // not itself eligible for the eight-item presentation window. Hash the whole
 // fence set independently from the currently selected source manifest.
-pub fn deletion_fence_manifest(graph: &Graph, prefix: &str) -> Result<(usize,String)> {
+pub fn deletion_fence_manifest(graph: &Graph, prefix: &str, view: Option<&str>) -> Result<(usize,String)> {
+    if view.is_some_and(|mode|!matches!(mode,"wiki"|"owner")) {
+        return Err(Error::Invalid("invalid managed deletion proof view".into()));
+    }
     let mut proof=Vec::new();
     for node in graph.nodes().filter(|n|
         n.id.starts_with(&format!("{prefix}vivim-context-t-")) ||
@@ -100,8 +103,10 @@ pub fn deletion_fence_manifest(graph: &Graph, prefix: &str) -> Result<(usize,Str
                 return Err(invalid());
             }
         }
-        proof.push(json!([local,kind,source_ref,digest,high,deleted,
-            semantic,p.get("vivim.context.receiptDigest")]));
+        if view!=Some("wiki") || kind=="wiki" {
+            proof.push(json!([local,kind,source_ref,digest,high,deleted,
+                semantic,p.get("vivim.context.receiptDigest")]));
+        }
     }
     let encoded=serde_json::to_vec(&proof)
         .map_err(|e|Error::Invalid(format!("deletion fence proof encoding: {e}")))?;
@@ -135,7 +140,7 @@ pub fn project_managed_graph_selected(
         return Err(Error::Conflict("managed graph scope or epoch mismatch".into()));
     }
     let (deletion_fences_total,deletion_fences_digest)=
-        deletion_fence_manifest(graph,&prefix)?;
+        deletion_fence_manifest(graph,&prefix,Some(view))?
     let mut candidates = Vec::new();
     let mut orders: BTreeMap<String,u64> = BTreeMap::new();
     for node in graph.nodes() {
