@@ -182,3 +182,17 @@ test('VEC live bindings refuse getters and malformed unavailable rows',()=>{
     'INVALID_LIVE_BINDING');
   assert.deepEqual(guard.status(),[]);
 });
+
+test('first-party VEC accepts every native-supported nested Host surface depth',()=>{
+  const surface=createSurface();
+  let parent=surface.tree;
+  for(let depth=1;depth<=7;depth++){
+    const child={id:'nested-'+depth,type:'card',props:{title:'Nested '+depth},children:[]};
+    parent.children.push(child);parent=child;
+    const result=run('Add a card called Research',surface);
+    assert.equal(result.outcome,'candidate','valid nested UI level '+depth+' must not be refused by VEC admission');
+    assert.equal(result.code,'PURE_UI_PREVIEW');
+    assert.equal(result.authorization,'none');
+    assert.equal(result.executed,false);
+  }
+});

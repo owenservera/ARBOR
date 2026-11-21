@@ -32,7 +32,7 @@ if(typeof window!=='undefined'){
 function inertAdapterField(value){
   const seen=new Set();let nodes=0;
   function visit(v,depth){
-    if(++nodes>8192||depth>12)return false;
+    if(++nodes>8192||depth>24)return false;
     if(v===null||typeof v==='boolean')return true;
     if(typeof v==='string')return codeBytes(v)<=32768;
     if(typeof v==='number')return Number.isFinite(v);

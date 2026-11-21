@@ -23,7 +23,7 @@ fn semantic_id(schema:&str)->String{
     format!("{}@{}",&schema[..i],&schema[i+1..])
 }
 fn inert_field(value:&Value,depth:usize)->bool{
-    if depth>12{return false}
+    if depth>24{return false}
     match value{
         Value::Null|Value::Bool(_)|Value::Number(_)=>true,
         Value::String(s)=>s.len()<=32768,
@@ -128,6 +128,19 @@ mod tests{
         assert_eq!(admit(&input)["code"],"ADAPTER_INVALID_RESULT");
         input["adapterResult"]["preview"]=json!({"items":[1,2,3]});
         assert_eq!(admit(&input)["outcome"],"candidate");
+    }
+    #[test]fn nested_visual_preview_remains_inside_real_ui_depth_limit(){
+        let mut input=json!({"domain":"ui","text":"create","contextValid":true,
+            "adapterInstalled":true,"adapterResult":{"outcome":"candidate",
+              "proposal":{"schema":"vivim.ui-proposal/1"}}});
+        let mut deep=Value::Null;
+        for _ in 0..20{deep=json!({"child":deep});}
+        input["adapterResult"]["preview"]=deep;
+        assert_eq!(admit(&input)["outcome"],"candidate");
+        let mut too_deep=Value::Null;
+        for _ in 0..25{too_deep=json!({"child":too_deep});}
+        input["adapterResult"]["preview"]=too_deep;
+        assert_eq!(admit(&input)["code"],"ADAPTER_INVALID_RESULT");
     }
     #[test]fn input_limit_is_utf16_to_match_browser(){
         let input=json!({"domain":"ui","text":"😀".repeat(2049),"contextValid":true,"adapterInstalled":true});
