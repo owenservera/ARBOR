@@ -185,8 +185,11 @@ export function writeFrozenManifest(base){
  return manifest;
 }
 // Verify an installed or staged runtime tree against the frozen contract.
-export function verifyStagedRuntime(base,{manifest=null}={}){
+export function verifyStagedRuntime(base,{manifest=null,requireManifest=false}={}){
  const problems=[];
+ if(requireManifest&&!manifest)problems.push('missing frozen runtime manifest');
+ if(existsSync(path.join(base,RUNTIME_PLACEHOLDER)))
+   problems.push('runtime still contains the generated Tauri resource placeholder');
  const rel=p=>path.relative(base,p).split(path.sep).join('/');
  for(const dir of STAGED_DIRS)if(!existsSync(path.join(base,dir)))problems.push('missing staged dir: '+dir);
  for(const file of STAGED_TOP_FILES)if(!existsSync(path.join(base,file)))problems.push('missing staged file: '+file);
@@ -219,17 +222,51 @@ export function verifyStagedRuntime(base,{manifest=null}={}){
   }
  };
  scan(base,'');
- // Frozen manifest: every recorded file must still hash to the recorded value.
+ // Frozen manifest: a verified install must contain exactly the files in the
+ // canonical manifest (apart from installed dependency contents, whose
+ // integrity is governed separately by the frozen bun.lock).
  let verifiedFiles=0;
  if(manifest){
-  if(manifest.schema!==RUNTIME_MANIFEST_SCHEMA)problems.push('unexpected runtime manifest schema: '+String(manifest.schema));
-  for(const entry of manifest.files||[]){
-   const abs=path.join(base,entry.path);
-   if(!existsSync(abs)){problems.push('manifest file missing from runtime: '+entry.path);continue;}
+  if(manifest.schema!==RUNTIME_MANIFEST_SCHEMA)
+   problems.push('unexpected runtime manifest schema: '+String(manifest.schema));
+  if(!Array.isArray(manifest.files))
+   problems.push('invalid runtime manifest files array');
+  const expected=new Set();
+  const validRel=rel=>typeof rel==='string'&&rel.length>0&&
+   !rel.includes('\\')&&!rel.startsWith('/')&&
+   rel.split('/').every(part=>part.length>0&&part!=='.'&&part!=='..');
+  for(const entry of Array.isArray(manifest.files)?manifest.files:[]){
+   const p=entry?.path;
+   if(!validRel(p)){problems.push('invalid manifest path: '+String(p));continue;}
+   if(expected.has(p)){problems.push('duplicate manifest file: '+p);continue;}
+   expected.add(p);
+   if(!Number.isSafeInteger(entry.bytes)||entry.bytes<0||
+      typeof entry.sha256!=='string'||!/^[0-9a-f]{64}$/.test(entry.sha256)){
+    problems.push('invalid manifest file metadata: '+p);continue;
+   }
+   const abs=path.join(base,...p.split('/'));
+   if(!existsSync(abs)){problems.push('manifest file missing from runtime: '+p);continue;}
+   const st=lstatSync(abs);
+   if(!st.isFile()){problems.push('manifest entry is not a regular file: '+p);continue;}
+   if(st.size!==entry.bytes){
+    problems.push('runtime file size does not match the frozen manifest: '+p);
+    continue;
+   }
    const actual=createHash('sha256').update(readFileSync(abs)).digest('hex');
-   if(actual!==entry.sha256)problems.push('runtime file does not match the frozen manifest: '+entry.path);
+   if(actual!==entry.sha256)problems.push('runtime file does not match the frozen manifest: '+p);
    else verifiedFiles++;
   }
+  const walk=(dir,prefix)=>{
+   for(const name of readdirSync(dir)){
+    if(name==='node_modules'||name===RUNTIME_MANIFEST_NAME)continue;
+    const abs=path.join(dir,name),p=prefix+name;
+    const st=lstatSync(abs);
+    if(st.isSymbolicLink()){problems.push('symlink in frozen runtime: '+p);continue;}
+    if(st.isDirectory())walk(abs,p+'/');
+    else if(!expected.has(p))problems.push('unlisted file in frozen runtime: '+p);
+   }
+  };
+  walk(base,'');
  }
  return {ok:problems.length===0,problems,checks:{
   stagedDirs:STAGED_DIRS.length,stagedFiles:STAGED_TOP_FILES.length,
@@ -247,7 +284,7 @@ if(mode==='--verify'){
  if(!existsSync(base)){console.log(JSON.stringify({ok:false,problems:['runtime tree not found: '+base],checks:{}}));process.exit(2);}
  const manifestPath=path.join(base,RUNTIME_MANIFEST_NAME);
  const manifest=existsSync(manifestPath)?JSON.parse(readFileSync(manifestPath,'utf8')):null;
- const report=verifyStagedRuntime(base,{manifest});
+ const report=verifyStagedRuntime(base,{manifest,requireManifest:true});
  console.log(JSON.stringify({status:report.ok?'RUNTIME_VERIFIED':'RUNTIME_INVALID',runtime:base,...report}));
  process.exit(report.ok?0:1);
 }
@@ -291,7 +328,7 @@ checkInputs({requireLock:true});
   run(path.join(stage,'node.exe'),['--check',path.join(stage,'apps/vivim-host/server.mjs')],stage);
   // Freeze the staged payload and verify it before it replaces the live runtime.
   writeFrozenManifest(stage);
-  const report=verifyStagedRuntime(stage,{manifest:JSON.parse(readFileSync(path.join(stage,RUNTIME_MANIFEST_NAME),'utf8'))});
+  const report=verifyStagedRuntime(stage,{manifest:JSON.parse(readFileSync(path.join(stage,RUNTIME_MANIFEST_NAME),'utf8')),requireManifest:true});
   if(!report.ok)refuse('staged runtime failed verification: '+report.problems.join('; '));
   if(existsSync(runtime))renameSync(runtime,previous);
   try{renameSync(stage,runtime);}catch(e){if(existsSync(previous))renameSync(previous,runtime);throw e;}
