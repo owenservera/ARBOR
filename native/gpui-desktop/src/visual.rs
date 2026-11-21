@@ -4,6 +4,7 @@
 //! @hq:consumes vivim.native-visual-validation@1
 use crate::{BASE, LIMIT, Endpoint, ReadError, get, owner_token, validate_health};
 use reqwest::blocking::Client;
+use serde_json::Value;
 use std::{io::Read,time::Duration};
 pub use vivim_programmability_core::visual::{Visual, Node, RevisionGuard, VisualError};
 
@@ -27,6 +28,19 @@ impl From<VisualError> for ReadError {
         match e {VisualError::InvalidProjection=>Self::InvalidProjection,VisualError::Unavailable=>Self::Unavailable}
     }
 }
+/// Verify the viewport the canonical TierFlow plan actually admitted. This
+/// field is in the existing GPUI/PWA-shared RenderPlan, not a new Host schema.
+/// A request can return successfully yet still contain an older cached plan.
+pub fn parse_at(viewport_px:u32,payload:&Value)->Result<Option<Visual>,ReadError>{
+    if !(240..=3840).contains(&viewport_px) {return Err(ReadError::InvalidInput);}
+    if payload["state"]=="source-backed" {
+        let admitted=payload["plan"]["viewportPx"].as_u64()
+            .ok_or(ReadError::InvalidProjection)?;
+        if admitted!=u64::from(viewport_px){return Err(ReadError::SnapshotChanged);}
+    }
+    vivim_programmability_core::visual::parse(payload).map_err(Into::into)
+}
+
 /// Request a genuine Host-planned viewport, never a locally approximated layout.
 pub fn read_at(viewport_px:u32)->Result<Option<Visual>,ReadError>{
     if !(240..=3840).contains(&viewport_px){return Err(ReadError::InvalidInput)}
@@ -38,13 +52,23 @@ pub fn read_at(viewport_px:u32)->Result<Option<Visual>,ReadError>{
     match response.status().as_u16(){200=>{},401|403=>return Err(ReadError::OwnerRequired),_=>return Err(ReadError::Unavailable)}
     let mut bytes=Vec::new();response.take(LIMIT+1).read_to_end(&mut bytes).map_err(|_|ReadError::Unavailable)?;
     if bytes.len() as u64>LIMIT{return Err(ReadError::InvalidProjection)}
-    Ok(vivim_programmability_core::visual::parse(&serde_json::from_slice(&bytes).map_err(|_|ReadError::InvalidProjection)?)?)
+    let payload:Value=serde_json::from_slice(&bytes).map_err(|_|ReadError::InvalidProjection)?;
+    parse_at(viewport_px,&payload)
 }
 
 
 #[cfg(test)]
 mod coherence_tests {
     use super::*;
+    use serde_json::json;
+    #[test]
+    fn rejects_wrong_or_missing_tierflow_admission_width_before_compilation() {
+        let stale=json!({"state":"source-backed","plan":{"viewportPx":360}});
+        assert_eq!(parse_at(768,&stale),Err(ReadError::SnapshotChanged));
+        assert_eq!(parse_at(240,&json!({"state":"source-backed","plan":{}})),
+            Err(ReadError::InvalidProjection));
+        assert_eq!(parse_at(239,&stale),Err(ReadError::InvalidInput));
+    }
     #[test]
     fn cross_source_revision_mismatch_is_not_empty_or_accepted() {
         let mut visual=Visual{
