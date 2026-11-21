@@ -77,9 +77,10 @@ export function createPersonalRuleStore({
     // Review a detached JSON value with the same insertion order and digest
     // as the Host approval subject. A verifier cannot edit an owner-supplied
     // remember rule via nested references, even temporarily.
-    let reviewed, subjectBytes;
+    let reviewed, subjectBytes, catalogBytes;
     try {
       subjectBytes = JSON.stringify(approvalSubject);
+      catalogBytes = JSON.stringify(catalog);
       reviewed = JSON.parse(subjectBytes);
     } catch {
       throw fail('PERSONAL_STORE_APPROVAL_CHANGED');
@@ -89,6 +90,7 @@ export function createPersonalRuleStore({
       throw fail('PERSONAL_STORE_OWNER_APPROVAL_REQUIRED');
     if (JSON.stringify(reviewed) !== subjectBytes ||
         JSON.stringify(approvalSubject) !== subjectBytes ||
+        JSON.stringify(catalog) !== catalogBytes ||
         approval?.receiptId !== receiptId)
       throw fail('PERSONAL_STORE_APPROVAL_CHANGED');
     return receiptId;
@@ -111,6 +113,9 @@ export function createPersonalRuleStore({
       try { linkSync(tempLock, lockFile); acquired = true; }
       catch (e) { if (e.code === 'EEXIST') throw fail('PERSONAL_STORE_BUSY'); throw e; }
       const current = read();
+      // Preserve JSON property order: legacy scope-order digests are
+      // significant even when deep structural equality says otherwise.
+      const currentBytes = JSON.stringify(current);
       if (current.version !== expectedVersion) throw fail('PERSONAL_STORE_STALE');
       if (current.version >= Number.MAX_SAFE_INTEGER)
         throw fail('PERSONAL_STORE_INVALID_TRANSITION');
@@ -135,6 +140,12 @@ export function createPersonalRuleStore({
               committed.ruleId, committed.revision, prepared.version, catalog) ||
             !isDeepStrictEqual(prepared, JSON.parse(JSON.stringify(next))))
           throw fail('PERSONAL_STORE_READBACK_MISMATCH');
+        // Revalidate the Host-owned source file immediately before the atomic
+        // rename. A verifier, injected adapter, or writer ignoring our lock
+        // cannot cause a stale snapshot to silently clobber newer source data.
+        if (JSON.stringify(current) !== currentBytes ||
+            JSON.stringify(read()) !== currentBytes)
+          throw fail('PERSONAL_STORE_STALE');
         renameSync(temp, file);
       } finally { try { unlinkSync(temp); } catch {} }
       // Readback is performed while holding the original Host lock. The
