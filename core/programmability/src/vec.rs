@@ -236,6 +236,17 @@ pub fn diff(previous:Option<&View>,next:Option<&View>)->Result<Delta,VisualError
     Ok(out)
 }
 
+/// JSON bridge for the existing VEC delta engine. This does not register a
+/// new kernel operation: Lane A owns shared ABI dispatch registration.
+/// Both projections must independently pass the incumbent Host visual
+/// admission before a delta can be interpreted by a renderer.
+pub fn diff_projections(previous:&Value,next:&Value)->Result<Value,VisualError>{
+    let before=visual::parse(previous)?.map(|v|compile(&v)).transpose()?;
+    let after=visual::parse(next)?.map(|v|compile(&v)).transpose()?;
+    serde_json::to_value(diff(before.as_ref(),after.as_ref())?)
+        .map_err(|_|VisualError::InvalidProjection)
+}
+
 #[cfg(test)]
 mod vec_revision_tests{
     use super::*;
@@ -259,6 +270,20 @@ mod vec_revision_tests{
         assert_eq!(value["executionAuthorized"],false);
         assert_eq!(value["effectPerformed"],false);
         assert!(value.get("bindingWatermarks").is_none());
+    }
+    #[test]fn foreign_visual_source_cannot_be_repainted_as_a_delta(){
+        let prior=compile(&observed()).unwrap();
+        let mut foreign=observed();
+        foreign.surface_id="another-host-surface".into();
+        let next=compile(&foreign).unwrap();
+        assert!(diff(Some(&prior),Some(&next)).is_err());
+        // An explicitly unavailable source is a removal, never a silent
+        // continuation with retained private binding content.
+        let absent=diff(Some(&prior),None).unwrap();
+        assert!(absent.repaint_required);
+        assert_eq!(absent.from_revision,Some(7));
+        assert_eq!(absent.to_revision,None);
+        assert_eq!(absent.changed_bindings,vec!["personal.open-tasks"]);
     }
     #[test]fn live_revisions_invalidate_without_design_changes(){
         let old=compile(&observed()).unwrap();

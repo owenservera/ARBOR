@@ -21,7 +21,9 @@ const region=(native,pointer,length)=>Number.isSafeInteger(pointer)&&Number.isSa
 function unavailable(code){instance=null;reason=code;lastOperation='FAILED';return null;}
 export function rustUiEngineStatus(){
   return {state:instance?'ready':'unavailable',code:instance?'NONE':reason,
-    fallback:instance||everReady?'none':'trusted-js',lastOperation};
+    fallback:instance||everReady||
+      !['NON_BROWSER_RUNTIME','WASM_NOT_INITIALIZED','WASM_FETCH_UNAVAILABLE'].includes(reason)
+      ?'none':'trusted-js',lastOperation};
 }
 // Enforce the wire ceiling while the real response is read; never consume an
 // unchecked response.arrayBuffer() or turn a broken artifact into a projection.

@@ -61,3 +61,21 @@ test('WASM reply is not marked computed before owned allocations are released',(
   assert.match(moduleSource,/WASM_OUTPUT_ALIASES_INPUT/);
   assert.match(moduleSource,/let releaseFailed=false/);
 });
+
+
+test('served corrupt WASM is never presented as an expected trusted-JS fallback',async()=>{
+  const oldWindow=globalThis.window,oldFetch=globalThis.fetch;
+  try{
+    globalThis.window={};
+    globalThis.fetch=async()=>new Response(new Uint8Array([1,2,3,4,1,0,0,0]),{status:200});
+    const native=await import('../src/rust-wasm.mjs?corrupt-native-module');
+    assert.equal(await native.initializeRustUiEngine(),false);
+    assert.equal(native.rustUiEngineStatus().code,'WASM_MODULE_BAD_MAGIC');
+    assert.equal(native.rustUiEngineStatus().fallback,'none');
+    assert.equal(native.rustVecAdmission({domain:'ui'}),undefined);
+  }finally{
+    if(oldWindow===undefined)delete globalThis.window;
+    else globalThis.window=oldWindow;
+    globalThis.fetch=oldFetch;
+  }
+});

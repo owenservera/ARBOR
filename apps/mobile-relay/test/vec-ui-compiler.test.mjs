@@ -227,3 +227,22 @@ test('VEC binding marks are scoped to a paired grant without retaining raw crede
   assert.equal(fence.bindScope('session-b:grant-b:my-space').state,'changed');
   assert.equal(JSON.stringify(fence.status()).includes('grant-b'),false);
 });
+
+
+test('prepared TierFlow paint cannot commit after a different device grant is bound',()=>{
+  const fence=createVecBindingFence(['personal.open-tasks']);
+  const row=(revision,label)=>({'personal.open-tasks':{
+    state:'source-backed',revision,total:1,items:[{label,detail:'Host Wiki read'}]
+  }});
+  assert.equal(fence.bindScope('session-one:grant-one:my-space').state,'changed');
+  const prepared=fence.prepare(row(9,'Owner one private task'));
+  assert.equal(prepared.state,'ready');
+  assert.equal(fence.bindScope('session-two:grant-two:my-space').state,'changed');
+  assert.equal(prepared.commit(),false,'outstanding paint cannot write across scopes');
+  assert.deepEqual(fence.status(),[]);
+  assert.equal(fence.prepare(row(1,'Owner two task')).commit(),true);
+  const secondPrepared=fence.prepare(row(2,'Fresh owner two task'));
+  assert.equal(fence.clearScope().state,'cleared');
+  assert.equal(secondPrepared.commit(),false,'revocation invalidates in-flight paint');
+  assert.equal(fence.prepare(row(3,'Orphan')).code,'BINDING_SCOPE_UNAVAILABLE');
+});

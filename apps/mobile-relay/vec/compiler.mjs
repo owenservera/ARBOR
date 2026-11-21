@@ -96,10 +96,11 @@ function codeBytes(value){
 // Rust admission is authoritative when available. A comparison with the
 // incumbent pure fallback is retained until real deployed input parity closes.
 function admitOrFallback(input,legacy){
-  const wasReady=rustStatus?.()?.fallback==='none';
+  const requiredBefore=rustStatus?.()?.fallback==='none';
   const native=rustAdmission?.(input);
-  // Native runtime failed mid-admission: refuse rather than silently reroute.
-  if(native===undefined)return wasReady
+  // A failed WASM load can be detected during this call as well as before it.
+  // Only a never-ready, explicitly missing module permits the proven JS path.
+  if(native===undefined)return requiredBefore||rustStatus?.()?.fallback==='none'
     ?fail(VEC_DOMAINS.includes(input.domain)?input.domain:null,'refused','RUST_VEC_UNAVAILABLE')
     :legacy;
   if(JSON.stringify(canonical(native))!==JSON.stringify(canonical(legacy)))
@@ -118,7 +119,7 @@ export function createVecBindingFence(ids=[]){
   // A paired-phone grant change is not a source rollback. Isolate its
   // ephemeral revision history by the exact authenticated session/surface.
   // Keep only a digest of the scope identity; never persist raw grants.
-  let scoped=false,scopeDigest=null;
+  let scoped=false,scopeDigest=null,scopeEpoch=0;
   const blocked=code=>({state:'blocked',code,revisions:[]});
   const revision=n=>Number.isSafeInteger(n)&&n>=0&&n<=1_000_000_000;
   function fingerprint(value){
@@ -158,12 +159,12 @@ export function createVecBindingFence(ids=[]){
       let digest;
       try{digest=sha256Hex(identity);}catch{return {state:'refused',code:'INVALID_BINDING_SCOPE'}}
       if(scoped&&scopeDigest===digest)return {state:'unchanged',code:'NONE'};
-      high.clear();
+      high.clear();scopeEpoch++;
       scoped=true;scopeDigest=digest;
       return {state:'changed',code:'NONE'};
     },
     clearScope(){
-      high.clear();scopeDigest=null;scoped=true;
+      high.clear();scopeEpoch++;scopeDigest=null;scoped=true;
       return {state:'cleared',code:'NONE'};
     },
     prepare(data){
@@ -200,10 +201,14 @@ export function createVecBindingFence(ids=[]){
         incoming.set(id,{revision:row.revision,signature});
       }
       if(personal.size>1)return blocked('WIKI_BINDING_REVISION_CONFLICT');
+      const preparedEpoch=scopeEpoch;
       const revisions=Object.freeze([...incoming].sort(([a],[b])=>a.localeCompare(b))
         .map(([id,mark])=>Object.freeze({id,revision:mark.revision})));
       return {state:'ready',code:'NONE',revisions,
         commit(){
+          // A pending TierFlow repaint must never install rows from a prior
+          // device grant after revoke/re-pair, even when revisions match.
+          if(preparedEpoch!==scopeEpoch)return false;
           for(const [id,mark] of incoming){
             const prior=high.get(id);
             if(prior&&(mark.revision<prior.revision||
