@@ -892,3 +892,106 @@ fn active_source_manifest_changes_for_hidden_old_wiki_revisions() {
     assert_eq!(after["items"],first["items"],
         "the bounded presentation alone cannot prove all source content");
 }
+
+#[test]
+fn complete_inventory_invalidates_only_links_between_current_selected_pages() {
+    let temp=Temp::new();let file=temp.journal();
+    let mut a=wiki_record(0,3);a["semanticId"]=json!("wiki:page:Alpha");
+    let mut b=wiki_record(1,3);b["semanticId"]=json!("wiki:page:Beta");
+    let mut c=wiki_record(2,3);c["semanticId"]=json!("wiki:page:Gamma");
+    let link=|from:&Value,to:&Value| {
+        let from=from["id"].as_str().unwrap();
+        let to=to["id"].as_str().unwrap();
+        json!({"id":format!("vivim-context-p-{:x}",Sha256::digest(
+            serde_json::to_string(&[from,to]).unwrap().as_bytes())),
+            "from":from,"to":to,"kind":"wiki-page-link",
+            "sourceRef":ENTRY,"revision":3,"digest":"a".repeat(64)})
+    };
+    let ab=link(&a,&b);let bc=link(&b,&c);
+    let (ok,initial)=sync_with_relationships(&file,SCOPE,
+        vec![a.clone(),b.clone(),c.clone()],vec![ab.clone(),bc.clone()]);
+    assert!(ok,"{initial}");
+    let epoch=initial["epoch"].as_u64().unwrap();
+    let selected=vec![a["id"].clone(),b["id"].clone()];
+    let packet=|revision:u64,base:u64|json!({
+        "schema":"vivim.hqkg-personal/1","scope":SCOPE,
+        "op":"sync-context-read","view":"wiki",
+        "nodes":[],"relationships":[],"baseRevision":3,"baseEpoch":base,
+        "deltas":[],"activeIds":selected,"activeRelationshipIds":[],
+        "completeWikiRevision":revision
+    });
+    let bytes=fs::read(&file).unwrap();
+    let (ok,stale)=run_packet(&file,packet(2,epoch));
+    assert!(!ok,"lower committed high-water may not prune newer link: {stale}");
+    assert_eq!(fs::read(&file).unwrap(),bytes);
+    let (ok,updated)=run_packet(&file,packet(3,epoch));
+    assert!(ok,"{updated}");
+    assert_eq!(updated["reconciledRelationships"],1);
+    assert_eq!(updated["context"]["pageRelationships"],json!([]));
+    let graph=Journal::new(&file).load().unwrap();
+    assert_eq!(graph.edge_count(),1,"out-of-window Gamma link remains historical");
+    assert!(graph.edges().any(|edge|edge.id.ends_with(bc["id"].as_str().unwrap())));
+    assert!(!graph.edges().any(|edge|edge.id.ends_with(ab["id"].as_str().unwrap())));
+    let bytes=fs::read(&file).unwrap();
+    let (ok,replayed)=run_packet(&file,packet(3,updated["epoch"].as_u64().unwrap()));
+    assert!(ok,"{replayed}");
+    assert_eq!(replayed["changed"],false);
+    assert_eq!(replayed["reconciledRelationships"],0);
+    assert_eq!(fs::read(&file).unwrap(),bytes);
+}
+
+#[test]
+fn empty_complete_inventory_recovers_after_every_section_disappears() {
+    let temp=Temp::new();let file=temp.journal();
+    let a=wiki_record(0,2);let b=wiki_record(1,2);let receipt=effect();
+    let (ok,first)=sync(&file,SCOPE,vec![a,b,receipt]);
+    assert!(ok,"{first}");
+    let (ok,empty)=run_packet(&file,json!({
+        "schema":"vivim.hqkg-personal/1","scope":SCOPE,
+        "op":"sync-context-read","view":"wiki",
+        "nodes":[],"relationships":[],"baseRevision":3,
+        "baseEpoch":first["epoch"],"deltas":[],"activeIds":[],
+        "activeRelationshipIds":[],"completeWikiRevision":3
+    }));
+    assert!(ok,"{empty}");
+    assert_eq!(empty["reconciledSections"],2);
+    assert_eq!(empty["context"]["activeSourcesTotal"],0);
+    assert_eq!(empty["context"]["items"],json!([]));
+    let graph=Journal::new(&file).load().unwrap();
+    assert_eq!(graph.node_count(),1,"historical applied receipt is preserved");
+    assert!(graph.nodes().all(|n|n.properties.get("vivim.context.kind")
+        .map(String::as_str)==Some("effect")));
+}
+
+#[test]
+fn fingerprinted_receipt_cannot_rebind_action_or_target_after_compaction() {
+    let temp=Temp::new();let file=temp.journal();
+    let mut applied=effect();
+    applied["receiptDigest"]=json!("f".repeat(64));
+    let (ok,initial)=sync(&file,SCOPE,vec![wiki(ENTRY,2,"Current"),applied.clone()]);
+    assert!(ok,"{initial}");
+    let epoch=initial["epoch"].as_u64().unwrap();
+    let compact=Journal::new(&file)
+        .compact_verified(initial["bytes"].as_u64().unwrap(),epoch).unwrap();
+    assert_eq!(compact.epoch,epoch);
+    let original=fs::read(&file).unwrap();
+    for field in ["actionId","semanticId","sourceRevision","revision"] {
+        let mut altered=applied.clone();
+        altered[field]=match field {
+            "actionId"=>json!("wiki.capture.save"),
+            "semanticId"=>json!("receipt:ctl-other"),
+            _=>json!(3)
+        };
+        let (ok,denied)=run_packet(&file,json!({
+            "schema":"vivim.hqkg-personal/1","scope":SCOPE,
+            "op":"sync-context","nodes":[],"relationships":[],
+            "baseRevision":3,"baseEpoch":epoch,"deltas":[put(altered)]
+        }));
+        assert!(!ok,"fingerprinted receipt {field} changed: {denied}");
+        assert_eq!(fs::read(&file).unwrap(),original);
+    }
+    let owner=read(&file,SCOPE,epoch,"owner").unwrap();
+    assert_eq!(owner["effectRelationshipsTotal"],1);
+    assert_eq!(owner["effectRelationships"][0]["receiptDigest"],"f".repeat(64));
+}
+
