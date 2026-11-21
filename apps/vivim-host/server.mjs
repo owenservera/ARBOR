@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { createReadStream, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { appendFile, readFile } from 'node:fs/promises';
-import { createHash } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { nativeOwnerProof } from './bootstrap/native-owner-proof.mjs';
 import { fileURLToPath } from 'node:url';
 import { execFile as execFileCb } from 'node:child_process';
@@ -504,9 +504,32 @@ export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path
       }
       return;
     }
+    if(pathname==='/api/host/live-system/proposal/rebase'){
+      if(req.method!=='POST'){res.setHeader('allow','POST');sendJson(res,405,{code:'METHOD'});return;}
+      if(String(req.headers.origin||'').toLowerCase()!=='http://'+host||
+         req.headers['x-vivim-control']!=='1'){
+        sendJson(res,403,{code:'ORIGIN_OR_CSRF'});return;
+      }
+      if(!ownerAuthorized(req,res,tokenFor))return;
+      res.setHeader('cache-control','private, no-store');
+      try{
+        const body=await readJsonBody(req,1024);
+        if(!body||Object.keys(body).some(k=>!['expectedSequence','discardPending'].includes(k))||
+           body.discardPending!==true||!Number.isSafeInteger(body.expectedSequence)){
+          sendJson(res,400,{code:'LIVE_MIRROR_REBASE_INPUT'});return;
+        }
+        await liveSystemMirror.publish(await liveSystem.snapshot());
+        const result=await liveSystemMirror.rebaseProposal(body);
+        sendJson(res,200,result);
+      }catch(error){
+        sendJson(res,[400,409,503].includes(error.status)?error.status:409,
+          {code:error?.code??'LIVE_MIRROR_REBASE_REFUSED',executionAuthorized:false,effectPerformed:false});
+      }
+      return;
+    }
     if(pathname.startsWith('/api/host/live-system/composer/')){
       const command=pathname.slice('/api/host/live-system/composer/'.length);
-      const allowed={stage:'POST',pause:'POST',status:'GET'};
+      const allowed={stage:'POST','stage-file':'POST',pause:'POST',status:'GET'};
       if(!Object.hasOwn(allowed,command)){sendJson(res,404,{code:'NOT_FOUND'});return;}
       if(req.method!==allowed[command]){
         res.setHeader('allow',allowed[command]);sendJson(res,405,{code:'METHOD'});return;
@@ -520,6 +543,49 @@ export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path
       try{
         if(command==='status'){sendJson(res,200,composerBridge.status());return;}
         const body=await readJsonBody(req,8192);
+        if(command==='stage-file'){
+          if(!body||Object.keys(body).length!==1||body.confirm!==true){
+            sendJson(res,400,{code:'LIVE_FILE_STAGE_CONFIRMATION_REQUIRED'});return;
+          }
+          // Files can propose only the same Rust candidate as the authorized
+          // terminal caller. Neither a watcher nor this route performs effects.
+          await liveSystemMirror.publish(await liveSystem.snapshot());
+          const correlationId='file.'+randomBytes(12).toString('hex');
+          const candidateSet=await liveSystemMirror.admitEdited({correlationId});
+          const candidates=candidateSet?.commands;
+          if(candidateSet?.state!=='candidate'||!Array.isArray(candidates)||
+             candidates.length!==1){
+            sendJson(res,409,{code:'LIVE_FILE_EDIT_NOT_ADMISSIBLE',
+              reason:candidateSet?.reason??'NOT_ONE_EDIT',
+              executionAuthorized:false,effectPerformed:false});return;
+          }
+          const c=candidates[0];
+          if(c.regionId!=='phone.composer'||c.pointer!=='/draft'||
+             c.actionId!=='pwa.composer.draft.set'||
+             c.correlationId!==correlationId||
+             typeof c.oldValue!=='string'||typeof c.newValue!=='string'){
+            sendJson(res,409,{code:'LIVE_FILE_ACTION_NOT_SUPPORTED',
+              executionAuthorized:false,effectPerformed:false});return;
+          }
+          const current=await liveSystem.snapshot();
+          const region=current?.regions?.find(r=>r.id==='phone.composer');
+          if(current.revision!==c.expectedSystemSequence||
+             region?.viewRevision!==c.expectedRegionRevision||
+             region?.sourceRevision!==c.expectedSourceRevision||
+             region?.data?.draft!==c.oldValue||
+             typeof region?.data?.sessionId!=='string'){
+            sendJson(res,409,{code:'LIVE_FILE_SOURCE_STALE',
+              executionAuthorized:false,effectPerformed:false});return;
+          }
+          const staged=await composerBridge.stage({sessionId:region.data.sessionId,
+            intent:{epoch:current.epoch,regionId:c.regionId,pointer:'/draft',
+              expectedSequence:current.revision,
+              expectedViewRevision:c.expectedRegionRevision,
+              expectedSourceRevision:c.expectedSourceRevision,
+              correlationId,operation:'replace',text:c.newValue}});
+          sendJson(res,202,{...staged,origin:'owner-file-proposal'});
+          return;
+        }
         if(command==='pause'){
           if(Object.keys(body).length!==1||typeof body.paused!=='boolean')
             {sendJson(res,400,{code:'COMPOSER_CONTROL_INVALID'});return;}
