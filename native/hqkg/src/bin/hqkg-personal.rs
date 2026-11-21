@@ -776,9 +776,10 @@ fn sync_context(v: &Value, ns: &Namespace, journal: &Journal, g: &mut Graph,
             for local in ids {
                 let id=scoped_graph::qualified_id(ns,local).map_err(err)?;
                 let node=g.node(&id).ok_or("active context source missing from projected graph")?;
-                if !matches!(node.properties.get("vivim.context.kind").map(String::as_str),
-                    Some("wiki"|"effect")) {
-                    return Err("invalid projected active source kind".into());
+                let kind=node.properties.get("vivim.context.kind").map(String::as_str);
+                if !matches!(kind,Some("wiki"|"effect")) ||
+                    (view==Some("wiki") && kind!=Some("wiki")) {
+                    return Err("invalid projected active source kind for view".into());
                 }
             }
         }
@@ -793,8 +794,18 @@ fn sync_context(v: &Value, ns: &Namespace, journal: &Journal, g: &mut Graph,
             }
         }
     }
-    // A failed deletion-fence proof must refuse persistence, not write a
-    // poisoned head and discover it only during post-commit readback.
+    // Native managed retrieval has additional view, bounded link and D4
+    // lineage checks beyond active-ID existence. Run those checks against
+    // the proposed graph BEFORE any append or verified compaction, so a
+    // semantically invalid candidate cannot leave a committed frame behind.
+    // Re-project from the durable replay after save as a separate readback
+    // attestation; the in-memory candidate is never returned directly.
+    if let Some(selected_view)=view {
+        project_managed_graph_selected(g,scope,g.epoch(),selected_view,
+            active_ids.as_ref(),active_relationships.as_ref()).map_err(quarantine)?;
+    }
+    // Even write-only delta batches must validate the complete internal
+    // deletion-fence proof before creating a persistent graph revision.
     deletion_fence_manifest(g,&prefix,None).map_err(quarantine)?;
     let mut compacted=false;
     if changed || before == 0 {
