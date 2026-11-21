@@ -1070,7 +1070,7 @@ function clearPrivatePhoneState() {
   S.sigs.ux = null; S.sigs.msgs = null; S.sigs.list = null;
   $('app').hidden = true; $('pairbox').hidden = false;
   document.body.classList.remove('paired', 'offline-shell');
-  if (build){build.clearBindingScope();build.clear();}
+  if (build){build.clearVisualSourceScope();build.clear();}
   window.dispatchEvent(new CustomEvent('vivim:paired', { detail: { paired: false } }));
 }
 // Native media playback is an explicit user action. All bytes stay on the Host
@@ -1839,7 +1839,17 @@ async function refresh() {
       needStatus ? api('status').catch(e => { if (e.status === 401) throw e; }) : null]);
     if(!current()){revokeOldProjection();return;}
     S.cmds = (cm && cm.commands) || [];
-    if (st) { S.statusObj = st; S.statusAt = Date.now(); S.manifest = (st.snapshot && st.snapshot.manifest) || null; window.dispatchEvent(new CustomEvent('vivim:bootstrap-status', { detail: st })); }
+    if (st) {
+      // The mounted visual guard is scoped BEFORE bootstrap-status publishes
+      // its committed revision to TierFlow. Only this authenticated read can
+      // rotate the visual source, never a source-supplied surface identifier.
+      if(transport.direct&&build&&!build.setVisualSourceScope(JSON.stringify([
+          'phone-visual-source',grant['x-vivim-device-session'],grant['x-vivim-grant-id']])))
+        throw new Error('Visual source scope unavailable');
+      S.statusObj = st; S.statusAt = Date.now();
+      S.manifest = (st.snapshot && st.snapshot.manifest) || null;
+      window.dispatchEvent(new CustomEvent('vivim:bootstrap-status', { detail: st }));
+    }
     else if(needStatus)shellPresentation.clear();
     mergeServerConvs(); ensureActive();
     setConn(transport.direct ? 'Connected to PC' : 'Paired · relay online');
@@ -1848,7 +1858,7 @@ async function refresh() {
     if(!current()){revokeOldProjection();return;}
     // Status authority is unavailable: never retain a private Build revision.
     shellPresentation.clear();
-    if (build) { build.clearBindingScope();build.clear(); buildKey = ''; }
+    if (build) { build.clear(); buildKey = ''; }
     if (e.status === 401) {
       if (transport.direct) clearPrivatePhoneState();
       return start();
@@ -2081,12 +2091,18 @@ async function pollBuild() {
     // A status request issued under an old grant cannot repaint the new
     // device's Build surface, even if its visual revision happens to match.
     if(readSequence!==buildPollSequence)return;
-    build?.clearBindingScope();build?.clear();shellPresentation.clear();buildKey='';
+    build?.clearVisualSourceScope();shellPresentation.clear();buildKey='';
   };
   if(!current()){redact();return;}
   try {
     const st = await api('status');
     if(!current()){redact();return;}
+    // Bind the entire committed visual revision domain to the session/grant,
+    // not to an untrusted source-supplied surface ID.
+    if(transport.direct&&!build.setVisualSourceScope(JSON.stringify([
+        'phone-visual-source',grant['x-vivim-device-session'],grant['x-vivim-grant-id']]))) {
+      redact();return;
+    }
     S.statusObj = st; S.statusAt = Date.now();
     const rev = st && st.snapshot && st.snapshot.bootstrap ? st.snapshot.bootstrap.uiRevision : null;
     // Always inspect the Host full snapshot. Comparing just a numeric revision
