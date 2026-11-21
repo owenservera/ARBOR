@@ -46,6 +46,7 @@ struct Desktop {
     viewport_epoch: u64,
     // Invalidates reads crossing a Host effect without weakening revision guards.
     source_epoch: u64,
+    presentation_epoch: u64,
     read_busy: bool,
     refresh_pending: bool,
     // At most one immediate drift retry per successful cycle or observer tick.
@@ -66,6 +67,7 @@ struct Desktop {
     graph_detail: String,
     graph_status: String,
     graph_busy: bool,
+    graph_pending: bool,
     graph_query: Option<(&'static str,String)>,
     graph_guard: DevelopmentRevisionGuard,
     review: Option<Review>,
@@ -96,6 +98,9 @@ impl Desktop {
         // Each resize changes the contract identity even if the user returns
         // to a previous width before an older HTTP read finishes.
         self.viewport_epoch=self.viewport_epoch.wrapping_add(1);
+        self.presentation_epoch=self.presentation_epoch.wrapping_add(1);
+        self.graph_detail.clear();
+        self.graph_status="Native viewport changed · graph read requires a fresh presentation".into();
         let epoch=self.viewport_epoch;
         self.visual_status=format!("Viewport resized to {}px · awaiting Host admission",viewport_px);
         self.visual=None;
@@ -112,6 +117,13 @@ impl Desktop {
     fn select_panel(&mut self, panel:Panel, cx:&mut Context<Self>){
         let changed=self.panel!=panel;
         self.panel=panel;
+        if changed {
+            self.presentation_epoch=self.presentation_epoch.wrapping_add(1);
+            if matches!(panel,Panel::Overview|Panel::Graph) {
+                self.graph_detail.clear();
+                self.graph_status="Native panel changed · graph readback must be refreshed".into();
+            }
+        }
         self.status=format!("{} · local native view only",panel.label());
         cx.notify();
         // A panel switch is an explicit freshness request, but still cannot
@@ -171,7 +183,8 @@ impl Desktop {
         let ticket=ObservationTicket{
             viewport_px:self.viewport_px,
             viewport_epoch:self.viewport_epoch,
-            source_epoch:self.source_epoch
+            source_epoch:self.source_epoch,
+            presentation_epoch:self.presentation_epoch
         };
         let viewport_px=ticket.viewport_px;
         // These GET-only requests can finish independently. Neither invokes
@@ -192,7 +205,7 @@ impl Desktop {
                 }
                 // Compare a monotonically increasing resize identity, not
                 // just width: A -> B -> A still invalidates the first A read.
-                if !ticket.matches(view.viewport_px,view.viewport_epoch,view.source_epoch) {
+                if !ticket.matches(view.viewport_px,view.viewport_epoch,view.source_epoch,view.presentation_epoch) {
                     // The last resize or Host effect invalidated both results.
                     // A queued refresh replaces this stale response entirely.
                     if std::mem::take(&mut view.refresh_pending) {view.refresh(cx);}
@@ -206,6 +219,16 @@ impl Desktop {
                 }
                 match overview {
                     Ok(data) => {
+                        // Any change to the observed Host snapshot, Wiki source
+                        // or device count invalidates graph reads launched under
+                        // the old Host presentation. The graph journal retains
+                        // its independent authoritative epoch fence.
+                        let changed_source=view.overview.as_ref().is_some_and(|prior|
+                            prior.host_snapshot_digest!=data.host_snapshot_digest ||
+                            prior.wiki_revision!=data.wiki_revision ||
+                            prior.wiki_digest!=data.wiki_digest ||
+                            prior.active_devices!=data.active_devices
+                        );
                         if view.wiki_guard.accept(data.wiki_revision, &data.wiki_digest).is_err() {
                             view.source_status="Wiki source revision/digest conflict · observation refused".into();
                             view.overview=None;view.visual=None;view.vec_view=None;
@@ -246,6 +269,11 @@ impl Desktop {
                                     .unwrap_or_default()
                             )).collect()
                         ).unwrap_or_default();
+                        if changed_source {
+                            view.source_epoch=view.source_epoch.wrapping_add(1);
+                            view.graph_detail.clear();
+                            view.graph_status="Host snapshot, Wiki or device source changed · graph readback invalidated".into();
+                        }
                         if view.overview.as_ref()!=Some(&data){view.overview=Some(data);}
                     }
                     Err(error) => {
@@ -328,6 +356,11 @@ impl Desktop {
                         }
                     }
                 }
+                // The development graph is independently journaled; it is
+                // never called transactionally consistent with Wiki/VEC.
+                // Re-query after any Host source transition, not from a
+                // previous panel/device presentation.
+                if view.overview.is_some() {view.refresh_graph(cx);}
                 cx.notify();
             });
         }).detach();
@@ -349,6 +382,8 @@ impl Desktop {
         self.review = None;
         self.detail.clear();
         self.busy = true;
+        self.graph_detail.clear();
+        self.graph_status="Host planning in progress · graph readback withheld".into();
         self.status = "Planning with canonical Host…".into();
         cx.notify();
         let work = cx.background_executor().spawn(async move { control::plan(&text) });
@@ -431,19 +466,31 @@ impl Desktop {
     }
     fn refresh_graph(&mut self,cx:&mut Context<Self>){
         // Hidden graph tabs retain their last exact query but never spend
-        // background GETs on unread results.
-        if !matches!(self.panel,Panel::Overview|Panel::Graph){return;}
+        // background GETs on unread results. Require an admitted Host
+        // overview before displaying an independently sourced graph read.
+        if !matches!(self.panel,Panel::Overview|Panel::Graph) ||
+            self.overview.is_none(){return;}
         if let Some((operation,key))=self.graph_query.clone() {
             self.request_graph(operation,key,cx);
         }
     }
     fn request_graph(&mut self,operation:&'static str,key:String,cx:&mut Context<Self>){
-        if self.graph_busy || !passive_read_allowed(self.busy,self.uncertain,
+        if !passive_read_allowed(self.busy,self.uncertain,
             self.review.as_ref().is_some_and(Review::needs_approval)){return;}
+        if self.overview.is_none() {
+            self.graph_detail.clear();
+            self.graph_status="Host source not admitted · graph query withheld, not empty".into();
+            cx.notify();return;
+        }
+        if self.graph_busy {
+            self.graph_pending=true;
+            return;
+        }
         self.graph_busy=true;
         self.graph_status=format!("Refreshing owner-authorized graph {operation} for “{key}” · previous read may be stale");
         cx.notify();
         let source_epoch=self.source_epoch;
+        let presentation_epoch=self.presentation_epoch;
         let query=(operation,key);
         let request_key=query.1.clone();
         let work=cx.background_executor().spawn(async move {read_development(operation,&request_key)});
@@ -457,8 +504,9 @@ impl Desktop {
                     view.graph_detail.clear();
                     cx.notify();return;
                 }
-                if view.source_epoch!=source_epoch {
-                    view.graph_status="Discarded graph read predating a Host effect".into();
+                if view.source_epoch!=source_epoch ||
+                    view.presentation_epoch!=presentation_epoch {
+                    view.graph_status="Discarded graph read predating Host source, tab or device change".into();
                     view.graph_detail.clear();
                     view.refresh_graph(cx); // GET-only, and still subject to approval fences
                     cx.notify();return;
@@ -468,15 +516,26 @@ impl Desktop {
                     view.refresh_graph(cx);
                     return;
                 }
+                if std::mem::take(&mut view.graph_pending) {
+                    view.graph_detail.clear();
+                    view.graph_status="Superseded graph request · obtaining current source".into();
+                    view.refresh_graph(cx);
+                    cx.notify();return;
+                }
                 match result {
                     Ok(data)=>match view.graph_guard.accept(&data){
                         Ok(())=>{
                             let unchanged=view.graph_detail==data.text;
-                            view.graph_status=format!(
-                                "HQKG epoch {} · query result SHA256 {} · {} · requested “{}” · {} · read only",
-                                data.epoch,data.source_digest,data.operation,data.requested_key,
-                                if unchanged {"unchanged"}else{"updated"}
-                            );
+                            view.graph_status=if data.text.trim().is_empty() {
+                                format!("HQKG epoch {} · owner-authorized graph projection genuinely empty · SHA256 {}",
+                                    data.epoch,data.source_digest)
+                            } else {
+                                format!(
+                                    "HQKG epoch {} · query result SHA256 {} · {} · requested “{}” · {} · read only",
+                                    data.epoch,data.source_digest,data.operation,data.requested_key,
+                                    if unchanged {"unchanged"}else{"updated"}
+                                )
+                            };
                             if !unchanged {view.graph_detail=data.text;}
                         }
                         Err(_)=>{
@@ -814,12 +873,12 @@ fn main() {
                 let input=cx.new(|cx| InputState::new(window,cx).placeholder("Ask VIVIM or describe a Host command"));
                 let view=cx.new(|cx| {
                     let mut view=Desktop {input,panel:Panel::Overview,viewport_px:viewport_for_window(window),
-                        viewport_epoch:0,source_epoch:0,read_busy:false,refresh_pending:false,
+                        viewport_epoch:0,source_epoch:0,presentation_epoch:0,read_busy:false,refresh_pending:false,
                         coherence_retry_ready:true,
                         source_status:"Host source not yet observed".into(),
                         wiki_query:None,status:"Not yet observed".into(),overview:None,visual:None,vec_view:None,visual_status:"Not yet observed".into(),visual_guard:RevisionGuard::default(),wiki_guard:WikiRevisionGuard::default(),wiki_delta:"Not yet observed".into(),wiki_events:Vec::new(),detail:String::new(),
                         review:None,last_plan:None,busy:false,uncertain:false,
-                        graph_detail:String::new(),graph_status:"Graph not yet queried".into(),graph_busy:false,
+                        graph_detail:String::new(),graph_status:"Graph not yet queried".into(),graph_busy:false,graph_pending:false,
                         graph_query:None,graph_guard:DevelopmentRevisionGuard::default()};
                     cx.observe_window_bounds(window, |view,window,cx|{
                         view.set_viewport(viewport_for_window(window),cx);

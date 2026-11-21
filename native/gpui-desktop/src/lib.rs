@@ -43,12 +43,15 @@ pub struct ObservationTicket {
     pub viewport_px: u32,
     pub viewport_epoch: u64,
     pub source_epoch: u64,
+    /// A tab/device/viewport presentation change supersedes in-flight reads.
+    pub presentation_epoch: u64,
 }
 impl ObservationTicket {
-    pub fn matches(&self, width:u32, viewport_epoch:u64, source_epoch:u64)->bool {
+    pub fn matches(&self, width:u32, viewport_epoch:u64, source_epoch:u64, presentation_epoch:u64)->bool {
         self.viewport_px==width &&
             self.viewport_epoch==viewport_epoch &&
-            self.source_epoch==source_epoch
+            self.source_epoch==source_epoch &&
+            self.presentation_epoch==presentation_epoch
     }
 }
 /// Passive observation never runs while a command/receipt, uncertain effect
@@ -311,11 +314,12 @@ mod tests {
             "devices":{"schema":"vivim.device-counts/1","active":2}}})
     }
     #[test] fn read_ticket_refuses_resize_a_b_a_and_host_effect_overlap() {
-        let request=ObservationTicket{viewport_px:960,viewport_epoch:8,source_epoch:3};
-        assert!(request.matches(960,8,3));
-        assert!(!request.matches(720,8,3));
-        assert!(!request.matches(960,10,3)); // A -> B -> A
-        assert!(!request.matches(960,8,4)); // Host effect began
+        let request=ObservationTicket{viewport_px:960,viewport_epoch:8,source_epoch:3,presentation_epoch:4};
+        assert!(request.matches(960,8,3,4));
+        assert!(!request.matches(720,8,3,4));
+        assert!(!request.matches(960,10,3,4)); // A -> B -> A
+        assert!(!request.matches(960,8,4,4)); // Host effect began
+        assert!(!request.matches(960,8,3,5)); // Panel A -> B -> A
     }
     #[test] fn passive_observation_never_crosses_owner_approval() {
         assert!(passive_read_allowed(false,false,false));
