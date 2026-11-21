@@ -1249,3 +1249,33 @@ fn complete_section_inventory_cannot_over_fence_bounded_page_tombstones() {
     assert_eq!(read(&file,SCOPE,restored["epoch"].as_u64().unwrap(),"wiki")
         .unwrap()["activeSourcesTotal"],1);
 }
+
+#[test]
+fn phone_wiki_deletion_proof_does_not_disclose_owner_receipt_revocation() {
+    let temp=Temp::new();let file=temp.journal();
+    let page=wiki_record(0,2);
+    let mut receipt=effect();
+    receipt["receiptDigest"]=json!("f".repeat(64));
+    let (ok,first)=sync(&file,SCOPE,vec![page.clone(),receipt.clone()]);
+    assert!(ok,"{first}");
+    let (ok,deleted)=run_packet(&file,json!({
+        "schema":"vivim.hqkg-personal/1","scope":SCOPE,
+        "op":"sync-context","nodes":[],"relationships":[],
+        "baseRevision":2,"baseEpoch":first["epoch"],
+        "deltas":[{"op":"delete","kind":"effect","id":receipt["id"],
+            "revision":2,"digest":receipt["digest"]}]
+    }));
+    assert!(ok,"{deleted}");
+    let epoch=deleted["epoch"].as_u64().unwrap();
+    let wiki=read(&file,SCOPE,epoch,"wiki").unwrap();
+    let owner=read(&file,SCOPE,epoch,"owner").unwrap();
+    assert_eq!(wiki["totalRetrieved"],1);
+    assert_eq!(owner["totalRetrieved"],1);
+    assert_eq!(wiki["deletionFencesTotal"],0,
+        "phone Wiki must not count revoked owner receipts");
+    assert_eq!(wiki["deletionFencesDigest"],format!("{:x}",Sha256::digest(b"[]")));
+    assert_eq!(owner["deletionFencesTotal"],1);
+    assert_ne!(owner["deletionFencesDigest"],wiki["deletionFencesDigest"]);
+    assert_eq!(wiki["activeSourcesDigest"],owner["activeSourcesDigest"],
+        "the one committed Wiki source remains the same for both views");
+}
