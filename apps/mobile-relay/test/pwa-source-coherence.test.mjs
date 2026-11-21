@@ -240,3 +240,29 @@ test('stale media ticket revocation cannot revoke a replacement grant',async()=>
   assert.deepEqual(revoked,[]);
   assert.equal(env.playerActive,false);
 });
+
+
+test('rejected Build visual rollback does not overwrite newer app-wide Host status',async()=>{
+  const oldStatus={snapshot:{bootstrap:{uiRevision:{revision:8,surfaceId:'my-space'}}}};
+  let scheduleCount=0,cleared=0,bindings=0;
+  const env=install({
+    buildTimer:0,buildPollSequence:0,buildKey:'current',
+    HOST_PREVIEW:false,
+    S:{tab:'build',paired:true,statusObj:oldStatus,statusAt:10},
+    transport:{direct:true,deviceHeaders:()=>({
+      'x-vivim-device-session':'session','x-vivim-grant-id':'grant'
+    })},
+    api:async()=>({snapshot:{bootstrap:{uiRevision:{revision:7,surfaceId:'my-space'}}}}),
+    build:{setVisualSourceScope:()=>true,
+      setSurface:()=>({state:'blocked',reason:'ROLLBACK_PROOF_REQUIRED'}),
+      clear(){},clearVisualSourceScope(){}},
+    shellPresentation:{observe(){throw Error('stale status must not be presented')},
+      clear(){cleared++}},
+    refreshBuildBindings(){bindings++},scheduleBuild(){scheduleCount++}
+  },['pollBuild']);
+  await env.pollBuild();
+  assert.equal(env.S.statusObj,oldStatus,'newer Host status cannot be replaced by a stale visual revision');
+  assert.equal(cleared,1,'refused visual head removes any optimistic shell paint');
+  assert.equal(bindings,0,'no stale Wiki/Studio binding fetch');
+  assert.equal(scheduleCount,1,'polling continues to look for the newer admitted Host head');
+});
