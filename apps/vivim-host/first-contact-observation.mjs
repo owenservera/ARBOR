@@ -31,7 +31,7 @@ export function createFirstContactObservations(dataRoot){
     const event=validateFirstContactObservation(input);
     if(!event)return Promise.reject(Object.assign(Error('OBSERVATION_INVALID'),{status:400}));
     const record=JSON.stringify({schema:'vivim.first-contact-observation/1',
-      time:new Date().toISOString(),origin:'owner-tailnet-phone',
+      time:new Date().toISOString(),origin:'owner-tailnet-http', // Transport identity only; NOT proof of a physical phone.
       ...event})+'\n';
     if(Buffer.byteLength(record)>MAX_EVENT_BYTES)
       return Promise.reject(Object.assign(Error('OBSERVATION_INVALID'),{status:400}));
