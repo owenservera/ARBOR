@@ -763,3 +763,105 @@ fn immutable_d4_receipt_fingerprint_is_added_once_and_refuses_mutation() {
     assert!(!ok,"a fingerprinted applied receipt must not downgrade: {downgrade}");
     assert_eq!(fs::read(&file).unwrap(),bytes);
 }
+
+
+#[test]
+fn cold_restart_complete_wiki_inventory_prunes_only_missing_sections() {
+    let temp=Temp::new(); let file=temp.journal();
+    let current=wiki(ENTRY,2,"Still committed");
+    let gone=wiki_record(1,2);
+    let mut page=wiki_record(2,2);
+    page["semanticId"]=json!("wiki:page:Main");
+    let receipt=effect();
+    let (ok,initial)=sync(&file,SCOPE,vec![current.clone(),gone.clone(),page.clone(),receipt.clone()]);
+    assert!(ok,"{initial}");
+    assert_eq!(Journal::new(&file).load().unwrap().node_count(),4);
+    assert_eq!(Journal::new(&file).load().unwrap().edge_count(),1);
+    let epoch=initial["epoch"].as_u64().unwrap();
+    let active=vec![current["id"].clone(),page["id"].clone(),receipt["id"].clone()];
+    let packet=|revision:u64,base:u64|json!({
+        "schema":"vivim.hqkg-personal/1","scope":SCOPE,
+        "op":"sync-context-read","view":"owner",
+        "nodes":[],"relationships":[],"baseRevision":3,"baseEpoch":base,
+        "deltas":[],"activeIds":active,"activeRelationshipIds":[],
+        "completeWikiRevision":revision
+    });
+    let bytes=fs::read(&file).unwrap();
+    let (ok,stale)=run_packet(&file,packet(1,epoch));
+    assert!(!ok,"a lower Wiki source high-water must not erase newer sections: {stale}");
+    assert_eq!(fs::read(&file).unwrap(),bytes);
+    let (ok,pruned)=run_packet(&file,packet(3,epoch));
+    assert!(ok,"{pruned}");
+    assert_eq!(pruned["reconciledSections"],1);
+    assert_eq!(pruned["tombstoned"],0);
+    assert_eq!(pruned["context"]["totalRetrieved"],3);
+    assert_eq!(pruned["context"]["effectRelationshipsTotal"],1);
+    let graph=Journal::new(&file).load().unwrap();
+    assert_eq!(graph.node_count(),3);
+    assert_eq!(graph.edge_count(),1);
+    assert!(graph.nodes().any(|n|n.properties.get("vivim.context.kind")
+        .map(String::as_str)==Some("effect")));
+    assert!(graph.nodes().any(|n|n.properties.get("vivim.context.semanticId")
+        .map(String::as_str)==Some("wiki:page:Main")));
+    let updated=pruned["epoch"].as_u64().unwrap();
+    let bytes=fs::read(&file).unwrap();
+    let (ok,replay)=run_packet(&file,packet(3,updated));
+    assert!(ok,"{replay}");
+    assert_eq!(replay["reconciledSections"],0);
+    assert_eq!(replay["changed"],false);
+    assert_eq!(fs::read(&file).unwrap(),bytes,
+        "replaying an exact complete inventory must not write a new frame");
+}
+
+#[test]
+fn complete_wiki_inventory_requires_an_exact_graph_epoch_and_scoped_read() {
+    let temp=Temp::new();let file=temp.journal();
+    let a=wiki_record(0,2);
+    let b=wiki_record(1,2);
+    let (ok,initial)=sync(&file,SCOPE,vec![a.clone(),b.clone()]);
+    assert!(ok,"{initial}");
+    let epoch=initial["epoch"].as_u64().unwrap();
+    let bytes=fs::read(&file).unwrap();
+    let current=[a["id"].clone()];
+    for invalid in [
+        json!({"schema":"vivim.hqkg-personal/1","scope":SCOPE,
+            "op":"sync-context-read","view":"wiki",
+            "nodes":[],"relationships":[],"baseRevision":2,
+            "deltas":[],"activeIds":current,
+            "completeWikiRevision":2}),
+        json!({"schema":"vivim.hqkg-personal/1","scope":SCOPE,
+            "op":"sync-context","nodes":[],"relationships":[],"baseRevision":2,
+            "baseEpoch":epoch,"deltas":[],"activeIds":current,
+            "completeWikiRevision":2}),
+        json!({"schema":"vivim.hqkg-personal/1","scope":SCOPE,
+            "op":"sync-context-read","view":"wiki",
+            "nodes":[],"relationships":[],"baseRevision":2,
+            "baseEpoch":epoch,"deltas":[],"completeWikiRevision":2})
+    ] {
+        let (ok,refused)=run_packet(&file,invalid);
+        assert!(!ok,"an inventory without an exact scoped CAS must be refused: {refused}");
+        assert_eq!(fs::read(&file).unwrap(),bytes);
+    }
+}
+
+#[test]
+fn invalid_active_readback_must_not_commit_any_wiki_change() {
+    let temp=Temp::new();let file=temp.journal();
+    let a=wiki_record(0,2);
+    let (ok,initial)=sync(&file,SCOPE,vec![a]);
+    assert!(ok,"{initial}");
+    let epoch=initial["epoch"].as_u64().unwrap();
+    let before=fs::read(&file).unwrap();
+    let next=wiki_record(1,3);
+    let absent=format!("vivim-context-w-{}","f".repeat(64));
+    let (ok,rejected)=run_packet(&file,json!({
+        "schema":"vivim.hqkg-personal/1","scope":SCOPE,
+        "op":"sync-context-read","view":"wiki",
+        "nodes":[],"relationships":[],"baseRevision":3,"baseEpoch":epoch,
+        "deltas":[put(next)],"activeIds":[absent],
+        "activeRelationshipIds":[],"completeWikiRevision":3
+    }));
+    assert!(!ok,"unknown active selection must not write: {rejected}");
+    assert_eq!(fs::read(&file).unwrap(),before,
+        "invalid retrieval identity cannot save source mutations first");
+}
