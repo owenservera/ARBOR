@@ -52,10 +52,11 @@ const shellPresentation=createShellPresentation(document.body);
 const HOST_PREVIEW = new URLSearchParams(location.search).get('host-preview') === '1'
   && ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname)
   && location.pathname.startsWith('/mobile/');
-// Explicit first-customer experience. Existing pairing, signed-in provider registry,
-// Host planner, approval receipts and old phone shell remain unchanged.
-const FIRST_CONTACT = transport.direct && !HOST_PREVIEW &&
-  new URLSearchParams(location.search).get('first') === '1';
+// Single customer-facing VIVIM surface: the existing text-box-first Wiki composer.
+// All Direct Host PWA entry points use it by default (desktop and phone).
+// Internal loopback Host preview is explicitly read-only and never a user product UI.
+// Preserve the existing Host permissions, pairing, approvals and shared composer.
+const FIRST_CONTACT = transport.direct && !HOST_PREVIEW;
 if (FIRST_CONTACT) document.body.classList.add('first-contact');
 // This action exists only inside the signed VIVIM Android shell. The online surface
 // remains the single Host-operated phone; Pocket holds local raw evidence only.
