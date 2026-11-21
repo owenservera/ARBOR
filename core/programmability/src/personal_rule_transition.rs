@@ -169,17 +169,11 @@ pub fn reduce(input: &Value) -> Value {
             if claimed.is_some() && claimed != Some(id) {
                 return refused("PERSONAL_STORE_CONFLICT");
             }
-            // Defend independently against exact duplicate phrases/scopes.
-            // Unicode-equivalent aliases remain governed by the Host's
-            // existing NFKC matching above, not a new Rust grammar.
-            if current["entries"].as_array().is_some_and(|rows| rows.iter().any(|row|
-                row["state"] == "accepted"
-                && row["phrase"] == candidate["phrase"]
-                && row["scope"] == candidate["scope"]
-                && row["id"].as_str() != Some(id)
-            )) {
-                return refused("PERSONAL_STORE_CONFLICT");
-            }
+            // Only the Host can reproduce the incumbent JSON.stringify
+            // scope digest and NFKC phrase normalization exactly. In
+            // particular, serde_json's object-key sorting must NOT collapse
+            // distinct owner-reviewed legacy scopes into a new conflict.
+            // Require the Host's match identity to agree with locked state.
             let previous = match existing(current, id) {
                 Some(old) => {
                     if claimed != Some(id)
@@ -353,6 +347,9 @@ mod tests {
         assert_eq!(reduce(&replace)["code"], "PERSONAL_STORE_CONFLICT");
         replace["matchingRuleIds"] = json!(["rule:a"]);
         replace["previous"]["revision"] = json!(9);
+        assert_eq!(reduce(&replace)["code"], "PERSONAL_STORE_CONFLICT");
+        replace["previous"] = fresh["rule"].clone();
+        replace["candidate"]["scope"] = json!({"workspaceId":"other"});
         assert_eq!(reduce(&replace)["code"], "PERSONAL_STORE_CONFLICT");
     }
     #[test]

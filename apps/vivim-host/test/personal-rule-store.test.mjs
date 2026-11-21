@@ -227,3 +227,28 @@ test('oldest bounded history is pruned without altering current accepted rule',t
     approval:boundApproval(store,p.ruleId,'proposed')}),
     /PERSONAL_STORE_UNKNOWN_REVISION/);
 });
+
+test('legacy ordered-scope digests remain distinct and owner records are not rewritten',t=>{
+  const {store}=withStore(t,()=>true);
+  const firstScope={workspaceId:'project-a',surface:'desktop'};
+  const secondScope={surface:'desktop',workspaceId:'project-a'};
+  const subject=(scope)=>{
+    const s=store.snapshot();
+    return {operation:'remember',catalogVersion:catalog.version,
+      storeVersion:s.version,storeDigest:s.digest,
+      rule:{phrase:'quazzlememo',actionId:'ui.theme.set_preset',
+        args:{preset:'dusk'},scope},
+      previousId:null,previousDigest:null};
+  };
+  const first=store.remember({subject:subject(firstScope),approval:{receiptId:'one'}});
+  const second=store.remember({subject:subject(secondScope),approval:{receiptId:'two'}});
+  assert.notEqual(first.ruleId,second.ruleId);
+  const state=JSON.parse(readFileSync(store.file,'utf8'));
+  assert.equal(state.version,2);
+  assert.equal(state.entries.length,2);
+  assert.equal(state.history.length,2);
+  assert.deepEqual(state.history[0].after.scope,firstScope);
+  assert.deepEqual(state.history[1].after.scope,secondScope);
+  assert.deepEqual(Object.keys(state.history[0].after.scope),['workspaceId','surface']);
+  assert.deepEqual(Object.keys(state.history[1].after.scope),['surface','workspaceId']);
+});
