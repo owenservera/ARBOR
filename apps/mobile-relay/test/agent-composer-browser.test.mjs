@@ -169,3 +169,34 @@ test('human edits during animated agent delivery stop the remaining frames and p
   assert.equal(b.ackCount(),0);
   b.result.dispose();
 });
+
+test('UTF-8 oversized approved draft is refused before visible AutoWiki input or Host ACK',async t=>{
+  const b=browser(t);await b.idle();
+  const before=b.field.value;
+  let inputs=0,sends=0;
+  b.field.addEventListener('input',()=>inputs++);
+  b.field.addEventListener('submit',()=>sends++);
+  // 300 astral characters are 600 JS code units but 1200 UTF-8 bytes.
+  b.enqueue({newValue:'😀'.repeat(300)});
+  await b.tick();
+  assert.equal(b.field.value,before);
+  assert.equal(inputs,0,'no misleading intermediate AutoWiki frames');
+  assert.equal(sends,0);
+  assert.equal(b.ackCount(),0,'Host must not ACK a locally rejected draft');
+  assert.equal(b.observe().text,before);
+  b.result.dispose();
+});
+
+test('UTF-8 draft inside the observation budget retains a single verified ACK',async t=>{
+  const b=browser(t);await b.idle();
+  const unicode='😀'.repeat(200);
+  let inputs=0;
+  b.field.addEventListener('input',()=>inputs++);
+  b.enqueue({newValue:unicode});
+  await b.tick();
+  assert.equal(b.field.value,unicode);
+  assert.equal(inputs,1);
+  assert.equal(b.ackCount(),1);
+  assert.equal(b.observe().text,unicode);
+  b.result.dispose();
+});
