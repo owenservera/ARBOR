@@ -119,6 +119,54 @@ pub fn project_managed_graph_selected(
         return Err(Error::Corrupt("Wiki link bound exceeded".into()));
     }
     page_relationships.sort_by(|a,b| a["id"].as_str().cmp(&b["id"].as_str()));
+    // D4 effect lineage is owner-only and sourced from the existing durable
+    // graph edges, never inferred from matching titles or journal recency.
+    // Omitted or superseded links remain historical, not live Wiki authority.
+    let mut effect_relationships=Vec::new();
+    if view=="owner" {
+        for edge in graph.edges() {
+            if !edge.id.starts_with(&format!("{prefix}vivim-context-l-")) ||
+                edge.properties.get("vivim.context.kind").map(String::as_str)!=Some("effect-wiki-link") {
+                continue;
+            }
+            if active.is_some() && (!orders.contains_key(&edge.from) || !orders.contains_key(&edge.to)) {
+                continue;
+            }
+            let receipt=graph.node(&edge.from)
+                .ok_or_else(||Error::Corrupt("D4 receipt endpoint missing".into()))?;
+            let wiki=graph.node(&edge.to)
+                .ok_or_else(||Error::Corrupt("D4 Wiki endpoint missing".into()))?;
+            if receipt.properties.get("vivim.context.kind").map(String::as_str)!=Some("effect") ||
+                wiki.properties.get("vivim.context.kind").map(String::as_str)!=Some("wiki") ||
+                edge.relation!="committed-wiki-change" {
+                return Err(Error::Corrupt("invalid D4 lineage edge".into()));
+            }
+            let expected_ref=receipt.properties.get("vivim.context.wikiEntryId");
+            let source_ref=wiki.properties.get("vivim.context.sourceRef");
+            let expected_rev=receipt.properties.get("vivim.context.wikiRevision")
+                .and_then(|s|s.parse::<u64>().ok());
+            let source_rev=wiki.properties.get("hqkg.provenance.revision")
+                .and_then(|s|s.parse::<u64>().ok());
+            if expected_ref!=source_ref || expected_rev.is_none() || expected_rev!=source_rev {
+                continue; // a historical superseded edge is not current lineage
+            }
+            let receipt_ref=receipt.properties.get("vivim.context.sourceRef")
+                .ok_or_else(||Error::Corrupt("missing D4 receipt identity".into()))?;
+            let receipt_digest=receipt.properties.get("hqkg.provenance.digest")
+                .ok_or_else(||Error::Corrupt("missing D4 receipt digest".into()))?;
+            effect_relationships.push(json!({
+                "id":edge.id.strip_prefix(prefix.as_str()),
+                "from":edge.from.strip_prefix(prefix.as_str()),
+                "to":edge.to.strip_prefix(prefix.as_str()),
+                "kind":edge.relation,"sourceRef":receipt_ref,
+                "sourceDigest":receipt_digest,"wikiEntryId":source_ref,
+                "wikiRevision":source_rev
+            }));
+        }
+    }
+    effect_relationships.sort_by(|a,b|a["id"].as_str().cmp(&b["id"].as_str()));
+    let omitted_effects=effect_relationships.len().saturating_sub(24);
+    effect_relationships.truncate(24);
     // Relevance decides seed order: pages other pages point at (inbound
     // relationships) are the most relevant, then pages that point at others,
     // then recency. Newest-eight selection and excluded-node traversal are gone.
@@ -149,10 +197,15 @@ pub fn project_managed_graph_selected(
         }
     }
     let exhausted = total > items.len();
-    Ok(json!({"schema":SCHEMA,"state":"source-backed","core":"hqkg","authority":"read-only",
+    let mut result=json!({"schema":SCHEMA,"state":"source-backed","core":"hqkg","authority":"read-only",
         "seed":format!("managed:{view}"),"epoch":epoch,"tokensUsed":tokens,"budgetTokens":320,
         "budgetExhausted":exhausted,"staleCount":0,"totalRetrieved":total,"items":items,
-        "pageRelationships":page_relationships}))
+        "pageRelationships":page_relationships});
+    if view=="owner" {
+        result["effectRelationships"]=json!(effect_relationships);
+        result["omittedEffectRelationships"]=json!(omitted_effects);
+    }
+    Ok(result)
 }
 
 // Retain the standalone read-only CLI contract for existing callers.

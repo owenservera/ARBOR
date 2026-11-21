@@ -143,7 +143,8 @@ test('managed reads share one native invocation per concurrent authorized view a
         tombstoned:packet.deltas.filter(d=>d.op==='delete').length}:{}),
       context:{schema:'vivim.hqkg-chat-context/1',state:'source-backed',core:'hqkg',authority:'read-only',
         seed:'managed:'+packet.view,epoch:7,staleCount:0,budgetTokens:320,tokensUsed:items.length*30,
-        budgetExhausted:false,totalRetrieved:visible.length,items,pageRelationships:packet.relationships}})};
+        budgetExhausted:false,totalRetrieved:visible.length,items,pageRelationships:packet.relationships,
+        ...(packet.view==='owner'?{effectRelationships:[],omittedEffectRelationships:0}:{})}})};
   };
   const managed=createRustChatContext({env:{},dataRoot,productJournal:journal,control:()=>controls,
     isFile:p=>p.includes('hqkg-personal'),execute:async()=>{throw Error('legacy reader must not be launched')},

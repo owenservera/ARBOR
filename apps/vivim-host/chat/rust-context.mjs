@@ -443,6 +443,41 @@ function managedReader({env,dataRoot,productJournal,control,executePersonal,repo
           expectedLinks.delete(link.id);
         }
         const byRef=new Map(rows.map(row=>[row.sourceRef,row]));
+        let effectRelationships=[];
+        if(view==='owner'){
+          // Native reports exact committed D4 edges. An effect summary alone
+          // is not evidence that the corresponding Wiki lineage was ingested.
+          const wikiByRef=new Map(rows.filter(row=>row.kind==='wiki')
+            .map(row=>[row.sourceRef,row]));
+          const expected=new Map();
+          for(const effect of rows.filter(row=>row.kind==='effect'&&row.wikiLink)){
+            const wiki=wikiByRef.get(effect.wikiLink.entryId);
+            if(!wiki||wiki.revision!==effect.wikiLink.wikiRevision)continue;
+            const id='vivim-context-l-'+effect.id.slice('vivim-context-e-'.length);
+            expected.set(id,{id,from:effect.id,to:wiki.id,
+              kind:'committed-wiki-change',sourceRef:effect.sourceRef,
+              sourceDigest:effect.digest,wikiEntryId:wiki.sourceRef,wikiRevision:wiki.revision});
+          }
+          const links=result.effectRelationships;
+          if(!Array.isArray(links)||links.length!==expected.size||
+            links.length>24||result.omittedEffectRelationships!==0)
+            return unavailable('RUST_CORE_CONTRACT_INVALID');
+          const verified=new Set();
+          for(const edge of links){
+            const wanted=expected.get(edge?.id);
+            if(!wanted||verified.has(edge.id)||
+              Object.keys(wanted).some(key=>edge[key]!==wanted[key]))
+              return unavailable('RUST_CORE_CONTRACT_INVALID');
+            verified.add(edge.id);
+            const effect=rows.find(row=>row.id===edge.from);
+            const wiki=rows.find(row=>row.id===edge.to);
+            effectRelationships.push({receipt:effect.semanticId,wiki:wiki.semanticId,
+              sourceRef:effect.sourceRef,sourceDigest:effect.digest,
+              wikiEntryId:wiki.sourceRef,wikiRevision:wiki.revision});
+          }
+        }else if(result.effectRelationships!==undefined||
+            result.omittedEffectRelationships!==undefined)
+          return unavailable('RUST_CORE_CONTRACT_INVALID');
         const seen=new Set(), items=[];
         let sum=0;
         for (const item of result.items) {
@@ -468,6 +503,7 @@ function managedReader({env,dataRoot,productJournal,control,executePersonal,repo
           budgetTokens:320,staleCount:0,budgetExhausted:result.budgetExhausted,
           totalRetrieved:result.totalRetrieved,items,
           sourceHighWater:{wikiRevision:projection.wikiRevision,graphEpoch:packet.epoch},
+          ...(view==='owner'?{effectRelationships}:{}),
           ...(relationships.length?{syncedRelationships:relationships.length,
             pageRelationships:relationships.map(({from,to,kind,sourceRef,revision,digest:sourceDigest})=>({
               from:rows.find(row=>row.id===from).semanticId,to:rows.find(row=>row.id===to).semanticId,

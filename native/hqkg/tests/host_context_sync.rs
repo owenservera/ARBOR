@@ -531,6 +531,17 @@ fn delayed_d4_receipt_delta_links_an_unchanged_durable_wiki_source() {
     let link=graph.edges().next().unwrap();
     assert_eq!(link.relation,"committed-wiki-change");
     assert_eq!(link.properties.get("vivim.context.kind").map(String::as_str),Some("effect-wiki-link"));
+    let epoch=late["epoch"].as_u64().unwrap();
+    let owner=read(&file,SCOPE,epoch,"owner").unwrap();
+    assert_eq!(owner["effectRelationships"].as_array().unwrap().len(),1);
+    let lineage=&owner["effectRelationships"][0];
+    assert_eq!(lineage["sourceRef"],"ctl-0123456789abcdef");
+    assert_eq!(lineage["wikiEntryId"],ENTRY);
+    assert_eq!(lineage["wikiRevision"],2);
+    assert_eq!(lineage["kind"],"committed-wiki-change");
+    let phone=read(&file,SCOPE,epoch,"wiki").unwrap();
+    assert!(phone.get("effectRelationships").is_none(),
+        "owner receipt lineage must not enter phone Wiki context");
     let bytes=fs::read(&file).unwrap();
     let (ok,replay)=delta(&file,SCOPE,2,vec![put(effect())]);
     assert!(ok,"{replay}");
@@ -543,6 +554,9 @@ fn delayed_d4_receipt_delta_links_an_unchanged_durable_wiki_source() {
     let graph=Journal::new(&file).load().unwrap();
     assert_eq!(graph.node_count(),2);
     assert_eq!(graph.edge_count(),0,"superseded source must invalidate D4 link");
+    let owner=read(&file,SCOPE,changed["epoch"].as_u64().unwrap(),"owner").unwrap();
+    assert_eq!(owner["effectRelationships"],json!([]));
+    assert_eq!(owner["omittedEffectRelationships"],0);
     assert!(graph.nodes().any(|n|
         n.properties.get("vivim.context.sourceRef").map(String::as_str)==Some("ctl-0123456789abcdef")));
     let bytes=fs::read(&file).unwrap();
