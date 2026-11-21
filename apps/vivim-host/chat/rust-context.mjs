@@ -190,6 +190,17 @@ export function buildNativeKnowledge(snapshot, effects) {
         !SHA.test(e.planDigest) || !SHA.test(e.receiptDigest) ||
         !(e.sourceRevision === null || safeUInt(e.sourceRevision)))
       throw Error('NATIVE_EFFECT_SOURCE_INVALID');
+    // The receipt's immutable original Wiki commit is historical provenance,
+    // not a claim that the entry is still the current section. A current edge
+    // is allowed only when it identifies that same original committed source.
+    const receiptWikiOrigin=e.receiptWikiOrigin??null;
+    if(receiptWikiOrigin && (
+      !['wiki.section.edit','wiki.capture.save'].includes(e.actionId) ||
+      receiptWikiOrigin.kind!=='committed-wiki-origin' ||
+      !/^[0-9a-f-]{36}$/.test(receiptWikiOrigin.entryId??'') ||
+      !safeUInt(receiptWikiOrigin.wikiRevision)||receiptWikiOrigin.wikiRevision===0 ||
+      receiptWikiOrigin.wikiRevision!==e.sourceRevision))
+      throw Error('NATIVE_EFFECT_ORIGIN_INVALID');
     // The immutable receipt itself has version 1; its target state revision,
     // when supplied by D4, remains separately and exactly identified.
     const wikiLink = e.wikiLink ?? null;
@@ -198,6 +209,12 @@ export function buildNativeKnowledge(snapshot, effects) {
         !/^[0-9a-f-]{36}$/.test(wikiLink.entryId) ||
         !safeUInt(wikiLink.wikiRevision) || wikiLink.wikiRevision===0))
       throw Error('NATIVE_EFFECT_SOURCE_LINK_INVALID');
+    if(wikiLink && (!receiptWikiOrigin ||
+      wikiLink.entryId!==receiptWikiOrigin.entryId ||
+      wikiLink.wikiRevision!==receiptWikiOrigin.wikiRevision))
+      throw Error('NATIVE_EFFECT_ORIGIN_CONFLICT');
+    if(['wiki.section.edit','wiki.capture.save'].includes(e.actionId)&&!receiptWikiOrigin)
+      throw Error('NATIVE_EFFECT_ORIGIN_MISSING');
     const sequenceLinks=e.sequenceLinks??null;
     if(sequenceLinks&& (e.actionId!=='program.write_wiki'||!Array.isArray(sequenceLinks)||!sequenceLinks.length||sequenceLinks.length>8||
         !safeUInt(e.sourceRevision)||new Set(sequenceLinks.map(s=>s.step)).size!==sequenceLinks.length||
@@ -217,7 +234,7 @@ export function buildNativeKnowledge(snapshot, effects) {
       sourceRef:e.planId,digest:e.planDigest,receiptDigest:e.receiptDigest,
       revision:Math.max(1,e.sourceRevision ?? 1),
       sourceRevision:e.sourceRevision,order:Date.parse(e.receivedAt),
-      semanticId:receiptId(e.planId),actionId:e.actionId,wikiLink,
+      semanticId:receiptId(e.planId),actionId:e.actionId,wikiLink,receiptWikiOrigin,
       title:safe('Applied: '+e.actionId,100),summary:safe('Historical Host receipt'+linked,120)});
   }
   if (rows.some(r => !safeUInt(r.order) || r.order === 0) ||
@@ -562,7 +579,9 @@ function managedReader({env,dataRoot,productJournal,control,executePersonal,repo
             row.revision,row.sourceRevision,row.order,row.title,
             row.summary,row.semanticId,row.actionId??null,
             row.receiptDigest??null,row.wikiLink?.entryId??null,
-            row.wikiLink?.wikiRevision??null
+            row.wikiLink?.wikiRevision??null,
+            row.receiptWikiOrigin?.entryId??null,
+            row.receiptWikiOrigin?.wikiRevision??null
           ]);
         if(result.activeSourcesTotal!==proof.length||
           result.activeSourcesDigest!==digest(proof))
@@ -629,14 +648,20 @@ function managedReader({env,dataRoot,productJournal,control,executePersonal,repo
               (view==='wiki' && expected.kind!=='wiki') || item.kind!==expected.kind ||
               item.sourceDigest!==expected.digest || item.sourceRevision!==expected.sourceRevision ||
               item.title!==expected.title || item.summary!==expected.summary ||
-              (expected.kind==='effect' && item.receiptDigest!==expected.receiptDigest) ||
+              (expected.kind==='effect' && (item.receiptDigest!==expected.receiptDigest ||
+                (view==='owner' && (
+                  item.receiptWikiOrigin?.entryId!==(expected.receiptWikiOrigin?.entryId??undefined) ||
+                  item.receiptWikiOrigin?.wikiRevision!==(expected.receiptWikiOrigin?.wikiRevision??undefined))))) ||
               item.revision!==expected.revision || item.depth!==0 || item.sourceCount!==1 ||
               !safeUInt(item.estimatedTokens) || item.estimatedTokens>320)
             return unavailable('RUST_CORE_CONTRACT_INVALID');
           seen.add(item.sourceRef); sum+=item.estimatedTokens;
           items.push({title:item.title,summary:item.summary,kind:item.kind,
             sourceRef:item.sourceRef,sourceDigest:item.sourceDigest,
-            ...(expected.kind==='effect'?{receiptDigest:expected.receiptDigest}:{}),
+            ...(expected.kind==='effect'?{
+              receiptDigest:expected.receiptDigest,
+              ...(expected.receiptWikiOrigin?{receiptWikiOrigin:expected.receiptWikiOrigin}:{})
+            }:{}),
             depth:item.depth,revision:item.revision,sourceRevision:item.sourceRevision,
             sourceCount:item.sourceCount,estimatedTokens:item.estimatedTokens});
         }
