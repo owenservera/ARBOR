@@ -101,6 +101,40 @@ function renderWiki(wiki) {
   }
   return root;
 }
+function wikiShape(wiki) {
+  return JSON.stringify(Object.entries(wiki.pages || {}).map(([name, page]) =>
+    [name, Array.isArray(page?.links) ? page.links : [], Object.keys(page?.sections || {}).sort()]));
+}
+function eachWikiSection(node, fn) {
+  for (const child of Array.from(node.children || [])) {
+    if (child.dataset?.wikiId) fn(child);
+    eachWikiSection(child, fn);
+  }
+}
+// Content-only revision bump: patch affected sections in place, keep every other
+// section's DOM node, listeners and state, and highlight only the changed one.
+function patchWikiView(wiki) {
+  const nodes = new Map();
+  eachWikiSection($('wiki-view'), node => nodes.set(node.dataset.wikiId, node));
+  for (const node of nodes.values()) { node.className = 'section'; delete node.dataset.changedRevision; }
+  for (const [name, page] of Object.entries(wiki.pages || {})) {
+    for (const [section, body] of Object.entries(page?.sections || {})) {
+      const node = nodes.get(name + '/' + section);
+      if (!node) continue;
+      const text = present(body, '');
+      node.dataset.revision = String(wiki.revision);
+      const bodyNode = Array.from(node.children).find(n => n.className === 'body');
+      if (bodyNode && bodyNode.textContent !== text) {
+        bodyNode.textContent = text;
+        node.className = 'section changed';
+        node.dataset.changedRevision = String(wiki.revision);
+        const metaNode = Array.from(node.children).find(n => n.className === 'meta');
+        if (metaNode) metaNode.textContent =
+          `data-wiki-id=${name}/${section} · changed in Wiki rev ${wiki.revision} · ${observedEdit(name, section, text)}`;
+      }
+    }
+  }
+}
 function semanticRows(context) {
   const graph = context.semantics;
   if (graph?.schema !== 'vivim.autowiki-semantics/1' || graph.scope !== 'owner-private' ||
@@ -522,7 +556,7 @@ function updateSourceMeta(key) {
   if (!field) return;
   const snap = snapshots[key];
   field.className = 'source-meta' + (snap?.error ? snap?.data ? ' stale' : ' error' : '');
-  field.textContent = `${SOURCES[key].path} · ${SOURCES[key].url} · ${snap?.data ? revisionLabel(key, snap.data) : 'not observed'}${snap?.error ? ` · stale/unavailable: ${snap.error}` : ' · Host read observed; independent acceptance not implied'}`;
+  field.textContent = `${SOURCES[key].path} · ${SOURCES[key].url} · ${snap?.data ? revisionLabel(key, snap.data) : 'not observed'}${snap?.staleNote ? ` · ${snap.staleNote}` : ''}${snap?.error ? ` · stale/unavailable: ${snap.error}` : ' · Host read observed; independent acceptance not implied'}`;
 }
 function ingest(key, data) {
   const signature = JSON.stringify(data);
@@ -538,8 +572,20 @@ function ingest(key, data) {
   updateSourceMeta(key);
   if (changed) {
     if (key === 'wiki') {
-      $('wiki-view').replaceChildren(renderWiki(data));
-      if (sourceRecord('context')) $('context-view').replaceChildren(renderContext(sourceRecord('context')));
+      const previousWiki = previous?.data;
+      if (previousWiki && Number.isSafeInteger(previousWiki.revision) &&
+          Number.isSafeInteger(data.revision) && data.revision < previousWiki.revision) {
+        // Out-of-order response: the fresher committed projection stays in the DOM; never roll back.
+        snapshots[key] = { ...snapshots[key], data: previousWiki, signature: previous.signature,
+          staleNote: `stale rev ${data.revision} discarded (current rev ${previousWiki.revision})` };
+        updateSourceMeta(key);
+      } else if (previousWiki && wikiShape(previousWiki) === wikiShape(data)) {
+        patchWikiView(data);
+        if (sourceRecord('context')) $('context-view').replaceChildren(renderContext(sourceRecord('context')));
+      } else {
+        $('wiki-view').replaceChildren(renderWiki(data));
+        if (sourceRecord('context')) $('context-view').replaceChildren(renderContext(sourceRecord('context')));
+      }
     }
     if (key === 'context') $('context-view').replaceChildren(renderContext(data));
     if (key === 'surface') $('surface-view').replaceChildren(renderFileSurface(data));
@@ -548,10 +594,10 @@ function ingest(key, data) {
       if (sourceRecord('wiki')) $('wiki-view').replaceChildren(renderWiki(sourceRecord('wiki')));
     }
   }
-  if (key === 'wiki') {
-    $('rev').textContent = `Wiki revision: ${data.revision}`;
+  if (key === 'wiki' && !snapshots[key]?.staleNote) {
+    $('rev').textContent = `Wiki revision: ${snapshots[key].data.revision}`;
     checkEditorRevision();
-    checkReadback(data);
+    checkReadback(snapshots[key].data);
   }
   if (key === 'state') $('state-rev').textContent = `Chat state: ${data.revision} · Wiki ${present(data.wikiRevision)}`;
 }

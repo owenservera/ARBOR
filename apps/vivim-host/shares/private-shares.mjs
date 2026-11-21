@@ -158,15 +158,15 @@ export function createPrivateShares({
     return value;
   }
   return Object.freeze({
-    reserve: (options, owner) =>
+    reserve: async (options, owner) =>
       run('reserve', {options, ownerDeviceId:checkOwner(owner)}),
     finish,
-    list: owner => run('list', {ownerDeviceId:checkOwner(owner)}),
-    inspect: (id, capability, passcode) =>
+    list: async owner => run('list', {ownerDeviceId:checkOwner(owner)}),
+    inspect: async (id, capability, passcode) =>
       run('inspect', {id:checkId(id), capability:checkToken(capability),
         passcode:typeof passcode === 'string' ? passcode : ''}),
     download,
-    revoke: (id, owner) =>
+    revoke: async (id, owner) =>
       run('revoke', {id:checkId(id), ownerDeviceId:checkOwner(owner)}),
     prune: () => run('prune')
   });

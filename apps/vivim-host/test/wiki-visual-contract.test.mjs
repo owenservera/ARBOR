@@ -22,6 +22,8 @@ class MockNode {
     this.disabled = false; this.repaints = 0; this.attributes = {};
   }
   appendChild(child) { this.children.push(child); return child; }
+  insertBefore(node, ref) { const i = ref ? this.children.indexOf(ref) : -1; if (i < 0) this.children.push(node); else this.children.splice(i, 0, node); return node; }
+  removeChild(node) { const i = this.children.indexOf(node); if (i >= 0) this.children.splice(i, 1); return node; }
   append(...children){this.children.push(...children);}
   replaceChildren(...children) { this.children = [...children]; this.repaints++; }
   addEventListener(name, callback) { (this.listeners[name] ||= []).push(callback); }
@@ -55,7 +57,7 @@ function setup() {
       args: { target: 'main/about', content: 'Voice notes are now our active priority' } } };
   const interpretCalls = [];
   const posts = [];
-  let interval = null;
+  const intervals = [];
   const fetch = async (url, options = {}) => {
     if (url === '/api/host/control/ui-state') {
       assert.equal(options.credentials, 'same-origin');
@@ -116,10 +118,10 @@ function setup() {
     return elements.get(id);
   }, createElement: name => new MockNode(name), addEventListener() {}, hidden: false };
   for(const node of elements.values())node.ownerDocument=document;
-  const context = vm.createContext({ resolveDesktopDestination, resolveProductRoute, mountComposerAssist, sourceCards,sameSourceCard,matchesSourceContext,exactSourceContextUrl,reconcileSourceCards, document, fetch, setInterval: fn => { interval = fn; return 1; }, AbortSignal, TextEncoder, Date, console });
+  const context = vm.createContext({ resolveDesktopDestination, resolveProductRoute, mountComposerAssist, sourceCards,sameSourceCard,matchesSourceContext,exactSourceContextUrl,reconcileSourceCards, document, fetch, setInterval: fn => { intervals.push(fn); return intervals.length; }, AbortSignal, TextEncoder, Date, console });
   vm.runInContext(script.replace("import { resolveDesktopDestination, resolveProductRoute } from '/mobile/control-language.mjs';",'').replace("import { mountComposerAssist } from '/mobile/composer-assist.mjs';",'').replace("import { sourceCards, sameSourceCard, matchesSourceContext, exactSourceContextUrl, reconcileSourceCards } from '/mobile/wiki-source-view.mjs';",''), context, { filename: 'wiki.js' });
   const el = id => elements.get(id);
-  return { elements, docs, posts, interpretCalls, el, context, tick: () => interval(),
+  return { elements, docs, posts, interpretCalls, el, context, tick: () => intervals[0]?.(),
     setPostStatus: value => { postStatus = value; }, setPostThrows: value => { postThrows = value; },
     setGetFailure: value => { getFailure = value; },
     setOwnerSession: value => { ownerSession = value; },

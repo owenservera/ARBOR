@@ -8,6 +8,9 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import vm from 'node:vm';
+import { resolveDesktopDestination, resolveProductRoute } from '../../mobile-relay/control-language.mjs';
+import { mountComposerAssist } from '../../mobile-relay/composer-assist.mjs';
+import { sourceCards, sameSourceCard, matchesSourceContext, exactSourceContextUrl, reconcileSourceCards } from '../../mobile-relay/wiki-source-view.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const pages = path.resolve(here, '../public/pages');
@@ -45,10 +48,14 @@ function setup() {
     return { ok: true, status: 200, json: async () => clone(docs[url]) };
   };
   const document = { getElementById: id => elements.get(id), createElement: name => new MockNode(name), addEventListener() {}, hidden: false };
-  let interval = null;
-  const context = vm.createContext({ document, fetch, setInterval: fn => { interval = fn; return 1; }, AbortSignal, TextEncoder, Date, console });
-  vm.runInContext(script, context, { filename: 'wiki.js' });
-  return { elements, docs, context, el: id => elements.get(id), tick: () => interval() };
+  for (const node of elements.values()) node.ownerDocument = document;
+  const intervals = [];
+  const context = vm.createContext({ resolveDesktopDestination, resolveProductRoute, mountComposerAssist, sourceCards, sameSourceCard, matchesSourceContext, exactSourceContextUrl, reconcileSourceCards, document, fetch, setInterval: fn => { intervals.push(fn); return intervals.length; }, AbortSignal, TextEncoder, Date, console });
+  vm.runInContext(script
+    .replace("import { resolveDesktopDestination, resolveProductRoute } from '/mobile/control-language.mjs';", '')
+    .replace("import { mountComposerAssist } from '/mobile/composer-assist.mjs';", '')
+    .replace("import { sourceCards, sameSourceCard, matchesSourceContext, exactSourceContextUrl, reconcileSourceCards } from '/mobile/wiki-source-view.mjs';", ''), context, { filename: 'wiki.js' });
+  return { elements, docs, context, el: id => elements.get(id), tick: () => intervals[0]?.() };
 }
 async function settle() { for (let i = 0; i < 8; i++) await new Promise(resolve => setImmediate(resolve)); }
 const sectionNodes = ui => allChildren(ui.el('wiki-view')).filter(node => node.dataset?.wikiId);
@@ -96,7 +103,9 @@ test('N -> N+1: highlight the changed section only, keep untouched DOM/state, di
   assert.doesNotMatch(ui.el('sync-status').textContent, /Retry pending/, 'discard is not a source failure');
 
   // N+1 -> N+2: the highlight moves to the newly changed section and clears from the old one.
+  // Host truth at rev 3 keeps HowTo as applied at rev 2 (the discarded rev-1 response never landed).
   ui.docs['/api/wiki'].revision = 3;
+  ui.docs['/api/wiki'].pages.Main.sections.HowTo = 'New first line\nSecond';
   ui.docs['/api/wiki'].pages.Main.sections.About = 'revised about';
   ui.el('refresh-now').fire('click'); await settle();
   assert.equal(ui.el('wiki-view').repaints, repaints, 'second projection is also in place');

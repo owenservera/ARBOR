@@ -373,6 +373,7 @@ mod tests {
     #[test]
     fn remember_requires_matching_accepted_identity_and_rejects_duplicates() {
         let mut q = input("remember", current());
+        q["ruleId"] = json!("rule:a");
         q["candidate"] = rule("rule:validation", 1, "accepted");
         q["matchingRuleIds"] = json!([]);
         let fresh = reduce(&q);
@@ -381,6 +382,7 @@ mod tests {
         assert_eq!(fresh["rule"]["revision"], 1);
 
         let mut replace = input("remember", fresh["next"].clone());
+        replace["ruleId"] = json!("rule:a");
         replace["candidate"] = rule("rule:validation", 1, "accepted");
         replace["matchingRuleIds"] = json!(["rule:a"]);
         replace["previous"] = fresh["rule"].clone();

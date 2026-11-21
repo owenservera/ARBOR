@@ -232,7 +232,7 @@ pub fn structure_transition(input:&Value)->Value {
     for row in raw {
         let Some(name)=row["name"].as_str().filter(|n|valid_page_name(n))
             else{return refuse("INVALID_SOURCE")};
-        if names.iter().any(|old|old.eq_ignore_ascii_case(name)){
+        if names.iter().any(|old:&String|old.eq_ignore_ascii_case(name)){
             return refuse("AMBIGUOUS_SOURCE_PAGE")
         }
         let links=match &row["links"] {
@@ -242,7 +242,7 @@ pub fn structure_transition(input:&Value)->Value {
                 for item in items {
                     let Some(target)=item.as_str().filter(|target|valid_page_name(target))
                         else{return refuse("INVALID_SOURCE")};
-                    if found.iter().any(|old|old.as_str()==target){
+                    if found.iter().any(|old:&String|old.as_str()==target){
                         return refuse("INVALID_SOURCE")
                     }
                     found.push(target.to_owned());
