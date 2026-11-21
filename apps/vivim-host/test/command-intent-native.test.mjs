@@ -489,3 +489,81 @@ test('native world compiler stamp and owner-language method are checked against 
     assert.equal(native.effectPerformed, false);
   }
 });
+
+test('native uses the Host first-eight clarification filtering without promoting action risk', t => {
+  if (!hasBinary()) {
+    t.diagnostic('Native binary not packaged: clarification projection unrun.');
+    return;
+  }
+  const phrase='Stop all traffic';
+  const world=buildControlWorld(catalog);
+  const reading=interpretControl(phrase,{catalog,world});
+  assert.equal(reading.outcome,'clarification_required');
+  assert.ok(reading.choices?.length);
+  const expected=toCommandIntent({text:phrase,scope:'text'},{catalog,world});
+  const request={
+    schema:'vivim.command-intent-projection-input/1',
+    input:{text:phrase,scope:'text',audience:'owner'},
+    catalogVersion:catalog.version,worldRevision:world.v,
+    worldNlclVersion:world.kernel.nlclVersion,
+    catalogActions:catalog.actions.map(({id,title,args,risk,owner,readiness,requiredScopes})=>
+      ({id,title,args,risk,owner,readiness,
+        ...(requiredScopes!==undefined?{requiredScopes}:{})})),
+    baselineOutcome:reading.outcome,personalProvenance:null,
+    reading:{...reading,choices:['not.a.catalog.action',...reading.choices,{invalid:true}]}
+  };
+  const native=runNativeProductPureSync('command-intent-projection',request);
+  assert.equal(native?.intent?.outcome,'clarification_required');
+  assert.deepEqual(native.intent.alternatives,expected.alternatives);
+  assert.equal(native.intent.risk,expected.risk);
+  assert.equal(native.executionAuthorized,false);
+  assert.equal(native.effectPerformed,false);
+});
+
+test('native rejects forged recipe/template invocation from a real accepted personal rule', t => {
+  if (!hasBinary()) {
+    t.diagnostic('Native binary not packaged: source-bound recipe validation unrun.');
+    return;
+  }
+  const phrase='quazzlememo';
+  const world=buildControlWorld(catalog);
+  const baseline=interpretControl(phrase,{catalog,world});
+  assert.equal(baseline.outcome,'interpretation_required');
+  const rule={schema:PERSONAL_RULE_SCHEMA,id:'rule:quazzlememo',
+    revision:1,phrase,actionId:'ui.theme.set_preset',
+    args:{preset:'dusk'},scope:{},state:'accepted',
+    source:'explicit-owner',catalogVersion:catalog.version};
+  const selected=resolvePersonalSemantics({
+    text:phrase,baseline,rules:[rule],catalog,scope:{surface:'text'}
+  });
+  assert.equal(selected.outcome,'candidate');
+  const request={
+    schema:'vivim.command-intent-projection-input/1',
+    input:{text:phrase,scope:'text',audience:'owner'},
+    catalogVersion:catalog.version,worldRevision:world.v,
+    worldNlclVersion:world.kernel.nlclVersion,
+    catalogActions:catalog.actions.map(({id,title,args,risk,owner,readiness,requiredScopes})=>
+      ({id,title,args,risk,owner,readiness,
+        ...(requiredScopes!==undefined?{requiredScopes}:{})})),
+    baselineOutcome:baseline.outcome,
+    reading:{...baseline,outcome:'candidate',candidate:selected.candidate},
+    personalProvenance:selected.provenance
+  };
+  assert.equal(runNativeProductPureSync('command-intent-projection',request)
+    ?.intent?.outcome,'candidate');
+  for(const forged of [
+    {...selected.provenance,reuse:'typed-write-recipe',invocation:'different owner text'},
+    {...selected.provenance,reuse:'typed-write-recipe',invocation:phrase,
+      templateSchema:'unexpected'},
+    {...selected.provenance,reuse:'parameterized-template',invocation:phrase,
+      templateSchema:'wrong-version'},
+    {...selected.provenance,semanticScope:{surface:'remote-root'}},
+    {...selected.provenance,authorization:'forged'}
+  ]){
+    const result=runNativeProductPureSync('command-intent-projection',
+      {...request,personalProvenance:forged});
+    assert.equal(result?.intent?.refusal?.code,'INVALID_READING');
+    assert.equal(result.executionAuthorized,false);
+    assert.equal(result.effectPerformed,false);
+  }
+});
