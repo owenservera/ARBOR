@@ -27,13 +27,14 @@ import { mountVoiceCapture } from './ux/voice-capture.mjs';
 // @hq:consumes vivim.rust-control-receipt-presentation@1
 // The browser keeps its current Wiki UI; Rust supplies optional source identity
 // from the same local WASM kernel used for VEC and other pure operations.
-let rustWikiSourceStamp=null,rustWikiSearch=null,rustWikiSourceTransition=null,rustWikiSourceDelta=null,rustControlReceiptPreview=null;
+let rustWikiSourceStamp=null,rustWikiSearch=null,rustWikiSourceTransition=null,rustWikiSourceDelta=null,rustControlReceiptPreview=null,rustUiEngineStatus=null;
 let wikiSourceFence=null; // Rust-stamped source high-water mark, never a grant
 let wikiReadScope=null; // session+grant digest, valid even when optional WASM is unavailable
 if(typeof window!=='undefined'){
   void import('./vec-engines/rust-wasm.mjs')
     .then(module=>{
       rustWikiSourceStamp=module.rustWikiSourceStamp;
+      rustUiEngineStatus=module.rustUiEngineStatus;
       rustWikiSearch=module.rustWikiSearch;
       rustWikiSourceTransition=module.rustWikiSourceTransition;
       rustWikiSourceDelta=module.rustWikiSourceDelta;
@@ -569,11 +570,21 @@ function clearWiki(reason = 'Wiki unavailable') {
 // JSON object keys, preserving array order. This is a bounded source identity,
 // never an approval, UI mutation or substitute for a device grant.
 function wikiSourceStampFallback(wiki) {
+  // Serde JSON keys are UTF-8 sorted; JS's default UTF-16 sorting differs
+  // for supplementary-plane characters (including emoji page names).
+  const sourceKeyOrder = (left, right) => {
+    const a=[...left],b=[...right];
+    for(let i=0;i<Math.min(a.length,b.length);i++){
+      const delta=a[i].codePointAt(0)-b[i].codePointAt(0);
+      if(delta)return delta;
+    }
+    return a.length-b.length;
+  };
   const sortValue = (value, depth = 0) => {
     if (depth > 24) throw new Error('Wiki source nesting exceeds digest limit');
     if (Array.isArray(value)) return value.map(row => sortValue(row, depth + 1));
     if (value && typeof value === 'object')
-      return Object.fromEntries(Object.keys(value).sort().map(
+      return Object.fromEntries(Object.keys(value).sort(sourceKeyOrder).map(
         key => [key, sortValue(value[key], depth + 1)]));
     return value;
   };
@@ -971,6 +982,9 @@ async function refreshWiki() {
     // a JS-only result after a broken/unavailable WASM dispatch.
     const portableStamp=wikiSourceStampFallback(wiki);
     const nativeStamp=rustWikiSourceStamp?.(wiki);
+    if(!nativeStamp&&rustUiEngineStatus?.()?.fallback==='none'){
+      clearWiki('Native Wiki source verification unavailable');return;
+    }
     if(nativeStamp && (nativeStamp.revision!==portableStamp.revision||
         nativeStamp.pagesTotal!==portableStamp.pagesTotal||
         nativeStamp.digest!==portableStamp.digest)){
