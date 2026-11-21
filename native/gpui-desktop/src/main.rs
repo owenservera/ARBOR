@@ -48,6 +48,8 @@ struct Desktop {
     source_epoch: u64,
     read_busy: bool,
     refresh_pending: bool,
+    // At most one immediate drift retry per successful cycle or observer tick.
+    coherence_retry_ready: bool,
     source_status: String,
     wiki_query: Option<String>,
     input: Entity<InputState>,
@@ -112,6 +114,24 @@ impl Desktop {
         self.status=format!("{} · local native view only",panel.label());
         cx.notify();
     }
+    fn retry_transient_source_drift(&mut self, cx: &mut Context<Self>) {
+        // One bounded retry after a torn Wiki bracket or mismatched TierFlow
+        // viewport/live-binding revision. Never retry through an approval.
+        if !std::mem::take(&mut self.coherence_retry_ready) {return;}
+        let viewport_epoch=self.viewport_epoch;
+        let source_epoch=self.source_epoch;
+        cx.spawn(async move |this,cx|{
+            cx.background_executor().timer(Duration::from_millis(375)).await;
+            let _=this.update(cx,|view,cx|{
+                if view.viewport_epoch==viewport_epoch &&
+                    view.source_epoch==source_epoch &&
+                    !view.busy && !view.uncertain &&
+                    !view.review.as_ref().is_some_and(Review::needs_approval) {
+                    view.refresh(cx);
+                }
+            });
+        }).detach();
+    }
     // Weak entity lifetime stops the observer when its workspace closes.
     // All refreshes are GET-only. Neither polling nor readback can approve.
     fn start_observer(&self,cx:&mut Context<Self>){
@@ -119,6 +139,9 @@ impl Desktop {
             loop{
                 cx.background_executor().timer(Duration::from_secs(15)).await;
                 if this.update(cx,|view,cx|{
+                    // The existing 15-second observation tick is the upper
+                    // bound on retry re-arming for a perpetually changing Host.
+                    view.coherence_retry_ready=true;
                     if !view.busy && !view.uncertain
                         && !view.review.as_ref().is_some_and(Review::needs_approval){
                         view.refresh(cx);
@@ -219,10 +242,17 @@ impl Desktop {
                         if view.overview.as_ref()!=Some(&data){view.overview=Some(data);}
                     }
                     Err(error) => {
-                        view.source_status=format!("{} · Wiki is unavailable, not empty",error.label());
+                        view.source_status=if error==ReadError::SnapshotChanged {
+                            "Host Wiki changed during summary read · mixed snapshot refused · bounded retry queued".into()
+                        } else {
+                            format!("{} · Wiki is unavailable, not empty",error.label())
+                        };
                         view.overview=None;view.visual=None;view.vec_view=None;
                         view.visual_status="Visual admission withheld · Host Wiki/source snapshot unavailable".into();
                         view.wiki_events.clear();view.wiki_delta.clear();
+                        if error==ReadError::SnapshotChanged {
+                            view.retry_transient_source_drift(cx);
+                        }
                         cx.notify();return;
                     }
                 }
@@ -267,6 +297,7 @@ impl Desktop {
                         // even if the GPU redraw itself can be skipped.
                         view.visual=next.source;
                         view.vec_view=next.vec_view;
+                        view.coherence_retry_ready=true;
                     }
                     Err(e)=>{
                         view.visual_status=if e==ReadError::SnapshotChanged {
@@ -276,6 +307,9 @@ impl Desktop {
                         };
                         view.visual=None;
                         view.vec_view=None;
+                        if e==ReadError::SnapshotChanged {
+                            view.retry_transient_source_drift(cx);
+                        }
                     }
                 }
                 cx.notify();
@@ -759,6 +793,7 @@ fn main() {
                 let view=cx.new(|cx| {
                     let mut view=Desktop {input,panel:Panel::Overview,viewport_px:viewport_for_window(window),
                         viewport_epoch:0,source_epoch:0,read_busy:false,refresh_pending:false,
+                        coherence_retry_ready:true,
                         source_status:"Host source not yet observed".into(),
                         wiki_query:None,status:"Not yet observed".into(),overview:None,visual:None,vec_view:None,visual_status:"Not yet observed".into(),visual_guard:RevisionGuard::default(),wiki_guard:WikiRevisionGuard::default(),wiki_delta:"Not yet observed".into(),wiki_events:Vec::new(),detail:String::new(),
                         review:None,last_plan:None,busy:false,uncertain:false,
