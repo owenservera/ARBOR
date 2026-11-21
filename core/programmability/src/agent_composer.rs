@@ -1,6 +1,6 @@
 //! Native, inert revision-fenced actor composer proposals. Host remains the only authority.
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use serde_json::{json, Value};
 use std::collections::BTreeSet;
 use crate::live_system::{
     ChangeEvent, EditCandidate, Freshness, LiveSystemState, RegionKind,
@@ -11,7 +11,8 @@ pub const PROPOSAL_SCHEMA: &str = "vivim.agent-composer-proposal/1";
 
 /// This identity comes from an already authenticated Host context; a user
 /// payload cannot create or grant it. Host MUST recheck live authorization.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct ActorContext {
     pub actor_id: String,
     pub allowed_regions: BTreeSet<String>,
@@ -158,6 +159,39 @@ pub fn verify_source_observation(
         return Err(DraftError::UnverifiedOutcome);
     }
     Ok(())
+}
+
+
+const REQUEST_SCHEMA: &str = "vivim.agent-composer-request/1";
+const COMPUTATION_SCHEMA: &str = "vivim.agent-composer-computation/1";
+
+/// Existing product-pure/WASM ABI. Even a forged actor or scope produces
+/// ONLY an inert candidate; the Host authenticates, grants and executes later.
+pub fn dispatch(input: &Value) -> Value {
+    let parsed = || -> Result<DraftProposal, DraftError> {
+        if input["schema"] != REQUEST_SCHEMA {
+            return Err(DraftError::InvalidIntent);
+        }
+        let state: LiveSystemState = serde_json::from_value(input["state"].clone())
+            .map_err(|_| DraftError::InvalidIntent)?;
+        let actor: ActorContext = serde_json::from_value(input["actor"].clone())
+            .map_err(|_| DraftError::InvalidActor)?;
+        let intent: DraftIntent = serde_json::from_value(input["intent"].clone())
+            .map_err(|_| DraftError::InvalidIntent)?;
+        prepare_draft(&state, &actor, &intent)
+    };
+    match parsed() {
+        Ok(proposal) => json!({
+            "schema": COMPUTATION_SCHEMA, "state": "computed",
+            "authority": "none", "executionAuthorized": false,
+            "effectPerformed": false, "result": proposal
+        }),
+        Err(error) => json!({
+            "schema": COMPUTATION_SCHEMA, "state": "refused",
+            "reason": format!("{error:?}"), "authority": "none",
+            "executionAuthorized": false, "effectPerformed": false
+        }),
+    }
 }
 
 #[cfg(test)]
