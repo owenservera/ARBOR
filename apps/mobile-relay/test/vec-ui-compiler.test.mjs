@@ -162,3 +162,23 @@ test('cyclic or accessor-bearing live bindings are not admitted',()=>{
   assert.deepEqual(fence.status(),[]);
   assert.throws(()=>createVecBindingFence(['same','same']),/INVALID_VEC_BINDING_SET/);
 });
+
+test('VEC rejects non-inert candidate adapter fields before browser fallback',()=>{
+  const cycle={note:'text'};cycle.self=cycle;
+  const accessor={};Object.defineProperty(accessor,'private',{enumerable:true,get(){throw Error('getter invoked')}});
+  for(const field of [cycle,{rows:Array.from({length:1025},()=>1)},{text:'x'.repeat(32769)},accessor]){
+    const result=createVecCompiler({adapters:{ui:()=>({outcome:'candidate',preview:field})}})
+      .compile({domain:'ui',text:'Edit UI'});
+    assert.equal(result.code,'ADAPTER_INVALID_RESULT');
+    assert.equal(result.executed,false);
+  }
+});
+test('VEC live bindings refuse getters and malformed unavailable rows',()=>{
+  const guard=createVecBindingFence(['personal.open-tasks']);
+  const poisoned={};Object.defineProperty(poisoned,'personal.open-tasks',
+    {enumerable:true,get(){throw Error('source getter invoked')}});
+  assert.equal(guard.prepare(poisoned).code,'INVALID_LIVE_BINDINGS');
+  assert.equal(guard.prepare({'personal.open-tasks':{state:'unavailable',items:[{label:'hidden'}]}}).code,
+    'INVALID_LIVE_BINDING');
+  assert.deepEqual(guard.status(),[]);
+});

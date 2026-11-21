@@ -28,6 +28,41 @@ if(typeof window!=='undefined'){
       return module.initializeRustUiEngine();
     }).catch(()=>{});
 }
+// Mirror Rust's bounded serde_json value closure for inert adapter fields.
+function inertAdapterField(value){
+  const seen=new Set();let nodes=0;
+  function visit(v,depth){
+    if(++nodes>8192||depth>12)return false;
+    if(v===null||typeof v==='boolean')return true;
+    if(typeof v==='string')return codeBytes(v)<=32768;
+    if(typeof v==='number')return Number.isFinite(v);
+    if(!v||typeof v!=='object'||seen.has(v))return false;
+    const array=Array.isArray(v);
+    if(!array&&!plain(v))return false;
+    const keys=Reflect.ownKeys(v);
+    if(keys.length>(array?1025:256)||array&&v.length>1024)return false;
+    seen.add(v);
+    if(array){
+      for(let i=0;i<v.length;i++){
+        const field=Object.getOwnPropertyDescriptor(v,String(i));
+        if(!field||!Object.hasOwn(field,'value')||!visit(field.value,depth+1)){seen.delete(v);return false;}
+      }
+    }else{
+      for(const key of keys){
+        if(typeof key!=='string'||codeBytes(key)>128||
+            ['__proto__','prototype','constructor'].includes(key))return false;
+        const field=Object.getOwnPropertyDescriptor(v,key);
+        if(!field||!Object.hasOwn(field,'value')||!visit(field.value,depth+1)){seen.delete(v);return false;}
+      }
+    }
+    seen.delete(v);return true;
+  }
+  try{
+    if(!visit(value,0))return false;
+    const json=JSON.stringify(value);
+    return typeof json==='string'&&codeBytes(json)<=256*1024;
+  }catch{return false;}
+}
 const canonical=v=>Array.isArray(v)?v.map(canonical):
   v&&typeof v==='object'?Object.fromEntries(Object.keys(v).sort().map(
     key=>[key,canonical(v[key])])):v;
@@ -113,19 +148,29 @@ export function createVecBindingFence(ids=[]){
   return Object.freeze({
     prepare(data){
       if(data===null)return {state:'unavailable',code:'SOURCE_UNAVAILABLE',revisions:[]};
-      if(!plain(data)||Object.keys(data).some(key=>!allowed.has(key)))
+      if(!plain(data))return blocked('INVALID_LIVE_BINDINGS');
+      const keys=Reflect.ownKeys(data);
+      if(keys.length>32||keys.some(key=>typeof key!=='string'||!allowed.has(key)||
+          !Object.hasOwn(Object.getOwnPropertyDescriptor(data,key),'value')))
         return blocked('INVALID_LIVE_BINDINGS');
       const incoming=new Map(),personal=new Set();
-      for(const [id,row] of Object.entries(data)){
+      for(const id of keys){
+        const row=Object.getOwnPropertyDescriptor(data,id).value;
         if(!plain(row))return blocked('INVALID_LIVE_BINDING');
-        if(row.state==='unavailable')continue;
+        // Validate all descriptors before ever reading a source property.
+        const signature=fingerprint(row);
+        if(!signature)return blocked('INVALID_LIVE_BINDING');
+        if(row.state==='unavailable'){
+          if(!Array.isArray(row.items)||row.items.length!==0||
+              Object.keys(row).some(key=>!['state','items'].includes(key)))
+            return blocked('INVALID_LIVE_BINDING');
+          continue;
+        }
         if(row.state!=='source-backed'||!revision(row.revision)||!revision(row.total)||
            !Array.isArray(row.items)||row.items.length>16||row.items.length>row.total||
            row.items.some(item=>!plain(item)||typeof item.label!=='string'||!item.label||
               item.label.length>100||typeof item.detail!=='string'||!item.detail||item.detail.length>512))
           return blocked('INVALID_LIVE_BINDING');
-        const signature=fingerprint(row);
-        if(!signature)return blocked('INVALID_LIVE_BINDING');
         const prior=high.get(id);
         if(prior&&(row.revision<prior.revision||
             row.revision===prior.revision&&prior.signature!==signature))
@@ -182,6 +227,10 @@ export function createVecCompiler({adapters={}}={}){
       if(code!==undefined&&code!==null&&
         (typeof code!=='string'||code.length===0||codeBytes(code)>128||
          /\p{Cc}/u.test(code)))
+        return admitOrFallback({...input,adapterResult:result},
+          fail(domain,'refused','ADAPTER_INVALID_RESULT'));
+      if([proposal,preview,summary,detail].some(value=>
+          value!==undefined&&!inertAdapterField(value)))
         return admitOrFallback({...input,adapterResult:result},
           fail(domain,'refused','ADAPTER_INVALID_RESULT'));
       const sourceSemanticIds=outcome==='candidate'&&plain(proposal)&&

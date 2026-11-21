@@ -18,7 +18,7 @@ function admit(exports){
 const region=(native,pointer,length)=>Number.isSafeInteger(pointer)&&Number.isSafeInteger(length)&&
   pointer>0&&length>0&&length<=MAX&&native.memory.buffer.byteLength<=MAX_MEMORY&&
   pointer+length<=native.memory.buffer.byteLength;
-function unavailable(code){instance=null;reason=code;return null;}
+function unavailable(code){instance=null;reason=code;lastOperation='FAILED';return null;}
 export function rustUiEngineStatus(){
   return {state:instance?'ready':'unavailable',code:instance?'NONE':reason,
     fallback:instance||everReady?'none':'trusted-js',lastOperation};
