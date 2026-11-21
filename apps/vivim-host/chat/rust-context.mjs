@@ -544,6 +544,21 @@ function managedReader({env,dataRoot,productJournal,control,executePersonal,repo
             typeof result.budgetExhausted!=='boolean' || !Array.isArray(result.items) ||
             result.items.length>8 || result.items.length>result.totalRetrieved)
           return unavailable('RUST_CORE_CONTRACT_INVALID');
+        // Eight retrieved items are only a presentation budget. The native
+        // reader must attest to *every* active source record, including older
+        // entries not selected by the relevance query. Recreate the exact
+        // canonical Rust manifest from the admitted Host source projection.
+        const proof=rows.filter(row=>view==='owner'||row.kind==='wiki')
+          .sort((a,b)=>a.id.localeCompare(b.id)).map(row=>[
+            row.id,row.kind,row.sourceRef,row.digest,
+            row.revision,row.sourceRevision,row.order,row.title,
+            row.summary,row.semanticId,row.actionId??null,
+            row.receiptDigest??null,row.wikiLink?.entryId??null,
+            row.wikiLink?.wikiRevision??null
+          ]);
+        if(result.activeSourcesTotal!==proof.length||
+          result.activeSourcesDigest!==digest(proof))
+          return unavailable('RUST_CORE_CONTRACT_INVALID');
         const nativeLinks=result.pageRelationships??[];
         if(!Array.isArray(nativeLinks)||nativeLinks.length!==relationships.length)
           return unavailable('RUST_CORE_CONTRACT_INVALID');
@@ -633,6 +648,7 @@ function managedReader({env,dataRoot,productJournal,control,executePersonal,repo
           budgetTokens:320,staleCount:0,budgetExhausted:result.budgetExhausted,
           totalRetrieved:result.totalRetrieved,items,
           sourceHighWater:{wikiRevision:projection.wikiRevision,graphEpoch:packet.epoch,
+            activeSourcesDigest:result.activeSourcesDigest,
             ...(view==='owner'?{
               productJournalEntries:projection.sourceStamp.journalEntries,
               productJournalDigest:projection.sourceStamp.committedJournalDigest,
