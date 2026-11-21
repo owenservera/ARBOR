@@ -175,3 +175,55 @@ test('native refusal is not a store transition or an authorization',t=>{
     /PERSONAL_STORE_NATIVE_MISMATCH/);
   assert.equal(store.snapshot().version,1);
 });
+
+test('remember forwards Host-matched identities and preserves exact owner record bytes',t=>{
+  const inputs=[];
+  const reducer=(operation,input)=>{
+    assert.equal(operation,'personal-rule-transition');
+    inputs.push(input);
+    return null; // unavailable binary retains incumbent behavior
+  };
+  const verifier=()=>true;
+  const {store}=withStore(t,verifier,reducer);
+  const rule={phrase:'quazzlememo',actionId:'ui.theme.set_preset',
+    args:{preset:'dusk'},scope:{}};
+  const subject=(changed,previous)=>{
+    const snap=store.snapshot();
+    return {operation:'remember',catalogVersion:catalog.version,
+      storeVersion:snap.version,storeDigest:snap.digest,
+      rule:changed,previousId:previous?.id??null,
+      previousDigest:previous?createHash('sha256')
+        .update(JSON.stringify(previous)).digest('hex'):null};
+  };
+  const first=store.remember({subject:subject(rule),approval:{receiptId:'one'}});
+  const previous=store.snapshot().entries[0];
+  assert.deepEqual(inputs.at(-1).matchingRuleIds,[]);
+  store.remember({subject:subject({...rule,args:{preset:'dawn'}},previous),
+    approval:{receiptId:'two'}});
+  assert.deepEqual(inputs.at(-1).matchingRuleIds,[first.ruleId]);
+  const persisted=JSON.parse(readFileSync(store.file,'utf8'));
+  assert.equal(persisted.history.length,2);
+  assert.deepEqual(persisted.history[0].before,null);
+  assert.deepEqual(persisted.history[1].before,previous);
+  assert.equal(persisted.entries[0].id,first.ruleId);
+  assert.equal(persisted.entries[0].revision,2);
+});
+test('oldest bounded history is pruned without altering current accepted rule',t=>{
+  const {store}=withStore(t);
+  const p=store.propose(proposal(0));
+  let state='accepted';
+  for(let version=1;version<=504;version++){
+    store.transition({ruleId:p.ruleId,nextState:state,expectedVersion:version,
+      approval:boundApproval(store,p.ruleId,state)});
+    state=state==='accepted'?'suspended':'accepted';
+  }
+  assert.equal(store.snapshot().version,505);
+  assert.equal(store.snapshot().entries[0].revision,505);
+  const history=store.history();
+  assert.equal(history.length,500);
+  assert.equal(history[0].version,6);
+  assert.equal(history.at(-1).version,505);
+  assert.throws(()=>store.rollback({ruleId:p.ruleId,toRevision:1,expectedVersion:505,
+    approval:boundApproval(store,p.ruleId,'proposed')}),
+    /PERSONAL_STORE_UNKNOWN_REVISION/);
+});

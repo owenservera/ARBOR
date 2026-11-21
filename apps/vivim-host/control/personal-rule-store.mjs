@@ -97,7 +97,7 @@ export function createPersonalRuleStore({
   // If native produces ANY result, exact parity is required before persistence.
   function projected(current, rule, mode, previous, {
     candidate = null, ruleId = rule.id, nextState = null, toRevision = null,
-    ownerReceiptId = null,
+    ownerReceiptId = null, matchingRuleIds = null,
   } = {}) {
     const at = now();
     const next = record(current, rule, mode, previous, ownerReceiptId, at);
@@ -105,7 +105,7 @@ export function createPersonalRuleStore({
       schema: 'vivim.personal-rule-transition-input/1',
       mode, current, expectedVersion: current.version,
       previous: previous ?? null, candidate, ruleId, nextState, toRevision,
-      ownerReceiptId, at, entryOrder: next.entries.map(x => x.id),
+      ownerReceiptId, at, matchingRuleIds, entryOrder: next.entries.map(x => x.id),
     });
     if (native !== null) {
       // Serialization normalization reproduces the existing on-disk shape
@@ -163,7 +163,8 @@ export function createPersonalRuleStore({
       if (!old && current.entries.some(x => x.id === changed.id))
         throw fail('PERSONAL_STORE_CONFLICT');
       return projected(current,changed,'remember',old,{
-        candidate:trial,ownerReceiptId:approval.receiptId
+        candidate:trial,ownerReceiptId:approval.receiptId,
+        matchingRuleIds:matches.map(rule=>rule.id)
       });
     },subject?.storeVersion);
     return resultShape(next,changed);

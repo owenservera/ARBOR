@@ -155,15 +155,44 @@ pub fn reduce(input: &Value) -> Value {
             if !valid_rule(candidate) || candidate["state"] != "accepted"
                 || candidate["source"] != "explicit-owner"
             { return refused("PERSONAL_STORE_INVALID_TRANSITION"); }
+            // Host computed the incumbent NFKC phrase / JSON-scope match.
+            // Preserve that exact compatibility policy, but reject claims
+            // which contradict accepted identities in the current snapshot.
+            let Some(matched) = input["matchingRuleIds"].as_array()
+                .filter(|rows| rows.len() <= MAX_RULES)
+            else { return refused("PERSONAL_STORE_NATIVE_INVALID"); };
+            if matched.len() > 1 { return refused("PERSONAL_STORE_CONFLICT"); }
+            if matched.iter().any(|row| !row.is_string()) {
+                return refused("PERSONAL_STORE_NATIVE_INVALID");
+            }
+            let claimed = matched.first().and_then(Value::as_str);
+            if claimed.is_some() && claimed != Some(id) {
+                return refused("PERSONAL_STORE_CONFLICT");
+            }
+            // Defend independently against exact duplicate phrases/scopes.
+            // Unicode-equivalent aliases remain governed by the Host's
+            // existing NFKC matching above, not a new Rust grammar.
+            if current["entries"].as_array().is_some_and(|rows| rows.iter().any(|row|
+                row["state"] == "accepted"
+                && row["phrase"] == candidate["phrase"]
+                && row["scope"] == candidate["scope"]
+                && row["id"].as_str() != Some(id)
+            )) {
+                return refused("PERSONAL_STORE_CONFLICT");
+            }
             let previous = match existing(current, id) {
                 Some(old) => {
-                    if input["previous"] != *old || old["state"] != "accepted" {
+                    if claimed != Some(id)
+                        || input["previous"] != *old
+                        || old["state"] != "accepted"
+                        || old["scope"] != candidate["scope"]
+                    {
                         return refused("PERSONAL_STORE_CONFLICT");
                     }
                     old.clone()
                 }
                 None => {
-                    if !input["previous"].is_null()
+                    if claimed.is_some() || !input["previous"].is_null()
                         || current["entries"].as_array().is_none_or(|e| e.len() >= MAX_RULES)
                     { return refused("PERSONAL_STORE_CONFLICT"); }
                     Value::Null
@@ -299,6 +328,32 @@ mod tests {
         assert_eq!(reduce(&second)["outcome"], "refused");
         second["expectedVersion"] = json!(0);
         assert_eq!(reduce(&second)["code"], "PERSONAL_STORE_STALE");
+    }
+    #[test]
+    fn remember_requires_matching_accepted_identity_and_rejects_duplicates() {
+        let mut q = input("remember", current());
+        q["candidate"] = rule("rule:validation", 1, "accepted");
+        q["matchingRuleIds"] = json!([]);
+        let fresh = reduce(&q);
+        assert_eq!(fresh["outcome"], "projected");
+        assert_eq!(fresh["rule"]["id"], "rule:a");
+        assert_eq!(fresh["rule"]["revision"], 1);
+
+        let mut replace = input("remember", fresh["next"].clone());
+        replace["candidate"] = rule("rule:validation", 1, "accepted");
+        replace["matchingRuleIds"] = json!(["rule:a"]);
+        replace["previous"] = fresh["rule"].clone();
+        let updated = reduce(&replace);
+        assert_eq!(updated["outcome"], "projected");
+        assert_eq!(updated["rule"]["revision"], 2);
+
+        replace["matchingRuleIds"] = json!([]);
+        assert_eq!(reduce(&replace)["code"], "PERSONAL_STORE_CONFLICT");
+        replace["matchingRuleIds"] = json!(["rule:a", "rule:b"]);
+        assert_eq!(reduce(&replace)["code"], "PERSONAL_STORE_CONFLICT");
+        replace["matchingRuleIds"] = json!(["rule:a"]);
+        replace["previous"]["revision"] = json!(9);
+        assert_eq!(reduce(&replace)["code"], "PERSONAL_STORE_CONFLICT");
     }
     #[test]
     fn history_is_bounded_and_order_is_exact() {
