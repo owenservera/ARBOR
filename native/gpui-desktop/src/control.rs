@@ -75,7 +75,11 @@ fn connected() -> Result<(Client,String), ReadError> {
         .connect_timeout(Duration::from_secs(2)).timeout(Duration::from_secs(30))
         .build().map_err(|_| ReadError::Unavailable)?;
     validate_health(&get(&client, Endpoint::Health, None)?)?;
-    Ok((client,owner_token()?))
+    let token=owner_token()?;
+    if !vivim_host_supervisor::verify_host_owner(&client,&token) {
+        return Err(ReadError::OwnerRequired);
+    }
+    Ok((client,token))
 }
 
 fn request(route: &str, body: Option<Value>) -> Result<Value, ReadError> {
