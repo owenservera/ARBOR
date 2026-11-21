@@ -15,7 +15,7 @@ test('owner proof is a bound HMAC and never returns an owner token', () => {
   assert.equal(result.schema, NATIVE_OWNER_PROOF_SCHEMA);
   assert.equal(result.challenge, nonce);
   assert.equal(result.mac, createHmac('sha256',key)
-    .update(NATIVE_OWNER_PROOF_SCHEMA+'\\n'+nonce).digest('hex'));
+    .update(NATIVE_OWNER_PROOF_SCHEMA+'\n'+nonce).digest('hex'));
   assert.ok(!JSON.stringify(result).includes(key));
   assert.notEqual(nativeOwnerProof(randomBytes(32).toString('hex'),key).mac,result.mac);
   for (const challenge of ['', 'a'.repeat(63), '../owner-token', 'A'.repeat(64)]) {
