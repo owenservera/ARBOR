@@ -284,8 +284,15 @@ export function planNativeContextSync({scope,view,rows,relationships,last=null,h
   if(current.size!==rows.length||currentLinks.size!==relationships.length)
     throw Error('RUST_CORE_SOURCE_DUPLICATE');
   const delta=last!==null||hasGraph||rows.length>MAX_CONTEXT_BATCH;
-  const puts=last?rows.filter(row=>!last.rows.has(row.id)||
-    digest(last.rows.get(row.id))!==digest(row)):rows;
+  // Order *writes* by referential dependency, not record ID. The stable
+  // effect ID prefix sorts before Wiki IDs, but a receipt's exact D4 edge
+  // cannot be established until its committed Wiki target is durable.
+  // All Wiki sources must land before receipt batches, and page-link edges
+  // are ingested after both endpoints. Active read identity order is unchanged.
+  const puts=(last?rows.filter(row=>!last.rows.has(row.id)||
+    digest(last.rows.get(row.id))!==digest(row)):rows).slice()
+    .sort((a,b)=>(a.kind==='wiki'?0:1)-(b.kind==='wiki'?0:1)||
+      a.id.localeCompare(b.id));
   const deletes=last?[...last.rows.values()].filter(row=>
     row.kind==='wiki'&&row.semanticId.startsWith('wiki:section:')&&!current.has(row.id))
     .map(row=>({op:'delete',kind:'wiki',id:row.id,

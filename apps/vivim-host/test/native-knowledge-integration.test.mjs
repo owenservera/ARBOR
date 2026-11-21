@@ -400,3 +400,33 @@ test('a multi-step D4 write must match every durable sequence binding',()=>{
   wikiChanges.items.pop();
   assert.equal(projectAppliedControlEffects(control,wikiChanges).items.length,0);
 });
+
+
+test('cold multi-batch owner bootstrap durably admits Wiki targets before D4 receipts',()=>{
+  const scope='d'.repeat(64);
+  const effects=Array.from({length:190},(_,i)=>({
+    id:'vivim-context-e-'+(i+1).toString(16).padStart(64,'0'),
+    kind:'effect',semanticId:'receipt:ctl-'+(i+1).toString(16).padStart(16,'0'),
+    sourceRef:'ctl-'+(i+1).toString(16).padStart(16,'0'),
+    digest:'a'.repeat(64),revision:2,sourceRevision:2,order:2,
+    title:'Applied: wiki.section.edit',summary:'Committed historical receipt'
+  }));
+  const wiki=Array.from({length:600},(_,i)=>({
+    id:'vivim-context-w-'+(i+1).toString(16).padStart(64,'0'),
+    kind:'wiki',semanticId:'wiki:section:Page'+i+'/About',
+    sourceRef:'journal-'+i,digest:'b'.repeat(64),revision:2,
+    sourceRevision:2,order:2,title:'Wiki: '+i,summary:'Committed'
+  }));
+  const plan=planNativeContextSync({scope,view:'owner',
+    rows:[...effects,...wiki],relationships:[]});
+  assert.equal(plan.delta,true);
+  assert.equal(plan.batched,true);
+  const ordered=plan.stages.flatMap(p=>p.deltas);
+  assert.equal(ordered.length,790);
+  assert.equal(ordered.filter(r=>r.kind==='wiki').length,600);
+  assert.ok(ordered.slice(0,600).every(row=>row.kind==='wiki'),
+    'all committed Wiki sources must land before any receipt');
+  assert.ok(ordered.slice(600).every(row=>row.kind==='effect'));
+  assert.equal(plan.finalPacket.activeIds.length,790);
+  assert.ok(plan.stages.every(p=>p.deltas.length<=512));
+});
