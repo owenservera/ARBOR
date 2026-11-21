@@ -82,6 +82,18 @@ test('actual phone Build consumer unwraps only applied Host head, refuses stale 
   assert.equal(build.revisionState().state,'blocked');
   build.setSurface(null,emptyHost);
   assert.equal(build.draftSurface(),null,'previously observed committed head cannot become a blank draft');
+  assert.equal(build.setVisualSourceScope('session-a:grant-a'),true);
+  assert.equal(build.setSurface(host(8)).state,'ready');
+  build.clear();
+  assert.equal(build.setVisualSourceScope('session-a:grant-a'),true);
+  assert.equal(build.setSurface(host(7)).reason,'ROLLBACK_PROOF_REQUIRED',
+    'offline/clear retains the same authenticated source high mark');
+  assert.equal(build.setVisualSourceScope('session-b:grant-b'),true);
+  assert.equal(build.setSurface(host(1)).state,'ready',
+    'new authenticated grant may legitimately begin at a lower revision');
+  build.clearVisualSourceScope();
+  assert.equal(build.setSurface(host(2)).reason,'SOURCE_SCOPE_UNAVAILABLE',
+    'revoked visual source cannot display a Host revision until rebound');
 });
 
 test('polling path checks full Host head and clears Build UI on lost status authority', () => {
