@@ -116,6 +116,7 @@ const S = {
   wiki: null, wikiStamp: null, wikiError: 'Wiki not loaded', wikiContext: null, wikiContextError: ''
 };
 let buildBindingSequence=0,buildPollSequence=0;
+let phoneRefreshEpoch=0,activePhoneSourceScope=null; // authenticated read generation + hashed grant identity
 let combinedInbox = true; // UI-only inbox aggregation; never fan-out or a provider target.
 let providerRefreshBusy = false;
 const N = { target: transport.direct ? 'vivim' : 'harness', session: '', sessions: [], messages: [], timer: 0, generation: 0, sending: false, note: '', pending: null };
@@ -1046,6 +1047,7 @@ function clearPrivatePhoneState() {
   wikiSourceFence=null;wikiReadScope=null;
   buildWikiSourceScope=null;buildWikiSourceFence=null;
   buildBindingSequence++;buildPollSequence++;
+  phoneRefreshEpoch++;activePhoneSourceScope=null;S.busy=false;
   shellPresentation.clear();
   dockAssist?.reset();compose?.resetAssist?.();capabilityLauncher?.close();
   mediaGeneration++;
@@ -1815,12 +1817,27 @@ function schedule() {
 }
 async function refresh() {
   if (!S.paired || S.busy || N.target === 'phone') return;
+  const readEpoch=++phoneRefreshEpoch;
+  const grant=transport.direct?transport.deviceHeaders?.():null;
+  const validGrant=()=>!transport.direct||!!grant&&
+    typeof grant['x-vivim-device-session']==='string'&&!!grant['x-vivim-device-session']&&
+    typeof grant['x-vivim-grant-id']==='string'&&!!grant['x-vivim-grant-id']&&
+    transport.deviceHeaders?.()?.['x-vivim-device-session']===grant['x-vivim-device-session']&&
+    transport.deviceHeaders?.()?.['x-vivim-grant-id']===grant['x-vivim-grant-id'];
+  const current=()=>readEpoch===phoneRefreshEpoch&&S.paired&&N.target!=='phone'&&validGrant();
+  const revokeOldProjection=()=>{
+    // Only the current request may redact. An older request cannot erase a
+    // newer grant's already-admitted Host snapshot or receipt readback.
+    if(readEpoch===phoneRefreshEpoch&&S.paired&&!validGrant())
+      clearPrivatePhoneState();
+  };
+  if(!validGrant()){revokeOldProjection();return;}
   S.busy = true; clearTimeout(S.timer);
   try {
     const needStatus = !S.statusAt || Date.now() - S.statusAt > 7500;
     const [cm, st] = await Promise.all([api('commands'),
       needStatus ? api('status').catch(e => { if (e.status === 401) throw e; }) : null]);
-    if (N.target === 'phone') { S.busy = false; return; }
+    if(!current()){revokeOldProjection();return;}
     S.cmds = (cm && cm.commands) || [];
     if (st) { S.statusObj = st; S.statusAt = Date.now(); S.manifest = (st.snapshot && st.snapshot.manifest) || null; window.dispatchEvent(new CustomEvent('vivim:bootstrap-status', { detail: st })); }
     else if(needStatus)shellPresentation.clear();
@@ -1828,19 +1845,20 @@ async function refresh() {
     setConn(transport.direct ? 'Connected to PC' : 'Paired · relay online');
     renderAll();
   } catch (e) {
-    // Status authority is unavailable: do not leave a previously private Build
-    // revision visible or clickable after a grant loss/disconnect.
+    if(!current()){revokeOldProjection();return;}
+    // Status authority is unavailable: never retain a private Build revision.
     shellPresentation.clear();
-    if (build) { build.clear(); buildKey = ''; }
+    if (build) { build.clearBindingScope();build.clear(); buildKey = ''; }
     if (e.status === 401) {
-      S.busy = false;
       if (transport.direct) clearPrivatePhoneState();
       return start();
     }
     setConn('Relay error: ' + e.message, true); ensureActive(); renderAll();
+  } finally {
+    if(readEpoch===phoneRefreshEpoch)S.busy=false;
   }
-  S.busy = false;
-  if (S.tab === 'wiki' && S.paired) void refreshWiki();
+  if(!current())return;
+  if (S.tab === 'wiki') void refreshWiki();
   schedule();
 }
 
@@ -2214,6 +2232,19 @@ async function runStart() {
         }
         return;
       }
+      // Resume is an authentication event, not permission to keep displaying
+      // snapshots that were obtained under a different Host/device grant.
+      const activeHeaders=transport.deviceHeaders?.();
+      if(typeof activeHeaders?.['x-vivim-device-session']!=='string'||
+          !activeHeaders['x-vivim-device-session']||
+          typeof activeHeaders?.['x-vivim-grant-id']!=='string'||
+          !activeHeaders['x-vivim-grant-id'])
+        throw new Error('ACTIVE_DEVICE_GRANT_HEADERS_MISSING');
+      const nextScope=sha256Hex(JSON.stringify(['phone-source',
+        activeHeaders['x-vivim-device-session'],activeHeaders['x-vivim-grant-id']]));
+      if(activePhoneSourceScope!==null&&activePhoneSourceScope!==nextScope)
+        clearPrivatePhoneState(); // also invalidates in-flight command/status reads
+      activePhoneSourceScope=nextScope;
     } catch (error) {
       clearPrivatePhoneState();
       showPairingState('error',
