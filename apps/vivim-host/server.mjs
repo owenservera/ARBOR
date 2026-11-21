@@ -36,6 +36,7 @@ import { createStudioPort } from './onboarding/studio-port.mjs';
 import { detectEnvironment } from './onboarding/environment.mjs';
 import { controlErrorStatus } from './control/http-status.mjs';
 import { createLiveSourceSurface } from './control/live-source-surface.mjs';
+import { createLiveSystemReadPort } from './control/live-system-read-port.mjs';
 import { createDevelopmentReadPort } from './control/development-read-port.mjs';
 import { attachRequestContext } from './control/request-context.mjs';
 import { composerResponse, needsWikiDraftContext } from '../mobile-relay/composer-assist.mjs';
@@ -199,6 +200,10 @@ export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path
     if (!runtime) runtime = createBootstrapRuntime({ dataRoot });
     return runtime;
   };
+  const liveSystem = createLiveSystemReadPort({
+    readWiki: () => productJournal.readProjection(),
+    readStatus: () => hostSnapshot({dataRoot,bootstrap:runtimeFor()})
+  });
   const tokenFor = () => {
     if (token) return token;
     token = loadOwnerToken({ dataRoot }).token;
@@ -508,6 +513,24 @@ export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path
         sendJson(res, 200, nativeOwnerProof(challenge, tokenFor()));
       } catch {
         sendJson(res, 503, {code:'HOST_PROOF_UNAVAILABLE'});
+      }
+      return;
+    }
+    if (pathname === '/api/host/live-system') {
+      if (req.method !== 'GET') {
+        res.setHeader('allow','GET');sendJson(res,405,{code:'METHOD'});return;
+      }
+      if (req.headers.origin !== undefined && String(req.headers.origin).toLowerCase() !== 'http://' + host) {
+        sendJson(res,403,{code:'ORIGIN'});return;
+      }
+      if (!ownerAuthorized(req,res,tokenFor)) return;
+      try {
+        const observed=await liveSystem.snapshot();
+        res.setHeader('cache-control','private, no-store');
+        sendJson(res,200,observed);
+      } catch {
+        sendJson(res,503,{schema:'vivim.host-live-system/1',state:'unavailable',
+          code:'LIVE_SYSTEM_UNAVAILABLE',authority:'none',executionAuthorized:false,effectPerformed:false});
       }
       return;
     }
