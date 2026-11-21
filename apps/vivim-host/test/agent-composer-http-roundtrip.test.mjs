@@ -82,7 +82,7 @@ test('real Rust Host Control plan -> one-use Direct phone draft -> source receip
   assert.equal(stage.body.state,'staged');
   assert.equal(stage.body.executionAuthorized,false);
   assert.equal(stage.body.effectPerformed,false);
-  assert.equal((await phone('GET','/mobile/api/first-contact/composer/next?sessionId='+SID)).body.state,'none');
+  assert.equal((await phone('GET','/mobile/api/first-contact/composer/next?sessionId='+SID+'&wait=0')).body.state,'none');
   const plan=await owner('POST','/api/host/control/plan',{
     actionId:'pwa.composer.draft.set',args:{stage_id:stage.body.stageId}
   });
@@ -99,7 +99,7 @@ test('real Rust Host Control plan -> one-use Direct phone draft -> source receip
   let delivery=null;
   for(let attempt=0;attempt<16;attempt++){
     await new Promise(resolve=>setTimeout(resolve,15));
-    const found=await phone('GET','/mobile/api/first-contact/composer/next?sessionId='+SID);
+    const found=await phone('GET','/mobile/api/first-contact/composer/next?sessionId='+SID+'&wait=250');
     if(found.status===200&&found.body.schema==='vivim.agent-composer-delivery/1'){
       delivery=found.body;break;
     }
@@ -108,7 +108,7 @@ test('real Rust Host Control plan -> one-use Direct phone draft -> source receip
   assert.equal(delivery.candidate.oldValue,'Hello');
   assert.equal(delivery.candidate.newValue,'Hello world');
   assert.equal(delivery.candidate.effectPerformed,false);
-  assert.equal((await phone('GET','/mobile/api/first-contact/composer/next?sessionId='+SID)).body.state,'none');
+  assert.equal((await phone('GET','/mobile/api/first-contact/composer/next?sessionId='+SID+'&wait=0')).body.state,'none');
   const newObservation=await phone('POST','/mobile/api/first-contact/composer/observe',{
     sessionId:SID,revision:2,text:'Hello world',mode:'vivim',visible:true,
     composing:false,correlationId:CORRELATION
