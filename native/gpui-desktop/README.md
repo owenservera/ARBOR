@@ -32,22 +32,22 @@ generated lockfile. Generate and review it on the Windows build machine.
 
 ## Required convergence
 1. Run and record actual Windows GPU build and smoke; verify wiki-view payload
-   against the running Host. The Host is started separately in this slice.
-2. Extract common native owner/session and supervisor logic rather than
-   duplicating it; prefer short-lived native sessions when supported.
+   against the Host cold-started by the native supervisor or explicitly attached. No live acceptance is claimed.
+2. Migrate the remaining Tauri-specific owner session and supervisor behaviors
+   into native/host-supervisor, with strong process attestation and no extra grants.
 3. Map existing VEC/TierFlow component/schema contracts into GPUI elements,
    preserving stable IDs and revision semantics; reuse theme tokens.
 4. Native plan/approve/receipt source exists; validate on Windows and add typed preview widgets, explicit recovery across restart, composer assistance and accessibility. Never execute on render.
 5. Add HQ/Wiki live revision projection, accessible keyboard/touch navigation,
    resizing and device pairing parity, then opt-in installer packaging.
-6. Retire the Tauri renderer only after reproducible desktop parity and owner
-   decision. PWA mobile remains unchanged.
+6. Retire Tauri after the GPUI lifecycle, installer, signed upgrade and device
+   parity are demonstrated with real Windows acceptance. PWA mobile remains unchanged.
 
 No build or GPU/device runtime evidence is claimed by this source change.
 
 The native workspace has Overview, Wiki, Build, Graph and Decisions panels; exact local Wiki/Build/Control navigation uses the shared Rust grammar without sending an effect. The Rust Wiki read model displays committed pages, sections, links and source-validated personal captures. Native viewport choices request fresh TierFlow plans from the Host; stale in-flight viewport responses are discarded.
 
-The native window now polls the authenticated read projections every 15 seconds while idle, skips pending approvals, retains read-only receipt status, and refreshes immediately after a known execution outcome. The shared Rust delta reports changed/added/removed UI nodes; it does not yet prove retained GPU element reuse or server push.
+The native window polls the authenticated read projections every 15 seconds while idle, skips pending approvals, retains read-only receipt status, and refreshes immediately after a known execution outcome. The shared Rust delta reports changed/added/removed UI nodes; it does not yet prove retained GPU element reuse or server push.
 
 ## Native Host supervisor (2026-11-21)
 
@@ -60,10 +60,14 @@ The GPUI process starts `native/host-supervisor` on a native background thread. 
 
 The source now includes a **Tauri-independent portable bundle assembly** (not an MSI or signed release). It consumes a *real*, already-frozen runtime and a built Windows release executable:
 
-\`\`\`powershell
+```powershell
 cargo build --manifest-path native/gpui-desktop/Cargo.toml --features desktop --release
 node tools/packaging/bundle-gpui-desktop.mjs --bundle --runtime C:\\verified-host-runtime --binary native/gpui-desktop/target/release/vivim-gpui-desktop.exe --out C:\\vivim-gpui-portable
 node tools/packaging/bundle-gpui-desktop.mjs --verify --out C:\\vivim-gpui-portable
-\`\`\`
+```
 
 The adjacent runtime/ tree is mandatory. The packager refuses nonexistent/fake executables, invalid manifests, symlinks in frozen staging, existing outputs, and non-Windows bundling. It copies no owner data. **No installer acceptance or signed distribution has been performed.** The frozen-runtime producer remains an independent pending step; a future neutral staging mode should remove the legacy Tauri resource-path coupling entirely.
+
+### New neutral staging command
+
+`node tools/packaging/prepare-host-runtime.mjs --stage-gpui` builds the **same** frozen Node/Host/nine Rust executable runtime into `native/gpui-desktop/resources/runtime` without consulting Tauri configuration. It requires real root Cargo/Bun lockfiles, a verified Windows Node 24+ binary, and the original frozen production inputs. Then `bundle-gpui-desktop.mjs` assembles the portable directory beside the built GPUI release executable. These commands have not been executed in this assessment.

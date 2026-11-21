@@ -136,3 +136,36 @@ Real behavior observed | protected data preserved? | failure / next handoff
 ```
 
 **Retirement verdict as of this assessment: BLOCKED.** Keep Tauri usable until GPUI can launch and supervise the identical canonical Host, package/upgrade reliably, preserve required desktop flows, and pass actual Windows acceptance. Once that is demonstrated, delete Tauri decisively rather than maintaining two shipped desktop runtimes.
+
+## 9. In-thread implementation ledger (2026-11-21)
+
+**Direct commits to main, preserving prior work:**
+
+| Commit | Actual source change | Verification |
+|---|---|---|
+| `eecfdf629516` | New shared native/host-supervisor crate; root Rust workspace registration; GPUI launches Host from native worker and shows status | SOURCE_PRESENT; Windows compile UNRUN |
+| `133f26bc24ba` | Tauri-independent portable GPUI bundler and parser tests; consumes existing frozen runtime and actual release PE | SOURCE_PRESENT; bundling UNRUN |
+| `28fd77e6fbab` | Tauri now calls shared full SHA256 frozen-runtime verifier; Rust staged-manifest tests updated for real empty-file digest; shared verifier tightened | SOURCE_PRESENT; Cargo tests UNRUN |
+| `1dbb7dfc9c2c` | Neutral `--stage-gpui` frozen runtime path reuses canonical Host staging logic; test covers Tauri/GPUI destinations | SOURCE_PRESENT; staging UNRUN |
+| `b9e509ef93ac` | Correct literal `--stage-gpui` path selection after refactor | SOURCE_PRESENT; staging UNRUN |
+
+**Status updates:**
+- R01 PARTIAL: shared native supervisor exists; Tauri still has lifecycle implementation and has not delegated its process state machine.
+- R02 PARTIAL: GPUI now starts or attaches Host on a background worker and observes bounded owned-child exit recovery; real Windows build/boot unverified.
+- R03 OPEN: schema-only attached-host health is not cryptographic/OS process attestation; don't claim owner bearer is safe against forged listeners. Protected process-bound bootstrap still required.
+- R04 PARTIAL: same canonical frozen runtime packager supports GPUI path independent of Tauri and portable bundle script exists; real verified package not yet generated.
+- R05/R06 SOURCE_PRESENT / LIVE UNRUN as before.
+- R07/R08/R09 OPEN/PARTIAL as before; no native UI parity claim.
+- R10 BLOCKED ON REAL ROOT LOCKFILES + WINDOWS BUILD/SIGNING; portable bundling source does not equal MSI.
+- R11–R13 UNRUN; no cargo, Bun, GPU/device or installer test run in this in-thread GitHub-only execution.
+- R14 TAURI RETIREMENT BLOCKED until R03/R10–R13 have real acceptance; do not delete working shell.
+
+**Next actual local commands (Windows, recorded exits):**
+```powershell
+cargo test -p vivim-host-supervisor
+cargo test -p vivim-host --bin vivim-host
+cargo test --manifest-path native/gpui-desktop/Cargo.toml --lib
+cargo check --manifest-path native/gpui-desktop/Cargo.toml --features desktop
+node --test tools/packaging/test/stage-gpui-runtime.test.mjs tools/packaging/test/bundle-gpui-desktop.test.mjs
+```
+Only after genuine root `Cargo.lock` and `bun.lock` are generated, reviewed and committed, stage/build/verify the native distribution using the GPUI README commands. Never mark release PASS on a source-only commit.

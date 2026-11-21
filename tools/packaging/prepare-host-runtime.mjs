@@ -368,8 +368,8 @@ checkInputs({requireLock:true,requireTauri:mode!=='--stage-gpui'});
   for(const p of dirs){const to=path.join(targetStage,p);mkdirSync(path.dirname(to),{recursive:true});cpSync(path.join(root,p),to,{recursive:true,filter:safeFilter});}
   for(const p of topFiles){const to=path.join(targetStage,p);mkdirSync(path.dirname(to),{recursive:true});copyFileSync(path.join(root,p),to);}
   copyFileSync(binary,path.join(targetStage,'node.exe'));
-  // Build and targetStage the existing Rust CLIs once at packaging time. The Host
-  // discovers these exact bundled executables without Cargo or environment at targetRuntime.
+  // Build and stage the existing Rust CLIs once at packaging time. The Host
+  // discovers these exact bundled executables without Cargo or environment at runtime.
   for(const plan of CARGO_BUILDS)run('cargo',cargoArgs(plan,path.join(root,'target')),root);
  const nativeDir=path.join(targetStage,'native','bin');
   mkdirSync(nativeDir,{recursive:true});
@@ -377,10 +377,10 @@ checkInputs({requireLock:true,requireTauri:mode!=='--stage-gpui'});
     copyFileSync(path.join(root,'target','release',name+'.exe'),path.join(nativeDir,name+'.exe'));
   run('bun',['install','--production','--frozen-lockfile','--ignore-scripts'],targetStage);
   run(path.join(targetStage,'node.exe'),['--check',path.join(targetStage,'apps/vivim-host/server.mjs')],targetStage);
-  // Freeze the staged payload and verify it before it replaces the live targetRuntime.
+  // Freeze the staged payload and verify it before it replaces the live runtime.
   writeFrozenManifest(targetStage);
   const report=verifyStagedRuntime(targetStage,{manifest:JSON.parse(readFileSync(path.join(targetStage,RUNTIME_MANIFEST_NAME),'utf8')),requireManifest:true});
-  if(!report.ok)refuse('staged targetRuntime failed verification: '+report.problems.join('; '));
+  if(!report.ok)refuse('staged runtime failed verification: '+report.problems.join('; '));
   if(existsSync(targetRuntime))renameSync(targetRuntime,targetPrevious);
   try{renameSync(targetStage,targetRuntime);}catch(e){if(existsSync(targetPrevious))renameSync(targetPrevious,targetRuntime);throw e;}
   if(existsSync(targetPrevious))rmSync(targetPrevious,{recursive:true,force:true});
