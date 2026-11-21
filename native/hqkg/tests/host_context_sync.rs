@@ -1023,9 +1023,17 @@ fn durable_deleted_wiki_source_cannot_reappear_after_compaction() {
     assert_eq!(fence.properties.get("vivim.context.deletedId").map(String::as_str),
         Some(local.as_str()));
     assert_eq!(fence.properties.get("hqkg.provenance.revision").map(String::as_str),Some("9"));
+    let before_projection=read(&file,SCOPE,deleted["epoch"].as_u64().unwrap(),"wiki").unwrap();
+    assert_eq!(before_projection["deletionFencesTotal"],1);
+    let fence_digest=before_projection["deletionFencesDigest"].as_str().unwrap().to_string();
+    assert_eq!(fence_digest.len(),64);
     let r=Journal::new(&file).compact_verified(
         deleted["bytes"].as_u64().unwrap(),deleted["epoch"].as_u64().unwrap()).unwrap();
     assert_eq!(r.epoch,deleted["epoch"].as_u64().unwrap());
+    let after_projection=read(&file,SCOPE,deleted["epoch"].as_u64().unwrap(),"wiki").unwrap();
+    assert_eq!(after_projection["deletionFencesTotal"],1);
+    assert_eq!(after_projection["deletionFencesDigest"],fence_digest,
+        "source deletion high-water proof must survive verified compaction");
     let stable=fs::read(&file).unwrap();
     for revision in [2,3,9] {
         let (ok,stale)=delta(&file,SCOPE,9,vec![put(wiki_record(0,revision))]);
@@ -1074,6 +1082,9 @@ fn revoked_d4_receipt_cannot_resurrect_even_with_new_source_revision() {
     let fence=graph.nodes().next().unwrap();
     assert_eq!(fence.properties.get("vivim.context.receiptDigest").map(String::as_str),
         Some("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"));
+    let durable=read(&file,SCOPE,deleted["epoch"].as_u64().unwrap(),"owner").unwrap();
+    assert_eq!(durable["deletionFencesTotal"],1);
+    assert_eq!(durable["deletionFencesDigest"].as_str().unwrap().len(),64);
     let stable=fs::read(&file).unwrap();
     let mut later=applied.clone();
     later["revision"]=json!(10);
