@@ -171,3 +171,47 @@ test('ready native Wiki verifier may not silently downgrade to JS-only identity'
   assert.equal(env.S.wiki,null);
   assert.match(env.S.wikiError,/Native Wiki source verification unavailable/);
 });
+
+
+test('portable Wiki source digest preserves Rust map order for numeric and Unicode page keys',()=>{
+  const env={sha256Hex};
+  vm.createContext(env);
+  vm.runInContext(functionSource(app,'wikiSourceStampFallback'),env);
+  const numeric=JSON.parse('{"2":{"sections":{"S":"two"}},"10":{"sections":{"S":"ten"}}}');
+  const mark=env.wikiSourceStampFallback({revision:9,pages:numeric});
+  assert.equal(mark.digest,sha256Hex('{"10":{"sections":{"S":"ten"}},"2":{"sections":{"S":"two"}}}'));
+  const unicode={'\\uE000':{sections:{S:'private'}},'\\u{10000}':{sections:{S:'supplementary'}}};
+  const pages={'\\uE000':unicode['\\uE000'],'\\u{10000}':unicode['\\u{10000}']};
+  const expected='{"\\uE000":{"sections":{"S":"private"}},"\\u{10000}":{"sections":{"S":"supplementary"}}}';
+  assert.equal(env.wikiSourceStampFallback({revision:9,pages}).digest,sha256Hex(expected));
+});
+
+test('stale revoked-grant 403 cannot clear newly paired Wiki or revoke its session',async()=>{
+  let grant='old',resolveOld;const revoked=[];
+  const env={
+    HOST_PREVIEW:false,wikiReadSequence:0,wikiReadScope:null,wikiSourceFence:null,
+    rustUiEngineStatus:null,rustWikiSourceStamp:null,rustWikiSourceTransition:null,rustWikiSourceDelta:null,
+    sha256Hex,clearWikiSources(){},renderWiki(){},
+    S:{tab:'wiki',paired:true,wiki:null,wikiError:'',device:{scopes:['control:read']}},
+    transport:{direct:true,deviceHeaders:()=>({
+      'x-vivim-device-session':'session','x-vivim-grant-id':grant
+    }),setDeviceSession:()=>revoked.push('session-cleared')},
+    clearPrivatePhoneState:()=>revoked.push('private-cleared'),
+    isInvalidDeviceSession:code=>code==='GRANT_REVOKED',
+    clearWiki(reason){env.wikiReadSequence++;env.S.wiki=null;env.S.wikiError=reason;},
+    fetch:async(_url,options)=> options.headers['x-vivim-grant-id']==='old'
+      ?new Promise(resolve=>{resolveOld=resolve})
+      :{ok:true,json:async()=>({revision:1,pages:{Main:{sections:{Info:'new grant'}}}})}
+  };
+  vm.createContext(env);
+  vm.runInContext(functionSource(app,'wikiSourceStampFallback'),env);
+  vm.runInContext(functionSource(app,'refreshWiki'),env);
+  const stale=env.refreshWiki();
+  grant='new';
+  await env.refreshWiki();
+  assert.equal(env.S.wiki.pages.Main.sections.Info,'new grant');
+  resolveOld({ok:false,status:403,json:async()=>({code:'GRANT_REVOKED'})});
+  await stale;
+  assert.deepEqual(revoked,[]);
+  assert.equal(env.S.wiki.pages.Main.sections.Info,'new grant');
+});
