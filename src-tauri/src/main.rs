@@ -325,8 +325,12 @@ impl HostProcess {
         // A listener on this port is not by itself a trusted Host. Bound
         // its response before the existing schema/online-state validation.
         let mut bytes=Vec::new();
-        if response.take(16 * 1024 + 1).read_to_end(&mut bytes).is_err()
-            || bytes.len()>16 * 1024 {return false;}
+        // A genuine Host status includes bounded service, journey and
+        // bootstrap diagnostics; allow a complete response while retaining a
+        // hard upper bound against unrelated loopback listeners.
+        const MAX_HEALTH_BYTES:usize=256 * 1024;
+        if response.take((MAX_HEALTH_BYTES + 1) as u64).read_to_end(&mut bytes).is_err()
+            || bytes.len()>MAX_HEALTH_BYTES {return false;}
         let body:serde_json::Value=match serde_json::from_slice(&bytes) {
             Ok(body)=>body,
             Err(_)=>return false,
