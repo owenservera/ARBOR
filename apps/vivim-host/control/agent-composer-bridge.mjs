@@ -38,7 +38,12 @@ export function createHostComposerBridge({readSnapshot,compute=runNativeProductP
     const changed=!previous||previous.stale===true||previous.revision!==body.revision||selected!==body.sessionId;
     if(changed)sourceRevision++;
     selected=body.sessionId;
-    sessions.set(body.sessionId,{...body,seenAt:clock(),sourceRevision});
+    sessions.set(body.sessionId,{...body,
+      // A same-revision heartbeat must not erase the applied correlation
+      // before the Host has independently checked that observation.
+      ...(body.correlationId===undefined&&previous?.revision===body.revision&&
+         previous.correlationId?{correlationId:previous.correlationId}:{}),
+      seenAt:clock(),sourceRevision});
     // Bounded in-memory source cache; never retain full drafts in a diagnostic log.
     for(const [key,value] of sessions)if(clock()-value.seenAt>FRESH_MS*3) sessions.delete(key);
     if(sessions.size>8){for(const key of sessions.keys()){if(key!==selected){sessions.delete(key);break;}}}
