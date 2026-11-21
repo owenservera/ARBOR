@@ -22,15 +22,18 @@ fn semantic_id(schema:&str)->String{
     let i=schema.rfind('/').unwrap_or(0);
     format!("{}@{}",&schema[..i],&schema[i+1..])
 }
-fn inert_field(value:&Value,depth:usize)->bool{
-    if depth>24{return false}
+// Match the established browser's 8,192-node closure as well as per-value
+// width, depth and byte limits; no second source of trust is introduced.
+fn inert_field(value:&Value,depth:usize,nodes:&mut usize)->bool{
+    *nodes+=1;
+    if *nodes>8192||depth>24{return false}
     match value{
         Value::Null|Value::Bool(_)|Value::Number(_)=>true,
         Value::String(s)=>s.len()<=32768,
-        Value::Array(rows)=>rows.len()<=1024&&rows.iter().all(|v|inert_field(v,depth+1)),
+        Value::Array(rows)=>rows.len()<=1024&&rows.iter().all(|v|inert_field(v,depth+1,nodes)),
         Value::Object(fields)=>fields.len()<=256&&fields.iter().all(|(key,v)|
             key.len()<=128&&!matches!(key.as_str(),"__proto__"|"prototype"|"constructor")&&
-            inert_field(v,depth+1)),
+            inert_field(v,depth+1,nodes)),
     }
 }
 pub fn admit(input:&Value)->Value{
@@ -71,7 +74,8 @@ pub fn admit(input:&Value)->Value{
     };
     for key in ["proposal","preview","summary","detail"]{
         if let Some(value)=object.get(key){
-            if !inert_field(value,0)||
+            let mut nodes=0;
+            if !inert_field(value,0,&mut nodes)||
                 serde_json::to_vec(value).map_or(true,|bytes|bytes.len()>256*1024){
                 return fail(Some(domain),"refused","ADAPTER_INVALID_RESULT")
             }
@@ -127,6 +131,15 @@ mod tests{
         input["adapterResult"]["preview"]=json!({"__proto__":"unsafe"});
         assert_eq!(admit(&input)["code"],"ADAPTER_INVALID_RESULT");
         input["adapterResult"]["preview"]=json!({"items":[1,2,3]});
+        assert_eq!(admit(&input)["outcome"],"candidate");
+    }
+    #[test]fn wide_nested_adapter_value_matches_browser_node_limit(){
+        let mut input=json!({"domain":"ui","text":"edit","contextValid":true,
+            "adapterInstalled":true,"adapterResult":{"outcome":"candidate",
+              "proposal":{"schema":"vivim.ui-proposal/1"}}});
+        input["adapterResult"]["preview"]=json!(vec![vec![0;1024];9]);
+        assert_eq!(admit(&input)["code"],"ADAPTER_INVALID_RESULT");
+        input["adapterResult"]["preview"]=json!(vec![vec![0;256];2]);
         assert_eq!(admit(&input)["outcome"],"candidate");
     }
     #[test]fn nested_visual_preview_remains_inside_real_ui_depth_limit(){
