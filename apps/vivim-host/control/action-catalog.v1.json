@@ -1,7 +1,7 @@
 {
   "schema": "vivim.control-action-catalog/1",
-  "version": 15,
-  "asOf": "2026-11-18",
+  "version": 16,
+  "asOf": "2026-11-21",
   "policy": {
     "allUserFacingActionsRequireTextPath": true,
     "uiSharesTypedExecutor": true,
@@ -1790,6 +1790,38 @@
       "subject": "program",
       "priority": "P1",
       "precondition": "Desktop owner; local read-only validation, never execution."
+    },
+    {
+      "id": "pwa.composer.draft.set",
+      "title": "Apply one supervised draft edit to the active PWA composer",
+      "category": "input",
+      "owner": "host-control",
+      "executor": "apps/vivim-host/control/dispatcher.mjs:createExecutors",
+      "readiness": "source_wired",
+      "risk": "R1",
+      "target": "local-host",
+      "surfaces": [
+        "text",
+        "desktop",
+        "mobile",
+        "visual"
+      ],
+      "privacy": "authenticated-pc-owner-only",
+      "aiCandidate": false,
+      "args": {
+        "stage_id": {
+          "type": "string",
+          "min": 32,
+          "max": 32
+        }
+      },
+      "examples": [
+        "Stage a composer edit and approve its exact Host Control plan"
+      ],
+      "reversible": false,
+      "subject": "composer",
+      "priority": "P1",
+      "precondition": "Explicit authenticated desktop-owner Control approval. A volatile, revision-fenced Rust draft stage must exist; no Send, provider call, or replay."
     }
   ],
   "readinessStates": {
