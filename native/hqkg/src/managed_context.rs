@@ -72,6 +72,18 @@ pub fn deletion_fence_manifest(graph: &Graph, prefix: &str) -> Result<(usize,Str
         let source_ref=p.get("vivim.context.sourceRef").ok_or_else(invalid)?;
         let source=p.get("hqkg.provenance.source").ok_or_else(invalid)?;
         let digest=p.get("hqkg.provenance.digest").ok_or_else(invalid)?;
+        let semantic=p.get("vivim.context.deletedSemanticId");
+        if semantic.is_some_and(|id|if kind=="wiki" {
+            !id.starts_with("wiki:section:") && !id.starts_with("wiki:page:")
+        } else { !id.starts_with("receipt:") }) {
+            return Err(invalid());
+        }
+        if let Some(body)=p.get("vivim.context.receiptDigest") {
+            if kind!="effect" || body.len()!=64 ||
+                !body.bytes().all(|b|b.is_ascii_digit() || (b'a'..=b'f').contains(&b)) {
+                return Err(invalid());
+            }
+        }
         let expected_source=if kind=="wiki"{"host-product-journal:"}
             else {"host-control-receipt:"};
         if high==0 || deleted==0 || high<deleted ||
@@ -89,7 +101,7 @@ pub fn deletion_fence_manifest(graph: &Graph, prefix: &str) -> Result<(usize,Str
             }
         }
         proof.push(json!([local,kind,source_ref,digest,high,deleted,
-            p.get("vivim.context.receiptDigest")]));
+            semantic,p.get("vivim.context.receiptDigest")]));
     }
     let encoded=serde_json::to_vec(&proof)
         .map_err(|e|Error::Invalid(format!("deletion fence proof encoding: {e}")))?;
@@ -115,6 +127,7 @@ pub fn project_managed_graph_selected(
 ) -> Result<Value> {
     let (ns,prefix)=scope_prefix(scope,view)?;
     graph.check_indexes()?;
+    scoped_graph::validate_scope(graph,&ns)?;
     if graph.epoch()!=epoch ||
         graph.nodes().any(|n| !n.id.starts_with(&prefix) ||
             n.properties.get("hqkg.namespace")!=Some(&ns.label())) ||
