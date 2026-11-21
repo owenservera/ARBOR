@@ -1,0 +1,21 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://vivim.live/schemas/craft-intelligence-sources/1",
+  "title":"Developer-only operator source index for Studio Craft Intelligence",
+  "type":"object","additionalProperties":false,
+  "required":["schema","targets"],
+  "properties":{
+    "schema":{"const":"vivim.craft-intelligence-sources/1"},
+    "targets":{"type":"array","minItems":1,"maxItems":24,
+      "items":{"type":"object","additionalProperties":false,
+        "required":["siteId","atlasPath"],
+        "properties":{
+          "siteId":{"type":"string","pattern":"^[a-z0-9][a-z0-9-]{0,79}$"},
+          "atlasPath":{"type":"string","minLength":1,"maxLength":2048},
+          "reconciliationPath":{"type":"string","minLength":1,"maxLength":2048},
+          "previousAtlasPath":{"type":"string","minLength":1,"maxLength":2048}
+        }
+      }
+    }
+  }
+}
