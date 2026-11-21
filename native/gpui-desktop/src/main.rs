@@ -17,6 +17,17 @@ use vivim_programmability_core::visual::visual_delta;
 use vivim_programmability_core::wiki_read::{self, RevisionGuard as WikiRevisionGuard};
 use vivim_programmability_core::vec::{self, View as VecView, Element as VecElement};
 use gpui::{AnyElement, App, Application, Bounds, Context, Entity, Window, WindowBounds, WindowOptions, div, prelude::*, px, relative, rgb, size};
+
+// Window-local logical pixels, minus the workspace's horizontal padding.
+// The Host remains responsible for admitting and planning this exact width.
+fn viewport_for_width(width: f32) -> u32 {
+    if !width.is_finite() { return 1000; }
+    (width - 40.).round().clamp(240., 3840.) as u32
+}
+fn viewport_for_window(window: &Window) -> u32 {
+    viewport_for_width(f32::from(window.bounds().size.width))
+}
+
 use gpui_component::{Root, input::{Input, InputState}, button::{Button, ButtonVariants}};
 use vivim_gpui_desktop::{Overview, read_overview, read_development, control::{self, Review}, visual::{self, Visual, RevisionGuard}};
 
@@ -33,6 +44,10 @@ impl Panel {
 struct Desktop {
     panel: Panel,
     viewport_px: u32,
+    viewport_epoch: u64,
+    read_busy: bool,
+    refresh_pending: bool,
+    source_status: String,
     wiki_query: Option<String>,
     input: Entity<InputState>,
     status: String,
@@ -71,15 +86,23 @@ impl Desktop {
         cx.notify();
     }
     fn set_viewport(&mut self, viewport_px:u32, cx:&mut Context<Self>){
-        if !matches!(viewport_px,360|768|1000|1440) || self.viewport_px==viewport_px{return;}
+        if !(240..=3840).contains(&viewport_px) || self.viewport_px==viewport_px{return;}
         self.viewport_px=viewport_px;
-        self.visual_status=format!("Reading canonical {}px Host viewport…",viewport_px);
-        // The current GPU visual is from another layout contract. Never show
-        // it as the newly selected viewport before fresh Host admission.
+        // Each resize changes the contract identity even if the user returns
+        // to a previous width before an older HTTP read finishes.
+        self.viewport_epoch=self.viewport_epoch.wrapping_add(1);
+        let epoch=self.viewport_epoch;
+        self.visual_status=format!("Viewport resized to {}px · awaiting Host admission",viewport_px);
         self.visual=None;
         self.vec_view=None;
         cx.notify();
-        if !self.busy{self.refresh(cx);}
+        // Debounce drag-resize storms without displaying a stale source plan.
+        cx.spawn(async move |this,cx|{
+            cx.background_executor().timer(Duration::from_millis(250)).await;
+            let _=this.update(cx,|view,cx|{
+                if view.viewport_epoch==epoch {view.refresh(cx);}
+            });
+        }).detach();
     }
     fn select_panel(&mut self, panel:Panel, cx:&mut Context<Self>){
         self.panel=panel;
@@ -93,7 +116,8 @@ impl Desktop {
             loop{
                 cx.background_executor().timer(Duration::from_secs(15)).await;
                 if this.update(cx,|view,cx|{
-                    if !view.busy&&!view.review.as_ref().is_some_and(Review::needs_approval){
+                    if !view.busy && !view.uncertain
+                        && !view.review.as_ref().is_some_and(Review::needs_approval){
                         view.refresh(cx);
                     }
                 }).is_err(){break}
@@ -101,38 +125,54 @@ impl Desktop {
         }).detach();
     }
     fn refresh(&mut self, cx: &mut Context<Self>) {
-        if self.busy { return; }
-        self.busy = true;
-        self.visual_status = "Checking Host · displayed observations may be stale".into();
+        // Read-only observation is never a substitute for explicit owner
+        // review, and does not share the in-flight command/receipt flag.
+        if self.busy || self.uncertain || self.review.as_ref().is_some_and(Review::needs_approval) {return;}
+        if self.read_busy {self.refresh_pending=true;return;}
+        self.read_busy=true;
+        self.refresh_pending=false;
+        self.source_status="Checking owner-authorized Host source · previous read may be stale".into();
+        self.visual_status="Checking Host visual · previous admission may be stale".into();
         cx.notify();
         let viewport_px=self.viewport_px;
-        let work = cx.background_executor().spawn(async move { (read_overview(), visual::read_at(viewport_px)) });
+        let epoch=self.viewport_epoch;
+        // These GET-only requests can finish independently. Neither invokes
+        // planning, execution, approval, or a provider transport.
+        let overview_job=cx.background_executor().spawn(async {read_overview()});
+        let visual_job=cx.background_executor().spawn(async move {visual::read_at(viewport_px)});
         cx.spawn(async move |this, cx| {
-            let result = work.await;
-            let _ = this.update(cx, |view, cx| {
-                view.busy = false;
-                // A user can change viewports during an in-flight read. Old
-                // viewport responses cannot be displayed under the new label.
-                if view.viewport_px!=viewport_px {
-                    view.refresh(cx);
+            let overview=overview_job.await;
+            let visual=visual_job.await;
+            let _=this.update(cx,|view,cx|{
+                view.read_busy=false;
+                // Compare a monotonically increasing resize identity, not
+                // just width: A -> B -> A still invalidates the first A read.
+                if view.viewport_epoch!=epoch || view.viewport_px!=viewport_px {
+                    view.refresh_pending=false; // the resize debounce owns the next fetch
                     return;
                 }
-                let (overview, visual) = result;
+                if std::mem::take(&mut view.refresh_pending) {
+                    view.refresh(cx);
+                }
                 match overview {
                     Ok(data) => {
                         if view.wiki_guard.accept(data.wiki_revision, &data.wiki_digest).is_err() {
-                            view.visual_status="Wiki revision or source-content conflict".into();
-                            view.overview=None;view.review=None;view.visual=None;view.vec_view=None;
+                            view.source_status="Wiki source revision/digest conflict · observation refused".into();
+                            view.overview=None;view.visual=None;view.vec_view=None;
                             cx.notify();return;
                         }
+                        view.source_status=format!(
+                            "Owner-authorized Wiki · revision {} · source SHA256 {} · observed {}",
+                            data.wiki_revision,data.wiki_digest,data.observed_at
+                        );
                         let delta=wiki_read::source_delta(&json!({
                             "previous":view.overview.as_ref().map(|old|&old.wiki_source),
                             "current":&data.wiki_source
                         }));
                         let outcome=delta["outcome"].as_str();
                         if !matches!(outcome,Some("baseline"|"unchanged"|"changed")){
-                            view.visual_status="Rust Wiki change projection refused".into();
-                            view.overview=None;view.review=None;view.visual=None;view.vec_view=None;
+                            view.source_status="Rust Wiki source-delta refused · observation unavailable".into();
+                            view.overview=None;view.visual=None;view.vec_view=None;
                             cx.notify();return;
                         }
                         view.wiki_delta=match outcome{
@@ -157,24 +197,29 @@ impl Desktop {
                         ).unwrap_or_default();
                         if view.overview.as_ref()!=Some(&data){view.overview=Some(data);}
                     }
-                    Err(error) => { view.visual_status=error.label().into(); view.overview = None; view.review = None; view.visual=None; view.vec_view=None; cx.notify(); return; }
+                    Err(error) => {
+                        view.source_status=format!("{} · Wiki is unavailable, not empty",error.label());
+                        view.overview=None;view.visual=None;view.vec_view=None;
+                        view.wiki_events.clear();view.wiki_delta.clear();
+                        cx.notify();return;
+                    }
                 }
                 match visual.and_then(|v| view.visual_guard.accept(v).map_err(Into::into)) {
                     Ok(next) => {
                         match visual_delta(view.visual.as_ref(),next.as_ref()){
                             Ok(delta)=>{
                                 if delta.is_empty(){
-                                    view.visual_status=next.as_ref().map(|v|format!("Committed {} · revision {} · Rust VEC unchanged",v.surface_id,v.revision)).unwrap_or_else(||"No committed visual surface".into());
+                                    view.visual_status=next.as_ref().map(|v|format!("Committed {} · revision {} · source fingerprint {} · Rust VEC unchanged",v.surface_id,v.revision,v.fingerprint)).unwrap_or_else(||"Host online · no committed visual surface".into());
                                 }else{
                                     match next.as_ref().map(vec::compile).transpose(){
                                         Ok(compiled)=>match vec::diff(view.vec_view.as_ref(),compiled.as_ref()){
                                             Ok(changes)=>{
                                                 view.visual_status=next.as_ref().map(|v|format!(
-                                                    "Committed {} · rev {} · Rust VEC: +{} / ~{} / -{} / {} moved / {} reordered / {} bindings{}",
-                                                    v.surface_id,v.revision,changes.added.len(),changes.updated.len(),
+                                                    "Committed {} · rev {} · fingerprint {} · Rust VEC: +{} / ~{} / -{} / {} moved / {} reordered / {} bindings{}",
+                                                    v.surface_id,v.revision,v.fingerprint,changes.added.len(),changes.updated.len(),
                                                     changes.removed.len(),changes.moved.len(),changes.reordered.len(),
                                                     changes.changed_bindings.len(),if changes.theme_changed{" · theme changed"}else{""}
-                                                )).unwrap_or_else(||"No committed visual surface".into());
+                                                )).unwrap_or_else(||"Host online · no committed visual surface".into());
                                                 // Retain revision and binding fences even if no redraw is required.
                                                 view.visual=next;view.vec_view=compiled;
                                             }
@@ -193,7 +238,10 @@ impl Desktop {
                             Err(_)=>{view.visual=None;view.vec_view=None;view.visual_status="Visual revision conflict".into();}
                         }
                     }
-                    Err(e) => {view.visual_status=e.label().into(); view.visual=None;view.vec_view=None;view.review=None;}
+                    Err(e) => {
+                        view.visual_status=format!("{} · visual unavailable, not an empty surface",e.label());
+                        view.visual=None;view.vec_view=None;
+                    }
                 }
                 cx.notify();
             });
@@ -273,7 +321,7 @@ impl Desktop {
         if self.graph_busy{return}
         let key=self.input.read(cx).value().to_string();
         self.graph_busy=true;
-        self.graph_status=format!("Reading indexed {}…",operation);
+        self.graph_status=format!("Reading owner-authorized graph {operation} for exact query “{key}”…");
         self.graph_detail.clear();
         cx.notify();
         let work=cx.background_executor().spawn(async move{read_development(operation,&key)});
@@ -282,8 +330,14 @@ impl Desktop {
             let _=this.update(cx,|view,cx|{
                 view.graph_busy=false;
                 match result{
-                    Ok(data)=>{view.graph_status="Source-backed HQKG read only".into();view.graph_detail=data;}
-                    Err(e)=>{view.graph_status=e.label().into();view.graph_detail.clear();}
+                    Ok(data)=>{
+                        view.graph_status=format!("Source-backed HQKG · {operation} · query “{key}” · read only");
+                        view.graph_detail=data;
+                    }
+                    Err(e)=>{
+                        view.graph_status=format!("{} · graph result unavailable, not empty",e.label());
+                        view.graph_detail.clear();
+                    }
                 }
                 cx.notify();
             });
@@ -384,7 +438,8 @@ fn mount_node(n:&VecElement,view:&VecView)->AnyElement{
 
 impl Render for Desktop {
     fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let mut body = div().flex().flex_col().gap_3();
+        let mut body = div().flex().flex_col().gap_3()
+            .child(div().text_sm().child(self.source_status.clone()));
         if let Some(data) = &self.overview {
             body = body.child(format!("Host observed: {}", data.observed_at))
                 .child(format!("Active devices: {}", data.active_devices));
@@ -494,9 +549,23 @@ impl Render for Desktop {
         }
         if matches!(self.panel,Panel::Overview|Panel::Visual){
         body=body.child(div().text_lg().child(format!(
-            "Committed TierFlow surface · {}px canonical viewport",self.viewport_px
+            "Committed TierFlow surface · {}px GPUI window-derived Host request",self.viewport_px
         ))).child(self.visual_status.clone());
         if let Some(v)=&self.vec_view{
+            body=body.child(div().text_sm().child(format!(
+                "Admitted design digest SHA256 {} · surface {} · revision {} · authority {}",
+                v.design_digest,v.surface_id,v.revision,v.authority
+            )));
+            for (binding,(revision,digest)) in v.binding_watermarks.iter().take(12) {
+                body=body.child(div().text_sm().child(format!(
+                    "Live source binding {binding} · revision {revision} · digest {digest}"
+                )));
+            }
+            if v.binding_watermarks.len()>12 {
+                body=body.child(format!(
+                    "{} more bound source identities not displayed",v.binding_watermarks.len()-12
+                ));
+            }
             body=body.child(div().child(format!("Rust VEC · {} components · {} charts · {} preview-only actions",
                 v.node_count,v.chart_count,v.preview_action_ids.len())))
                 .child(div().p_3().bg(rgb(rgb_hex(&v.background))).text_color(rgb(rgb_hex(&v.foreground)))
@@ -543,16 +612,9 @@ impl Render for Desktop {
                     .on_click(cx.listener(|v,_,_,cx|v.clear_wiki_search(cx)))));
         }
         if matches!(self.panel,Panel::Overview|Panel::Visual){
-            let viewports=div().flex().flex_wrap().gap_2()
-                .child(Button::new("viewport-phone").label("Phone · 360px")
-                    .on_click(cx.listener(|v,_,_,cx|v.set_viewport(360,cx))))
-                .child(Button::new("viewport-tablet").label("Tablet · 768px")
-                    .on_click(cx.listener(|v,_,_,cx|v.set_viewport(768,cx))))
-                .child(Button::new("viewport-desktop").label("Desktop · 1000px")
-                    .on_click(cx.listener(|v,_,_,cx|v.set_viewport(1000,cx))))
-                .child(Button::new("viewport-wide").label("Wide · 1440px")
-                    .on_click(cx.listener(|v,_,_,cx|v.set_viewport(1440,cx))));
-            actions=actions.child(viewports);
+            actions=actions.child(div().text_sm().child(
+                "Resize the native window to request the exact Host-planned viewport. Preview actions never execute."
+            ));
         }
         let navigation=div().flex().flex_wrap().gap_2()
             .child(Button::new("panel-overview").label("Overview")
@@ -583,13 +645,32 @@ fn main() {
             |window, cx| {
                 let input=cx.new(|cx| InputState::new(window,cx).placeholder("Ask VIVIM or describe a Host command"));
                 let view=cx.new(|cx| {
-                    let mut view=Desktop {input,panel:Panel::Overview,viewport_px:1000,wiki_query:None,status:"Not yet observed".into(),overview:None,visual:None,vec_view:None,visual_status:"Not yet observed".into(),visual_guard:RevisionGuard::default(),wiki_guard:WikiRevisionGuard::default(),wiki_delta:"Not yet observed".into(),wiki_events:Vec::new(),detail:String::new(),
+                    let mut view=Desktop {input,panel:Panel::Overview,viewport_px:viewport_for_window(window),
+                        viewport_epoch:0,read_busy:false,refresh_pending:false,
+                        source_status:"Host source not yet observed".into(),
+                        wiki_query:None,status:"Not yet observed".into(),overview:None,visual:None,vec_view:None,visual_status:"Not yet observed".into(),visual_guard:RevisionGuard::default(),wiki_guard:WikiRevisionGuard::default(),wiki_delta:"Not yet observed".into(),wiki_events:Vec::new(),detail:String::new(),
                         review:None,last_plan:None,busy:false,uncertain:false,
                         graph_detail:String::new(),graph_status:"Graph not yet queried".into(),graph_busy:false};
+                    cx.observe_window_bounds(window, |view,window,cx|{
+                        view.set_viewport(viewport_for_window(window),cx);
+                    }).detach();
                     view.refresh(cx);view.start_observer(cx);view
                 });
                 cx.new(|cx|Root::new(view,window,cx))
             }).expect("Unable to open VIVIM GPUI window");
         cx.activate(true);
     });
+}
+
+#[cfg(test)]
+mod viewport_tests {
+    use super::viewport_for_width;
+    #[test]
+    fn real_window_width_is_bounded_and_not_a_preset() {
+        assert_eq!(viewport_for_width(1000.),960);
+        assert_eq!(viewport_for_width(513.),473);
+        assert_eq!(viewport_for_width(120.),240);
+        assert_eq!(viewport_for_width(5000.),3840);
+        assert_eq!(viewport_for_width(f32::NAN),1000);
+    }
 }
