@@ -2830,6 +2830,9 @@ if (FIRST_CONTACT) {
       active: () => N.target === 'vivim' && S.tab === 'talk' &&
         !HOST_PREVIEW && transport.direct,
       onVerified: () => showVerifiedAgentDraftPulse(),
+      // Each Host-approved visual frame flows through the existing Wiki
+      // input listener; pause exceeds its 180 ms debounce.
+      typingIntervalMs:225,
       maxLength: () => $('text').maxLength > 0 ? $('text').maxLength : 1000
     });
   }).catch(()=>{ /* unavailable bridge never enables remote draft edits */ });
