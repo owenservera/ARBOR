@@ -603,9 +603,25 @@ function wikiSourceStampFallback(wiki) {
   return {revision:wiki.revision, pagesTotal:Object.keys(wiki.pages).length,
     digest:sha256Hex(canonicalJson(wiki.pages))};
 }
+// The same bounded source shape applies to the mounted Wiki and TierFlow
+// live bindings. This admits Host observations only, not proposed writes.
+function validWikiSourceShape(wiki) {
+  if(!wiki||!Number.isSafeInteger(wiki.revision)||wiki.revision<0||
+      !wiki.pages||typeof wiki.pages!=='object'||Array.isArray(wiki.pages))
+    return false;
+  const nameOK=name=>typeof name==='string'&&name.length>0&&
+    [...name].length<=160&&!/[\\u0000-\\u001f\\u007f-\\u009f]/.test(name);
+  return Object.entries(wiki.pages).every(([pageName,page])=>
+    nameOK(pageName)&&page&&typeof page==='object'&&!Array.isArray(page)&&
+    page.sections&&typeof page.sections==='object'&&!Array.isArray(page.sections)&&
+    Object.entries(page.sections).every(([section,body])=>nameOK(section)&&typeof body==='string')&&
+    (page.links===undefined||Array.isArray(page.links)&&page.links.every(nameOK)));
+}
 // One inert admission rule for mounted Wiki and TierFlow Build bindings.
 // The optional native verifier takes precedence over proven portable fallback.
 function verifyWikiSourceStamp(wiki,previous=null) {
+  if(!validWikiSourceShape(wiki))
+    return {state:'blocked',reason:'Invalid Host Wiki projection'};
   try {
     const portable=wikiSourceStampFallback(wiki);
     const native=rustWikiSourceStamp?.(wiki);
@@ -989,11 +1005,7 @@ async function refreshWiki() {
       throw new Error('Wiki read refused (HTTP ' + response.status + ')');
     }
     const wiki = await response.json();
-    if (!wiki || !Number.isSafeInteger(wiki.revision) || wiki.revision < 0 ||
-        !wiki.pages || typeof wiki.pages !== 'object' || Array.isArray(wiki.pages) ||
-        Object.values(wiki.pages).some(page => !page || !page.sections ||
-          typeof page.sections !== 'object' || Array.isArray(page.sections) ||
-          Object.values(page.sections).some(value => typeof value !== 'string')))
+    if(!validWikiSourceShape(wiki))
       throw new Error('Invalid Host Wiki projection');
     let context = null, contextError = '',sourceSurface=null;
     if (HOST_PREVIEW) {
@@ -2071,10 +2083,6 @@ async function refreshBuildBindings(snapshot){
  if(!HOST_PREVIEW&&!S.device.scopes?.includes('control:read'))wiki=null;
  let admission=null;
  if(wiki!==null){
-   if(!Number.isSafeInteger(wiki?.revision)||wiki.revision<0||
-       !wiki.pages||typeof wiki.pages!=='object'||Array.isArray(wiki.pages)){
-     build.setLiveData(null,revision);return;
-   }
    admission=verifyWikiSourceStamp(wiki,buildWikiSourceFence);
    if(admission.state!=='accepted'){
      // Do not paint newer Studio rows alongside a conflicted Wiki read:
