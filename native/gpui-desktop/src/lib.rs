@@ -309,6 +309,16 @@ pub fn project_development(operation:&str,key:&str,data:&Value)->Result<Developm
     if !development_projection::valid_query(operation,key) {
         return Err(ReadError::InvalidInput);
     }
+    // The existing HQKG native adapter echoes the exact key for indexed
+    // queries. File computations instead identify their source through
+    // programId=dev.<file-id>. A plausible operation/epoch from another
+    // request must never be attributed to this user's selected source.
+    let source_matches=if operation=="compute" {
+        data["programId"].as_str()==Some(format!("dev.{key}").as_str())
+    } else {
+        data["key"].as_str()==Some(key)
+    };
+    if !source_matches { return Err(ReadError::InvalidProjection); }
     let text=development_projection::render(operation,data).map_err(|error|match error{
         ProjectionError::Unavailable=>ReadError::Unavailable,
         ProjectionError::InvalidInput=>ReadError::InvalidInput,
@@ -329,6 +339,8 @@ pub fn project_development(operation:&str,key:&str,data:&Value)->Result<Developm
     // Request time or other transient transport metadata are not part of it.
     let substantive=json!({
         "state":data["state"],"result":data["result"],
+        "operation":data["operation"],"key":data["key"],
+        "programId":data["programId"],"programRevision":data["programRevision"],
         "outputs":data["outputs"],"computation":data["computation"]
     });
     let source_digest=source_sha256(&substantive)?;
@@ -387,7 +399,7 @@ mod tests {
     #[test] fn development_epoch_fence_rejects_rollback_and_same_epoch_conflict() {
         let source=json!({
             "schema":"hqkg.development-query/1","authority":"read-only",
-            "operation":"symbols","epoch":7,"state":"indexed-snapshot",
+            "operation":"symbols","key":"work","epoch":7,"state":"indexed-snapshot",
             "result":{"symbols":[]}
         });
         let first=project_development("symbols","work",&source).unwrap();
@@ -401,7 +413,9 @@ mod tests {
         let mut conflict=first.clone();
         conflict.text.push_str(" altered");
         assert_eq!(guard.accept(&conflict),Err(ReadError::InvalidProjection));
-        let another=project_development("symbols","other",&source).unwrap();
+        let mut other_source=source.clone();
+        other_source["key"]=json!("other");
+        let another=project_development("symbols","other",&other_source).unwrap();
         assert!(guard.accept(&another).is_ok());
         // Switching queries must not forget a previously seen same-epoch
         // query: otherwise an A/B/A read could accept contradictory source.
@@ -415,27 +429,31 @@ mod tests {
     #[test] fn graph_query_fence_is_bounded_and_retains_high_epoch() {
         let source=json!({
             "schema":"hqkg.development-query/1","authority":"read-only",
-            "operation":"symbols","epoch":7,"state":"indexed-snapshot",
+            "operation":"symbols","key":"work","epoch":7,"state":"indexed-snapshot",
             "result":{"symbols":[]}
         });
         let mut guard=DevelopmentRevisionGuard::default();
         for index in 0..40 {
             let key=format!("source-{index}");
-            guard.accept(&project_development("symbols",&key,&source).unwrap()).unwrap();
+            let mut scoped=source.clone();
+            scoped["key"]=json!(key);
+            guard.accept(&project_development("symbols",&key,&scoped).unwrap()).unwrap();
         }
         assert_eq!(guard.by_query.len(),32);
         assert_eq!(guard.high_epoch,Some(7));
-        let mut old=project_development("symbols","source-39",&source).unwrap();
+        let mut scoped=source.clone();
+        scoped["key"]=json!("source-39");
+        let mut old=project_development("symbols","source-39",&scoped).unwrap();
         old.epoch=6;
         assert!(guard.accept(&old).is_err());
-        let mut forged=project_development("symbols","source-39",&source).unwrap();
+        let mut forged=project_development("symbols","source-39",&scoped).unwrap();
         forged.source_digest="wrong".into();
         assert!(guard.accept(&forged).is_err());
     }
     #[test] fn source_digest_detects_same_epoch_changed_graph_payload() {
         let source=json!({
             "schema":"hqkg.development-query/1","authority":"read-only",
-            "operation":"symbols","epoch":7,"state":"indexed-snapshot",
+            "operation":"symbols","key":"work","epoch":7,"state":"indexed-snapshot",
             "result":{"symbols":[]}
         });
         let mut guard=DevelopmentRevisionGuard::default();
@@ -465,10 +483,36 @@ mod tests {
         altered_wiki["revision"]=json!(8);
         assert_eq!(project_double_bracketed(&before,&before,&wiki,&altered_wiki),Err(ReadError::SnapshotChanged));
     }
+    #[test] fn exact_development_source_key_cannot_be_substituted() {
+        let mut response=json!({
+            "schema":"hqkg.development-query/1","authority":"read-only",
+            "operation":"symbols","key":"a","epoch":5,"state":"indexed-snapshot",
+            "result":{"symbols":[]}
+        });
+        assert!(project_development("symbols","a",&response).is_ok());
+        assert_eq!(project_development("symbols","b",&response),Err(ReadError::InvalidProjection));
+        response.as_object_mut().unwrap().remove("key");
+        assert_eq!(project_development("symbols","a",&response),Err(ReadError::InvalidProjection));
+    }
+    #[test] fn exact_computed_source_program_id_is_required() {
+        let file_id=format!("hqg1:{}", "a".repeat(64));
+        let mut response=json!({
+            "schema":"hqkg.development-query/1","authority":"read-only",
+            "operation":"compute","state":"computed","epoch":11,
+            "computation":"source-backed-graph",
+            "programId":format!("dev.{file_id}"),"programRevision":2,
+            "outputs":[],"executionAuthorized":false,"effectPerformed":false
+        });
+        let valid=project_development("compute",&file_id,&response).unwrap();
+        assert_eq!(valid.epoch,11);
+        response["programId"]=json!(format!("dev.hqg1:{}", "b".repeat(64)));
+        assert_eq!(project_development("compute",&file_id,&response),
+            Err(ReadError::InvalidProjection));
+    }
     #[test] fn graph_empty_is_source_derived_not_render_text_length() {
         let source=json!({
             "schema":"hqkg.development-query/1","authority":"read-only",
-            "operation":"symbols","epoch":11,"state":"indexed-snapshot",
+            "operation":"symbols","key":"work","epoch":11,"state":"indexed-snapshot",
             "result":{"symbols":[]}
         });
         let empty=project_development("symbols","work",&source).unwrap();
