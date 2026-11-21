@@ -188,6 +188,12 @@ export function writeFrozenManifest(base){
 export function verifyStagedRuntime(base,{manifest=null,requireManifest=false}={}){
  const problems=[];
  if(requireManifest&&!manifest)problems.push('missing frozen runtime manifest');
+ if(requireManifest&&!existsSync(path.join(base,RUNTIME_MANIFEST_NAME)))
+   problems.push('missing installed runtime.manifest.json');
+ // A source-only preflight is intentionally backwards-compatible; installed
+ // runtime acceptance must require the actual Host entrypoint.
+ if(requireManifest&&!existsSync(path.join(base,HOST_ENTRY)))
+   problems.push('missing Host entry point: '+HOST_ENTRY);
  if(existsSync(path.join(base,RUNTIME_PLACEHOLDER)))
    problems.push('runtime still contains the generated Tauri resource placeholder');
  const rel=p=>path.relative(base,p).split(path.sep).join('/');
@@ -231,7 +237,7 @@ export function verifyStagedRuntime(base,{manifest=null,requireManifest=false}={
    problems.push('unexpected runtime manifest schema: '+String(manifest.schema));
   if(!Array.isArray(manifest.files))
    problems.push('invalid runtime manifest files array');
-  const expected=new Set();
+  const expected=new Set(),caseInsensitivePaths=new Set();
   const validRel=rel=>typeof rel==='string'&&rel.length>0&&
    !rel.includes('\\')&&!rel.includes(':')&&!rel.startsWith('/')&&
    rel.split('/').every(part=>part.length>0&&part!=='.'&&part!=='..');
@@ -239,6 +245,12 @@ export function verifyStagedRuntime(base,{manifest=null,requireManifest=false}={
    const p=entry?.path;
    if(!validRel(p)){problems.push('invalid manifest path: '+String(p));continue;}
    if(expected.has(p)){problems.push('duplicate manifest file: '+p);continue;}
+   const folded=p.toLowerCase();
+   if(caseInsensitivePaths.has(folded)){
+     problems.push('case-colliding manifest file on Windows: '+p);
+     continue;
+   }
+   caseInsensitivePaths.add(folded);
    expected.add(p);
    if(!Number.isSafeInteger(entry.bytes)||entry.bytes<0||
       typeof entry.sha256!=='string'||!/^[0-9a-f]{64}$/.test(entry.sha256)){
