@@ -26,6 +26,10 @@
     "test:mobile": "cd apps/mobile-relay && node --test test/*.test.mjs",
     "test:tierflow": "cd packages/tierflow && bun test tests/visual-runtime",
     "test:rust": "cargo test --workspace",
-    "build:rust:pwa": "node tools/packaging/build-product-wasm.mjs"
+    "build:rust:pwa": "node tools/packaging/build-product-wasm.mjs",
+    "desktop": "cargo run --manifest-path native/gpui-desktop/Cargo.toml --features desktop",
+    "desktop:test:local": "node tools/packaging/gpui-local-integration.mjs --validate",
+    "desktop:portable": "node tools/packaging/gpui-local-integration.mjs --portable",
+    "desktop:legacy:tauri": "cargo run -p vivim-host"
   }
 }
