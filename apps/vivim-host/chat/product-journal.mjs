@@ -868,7 +868,17 @@ export function createProductJournal({ dataRoot, seedState, seedWiki }) {
     context.capturePages=capturePages.filter(e=>selected.has(e));
     context.capturePagesOmitted=capturePages.length-context.capturePages.length;
     const records = new Map(current.records.filter(e => e.entryId).map(e => [e.entryId, e]));
-    return { context, changes: { ...changes, items: changes.items.map(change => {
+    // Exact durable product-journal high-water for private native ingestion.
+    // The digest covers *all* committed append records (including non-Wiki
+    // events) without exporting their private bodies or losing chat-only
+    // revisions. It is never a proof of the truth of Wiki-authored content.
+    const sourceStamp={
+      journalEntries:current.records.length,
+      committedJournalDigest:createHash('sha256')
+        .update(current.committed,'utf8').digest('hex'),
+      wikiRevision:current.wikiRevision
+    };
+    return {sourceStamp, context, changes: { ...changes, items: changes.items.map(change => {
       const record = records.get(change.entryId);
       requireShape(record?.kind === 'wiki-edit' &&
         createHash('sha256').update(record.edit.content, 'utf8').digest('hex') === change.contentDigest,
