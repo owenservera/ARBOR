@@ -1146,3 +1146,50 @@ fn successive_complete_wiki_inventories_advance_existing_deletion_fence_without_
     assert_eq!(Journal::new(&file).load().unwrap().node_count(),2,
         "one live Wiki section and its older deletion metadata coexist");
 }
+
+#[test]
+fn torn_managed_journal_holds_replay_until_explicit_verified_prefix_repair() {
+    let temp=Temp::new();let file=temp.journal();
+    let row=wiki_record(0,2);
+    let (ok,first)=sync(&file,SCOPE,vec![row.clone()]);
+    assert!(ok,"{first}");
+    let (ok,deleted)=run_packet(&file,json!({
+        "schema":"vivim.hqkg-personal/1","scope":SCOPE,
+        "op":"sync-context-read","view":"wiki",
+        "nodes":[],"relationships":[],"baseRevision":4,
+        "baseEpoch":first["epoch"],"deltas":[],
+        "activeIds":[],"activeRelationshipIds":[],
+        "completeWikiRevision":4
+    }));
+    assert!(ok,"{deleted}");
+    let journal=Journal::new(&file);
+    journal.compact_verified(deleted["bytes"].as_u64().unwrap(),
+        deleted["epoch"].as_u64().unwrap()).unwrap();
+    let healthy=fs::read(&file).unwrap();
+    let mut f=fs::OpenOptions::new().append(true).open(&file).unwrap();
+    f.write_all(b"HQ").unwrap();
+    f.sync_all().unwrap();
+    drop(f);
+    let torn=fs::read(&file).unwrap();
+    assert_eq!(torn.len(),healthy.len()+2);
+    let (ok,held)=delta(&file,SCOPE,4,vec![put(row.clone())]);
+    assert!(!ok,"torn journal accepted a stale source put: {held}");
+    assert!(held["error"].as_str().unwrap().starts_with("RECOVERY_REQUIRED"));
+    assert!(read(&file,SCOPE,deleted["epoch"].as_u64().unwrap(),"wiki").is_none());
+    assert_eq!(fs::read(&file).unwrap(),torn,
+        "managed Host read/write must never auto-truncate an unverified tail");
+    let status=journal.status().unwrap();
+    assert_eq!(status.epoch,deleted["epoch"].as_u64().unwrap());
+    assert_eq!(status.trailing_bytes,2);
+    // Exercise the existing explicit engine recovery primitive. The Host CLI
+    // itself remains read-only with respect to repair authorization.
+    assert_eq!(journal.repair_torn_tail(status.epoch).unwrap(),2);
+    assert_eq!(fs::read(&file).unwrap(),healthy);
+    let reopened=read(&file,SCOPE,status.epoch,"wiki").unwrap();
+    assert_eq!(reopened["activeSourcesTotal"],0);
+    assert_eq!(reopened["deletionFencesTotal"],1);
+    let bytes=fs::read(&file).unwrap();
+    let (ok,stale)=delta(&file,SCOPE,4,vec![put(row)]);
+    assert!(!ok,"recovered journal forgot source tombstone: {stale}");
+    assert_eq!(fs::read(&file).unwrap(),bytes);
+}
