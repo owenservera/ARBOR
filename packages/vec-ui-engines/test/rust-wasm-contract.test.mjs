@@ -79,3 +79,23 @@ test('served corrupt WASM is never presented as an expected trusted-JS fallback'
     globalThis.fetch=oldFetch;
   }
 });
+
+
+test('WASM initialization in flight cannot silently run the JS path',async()=>{
+  const oldWindow=globalThis.window,oldFetch=globalThis.fetch;
+  try{
+    let resolveFetch;
+    globalThis.window={};
+    globalThis.fetch=()=>new Promise(resolve=>{resolveFetch=resolve});
+    const native=await import('../src/rust-wasm.mjs?pending-native-module');
+    const pending=native.initializeRustUiEngine();
+    assert.equal(native.rustUiEngineStatus().fallback,'none');
+    resolveFetch({ok:false});
+    assert.equal(await pending,false);
+    assert.equal(native.rustUiEngineStatus().code,'WASM_FETCH_UNAVAILABLE');
+    assert.equal(native.rustUiEngineStatus().fallback,'trusted-js');
+  }finally{
+    if(oldWindow===undefined)delete globalThis.window;else globalThis.window=oldWindow;
+    globalThis.fetch=oldFetch;
+  }
+});

@@ -1972,7 +1972,18 @@ async function refreshBuildBindings(snapshot){
        {credentials:'same-origin',cache:'no-store',headers,signal:AbortSignal.timeout(4000)});
      if(response.ok)wiki=await response.json();
      else if(response.status===401||response.status===403){
-       if(seq===buildBindingSequence)build.setLiveData(null,revision);
+       const denied=await response.json().catch(()=>({}));
+       if(seq!==buildBindingSequence||!authorized())return;
+       if(!HOST_PREVIEW&&isInvalidDeviceSession(denied.code||denied.reason||denied.error)){
+         // Revoked Direct devices lose their Build surface and private Wiki
+         // bindings, not just an individual read projection.
+         transport.setDeviceSession(null);
+         clearPrivatePhoneState();
+         showPairingState('revoked','The Host revoked this phone read grant. Pair again.');
+         setConn('Device Wiki read grant expired or revoked',true);
+         return;
+       }
+       build.setLiveData(null,revision); // a scoped denial is not global revocation
        return;
      }
    }catch{/* source unavailable; do not retain old task values */}

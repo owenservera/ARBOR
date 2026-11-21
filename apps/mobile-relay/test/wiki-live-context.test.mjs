@@ -140,3 +140,11 @@ test('same Wiki revision with changed source bytes is refused without optional W
   await pending;
   assert.equal(env.S.wiki.pages.Main.sections.About,'Grant c');
 });
+
+
+test('Build Wiki read revocation clears private PWA state; scoped 403 only blanks bindings',()=>{
+  const source=functionSource(app,'refreshBuildBindings');
+  assert.match(source,/isInvalidDeviceSession\(denied\.code\|\|denied\.reason\|\|denied\.error\)/);
+  assert.match(source,/transport\.setDeviceSession\(null\);\s*clearPrivatePhoneState\(\);/);
+  assert.match(source,/build\.setLiveData\(null,revision\); \/\/ a scoped denial/);
+});
