@@ -184,4 +184,10 @@ test('native projection rejects stale and contradictory real Host snapshots', t 
   refuse({ ...request, reading: { ...reading,
     candidate: { ...reading.candidate, actionId: 'unknown.catalog.action' } } },
     'UNKNOWN_ACTION');
+  refuse({ ...request, reading: { ...reading,
+    refusal: {code: 'NEGATED_ACTION', message: 'A negative command.'} } },
+    'INVALID_READING');
+  refuse({ ...request, baselineOutcome: 'refused',
+    reading: { ...reading, outcome: 'refused', refusal: undefined } },
+    'INVALID_READING');
 });

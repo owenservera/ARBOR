@@ -214,6 +214,18 @@ fn check_reading(reading: &Value, source: &Value, personal: &Value, baseline: &V
         if !modifiers.as_array().is_some_and(|m| m.len() <= 32 &&
             m.iter().all(safe_text)) { return false }
     }
+    if outcome == "candidate" && personal.is_null() &&
+        (!reading["candidate"].is_object() || reading.get("refusal").is_some() ||
+         reading.get("missing").is_some() || reading.get("choices").is_some()) {
+        // A canonical NLCL candidate never coexists with a refusal or
+        // unresolved slots. The personal resolver has separate precedence.
+        return false
+    }
+    if outcome == "refused" &&
+        (!reading["refusal"]["code"].as_str().is_some_and(|s| !s.is_empty()) ||
+         !reading["refusal"]["message"].as_str().is_some_and(|s| !s.is_empty())) {
+        return false
+    }
     if !personal.is_null() {
         if baseline.as_str() != Some("interpretation_required") { return false }
         match personal["method"].as_str() {
