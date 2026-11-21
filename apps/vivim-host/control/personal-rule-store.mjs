@@ -70,6 +70,15 @@ export function createPersonalRuleStore({
       const temp = file + '.' + process.pid + '.' + randomBytes(6).toString('hex') + '.tmp';
       try {
         writeFileSync(temp, JSON.stringify(next, null, 2), { mode: 0o600 });
+        // Verify exactly what would be committed BEFORE the atomic rename.
+        // A corrupt/truncated temporary write must never replace the last
+        // known-good owner-reviewed file.
+        let prepared;
+        try { prepared = JSON.parse(readFileSync(temp, 'utf8')); }
+        catch { throw fail('PERSONAL_STORE_READBACK_MISMATCH'); }
+        if (!validData(prepared, catalog) ||
+            !isDeepStrictEqual(prepared, JSON.parse(JSON.stringify(next))))
+          throw fail('PERSONAL_STORE_READBACK_MISMATCH');
         renameSync(temp, file);
       } finally { try { unlinkSync(temp); } catch {} }
       // Readback is performed while holding the original Host lock. The
@@ -199,7 +208,9 @@ export function createPersonalRuleStore({
       if (!old) throw fail('PERSONAL_STORE_UNKNOWN_RULE');
       const past = [...current.history].reverse().find(h => h.ruleId === ruleId &&
         h.after?.revision === toRevision)?.after;
-      if (!past || !validatePersonalRule(past, catalog).ok)
+      // History is legacy-compatible and not rewritten on read. However a
+      // malformed historical row must never make rollback change identities.
+      if (!past || past.id !== ruleId || !validatePersonalRule(past, catalog).ok)
         throw fail('PERSONAL_STORE_UNKNOWN_REVISION');
       const approvalSubject = { ruleId, ruleDigest: digest(old), nextState: past.state,
         rollbackTo: toRevision, storeVersion: current.version, catalogVersion: catalog.version };

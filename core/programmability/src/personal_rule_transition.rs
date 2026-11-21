@@ -100,7 +100,9 @@ fn assemble(input: &Value, current: &Value, version: u64,
     }
     if !by_id.is_empty() { return None; }
 
-    let at = input["at"].as_str().filter(|s| !s.is_empty())?;
+    // The historical Host store allows an empty string timestamp when an
+    // injected clock supplies one. Preserve exact legacy reducer parity.
+    let at = input["at"].as_str()?;
     let mut event = json!({"version":version + 1,"ruleId":id,
         "revision":rule["revision"],"op":op,"before":previous,
         "after":rule,"at":at});
@@ -295,6 +297,28 @@ mod tests {
         assert_eq!(accepted["rule"]["source"], "explicit-owner");
         transition["previous"]["revision"] = json!(900);
         assert_eq!(reduce(&transition)["outcome"], "refused");
+    }
+    #[test]
+    fn legacy_empty_timestamp_remains_compatible() {
+        let mut q = input("propose", current());
+        q["candidate"] = rule("rule:a", 1, "proposed");
+        q["at"] = json!("");
+        let result = reduce(&q);
+        assert_eq!(result["outcome"], "projected");
+        assert_eq!(result["next"]["history"][0]["at"], "");
+    }
+    #[test]
+    fn rollback_does_not_consume_a_different_rule_identity() {
+        let mut q = input("propose", current());
+        q["candidate"] = rule("rule:a", 1, "proposed");
+        let first = reduce(&q);
+        let mut wrong = first["next"].clone();
+        wrong["history"][0]["after"]["id"] = json!("rule:b");
+        let mut rollback = input("rollback", wrong);
+        rollback["ruleId"] = json!("rule:a");
+        rollback["previous"] = first["rule"].clone();
+        rollback["toRevision"] = json!(1);
+        assert_eq!(reduce(&rollback)["code"], "PERSONAL_STORE_UNKNOWN_REVISION");
     }
     #[test]
     fn rollback_appends_revision_and_remains_inert() {

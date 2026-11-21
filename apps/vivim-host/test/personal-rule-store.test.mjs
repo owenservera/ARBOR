@@ -5,6 +5,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { createPersonalRuleStore } from '../control/personal-rule-store.mjs';
+import { runNativeProductPureSync } from '../control/native-product-pure-sync.mjs';
+import { resolveBundledRustBinary } from '../chat/rust-context.mjs';
 
 const catalog = { version: 6, actions: [
   { id: 'vivim.status.show', language: { verbs: ['status'] }, args: {} },
@@ -251,4 +253,78 @@ test('legacy ordered-scope digests remain distinct and owner records are not rew
   assert.deepEqual(state.history[1].after.scope,secondScope);
   assert.deepEqual(Object.keys(state.history[0].after.scope),['workspaceId','surface']);
   assert.deepEqual(Object.keys(state.history[1].after.scope),['surface','workspaceId']);
+});
+
+test('rollback refuses a historical after-rule carrying another rule ID',t=>{
+  const {store}=withStore(t,()=>true);
+  const first=store.propose(proposal(0));
+  const other=store.propose({...proposal(1),phrase:'different phrase'});
+  const before=JSON.parse(readFileSync(store.file,'utf8'));
+  before.history[0].after=before.entries.find(x=>x.id===other.ruleId);
+  writeFileSync(store.file,JSON.stringify(before,null,2),{mode:0o600});
+  const bytes=readFileSync(store.file,'utf8');
+  assert.throws(()=>store.rollback({ruleId:first.ruleId,toRevision:1,
+    expectedVersion:2,approval:{receiptId:'owner'}}),
+    /PERSONAL_STORE_UNKNOWN_REVISION/);
+  assert.equal(readFileSync(store.file,'utf8'),bytes);
+  assert.equal(store.snapshot().version,2);
+});
+test('existing Host clock accepts empty string without changing historical schema',t=>{
+  const dataRoot=mkdtempSync(path.join(os.tmpdir(),'vivim-personal-clock-'));
+  t.after(()=>rmSync(dataRoot,{recursive:true,force:true}));
+  const store=createPersonalRuleStore({dataRoot,catalog,now:()=>'',nativeReducer:()=>null});
+  store.propose(proposal(0));
+  assert.equal(JSON.parse(readFileSync(store.file,'utf8')).history[0].at,'');
+});
+
+test('packaged Rust personal-rule reducer agrees with actual Host persisted transitions',t=>{
+  // Unlike injected-mock tests, this checks the real native product binary
+  // against the same accepted Host record bytes. No binary means UNRUN, not
+  // a fabricated passing native execution.
+  let binary;
+  try { binary=resolveBundledRustBinary('vivim-product-pure'); }
+  catch {}
+  if (!binary) { t.skip('native product-pure binary not packaged'); return; }
+  const observed=[];
+  const {store}=withStore(t,()=>true,(operation,input)=>{
+    observed.push({operation,input});
+    return null; // Host remains the independent expected-state oracle
+  });
+  const expectations=[];
+  const checkpoint=()=>{
+    const request=observed.at(-1);
+    const next=JSON.parse(readFileSync(store.file,'utf8'));
+    const rule=next.entries.find(item=>item.id===request.input.ruleId);
+    expectations.push({...request,next,rule});
+  };
+  const p=store.propose(proposal(0));
+  checkpoint();
+  store.transition({ruleId:p.ruleId,nextState:'accepted',expectedVersion:1,
+    approval:{receiptId:'accepted-proof'}});
+  checkpoint();
+  store.rollback({ruleId:p.ruleId,toRevision:1,expectedVersion:2,
+    approval:{receiptId:'rollback-proof'}});
+  checkpoint();
+  const rule={phrase:'separate taught phrase',actionId:'ui.theme.set_preset',
+    args:{preset:'dawn'},scope:{}};
+  const subject=()=>{
+    const state=store.snapshot();
+    return {operation:'remember',storeVersion:state.version,
+      storeDigest:state.digest,catalogVersion:catalog.version,
+      rule,previousId:null,previousDigest:null};
+  };
+  store.remember({subject:subject(),approval:{receiptId:'remember-proof'}});
+  checkpoint();
+
+  for(const {operation,input,next,rule} of expectations){
+    assert.equal(operation,'personal-rule-transition');
+    const native=runNativeProductPureSync(operation,input);
+    assert.ok(native,'packaged Rust reducer unavailable or returned invalid response');
+    assert.equal(native.outcome,'projected');
+    assert.equal(native.authority,'none');
+    assert.equal(native.executionAuthorized,false);
+    assert.equal(native.effectPerformed,false);
+    assert.deepEqual(native.rule,rule);
+    assert.deepEqual(native.next,next);
+  }
 });
