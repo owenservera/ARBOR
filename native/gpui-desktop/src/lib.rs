@@ -187,14 +187,6 @@ pub fn project(pwa: &Value, wiki: &Value) -> Result<Overview, ReadError> {
     })
 }
 
-/// Browser handoff for Host-owned onboarding, device grants and Studio.
-/// The URL contains a one-use Host code, never the durable owner token.
-pub fn owner_control_session_url() -> Result<String, ReadError> {
-    let token=owner_token()?;
-    vivim_host_supervisor::mint_owner_ui_session(&token)
-        .map_err(|_|ReadError::OwnerRequired)
-}
-
 // Reuse the canonical native Host owner capability loader, never a second
 // Windows/Unix token path, and never an alternate approval authority.
 fn owner_token() -> Result<String, ReadError> {
