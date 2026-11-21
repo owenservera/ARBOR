@@ -28,7 +28,8 @@ import { mountVoiceCapture } from './ux/voice-capture.mjs';
 // The browser keeps its current Wiki UI; Rust supplies optional source identity
 // from the same local WASM kernel used for VEC and other pure operations.
 let rustWikiSourceStamp=null,rustWikiSearch=null,rustWikiSourceTransition=null,rustWikiSourceDelta=null,rustControlReceiptPreview=null;
-let wikiSourceFence=null; // session-keyed and memory-only; a read never becomes a grant
+let wikiSourceFence=null; // Rust-stamped source high-water mark, never a grant
+let wikiReadScope=null; // session+grant digest, valid even when optional WASM is unavailable
 if(typeof window!=='undefined'){
   void import('./vec-engines/rust-wasm.mjs')
     .then(module=>{
@@ -931,12 +932,13 @@ async function refreshWiki() {
     // Store only its digest, never readable session or grant credentials.
     const fenceKey=HOST_PREVIEW?'host-owner-preview':sha256Hex(JSON.stringify([
       'wiki-read',session['x-vivim-device-session'],session['x-vivim-grant-id']]));
-    if(wikiSourceFence && wikiSourceFence.key!==fenceKey){
+    if(wikiReadScope!==null&&wikiReadScope!==fenceKey){
       wikiSourceFence=null;
       clearWikiSources('Wiki authorization scope changed');
       S.wiki=null;S.wikiStamp=null;S.wikiDelta=null;
       S.wikiContext=null;S.wikiContextError='';
     }
+    wikiReadScope=fenceKey;
     if (S.wiki && wiki.revision < S.wiki.revision) {
       clearWikiSources('Wiki revision regressed');S.wikiContext = null; S.wikiContextError = 'Wiki revision regressed; private context cleared.';
       renderWiki(); return;
@@ -978,7 +980,7 @@ function isInvalidDeviceSession(code) {
 // A lost grant must clear *all* private phone projections, not just hide tabs.
 // Session restoration must start from new device proof; no offline replay.
 function clearPrivatePhoneState() {
-  wikiSourceFence=null;
+  wikiSourceFence=null;wikiReadScope=null;
   buildBindingSequence++;
   shellPresentation.clear();
   dockAssist?.reset();compose?.resetAssist?.();capabilityLauncher?.close();

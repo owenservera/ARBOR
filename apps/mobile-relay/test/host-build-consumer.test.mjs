@@ -120,3 +120,13 @@ test('Wiki readback checks both device grant and session before comparing source
   assert.ok(scope>0&&oldRevision>scope,'scope change must precede rollback validation');
   assert.match(source,/S\.wiki=null;S\.wikiStamp=null;S\.wikiDelta=null/);
 });
+
+test('Wiki authorization scopes are tracked without relying on optional WASM availability',()=>{
+  const app=readFileSync(new URL('../app.js',import.meta.url),'utf8');
+  assert.match(app,/let wikiReadScope=null/);
+  assert.match(app,/wikiSourceFence=null;wikiReadScope=null/);
+  assert.match(app,/if\(wikiReadScope!==null&&wikiReadScope!==fenceKey\)/);
+  assert.match(app,/wikiReadScope=fenceKey/);
+  assert.ok(app.indexOf('wikiReadScope=fenceKey')<
+    app.indexOf('if (S.wiki && wiki.revision < S.wiki.revision)'));
+});
