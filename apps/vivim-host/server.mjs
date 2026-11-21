@@ -5,6 +5,7 @@ import path from 'node:path';
 import { createReadStream, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { appendFile, readFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
+import { nativeOwnerProof } from './bootstrap/native-owner-proof.mjs';
 import { fileURLToPath } from 'node:url';
 import { execFile as execFileCb } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -490,6 +491,26 @@ export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path
       return;
     }
     if (req.method !== 'GET' && req.method !== 'HEAD') { res.setHeader('allow', 'GET, HEAD'); res.writeHead(405); res.end(); return; }
+    if (pathname === '/api/host/native-owner-proof') {
+      // A native client must prove the listener knows the existing owner
+      // capability before ever transmitting the long-lived bearer token.
+      // This is read-only and issues no action, session, grant, or receipt.
+      if (req.method !== 'GET') { sendJson(res, 405, {code:'METHOD'}); return; }
+      const params = new URL(req.url, 'http://localhost').searchParams;
+      if (params.size !== 1 || params.getAll('challenge').length !== 1) {
+        sendJson(res, 400, {code:'HOST_PROOF_CHALLENGE_INVALID'}); return;
+      }
+      const challenge = params.get('challenge');
+      if (typeof challenge !== 'string' || !/^[0-9a-f]{64}$/.test(challenge)) {
+        sendJson(res, 400, {code:'HOST_PROOF_CHALLENGE_INVALID'}); return;
+      }
+      try {
+        sendJson(res, 200, nativeOwnerProof(challenge, tokenFor()));
+      } catch {
+        sendJson(res, 503, {code:'HOST_PROOF_UNAVAILABLE'});
+      }
+      return;
+    }
     if (pathname === '/api/host/status') {
       res.setHeader('content-type', 'application/json; charset=utf-8');
       const snapshot=hostSnapshot({dataRoot,bootstrap:runtimeFor()});
