@@ -624,3 +624,70 @@ test('reviewed remember subjects are detached from caller-owned objects',t=>{
     'a verifier cannot mutate the original owner-reviewed candidate');
   assert.equal(store.snapshot().version,0);
 });
+
+test('Host detects a source-file change during approval before atomic rename',t=>{
+  let injectedBytes;
+  let store;
+  const verifier=()=>{
+    const source=JSON.parse(readFileSync(store.file,'utf8'));
+    source.entries[0].phrase='rewritten by external writer';
+    injectedBytes=JSON.stringify(source,null,2);
+    writeFileSync(store.file,injectedBytes,{mode:0o600});
+    return true;
+  };
+  const result=withStore(t,verifier);
+  store=result.store;
+  const p=store.propose(proposal(0));
+  assert.throws(()=>store.transition({ruleId:p.ruleId,nextState:'accepted',
+    expectedVersion:1,approval:{receiptId:'owner-proof'}}),
+    /PERSONAL_STORE_STALE/);
+  assert.equal(readFileSync(store.file,'utf8'),injectedBytes,
+    'Host must not overwrite a store changed after its locked read');
+  assert.equal(store.snapshot().version,1);
+  assert.equal(store.accepted().length,0);
+});
+
+test('Host detects legacy JSON scope key-order changes during owner review',t=>{
+  let injectedBytes;
+  let store;
+  const verifier=()=>{
+    const source=JSON.parse(readFileSync(store.file,'utf8'));
+    const scope=source.entries[0].scope;
+    source.entries[0].scope={surface:scope.surface,workspaceId:scope.workspaceId};
+    injectedBytes=JSON.stringify(source,null,2);
+    writeFileSync(store.file,injectedBytes,{mode:0o600});
+    return true;
+  };
+  const result=withStore(t,verifier);
+  store=result.store;
+  const p=store.propose({...proposal(0),
+    scope:{workspaceId:'project-one',surface:'desktop'}});
+  assert.throws(()=>store.transition({ruleId:p.ruleId,nextState:'accepted',
+    expectedVersion:1,approval:{receiptId:'owner-proof'}}),
+    /PERSONAL_STORE_STALE/);
+  assert.equal(readFileSync(store.file,'utf8'),injectedBytes);
+  assert.deepEqual(Object.keys(store.snapshot().entries[0].scope),
+    ['surface','workspaceId']);
+});
+
+test('changed action catalog during verifier callback cannot commit reviewed rule',t=>{
+  const localCatalog=structuredClone(catalog);
+  const dataRoot=mkdtempSync(path.join(os.tmpdir(),'vivim-personal-catalog-'));
+  t.after(()=>rmSync(dataRoot,{recursive:true,force:true}));
+  let calls=0;
+  const store=createPersonalRuleStore({dataRoot,catalog:localCatalog,
+    nativeReducer:()=>null,
+    verifyOwnerApproval:()=>{
+      calls++;
+      localCatalog.actions[1].args.preset.values.reverse();
+      return true;
+    }});
+  const p=store.propose(proposal(0));
+  const bytes=readFileSync(store.file,'utf8');
+  assert.throws(()=>store.transition({ruleId:p.ruleId,nextState:'accepted',
+    expectedVersion:1,approval:{receiptId:'owner-approved'}}),
+    /PERSONAL_STORE_APPROVAL_CHANGED/);
+  assert.equal(calls,1);
+  assert.equal(readFileSync(store.file,'utf8'),bytes);
+  assert.equal(store.snapshot().version,1);
+});
