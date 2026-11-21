@@ -29,7 +29,8 @@ function nativeActiveSourceManifestDigest(rows) {
     row.id,row.kind,row.sourceRef,row.digest,
     row.revision,row.sourceRevision,row.order,row.title,row.summary,
     row.semanticId,row.actionId??null,row.receiptDigest??null,
-    row.wikiLink?.entryId??null,row.wikiLink?.wikiRevision??null
+    row.wikiLink?.entryId??null,row.wikiLink?.wikiRevision??null,
+    row.receiptWikiOrigin?.entryId??null,row.receiptWikiOrigin?.wikiRevision??null
   ]);
   return createHash('sha256').update(JSON.stringify(proof)).digest('hex');
 }
@@ -77,6 +78,8 @@ test('D4 exact receipt/Wiki relation retains canonical action identity',async t=
     createHash('sha256').update(JSON.stringify(receipt)).digest('hex'));
   assert.equal(effect.wikiLink.entryId,e.entryId);
   assert.equal(effect.wikiLink.wikiRevision,e.wikiRevision);
+  assert.deepEqual(effect.receiptWikiOrigin,{kind:'committed-wiki-origin',
+    entryId:e.entryId,wikiRevision:e.wikiRevision});
   receipt.result.content='unmatched';
   assert.equal(buildNativeKnowledge(snap,projectAppliedControlEffects(control,snap.context.wikiChanges))
     .filter(r=>r.kind==='effect').length,0);
@@ -187,6 +190,11 @@ test('real committed Wiki plus persisted D4 receipt survive Rust restart and sup
       'old applied receipt must not claim the superseded current Wiki section');
     assert.equal(after.sourceHighWater.indexedAppliedReceipts,1,
       'receipt remains durable as historical applied evidence');
+    const historicalReceipt=after.items.find(item=>item.kind==='effect');
+    assert.ok(historicalReceipt,'the bounded two-record view contains the applied receipt');
+    assert.deepEqual(historicalReceipt.receiptWikiOrigin,{
+      kind:'committed-wiki-origin',entryId:committed.entryId,
+      wikiRevision:committed.wikiRevision});
     assert.notEqual(after.sourceHighWater.productJournalDigest,
       first.sourceHighWater.productJournalDigest);
     assert.equal(after.totalRetrieved,2);
@@ -215,7 +223,10 @@ test('managed reads share one native invocation per concurrent authorized view a
       active.has(row.id)&&(packet.view==='owner'||row.kind==='wiki'));
     const items=visible.slice(0,1).map(row=>({title:row.title,summary:row.summary,kind:row.kind,
       sourceRef:row.sourceRef,sourceDigest:row.digest,sourceRevision:row.sourceRevision,
-      ...(row.kind==='effect'?{receiptDigest:row.receiptDigest}:{}),
+      ...(row.kind==='effect'?{
+        receiptDigest:row.receiptDigest,
+        ...(row.receiptWikiOrigin?{receiptWikiOrigin:row.receiptWikiOrigin}:{})
+      }:{}),
       revision:row.revision,depth:0,sourceCount:1,estimatedTokens:30}));
     return {stdout:JSON.stringify({schema:'vivim.hqkg-personal/1',scope:packet.scope,op:packet.op,
       epoch:7,bytes:2000,synced:packet.deltas?packet.deltas.filter(d=>d.op==='put').length:packet.nodes.length,
@@ -479,12 +490,17 @@ test('D4 historical receipts survive supersession without acquiring live Wiki ed
   assert.equal(complete.items.length,2);
   const byPlan=new Map(complete.items.map(item=>[item.planId,item]));
   assert.equal(byPlan.get('ctl-0000000000000001').wikiLink,undefined);
+  assert.deepEqual(byPlan.get('ctl-0000000000000001').receiptWikiOrigin,{
+    kind:'committed-wiki-origin',entryId:history.items[0].entryId,
+    wikiRevision:history.items[0].wikiRevision});
   assert.equal(byPlan.get('ctl-0000000000000001').sourceRevision,2);
   assert.match(byPlan.get('ctl-0000000000000001').receiptDigest,/^[a-f0-9]{64}$/);
   assert.equal(byPlan.get('ctl-0000000000000002').wikiLink.entryId,history.items[1].entryId);
   const rows=buildNativeKnowledge(snap,complete);
   assert.equal(rows.filter(row=>row.kind==='effect').length,2);
   assert.equal(rows.find(row=>row.semanticId==='receipt:ctl-0000000000000001').wikiLink,null);
+  assert.deepEqual(rows.find(row=>row.semanticId==='receipt:ctl-0000000000000001')
+    .receiptWikiOrigin,byPlan.get('ctl-0000000000000001').receiptWikiOrigin);
   assert.equal(first.entryId,history.items[0].entryId);
 });
 
