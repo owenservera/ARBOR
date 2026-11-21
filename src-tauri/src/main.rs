@@ -496,16 +496,24 @@ impl HostProcess {
 
 /// Real child state, not retained handle presence.
 #[tauri::command]
-fn host_is_running(_state: State<'_, Arc<HostProcess>>) -> bool {
-    // Includes a verified existing Host we deliberately did not spawn.
-    HostProcess::health_online()
+async fn host_is_running() -> bool {
+    // Host health is a bounded network probe; it must never stall the
+    // Tauri window's main thread. This includes an existing healthy Host.
+    tauri::async_runtime::spawn_blocking(HostProcess::health_online)
+        .await.unwrap_or(false)
 }
 
 /// Native supervisor view: real child state, runtime origin and approved
 /// binaries actually shipped by this install.
 #[tauri::command]
-fn host_status(app: tauri::AppHandle, state: State<'_, Arc<HostProcess>>) -> serde_json::Value {
-    state.status_payload(&HostProcess::resolve_runtime(&app))
+async fn host_status(app: tauri::AppHandle,
+                     state: State<'_, Arc<HostProcess>>) -> Result<serde_json::Value,String> {
+    // status_payload includes a live identity-checked HTTP probe, so report
+    // the same source-backed payload from a blocking worker, not the UI loop.
+    let state=state.inner().clone();
+    tauri::async_runtime::spawn_blocking(move ||
+        state.status_payload(&HostProcess::resolve_runtime(&app))
+    ).await.map_err(|error|error.to_string())
 }
 
 /// Clean restart of the Host this shell owns. Only our own child is stopped;

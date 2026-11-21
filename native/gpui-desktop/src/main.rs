@@ -136,11 +136,13 @@ impl Desktop {
         if !std::mem::take(&mut self.coherence_retry_ready) {return;}
         let viewport_epoch=self.viewport_epoch;
         let source_epoch=self.source_epoch;
+        let presentation_epoch=self.presentation_epoch;
         cx.spawn(async move |this,cx|{
             cx.background_executor().timer(Duration::from_millis(375)).await;
             let _=this.update(cx,|view,cx|{
                 if view.viewport_epoch==viewport_epoch &&
                     view.source_epoch==source_epoch &&
+                    view.presentation_epoch==presentation_epoch &&
                     passive_read_allowed(view.busy,view.uncertain,
                         view.review.as_ref().is_some_and(Review::needs_approval)) {
                     view.refresh(cx);
