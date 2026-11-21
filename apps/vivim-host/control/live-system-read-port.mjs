@@ -131,7 +131,7 @@ export function createLiveSystemReadPort({
       maxExposure: 'owner', allowedIds: ['host.health', 'wiki.summary','pwa.input','pwa.view','phone.composer']});
     if(safe?.schema !== 'vivim.live-system-state/1' || safe.epoch !== epoch ||
        !Array.isArray(safe.regions) ||
-       safe.regions.some(r => !['host.health', 'wiki.summary','pwa.input','pwa.view'].includes(r.id)))
+       safe.regions.some(r => !['host.health', 'wiki.summary','pwa.input','pwa.view','phone.composer'].includes(r.id)))
       throw fail('LIVE_SYSTEM_STATE_INVALID');
     state = current;
     lastHealth = fingerprint;
