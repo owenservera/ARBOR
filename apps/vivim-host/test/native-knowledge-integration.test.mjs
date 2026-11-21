@@ -161,6 +161,12 @@ test('managed reads share one native invocation per concurrent authorized view a
   assert.equal(wiki.state,'source-backed',wiki.reason);
   assert.equal(owner.state,'source-backed',owner.reason);
   assert.equal(owner.sourceHighWater.scannedAppliedPlans,0);
+  assert.equal(owner.sourceHighWater.indexedAppliedReceipts,0);
+  assert.equal(owner.sourceHighWater.productJournalEntries,1);
+  assert.equal(owner.sourceHighWater.productJournalDigest,
+    createHash('sha256').update(await journal.rawJournal()).digest('hex'));
+  assert.equal(owner.sourceHighWater.receiptEvidenceDigest,
+    createHash('sha256').update('[]').digest('hex'));
   assert.equal(owner.sourceHighWater.receiptScanDigest,
     createHash('sha256').update('[]').digest('hex'));
   assert.equal(owner.sourceHighWater.latestIngestedReceiptAt,null);
@@ -521,9 +527,15 @@ test('alternating phone and owner reads retain verified receipts without repeate
   assert.equal(first.effectRelationshipsTotal,1);
   assert.equal(first.effectRelationships.length,1);
   assert.equal(first.sourceHighWater.scannedAppliedPlans,1);
+  assert.equal(first.sourceHighWater.indexedAppliedReceipts,1);
+  assert.equal(first.sourceHighWater.productJournalEntries,1);
+  assert.match(first.sourceHighWater.productJournalDigest,/^[0-9a-f]{64}$/);
+  assert.match(first.sourceHighWater.receiptEvidenceDigest,/^[0-9a-f]{64}$/);
   const phone=await managed('wiki');
   assert.equal(phone.state,'source-backed',phone.reason);
   assert.equal(Object.hasOwn(phone,'effectRelationships'),false);
+  assert.equal(Object.hasOwn(phone.sourceHighWater,'productJournalDigest'),false);
+  assert.equal(Object.hasOwn(phone.sourceHighWater,'receiptEvidenceDigest'),false);
   assert.equal(phone.totalRetrieved,1);
   const again=await managed('wiki',{owner:true});
   assert.equal(again.state,'source-backed',again.reason);
@@ -577,4 +589,26 @@ test('owner receipt discovery refuses malformed and replaced journal receipts',a
   }};
   await assert.rejects(()=>discoverOwnerControlReceipts(dataRoot,changed),
     /NATIVE_EFFECT_SOURCE_CHANGED/);
+});
+
+
+test('native product journal stamps all committed source revisions without exporting chat bodies',async t=>{
+  const {journal,edit}=await setup(t);
+  await edit('Wiki source unchanged',1);
+  const before=await journal.readNativeKnowledge({nativeOnly:true,completeSources:true});
+  assert.equal(before.sourceStamp.journalEntries,1);
+  assert.equal(before.sourceStamp.wikiRevision,2);
+  assert.match(before.sourceStamp.committedJournalDigest,/^[a-f0-9]{64}$/);
+  await journal.append({kind:'chat-send',actor:'human',schemaVersion:1,
+    text:'private observation must not become Wiki fact'});
+  const after=await journal.readNativeKnowledge({nativeOnly:true,completeSources:true});
+  assert.equal(after.sourceStamp.journalEntries,2);
+  assert.equal(after.sourceStamp.wikiRevision,2);
+  assert.notEqual(after.sourceStamp.committedJournalDigest,
+    before.sourceStamp.committedJournalDigest);
+  assert.deepEqual(after.changes.items,before.changes.items);
+  assert.doesNotMatch(JSON.stringify(after.sourceStamp),
+    /private observation|Wiki source unchanged/);
+  assert.equal(after.sourceStamp.committedJournalDigest,
+    createHash('sha256').update(await journal.rawJournal()).digest('hex'));
 });
