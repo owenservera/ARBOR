@@ -74,11 +74,21 @@ export function createPersonalRuleStore({
   // The trusted verifier must review the exact subject whose transition and
   // receipt get persisted. Detect callback mutation before any write.
   function verifiedReceipt(approval, approvalSubject) {
-    const subjectBytes = JSON.stringify(approvalSubject);
+    // Review a detached JSON value with the same insertion order and digest
+    // as the Host approval subject. A verifier cannot edit an owner-supplied
+    // remember rule via nested references, even temporarily.
+    let reviewed, subjectBytes;
+    try {
+      subjectBytes = JSON.stringify(approvalSubject);
+      reviewed = JSON.parse(subjectBytes);
+    } catch {
+      throw fail('PERSONAL_STORE_APPROVAL_CHANGED');
+    }
     const receiptId = approval?.receiptId;
-    if (!approval || verifyOwnerApproval(approval, approvalSubject) !== true)
+    if (!approval || verifyOwnerApproval(approval, reviewed) !== true)
       throw fail('PERSONAL_STORE_OWNER_APPROVAL_REQUIRED');
-    if (JSON.stringify(approvalSubject) !== subjectBytes ||
+    if (JSON.stringify(reviewed) !== subjectBytes ||
+        JSON.stringify(approvalSubject) !== subjectBytes ||
         approval?.receiptId !== receiptId)
       throw fail('PERSONAL_STORE_APPROVAL_CHANGED');
     return receiptId;
@@ -209,7 +219,10 @@ export function createPersonalRuleStore({
       // Serialization normalization reproduces the existing on-disk shape
       // (including omitted undefined optional fields). No record is migrated.
       const normalized = value => JSON.parse(JSON.stringify(value));
+      const keys = ['authority','effectPerformed','executionAuthorized',
+        'next','outcome','rule','schema'];
       if (!native || typeof native !== 'object' || Array.isArray(native) ||
+          !isDeepStrictEqual(Object.keys(native).sort(), keys) ||
           native.schema !== 'vivim.personal-rule-transition/1' ||
           native.outcome !== 'projected' || native.authority !== 'none' ||
           native.executionAuthorized !== false || native.effectPerformed !== false ||
