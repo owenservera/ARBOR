@@ -459,3 +459,80 @@ test('Host accepts an exactly matching inert native projection, never as approva
   assert.equal(attempts,1);
   assert.equal(store.snapshot().version,1);
 });
+
+test('remember refuses verifier mutation of the approved subject without writing',t=>{
+  const {store}=withStore(t,(_approval,subject)=>{
+    subject.rule.args.preset='dawn';
+    return true;
+  });
+  const snapshot=store.snapshot();
+  const subject={operation:'remember',catalogVersion:catalog.version,
+    storeVersion:snapshot.version,storeDigest:snapshot.digest,
+    rule:{phrase:'quazzlememo',actionId:'ui.theme.set_preset',
+      args:{preset:'dusk'},scope:{}},previousId:null,previousDigest:null};
+  assert.throws(()=>store.remember({subject,approval:{receiptId:'owner-before'}}),
+    /PERSONAL_STORE_APPROVAL_CHANGED/);
+  assert.equal(store.snapshot().version,0);
+  assert.deepEqual(store.history(),[]);
+  assert.throws(()=>readFileSync(store.file,'utf8'),/ENOENT/);
+});
+
+test('transition cannot persist changed verifier subjects or swapped receipts',t=>{
+  for (const tamper of ['subject','receipt']) {
+    const {store}=withStore(t,(approval,subject)=>{
+      if (tamper==='subject') subject.nextState='revoked';
+      else approval.receiptId='swapped';
+      return true;
+    });
+    const p=store.propose(proposal(0));
+    const before=readFileSync(store.file,'utf8');
+    assert.throws(()=>store.transition({ruleId:p.ruleId,nextState:'accepted',
+      expectedVersion:1,approval:{receiptId:'original'}}),
+      /PERSONAL_STORE_APPROVAL_CHANGED/);
+    assert.equal(readFileSync(store.file,'utf8'),before);
+    assert.equal(store.snapshot().entries[0].state,'proposed');
+  }
+});
+
+test('rollback rejects forged event metadata before owner verification',t=>{
+  let approvals=0;
+  const {store}=withStore(t,()=>{approvals++;return true});
+  const p=store.propose(proposal(0));
+  store.transition({ruleId:p.ruleId,nextState:'accepted',expectedVersion:1,
+    approval:{receiptId:'approved-transition'}});
+  const original=JSON.parse(readFileSync(store.file,'utf8'));
+  const tamperings=[
+    row=>{row.revision=77},
+    row=>{row.op='injected'},
+    row=>{row.version=3},
+    row=>{row.before.id='rule:other'},
+    row=>{row.before.revision=2},
+    row=>{row.after.revision=3},
+    row=>{row.ownerReceiptId={unbound:true}},
+  ];
+  for (const tamper of tamperings) {
+    const altered=structuredClone(original);
+    tamper(altered.history[1]);
+    writeFileSync(store.file,JSON.stringify(altered,null,2),{mode:0o600});
+    const before=readFileSync(store.file,'utf8');
+    assert.throws(()=>store.rollback({ruleId:p.ruleId,toRevision:2,
+      expectedVersion:2,approval:{receiptId:'rollback'}}),
+      /PERSONAL_STORE_UNKNOWN_REVISION/);
+    assert.equal(readFileSync(store.file,'utf8'),before);
+    assert.equal(store.snapshot().version,2);
+  }
+  assert.equal(approvals,1,'only the original transition required approval');
+});
+
+test('remember refuses malformed receipt in the pending Host write',t=>{
+  const {store}=withStore(t,()=>true);
+  const snapshot=store.snapshot();
+  const subject={operation:'remember',catalogVersion:catalog.version,
+    storeVersion:snapshot.version,storeDigest:snapshot.digest,
+    rule:{phrase:'quazzlememo',actionId:'ui.theme.set_preset',
+      args:{preset:'dusk'},scope:{}},previousId:null,previousDigest:null};
+  assert.throws(()=>store.remember({subject,approval:{receiptId:{unbound:true}}}),
+    /PERSONAL_STORE_INVALID_TRANSITION/);
+  assert.equal(store.snapshot().version,0);
+  assert.throws(()=>readFileSync(store.file,'utf8'),/ENOENT/);
+});
