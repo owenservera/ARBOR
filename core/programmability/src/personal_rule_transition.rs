@@ -147,6 +147,25 @@ fn valid_history_order(history: &[Value], index: usize, store_version: u64) -> b
     history.iter().enumerate().all(|(offset, row)|
         row["version"].as_u64() == Some(first + offset as u64))
 }
+// Every retained event claiming this rule must maintain its Host-generated
+// identity and increase the rule revision by exactly one. An old forged row
+// cannot supply a safe rollback even if the chosen event looks valid.
+fn valid_rule_history_chain(history: &[Value], id: &str, current_revision: u64) -> bool {
+    let mut previous: Option<u64> = None;
+    for row in history {
+        if row["ruleId"] != id && row["after"]["id"] != id { continue; }
+        let Some(revision) = row["revision"].as_u64() else { return false };
+        if revision == 0 || revision > MAX_SAFE
+            || row["ruleId"] != id || row["after"]["id"] != id
+            || row["after"]["revision"].as_u64() != Some(revision)
+            || previous.is_some_and(|old| old.checked_add(1) != Some(revision))
+        {
+            return false;
+        }
+        previous = Some(revision);
+    }
+    previous == Some(current_revision)
+}
 fn assemble(input: &Value, current: &Value, version: u64,
             rule: Value, previous: Value, op: &str) -> Option<Value> {
     let id = rule["id"].as_str()?;
@@ -339,6 +358,8 @@ pub fn reduce(input: &Value) -> Value {
             }
             let past = &first["after"];
             if !valid_history_order(history, index, version)
+                || !valid_rule_history_chain(history, id,
+                    old["revision"].as_u64().unwrap_or(0))
                 || !valid_history_target(first, id, to, version,
                     old["revision"].as_u64().unwrap_or(0)) {
                 return refused("PERSONAL_STORE_UNKNOWN_REVISION");
@@ -704,6 +725,40 @@ mod tests {
         rollback["ruleId"] = json!("rule:a");
         rollback["previous"] = first["rule"].clone();
         rollback["toRevision"] = json!(1);
+        assert_eq!(reduce(&rollback)["code"], "PERSONAL_STORE_UNKNOWN_REVISION");
+    }
+    #[test]
+    fn rollback_refuses_forged_old_rule_revisions_and_stale_live_entry() {
+        let mut q = input("propose", current());
+        q["candidate"] = rule("rule:a", 1, "proposed");
+        let first = reduce(&q);
+        let mut accept = input("transition", first["next"].clone());
+        accept["ruleId"] = json!("rule:a");
+        accept["previous"] = first["rule"].clone();
+        accept["nextState"] = json!("accepted");
+        let second = reduce(&accept);
+        let mut suspend = input("transition", second["next"].clone());
+        suspend["ruleId"] = json!("rule:a");
+        suspend["previous"] = second["rule"].clone();
+        suspend["nextState"] = json!("suspended");
+        let third = reduce(&suspend);
+        assert_eq!(third["outcome"], "projected");
+
+        let mut corrupt = third["next"].clone();
+        corrupt["history"][0]["revision"] = json!(9);
+        corrupt["history"][0]["after"]["revision"] = json!(9);
+        let mut rollback = input("rollback", corrupt);
+        rollback["ruleId"] = json!("rule:a");
+        rollback["previous"] = third["rule"].clone();
+        rollback["toRevision"] = json!(3);
+        assert_eq!(reduce(&rollback)["code"], "PERSONAL_STORE_UNKNOWN_REVISION");
+
+        let mut corrupt = third["next"].clone();
+        corrupt["entries"][0]["revision"] = json!(4);
+        let mut rollback = input("rollback", corrupt);
+        rollback["ruleId"] = json!("rule:a");
+        rollback["previous"] = rollback["current"]["entries"][0].clone();
+        rollback["toRevision"] = json!(2);
         assert_eq!(reduce(&rollback)["code"], "PERSONAL_STORE_UNKNOWN_REVISION");
     }
     #[test]
