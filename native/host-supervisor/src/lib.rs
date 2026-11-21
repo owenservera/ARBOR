@@ -72,7 +72,7 @@ impl HostSupervisor {
             let mut s=self.inner.lock().expect("Host state poisoned");
             if let Some(child)=s.child.as_mut() {
                 if child.try_wait().map_err(|e|e.to_string())?.is_none() {
-                    if health_online() {
+                    if authenticated_health() {
                         s.status.readiness=Readiness::Owned;
                         s.status.error=None;
                         return Ok(())
@@ -85,7 +85,7 @@ impl HostSupervisor {
             }
             s.status.readiness=Readiness::Starting;s.status.error=None;
         }
-        if health_online() {
+        if authenticated_health() {
             let mut s=self.inner.lock().expect("Host state poisoned");
             s.status.readiness=Readiness::Attached;
             return Ok(());
@@ -106,7 +106,7 @@ impl HostSupervisor {
                 Err(e) => return Err(self.fail(format!("Host child state unknown: {e}"))),
                 Ok(None) => {}
             }
-            if health_online() {
+            if authenticated_health() {
                 let mut s=self.inner.lock().expect("Host state poisoned");
                 s.child=Some(child);
                 s.status.readiness=Readiness::Owned;
@@ -132,7 +132,7 @@ impl HostSupervisor {
             // Serialize observations with owner-initiated reconnect. Otherwise
             // an observed old exit could kill or supersede a newly spawned child.
             let _lifecycle=self.lifecycle.lock().expect("Host lifecycle poisoned");
-            if self.snapshot().readiness == Readiness::Attached && !health_online() {
+            if self.snapshot().readiness == Readiness::Attached && !authenticated_health() {
                 self.fail("Previously attached Host is now offline; no owned restart".into());
                 continue;
             }
@@ -175,6 +175,18 @@ pub fn health_online()->bool {
     let mut bytes=Vec::new();
     if response.take(262145).read_to_end(&mut bytes).is_err()||bytes.len()>262144{return false}
     serde_json::from_slice::<Value>(&bytes).is_ok_and(|v|valid_health(&v))
+}
+
+/// A status JSON is diagnostic, not ownership. Native startup/attach
+/// readiness additionally requires knowledge of the existing Host owner
+/// capability, using a fresh proof without transmitting that capability.
+fn authenticated_health() -> bool {
+    if !health_online() { return false; }
+    let Ok(token)=read_owner_token() else { return false; };
+    let Ok(client)=Client::builder().no_proxy().redirect(reqwest::redirect::Policy::none())
+        .connect_timeout(Duration::from_millis(500))
+        .timeout(Duration::from_secs(2)).build() else { return false; };
+    verify_host_owner(&client,&token)
 }
 
 /// Fresh nonce proof before a native client transmits a permanent owner bearer.
