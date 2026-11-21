@@ -7,6 +7,8 @@
  * On disconnect, revocation, mismatched head or unproved rollback, callers
  * must remove the rendered projection and must not submit UI intents.
  */
+import {sha256Hex} from './portable-digest.mjs';
+
 const PLAIN = value => value !== null && typeof value === 'object' &&
   !Array.isArray(value) && (Object.getPrototypeOf(value) === Object.prototype || Object.getPrototypeOf(value) === null);
 const REV = value => Number.isSafeInteger(value) && value >= 0 && value <= 1_000_000_000;
@@ -37,13 +39,31 @@ export function committedHostSurface(row) {
 /** One bounded head per mounted surface, no offline state and no automatic retry. */
 export function createHostRevisionGuard() {
   let high = null;
-  let currentlyVisible = false;
+  let currentlyVisible = false,scoped=false,scopeDigest=null;
   function invalidate(reason) {
     currentlyVisible = false;
     return { state: 'blocked', reason, surface: null, changed: true };
   }
   return Object.freeze({
+    // Supplied ONLY by the authenticated PWA readback adapter. The scope is
+    // not a grant: it fences local visual history to the Host session/grant.
+    bindScope(identity) {
+      if(typeof identity!=='string'||!identity||identity.length>512)
+        return {state:'refused',reason:'INVALID_VISUAL_SOURCE_SCOPE'};
+      let digest;
+      try{digest=sha256Hex(identity);}catch{return {state:'refused',reason:'INVALID_VISUAL_SOURCE_SCOPE'}}
+      if(scoped&&scopeDigest===digest)return {state:'unchanged',reason:'NONE'};
+      scoped=true;scopeDigest=digest;high=null;currentlyVisible=false;
+      return {state:'changed',reason:'NONE'};
+    },
+    // Revocation differs from disconnect: the next grant is a new revision
+    // domain, while an offline reconnect under the SAME grant retains high.
+    clearScope(){
+      scoped=true;scopeDigest=null;high=null;currentlyVisible=false;
+      return {state:'cleared',reason:'NONE'};
+    },
     observe(row) {
+      if(scoped&&!scopeDigest)return invalidate('SOURCE_SCOPE_UNAVAILABLE');
       if (row == null) return invalidate('NO_COMMITTED_SURFACE');
       const surface = committedHostSurface(row);
       if (!surface) return invalidate('INVALID_HOST_REVISION');
