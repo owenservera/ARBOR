@@ -62,6 +62,8 @@ test('one-shot composer draft requires Host executor claim and independently obs
   assert.ok(!JSON.stringify(staged).includes('after'));
   assert.equal(bridge.delivery(phone).state,'none');
   const effect=bridge.execute(staged.stageId);
+  // Executor fences current Rust state asynchronously before exposing a poll.
+  await new Promise(resolve=>setImmediate(resolve));
   const delivery=bridge.delivery(phone);
   assert.equal(delivery.schema,'vivim.agent-composer-delivery/1');
   assert.equal(delivery.candidate.oldValue,'before');
@@ -111,6 +113,7 @@ test('owner bridge rejects source tampering, oversized text and unverified ACK',
   await assert.rejects(observe('different',1),{code:'COMPOSER_SOURCE_REVISION_CONFLICT'});
   const staged=await bridge.stage({sessionId:phone,intent:intent(fence,'finish')});
   const pending=bridge.execute(staged.stageId);
+  await new Promise(resolve=>setImmediate(resolve));
   const delivery=bridge.delivery(phone);
   assert.equal(delivery.schema,'vivim.agent-composer-delivery/1');
   await assert.rejects(bridge.acknowledge({sessionId:phone,correlationId:'draft.unit',stage:'applied-local'}),
