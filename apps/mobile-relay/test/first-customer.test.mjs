@@ -75,7 +75,7 @@ test('real PWA Wiki rows expand source only while the exact device grant is live
     firstWikiScope:()=>({key:grant}),
     rustWikiSearch:()=>({wikiRevision:2,wikiDigest:'a'.repeat(64),
       matches:1,results:[{page:'ARBOR',section:'Rust Core',excerpt:'Rust code'}]}),
-    el:node,Array};
+    el:node,Array,observeFirstWiki:()=>{}};
   vm.createContext(env);
   vm.runInContext(functionSource(app,'renderFirstWiki'),env);
   env.renderFirstWiki('Rust',source);
