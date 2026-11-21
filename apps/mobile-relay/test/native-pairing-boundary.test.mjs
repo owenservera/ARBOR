@@ -143,7 +143,8 @@ test('nativeRefresh/nativeSend do I/O only through the canonical typed Host rout
 test('clearPrivatePhoneState is called only from revoke/guard paths', () => {
   const callers = callersOf('clearPrivatePhoneState');
   for (const f of callers) {
-    assert.ok(['openMediaPlayer', 'readGraphContext', 'refresh', 'refreshMedia', 'refreshWiki', 'runStart', 'showOfflineShell']
+    assert.ok(['openMediaPlayer', 'readGraphContext', 'refresh', 'refreshBuildBindings',
+      'refreshMedia', 'refreshWiki', 'runStart', 'showOfflineShell']
       .includes(f), f + ' is not a known revoke/guard caller');
   }
   assert.ok(callers.includes('readGraphContext') && callers.includes('runStart'));
