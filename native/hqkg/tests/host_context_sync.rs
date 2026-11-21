@@ -565,3 +565,111 @@ fn delayed_d4_receipt_delta_links_an_unchanged_durable_wiki_source() {
     assert_eq!(stale["changed"],false);
     assert_eq!(fs::read(&file).unwrap(),bytes);
 }
+
+
+#[test]
+fn owner_lineage_digest_covers_all_thirty_active_edges_not_only_display_rows() {
+    let temp=Temp::new(); let file=temp.journal();
+    let mut nodes=vec![wiki(ENTRY,2,"Current committed Wiki section")];
+    for i in 0..30u64 {
+        let mut receipt=effect();
+        let plan_id=format!("ctl-{i:016x}");
+        receipt["id"]=json!(format!("vivim-context-e-{i:064x}"));
+        receipt["sourceRef"]=json!(plan_id);
+        receipt["semanticId"]=json!(format!("receipt:ctl-{i:016x}"));
+        receipt["order"]=json!(i+4);
+        nodes.push(receipt);
+    }
+    let (ok,first)=sync(&file,SCOPE,nodes);
+    assert!(ok,"{first}");
+    let epoch=first["epoch"].as_u64().unwrap();
+    let graph=Journal::new(&file).load().unwrap();
+    assert_eq!(graph.edge_count(),30);
+    let owner=read(&file,SCOPE,epoch,"owner").unwrap();
+    assert_eq!(owner["effectRelationshipsTotal"],30);
+    assert_eq!(owner["omittedEffectRelationships"],6);
+    let shown=owner["effectRelationships"].as_array().unwrap();
+    assert_eq!(shown.len(),24);
+    assert!(shown.windows(2).all(|w|w[0]["id"]<=w[1]["id"]));
+    let mut proof=Vec::new();
+    for edge in graph.edges() {
+        let receipt=graph.node(&edge.from).unwrap();
+        let wiki=graph.node(&edge.to).unwrap();
+        proof.push(json!([
+            local(&edge.id),local(&edge.from),local(&edge.to),edge.relation,
+            receipt.properties.get("vivim.context.sourceRef").unwrap(),
+            receipt.properties.get("hqkg.provenance.digest").unwrap(),
+            wiki.properties.get("vivim.context.sourceRef").unwrap(),2
+        ]));
+    }
+    proof.sort_by(|a,b|a[0].as_str().cmp(&b[0].as_str()));
+    let expected=format!("{:x}",Sha256::digest(serde_json::to_vec(&proof).unwrap()));
+    let sha=owner["effectRelationshipsDigest"].as_str().unwrap();
+    assert_eq!(sha,expected,"native proof must cover every active D4 edge");
+    assert_ne!(sha,format!("{:x}",Sha256::digest(b"[]")));
+    let phone=read(&file,SCOPE,epoch,"wiki").unwrap();
+    assert!(phone.get("effectRelationships").is_none());
+    assert!(phone.get("effectRelationshipsDigest").is_none());
+}
+
+#[test]
+fn exact_graph_epoch_fences_independent_lower_revision_sources() {
+    let temp=Temp::new();let file=temp.journal();
+    let mut receipt=effect();receipt["revision"]=json!(100);
+    receipt["sourceRevision"]=json!(100);
+    receipt["wikiLink"]=Value::Null;
+    let current=wiki(ENTRY,2,"Current Wiki content");
+    let (ok,first)=sync(&file,SCOPE,vec![current.clone(),receipt]);
+    assert!(ok,"{first}");
+    let epoch=first["epoch"].as_u64().unwrap();
+    let updated=wiki(NEXT,3,"Next Wiki content");
+    let (ok,valid)=run_packet(&file,json!({
+        "schema":"vivim.hqkg-personal/1","scope":SCOPE,
+        "op":"sync-context","nodes":[],"relationships":[],
+        "baseRevision":3,"baseEpoch":epoch,
+        "deltas":[put(updated)]
+    }));
+    assert!(ok,"unrelated receipt revision should not block epoch-fenced Wiki delta: {valid}");
+    let after=valid["epoch"].as_u64().unwrap();
+    assert!(after>epoch);
+    let bytes=fs::read(&file).unwrap();
+    let (ok,stale)=run_packet(&file,json!({
+        "schema":"vivim.hqkg-personal/1","scope":SCOPE,
+        "op":"sync-context","nodes":[],"relationships":[],
+        "baseRevision":3,"baseEpoch":after,
+        "deltas":[put(current)]
+    }));
+    assert!(!ok,"per-source revision still refuses older Wiki source: {stale}");
+    assert_eq!(fs::read(&file).unwrap(),bytes);
+}
+
+#[test]
+fn delinked_historical_receipt_retains_its_node_but_drops_old_d4_edge() {
+    let temp=Temp::new();let file=temp.journal();
+    let (ok,first)=sync(&file,SCOPE,vec![wiki(ENTRY,2,"Current"),effect()]);
+    assert!(ok,"{first}");
+    assert_eq!(Journal::new(&file).load().unwrap().edge_count(),1);
+    let mut historical=effect();
+    historical["wikiLink"]=Value::Null;
+    let epoch=first["epoch"].as_u64().unwrap();
+    let (ok,removed)=run_packet(&file,json!({
+        "schema":"vivim.hqkg-personal/1","scope":SCOPE,
+        "op":"sync-context","nodes":[],"relationships":[],
+        "baseRevision":2,"baseEpoch":epoch,
+        "deltas":[put(historical.clone())]
+    }));
+    assert!(ok,"{removed}");
+    let graph=Journal::new(&file).load().unwrap();
+    assert_eq!(graph.node_count(),2);
+    assert_eq!(graph.edge_count(),0);
+    let bytes=fs::read(&file).unwrap();
+    let (ok,again)=run_packet(&file,json!({
+        "schema":"vivim.hqkg-personal/1","scope":SCOPE,
+        "op":"sync-context","nodes":[],"relationships":[],
+        "baseRevision":2,"baseEpoch":removed["epoch"],
+        "deltas":[put(historical)]
+    }));
+    assert!(ok,"{again}");
+    assert_eq!(again["changed"],false);
+    assert_eq!(fs::read(&file).unwrap(),bytes);
+}

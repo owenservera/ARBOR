@@ -5,7 +5,7 @@ import { createHash } from 'node:crypto';
 import os from 'node:os';
 import path from 'node:path';
 import { createProductJournal, projectAppliedControlEffects } from '../chat/product-journal.mjs';
-import { buildNativeKnowledge, createRustChatContext, planNativeContextSync, resolveRustContextRuntime } from '../chat/rust-context.mjs';
+import { buildNativeKnowledge, createRustChatContext, discoverOwnerControlReceipts, planNativeContextSync, resolveRustContextRuntime } from '../chat/rust-context.mjs';
 
 async function setup(t) {
   const dataRoot=await mkdtemp(path.join(os.tmpdir(),'vivim-native-context-'));
@@ -140,11 +140,13 @@ test('managed reads share one native invocation per concurrent authorized view a
       epoch:7,bytes:2000,synced:packet.deltas?packet.deltas.filter(d=>d.op==='put').length:packet.nodes.length,
       syncedRelationships:packet.relationships.length,changed:false,
       ...(packet.deltas?{mode:'delta',ingested:packet.deltas.filter(d=>d.op==='put').length,
-        tombstoned:packet.deltas.filter(d=>d.op==='delete').length}:{}),
+        tombstoned:packet.deltas.filter(d=>d.op==='delete').length}:{mode:'projection'}),
       context:{schema:'vivim.hqkg-chat-context/1',state:'source-backed',core:'hqkg',authority:'read-only',
         seed:'managed:'+packet.view,epoch:7,staleCount:0,budgetTokens:320,tokensUsed:items.length*30,
         budgetExhausted:false,totalRetrieved:visible.length,items,pageRelationships:packet.relationships,
-        ...(packet.view==='owner'?{effectRelationships:[],omittedEffectRelationships:0}:{})}})};
+        ...(packet.view==='owner'?{effectRelationships:[],effectRelationshipsTotal:0,
+          effectRelationshipsDigest:createHash('sha256').update('[]').digest('hex'),
+          omittedEffectRelationships:0}:{})}})};
   };
   const managed=createRustChatContext({env:{},dataRoot,productJournal:journal,control:()=>controls,
     isFile:p=>p.includes('hqkg-personal'),execute:async()=>{throw Error('legacy reader must not be launched')},
@@ -179,7 +181,7 @@ test('combined native read detects source edits during execution and retries fro
       const row=p.nodes[0],epoch=++calls;
       if(calls===1)await edit('Changed while native read was running',2);
       return {stdout:JSON.stringify({schema:'vivim.hqkg-personal/1',scope:p.scope,op:p.op,epoch,bytes:10,
-        synced:p.nodes.length,syncedRelationships:0,changed:true,
+        synced:p.nodes.length,syncedRelationships:0,changed:true,mode:'projection',
         context:{schema:'vivim.hqkg-chat-context/1',state:'source-backed',core:'hqkg',authority:'read-only',
           seed:'managed:'+p.view,epoch,tokensUsed:40,budgetTokens:320,staleCount:0,budgetExhausted:false,
           totalRetrieved:1,pageRelationships:[],items:[{...row,sourceDigest:row.digest,sourceCount:1,depth:0,estimatedTokens:40}]}})};
@@ -303,4 +305,92 @@ test('incremental planner tombstones only absent current sections, not historica
   });
   assert.equal(plan.finalPacket.activeIds.length,0);
   assert.equal(plan.expectedTombstones,1);
+});
+
+
+test('owner reads discover applied receipts beyond the dispatchers 100-plan window',async t=>{
+  const {dataRoot}=await setup(t);
+  const dir=path.join(dataRoot,'control','plans');
+  await mkdir(dir,{recursive:true});
+  const statuses=new Map();
+  for(let i=0;i<125;i++){
+    const planId='ctl-'+(i+1).toString(16).padStart(16,'0');
+    await writeFile(path.join(dir,planId+'.receipt.json'),'{}');
+    statuses.set(planId,{planId,state:'applied',actionId:'wiki.section.edit',
+      risk:'R1',createdAt:new Date(1000+i*1000).toISOString(),receipt:{planId}});
+  }
+  const calls=[];
+  const dispatcher={recent:()=>{throw Error('bounded recent must not be used')},
+    status:id=>{calls.push(id);return statuses.get(id);}};
+  const found=await discoverOwnerControlReceipts(dataRoot,dispatcher);
+  assert.equal(found.length,125);
+  assert.equal(calls.length,125);
+  assert.equal(found[0].planId,'ctl-000000000000007d');
+  assert.equal(found.at(-1).planId,'ctl-0000000000000001');
+  assert.equal(found.every(v=>v.state==='applied'),true);
+});
+
+test('D4 historical receipts survive supersession without acquiring live Wiki edges',async t=>{
+  const {journal,edit}=await setup(t);
+  await edit('First committed source',1);
+  const first=(await journal.readNativeKnowledge({completeSources:true})).changes.items[0];
+  await edit('Current committed source',2);
+  const snap=await journal.readNativeKnowledge({nativeOnly:true,completeSources:true});
+  const history=snap.context.committedHistory;
+  assert.equal(history.items.length,2);
+  assert.deepEqual(history.items.map(item=>item.status),
+    ['superseded-section-revision','current-section-revision']);
+  assert.equal(Object.hasOwn(history.items[0],'content'),false);
+  const summaries=[],records=new Map();
+  for(const [i,entry] of history.items.entries()){
+    const planId='ctl-'+(i+1).toString(16).padStart(16,'0');
+    const actionId='wiki.section.edit',risk='R1';
+    const content=i===0?'First committed source':'Current committed source';
+    const receipt={schema:'vivim.control-receipt/1',status:'applied',
+      executionPerformed:true,planId,actionId,risk,planDigest:'c'.repeat(64),
+      at:new Date(1000+i*1000).toISOString(),approvedVia:'desktop-owner-token',
+      result:{entryId:entry.entryId,sequence:entry.sequence,
+        wikiRevision:entry.wikiRevision,previousRevision:entry.previousWikiRevision,
+        page:entry.relationship.page,section:entry.relationship.section,content}};
+    records.set(planId,{state:'applied',receipt});
+    summaries.push({planId,state:'applied',actionId,risk});
+  }
+  const control={status:id=>records.get(id),
+    recent:()=>{throw Error('native owner source must not use recent')}}
+  const complete=projectAppliedControlEffects(control,{items:history.items},
+    snap.context.wikiStructure,{complete:true,summaries,
+      historicalStructureItems:history.structureItems});
+  assert.equal(complete.items.length,2);
+  const byPlan=new Map(complete.items.map(item=>[item.planId,item]));
+  assert.equal(byPlan.get('ctl-0000000000000001').wikiLink,undefined);
+  assert.equal(byPlan.get('ctl-0000000000000001').sourceRevision,2);
+  assert.equal(byPlan.get('ctl-0000000000000002').wikiLink.entryId,history.items[1].entryId);
+  const rows=buildNativeKnowledge(snap,complete);
+  assert.equal(rows.filter(row=>row.kind==='effect').length,2);
+  assert.equal(rows.find(row=>row.semanticId==='receipt:ctl-0000000000000001').wikiLink,null);
+  assert.equal(first.entryId,history.items[0].entryId);
+});
+
+test('a multi-step D4 write must match every durable sequence binding',()=>{
+  const planId='ctl-0000000000000001',planDigest='a'.repeat(64),actionId='program.write_wiki';
+  const entries=Array.from({length:2},(_,i)=>({
+    kind:'wiki-edit',entryId:'e'+String(i).padStart(35,'0'),
+    sequence:i+1,wikiRevision:i+2,edit:{page:'Main',section:'About',content:'step '+i}
+  }));
+  const receipt={schema:'vivim.control-receipt/1',status:'applied',
+    executionPerformed:true,planId,actionId,risk:'R1',planDigest,
+    at:new Date(3000).toISOString(),approvedVia:'desktop-owner-token',
+    result:{schema:'vivim.wiki-change-result/1',sequenceVerified:true,
+      previousRevision:1,wikiRevision:3,entries}};
+  const wikiChanges={items:entries.map((entry,i)=>({
+    ...entry,kind:'committed-wiki-edit',
+    relationship:{page:'Main',section:'About'},
+    sequenceBinding:{planId,planDigest,step:i+1,total:2},
+    contentDigest:createHash('sha256').update(entry.edit.content).digest('hex')
+  }))};
+  const control={recent:()=>[{state:'applied',actionId,risk:'R1',planId}],
+    status:()=>({state:'applied',receipt})};
+  assert.equal(projectAppliedControlEffects(control,wikiChanges).items.length,1);
+  wikiChanges.items.pop();
+  assert.equal(projectAppliedControlEffects(control,wikiChanges).items.length,0);
 });

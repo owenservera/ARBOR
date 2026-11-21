@@ -3,7 +3,7 @@
 // substitute synthetic context, accept client-selected graph IDs or spawn a shell.
 import path from 'node:path';
 import { lstatSync } from 'node:fs';
-import { mkdir, lstat } from 'node:fs/promises';
+import { mkdir, lstat, readdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 import { projectAppliedControlEffects } from './product-journal.mjs';
@@ -83,7 +83,8 @@ export function createRustChatContext({
 const DEFAULT_ROOT = fileURLToPath(new URL('../../../', import.meta.url));
 const PERSONAL_SCHEMA = 'vivim.hqkg-personal/1';
 const MAX_CONTEXT_BATCH = 512;
-const MAX_CONTEXT_SOURCES = 4096;
+const MAX_CONTEXT_SOURCES = 8192;
+const MAX_DISCOVERED_RECEIPTS = 8192;
 const MAX_CONTEXT_LINK_BATCH = 24;
 const MAX_NATIVE_INPUT = 1024 * 1024;
 const digest = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
@@ -117,7 +118,7 @@ export function resolveRustContextRuntime({env=process.env,repoRoot=DEFAULT_ROOT
 // An unverified chat observation is intentionally never ingested.
 export function buildNativeKnowledge(snapshot, effects) {
   if (!snapshot || !Array.isArray(snapshot.changes?.items) || snapshot.changes.items.length > 4096 ||
-      effects?.state !== 'source-backed' || !Array.isArray(effects.items) || effects.items.length > 24)
+      effects?.state !== 'source-backed' || !Array.isArray(effects.items) || effects.items.length > MAX_CONTEXT_SOURCES)
     throw Error('NATIVE_SOURCE_UNAVAILABLE');
   const rows = [];
   for (const e of snapshot.changes.items) {
@@ -335,6 +336,46 @@ export function planNativeContextSync({scope,view,rows,relationships,last=null,h
     next:{rows:current,links:currentLinks}};
 }
 
+// Read only the receipt filenames from the existing Host control journal.
+// Every candidate is resolved by the canonical dispatcher.status() read; this
+// is discovery, not a new receipt parser, authority, approval or persistence.
+// It never supplies receipt summaries to a phone-facing Wiki read.
+export async function discoverOwnerControlReceipts(dataRoot,dispatcher) {
+  if(typeof dataRoot!=='string'||!path.isAbsolute(dataRoot)||
+    typeof dispatcher?.status!=='function')
+    throw Error('NATIVE_EFFECT_SOURCE_UNAVAILABLE');
+  const dir=path.join(dataRoot,'control','plans');
+  let st;
+  try {st=await lstat(dir);} catch(error){
+    if(error?.code==='ENOENT')return [];
+    throw error;
+  }
+  if(!st.isDirectory()||st.isSymbolicLink())
+    throw Error('NATIVE_EFFECT_SOURCE_UNSAFE');
+  const entries=await readdir(dir,{withFileTypes:true});
+  const receipts=entries.filter(entry=>entry.name.endsWith('.receipt.json'));
+  if(receipts.length>MAX_DISCOVERED_RECEIPTS)
+    throw Error('NATIVE_EFFECT_SOURCE_LIMIT');
+  const results=[];
+  for(const entry of receipts){
+    if(!/^ctl-[a-f0-9]{16}\.receipt\.json$/.test(entry.name))continue;
+    if(!entry.isFile()||entry.isSymbolicLink())
+      throw Error('NATIVE_EFFECT_SOURCE_UNSAFE');
+    const planId=entry.name.slice(0,-'.receipt.json'.length);
+    // This call exercises the Host's own risk, state and receipt read path.
+    const detail=dispatcher.status(planId);
+    if(detail?.planId!==planId || detail.state!=='applied')continue;
+    if(detail.receipt?.planId!==planId)
+      throw Error('NATIVE_EFFECT_SOURCE_INVALID');
+    results.push({planId,actionId:detail.actionId,
+      risk:detail.risk,state:detail.state,
+      createdAt:detail.createdAt});
+  }
+  return results.sort((a,b)=>
+    String(b.createdAt).localeCompare(String(a.createdAt))||
+    a.planId.localeCompare(b.planId));
+}
+
 function managedReader({env,dataRoot,productJournal,control,executePersonal,repoRoot,isFile}) {
   const root=typeof dataRoot==='string' && path.isAbsolute(dataRoot) ? path.resolve(dataRoot) : null;
   // One Host-owned native personal journal. An existing explicit journal is
@@ -345,11 +386,21 @@ function managedReader({env,dataRoot,productJournal,control,executePersonal,repo
   const inflight=new Map();
   // Only a verified durable readback can establish a delta base.
   let last=null;
-  async function snapshot() {
+  async function snapshot(view) {
     const current=await productJournal.readNativeKnowledge({nativeOnly:true,completeSources:true});
-    const effects=projectAppliedControlEffects(control(),{items:current.changes.items},current.context.wikiStructure);
+    const effects=view==='owner'
+      ?projectAppliedControlEffects(control(),
+        {items:current.context.committedHistory.items},
+        current.context.wikiStructure,{
+          complete:true,
+          summaries:await discoverOwnerControlReceipts(root,control()),
+          historicalStructureItems:current.context.committedHistory.structureItems
+        })
+      :{state:'source-backed',items:[]};
     const rows=buildNativeKnowledge(current,effects);
-    return {rows,relationships:buildNativeRelationships(current,rows),wikiRevision:current.context.wikiRevision};
+    return {rows,relationships:buildNativeRelationships(current,rows),
+      wikiRevision:current.context.wikiRevision,
+      ...(view==='owner'?{effectScannedPlans:effects.scannedPlans}:{})};
   }
   async function read(view) {
     if (!root || typeof journal!=='string' || !path.isAbsolute(journal))
@@ -365,7 +416,7 @@ function managedReader({env,dataRoot,productJournal,control,executePersonal,repo
       // Recheck the exact source projection after native ingestion/retrieval.
       // One invocation performs both operations against the existing durable graph.
       for (let attempt=0;attempt<2;attempt++) {
-        const projection=await snapshot(),{rows,relationships}=projection,fingerprint=digest(projection);
+        const projection=await snapshot(view),{rows,relationships}=projection,fingerprint=digest(projection);
         if(!rows.some(row=>view==='owner'||row.kind==='wiki'))
           return unavailable('RUST_CORE_SOURCE_UNAVAILABLE');
         if(rows.length>MAX_CONTEXT_SOURCES||relationships.length>MAX_CONTEXT_LINK_BATCH)
@@ -459,23 +510,29 @@ function managedReader({env,dataRoot,productJournal,control,executePersonal,repo
               sourceDigest:effect.digest,wikiEntryId:wiki.sourceRef,wikiRevision:wiki.revision});
           }
           const links=result.effectRelationships;
-          if(!Array.isArray(links)||links.length!==expected.size||
-            links.length>24||result.omittedEffectRelationships!==0)
+          const expectedSorted=[...expected.values()].sort((a,b)=>a.id.localeCompare(b.id));
+          const proof=expectedSorted.map(e=>[e.id,e.from,e.to,e.kind,e.sourceRef,
+            e.sourceDigest,e.wikiEntryId,e.wikiRevision]);
+          if(!Array.isArray(links)||links.length!==Math.min(24,expected.size)||
+            result.effectRelationshipsTotal!==expected.size||
+            result.omittedEffectRelationships!==Math.max(0,expected.size-24)||
+            result.effectRelationshipsDigest!==digest(proof))
             return unavailable('RUST_CORE_CONTRACT_INVALID');
-          const verified=new Set();
-          for(const edge of links){
-            const wanted=expected.get(edge?.id);
-            if(!wanted||verified.has(edge.id)||
-              Object.keys(wanted).some(key=>edge[key]!==wanted[key]))
+          const wikiById=new Map(rows.filter(row=>row.kind==='wiki').map(row=>[row.id,row]));
+          const effectById=new Map(rows.filter(row=>row.kind==='effect').map(row=>[row.id,row]));
+          for(let i=0;i<links.length;i++){
+            const edge=links[i],wanted=expectedSorted[i];
+            if(!edge||Object.keys(wanted).some(key=>edge[key]!==wanted[key]))
               return unavailable('RUST_CORE_CONTRACT_INVALID');
-            verified.add(edge.id);
-            const effect=rows.find(row=>row.id===edge.from);
-            const wiki=rows.find(row=>row.id===edge.to);
+            const effect=effectById.get(edge.from),wiki=wikiById.get(edge.to);
+            if(!effect||!wiki)return unavailable('RUST_CORE_CONTRACT_INVALID');
             effectRelationships.push({receipt:effect.semanticId,wiki:wiki.semanticId,
               sourceRef:effect.sourceRef,sourceDigest:effect.digest,
               wikiEntryId:wiki.sourceRef,wikiRevision:wiki.revision});
           }
         }else if(result.effectRelationships!==undefined||
+            result.effectRelationshipsTotal!==undefined||
+            result.effectRelationshipsDigest!==undefined||
             result.omittedEffectRelationships!==undefined)
           return unavailable('RUST_CORE_CONTRACT_INVALID');
         const seen=new Set(), items=[];
@@ -496,14 +553,17 @@ function managedReader({env,dataRoot,productJournal,control,executePersonal,repo
             sourceCount:item.sourceCount,estimatedTokens:item.estimatedTokens});
         }
         if (sum!==result.tokensUsed) return unavailable('RUST_CORE_CONTRACT_INVALID');
-        if (digest(await snapshot())!==fingerprint) {last=null;continue;}
+        if (digest(await snapshot(view))!==fingerprint) {last=null;continue;}
         last={epoch:packet.epoch,...plan.next};
         return {schema:CHAT_CONTEXT_SCHEMA,state:'source-backed',core:'hqkg',
           authority:'read-only',epoch:result.epoch,tokensUsed:result.tokensUsed,
           budgetTokens:320,staleCount:0,budgetExhausted:result.budgetExhausted,
           totalRetrieved:result.totalRetrieved,items,
-          sourceHighWater:{wikiRevision:projection.wikiRevision,graphEpoch:packet.epoch},
-          ...(view==='owner'?{effectRelationships}:{}),
+          sourceHighWater:{wikiRevision:projection.wikiRevision,graphEpoch:packet.epoch,
+            ...(view==='owner'?{scannedAppliedPlans:projection.effectScannedPlans}:{})},
+          ...(view==='owner'?{effectRelationships,
+            effectRelationshipsTotal:result.effectRelationshipsTotal,
+            effectRelationshipsDigest:result.effectRelationshipsDigest}:{}),
           ...(relationships.length?{syncedRelationships:relationships.length,
             pageRelationships:relationships.map(({from,to,kind,sourceRef,revision,digest:sourceDigest})=>({
               from:rows.find(row=>row.id===from).semanticId,to:rows.find(row=>row.id===to).semanticId,

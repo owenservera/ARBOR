@@ -512,6 +512,44 @@ function projectCompleteWikiChanges(records,wiki) {
   return {total:items.length,omitted:0,items};
 }
 
+// Full, digest-only committed Wiki history for matching already-applied D4
+// receipts. No historical private Wiki content is exported: only the exact
+// replay-admitted source identity, revision, action and content digest.
+// The current ingestion window still contains *only* current section content.
+function projectCommittedWikiHistory(records,wiki) {
+  const latest=new Map();
+  for(const entry of records)if(entry.kind==='wiki-edit')latest.set(
+    JSON.stringify([entry.edit.page,entry.edit.section]),entry.entryId);
+  const items=[],structureItems=[];
+  for(const entry of records){
+    if(!entry.entryId||!Number.isSafeInteger(entry.sequence))continue;
+    if(entry.kind==='wiki-edit'){
+      const {page,section,content}=entry.edit;
+      const key=JSON.stringify([page,section]);
+      const current=latest.get(key)===entry.entryId &&
+        wiki.pages?.[page]?.sections?.[section]===content;
+      items.push({source:'host-product-journal',entryId:entry.entryId,
+        sequence:entry.sequence,receivedAt:entry.receivedAt,
+        kind:'committed-wiki-edit',
+        previousWikiRevision:entry.expectedRevision,
+        wikiRevision:entry.expectedRevision+1,
+        contentDigest:createHash('sha256').update(content,'utf8').digest('hex'),
+        relationship:{kind:'mutated-section',page,section},
+        status:current?'current-section-revision':'superseded-section-revision',
+        ...(entry.sequenceBinding?{sequenceBinding:entry.sequenceBinding}:{})});
+    }else if(entry.kind==='wiki-structure'){
+      structureItems.push({source:'host-product-journal',entryId:entry.entryId,
+        sequence:entry.sequence,receivedAt:entry.receivedAt,
+        kind:'committed-wiki-structure',edit:{...entry.edit},
+        previousWikiRevision:entry.expectedRevision,
+        wikiRevision:entry.expectedRevision+1,
+        contentDigest:createHash('sha256').update(JSON.stringify(entry.edit)).digest('hex'),
+        ...(entry.sequenceBinding?{sequenceBinding:entry.sequenceBinding}:{})});
+    }
+  }
+  return {items,structureItems};
+}
+
 // Rust reconstructs the current/superseded Wiki lineage and recent/source-current
 // windows from replay-admitted journal identities; no private text leaves Host.
 async function nativeWikiChanges(records,{currentOnly=false}={}){
@@ -579,10 +617,20 @@ export function projectWikiContext(records, wikiRevision = null, wiki = null, na
   return { ...context, semantics: projectWikiSemantics(context) };
 }
 
-export function projectAppliedControlEffects(control, wikiChanges = null, wikiStructure = null) {
-  // The existing dispatcher owns receipt reads. No new journal or graph writes.
-  const recent = control.recent(100);
+export function projectAppliedControlEffects(control, wikiChanges = null, wikiStructure = null,
+  {summaries=null,complete=false,historicalStructureItems=[]}={}) {
+  // The dispatcher owns all receipt validation. For private owner-only native
+  // ingestion the Host can hand in the complete on-disk applied-plan IDs;
+  // ordinary callers retain the original bounded recent presentation view.
+  const recent = summaries??control.recent(100);
+  if(!Array.isArray(recent)||recent.length>8192||
+     !Array.isArray(historicalStructureItems)||historicalStructureItems.length>8192)
+    throw Error('NATIVE_EFFECT_SOURCE_LIMIT');
   const items = [], seenPlans=new Set();
+  const wikiByEntry=new Map((wikiChanges?.items??[]).map(entry=>[entry.entryId,entry]));
+  const structureByEntry=new Map([...(wikiStructure?.items??[]),
+    ...(wikiStructure?.links??[]),...historicalStructureItems]
+    .map(entry=>[entry.entryId,entry]));
   for (const summary of recent) {
     if (summary.state !== 'applied' || (summary.actionId === 'wiki.section.edit' && !wikiChanges) ||
         !['R1', 'R2'].includes(summary.risk)) continue;
@@ -600,27 +648,33 @@ export function projectAppliedControlEffects(control, wikiChanges = null, wikiSt
     let wikiLink = null, structureLink = null;
     if (['wiki.section.edit','wiki.capture.save'].includes(receipt.actionId)) {
       const result = receipt.result;
-      const edit = wikiChanges?.items?.find(e => e.entryId === result?.entryId &&
-        e.sequence === result?.sequence && e.wikiRevision === result?.wikiRevision &&
-        e.previousWikiRevision === result?.previousRevision &&
-        e.relationship.page === result?.page && e.relationship.section === result?.section &&
+      const edit = wikiByEntry.get(result?.entryId);
+      const matching=edit && edit.sequence === result?.sequence &&
+        edit.wikiRevision === result?.wikiRevision &&
+        edit.previousWikiRevision === result?.previousRevision &&
+        edit.relationship.page === result?.page && edit.relationship.section === result?.section &&
         typeof result?.content === 'string' &&
-        createHash('sha256').update(result.content, 'utf8').digest('hex') === e.contentDigest);
-      // No exact committed source relation: do not double-count or invent one.
-      if (!edit) continue;
-      wikiLink = { kind: 'committed-wiki-change', entryId: edit.entryId, wikiRevision: edit.wikiRevision };
+        createHash('sha256').update(result.content, 'utf8').digest('hex') === edit.contentDigest;
+      // A historical receipt can outlive its Wiki source's *current* section.
+      // Retain its immutable applied fact, but never claim current lineage to
+      // a superseded section. Any content mismatch remains unverified.
+      if (!matching) continue;
+      if(edit.status==='current-section-revision')
+        wikiLink = { kind: 'committed-wiki-change', entryId: edit.entryId, wikiRevision: edit.wikiRevision };
     }
     const expectedStructure={
       'wiki.page.create':'create-page','wiki.page.move':'move-page','wiki.pages.link':'link-pages'
     }[receipt.actionId];
     if(expectedStructure){
       const result=receipt.result;
-      const event=[...(wikiStructure?.items||[]),...(wikiStructure?.links||[])].find(e=>
-        e.entryId===result?.entryId&&e.sequence===result?.sequence&&
-        e.wikiRevision===result?.wikiRevision&&e.previousWikiRevision===result?.previousRevision&&
-        e.edit.action===expectedStructure&&result?.edit&&
-        Object.keys(result.edit).length===Object.keys(e.edit).length&&
-        Object.keys(e.edit).every(key=>result.edit[key]===e.edit[key]));
+      const candidate=structureByEntry.get(result?.entryId);
+      const event=candidate && candidate.sequence===result?.sequence&&
+        candidate.wikiRevision===result?.wikiRevision&&
+        candidate.previousWikiRevision===result?.previousRevision&&
+        candidate.edit.action===expectedStructure&&result?.edit&&
+        Object.keys(result.edit).length===Object.keys(candidate.edit).length&&
+        Object.keys(candidate.edit).every(key=>result.edit[key]===candidate.edit[key])
+          ?candidate:null;
       if(!event)continue;
       structureLink={kind:'committed-wiki-structure',entryId:event.entryId,wikiRevision:event.wikiRevision};
     }
@@ -629,12 +683,13 @@ export function projectAppliedControlEffects(control, wikiChanges = null, wikiSt
       const result=receipt.result,rows=result?.entries;
       if(result?.schema!=='vivim.wiki-change-result/1'||result.sequenceVerified!==true||!Array.isArray(rows)||rows.length<2||rows.length>8||result.wikiRevision!==result.previousRevision+rows.length)continue;
       sequenceLinks=rows.flatMap((row,i)=>{
-        const candidates=row.kind==='wiki-edit'?wikiChanges?.items??[]:row.kind==='wiki-structure'?[...(wikiStructure?.items??[]),...(wikiStructure?.links??[])]:[];
-        const match=candidates.find(e=>e.entryId===row.entryId&&e.sequence===row.sequence&&e.wikiRevision===row.wikiRevision&&row.wikiRevision===result.previousRevision+i+1&&e.sequenceBinding?.planId===receipt.planId&&e.sequenceBinding.planDigest===receipt.planDigest&&e.sequenceBinding.step===i+1&&e.sequenceBinding.total===rows.length&&
-           (row.kind==='wiki-edit'?e.relationship.page===row.edit?.page&&e.relationship.section===row.edit?.section&&typeof row.edit?.content==='string'&&createHash('sha256').update(row.edit.content,'utf8').digest('hex')===e.contentDigest:JSON.stringify(row.edit)===JSON.stringify(e.edit)));
-        return match?[{kind:match.kind,entryId:match.entryId,wikiRevision:match.wikiRevision,step:i+1}]:[];
+        const e=row.kind==='wiki-edit'?wikiByEntry.get(row.entryId):
+          row.kind==='wiki-structure'?structureByEntry.get(row.entryId):null;
+        const match=e&&e.entryId===row.entryId&&e.sequence===row.sequence&&e.wikiRevision===row.wikiRevision&&row.wikiRevision===result.previousRevision+i+1&&e.sequenceBinding?.planId===receipt.planId&&e.sequenceBinding.planDigest===receipt.planDigest&&e.sequenceBinding.step===i+1&&e.sequenceBinding.total===rows.length&&
+           (row.kind==='wiki-edit'?e.relationship.page===row.edit?.page&&e.relationship.section===row.edit?.section&&typeof row.edit?.content==='string'&&createHash('sha256').update(row.edit.content,'utf8').digest('hex')===e.contentDigest:JSON.stringify(row.edit)===JSON.stringify(e.edit));
+        return match?[{kind:e.kind,entryId:e.entryId,wikiRevision:e.wikiRevision,step:i+1}]:[];
       });
-      if(!sequenceLinks.length)continue;
+      if(sequenceLinks.length!==rows.length)continue;
     }
     let visualLink=null;
     if(receipt.actionId==='ui.visual.apply'){
@@ -662,12 +717,17 @@ export function projectAppliedControlEffects(control, wikiChanges = null, wikiSt
       actionId: receipt.actionId, receivedAt: receipt.at, kind: 'executed-effect',
       status: 'historical-applied-receipt',
       sourceRevision: wikiLink?.wikiRevision ?? structureLink?.wikiRevision ?? (sequenceLinks?receipt.result.wikiRevision:null) ??
+        (['wiki.section.edit','wiki.capture.save'].includes(receipt.actionId)&&
+          Number.isSafeInteger(receipt.result?.wikiRevision)&&receipt.result.wikiRevision>0
+          ?receipt.result.wikiRevision:null) ??
         (Number.isSafeInteger(receipt.result?.revision) && receipt.result.revision >= 0 ? receipt.result.revision : null)
     });
   }
   items.sort((a, b) => Date.parse(b.receivedAt) - Date.parse(a.receivedAt) || a.planId.localeCompare(b.planId));
-  return { state: 'source-backed', scannedPlans: recent.length, scanLimit: 100,
-    omitted: Math.max(0, items.length - 24), items: items.slice(0, 24) };
+  return { state: 'source-backed', scannedPlans: recent.length,
+    scanLimit:complete?8192:100,
+    omitted: complete?0:Math.max(0, items.length-24),
+    items:complete?items:items.slice(0,24) };
 }
 
 export function createProductJournal({ dataRoot, seedState, seedWiki }) {
@@ -795,6 +855,8 @@ export function createProductJournal({ dataRoot, seedState, seedWiki }) {
     const changes = completeSources
       ? projectCompleteWikiChanges(current.records,current.wiki)
       : await nativeWikiChanges(current.records, { currentOnly: true });
+    if(completeSources)context.committedHistory=projectCommittedWikiHistory(
+      current.records,current.wiki);
     // Native adapter accepts a bounded input. Preserve current section owners and linked pages
     // first, then fill the remainder with recent capture identities; the durable journal is unchanged.
     const priority=new Set([...changes.items.map(e=>e.relationship.page),...(context.wikiStructure?.links??[]).flatMap(e=>[e.edit.from,e.edit.to])]);

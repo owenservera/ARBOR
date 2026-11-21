@@ -234,7 +234,7 @@ fn sync_context(v: &Value, ns: &Namespace, journal: &Journal, g: &mut Graph,
     }
     let active_ids:Option<BTreeSet<String>>=match v.get("activeIds") {
         None => None,
-        Some(Value::Array(ids)) if view.is_some() && ids.len()<=4096 => {
+        Some(Value::Array(ids)) if view.is_some() && ids.len()<=8192 => {
             let mut selected=BTreeSet::new();
             for value in ids {
                 let id=value.as_str().ok_or("invalid active context id")?;
@@ -267,9 +267,12 @@ fn sync_context(v: &Value, ns: &Namespace, journal: &Journal, g: &mut Graph,
     if nodes.len() > MAX_CONTEXT_RECORDS { return Err("POLICY_LIMIT context nodes".into()); }
     let prefix = scoped_graph::prefix(ns).map_err(err)?;
     let managed_prefix = format!("{prefix}vivim-context-");
-    // Whole-batch revision fence: the newest managed revision already durable
-    // must not be newer than the revision the caller says it projected from.
-    if let Some(base)=base_revision {
+    // A standalone delta without graph-epoch CAS keeps its conservative
+    // whole-graph high-water fence. When the Host supplies exact baseEpoch,
+    // that durable graph CAS and per-record revision/digest guards are stronger:
+    // an unrelated historical receipt with a higher revision must not block
+    // a valid lower-revision Wiki source or an empty scoped read.
+    if let Some(base)=base_revision.filter(|_|v.get("baseEpoch").is_none()) {
         let head=g.nodes()
             .filter(|n|n.id.starts_with(&managed_prefix) &&
                 matches!(n.properties.get("vivim.context.kind").map(String::as_str),Some("wiki"|"effect")))
@@ -383,6 +386,22 @@ fn sync_context(v: &Value, ns: &Namespace, journal: &Journal, g: &mut Graph,
                 if old == &edge { continue; }
             }
             changes = changes.put_edge(edge);
+        }
+    }
+    // If a previously linked receipt loses its current Wiki link in the
+    // source projection, its historical node remains while its stale edge is
+    // explicitly removed. An unchanged receipt omitted from a delta is never
+    // interpreted as revocation.
+    if deltas.is_some() {
+        for record in &records {
+            if record.kind!="effect" {continue;}
+            let local_edge=format!("vivim-context-l-{}",
+                &record.local["vivim-context-e-".len()..]);
+            let edge_id=scoped_graph::qualified_id(ns,&local_edge).map_err(err)?;
+            if g.edge(&edge_id).is_some() && !wanted_edges.contains(&edge_id) {
+                changes=changes.remove_edge(&edge_id,
+                    "D4 current Wiki evidence no longer linked",record.revision);
+            }
         }
     }
     // Only Host-supplied evidence over two selected managed Wiki page nodes.

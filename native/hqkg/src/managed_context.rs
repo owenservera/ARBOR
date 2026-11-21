@@ -5,6 +5,7 @@ use crate::context_retrieval::{query_scoped, ScopedQuery};
 use crate::scoped_graph;
 use crate::typed_dag::{GraphDomain, Namespace};
 use serde_json::{json, Value};
+use sha2::{Digest, Sha256};
 use std::{collections::{BTreeMap, BTreeSet}, fs, path::Path};
 
 const SCHEMA: &str = "vivim.hqkg-chat-context/1";
@@ -165,7 +166,18 @@ pub fn project_managed_graph_selected(
         }
     }
     effect_relationships.sort_by(|a,b|a["id"].as_str().cmp(&b["id"].as_str()));
-    let omitted_effects=effect_relationships.len().saturating_sub(24);
+    // Hash *all* active lineage edges in canonical order, not merely the
+    // bounded presentation subset. The Host independently constructs this
+    // proof from admitted current section and applied receipt identities.
+    let effect_proof: Vec<Value> = effect_relationships.iter().map(|e|json!([
+        e["id"],e["from"],e["to"],e["kind"],e["sourceRef"],
+        e["sourceDigest"],e["wikiEntryId"],e["wikiRevision"]
+    ])).collect();
+    let effect_bytes=serde_json::to_vec(&effect_proof)
+        .map_err(|e|Error::Invalid(format!("D4 lineage encoding: {e}")))?;
+    let effect_digest=format!("{:x}",Sha256::digest(&effect_bytes));
+    let effect_total=effect_relationships.len();
+    let omitted_effects=effect_total.saturating_sub(24);
     effect_relationships.truncate(24);
     // Relevance decides seed order: pages other pages point at (inbound
     // relationships) are the most relevant, then pages that point at others,
@@ -203,6 +215,8 @@ pub fn project_managed_graph_selected(
         "pageRelationships":page_relationships});
     if view=="owner" {
         result["effectRelationships"]=json!(effect_relationships);
+        result["effectRelationshipsTotal"]=json!(effect_total);
+        result["effectRelationshipsDigest"]=json!(effect_digest);
         result["omittedEffectRelationships"]=json!(omitted_effects);
     }
     Ok(result)
