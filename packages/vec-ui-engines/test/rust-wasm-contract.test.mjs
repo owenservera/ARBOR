@@ -46,3 +46,9 @@ test('WASM oversized stream is rejected before instantiation',async()=>{
     globalThis.fetch=oldFetch;
   }
 });
+
+test('unavailable unpackaged browser WASM remains an explicit JS fallback',()=>{
+  const status=rustUiEngineStatus();
+  assert.equal(status.state,'unavailable');
+  assert.equal(status.fallback,'trusted-js');
+});

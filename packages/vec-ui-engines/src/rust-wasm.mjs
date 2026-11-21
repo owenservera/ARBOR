@@ -8,7 +8,7 @@
 const SCHEMA='vivim.product-pure-response/1';
 const WASM_URL='/mobile/wasm/vivim_programmability_core.wasm';
 const MAX=512*1024, MAX_MODULE_BYTES=12*1024*1024,MAX_MEMORY=64*1024*1024;
-let instance=null,attempt=null,reason='WASM_NOT_INITIALIZED',lastOperation='NOT_RUN';
+let instance=null,attempt=null,reason='WASM_NOT_INITIALIZED',lastOperation='NOT_RUN',everReady=false;
 const utf8=new TextEncoder(),decode=new TextDecoder('utf-8',{fatal:true});
 function admit(exports){
   return exports?.memory instanceof WebAssembly.Memory&&
@@ -21,7 +21,7 @@ const region=(native,pointer,length)=>Number.isSafeInteger(pointer)&&Number.isSa
 function unavailable(code){instance=null;reason=code;return null;}
 export function rustUiEngineStatus(){
   return {state:instance?'ready':'unavailable',code:instance?'NONE':reason,
-    fallback:instance?'none':'trusted-js',lastOperation};
+    fallback:instance||everReady?'none':'trusted-js',lastOperation};
 }
 // Enforce the wire ceiling while the real response is read; never consume an
 // unchecked response.arrayBuffer() or turn a broken artifact into a projection.
@@ -29,11 +29,12 @@ async function readBoundedModule(response){
   if(!response.body||typeof response.body.getReader!=='function'){
     reason='WASM_STREAM_UNAVAILABLE';return null;
   }
-  const reader=response.body.getReader();let total=0;const chunks=[];
+  const reader=response.body.getReader();let total=0,count=0;const chunks=[];
   try{
     while(true){
       const {done,value}=await reader.read();
       if(done)break;
+      if(++count>16384){reason='WASM_STREAM_CHUNKS_EXCEEDED';await reader.cancel().catch(()=>{});return null;}
       if(!(value instanceof Uint8Array)){
         reason='WASM_MODULE_INVALID_CHUNK';await reader.cancel().catch(()=>{});return null;
       }
@@ -77,7 +78,7 @@ export async function initializeRustUiEngine(){
       const native=output.instance?.exports??output.exports;
       if(!admit(native)){reason='WASM_ABI_UNAVAILABLE';return false;}
       if(native.memory.buffer.byteLength>MAX_MEMORY){reason='WASM_MEMORY_LIMIT';return false;}
-      instance=native;reason='NONE';return true;
+      instance=native;everReady=true;reason='NONE';return true;
     }catch{reason='WASM_INITIALIZATION_FAILED';return false;}
   })().finally(()=>{attempt=null;});
   return attempt;

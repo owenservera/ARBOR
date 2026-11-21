@@ -90,3 +90,11 @@ test('polling path checks full Host head and clears Build UI on lost status auth
   assert.match(source,/if \(build\) build\.clear\(\)/);
   assert.doesNotMatch(source,/if \(rev && key !== buildKey\)/);
 });
+
+test('Build consumer uses the real VEC source watermark in the TierFlow path',()=>{
+  const source=readFileSync(new URL('../generative-ui/phone-surface.mjs',import.meta.url),'utf8');
+  assert.match(source,/bindingFence\.prepare\(data\)/);
+  assert.match(source,/candidate\.commit\(\)/);
+  assert.match(source,/bindingRevisions: \(\) => bindingFence\.status\(\)/);
+  assert.match(source,/renderSurface\(mount, s,/);
+});

@@ -3,7 +3,8 @@
 // uses the existing bootstrap command channel. Browser-only; no Node imports.
 // A tap never sends a provider prompt and is never automatically resent while uncertain.
 import { renderSurface } from './renderer.mjs';
-import { createSurface } from './catalog.mjs';
+import { createSurface, LIVE_UI_BINDINGS } from './catalog.mjs';
+import { createVecBindingFence } from '../vec/compiler.mjs';
 import { projectVisualIntent, projectMountedVisualSemantics } from './semantic-projection.mjs';
 import { transport } from '../transport.mjs';
 import { createHostRevisionGuard } from './host-revision-guard.mjs';
@@ -59,6 +60,7 @@ export function mountBuildSurface(mount, { onCommit = () => {}, semantic = null,
   if (mounted) throw new Error('Build surface already mounted');
   mounted = true;
   const revisionGuard = createHostRevisionGuard();
+  const bindingFence = createVecBindingFence(Object.keys(LIVE_UI_BINDINGS));
   let initialDraft = null,instances=new Map(),highlighted=null,selected=null,mountedSemantic=null,inspecting=false,liveData=null;
 
   function clear() {
@@ -170,11 +172,25 @@ export function mountBuildSurface(mount, { onCommit = () => {}, semantic = null,
   },true);
   function setLiveData(data,revision){
     if(!surface||surface.revision!==revision)return false;
+    const candidate=bindingFence.prepare(data);
+    if(candidate.state==='blocked'){
+      // Never leave stale private source rows painted after revision conflict.
+      liveData=null;
+      try{render(surface);}catch{clear();}
+      return false;
+    }
     if(JSON.stringify(liveData)===JSON.stringify(data))return true;
     liveData=data;
-    try{render(surface);return true;}catch{clear();return false;}
+    try{
+      render(surface);
+      if(candidate.state==='ready'&&!candidate.commit()){
+        liveData=null;render(surface);return false;
+      }
+      return true;
+    }catch{clear();return false;}
   }
   return { render, setSurface, setLiveData, clear, listInstances, selectInstance, selectedInstance, setInspecting, surface: () => surface,
     draftSurface: () => initialDraft, pending: () => pending,
-    revisionState: () => revisionGuard.status() };
+    revisionState: () => revisionGuard.status(),
+    bindingRevisions: () => bindingFence.status() };
 }

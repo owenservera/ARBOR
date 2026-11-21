@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createVecCompiler, VEC_COMPILE_SCHEMA } from '../vec/compiler.mjs';
+import { createVecCompiler, createVecBindingFence, VEC_COMPILE_SCHEMA } from '../vec/compiler.mjs';
 import { compileVecUiRequest } from '../vec/ui-adapter.mjs';
 import { createSurface } from '../generative-ui/catalog.mjs';
 import { compileUiProposal } from '../generative-ui/compiler.mjs';
@@ -134,4 +134,31 @@ test('malformed adapter classification is refused without native WASM',()=>{
     assert.equal(result.executed,false);
     assert.equal(result.persisted,false);
   }
+});
+
+test('PWA live binding fence requires monotonic Wiki readback and atomic paint commit',()=>{
+  const fence=createVecBindingFence(['personal.open-tasks','personal.completed-tasks','studio.recent-outcomes']);
+  const row=(revision,label='Task')=>({state:'source-backed',revision,total:1,
+    items:[{label,detail:'Committed read-only source'}]});
+  const first=fence.prepare({'personal.open-tasks':row(7)});
+  assert.equal(first.state,'ready');assert.deepEqual(fence.status(),[]);
+  assert.equal(first.commit(),true);
+  assert.deepEqual(fence.status(),[{id:'personal.open-tasks',revision:7}]);
+  assert.equal(fence.prepare(null).state,'unavailable');
+  assert.equal(fence.prepare({'personal.open-tasks':row(6)}).code,'LIVE_BINDING_REVISION_CONFLICT');
+  assert.equal(fence.prepare({'personal.open-tasks':row(7,'Changed')}).code,'LIVE_BINDING_REVISION_CONFLICT');
+  const next=fence.prepare({'personal.open-tasks':row(8),'studio.recent-outcomes':row(2,'Reply')});
+  assert.equal(next.state,'ready');assert.equal(next.commit(),true);
+  assert.equal(fence.prepare({'personal.open-tasks':row(8),'personal.completed-tasks':row(9)}).code,
+    'WIKI_BINDING_REVISION_CONFLICT');
+  assert.equal(fence.prepare({'other.binding':row(8)}).code,'INVALID_LIVE_BINDINGS');
+  assert.equal(fence.prepare({'personal.open-tasks':{state:'source-backed',revision:9,total:0,
+    items:[{label:'x',detail:'x'}]}}).code,'INVALID_LIVE_BINDING');
+});
+test('cyclic or accessor-bearing live bindings are not admitted',()=>{
+  const fence=createVecBindingFence(['personal.recent-notes']);
+  const row={state:'source-backed',revision:1,total:1,items:[{label:'N',detail:'D'}]};
+  row.unsafe=row;assert.equal(fence.prepare({'personal.recent-notes':row}).state,'blocked');
+  assert.deepEqual(fence.status(),[]);
+  assert.throws(()=>createVecBindingFence(['same','same']),/INVALID_VEC_BINDING_SET/);
 });
