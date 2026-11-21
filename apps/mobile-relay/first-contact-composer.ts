@@ -25,6 +25,7 @@ const validFence=(o:any):o is {
   Number.isSafeInteger(o.sourceRevision)&&o.regionId==='phone.composer';
 export function mountFirstContactComposer({field,active,maxLength,onVerified}:Config){
   let revision=0,composing=false,closed=false,dirty=true,applying=false;
+  let lastSignature='';
   let fence:Fence|null=null,authDelivery:any=null,pollBusy=false;
   let chain:Promise<unknown>=Promise.resolve();
   const headers={'content-type':'application/json','x-vivim-composer':'1'};
@@ -39,9 +40,13 @@ export function mountFirstContactComposer({field,active,maxLength,onVerified}:Co
   }
   function report(change=true,correlationId?:string):Promise<any>{
     if(closed)return Promise.reject(Error('COMPOSER_DISPOSED'));
-    if(change||revision===0)revision++;
+    const visible=eligible();
+    const signature=JSON.stringify([field.value,'vivim',visible,composing]);
+    // Visibility/target changes are real source changes, not a new grant.
+    if(change||revision===0||signature!==lastSignature)revision++;
+    lastSignature=signature;
     const captured={sessionId:ID,revision,text:field.value,
-      mode:'vivim',visible:eligible(),composing,
+      mode:'vivim',visible,composing,
       ...(correlationId?{correlationId}:{})};
     dirty=true;fence=null;
     const pending=chain.then(async()=>{
@@ -110,6 +115,8 @@ export function mountFirstContactComposer({field,active,maxLength,onVerified}:Co
     if(eligible()){
       if(!dirty)void poll();
       else void report(false).catch(()=>{});
+    }else if(!closed&&lastSignature&&JSON.parse(lastSignature)[2]===true){
+      void report(false).catch(()=>{});
     }
   },750);
   const heartbeat=setInterval(()=>{if(!closed)void report(false).catch(()=>{});},8000);
