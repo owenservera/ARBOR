@@ -68,6 +68,24 @@ const validHistoryEvent = (row, ruleId, revision, storeVersion, catalog) => (
     })
   ))
 );
+// A retained rule history is a revision-contiguous suffix, even when other
+// rules have interleaved Host CAS versions. The latest retained revision must
+// equal the live entry. Do not trust a forged older after-rule identity just
+// because the selected rollback event is individually well formed.
+const validRuleHistoryChain = (history, ruleId, currentRevision) => {
+  let previous = null;
+  for (const row of history) {
+    if (row?.ruleId !== ruleId && row?.after?.id !== ruleId) continue;
+    const revision = row?.after?.revision;
+    if (row?.ruleId !== ruleId || row?.after?.id !== ruleId ||
+        !Number.isSafeInteger(row.revision) || row.revision < 1 ||
+        row.revision !== revision ||
+        (previous !== null && revision !== previous + 1))
+      return false;
+    previous = revision;
+  }
+  return previous !== null && previous === currentRevision;
+};
 const nextRuleRevision = rule => {
   if (!Number.isSafeInteger(rule.revision) || rule.revision < 1 ||
       rule.revision >= Number.MAX_SAFE_INTEGER)
@@ -366,6 +384,7 @@ export function createPersonalRuleStore({
       // History is legacy-compatible and not rewritten on read. However a
       // malformed historical row must never make rollback change identities.
       if (!past || !versionOrderValid ||
+          !validRuleHistoryChain(current.history, ruleId, old.revision) ||
           !validHistoryEvent(selected, ruleId, toRevision,
             current.version, catalog) || toRevision > old.revision)
         throw fail('PERSONAL_STORE_UNKNOWN_REVISION');
