@@ -209,6 +209,22 @@ pub fn reduce(input: &Value) -> Value {
     let Some(op) = input["mode"].as_str().filter(|s| matches!(
         *s, "propose" | "remember" | "transition" | "rollback"))
     else { return refused("PERSONAL_STORE_NATIVE_INVALID"); };
+    // This is NOT an approval verifier. It only rejects impossible Host
+    // receipt metadata before creating an inert projection. Host continues
+    // to verify the approval against its journal and owns the durable write.
+    // JS String.length counts UTF-16 code units, not UTF-8 bytes.
+    match op {
+        "propose" if !input["ownerReceiptId"].is_null() => {
+            return refused("PERSONAL_STORE_NATIVE_INVALID");
+        }
+        "remember" | "transition" | "rollback" => {
+            if !input["ownerReceiptId"].as_str().is_some_and(|id|
+                !id.is_empty() && id.encode_utf16().count() <= 100) {
+                return refused("PERSONAL_STORE_NATIVE_INVALID");
+            }
+        }
+        _ => {}
+    }
     let current = &input["current"];
     let (rule, previous) = match op {
         "propose" => {
@@ -359,7 +375,9 @@ mod tests {
         json!({"schema":INPUT,"mode":mode,"expectedVersion":current["version"],
             "current":current,"previous":null,"candidate":null,
             "ruleId":null,"nextState":null,"toRevision":null,
-            "entryOrder":["rule:a"],"ownerReceiptId":null,
+            "entryOrder":["rule:a"],
+            "ownerReceiptId":if mode == "propose" { Value::Null }
+                else { json!("owner:receipt") },
             "at":"2026-11-21T00:00:00.000Z"})
     }
     #[test]
@@ -643,6 +661,34 @@ mod tests {
         rollback["previous"] = first["rule"].clone();
         rollback["toRevision"] = json!(2);
         assert_eq!(reduce(&rollback)["code"], "PERSONAL_STORE_UNKNOWN_REVISION");
+    }
+    #[test]
+    fn new_receipt_metadata_must_be_exact_and_bounded() {
+        let mut q = input("propose", current());
+        q["candidate"] = rule("rule:a", 1, "proposed");
+        q["ownerReceiptId"] = json!("not-allowed-on-proposal");
+        assert_eq!(reduce(&q)["code"], "PERSONAL_STORE_NATIVE_INVALID");
+        q["ownerReceiptId"] = Value::Null;
+        let proposed = reduce(&q);
+        assert_eq!(proposed["outcome"], "projected");
+
+        let mut accept = input("transition", proposed["next"].clone());
+        accept["ruleId"] = json!("rule:a");
+        accept["previous"] = proposed["rule"].clone();
+        accept["nextState"] = json!("accepted");
+        for malformed in [
+            Value::Null, json!(""), json!(42), json!("x".repeat(101)),
+            json!("🦀".repeat(51)),
+        ] {
+            accept["ownerReceiptId"] = malformed;
+            assert_eq!(reduce(&accept)["code"], "PERSONAL_STORE_NATIVE_INVALID");
+        }
+        let receipt = "🦀".repeat(50);
+        accept["ownerReceiptId"] = json!(receipt);
+        let result = reduce(&accept);
+        assert_eq!(result["outcome"], "projected");
+        assert_eq!(result["next"]["history"][1]["ownerReceiptId"], receipt);
+        assert_eq!(result["authority"], "none");
     }
     #[test]
     fn history_is_bounded_and_order_is_exact() {
