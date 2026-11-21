@@ -34,6 +34,25 @@ const resultShape = (s, rule) => ({
   schema: PERSONAL_STORE_SCHEMA, version: s.version, ruleId: rule.id,
   ruleRevision: rule.revision, state: rule.state, digest: digest(rule),
 });
+// Historical objects remain byte-for-byte unchanged; a selected rollback
+// source or a newly prepared commit must satisfy full event identity.
+const validHistoryEvent = (row, ruleId, revision, storeVersion, catalog) => (
+  row && typeof row === 'object' && !Array.isArray(row) &&
+  row.ruleId === ruleId && row.revision === revision &&
+  Number.isSafeInteger(row.version) && row.version > 0 && row.version <= storeVersion &&
+  ['propose', 'remember', 'transition', 'rollback'].includes(row.op) &&
+  row.after?.id === ruleId && row.after?.revision === revision &&
+  validatePersonalRule(row.after, catalog).ok &&
+  (row.before === null ||
+    (row.before?.id === ruleId && Number.isSafeInteger(row.before?.revision) &&
+      row.before.revision < revision && validatePersonalRule(row.before, catalog).ok))
+);
+const nextRuleRevision = rule => {
+  if (!Number.isSafeInteger(rule.revision) || rule.revision < 1 ||
+      rule.revision >= Number.MAX_SAFE_INTEGER)
+    throw fail('PERSONAL_STORE_INVALID_TRANSITION');
+  return rule.revision + 1;
+};
 export function createPersonalRuleStore({
   dataRoot, catalog, verifyOwnerApproval = () => false,
   now = () => new Date().toISOString(),
@@ -45,6 +64,18 @@ export function createPersonalRuleStore({
     throw fail('PERSONAL_STORE_INVALID_SETUP');
   const dir = path.join(dataRoot, 'control');
   const file = path.join(dir, 'personal-semantics.json');
+  // The trusted verifier must review the exact subject whose transition and
+  // receipt get persisted. Detect callback mutation before any write.
+  function verifiedReceipt(approval, approvalSubject) {
+    const subjectBytes = JSON.stringify(approvalSubject);
+    const receiptId = approval?.receiptId;
+    if (!approval || verifyOwnerApproval(approval, approvalSubject) !== true)
+      throw fail('PERSONAL_STORE_OWNER_APPROVAL_REQUIRED');
+    if (JSON.stringify(approvalSubject) !== subjectBytes ||
+        approval?.receiptId !== receiptId)
+      throw fail('PERSONAL_STORE_APPROVAL_CHANGED');
+    return receiptId;
+  }
   function read() {
     let value;
     try { value = JSON.parse(readFileSync(file, 'utf8')); }
@@ -64,8 +95,14 @@ export function createPersonalRuleStore({
       catch (e) { if (e.code === 'EEXIST') throw fail('PERSONAL_STORE_BUSY'); throw e; }
       const current = read();
       if (current.version !== expectedVersion) throw fail('PERSONAL_STORE_STALE');
+      if (current.version >= Number.MAX_SAFE_INTEGER)
+        throw fail('PERSONAL_STORE_INVALID_TRANSITION');
       const next = mutator(current);
-      if (!validData(next, catalog) || next.version !== current.version + 1)
+      const committed = next?.history?.at(-1);
+      if (!validData(next, catalog) || next.version !== current.version + 1 ||
+          committed?.version !== next.version ||
+          !validHistoryEvent(committed, committed?.ruleId, committed?.revision,
+            next.version, catalog))
         throw fail('PERSONAL_STORE_INVALID_TRANSITION');
       const temp = file + '.' + process.pid + '.' + randomBytes(6).toString('hex') + '.tmp';
       try {
@@ -77,6 +114,8 @@ export function createPersonalRuleStore({
         try { prepared = JSON.parse(readFileSync(temp, 'utf8')); }
         catch { throw fail('PERSONAL_STORE_READBACK_MISMATCH'); }
         if (!validData(prepared, catalog) ||
+            !validHistoryEvent(prepared.history.at(-1),
+              committed.ruleId, committed.revision, prepared.version, catalog) ||
             !isDeepStrictEqual(prepared, JSON.parse(JSON.stringify(next))))
           throw fail('PERSONAL_STORE_READBACK_MISMATCH');
         renameSync(temp, file);
@@ -204,13 +243,13 @@ export function createPersonalRuleStore({
       if((old?.id??null)!==subject.previousId||(old?digest(old):null)!==subject.previousDigest)
         throw fail('PERSONAL_STORE_STALE');
       if(!old&&current.entries.length>=MAX_RULES)throw fail('PERSONAL_STORE_FULL');
-      if(!approval||verifyOwnerApproval(approval,subject)!==true)
-        throw fail('PERSONAL_STORE_OWNER_APPROVAL_REQUIRED');
-      changed={...trial,id:old?.id??'rule:'+randomBytes(12).toString('hex'),revision:old?old.revision+1:1};
+      const revision = old ? nextRuleRevision(old) : 1;
+      const receiptId = verifiedReceipt(approval, subject);
+      changed={...trial,id:old?.id??'rule:'+randomBytes(12).toString('hex'),revision};
       if (!old && current.entries.some(x => x.id === changed.id))
         throw fail('PERSONAL_STORE_CONFLICT');
       return projected(current,changed,'remember',old,{
-        candidate:trial,ownerReceiptId:approval.receiptId,
+        candidate:trial,ownerReceiptId:receiptId,
         matchingRuleIds:matches.map(rule=>rule.id)
       });
     },subject?.storeVersion);
@@ -228,13 +267,13 @@ export function createPersonalRuleStore({
       // No raw boolean, model assertion or unverified receipt bypasses this callback.
       const approvalSubject = { ruleId, ruleDigest: digest(old), nextState,
         storeVersion: current.version, catalogVersion: catalog.version };
-      if (!approval || verifyOwnerApproval(approval, approvalSubject) !== true)
-        throw fail('PERSONAL_STORE_OWNER_APPROVAL_REQUIRED');
-      changed = { ...old, revision: old.revision + 1, state: nextState,
+      const revision = nextRuleRevision(old);
+      const receiptId = verifiedReceipt(approval, approvalSubject);
+      changed = { ...old, revision, state: nextState,
         ...(nextState === 'accepted' ? { source: 'explicit-owner' } : {}) };
       return projected(current, changed, 'transition', old, {
         ruleId, nextState,
-        ownerReceiptId:typeof approval.receiptId === 'string' ? approval.receiptId.slice(0, 100) : null,
+        ownerReceiptId:typeof receiptId === 'string' ? receiptId.slice(0, 100) : null,
       });
     }, expectedVersion);
     return resultShape(next, changed);
@@ -252,17 +291,18 @@ export function createPersonalRuleStore({
       const past = matches.length === 1 ? matches[0].after : null;
       // History is legacy-compatible and not rewritten on read. However a
       // malformed historical row must never make rollback change identities.
-      if (!past || past.id !== ruleId || !validatePersonalRule(past, catalog).ok)
+      if (!past || !validHistoryEvent(matches[0], ruleId, toRevision,
+          current.version, catalog) || toRevision > old.revision)
         throw fail('PERSONAL_STORE_UNKNOWN_REVISION');
       const approvalSubject = { ruleId, ruleDigest: digest(old), nextState: past.state,
         rollbackTo: toRevision, storeVersion: current.version, catalogVersion: catalog.version };
-      if (!approval || verifyOwnerApproval(approval, approvalSubject) !== true)
-        throw fail('PERSONAL_STORE_OWNER_APPROVAL_REQUIRED');
+      const revision = nextRuleRevision(old);
+      const receiptId = verifiedReceipt(approval, approvalSubject);
       // Rollback creates a new revision, preserving history and preventing replay of old approval.
-      changed = { ...past, revision: old.revision + 1 };
+      changed = { ...past, revision };
       return projected(current, changed, 'rollback', old, {
         ruleId, toRevision,
-        ownerReceiptId:typeof approval.receiptId === 'string' ? approval.receiptId.slice(0, 100) : null,
+        ownerReceiptId:typeof receiptId === 'string' ? receiptId.slice(0, 100) : null,
       });
     }, expectedVersion);
     return resultShape(next, changed);
