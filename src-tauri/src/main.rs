@@ -518,8 +518,16 @@ async fn host_is_running(state: State<'_, Arc<HostProcess>>) -> bool {
     // count as readiness. Network health never blocks the Tauri UI thread.
     let state=state.inner().clone();
     tauri::async_runtime::spawn_blocking(move || {
-        let owned=state.probe_child()==ChildState::Running;
-        if owned {HostProcess::health_online()} else {HostProcess::health_online()}
+        match state.probe_child() {
+            ChildState::Running => HostProcess::health_online(),
+            ChildState::Exited|ChildState::NotStarted => {
+                // An exited owned child is not "running" merely because a
+                // different process answered the status port. Only a
+                // deliberate attachment may report independent Host health.
+                *state.readiness.lock().unwrap()==Readiness::Attached &&
+                    HostProcess::health_online()
+            }
+        }
     }).await.unwrap_or(false)
 }
 
