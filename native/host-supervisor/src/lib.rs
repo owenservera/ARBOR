@@ -227,6 +227,40 @@ pub fn verify_host_owner(client: &Client, owner_token: &str) -> bool {
         reply["mac"].as_str().is_some_and(|mac| owner_proof_matches(&challenge, owner_token, mac))
 }
 
+/// Host-controlled, one-use desktop browser session. No persistent token in URL.
+pub fn mint_owner_ui_session(owner_token: &str) -> Result<String, String> {
+    let client=Client::builder().no_proxy().redirect(reqwest::redirect::Policy::none())
+        .connect_timeout(Duration::from_secs(1)).timeout(Duration::from_secs(3))
+        .build().map_err(|_|"Owner session transport unavailable".to_string())?;
+    if !verify_host_owner(&client, owner_token) {
+        return Err("Owner-authenticated Host proof unavailable".into());
+    }
+    let response=client.post("http://127.0.0.1:43187/api/host/control/ui-session")
+        .header("origin","http://127.0.0.1:43187")
+        .header("x-vivim-control","1")
+        .header("content-type","application/json")
+        .bearer_auth(owner_token)
+        .body("{}")
+        .send().map_err(|_|"Owner session request failed".to_string())?;
+    if response.status().as_u16()!=201 {
+        return Err("Host refused owner session".into());
+    }
+    let mut bytes=Vec::new();
+    if response.take(4097).read_to_end(&mut bytes).is_err()||bytes.len()>4096{
+        return Err("Owner session response exceeded bound".into());
+    }
+    let reply:Value=serde_json::from_slice(&bytes)
+        .map_err(|_|"Invalid owner session response".to_string())?;
+    let code=reply["code"].as_str().ok_or("Owner session code missing")?;
+    if !valid_owner_session_code(code){
+        return Err("Invalid owner session code".into());
+    }
+    Ok(format!("http://127.0.0.1:43187/#control-session={code}"))
+}
+pub fn valid_owner_session_code(code:&str)->bool{
+    code.len()==64&&code.bytes().all(|b|b.is_ascii_digit()||(b'a'..=b'f').contains(&b))
+}
+
 pub fn listener_occupied()->bool {
     TcpStream::connect_timeout(&SocketAddr::from(([127,0,0,1],PORT)),
         Duration::from_millis(300)).is_ok()
