@@ -137,11 +137,42 @@ fn context_record(ns: &Namespace, n: &Value) -> Result<ContextRecord, String> {
         source_ref: source_ref.to_string(), digest: digest.to_string(), revision, page, link, provenance })
 }
 
+// One internal, scope-qualified guard for each removed managed source. This
+// record is stored in the same graph/journal as its source, not a second store.
+// It is never admitted as Wiki or effect knowledge by managed retrieval.
+fn deletion_fence_local(local: &str) -> String {
+    format!("vivim-context-t-{:x}", Sha256::digest(local.as_bytes()))
+}
+fn deletion_fence<'a>(g: &'a Graph, ns: &Namespace, local: &str)
+    -> Result<Option<&'a Node>, String> {
+    let id=scoped_graph::qualified_id(ns,&deletion_fence_local(local)).map_err(err)?;
+    let Some(node)=g.node(&id) else { return Ok(None); };
+    if node.properties.get("vivim.context.kind").map(String::as_str)!=Some("tombstone") ||
+        node.properties.get("vivim.context.deletedId").map(String::as_str)!=Some(local) {
+        return Err("RECOVERY_REQUIRED managed deletion fence identity conflict".into());
+    }
+    Ok(Some(node))
+}
+
 // Durable ingest of one authorized record. The change set comes back unchanged
 // when the record is already current, which is the idempotency boundary: a
 // replayed put stages nothing, so the journal bytes stay identical.
-fn stage_record(g: &Graph, changes: GraphChangeSet, record: &ContextRecord) -> Result<GraphChangeSet, String> {
+fn stage_record(g: &Graph, ns: &Namespace, changes: GraphChangeSet, record: &ContextRecord) -> Result<GraphChangeSet, String> {
     let node = &record.node;
+    if let Some(fence)=deletion_fence(g,ns,&record.local)? {
+        if fence.properties.get("vivim.context.deletedKind").map(String::as_str)
+            !=Some(record.kind.as_str()) {
+            return Err("RECOVERY_REQUIRED managed deletion fence kind conflict".into());
+        }
+        let high_water=fence.properties.get("hqkg.provenance.revision")
+            .and_then(|s|s.parse::<u64>().ok())
+            .ok_or("RECOVERY_REQUIRED managed deletion fence revision")?;
+        // Revoked applied receipts are never resurrected, even if a caller
+        // supplies a later graph revision for the same plan identity.
+        if record.kind=="effect" || record.revision<=high_water {
+            return Err("STALE_CONTEXT_SOURCE durable deletion fence".into());
+        }
+    }
     if let Some(old) = g.node(&node.id) {
         if old.properties.get("vivim.context.kind").map(String::as_str) != Some(record.kind.as_str()) {
             return Err("managed context identity conflict".into());
@@ -183,11 +214,11 @@ fn stage_record(g: &Graph, changes: GraphChangeSet, record: &ContextRecord) -> R
 
 // Explicit tombstone. The record names its own source, its kind and the source
 // revision at which it disappeared; omission never deletes. The namespace
-// boundary is checked before any op is built, and the removal itself is fenced
-// at the change-set layer so a source that moved past the observed revision is
-// held instead of erased. A tombstone for an already-absent source is a no-op,
-// which is what makes replay idempotent.
-fn stage_tombstone(g: &Graph, ns: &Namespace, changes: GraphChangeSet, d: &Value)
+// boundary is checked before any op is built. The deletion high-water is
+// persisted as a scoped metadata node alongside the fenced remove, so journal
+// compaction cannot resurrect older source puts. Absent-source replay is a no-op.
+fn stage_tombstone(g: &Graph, ns: &Namespace, changes: GraphChangeSet, d: &Value,
+    complete_high_water: Option<u64>)
     -> Result<(GraphChangeSet, bool), String> {
     let kind = text(d, "kind")?;
     let local = text(d, "id")?;
@@ -217,8 +248,42 @@ fn stage_tombstone(g: &Graph, ns: &Namespace, changes: GraphChangeSet, d: &Value
                     return Err("STALE_CONTEXT_SOURCE".into());
                 }
             }
-            Ok((changes.remove_node_fenced(&id, revision,
-                "Host explicit managed context tombstone", revision), true))
+            let high_water=complete_high_water.unwrap_or(revision);
+            if high_water<old_revision {
+                return Err("STALE_CONTEXT_SOURCE deletion high-water".into());
+            }
+            if let Some(prior)=deletion_fence(g,ns,local)? {
+                if prior.properties.get("vivim.context.deletedKind").map(String::as_str)!=Some(kind) {
+                    return Err("RECOVERY_REQUIRED managed deletion fence kind conflict".into());
+                }
+                let prior_revision=prior.properties.get("hqkg.provenance.revision")
+                    .and_then(|s|s.parse::<u64>().ok())
+                    .ok_or("RECOVERY_REQUIRED managed deletion fence revision")?;
+                if high_water<=prior_revision {
+                    return Err("STALE_CONTEXT_SOURCE deletion high-water regression".into());
+                }
+            }
+            let prior_digest=old.properties.get("hqkg.provenance.digest")
+                .ok_or("invalid prior managed source digest")?;
+            let prior_source=old.properties.get("hqkg.provenance.source")
+                .ok_or("invalid prior managed source provenance")?;
+            let prior_ref=old.properties.get("vivim.context.sourceRef")
+                .ok_or("invalid prior managed source identity")?;
+            let provenance=Provenance {source:prior_source.clone(),
+                revision:high_water,digest:prior_digest.clone()};
+            let mut fence=scoped_graph::node(ns,&deletion_fence_local(local),
+                NodeKind::Concept,"Managed deletion fence",&provenance).map_err(err)?;
+            fence.properties.insert("vivim.context.kind".into(),"tombstone".into());
+            fence.properties.insert("vivim.context.deletedId".into(),local.into());
+            fence.properties.insert("vivim.context.deletedKind".into(),kind.into());
+            fence.properties.insert("vivim.context.sourceRef".into(),prior_ref.clone());
+            fence.properties.insert("vivim.context.deletedRevision".into(),old_revision.to_string());
+            if let Some(body)=old.properties.get("vivim.context.receiptDigest") {
+                fence.properties.insert("vivim.context.receiptDigest".into(),body.clone());
+            }
+            Ok((changes.remove_node_fenced(&id,revision,
+                "Host explicit managed context tombstone",high_water)
+                .put_node(fence),true))
         }
     }
 }
@@ -374,7 +439,7 @@ fn sync_context(v: &Value, ns: &Namespace, journal: &Journal, g: &mut Graph,
                             wiki_page_nodes.remove(local.strip_prefix(&prefix).unwrap_or(""));
                         }
                     }
-                    let (next,applied)=stage_tombstone(g,ns,changes,d)?;
+                    let (next,applied)=stage_tombstone(g,ns,changes,d,None)?;
                     changes=next;
                     if applied { tombstoned+=1; }
                 }
@@ -406,7 +471,7 @@ fn sync_context(v: &Value, ns: &Namespace, journal: &Journal, g: &mut Graph,
             }
             wiki_nodes.insert(record.source_ref.clone(),(record.node.id.clone(),record.revision));
         }
-        changes=stage_record(g,changes,record)?;
+        changes=stage_record(g,ns,changes,record)?;
         ingested+=1;
         if let Some((entry,wiki_revision))=&record.link {
             effect_links.push((record.local.clone(),record.node.id.clone(),entry.clone(),
@@ -585,7 +650,7 @@ fn sync_context(v: &Value, ns: &Namespace, journal: &Journal, g: &mut Graph,
                 .ok_or("invalid historical Wiki section digest")?;
             let exact=json!({"kind":"wiki","id":local,
                 "revision":old_revision,"digest":prior_digest});
-            let (next,deleted_one)=stage_tombstone(g,ns,changes,&exact)?;
+            let (next,deleted_one)=stage_tombstone(g,ns,changes,&exact,Some(wiki_revision))?;
             changes=next;
             if deleted_one {reconciled_sections+=1;}
         }
@@ -640,7 +705,17 @@ fn sync_context(v: &Value, ns: &Namespace, journal: &Journal, g: &mut Graph,
             if old.id.starts_with(&managed_prefix) &&
                 matches!(old.properties.get("vivim.context.kind").map(String::as_str), Some("wiki" | "effect")) &&
                 !wanted.contains(&old.id) {
-                changes = changes.remove_node(&old.id, "Host source no longer in current bounded projection", 0);
+                let local=old.id.strip_prefix(&prefix)
+                        .ok_or("invalid complete managed source scope")?;
+                    let revision=old.properties.get("hqkg.provenance.revision")
+                        .and_then(|s|s.parse::<u64>().ok())
+                        .ok_or("invalid prior managed source revision")?;
+                    let digest=old.properties.get("hqkg.provenance.digest")
+                        .ok_or("invalid prior managed source digest")?;
+                    let exact=json!({"kind":old.properties.get("vivim.context.kind"),
+                        "id":local,"revision":revision,"digest":digest});
+                    let (next,_)=stage_tombstone(g,ns,changes,&exact,None)?;
+                    changes=next;
             }
         }
     }
@@ -782,7 +857,8 @@ fn run() -> Result<Value, String> {
     let marker_id=if let Some(id)=v["opId"].as_str() {if !valid_local(id) {return Err("invalid opId".into());} Some(scoped_graph::qualified_id(&ns,&format!("commit-{id}")).map_err(err)?)} else {None};
     if op=="inspect" || op=="query" {
         let marker=marker_id.as_ref().and_then(|id|g.node(id)).map(|n|json!({"opId":n.properties.get("personal.opId"),"payloadDigest":n.properties.get("personal.payloadDigest"),"epoch":g.epoch()}));
-        let nodes:Vec<Value>=if op=="query" {g.nodes().filter(|n|!n.properties.contains_key("personal.opId")).map(|n|json!({"id":n.id,"title":n.title,"properties":n.properties})).collect()} else {Vec::new()};
+        let nodes:Vec<Value>=if op=="query" {g.nodes().filter(|n|!n.properties.contains_key("personal.opId") &&
+                    n.properties.get("vivim.context.kind").map(String::as_str)!=Some("tombstone")).map(|n|json!({"id":n.id,"title":n.title,"properties":n.properties})).collect()} else {Vec::new()};
         return Ok(json!({"schema":"vivim.hqkg-personal/1","scope":scope,"epoch":g.epoch(),"bytes":before,"marker":marker,"nodes":nodes}));
     }
     if !["apply","erase","preflight","compact","erase-effects"].contains(&op) {return Err("unknown operation".into());}
