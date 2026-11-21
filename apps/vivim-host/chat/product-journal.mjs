@@ -645,7 +645,7 @@ export function projectAppliedControlEffects(control, wikiChanges = null, wikiSt
         !Number.isFinite(Date.parse(receipt.at)) ||
         !['desktop-owner-token', 'direct-phone'].includes(receipt.approvedVia))
       throw new Error('Invalid applied control receipt');
-    let wikiLink = null, structureLink = null;
+    let wikiLink = null, receiptWikiOrigin = null, structureLink = null;
     if (['wiki.section.edit','wiki.capture.save'].includes(receipt.actionId)) {
       const result = receipt.result;
       const edit = wikiByEntry.get(result?.entryId);
@@ -659,6 +659,11 @@ export function projectAppliedControlEffects(control, wikiChanges = null, wikiSt
       // Retain its immutable applied fact, but never claim current lineage to
       // a superseded section. Any content mismatch remains unverified.
       if (!matching) continue;
+      // The committed receipt's original Wiki target is immutable historical
+      // evidence, even if a later edit supersedes the live section. Keep that
+      // identity separate from wikiLink, which may claim *current* lineage only.
+      receiptWikiOrigin={kind:'committed-wiki-origin',
+        entryId:edit.entryId,wikiRevision:edit.wikiRevision};
       if(edit.status==='current-section-revision')
         wikiLink = { kind: 'committed-wiki-change', entryId: edit.entryId, wikiRevision: edit.wikiRevision };
     }
@@ -712,6 +717,7 @@ export function projectAppliedControlEffects(control, wikiChanges = null, wikiSt
       ...(visualLink?{visualLink}:{}),
       ...(sequenceLinks?{sequenceLinks}:{}),
       ...(wikiLink ? { wikiLink } : {}),
+      ...(receiptWikiOrigin ? { receiptWikiOrigin } : {}),
       ...(structureLink ? { structureLink } : {}),
       source: 'host-control-receipt', planId: receipt.planId, planDigest: receipt.planDigest,
       // Exact immutable applied-receipt body; planDigest remains the original
