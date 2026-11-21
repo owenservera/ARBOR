@@ -172,3 +172,71 @@ test('active device-grant switch on startup redacts previous phone projections b
   assert.equal(env.activePhoneSourceScope,
     sha256Hex(JSON.stringify(['phone-source','session',grant])));
 });
+
+
+test('old-grant graph context 403 cannot revoke new context or new session',async()=>{
+  let grant='grant-a',resolveOld;const revoked=[];
+  const env=install({
+    HOST_PREVIEW:false,chatContextEpoch:0,chatContext:null,
+    S:{tab:'wiki',paired:true},transport:{direct:true,deviceHeaders:()=>({
+      'x-vivim-device-session':'session','x-vivim-grant-id':grant
+    }),setDeviceSession:()=>revoked.push('session-cleared')},
+    toast(){},renderFocusPanel(){},clearPrivatePhoneState:()=>revoked.push('private-cleared'),
+    showPairingState(){},setConn(){},isInvalidDeviceSession:code=>code==='GRANT_REVOKED',
+    fetch:async(_url,options)=>options.headers['x-vivim-grant-id']==='grant-a'
+      ?new Promise(resolve=>{resolveOld=resolve})
+      :{ok:true,json:async()=>({schema:'vivim.hqkg-chat-context/1',
+         state:'source-backed',authority:'read-only',focus:'wiki',
+         items:[{title:'B source'}],epoch:2})}
+  },['readGraphContext']);
+  const stale=env.readGraphContext();
+  grant='grant-b';
+  await env.readGraphContext();
+  assert.equal(env.chatContext.items[0].title,'B source');
+  resolveOld({ok:false,status:403,json:async()=>({code:'GRANT_REVOKED'})});
+  await stale;
+  assert.equal(env.chatContext.items[0].title,'B source');
+  assert.deepEqual(revoked,[]);
+});
+
+test('late media read from previous grant cannot leave private metadata displayed',async()=>{
+  let grant='grant-a',resolveOld;
+  const env=install({
+    HOST_PREVIEW:false,mediaGeneration:0,
+    S:{tab:'world',paired:true,mediaLoading:false,mediaAt:0,mediaOffset:0,media:null},
+    transport:{direct:true,deviceHeaders:()=>({
+      'x-vivim-device-session':'session','x-vivim-grant-id':grant
+    })},
+    renderSurfaces(){},isInvalidDeviceSession:()=>false,fetch:async()=>
+      new Promise(resolve=>{resolveOld=resolve})
+  },['refreshMedia']);
+  const stale=env.refreshMedia(true,0);
+  grant='grant-b';
+  resolveOld({ok:true,json:async()=>({
+    schema:'vivim.media-library-summary/1',offset:0,items:[{name:'Grant A private media'}]
+  })});
+  await stale;
+  assert.deepEqual(JSON.parse(JSON.stringify(env.S.media)),{state:'not-authorized'});
+  assert.equal(env.S.mediaLoading,false);
+  assert.equal(env.S.mediaAt,0);
+});
+
+test('stale media ticket revocation cannot revoke a replacement grant',async()=>{
+  let grant='grant-a',resolveOld;const revoked=[];
+  const env=install({
+    HOST_PREVIEW:false,playerActive:false,playerEpoch:0,playerOpen:null,
+    S:{tab:'world',paired:true},location:{origin:'https://host.test'},
+    transport:{direct:true,deviceHeaders:()=>({
+      'x-vivim-device-session':'session','x-vivim-grant-id':grant
+    }),setDeviceSession:()=>revoked.push('session-cleared')},
+    AbortController,clearPrivatePhoneState:()=>revoked.push('private-cleared'),
+    showPairingState(){},setConn(){},isInvalidDeviceSession:code=>code==='GRANT_REVOKED',
+    fetch:async()=>new Promise(resolve=>{resolveOld=resolve})
+  },['openMediaPlayer']);
+  const pending=env.openMediaPlayer('a'.repeat(32),'Private');
+  grant='grant-b';
+  resolveOld({ok:false,status:403,json:async()=>({code:'GRANT_REVOKED'})});
+  await pending;
+  assert.deepEqual(revoked,[]);
+  assert.equal(env.playerActive,false);
+});
