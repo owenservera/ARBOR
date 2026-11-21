@@ -249,6 +249,15 @@ impl Desktop {
                         if view.overview.as_ref()!=Some(&data){view.overview=Some(data);}
                     }
                     Err(error) => {
+                        // The Host summary/Wiki source is not currently
+                        // admissible. Invalidate any independent GET started
+                        // under the previous owner-observation generation.
+                        view.source_epoch=view.source_epoch.wrapping_add(1);
+                        view.graph_detail.clear();
+                        view.graph_status=format!(
+                            "Graph readback withheld after Host observation failure · {}",
+                            error.label()
+                        );
                         view.source_status=if error==ReadError::SnapshotChanged {
                             "Host Wiki changed during summary read · mixed snapshot refused · bounded retry queued".into()
                         } else {
@@ -408,6 +417,9 @@ impl Desktop {
         let key=self.input.read(cx).value().to_string();
         let key=key.trim().to_owned();
         if !vivim_programmability_core::development_projection::valid_query(operation,&key) {
+            // A rejected query supersedes any earlier graph search. Never
+            // allow a late old-query response to reappear under its label.
+            self.graph_query=None;
             self.graph_status="Invalid graph query · use a source name or exact hqg1: file ID".into();
             self.graph_detail.clear();
             cx.notify();return;
