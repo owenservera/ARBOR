@@ -75,6 +75,9 @@ pub struct DevelopmentRead {
     /// SHA256 of the validated query's substantive source response.
     pub source_digest: String,
     pub text: String,
+    /// Derived only from the validated journal response. The rendered
+    /// graph header itself is nonempty even when the query returned zero rows.
+    pub result_empty: bool,
 }
 
 /// Bounded, inert per-query fence on the existing HQKG journal epoch.
@@ -243,9 +246,10 @@ pub fn read_overview() -> Result<Overview, ReadError> {
     // Wiki reads. This proves only that the Wiki projection did not change
     // over this read window, not that all Host systems share a transaction.
     let before = get(&client, Endpoint::Wiki, Some(&token))?;
-    let pwa = get(&client, Endpoint::Pwa, Some(&token))?;
+    let pwa_before = get(&client, Endpoint::Pwa, Some(&token))?;
+    let pwa_after = get(&client, Endpoint::Pwa, Some(&token))?;
     let after = get(&client, Endpoint::Wiki, Some(&token))?;
-    project_bracketed(&pwa,&before,&after)
+    project_double_bracketed(&pwa_before,&pwa_after,&before,&after)
 }
 
 /// Conservatively refuse mixed Wiki observations, rather than presenting a
@@ -255,6 +259,24 @@ pub fn project_bracketed(pwa:&Value,before:&Value,after:&Value)->Result<Overview
     // object must not be silently treated as the same authorized readback.
     if before != after {return Err(ReadError::SnapshotChanged);}
     project(pwa,after)
+}
+
+/// Bracket the Host's nontransactional PWA summary between two Wiki reads.
+/// Stable authoritative snapshots, not timestamps, are compared: each GET
+/// legitimately receives a different observedAt. This bounds Wiki, control
+/// and device drift without pretending there is a shared Host transaction.
+pub fn project_double_bracketed(
+    pwa_before:&Value,pwa_after:&Value,wiki_before:&Value,wiki_after:&Value
+) -> Result<Overview,ReadError> {
+    if pwa_before["schema"]!="vivim.host-pwa-view/1" ||
+       pwa_after["schema"]!="vivim.host-pwa-view/1" {
+        return Err(ReadError::InvalidProjection);
+    }
+    if pwa_before["state"]!=pwa_after["state"] ||
+       pwa_before["snapshot"]!=pwa_after["snapshot"] {
+        return Err(ReadError::SnapshotChanged);
+    }
+    project_bracketed(pwa_after,wiki_before,wiki_after)
 }
 
 /// Owner-only development graph read, from the same Host endpoint used by PWA.
@@ -293,6 +315,16 @@ pub fn project_development(operation:&str,key:&str,data:&Value)->Result<Developm
         ProjectionError::InvalidProjection=>ReadError::InvalidProjection,
     })?;
     let epoch=data["epoch"].as_u64().ok_or(ReadError::InvalidProjection)?;
+    let result=&data["result"];
+    let result_empty=match operation {
+        "symbols"=>result["symbols"].as_array().is_some_and(Vec::is_empty),
+        "sources"=>result["anchors"].as_array().is_some_and(Vec::is_empty),
+        "impact"=>result["files"].as_array().is_some_and(Vec::is_empty),
+        "compute"=>data["outputs"].as_array().is_some_and(Vec::is_empty),
+        "wiring"=>["imports","dependents","semanticObservations","potentialWiring"]
+            .iter().all(|name|result[*name].as_array().is_some_and(Vec::is_empty)),
+        _=>false,
+    };
     // The journal epoch and stable substantive response identify the read.
     // Request time or other transient transport metadata are not part of it.
     let substantive=json!({
@@ -301,7 +333,7 @@ pub fn project_development(operation:&str,key:&str,data:&Value)->Result<Developm
     });
     let source_digest=source_sha256(&substantive)?;
     Ok(DevelopmentRead{epoch,operation:operation.to_owned(),
-        requested_key:key.to_owned(),source_digest,text})
+        requested_key:key.to_owned(),source_digest,text,result_empty})
 }
 
 #[cfg(test)]
@@ -417,6 +449,34 @@ mod tests {
         let two=project_development("symbols","work",&changed).unwrap();
         assert_ne!(one.source_digest,two.source_digest);
         assert!(guard.accept(&two).is_err());
+    }
+    #[test] fn double_bracket_detects_control_and_device_drift_but_not_observation_time() {
+        let wiki=json!({"revision":7,"pages":{"work":{"sections":{}}}});
+        let before=pwa();
+        let mut after=before.clone();
+        after["observedAt"]=json!("2026-11-20T00:00:02Z");
+        assert!(project_double_bracketed(&before,&after,&wiki,&wiki).is_ok());
+        after["snapshot"]["devices"]["active"]=json!(3);
+        assert_eq!(project_double_bracketed(&before,&after,&wiki,&wiki),Err(ReadError::SnapshotChanged));
+        after=before.clone();
+        after["snapshot"]["control"]["recent"]=json!([]);
+        assert_eq!(project_double_bracketed(&before,&after,&wiki,&wiki),Err(ReadError::SnapshotChanged));
+        let mut altered_wiki=wiki.clone();
+        altered_wiki["revision"]=json!(8);
+        assert_eq!(project_double_bracketed(&before,&before,&wiki,&altered_wiki),Err(ReadError::SnapshotChanged));
+    }
+    #[test] fn graph_empty_is_source_derived_not_render_text_length() {
+        let source=json!({
+            "schema":"hqkg.development-query/1","authority":"read-only",
+            "operation":"symbols","epoch":11,"state":"indexed-snapshot",
+            "result":{"symbols":[]}
+        });
+        let empty=project_development("symbols","work",&source).unwrap();
+        assert!(empty.result_empty);
+        assert!(!empty.text.is_empty());
+        let mut filled=source;
+        filled["result"]["symbols"]=json!([{"name":"test","path":"src/main.rs","line":1,"id":"x","fileId":"hqg1:a"}]);
+        assert!(!project_development("symbols","work",&filled).unwrap().result_empty);
     }
     #[test] fn only_fixed_read_paths() {
         for e in [Endpoint::Health, Endpoint::Pwa, Endpoint::Wiki] {

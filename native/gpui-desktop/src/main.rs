@@ -237,7 +237,7 @@ impl Desktop {
                             cx.notify();return;
                         }
                         view.source_status=format!(
-                            "Owner-authorized Host PWA summary SHA256 {} · observed {} · Wiki revision {} · Wiki source SHA256 {} · Wiki stable across summary read; no global transaction claimed",
+                            "Owner-authorized Host PWA summary SHA256 {} · observed {} · Wiki revision {} · Wiki source SHA256 {} · Wiki and Host summary double-bracketed; no global transaction claimed",
                             data.host_snapshot_digest,data.observed_at,
                             data.wiki_revision,data.wiki_digest
                         );
@@ -528,7 +528,7 @@ impl Desktop {
                     Ok(data)=>match view.graph_guard.accept(&data){
                         Ok(())=>{
                             let unchanged=view.graph_detail==data.text;
-                            view.graph_status=if data.text.trim().is_empty() {
+                            view.graph_status=if data.result_empty {
                                 format!("HQKG epoch {} · owner-authorized graph projection genuinely empty · SHA256 {}",
                                     data.epoch,data.source_digest)
                             } else {
