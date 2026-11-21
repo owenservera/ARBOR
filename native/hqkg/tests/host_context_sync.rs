@@ -865,3 +865,30 @@ fn invalid_active_readback_must_not_commit_any_wiki_change() {
     assert_eq!(fs::read(&file).unwrap(),before,
         "invalid retrieval identity cannot save source mutations first");
 }
+
+
+#[test]
+fn active_source_manifest_changes_for_hidden_old_wiki_revisions() {
+    let temp=Temp::new();let file=temp.journal();
+    let rows=(0..32).map(|i|wiki_record(i,1)).collect();
+    let (ok,initial)=sync(&file,SCOPE,rows);
+    assert!(ok,"{initial}");
+    let epoch=initial["epoch"].as_u64().unwrap();
+    let first=read(&file,SCOPE,epoch,"wiki").unwrap();
+    assert_eq!(first["activeSourcesTotal"],32);
+    let first_hash=first["activeSourcesDigest"].as_str().unwrap().to_string();
+    assert_eq!(first_hash.len(),64);
+    assert_eq!(first["items"].as_array().unwrap().len(),8);
+    assert!(first["items"].as_array().unwrap().iter().all(|row|
+        row["sourceRef"]!="page-0"),"old source should be outside the display window");
+    let mut older=wiki_record(0,3);
+    older["summary"]=json!("Revised older committed Wiki source");
+    let (ok,mutated)=delta(&file,SCOPE,3,vec![put(older)]);
+    assert!(ok,"{mutated}");
+    let after=read(&file,SCOPE,mutated["epoch"].as_u64().unwrap(),"wiki").unwrap();
+    assert_eq!(after["activeSourcesTotal"],32);
+    assert_ne!(after["activeSourcesDigest"],first["activeSourcesDigest"],
+        "complete source proof must change even when top-eight items do not");
+    assert_eq!(after["items"],first["items"],
+        "the bounded presentation alone cannot prove all source content");
+}
