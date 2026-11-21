@@ -55,6 +55,8 @@ export interface ComposerBinding {
   maxLength: () => number;
   createInputEvent?: () => Event;
   focusOnApply?: boolean;
+  /** Visual-only pacing of an already Host-approved draft. Defaults to one update. */
+  typingIntervalMs?: number;
 }
 
 export function createComposerDraftAdapter(options: ComposerBinding) {
@@ -64,6 +66,52 @@ export function createComposerDraftAdapter(options: ComposerBinding) {
   let composing = false;
   let stopped = false;
   let applying = false;
+  let humanInputVersion = 0;
+  const ownEvents = new WeakSet<Event>();
+  const onInput = (event: Event) => {
+    if (!ownEvents.has(event)) humanInputVersion++;
+  };
+  field.addEventListener('input', onInput as EventListener);
+  function emitInput() {
+    const event = options.createInputEvent?.() ?? new Event('input', { bubbles: true });
+    ownEvents.add(event);
+    field.dispatchEvent(event);
+  }
+  async function applyVisibleDraft(oldText: string, newText: string, fence: ComposerFence) {
+    const pace = options.typingIntervalMs;
+    if (pace === undefined) {
+      field.value = newText;
+      emitInput();
+      return true;
+    }
+    if (!Number.isSafeInteger(pace) || pace < 0 || pace > 300)
+      throw Error('INVALID_TYPING_INTERVAL');
+    // Only the one Host-admitted result is authoritative. Intermediate frames
+    // are visual previews in the same textarea, never individual Host edits.
+    let prefix = 0;
+    while (prefix < oldText.length && prefix < newText.length &&
+           oldText[prefix] === newText[prefix]) prefix++;
+    const tail = newText.slice(prefix);
+    const frames = Math.min(12, Math.max(1, Math.ceil(tail.length / 8)));
+    const humanBefore = humanInputVersion;
+    let visible = oldText;
+    for (let i = 1; i <= frames; i++) {
+      const now = options.currentFence();
+      if (stopped || composing || humanInputVersion !== humanBefore ||
+          field.value !== visible || !field.isConnected ||
+          field.disabled || field.readOnly || !now ||
+          now.epoch !== fence.epoch || now.sequence !== fence.sequence ||
+          now.viewRevision !== fence.viewRevision ||
+          now.sourceRevision !== fence.sourceRevision) return false;
+      const to = i === frames ? tail.length : Math.floor(tail.length * i / frames);
+      visible = newText.slice(0, prefix) + tail.slice(0, to);
+      field.value = visible;
+      emitInput(); // The existing AutoWiki input listener handles this.
+      if (i < frames && pace)
+        await new Promise<void>(resolve => setTimeout(resolve, pace));
+    }
+    return humanInputVersion === humanBefore && field.value === newText;
+  }
   const start = () => { composing = true; };
   const end = () => { composing = false; };
   field.addEventListener('compositionstart', start as EventListener);
@@ -102,8 +150,8 @@ export function createComposerDraftAdapter(options: ComposerBinding) {
         if (field.value === candidate.newValue) return refusal('NO_CHANGE', correlation);
         // PWA composer and native human input share this same semantic input handler.
         // Do NOT synthesize keydown/Enter/click/submit (those may SEND).
-        field.value = candidate.newValue;
-        field.dispatchEvent(options.createInputEvent?.() ?? new Event('input', { bubbles: true }));
+        if (!(await applyVisibleDraft(candidate.oldValue, candidate.newValue, fence)))
+          return refusal('HUMAN_DRAFT_CONFLICT', correlation);
         if (options.focusOnApply) field.focus?.();
         if (field.value !== candidate.newValue)
           return refusal('RENDER_READBACK_MISMATCH', correlation);
@@ -124,6 +172,7 @@ export function createComposerDraftAdapter(options: ComposerBinding) {
       stopped = true;
       field.removeEventListener('compositionstart', start as EventListener);
       field.removeEventListener('compositionend', end as EventListener);
+      field.removeEventListener('input', onInput as EventListener);
     }
   };
 }
