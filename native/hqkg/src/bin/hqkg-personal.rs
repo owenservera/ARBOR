@@ -139,7 +139,8 @@ fn context_record(ns: &Namespace, n: &Value) -> Result<ContextRecord, String> {
         } else {None};
         if let Some((_,original_revision))=origin.as_ref() {
             if !node.properties.contains_key("vivim.context.receiptDigest") ||
-                source_revision!=original_revision.to_string() {
+                node.properties.get("vivim.context.sourceRevision")
+                    .and_then(|value|value.parse::<u64>().ok())!=Some(*original_revision) {
                 return Err("immutable receipt origin requires matching applied receipt body and source revision".into());
             }
         }
