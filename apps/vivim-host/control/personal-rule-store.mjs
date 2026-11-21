@@ -98,7 +98,10 @@ export function createPersonalRuleStore({
       throw fail('PERSONAL_STORE_APPROVAL_CHANGED');
     }
     const receiptId = approval?.receiptId;
-    if (!approval || verifyOwnerApproval(approval, reviewed) !== true)
+    // Host approval is always tied to an actual journal receipt. A test or
+    // integration verifier returning true is not itself a receipt identity.
+    if (typeof receiptId !== 'string' || receiptId.length === 0 ||
+        !approval || verifyOwnerApproval(approval, reviewed) !== true)
       throw fail('PERSONAL_STORE_OWNER_APPROVAL_REQUIRED');
     if (JSON.stringify(reviewed) !== subjectBytes ||
         JSON.stringify(approvalSubject) !== subjectBytes ||
