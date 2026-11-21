@@ -58,7 +58,7 @@ test('real PWA Wiki HTTP projection rejects rollback and revocation, without sto
   const env = {
     HOST_PREVIEW: false,
     wikiReadSequence: 0, wikiReadScope:null, wikiSourceFence:null,
-    rustWikiSourceStamp:null,rustWikiSourceTransition:null,rustWikiSourceDelta:null,
+    rustUiEngineStatus:null,rustWikiSourceStamp:null,rustWikiSourceTransition:null,rustWikiSourceDelta:null,
     sha256Hex, clearWikiSources() {},
     S: { tab: 'wiki', paired: true, wiki: null, wikiError: '',
       device: { scopes: ['control:read'] } },
@@ -106,7 +106,7 @@ test('same Wiki revision with changed source bytes is refused without optional W
   let grant='grant-a',secondReply;
   const env={
     HOST_PREVIEW:false, wikiReadSequence:0, wikiReadScope:null,wikiSourceFence:null,
-    rustWikiSourceStamp:null,rustWikiSourceTransition:null,rustWikiSourceDelta:null,
+    rustUiEngineStatus:null,rustWikiSourceStamp:null,rustWikiSourceTransition:null,rustWikiSourceDelta:null,
     sha256Hex, clearWikiSources(){},
     S:{tab:'wiki',paired:true,wiki:null,wikiError:'',device:{scopes:['control:read']}},
     transport:{direct:true,deviceHeaders:()=>({
@@ -147,4 +147,27 @@ test('Build Wiki read revocation clears private PWA state; scoped 403 only blank
   assert.match(source,/isInvalidDeviceSession\(denied\.code\|\|denied\.reason\|\|denied\.error\)/);
   assert.match(source,/transport\.setDeviceSession\(null\);\s*clearPrivatePhoneState\(\);/);
   assert.match(source,/build\.setLiveData\(null,revision\); \/\/ a scoped denial/);
+});
+
+
+test('ready native Wiki verifier may not silently downgrade to JS-only identity',async()=>{
+  const wiki={revision:4,pages:{Main:{sections:{Info:'Host source'}}}};
+  const env={
+    HOST_PREVIEW:false,wikiReadSequence:0,wikiReadScope:null,wikiSourceFence:null,
+    rustUiEngineStatus:()=>({fallback:'none'}),rustWikiSourceStamp:()=>undefined,
+    rustWikiSourceTransition:null,rustWikiSourceDelta:null,sha256Hex,
+    clearWikiSources(){},renderWiki(){},
+    S:{tab:'wiki',paired:true,wiki:null,wikiError:'',device:{scopes:['control:read']}},
+    transport:{direct:true,deviceHeaders:()=>({
+      'x-vivim-device-session':'session','x-vivim-grant-id':'grant'
+    })},
+    clearWiki(reason){env.wikiReadSequence++;env.S.wiki=null;env.S.wikiError=reason;},
+    isInvalidDeviceSession:()=>false,fetch:async()=>({ok:true,json:async()=>wiki})
+  };
+  vm.createContext(env);
+  vm.runInContext(functionSource(app,'wikiSourceStampFallback'),env);
+  vm.runInContext(functionSource(app,'refreshWiki'),env);
+  await env.refreshWiki();
+  assert.equal(env.S.wiki,null);
+  assert.match(env.S.wikiError,/Native Wiki source verification unavailable/);
 });
