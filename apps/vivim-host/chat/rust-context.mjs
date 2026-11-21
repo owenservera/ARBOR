@@ -472,8 +472,6 @@ function managedReader({env,dataRoot,productJournal,control,executePersonal,repo
       // One invocation performs both operations against the existing durable graph.
       for (let attempt=0;attempt<2;attempt++) {
         const projection=await snapshot(view),{rows,relationships}=projection,fingerprint=digest(projection);
-        if(!rows.some(row=>view==='owner'||row.kind==='wiki'))
-          return unavailable('RUST_CORE_SOURCE_UNAVAILABLE');
         if(rows.length>MAX_CONTEXT_SOURCES||relationships.length>MAX_CONTEXT_LINK_BATCH)
           return unavailable('RUST_CORE_SOURCE_LIMIT');
         // On process restart an existing HQKG graph may contain older valid
@@ -487,6 +485,11 @@ function managedReader({env,dataRoot,productJournal,control,executePersonal,repo
         } catch(error) {
           if(error?.code!=='ENOENT')return unavailable('RUST_CORE_UNSAFE_JOURNAL');
         }
+        // An empty but fully verified committed Wiki source can invalidate
+        // the last historical sections after restart. No journal and no
+        // sources still yield unavailable; never seed an empty native graph.
+        if(!hasGraph&&!rows.some(row=>view==='owner'||row.kind==='wiki'))
+          return unavailable('RUST_CORE_SOURCE_UNAVAILABLE');
         const plan=planNativeContextSync({scope,view,rows,relationships,
           completeWikiRevision:projection.wikiRevision,last,hasGraph});
         // Intermediate commits extend exactly the same native journal. Each
@@ -507,7 +510,10 @@ function managedReader({env,dataRoot,productJournal,control,executePersonal,repo
             typeof response.changed!=='boolean'||
             (response.compacted!==undefined&&typeof response.compacted!=='boolean')||
             !safeUInt(response.reconciledSections)||
-            (request.completeWikiRevision===undefined&&response.reconciledSections!==0))
+            (request.completeWikiRevision===undefined&&response.reconciledSections!==0)||
+             (response.reconciledRelationships!==undefined&&
+               (!safeUInt(response.reconciledRelationships)||
+                (request.completeWikiRevision===undefined&&response.reconciledRelationships!==0))))
             throw Object.assign(Error('RUST_CORE_CONTRACT_INVALID'),
               {code:'RUST_CORE_CONTRACT_INVALID'});
           if(response.compacted===true)compactions++;
@@ -660,7 +666,8 @@ function managedReader({env,dataRoot,productJournal,control,executePersonal,repo
             }:{})},
           ingestionStats:{nativeBatches:plan.stages.length+1,
             nativeCompactions:compactions,
-            reconciledWikiSections:packet.reconciledSections},
+            reconciledWikiSections:packet.reconciledSections,
+             reconciledWikiLinks:packet.reconciledRelationships??0},
           ...(view==='owner'?{effectRelationships,
             effectRelationshipsTotal:result.effectRelationshipsTotal,
             effectRelationshipsDigest:result.effectRelationshipsDigest}:{}),
