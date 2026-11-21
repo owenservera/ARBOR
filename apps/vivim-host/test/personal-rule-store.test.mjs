@@ -16,10 +16,11 @@ const verify = (approval, expected) =>
   approval?.nextState === expected.nextState && approval?.storeVersion === expected.storeVersion;
 const proposal = version => ({phrase:'quazzlememo',actionId:'ui.theme.set_preset',args:{preset:'dusk'},
   scope:{},expectedVersion:version,source:'system-observed'});
-const withStore = (t, verifier = verify) => {
+const withStore = (t, verifier = verify, nativeReducer) => {
   const dataRoot = mkdtempSync(path.join(os.tmpdir(),'vivim-personal-rules-'));
   t.after(() => rmSync(dataRoot,{recursive:true,force:true}));
-  return {dataRoot, store:createPersonalRuleStore({dataRoot,catalog,verifyOwnerApproval:verifier})};
+  return {dataRoot, store:createPersonalRuleStore({dataRoot,catalog,verifyOwnerApproval:verifier,
+    ...(nativeReducer ? {nativeReducer} : {})})};
 };
 const boundApproval = (store,ruleId,nextState,extra={}) => {
   const state = store.snapshot();
@@ -94,4 +95,83 @@ test('persisted proposals survive reopening without granting activation',t=>{
   assert.equal(reopened.accepted().length,0);
   assert.throws(()=>reopened.transition({ruleId:p.ruleId,nextState:'accepted',expectedVersion:1,
     approval:{approved:true}}),/PERSONAL_STORE_OWNER_APPROVAL_REQUIRED/);
+});
+
+test('remember uses one approved CAS revision; replacement preserves identity and rollback appends',t=>{
+  const approve=(approval,subject)=>approval?.receiptId==='owner-bound' &&
+    approval?.subjectDigest===createHash('sha256').update(JSON.stringify(subject)).digest('hex');
+  const {store}=withStore(t,approve);
+  const rule={phrase:'quazzlememo',actionId:'ui.theme.set_preset',
+    args:{preset:'dusk'},scope:{}};
+  const subject=(rule,previous=null)=>{
+    const snapshot=store.snapshot();
+    return {operation:'remember',catalogVersion:catalog.version,
+      storeVersion:snapshot.version,storeDigest:snapshot.digest,rule,
+      previousId:previous?.id??null,
+      previousDigest:previous?createHash('sha256').update(JSON.stringify(previous)).digest('hex'):null};
+  };
+  const receipt=subject=>({receiptId:'owner-bound',
+    subjectDigest:createHash('sha256').update(JSON.stringify(subject)).digest('hex')});
+  const first=subject(rule);
+  assert.throws(()=>store.remember({subject:first,approval:{approved:true}}),
+    /PERSONAL_STORE_OWNER_APPROVAL_REQUIRED/);
+  assert.equal(store.snapshot().version,0);
+  const remembered=store.remember({subject:first,approval:receipt(first)});
+  assert.equal(remembered.ruleRevision,1);
+  assert.equal(remembered.state,'accepted');
+  const previous=store.snapshot().entries[0];
+  const replacement=subject({...rule,args:{preset:'dawn'}},previous);
+  const changed=store.remember({subject:replacement,approval:receipt(replacement)});
+  assert.equal(changed.ruleId,remembered.ruleId);
+  assert.equal(changed.ruleRevision,2);
+  assert.equal(store.snapshot().entries.length,1);
+  assert.equal(store.snapshot().entries[0].args.preset,'dawn');
+  assert.throws(()=>store.remember({subject:replacement,approval:receipt(replacement)}),
+    /PERSONAL_STORE_STALE/);
+  const rolled=store.rollback({ruleId:remembered.ruleId,toRevision:1,
+    expectedVersion:2,approval:receipt({ruleId:remembered.ruleId,
+      ruleDigest:createHash('sha256').update(JSON.stringify(store.snapshot().entries[0])).digest('hex'),
+      nextState:'accepted',rollbackTo:1,storeVersion:2,catalogVersion:catalog.version})});
+  assert.equal(rolled.ruleRevision,3);
+  assert.equal(store.snapshot().entries[0].args.preset,'dusk');
+  assert.equal(store.history().at(-1).op,'rollback');
+});
+test('native reducer is called only after protected Host approval, mismatch fails closed',t=>{
+  const calls=[];
+  const nativeReducer=(operation,input)=>{
+    assert.equal(operation,'personal-rule-transition');
+    calls.push(input.mode);
+    if(input.mode!=='transition')return null; // old registry/binary fallback
+    return {schema:'vivim.personal-rule-transition/1',outcome:'projected',
+      authority:'none',executionAuthorized:false,effectPerformed:false,
+      next:{...input.current,version:999},rule:{id:'unexpected'}};
+  };
+  const {store}=withStore(t,verify,nativeReducer);
+  const proposalResult=store.propose(proposal(0));
+  assert.deepEqual(calls,['propose']);
+  const failedApproval={authority:'untrusted',approved:true};
+  assert.throws(()=>store.transition({ruleId:proposalResult.ruleId,
+    nextState:'accepted',expectedVersion:1,approval:failedApproval}),
+    /PERSONAL_STORE_OWNER_APPROVAL_REQUIRED/);
+  assert.deepEqual(calls,['propose']);
+  assert.throws(()=>store.transition({ruleId:proposalResult.ruleId,
+    nextState:'accepted',expectedVersion:1,
+    approval:boundApproval(store,proposalResult.ruleId,'accepted')}),
+    /PERSONAL_STORE_NATIVE_MISMATCH/);
+  assert.deepEqual(calls,['propose','transition']);
+  assert.equal(store.snapshot().version,1);
+  assert.equal(store.accepted().length,0);
+  assert.equal(store.history().length,1);
+});
+test('native refusal is not a store transition or an authorization',t=>{
+  const nativeReducer=(_,input)=>input.mode==='propose'?null:{
+    schema:'vivim.personal-rule-transition/1',outcome:'refused',
+    code:'PERSONAL_STORE_STALE',authority:'none',
+    executionAuthorized:false,effectPerformed:false};
+  const {store}=withStore(t,verify,nativeReducer);
+  const p=store.propose(proposal(0));
+  assert.throws(()=>store.transition({ruleId:p.ruleId,nextState:'accepted',
+    expectedVersion:1,approval:boundApproval(store,p.ruleId,'accepted')}),
+    /PERSONAL_STORE_NATIVE_MISMATCH/);
+  assert.equal(store.snapshot().version,1);
 });
