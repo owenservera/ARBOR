@@ -233,7 +233,7 @@ export function verifyStagedRuntime(base,{manifest=null,requireManifest=false}={
    problems.push('invalid runtime manifest files array');
   const expected=new Set();
   const validRel=rel=>typeof rel==='string'&&rel.length>0&&
-   !rel.includes('\\')&&!rel.startsWith('/')&&
+   !rel.includes('\\')&&!rel.includes(':')&&!rel.startsWith('/')&&
    rel.split('/').every(part=>part.length>0&&part!=='.'&&part!=='..');
   for(const entry of Array.isArray(manifest.files)?manifest.files:[]){
    const p=entry?.path;
@@ -277,10 +277,12 @@ export function verifyStagedRuntime(base,{manifest=null,requireManifest=false}={
 export function main(argv){
 const mode=argv[0]||'--check';
 if(!['--check','--prepare','--verify','--stage','--lock'].includes(mode))refuse('Usage: node tools/packaging/prepare-host-runtime.mjs --check|--prepare|--verify [--dir <runtime>]|--stage|--lock');
-const modeArg=argv[1]||null;
-if(modeArg&&!modeArg.startsWith('--'))refuse('Usage: node tools/packaging/prepare-host-runtime.mjs --check|--prepare|--verify [--dir <runtime>]|--stage|--lock');
+const rest=argv.slice(1);
+const usage='Usage: node tools/packaging/prepare-host-runtime.mjs --check|--prepare|--verify [--dir <runtime>]|--stage|--lock';
 if(mode==='--verify'){
- const base=modeArg?path.resolve(process.cwd(),modeArg):runtime;
+ if(rest.length!==0&&!(rest.length===2&&rest[0]==='--dir'&&rest[1]))
+  refuse(usage);
+ const base=rest.length===2?path.resolve(process.cwd(),rest[1]):runtime;
  if(!existsSync(base)){console.log(JSON.stringify({ok:false,problems:['runtime tree not found: '+base],checks:{}}));process.exit(2);}
  const manifestPath=path.join(base,RUNTIME_MANIFEST_NAME);
  const manifest=existsSync(manifestPath)?JSON.parse(readFileSync(manifestPath,'utf8')):null;
@@ -288,6 +290,7 @@ if(mode==='--verify'){
  console.log(JSON.stringify({status:report.ok?'RUNTIME_VERIFIED':'RUNTIME_INVALID',runtime:base,...report}));
  process.exit(report.ok?0:1);
 }
+if(rest.length)refuse(usage);
 if(mode==='--prepare'){
  // The declared Tauri resource path must exist before the owning build runs.
  const dir=ensureRuntimeResourceDir(root);
