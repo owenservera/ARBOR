@@ -17,7 +17,7 @@
 use hqkg::{Error, Graph, Journal, Node, NodeKind};
 use hqkg::graph_change_set::{ApplyLedger, GraphChangeSet};
 use hqkg::scoped_graph::{self, Provenance};
-use hqkg::managed_context::{check_managed_head, project_managed_graph_selected};
+use hqkg::managed_context::{check_managed_head, deletion_fence_manifest, project_managed_graph_selected};
 use hqkg::typed_dag::{GraphDomain, Namespace, RevisionToken};
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
@@ -750,6 +750,9 @@ fn sync_context(v: &Value, ns: &Namespace, journal: &Journal, g: &mut Graph,
             }
         }
     }
+    // A failed deletion-fence proof must refuse persistence, not write a
+    // poisoned head and discover it only during post-commit readback.
+    deletion_fence_manifest(g,&prefix).map_err(quarantine)?;
     let mut compacted=false;
     if changed || before == 0 {
         let bytes = hqkg::serialize(g).map_err(err)?;
