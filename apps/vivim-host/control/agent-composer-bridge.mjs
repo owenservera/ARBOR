@@ -35,7 +35,7 @@ export function createHostComposerBridge({readSnapshot,compute=runNativeProductP
       throw fail('COMPOSER_SOURCE_REVISION_CONFLICT');
     if(previous&&body.revision>previous.revision+1)
       throw fail('COMPOSER_SOURCE_GAP');
-    const changed=!previous||previous.revision!==body.revision||selected!==body.sessionId;
+    const changed=!previous||previous.stale===true||previous.revision!==body.revision||selected!==body.sessionId;
     if(changed)sourceRevision++;
     selected=body.sessionId;
     sessions.set(body.sessionId,{...body,seenAt:clock(),sourceRevision});
