@@ -429,6 +429,15 @@ mod tests {
         assert!(!owner_proof_matches(&challenge, token, "short"));
         assert!(!owner_proof_matches(&challenge[..63], token, good));
     }
+    #[test] fn owner_session_code_is_not_a_persistent_grant() {
+        assert!(valid_owner_session_code(&"a".repeat(64)));
+        assert!(valid_owner_session_code(&"0123456789abcdef".repeat(4)));
+        assert!(!valid_owner_session_code(&"A".repeat(64)));
+        assert!(!valid_owner_session_code("../host/control"));
+        assert!(!valid_owner_session_code(&"a".repeat(63)));
+        // A one-use session is never a bearer owner token.
+        assert!(!valid_owner_session_code("Bearer owner-secret-do-not-export"));
+    }
     #[test] fn inert_state_does_not_start_effects(){
         let s=HostSupervisor::new().snapshot();
         assert_eq!(s.readiness,Readiness::NotChecked);
