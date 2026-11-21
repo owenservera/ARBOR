@@ -30,6 +30,7 @@ import { mountVoiceCapture } from './ux/voice-capture.mjs';
 let rustWikiSourceStamp=null,rustWikiSearch=null,rustWikiSourceTransition=null,rustWikiSourceDelta=null,rustControlReceiptPreview=null,rustUiEngineStatus=null;
 let wikiSourceFence=null; // Rust-stamped source high-water mark, never a grant
 let wikiReadScope=null; // session+grant digest, valid even when optional WASM is unavailable
+let buildWikiSourceScope=null,buildWikiSourceFence=null; // read-only VEC watermark, scoped to grant/surface digest
 if(typeof window!=='undefined'){
   void import('./vec-engines/rust-wasm.mjs')
     .then(module=>{
@@ -597,6 +598,30 @@ function wikiSourceStampFallback(wiki) {
   return {revision:wiki.revision, pagesTotal:Object.keys(wiki.pages).length,
     digest:sha256Hex(canonicalJson(wiki.pages))};
 }
+// One inert admission rule for mounted Wiki and TierFlow Build bindings.
+// The optional native verifier takes precedence over proven portable fallback.
+function verifyWikiSourceStamp(wiki,previous=null) {
+  try {
+    const portable=wikiSourceStampFallback(wiki);
+    const native=rustWikiSourceStamp?.(wiki);
+    if(!native&&rustUiEngineStatus?.()?.fallback==='none')
+      return {state:'blocked',reason:'Native Wiki source verification unavailable'};
+    if(native&&(native.revision!==portable.revision||
+        native.pagesTotal!==portable.pagesTotal||native.digest!==portable.digest))
+      return {state:'blocked',reason:'Native and portable Wiki source identities disagree'};
+    if(previous?.native&&!native)
+      return {state:'blocked',reason:'Previously native-verified Wiki source is unavailable'};
+    const stamp=native??portable,old=previous?.stamp;
+    if(old&&(stamp.revision<old.revision||
+        stamp.revision===old.revision&&stamp.digest!==old.digest))
+      return {state:'blocked',reason:'Wiki source identity unavailable or revision conflict'};
+    if(native&&rustWikiSourceTransition?.(old??null,native)!==true)
+      return {state:'blocked',reason:'Wiki source identity unavailable or revision conflict'};
+    return {state:'accepted',stamp,native:!!native};
+  }catch{
+    return {state:'blocked',reason:'Wiki source identity unavailable'};
+  }
+}
 // The owner-private context is a read-only overlay, not a second Wiki or a device grant.
 function semanticRows(context) {
   const graph = context.semantics;
@@ -989,35 +1014,15 @@ async function refreshWiki() {
       clearWikiSources('Wiki revision regressed');S.wikiContext = null; S.wikiContextError = 'Wiki revision regressed; private context cleared.';
       renderWiki(); return;
     }
-    // The native stamp and the bounded JS fallback must describe identical
-    // Host pages. If native has ever verified this scope, never downgrade to
-    // a JS-only result after a broken/unavailable WASM dispatch.
-    const portableStamp=wikiSourceStampFallback(wiki);
-    const nativeStamp=rustWikiSourceStamp?.(wiki);
-    if(!nativeStamp&&rustUiEngineStatus?.()?.fallback==='none'){
-      clearWiki('Native Wiki source verification unavailable');return;
-    }
-    if(nativeStamp && (nativeStamp.revision!==portableStamp.revision||
-        nativeStamp.pagesTotal!==portableStamp.pagesTotal||
-        nativeStamp.digest!==portableStamp.digest)){
-      clearWiki('Native and portable Wiki source identities disagree');return;
-    }
-    if(wikiSourceFence?.native && !nativeStamp){
-      clearWiki('Previously native-verified Wiki source is unavailable');return;
-    }
-    const stamp=nativeStamp??portableStamp;
-    const previous=wikiSourceFence?.stamp;
-    const consistent=!previous||stamp.revision>previous.revision||
-      stamp.revision===previous.revision&&stamp.digest===previous.digest;
-    if(!consistent || nativeStamp &&
-        rustWikiSourceTransition?.(previous??null,nativeStamp)!==true){
-      clearWiki('Wiki source identity unavailable or revision conflict');return;
-    }
-    const nativeDelta=nativeStamp?rustWikiSourceDelta?.(S.wiki??null,wiki):null;
+    // Wiki and Build share one source-identity rule, not two admission engines.
+    const admission=verifyWikiSourceStamp(wiki,wikiSourceFence);
+    if(admission.state!=='accepted'){clearWiki(admission.reason);return;}
+    const {stamp,native}=admission;
+    const nativeDelta=native?rustWikiSourceDelta?.(S.wiki??null,wiki):null;
     const matchingDelta=!!nativeDelta&&nativeDelta.to.revision===wiki.revision&&
       nativeDelta.to.digest===stamp.digest&&
       (!S.wikiStamp||nativeDelta.from?.digest===S.wikiStamp.digest);
-    wikiSourceFence={key:fenceKey,stamp,native:!!nativeStamp};
+    wikiSourceFence={key:fenceKey,stamp,native};
     if(HOST_PREVIEW)ingestWikiSources(sourceSurface);
     S.wiki = wiki; S.wikiStamp=stamp;
     S.wikiDelta=matchingDelta?nativeDelta:null; S.wikiError = '';
@@ -1039,6 +1044,7 @@ function isInvalidDeviceSession(code) {
 // Session restoration must start from new device proof; no offline replay.
 function clearPrivatePhoneState() {
   wikiSourceFence=null;wikiReadScope=null;
+  buildWikiSourceScope=null;buildWikiSourceFence=null;
   buildBindingSequence++;buildPollSequence++;
   shellPresentation.clear();
   dockAssist?.reset();compose?.resetAssist?.();capabilityLauncher?.close();
@@ -1989,6 +1995,12 @@ async function refreshBuildBindings(snapshot){
    JSON.stringify(['direct-phone',headers?.['x-vivim-device-session'],
      headers?.['x-vivim-grant-id'],surface.surfaceId]);
  if(!build.setBindingScope(bindingScope)){build.setLiveData(null,revision);return;}
+ // Keep only a digest of this exact authorized grant/surface. Never retain
+ // the raw session or grant as a persistent source watermark.
+ const sourceScope=sha256Hex(bindingScope);
+ if(sourceScope!==buildWikiSourceScope){
+   buildWikiSourceScope=sourceScope;buildWikiSourceFence=null;
+ }
  const outcomes=HOST_PREVIEW?snapshot?.studioOutcomes:
    snapshot?.live?.state==='source-backed'?snapshot.live.studioOutcomes:null;
  let wiki=null;
@@ -2018,7 +2030,23 @@ async function refreshBuildBindings(snapshot){
     build?.surface()?.surfaceId!==surface.surfaceId)return;
  if(!authorized()){build.clearBindingScope();build.setLiveData(null,revision);return;}
  if(!HOST_PREVIEW&&!S.device.scopes?.includes('control:read'))wiki=null;
- build.setLiveData(workspaceBindingData({wiki,outcomes}),revision);
+ let admission=null;
+ if(wiki!==null){
+   if(!Number.isSafeInteger(wiki?.revision)||wiki.revision<0||
+       !wiki.pages||typeof wiki.pages!=='object'||Array.isArray(wiki.pages)){
+     build.setLiveData(null,revision);return;
+   }
+   admission=verifyWikiSourceStamp(wiki,buildWikiSourceFence);
+   if(admission.state!=='accepted'){
+     // Do not paint newer Studio rows alongside a conflicted Wiki read:
+     // the entire visual snapshot must remain source-coherent.
+     build.setLiveData(null,revision);return;
+   }
+ }
+ const painted=build.setLiveData(workspaceBindingData({wiki,outcomes}),revision);
+ // Commit the source watermark only after TierFlow paints this authorized
+ // snapshot; an aborted/failed repaint must never advance its revision.
+ if(painted&&admission)buildWikiSourceFence=admission;
 }
 async function pollBuild() {
   buildTimer = 0;
