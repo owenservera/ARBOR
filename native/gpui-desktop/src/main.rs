@@ -18,14 +18,14 @@ use vivim_programmability_core::wiki_read::{self, RevisionGuard as WikiRevisionG
 use vivim_programmability_core::vec::{self, View as VecView, Element as VecElement};
 use gpui::{AnyElement, App, Application, Bounds, Context, Entity, Window, WindowBounds, WindowOptions, div, prelude::*, px, relative, rgb, size};
 
-// Window-local logical pixels, minus the workspace's horizontal padding.
+// GPUI 0.2.2 drawable viewport logical pixels, minus workspace padding.
 // The Host remains responsible for admitting and planning this exact width.
 fn viewport_for_width(width: f32) -> u32 {
     if !width.is_finite() { return 1000; }
     (width - 40.).round().clamp(240., 3840.) as u32
 }
 fn viewport_for_window(window: &Window) -> u32 {
-    viewport_for_width(f32::from(window.bounds().size.width))
+    viewport_for_width(f32::from(window.viewport_size().width))
 }
 
 use gpui_component::{Root, input::{Input, InputState}, button::{Button, ButtonVariants}};
@@ -152,14 +152,16 @@ impl Desktop {
                 // just width: A -> B -> A still invalidates the first A read.
                 if view.viewport_epoch!=epoch || view.viewport_px!=viewport_px
                     || view.source_epoch!=source_epoch {
-                    // The resize debounce may already have fired while the
-                    // old read was in progress. Re-request the latest identity
-                    // only when no Host decision is currently executing.
+                    // The last resize or Host effect invalidated both results.
+                    // A queued refresh replaces this stale response entirely.
                     if std::mem::take(&mut view.refresh_pending) {view.refresh(cx);}
                     return;
                 }
                 if std::mem::take(&mut view.refresh_pending) {
+                    // Never apply the previous source after a fresher request
+                    // has already been queued, even for an unchanged width.
                     view.refresh(cx);
+                    return;
                 }
                 match overview {
                     Ok(data) => {
@@ -216,14 +218,20 @@ impl Desktop {
                         match visual_delta(view.visual.as_ref(),next.as_ref()){
                             Ok(delta)=>{
                                 if delta.is_empty(){
-                                    view.visual_status=next.as_ref().map(|v|format!("Committed {} · revision {} · source fingerprint {} · Rust VEC unchanged",v.surface_id,v.revision,v.fingerprint)).unwrap_or_else(||"Host online · no committed visual surface".into());
+                                    view.visual_status=next.as_ref().map(|v|format!(
+                                        "Committed {} · revision {} · VEC design SHA256 {} · unchanged",
+                                        v.surface_id,v.revision,
+                                        view.vec_view.as_ref().map(|ir|ir.design_digest.as_str()).unwrap_or("not compiled")
+                                    )).unwrap_or_else(||"Host online · no committed visual surface".into());
                                 }else{
                                     match next.as_ref().map(vec::compile).transpose(){
                                         Ok(compiled)=>match vec::diff(view.vec_view.as_ref(),compiled.as_ref()){
                                             Ok(changes)=>{
                                                 view.visual_status=next.as_ref().map(|v|format!(
-                                                    "Committed {} · rev {} · fingerprint {} · Rust VEC: +{} / ~{} / -{} / {} moved / {} reordered / {} bindings{}",
-                                                    v.surface_id,v.revision,v.fingerprint,changes.added.len(),changes.updated.len(),
+                                                    "Committed {} · rev {} · VEC design SHA256 {} · Rust VEC: +{} / ~{} / -{} / {} moved / {} reordered / {} bindings{}",
+                                                    v.surface_id,v.revision,
+                                                    compiled.as_ref().map(|ir|ir.design_digest.as_str()).unwrap_or("not compiled"),
+                                                    changes.added.len(),changes.updated.len(),
                                                     changes.removed.len(),changes.moved.len(),changes.reordered.len(),
                                                     changes.changed_bindings.len(),if changes.theme_changed{" · theme changed"}else{""}
                                                 )).unwrap_or_else(||"Host online · no committed visual surface".into());
