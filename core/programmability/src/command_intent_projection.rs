@@ -11,6 +11,20 @@ const INTENT: &str = "vivim.command-intent/0.1";
 const LANGUAGE: &str = "vivim.control-language/1";
 const MAX_SAFE: u64 = 9_007_199_254_740_991;
 
+// ECMAScript String.prototype.trim does not use the exact same whitespace
+// table as Rust str::trim: notably U+FEFF is trimmed by JS, while U+0085
+// is not. Use Host semantics for source text and catalog argument parity.
+fn js_whitespace(ch: char) -> bool {
+    matches!(ch,
+        '\u{0009}'..='\u{000D}' | '\u{0020}' | '\u{00A0}' |
+        '\u{1680}' | '\u{2000}'..='\u{200A}' |
+        '\u{2028}'..='\u{2029}' | '\u{202F}' |
+        '\u{205F}' | '\u{3000}' | '\u{FEFF}')
+}
+fn js_trim(text: &str) -> &str {
+    text.trim_matches(js_whitespace)
+}
+
 fn catalog_id(id: &str) -> bool {
     let b = id.as_bytes();
     (3..=96).contains(&b.len()) && b[0].is_ascii_lowercase() &&
@@ -53,7 +67,7 @@ fn risk_rank(value: &Value) -> usize {
     }
 }
 fn safe_text(value: &Value) -> bool {
-    value.as_str().is_some_and(|s| !s.is_empty() && s == s.trim())
+    value.as_str().is_some_and(|s| !s.is_empty() && s == js_trim(s))
 }
 fn valid_specs(value: &Value) -> bool {
     let Some(specs) = value.as_object() else { return false };
@@ -99,7 +113,7 @@ fn checked_args(action: &Value, args: &Value) -> Option<Value> {
     let mut normalized = Map::new();
     for (key, spec) in specs {
         let value = values.get(key)?;
-        let text = value.as_str().filter(|s| !s.is_empty() && *s == s.trim())?;
+        let text = value.as_str().filter(|s| !s.is_empty() && *s == js_trim(s))?;
         let valid = match spec["type"].as_str() {
             Some("enum") => spec["values"].as_array()?.iter()
                 .any(|choice| choice.as_str() == Some(text)),
@@ -163,7 +177,7 @@ fn intent_with_meta(outcome: &str, mut fields: Value, meta: &Value) -> Value {
 fn check_reading(reading: &Value, source: &Value, personal: &Value, baseline: &Value) -> bool {
     if reading["schema"] != LANGUAGE ||
         !(reading["input"] == source["text"] ||
-          reading["input"].as_str() == source["text"].as_str().map(str::trim)) {
+          reading["input"].as_str() == source["text"].as_str().map(js_trim)) {
         return false
     }
     let Some(baseline_outcome) = baseline.as_str() else { return false };
@@ -220,7 +234,7 @@ pub fn project(request: &Value) -> Value {
     let source = &request["input"];
     if request["schema"] != INPUT || !source.is_object()
         || !source["text"].as_str().is_some_and(|s| {
-            !s.trim().is_empty() && s.encode_utf16().count() <= 1000
+            !js_trim(s).is_empty() && s.encode_utf16().count() <= 1000
         })
         || !request["catalogVersion"].as_u64().is_some_and(|v| v > 0 && v <= MAX_SAFE)
         || !request["worldRevision"].as_u64().is_some_and(|v| v <= MAX_SAFE)
@@ -334,4 +348,20 @@ pub fn project(request: &Value) -> Value {
         }), &meta),
     };
     result(projected)
+}
+
+
+#[cfg(test)]
+mod host_whitespace_tests {
+    use super::{js_trim, safe_text};
+    use serde_json::json;
+
+    #[test]
+    fn ecmascript_whitespace_exactly_matches_host_for_known_unicode_edges() {
+        assert_eq!(js_trim("\u{FEFF} wiki \u{FEFF}"), "wiki");
+        assert_eq!(js_trim("\u{00A0}theme\u{2028}"), "theme");
+        assert_eq!(js_trim("\u{0085}theme\u{0085}"), "\u{0085}theme\u{0085}");
+        assert!(safe_text(&json!("theme\u{0085}")));
+        assert!(!safe_text(&json!("theme\u{FEFF}")));
+    }
 }
