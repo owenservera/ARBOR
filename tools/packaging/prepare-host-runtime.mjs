@@ -53,7 +53,7 @@ export const CARGO_BUILDS=[
  {package:'vivim-programmability-core',features:[],bins:['vivim-program-validate','vivim-vec-project','vivim-product-pure']},
  {package:'vivim-private-shares',features:[],bins:['vivim-private-shares']}];
 export function cargoArgs(plan,targetDir){
- const args=['build','--release','-p',plan.package];
+ const args=['build','--release','--locked','-p',plan.package];
  if(plan.features?.length)args.push('--features',plan.features.join(','));
  for(const bin of plan.bins)args.push('--bin',bin);
  return [...args,'--target-dir',targetDir];
@@ -70,6 +70,7 @@ function checkInputs({requireLock=true,requireTauri=true}={}){
  const required=[...topFiles.filter(p=>requireLock||p!=='bun.lock'),
    ...(requireTauri?['src-tauri/tauri.conf.json']:[]),...dirs];
  for(const p of required)if(!existsSync(path.join(root,p)))refuse('missing '+p);
+ if(requireLock)for(const p of LOCKFILES)if(!existsSync(path.join(root,p)))refuse('missing frozen lockfile '+p);
  if(requireTauri){
   const c=JSON.parse(readFileSync(path.join(root,'src-tauri/tauri.conf.json'),'utf8'));
   for(const p of Object.keys(c.bundle?.resources||{}))if(/\.apk$/i.test(p))refuse('PWA-first still mandates APK: '+p);
