@@ -11,8 +11,9 @@ const digest=s=>createHash('sha256').update(s).digest('hex');
 const MAX_BYTES=1000, FRESH_MS=25_000, STAGE_MS=60_000, ACK_MS=12_000;
 const bytes=s=>Buffer.byteLength(s,'utf8');
 export function createHostComposerBridge({readSnapshot,compute=runNativeProductPure,
-    clock=()=>Date.now()}={}){
-  if(typeof readSnapshot!=='function'||typeof compute!=='function')
+    onVerifiedSnapshot=async()=>{},clock=()=>Date.now()}={}){
+  if(typeof readSnapshot!=='function'||typeof compute!=='function'||
+     typeof onVerifiedSnapshot!=='function')
     throw fail('COMPOSER_BRIDGE_UNBOUND',503);
   const sessions=new Map(), stages=new Map(), waiters=new Map();
   let selected=null,sourceRevision=0,paused=false,inflight=null;
@@ -218,6 +219,10 @@ export function createHostComposerBridge({readSnapshot,compute=runNativeProductP
        region.data?.localRevision!==phone.revision||
        region.freshness!=='current')
       throw fail('COMPOSER_RENDER_SOURCE_UNVERIFIED');
+    // File materialization is a consequence of the verified Rust snapshot,
+    // never a competing source. Failure leaves the claimed effect UNCERTAIN.
+    await onVerifiedSnapshot(observed);
+    if(inflight!==job||paused)throw fail('COMPOSER_ACK_REVOKED_OR_UNCERTAIN',503);
     clearTimeout(job.timer);inflight=null;
     const result={schema:'vivim.composer-render-proof/1',status:'verified',
       correlationId:body.correlationId,sessionId:body.sessionId,
