@@ -82,7 +82,7 @@ bun run desktop:test:local
 bun run desktop:portable
 ```
 
-The native GPUI workspace offers **Reconnect Host** and **Open Host controls / pairing**. The latter requests a Host-minted, one-use owner browser session after HMAC verification, then asks the OS default browser to open it. This preserves the existing Host administration and onboarding surfaces without duplicating permission or effect authority in GPUI. The launch request is not proof that the browser successfully displayed or exchanged the session.
+**Windows GPUI-only UI policy (owner directive 2026-11-21):** the desktop launcher must start the native `vivim-gpui-desktop.exe` and must never fall back to Edge, Chrome, PWA app mode, WebView, or a browser. The GPUI workspace includes native **Reconnect Host**, command planning/approval, read-only Host decisions, Wiki and VEC projections. The former **Open Host controls / pairing** browser button and its one-use browser session adapter have been removed. Device-pairing administration that has not yet been integrated into GPUI is explicitly **UNAVAILABLE in the native UI**, not silently delegated to another UI. The separate phone PWA is unaffected; no claim of native/phone visual parity is made. Windows GPUI acceptance requires a real GPU window and source-stamped readback. If the native executable cannot be built/launched, fail closed rather than launching a browser.
 
 ### Standalone Windows installer source
 
