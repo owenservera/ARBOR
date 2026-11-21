@@ -784,3 +784,25 @@ test('managed Host readback requires the native durable deletion-fence manifest'
   assert.equal(Object.hasOwn(valid.sourceHighWater,'durableDeletionFencesDigest'),false);
   assert.equal(valid.items[0].summary,'Actual committed Wiki evidence');
 });
+
+test('native admission accepts more than 4096 validated Wiki sources up to the shared 8192-source capacity',()=>{
+  const changeItems=Array.from({length:4097},(_,i)=>{
+    const content='Committed Wiki section '+i;
+    return {source:'host-product-journal',kind:'committed-wiki-edit',
+      status:'current-section-revision',
+      entryId:i.toString(16).padStart(8,'0')+'-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+      wikiRevision:i+2,receivedAt:'2026-11-21T01:00:00Z',
+      content,contentDigest:createHash('sha256').update(content).digest('hex'),
+      relationship:{kind:'mutated-section',page:'Main',section:'S'+i}};
+  });
+  const snapshot={changes:{items:changeItems},context:{wikiRevision:4099,
+    wikiStructure:{pageSources:[],links:[]},capturePages:[]}};
+  const rows=buildNativeKnowledge(snapshot,emptyEffects);
+  assert.equal(rows.length,4097);
+  const plan=planNativeContextSync({scope:'a'.repeat(64),view:'wiki',
+    rows,relationships:[],completeWikiRevision:4099});
+  assert.deepEqual(plan.stages.map(packet=>packet.deltas.length),
+    [512,512,512,512,512,512,512,512,1]);
+  assert.equal(plan.finalPacket.activeIds.length,4097);
+  assert.ok(plan.stages.every(packet=>packet.deltas.length<=512));
+});
