@@ -39,6 +39,7 @@ import { createLiveSourceSurface } from './control/live-source-surface.mjs';
 import { createLiveSystemReadPort } from './control/live-system-read-port.mjs';
 import { createFirstContactLiveSource } from './control/first-contact-live-source.mjs';
 import { createLiveSystemFileMirror } from './control/live-system-file-mirror.mjs';
+import { createLiveSystemDeltaFeed } from './control/live-system-delta-feed.mjs';
 import { createHostComposerBridge } from './control/agent-composer-bridge.mjs';
 import { createDevelopmentReadPort } from './control/development-read-port.mjs';
 import { attachRequestContext } from './control/request-context.mjs';
@@ -211,8 +212,21 @@ export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path
     readComposerObservations: () => composerBridge.observation(),
     readStatus: () => hostSnapshot({dataRoot,bootstrap:runtimeFor()})
   });
-  const composerBridge=createHostComposerBridge({readSnapshot:()=>liveSystem.snapshot(),
-    onVerifiedSnapshot:state=>liveSystemMirror.publish(state)});
+  // A bounded cursor is a transport projection over the SAME Rust live state,
+  // not a second source of truth. Real PWA observations wake owner subscribers.
+  const liveSystemFeed=createLiveSystemDeltaFeed();
+  const readPublishedLiveSystem=async()=>{
+    const observed=await liveSystem.snapshot();
+    liveSystemFeed.publish(observed);
+    return observed;
+  };
+  const composerBridge=createHostComposerBridge({
+    readSnapshot:readPublishedLiveSystem,
+    onVerifiedSnapshot:async state=>{
+      liveSystemFeed.publish(state);
+      await liveSystemMirror.publish(state);
+    }
+  });
   const tokenFor = () => {
     if (token) return token;
     token = loadOwnerToken({ dataRoot }).token;
@@ -505,6 +519,42 @@ export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path
       }
       return;
     }
+    if(pathname==='/api/host/live-system/changes'){
+      if(req.method!=='GET'){
+        res.setHeader('allow','GET');sendJson(res,405,{code:'METHOD'});return;
+      }
+      if(req.headers.origin!==undefined&&
+         String(req.headers.origin).toLowerCase()!=='http://'+host){
+        sendJson(res,403,{code:'ORIGIN'});return;
+      }
+      if(!ownerAuthorized(req,res,tokenFor))return;
+      res.setHeader('cache-control','private, no-store');
+      try{
+        const params=new URL(req.url||'/', 'http://localhost').searchParams;
+        if([...params.keys()].some(k=>!['epoch','after','wait'].includes(k))||
+           [...params.keys()].some(k=>params.getAll(k).length!==1))
+          throw Object.assign(Error('LIVE_FEED_CURSOR_INVALID'),{status:400});
+        const epoch=params.get('epoch'),rawAfter=params.get('after'),
+          rawWait=params.get('wait');
+        if((epoch===null)!==(rawAfter===null)||
+           (rawAfter!==null&&!/^(0|[1-9][0-9]{0,15})$/.test(rawAfter))||
+           (rawWait!==null&&!/^(0|[1-9][0-9]{0,4})$/.test(rawWait)))
+          throw Object.assign(Error('LIVE_FEED_CURSOR_INVALID'),{status:400});
+        const after=rawAfter===null?null:Number(rawAfter);
+        const waitMs=rawWait===null?0:Number(rawWait);
+        if((after!==null&&!Number.isSafeInteger(after))||
+           !Number.isSafeInteger(waitMs)||waitMs<0||waitMs>15000)
+          throw Object.assign(Error('LIVE_FEED_CURSOR_INVALID'),{status:400});
+        await readPublishedLiveSystem();
+        const result=await liveSystemFeed.changes({epoch,after,waitMs});
+        sendJson(res,200,result);
+      }catch(error){
+        sendJson(res,[400,409,429,503].includes(error?.status)?error.status:503,
+          {schema:'vivim.host-live-system-changes/1',state:'unavailable',
+            code:typeof error?.code==='string'?error.code:'LIVE_FEED_UNAVAILABLE'});
+      }
+      return;
+    }
     if(pathname==='/api/host/live-system/proposal/rebase'){
       if(req.method!=='POST'){res.setHeader('allow','POST');sendJson(res,405,{code:'METHOD'});return;}
       if(String(req.headers.origin||'').toLowerCase()!=='http://'+host||
@@ -519,7 +569,7 @@ export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path
            body.discardPending!==true||!Number.isSafeInteger(body.expectedSequence)){
           sendJson(res,400,{code:'LIVE_MIRROR_REBASE_INPUT'});return;
         }
-        await liveSystemMirror.publish(await liveSystem.snapshot());
+        await liveSystemMirror.publish(await readPublishedLiveSystem());
         const result=await liveSystemMirror.rebaseProposal(body);
         sendJson(res,200,result);
       }catch(error){
@@ -550,7 +600,7 @@ export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path
           }
           // Files can propose only the same Rust candidate as the authorized
           // terminal caller. Neither a watcher nor this route performs effects.
-          await liveSystemMirror.publish(await liveSystem.snapshot());
+          await liveSystemMirror.publish(await readPublishedLiveSystem());
           const correlationId='file.'+randomBytes(12).toString('hex');
           const candidateSet=await liveSystemMirror.admitEdited({correlationId});
           const candidates=candidateSet?.commands;
@@ -640,7 +690,7 @@ export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path
       }
       if (!ownerAuthorized(req,res,tokenFor)) return;
       try {
-        const observed=await liveSystem.snapshot();
+        const observed=await readPublishedLiveSystem();
         res.setHeader('cache-control','private, no-store');
         let mirrorState='unavailable';
         try{mirrorState=(await liveSystemMirror.publish(observed)).state}
@@ -714,7 +764,10 @@ export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path
   });
   // Release the Direct share-maintenance timer with the server. Do not leave
   // background cleanup running after the owning Host instance shuts down.
-  server.on('close', () => { try { direct?.close?.(); } catch { /* no timer remains */ } });
+  server.on('close', () => {
+    liveSystemFeed.dispose();
+    try { direct?.close?.(); } catch { /* no timer remains */ }
+  });
   // The persistent Rust computation child belongs to this Host lifetime.
   server.on('close', () => {
     void import('./control/native-product-kernel.mjs')

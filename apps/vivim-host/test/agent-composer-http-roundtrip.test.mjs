@@ -67,6 +67,17 @@ test('real Rust Host Control plan -> one-use Direct phone draft -> source receip
   assert.equal(observation.body.schema,'vivim.composer-observation-receipt/1');
   const snapshot=await owner('GET','/api/host/live-system');
   assert.equal(snapshot.status,200,JSON.stringify(snapshot.body));
+  const initialChanges=await owner('GET','/api/host/live-system/changes?wait=0');
+  assert.equal(initialChanges.status,200,JSON.stringify(initialChanges.body));
+  assert.equal(initialChanges.body.schema,'vivim.host-live-system-changes/1');
+  assert.equal(initialChanges.body.state,'snapshot');
+  assert.equal(initialChanges.body.sequence,snapshot.body.revision);
+  assert.ok(initialChanges.body.regions.some(r=>r.id==='phone.composer'));
+  const idle=await owner('GET','/api/host/live-system/changes?epoch='+
+    encodeURIComponent(snapshot.body.epoch)+'&after='+snapshot.body.revision+'&wait=0');
+  assert.equal(idle.status,200);
+  assert.equal(idle.body.state,'idle');
+  assert.equal((await owner('GET','/api/host/live-system/changes?after=1')).status,400);
   const region=snapshot.body.regions.find(r=>r.id==='phone.composer');
   assert.equal(region.data.draft,'Hello');
   assert.equal(region.writable[0].actionId,'pwa.composer.draft.set');
@@ -126,6 +137,12 @@ test('real Rust Host Control plan -> one-use Direct phone draft -> source receip
   assert.equal(executed.body.result?.status,'verified');
   assert.equal(executed.body.result.draftSent,false);
   assert.equal(executed.body.result.providerEffect,false);
+  const changeDelta=await owner('GET','/api/host/live-system/changes?epoch='+
+    encodeURIComponent(snapshot.body.epoch)+'&after='+snapshot.body.revision+'&wait=0');
+  assert.equal(changeDelta.status,200,JSON.stringify(changeDelta.body));
+  assert.equal(changeDelta.body.state,'delta');
+  assert.ok(changeDelta.body.events.some(e=>e.regionId==='phone.composer'&&
+    e.region.data.draft==='Hello world'));
   const final=await owner('GET','/api/host/live-system');
   assert.equal(final.status,200,JSON.stringify(final.body));
   assert.equal(final.body.regions.find(r=>r.id==='phone.composer').data.draft,'Hello world');

@@ -1,6 +1,6 @@
 // First-contact PWA draft source/delivery binding (TypeScript 7+).
-// Only same-origin, owner-Tailscale phone routes can furnish a delivery;
-// no global event, browser-generated grant, provider send or new CLI.
+// The existing Host Control plan must be claimed before a draft edit can arrive.
+// No global event, browser-generated grant, provider send or new CLI.
 import {createComposerDraftAdapter} from './agent-composer-adapter.ts';
 
 type Fence = {
@@ -14,8 +14,6 @@ type Config = {
   onVerified?:(correlationId:string)=>void;
 };
 const ENDPOINT='/mobile/api/first-contact/composer/';
-const ID=Array.from(crypto.getRandomValues(new Uint8Array(16)),
-  b=>b.toString(16).padStart(2,'0')).join('');
 const validFence=(o:any):o is {
   schema:string;state:string;epoch:string;systemSequence:number;
   viewRevision:number;sourceRevision:number;regionId:string;
@@ -24,13 +22,18 @@ const validFence=(o:any):o is {
   Number.isSafeInteger(o.systemSequence)&&Number.isSafeInteger(o.viewRevision)&&
   Number.isSafeInteger(o.sourceRevision)&&o.regionId==='phone.composer';
 export function mountFirstContactComposer({field,active,maxLength,onVerified}:Config){
+  // Every browser document is an independent source, including repeat mounts.
+  const ID=Array.from(crypto.getRandomValues(new Uint8Array(16)),
+    b=>b.toString(16).padStart(2,'0')).join('');
   let revision=0,composing=false,closed=false,dirty=true,applying=false;
-  let lastSignature='';
+  let lastSignature='',humanEdits=0;
   let fence:Fence|null=null,authDelivery:any=null,pollBusy=false;
   let chain:Promise<unknown>=Promise.resolve();
+  const syntheticEvents=new WeakSet<Event>();
   const headers={'content-type':'application/json','x-vivim-composer':'1'};
   const eligible=()=>!closed&&active()&&document.visibilityState==='visible'&&
     navigator.onLine!==false&&field.isConnected&&!field.disabled&&!field.readOnly;
+  const signature=()=>JSON.stringify([field.value,'vivim',eligible(),composing]);
   async function fetchJson(path:string,options:RequestInit={}):Promise<any>{
     const result=await fetch(ENDPOINT+path,{
       cache:'no-store',credentials:'same-origin',headers,...options
@@ -38,28 +41,31 @@ export function mountFirstContactComposer({field,active,maxLength,onVerified}:Co
     if(!result.ok)throw Error('COMPOSER_PHONE_SOURCE_UNAVAILABLE');
     return result.json();
   }
-  function report(change=true,correlationId?:string):Promise<any>{
+  function report(forceRevision=false,correlationId?:string):Promise<any>{
     if(closed)return Promise.reject(Error('COMPOSER_DISPOSED'));
-    const visible=eligible();
-    const signature=JSON.stringify([field.value,'vivim',visible,composing]);
-    // Visibility/target changes are real source changes, not a new grant.
-    if(change||revision===0||signature!==lastSignature)revision++;
-    lastSignature=signature;
+    const observedSignature=signature();
+    const changed=forceRevision||revision===0||observedSignature!==lastSignature;
+    if(changed){revision++;dirty=true;fence=null;}
+    lastSignature=observedSignature;
     const captured={sessionId:ID,revision,text:field.value,
-      mode:'vivim',visible,composing,
+      mode:'vivim',visible:eligible(),composing,
       ...(correlationId?{correlationId}:{})};
-    dirty=true;fence=null;
     const pending=chain.then(async()=>{
       if(closed)throw Error('COMPOSER_DISPOSED');
-      if(captured.text.length>maxLength())throw Error('COMPOSER_TOO_LARGE');
+      if(new TextEncoder().encode(captured.text).byteLength>maxLength())
+        throw Error('COMPOSER_TOO_LARGE');
       const observed=await fetchJson('observe',{method:'POST',body:JSON.stringify(captured)});
       if(!validFence(observed))throw Error('COMPOSER_FENCE_UNAVAILABLE');
       if(revision===captured.revision&&field.value===captured.text&&
          composing===captured.composing&&eligible()===captured.visible){
-        fence={epoch:observed.epoch,sequence:observed.systemSequence,
-          regionId:observed.regionId,viewRevision:observed.viewRevision,
-          sourceRevision:observed.sourceRevision};
-        dirty=false;
+        // Heartbeats refresh source freshness without briefly revoking draft
+        // editability or manufacturing a source revision.
+        if(changed||dirty){
+          fence={epoch:observed.epoch,sequence:observed.systemSequence,
+            regionId:observed.regionId,viewRevision:observed.viewRevision,
+            sourceRevision:observed.sourceRevision};
+          dirty=false;
+        }
       }
       return observed;
     });
@@ -73,17 +79,34 @@ export function mountFirstContactComposer({field,active,maxLength,onVerified}:Co
       message?.actorId==='desktop-owner'&&eligible()&&!dirty,
     onLocalApplied:async({text,correlationId}:{text:string;correlationId:string})=>{
       if(!applying||field.value!==text)throw Error('COMPOSER_LOCAL_STALE');
-      await report(true,correlationId); // independent, exact #text input readback
+      const beforeHumanEdits=humanEdits;
+      await report(true,correlationId);
+      // A real human edit can occur while the source observation is in flight.
+      // Do not call the Host ACK when the user's draft has won this race.
+      if(humanEdits!==beforeHumanEdits||field.value!==text||!eligible())
+        throw Error('COMPOSER_HUMAN_CONFLICT');
       const ack=await fetchJson('ack',{method:'POST',body:JSON.stringify({
         sessionId:ID,correlationId,stage:'applied-local'
       })});
       if(ack?.schema!=='vivim.composer-ack/1'||ack.state!=='verified'||
          ack.correlationId!==correlationId)throw Error('COMPOSER_HOST_NOT_VERIFIED');
+      if(humanEdits!==beforeHumanEdits||field.value!==text||!eligible())
+        throw Error('COMPOSER_HUMAN_CONFLICT');
       onVerified?.(correlationId);
     },
-    createInputEvent:()=>new Event('input',{bubbles:true})
+    createInputEvent:()=>{
+      const event=new Event('input',{bubbles:true});
+      syntheticEvents.add(event);
+      return event;
+    }
   });
-  const humanInput=()=>{if(!applying)void report(true).catch(()=>{});};
+  const humanInput=(event:Event)=>{
+    // Suppress only the exact internally generated Event. Human input is
+    // never suppressed simply because an agent edit is underway.
+    if(syntheticEvents.has(event))return;
+    humanEdits++;
+    void report(true).catch(()=>{});
+  };
   const startComposition=()=>{composing=true;void report(true).catch(()=>{});};
   const endComposition=()=>{composing=false;void report(true).catch(()=>{});};
   const visibility=()=>{void report(true).catch(()=>{});};
@@ -95,7 +118,7 @@ export function mountFirstContactComposer({field,active,maxLength,onVerified}:Co
     if(pollBusy||!currentFence())return;
     pollBusy=true;
     try{
-      const delivery=await fetchJson('next?sessionId='+encodeURIComponent(ID),{
+      const delivery=await fetchJson('next?sessionId='+encodeURIComponent(ID)+'&wait=15000',{
         headers:{'x-vivim-composer':'1'}
       });
       if(delivery?.schema!=='vivim.agent-composer-delivery/1')return;
@@ -121,6 +144,7 @@ export function mountFirstContactComposer({field,active,maxLength,onVerified}:Co
   },750);
   const heartbeat=setInterval(()=>{if(!closed)void report(false).catch(()=>{});},8000);
   const dispose=()=>{
+    if(closed)return;
     closed=true;clearInterval(timer);clearInterval(heartbeat);
     field.removeEventListener('input',humanInput);
     field.removeEventListener('compositionstart',startComposition);
