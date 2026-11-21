@@ -1,0 +1,20 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://vivim.live/schemas/studio-craft-observation-delta/1",
+  "title":"Read-only observation delta, not a feature regression verdict",
+  "type":"object","additionalProperties":false,
+  "required":["schema","target","snapshots","observedEvidence","roleCounts","states","status","authority","note"],
+  "properties":{
+    "schema":{"const":"vivim.studio-craft-observation-delta/1"},
+    "target":{"type":"object","required":["siteId","origin"]},
+    "snapshots":{"type":"object","required":["before","after"]},
+    "observedEvidence":{"type":"object","required":["added","notPresentInAfter"],"properties":{
+      "added":{"type":"integer","minimum":0},"notPresentInAfter":{"type":"integer","minimum":0}}},
+    "roleCounts":{"type":"array","items":{"type":"object","required":["role","before","after","delta"]}},
+    "states":{"type":"object","required":["before","after"]},
+    "status":{"const":"observation-difference-only"},
+    "authority":{"type":"object","required":["executionAuthorized","activationPermitted","sendPermission"],"properties":{
+      "executionAuthorized":{"const":false},"activationPermitted":{"const":false},"sendPermission":{"const":false}}},
+    "note":{"type":"string"}
+  }
+}
