@@ -574,6 +574,9 @@ mod tests {
         let mut high_revision = input("transition", next["next"].clone());
         high_revision["current"]["version"] = json!(MAX_SAFE - 1);
         high_revision["expectedVersion"] = json!(MAX_SAFE - 1);
+        // A valid store cannot have history from a future CAS version.
+        // Isolate the rule-revision overflow from history validation.
+        high_revision["current"]["history"] = json!([]);
         high_revision["current"]["entries"][0]["revision"] = json!(MAX_SAFE);
         high_revision["previous"] = high_revision["current"]["entries"][0].clone();
         high_revision["ruleId"] = json!("rule:a");
