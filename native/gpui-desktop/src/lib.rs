@@ -35,6 +35,43 @@ pub struct Overview {
 pub enum ReadError {
     Offline, OwnerRequired, Unavailable, InvalidProjection, InvalidInput,
 }
+
+/// A single validated, owner-authorized HQKG response. The epoch is supplied
+/// by the existing graph journal, never synthesized by GPUI.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct DevelopmentRead {
+    pub epoch: u64,
+    pub operation: String,
+    pub requested_key: String,
+    pub text: String,
+}
+
+/// An inert in-memory fence, not a new graph or journal. Unavailability does
+/// not erase the last witnessed graph epoch.
+#[derive(Default)]
+pub struct DevelopmentRevisionGuard {
+    high_epoch: Option<u64>,
+    last: Option<DevelopmentRead>,
+}
+impl DevelopmentRevisionGuard {
+    pub fn accept(&mut self, next: &DevelopmentRead) -> Result<(), ReadError> {
+        if self.high_epoch.is_some_and(|epoch| next.epoch < epoch) {
+            return Err(ReadError::InvalidProjection);
+        }
+        if let Some(previous) = &self.last {
+            if previous.epoch == next.epoch
+                && previous.operation == next.operation
+                && previous.requested_key == next.requested_key
+                && previous.text != next.text
+            {
+                return Err(ReadError::InvalidProjection);
+            }
+        }
+        self.high_epoch = Some(next.epoch);
+        self.last = Some(next.clone());
+        Ok(())
+    }
+}
 impl ReadError {
     pub fn label(&self) -> &'static str {
         match self {
@@ -157,7 +194,7 @@ pub fn read_overview() -> Result<Overview, ReadError> {
 
 /// Owner-only development graph read, from the same Host endpoint used by PWA.
 /// Neither a graph reference nor a symbol name is an execution credential.
-pub fn read_development(operation:&str,key:&str)->Result<String,ReadError>{
+pub fn read_development(operation:&str,key:&str)->Result<DevelopmentRead,ReadError>{
     if !development_projection::valid_query(operation,key){return Err(ReadError::InvalidInput)}
     let client=Client::builder().no_proxy().redirect(reqwest::redirect::Policy::none())
         .timeout(Duration::from_secs(12)).connect_timeout(Duration::from_secs(2))
@@ -176,11 +213,22 @@ pub fn read_development(operation:&str,key:&str)->Result<String,ReadError>{
     response.take(256*1024+1).read_to_end(&mut bytes).map_err(|_|ReadError::Unavailable)?;
     if bytes.len()>256*1024{return Err(ReadError::InvalidProjection)}
     let data:Value=serde_json::from_slice(&bytes).map_err(|_|ReadError::InvalidProjection)?;
-    development_projection::render(operation,&data).map_err(|error|match error{
+    project_development(operation,key,&data)
+}
+
+/// Preserve the same native projection validation before exposing the journal
+/// epoch as a typed field. A requested key is an attribution, not graph truth.
+pub fn project_development(operation:&str,key:&str,data:&Value)->Result<DevelopmentRead,ReadError>{
+    if !development_projection::valid_query(operation,key) {
+        return Err(ReadError::InvalidInput);
+    }
+    let text=development_projection::render(operation,data).map_err(|error|match error{
         ProjectionError::Unavailable=>ReadError::Unavailable,
         ProjectionError::InvalidInput=>ReadError::InvalidInput,
         ProjectionError::InvalidProjection=>ReadError::InvalidProjection,
-    })
+    })?;
+    let epoch=data["epoch"].as_u64().ok_or(ReadError::InvalidProjection)?;
+    Ok(DevelopmentRead{epoch,operation:operation.to_owned(),requested_key:key.to_owned(),text})
 }
 
 #[cfg(test)]
@@ -207,6 +255,28 @@ mod tests {
         let mut p = pwa(); p["state"] = json!("unavailable");
         assert_eq!(project(&p, &json!({})), Err(ReadError::Unavailable));
         assert_eq!(project(&pwa(), &json!({"revision":-1,"pages":{}})), Err(ReadError::InvalidProjection));
+    }
+    #[test] fn development_epoch_fence_rejects_rollback_and_same_epoch_conflict() {
+        let source=json!({
+            "schema":"hqkg.development-query/1","authority":"read-only",
+            "operation":"symbols","epoch":7,"state":"indexed-snapshot",
+            "result":{"symbols":[]}
+        });
+        let first=project_development("symbols","work",&source).unwrap();
+        assert_eq!(first.epoch,7);
+        let mut guard=DevelopmentRevisionGuard::default();
+        assert!(guard.accept(&first).is_ok());
+        assert!(guard.accept(&first).is_ok());
+        let mut rollback=first.clone();
+        rollback.epoch=6;
+        assert_eq!(guard.accept(&rollback),Err(ReadError::InvalidProjection));
+        let mut conflict=first.clone();
+        conflict.text.push_str(" altered");
+        assert_eq!(guard.accept(&conflict),Err(ReadError::InvalidProjection));
+        let mut advance=source;
+        advance["epoch"]=json!(8);
+        let newer=project_development("symbols","work",&advance).unwrap();
+        assert!(guard.accept(&newer).is_ok());
     }
     #[test] fn only_fixed_read_paths() {
         for e in [Endpoint::Health, Endpoint::Pwa, Endpoint::Wiki] {

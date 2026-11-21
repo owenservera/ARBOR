@@ -29,7 +29,7 @@ fn viewport_for_window(window: &Window) -> u32 {
 }
 
 use gpui_component::{Root, input::{Input, InputState}, button::{Button, ButtonVariants}};
-use vivim_gpui_desktop::{Overview, read_overview, read_development, control::{self, Review}, visual::{self, Visual, RevisionGuard}};
+use vivim_gpui_desktop::{Overview, DevelopmentRevisionGuard, read_overview, read_development, control::{self, Review}, visual::{self, Visual, RevisionGuard}};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Panel { Overview, Wiki, Visual, Graph, Control }
@@ -65,6 +65,8 @@ struct Desktop {
     graph_detail: String,
     graph_status: String,
     graph_busy: bool,
+    graph_query: Option<(&'static str,String)>,
+    graph_guard: DevelopmentRevisionGuard,
     review: Option<Review>,
     last_plan: Option<String>,
     busy: bool,
@@ -130,6 +132,9 @@ impl Desktop {
         // Read-only observation is never a substitute for explicit owner
         // review, and does not share the in-flight command/receipt flag.
         if self.busy || self.uncertain || self.review.as_ref().is_some_and(Review::needs_approval) {return;}
+        // Refresh the last explicitly selected graph query, never invent a new
+        // query or poll its source while an approval is pending.
+        self.refresh_graph(cx);
         if self.read_busy {self.refresh_pending=true;return;}
         self.read_busy=true;
         self.refresh_pending=false;
@@ -344,30 +349,63 @@ impl Desktop {
         }).detach();
     }
     fn inspect_graph(&mut self,operation:&'static str,cx:&mut Context<Self>){
-        if self.graph_busy{return}
         let key=self.input.read(cx).value().to_string();
+        let key=key.trim().to_owned();
+        if !vivim_programmability_core::development_projection::valid_query(operation,&key) {
+            self.graph_status="Invalid graph query · use a source name or exact hqg1: file ID".into();
+            self.graph_detail.clear();
+            cx.notify();return;
+        }
+        let same=self.graph_query.as_ref().is_some_and(|(op,prior)|*op==operation && prior==&key);
+        self.graph_query=Some((operation,key.clone()));
+        if !same {self.graph_detail.clear();}
+        self.request_graph(operation,key,cx);
+    }
+    fn refresh_graph(&mut self,cx:&mut Context<Self>){
+        if let Some((operation,key))=self.graph_query.clone() {
+            self.request_graph(operation,key,cx);
+        }
+    }
+    fn request_graph(&mut self,operation:&'static str,key:String,cx:&mut Context<Self>){
+        if self.graph_busy||self.busy||self.uncertain
+            ||self.review.as_ref().is_some_and(Review::needs_approval){return;}
         self.graph_busy=true;
-        self.graph_status=format!("Reading owner-authorized graph {operation} for exact query “{key}”…");
-        self.graph_detail.clear();
+        self.graph_status=format!("Refreshing owner-authorized graph {operation} for “{key}” · previous read may be stale");
         cx.notify();
         let source_epoch=self.source_epoch;
-        let query_key=key.clone();
-        let work=cx.background_executor().spawn(async move{read_development(operation,&query_key)});
+        let query=(operation,key);
+        let request_key=query.1.clone();
+        let work=cx.background_executor().spawn(async move {read_development(operation,&request_key)});
         cx.spawn(async move |this,cx|{
             let result=work.await;
             let _=this.update(cx,|view,cx|{
                 view.graph_busy=false;
                 if view.source_epoch!=source_epoch {
-                    view.graph_status="Discarded graph read predating the Host effect".into();
+                    view.graph_status="Discarded graph read predating a Host effect".into();
                     view.graph_detail.clear();
-                    cx.notify();
+                    cx.notify();return;
+                }
+                if view.graph_query.as_ref()!=Some(&query) {
+                    // Manual query replaced this one during the flight.
+                    view.refresh_graph(cx);
                     return;
                 }
-                match result{
-                    Ok(data)=>{
-                        view.graph_status=format!("Source-backed HQKG · {operation} · query “{key}” · read only");
-                        view.graph_detail=data;
-                    }
+                match result {
+                    Ok(data)=>match view.graph_guard.accept(&data){
+                        Ok(())=>{
+                            let unchanged=view.graph_detail==data.text;
+                            view.graph_status=format!(
+                                "HQKG epoch {} · {} · requested “{}” · {} · read only",
+                                data.epoch,data.operation,data.requested_key,
+                                if unchanged {"unchanged"}else{"updated"}
+                            );
+                            if !unchanged {view.graph_detail=data.text;}
+                        }
+                        Err(_)=>{
+                            view.graph_status="HQKG epoch rollback or same-epoch query conflict · refused".into();
+                            view.graph_detail.clear();
+                        }
+                    },
                     Err(e)=>{
                         view.graph_status=format!("{} · graph result unavailable, not empty",e.label());
                         view.graph_detail.clear();
@@ -684,7 +722,8 @@ fn main() {
                         source_status:"Host source not yet observed".into(),
                         wiki_query:None,status:"Not yet observed".into(),overview:None,visual:None,vec_view:None,visual_status:"Not yet observed".into(),visual_guard:RevisionGuard::default(),wiki_guard:WikiRevisionGuard::default(),wiki_delta:"Not yet observed".into(),wiki_events:Vec::new(),detail:String::new(),
                         review:None,last_plan:None,busy:false,uncertain:false,
-                        graph_detail:String::new(),graph_status:"Graph not yet queried".into(),graph_busy:false};
+                        graph_detail:String::new(),graph_status:"Graph not yet queried".into(),graph_busy:false,
+                        graph_query:None,graph_guard:DevelopmentRevisionGuard::default()};
                     cx.observe_window_bounds(window, |view,window,cx|{
                         view.set_viewport(viewport_for_window(window),cx);
                     }).detach();
