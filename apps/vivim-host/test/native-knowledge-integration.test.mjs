@@ -6,6 +6,7 @@ import { createHash } from 'node:crypto';
 import os from 'node:os';
 import path from 'node:path';
 import { createProductJournal, projectAppliedControlEffects } from '../chat/product-journal.mjs';
+import { createControlJournal, newPlanId } from '../control/journal.mjs';
 import { buildNativeKnowledge, createRustChatContext, discoverOwnerControlReceipts, planNativeContextSync, resolveRustContextRuntime } from '../chat/rust-context.mjs';
 
 async function setup(t) {
@@ -127,6 +128,71 @@ test('real Node → actual Rust CLIs → persisted native Wiki readback',
   assert.equal(next.items[0].summary,'Real updated Wiki value');
   assert.equal(next.items[0].sourceRevision,3);
 });
+
+
+test('real committed Wiki plus persisted D4 receipt survive Rust restart and supersession',
+  {skip: !binaries.personal ?
+    'Native personal binary not built; run the Host + HQKG Rust acceptance journey after packaging' : false},
+  async t=>{
+    const {journal,dataRoot,edit}=await setup(t);
+    await edit('First committed Wiki value',1);
+    const committed=(await journal.readNativeKnowledge({nativeOnly:true,completeSources:true}))
+      .changes.items[0];
+    const controlJournal=createControlJournal({dataRoot});
+    const planId=newPlanId(),actionId='wiki.section.edit',risk='R1';
+    const planBody={schema:'vivim.control-plan-record/1',planId,actionId,risk,
+      args:{target:'Main/About',content:committed.content},
+      source:'desktop',actor:'desktop-owner',origin:'typed',
+      createdAt:new Date().toISOString(),
+      expiresAt:new Date(Date.now()+600000).toISOString()};
+    const planDigest=createHash('sha256').update(JSON.stringify(planBody)).digest('hex');
+    controlJournal.record({...planBody,planDigest});
+    controlJournal.approve(planId,{planId,planDigest,channel:'desktop-owner-token',
+      actor:'desktop-owner',at:new Date().toISOString()});
+    assert.equal(controlJournal.claim(planId),true);
+    controlJournal.finish(planId,{schema:'vivim.control-receipt/1',
+      planId,planDigest,actionId,risk,status:'applied',executionPerformed:true,
+      at:new Date().toISOString(),approvedVia:'desktop-owner-token',
+      result:{entryId:committed.entryId,sequence:committed.sequence,
+        wikiRevision:committed.wikiRevision,
+        previousRevision:committed.previousWikiRevision,
+        page:committed.relationship.page,section:committed.relationship.section,
+        content:committed.content}});
+    const dispatcher={status(id){
+      const actual=controlJournal.get(id);
+      return {planId:id,state:actual.state,actionId:actual.plan.actionId,
+        risk:actual.plan.risk,createdAt:actual.plan.createdAt,
+        receipt:actual.receipt};
+    }};
+    const open=()=>createRustChatContext({env:{},dataRoot,
+      productJournal:journal,control:()=>dispatcher});
+    const first=await open()('wiki',{owner:true});
+    assert.equal(first.state,'source-backed',first.reason);
+    assert.equal(first.effectRelationshipsTotal,1);
+    assert.equal(first.effectRelationships.length,1);
+    assert.equal(first.effectRelationships[0].wikiEntryId,committed.entryId);
+    assert.equal(first.sourceHighWater.indexedAppliedReceipts,1);
+    assert.equal(first.sourceHighWater.scannedAppliedPlans,1);
+    const phone=await open()('wiki');
+    assert.equal(phone.state,'source-backed',phone.reason);
+    assert.equal(Object.hasOwn(phone,'effectRelationships'),false);
+    assert.equal(phone.totalRetrieved,1);
+    assert.notEqual(phone.sourceHighWater.activeSourcesDigest,
+      first.sourceHighWater.activeSourcesDigest);
+    await edit('Superseding Wiki value',2);
+    const after=await open()('wiki',{owner:true});
+    assert.equal(after.state,'source-backed',after.reason);
+    assert.equal(after.effectRelationshipsTotal,0,
+      'old applied receipt must not claim the superseded current Wiki section');
+    assert.equal(after.sourceHighWater.indexedAppliedReceipts,1,
+      'receipt remains durable as historical applied evidence');
+    assert.notEqual(after.sourceHighWater.productJournalDigest,
+      first.sourceHighWater.productJournalDigest);
+    assert.equal(after.totalRetrieved,2);
+    assert.equal(after.items.some(item=>item.summary==='Superseding Wiki value'),true);
+    assert.equal(controlJournal.get(planId).state,'applied');
+  }
+);
 
 test('managed reads share one native invocation per concurrent authorized view and never cache completed results',async t=>{
   const {journal,dataRoot,edit}=await setup(t);
