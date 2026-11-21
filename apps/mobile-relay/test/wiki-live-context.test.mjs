@@ -118,6 +118,7 @@ test('same Wiki revision with changed source bytes is refused without optional W
   };
   vm.createContext(env);
   vm.runInContext(functionSource(app,'wikiSourceStampFallback'),env);
+  vm.runInContext(functionSource(app,'validWikiSourceShape'),env);
   vm.runInContext(functionSource(app,'verifyWikiSourceStamp'),env);
   vm.runInContext(functionSource(app,'refreshWiki'),env);
   await env.refreshWiki();
@@ -167,6 +168,7 @@ test('ready native Wiki verifier may not silently downgrade to JS-only identity'
   };
   vm.createContext(env);
   vm.runInContext(functionSource(app,'wikiSourceStampFallback'),env);
+  vm.runInContext(functionSource(app,'validWikiSourceShape'),env);
   vm.runInContext(functionSource(app,'verifyWikiSourceStamp'),env);
   vm.runInContext(functionSource(app,'refreshWiki'),env);
   await env.refreshWiki();
@@ -207,6 +209,7 @@ test('stale revoked-grant 403 cannot clear newly paired Wiki or revoke its sessi
   };
   vm.createContext(env);
   vm.runInContext(functionSource(app,'wikiSourceStampFallback'),env);
+  vm.runInContext(functionSource(app,'validWikiSourceShape'),env);
   vm.runInContext(functionSource(app,'verifyWikiSourceStamp'),env);
   vm.runInContext(functionSource(app,'refreshWiki'),env);
   const stale=env.refreshWiki();
