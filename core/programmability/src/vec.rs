@@ -138,6 +138,13 @@ pub fn compile_projection(projection:&Value)->Result<Value,VisualError>{
 
 /// Source-derived change-set, not a Host UI mutation or GPU partial-draw claim.
 pub const DELTA_SCHEMA:&str="vivim.vec-change-set/1";
+/// Source-identity-only transition, no private bound value or Host effect.
+#[derive(Clone,Debug,Serialize,PartialEq,Eq)]
+#[serde(rename_all="camelCase")]
+pub struct BindingTransition {
+    pub id:String,pub from_revision:Option<u64>,pub to_revision:Option<u64>,
+    pub to_digest:Option<String>,
+}
 #[derive(Clone,Debug,Serialize,PartialEq,Eq)]
 #[serde(rename_all="camelCase")]
 pub struct Delta{
@@ -145,7 +152,7 @@ pub struct Delta{
     pub from_revision:Option<u64>,pub to_revision:Option<u64>,
     pub added:Vec<String>,pub removed:Vec<String>,pub updated:Vec<String>,
     pub moved:Vec<String>,pub reordered:Vec<String>,
-    pub changed_bindings:Vec<String>,
+    pub changed_bindings:Vec<String>,pub binding_transitions:Vec<BindingTransition>,
     pub theme_changed:bool,pub revision_changed:bool,pub repaint_required:bool,
 }
 fn flatten_ir<'a>(node:&'a Element,parent:Option<&'a str>,index:usize,
@@ -187,6 +194,7 @@ pub fn diff(previous:Option<&View>,next:Option<&View>)->Result<Delta,VisualError
         from_revision:previous.map(|v|v.revision),to_revision:next.map(|v|v.revision),
         added:Vec::new(),removed:Vec::new(),updated:Vec::new(),
         moved:Vec::new(),reordered:Vec::new(),changed_bindings:Vec::new(),
+        binding_transitions:Vec::new(),
         theme_changed:previous.map(|v|(&v.background,&v.foreground,&v.secondary,&v.accent))
             !=next.map(|v|(&v.background,&v.foreground,&v.secondary,&v.accent)),
         revision_changed:previous.map(|v|v.revision)!=next.map(|v|v.revision),
@@ -212,9 +220,14 @@ pub fn diff(previous:Option<&View>,next:Option<&View>)->Result<Delta,VisualError
     if let Some(v)=previous{keys.extend(v.binding_watermarks.keys().cloned())}
     if let Some(v)=next{keys.extend(v.binding_watermarks.keys().cloned())}
     for id in keys{
-        if previous.and_then(|v|v.binding_watermarks.get(&id))
-            !=next.and_then(|v|v.binding_watermarks.get(&id)){
-            out.changed_bindings.push(id);
+        let before=previous.and_then(|v|v.binding_watermarks.get(&id));
+        let after=next.and_then(|v|v.binding_watermarks.get(&id));
+        if before!=after{
+            out.changed_bindings.push(id.clone());
+            out.binding_transitions.push(BindingTransition{
+                id,from_revision:before.map(|v|v.0),to_revision:after.map(|v|v.0),
+                to_digest:after.map(|v|v.1.clone())
+            });
         }
     }
     out.repaint_required=out.theme_changed||out.revision_changed||
@@ -254,6 +267,13 @@ mod vec_revision_tests{
         let updated=compile(&next).unwrap();
         let change=diff(Some(&old),Some(&updated)).unwrap();
         assert_eq!(change.changed_bindings,vec!["personal.open-tasks"]);
+        assert_eq!(change.binding_transitions.len(),1);
+        assert_eq!(change.binding_transitions[0].from_revision,Some(11));
+        assert_eq!(change.binding_transitions[0].to_revision,Some(12));
+        assert_eq!(change.binding_transitions[0].to_digest.as_deref(),Some("b".repeat(64).as_str()));
+        let wire=serde_json::to_value(&change).unwrap();
+        assert_eq!(wire["bindingTransitions"][0]["toRevision"],12);
+        assert!(wire.get("boundContent").is_none());
         assert!(!change.revision_changed);
         assert!(change.repaint_required);
         let mut stale=updated.clone();stale.revision=6;

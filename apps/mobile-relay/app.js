@@ -1,6 +1,7 @@
 // grokbot-authored. Relay PWA shell: same-origin only, no secrets stored in JS-readable storage.
 import { transport } from './transport.mjs';
 import { mountBuildSurface } from './generative-ui/phone-surface.mjs';
+import { sha256Hex } from './generative-ui/portable-digest.mjs';
 import { mountBuildCanvas } from './build-canvas.mjs';
 import { createControlClient } from './control-client.mjs';
 import {workspaceBindingData,hasWorkspaceBinding,projectStudioActivity,readPersonalCaptures} from './generative-ui/workspace-live-data.mjs';
@@ -869,6 +870,11 @@ async function refreshWiki() {
     clearWiki('Owner session required to read the Host Wiki.'); return;
   }
   const session = HOST_PREVIEW ? null : transport.deviceHeaders();
+  if(!HOST_PREVIEW&&(
+      typeof session?.['x-vivim-device-session']!=='string'||!session['x-vivim-device-session']||
+      typeof session?.['x-vivim-grant-id']!=='string'||!session['x-vivim-grant-id'])){
+    clearWiki('A valid paired-device grant is required for Wiki readback.');return;
+  }
   try {
     // The local /api/wiki route is loopback-only, but the embedded desktop
     // owner preview must also have a live, unexpired browser owner session.
@@ -915,18 +921,26 @@ async function refreshWiki() {
       }catch{/* clear private evidence below */}}
     }
     if (sequence !== wikiReadSequence || S.tab !== 'wiki') return;
-    if (!HOST_PREVIEW && transport.deviceHeaders?.()?.['x-vivim-device-session'] !==
-        session['x-vivim-device-session']) return;
+    if (!HOST_PREVIEW && (transport.deviceHeaders?.()?.['x-vivim-device-session'] !==
+        session['x-vivim-device-session'] ||
+        transport.deviceHeaders?.()?.['x-vivim-grant-id'] !==
+        session['x-vivim-grant-id'])) return;
+    // Native and PWA share one pure Rust source digest. Unlike a revision,
+    // the digest catches divergent pages under the same Host revision.
+    // A fresh pairing/grant is a new source scope, not an unauthorized rollback.
+    // Store only its digest, never readable session or grant credentials.
+    const fenceKey=HOST_PREVIEW?'host-owner-preview':sha256Hex(JSON.stringify([
+      'wiki-read',session['x-vivim-device-session'],session['x-vivim-grant-id']]));
+    if(wikiSourceFence && wikiSourceFence.key!==fenceKey){
+      wikiSourceFence=null;
+      clearWikiSources('Wiki authorization scope changed');
+      S.wiki=null;S.wikiStamp=null;S.wikiDelta=null;
+      S.wikiContext=null;S.wikiContextError='';
+    }
     if (S.wiki && wiki.revision < S.wiki.revision) {
       clearWikiSources('Wiki revision regressed');S.wikiContext = null; S.wikiContextError = 'Wiki revision regressed; private context cleared.';
       renderWiki(); return;
     }
-    // Native and PWA share one pure Rust source digest. Unlike a revision,
-    // the digest catches divergent pages under the same Host revision.
-    // Missing WASM does not create an alternative Wiki authority.
-    const fenceKey=HOST_PREVIEW?'host-owner-preview':session?.['x-vivim-device-session'];
-    // Never share source monotonicity across unrelated paired-device sessions.
-    if(wikiSourceFence && wikiSourceFence.key!==fenceKey)wikiSourceFence=null;
     const nativeStamp=rustWikiSourceStamp?.(wiki);
     const validStamp=!!nativeStamp && nativeStamp.revision===wiki.revision &&
       nativeStamp.pagesTotal===Object.keys(wiki.pages).length;

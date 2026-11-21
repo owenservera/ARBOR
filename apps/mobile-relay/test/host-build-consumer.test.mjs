@@ -109,3 +109,14 @@ test('Direct Build binding read is scoped to the active authorization',()=>{
   assert.match(adapter,/function setBindingScope\(identity\)/);
   assert.match(adapter,/bindingFence\.clearScope\(\)/);
 });
+
+test('Wiki readback checks both device grant and session before comparing source revisions',()=>{
+  const source=readFileSync(new URL('../app.js',import.meta.url),'utf8');
+  assert.match(source,/sha256Hex\(JSON\.stringify\(\[/);
+  assert.match(source,/session\['x-vivim-grant-id'\]/);
+  assert.match(source,/session\['x-vivim-device-session'\]/);
+  const scope=source.indexOf("const fenceKey=HOST_PREVIEW?");
+  const oldRevision=source.indexOf("if (S.wiki && wiki.revision < S.wiki.revision)");
+  assert.ok(scope>0&&oldRevision>scope,'scope change must precede rollback validation');
+  assert.match(source,/S\.wiki=null;S\.wikiStamp=null;S\.wikiDelta=null/);
+});
