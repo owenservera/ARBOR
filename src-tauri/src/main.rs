@@ -282,8 +282,9 @@ impl HostProcess {
             }
         }?;
         let client = reqwest::blocking::Client::builder()
-            .timeout(Duration::from_secs(3))
-            .build()
+            .no_proxy().redirect(reqwest::redirect::Policy::none())
+            .connect_timeout(Duration::from_secs(1))
+            .timeout(Duration::from_secs(3)).build()
             .ok()?;
         let response = client
             .post("http://127.0.0.1:43187/api/host/control/ui-session")
@@ -297,8 +298,11 @@ impl HostProcess {
         if !response.status().is_success() {
             return None;
         }
-        let response_text = response.text().ok()?;
-        let reply: serde_json::Value = serde_json::from_str(&response_text).ok()?;
+        let mut bytes=Vec::new();
+        if response.take(4097).read_to_end(&mut bytes).is_err() || bytes.len()>4096 {
+            return None;
+        }
+        let reply:serde_json::Value=serde_json::from_slice(&bytes).ok()?;
         let code = reply.get("code")?.as_str()?;
         if code.len() != 64 || !code.bytes().all(|b| b.is_ascii_hexdigit()) {
             return None;
@@ -447,6 +451,13 @@ impl HostProcess {
         }
     }
 
+    /// Ordinary shell exit must not interrupt a durable Host effect. Dropping
+    /// our process handle leaves the existing PWA-first Host running; another
+    /// shell will attach on its next launch rather than spawning a duplicate.
+    fn relinquish_owned(&self) {
+        let _=self.child.lock().unwrap().take();
+    }
+
     /// Adopt a freshly spawned child, stopping any earlier child this shell still
     /// owns so a second setup pass cannot leak a live process.
     fn store_child(&self, child: Child) {
@@ -501,11 +512,15 @@ impl HostProcess {
 
 /// Real child state, not retained handle presence.
 #[tauri::command]
-async fn host_is_running() -> bool {
-    // Host health is a bounded network probe; it must never stall the
-    // Tauri window's main thread. This includes an existing healthy Host.
-    tauri::async_runtime::spawn_blocking(HostProcess::health_online)
-        .await.unwrap_or(false)
+async fn host_is_running(state: State<'_, Arc<HostProcess>>) -> bool {
+    // OS child state and independent attached-Host state are both observed.
+    // Neither cached handles nor unauthenticated successful TCP connects
+    // count as readiness. Network health never blocks the Tauri UI thread.
+    let state=state.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let owned=state.probe_child()==ChildState::Running;
+        if owned {HostProcess::health_online()} else {HostProcess::health_online()}
+    }).await.unwrap_or(false)
 }
 
 /// Native supervisor view: real child state, runtime origin and approved
@@ -564,7 +579,41 @@ fn reconcile_blocking(app:&tauri::AppHandle, state:&HostProcess,
 }
 
 fn restart_blocking(app: &tauri::AppHandle, state: &HostProcess) -> serde_json::Value {
-    reconcile_blocking(app,state,true,2)
+    let _lifecycle=state.lifecycle.lock().unwrap();
+    // Manual restart stops only the owned child. Never kill an external Host
+    // or replay a Host control effect in the native shell.
+    state.stop_owned();
+    state.auto_recoveries.store(0,Ordering::Release);
+    let result=if state.shutting_down.load(Ordering::Acquire) {
+        Err("Native shell is shutting down".to_owned())
+    } else if HostProcess::health_online() {
+        state.set_readiness(Readiness::Attached,None);Ok(())
+    } else if HostProcess::listener_occupied() {
+        let e="Host port occupied by unverified listener; restart refused".to_owned();
+        state.set_readiness(Readiness::Failed,Some(e.clone()));Err(e)
+    } else {
+        // Direct owned start is serialized with setup and crash recovery.
+        match HostProcess::start(app) {
+            Ok(child)=>{
+                state.store_child(child);
+                if state.wait_owned_healthy(Duration::from_secs(10)) {
+                    state.set_readiness(Readiness::Owned,None);Ok(())
+                } else {
+                    state.stop_owned();
+                    let e="Restarted Host did not become healthy; child reaped".to_owned();
+                    state.set_readiness(Readiness::Failed,Some(e.clone()));Err(e)
+                }
+            }
+            Err(err)=>{
+                let e=format!("Host restart refused: {err}");
+                state.set_readiness(Readiness::Failed,Some(e.clone()));Err(e)
+            }
+        }
+    };
+    let mut payload=state.status_payload(&HostProcess::resolve_runtime(app));
+    payload["ok"]=serde_json::json!(result.is_ok());
+    if let Err(error)=result {payload["error"]=serde_json::json!(error);}
+    payload
 }
 
 #[tauri::command]
@@ -592,12 +641,16 @@ fn main() {
             thread::spawn(move || {
                 let report=reconcile_blocking(&handle,&state,false,2);
                 if report["ok"]==true {
-                    let destination=HostProcess::desktop_launch_url()
-                        .unwrap_or_else(||"http://127.0.0.1:43187/".to_string());
-                    let script=format!("location.href = {};",
-                        serde_json::to_string(&destination).unwrap());
-                    let _=window.eval(&script);
-                    let _=window.set_focus();
+                    if let Some(destination)=HostProcess::desktop_launch_url() {
+                        let script=format!("location.href = {};",
+                            serde_json::to_string(&destination).unwrap());
+                        let _=window.eval(&script);
+                        let _=window.set_focus();
+                    } else {
+                        // Do not substitute an uncredentialed control URL when
+                        // the Host refused the exact owner browser session.
+                        eprintln!("VIVIM Host online but owner UI session unavailable");
+                    }
                 } else {
                     eprintln!("VIVIM Host startup not ready: {}",report["error"]);
                 }
@@ -640,7 +693,9 @@ fn main() {
                 let state=handle.state::<Arc<HostProcess>>();
                 state.shutting_down.store(true,Ordering::Release);
                 let _lifecycle=state.lifecycle.lock().unwrap();
-                state.stop_owned();
+                // Closing a companion window cannot abort a Host effect.
+                // Manual restart is the only shell path which stops the child.
+                state.relinquish_owned();
                 state.set_readiness(Readiness::Stopped,None);
             }
         });
