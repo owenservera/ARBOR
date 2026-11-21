@@ -1491,3 +1491,33 @@ fn superseded_d4_receipt_preserves_immutable_original_wiki_origin_without_live_e
     assert!(!ok,"the original applied Wiki origin must not be stripped: {denied}");
     assert_eq!(fs::read(&file).unwrap(),preserved);
 }
+
+
+#[test]
+fn original_d4_wiki_commit_requires_a_fingerprinted_matching_receipt_revision() {
+    let temp=Temp::new();let file=temp.journal();
+    let origin=json!({"kind":"committed-wiki-origin",
+        "entryId":ENTRY,"wikiRevision":2});
+    let mut unverified=effect();
+    unverified["receiptWikiOrigin"]=origin.clone();
+    let (ok,refused)=sync(&file,SCOPE,vec![wiki(ENTRY,2,"Committed"),unverified]);
+    assert!(!ok,"unfingerprinted receipt must not claim historical provenance: {refused}");
+    let original=fs::read(&file).unwrap_or_default();
+    let mut mismatched=effect();
+    mismatched["receiptDigest"]=json!("f".repeat(64));
+    mismatched["receiptWikiOrigin"]=json!({"kind":"committed-wiki-origin",
+        "entryId":ENTRY,"wikiRevision":3});
+    let (ok,refused)=sync(&file,SCOPE,vec![wiki(ENTRY,2,"Committed"),mismatched]);
+    assert!(!ok,"mismatched original source revision must be refused: {refused}");
+    assert_eq!(fs::read(&file).unwrap_or_default(),original);
+    let mut valid=effect();
+    valid["receiptDigest"]=json!("f".repeat(64));
+    valid["receiptWikiOrigin"]=origin;
+    let (ok,committed)=sync(&file,SCOPE,vec![wiki(ENTRY,2,"Committed"),valid]);
+    assert!(ok,"fingerprinted historical provenance should be admitted: {committed}");
+    let owner=read(&file,SCOPE,committed["epoch"].as_u64().unwrap(),"owner").unwrap();
+    assert_eq!(owner["effectRelationshipsTotal"],1);
+    assert_eq!(owner["items"].as_array().unwrap().iter()
+        .find(|item|item["kind"]=="effect").unwrap()
+        ["receiptWikiOrigin"]["entryId"],ENTRY);
+}
