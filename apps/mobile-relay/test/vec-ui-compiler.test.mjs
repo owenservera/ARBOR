@@ -208,3 +208,22 @@ test('VEC source fingerprints normalize field order without retaining private te
   assert.equal(fence.prepare({'personal.recent-notes':{...source,items:[{label:'Changed',detail:'Read only'}]}}).code,
     'LIVE_BINDING_REVISION_CONFLICT');
 });
+
+test('VEC binding marks are scoped to a paired grant without retaining raw credentials',()=>{
+  const fence=createVecBindingFence(['personal.open-tasks']);
+  const row=(revision,label)=>({'personal.open-tasks':{state:'source-backed',
+    revision,total:1,items:[{label,detail:'Authorized source'}]}});
+  assert.equal(fence.bindScope('session-a:grant-a:my-space').state,'changed');
+  assert.equal(fence.prepare(row(7,'Private')).commit(),true);
+  assert.deepEqual(fence.status(),[{id:'personal.open-tasks',revision:7}]);
+  assert.equal(fence.bindScope('session-a:grant-a:my-space').state,'unchanged');
+  assert.equal(fence.prepare(row(6,'Old')).code,'LIVE_BINDING_REVISION_CONFLICT');
+  assert.equal(fence.bindScope('session-b:grant-b:my-space').state,'changed');
+  assert.deepEqual(fence.status(),[]);
+  assert.equal(fence.prepare(row(1,'Other owner')).commit(),true);
+  assert.equal(fence.clearScope().state,'cleared');
+  assert.deepEqual(fence.status(),[]);
+  assert.equal(fence.prepare(row(2,'Unavailable')).code,'BINDING_SCOPE_UNAVAILABLE');
+  assert.equal(fence.bindScope('session-b:grant-b:my-space').state,'changed');
+  assert.equal(JSON.stringify(fence.status()).includes('grant-b'),false);
+});

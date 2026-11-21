@@ -170,6 +170,20 @@ export function mountBuildSurface(mount, { onCommit = () => {}, semantic = null,
     event.preventDefault();event.stopPropagation();
     selectInstance(target,surface.revision,'tap');
   },true);
+  function setBindingScope(identity){
+    const state=bindingFence.bindScope(identity);
+    if(state.state==='refused')return false;
+    if(state.state==='changed'&&liveData!==null){
+      liveData=null;
+      if(surface){try{render(surface);}catch{clear();return false;}}
+    }
+    return true;
+  }
+  function clearBindingScope(){
+    bindingFence.clearScope();
+    liveData=null;
+    if(surface){try{render(surface);}catch{clear();}}
+  }
   function setLiveData(data,revision){
     if(!surface||surface.revision!==revision)return false;
     const candidate=bindingFence.prepare(data);
@@ -189,7 +203,8 @@ export function mountBuildSurface(mount, { onCommit = () => {}, semantic = null,
       return true;
     }catch{clear();return false;}
   }
-  return { render, setSurface, setLiveData, clear, listInstances, selectInstance, selectedInstance, setInspecting, surface: () => surface,
+  return { render, setSurface, setLiveData, setBindingScope, clearBindingScope,
+    clear, listInstances, selectInstance, selectedInstance, setInspecting, surface: () => surface,
     draftSurface: () => initialDraft, pending: () => pending,
     revisionState: () => revisionGuard.status(),
     bindingRevisions: () => bindingFence.status() };

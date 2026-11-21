@@ -988,7 +988,7 @@ function clearPrivatePhoneState() {
   S.sigs.ux = null; S.sigs.msgs = null; S.sigs.list = null;
   $('app').hidden = true; $('pairbox').hidden = false;
   document.body.classList.remove('paired', 'offline-shell');
-  if (build) build.clear();
+  if (build){build.clearBindingScope();build.clear();}
   window.dispatchEvent(new CustomEvent('vivim:paired', { detail: { paired: false } }));
 }
 // Native media playback is an explicit user action. All bytes stay on the Host
@@ -1905,7 +1905,13 @@ async function refreshBuildBindings(snapshot){
  const authorized=()=>HOST_PREVIEW?!!S.statusObj:transport.direct&&S.paired&&navigator.onLine!==false&&
    !!headers&&!!transport.deviceHeaders?.()&&transport.deviceHeaders?.()?.['x-vivim-device-session']===headers['x-vivim-device-session']&&
    transport.deviceHeaders?.()?.['x-vivim-grant-id']===headers['x-vivim-grant-id'];
- if(!authorized()){build.setLiveData(null,revision);return;}
+ if(!authorized()){build.clearBindingScope();build.setLiveData(null,revision);return;}
+ // Bind the live revision fence to the same grant/session that authorized
+ // this read. A new device or Host scope starts a new private watermark.
+ const bindingScope=HOST_PREVIEW?'loopback-owner:'+surface.surfaceId:
+   JSON.stringify(['direct-phone',headers?.['x-vivim-device-session'],
+     headers?.['x-vivim-grant-id'],surface.surfaceId]);
+ if(!build.setBindingScope(bindingScope)){build.setLiveData(null,revision);return;}
  const outcomes=HOST_PREVIEW?snapshot?.studioOutcomes:
    snapshot?.live?.state==='source-backed'?snapshot.live.studioOutcomes:null;
  let wiki=null;
@@ -1922,7 +1928,7 @@ async function refreshBuildBindings(snapshot){
  }
  if(seq!==buildBindingSequence||S.tab!=='build'||build?.surface()?.revision!==revision||
     build?.surface()?.surfaceId!==surface.surfaceId)return;
- if(!authorized()){build.setLiveData(null,revision);return;}
+ if(!authorized()){build.clearBindingScope();build.setLiveData(null,revision);return;}
  if(!HOST_PREVIEW&&!S.device.scopes?.includes('control:read'))wiki=null;
  build.setLiveData(workspaceBindingData({wiki,outcomes}),revision);
 }

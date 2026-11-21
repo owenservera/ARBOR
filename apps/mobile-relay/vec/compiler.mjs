@@ -115,6 +115,10 @@ export function createVecBindingFence(ids=[]){
       ids.some(id=>typeof id!=='string'||!id||id.length>80))
     throw new TypeError('INVALID_VEC_BINDING_SET');
   const allowed=new Set(ids),high=new Map();
+  // A paired-phone grant change is not a source rollback. Isolate its
+  // ephemeral revision history by the exact authenticated session/surface.
+  // Keep only a digest of the scope identity; never persist raw grants.
+  let scoped=false,scopeDigest=null;
   const blocked=code=>({state:'blocked',code,revisions:[]});
   const revision=n=>Number.isSafeInteger(n)&&n>=0&&n<=1_000_000_000;
   function fingerprint(value){
@@ -148,8 +152,23 @@ export function createVecBindingFence(ids=[]){
     }catch{return null;}
   }
   return Object.freeze({
+    bindScope(identity){
+      if(typeof identity!=='string'||identity.length<1||identity.length>512)
+        return {state:'refused',code:'INVALID_BINDING_SCOPE'};
+      let digest;
+      try{digest=sha256Hex(identity);}catch{return {state:'refused',code:'INVALID_BINDING_SCOPE'}}
+      if(scoped&&scopeDigest===digest)return {state:'unchanged',code:'NONE'};
+      high.clear();
+      scoped=true;scopeDigest=digest;
+      return {state:'changed',code:'NONE'};
+    },
+    clearScope(){
+      high.clear();scopeDigest=null;scoped=true;
+      return {state:'cleared',code:'NONE'};
+    },
     prepare(data){
       if(data===null)return {state:'unavailable',code:'SOURCE_UNAVAILABLE',revisions:[]};
+      if(scoped&&!scopeDigest)return blocked('BINDING_SCOPE_UNAVAILABLE');
       if(!plain(data))return blocked('INVALID_LIVE_BINDINGS');
       const keys=Reflect.ownKeys(data);
       if(keys.length>32||keys.some(key=>typeof key!=='string'||!allowed.has(key)||

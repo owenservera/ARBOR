@@ -98,3 +98,14 @@ test('Build consumer uses the real VEC source watermark in the TierFlow path',()
   assert.match(source,/bindingRevisions: \(\) => bindingFence\.status\(\)/);
   assert.match(source,/renderSurface\(mount, s,/);
 });
+
+test('Direct Build binding read is scoped to the active authorization',()=>{
+  const app=readFileSync(new URL('../app.js',import.meta.url),'utf8');
+  assert.match(app,/build\.setBindingScope\(bindingScope\)/);
+  assert.match(app,/build\.clearBindingScope\(\)/);
+  assert.match(app,/'x-vivim-device-session'/);
+  assert.match(app,/'x-vivim-grant-id'/);
+  const adapter=readFileSync(new URL('../generative-ui/phone-surface.mjs',import.meta.url),'utf8');
+  assert.match(adapter,/function setBindingScope\(identity\)/);
+  assert.match(adapter,/bindingFence\.clearScope\(\)/);
+});
