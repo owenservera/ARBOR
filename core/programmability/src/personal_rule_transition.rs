@@ -108,10 +108,31 @@ fn valid_history_target(row: &Value, id: &str, to: u64, version: u64,
     if before.is_null() {
         return to == 1 && matches!(row["op"].as_str(), Some("propose" | "remember"));
     }
-    matches!(row["op"].as_str(), Some("remember" | "transition" | "rollback"))
-        && valid_rule(before)
-        && before["id"] == id
-        && before["revision"].as_u64().is_some_and(|n| n.checked_add(1) == Some(to))
+    if !matches!(row["op"].as_str(), Some("remember" | "transition" | "rollback"))
+        || !valid_rule(before)
+        || before["id"] != id
+        || !before["revision"].as_u64().is_some_and(|n| n.checked_add(1) == Some(to))
+    {
+        return false;
+    }
+    match row["op"].as_str() {
+        Some("remember") => before["state"] == "accepted",
+        Some("rollback") => true,
+        Some("transition") => {
+            if !can_transition(before["state"].as_str().unwrap_or(""),
+                after["state"].as_str().unwrap_or("")) {
+                return false;
+            }
+            let mut expected = before.clone();
+            expected["revision"] = json!(to);
+            expected["state"] = after["state"].clone();
+            if after["state"] == "accepted" {
+                expected["source"] = json!("explicit-owner");
+            }
+            expected == *after
+        }
+        _ => false,
+    }
 }
 
 // Every Host mutation appends exactly one event and increases store version
@@ -583,6 +604,31 @@ mod tests {
         rollback["previous"] = second["rule"].clone();
         rollback["toRevision"] = json!(2);
         assert_eq!(reduce(&rollback)["code"], "PERSONAL_STORE_UNKNOWN_REVISION");
+    }
+    #[test]
+    fn rollback_refuses_forged_prior_transition_payload() {
+        let mut q = input("propose", current());
+        q["candidate"] = rule("rule:a", 1, "proposed");
+        let first = reduce(&q);
+        let mut transition = input("transition", first["next"].clone());
+        transition["previous"] = first["rule"].clone();
+        transition["ruleId"] = json!("rule:a");
+        transition["nextState"] = json!("accepted");
+        let accepted = reduce(&transition);
+        assert_eq!(accepted["outcome"], "projected");
+        for (field, replacement) in [
+            ("state", json!("suspended")),
+            ("args", json!({"preset":"dawn"})),
+        ] {
+            let mut changed = accepted["next"].clone();
+            changed["history"][1]["after"][field] = replacement;
+            let mut rollback = input("rollback", changed);
+            rollback["ruleId"] = json!("rule:a");
+            rollback["previous"] = accepted["rule"].clone();
+            rollback["toRevision"] = json!(2);
+            assert_eq!(reduce(&rollback)["code"], "PERSONAL_STORE_UNKNOWN_REVISION",
+                "tampered after field {field}");
+        }
     }
     #[test]
     fn rollback_never_selects_future_history_or_unrelated_prior_rule() {
