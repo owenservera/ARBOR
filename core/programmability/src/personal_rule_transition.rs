@@ -56,7 +56,9 @@ fn valid_store(current: &Value) -> Option<u64> {
         if !row.is_object()
             || !row["ruleId"].is_string()
             || !row["at"].is_string()
-            || !row["version"].as_i64().is_some_and(|n| n.unsigned_abs() <= MAX_SAFE)
+            // History is a bounded series of committed Host versions. A
+            // negative, zero or future version is never a valid write source.
+            || !row["version"].as_u64().is_some_and(|n| n > 0 && n <= version)
         { return None; }
     }
     Some(version)
@@ -77,6 +79,30 @@ fn can_transition(from: &str, to: &str) -> bool {
         ("proposed", "accepted" | "revoked")
         | ("accepted", "suspended" | "revoked")
         | ("suspended", "accepted" | "revoked"))
+}
+
+// A rollback is a new revision of *this* rule, not a restoration of an
+// arbitrary object selected by revision alone. Retain legacy history bytes
+// and validate the selected record without fabricating missing metadata.
+fn valid_history_target(row: &Value, id: &str, to: u64, version: u64,
+                        current_revision: u64) -> bool {
+    if row["ruleId"] != id
+        || row["revision"].as_u64() != Some(to)
+        || row["version"].as_u64().is_none_or(|v| v == 0 || v > version)
+        || !matches!(row["op"].as_str(), Some(
+            "propose" | "remember" | "transition" | "rollback"))
+        || to > current_revision
+    {
+        return false;
+    }
+    let after = &row["after"];
+    if !valid_rule(after) || after["id"] != id || after["revision"] != to {
+        return false;
+    }
+    let before = &row["before"];
+    before.is_null() || (valid_rule(before)
+        && before["id"] == id
+        && before["revision"].as_u64().is_some_and(|n| n < to))
 }
 fn assemble(input: &Value, current: &Value, version: u64,
             rule: Value, previous: Value, op: &str) -> Option<Value> {
@@ -252,7 +278,8 @@ pub fn reduce(input: &Value) -> Value {
                 return refused("PERSONAL_STORE_UNKNOWN_REVISION");
             }
             let past = &first["after"];
-            if !valid_rule(past) || past["id"] != id {
+            if !valid_history_target(first, id, to, version,
+                old["revision"].as_u64().unwrap_or(0)) {
                 return refused("PERSONAL_STORE_UNKNOWN_REVISION");
             }
             let Some(revision) = next_revision(old) else {
@@ -468,6 +495,46 @@ mod tests {
         high_revision["ruleId"] = json!("rule:a");
         high_revision["nextState"] = json!("accepted");
         assert_eq!(reduce(&high_revision)["code"], "PERSONAL_STORE_INVALID_TRANSITION");
+    }
+    #[test]
+    fn rollback_rejects_tampered_event_identity_without_rewriting_history() {
+        let mut q = input("propose", current());
+        q["candidate"] = rule("rule:a", 1, "proposed");
+        let first = reduce(&q);
+        let mutations: Vec<(&str, Value)> = vec![
+            ("revision", json!(99)),
+            ("op", json!("injected")),
+            ("version", json!(2)),
+            ("before", rule("rule:other", 1, "accepted")),
+        ];
+        for (field, replacement) in mutations {
+            let mut changed = first["next"].clone();
+            changed["history"][0][field] = replacement;
+            let mut rollback = input("rollback", changed);
+            rollback["ruleId"] = json!("rule:a");
+            rollback["previous"] = first["rule"].clone();
+            rollback["toRevision"] = json!(1);
+            let result = reduce(&rollback);
+            assert_eq!(result["outcome"], "refused", "field: {field}");
+            assert!(matches!(result["code"].as_str(),
+                Some("PERSONAL_STORE_UNKNOWN_REVISION" | "PERSONAL_STORE_NATIVE_INVALID")),
+                "field: {field}");
+            assert_eq!(result["executionAuthorized"], false);
+        }
+    }
+    #[test]
+    fn rollback_never_selects_future_history_or_unrelated_prior_rule() {
+        let mut q = input("propose", current());
+        q["candidate"] = rule("rule:a", 1, "proposed");
+        let first = reduce(&q);
+        let mut changed = first["next"].clone();
+        changed["history"][0]["revision"] = json!(2);
+        changed["history"][0]["after"]["revision"] = json!(2);
+        let mut rollback = input("rollback", changed);
+        rollback["ruleId"] = json!("rule:a");
+        rollback["previous"] = first["rule"].clone();
+        rollback["toRevision"] = json!(2);
+        assert_eq!(reduce(&rollback)["code"], "PERSONAL_STORE_UNKNOWN_REVISION");
     }
     #[test]
     fn history_is_bounded_and_order_is_exact() {
