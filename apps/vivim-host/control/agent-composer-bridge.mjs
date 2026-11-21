@@ -46,6 +46,16 @@ export function createHostComposerBridge({readSnapshot,compute=runNativeProductP
       sourceRevision,localRevision:body.revision,authority:'source-only',
       executionAuthorized:false,effectPerformed:false};
   }
+  async function observeWithFence(body){
+    const accepted=observe(body);
+    const state=await readSnapshot();
+    const region=state?.regions?.find(r=>r.id==='phone.composer');
+    if(!region||region.data?.sessionId!==body.sessionId||
+       region.sourceRevision!==accepted.sourceRevision)
+      throw fail('COMPOSER_FENCE_UNAVAILABLE',503);
+    return {...accepted,epoch:state.epoch,systemSequence:state.revision,
+      viewRevision:region.viewRevision,regionId:'phone.composer'};
+  }
   function observation(){
     const item=active();
     if(!item)return [];
@@ -201,5 +211,5 @@ export function createHostComposerBridge({readSnapshot,compute=runNativeProductP
         correlationId:inflight.proposal.candidate.correlationId,
         stage:inflight.delivered?'delivered-uncertain':'awaiting-poll'}:null};
   }
-  return Object.freeze({observe,observation,stage,execute,delivery,acknowledge,setPaused,status});
+  return Object.freeze({observe,observeWithFence,observation,stage,execute,delivery,acknowledge,setPaused,status});
 }
