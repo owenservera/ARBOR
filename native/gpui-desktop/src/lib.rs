@@ -242,6 +242,9 @@ pub fn read_overview() -> Result<Overview, ReadError> {
         .build().map_err(|_| ReadError::Unavailable)?;
     validate_health(&get(&client, Endpoint::Health, None)?)?;
     let token = owner_token()?;
+    if !vivim_host_supervisor::verify_host_owner(&client,&token) {
+        return Err(ReadError::OwnerRequired);
+    }
     // Bracket a non-transactional Host summary GET between two authorized
     // Wiki reads. This proves only that the Wiki projection did not change
     // over this read window, not that all Host systems share a transaction.
@@ -288,6 +291,9 @@ pub fn read_development(operation:&str,key:&str)->Result<DevelopmentRead,ReadErr
         .build().map_err(|_|ReadError::Unavailable)?;
     validate_health(&get(&client,Endpoint::Health,None)?)?;
     let token=owner_token()?;
+    if !vivim_host_supervisor::verify_host_owner(&client,&token) {
+        return Err(ReadError::OwnerRequired);
+    }
     let response=client.get(format!("{BASE}/api/host/control/development/graph"))
         .bearer_auth(token).query(&[("operation",operation),("key",key)])
         .send().map_err(|_|ReadError::Offline)?;
