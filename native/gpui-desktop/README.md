@@ -1,11 +1,11 @@
 # VIVIM GPUI desktop — native Host interaction
 
-Opt-in native renderer, not a replacement for the shipped Tauri shell or PWA.
+GPUI is the intended native Windows desktop replacement. It can now start or attach to the canonical Host via the shared native supervisor. Tauri stays as fallback pending real Windows installer and lifecycle acceptance.
 The canonical Host remains the only state/effect authority. No provider calls, extra grants, local journal, fake UI data, or NEW execution endpoints are introduced. Native commands reuse the existing owner-authorized control plan/execute/inspect endpoints.
 
 ## Run from repository root
 
-Start the existing Host using its usual owner workflow. Then:
+From a development checkout GPUI starts/attaches to the existing Host (Node on PATH). Installed GPUI requires an adjacent verified frozen runtime/ tree. Run:
 
 ```powershell
 cargo test --manifest-path native/gpui-desktop/Cargo.toml
@@ -48,3 +48,9 @@ No build or GPU/device runtime evidence is claimed by this source change.
 The native workspace has Overview, Wiki, Build, Graph and Decisions panels; exact local Wiki/Build/Control navigation uses the shared Rust grammar without sending an effect. The Rust Wiki read model displays committed pages, sections, links and source-validated personal captures. Native viewport choices request fresh TierFlow plans from the Host; stale in-flight viewport responses are discarded.
 
 The native window now polls the authenticated read projections every 15 seconds while idle, skips pending approvals, retains read-only receipt status, and refreshes immediately after a known execution outcome. The shared Rust delta reports changed/added/removed UI nodes; it does not yet prove retained GPU element reuse or server push.
+
+## Native Host supervisor (2026-11-21)
+
+The GPUI process starts `native/host-supervisor` on a native background thread. It refuses occupied foreign ports, honors an existing Host, bounds recovery of an OS-observed exited *owned* Host (two attempts), and never kills a living unhealthy Host or replays effects. A release binary refuses source workspace fallback and verifies the entire frozen runtime manifest by SHA256 before running the bundled Node and nine Rust executables. GPUI shows supervisor status in its native UI.
+
+**Still outstanding:** the Tauri shell has its legacy supervisor until shared lifecycle migration is verified; an adjacent GPUI release runtime, signed installer, and physical Windows acceptance are not yet present. Schema-valid attached Host status is not strong process attestation. Do not call this cutover complete.

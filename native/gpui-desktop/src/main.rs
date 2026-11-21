@@ -10,7 +10,8 @@
 //! @hq:consumes vivim.rust-wiki-source-delta@1
 //! @hq:consumes hqkg.development-query@1
 //! @hq:consumes vivim.rust-development-projection@1
-use std::time::Duration;
+use std::{time::Duration, sync::Arc};
+use vivim_host_supervisor::HostSupervisor;
 use serde_json::json;
 use vivim_programmability_core::navigation;
 use vivim_programmability_core::wiki_read::{self, RevisionGuard as WikiRevisionGuard};
@@ -41,6 +42,7 @@ impl Panel {
     }
 }
 struct Desktop {
+    supervisor: Arc<HostSupervisor>,
     panel: Panel,
     viewport_px: u32,
     viewport_epoch: u64,
@@ -880,6 +882,7 @@ impl Render for Desktop {
             .flex().flex_col().p_5().gap_3()
             .child(div().text_xl().child("VIVIM · Native workspace"))
             .child(navigation)
+            .child(self.supervisor.snapshot().label())
             .child(self.status.clone())
             .child(Input::new(&self.input))
             .child(actions)
@@ -887,14 +890,19 @@ impl Render for Desktop {
     }
 }
 fn main() {
-    Application::new().run(|cx: &mut App| {
+    // Cold-start the authoritative Host on a non-UI thread, without Tauri.
+    let supervisor = Arc::new(HostSupervisor::new());
+    let worker = Arc::clone(&supervisor);
+    std::thread::spawn(move || worker.run());
+    Application::new().run(move |cx: &mut App| {
         gpui_component::init(cx);
         let bounds = Bounds::centered(None, size(px(1000.), px(740.)), cx);
         cx.open_window(WindowOptions { window_bounds: Some(WindowBounds::Windowed(bounds)), ..Default::default() },
-            |window, cx| {
+            move |window, cx| {
+                let supervisor = Arc::clone(&supervisor);
                 let input=cx.new(|cx| InputState::new(window,cx).placeholder("Ask VIVIM or describe a Host command"));
-                let view=cx.new(|cx| {
-                    let mut view=Desktop {input,panel:Panel::Overview,viewport_px:viewport_for_window(window),
+                let view=cx.new(move |cx| {
+                    let mut view=Desktop {supervisor, input,panel:Panel::Overview,viewport_px:viewport_for_window(window),
                         viewport_epoch:0,source_epoch:0,presentation_epoch:0,read_busy:false,refresh_pending:false,
                         coherence_retry_ready:true,
                         source_status:"Host source not yet observed".into(),
