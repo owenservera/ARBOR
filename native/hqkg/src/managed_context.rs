@@ -99,7 +99,9 @@ pub fn deletion_fence_manifest(graph: &Graph, prefix: &str, view: Option<&str>) 
             let revision=live.properties.get("hqkg.provenance.revision")
                 .and_then(|v|v.parse::<u64>().ok()).ok_or_else(invalid)?;
             if kind=="effect" || revision<=high ||
-                live.properties.get("vivim.context.kind")!=Some(kind) {
+                live.properties.get("vivim.context.kind")!=Some(kind) ||
+                semantic.is_some_and(|expected|
+                    live.properties.get("vivim.context.semanticId")!=Some(expected)) {
                 return Err(invalid());
             }
         }
