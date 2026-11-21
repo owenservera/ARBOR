@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtemp, rm, mkdir, writeFile } from 'node:fs/promises';
+import { writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import os from 'node:os';
 import path from 'node:path';
@@ -142,7 +143,7 @@ test('managed reads share one native invocation per concurrent authorized view a
       revision:row.revision,depth:0,sourceCount:1,estimatedTokens:30}));
     return {stdout:JSON.stringify({schema:'vivim.hqkg-personal/1',scope:packet.scope,op:packet.op,
       epoch:7,bytes:2000,synced:packet.deltas?packet.deltas.filter(d=>d.op==='put').length:packet.nodes.length,
-      syncedRelationships:packet.relationships.length,changed:false,
+      syncedRelationships:packet.relationships.length,changed:false,reconciledSections:0,
       ...(packet.deltas?{mode:'delta',ingested:packet.deltas.filter(d=>d.op==='put').length,
         tombstoned:packet.deltas.filter(d=>d.op==='delete').length}:{mode:'projection'}),
       context:{schema:'vivim.hqkg-chat-context/1',state:'source-backed',core:'hqkg',authority:'read-only',
@@ -192,6 +193,7 @@ test('combined native read detects source edits during execution and retries fro
       if(calls===1)await edit('Changed while native read was running',2);
       return {stdout:JSON.stringify({schema:'vivim.hqkg-personal/1',scope:p.scope,op:p.op,epoch,bytes:10,
         synced:p.nodes.length,syncedRelationships:0,changed:true,mode:'projection',
+        reconciledSections:0,
         context:{schema:'vivim.hqkg-chat-context/1',state:'source-backed',core:'hqkg',authority:'read-only',
           seed:'managed:'+p.view,epoch,tokensUsed:40,budgetTokens:320,staleCount:0,budgetExhausted:false,
           totalRetrieved:1,pageRelationships:[],items:[{...row,sourceDigest:row.digest,sourceCount:1,depth:0,estimatedTokens:40}]}})};
@@ -229,42 +231,54 @@ test('native ingestion receives every current committed section beyond presentat
 });
 
 
-test('restart against an existing HQKG journal bootstraps with puts, never omission deletes',async t=>{
+test('restart probes durable epoch before source writes and fenced complete inventory',async t=>{
   const {journal,dataRoot,edit}=await setup(t);
   await edit('Current committed section',1);
   const hq=path.join(dataRoot,'hqkg');
   await mkdir(hq,{recursive:true});
-  // A pre-existing journal is enough to choose the conservative delta mode.
-  // Native correctness/readback is separately covered by the Rust CLI tests.
+  // An existing native journal with no verified RAM baseline must be probed
+  // first. These are protocol mock responses, not a replacement for native CLI
+  // acceptance, which is covered separately by the Rust integration tests.
   await writeFile(path.join(hq,'personal.hqj'),'existing-native-journal');
-  let sent;
-  const managed=createRustChatContext({env:{},dataRoot,productJournal:journal,control:()=>controls,
-    isFile:()=>true,executePersonal:async(_bin,_journal,packet)=>{
-      sent=packet;
+  const sent=[];
+  const managed=createRustChatContext({env:{},dataRoot,productJournal:journal,
+    control:()=>controls,isFile:()=>true,
+    executePersonal:async(_bin,_journal,packet)=>{
+      sent.push(packet);
+      if(packet.op==='sync-context')return {stdout:JSON.stringify({
+        schema:'vivim.hqkg-personal/1',scope:packet.scope,op:packet.op,
+        epoch:5,bytes:1234,mode:'delta',ingested:0,tombstoned:0,
+        synced:0,syncedRelationships:0,changed:false,reconciledSections:0
+      })};
       const row=packet.deltas.find(d=>d.op==='put');
       const item={title:row.title,summary:row.summary,kind:row.kind,
         sourceRef:row.sourceRef,sourceDigest:row.digest,sourceRevision:row.sourceRevision,
         revision:row.revision,depth:0,sourceCount:1,estimatedTokens:20};
       return {stdout:JSON.stringify({schema:'vivim.hqkg-personal/1',scope:packet.scope,
-        op:packet.op,epoch:5,bytes:1234,mode:'delta',ingested:packet.deltas.length,
-        tombstoned:0,synced:packet.deltas.length,syncedRelationships:0,changed:true,
+        op:packet.op,epoch:6,bytes:2345,mode:'delta',ingested:1,
+        tombstoned:0,synced:1,syncedRelationships:0,changed:true,reconciledSections:0,
         context:{schema:'vivim.hqkg-chat-context/1',state:'source-backed',
-          core:'hqkg',authority:'read-only',seed:'managed:wiki',epoch:5,
+          core:'hqkg',authority:'read-only',seed:'managed:wiki',epoch:6,
           tokensUsed:20,budgetTokens:320,staleCount:0,budgetExhausted:false,
           totalRetrieved:1,items:[item],pageRelationships:[]}})};
     }});
   const out=await managed('wiki');
   assert.equal(out.state,'source-backed',out.reason);
   assert.equal(out.items[0].summary,'Current committed section');
-  assert.equal(sent.op,'sync-context-read');
-  assert.deepEqual(sent.nodes,[]);
-  assert.equal(sent.deltas.length,1);
-  assert.equal(sent.deltas[0].op,'put');
-  assert.equal(sent.baseRevision,Number.MAX_SAFE_INTEGER);
-  assert.equal(Object.hasOwn(sent,'baseEpoch'),false);
-  assert.deepEqual(sent.activeIds,[sent.deltas[0].id]);
+  assert.equal(out.ingestionStats.reconciledWikiSections,0);
+  assert.equal(sent.length,2,'cold restart requires epoch read then mutation');
+  assert.equal(sent[0].op,'sync-context');
+  assert.deepEqual(sent[0].deltas,[]);
+  assert.equal(Object.hasOwn(sent[0],'baseEpoch'),false);
+  assert.equal(sent[1].op,'sync-context-read');
+  assert.deepEqual(sent[1].nodes,[]);
+  assert.equal(sent[1].deltas.length,1);
+  assert.equal(sent[1].deltas[0].op,'put');
+  assert.equal(sent[1].baseRevision,Number.MAX_SAFE_INTEGER);
+  assert.equal(sent[1].baseEpoch,5);
+  assert.equal(sent[1].completeWikiRevision,2);
+  assert.deepEqual(sent[1].activeIds,[sent[1].deltas[0].id]);
 });
-
 
 test('large native source projections use sequential bounded deltas and one scoped read',()=>{
   const scope='b'.repeat(64);
@@ -434,4 +448,133 @@ test('cold multi-batch owner bootstrap durably admits Wiki targets before D4 rec
   assert.ok(ordered.slice(600).every(row=>row.kind==='effect'));
   assert.equal(plan.finalPacket.activeIds.length,790);
   assert.ok(plan.stages.every(p=>p.deltas.length<=512));
+});
+
+
+test('alternating phone and owner reads retain verified receipts without repeated D4 puts',async t=>{
+  const {journal,dataRoot,edit}=await setup(t);
+  await edit('Current committed Wiki section',1);
+  const e=(await journal.readNativeKnowledge({nativeOnly:true,completeSources:true})).changes.items[0];
+  const planId='ctl-abcdef0123456789',actionId='wiki.section.edit',risk='R1';
+  const receipt={schema:'vivim.control-receipt/1',status:'applied',
+    executionPerformed:true,planId,actionId,risk,planDigest:'a'.repeat(64),
+    at:e.receivedAt,approvedVia:'desktop-owner-token',
+    result:{entryId:e.entryId,sequence:e.sequence,wikiRevision:e.wikiRevision,
+      previousRevision:e.previousWikiRevision,page:e.relationship.page,
+      section:e.relationship.section,content:e.content}};
+  const dir=path.join(dataRoot,'control','plans');await mkdir(dir,{recursive:true});
+  await writeFile(path.join(dir,planId+'.receipt.json'),JSON.stringify(receipt));
+  const dispatcher={recent:()=>{throw Error('owner must use durable receipt scan')},
+    status:id=>{
+      assert.equal(id,planId);
+      return {planId,state:'applied',actionId,risk,receipt,
+        createdAt:e.receivedAt};
+    }};
+  const packets=[],durable=new Map();
+  const h=value=>createHash('sha256').update(JSON.stringify(value)).digest('hex');
+  const executePersonal=async(_bin,_journal,packet)=>{
+    packets.push(packet);
+    if(packet.deltas)for(const delta of packet.deltas){
+      if(delta.op==='put')durable.set(delta.id,delta);
+      if(delta.op==='delete')durable.delete(delta.id);
+    } else for(const row of packet.nodes)durable.set(row.id,row);
+    const active=new Set(packet.activeIds||[...durable.keys()]);
+    const visible=[...durable.values()].filter(row=>active.has(row.id)&&
+      (packet.view==='owner'||row.kind==='wiki'));
+    const links=[...durable.values()].filter(row=>row.kind==='effect'&&row.wikiLink&&
+      active.has(row.id)).flatMap(effect=>{
+        const wiki=[...durable.values()].find(row=>row.kind==='wiki'&&active.has(row.id)&&
+          row.sourceRef===effect.wikiLink.entryId&&row.revision===effect.wikiLink.wikiRevision);
+        if(!wiki)return [];
+        return [{id:'vivim-context-l-'+effect.id.slice('vivim-context-e-'.length),
+          from:effect.id,to:wiki.id,kind:'committed-wiki-change',
+          sourceRef:effect.sourceRef,sourceDigest:effect.digest,
+          receiptDigest:effect.receiptDigest,
+          wikiEntryId:wiki.sourceRef,wikiRevision:wiki.revision}];
+      }).sort((a,b)=>a.id.localeCompare(b.id));
+    const proof=links.map(link=>[link.id,link.from,link.to,link.kind,
+      link.sourceRef,link.sourceDigest,link.receiptDigest,
+      link.wikiEntryId,link.wikiRevision]);
+    const putCount=packet.deltas?
+      packet.deltas.filter(row=>row.op==='put').length:packet.nodes.length;
+    return {stdout:JSON.stringify({schema:'vivim.hqkg-personal/1',scope:packet.scope,
+      op:packet.op,epoch:9,bytes:100,changed:putCount>0,compacted:false,
+      synced:putCount,syncedRelationships:packet.relationships.length,
+      reconciledSections:0,mode:packet.deltas?'delta':'projection',
+      ...(packet.deltas?{ingested:putCount,
+        tombstoned:packet.deltas.length-putCount}:{}),
+      context:{schema:'vivim.hqkg-chat-context/1',state:'source-backed',
+        core:'hqkg',authority:'read-only',seed:'managed:'+packet.view,
+        epoch:9,staleCount:0,budgetTokens:320,tokensUsed:0,
+        totalRetrieved:visible.length,budgetExhausted:visible.length>0,
+        items:[],pageRelationships:[],
+        ...(packet.view==='owner'?{effectRelationships:links.slice(0,24),
+          effectRelationshipsTotal:links.length,
+          omittedEffectRelationships:Math.max(0,links.length-24),
+          effectRelationshipsDigest:h(proof)}:{})}})};
+  };
+  const managed=createRustChatContext({env:{},dataRoot,productJournal:journal,
+    control:()=>dispatcher,isFile:p=>p.includes('hqkg-personal'),
+    executePersonal});
+  const first=await managed('wiki',{owner:true});
+  assert.equal(first.state,'source-backed',first.reason);
+  assert.equal(first.effectRelationshipsTotal,1);
+  assert.equal(first.effectRelationships.length,1);
+  assert.equal(first.sourceHighWater.scannedAppliedPlans,1);
+  const phone=await managed('wiki');
+  assert.equal(phone.state,'source-backed',phone.reason);
+  assert.equal(Object.hasOwn(phone,'effectRelationships'),false);
+  assert.equal(phone.totalRetrieved,1);
+  const again=await managed('wiki',{owner:true});
+  assert.equal(again.state,'source-backed',again.reason);
+  assert.equal(again.effectRelationshipsTotal,1);
+  assert.deepEqual(packets.map(p=>p.view),['owner','wiki','owner']);
+  const retransmitted=packets.at(-1).deltas.filter(delta=>
+    delta.op==='put'&&delta.kind==='effect');
+  assert.equal(retransmitted.length,0,
+    'phone reads must not evict the verified owner receipt delta baseline');
+  assert.equal(packets.at(-1).completeWikiRevision,e.wikiRevision);
+});
+
+test('bounded native planner only authorizes inventory on the final source-complete read',()=>{
+  const scope='e'.repeat(64);
+  const rows=Array.from({length:580},(_,i)=>({
+    id:'vivim-context-w-'+(i+1).toString(16).padStart(64,'0'),
+    kind:'wiki',semanticId:'wiki:section:Main/'+i,
+    sourceRef:'entry-'+i,digest:'f'.repeat(64),
+    revision:400,sourceRevision:400,order:i+1,
+    title:'Wiki '+i,summary:'Current source'
+  }));
+  const plan=planNativeContextSync({scope,view:'wiki',rows,
+    relationships:[],hasGraph:true,completeWikiRevision:400});
+  assert.equal(plan.stages.length,3);
+  assert.deepEqual(plan.stages.map(stage=>stage.deltas.length),[0,512,68]);
+  assert.ok(plan.stages.every(stage=>!Object.hasOwn(stage,'completeWikiRevision')));
+  assert.ok(plan.stages.every(stage=>!Object.hasOwn(stage,'activeIds')));
+  assert.equal(plan.finalPacket.completeWikiRevision,400);
+  assert.equal(plan.finalPacket.deltas.length,0);
+  assert.equal(plan.finalPacket.activeIds.length,580);
+  assert.equal(plan.expectedTombstones,0);
+});
+
+
+test('owner receipt discovery refuses malformed and replaced journal receipts',async t=>{
+  const {dataRoot}=await setup(t),dir=path.join(dataRoot,'control','plans');
+  await mkdir(dir,{recursive:true});
+  const malformed=path.join(dir,'unidentified.receipt.json');
+  await writeFile(malformed,'{}');
+  const dispatcher={status:()=>{throw Error('must not read malformed receipt')}};
+  await assert.rejects(()=>discoverOwnerControlReceipts(dataRoot,dispatcher),
+    /NATIVE_EFFECT_SOURCE_UNSAFE/);
+  await rm(malformed);
+  const planId='ctl-0000000000000001',file=path.join(dir,planId+'.receipt.json');
+  await writeFile(file,'{"status":"applied"}');
+  const changed={status:id=>{
+    assert.equal(id,planId);
+    writeFileSync(file,'{"status":"changed after source read"}');
+    return {planId,state:'applied',actionId:'wiki.section.edit',risk:'R1',
+      createdAt:'2026-11-21T01:00:00Z',receipt:{planId}};
+  }};
+  await assert.rejects(()=>discoverOwnerControlReceipts(dataRoot,changed),
+    /NATIVE_EFFECT_SOURCE_CHANGED/);
 });
