@@ -547,6 +547,8 @@ function managedReader({env,dataRoot,productJournal,control,executePersonal,repo
             result.staleCount!==0 || result.budgetTokens!==320 || !safeUInt(result.tokensUsed) ||
             result.tokensUsed>320 || !safeUInt(result.totalRetrieved) ||
             result.totalRetrieved!==rows.filter(row=>view==='owner'||row.kind==='wiki').length ||
+            !safeUInt(result.deletionFencesTotal)||
+            !SHA.test(result.deletionFencesDigest??'') ||
             typeof result.budgetExhausted!=='boolean' || !Array.isArray(result.items) ||
             result.items.length>8 || result.items.length>result.totalRetrieved)
           return unavailable('RUST_CORE_CONTRACT_INVALID');
@@ -655,6 +657,8 @@ function managedReader({env,dataRoot,productJournal,control,executePersonal,repo
           totalRetrieved:result.totalRetrieved,items,
           sourceHighWater:{wikiRevision:projection.wikiRevision,graphEpoch:packet.epoch,
             activeSourcesDigest:result.activeSourcesDigest,
+            durableDeletionFences:result.deletionFencesTotal,
+            durableDeletionFencesDigest:result.deletionFencesDigest,
             ...(view==='owner'?{
               productJournalEntries:projection.sourceStamp.journalEntries,
               productJournalDigest:projection.sourceStamp.committedJournalDigest,
