@@ -1,7 +1,7 @@
 # VIVIM GPUI desktop — native Host interaction
 
 GPUI is the intended native Windows desktop replacement. It can now start or attach to the canonical Host via the shared native supervisor. Tauri stays as fallback pending real Windows installer and lifecycle acceptance.
-The canonical Host remains the only state/effect authority. No provider calls, extra grants, local journal, fake UI data, or NEW execution endpoints are introduced. Native commands reuse the existing owner-authorized control plan/execute/inspect endpoints.
+The canonical Host remains the only state/effect authority. No provider calls, extra grants, local journal, fake UI data, or new execution endpoints are introduced. The Host exposes one new read-only owner-proof endpoint to authenticate native transports. Native commands reuse the existing owner-authorized control plan/execute/inspect endpoints.
 
 ## Run from repository root
 
@@ -19,13 +19,13 @@ generated lockfile. Generate and review it on the Windows build machine.
 
 ## Implemented source
 - Owner-authorized native visual GET uses the same canonical TierFlow plan and committed Host surface as PWA. No blank draft substitution. Native client validates source/plan identities, complete trace, revision and monotonic head during the session; preview actions are inert.
-- Native layout maps stack/grid/card/text and structured rows, source colors and bounded presentation. Native viewport controls request the existing Host planner at 360, 768, 1000 or 1440px; this is not automatic window-size tracking and makes no pixel/font/animation or interactive parity claim; live binding rows reuse the canonical workspace projection, with bounded totals and source revisions. Missing data stays unavailable. Session high-water fencing independently checks every observed live binding revision and rejects same-revision content conflicts.
+- Native layout maps stack/grid/card/text and structured rows, source colors and bounded presentation. Native window-resize observations request the existing Host planner at the actual bounded drawable width; this does not establish pixel/font/animation or full interactive parity; live binding rows reuse the canonical workspace projection, with bounded totals and source revisions. Missing data stays unavailable. Session high-water fencing independently checks every observed live binding revision and rejects same-revision content conflicts.
 - Loopback-only client with no redirects or proxies, bounded response size,
   timeouts and existing native owner-token convention.
 - Canonical GET Host status, private PWA projection, private Wiki projection.
 - Schema-checked source-backed overview with Wiki revision, page names,
   active paired-device count, recent Host decision states and explicit refresh.
-- Background fetch, fail-closed state, no automatic retry or writes from refresh.
+- Background reads, fail-closed state, only bounded source-drift retries, and no writes from refresh.
 - Production text input using pinned gpui-component 0.5.0, native plan review, explicit one-click approval, canonical receipt validation and original plan inspection.
 - Unknown execution outcomes block new commands in the current UI session; inspect locally before opening a new session. Closing the window does not resolve an uncertain effect.
 - Projection and exact approval/receipt contract tests (not live acceptance).
@@ -53,7 +53,7 @@ The native window polls the authenticated read projections every 15 seconds whil
 
 The GPUI process starts `native/host-supervisor` on a native background thread. It refuses occupied foreign ports, honors an existing Host, bounds recovery of an OS-observed exited *owned* Host (two attempts), and never kills a living unhealthy Host or replays effects. A release binary refuses source workspace fallback and verifies the entire frozen runtime manifest by SHA256 before running the bundled Node and nine Rust executables. GPUI shows supervisor status in its native UI.
 
-**Still outstanding:** the Tauri shell has its legacy supervisor until shared lifecycle migration is verified; an adjacent GPUI release runtime, signed installer, and physical Windows acceptance are not yet present. Schema-valid attached Host status is not strong process attestation. Do not call this cutover complete.
+**Still outstanding:** the Tauri shell has its legacy supervisor until shared lifecycle migration is verified; an adjacent GPUI release runtime, signed installer, and physical Windows acceptance are not yet present. Native owned/attached readiness now requires an owner-secret HMAC proof; this still does not bind the socket to an OS PID or prevent every localhost proxy/race attack. Do not call this cutover complete.
 
 
 ### Portable Windows GPUI bundle
@@ -62,12 +62,38 @@ The source now includes a **Tauri-independent portable bundle assembly** (not an
 
 ```powershell
 cargo build --manifest-path native/gpui-desktop/Cargo.toml --features desktop --release
-node tools/packaging/bundle-gpui-desktop.mjs --bundle --runtime C:\\verified-host-runtime --binary native/gpui-desktop/target/release/vivim-gpui-desktop.exe --out C:\\vivim-gpui-portable
-node tools/packaging/bundle-gpui-desktop.mjs --verify --out C:\\vivim-gpui-portable
+node tools/packaging/bundle-gpui-desktop.mjs --bundle --runtime C:\verified-host-runtime --binary native/gpui-desktop/target/release/vivim-gpui-desktop.exe --out C:\vivim-gpui-portable
+node tools/packaging/bundle-gpui-desktop.mjs --verify --out C:\vivim-gpui-portable
 ```
 
-The adjacent runtime/ tree is mandatory. The packager refuses nonexistent/fake executables, invalid manifests, symlinks in frozen staging, existing outputs, and non-Windows bundling. It copies no owner data. **No installer acceptance or signed distribution has been performed.** The frozen-runtime producer remains an independent pending step; a future neutral staging mode should remove the legacy Tauri resource-path coupling entirely.
+The adjacent runtime/ tree is mandatory. The packager refuses nonexistent/fake executables, invalid manifests, symlinks in frozen staging, existing outputs, and non-Windows bundling. It copies no owner data. **No installer acceptance or signed distribution has been performed.** Neutral frozen-runtime staging is now implemented with `--stage-gpui`; actual release validation remains pending.
 
 ### New neutral staging command
 
 `node tools/packaging/prepare-host-runtime.mjs --stage-gpui` builds the **same** frozen Node/Host/nine Rust executable runtime into `native/gpui-desktop/resources/runtime` without consulting Tauri configuration. It requires real root Cargo/Bun lockfiles, a verified Windows Node 24+ binary, and the original frozen production inputs. Then `bundle-gpui-desktop.mjs` assembles the portable directory beside the built GPUI release executable. These commands have not been executed in this assessment.
+
+### Current GPUI-first developer entry points
+
+```powershell
+bun run desktop
+bun run desktop:test:local
+# Windows release prerequisites: genuine root Cargo.lock + bun.lock,
+# native/gpui-desktop/Cargo.lock, and verified ARBOR_NODE24_* environment.
+bun run desktop:portable
+```
+
+The native GPUI workspace offers **Reconnect Host** and **Open Host controls / pairing**. The latter requests a Host-minted, one-use owner browser session after HMAC verification, then asks the OS default browser to open it. This preserves the existing Host administration and onboarding surfaces without duplicating permission or effect authority in GPUI. The launch request is not proof that the browser successfully displayed or exchanged the session.
+
+### Standalone Windows installer source
+
+`tools/packaging/gpui-windows-installer.iss` describes a per-user, independent GPUI installer using the verified portable payload. `tools/packaging/build-gpui-installer.mjs` invokes an **explicit**, installed Inno Setup compiler only after verifying that payload. Example:
+
+```powershell
+bun run desktop:installer -- --portable C:\vivim-gpui-portable --iscc "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+```
+
+This is **not an installed, signed, upgrade-tested release**. Do not remove Tauri until the running Windows desktop, device, signer, upgrades, and fallback/rollback are verified against actual owner data.
+
+### Local evidence rule
+
+`tools/packaging/gpui-local-integration.mjs` produces a private system-temp JSON receipt with source SHA, exact commands, PASS/FAIL/UNRUN, and blocked lockfile/toolchain checks. It never invokes GitHub Actions, invents lockfiles, or reports manual Windows GPU/device acceptance as passing.
