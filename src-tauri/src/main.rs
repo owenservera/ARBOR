@@ -6,6 +6,7 @@ use std::sync::{Arc, atomic::{AtomicBool,AtomicU8,Ordering}};
 use std::thread;
 use std::time::{Duration, Instant};
 use std::net::{TcpStream,SocketAddr};
+use std::io::Read;
 
 use tauri::{Manager, State};
 
@@ -317,30 +318,16 @@ impl HostProcess {
         if !response.status().is_success() {
             return false;
         }
-        let body: serde_json::Value = match response.json() {
-            Ok(body) => body,
-            Err(_) => return false,
+        // A listener on this port is not by itself a trusted Host. Bound
+        // its response before the existing schema/online-state validation.
+        let mut bytes=Vec::new();
+        if response.take(16 * 1024 + 1).read_to_end(&mut bytes).is_err()
+            || bytes.len()>16 * 1024 {return false;}
+        let body:serde_json::Value=match serde_json::from_slice(&bytes) {
+            Ok(body)=>body,
+            Err(_)=>return false,
         };
         is_host_status(&body)
-    }
-
-    /// Block until the Host health endpoint answers, up to `timeout`.
-    fn wait_healthy(timeout: Duration) -> bool {
-        let client = match reqwest::blocking::Client::builder()
-            .timeout(Duration::from_secs(2))
-            .build()
-        {
-            Ok(client) => client,
-            Err(_) => return false,
-        };
-        let deadline = Instant::now() + timeout;
-        while Instant::now() < deadline {
-            if Self::probe_health(&client) {
-                return true;
-            }
-            thread::sleep(Duration::from_millis(300));
-        }
-        false
     }
 
     fn health_online() -> bool {
@@ -366,8 +353,9 @@ impl HostProcess {
     fn wait_owned_healthy(&self, timeout: Duration) -> bool {
         let deadline=Instant::now()+timeout;
         while Instant::now()<deadline && !self.shutting_down.load(Ordering::Acquire) {
-            if Self::health_online() { return true; }
+            // Do not adopt a different process's health after our child exits.
             if self.probe_child()!=ChildState::Running { return false; }
+            if Self::health_online() { return true; }
             thread::sleep(Duration::from_millis(300));
         }
         false
