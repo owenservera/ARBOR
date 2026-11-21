@@ -78,9 +78,11 @@ pub fn validate(input:&Value)->Value{
         return refused(source,"AI_ACTION_NOT_ALLOWED",
             "AI may only propose catalog-approved action IDs.")
     }
+    // JavaScript incumbent uses proposal.args ?? {}. Both omitted and
+    // explicit null select the empty object, important for zero-arg actions.
     let args=proposal.get("args").unwrap_or(&Value::Null);
     let blank=json!({});
-    let args=if args.is_null()&&proposal.get("args").is_none(){&blank}else{args};
+    let args=if args.is_null(){&blank}else{args};
     if !valid_args(&action["args"],args){
         return refused(source,"INVALID_ARGS","AI proposed invalid or missing arguments.")
     }

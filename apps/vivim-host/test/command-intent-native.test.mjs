@@ -135,6 +135,80 @@ test('AI proposal is inert and cannot contradict real owner text', () => {
   }
 });
 
+
+test('all real NLCL cases preserve the native AI guard decision and its provenance', t => {
+  const defaultCase = corpus.cases.find(c => c.text === 'Set my theme to dusk');
+  assert.ok(defaultCase?.actionId && defaultCase.args);
+  let compared = 0;
+  let exercised = 0;
+  for (const entry of corpus.cases) {
+    if (typeof entry.text !== 'string' || !entry.text.trim() || entry.text.length > 1000) continue;
+    const world = buildControlWorld(catalog, {lexicon: entry.lexicon ?? []});
+    const context = {catalog, world};
+    const proposal = entry.outcome === 'candidate'
+      ? {actionId: entry.actionId, args: entry.args}
+      : {actionId: defaultCase.actionId, args: defaultCase.args};
+    const input = {text: entry.text, scope: 'text'};
+    const incumbent = validateAiCommandCandidate({...input, candidate: proposal}, context);
+    const reading = toCommandIntent(input, context);
+    assert.equal(incumbent.schema, 'vivim.command-intent/0.1', entry.text);
+    assert.equal(incumbent.provenance.authority, 'none', entry.text);
+    assert.notEqual(incumbent.refusal?.code, 'NATIVE_INTENT_INVALID', entry.text);
+    const action = catalog.actions.find(a => a.id === proposal.actionId);
+    const native = runNativeProductPureSync('command-ai-guard', {
+      schema: 'vivim.command-ai-proposal-guard-input/1',
+      input: {text: entry.text, scope: 'text', audience: 'owner',
+        catalogRevision: null, worldRevision: null},
+      proposal, reading, action,
+      catalogVersion: catalog.version, worldRevision: world.v
+    });
+    if (hasBinary()) assert.ok(native, 'packaged binary must support AI guard: ' + entry.text);
+    if (native) {
+      assert.equal(native.executionAuthorized, false, entry.text);
+      assert.equal(native.effectPerformed, false, entry.text);
+      assert.deepEqual(native.intent, JSON.parse(JSON.stringify(incumbent)),
+        'native AI guard must equal Host source decision: ' + entry.text);
+      compared++;
+    }
+    exercised++;
+  }
+  assert.ok(exercised >= 30, 'real NLCL corpus unexpectedly reduced');
+  if (compared) assert.equal(compared, exercised);
+  else t.diagnostic('No native binary: AI guard corpus exercised on Host; Rust parity unrun.');
+});
+
+test('zero-argument native AI proposals accept nullish arguments like Host', () => {
+  const entry = corpus.cases.find(c => c.text === 'Undo my theme');
+  assert.ok(entry && entry.outcome === 'candidate' && Object.keys(entry.args).length === 0);
+  const world = buildControlWorld(catalog);
+  const context = {catalog, world};
+  const input = {text: entry.text, scope: 'text'};
+  const action = catalog.actions.find(a => a.id === entry.actionId);
+  const reading = toCommandIntent(input, context);
+  for (const proposal of [
+    {actionId: entry.actionId},
+    {actionId: entry.actionId, args: null},
+    {actionId: entry.actionId, args: {}}
+  ]) {
+    const incumbent = validateAiCommandCandidate({...input, candidate: proposal}, context);
+    assert.equal(incumbent.outcome, 'candidate', 'Host accepts zero-arg owner command');
+    assert.deepEqual(incumbent.args, {});
+    const native = runNativeProductPureSync('command-ai-guard', {
+      schema: 'vivim.command-ai-proposal-guard-input/1',
+      input: {text: entry.text, scope: 'text', audience: 'owner',
+        catalogRevision: null, worldRevision: null},
+      proposal, reading, action, catalogVersion: catalog.version,
+      worldRevision: world.v
+    });
+    if (hasBinary()) assert.ok(native, 'native zero-arg proposal must be available');
+    if (native) {
+      assert.equal(native.executionAuthorized, false);
+      assert.equal(native.effectPerformed, false);
+      assert.deepEqual(native.intent, JSON.parse(JSON.stringify(incumbent)));
+    }
+  }
+});
+
 test('native projection rejects stale and contradictory real Host snapshots', t => {
   if (!hasBinary()) {
     t.diagnostic('Rust binary not staged: native rejection checks unrun.');
