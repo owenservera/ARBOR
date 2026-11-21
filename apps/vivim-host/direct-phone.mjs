@@ -165,7 +165,7 @@ export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'wo
   try { url = new URL(origin); } catch { throw new TypeError('Direct phone origin must be an HTTPS origin'); }
   if (url.protocol !== 'https:' || url.origin !== origin || url.username || url.password || !user || typeof user !== 'string' || user.trim() !== user) throw new TypeError('Direct phone requires an exact HTTPS origin and user');
   const firstContactObservations=createFirstContactObservations(dataRoot);
-  let observationLastAt=0;
+  let observationWindowStart=0,observationWindowCount=0;
   const bridge = createBridgeStore({ root: dataRoot });
   // Source-backed metadata projection; bridge remains the sole queue authority.
   const live = createSourceVerifiedLiveProjection({dataRoot,worldId});
@@ -358,11 +358,15 @@ export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'wo
       try{
         const observation=await readBody(req);
         const now=Date.now();
-        // Cap anonymous browser observation throughput; the outer Direct
-        // handler already proved the Tailscale owner's identity.
-        if(now-observationLastAt<80){json(res,429,{code:'OBSERVATION_RATE_LIMIT'});return;}
+        // Preserve short sequences (input -> fetch -> Rust -> render), while
+        // bounding a compromised browser to 300 diagnostic writes/minute.
+        // The outer Direct handler already verified the Tailnet owner.
+        if(now-observationWindowStart>=60000){
+          observationWindowStart=now;observationWindowCount=0;
+        }
+        if(observationWindowCount>=300){json(res,429,{code:'OBSERVATION_RATE_LIMIT'});return;}
         await firstContactObservations.append(observation);
-        observationLastAt=now;
+        observationWindowCount++;
         res.writeHead(204);res.end();
       }catch(error){
         json(res,error.status||503,{code:error.status===400?'OBSERVATION_INVALID':'OBSERVATION_UNAVAILABLE'});
