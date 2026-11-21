@@ -359,8 +359,8 @@ if(mode==='--lock'){
 }else{
 const location=stagingPaths(mode);
 const targetRuntime=location.runtime, targetStage=location.stage, targetPrevious=location.previous;
-if(mode==='--targetStage-gpui')mkdirSync(location.resources,{recursive:true});
-checkInputs({requireLock:true,requireTauri:mode!=='--targetStage-gpui'});
+if(mode==='--stage-gpui')mkdirSync(location.resources,{recursive:true});
+checkInputs({requireLock:true,requireTauri:mode!=='--stage-gpui'});
  const binary=nodeBinary();
  if(existsSync(targetStage)||existsSync(targetPrevious))refuse('Existing staging/rollback directory requires manual inspection');
  mkdirSync(targetStage,{recursive:true});
