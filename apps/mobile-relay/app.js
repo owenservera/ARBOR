@@ -315,13 +315,17 @@ async function readGraphContext() {
     renderFocusPanel();return;
   }
   const epoch=++chatContextEpoch;
+  const sameGrant=()=>epoch===chatContextEpoch&&S.paired&&
+    transport.deviceHeaders?.()?.['x-vivim-device-session']===device['x-vivim-device-session']&&
+    transport.deviceHeaders?.()?.['x-vivim-grant-id']===device['x-vivim-grant-id'];
   chatContext={state:'loading'};renderFocusPanel();
   try{
     const response=await fetch('/mobile/api/chat/context?focus='+encodeURIComponent(focus),{
       method:'GET',credentials:'same-origin',cache:'no-store',headers:device
     });
     const data=await response.json();
-    if(epoch!==chatContextEpoch||!S.paired)return;
+    // A stale denial under a previous grant may not revoke a newly resumed one.
+    if(!sameGrant())return;
     if((response.status===401||response.status===403)&&
        isInvalidDeviceSession(data?.reason||data?.code)){
       transport.setDeviceSession(null);
@@ -330,8 +334,7 @@ async function readGraphContext() {
       setConn('PC device authorization expired or revoked',true);
       return;
     }
-    if(!transport.deviceHeaders?.()||
-       transport.deviceHeaders()['x-vivim-device-session']!==device['x-vivim-device-session'])return;
+    if(!sameGrant())return;
     if(!response.ok||data?.schema!=='vivim.hqkg-chat-context/1'){
       chatContext={state:'unavailable',reason:'Host context read unavailable'};
     }else if(data.state==='source-backed'&&data.authority==='read-only'&&
@@ -343,9 +346,9 @@ async function readGraphContext() {
       chatContext={state:'unavailable',reason:data.reason||'Native context unavailable'};
     }
   }catch{
-    if(epoch===chatContextEpoch)chatContext={state:'unavailable',reason:'Host or native Rust context unavailable'};
+    if(sameGrant())chatContext={state:'unavailable',reason:'Host or native Rust context unavailable'};
   }
-  if(epoch===chatContextEpoch)renderFocusPanel();
+  if(sameGrant())renderFocusPanel();
 }
 function openFocusPanel() {
   const panel=$('chat-context-panel');
@@ -1185,6 +1188,12 @@ async function openMediaPlayer(mediaId, title) {
     });
     const payload = await response.json().catch(() => ({}));
     if (epoch !== playerEpoch || controller.signal.aborted) return;
+    // A ticket and its denial both belong to the exact starting grant.
+    if(!S.paired||transport.deviceHeaders?.()?.['x-vivim-device-session']!==
+         device['x-vivim-device-session']||
+       transport.deviceHeaders?.()?.['x-vivim-grant-id']!==device['x-vivim-grant-id']){
+      playerActive=false;return;
+    }
     if (isInvalidDeviceSession(payload?.code)) {
       transport.setDeviceSession(null);
       clearPrivatePhoneState();
@@ -1192,10 +1201,7 @@ async function openMediaPlayer(mediaId, title) {
       setConn('PC device authorization expired or revoked', true);
       return;
     }
-    if (!S.paired || !transport.deviceHeaders?.() ||
-        transport.deviceHeaders()['x-vivim-device-session'] !== device['x-vivim-device-session'])
-      throw new Error('Device session changed while opening the stream');
-    if (!response.ok || payload.schema !== 'vivim.media-playback-ticket/1' ||
+     if (!response.ok || payload.schema !== 'vivim.media-playback-ticket/1' ||
         payload.url !== '/mobile/api/media/stream/' + mediaId)
       throw new Error(payload.code || 'Host did not authorize this playable file');
     priorMediaFocus = document.activeElement;
@@ -1234,12 +1240,15 @@ async function refreshMedia(force = false, offset = S.mediaOffset) {
   }
   if (!force && S.mediaAt && Date.now() - S.mediaAt < 120000) return;
   const headers = transport.deviceHeaders?.();
-  if (!headers) {
+  if (!headers||!headers['x-vivim-device-session']||!headers['x-vivim-grant-id']) {
     S.media = { state: 'not-authorized' };
     if (S.tab === 'world') renderSurfaces();
     return;
   }
   const generation = mediaGeneration;
+  const sameGrant=()=>generation===mediaGeneration&&S.paired&&
+    transport.deviceHeaders?.()?.['x-vivim-device-session']===headers['x-vivim-device-session']&&
+    transport.deviceHeaders?.()?.['x-vivim-grant-id']===headers['x-vivim-grant-id'];
   S.mediaLoading = true;
   S.media = { state: 'loading' };
   if (S.tab === 'world') renderSurfaces();
@@ -1248,9 +1257,7 @@ async function refreshMedia(force = false, offset = S.mediaOffset) {
       credentials: 'same-origin', cache: 'no-store', headers
     });
     const result = await response.json();
-    if (generation !== mediaGeneration || !S.paired ||
-        transport.deviceHeaders?.()?.['x-vivim-device-session'] !==
-          headers['x-vivim-device-session']) return;
+    if(!sameGrant())return;
     if (response.status === 401 || response.status === 403) {
       if (isInvalidDeviceSession(result?.reason)) {
         transport.setDeviceSession(null);
@@ -1267,12 +1274,14 @@ async function refreshMedia(force = false, offset = S.mediaOffset) {
       S.media = result;
     }
   } catch {
-    if (generation === mediaGeneration) S.media = { state: 'unavailable', reason: 'PC_CONNECTION_UNAVAILABLE' };
+    if(sameGrant())S.media={state:'unavailable',reason:'PC_CONNECTION_UNAVAILABLE'};
   } finally {
-    if (generation === mediaGeneration) {
-      S.mediaAt = Date.now();
-      S.mediaLoading = false;
-      if (S.tab === 'world') renderSurfaces();
+    if(generation===mediaGeneration){
+      // An old-grant response never leaves previous private metadata visible.
+      S.mediaAt=sameGrant()?Date.now():0;
+      S.mediaLoading=false;
+      if(!sameGrant())S.media={state:'not-authorized'};
+      if(S.tab==='world')renderSurfaces();
     }
   }
 }
@@ -2394,7 +2403,8 @@ $('dock-provider-refresh').addEventListener('click', async () => {
     });
     const result=await response.json();
     if(!S.paired||transport.deviceHeaders?.()?.['x-vivim-device-session']!==
-      headers['x-vivim-device-session'])return;
+        headers['x-vivim-device-session']||transport.deviceHeaders?.()?.['x-vivim-grant-id']!==
+        headers['x-vivim-grant-id'])return;
     if((response.status===401||response.status===403)&&
        isInvalidDeviceSession(result?.reason||result?.code)){
       transport.setDeviceSession(null);clearPrivatePhoneState();
