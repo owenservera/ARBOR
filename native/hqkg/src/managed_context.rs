@@ -140,7 +140,7 @@ pub fn project_managed_graph_selected(
         return Err(Error::Conflict("managed graph scope or epoch mismatch".into()));
     }
     let (deletion_fences_total,deletion_fences_digest)=
-        deletion_fence_manifest(graph,&prefix,Some(view))?
+        deletion_fence_manifest(graph,&prefix,Some(view))?;
     let mut candidates = Vec::new();
     let mut orders: BTreeMap<String,u64> = BTreeMap::new();
     for node in graph.nodes() {
