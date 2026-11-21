@@ -182,6 +182,11 @@ pub fn project_managed_graph_selected(
             .and_then(|s|s.parse::<u64>().ok());
         let wiki_revision=p.get("vivim.context.wikiRevision")
             .and_then(|s|s.parse::<u64>().ok());
+        let origin_revision=p.get("vivim.context.receiptOriginRevision")
+            .and_then(|s|s.parse::<u64>().ok());
+        if p.contains_key("vivim.context.receiptOriginEntryId") != origin_revision.is_some() {
+            return Err(Error::Corrupt("incomplete historical D4 origin".into()));
+        }
         Ok(json!([
             local,p.get("vivim.context.kind"),
             p.get("vivim.context.sourceRef"),
@@ -191,7 +196,8 @@ pub fn project_managed_graph_selected(
             p.get("vivim.context.semanticId"),
             p.get("vivim.context.actionId"),
             p.get("vivim.context.receiptDigest"),
-            p.get("vivim.context.wikiEntryId"),wiki_revision
+            p.get("vivim.context.wikiEntryId"),wiki_revision,
+            p.get("vivim.context.receiptOriginEntryId"),origin_revision
         ]))
     }).collect::<Result<Vec<_>>>()?;
     let manifest_bytes=serde_json::to_vec(&manifest)
@@ -328,6 +334,16 @@ pub fn project_managed_graph_selected(
                 "summary":p.get("vivim.context.summary")});
             if let Some(receipt_body)=p.get("vivim.context.receiptDigest") {
                 presented["receiptDigest"]=json!(receipt_body);
+            }
+            if view=="owner" {
+                if let Some(original)=p.get("vivim.context.receiptOriginEntryId") {
+                    let revision=p.get("vivim.context.receiptOriginRevision")
+                        .and_then(|s|s.parse::<u64>().ok())
+                        .ok_or_else(||Error::Corrupt("invalid historical receipt origin".into()))?;
+                    presented["receiptWikiOrigin"]=json!({
+                        "kind":"committed-wiki-origin",
+                        "entryId":original,"wikiRevision":revision});
+                }
             }
             items.push(presented);
         }
