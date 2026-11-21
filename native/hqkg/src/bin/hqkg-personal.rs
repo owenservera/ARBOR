@@ -254,7 +254,12 @@ fn stage_tombstone(g: &Graph, ns: &Namespace, changes: GraphChangeSet, d: &Value
                     return Err("STALE_CONTEXT_SOURCE".into());
                 }
             }
-            let high_water=complete_high_water.unwrap_or(revision);
+            // A complete Host inventory proves absence only for Wiki sections,
+            // never for bounded Wiki page records or applied D4 receipts.
+            let high_water=if kind=="wiki" && old.properties.get("vivim.context.semanticId")
+                .is_some_and(|id|id.starts_with("wiki:section:")) {
+                complete_high_water.unwrap_or(revision)
+            } else { revision };
             if high_water<old_revision {
                 return Err("STALE_CONTEXT_SOURCE deletion high-water".into());
             }
@@ -448,7 +453,7 @@ fn sync_context(v: &Value, ns: &Namespace, journal: &Journal, g: &mut Graph,
                             wiki_page_nodes.remove(local.strip_prefix(&prefix).unwrap_or(""));
                         }
                     }
-                    let (next,applied)=stage_tombstone(g,ns,changes,d,None)?;
+                    let (next,applied)=stage_tombstone(g,ns,changes,d,complete_wiki_revision)?;
                     changes=next;
                     if applied { tombstoned+=1; }
                 }
