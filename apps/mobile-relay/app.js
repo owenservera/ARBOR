@@ -2351,7 +2351,7 @@ function showPairingState(status, message = '') {
       ? 'Open Host Control on your PC to approve this device, then check again.'
       : status === 'revoked'
         ? 'This grant no longer works. Start a fresh one-use pairing link on your PC.'
-        : 'Open VIVIM Host on your PC, choose Pair a phone, then scan its secure QR link here.'
+        : 'No pairing request exists yet for this browser. On your Windows PC, open http://127.0.0.1:43187/onboarding, choose Pair your phone, then open its one-use QR link on this phone.'
   );
 }
 
@@ -2479,7 +2479,34 @@ async function runStart() {
   window.dispatchEvent(new CustomEvent('vivim:paired', { detail: { paired } }));
   if (paired) { renderAll(true); refresh(); }
 }
-$('pair-check').onclick = () => { if (transport.direct) void start(); };
+$('pair-check').onclick = async () => {
+  // Rechecking an unpaired browser is read-only; it cannot create or approve
+  // a device grant. Always show the result rather than repainting identical UI.
+  const button = $('pair-check');
+  if (!transport.direct || button.disabled) return;
+  button.disabled = true;
+  button.textContent = 'Checking device…';
+  $('pair-help').textContent = 'Checking this browser with your computer…';
+  try {
+    await start();
+    if (S.paired || $('pairbox').hidden) return;
+    if (S.device.status === 'unpaired') {
+      showPairingState('unpaired',
+        'No pairing request found for this browser. On your Windows PC open http://127.0.0.1:43187/onboarding, choose Pair your phone, and open the one-use QR link on this phone. Then check again.');
+    } else if (S.device.status === 'pending') {
+      showPairingState('pending',
+        'Your pairing request is waiting for your approval on the PC. Open http://127.0.0.1:43187/host/control, unlock Host Control, select Your paired phones, and review the pending permissions.');
+    } else if (S.device.status === 'revoked') {
+      showPairingState('revoked');
+    }
+  } catch (error) {
+    showPairingState('error',
+      'Unable to check this browser: ' + String(error?.message || error).slice(0,120));
+  } finally {
+    button.disabled = false;
+    button.textContent = 'Check device approval';
+  }
+};
 $('pairbtn').onclick = async () => { try { localStorage.removeItem('vivim.bootstrap.projection.v1'); } catch {} window.dispatchEvent(new Event('vivim:clear-bootstrap-cache')); try { await pair($('secret').value.trim()); $('secret').value = ''; start(); } catch (e) { setConn('Pairing failed', true); } };
 
 /* ---------- events ---------- */
