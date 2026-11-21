@@ -209,7 +209,7 @@ function revokeEnv() {
     document: dom.document,
     window: { dispatchEvent() {} },
     CustomEvent: class { constructor(type, opts) { this.type = type; this.detail = opts && opts.detail; } },
-    buildBindingSequence: 0, mediaGeneration: 0, chatContextEpoch: 0, chatContext: null, dockExpanded: true,
+    buildBindingSequence: 0, buildPollSequence: 0, phoneRefreshEpoch: 0, mediaGeneration: 0, chatContextEpoch: 0, chatContext: null, dockExpanded: true,
     shellPresentation: { clear() { this.cleared = true; } },
     dockAssist: null, compose: null, capabilityLauncher: null,
     closeFocusPanel() {}, stopMediaPlayer() {}, clearWiki() {}, vivimChat: { redact() {} },
