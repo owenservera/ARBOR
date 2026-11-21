@@ -168,9 +168,10 @@ fn missing_approved_binaries(root: &Path) -> Vec<&'static str> {
         .collect()
 }
 
-/// True only for a reply that is actually this Host: the status schema plus an
-/// online host state. This is what keeps an unrelated listener on the port from
-/// being mistaken for a healthy VIVIM Host.
+/// Bounded schema/online-state sanity check for the loopback Host listener.
+/// This does not cryptographically attest the listener's PID or binary and
+/// does not confer owner authority. The Host must still issue the authenticated
+/// one-use control session before the desktop UI can be opened.
 fn is_host_status(value: &serde_json::Value) -> bool {
     value.get("schema").and_then(|v| v.as_str()) == Some(HOST_STATUS_SCHEMA)
         && value
@@ -534,11 +535,13 @@ impl HostProcess {
             "exitCode": *self.exit_code.lock().unwrap(),
             "readiness": readiness.as_str(),
             "verifiedHostOnline": healthy,
+            "healthEvidence": "status-schema-and-online-state-only",
             "ready": effective_ready,
             "ownedChild": child=="running",
             "autoRecoveryAttempts": self.auto_recoveries.load(Ordering::Relaxed),
             "autoRecoveryLimit": MAX_AUTO_RECOVERIES,
-            "ownerSessionLaunchRequested": self.owner_session_launch_requested.load(Ordering::Acquire),
+            "ownerSessionLaunchRequested": effective_ready &&
+                self.owner_session_launch_requested.load(Ordering::Acquire),
             "lastStartError": self.last_error.lock().unwrap().clone(),
             "runtime": runtime.mode.as_str(),
             "runtimeRoot": runtime.root.display().to_string(),
