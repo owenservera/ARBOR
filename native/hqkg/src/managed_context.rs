@@ -46,7 +46,10 @@ pub fn check_managed_head(journal: &Path, expected: &JournalStatus) -> Result<()
 // fence set independently from the currently selected source manifest.
 fn deletion_fence_manifest(graph: &Graph, prefix: &str) -> Result<(usize,String)> {
     let mut proof=Vec::new();
-    for node in graph.nodes().filter(|n|n.id.starts_with(&format!("{prefix}vivim-context-t-"))) {
+    for node in graph.nodes().filter(|n|
+        n.id.starts_with(&format!("{prefix}vivim-context-t-")) ||
+        (n.id.starts_with(&format!("{prefix}vivim-context-")) &&
+         n.properties.get("vivim.context.kind").map(String::as_str)==Some("tombstone"))) {
         let p=&node.properties;
         let invalid=||Error::Corrupt("invalid durable managed deletion fence".into());
         let local=p.get("vivim.context.deletedId").ok_or_else(invalid)?;
@@ -124,8 +127,12 @@ pub fn project_managed_graph_selected(
     let mut orders: BTreeMap<String,u64> = BTreeMap::new();
     for node in graph.nodes() {
         let kind = node.properties.get("vivim.context.kind").map(String::as_str);
-        if !node.id.starts_with(&format!("{prefix}vivim-context-")) ||
-            !(kind == Some("wiki") || (view == "owner" && kind == Some("effect"))) ||
+        let typed_id=match kind {
+            Some("wiki")=>node.id.starts_with(&format!("{prefix}vivim-context-w-")),
+            Some("effect")=>node.id.starts_with(&format!("{prefix}vivim-context-e-")),
+            _=>false,
+        };
+        if !typed_id || !(kind == Some("wiki") || (view == "owner" && kind == Some("effect"))) ||
             active.is_some_and(|ids| !ids.contains(node.id.strip_prefix(&prefix).unwrap_or(""))) {
             continue;
         }
