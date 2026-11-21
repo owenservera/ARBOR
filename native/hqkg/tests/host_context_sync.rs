@@ -1098,3 +1098,51 @@ fn revoked_d4_receipt_cannot_resurrect_even_with_new_source_revision() {
     assert_eq!(owner["activeSourcesTotal"],0);
     assert_eq!(owner["effectRelationshipsTotal"],0);
 }
+
+#[test]
+fn successive_complete_wiki_inventories_advance_existing_deletion_fence_without_rewriting_sources() {
+    let temp=Temp::new();let file=temp.journal();
+    let source=wiki_record(0,2);
+    let (ok,first)=sync(&file,SCOPE,vec![source]);
+    assert!(ok,"{first}");
+    let packet=|rev:u64,epoch:u64|json!({
+        "schema":"vivim.hqkg-personal/1","scope":SCOPE,
+        "op":"sync-context-read","view":"wiki","nodes":[],"relationships":[],
+        "baseRevision":rev,"baseEpoch":epoch,"deltas":[],
+        "activeIds":[],"activeRelationshipIds":[],
+        "completeWikiRevision":rev
+    });
+    let (ok,deleted)=run_packet(&file,packet(4,first["epoch"].as_u64().unwrap()));
+    assert!(ok,"{deleted}");
+    assert_eq!(deleted["reconciledSections"],1);
+    assert_eq!(deleted["context"]["deletionFencesTotal"],1);
+    let old_hash=deleted["context"]["deletionFencesDigest"].clone();
+    // During a cold restart the Host can prove absence again at a later
+    // complete Wiki high-water, without any active section put or deletion.
+    let (ok,advanced)=run_packet(&file,packet(8,deleted["epoch"].as_u64().unwrap()));
+    assert!(ok,"{advanced}");
+    assert_eq!(advanced["reconciledSections"],0);
+    assert_eq!(advanced["ingested"],0);
+    assert_eq!(advanced["changed"],true);
+    assert_ne!(advanced["context"]["deletionFencesDigest"],old_hash);
+    assert_eq!(advanced["context"]["activeSourcesTotal"],0);
+    let graph=Journal::new(&file).load().unwrap();
+    let fence=graph.nodes().next().unwrap();
+    assert_eq!(fence.properties.get("hqkg.provenance.revision").map(String::as_str),Some("8"));
+    let stable=fs::read(&file).unwrap();
+    let (ok,replay)=run_packet(&file,packet(8,advanced["epoch"].as_u64().unwrap()));
+    assert!(ok,"{replay}");
+    assert_eq!(replay["changed"],false);
+    assert_eq!(fs::read(&file).unwrap(),stable);
+    for revision in [2,5,8] {
+        let (ok,stale)=delta(&file,SCOPE,8,vec![put(wiki_record(0,revision))]);
+        assert!(!ok,"stale version {revision} resurrected: {stale}");
+        assert_eq!(fs::read(&file).unwrap(),stable);
+    }
+    let (ok,newer)=delta(&file,SCOPE,9,vec![put(wiki_record(0,9))]);
+    assert!(ok,"{newer}");
+    assert_eq!(read(&file,SCOPE,newer["epoch"].as_u64().unwrap(),"wiki").unwrap()
+        ["items"][0]["revision"],9);
+    assert_eq!(Journal::new(&file).load().unwrap().node_count(),2,
+        "one live Wiki section and its older deletion metadata coexist");
+}
