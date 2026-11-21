@@ -53,6 +53,7 @@ pub fn dispatch(request:&Value)->Value{
         "personal-rule-transition"=>crate::personal_rule_transition::reduce(input),
         "control-catalog-compatibility"=>crate::control_catalog_compat::assess(input),
         "semantic-observation"=>crate::semantic_observation::aggregate(input),
+        "live-system"=>crate::live_system::dispatch(input),
         "development-projection"=>crate::development_projection::project(input),
         "control-plan-preview"=>crate::control_plan_presentation::project(input),
         "control-receipt-preview"=>crate::control_plan_presentation::receipt_project(input),
