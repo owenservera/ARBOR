@@ -29,7 +29,7 @@ fn viewport_for_window(window: &Window) -> u32 {
 }
 
 use gpui_component::{Root, input::{Input, InputState}, button::{Button, ButtonVariants}};
-use vivim_gpui_desktop::{Overview, DevelopmentRevisionGuard, read_overview, read_development, control::{self, Review}, visual::{self, Visual, RevisionGuard}};
+use vivim_gpui_desktop::{Overview, ReadError, DevelopmentRevisionGuard, read_overview, read_development, control::{self, Review}, visual::{self, Visual, RevisionGuard}};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Panel { Overview, Wiki, Visual, Graph, Control }
@@ -153,6 +153,13 @@ impl Desktop {
             let visual=visual_job.await;
             let _=this.update(cx,|view,cx|{
                 view.read_busy=false;
+                // A command or pending approval supersedes every read
+                // started before it. In-flight GET data is not a receipt.
+                if view.busy || view.uncertain
+                    || view.review.as_ref().is_some_and(Review::needs_approval) {
+                    view.refresh_pending=false;
+                    return;
+                }
                 // Compare a monotonically increasing resize identity, not
                 // just width: A -> B -> A still invalidates the first A read.
                 if view.viewport_epoch!=epoch || view.viewport_px!=viewport_px
@@ -176,8 +183,9 @@ impl Desktop {
                             cx.notify();return;
                         }
                         view.source_status=format!(
-                            "Owner-authorized Wiki · revision {} · source SHA256 {} · observed {}",
-                            data.wiki_revision,data.wiki_digest,data.observed_at
+                            "Owner-authorized Host snapshot SHA256 {} · observed {} · Wiki revision {} · Wiki source SHA256 {} · Wiki stable across summary read; no global transaction claimed",
+                            data.host_snapshot_digest,data.observed_at,
+                            data.wiki_revision,data.wiki_digest
                         );
                         let delta=wiki_read::source_delta(&json!({
                             "previous":view.overview.as_ref().map(|old|&old.wiki_source),
@@ -214,31 +222,49 @@ impl Desktop {
                     Err(error) => {
                         view.source_status=format!("{} · Wiki is unavailable, not empty",error.label());
                         view.overview=None;view.visual=None;view.vec_view=None;
+                        view.visual_status="Visual admission withheld · Host Wiki/source snapshot unavailable".into();
                         view.wiki_events.clear();view.wiki_delta.clear();
                         cx.notify();return;
                     }
                 }
-                match visual.and_then(|v| view.visual_guard.accept(v).map_err(Into::into)) {
+                // Personal live bindings derive from the same committed Host
+                // Wiki revision. Reject cross-request races BEFORE advancing
+                // the native revision guard. Other bindings are independent
+                // domains and cannot be asserted globally coherent.
+                let mut aligned_wiki_bindings=0usize;
+                let checked=visual.and_then(|candidate|{
+                    if let Some(ref visual)=candidate {
+                        let wiki_revision=view.overview.as_ref()
+                            .ok_or(ReadError::Unavailable)?.wiki_revision;
+                        aligned_wiki_bindings=visual::aligned_wiki_bindings(wiki_revision,visual)?;
+                    }
+                    Ok(candidate)
+                });
+                match checked.and_then(|v| view.visual_guard.accept(v).map_err(Into::into)) {
                     Ok(next) => {
                         match visual_delta(view.visual.as_ref(),next.as_ref()){
                             Ok(delta)=>{
                                 if delta.is_empty(){
                                     view.visual_status=next.as_ref().map(|v|format!(
-                                        "Committed {} · revision {} · VEC design SHA256 {} · unchanged",
+                                        "Committed {} · revision {} · VEC design SHA256 {} · unchanged · {}",
                                         v.surface_id,v.revision,
-                                        view.vec_view.as_ref().map(|ir|ir.design_digest.as_str()).unwrap_or("not compiled")
+                                        view.vec_view.as_ref().map(|ir|ir.design_digest.as_str()).unwrap_or("not compiled"),
+                                        if aligned_wiki_bindings>0 {"Wiki-backed bindings revision-aligned"}
+                                        else {"cross-source alignment unproven (no personal binding)"}
                                     )).unwrap_or_else(||"Host online · no committed visual surface".into());
                                 }else{
                                     match next.as_ref().map(vec::compile).transpose(){
                                         Ok(compiled)=>match vec::diff(view.vec_view.as_ref(),compiled.as_ref()){
                                             Ok(changes)=>{
                                                 view.visual_status=next.as_ref().map(|v|format!(
-                                                    "Committed {} · rev {} · VEC design SHA256 {} · Rust VEC: +{} / ~{} / -{} / {} moved / {} reordered / {} bindings{}",
+                                                    "Committed {} · rev {} · VEC design SHA256 {} · Rust VEC: +{} / ~{} / -{} / {} moved / {} reordered / {} bindings{} · {}",
                                                     v.surface_id,v.revision,
                                                     compiled.as_ref().map(|ir|ir.design_digest.as_str()).unwrap_or("not compiled"),
                                                     changes.added.len(),changes.updated.len(),
                                                     changes.removed.len(),changes.moved.len(),changes.reordered.len(),
-                                                    changes.changed_bindings.len(),if changes.theme_changed{" · theme changed"}else{""}
+                                                    changes.changed_bindings.len(),if changes.theme_changed{" · theme changed"}else{""},
+                                                    if aligned_wiki_bindings>0 {"Wiki-backed binding revisions aligned"}
+                                                    else {"cross-source alignment unproven (no personal binding)"}
                                                 )).unwrap_or_else(||"Host online · no committed visual surface".into());
                                                 // Retain revision and binding fences even if no redraw is required.
                                                 view.visual=next;view.vec_view=compiled;
@@ -259,7 +285,11 @@ impl Desktop {
                         }
                     }
                     Err(e) => {
-                        view.visual_status=format!("{} · visual unavailable, not an empty surface",e.label());
+                        view.visual_status=if e==ReadError::SnapshotChanged {
+                            "Personal live bindings disagree with Wiki source revision · visual withheld until a coherent read".into()
+                        } else {
+                            format!("{} · visual unavailable, not an empty surface",e.label())
+                        };
                         view.visual=None;view.vec_view=None;
                     }
                 }
@@ -380,6 +410,12 @@ impl Desktop {
             let result=work.await;
             let _=this.update(cx,|view,cx|{
                 view.graph_busy=false;
+                if view.busy || view.uncertain
+                    || view.review.as_ref().is_some_and(Review::needs_approval) {
+                    view.graph_status="Graph readback withheld during Host decision or pending approval".into();
+                    view.graph_detail.clear();
+                    cx.notify();return;
+                }
                 if view.source_epoch!=source_epoch {
                     view.graph_status="Discarded graph read predating a Host effect".into();
                     view.graph_detail.clear();
@@ -395,8 +431,8 @@ impl Desktop {
                         Ok(())=>{
                             let unchanged=view.graph_detail==data.text;
                             view.graph_status=format!(
-                                "HQKG epoch {} · {} · requested “{}” · {} · read only",
-                                data.epoch,data.operation,data.requested_key,
+                                "HQKG epoch {} · source SHA256 {} · {} · requested “{}” · {} · read only",
+                                data.epoch,data.source_digest,data.operation,data.requested_key,
                                 if unchanged {"unchanged"}else{"updated"}
                             );
                             if !unchanged {view.graph_detail=data.text;}
@@ -524,6 +560,11 @@ impl Render for Desktop {
             body=body.child(div().text_sm().child(format!(
                 "{} source-backed Wiki pages · {} displayed",data.wiki_page_total,data.wiki_content.len()
             )));
+            if data.wiki_page_total==0 {
+                body=body.child(div().text_sm().child(
+                    "Owner-authorized Wiki source is empty at this revision"
+                ));
+            }
             if let Some(captures)=&data.wiki_captures {
                 body=body.child(div().text_lg().child("Personal captures · committed Wiki"))
                     .child(format!(
@@ -659,7 +700,8 @@ impl Render for Desktop {
             controls=controls.child(Button::new("approve").primary().label("Approve exact displayed Host plan")
                 .on_click(cx.listener(|v,_,_,cx|v.approve(cx))))
                 .child(Button::new("cancel").label("Cancel · no effect").on_click(cx.listener(|v,_,_,cx|{
-                    v.review=None;v.status="Cancelled locally · no execution sent".into();cx.notify();
+                    v.review=None;v.status="Cancelled locally · no execution sent".into();
+                    v.refresh(cx);cx.notify();
                 })));
         }
         controls=controls.child(Button::new("inspect").label("Inspect Host plan ID · read only")
