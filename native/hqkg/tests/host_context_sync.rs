@@ -599,6 +599,7 @@ fn owner_lineage_digest_covers_all_thirty_active_edges_not_only_display_rows() {
             local(&edge.id),local(&edge.from),local(&edge.to),edge.relation,
             receipt.properties.get("vivim.context.sourceRef").unwrap(),
             receipt.properties.get("hqkg.provenance.digest").unwrap(),
+            receipt.properties.get("vivim.context.receiptDigest"),
             wiki.properties.get("vivim.context.sourceRef").unwrap(),2
         ]));
     }
@@ -706,4 +707,58 @@ fn verified_compaction_keeps_managed_epoch_and_receipt_lineage_readable() {
     assert_eq!(out["context"]["effectRelationships"].as_array().unwrap().len(),1);
     assert_eq!(Journal::new(&file).load().unwrap().node_count(),2);
     assert_eq!(Journal::new(&file).load().unwrap().edge_count(),1);
+}
+
+
+#[test]
+fn immutable_d4_receipt_fingerprint_is_added_once_and_refuses_mutation() {
+    let temp=Temp::new();let file=temp.journal();
+    let legacy=effect();
+    let (ok,first)=sync(&file,SCOPE,vec![wiki(ENTRY,2,"Current"),legacy.clone()]);
+    assert!(ok,"{first}");
+    let initial=first["epoch"].as_u64().unwrap();
+    let mut fingerprinted=legacy.clone();
+    fingerprinted["receiptDigest"]=json!("f".repeat(64));
+    let (ok,upgrade)=run_packet(&file,json!({
+        "schema":"vivim.hqkg-personal/1","scope":SCOPE,
+        "op":"sync-context-read","view":"owner",
+        "nodes":[],"relationships":[],"baseRevision":2,"baseEpoch":initial,
+        "deltas":[put(fingerprinted.clone())],
+        "activeIds":[wiki(ENTRY,2,"Current")["id"],fingerprinted["id"]],
+        "activeRelationshipIds":[]
+    }));
+    assert!(ok,"{upgrade}");
+    let epoch=upgrade["epoch"].as_u64().unwrap();
+    assert!(epoch>initial);
+    let receipt=Journal::new(&file).load().unwrap().nodes()
+        .find(|n|n.properties.get("vivim.context.kind").map(String::as_str)==Some("effect"))
+        .unwrap().clone();
+    assert_eq!(receipt.properties.get("vivim.context.receiptDigest").map(String::as_str),
+        Some("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"));
+    assert_eq!(upgrade["context"]["effectRelationships"][0]["receiptDigest"],"f".repeat(64));
+    let bytes=fs::read(&file).unwrap();
+    let (ok,idempotent)=run_packet(&file,json!({
+        "schema":"vivim.hqkg-personal/1","scope":SCOPE,
+        "op":"sync-context","nodes":[],"relationships":[],
+        "baseRevision":2,"baseEpoch":epoch,"deltas":[put(fingerprinted.clone())]
+    }));
+    assert!(ok,"{idempotent}");
+    assert_eq!(idempotent["changed"],false);
+    assert_eq!(fs::read(&file).unwrap(),bytes);
+    let mut changed=fingerprinted;
+    changed["receiptDigest"]=json!("e".repeat(64));
+    let (ok,rejected)=run_packet(&file,json!({
+        "schema":"vivim.hqkg-personal/1","scope":SCOPE,
+        "op":"sync-context","nodes":[],"relationships":[],
+        "baseRevision":2,"baseEpoch":epoch,"deltas":[put(changed)]
+    }));
+    assert!(!ok,"an immutable applied receipt must not change: {rejected}");
+    assert_eq!(fs::read(&file).unwrap(),bytes);
+    let (ok,downgrade)=run_packet(&file,json!({
+        "schema":"vivim.hqkg-personal/1","scope":SCOPE,
+        "op":"sync-context","nodes":[],"relationships":[],
+        "baseRevision":2,"baseEpoch":epoch,"deltas":[put(legacy)]
+    }));
+    assert!(!ok,"a fingerprinted applied receipt must not downgrade: {downgrade}");
+    assert_eq!(fs::read(&file).unwrap(),bytes);
 }

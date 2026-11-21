@@ -187,7 +187,8 @@ export function buildNativeKnowledge(snapshot, effects) {
         e.status !== 'historical-applied-receipt' ||
         typeof e.planId !== 'string' || !/^ctl-[a-f0-9]{16}$/.test(e.planId) ||
         typeof e.actionId !== 'string' || !/^[a-z0-9._-]{1,128}$/.test(e.actionId) ||
-        !SHA.test(e.planDigest) || !(e.sourceRevision === null || safeUInt(e.sourceRevision)))
+        !SHA.test(e.planDigest) || !SHA.test(e.receiptDigest) ||
+        !(e.sourceRevision === null || safeUInt(e.sourceRevision)))
       throw Error('NATIVE_EFFECT_SOURCE_INVALID');
     // The immutable receipt itself has version 1; its target state revision,
     // when supplied by D4, remains separately and exactly identified.
@@ -213,7 +214,8 @@ export function buildNativeKnowledge(snapshot, effects) {
       sequenceLinks?' · Wiki sequence final rev '+e.sourceRevision+' · '+sequenceLinks.length+' linked records':
       visual?' · Visual '+visual.surfaceId+' rev '+visual.parentRevision+' → '+visual.revision+' · '+visual.changeId:'';
     rows.push({id:'vivim-context-e-'+digest(e.planId),kind:'effect',
-      sourceRef:e.planId,digest:e.planDigest,revision:Math.max(1,e.sourceRevision ?? 1),
+      sourceRef:e.planId,digest:e.planDigest,receiptDigest:e.receiptDigest,
+      revision:Math.max(1,e.sourceRevision ?? 1),
       sourceRevision:e.sourceRevision,order:Date.parse(e.receivedAt),
       semanticId:receiptId(e.planId),actionId:e.actionId,wikiLink,
       title:safe('Applied: '+e.actionId,100),summary:safe('Historical Host receipt'+linked,120)});
@@ -523,12 +525,13 @@ function managedReader({env,dataRoot,productJournal,control,executePersonal,repo
             const id='vivim-context-l-'+effect.id.slice('vivim-context-e-'.length);
             expected.set(id,{id,from:effect.id,to:wiki.id,
               kind:'committed-wiki-change',sourceRef:effect.sourceRef,
-              sourceDigest:effect.digest,wikiEntryId:wiki.sourceRef,wikiRevision:wiki.revision});
+              sourceDigest:effect.digest,receiptDigest:effect.receiptDigest,
+              wikiEntryId:wiki.sourceRef,wikiRevision:wiki.revision});
           }
           const links=result.effectRelationships;
           const expectedSorted=[...expected.values()].sort((a,b)=>a.id.localeCompare(b.id));
           const proof=expectedSorted.map(e=>[e.id,e.from,e.to,e.kind,e.sourceRef,
-            e.sourceDigest,e.wikiEntryId,e.wikiRevision]);
+            e.sourceDigest,e.receiptDigest,e.wikiEntryId,e.wikiRevision]);
           if(!Array.isArray(links)||links.length!==Math.min(24,expected.size)||
             result.effectRelationshipsTotal!==expected.size||
             result.omittedEffectRelationships!==Math.max(0,expected.size-24)||
@@ -544,6 +547,7 @@ function managedReader({env,dataRoot,productJournal,control,executePersonal,repo
             if(!effect||!wiki)return unavailable('RUST_CORE_CONTRACT_INVALID');
             effectRelationships.push({receipt:effect.semanticId,wiki:wiki.semanticId,
               sourceRef:effect.sourceRef,sourceDigest:effect.digest,
+              receiptDigest:effect.receiptDigest,
               wikiEntryId:wiki.sourceRef,wikiRevision:wiki.revision});
           }
         }else if(result.effectRelationships!==undefined||
@@ -559,12 +563,14 @@ function managedReader({env,dataRoot,productJournal,control,executePersonal,repo
               (view==='wiki' && expected.kind!=='wiki') || item.kind!==expected.kind ||
               item.sourceDigest!==expected.digest || item.sourceRevision!==expected.sourceRevision ||
               item.title!==expected.title || item.summary!==expected.summary ||
+              (expected.kind==='effect' && item.receiptDigest!==expected.receiptDigest) ||
               item.revision!==expected.revision || item.depth!==0 || item.sourceCount!==1 ||
               !safeUInt(item.estimatedTokens) || item.estimatedTokens>320)
             return unavailable('RUST_CORE_CONTRACT_INVALID');
           seen.add(item.sourceRef); sum+=item.estimatedTokens;
           items.push({title:item.title,summary:item.summary,kind:item.kind,
             sourceRef:item.sourceRef,sourceDigest:item.sourceDigest,
+            ...(expected.kind==='effect'?{receiptDigest:expected.receiptDigest}:{}),
             depth:item.depth,revision:item.revision,sourceRevision:item.sourceRevision,
             sourceCount:item.sourceCount,estimatedTokens:item.estimatedTokens});
         }

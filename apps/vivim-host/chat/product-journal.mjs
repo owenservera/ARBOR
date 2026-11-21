@@ -714,6 +714,9 @@ export function projectAppliedControlEffects(control, wikiChanges = null, wikiSt
       ...(wikiLink ? { wikiLink } : {}),
       ...(structureLink ? { structureLink } : {}),
       source: 'host-control-receipt', planId: receipt.planId, planDigest: receipt.planDigest,
+      // Exact immutable applied-receipt body; planDigest remains the original
+      // provenance digest for backwards-compatible HQKG record identity.
+      receiptDigest: createHash('sha256').update(JSON.stringify(receipt)).digest('hex'),
       actionId: receipt.actionId, receivedAt: receipt.at, kind: 'executed-effect',
       status: 'historical-applied-receipt',
       sourceRevision: wikiLink?.wikiRevision ?? structureLink?.wikiRevision ?? (sequenceLinks?receipt.result.wikiRevision:null) ??

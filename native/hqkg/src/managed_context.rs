@@ -155,12 +155,14 @@ pub fn project_managed_graph_selected(
                 .ok_or_else(||Error::Corrupt("missing D4 receipt identity".into()))?;
             let receipt_digest=receipt.properties.get("hqkg.provenance.digest")
                 .ok_or_else(||Error::Corrupt("missing D4 receipt digest".into()))?;
+            let body_digest=receipt.properties.get("vivim.context.receiptDigest");
             effect_relationships.push(json!({
                 "id":edge.id.strip_prefix(prefix.as_str()),
                 "from":edge.from.strip_prefix(prefix.as_str()),
                 "to":edge.to.strip_prefix(prefix.as_str()),
                 "kind":edge.relation,"sourceRef":receipt_ref,
-                "sourceDigest":receipt_digest,"wikiEntryId":source_ref,
+                "sourceDigest":receipt_digest,"receiptDigest":body_digest,
+                "wikiEntryId":source_ref,
                 "wikiRevision":source_rev
             }));
         }
@@ -171,7 +173,7 @@ pub fn project_managed_graph_selected(
     // proof from admitted current section and applied receipt identities.
     let effect_proof: Vec<Value> = effect_relationships.iter().map(|e|json!([
         e["id"],e["from"],e["to"],e["kind"],e["sourceRef"],
-        e["sourceDigest"],e["wikiEntryId"],e["wikiRevision"]
+        e["sourceDigest"],e["receiptDigest"],e["wikiEntryId"],e["wikiRevision"]
     ])).collect();
     let effect_bytes=serde_json::to_vec(&effect_proof)
         .map_err(|e|Error::Invalid(format!("D4 lineage encoding: {e}")))?;
@@ -201,11 +203,15 @@ pub fn project_managed_graph_selected(
             let revision = p.get("hqkg.provenance.revision").and_then(|v| v.parse::<u64>().ok())
                 .ok_or_else(|| Error::Corrupt("context revision".into()))?;
             let source_revision = p.get("vivim.context.sourceRevision").and_then(|v| v.parse::<u64>().ok());
-            items.push(json!({"title":safe_title(&item.title),"depth":item.depth,"revision":revision,
+            let mut presented=json!({"title":safe_title(&item.title),"depth":item.depth,"revision":revision,
                 "sourceCount":item.sources.len(),"estimatedTokens":item.tokens,
                 "kind":p.get("vivim.context.kind"),"sourceRef":p.get("vivim.context.sourceRef"),
                 "sourceDigest":p.get("hqkg.provenance.digest"),"sourceRevision":source_revision,
-                "summary":p.get("vivim.context.summary")}));
+                "summary":p.get("vivim.context.summary")});
+            if let Some(receipt_body)=p.get("vivim.context.receiptDigest") {
+                presented["receiptDigest"]=json!(receipt_body);
+            }
+            items.push(presented);
         }
     }
     let exhausted = total > items.len();

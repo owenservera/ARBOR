@@ -105,6 +105,9 @@ fn context_record(ns: &Namespace, n: &Value) -> Result<ContextRecord, String> {
     }
     node.properties.insert("vivim.context.semanticId".into(), semantic_id.into());
     let page = kind == "wiki" && semantic_id.starts_with("wiki:page:");
+    if kind=="wiki" && n.get("receiptDigest").is_some() {
+        return Err("Wiki source cannot carry a D4 receipt digest".into());
+    }
     let mut link = None;
     if kind != "wiki" {
         let action_id = text(n, "actionId")?;
@@ -113,6 +116,11 @@ fn context_record(ns: &Namespace, n: &Value) -> Result<ContextRecord, String> {
             return Err("invalid semantic action identity".into());
         }
         node.properties.insert("vivim.context.actionId".into(), action_id.into());
+        if let Some(value)=n.get("receiptDigest") {
+            let fingerprint=value.as_str().ok_or("invalid D4 applied receipt digest")?;
+            if !hex(fingerprint) {return Err("invalid D4 applied receipt digest".into());}
+            node.properties.insert("vivim.context.receiptDigest".into(),fingerprint.into());
+        }
         if let Some(l) = n.get("wikiLink").filter(|v| !v.is_null()) {
             let entry = text(l, "entryId")?;
             let linked_revision = l["wikiRevision"].as_u64().ok_or("invalid linked Wiki revision")?;
@@ -142,6 +150,15 @@ fn stage_record(g: &Graph, changes: GraphChangeSet, record: &ContextRecord) -> R
             .and_then(|v| v.parse::<u64>().ok()).ok_or("invalid prior source revision")?;
         let old_digest = old.properties.get("hqkg.provenance.digest").map(String::as_str);
         let old_ref = old.properties.get("vivim.context.sourceRef").map(String::as_str);
+        // Backward-compatible one-way migration: a durable applied receipt
+        // without a body fingerprint can acquire it. Once present the actual
+        // immutable receipt bytes may not change under the same plan identity.
+        let old_receipt_digest=old.properties.get("vivim.context.receiptDigest").map(String::as_str);
+        let new_receipt_digest=node.properties.get("vivim.context.receiptDigest").map(String::as_str);
+        if record.kind=="effect" && old_receipt_digest.is_some() &&
+            old_receipt_digest!=new_receipt_digest {
+            return Err("STALE_CONTEXT_SOURCE immutable applied receipt changed".into());
+        }
         if (record.kind == "wiki" && (old_revision > record.revision ||
             (old_revision == record.revision && (old_digest != Some(record.digest.as_str()) ||
                 old_ref != Some(record.source_ref.as_str()))))) ||
