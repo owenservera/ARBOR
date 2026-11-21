@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Craft Intelligence — VIVIM Studio</title>
+<style>
+:root{color-scheme:light dark;font-family:system-ui,sans-serif;font-size:14px}
+body{max-width:1120px;margin:0 auto;padding:24px;background:Canvas;color:CanvasText}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+a{color:LinkText}button{font:inherit;padding:7px 12px;cursor:pointer}
+.card{border:1px solid GrayText;border-radius:9px;padding:15px;margin:15px 0}
+.metrics{display:flex;gap:25px;flex-wrap:wrap}.metric b{display:block;font-size:1.6rem}
+table{border-collapse:collapse;width:100%}th,td{text-align:left;border-bottom:1px solid GrayText;padding:8px}
+small{opacity:.8}#notice{font-weight:600}code{overflow-wrap:anywhere}
+</style></head><body>
+<header><h1>Craft Intelligence <small>read-only</small></h1><a href="/">Back to Studio</a></header>
+<p>Source-qualified, bounded application observations from the local Craft research bridge. No control can be clicked, approved or activated from this view.</p>
+<div class="card"><button id="reload">Refresh evidence</button> <span id="notice" role="status">Loading…</span><p id="target"></p><p id="origin"></p></div>
+<section class="card"><h2>Observed coverage</h2><div class="metrics" id="metrics"></div><p id="source"></p></section>
+<section class="card"><h2>Control roles</h2><table><thead><tr><th>Role</th><th>Count</th></tr></thead><tbody id="roles"></tbody></table></section>
+<section class="card"><h2>Evidence operations</h2><table><thead><tr><th>Operation</th><th>Records</th></tr></thead><tbody id="operations"></tbody></table></section>
+<section class="card"><h2>Studio/Harness reconciliation</h2><p id="recon"></p><table><thead><tr><th>Owner</th><th>Feature</th><th>Observation status</th></tr></thead><tbody id="features"></tbody></table></section>
+<script type="module" src="/ui/craft-intel.mjs"></script>
+</body></html>
