@@ -98,7 +98,9 @@ test('actual phone Build consumer unwraps only applied Host head, refuses stale 
 
 test('polling path checks full Host head and clears Build UI on lost status authority', () => {
   const source=readFileSync(new URL('../app.js',import.meta.url),'utf8');
-  assert.match(source,/const observed = build\.setSurface\(rev, st\?\.snapshot\?\.bootstrap\)/);
+  assert.match(source,/const observed=build\.setSurface\(rev,bootstrap\)/);
+  assert.match(source,/if\(observed\?\.state==='ready'\|\|genuineEmpty\)/);
+  assert.match(source,/S\.statusObj=st;S\.statusAt=Date\.now\(\)/);
   assert.match(source,/if \(build\) build\.clear\(\)/);
   assert.doesNotMatch(source,/if \(rev && key !== buildKey\)/);
 });
