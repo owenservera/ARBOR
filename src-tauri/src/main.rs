@@ -115,7 +115,7 @@ fn packaged_runtime(root: &Path) -> Option<PathBuf> {
         .chain(std::iter::once("apps/vivim-host/server.mjs".to_string()))
         .chain(APPROVED_BINARIES.iter().map(|bin| format!("native/bin/{bin}.exe")));
     if !required.into_iter().all(|rel| {
-        let present = entries.iter().any(|file| file["path"].as_str() == Some(&rel));
+        let present = entries.iter().any(|file| file["path"].as_str() == Some(rel.as_str()));
         present && root.join(&rel).is_file()
     }) {
         return None;
