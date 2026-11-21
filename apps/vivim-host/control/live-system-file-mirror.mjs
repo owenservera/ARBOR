@@ -10,7 +10,7 @@ import {runNativeProductPure} from './native-product-pure.mjs';
 const MAX_FILE=512*1024;
 const FILE_SCHEMA='vivim.live-system-state/1';
 const VIEW_SCHEMA='vivim.host-live-system/1';
-const ALLOWED=new Set(['host.health','wiki.summary','pwa.input','pwa.view']);
+const ALLOWED=new Set(['host.health','wiki.summary','pwa.input','pwa.view','phone.composer']);
 const fail=code=>Object.assign(Error(code),{code});
 const own=o=>o!==null&&typeof o==='object'&&!Array.isArray(o)&&
   Object.getPrototypeOf(o)===Object.prototype;
@@ -21,8 +21,11 @@ function safeView(view){
      view.effectPerformed!==false||view.coverage?.complete!==false||
      !/^[a-zA-Z0-9._:-]{1,128}$/.test(view.epoch||'')||
      !boundedInt(view.revision)||!Array.isArray(view.regions)||
-     view.regions.length>4||view.regions.some(r=>!ALLOWED.has(r?.id)||
-       r?.exposure!=='owner'||!Array.isArray(r?.writable)||r.writable.length!==0))
+     view.regions.length>5||view.regions.some(r=>!ALLOWED.has(r?.id)||
+       r?.exposure!=='owner'||!Array.isArray(r?.writable)||
+       (r.id!=='phone.composer'&&r.writable.length!==0)||
+       (r.id==='phone.composer'&&r.writable.some(f=>
+         f.pointer!=='/draft'||f.primitive!=='text'||f.actionId!=='pwa.composer.draft.set'))))
     throw fail('LIVE_MIRROR_UNTRUSTED_VIEW');
   const state={schema:FILE_SCHEMA,epoch:view.epoch,sequence:view.revision,
     regions:view.regions};
