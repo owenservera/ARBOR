@@ -613,18 +613,53 @@ async fn host_restart(
 }
 
 fn reconcile_blocking(app:&tauri::AppHandle, state:&HostProcess,
-                      stop_owned:bool, attempts:u8) -> serde_json::Value {
+                      attempts:u8) -> serde_json::Value {
     let _lifecycle=state.lifecycle.lock().unwrap();
-    if stop_owned {
-        // An explicit restart may stop only our own process, never an existing
-        // independent Host. Its journal and durable receipts stay untouched.
-        state.stop_owned();
-        state.auto_recoveries.store(0,Ordering::Release);
-    }
     let result=state.ensure_ready_locked(app,attempts);
+    let host_ready=result.is_ok();
+    // Serialize owner browser session issuance with startup and restart.
+    let session_requested=host_ready && present_owner_session(app,state);
     let mut payload=state.status_payload(&HostProcess::resolve_runtime(app));
-    payload["ok"]=serde_json::json!(result.is_ok());
+    payload["ok"]=serde_json::json!(host_ready&&session_requested);
+    payload["hostReady"]=serde_json::json!(host_ready);
     if let Err(error)=result {payload["error"]=serde_json::json!(error);}
+    else if !session_requested {
+        payload["error"]=serde_json::json!("Host online, but owner UI session was not launched");
+    }
+    payload
+}
+
+/// An automatic recovery is admitted only while the child is STILL exited
+/// under the exact same lifecycle lock used by manual restart and shutdown.
+/// A superseded crash observation cannot spend the bounded retry allowance
+/// or issue a second owner session.
+fn recover_exited_blocking(app:&tauri::AppHandle,state:&HostProcess)->serde_json::Value {
+    let _lifecycle=state.lifecycle.lock().unwrap();
+    if state.shutting_down.load(Ordering::Acquire) ||
+        state.probe_child()!=ChildState::Exited {
+        return serde_json::json!({"attempted":false,"ok":false,"exhausted":false});
+    }
+    let used=state.auto_recoveries.load(Ordering::Acquire);
+    if used>=MAX_AUTO_RECOVERIES {
+        state.set_readiness(Readiness::Failed,
+            Some("Owned Host exhausted bounded crash recovery".into()));
+        return serde_json::json!({"attempted":false,"ok":false,"exhausted":true});
+    }
+    state.auto_recoveries.fetch_add(1,Ordering::AcqRel);
+    state.owner_session_launch_requested.store(false,Ordering::Release);
+    let result=state.ensure_ready_locked(app,1);
+    let host_ready=result.is_ok();
+    // The recovered process cannot reuse the old transient browser session.
+    // Issuance and navigation are serialized, and no Host effect is retried.
+    let session_requested=host_ready && present_owner_session(app,state);
+    let mut payload=state.status_payload(&HostProcess::resolve_runtime(app));
+    payload["attempted"]=serde_json::json!(true);
+    payload["hostReady"]=serde_json::json!(host_ready);
+    payload["ok"]=serde_json::json!(host_ready&&session_requested);
+    if let Err(error)=result {payload["error"]=serde_json::json!(error);}
+    else if !session_requested {
+        payload["error"]=serde_json::json!("Host recovered, but owner UI session unavailable");
+    }
     payload
 }
 
@@ -729,12 +764,8 @@ fn main() {
             // already-running Host and never starts a second background Host.
             let state=handle.state::<Arc<HostProcess>>().inner().clone();
             thread::spawn(move || {
-                let report=reconcile_blocking(&handle,&state,false,2);
-                if report["ok"]==true {
-                    if !present_owner_session(&handle,&state) {
-                        eprintln!("VIVIM Host online but owner UI session unavailable");
-                    }
-                } else {
+                let report=reconcile_blocking(&handle,&state,2);
+                if report["ok"]!=true {
                     eprintln!("VIVIM Host startup not ready: {}",report["error"]);
                 }
 
@@ -746,24 +777,12 @@ fn main() {
                     thread::sleep(Duration::from_secs(3));
                     if state.shutting_down.load(Ordering::Acquire) {break;}
                     if state.probe_child()!=ChildState::Exited {continue;}
-                    state.owner_session_launch_requested.store(false,Ordering::Release);
-                    let used=state.auto_recoveries.load(Ordering::Acquire);
-                    if used>=MAX_AUTO_RECOVERIES {
-                        state.set_readiness(Readiness::Failed,
-                            Some("Owned Host exhausted bounded crash recovery".into()));
-                        break;
-                    }
-                    state.auto_recoveries.fetch_add(1,Ordering::AcqRel);
-                    let recovery=reconcile_blocking(&handle,&state,false,1);
+                    let recovery=recover_exited_blocking(&handle,&state);
+                    if recovery["exhausted"]==true {break;}
+                    if recovery["attempted"]!=true {continue;}
                     if recovery["ok"]!=true {
-                        eprintln!("VIVIM Host crash recovery refused: {}",recovery["error"]);
+                        eprintln!("VIVIM Host crash recovery incomplete: {}",recovery["error"]);
                         break;
-                    }
-                    // A recovered Host has no obligation to retain the prior
-                    // process's transient browser code/cookie. Re-establish
-                    // owner navigation, but never replay the original effect.
-                    if !present_owner_session(&handle,&state) {
-                        eprintln!("VIVIM Host recovered but owner UI session unavailable");
                     }
                 }
             });
