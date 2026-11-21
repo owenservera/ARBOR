@@ -167,6 +167,12 @@ fn stage_record(g: &Graph, ns: &Namespace, changes: GraphChangeSet, record: &Con
         let high_water=fence.properties.get("hqkg.provenance.revision")
             .and_then(|s|s.parse::<u64>().ok())
             .ok_or("RECOVERY_REQUIRED managed deletion fence revision")?;
+        // A stable Wiki identity may advance beyond its deletion high-water,
+        // but a different semantic source may never claim its old graph key.
+        if fence.properties.get("vivim.context.deletedSemanticId")
+            .is_some_and(|id|record.node.properties.get("vivim.context.semanticId")!=Some(id)) {
+            return Err("STALE_CONTEXT_SOURCE deleted semantic identity changed".into());
+        }
         // Revoked applied receipts are never resurrected, even if a caller
         // supplies a later graph revision for the same plan identity.
         if record.kind=="effect" || record.revision<=high_water {
@@ -276,6 +282,9 @@ fn stage_tombstone(g: &Graph, ns: &Namespace, changes: GraphChangeSet, d: &Value
             fence.properties.insert("vivim.context.kind".into(),"tombstone".into());
             fence.properties.insert("vivim.context.deletedId".into(),local.into());
             fence.properties.insert("vivim.context.deletedKind".into(),kind.into());
+            let semantic=old.properties.get("vivim.context.semanticId")
+                .ok_or("invalid prior managed semantic identity")?;
+            fence.properties.insert("vivim.context.deletedSemanticId".into(),semantic.clone());
             fence.properties.insert("vivim.context.sourceRef".into(),prior_ref.clone());
             fence.properties.insert("vivim.context.deletedRevision".into(),old_revision.to_string());
             if let Some(body)=old.properties.get("vivim.context.receiptDigest") {
@@ -653,6 +662,35 @@ fn sync_context(v: &Value, ns: &Namespace, journal: &Journal, g: &mut Graph,
             let (next,deleted_one)=stage_tombstone(g,ns,changes,&exact,Some(wiki_revision))?;
             changes=next;
             if deleted_one {reconciled_sections+=1;}
+        }
+        // The committed Wiki high-water also advances already-deleted section
+        // fences. Otherwise an absent section deleted at revision 2 could be
+        // resurrected by a delayed revision 3 delta after Host verified that
+        // it was still absent at revision 20. This updates metadata only, using
+        // the same durable graph CAS and without inventing source content.
+        for old in g.nodes() {
+            if !old.id.starts_with(&managed_prefix) ||
+                old.properties.get("vivim.context.kind").map(String::as_str)!=Some("tombstone") ||
+                old.properties.get("vivim.context.deletedKind").map(String::as_str)!=Some("wiki") ||
+                !old.properties.get("vivim.context.deletedSemanticId")
+                    .is_some_and(|id|id.starts_with("wiki:section:")) {
+                continue;
+            }
+            let local=old.properties.get("vivim.context.deletedId")
+                .ok_or("invalid durable section fence identity")?;
+            if current.contains(local) {continue;}
+            let previous=old.properties.get("hqkg.provenance.revision")
+                .and_then(|v|v.parse::<u64>().ok())
+                .ok_or("invalid durable section fence high-water")?;
+            if previous>wiki_revision {
+                return Err("STALE_CONTEXT_SOURCE complete Wiki deletion high-water".into());
+            }
+            if previous<wiki_revision {
+                let mut updated=old.clone();
+                updated.properties.insert("hqkg.provenance.revision".into(),
+                    wiki_revision.to_string());
+                changes=changes.put_node(updated);
+            }
         }
         // Omission can invalidate an old page link only when both endpoints
         // belong to the exact committed Wiki view. Historical out-of-window
