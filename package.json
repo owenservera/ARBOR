@@ -30,7 +30,6 @@
     "desktop": "cargo run --manifest-path native/gpui-desktop/Cargo.toml --features desktop",
     "desktop:test:local": "node tools/packaging/gpui-local-integration.mjs --validate",
     "desktop:portable": "node tools/packaging/gpui-local-integration.mjs --portable",
-    "desktop:legacy:tauri": "cargo run -p vivim-host",
     "desktop:installer": "node tools/packaging/build-gpui-installer.mjs"
   }
 }

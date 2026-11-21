@@ -12,6 +12,7 @@ import { prepareDeviceSigner, enrollWithChallenge, resumeDeviceSession } from '.
 import { worldModel, meModel, todayModel, LIVE_STATE_LABELS, TABS } from './ux/model.mjs';
 import { renderToday, renderWorld, renderMe } from './ux/render.mjs';
 import { createControlChat } from './control-chat.mjs';
+import { initializeRustUiEngine, rustUiEngineStatus as coreUiStatus, rustFirstContact } from './vec-engines/rust-wasm.mjs';
 import { mountComposerAssist } from './composer-assist.mjs';
 import { sourceCards, sameSourceCard, matchesSourceContext, exactSourceContextUrl, reconcileSourceCards } from './wiki-source-view.mjs';
 import { deriveReadiness, safeReadinessReport } from './ux/readiness.mjs';
@@ -51,6 +52,11 @@ const shellPresentation=createShellPresentation(document.body);
 const HOST_PREVIEW = new URLSearchParams(location.search).get('host-preview') === '1'
   && ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname)
   && location.pathname.startsWith('/mobile/');
+// Explicit first-customer experience. Existing pairing, signed-in provider registry,
+// Host planner, approval receipts and old phone shell remain unchanged.
+const FIRST_CONTACT = transport.direct && !HOST_PREVIEW &&
+  new URLSearchParams(location.search).get('first') === '1';
+if (FIRST_CONTACT) document.body.classList.add('first-contact');
 // This action exists only inside the signed VIVIM Android shell. The online surface
 // remains the single Host-operated phone; Pocket holds local raw evidence only.
 const pocketButton = document.getElementById('pocket-native');
@@ -1382,7 +1388,7 @@ function renderComposer() {
   if (N.target === 'vivim') {
     $('chips').hidden = true; $('modelwrap').hidden = true; $('effortwrap').hidden = true;
     $('clip').hidden = true; $('files').hidden = true;
-    $('text').placeholder = 'Ask VIVIM: show status, or describe a change…';
+    $('text').placeholder = FIRST_CONTACT ? 'Ask anything…' : 'Ask VIVIM: show status, or describe a change…';
     $('text').maxLength = 1000;
     $('composer-note').textContent = HOST_PREVIEW
       ? 'Local preview · pair with your PC to unlock live Host actions'
@@ -1434,8 +1440,129 @@ function renderComposer() {
   }
   updateSend();
 }
+// Wiki-first onboarding uses the existing owner-granted phone Wiki read and
+// the same Rust/WASM search as the full Wiki tab. No second journal, index,
+// provider session or uncontrolled effect is introduced.
+let firstWikiPanel=null,firstWikiTimer=0,firstWikiEpoch=0,firstWikiSource=null,
+    firstWikiGrant=null,firstWikiLoad=null,firstWikiAbort=null,
+    firstWikiAt=0,firstWikiHighWater=null;
+function resetFirstWiki() {
+  firstWikiEpoch++;clearTimeout(firstWikiTimer);firstWikiTimer=0;
+  firstWikiAbort?.abort();firstWikiAbort=null;firstWikiLoad=null;
+  firstWikiSource=null;firstWikiGrant=null;firstWikiAt=0;firstWikiHighWater=null;
+  if(firstWikiPanel){firstWikiPanel.hidden=true;firstWikiPanel.replaceChildren();}
+}
+function firstWikiScope(){
+  if(!FIRST_CONTACT||!S.paired||!transport.direct||
+      !S.device.scopes?.includes('control:read'))return null;
+  const headers=transport.deviceHeaders?.();
+  if(!headers?.['x-vivim-device-session']||!headers?.['x-vivim-grant-id'])return null;
+  return {headers,key:sha256Hex(JSON.stringify([
+    'first-wiki',headers['x-vivim-device-session'],headers['x-vivim-grant-id']]))};
+}
+function renderFirstWiki(text,source) {
+  if(!firstWikiPanel)return;
+  firstWikiPanel.replaceChildren();
+  if(!text||!source){firstWikiPanel.hidden=true;return;}
+  const found=rustWikiSearch?.(source.wiki,text.slice(0,160));
+  if(found?.wikiRevision!==source.stamp.revision||
+      found?.wikiDigest!==source.stamp.digest){firstWikiPanel.hidden=true;return;}
+  firstWikiPanel.hidden=false;
+  const heading=el('p','first-wiki-label',
+    'WIKI · '+found.matches+' matches · revision '+found.wikiRevision);
+  firstWikiPanel.append(heading);
+  if(!found.results.length){
+    firstWikiPanel.append(el('p','first-wiki-empty','No matching committed Wiki entries.'));
+    return;
+  }
+  for(const item of found.results.slice(0,6)){
+    const row=el('article','first-wiki-item');
+    row.append(el('strong','',item.page+(item.section?' / '+item.section:'')));
+    if(item.excerpt)row.append(el('p','',item.excerpt));
+    firstWikiPanel.append(row);
+  }
+  if(found.indexTruncated)firstWikiPanel.append(el('small','',
+    'Search is limited to the admitted Rust source index.'));
+}
+async function refreshFirstWiki(){
+  const text=$('text').value.trim(),scope=firstWikiScope();
+  if(!text||!scope||coreUiStatus().state!=='ready'||!rustWikiSearch||
+      !rustWikiSourceStamp){resetFirstWiki();return;}
+  if(firstWikiGrant!==scope.key){
+    resetFirstWiki();firstWikiGrant=scope.key;firstWikiSource=null;
+  }
+  const epoch=++firstWikiEpoch;
+  const current=()=>epoch===firstWikiEpoch&&firstWikiScope()?.key===scope.key&&
+    $('text').value.trim()===text;
+  if(firstWikiSource&&Date.now()-firstWikiAt<8000){
+    if(current())renderFirstWiki(text,firstWikiSource);return;
+  }
+  firstWikiSource=null;firstWikiPanel.hidden=true;
+  if(!firstWikiLoad){
+    firstWikiAbort=new AbortController();
+    const abort=firstWikiAbort;
+    firstWikiLoad=(async()=>{
+      const response=await fetch('/mobile/api/wiki',{
+        method:'GET',credentials:'same-origin',cache:'no-store',
+        headers:scope.headers,signal:abort.signal
+      });
+      if(!response.ok)throw new Error('WIKI_READ_UNAVAILABLE');
+      const wiki=await response.json();
+      if(!validWikiSourceShape(wiki))throw new Error('WIKI_SOURCE_INVALID');
+      const admitted=verifyWikiSourceStamp(wiki,
+        firstWikiHighWater?{stamp:firstWikiHighWater,native:true}:null);
+      if(admitted.state!=='accepted'||!admitted.native)
+        throw new Error('WIKI_RUST_PROOF_REQUIRED');
+      return {wiki,stamp:admitted.stamp};
+    })().finally(()=>{if(firstWikiAbort===abort){
+      firstWikiAbort=null;firstWikiLoad=null;
+    }});
+  }
+  try {
+    const source=await firstWikiLoad;
+    if(firstWikiScope()?.key!==scope.key)return;
+    firstWikiSource=source;firstWikiAt=Date.now();firstWikiHighWater=source.stamp;
+    if(current())renderFirstWiki(text,source);
+  }catch {
+    if(current()&&firstWikiPanel){
+      firstWikiPanel.hidden=false;firstWikiPanel.replaceChildren(
+        el('p','first-wiki-empty','Wiki unavailable or no authorized source. No cached results shown.'));
+    }
+  }
+}
+function scheduleFirstWiki(){
+  if(!FIRST_CONTACT)return;
+  clearTimeout(firstWikiTimer);
+  if(!$('text').value.trim()){resetFirstWiki();return;}
+  firstWikiTimer=setTimeout(()=>{void refreshFirstWiki();},240);
+}
+function mountFirstWiki(){
+  if(!FIRST_CONTACT)return;
+  firstWikiPanel=el('aside','first-wiki');
+  firstWikiPanel.id='first-wiki';
+  firstWikiPanel.setAttribute('aria-label','Live source-backed Wiki suggestions');
+  firstWikiPanel.setAttribute('aria-live','polite');
+  firstWikiPanel.hidden=true;
+  $('v-talk').querySelector('.chat').append(firstWikiPanel);
+  $('text').addEventListener('input',scheduleFirstWiki);
+  window.addEventListener('vivim:paired',()=>resetFirstWiki());
+  document.addEventListener('vivim:wiki-committed',()=>{
+    resetFirstWiki();scheduleFirstWiki();
+  });
+  document.addEventListener('visibilitychange',()=>{
+    if(document.hidden)resetFirstWiki();
+  });
+}
+
 function updateSend() {
   if (HOST_PREVIEW || !S.paired) { $('send').disabled = true; return; }
+  if (FIRST_CONTACT) {
+    const projected = rustFirstContact({ text: $('text').value });
+    $('send').disabled = N.target !== 'vivim' || vivimChat.busy() ||
+      projected?.schema !== 'vivim.first-contact/1' || projected.state !== 'admitted' ||
+      projected.executionAuthorized !== false || projected.effectPerformed !== false;
+    return;
+  }
   $('send').disabled = N.target === 'vivim'
     ? !transport.direct || vivimChat.busy() || !$('text').value.trim() || $('text').value.trim().length > 1000
     : N.target === 'phone'
@@ -1795,6 +1922,14 @@ async function send() {
   if (N.target === 'vivim') {
     const field = $('text'), body = field.value.trim();
     if (!body || body.length > 1000 || vivimChat.busy()) return;
+    if (FIRST_CONTACT) {
+      const admitted = rustFirstContact({text:field.value});
+      if (admitted?.schema !== 'vivim.first-contact/1' || admitted.state !== 'admitted' ||
+          admitted.text !== body || admitted.executionAuthorized !== false || admitted.effectPerformed !== false) {
+        toast('Rust core unavailable or unable to admit this text. Nothing was sent.');
+        updateSend(); return;
+      }
+    }
     // Submit exclusively to the Host plan boundary. Never route to a provider.
     void vivimChat.send(body);
     if (field.value.trim() === body) { field.value = ''; autogrow(); }
@@ -2406,7 +2541,8 @@ dockAssist=mountComposerAssist({
 });
 $('text').addEventListener('input', () => { autogrow(); updateSend(); });
 $('text').addEventListener('keydown', e => {
-  if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && matchMedia('(pointer:fine)').matches) {
+  if (e.key === 'Enter' && !e.shiftKey && !e.isComposing &&
+      (FIRST_CONTACT || matchMedia('(pointer:fine)').matches)) {
     e.preventDefault();if(S.tab!=='talk')goTab('talk');void send();
   }
 });
@@ -2518,6 +2654,24 @@ if (!HOST_PREVIEW && 'serviceWorker' in navigator) {
   });
 }
 mountUniversalDock();
+mountFirstWiki();
+if (FIRST_CONTACT) {
+  $('text').placeholder = 'Ask anything…';
+  $('text').setAttribute('enterkeyhint','send');
+  void initializeRustUiEngine().then(ok => {
+    if (ok) {
+      const view = rustFirstContact({text:''});
+      if (view?.schema === 'vivim.first-contact/1' && view.state === 'empty' &&
+          view.presentation?.surface === 'composer' &&
+          view.presentation?.target === 'vivim-host') {
+        $('text').placeholder = view.presentation.placeholder;
+      }
+    }
+    updateSend();
+    if (!ok || coreUiStatus().state !== 'ready')
+      $('connection-announcer').textContent = 'Rust core unavailable; no command can be sent.';
+  });
+}
 $('native-session').hidden = N.target !== 'phone';
 $('native-status').hidden = N.target !== 'phone';
 $('drawer').hidden = N.target !== 'harness';

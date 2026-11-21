@@ -137,6 +137,9 @@ function invoke(operation,input){
   lastOperation='COMPUTED';
   return result;
 }
+export function rustFirstContact(input){
+  return invoke('first-contact',input);
+}
 export function rustUiValue(type,value,choices){
   return invoke('ui-value',{type,value,...(choices===undefined?{}:{choices})});
 }

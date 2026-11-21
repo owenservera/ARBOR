@@ -5,8 +5,10 @@ members = [
   "native/host-supervisor",
   "native/private-shares",
   "core/programmability",
-  "src-tauri",
 ]
+# Tauri is retained only as a legacy reference; it must never poison the
+# active Rust workspace dependency resolution or portable WASM builds.
+exclude = ["src-tauri", "native/gpui-desktop"]
 default-members = [
   "native/hqkg",
   "native/private-shares",

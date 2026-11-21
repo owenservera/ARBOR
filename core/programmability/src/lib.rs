@@ -31,6 +31,7 @@ pub mod context_grounding;
 pub mod wiki_target;
 pub mod recovery_diagnosis;
 pub mod ui_value;
+pub mod first_contact;
 pub mod product_kernel;
 pub mod ui_tokens;
 pub mod navigation;

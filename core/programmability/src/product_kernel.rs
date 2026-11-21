@@ -27,6 +27,7 @@ pub fn dispatch(request:&Value)->Value{
         "recovery-diagnosis"=>crate::recovery_diagnosis::diagnose(&input["finding"]),
         "recovery-diagnosis-batch"=>crate::recovery_diagnosis::diagnose_batch(input),
         "ui-value"=>crate::ui_value::validate(input),
+        "first-contact"=>crate::first_contact::project(input),
         "ui-token-pack"=>crate::ui_tokens::resolve_package(input),
         "local-navigation"=>crate::navigation::destination(input),
         "vec-admission"=>crate::vec_admission::admit(input),
