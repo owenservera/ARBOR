@@ -795,7 +795,7 @@ fn sync_context(v: &Value, ns: &Namespace, journal: &Journal, g: &mut Graph,
     }
     // A failed deletion-fence proof must refuse persistence, not write a
     // poisoned head and discover it only during post-commit readback.
-    deletion_fence_manifest(g,&prefix).map_err(quarantine)?;
+    deletion_fence_manifest(g,&prefix,None).map_err(quarantine)?;
     let mut compacted=false;
     if changed || before == 0 {
         let bytes = hqkg::serialize(g).map_err(err)?;
