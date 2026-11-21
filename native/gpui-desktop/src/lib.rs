@@ -63,6 +63,11 @@ pub struct DevelopmentRevisionGuard {
 }
 impl DevelopmentRevisionGuard {
     pub fn accept(&mut self, next: &DevelopmentRead) -> Result<(), ReadError> {
+        if !development_projection::valid_query(&next.operation,&next.requested_key)
+            || next.source_digest.len()!=64 || !next.source_digest.bytes()
+                .all(|b|b.is_ascii_digit()||(b'a'..=b'f').contains(&b)) {
+            return Err(ReadError::InvalidProjection);
+        }
         if self.high_epoch.is_some_and(|epoch| next.epoch < epoch) {
             return Err(ReadError::InvalidProjection);
         }
@@ -336,6 +341,26 @@ mod tests {
         let newer=project_development("symbols","work",&advance).unwrap();
         assert!(guard.accept(&newer).is_ok());
         assert!(guard.accept(&first).is_err());
+    }
+    #[test] fn graph_query_fence_is_bounded_and_retains_high_epoch() {
+        let source=json!({
+            "schema":"hqkg.development-query/1","authority":"read-only",
+            "operation":"symbols","epoch":7,"state":"indexed-snapshot",
+            "result":{"symbols":[]}
+        });
+        let mut guard=DevelopmentRevisionGuard::default();
+        for index in 0..40 {
+            let key=format!("source-{index}");
+            guard.accept(&project_development("symbols",&key,&source).unwrap()).unwrap();
+        }
+        assert_eq!(guard.by_query.len(),32);
+        assert_eq!(guard.high_epoch,Some(7));
+        let mut old=project_development("symbols","source-39",&source).unwrap();
+        old.epoch=6;
+        assert!(guard.accept(&old).is_err());
+        let mut forged=project_development("symbols","source-39",&source).unwrap();
+        forged.source_digest="wrong".into();
+        assert!(guard.accept(&forged).is_err());
     }
     #[test] fn source_digest_detects_same_epoch_changed_graph_payload() {
         let source=json!({

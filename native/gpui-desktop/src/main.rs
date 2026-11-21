@@ -183,7 +183,7 @@ impl Desktop {
                             cx.notify();return;
                         }
                         view.source_status=format!(
-                            "Owner-authorized Host snapshot SHA256 {} · observed {} · Wiki revision {} · Wiki source SHA256 {} · Wiki stable across summary read; no global transaction claimed",
+                            "Owner-authorized Host PWA summary SHA256 {} · observed {} · Wiki revision {} · Wiki source SHA256 {} · Wiki stable across summary read; no global transaction claimed",
                             data.host_snapshot_digest,data.observed_at,
                             data.wiki_revision,data.wiki_digest
                         );
@@ -286,7 +286,7 @@ impl Desktop {
                     }
                     Err(e) => {
                         view.visual_status=if e==ReadError::SnapshotChanged {
-                            "Personal live bindings disagree with Wiki source revision · visual withheld until a coherent read".into()
+                            "TierFlow viewport admission or Wiki-backed source revision disagrees with this read · visual withheld".into()
                         } else {
                             format!("{} · visual unavailable, not an empty surface",e.label())
                         };
@@ -419,6 +419,7 @@ impl Desktop {
                 if view.source_epoch!=source_epoch {
                     view.graph_status="Discarded graph read predating a Host effect".into();
                     view.graph_detail.clear();
+                    view.refresh_graph(cx); // GET-only, and still subject to approval fences
                     cx.notify();return;
                 }
                 if view.graph_query.as_ref()!=Some(&query) {
@@ -431,7 +432,7 @@ impl Desktop {
                         Ok(())=>{
                             let unchanged=view.graph_detail==data.text;
                             view.graph_status=format!(
-                                "HQKG epoch {} · source SHA256 {} · {} · requested “{}” · {} · read only",
+                                "HQKG epoch {} · query result SHA256 {} · {} · requested “{}” · {} · read only",
                                 data.epoch,data.source_digest,data.operation,data.requested_key,
                                 if unchanged {"unchanged"}else{"updated"}
                             );
@@ -707,10 +708,22 @@ impl Render for Desktop {
         controls=controls.child(Button::new("inspect").label("Inspect Host plan ID · read only")
             .on_click(cx.listener(|v,_,_,cx|v.inspect(cx))));
         if matches!(self.panel,Panel::Overview|Panel::Graph){
-            body=body.child(div().text_lg().child("Development graph · source-backed only"))
-                .child(self.graph_status.clone());
+            body=body.child(div().text_lg().child(
+                "Development graph · independently versioned HQKG source"
+            )).child(self.graph_status.clone());
             if !self.graph_detail.is_empty(){
-                body=body.child(div().p_3().bg(rgb(0x202b3a)).child(self.graph_detail.clone()));
+                // Render the actual, bounded Rust graph projection line by line.
+                // No synthetic nodes, schema remapping or DOM/HTML interpretation.
+                let mut lines=div().flex().flex_col().gap_1().p_3().bg(rgb(0x202b3a));
+                for line in self.graph_detail.lines().take(120) {
+                    lines=lines.child(div().text_sm().child(line.to_owned()));
+                }
+                if self.graph_detail.lines().count()>120 {
+                    lines=lines.child(div().text_sm().child(
+                        "Additional graph projection lines omitted by the native viewport"
+                    ));
+                }
+                body=body.child(lines);
             }
         }
         if matches!(self.panel,Panel::Overview|Panel::Control) && !self.detail.is_empty() {
