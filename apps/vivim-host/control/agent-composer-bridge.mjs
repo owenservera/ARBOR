@@ -14,7 +14,7 @@ export function createHostComposerBridge({readSnapshot,compute=runNativeProductP
     clock=()=>Date.now()}={}){
   if(typeof readSnapshot!=='function'||typeof compute!=='function')
     throw fail('COMPOSER_BRIDGE_UNBOUND',503);
-  const sessions=new Map(), stages=new Map();
+  const sessions=new Map(), stages=new Map(), waiters=new Map();
   let selected=null,sourceRevision=0,paused=false,inflight=null;
   function active(){
     const entry=selected&&sessions.get(selected);
@@ -153,6 +153,7 @@ export function createHostComposerBridge({readSnapshot,compute=runNativeProductP
       },ACK_MS);
       timer.unref?.();
       inflight={...entry,delivered:false,timer,resolve,reject};
+      waiters.get(entry.sessionId)?.finish();
     });
   }
   function delivery(sessionId){
@@ -169,6 +170,27 @@ export function createHostComposerBridge({readSnapshot,compute=runNativeProductP
     return {schema:'vivim.agent-composer-delivery/1',
       epoch:job.epoch,actorId:'desktop-owner',candidate:job.proposal.candidate,
       sessionId:job.sessionId,localRevision:job.clientRevision};
+  }
+  function nextDelivery(sessionId,waitMs=15000){
+    if(!sid(sessionId)||!Number.isSafeInteger(waitMs)||waitMs<0||waitMs>20000)
+      throw fail('COMPOSER_POLL_INVALID',400);
+    const immediate=delivery(sessionId);
+    if(immediate.state!=='none'||waitMs===0||paused)return Promise.resolve(immediate);
+    if(waiters.has(sessionId)||waiters.size>=8)
+      throw fail('COMPOSER_POLL_BUSY',429);
+    // One bounded long-poll per actual browser session. Waking is caused by
+    // the existing claimed Control effect, not another queue or permission.
+    return new Promise(resolve=>{
+      const complete=()=>{
+        const record=waiters.get(sessionId);
+        if(!record)return;
+        clearTimeout(record.timer);waiters.delete(sessionId);
+        resolve(delivery(sessionId));
+      };
+      const timer=setTimeout(complete,waitMs);
+      timer.unref?.();
+      waiters.set(sessionId,{timer,finish:complete});
+    });
   }
   async function acknowledge(body){
     const job=inflight;
@@ -217,6 +239,7 @@ export function createHostComposerBridge({readSnapshot,compute=runNativeProductP
     if(paused&&inflight){const job=inflight;inflight=null;
       clearTimeout(job.timer);job.reject(fail(job.delivered?'COMPOSER_OUTCOME_UNCERTAIN':'COMPOSER_PAUSED',job.delivered?503:423));}
     stages.clear();
+    for(const waiter of [...waiters.values()])waiter.finish();
     return {schema:'vivim.composer-control/1',paused,executionAuthorized:false,effectPerformed:false};
   }
   function status(){
@@ -227,5 +250,5 @@ export function createHostComposerBridge({readSnapshot,compute=runNativeProductP
         correlationId:inflight.proposal.candidate.correlationId,
         stage:inflight.delivered?'delivered-uncertain':'awaiting-poll'}:null};
   }
-  return Object.freeze({observe,observeWithFence,observation,stage,execute,delivery,acknowledge,setPaused,status});
+  return Object.freeze({observe,observeWithFence,observation,stage,execute,delivery,nextDelivery,acknowledge,setPaused,status});
 }
