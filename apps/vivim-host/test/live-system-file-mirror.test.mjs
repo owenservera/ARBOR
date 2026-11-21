@@ -19,7 +19,7 @@ test('owner materialization is atomic JSON and file edits are inert Rust candida
   assert.equal(current.schema,'vivim.live-system-state/1');
   assert.equal(current.sequence,1);
   assert.equal((await mirror.admitEdited()).state,'refused');
-  writeFileSync(mirror.file,JSON.stringify({...current,sequence:2})+'\n');
+  writeFileSync(mirror.proposalFile,JSON.stringify({...current,sequence:2})+'\n');
   const refusal=await mirror.admitEdited();
   assert.equal(refusal.state,'refused');
   assert.equal(refusal.executionAuthorized,false);
@@ -28,6 +28,7 @@ test('owner materialization is atomic JSON and file edits are inert Rust candida
   const restored=await mirror.publish(view);
   assert.equal(restored.state,'written');
   assert.equal(JSON.parse(readFileSync(mirror.file,'utf8')).sequence,1);
+  assert.equal(JSON.parse(readFileSync(mirror.proposalFile,'utf8')).sequence,2); // refresh never erases edits
 });
 test('untrusted or overbroad views cannot be written to disk',async t=>{
   const dir=mkdtempSync(path.join(tmpdir(),'vivim-live-private-'));
