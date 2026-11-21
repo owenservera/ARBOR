@@ -5,7 +5,7 @@ import { createHash } from 'node:crypto';
 import os from 'node:os';
 import path from 'node:path';
 import { createProductJournal, projectAppliedControlEffects } from '../chat/product-journal.mjs';
-import { buildNativeKnowledge, createRustChatContext, resolveRustContextRuntime } from '../chat/rust-context.mjs';
+import { buildNativeKnowledge, createRustChatContext, planNativeContextSync, resolveRustContextRuntime } from '../chat/rust-context.mjs';
 
 async function setup(t) {
   const dataRoot=await mkdtemp(path.join(os.tmpdir(),'vivim-native-context-'));
@@ -250,4 +250,56 @@ test('restart against an existing HQKG journal bootstraps with puts, never omiss
   assert.equal(sent.baseRevision,Number.MAX_SAFE_INTEGER);
   assert.equal(Object.hasOwn(sent,'baseEpoch'),false);
   assert.deepEqual(sent.activeIds,[sent.deltas[0].id]);
+});
+
+
+test('large native source projections use sequential bounded deltas and one scoped read',()=>{
+  const scope='b'.repeat(64);
+  // The transport planner receives already-admitted source identities; these
+  // records are protocol fixtures, never runtime Wiki seeds or fallback context.
+  const rows=Array.from({length:601},(_,i)=>({
+    id:'vivim-context-w-'+(i+1).toString(16).padStart(64,'0'),
+    kind:'wiki',semanticId:'wiki:section:Page'+i+'/About',
+    sourceRef:'entry-'+i,digest:'a'.repeat(64),revision:i+1,
+    sourceRevision:i+1,order:i+1,title:'Wiki: '+i,summary:'Committed '+i
+  }));
+  const plan=planNativeContextSync({scope,view:'wiki',rows,relationships:[]});
+  assert.equal(plan.delta,true);
+  assert.equal(plan.batched,true);
+  assert.equal(plan.stages.length,2);
+  assert.deepEqual(plan.stages.map(p=>p.deltas.length),[512,89]);
+  assert.ok(plan.stages.every(p=>p.op==='sync-context'&&
+    p.nodes.length===0&&p.relationships.length===0));
+  assert.equal(plan.finalPacket.op,'sync-context-read');
+  assert.equal(plan.finalPacket.deltas.length,0);
+  assert.equal(plan.finalPacket.activeIds.length,601);
+  assert.deepEqual(plan.finalPacket.activeRelationshipIds,[]);
+  assert.equal(plan.expectedWrites,0);
+  assert.equal(plan.expectedTombstones,0);
+  const last={epoch:45,rows:new Map(rows.map(r=>[r.id,r])),links:new Map()};
+  const unchanged=planNativeContextSync({scope,view:'wiki',rows,relationships:[],last,hasGraph:true});
+  assert.equal(unchanged.stages.length,0);
+  assert.equal(unchanged.finalPacket.deltas.length,0);
+  assert.equal(unchanged.finalPacket.activeIds.length,601);
+  assert.equal(unchanged.delta,true);
+});
+
+test('incremental planner tombstones only absent current sections, not historical receipts',()=>{
+  const scope='c'.repeat(64);
+  const wiki={id:'vivim-context-w-'+'1'.repeat(64),kind:'wiki',
+    semanticId:'wiki:section:Main/About',revision:4,digest:'a'.repeat(64)};
+  const receipt={id:'vivim-context-e-'+'2'.repeat(64),kind:'effect',
+    semanticId:'receipt:ctl-0000000000000001',revision:5,digest:'b'.repeat(64)};
+  const page={id:'vivim-context-w-'+'3'.repeat(64),kind:'wiki',
+    semanticId:'wiki:page:Main',revision:2,digest:'c'.repeat(64)};
+  const last={epoch:18,rows:new Map([wiki,receipt,page].map(r=>[r.id,r])),
+    links:new Map()};
+  const plan=planNativeContextSync({scope,view:'owner',rows:[],
+    relationships:[],last,hasGraph:true});
+  assert.equal(plan.finalPacket.deltas.length,1);
+  assert.deepEqual(plan.finalPacket.deltas[0],{
+    op:'delete',kind:'wiki',id:wiki.id,revision:4,digest:wiki.digest
+  });
+  assert.equal(plan.finalPacket.activeIds.length,0);
+  assert.equal(plan.expectedTombstones,1);
 });

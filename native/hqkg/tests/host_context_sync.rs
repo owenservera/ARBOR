@@ -469,3 +469,47 @@ fn explicit_link_invalidation_removes_only_committed_page_relationship() {
     assert!(!ok,"old link revision frame must be refused: {stale}");
     assert_eq!(fs::read(&file).unwrap(),bytes);
 }
+
+
+#[test]
+fn multi_batch_ingestion_keeps_over_five_hundred_sources_and_reads_one_epoch() {
+    let temp=Temp::new(); let file=temp.journal();
+    let rows:Vec<Value>=(0..620).map(|i|wiki_record(i,1)).collect();
+    let mut epoch=None;
+    for chunk in rows.chunks(256) {
+        let packet=json!({"schema":"vivim.hqkg-personal/1","scope":SCOPE,
+            "op":"sync-context","nodes":[],"relationships":[],"baseRevision":1,
+            "deltas":chunk.iter().cloned().map(put).collect::<Vec<_>>()});
+        let mut packet=packet;
+        if let Some(prior)=epoch {packet["baseEpoch"]=json!(prior);}
+        let (ok,next)=run_packet(&file,packet);
+        assert!(ok,"{next}");
+        assert_eq!(next["mode"],"delta");
+        assert_eq!(next["ingested"],chunk.len());
+        assert_eq!(next["synced"],chunk.len());
+        epoch=next["epoch"].as_u64();
+    }
+    let epoch=epoch.unwrap();
+    let active=rows.iter().map(|r|r["id"].clone()).collect::<Vec<_>>();
+    let (ok,context)=run_packet(&file,json!({
+        "schema":"vivim.hqkg-personal/1","scope":SCOPE,"op":"sync-context-read",
+        "view":"wiki","nodes":[],"relationships":[],"baseRevision":1,
+        "baseEpoch":epoch,"deltas":[],"activeIds":active,
+        "activeRelationshipIds":[]
+    }));
+    assert!(ok,"{context}");
+    assert_eq!(context["epoch"],epoch);
+    assert_eq!(context["synced"],0);
+    assert_eq!(context["changed"],false);
+    assert_eq!(context["context"]["totalRetrieved"],620);
+    assert!(context["context"]["items"].as_array().unwrap().len()<=8);
+    assert_eq!(Journal::new(&file).load().unwrap().node_count(),620);
+    let bytes=fs::read(&file).unwrap();
+    let (ok,stale)=run_packet(&file,json!({
+        "schema":"vivim.hqkg-personal/1","scope":SCOPE,"op":"sync-context",
+        "nodes":[],"relationships":[],"baseRevision":1,"baseEpoch":epoch-1,
+        "deltas":[put(wiki_record(620,1))]
+    }));
+    assert!(!ok,"epoch mismatch should refuse: {stale}");
+    assert_eq!(fs::read(&file).unwrap(),bytes);
+}

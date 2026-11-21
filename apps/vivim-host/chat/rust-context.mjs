@@ -82,6 +82,10 @@ export function createRustChatContext({
 // variables required for a normal Host installation/development build.
 const DEFAULT_ROOT = fileURLToPath(new URL('../../../', import.meta.url));
 const PERSONAL_SCHEMA = 'vivim.hqkg-personal/1';
+const MAX_CONTEXT_BATCH = 512;
+const MAX_CONTEXT_SOURCES = 4096;
+const MAX_CONTEXT_LINK_BATCH = 24;
+const MAX_NATIVE_INPUT = 1024 * 1024;
 const digest = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const SHA = /^[a-f0-9]{64}$/;
 const safe = (value, max) => String(value ?? '').replace(/[\x00-\x1f\x7f-\x9f]/g, ' ')
@@ -265,6 +269,72 @@ async function nativePacket(result) {
   try { return JSON.parse(result.stdout); } catch { throw Error('RUST_CORE_OUTPUT_INVALID'); }
 }
 
+// Plan bounded packets against one existing personal graph and journal. A full
+// projection is used only for a first small graph. Existing graphs and larger
+// first syncs use explicit source-identified deltas; omission is never deletion.
+// Stages are inert descriptions until the Host invokes its already-approved CLI.
+export function planNativeContextSync({scope,view,rows,relationships,last=null,hasGraph=false}) {
+  if(!SHA.test(scope)||!['wiki','owner'].includes(view)||
+    !Array.isArray(rows)||rows.length>MAX_CONTEXT_SOURCES||
+    !Array.isArray(relationships)||relationships.length>MAX_CONTEXT_LINK_BATCH)
+    throw Error('RUST_CORE_SOURCE_LIMIT');
+  const current=new Map(rows.map(row=>[row.id,row]));
+  const currentLinks=new Map(relationships.map(link=>[link.id,link]));
+  if(current.size!==rows.length||currentLinks.size!==relationships.length)
+    throw Error('RUST_CORE_SOURCE_DUPLICATE');
+  const delta=last!==null||hasGraph||rows.length>MAX_CONTEXT_BATCH;
+  const puts=last?rows.filter(row=>!last.rows.has(row.id)||
+    digest(last.rows.get(row.id))!==digest(row)):rows;
+  const deletes=last?[...last.rows.values()].filter(row=>
+    row.kind==='wiki'&&row.semanticId.startsWith('wiki:section:')&&!current.has(row.id))
+    .map(row=>({op:'delete',kind:'wiki',id:row.id,
+      revision:row.revision,digest:row.digest})):[];
+  const linkPuts=last?relationships.filter(link=>!last.links.has(link.id)||
+    digest(last.links.get(link.id))!==digest(link)):relationships;
+  const linkDeletes=last?[...last.links.values()].filter(link=>!currentLinks.has(link.id))
+    .map(link=>({op:'delete',id:link.id,revision:link.revision,digest:link.digest})):[];
+  const changes=[...puts.map(row=>({...row,op:'put'})),...deletes];
+  const linkChanges=[...linkPuts.map(link=>({...link,op:'put'})),...linkDeletes];
+  const baseRevision=last?
+    Math.max(0,...[...last.rows.values(),...rows].map(row=>row.revision)):
+    Number.MAX_SAFE_INTEGER;
+  const activeIds=rows.map(row=>row.id);
+  const activeRelationshipIds=relationships.map(link=>link.id);
+  const common={schema:PERSONAL_SCHEMA,scope};
+  const readScope={view,activeIds,activeRelationshipIds};
+  const batched=changes.length>MAX_CONTEXT_BATCH||
+    linkChanges.length>MAX_CONTEXT_LINK_BATCH;
+  const stages=[];
+  let finalPacket,expectedWrites,expectedLinks;
+  if(batched) {
+    for(let offset=0;offset<changes.length;offset+=MAX_CONTEXT_BATCH)
+      stages.push({...common,op:'sync-context',nodes:[],relationships:[],
+        deltas:changes.slice(offset,offset+MAX_CONTEXT_BATCH),baseRevision});
+    for(let offset=0;offset<linkChanges.length;offset+=MAX_CONTEXT_LINK_BATCH)
+      stages.push({...common,op:'sync-context',nodes:[],relationships:[],
+        deltas:[],relationshipDeltas:linkChanges.slice(offset,offset+MAX_CONTEXT_LINK_BATCH),
+        baseRevision});
+    finalPacket={...common,op:'sync-context-read',nodes:[],relationships:[],
+      deltas:[],baseRevision,...readScope};
+    expectedWrites=0;expectedLinks=0;
+  } else if(delta){
+    finalPacket={...common,op:'sync-context-read',nodes:[],baseRevision,
+      deltas:changes,relationships:linkPuts,relationshipDeltas:linkDeletes,
+      ...readScope};
+    expectedWrites=puts.length;expectedLinks=linkPuts.length;
+  } else {
+    finalPacket={...common,op:'sync-context-read',nodes:rows,
+      relationships,...readScope};
+    expectedWrites=rows.length;expectedLinks=relationships.length;
+  }
+  const check=packet=>Buffer.byteLength(JSON.stringify(packet),'utf8')<=MAX_NATIVE_INPUT;
+  if(!stages.every(check)||!check(finalPacket))
+    throw Error('RUST_CORE_SOURCE_LIMIT');
+  return {stages,finalPacket,delta,batched,expectedWrites,expectedLinks,
+    expectedTombstones:batched?0:deletes.length,
+    next:{rows:current,links:currentLinks}};
+}
+
 function managedReader({env,dataRoot,productJournal,control,executePersonal,repoRoot,isFile}) {
   const root=typeof dataRoot==='string' && path.isAbsolute(dataRoot) ? path.resolve(dataRoot) : null;
   // One Host-owned native personal journal. An existing explicit journal is
@@ -298,7 +368,7 @@ function managedReader({env,dataRoot,productJournal,control,executePersonal,repo
         const projection=await snapshot(),{rows,relationships}=projection,fingerprint=digest(projection);
         if(!rows.some(row=>view==='owner'||row.kind==='wiki'))
           return unavailable('RUST_CORE_SOURCE_UNAVAILABLE');
-        if(rows.length>512 || rows.length+relationships.length>4096)
+        if(rows.length>MAX_CONTEXT_SOURCES||relationships.length>MAX_CONTEXT_LINK_BATCH)
           return unavailable('RUST_CORE_SOURCE_LIMIT');
         // On process restart an existing HQKG graph may contain older valid
         // receipts outside the current D4 presentation window. Bootstrap by
@@ -311,56 +381,46 @@ function managedReader({env,dataRoot,productJournal,control,executePersonal,repo
         } catch(error) {
           if(error?.code!=='ENOENT')return unavailable('RUST_CORE_UNSAFE_JOURNAL');
         }
-        const nowRows=new Map(rows.map(row=>[row.id,row]));
-        const nowLinks=new Map(relationships.map(link=>[link.id,link]));
-        const delta=last!==null||hasGraph;
-        const puts=last?rows.filter(row=>!last.rows.has(row.id)||
-          digest(last.rows.get(row.id))!==digest(row)):rows;
-        // A missing historical receipt or bounded page projection is not a
-        // revocation. Only complete committed section evidence permits a tombstone.
-        const deletes=last?[...last.rows.values()].filter(row=>
-          row.kind==='wiki'&&row.semanticId.startsWith('wiki:section:')&&!nowRows.has(row.id))
-          .map(row=>({op:'delete',kind:'wiki',id:row.id,revision:row.revision,digest:row.digest})):[];
-        const linkPuts=last?relationships.filter(link=>!last.links.has(link.id)||
-          digest(last.links.get(link.id))!==digest(link)):relationships;
-        const linkDeletes=last?[...last.links.values()].filter(link=>!nowLinks.has(link.id))
-          .map(link=>({op:'delete',id:link.id,revision:link.revision,digest:link.digest})):[];
-        const packetInput=delta?{
-          schema:PERSONAL_SCHEMA,scope,op:'sync-context-read',view,nodes:[],
-          deltas:[...puts.map(row=>({...row,op:'put'})),...deletes],
-          baseRevision:last?Math.max(0,...[...last.rows.values(),...rows].map(row=>row.revision)):
-            Number.MAX_SAFE_INTEGER,
-          ...(last?{baseEpoch:last.epoch}:{}),
-          relationships:linkPuts,relationshipDeltas:linkDeletes,
-          activeIds:rows.map(row=>row.id),
-          activeRelationshipIds:relationships.map(link=>link.id)
-        }:{
-          schema:PERSONAL_SCHEMA,scope,op:'sync-context-read',view,nodes:rows,
-          relationships,activeIds:rows.map(row=>row.id),
-          activeRelationshipIds:relationships.map(link=>link.id)
+        const plan=planNativeContextSync({scope,view,rows,relationships,last,hasGraph});
+        // Intermediate commits extend exactly the same native journal. Each
+        // acknowledged epoch fences the next batch. No context is published
+        // until the final retrieval and Host source recheck both succeed.
+        let nativeEpoch=last?.epoch??null;
+        const invoke=async(input,expectedWrites,expectedLinks,expectedTombstones)=>{
+          const request={...input,...(nativeEpoch!==null?{baseEpoch:nativeEpoch}:{})};
+          const response=await nativePacket(await executePersonal(runtime.personal,journal,request));
+          if(response?.schema!==PERSONAL_SCHEMA||response.scope!==scope||
+            response.op!==request.op||!safeUInt(response.epoch)||!safeUInt(response.bytes)||
+            response.mode!==(plan.delta||plan.batched?'delta':'projection')||
+            response.synced!==expectedWrites||
+            response.syncedRelationships!==expectedLinks||
+            (response.mode==='delta'&&
+              (response.ingested!==expectedWrites||response.tombstoned!==expectedTombstones))||
+            typeof response.changed!=='boolean')
+            throw Object.assign(Error('RUST_CORE_CONTRACT_INVALID'),
+              {code:'RUST_CORE_CONTRACT_INVALID'});
+          nativeEpoch=response.epoch;
+          return response;
         };
-        if(delta&&(packetInput.deltas.length>512||linkPuts.length+linkDeletes.length>24))
-          return unavailable('RUST_CORE_SOURCE_LIMIT');
         let packet;
         try {
-          packet=await nativePacket(await executePersonal(runtime.personal,journal,packetInput));
+          for(const stage of plan.stages) {
+            const n=stage.deltas.filter(row=>row.op==='put').length;
+            const tombstones=stage.deltas.length-n;
+            const links=stage.relationshipDeltas?.filter(row=>row.op==='put').length??0;
+            await invoke(stage,n,links,tombstones);
+          }
+          packet=await invoke(plan.finalPacket,plan.expectedWrites,
+            plan.expectedLinks,plan.expectedTombstones);
         } catch(error) {
-          // Another authorized Host writer may have advanced the same graph.
-          // Discard the in-memory epoch and retry as non-deleting bootstrap,
-          // never as an unfenced stale delta.
-          if(error?.code==='RUST_CORE_SOURCE_CHANGED'&&last!==null) {
+          // Treat a partially synchronized journal as durable but not a
+          // successful read. A subsequent retry bootstraps idempotent puts;
+          // it cannot infer deletions from omission or reuse a stale epoch.
+          if(error?.code==='RUST_CORE_SOURCE_CHANGED'&&attempt===0) {
             last=null;continue;
           }
+          last=null;
           throw error;
-        }
-        if (packet?.schema!==PERSONAL_SCHEMA || packet.scope!==scope ||
-            packet.op!=='sync-context-read' || !safeUInt(packet.epoch) ||
-            !safeUInt(packet.bytes) || packet.synced!==puts.length ||
-            packet.syncedRelationships!==linkPuts.length ||
-            (delta&&(packet.mode!=='delta'||packet.ingested!==puts.length||
-              packet.tombstoned!==deletes.length)) ||
-            typeof packet.changed!=='boolean') {
-          last=null; return unavailable('RUST_CORE_CONTRACT_INVALID');
         }
         const result=packet.context;
         if (result?.schema!==CHAT_CONTEXT_SCHEMA || result.core!=='hqkg' ||
@@ -402,7 +462,7 @@ function managedReader({env,dataRoot,productJournal,control,executePersonal,repo
         }
         if (sum!==result.tokensUsed) return unavailable('RUST_CORE_CONTRACT_INVALID');
         if (digest(await snapshot())!==fingerprint) {last=null;continue;}
-        last={epoch:packet.epoch,rows:nowRows,links:nowLinks};
+        last={epoch:packet.epoch,...plan.next};
         return {schema:CHAT_CONTEXT_SCHEMA,state:'source-backed',core:'hqkg',
           authority:'read-only',epoch:result.epoch,tokensUsed:result.tokensUsed,
           budgetTokens:320,staleCount:0,budgetExhausted:result.budgetExhausted,
@@ -418,8 +478,11 @@ function managedReader({env,dataRoot,productJournal,control,executePersonal,repo
       return unavailable('RUST_CORE_SOURCE_CHANGED');
     } catch (error) {
       last=null;
+      const reason=error?.code??error?.message;
       return unavailable(['RUST_CORE_RECOVERY_REQUIRED','RUST_CORE_CAPACITY_HELD',
-        'RUST_CORE_INGEST_FAILED'].includes(error?.code) ? error.code : 'RUST_CORE_READ_FAILED');
+        'RUST_CORE_INGEST_FAILED','RUST_CORE_CONTRACT_INVALID',
+        'RUST_CORE_SOURCE_LIMIT','RUST_CORE_SOURCE_DUPLICATE',
+        'RUST_CORE_SOURCE_CHANGED'].includes(reason)?reason:'RUST_CORE_READ_FAILED');
     }
   }
   // Serialize writer/read cycles for this Host; native save_checked adds a
