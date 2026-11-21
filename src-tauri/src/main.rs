@@ -327,6 +327,9 @@ impl HostProcess {
             .connect_timeout(Duration::from_secs(1))
             .timeout(Duration::from_secs(3)).build()
             .ok()?;
+        // Refuse to transmit the persistent owner token to a listener
+        // that cannot answer a fresh HMAC proof-of-possession challenge.
+        if !vivim_host_supervisor::verify_host_owner(&client,&token) { return None; }
         let response = client
             .post("http://127.0.0.1:43187/api/host/control/ui-session")
             .header("origin", "http://127.0.0.1:43187")
