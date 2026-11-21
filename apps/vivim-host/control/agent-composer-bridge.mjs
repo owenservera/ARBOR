@@ -149,7 +149,7 @@ export function createHostComposerBridge({readSnapshot,compute=runNativeProductP
       epoch:job.epoch,actorId:'desktop-owner',candidate:job.proposal.candidate,
       sessionId:job.sessionId,localRevision:job.clientRevision};
   }
-  function acknowledge(body){
+  async function acknowledge(body){
     const job=inflight;
     if(!job||!job.delivered||!body||body.sessionId!==job.sessionId||
        body.correlationId!==job.proposal.candidate.correlationId||
@@ -162,10 +162,24 @@ export function createHostComposerBridge({readSnapshot,compute=runNativeProductP
        phone.correlationId!==body.correlationId||
        phone.composing||!phone.visible)
       throw fail('COMPOSER_ACK_SOURCE_MISMATCH');
+    // Phone-local input ACK is not sufficient. Verify a NEW authoritative
+    // Rust LiveSystemState region before the existing Control journal can
+    // record the effect result; a raced human edit fails rather than passing.
+    const observed=await readSnapshot();
+    const region=observed?.regions?.find(r=>r.id==='phone.composer');
+    if(!region||observed.epoch!==job.epoch||
+       region.sourceRevision!==phone.sourceRevision||
+       region.viewRevision<=job.viewRevision||
+       region.data?.sessionId!==job.sessionId||
+       region.data?.draft!==phone.text||
+       region.data?.localRevision!==phone.revision||
+       region.freshness!=='current')
+      throw fail('COMPOSER_RENDER_SOURCE_UNVERIFIED');
     clearTimeout(job.timer);inflight=null;
     const result={schema:'vivim.composer-render-proof/1',status:'verified',
       correlationId:body.correlationId,sessionId:body.sessionId,
       regionId:'phone.composer',sourceRevision:phone.sourceRevision,
+      viewRevision:region.viewRevision,sequence:observed.revision,
       localRevision:phone.revision,digest:digest(phone.text),
       draftSent:false,providerEffect:false};
     job.resolve(result);return {schema:'vivim.composer-ack/1',state:'verified',
