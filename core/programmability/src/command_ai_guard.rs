@@ -3,8 +3,7 @@
 //! The Host supplies fresh source text, canonical action and a newly computed
 //! NLCL reading. No authorization, model transport, grants or effects.
 use serde_json::{json,Value};
-use crate::wiki_write_recipe::valid_args;
-use crate::command_intent_projection::valid_catalog_action;
+use crate::command_intent_projection::{valid_catalog_action, checked_args};
 
 const SCHEMA:&str="vivim.command-ai-proposal-guard/1";
 const INTENT:&str="vivim.command-intent/0.1";
@@ -103,10 +102,13 @@ pub fn validate(input:&Value)->Value{
     let args=proposal.get("args").unwrap_or(&Value::Null);
     let blank=json!({});
     let args=if args.is_null(){&blank}else{args};
-    if !valid_args(&action["args"],args){
+    // Use the SAME Host-parity catalog argument validator as command
+    // projection. A second validator may disagree on Unicode whitespace
+    // or string length and refuse a valid owner-bound zero-argument action.
+    let Some(args)=checked_args(action,args)else{
         return refused(source,"INVALID_ARGS","AI proposed invalid or missing arguments.")
-    }
-    let Some(expression)=canonical(action_id,args)else{
+    };
+    let Some(expression)=canonical(action_id,&args)else{
         return refused(source,"INVALID_ARGS","AI proposed invalid or missing arguments.")
     };
     if outcome=="candidate"&&reading["canonical"]!=expression{

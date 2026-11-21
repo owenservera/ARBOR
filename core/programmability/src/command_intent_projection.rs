@@ -109,7 +109,7 @@ fn action_catalog(actions: &Value) -> Option<BTreeMap<String, &Value>> {
     }
     Some(by_id)
 }
-fn checked_args(action: &Value, args: &Value) -> Option<Value> {
+pub(crate) fn checked_args(action: &Value, args: &Value) -> Option<Value> {
     let specs = action["args"].as_object()?;
     let values = args.as_object()?;
     if values.len() != specs.len() || values.keys().any(|k| !specs.contains_key(k)) {
@@ -428,6 +428,22 @@ mod host_whitespace_tests {
 mod canonical_catalog_tests {
     use super::{action_catalog, checked_args};
     use serde_json::{json, Value};
+
+
+    #[test]
+    fn real_wiki_action_uses_ecmascript_whitespace_for_ai_and_command_args() {
+        let catalog: Value = serde_json::from_str(include_str!(
+            "../../../apps/vivim-host/control/action-catalog.v1.json"
+        )).expect("canonical Host catalog");
+        let action = catalog["actions"].as_array().unwrap().iter()
+            .find(|a| a["id"] == "wiki.section.edit").expect("real Wiki edit action");
+        let args = json!({"target":"main/about", "content":"\u{0085}Keep this content"});
+        assert!(checked_args(action, &args).is_some(),
+            "Host String.trim preserves Unicode NEL");
+        let invalid = json!({"target":"main/about", "content":"\u{FEFF}Keep this content"});
+        assert!(checked_args(action, &invalid).is_none(),
+            "Host String.trim removes byte order mark");
+    }
 
     #[test]
     fn native_projector_accepts_real_host_catalog_without_external_registry() {
