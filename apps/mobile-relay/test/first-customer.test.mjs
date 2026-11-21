@@ -39,7 +39,7 @@ test('typing searches only an authorized, source-admitted Wiki with no effect or
 });
 
 test('Wiki results occupy the visible phone area above the composer and clear after send',()=>{
-  assert.match(app,/insertBefore\(firstWikiPanel,\$\('chat-composer'\)\)/);
+  assert.match(app,/querySelector\('\.chat'\)\.append\(firstWikiPanel\)/);
   assert.match(html,/#first-wiki \{/);
   assert.match(app,/if \(FIRST_CONTACT\) resetFirstWiki\(\)/);
 });
@@ -114,4 +114,56 @@ test('client observations are bounded metadata, with no raw typed words',()=>{
   assert.match(app,/fetch\('\/mobile\/api\/first-contact\/observe'/);
   assert.match(app,/observeFirstWiki\('input',\{length:Math\.min\(len,1000\)\}\)/);
   assert.doesNotMatch(app,/observeFirstWiki\('input',\{text:/);
+});
+
+test('mounted first-contact Wiki survives universal dock reparenting and both input sources',async()=>{
+  const vm=await import('node:vm');
+  // Simulate the real dock move before the first-contact mount. insertBefore
+  // against the old .chat parent must throw, exactly as the DOM does.
+  function element(){
+    return {children:[],parentNode:null,hidden:true,events:{},
+      setAttribute(){},
+      append(child){
+        if(child.parentNode)child.parentNode.children=
+          child.parentNode.children.filter(item=>item!==child);
+        child.parentNode=this;this.children.push(child);
+      },
+      insertBefore(child,reference){
+        if(!this.children.includes(reference))throw Error('NotFoundError');
+        if(child.parentNode)child.parentNode.children=
+          child.parentNode.children.filter(item=>item!==child);
+        child.parentNode=this;
+        this.children.splice(this.children.indexOf(reference),0,child);
+      }
+    };
+  }
+  const chat=element(),appRoot=element(),composer=element();
+  chat.append(composer);
+  // This is mountUniversalDock's existing DOM move, not another composer.
+  assert.match(app,/\$\('app'\)\.append\(\$\('chat-composer'\)\)/);
+  appRoot.append(composer);
+  assert.equal(composer.parentNode,appRoot);
+  const textInput=new EventTarget();
+  const document=new EventTarget(),window=new EventTarget();
+  const talk={querySelector:selector=>selector==='.chat'?chat:null};
+  const nodes={'v-talk':talk,'text':textInput};
+  let wikiInputCalls=0;
+  const ctx={FIRST_CONTACT:true,firstWikiPanel:null,
+    el:element, $:id=>nodes[id],
+    document,window,
+    scheduleFirstWiki:()=>{wikiInputCalls++},
+    resetFirstWiki:()=>{}};
+  const start=app.indexOf('function mountFirstWiki(){');
+  const end=app.indexOf('\nfunction updateSend()',start);
+  assert.ok(start!==-1&&end>start,'real first-contact function must exist');
+  vm.runInNewContext(app.slice(start,end)+'\nmountFirstWiki();',ctx);
+  assert.equal(ctx.firstWikiPanel.parentNode,chat,
+    'Wiki is mounted inside the visible Talk viewport, above the root dock');
+  assert.deepEqual(chat.children,[ctx.firstWikiPanel]);
+  // The human keyboard and the Host-admitted agent draft emit the same
+  // standard input event. Neither must submit or create a second textarea.
+  textInput.dispatchEvent(new Event('input'));
+  textInput.dispatchEvent(new Event('input'));
+  assert.equal(wikiInputCalls,2);
+  assert.deepEqual(appRoot.children,[composer]);
 });
