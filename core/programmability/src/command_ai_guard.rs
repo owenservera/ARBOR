@@ -90,6 +90,10 @@ pub fn validate(input:&Value)->Value{
         reading["provenance"]["surface"]!=source["scope"] ||
         reading.get("authorization").is_some() ||
         reading.get("approval").is_some() ||
+        reading["language"].get("authorization").is_some() ||
+        reading["language"].get("approval").is_some() ||
+        reading["provenance"].get("authorization").is_some() ||
+        reading["provenance"].get("approval").is_some() ||
         reading.get("executionAuthorized").is_some_and(|v|v.as_bool()!=Some(false)) ||
         reading.get("effectPerformed").is_some_and(|v|v.as_bool()!=Some(false)) {
         return refused(source,"UNSAFE_OR_UNRESOLVED_TEXT",
@@ -115,7 +119,7 @@ pub fn validate(input:&Value)->Value{
     } else {
         outcome=="candidate" && method==Some("accepted-personal-rule") &&
         personal["method"]=="accepted-personal-rule" &&
-        personal_provenance_valid(personal,&input["catalogVersion"])
+        personal_provenance_valid(personal,&input["catalogVersion"],&source["text"])
     };
     if !accepted_method || (outcome=="interpretation_required" && !personal.is_null()){
         return refused(source,"UNSAFE_OR_UNRESOLVED_TEXT",
