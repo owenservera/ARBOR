@@ -91,6 +91,8 @@ fn valid_history_target(row: &Value, id: &str, to: u64, version: u64,
         || row["version"].as_u64().is_none_or(|v| v == 0 || v > version)
         || !matches!(row["op"].as_str(), Some(
             "propose" | "remember" | "transition" | "rollback"))
+        || row.get("ownerReceiptId").is_some_and(|receipt|
+            !receipt.is_null() && !receipt.is_string())
         || to > current_revision
     {
         return false;
