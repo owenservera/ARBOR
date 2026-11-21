@@ -100,3 +100,46 @@ test('AI proposal is inert and cannot contradict real owner text', () => {
   assert.equal(compound.refusal.code, 'UNSAFE_OR_UNRESOLVED_TEXT');
   assert.equal(compound.provenance.authority, 'none');
 });
+
+test('native projection rejects stale and contradictory real Host snapshots', t => {
+  if (!hasBinary()) {
+    t.diagnostic('Rust binary not staged: native rejection checks unrun.');
+    return;
+  }
+  const sourceCase = corpus.cases.find(c => c.text === 'Set my theme to dusk');
+  assert.ok(sourceCase);
+  const world = buildControlWorld(catalog);
+  const reading = interpretControl(sourceCase.text, { catalog, world });
+  const request = {
+    schema: 'vivim.command-intent-projection-input/1',
+    input: { text: sourceCase.text, scope: 'text', audience: 'owner' },
+    catalogVersion: catalog.version, worldRevision: world.v,
+    catalogActions: catalog.actions, reading, baselineOutcome: reading.outcome,
+    personalProvenance: null
+  };
+  const refuse = (data, code) => {
+    const result = runNativeProductPureSync('command-intent-projection', data);
+    assert.ok(result, 'Staged binary must respond to rejected source metadata');
+    assert.equal(result.outcome, 'projected');
+    assert.equal(result.intent.outcome, 'refused');
+    assert.equal(result.intent.refusal.code, code);
+    assert.equal(result.intent.provenance.authority, 'none');
+    assert.equal(result.executionAuthorized, false);
+    assert.equal(result.effectPerformed, false);
+  };
+  refuse({ ...request, input: { ...request.input, worldRevision: world.v + 1 } },
+    'INVALID_CONTEXT');
+  refuse({ ...request, baselineOutcome: 'refused' }, 'INVALID_READING');
+  refuse({ ...request, reading: { ...reading, input: 'different owner text' } },
+    'INVALID_READING');
+  refuse({ ...request, reading: { ...reading,
+    feedback: { ...reading.feedback, worldV: world.v + 1 } } }, 'INVALID_READING');
+  refuse({ ...request, reading: { ...reading,
+    feedback: { ...reading.feedback, confidence: 'certain' } } }, 'INVALID_READING');
+  refuse({ ...request, catalogActions: catalog.actions.map(action =>
+    action.id === sourceCase.actionId ? { ...action, readiness: 'unknown' } : action) },
+    'INVALID_CONTEXT');
+  refuse({ ...request, reading: { ...reading,
+    candidate: { ...reading.candidate, actionId: 'unknown.catalog.action' } } },
+    'UNKNOWN_ACTION');
+});
