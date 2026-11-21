@@ -68,8 +68,8 @@ pub fn validate(input:&Value)->Value{
         reading["provenance"]["surface"]!=source["scope"] ||
         reading.get("authorization").is_some() ||
         reading.get("approval").is_some() ||
-        reading.get("executionAuthorized").is_some_and(|v|v!=false) ||
-        reading.get("effectPerformed").is_some_and(|v|v!=false) {
+        reading.get("executionAuthorized").is_some_and(|v|v.as_bool()!=Some(false)) ||
+        reading.get("effectPerformed").is_some_and(|v|v.as_bool()!=Some(false)) {
         return refused(source,"UNSAFE_OR_UNRESOLVED_TEXT",
             "Owner text must be clarified before proposing an action.")
     }
