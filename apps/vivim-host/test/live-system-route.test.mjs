@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
-import {mkdtempSync,rmSync} from 'node:fs';
+import {mkdtempSync,rmSync,mkdirSync,writeFileSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {createHostServer} from '../server.mjs';
@@ -42,4 +42,20 @@ test('owner-only live-system GET uses real journal source and native Rust comput
   assert.equal(again.status,200);
   assert.equal(again.body.epoch,first.body.epoch);
   assert.equal(again.body.revision,first.body.revision);
+  // Real diagnostic append is consumed without copying typed words or claiming
+  // a screenshot/DOM mirror. This is the first PWA input+render state feed.
+  mkdirSync(path.join(root,'diagnostics'),{recursive:true});
+  const stamp=new Date().toISOString();
+  const envelope=(stage,extra)=>JSON.stringify({schema:'vivim.first-contact-observation/1',
+    origin:'owner-tailnet-http',time:stamp,stage,...extra});
+  writeFileSync(path.join(root,'diagnostics','first-contact-events.jsonl'),
+    envelope('input',{length:5})+'\n'+envelope('render-matches',{matches:2,revision:1})+'\n');
+  const live=await req('GET',{authorization:'Bearer '+KEY});
+  assert.equal(live.status,200,JSON.stringify(live.body));
+  assert.equal(live.body.revision,first.body.revision+2);
+  assert.deepEqual(live.body.regions.map(x=>x.id),
+    ['host.health','pwa.input','pwa.view','wiki.summary']);
+  assert.equal(live.body.regions.find(x=>x.id==='pwa.input').data.length,5);
+  assert.equal(live.body.regions.find(x=>x.id==='pwa.view').data.matches,2);
+  assert.ok(!JSON.stringify(live.body).includes('ownerToken'));
 });
