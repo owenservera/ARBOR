@@ -525,7 +525,7 @@ test('rollback rejects forged event metadata before owner verification',t=>{
   assert.equal(approvals,1,'only the original transition required approval');
 });
 
-test('remember refuses malformed receipt in the pending Host write',t=>{
+test('remember refuses malformed receipt before approval or pending Host write',t=>{
   const {store}=withStore(t,()=>true);
   const snapshot=store.snapshot();
   const subject={operation:'remember',catalogVersion:catalog.version,
@@ -533,7 +533,7 @@ test('remember refuses malformed receipt in the pending Host write',t=>{
     rule:{phrase:'quazzlememo',actionId:'ui.theme.set_preset',
       args:{preset:'dusk'},scope:{}},previousId:null,previousDigest:null};
   assert.throws(()=>store.remember({subject,approval:{receiptId:{unbound:true}}}),
-    /PERSONAL_STORE_INVALID_TRANSITION/);
+    /PERSONAL_STORE_OWNER_APPROVAL_REQUIRED/);
   assert.equal(store.snapshot().version,0);
   assert.throws(()=>readFileSync(store.file,'utf8'),/ENOENT/);
 });
