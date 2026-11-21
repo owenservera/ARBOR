@@ -1394,3 +1394,32 @@ fn stable_managed_identity_cannot_be_rebound_to_another_semantic_source() {
     assert!(graph.nodes().any(|n|
         n.properties.get("vivim.context.sourceRef").map(String::as_str)==Some("ctl-0123456789abcdef")));
 }
+
+#[test]
+fn legacy_applied_receipt_metadata_is_immutable_during_body_fingerprint_upgrade() {
+    let temp=Temp::new();let file=temp.journal();
+    let legacy=effect();
+    let (ok,initial)=sync(&file,SCOPE,vec![wiki(ENTRY,2,"Committed"),legacy.clone()]);
+    assert!(ok,"{initial}");
+    let before=fs::read(&file).unwrap();
+    for field in ["actionId","revision","sourceRevision"] {
+        let mut changed=legacy.clone();
+        changed["receiptDigest"]=json!("f".repeat(64));
+        changed[field]=match field {
+            "actionId"=>json!("wiki.capture.save"),
+            _=>json!(3)
+        };
+        let (ok,denied)=delta(&file,SCOPE,3,vec![put(changed)]);
+        assert!(!ok,"legacy D4 {field} changed while applying body fingerprint: {denied}");
+        assert!(denied["error"].as_str().unwrap().contains("immutable applied receipt metadata"));
+        assert_eq!(fs::read(&file).unwrap(),before,
+            "D4 metadata conflict may not append to the existing journal");
+    }
+    let mut upgraded=legacy.clone();
+    upgraded["receiptDigest"]=json!("f".repeat(64));
+    let (ok,accepted)=delta(&file,SCOPE,2,vec![put(upgraded)]);
+    assert!(ok,"same-identity D4 body-hash upgrade should be allowed: {accepted}");
+    let owner=read(&file,SCOPE,accepted["epoch"].as_u64().unwrap(),"owner").unwrap();
+    assert_eq!(owner["effectRelationshipsTotal"],1);
+    assert_eq!(owner["effectRelationships"][0]["receiptDigest"],"f".repeat(64));
+}
