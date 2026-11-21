@@ -1000,3 +1000,90 @@ fn fingerprinted_receipt_cannot_rebind_action_or_target_after_compaction() {
     assert_eq!(owner["effectRelationships"][0]["receiptDigest"],"f".repeat(64));
 }
 
+#[test]
+fn durable_deleted_wiki_source_cannot_reappear_after_compaction() {
+    let temp=Temp::new();let file=temp.journal();
+    let previous=wiki_record(0,2);
+    let local=previous["id"].as_str().unwrap().to_string();
+    let (ok,first)=sync(&file,SCOPE,vec![previous]);
+    assert!(ok,"{first}");
+    // The exact Host Wiki inventory at revision nine omits the old section.
+    let (ok,deleted)=run_packet(&file,json!({
+        "schema":"vivim.hqkg-personal/1","scope":SCOPE,
+        "op":"sync-context-read","view":"wiki","nodes":[],"relationships":[],
+        "baseRevision":9,"baseEpoch":first["epoch"],"deltas":[],
+        "activeIds":[],"activeRelationshipIds":[],"completeWikiRevision":9
+    }));
+    assert!(ok,"{deleted}");
+    assert_eq!(deleted["reconciledSections"],1);
+    assert_eq!(deleted["context"]["totalRetrieved"],0);
+    assert!(query(&file,SCOPE).is_empty(),"source guard is not a context record");
+    let graph=Journal::new(&file).load().unwrap();
+    let fence=graph.nodes().next().unwrap();
+    assert_eq!(fence.properties.get("vivim.context.deletedId").map(String::as_str),
+        Some(local.as_str()));
+    assert_eq!(fence.properties.get("hqkg.provenance.revision").map(String::as_str),Some("9"));
+    let r=Journal::new(&file).compact_verified(
+        deleted["bytes"].as_u64().unwrap(),deleted["epoch"].as_u64().unwrap()).unwrap();
+    assert_eq!(r.epoch,deleted["epoch"].as_u64().unwrap());
+    let stable=fs::read(&file).unwrap();
+    for revision in [2,3,9] {
+        let (ok,stale)=delta(&file,SCOPE,9,vec![put(wiki_record(0,revision))]);
+        assert!(!ok,"stale version {revision} resurrected: {stale}");
+        assert_eq!(fs::read(&file).unwrap(),stable);
+    }
+    // A subsequent committed Wiki revision may reuse the stable semantic ID.
+    let (ok,replaced)=delta(&file,SCOPE,10,vec![put(wiki_record(0,10))]);
+    assert!(ok,"{replaced}");
+    assert_eq!(read(&file,SCOPE,replaced["epoch"].as_u64().unwrap(),"wiki").unwrap()
+        ["items"][0]["revision"],10);
+    let (ok,removed)=delta(&file,SCOPE,10,vec![tombstone(&local,"wiki",10)]);
+    assert!(ok,"{removed}");
+    assert_eq!(removed["tombstoned"],1);
+    let stable=fs::read(&file).unwrap();
+    let (ok,replay)=delta(&file,SCOPE,10,vec![tombstone(&local,"wiki",10)]);
+    assert!(ok,"{replay}");
+    assert_eq!(replay["changed"],false);
+    assert_eq!(fs::read(&file).unwrap(),stable);
+    let (ok,stale)=delta(&file,SCOPE,10,vec![put(wiki_record(0,10))]);
+    assert!(!ok,"new high-water did not fence old record: {stale}");
+    assert_eq!(fs::read(&file).unwrap(),stable);
+}
+
+#[test]
+fn revoked_d4_receipt_cannot_resurrect_even_with_new_source_revision() {
+    let temp=Temp::new();let file=temp.journal();
+    let mut applied=effect();
+    applied["receiptDigest"]=json!("f".repeat(64));
+    let (ok,first)=sync(&file,SCOPE,vec![applied.clone()]);
+    assert!(ok,"{first}");
+    let local=applied["id"].as_str().unwrap();
+    let (ok,deleted)=run_packet(&file,json!({
+        "schema":"vivim.hqkg-personal/1","scope":SCOPE,
+        "op":"sync-context","nodes":[],"relationships":[],
+        "baseRevision":2,"baseEpoch":first["epoch"],
+        "deltas":[{"op":"delete","kind":"effect","id":local,
+                   "revision":2,"digest":applied["digest"]}]
+    }));
+    assert!(ok,"{deleted}");
+    let r=Journal::new(&file).compact_verified(
+        deleted["bytes"].as_u64().unwrap(),deleted["epoch"].as_u64().unwrap()).unwrap();
+    assert_eq!(r.epoch,deleted["epoch"].as_u64().unwrap());
+    let graph=Journal::new(&file).load().unwrap();
+    assert_eq!(graph.node_count(),1);
+    let fence=graph.nodes().next().unwrap();
+    assert_eq!(fence.properties.get("vivim.context.receiptDigest").map(String::as_str),
+        Some("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"));
+    let stable=fs::read(&file).unwrap();
+    let mut later=applied.clone();
+    later["revision"]=json!(10);
+    later["sourceRevision"]=json!(10);
+    for row in [applied,later] {
+        let (ok,blocked)=delta(&file,SCOPE,10,vec![put(row)]);
+        assert!(!ok,"revoked applied receipt was resurrected: {blocked}");
+        assert_eq!(fs::read(&file).unwrap(),stable);
+    }
+    let owner=read(&file,SCOPE,deleted["epoch"].as_u64().unwrap(),"owner").unwrap();
+    assert_eq!(owner["activeSourcesTotal"],0);
+    assert_eq!(owner["effectRelationshipsTotal"],0);
+}
