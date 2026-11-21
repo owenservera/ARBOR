@@ -1622,9 +1622,11 @@ function mountFirstWiki(){
   firstWikiPanel.setAttribute('aria-label','Live source-backed Wiki suggestions');
   firstWikiPanel.setAttribute('aria-live','polite');
   firstWikiPanel.hidden=true;
-  // Suggestions belong above the composer, inside the flex viewport.
-  // Appending after it can render them below the phone's clipped screen.
-  $('v-talk').querySelector('.chat').insertBefore(firstWikiPanel,$('chat-composer'));
+  // mountUniversalDock already moved the shared composer into #app.
+  // The Wiki stays at the end of the flex .chat viewport, immediately above
+  // that composer. Using the moved textarea as insertBefore's reference node
+  // would throw NotFoundError and prevent both human and agent Wiki updates.
+  $('v-talk').querySelector('.chat').append(firstWikiPanel);
   $('text').addEventListener('input',scheduleFirstWiki);
   window.addEventListener('vivim:paired',()=>resetFirstWiki());
   document.addEventListener('vivim:wiki-committed',()=>{
