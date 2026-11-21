@@ -160,7 +160,11 @@ impl Desktop {
                     // The existing 15-second observation tick is the upper
                     // bound on retry re-arming for a perpetually changing Host.
                     view.coherence_retry_ready=true;
-                    if passive_read_allowed(view.busy,view.uncertain,
+                    // Periodic observation never queues a replacement while a
+                    // slow GET is still running: doing so could starve all
+                    // successful views when network latency exceeds poll time.
+                    // Explicit resize/tab/owner refresh still supersedes reads.
+                    if !view.read_busy && passive_read_allowed(view.busy,view.uncertain,
                         view.review.as_ref().is_some_and(Review::needs_approval)){
                         view.refresh(cx);
                     }
@@ -233,7 +237,11 @@ impl Desktop {
                         );
                         if view.wiki_guard.accept(data.wiki_revision, &data.wiki_digest).is_err() {
                             view.source_status="Wiki source revision/digest conflict · observation refused".into();
+                            view.source_epoch=view.source_epoch.wrapping_add(1);
                             view.overview=None;view.visual=None;view.vec_view=None;
+                            view.graph_detail.clear();
+                            view.graph_pending=false;
+                            view.graph_status="Graph withheld after Wiki revision/digest conflict".into();
                             cx.notify();return;
                         }
                         view.source_status=format!(
@@ -248,7 +256,11 @@ impl Desktop {
                         let outcome=delta["outcome"].as_str();
                         if !matches!(outcome,Some("baseline"|"unchanged"|"changed")){
                             view.source_status="Rust Wiki source-delta refused · observation unavailable".into();
+                            view.source_epoch=view.source_epoch.wrapping_add(1);
                             view.overview=None;view.visual=None;view.vec_view=None;
+                            view.graph_detail.clear();
+                            view.graph_pending=false;
+                            view.graph_status="Graph withheld after Rust Wiki source-delta refusal".into();
                             cx.notify();return;
                         }
                         view.wiki_delta=match outcome{
@@ -457,6 +469,7 @@ impl Desktop {
             // A rejected query supersedes any earlier graph search. Never
             // allow a late old-query response to reappear under its label.
             self.graph_query=None;
+            self.graph_pending=false;
             self.graph_status="Invalid graph query · use a source name or exact hqg1: file ID".into();
             self.graph_detail.clear();
             cx.notify();return;
@@ -514,7 +527,10 @@ impl Desktop {
                     cx.notify();return;
                 }
                 if view.graph_query.as_ref()!=Some(&query) {
-                    // Manual query replaced this one during the flight.
+                    // Manual query replaced this one during flight. Discard
+                    // the previous pending marker, so the new query cannot
+                    // trigger an unnecessary additional readback.
+                    view.graph_pending=false;
                     view.refresh_graph(cx);
                     return;
                 }
