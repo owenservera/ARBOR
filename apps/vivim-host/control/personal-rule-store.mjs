@@ -52,7 +52,19 @@ const validHistoryEvent = (row, ruleId, revision, storeVersion, catalog) => (
     : (row.before?.id === ruleId && Number.isSafeInteger(row.before?.revision) &&
       row.before.revision === revision - 1 &&
       ['remember', 'transition', 'rollback'].includes(row.op) &&
-      validatePersonalRule(row.before, catalog).ok))
+      validatePersonalRule(row.before, catalog).ok)) &&
+  (row.op !== 'remember' || row.before === null ||
+    row.before.state === 'accepted') &&
+  (row.op !== 'transition' || (
+    row.before !== null &&
+    states[row.before?.state]?.includes(row.after.state) &&
+    // A historical transition may change state, revision and acceptance
+    // source ONLY. Preserve order-sensitive scope serialization exactly.
+    JSON.stringify(row.after) === JSON.stringify({
+      ...row.before, revision, state: row.after.state,
+      ...(row.after.state === 'accepted' ? {source:'explicit-owner'} : {}),
+    })
+  ))
 );
 const nextRuleRevision = rule => {
   if (!Number.isSafeInteger(rule.revision) || rule.revision < 1 ||
