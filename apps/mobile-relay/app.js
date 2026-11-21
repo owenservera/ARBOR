@@ -1903,7 +1903,10 @@ async function refreshBuildBindings(snapshot){
  const seq=++buildBindingSequence,revision=surface.revision;
  const headers=HOST_PREVIEW?{}:transport.deviceHeaders?.();
  const authorized=()=>HOST_PREVIEW?!!S.statusObj:transport.direct&&S.paired&&navigator.onLine!==false&&
-   !!headers&&!!transport.deviceHeaders?.()&&transport.deviceHeaders?.()?.['x-vivim-device-session']===headers['x-vivim-device-session']&&
+   !!headers&&S.device.scopes?.includes('control:read')===true&&
+   typeof headers['x-vivim-device-session']==='string'&&!!headers['x-vivim-device-session']&&
+   typeof headers['x-vivim-grant-id']==='string'&&!!headers['x-vivim-grant-id']&&
+   !!transport.deviceHeaders?.()&&transport.deviceHeaders?.()?.['x-vivim-device-session']===headers['x-vivim-device-session']&&
    transport.deviceHeaders?.()?.['x-vivim-grant-id']===headers['x-vivim-grant-id'];
  if(!authorized()){build.clearBindingScope();build.setLiveData(null,revision);return;}
  // Bind the live revision fence to the same grant/session that authorized

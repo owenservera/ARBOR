@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {initializeRustUiEngine,rustUiEngineStatus,rustVecAdmission,
   rustUiValue,rustTokenPackage,nativeBrowserKernelReady} from '../src/rust-wasm.mjs';
 
@@ -51,4 +52,12 @@ test('unavailable unpackaged browser WASM remains an explicit JS fallback',()=>{
   const status=rustUiEngineStatus();
   assert.equal(status.state,'unavailable');
   assert.equal(status.fallback,'trusted-js');
+});
+
+test('WASM reply is not marked computed before owned allocations are released',()=>{
+  const moduleSource=readFileSync(new URL('../src/rust-wasm.mjs',import.meta.url),'utf8');
+  assert.match(moduleSource,/if\(instance!==native\)return null;/);
+  assert.match(moduleSource,/WASM_RELEASE_FAILED/);
+  assert.match(moduleSource,/WASM_OUTPUT_ALIASES_INPUT/);
+  assert.match(moduleSource,/let releaseFailed=false/);
 });

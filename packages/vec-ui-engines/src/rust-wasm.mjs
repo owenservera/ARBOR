@@ -94,7 +94,7 @@ function invoke(operation,input){
     lastOperation='REQUEST_TOO_LARGE';return null;
   }
   if(native.memory.buffer.byteLength>MAX_MEMORY)return unavailable('WASM_MEMORY_LIMIT');
-  let pointer=0,outputPointer=0,outputLength=0;
+  let pointer=0,outputPointer=0,outputLength=0,result=null;
   try{
     pointer=native.vivim_kernel_alloc(request.byteLength);
     if(!region(native,pointer,request.byteLength))return unavailable('WASM_INPUT_POINTER_INVALID');
@@ -104,20 +104,36 @@ function invoke(operation,input){
     outputPointer=Number(packed&0xffffffffn);
     outputLength=Number(packed>>32n);
     if(!region(native,outputPointer,outputLength))return unavailable('WASM_OUTPUT_POINTER_INVALID');
+    // The Rust ABI owns two distinct boxed allocations. An aliased output
+    // could otherwise cause the browser to free the same address twice.
+    if(outputPointer<pointer+request.byteLength&&pointer<outputPointer+outputLength){
+      outputPointer=0;outputLength=0;
+      return unavailable('WASM_OUTPUT_ALIASES_INPUT');
+    }
     const reply=JSON.parse(decode.decode(new Uint8Array(native.memory.buffer,outputPointer,outputLength)));
     if(reply?.schema!==SCHEMA||reply.state!=='computed'||
       reply.operation!==operation||reply.authority!=='none'||
       reply.executionAuthorized!==false||reply.effectPerformed!==false)
       return unavailable('WASM_RESPONSE_INVALID');
-    lastOperation='COMPUTED';
-    return reply.result??null;
+    result=reply.result??null;
   }catch{return unavailable('WASM_DISPATCH_FAILED');}
   finally{
-    try{
-      if(region(native,outputPointer,outputLength))native.vivim_kernel_free(outputPointer,outputLength);
-      if(region(native,pointer,request.byteLength))native.vivim_kernel_free(pointer,request.byteLength);
-    }catch{unavailable('WASM_RELEASE_FAILED');}
+    let releaseFailed=false;
+    if(region(native,outputPointer,outputLength)){
+      try{native.vivim_kernel_free(outputPointer,outputLength);}
+      catch{releaseFailed=true;}
+    }
+    if(region(native,pointer,request.byteLength)){
+      try{native.vivim_kernel_free(pointer,request.byteLength);}
+      catch{releaseFailed=true;}
+    }
+    if(releaseFailed)unavailable('WASM_RELEASE_FAILED');
   }
+  // A valid response is not usable until both owned WASM allocations have
+  // been released. Failed release never yields a native candidate to VEC.
+  if(instance!==native)return null;
+  lastOperation='COMPUTED';
+  return result;
 }
 export function rustUiValue(type,value,choices){
   return invoke('ui-value',{type,value,...(choices===undefined?{}:{choices})});
