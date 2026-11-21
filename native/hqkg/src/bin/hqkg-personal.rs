@@ -137,6 +137,12 @@ fn context_record(ns: &Namespace, n: &Value) -> Result<ContextRecord, String> {
             node.properties.insert("vivim.context.receiptOriginRevision".into(),revision.to_string());
             Some((entry.to_string(),revision))
         } else {None};
+        if let Some((_,original_revision))=origin.as_ref() {
+            if !node.properties.contains_key("vivim.context.receiptDigest") ||
+                source_revision!=original_revision.to_string() {
+                return Err("immutable receipt origin requires matching applied receipt body and source revision".into());
+            }
+        }
         if let Some(l) = n.get("wikiLink").filter(|v| !v.is_null()) {
             let entry = text(l, "entryId")?;
             let linked_revision = l["wikiRevision"].as_u64().ok_or("invalid linked Wiki revision")?;
