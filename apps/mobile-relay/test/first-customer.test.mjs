@@ -8,9 +8,8 @@ const kernel=readFileSync(new URL('../../../core/programmability/src/product_ker
 const bridge=readFileSync(new URL('../../../packages/vec-ui-engines/src/rust-wasm.mjs',import.meta.url),'utf8');
 
 test('the sole Direct Host product UI is First Contact by default, using the existing composer',()=>{
-  assert.match(app,/const FIRST_CONTACT = transport\.direct && !HOST_PREVIEW/);
-  assert.match(app,/const FIRST_CONTACT = transport\\.direct && !HOST_PREVIEW;/);
-  assert.doesNotMatch(app,/get\\('first'\\)/, 'legacy URL opt-in must not select another UI');
+  assert.match(app,/const FIRST_CONTACT = transport\.direct && !HOST_PREVIEW;/);
+  assert.doesNotMatch(app,/get\('first'\)/, 'legacy URL opt-in must not select another UI');
   assert.match(app,/mountUniversalDock\(\);\s*mountFirstWiki\(\);/);
   assert.match(app,/void vivimChat\.send\(body\)/);
   assert.match(app,/admitted\.executionAuthorized !== false/);
