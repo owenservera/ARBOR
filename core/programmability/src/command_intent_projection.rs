@@ -200,6 +200,16 @@ fn intent_with_meta(outcome: &str, mut fields: Value, meta: &Value) -> Value {
     intent["provenance"] = meta["provenance"].clone();
     intent
 }
+fn valid_personal_rule_id(value: &Value) -> bool {
+    value.as_str().is_some_and(|s| {
+        let b = s.as_bytes();
+        s.starts_with("rule:") && (6..=85).contains(&b.len()) &&
+        (b[5].is_ascii_lowercase() || b[5].is_ascii_digit()) &&
+        b[6..].iter().all(|c|c.is_ascii_lowercase() || c.is_ascii_digit() ||
+            matches!(*c,b'.'|b'_'|b'-'))
+    })
+}
+
 pub(crate) fn personal_provenance_valid(personal: &Value, catalog_version: &Value) -> bool {
     if personal.is_null() { return true }
     let Some(fields) = personal.as_object() else { return false };
@@ -211,10 +221,7 @@ pub(crate) fn personal_provenance_valid(personal: &Value, catalog_version: &Valu
     }
     match personal["method"].as_str() {
         Some("accepted-personal-rule") => {
-            personal["ruleId"].as_str().is_some_and(|s|
-                s.starts_with("rule:") && (6..=85).contains(&s.len()) &&
-                s.as_bytes()[5..].iter().all(|c| c.is_ascii_lowercase() ||
-                    c.is_ascii_digit() || matches!(*c, b'.' | b'_' | b'-'))) &&
+            valid_personal_rule_id(&personal["ruleId"]) &&
             personal["ruleRevision"].as_u64().is_some_and(|v| v > 0 && v <= MAX_SAFE) &&
             personal["catalogRevision"] == *catalog_version &&
             personal["semanticScope"].as_object().is_some_and(|scope| {
@@ -225,9 +232,8 @@ pub(crate) fn personal_provenance_valid(personal: &Value, catalog_version: &Valu
             })
         },
         Some("personal-rule-conflict") => personal["ruleIds"].as_array().is_some_and(|ids| {
-            !ids.is_empty() && ids.len() <= 500 && ids.iter().all(|id|
-                id.as_str().is_some_and(|s| s.starts_with("rule:") &&
-                    (6..=85).contains(&s.len()))) &&
+            !ids.is_empty() && ids.len() <= 500 &&
+            ids.iter().all(valid_personal_rule_id) &&
             ids.windows(2).all(|pair| pair[0].as_str() < pair[1].as_str())
         }),
         Some("personal-rule-refusal") => personal["reason"].as_str()
@@ -283,8 +289,8 @@ fn check_reading(reading: &Value, source: &Value, personal: &Value,
     if outcome == "candidate" && (!reading["candidate"].as_object()
         .is_some_and(|fields| fields.keys().all(|key|
             matches!(key.as_str(), "actionId" | "args"))) ||
-        (personal.is_null() && (reading.get("refusal").is_some() ||
-         reading.get("missing").is_some() || reading.get("choices").is_some()))) {
+        reading.get("refusal").is_some() ||
+        reading.get("missing").is_some() || reading.get("choices").is_some()) {
         // A canonical NLCL candidate never coexists with a refusal or
         // unresolved slots. The personal resolver has separate precedence.
         return false
@@ -301,8 +307,10 @@ fn check_reading(reading: &Value, source: &Value, personal: &Value,
         }
         match personal["method"].as_str() {
             Some("accepted-personal-rule") if outcome == "candidate" => (),
-            Some("personal-rule-conflict") if outcome == "clarification_required" => (),
-            Some("personal-rule-refusal") if outcome == "refused" => (),
+            Some("personal-rule-conflict") if outcome == "clarification_required" &&
+                reading["choices"].as_array().is_some_and(|choices| choices.is_empty()) => (),
+            Some("personal-rule-refusal") if outcome == "refused" &&
+                reading["refusal"]["code"] == personal["reason"] => (),
             _ => return false,
         }
     } else if baseline.as_str() != reading["outcome"].as_str() {
