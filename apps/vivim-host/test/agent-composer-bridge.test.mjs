@@ -135,5 +135,5 @@ test('idle phone long-poll wakes only from a claimed Control effect and remains 
   await observe('next',2,'draft.longpoll');
   await bridge.acknowledge({sessionId:phone,correlationId:'draft.longpoll',stage:'applied-local'});
   assert.equal((await effect).status,'verified');
-  await assert.rejects(bridge.nextDelivery(phone,-1),{code:'COMPOSER_POLL_INVALID'});
+  assert.throws(()=>bridge.nextDelivery(phone,-1),{code:'COMPOSER_POLL_INVALID'});
 });
