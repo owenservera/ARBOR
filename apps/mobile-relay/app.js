@@ -580,16 +580,22 @@ function wikiSourceStampFallback(wiki) {
     }
     return a.length-b.length;
   };
-  const sortValue = (value, depth = 0) => {
+  // Do not materialize an intermediate JS object: JSON.stringify reorders
+  // integer-shaped object keys, unlike Rust serde_json's ordered map. Serialize
+  // each parsed JSON node directly in UTF-8 lexical key order instead.
+  const canonicalJson = (value, depth = 0) => {
     if (depth > 24) throw new Error('Wiki source nesting exceeds digest limit');
-    if (Array.isArray(value)) return value.map(row => sortValue(row, depth + 1));
+    if (Array.isArray(value))
+      return '[' + value.map(row => canonicalJson(row, depth + 1)).join(',') + ']';
     if (value && typeof value === 'object')
-      return Object.fromEntries(Object.keys(value).sort(sourceKeyOrder).map(
-        key => [key, sortValue(value[key], depth + 1)]));
-    return value;
+      return '{' + Object.keys(value).sort(sourceKeyOrder)
+        .map(key => JSON.stringify(key) + ':' + canonicalJson(value[key], depth + 1)).join(',') + '}';
+    const encoded = JSON.stringify(value);
+    if (typeof encoded !== 'string') throw new Error('Invalid Wiki source scalar');
+    return encoded;
   };
   return {revision:wiki.revision, pagesTotal:Object.keys(wiki.pages).length,
-    digest:sha256Hex(JSON.stringify(sortValue(wiki.pages)))};
+    digest:sha256Hex(canonicalJson(wiki.pages))};
 }
 // The owner-private context is a read-only overlay, not a second Wiki or a device grant.
 function semanticRows(context) {
@@ -933,10 +939,20 @@ async function refreshWiki() {
     const response = await fetch(HOST_PREVIEW ? '/api/host/control/wiki-view' : '/mobile/api/wiki', {
       method: 'GET', credentials: 'same-origin', cache: 'no-store', headers: session || {}
     });
+    // A delayed denial from a revoked *old* grant must not revoke a newly
+    // resumed session. Check both the read generation and exact credentials
+    // before interpreting any 401/403 or consuming its response body.
+    const sameWikiGrant = () => sequence===wikiReadSequence && S.tab==='wiki' &&
+      (HOST_PREVIEW || S.paired && transport.direct &&
+        transport.deviceHeaders?.()?.['x-vivim-device-session']===session['x-vivim-device-session'] &&
+        transport.deviceHeaders?.()?.['x-vivim-grant-id']===session['x-vivim-grant-id']);
+    if (!sameWikiGrant()) return;
     if (!response.ok) {
       if (!HOST_PREVIEW && [401, 403].includes(response.status)) {
         const denied = await response.json().catch(() => ({}));
-        if (isInvalidDeviceSession(denied.code || denied.error)) {
+        if (!sameWikiGrant()) return;
+        if (isInvalidDeviceSession(denied.code || denied.reason || denied.error)) {
+          transport.setDeviceSession?.(null);
           clearPrivatePhoneState(); return;
         }
       }
@@ -966,11 +982,7 @@ async function refreshWiki() {
         if(sourceResponse.ok)sourceSurface=await sourceResponse.json();
       }catch{/* clear private evidence below */}}
     }
-    if (sequence !== wikiReadSequence || S.tab !== 'wiki') return;
-    if (!HOST_PREVIEW && (transport.deviceHeaders?.()?.['x-vivim-device-session'] !==
-        session['x-vivim-device-session'] ||
-        transport.deviceHeaders?.()?.['x-vivim-grant-id'] !==
-        session['x-vivim-grant-id'])) return;
+    if (!sameWikiGrant()) return;
     // Source scope was checked before the network request, so old private
     // content is never displayed while a newly paired device is loading.
     if (S.wiki && wiki.revision < S.wiki.revision) {
