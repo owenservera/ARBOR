@@ -276,10 +276,13 @@ async function nativePacket(result) {
 // projection is used only for a first small graph. Existing graphs and larger
 // first syncs use explicit source-identified deltas; omission is never deletion.
 // Stages are inert descriptions until the Host invokes its already-approved CLI.
-export function planNativeContextSync({scope,view,rows,relationships,last=null,hasGraph=false}) {
+export function planNativeContextSync({scope,view,rows,relationships,
+  completeWikiRevision=null,last=null,hasGraph=false}) {
   if(!SHA.test(scope)||!['wiki','owner'].includes(view)||
     !Array.isArray(rows)||rows.length>MAX_CONTEXT_SOURCES||
-    !Array.isArray(relationships)||relationships.length>MAX_CONTEXT_LINK_BATCH)
+    !Array.isArray(relationships)||relationships.length>MAX_CONTEXT_LINK_BATCH||
+    (completeWikiRevision!==null&&(!safeUInt(completeWikiRevision)||
+      completeWikiRevision===0)))
     throw Error('RUST_CORE_SOURCE_LIMIT');
   const current=new Map(rows.map(row=>[row.id,row]));
   const currentLinks=new Map(relationships.map(link=>[link.id,link]));
@@ -315,6 +318,13 @@ export function planNativeContextSync({scope,view,rows,relationships,last=null,h
   const batched=changes.length>MAX_CONTEXT_BATCH||
     linkChanges.length>MAX_CONTEXT_LINK_BATCH;
   const stages=[];
+  // On cold restart the durable head exists but no verified RAM epoch does.
+  // First read that head through the existing inert native delta operation,
+  // then bind every mutation (including inventory reconciliation) to the
+  // returned epoch. An unknown durable head is never pruned by guesswork.
+  if(hasGraph&&last===null)
+    stages.push({...common,op:'sync-context',nodes:[],relationships:[],
+      deltas:[],baseRevision:Number.MAX_SAFE_INTEGER});
   let finalPacket,expectedWrites,expectedLinks;
   if(batched) {
     for(let offset=0;offset<changes.length;offset+=MAX_CONTEXT_BATCH)
@@ -337,6 +347,11 @@ export function planNativeContextSync({scope,view,rows,relationships,last=null,h
       relationships,...readScope};
     expectedWrites=rows.length;expectedLinks=relationships.length;
   }
+  // Only the last scoped read has the complete source inventory. Intermediate
+  // delta batches must not delete records merely because later batches have
+  // not arrived yet.
+  if(delta&&completeWikiRevision!==null)
+    finalPacket.completeWikiRevision=completeWikiRevision;
   const check=packet=>Buffer.byteLength(JSON.stringify(packet),'utf8')<=MAX_NATIVE_INPUT;
   if(!stages.every(check)||!check(finalPacket))
     throw Error('RUST_CORE_SOURCE_LIMIT');
@@ -367,12 +382,24 @@ export async function discoverOwnerControlReceipts(dataRoot,dispatcher) {
     throw Error('NATIVE_EFFECT_SOURCE_LIMIT');
   const results=[];
   for(const entry of receipts){
-    if(!/^ctl-[a-f0-9]{16}\.receipt\.json$/.test(entry.name))continue;
-    if(!entry.isFile()||entry.isSymbolicLink())
+    if(!/^ctl-[a-f0-9]{16}\.receipt\.json$/.test(entry.name)||
+      !entry.isFile()||entry.isSymbolicLink())
+      throw Error('NATIVE_EFFECT_SOURCE_UNSAFE');
+    const receiptPath=path.join(dir,entry.name);
+    const before=await lstat(receiptPath);
+    if(!before.isFile()||before.isSymbolicLink())
       throw Error('NATIVE_EFFECT_SOURCE_UNSAFE');
     const planId=entry.name.slice(0,-'.receipt.json'.length);
     // This call exercises the Host's own risk, state and receipt read path.
+    // Check the same receipt's filesystem identity again after the canonical
+    // dispatcher read. A replacement/unlink during discovery cannot be used
+    // to fabricate a stable owner source high-water.
     const detail=dispatcher.status(planId);
+    const after=await lstat(receiptPath);
+    if(!after.isFile()||after.isSymbolicLink()||
+      after.dev!==before.dev||after.ino!==before.ino||
+      after.size!==before.size||after.mtimeMs!==before.mtimeMs)
+      throw Error('NATIVE_EFFECT_SOURCE_CHANGED');
     if(detail?.planId!==planId || detail.state!=='applied')continue;
     if(detail.receipt?.planId!==planId)
       throw Error('NATIVE_EFFECT_SOURCE_INVALID');
@@ -398,6 +425,8 @@ function managedReader({env,dataRoot,productJournal,control,executePersonal,repo
   async function snapshot(view) {
     const current=await productJournal.readNativeKnowledge({nativeOnly:true,completeSources:true});
     const dispatcher=view==='owner'?control():null;
+    if(view==='owner'&&typeof dispatcher?.status!=='function')
+      throw Error('NATIVE_EFFECT_SOURCE_UNAVAILABLE');
     const summaries=dispatcher?await discoverOwnerControlReceipts(root,dispatcher):[];
     const effects=dispatcher
       ?projectAppliedControlEffects(dispatcher,
@@ -408,6 +437,10 @@ function managedReader({env,dataRoot,productJournal,control,executePersonal,repo
         })
       :{state:'source-backed',items:[]};
     const rows=buildNativeKnowledge(current,effects);
+    if(current.changes.omitted!==0 ||
+      !safeUInt(current.context.wikiRevision) ||
+      current.context.wikiRevision===0)
+      throw Error('NATIVE_WIKI_SOURCE_INCOMPLETE');
     return {rows,relationships:buildNativeRelationships(current,rows),
       wikiRevision:current.context.wikiRevision,
       ...(view==='owner'?{
@@ -447,7 +480,8 @@ function managedReader({env,dataRoot,productJournal,control,executePersonal,repo
         } catch(error) {
           if(error?.code!=='ENOENT')return unavailable('RUST_CORE_UNSAFE_JOURNAL');
         }
-        const plan=planNativeContextSync({scope,view,rows,relationships,last,hasGraph});
+        const plan=planNativeContextSync({scope,view,rows,relationships,
+          completeWikiRevision:projection.wikiRevision,last,hasGraph});
         // Intermediate commits extend exactly the same native journal. Each
         // acknowledged epoch fences the next batch. No context is published
         // until the final retrieval and Host source recheck both succeed.
@@ -464,7 +498,9 @@ function managedReader({env,dataRoot,productJournal,control,executePersonal,repo
             (response.mode==='delta'&&
               (response.ingested!==expectedWrites||response.tombstoned!==expectedTombstones))||
             typeof response.changed!=='boolean'||
-            (response.compacted!==undefined&&typeof response.compacted!=='boolean'))
+            (response.compacted!==undefined&&typeof response.compacted!=='boolean')||
+            !safeUInt(response.reconciledSections)||
+            (request.completeWikiRevision===undefined&&response.reconciledSections!==0))
             throw Object.assign(Error('RUST_CORE_CONTRACT_INVALID'),
               {code:'RUST_CORE_CONTRACT_INVALID'});
           if(response.compacted===true)compactions++;
@@ -576,7 +612,15 @@ function managedReader({env,dataRoot,productJournal,control,executePersonal,repo
         }
         if (sum!==result.tokensUsed) return unavailable('RUST_CORE_CONTRACT_INVALID');
         if (digest(await snapshot(view))!==fingerprint) {last=null;continue;}
-        last={epoch:packet.epoch,...plan.next};
+        // A phone-safe Wiki read never forgets already verified owner receipt
+        // identities from the in-memory delta baseline. They remain excluded
+        // from the phone's activeIds/native readback, and get revalidated from
+        // the dispatcher on the next owner read. This avoids reingesting up to
+        // 8192 historical receipts whenever phone and owner views alternate.
+        const known=plan.next.rows;
+        if(view==='wiki'&&last!==null)for(const [id,row] of last.rows)
+          if(row.kind==='effect'&&!known.has(id))known.set(id,row);
+        last={epoch:packet.epoch,rows:known,links:plan.next.links};
         return {schema:CHAT_CONTEXT_SCHEMA,state:'source-backed',core:'hqkg',
           authority:'read-only',epoch:result.epoch,tokensUsed:result.tokensUsed,
           budgetTokens:320,staleCount:0,budgetExhausted:result.budgetExhausted,
@@ -588,7 +632,8 @@ function managedReader({env,dataRoot,productJournal,control,executePersonal,repo
               latestIngestedReceiptAt:projection.latestIngestedReceiptAt
             }:{})},
           ingestionStats:{nativeBatches:plan.stages.length+1,
-            nativeCompactions:compactions},
+            nativeCompactions:compactions,
+            reconciledWikiSections:packet.reconciledSections},
           ...(view==='owner'?{effectRelationships,
             effectRelationshipsTotal:result.effectRelationshipsTotal,
             effectRelationshipsDigest:result.effectRelationshipsDigest}:{}),
@@ -606,7 +651,10 @@ function managedReader({env,dataRoot,productJournal,control,executePersonal,repo
       return unavailable(['RUST_CORE_RECOVERY_REQUIRED','RUST_CORE_CAPACITY_HELD',
         'RUST_CORE_INGEST_FAILED','RUST_CORE_CONTRACT_INVALID',
         'RUST_CORE_SOURCE_LIMIT','RUST_CORE_SOURCE_DUPLICATE',
-        'RUST_CORE_SOURCE_CHANGED'].includes(reason)?reason:'RUST_CORE_READ_FAILED');
+        'RUST_CORE_SOURCE_CHANGED','NATIVE_EFFECT_SOURCE_CHANGED',
+        'NATIVE_EFFECT_SOURCE_UNSAFE','NATIVE_EFFECT_SOURCE_INVALID',
+        'NATIVE_EFFECT_SOURCE_LIMIT','NATIVE_EFFECT_SOURCE_UNAVAILABLE',
+        'NATIVE_WIKI_SOURCE_INCOMPLETE'].includes(reason)?reason:'RUST_CORE_READ_FAILED');
     }
   }
   // Serialize writer/read cycles for this Host; native save_checked adds a
