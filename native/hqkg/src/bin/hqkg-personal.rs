@@ -121,12 +121,30 @@ fn context_record(ns: &Namespace, n: &Value) -> Result<ContextRecord, String> {
             if !hex(fingerprint) {return Err("invalid D4 applied receipt digest".into());}
             node.properties.insert("vivim.context.receiptDigest".into(),fingerprint.into());
         }
+        // Immutable applied-receipt origin, distinct from current Wiki lineage.
+        let origin=if let Some(value)=n.get("receiptWikiOrigin").filter(|v|!v.is_null()) {
+            let entry=text(value,"entryId")?;
+            let revision=value["wikiRevision"].as_u64()
+                .ok_or("invalid original receipt Wiki revision")?;
+            if !matches!(action_id,"wiki.section.edit"|"wiki.capture.save") ||
+                text(value,"kind")?!="committed-wiki-origin" ||
+                entry.len()!=36 ||
+                !entry.bytes().all(|b|b.is_ascii_hexdigit()||b==b'-') ||
+                revision==0 {
+                return Err("invalid immutable receipt Wiki origin".into());
+            }
+            node.properties.insert("vivim.context.receiptOriginEntryId".into(),entry.into());
+            node.properties.insert("vivim.context.receiptOriginRevision".into(),revision.to_string());
+            Some((entry.to_string(),revision))
+        } else {None};
         if let Some(l) = n.get("wikiLink").filter(|v| !v.is_null()) {
             let entry = text(l, "entryId")?;
             let linked_revision = l["wikiRevision"].as_u64().ok_or("invalid linked Wiki revision")?;
             if !matches!(action_id,"wiki.section.edit" | "wiki.capture.save") || entry.len() != 36 ||
-                !entry.bytes().all(|b| b.is_ascii_hexdigit() || b == b'-') || linked_revision == 0 {
-                return Err("invalid D4 Wiki receipt link".into());
+                !entry.bytes().all(|b| b.is_ascii_hexdigit() || b == b'-') || linked_revision == 0 ||
+                origin.as_ref().is_some_and(|(original,revision)|
+                    original!=entry||*revision!=linked_revision) {
+                return Err("invalid D4 Wiki receipt link or immutable origin conflict".into());
             }
             node.properties.insert("vivim.context.wikiEntryId".into(), entry.into());
             node.properties.insert("vivim.context.wikiRevision".into(), linked_revision.to_string());
@@ -209,6 +227,17 @@ fn stage_record(g: &Graph, ns: &Namespace, changes: GraphChangeSet, record: &Con
         // immutable receipt bytes may not change under the same plan identity.
         let old_receipt_digest=old.properties.get("vivim.context.receiptDigest").map(String::as_str);
         let new_receipt_digest=node.properties.get("vivim.context.receiptDigest").map(String::as_str);
+        if record.kind=="effect" {
+            // Existing receipts may add an origin once; after that, rebinding
+            // or stripping the original committed source is refused.
+            for key in ["vivim.context.receiptOriginEntryId",
+                "vivim.context.receiptOriginRevision"] {
+                if old.properties.get(key).is_some() &&
+                    old.properties.get(key)!=node.properties.get(key) {
+                    return Err("STALE_CONTEXT_SOURCE immutable receipt Wiki origin changed".into());
+                }
+            }
+        }
         if record.kind=="effect" && old_receipt_digest.is_some() {
             // The immutable D4 receipt cannot rebind its applied action or
             // target revision under the same verified body fingerprint.
