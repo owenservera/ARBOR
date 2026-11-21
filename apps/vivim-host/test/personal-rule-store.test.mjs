@@ -785,3 +785,41 @@ test('malformed JSON store entries reject with typed corruption error',t=>{
   }
   assert.equal(p.state,'proposed');
 });
+
+test('rollback rejects noncontiguous retained history and hidden cross-rule identities',t=>{
+  let ownerCalls=0;
+  const {store}=withStore(t,()=>{ownerCalls++;return true});
+  const p=store.propose(proposal(0));
+  store.transition({ruleId:p.ruleId,nextState:'accepted',
+    expectedVersion:1,approval:{receiptId:'accept-proof'}});
+  store.transition({ruleId:p.ruleId,nextState:'suspended',
+    expectedVersion:2,approval:{receiptId:'suspend-proof'}});
+  const original=JSON.parse(readFileSync(store.file,'utf8'));
+  // The target event (v3) and its immediate predecessor (v2) remain valid.
+  // A distant forged version makes the retained history no longer a CAS suffix.
+  const invalid=structuredClone(original);
+  invalid.history[0].version=2;
+  writeFileSync(store.file,JSON.stringify(invalid,null,2),{mode:0o600});
+  const bytes=readFileSync(store.file,'utf8');
+  assert.throws(()=>store.rollback({ruleId:p.ruleId,toRevision:3,
+    expectedVersion:3,approval:{receiptId:'rollback-proof'}}),
+    /PERSONAL_STORE_UNKNOWN_REVISION/);
+  assert.equal(readFileSync(store.file,'utf8'),bytes);
+  // Earlier transitions have already invoked the trusted verifier twice.
+  assert.equal(ownerCalls,2);
+});
+
+test('rollback refuses forged after-rule identity behind unrelated history metadata',t=>{
+  const {store}=withStore(t,()=>true);
+  const first=store.propose(proposal(0));
+  store.propose({...proposal(1),phrase:'another phrase'});
+  const malformed=JSON.parse(readFileSync(store.file,'utf8'));
+  malformed.history[1].after.id=first.ruleId;
+  writeFileSync(store.file,JSON.stringify(malformed,null,2),{mode:0o600});
+  const bytes=readFileSync(store.file,'utf8');
+  assert.throws(()=>store.rollback({ruleId:first.ruleId,toRevision:1,
+    expectedVersion:2,approval:{receiptId:'owner-proof'}}),
+    /PERSONAL_STORE_UNKNOWN_REVISION/);
+  assert.equal(readFileSync(store.file,'utf8'),bytes);
+  assert.equal(store.snapshot().version,2);
+});
