@@ -235,15 +235,6 @@ impl Desktop {
                             prior.wiki_digest!=data.wiki_digest ||
                             prior.active_devices!=data.active_devices
                         );
-                        if view.wiki_guard.accept(data.wiki_revision, &data.wiki_digest).is_err() {
-                            view.source_status="Wiki source revision/digest conflict · observation refused".into();
-                            view.source_epoch=view.source_epoch.wrapping_add(1);
-                            view.overview=None;view.visual=None;view.vec_view=None;
-                            view.graph_detail.clear();
-                            view.graph_pending=false;
-                            view.graph_status="Graph withheld after Wiki revision/digest conflict".into();
-                            cx.notify();return;
-                        }
                         view.source_status=format!(
                             "Owner-authorized Host PWA summary SHA256 {} · observed {} · Wiki revision {} · Wiki source SHA256 {} · Wiki and Host summary double-bracketed; no global transaction claimed",
                             data.host_snapshot_digest,data.observed_at,
@@ -261,6 +252,19 @@ impl Desktop {
                             view.graph_detail.clear();
                             view.graph_pending=false;
                             view.graph_status="Graph withheld after Rust Wiki source-delta refusal".into();
+                            cx.notify();return;
+                        }
+                        // Admit the Wiki high-water only after the complete
+                        // source-delta preflight succeeds. A refused delta
+                        // must not poison the revision fence for later valid
+                        // Host readbacks.
+                        if view.wiki_guard.accept(data.wiki_revision, &data.wiki_digest).is_err() {
+                            view.source_status="Wiki source revision/digest conflict · observation refused".into();
+                            view.source_epoch=view.source_epoch.wrapping_add(1);
+                            view.overview=None;view.visual=None;view.vec_view=None;
+                            view.graph_detail.clear();
+                            view.graph_pending=false;
+                            view.graph_status="Graph withheld after Wiki revision/digest conflict".into();
                             cx.notify();return;
                         }
                         view.wiki_delta=match outcome{
@@ -545,7 +549,7 @@ impl Desktop {
                         Ok(())=>{
                             let unchanged=view.graph_detail==data.text;
                             view.graph_status=if data.result_empty {
-                                format!("HQKG epoch {} · owner-authorized graph projection genuinely empty · SHA256 {}",
+                                format!("HQKG epoch {} · owner-authorized query returned zero indexed matches (not an empty graph claim) · SHA256 {}",
                                     data.epoch,data.source_digest)
                             } else {
                                 format!(
