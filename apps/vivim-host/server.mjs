@@ -37,6 +37,7 @@ import { detectEnvironment } from './onboarding/environment.mjs';
 import { controlErrorStatus } from './control/http-status.mjs';
 import { createLiveSourceSurface } from './control/live-source-surface.mjs';
 import { createLiveSystemReadPort } from './control/live-system-read-port.mjs';
+import { createFirstContactLiveSource } from './control/first-contact-live-source.mjs';
 import { createDevelopmentReadPort } from './control/development-read-port.mjs';
 import { attachRequestContext } from './control/request-context.mjs';
 import { composerResponse, needsWikiDraftContext } from '../mobile-relay/composer-assist.mjs';
@@ -200,8 +201,10 @@ export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path
     if (!runtime) runtime = createBootstrapRuntime({ dataRoot });
     return runtime;
   };
+  const firstContactSource = createFirstContactLiveSource({dataRoot});
   const liveSystem = createLiveSystemReadPort({
     readWiki: () => productJournal.readProjection(),
+    readPhoneObservations: () => firstContactSource.read(),
     readStatus: () => hostSnapshot({dataRoot,bootstrap:runtimeFor()})
   });
   const tokenFor = () => {
