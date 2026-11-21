@@ -101,8 +101,9 @@ impl Default for HostProcess {
 /// Never classify the generated resource placeholder as a release runtime.
 fn packaged_runtime(root: &Path) -> Option<PathBuf> {
     let manifest_path = root.join("runtime.manifest.json");
-    let metadata = std::fs::metadata(&manifest_path).ok()?;
-    if !metadata.is_file() || metadata.len() > 16 * 1024 * 1024 {
+    let metadata = std::fs::symlink_metadata(&manifest_path).ok()?;
+    if !metadata.is_file() || metadata.file_type().is_symlink()
+        || metadata.len() > 16 * 1024 * 1024 {
         return None;
     }
     let bytes = std::fs::read(&manifest_path).ok()?;
@@ -115,8 +116,22 @@ fn packaged_runtime(root: &Path) -> Option<PathBuf> {
         .chain(std::iter::once("apps/vivim-host/server.mjs".to_string()))
         .chain(APPROVED_BINARIES.iter().map(|bin| format!("native/bin/{bin}.exe")));
     if !required.into_iter().all(|rel| {
-        let present = entries.iter().any(|file| file["path"].as_str() == Some(rel.as_str()));
-        present && root.join(&rel).is_file()
+        let Some(entry) = entries.iter()
+            .find(|file| file["path"].as_str() == Some(rel.as_str()))
+        else { return false; };
+        let Some(expected_size) = entry["bytes"].as_u64() else { return false; };
+        let Some(expected_digest) = entry["sha256"].as_str() else { return false; };
+        if expected_digest.len() != 64 ||
+            !expected_digest.bytes().all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b)) {
+            return false;
+        }
+        // A symlink to an executable outside the frozen package must not be
+        // misclassified as a staged native or Node binary. Size agreement is
+        // an additional inexpensive check; full SHA256 remains the packaging
+        // verifier's responsibility and is not claimed here.
+        std::fs::symlink_metadata(root.join(&rel)).ok()
+            .is_some_and(|meta| meta.is_file() && !meta.file_type().is_symlink()
+                && meta.len() == expected_size)
     }) {
         return None;
     }
@@ -856,9 +871,20 @@ mod tests {
         assert_eq!(packaged_runtime(&bundle), None);
         stage_manifest_contract(&bundle);
         assert_eq!(packaged_runtime(&bundle), Some(bundle.clone()));
+        std::fs::write(bundle.join("node.exe"), b"changed-size").unwrap();
+        assert_eq!(packaged_runtime(&bundle), None);
+        touch(&bundle.join("node.exe"));
+        assert_eq!(packaged_runtime(&bundle), Some(bundle.clone()));
         std::fs::remove_file(bundle.join("native/bin/hqkg-import.exe")).unwrap();
         assert_eq!(packaged_runtime(&bundle), None);
         touch(&bundle.join("native/bin/hqkg-import.exe"));
+        let manifest_path = bundle.join("runtime.manifest.json");
+        let original = std::fs::read_to_string(&manifest_path).unwrap();
+        let mut malformed:serde_json::Value=serde_json::from_str(&original).unwrap();
+        malformed["files"][0]["sha256"]=serde_json::json!("invalid");
+        std::fs::write(&manifest_path,malformed.to_string()).unwrap();
+        assert_eq!(packaged_runtime(&bundle), None);
+        std::fs::write(&manifest_path,original).unwrap();
         touch(&bundle.join("ARBOR-RUNTIME-PLACEHOLDER.txt"));
         assert_eq!(packaged_runtime(&bundle), None);
 
