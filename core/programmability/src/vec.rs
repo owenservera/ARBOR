@@ -167,6 +167,16 @@ pub fn diff(previous:Option<&View>,next:Option<&View>)->Result<Delta,VisualError
             (a.revision==b.revision&&a.design_digest!=b.design_digest){
             return Err(VisualError::InvalidProjection)
         }
+        // Live bindings advance independently of the Host design revision.
+        // The session RevisionGuard retains high marks even through outages.
+        for (id,(old_revision,old_digest)) in &a.binding_watermarks {
+            if let Some((new_revision,new_digest))=b.binding_watermarks.get(id) {
+                if new_revision<old_revision||
+                    (new_revision==old_revision&&new_digest!=old_digest){
+                    return Err(VisualError::InvalidProjection)
+                }
+            }
+        }
     }
     let mut old=BTreeMap::new();let mut new=BTreeMap::new();
     if let Some(v)=previous{flatten_ir(&v.root,None,0,&mut old)?}
@@ -248,5 +258,12 @@ mod vec_revision_tests{
         assert!(change.repaint_required);
         let mut stale=updated.clone();stale.revision=6;
         assert!(diff(Some(&updated),Some(&stale)).is_err());
+        let mut rollback=updated.clone();
+        rollback.binding_watermarks.insert("personal.open-tasks".into(),(11,"a".repeat(64)));
+        assert!(diff(Some(&updated),Some(&rollback)).is_err());
+        let mut conflict=updated.clone();
+        conflict.binding_watermarks.insert("personal.open-tasks".into(),(12,"c".repeat(64)));
+        assert!(diff(Some(&updated),Some(&conflict)).is_err());
+        assert!(diff(Some(&updated),Some(&updated)).unwrap().changed_bindings.is_empty());
     }
 }

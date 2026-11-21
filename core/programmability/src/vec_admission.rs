@@ -22,6 +22,17 @@ fn semantic_id(schema:&str)->String{
     let i=schema.rfind('/').unwrap_or(0);
     format!("{}@{}",&schema[..i],&schema[i+1..])
 }
+fn inert_field(value:&Value,depth:usize)->bool{
+    if depth>12{return false}
+    match value{
+        Value::Null|Value::Bool(_)|Value::Number(_)=>true,
+        Value::String(s)=>s.len()<=32768,
+        Value::Array(rows)=>rows.len()<=1024&&rows.iter().all(|v|inert_field(v,depth+1)),
+        Value::Object(fields)=>fields.len()<=256&&fields.iter().all(|(key,v)|
+            key.len()<=128&&!matches!(key.as_str(),"__proto__"|"prototype"|"constructor")&&
+            inert_field(v,depth+1)),
+    }
+}
 pub fn admit(input:&Value)->Value{
     let domain=input["domain"].as_str().unwrap_or("");
     let Some((_,product_schema))=known(domain)else{
@@ -60,7 +71,8 @@ pub fn admit(input:&Value)->Value{
     };
     for key in ["proposal","preview","summary","detail"]{
         if let Some(value)=object.get(key){
-            if serde_json::to_vec(value).map_or(true,|bytes|bytes.len()>256*1024){
+            if !inert_field(value,0)||
+                serde_json::to_vec(value).map_or(true,|bytes|bytes.len()>256*1024){
                 return fail(Some(domain),"refused","ADAPTER_INVALID_RESULT")
             }
         }
@@ -105,6 +117,17 @@ mod tests{
         assert_eq!(admit(&input)["code"],"ADAPTER_INVALID_RESULT");
         input["domain"]=json!("unknown");
         assert_eq!(admit(&input)["code"],"UNKNOWN_DOMAIN");
+    }
+    #[test]fn bounded_adapter_results_are_not_admitted(){
+        let mut input=json!({"domain":"ui","text":"edit","contextValid":true,
+          "adapterInstalled":true,"adapterResult":{"outcome":"candidate",
+          "proposal":{"schema":"vivim.ui-proposal/1"}}});
+        input["adapterResult"]["preview"]=json!({"rows":vec![json!(1);1025]});
+        assert_eq!(admit(&input)["code"],"ADAPTER_INVALID_RESULT");
+        input["adapterResult"]["preview"]=json!({"__proto__":"unsafe"});
+        assert_eq!(admit(&input)["code"],"ADAPTER_INVALID_RESULT");
+        input["adapterResult"]["preview"]=json!({"items":[1,2,3]});
+        assert_eq!(admit(&input)["outcome"],"candidate");
     }
     #[test]fn input_limit_is_utf16_to_match_browser(){
         let input=json!({"domain":"ui","text":"😀".repeat(2049),"contextValid":true,"adapterInstalled":true});

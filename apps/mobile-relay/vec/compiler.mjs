@@ -48,8 +48,12 @@ const fail = (domain, outcome, code) => ({
 // Rust admission is authoritative when available. A comparison with the
 // incumbent pure fallback is retained until real deployed input parity closes.
 function admitOrFallback(input,legacy){
+  const wasReady=rustStatus?.()?.state==='ready';
   const native=rustAdmission?.(input);
-  if(native===undefined)return legacy;
+  // Native runtime failed mid-admission: refuse rather than silently reroute.
+  if(native===undefined)return wasReady
+    ?fail(VEC_DOMAINS.includes(input.domain)?input.domain:null,'refused','RUST_VEC_UNAVAILABLE')
+    :legacy;
   if(JSON.stringify(canonical(native))!==JSON.stringify(canonical(legacy)))
     return fail(VEC_DOMAINS.includes(input.domain)?input.domain:null,'refused','RUST_VEC_ADMISSION_MISMATCH');
   return native;

@@ -15,3 +15,34 @@ test('unpackaged runtime explicitly reports unavailable without native projectio
   assert.equal(rustUiValue('color','#aabbcc'),null);
   assert.equal(rustTokenPackage({schema:'vivim.ui-token-pack/1',tokens:{}}),null);
 });
+
+test('WASM unavailable without a readable stream',async()=>{
+  const oldWindow=globalThis.window,oldFetch=globalThis.fetch;
+  try{
+    globalThis.window={};
+    globalThis.fetch=async()=>({ok:true,headers:new Headers(),body:null});
+    const native=await import('../src/rust-wasm.mjs?stream-missing');
+    assert.equal(await native.initializeRustUiEngine(),false);
+    assert.equal(native.rustUiEngineStatus().code,'WASM_STREAM_UNAVAILABLE');
+    assert.equal(native.nativeBrowserKernelReady(),false);
+  }finally{
+    if(oldWindow===undefined)delete globalThis.window;
+    else globalThis.window=oldWindow;
+    globalThis.fetch=oldFetch;
+  }
+});
+test('WASM oversized stream is rejected before instantiation',async()=>{
+  const oldWindow=globalThis.window,oldFetch=globalThis.fetch;
+  try{
+    globalThis.window={};
+    globalThis.fetch=async()=>new Response(new Uint8Array(12*1024*1024+1),{status:200});
+    const native=await import('../src/rust-wasm.mjs?stream-limit');
+    assert.equal(await native.initializeRustUiEngine(),false);
+    assert.equal(native.rustUiEngineStatus().code,'WASM_MODULE_OVERSIZED');
+    assert.equal(native.nativeBrowserKernelReady(),false);
+  }finally{
+    if(oldWindow===undefined)delete globalThis.window;
+    else globalThis.window=oldWindow;
+    globalThis.fetch=oldFetch;
+  }
+});

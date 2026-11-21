@@ -23,6 +23,40 @@ export function rustUiEngineStatus(){
   return {state:instance?'ready':'unavailable',code:instance?'NONE':reason,
     fallback:instance?'none':'trusted-js',lastOperation};
 }
+// Enforce the wire ceiling while the real response is read; never consume an
+// unchecked response.arrayBuffer() or turn a broken artifact into a projection.
+async function readBoundedModule(response){
+  if(!response.body||typeof response.body.getReader!=='function'){
+    reason='WASM_STREAM_UNAVAILABLE';return null;
+  }
+  const reader=response.body.getReader();let total=0;const chunks=[];
+  try{
+    while(true){
+      const {done,value}=await reader.read();
+      if(done)break;
+      if(!(value instanceof Uint8Array)){
+        reason='WASM_MODULE_INVALID_CHUNK';await reader.cancel().catch(()=>{});return null;
+      }
+      total+=value.byteLength;
+      if(total>MAX_MODULE_BYTES){
+        reason='WASM_MODULE_OVERSIZED';await reader.cancel().catch(()=>{});return null;
+      }
+      chunks.push(value);
+    }
+  }catch{
+    reason='WASM_MODULE_STREAM_FAILED';
+    try{await reader.cancel();}catch{}
+    return null;
+  }finally{try{reader.releaseLock();}catch{}}
+  if(total<8){reason='WASM_MODULE_INVALID_SIZE';return null;}
+  const bytes=new Uint8Array(total);let at=0;
+  for(const chunk of chunks){bytes.set(chunk,at);at+=chunk.byteLength;}
+  if(bytes[0]!==0||bytes[1]!==97||bytes[2]!==115||bytes[3]!==109||
+     bytes[4]!==1||bytes[5]!==0||bytes[6]!==0||bytes[7]!==0){
+    reason='WASM_MODULE_BAD_MAGIC';return null;
+  }
+  return bytes;
+}
 export async function initializeRustUiEngine(){
   if(typeof window==='undefined'||typeof WebAssembly==='undefined'||typeof fetch!=='function'){
     reason='NON_BROWSER_RUNTIME';return false;
@@ -37,17 +71,15 @@ export async function initializeRustUiEngine(){
       if(!Number.isSafeInteger(declared)||declared<0||declared>MAX_MODULE_BYTES){
         reason='WASM_MODULE_OVERSIZED';return false;
       }
-      const bytes=await response.arrayBuffer();
-      if(bytes.byteLength<8||bytes.byteLength>MAX_MODULE_BYTES){
-        reason='WASM_MODULE_INVALID_SIZE';return false;
-      }
+      const bytes=await readBoundedModule(response);
+      if(!bytes)return false;
       const output=await WebAssembly.instantiate(bytes,{});
       const native=output.instance?.exports??output.exports;
       if(!admit(native)){reason='WASM_ABI_UNAVAILABLE';return false;}
       if(native.memory.buffer.byteLength>MAX_MEMORY){reason='WASM_MEMORY_LIMIT';return false;}
       instance=native;reason='NONE';return true;
     }catch{reason='WASM_INITIALIZATION_FAILED';return false;}
-  })();
+  })().finally(()=>{attempt=null;});
   return attempt;
 }
 function invoke(operation,input){

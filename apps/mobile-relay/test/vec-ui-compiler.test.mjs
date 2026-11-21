@@ -116,3 +116,11 @@ test('refusals never call adapters and source IDs only come from reviewed schema
   })}}).compile({domain:'ui',text:'Add card'});
   assert.equal(Object.hasOwn(unreviewed,'sourceSemanticIds'),false);
 });
+
+test('VEC runtime status is read-only and never an effect grant', async()=>{
+  const {vecAdmissionRuntimeStatus}=await import('../vec/compiler.mjs');
+  const status=vecAdmissionRuntimeStatus();
+  assert.ok(['ready','unavailable'].includes(status.state));
+  assert.notEqual(status.state,'executed');
+  assert.notEqual(status.state,'persisted');
+});
