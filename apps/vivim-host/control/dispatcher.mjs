@@ -44,6 +44,7 @@ const NATIVE_PROGRAM_ACTION='program.validate';
 const WIKI_READ_PROGRAM_ACTION='program.read_wiki';
 const WIKI_WRITE_PROGRAM_ACTION='program.write_wiki';
 const HVI_ACTION='versions.compare.pinned';
+const COMPOSER_ACTION='pwa.composer.draft.set';
 // A typed VEC document is not an NL action or a string argument. Keep the existing
 // language catalog stable (including accepted learned rules); the visual contract
 // has its own version and uses the very same control plan journal and claim.
@@ -102,6 +103,7 @@ const VALIDATION_ERROR_CODES = new Set([
   'GRANT_ALREADY_REVOKED',
   'CONTROL_DEVICE_SCOPE_INVALID',
   'GRANT_NOT_PENDING',
+  'COMPOSER_STAGE_STALE','COMPOSER_PAUSED','COMPOSER_SOURCE_UNAVAILABLE',
 ]);
 
 function readWikiPages(wiki) {
@@ -123,7 +125,7 @@ function readWikiSection(wiki,{page,section}) {
 }
 
 /** Fixed executors keyed by catalog action id. Each returns a bounded, phone-safe summary. */
-function createExecutors({ runtime, planner, lexicon, devices, productJournal, personalSemantics, nativeProgram }) {
+function createExecutors({ runtime, planner, lexicon, devices, productJournal, personalSemantics, nativeProgram, composerBridge }) {
   const ownerExclusions = () => (runtime.status().preferences ?? [])
     .filter(p => p.hard && p.polarity === 'avoid' && p.source === 'owner')
     .slice(0, 50).map(p => ({ id: p.id, value: short(p.value, 120) }));
@@ -140,6 +142,10 @@ function createExecutors({ runtime, planner, lexicon, devices, productJournal, p
       entryId:entry.entryId,sequence:entry.sequence};
   };
   return {
+    [COMPOSER_ACTION]: ({stage_id}) => {
+      if(!composerBridge)throw fail('CONTROL_COMPOSER_UNAVAILABLE');
+      return composerBridge.execute(stage_id);
+    },
     'control.rule.remember': (_args,ctx) =>
       personalSemantics.remember({subject:ctx.ruleBinding.subject,approval:{receiptId:ctx.planId}}),
     'control.rule.revoke': (_args,ctx) =>
@@ -291,7 +297,7 @@ function createExecutors({ runtime, planner, lexicon, devices, productJournal, p
 }
 
 export function createControlDispatcher({ dataRoot, runtime, devices = null, productJournal = null, catalog = loadControlCatalog(),
-  commandScope = () => ({}),
+  commandScope = () => ({}), composerBridge = null,
   nativeProgram=createNativeProgramValidator({productJournal}),
   now = () => Date.now(), ttlMs = 10 * 60_000, freshMs = 2 * 60_000 } = {}) {
   if (!runtime || typeof runtime.status !== 'function') throw fail('CONTROL_RUNTIME_REQUIRED');
@@ -313,7 +319,7 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
   const planner = createControlPlanner({ catalog,
     lexicon: () => lexicon.entries(), personalRules: () => personalSemantics.accepted(),
     commandScope });
-  const executors = createExecutors({ runtime, planner, lexicon, devices, productJournal, personalSemantics,nativeProgram });
+  const executors = createExecutors({ runtime, planner, lexicon, devices, productJournal, personalSemantics,nativeProgram,composerBridge });
   // The catalog may not claim an executor the Host does not have, nor hide one it does.
   for (const a of catalog.actions) {
     const runnable = ['source_wired', 'verified'].includes(a.readiness);
@@ -560,6 +566,8 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
     else if (keys.length === 1 && keys[0] === 'candidate') p = planner.planCandidate(input.candidate, { source });
     else if (keys.every(k => ['actionId', 'args'].includes(k))) p = planner.planTyped({ actionId: input.actionId, args: input.args ?? {}, source, origin: 'typed' });
     else throw fail('CONTROL_INPUT_INVALID');
+    if(p.actionId===COMPOSER_ACTION&&(source!=='desktop'||actor!=='desktop-owner'||p.origin!=='typed'))
+      return {...p,outcome:'unavailable',executionPerformed:false,precondition:'A staged draft and authenticated desktop-owner typed approval are required.'};
     if(RULE_ACTIONS.has(p.actionId)&&(source!=='desktop'||actor!=='desktop-owner'))
       return {...p,outcome:'unavailable',executionPerformed:false,precondition:'Learning requires the authenticated desktop owner.'};
     const isProgram=[WIKI_READ_PROGRAM_ACTION,WIKI_WRITE_PROGRAM_ACTION].includes(p.actionId);
@@ -684,6 +692,10 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
       if(phoneProgram){if(rec.plan.origin!=='personal_rule'||approval.channel!=='direct-phone'||approval.actor!==rec.plan.actor||!rec.plan.programGrantId||approval.grantId!==rec.plan.programGrantId||typeof authorizeProgram!=='function')throw fail('CONTROL_WIKI_DEVICE_MISMATCH');authorizeProgram('control:execute');}
       else if(approval.actor!=='desktop-owner'||approval.channel!=='desktop-owner-token'||rec.plan.actor!=='desktop-owner'||rec.plan.source!=='desktop')throw fail('CONTROL_DESKTOP_APPROVAL_REQUIRED');
     }
+    if(rec.plan.actionId===COMPOSER_ACTION&&
+       (rec.plan.source!=='desktop'||rec.plan.actor!=='desktop-owner'||
+        rec.plan.origin!=='typed'||approval.channel!=='desktop-owner-token'||
+        approval.actor!=='desktop-owner'))throw fail('CONTROL_COMPOSER_DESKTOP_APPROVAL_REQUIRED');
     if(RULE_ACTIONS.has(rec.plan.actionId)&&approval.actor!=='desktop-owner')
       throw fail('CONTROL_DESKTOP_APPROVAL_REQUIRED');
     if(rec.plan.actionId===CAPTURE_ACTION&&rec.plan.source==='mobile'&&approval.grantId!==rec.plan.captureGrantId)throw fail('CONTROL_WIKI_DEVICE_MISMATCH');
@@ -767,7 +779,8 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
         code:typeof cause?.code==='string'?cause.code:null,
         wikiMutation:wikiMutation(rec.plan.actionId)
       });
-      const fallbackCode=cause?.status===409?'CONTROL_WIKI_STALE':
+      const fallbackCode=cause?.status===409?(
+         rec.plan.actionId===COMPOSER_ACTION?'COMPOSER_STAGE_STALE':'CONTROL_WIKI_STALE'):
         cause?.code??'CONTROL_EFFECT_UNCERTAIN';
       const definitive=cause?.status===409||VALIDATION_ERROR_CODES.has(fallbackCode)||
         (wikiMutation(rec.plan.actionId)&&[400,404,413,428].includes(cause?.status));
