@@ -196,3 +196,15 @@ test('first-party VEC accepts every native-supported nested Host surface depth',
     assert.equal(result.executed,false);
   }
 });
+
+test('VEC source fingerprints normalize field order without retaining private text',()=>{
+  const fence=createVecBindingFence(['personal.recent-notes']);
+  const source={state:'source-backed',revision:3,total:1,items:[{label:'Private note',detail:'Read only'}]};
+  const observed=fence.prepare({'personal.recent-notes':source});
+  assert.equal(observed.state,'ready');assert.equal(observed.commit(),true);
+  assert.equal(fence.prepare({'personal.recent-notes':{
+    items:[{detail:'Read only',label:'Private note'}],total:1,revision:3,state:'source-backed'}}).state,'ready');
+  assert.equal(JSON.stringify(fence.status()).includes('Private note'),false);
+  assert.equal(fence.prepare({'personal.recent-notes':{...source,items:[{label:'Changed',detail:'Read only'}]}}).code,
+    'LIVE_BINDING_REVISION_CONFLICT');
+});

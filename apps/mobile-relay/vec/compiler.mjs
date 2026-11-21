@@ -1,3 +1,4 @@
+import {sha256Hex} from '../generative-ui/portable-digest.mjs';
 // VEC core/0.1: one pure compilation boundary, three owner-preserving adapters.
 // Source text is NOT an execution or grant token. Only a trusted caller supplies the domain
 // and adapters; no input may install a compiler, authorize an action or select a publisher.
@@ -108,6 +109,7 @@ function admitOrFallback(input,legacy){
 
 // Source metadata is admitted from existing Host readback; no rendering, effects
 // or native-IR authenticity is claimed by this purely local revision fence.
+// Store only SHA-256 of canonical source values, not private Wiki strings.
 export function createVecBindingFence(ids=[]){
   if(!Array.isArray(ids)||ids.length>32||new Set(ids).size!==ids.length||
       ids.some(id=>typeof id!=='string'||!id||id.length>80))
@@ -142,7 +144,7 @@ export function createVecBindingFence(ids=[]){
     }
     try{
       const text=JSON.stringify(ordered(value,0));
-      return text&&text.length<=65536?text:null;
+      return text&&text.length<=65536?sha256Hex(text):null;
     }catch{return null;}
   }
   return Object.freeze({
