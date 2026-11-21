@@ -715,3 +715,26 @@ test('rollback refuses impossible historical transition payloads',t=>{
   }
   assert.equal(called,1);
 });
+
+test('a verifier cannot approve mutations without a concrete Host receipt ID',t=>{
+  let approvalChecks=0;
+  const {store}=withStore(t,()=>{approvalChecks++;return true});
+  const p=store.propose(proposal(0));
+  const committed=readFileSync(store.file,'utf8');
+  for(const approval of [{approved:true},{receiptId:null},{receiptId:''},{receiptId:1}]){
+    assert.throws(()=>store.transition({ruleId:p.ruleId,nextState:'accepted',
+      expectedVersion:1,approval}),/PERSONAL_STORE_OWNER_APPROVAL_REQUIRED/);
+    assert.throws(()=>store.rollback({ruleId:p.ruleId,toRevision:1,
+      expectedVersion:1,approval}),/PERSONAL_STORE_OWNER_APPROVAL_REQUIRED/);
+  }
+  const snap=store.snapshot();
+  const subject={operation:'remember',catalogVersion:catalog.version,
+    storeVersion:snap.version,storeDigest:snap.digest,
+    rule:{phrase:'different remembered rule',actionId:'ui.theme.set_preset',
+      args:{preset:'dusk'},scope:{}},previousId:null,previousDigest:null};
+  assert.throws(()=>store.remember({subject,approval:{approved:true}}),
+    /PERSONAL_STORE_OWNER_APPROVAL_REQUIRED/);
+  assert.equal(approvalChecks,0,'no malformed receipt reaches owner verifier');
+  assert.equal(readFileSync(store.file,'utf8'),committed);
+  assert.equal(store.snapshot().version,1);
+});
