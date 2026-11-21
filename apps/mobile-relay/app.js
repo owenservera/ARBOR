@@ -114,7 +114,7 @@ const S = {
   media: { state: 'idle' }, mediaAt: 0, mediaOffset: 0, mediaLoading: false, nextBatch: null,
   wiki: null, wikiStamp: null, wikiError: 'Wiki not loaded', wikiContext: null, wikiContextError: ''
 };
-let buildBindingSequence=0;
+let buildBindingSequence=0,buildPollSequence=0;
 let combinedInbox = true; // UI-only inbox aggregation; never fan-out or a provider target.
 let providerRefreshBusy = false;
 const N = { target: transport.direct ? 'vivim' : 'harness', session: '', sessions: [], messages: [], timer: 0, generation: 0, sending: false, note: '', pending: null };
@@ -1039,7 +1039,7 @@ function isInvalidDeviceSession(code) {
 // Session restoration must start from new device proof; no offline replay.
 function clearPrivatePhoneState() {
   wikiSourceFence=null;wikiReadScope=null;
-  buildBindingSequence++;
+  buildBindingSequence++;buildPollSequence++;
   shellPresentation.clear();
   dockAssist?.reset();compose?.resetAssist?.();capabilityLauncher?.close();
   mediaGeneration++;
@@ -2023,8 +2023,24 @@ async function refreshBuildBindings(snapshot){
 async function pollBuild() {
   buildTimer = 0;
   if (!build || !S.paired || S.tab !== 'build') return;
+  const readSequence=++buildPollSequence;
+  const grant=HOST_PREVIEW?null:transport.deviceHeaders?.();
+  const current=()=>readSequence===buildPollSequence&&S.paired&&S.tab==='build'&&
+    (HOST_PREVIEW||!transport.direct||!!grant&&
+      typeof grant['x-vivim-device-session']==='string'&&!!grant['x-vivim-device-session']&&
+      typeof grant['x-vivim-grant-id']==='string'&&!!grant['x-vivim-grant-id']&&
+      transport.deviceHeaders?.()?.['x-vivim-device-session']===grant['x-vivim-device-session']&&
+      transport.deviceHeaders?.()?.['x-vivim-grant-id']===grant['x-vivim-grant-id']);
+  const redact=()=>{
+    // A status request issued under an old grant cannot repaint the new
+    // device's Build surface, even if its visual revision happens to match.
+    if(readSequence!==buildPollSequence)return;
+    build?.clearBindingScope();build?.clear();shellPresentation.clear();buildKey='';
+  };
+  if(!current()){redact();return;}
   try {
     const st = await api('status');
+    if(!current()){redact();return;}
     S.statusObj = st; S.statusAt = Date.now();
     const rev = st && st.snapshot && st.snapshot.bootstrap ? st.snapshot.bootstrap.uiRevision : null;
     // Always inspect the Host full snapshot. Comparing just a numeric revision
@@ -2034,12 +2050,11 @@ async function pollBuild() {
     buildKey = observed?.state === 'ready' ? String(rev.surfaceId) + ':' + String(rev.revision) : '';
     if(observed?.state==='ready')void refreshBuildBindings(st?.snapshot);
   } catch (e) {
-    if (build) build.clear();
-    shellPresentation.clear();
-    buildKey = '';
+    if(!current()){redact();return;}
+    redact();
     if (e && (e.status === 401 || e.status === 403)) return;
   }
-  if (S.paired && S.tab === 'build') scheduleBuild();
+  if (current()) scheduleBuild();
 }
 
 /* ---------- pairing / startup ---------- */
