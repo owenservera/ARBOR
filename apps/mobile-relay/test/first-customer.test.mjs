@@ -15,7 +15,7 @@ test('first-contact is Direct-only, opt-in, and uses existing paired Host compos
   assert.match(app,/admitted\.executionAuthorized !== false/);
   assert.match(app,/admitted\.effectPerformed !== false/);
   assert.match(app,/rustFirstContact\(\{text:field\.value\}\)/);
-  assert.match(html,/body\.first-contact\.paired #top/);
+  assert.match(html,/body\.first-contact #top/);
   assert.match(html,/#msgs > \.vivim-intro/);
   assert.match(html,/#msgs > section\.vivim-plan/);
   assert.match(html,/#chat-composer \.row > :not\(#text\):not\(#send\)/);
@@ -29,7 +29,7 @@ test('typing searches only an authorized, source-admitted Wiki with no effect or
   assert.match(app,/function firstWikiScope\(\)/);
   assert.match(app,/S\.device\.scopes\?\.includes\('control:read'\)/);
   assert.match(app,/firstWikiAbort=new AbortController\(\)/);
-  assert.match(app,/fetch\('\/mobile\/api\/wiki'/);
+  assert.match(app,/fetch\(scope\.url,/);
   assert.match(app,/verifyWikiSourceStamp\(wiki,/);
   assert.match(app,/admitted\.state!=='accepted'\|\|!admitted\.native/);
   assert.match(app,/rustWikiSearch\?\.\(source\.wiki,text\.slice\(0,160\)\)/);
@@ -87,4 +87,14 @@ test('real PWA Wiki rows expand source only while the exact device grant is live
     wiki.pages.ARBOR.sections['Rust Core']);
   grant='grant-b';row.open=true;row.events.toggle();
   assert.equal(row.open,false,'old Wiki result cannot expand after a grant switch');
+});
+
+test('Tailscale owner first-contact is a usable read-only composer without device enrollment',()=>{
+  assert.match(app,/key:'tailnet-owner-first-contact',url:'\/mobile\/api\/first-contact\/wiki'/);
+  assert.match(app,/if \(FIRST_CONTACT\) \{/);
+  assert.match(app,/S\.paired = false; S\.tab = 'talk'; N\.target = 'vivim'/);
+  assert.match(app,/if \(FIRST_CONTACT && !S\.paired\) \{/);
+  assert.match(app,/await refreshFirstWiki\(\)/);
+  assert.match(app,/\/\/ Submit exclusively to the Host plan boundary/);
+  assert.match(html,/body\.first-contact #chat-composer/);
 });
