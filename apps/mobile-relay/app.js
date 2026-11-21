@@ -565,6 +565,21 @@ function clearWiki(reason = 'Wiki unavailable') {
   S.wikiContext = null; S.wikiContextError = reason;
   if (S.tab === 'wiki') renderWiki();
 }
+// Exact JS fallback for the existing Rust Wiki page digest. Both use sorted
+// JSON object keys, preserving array order. This is a bounded source identity,
+// never an approval, UI mutation or substitute for a device grant.
+function wikiSourceStampFallback(wiki) {
+  const sortValue = (value, depth = 0) => {
+    if (depth > 24) throw new Error('Wiki source nesting exceeds digest limit');
+    if (Array.isArray(value)) return value.map(row => sortValue(row, depth + 1));
+    if (value && typeof value === 'object')
+      return Object.fromEntries(Object.keys(value).sort().map(
+        key => [key, sortValue(value[key], depth + 1)]));
+    return value;
+  };
+  return {revision:wiki.revision, pagesTotal:Object.keys(wiki.pages).length,
+    digest:sha256Hex(JSON.stringify(sortValue(wiki.pages)))};
+}
 // The owner-private context is a read-only overlay, not a second Wiki or a device grant.
 function semanticRows(context) {
   const graph = context.semantics;
@@ -882,6 +897,19 @@ async function refreshWiki() {
       typeof session?.['x-vivim-grant-id']!=='string'||!session['x-vivim-grant-id'])){
     clearWiki('A valid paired-device grant is required for Wiki readback.');return;
   }
+  // Redact the previous grant's read model before starting a new network read.
+  // Waiting until its response arrives exposes the prior owner's Wiki on screen.
+  const fenceKey=HOST_PREVIEW?'host-owner-preview':sha256Hex(JSON.stringify([
+    'wiki-read',session['x-vivim-device-session'],session['x-vivim-grant-id']]));
+  if(wikiReadScope!==null&&wikiReadScope!==fenceKey){
+    wikiSourceFence=null;
+    clearWikiSources('Wiki authorization scope changed');
+    S.wiki=null;S.wikiStamp=null;S.wikiDelta=null;
+    S.wikiContext=null;S.wikiContextError='';
+    S.wikiError='Loading authorized Wiki source';
+    renderWiki();
+  }
+  wikiReadScope=fenceKey;
   try {
     // The local /api/wiki route is loopback-only, but the embedded desktop
     // owner preview must also have a live, unexpired browser owner session.
@@ -932,42 +960,40 @@ async function refreshWiki() {
         session['x-vivim-device-session'] ||
         transport.deviceHeaders?.()?.['x-vivim-grant-id'] !==
         session['x-vivim-grant-id'])) return;
-    // Native and PWA share one pure Rust source digest. Unlike a revision,
-    // the digest catches divergent pages under the same Host revision.
-    // A fresh pairing/grant is a new source scope, not an unauthorized rollback.
-    // Store only its digest, never readable session or grant credentials.
-    const fenceKey=HOST_PREVIEW?'host-owner-preview':sha256Hex(JSON.stringify([
-      'wiki-read',session['x-vivim-device-session'],session['x-vivim-grant-id']]));
-    if(wikiReadScope!==null&&wikiReadScope!==fenceKey){
-      wikiSourceFence=null;
-      clearWikiSources('Wiki authorization scope changed');
-      S.wiki=null;S.wikiStamp=null;S.wikiDelta=null;
-      S.wikiContext=null;S.wikiContextError='';
-    }
-    wikiReadScope=fenceKey;
+    // Source scope was checked before the network request, so old private
+    // content is never displayed while a newly paired device is loading.
     if (S.wiki && wiki.revision < S.wiki.revision) {
       clearWikiSources('Wiki revision regressed');S.wikiContext = null; S.wikiContextError = 'Wiki revision regressed; private context cleared.';
       renderWiki(); return;
     }
+    // The native stamp and the bounded JS fallback must describe identical
+    // Host pages. If native has ever verified this scope, never downgrade to
+    // a JS-only result after a broken/unavailable WASM dispatch.
+    const portableStamp=wikiSourceStampFallback(wiki);
     const nativeStamp=rustWikiSourceStamp?.(wiki);
-    const validStamp=!!nativeStamp && nativeStamp.revision===wiki.revision &&
-      nativeStamp.pagesTotal===Object.keys(wiki.pages).length;
-    const accepted=validStamp &&
-      rustWikiSourceTransition?.(wikiSourceFence?.stamp??null,nativeStamp)===true;
-    if(wikiSourceFence && !accepted){
-      // A transient loss of WASM must not erase the last known source identity.
+    if(nativeStamp && (nativeStamp.revision!==portableStamp.revision||
+        nativeStamp.pagesTotal!==portableStamp.pagesTotal||
+        nativeStamp.digest!==portableStamp.digest)){
+      clearWiki('Native and portable Wiki source identities disagree');return;
+    }
+    if(wikiSourceFence?.native && !nativeStamp){
+      clearWiki('Previously native-verified Wiki source is unavailable');return;
+    }
+    const stamp=nativeStamp??portableStamp;
+    const previous=wikiSourceFence?.stamp;
+    const consistent=!previous||stamp.revision>previous.revision||
+      stamp.revision===previous.revision&&stamp.digest===previous.digest;
+    if(!consistent || nativeStamp &&
+        rustWikiSourceTransition?.(previous??null,nativeStamp)!==true){
       clearWiki('Wiki source identity unavailable or revision conflict');return;
     }
-    if(validStamp && !accepted){
-      clearWiki('Rust Wiki source identity validation unavailable');return;
-    }
-    const nativeDelta=accepted?rustWikiSourceDelta?.(S.wiki??null,wiki):null;
+    const nativeDelta=nativeStamp?rustWikiSourceDelta?.(S.wiki??null,wiki):null;
     const matchingDelta=!!nativeDelta&&nativeDelta.to.revision===wiki.revision&&
-      nativeDelta.to.digest===nativeStamp.digest&&
+      nativeDelta.to.digest===stamp.digest&&
       (!S.wikiStamp||nativeDelta.from?.digest===S.wikiStamp.digest);
-    if(accepted)wikiSourceFence={key:fenceKey,stamp:nativeStamp};
+    wikiSourceFence={key:fenceKey,stamp,native:!!nativeStamp};
     if(HOST_PREVIEW)ingestWikiSources(sourceSurface);
-    S.wiki = wiki; S.wikiStamp=accepted?nativeStamp:null;
+    S.wiki = wiki; S.wikiStamp=stamp;
     S.wikiDelta=matchingDelta?nativeDelta:null; S.wikiError = '';
     S.wikiContext = context; S.wikiContextError = contextError; renderWiki();
   } catch (error) {

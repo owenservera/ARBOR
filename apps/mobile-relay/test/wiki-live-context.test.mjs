@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
+import {sha256Hex} from '../generative-ui/portable-digest.mjs';
 
 // Execute the actual PWA functions, not a second Wiki implementation.
 const app = readFileSync(new URL('../app.js', import.meta.url), 'utf8');
@@ -56,7 +57,9 @@ test('real PWA Wiki HTTP projection rejects rollback and revocation, without sto
   const calls = [];
   const env = {
     HOST_PREVIEW: false,
-    wikiReadSequence: 0,
+    wikiReadSequence: 0, wikiReadScope:null, wikiSourceFence:null,
+    rustWikiSourceStamp:null,rustWikiSourceTransition:null,rustWikiSourceDelta:null,
+    sha256Hex, clearWikiSources() {},
     S: { tab: 'wiki', paired: true, wiki: null, wikiError: '',
       device: { scopes: ['control:read'] } },
     transport: { direct: true, deviceHeaders: () => ({
@@ -74,6 +77,7 @@ test('real PWA Wiki HTTP projection rejects rollback and revocation, without sto
     }
   };
   vm.createContext(env);
+  vm.runInContext(functionSource(app, 'wikiSourceStampFallback'), env);
   vm.runInContext(functionSource(app, 'refreshWiki'), env);
   await env.refreshWiki();
   assert.equal(env.S.wiki.revision, 3);
@@ -94,4 +98,45 @@ test('Wiki can request existing optional native context, without a separate core
   assert.match(functionSource(app, 'renderWiki'), /Source context/);
   assert.match(functionSource(app, 'renderWiki'), /readGraphContext/);
   assert.doesNotMatch(functionSource(app, 'renderWiki'), /innerHTML|localStorage|sessionStorage|window\.open/);
+});
+
+
+test('same Wiki revision with changed source bytes is refused without optional WASM', async()=>{
+  let body={revision:4,pages:{Main:{sections:{About:'Original source'}}}};
+  let grant='grant-a',secondReply;
+  const env={
+    HOST_PREVIEW:false, wikiReadSequence:0, wikiReadScope:null,wikiSourceFence:null,
+    rustWikiSourceStamp:null,rustWikiSourceTransition:null,rustWikiSourceDelta:null,
+    sha256Hex, clearWikiSources(){},
+    S:{tab:'wiki',paired:true,wiki:null,wikiError:'',device:{scopes:['control:read']}},
+    transport:{direct:true,deviceHeaders:()=>({
+      'x-vivim-device-session':'session-a','x-vivim-grant-id':grant
+    })},
+    clearWiki(reason){env.wikiReadSequence++;env.S.wiki=null;env.S.wikiError=reason;},
+    renderWiki(){},isInvalidDeviceSession:()=>false,
+    fetch:async()=>secondReply??{ok:true,json:async()=>body}
+  };
+  vm.createContext(env);
+  vm.runInContext(functionSource(app,'wikiSourceStampFallback'),env);
+  vm.runInContext(functionSource(app,'refreshWiki'),env);
+  await env.refreshWiki();
+  assert.equal(env.S.wiki.revision,4);
+  body={revision:4,pages:{Main:{sections:{About:'Changed behind same revision'}}}};
+  await env.refreshWiki();
+  assert.equal(env.S.wiki,null,'same-revision conflict must not keep stale text displayed');
+  assert.match(env.S.wikiError,/source identity/i);
+  // A new authenticated session/grant is a distinct scope, not a rollback.
+  grant='grant-b';
+  body={revision:1,pages:{Main:{sections:{About:'New grant source'}}}};
+  await env.refreshWiki();
+  assert.equal(env.S.wiki.revision,1);
+  // Another swap must redact the old scope before the request resolves.
+  grant='grant-c';
+  let resolveRead;
+  secondReply=new Promise(resolve=>{resolveRead=resolve});
+  const pending=env.refreshWiki();
+  assert.equal(env.S.wiki,null);
+  resolveRead({ok:true,json:async()=>({revision:2,pages:{Main:{sections:{About:'Grant c'}}}})});
+  await pending;
+  assert.equal(env.S.wiki.pages.Main.sections.About,'Grant c');
 });
