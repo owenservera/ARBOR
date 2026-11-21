@@ -155,9 +155,17 @@ fn stage_record(g: &Graph, changes: GraphChangeSet, record: &ContextRecord) -> R
         // immutable receipt bytes may not change under the same plan identity.
         let old_receipt_digest=old.properties.get("vivim.context.receiptDigest").map(String::as_str);
         let new_receipt_digest=node.properties.get("vivim.context.receiptDigest").map(String::as_str);
-        if record.kind=="effect" && old_receipt_digest.is_some() &&
-            old_receipt_digest!=new_receipt_digest {
-            return Err("STALE_CONTEXT_SOURCE immutable applied receipt changed".into());
+        if record.kind=="effect" && old_receipt_digest.is_some() {
+            // The immutable D4 receipt cannot rebind its applied action or
+            // target revision under the same verified body fingerprint.
+            // Its current Wiki link and presentation may still be superseded.
+            if old_receipt_digest!=new_receipt_digest ||
+                old_revision!=record.revision ||
+                ["vivim.context.actionId","vivim.context.semanticId",
+                 "vivim.context.sourceRevision"].iter().any(|field|
+                    old.properties.get(*field)!=node.properties.get(*field)) {
+                return Err("STALE_CONTEXT_SOURCE immutable applied receipt changed".into());
+            }
         }
         if (record.kind == "wiki" && (old_revision > record.revision ||
             (old_revision == record.revision && (old_digest != Some(record.digest.as_str()) ||
@@ -553,6 +561,7 @@ fn sync_context(v: &Value, ns: &Namespace, journal: &Journal, g: &mut Graph,
     // its last RAM snapshot. Never target historical D4 effects, Wiki page
     // structure, unrelated namespace nodes, or newer source revisions.
     let mut reconciled_sections=0usize;
+    let mut reconciled_relationships=0usize;
     if let Some(wiki_revision)=complete_wiki_revision {
         let current=active_ids.as_ref().ok_or("missing complete Wiki inventory")?;
         for old in g.nodes() {
@@ -579,6 +588,36 @@ fn sync_context(v: &Value, ns: &Namespace, journal: &Journal, g: &mut Graph,
             let (next,deleted_one)=stage_tombstone(g,ns,changes,&exact)?;
             changes=next;
             if deleted_one {reconciled_sections+=1;}
+        }
+        // Omission can invalidate an old page link only when both endpoints
+        // belong to the exact committed Wiki view. Historical out-of-window
+        // edges remain durable and cannot be pruned by a bounded selection.
+        if let Some(current_links)=&active_relationships {
+            for old in g.edges() {
+                if !old.id.starts_with(&format!("{prefix}vivim-context-p-")) ||
+                    old.properties.get("vivim.context.kind").map(String::as_str)!=Some("wiki-page-link") ||
+                    page_edges.contains(&old.id) || removed_page_edges.contains(&old.id) {
+                    continue;
+                }
+                let local=old.id.strip_prefix(&prefix)
+                    .ok_or("invalid durable Wiki relationship scope")?;
+                let from=old.from.strip_prefix(&prefix)
+                    .ok_or("invalid durable Wiki relationship endpoint")?;
+                let to=old.to.strip_prefix(&prefix)
+                    .ok_or("invalid durable Wiki relationship endpoint")?;
+                if current_links.contains(local) || !current.contains(from) || !current.contains(to) {
+                    continue;
+                }
+                let old_revision=old.properties.get("hqkg.provenance.revision")
+                    .and_then(|s|s.parse::<u64>().ok())
+                    .ok_or("invalid historical Wiki relationship revision")?;
+                if old_revision>wiki_revision {
+                    return Err("STALE_CONTEXT_SOURCE complete Wiki relationship inventory".into());
+                }
+                changes=changes.remove_edge(&old.id,
+                    "Host complete committed Wiki relationship invalidation",wiki_revision);
+                reconciled_relationships+=1;
+            }
         }
     }
     // Only a complete projection reconciles generic omission. A bounded
@@ -676,7 +715,8 @@ fn sync_context(v: &Value, ns: &Namespace, journal: &Journal, g: &mut Graph,
         "compacted":compacted,
         "mode":if deltas.is_some(){"delta"}else{"projection"},
         "ingested":ingested,"tombstoned":tombstoned,
-        "reconciledSections":reconciled_sections});
+        "reconciledSections":reconciled_sections,
+        "reconciledRelationships":reconciled_relationships});
     if let Some(view)=view {
         check_managed_head(journal.path(),&status).map_err(quarantine)?;
         if let Some(ids)=&active_ids {
