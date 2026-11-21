@@ -120,6 +120,12 @@ impl HostSupervisor {
         if self.reconcile().is_err() { return; }
         loop {
             thread::sleep(Duration::from_secs(3));
+            // An attached Host is not our child. Do not restart it if it
+            // disappears; clearly invalidate readiness instead.
+            if self.snapshot().readiness==Readiness::Attached && !health_online(){
+                self.fail("Previously attached Host is now offline; no owned restart".into());
+                return;
+            }
             let recover={
                 let mut s=self.inner.lock().expect("Host state poisoned");
                 let exited=s.child.as_mut()
@@ -158,7 +164,8 @@ pub fn listener_occupied()->bool {
         Duration::from_millis(300)).is_ok()
 }
 fn valid_rel(s:&str)->Option<PathBuf>{
-    if s.is_empty()||s.contains('\\')||s.contains(':'){return None}
+    if s.is_empty()||s.contains('\\')||s.contains(':')||
+        s.split('/').any(|component|component.is_empty()||component=="."||component==".."){return None}
     let p=PathBuf::from(s);
     if !p.components().all(|c|matches!(c,Component::Normal(_))){return None}
     Some(p)
@@ -207,6 +214,23 @@ pub fn verify_frozen_runtime(root:&Path)->Result<(),String>{
             return Err(format!("Frozen file hash mismatch: {name}"))
         }
     }
+    // Reject unlisted files or symlinks outside node_modules, matching the
+    // frozen packager's source closure contract.
+    fn check_tree(root:&Path, dir:&Path, prefix:&str,listed:&HashSet<String>)->Result<(),String>{
+        for item in fs::read_dir(dir).map_err(|e|e.to_string())?{
+            let item=item.map_err(|e|e.to_string())?;
+            let name=item.file_name().to_string_lossy().to_string();
+            if name=="node_modules"||name=="runtime.manifest.json"{continue}
+            let rel=format!("{prefix}{name}");
+            let meta=fs::symlink_metadata(item.path()).map_err(|e|e.to_string())?;
+            if meta.file_type().is_symlink(){return Err(format!("Runtime symlink refused: {rel}"))}
+            if meta.is_dir(){check_tree(root,&item.path(),&format!("{rel}/"),listed)?}
+            else if !meta.is_file()||!listed.contains(&rel){return Err(format!("Unlisted runtime file: {rel}"))}
+        }
+        let _=root;
+        Ok(())
+    }
+    check_tree(root,root,"",&paths)?;
     for path in std::iter::once("node.exe".to_owned())
         .chain(std::iter::once(HOST_ENTRY.to_owned()))
         .chain(BINARIES.map(|name|format!("native/bin/{name}.exe"))){

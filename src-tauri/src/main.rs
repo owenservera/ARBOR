@@ -141,6 +141,9 @@ fn packaged_runtime(root: &Path) -> Option<PathBuf> {
     if root.join("ARBOR-RUNTIME-PLACEHOLDER.txt").exists() {
         return None;
     }
+    // Full SHA256 and closed-file-tree verification is shared with GPUI;
+    // the preceding structural pass remains for existing Tauri diagnostics.
+    vivim_host_supervisor::verify_frozen_runtime(root).ok()?;
     Some(root.to_path_buf())
 }
 
@@ -178,7 +181,7 @@ fn is_host_status(value: &serde_json::Value) -> bool {
             .get("host")
             .and_then(|h| h.get("state"))
             .and_then(|v| v.as_str())
-            == Some("online")
+            == Some("online") && vivim_host_supervisor::valid_health(value)
 }
 
 impl HostProcess {
@@ -918,7 +921,7 @@ mod tests {
             .collect();
         for rel in &paths { touch(&root.join(rel)); }
         let files: Vec<_> = paths.iter()
-            .map(|p| serde_json::json!({"path":p,"bytes":0,"sha256":"0".repeat(64)}))
+            .map(|p| serde_json::json!({"path":p,"bytes":0,"sha256":"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"}))
             .collect();
         std::fs::write(root.join("runtime.manifest.json"),
             serde_json::json!({"schema":"arbor.host-runtime-manifest/1","files":files}).to_string())
