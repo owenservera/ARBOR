@@ -194,6 +194,16 @@ fn stage_record(g: &Graph, ns: &Namespace, changes: GraphChangeSet, record: &Con
             .and_then(|v| v.parse::<u64>().ok()).ok_or("invalid prior source revision")?;
         let old_digest = old.properties.get("hqkg.provenance.digest").map(String::as_str);
         let old_ref = old.properties.get("vivim.context.sourceRef").map(String::as_str);
+        // An applied D4 receipt's action, target revision and source
+        // semantics are fixed even for legacy records that predate the
+        // optional receipt-body fingerprint. A one-way fingerprint upgrade
+        // may enrich provenance, never rewrite an already-applied effect.
+        if record.kind=="effect" &&
+            (old_revision!=record.revision ||
+             ["vivim.context.actionId","vivim.context.sourceRevision"].iter().any(|field|
+                 old.properties.get(*field)!=node.properties.get(*field))) {
+            return Err("STALE_CONTEXT_SOURCE immutable applied receipt metadata changed".into());
+        }
         // Backward-compatible one-way migration: a durable applied receipt
         // without a body fingerprint can acquire it. Once present the actual
         // immutable receipt bytes may not change under the same plan identity.
