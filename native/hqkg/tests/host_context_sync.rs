@@ -1333,3 +1333,35 @@ fn failed_scoped_read_never_compacts_or_advances_a_durable_graph_head() {
     assert_eq!(Journal::new(&file).status().unwrap().epoch,
         first["epoch"].as_u64().unwrap());
 }
+
+#[test]
+fn non_cas_delta_cannot_ignore_high_water_when_only_deletion_fences_remain() {
+    let temp=Temp::new();let file=temp.journal();
+    let old=wiki_record(0,2);
+    let (ok,first)=sync(&file,SCOPE,vec![old]);
+    assert!(ok,"{first}");
+    let (ok,deleted)=run_packet(&file,json!({
+        "schema":"vivim.hqkg-personal/1","scope":SCOPE,
+        "op":"sync-context-read","view":"wiki",
+        "nodes":[],"relationships":[],"baseRevision":9,
+        "baseEpoch":first["epoch"],"deltas":[],
+        "activeIds":[],"activeRelationshipIds":[],
+        "completeWikiRevision":9
+    }));
+    assert!(ok,"{deleted}");
+    assert_eq!(deleted["context"]["totalRetrieved"],0);
+    let graph=Journal::new(&file).load().unwrap();
+    assert_eq!(graph.nodes().filter(|n|
+        n.properties.get("vivim.context.kind").map(String::as_str)==Some("wiki")).count(),0);
+    let stable=fs::read(&file).unwrap();
+    // This second Wiki identity does not collide with the deleted one. The
+    // global conservative revision fence must still refuse a stale observer.
+    let newer=wiki_record(1,10);
+    let (ok,stale)=delta(&file,SCOPE,5,vec![put(newer.clone())]);
+    assert!(!ok,"legacy delta bypassed durable absence high-water: {stale}");
+    assert_eq!(fs::read(&file).unwrap(),stable);
+    let (ok,accepted)=delta(&file,SCOPE,9,vec![put(newer)]);
+    assert!(ok,"{accepted}");
+    assert_eq!(read(&file,SCOPE,accepted["epoch"].as_u64().unwrap(),"wiki")
+        .unwrap()["totalRetrieved"],1);
+}
