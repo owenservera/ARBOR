@@ -2790,6 +2790,16 @@ if (!HOST_PREVIEW && 'serviceWorker' in navigator) {
 mountUniversalDock();
 mountFirstWiki();
 if (FIRST_CONTACT) {
+  // Owner-Tailscale composer is an observed, approval-fenced document slice,
+  // not a second send channel. Same existing #text and Wiki input listeners.
+  mountFirstContactComposer({
+    field: $('text'),
+    active: () => N.target === 'vivim' && S.tab === 'talk' &&
+      !HOST_PREVIEW && transport.direct,
+    maxLength: () => $('text').maxLength > 0 ? $('text').maxLength : 1000
+  });
+}
+if (FIRST_CONTACT) {
   $('text').placeholder = 'Ask anything…';
   $('text').setAttribute('enterkeyhint','done');
   void initializeRustUiEngine().then(ok => {
