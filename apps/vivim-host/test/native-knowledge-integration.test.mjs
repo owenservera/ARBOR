@@ -22,6 +22,15 @@ async function setup(t) {
 }
 const controls={recent:()=>[],status:()=>null};
 const emptyEffects={state:'source-backed',items:[]};
+function nativeActiveSourceManifestDigest(rows) {
+  const proof=rows.slice().sort((a,b)=>a.id.localeCompare(b.id)).map(row=>[
+    row.id,row.kind,row.sourceRef,row.digest,
+    row.revision,row.sourceRevision,row.order,row.title,row.summary,
+    row.semanticId,row.actionId??null,row.receiptDigest??null,
+    row.wikiLink?.entryId??null,row.wikiLink?.wikiRevision??null
+  ]);
+  return createHash('sha256').update(JSON.stringify(proof)).digest('hex');
+}
 
 test('native input uses persisted source identities, current revision and exact content',async t=>{
   const {journal,edit}=await setup(t);
@@ -149,6 +158,8 @@ test('managed reads share one native invocation per concurrent authorized view a
       context:{schema:'vivim.hqkg-chat-context/1',state:'source-backed',core:'hqkg',authority:'read-only',
         seed:'managed:'+packet.view,epoch:7,staleCount:0,budgetTokens:320,tokensUsed:items.length*30,
         budgetExhausted:false,totalRetrieved:visible.length,items,pageRelationships:packet.relationships,
+        activeSourcesTotal:visible.length,
+        activeSourcesDigest:nativeActiveSourceManifestDigest(visible),
         ...(packet.view==='owner'?{effectRelationships:[],effectRelationshipsTotal:0,
           effectRelationshipsDigest:createHash('sha256').update('[]').digest('hex'),
           omittedEffectRelationships:0}:{})}})};
@@ -163,6 +174,7 @@ test('managed reads share one native invocation per concurrent authorized view a
   assert.equal(owner.sourceHighWater.scannedAppliedPlans,0);
   assert.equal(owner.sourceHighWater.indexedAppliedReceipts,0);
   assert.equal(owner.sourceHighWater.productJournalEntries,1);
+  assert.match(owner.sourceHighWater.activeSourcesDigest,/^[a-f0-9]{64}$/);
   assert.equal(owner.sourceHighWater.productJournalDigest,
     createHash('sha256').update(await journal.rawJournal()).digest('hex'));
   assert.equal(owner.sourceHighWater.receiptEvidenceDigest,
@@ -202,7 +214,8 @@ test('combined native read detects source edits during execution and retries fro
         reconciledSections:0,
         context:{schema:'vivim.hqkg-chat-context/1',state:'source-backed',core:'hqkg',authority:'read-only',
           seed:'managed:'+p.view,epoch,tokensUsed:40,budgetTokens:320,staleCount:0,budgetExhausted:false,
-          totalRetrieved:1,pageRelationships:[],items:[{...row,sourceDigest:row.digest,sourceCount:1,depth:0,estimatedTokens:40}]}})};
+          totalRetrieved:1,pageRelationships:[],items:[{...row,sourceDigest:row.digest,sourceCount:1,depth:0,estimatedTokens:40}],
+          activeSourcesTotal:1,activeSourcesDigest:nativeActiveSourceManifestDigest([row])}})};
     }});
   const out=await managed('wiki');
   assert.equal(out.state,'source-backed',out.reason);
@@ -266,7 +279,8 @@ test('restart probes durable epoch before source writes and fenced complete inve
         context:{schema:'vivim.hqkg-chat-context/1',state:'source-backed',
           core:'hqkg',authority:'read-only',seed:'managed:wiki',epoch:6,
           tokensUsed:20,budgetTokens:320,staleCount:0,budgetExhausted:false,
-          totalRetrieved:1,items:[item],pageRelationships:[]}})};
+          totalRetrieved:1,items:[item],pageRelationships:[],
+          activeSourcesTotal:1,activeSourcesDigest:nativeActiveSourceManifestDigest([row])}})};
     }});
   const out=await managed('wiki');
   assert.equal(out.state,'source-backed',out.reason);
@@ -514,6 +528,8 @@ test('alternating phone and owner reads retain verified receipts without repeate
         epoch:9,staleCount:0,budgetTokens:320,tokensUsed:0,
         totalRetrieved:visible.length,budgetExhausted:visible.length>0,
         items:[],pageRelationships:[],
+        activeSourcesTotal:visible.length,
+        activeSourcesDigest:nativeActiveSourceManifestDigest(visible),
         ...(packet.view==='owner'?{effectRelationships:links.slice(0,24),
           effectRelationshipsTotal:links.length,
           omittedEffectRelationships:Math.max(0,links.length-24),
@@ -611,4 +627,30 @@ test('native product journal stamps all committed source revisions without expor
     /private observation|Wiki source unchanged/);
   assert.equal(after.sourceStamp.committedJournalDigest,
     createHash('sha256').update(await journal.rawJournal()).digest('hex'));
+});
+
+
+test('native readback rejects a stale source hidden outside the eight-item presentation',async t=>{
+  const {journal,dataRoot,edit}=await setup(t);
+  await edit('Committed source',1);
+  let probes=0;
+  const managed=createRustChatContext({env:{},dataRoot,productJournal:journal,
+    control:()=>controls,isFile:p=>p.includes('hqkg-personal'),
+    executePersonal:async(_bin,_journal,p)=>{
+      probes++;
+      const row=p.nodes[0];
+      return {stdout:JSON.stringify({schema:'vivim.hqkg-personal/1',
+        scope:p.scope,op:p.op,epoch:1,bytes:100,changed:true,
+        mode:'projection',synced:1,syncedRelationships:0,
+        reconciledSections:0,
+        context:{schema:'vivim.hqkg-chat-context/1',state:'source-backed',
+          core:'hqkg',authority:'read-only',seed:'managed:wiki',
+          epoch:1,budgetTokens:320,tokensUsed:0,staleCount:0,
+          budgetExhausted:true,totalRetrieved:1,items:[],pageRelationships:[],
+          activeSourcesTotal:1,activeSourcesDigest:'f'.repeat(64)}})};
+    }});
+  const result=await managed('wiki');
+  assert.equal(result.state,'unavailable');
+  assert.equal(result.reason,'RUST_CORE_CONTRACT_INVALID');
+  assert.equal(probes,1,'bad full-source readback must not be reissued');
 });
