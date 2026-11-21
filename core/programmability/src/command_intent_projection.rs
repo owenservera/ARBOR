@@ -152,6 +152,10 @@ fn check_reading(reading: &Value, source: &Value, personal: &Value, baseline: &V
         "candidate" | "interpretation_required" | "empty") { return false }
     if let Some(feedback) = reading.get("feedback") {
         if !feedback.is_object() { return false }
+        if let Some(version) = feedback.get("worldV") {
+            if version.is_number() && version != &source["worldRevision"] &&
+                source.get("worldRevision").is_some() { return false }
+        }
     }
     if let Some(modifiers) = reading.get("ignoredModifiers") {
         if !modifiers.as_array().is_some_and(|m| m.len() <= 32 &&
@@ -198,7 +202,10 @@ pub fn project(request: &Value) -> Value {
     };
     let reading = &request["reading"];
     let personal = &request["personalProvenance"];
-    if !check_reading(reading, source, personal, &request["baselineOutcome"]) {
+    if !check_reading(reading, source, personal, &request["baselineOutcome"]) ||
+        reading["feedback"]["worldV"].as_i64().is_some_and(|v| {
+            request["worldRevision"].as_i64() != Some(v)
+        }) {
         return refusal(source, "INVALID_READING", "Host reading is malformed or contradictory.")
     }
     let meta = metadata(source, reading, personal,
@@ -224,16 +231,18 @@ pub fn project(request: &Value) -> Value {
             };
             let mut alternatives = vec![];
             let mut rank = 0;
-            for id in choices.iter().take(8) {
+            for (i, id) in choices.iter().enumerate() {
                 let Some(id) = id.as_str() else {
                     return refusal(source, "INVALID_READING", "Host reading is malformed or contradictory.")
                 };
                 let Some(action) = actions.get(id) else {
                     return refusal(source, "UNKNOWN_ACTION", "Action not in the Host catalog.")
                 };
-                rank = rank.max(risk_rank(&action["risk"]));
-                alternatives.push(json!({"actionId": id, "title": action["title"],
-                    "risk": action["risk"]}));
+                if i < 8 {
+                    rank = rank.max(risk_rank(&action["risk"]));
+                    alternatives.push(json!({"actionId": id, "title": action["title"],
+                        "risk": action["risk"]}));
+                }
             }
             let risk = ["R0", "R1", "R2", "R3"][rank];
             intent_with_meta("clarification_required", json!({

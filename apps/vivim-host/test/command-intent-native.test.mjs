@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs';
 import { buildControlWorld, interpretControl } from '../../mobile-relay/control-language.mjs';
 import { toCommandIntent } from '../control/command-intent.mjs';
 import { runNativeProductPureSync } from '../control/native-product-pure-sync.mjs';
+import { resolveBundledRustBinary } from '../chat/rust-context.mjs';
 
 const catalog = JSON.parse(readFileSync(new URL('../control/action-catalog.v1.json', import.meta.url), 'utf8'));
 const corpus = JSON.parse(readFileSync(new URL('../control/corpus.v1.json', import.meta.url), 'utf8'));
@@ -12,6 +13,8 @@ const corpus = JSON.parse(readFileSync(new URL('../control/corpus.v1.json', impo
 test('trusted NLCL corpus projects the same inert command intents with or without Rust', t => {
   const world = buildControlWorld(catalog);
   let compared = 0;
+  let binary = null;
+  try { binary = resolveBundledRustBinary('vivim-product-pure'); } catch {}
   for (const entry of corpus.cases) {
     if (typeof entry.text !== 'string' || !entry.text.trim() || entry.text.length > 1000) continue;
     const input = { text: entry.text, scope: 'text' };
@@ -26,11 +29,12 @@ test('trusted NLCL corpus projects the same inert command intents with or withou
       catalogActions: catalog.actions, reading, baselineOutcome: reading.outcome,
       personalProvenance: null
     });
+    if (binary) assert.ok(native, 'staged binary must implement native command intent: ' + entry.text);
     if (native) {
       assert.equal(native.authority, 'none', entry.text);
       assert.equal(native.executionAuthorized, false, entry.text);
       assert.equal(native.effectPerformed, false, entry.text);
-      assert.deepEqual(native.intent, intent, 'native parity: ' + entry.text);
+      assert.deepEqual(native.intent, JSON.parse(JSON.stringify(intent)), 'native wire parity: ' + entry.text);
       compared++;
     }
   }
