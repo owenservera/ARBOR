@@ -38,6 +38,7 @@ import { controlErrorStatus } from './control/http-status.mjs';
 import { createLiveSourceSurface } from './control/live-source-surface.mjs';
 import { createLiveSystemReadPort } from './control/live-system-read-port.mjs';
 import { createFirstContactLiveSource } from './control/first-contact-live-source.mjs';
+import { createLiveSystemFileMirror } from './control/live-system-file-mirror.mjs';
 import { createDevelopmentReadPort } from './control/development-read-port.mjs';
 import { attachRequestContext } from './control/request-context.mjs';
 import { composerResponse, needsWikiDraftContext } from '../mobile-relay/composer-assist.mjs';
@@ -202,6 +203,7 @@ export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path
     return runtime;
   };
   const firstContactSource = createFirstContactLiveSource({dataRoot});
+  const liveSystemMirror = createLiveSystemFileMirror({dataRoot});
   const liveSystem = createLiveSystemReadPort({
     readWiki: () => productJournal.readProjection(),
     readPhoneObservations: () => firstContactSource.read(),
@@ -498,6 +500,17 @@ export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path
       }
       return;
     }
+    if (pathname === '/api/host/live-system/admit-file') {
+      if(req.method!=='POST'){res.setHeader('allow','POST');sendJson(res,405,{code:'METHOD'});return;}
+      if(String(req.headers.origin||'').toLowerCase()!=='http://'+host ||
+         req.headers['x-vivim-control']!=='1'){
+        sendJson(res,403,{code:'ORIGIN_OR_CSRF'});return;
+      }
+      if(!ownerAuthorized(req,res,tokenFor))return;
+      try {sendJson(res,200,await liveSystemMirror.admitEdited())}
+      catch {sendJson(res,503,{code:'LIVE_MIRROR_ADMISSION_UNAVAILABLE',executionAuthorized:false,effectPerformed:false})}
+      return;
+    }
     if (req.method !== 'GET' && req.method !== 'HEAD') { res.setHeader('allow', 'GET, HEAD'); res.writeHead(405); res.end(); return; }
     if (pathname === '/api/host/native-owner-proof') {
       // A native client must prove the listener knows the existing owner
@@ -530,7 +543,10 @@ export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path
       try {
         const observed=await liveSystem.snapshot();
         res.setHeader('cache-control','private, no-store');
-        sendJson(res,200,observed);
+        let mirrorState='unavailable';
+        try{mirrorState=(await liveSystemMirror.publish(observed)).state}
+        catch{/* read-only observation remains available when file mirror fails */}
+        sendJson(res,200,{...observed,mirror:{state:mirrorState}});
       } catch {
         sendJson(res,503,{schema:'vivim.host-live-system/1',state:'unavailable',
           code:'LIVE_SYSTEM_UNAVAILABLE',authority:'none',executionAuthorized:false,effectPerformed:false});
