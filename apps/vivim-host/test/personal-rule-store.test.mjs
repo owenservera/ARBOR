@@ -691,3 +691,27 @@ test('changed action catalog during verifier callback cannot commit reviewed rul
   assert.equal(readFileSync(store.file,'utf8'),bytes);
   assert.equal(store.snapshot().version,1);
 });
+
+test('rollback refuses impossible historical transition payloads',t=>{
+  let called=0;
+  const {store}=withStore(t,()=>{called++;return true});
+  const p=store.propose(proposal(0));
+  store.transition({ruleId:p.ruleId,nextState:'accepted',
+    expectedVersion:1,approval:{receiptId:'original-acceptance'}});
+  const original=JSON.parse(readFileSync(store.file,'utf8'));
+  for(const tamper of [
+    row=>{row.after.state='suspended'},
+    row=>{row.after.args.preset='dawn'},
+  ]){
+    const altered=structuredClone(original);
+    tamper(altered.history[1]);
+    writeFileSync(store.file,JSON.stringify(altered,null,2),{mode:0o600});
+    const before=readFileSync(store.file,'utf8');
+    assert.throws(()=>store.rollback({ruleId:p.ruleId,toRevision:2,
+      expectedVersion:2,approval:{receiptId:'forged-rollback'}}),
+      /PERSONAL_STORE_UNKNOWN_REVISION/);
+    assert.equal(readFileSync(store.file,'utf8'),before);
+    assert.equal(store.snapshot().entries[0].state,'accepted');
+  }
+  assert.equal(called,1);
+});
