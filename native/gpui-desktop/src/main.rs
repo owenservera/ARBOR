@@ -79,43 +79,8 @@ struct Desktop {
     uncertain: bool,
 }
 impl Desktop {
-    /// Manual source-safe reconnect. It does not kill a live Host or retry an
-    /// effect, and shares one serialized supervisor with automatic recovery.
-    /// Preserve the full Host-owned control/onboarding surface without a
-    /// second native grant system. The one-use URL is never displayed/logged.
-    fn open_owner_controls(&mut self,cx:&mut Context<Self>) {
-        if !passive_read_allowed(self.busy,self.uncertain,
-            self.review.as_ref().is_some_and(Review::needs_approval)) {
-            self.status="Owner browser handoff withheld during pending Host effects".into();
-            cx.notify();return;
-        }
-        self.status="Requesting short-lived Host browser session".into();cx.notify();
-        let job=cx.background_executor().spawn(async move {
-            let Ok(url)=vivim_gpui_desktop::owner_control_session_url() else{return false};
-            #[cfg(target_os="windows")]
-            let opener="explorer.exe";
-            #[cfg(target_os="macos")]
-            let opener="open";
-            #[cfg(all(not(target_os="windows"),not(target_os="macos")))]
-            let opener="xdg-open";
-            std::process::Command::new(opener).arg(&url)
-                .stdin(std::process::Stdio::null())
-                .stdout(std::process::Stdio::null())
-                .stderr(std::process::Stdio::null())
-                .spawn().is_ok()
-        });
-        cx.spawn(async move |this,cx|{
-            let opened=job.await;
-            let _=this.update(cx,|view,cx|{
-                view.status=if opened {
-                    "Host owner browser launch requested · one-use session".into()
-                } else {
-                    "Host owner browser handoff unavailable · no grant issued by GPUI".into()
-                };
-                cx.notify();
-            });
-        }).detach();
-    }
+    // GPUI-only Windows surface: Host control, plans and receipts render above.
+    // Never start Edge, Chrome or a system browser from the native workspace.
     fn reconnect_host(&mut self,cx:&mut Context<Self>) {
         if !passive_read_allowed(self.busy,self.uncertain,
             self.review.as_ref().is_some_and(Review::needs_approval)) {
@@ -896,7 +861,6 @@ impl Render for Desktop {
         let mut controls=div().flex().flex_wrap().gap_2()
             .child(Button::new("refresh").label("Refresh Host").on_click(cx.listener(|v,_,_,cx|v.refresh(cx))))
             .child(Button::new("host-reconnect").label("Reconnect Host").on_click(cx.listener(|v,_,_,cx|v.reconnect_host(cx))))
-            .child(Button::new("host-controls").label("Open Host controls / pairing").on_click(cx.listener(|v,_,_,cx|v.open_owner_controls(cx))))
             .child(Button::new("plan").label("Review command").on_click(cx.listener(|v,_,_,cx|v.submit(cx))));
         if matches!(self.panel,Panel::Overview|Panel::Graph){
             controls=controls
