@@ -580,33 +580,39 @@ fn reconcile_blocking(app:&tauri::AppHandle, state:&HostProcess,
 
 fn restart_blocking(app: &tauri::AppHandle, state: &HostProcess) -> serde_json::Value {
     let _lifecycle=state.lifecycle.lock().unwrap();
-    // Manual restart stops only the owned child. Never kill an external Host
-    // or replay a Host control effect in the native shell.
-    state.stop_owned();
-    state.auto_recoveries.store(0,Ordering::Release);
+    // Never terminate a process during shutdown or take ownership of one
+    // that was started by another shell. Explicit restart stops only our own
+    // child; no Host effect or receipt is replayed by the native shell.
     let result=if state.shutting_down.load(Ordering::Acquire) {
-        Err("Native shell is shutting down".to_owned())
-    } else if HostProcess::health_online() {
-        state.set_readiness(Readiness::Attached,None);Ok(())
-    } else if HostProcess::listener_occupied() {
-        let e="Host port occupied by unverified listener; restart refused".to_owned();
-        state.set_readiness(Readiness::Failed,Some(e.clone()));Err(e)
+        Err("Native shell is shutting down; restart refused".to_owned())
     } else {
-        // Direct owned start is serialized with setup and crash recovery.
-        match HostProcess::start(app) {
-            Ok(child)=>{
-                state.store_child(child);
-                if state.wait_owned_healthy(Duration::from_secs(10)) {
-                    state.set_readiness(Readiness::Owned,None);Ok(())
-                } else {
-                    state.stop_owned();
-                    let e="Restarted Host did not become healthy; child reaped".to_owned();
+        state.stop_owned();
+        state.auto_recoveries.store(0,Ordering::Release);
+        if HostProcess::health_online() {
+            // An independent Host now holds the port. It remains healthy,
+            // but no restart occurred; a success receipt would be dishonest.
+            state.set_readiness(Readiness::Attached,None);
+            Err("Existing independent Host is online; no owned restart performed".to_owned())
+        } else if HostProcess::listener_occupied() {
+            let e="Host port occupied by unverified listener; restart refused".to_owned();
+            state.set_readiness(Readiness::Failed,Some(e.clone()));Err(e)
+        } else {
+            // Direct owned start is serialized with setup and crash recovery.
+            match HostProcess::start(app) {
+                Ok(child)=>{
+                    state.store_child(child);
+                    if state.wait_owned_healthy(Duration::from_secs(10)) {
+                        state.set_readiness(Readiness::Owned,None);Ok(())
+                    } else {
+                        state.stop_owned();
+                        let e="Restarted Host did not become healthy; child reaped".to_owned();
+                        state.set_readiness(Readiness::Failed,Some(e.clone()));Err(e)
+                    }
+                }
+                Err(err)=>{
+                    let e=format!("Host restart refused: {err}");
                     state.set_readiness(Readiness::Failed,Some(e.clone()));Err(e)
                 }
-            }
-            Err(err)=>{
-                let e=format!("Host restart refused: {err}");
-                state.set_readiness(Readiness::Failed,Some(e.clone()));Err(e)
             }
         }
     };
