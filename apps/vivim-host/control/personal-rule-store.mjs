@@ -40,6 +40,8 @@ const validHistoryEvent = (row, ruleId, revision, storeVersion, catalog) => (
   row && typeof row === 'object' && !Array.isArray(row) &&
   row.ruleId === ruleId && row.revision === revision &&
   Number.isSafeInteger(row.version) && row.version > 0 && row.version <= storeVersion &&
+  typeof row.at === 'string' &&
+  (row.ownerReceiptId == null || typeof row.ownerReceiptId === 'string') &&
   ['propose', 'remember', 'transition', 'rollback'].includes(row.op) &&
   row.after?.id === ruleId && row.after?.revision === revision &&
   validatePersonalRule(row.after, catalog).ok &&
