@@ -197,5 +197,5 @@ export function mountVoiceCapture({
   return Object.freeze({available,open,stop:stopRecording,close:closeDialog,
     isRecording:()=>recorder?.state==='recording',
     hasPendingLocalWork:()=>dialog.open||requesting||stopping||!!clip||dictated||
-      !!transcript.value.trim()||recorder?.state==='recording'});
+      !!transcript.value?.trim()||recorder?.state==='recording'});
 }
