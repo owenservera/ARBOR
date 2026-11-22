@@ -12,6 +12,21 @@ use crate::desktop_menu::{self,Intent,Section};
 pub const FIRST_ID: u16 = 0x4000;
 pub const SECTION_STRIDE: u16 = 64;
 
+/// GPUI 0.2.2 creates a DirectComposition HWND with
+/// WS_EX_NOREDIRECTIONBITMAP. User32 still reports a valid HMENU and menu
+/// rectangles, but the nonclient menu strip is transparent on the actual
+/// Windows compositor. Keep the top-edge GPUI application menu by default.
+/// Experimental native plumbing remains opt-in for isolated diagnostics.
+pub fn experimental_opt_in() -> bool {
+    #[cfg(windows)]
+    {
+        std::env::var_os("VIVIM_EXPERIMENTAL_WIN32_MENU").as_deref()
+            == Some(std::ffi::OsStr::new("1"))
+    }
+    #[cfg(not(windows))]
+    { false }
+}
+
 pub fn id_for(section:Section,index:usize)->Option<u16> {
     if index>=SECTION_STRIDE as usize || index>=desktop_menu::entries(section).len(){
         return None;
@@ -123,10 +138,7 @@ mod win {
         // app shell is the safe default. Native visual cutover requires an
         // explicit opt-in for experimental Windows menu acceptance; ordinary
         // startup must not silently hide the only accessible menu.
-        if std::env::var_os("VIVIM_EXPERIMENTAL_WIN32_MENU").as_deref()
-            !=Some(std::ffi::OsStr::new("1")) {
-            return false;
-        }
+        if !experimental_opt_in(){return false;}
         // SAFETY: read-only Win32 geometry probe for the owned window.
         unsafe {
             let hwnd=raw as Handle;
