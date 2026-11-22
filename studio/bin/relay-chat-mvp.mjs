@@ -16,6 +16,13 @@ const HARNESS = defaultHarnessDir();
 const root = process.argv.includes('--root') ? process.argv[process.argv.indexOf('--root') + 1] : defaultDataDir();
 const studioUrl = process.argv.includes('--studio-url') ? process.argv[process.argv.indexOf('--studio-url') + 1] : process.env.VIVIM_STUDIO_URL;
 const transport = process.argv.includes('--transport') ? process.argv[process.argv.indexOf('--transport') + 1] : null;
+// Opt-in only. Reuses Studio's existing receipt-backed chat ask and drive lease;
+// never launches a second browser driver or changes the default HTTP transport.
+const channelEnabled = process.argv.includes('--studio-channel');
+const channelPortArg = process.argv.includes('--cdp-port') ? process.argv[process.argv.indexOf('--cdp-port') + 1] : null;
+const channelPort = channelPortArg !== null && /^\d{1,5}$/.test(channelPortArg) ? Number(channelPortArg) : null;
+if (channelEnabled && (!studioUrl || !channelPort || channelPort > 65535 || !path.isAbsolute(root)))
+  throw new Error('--studio-channel requires --studio-url, --root and --cdp-port');
 if (process.argv.includes('--studio-url') && !studioUrl) throw new Error('--studio-url requires a URL');
 if (process.argv.includes('--transport') && (transport !== 'direct' || !studioUrl)) throw new Error('--transport direct requires --studio-url');
 const store = createBridgeStore({ root });
@@ -26,7 +33,8 @@ const runtime = path.resolve(HARNESS, '..', 'runtime');
 let approvals, router, studio;
 if (studioUrl) {
   const { createStudioRelayChat } = await import('./lib/relay-chat-studio.mjs');
-  studio = createStudioRelayChat({ url: studioUrl, store });
+  studio = createStudioRelayChat({ url: studioUrl, store,
+    isolatedChannel: channelEnabled ? { root, port: channelPort } : null });
 } else {
   const { createRouter } = await import(pathToFileURL(path.join(HARNESS, 'src/interface/router.mjs')).href);
   const { createApprovals } = await import(pathToFileURL(path.join(HARNESS, 'src/interface/approval.mjs')).href);

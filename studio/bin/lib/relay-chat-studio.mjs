@@ -1,6 +1,7 @@
 // The Studio process owns the browser. This adapter only uses its conversation HTTP API.
 import { appendFileSync, readFileSync } from 'node:fs';
 import { parseRelayChatIntent } from '../../src/studio/relay-chat-intent.mjs';
+import { runExistingStudioChatAsk } from './relay-chat-studio-channel.mjs';
 
 const code = value => typeof value === 'string' && /^[A-Z][A-Z0-9_]{0,79}$/.test(value) ? value : null;
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -23,7 +24,11 @@ function previousCommand(store, cmd, provider) {
   throw new Error('BRIDGE_COMMAND_MISSING');
 }
 
-export function createStudioRelayChat({ url, store, fetchImpl = fetch }) {
+export function createStudioRelayChat({ url, store, fetchImpl = fetch, isolatedChannel = null }) {
+  if (isolatedChannel !== null && (typeof isolatedChannel?.root !== 'string' ||
+      !Number.isSafeInteger(isolatedChannel?.port) ||
+      isolatedChannel.port < 1 || isolatedChannel.port > 65535))
+    throw new TypeError('STUDIO_CHANNEL_CONFIG_INVALID');
   let base;
   try { base = new URL(url); } catch { throw new Error('Studio URL must be a loopback HTTP origin'); }
   if (base.protocol !== 'http:' || !['127.0.0.1', 'localhost', '[::1]'].includes(base.hostname) || base.origin !== url || base.username || base.password) throw new Error('Studio URL must be a loopback HTTP origin');
@@ -56,6 +61,47 @@ export function createStudioRelayChat({ url, store, fetchImpl = fetch }) {
       if (provider !== 'chatgpt' || model || effort || cmd.attachments?.length) { fail('UNSUPPORTED_STUDIO_TARGET: Studio mode supports default ChatGPT text only'); return; }
       const { previous, count } = previousCommand(store, cmd, provider);
       if (previous && previous.status !== 'done' && !safeFailure(previous)) { fail('STUDIO_PRIOR_OUTCOME_UNCERTAIN: prior command must be reconciled'); return; }
+      if (isolatedChannel) {
+        // Transport selection is explicit at worker startup, never a fallback
+        // AFTER an uncertain HTTP attempt. A new AI chat gets a fresh Studio tab;
+        // continuation requires an immutable native thread from a prior receipt.
+        const thread = previous
+          ? (!cmd.newChat && previous.status === 'done' &&
+             /^chatgpt-c:[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(previous.studioThreadRef ?? '')
+              ? previous.studioThreadRef : null)
+          : cmd.newChat === true ? 'new' : null;
+        if (!thread) { fail('STUDIO_CHANNEL_THREAD_UNVERIFIED'); return; }
+        try {
+          const result = await runExistingStudioChatAsk({
+            root: isolatedChannel.root, port: isolatedChannel.port,
+            requestId: key, prompt, thread
+          });
+          if (result.effect !== 'OK') {
+            fail(result.effect === 'FAILED'
+              ? (code(result.reason) ?? 'STUDIO_CHANNEL_REFUSED')
+              : 'STUDIO_CHANNEL_UNCERTAIN_NOT_RESENT');
+            return;
+          }
+          // The channel receipt and bound /c/<uuid> have been verified by the
+          // existing channel adapter. Bind its native thread to THIS claimed
+          // bridge command before projecting its settled reply to the phone.
+          const current = store.get(cmd.id);
+          if (current.status !== 'claimed' || current.studioRequestKey !== key)
+            throw new Error('STUDIO_CHANNEL_COMMAND_CHANGED');
+          appendFileSync(store.file, JSON.stringify({
+            ...current, studioThreadRef: result.threadId,
+            studioChannelReceiptId: result.receiptId, studioTurnKey: key,
+            updatedAt: new Date().toISOString(), rev: current.rev + 1
+          }) + '\n', { mode: 0o600 });
+          store.reply(cmd.id, '[chatgpt] ' + result.reply.slice(0, 59980));
+        } catch (error) {
+          // A child may have dispatched a turn before returning. Never treat an
+          // unavailable child, parse error, or missing receipt as safe to retry.
+          const reason = code(error?.code) ?? code(error?.message) ?? 'STUDIO_CHANNEL_UNCERTAIN';
+          fail('uncertain, not resent (' + reason + '; key ' + key + ')');
+        }
+        return;
+      }
       let created;
       let blockedInitial = false;
       if (previous && !cmd.newChat && count === 1 && previous.status === 'failed' && previous.result === 'DRAFT_PRESENT' && previous.studioConversationId && previous.studioTurnKey) {
