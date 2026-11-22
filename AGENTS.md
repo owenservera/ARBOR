@@ -24,3 +24,10 @@ For the full tool matrix see [VIVIM Labs Cloud-First Coding Policy](https://gith
 For every requested code change: repository / refreshed base SHA; cloud-changed paths; actual test commands and PASS/FAIL/UNRUN; GitHub commit SHA and verification on `main`; any separately authorized post-push local run or phone evidence; remaining blockers. Distinguish **CODED**, **PUSHED**, **DEPLOYED** and **DEVICE VERIFIED**.
 
 **Preflight every tool call:** if the next action edits or builds application source through Desktop Commander/ZCode instead of ChatGPT cloud, stop and reroute to cloud/GitHub.
+
+## Mandatory product architecture — ONE canonical live surface (owner directive, 2026-11-22)
+**ONE VIVIM SURFACE → ONE CANONICAL STATE MODEL → MULTIPLE SYNCHRONIZED VIEWPORTS.** This overrides earlier PWA-only/GPUI-only UI ownership assumptions without changing Host authority or the cloud-first source-engineering rule. **Read [the complete owner architecture rule](docs/product/ONE-CANONICAL-LIVE-SURFACE.md) before any PC UI, PWA, TierFlow, VEC, renderer or Wiki work.**
+- **GPUI is the Windows native master authoring/control and rendering environment.** No Edge/Chrome/Tauri/WebView as a PC UI or fallback; the mobile PWA stays a responsive web renderer of the same semantic surface.
+- **TierFlow visual capabilities migrate into the shared Rust-led GPUI/VEC/LiveSurface runtime**, not into a second independent surface or effect engine. Keep existing source during incremental migration until proven replacement parity.
+- **The Host remains sole persisted-state, commands, grant, approval, execution and receipt authority.** GPUI master means authoring/control, never an alternate authority. PC and phone synchronize source-backed revisions bidirectionally.
+- **First Contact parity is the acceptance gate.** Reuse the successful Edge PWA as reference only. Native GPUI defaults to one composer with live Wiki-as-you-type and the same Host source data; confirm physical Windows/Android sync before expanding PC features. One launcher only after verified native deployment; preserve rollback.
