@@ -96,6 +96,44 @@ mod tests {
         assert!(disposition_count(Disposition::LegacyUi)>10);
     }
     #[test]
+    fn every_repository_html_surface_is_accounted_for() {
+        use std::{fs,path::Path};
+        // Development-time source closure only. Customers do not need Git
+        // or the historical HTML tree to run the compiled VIVIM executable.
+        let root=Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let registered=SURFACES.iter()
+            .filter(|row|row.source.ends_with(".html"))
+            .map(|row|row.source).collect::<BTreeSet<_>>();
+        for relative in [
+            "apps/mobile-relay", "apps/vivim-host/public", "demo/host-legacy",
+            "packages/tierflow/web", "studio/architecture",
+            "studio/src/studio/ui", "wiki",
+        ] {
+            let mut pending=vec![root.join(relative)];
+            while let Some(dir)=pending.pop() {
+                for entry in fs::read_dir(&dir).expect("tracked HTML scope exists") {
+                    let entry=entry.expect("source directory can be listed");
+                    let path=entry.path();
+                    if path.is_dir() {
+                        if !matches!(path.file_name().and_then(|s|s.to_str()),
+                            Some("node_modules"|"target"|".git"|"dist")) {
+                            pending.push(path);
+                        }
+                    } else if path.extension().is_some_and(|ext|ext=="html") {
+                        let relative=path.strip_prefix(&root)
+                            .expect("HTML under repository source");
+                        let relative=relative.to_string_lossy().replace('\\',"/");
+                        assert!(registered.contains(relative.as_str()),
+                            "unclassified UI entrypoint: {relative}");
+                    }
+                }
+            }
+        }
+        for path in registered {
+            assert!(root.join(path).is_file(), "inventory references missing UI: {path}");
+        }
+    }
+    #[test]
     fn legacy_sources_are_never_counted_as_native_accepted() {
         assert!(SURFACES.iter().filter(|row|row.disposition==Disposition::LegacyUi)
             .all(|row|row.disposition.label().contains("pending")));
