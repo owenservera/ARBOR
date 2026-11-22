@@ -164,12 +164,12 @@ test('phone relay refuses unsafe continuation and changed provider without effec
     isolatedChannel:{root,port:38702},channelRun});
   await adapter.handle({cmd:next,rec:next,provider:'chatgpt',model:null,effort:null,prompt:'Hi'});
   assert.equal(store.get(next.id).status,'failed');assert.equal(calls,0);
-  const changed=cmd(3,'claude',{newChat:false});
+  const changed=cmd(3,'chatgpt',{newChat:false});
   const changedStore=makeFakeBridge(path.join(root,'separate'),[
-    cmd(1,'chatgpt',{status:'done',studioThreadRef:THREAD}),changed]);
+    cmd(1,'claude',{status:'done',studioThreadRef:THREAD}),changed]);
   const changedAdapter=createStudioRelayChat({url:'http://127.0.0.1:38730',store:changedStore,
     isolatedChannel:{root,port:38702},channelRun});
-  await changedAdapter.handle({cmd:changed,rec:changed,provider:'claude',model:null,
+  await changedAdapter.handle({cmd:changed,rec:changed,provider:'chatgpt',model:null,
     effort:null,prompt:'Hi'});
   assert.equal(changedStore.get(changed.id).status,'failed');assert.equal(calls,0);
 }));
