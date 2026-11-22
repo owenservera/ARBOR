@@ -5,6 +5,7 @@
 pub mod control;
 pub mod desktop_capture;
 pub mod desktop_menu;
+pub mod native_windows_menu;
 pub mod desktop_settings;
 pub mod first_contact;
 pub mod visual;
