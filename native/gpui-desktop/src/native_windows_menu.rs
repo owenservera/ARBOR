@@ -144,7 +144,7 @@ mod win {
                     return Err("SetMenu failed".into());
                 }
                 // Subclass after the HMENU is mounted, before any UI command.
-                let old=SetWindowLongPtrW(hwnd,GWLP_WNDPROC,menu_wndproc as isize);
+                let old=SetWindowLongPtrW(hwnd,GWLP_WNDPROC,menu_wndproc as *const () as isize);
                 if old==0 {
                     SetMenu(hwnd,ptr::null_mut());
                     return Err("WndProc subclass failed".into());
