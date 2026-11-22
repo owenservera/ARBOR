@@ -121,7 +121,8 @@ const S = {
   statusAt: 0, statusObj: null, timer: 0, busy: false, sigs: {}, shownConv: null,
   conn: { label: '', tone: 'ok' }, device: { status: null, scopes: null },
   media: { state: 'idle' }, mediaAt: 0, mediaOffset: 0, mediaLoading: false, nextBatch: null,
-  wiki: null, wikiStamp: null, wikiError: 'Wiki not loaded', wikiContext: null, wikiContextError: ''
+  wiki: null, wikiStamp: null, wikiError: 'Wiki not loaded', wikiContext: null, wikiContextError: '',
+  delivery: null
 };
 let buildBindingSequence=0,buildPollSequence=0;
 let phoneRefreshEpoch=0,activePhoneSourceScope=null; // authenticated read generation + hashed grant identity
@@ -308,6 +309,9 @@ function renderFocusPanel() {
   const activity=$('chat-focus-activity');activity.replaceChildren();
   const current=todayModel(S.statusObj,S.cmds,surfaceContext());
   const entries=[...(current.attention||[]),...(current.running||[])].slice(0,6);
+  if(current.delivery) activity.append(focusPreview('Live build · '+current.delivery.sourceSha,
+    current.delivery.verified ? 'PWA module bytes verified here · Host '+(current.delivery.hostSourceSha||'unknown')+' not upgraded' :
+      'PWA module not verified · no Host acceptance claimed'));
   if(current.mission?.schema==='vivim.mission-card/1'){
     activity.append(focusPreview(current.mission.title||'Current mission',
       (current.mission.phase||'')+' · '+(current.mission.needsYou?'Owner action needed':'No action requested')));
@@ -484,12 +488,55 @@ function renderTabs() {
   else { clearTimeout(buildTimer); buildTimer = 0; }
 }
 
+
+let deliveryReadEpoch = 0;
+// Only same-origin allowlisted shell files are fetched. A manifest stamp is not
+// independent proof: the phone hashes the actual served module before marking it verified.
+async function readDeliveryStamp() {
+  const epoch = ++deliveryReadEpoch;
+  let delivery = null;
+  try {
+    const response = await fetch('manifest.webmanifest', {
+      credentials: 'same-origin', cache: 'no-store'
+    });
+    if (!response.ok) throw Error('BUILD_MANIFEST_UNAVAILABLE');
+    const stamp = (await response.json())?.vivim_delivery;
+    if (stamp?.schema === 'vivim.delivery-stamp/1' &&
+      /^[a-f0-9]{40}$/.test(stamp.sourceSha) &&
+      /^[a-f0-9]{40}$/.test(stamp.hostSourceSha) &&
+      /^[a-f0-9]{64}$/.test(stamp.moduleSha256) &&
+      stamp.module === 'provider-handoff.mjs') {
+      const served = await fetch('provider-handoff.mjs', {
+        credentials: 'same-origin', cache: 'no-store'
+      });
+      let verified = false;
+      if (served.ok && window.isSecureContext && crypto?.subtle) {
+        const bytes = await served.arrayBuffer();
+        const digest = await crypto.subtle.digest('SHA-256', bytes);
+        const actual = Array.from(new Uint8Array(digest), b =>
+          b.toString(16).padStart(2, '0')).join('');
+        verified = actual === stamp.moduleSha256;
+      }
+      delivery = { schema: stamp.schema, sourceSha: stamp.sourceSha,
+        hostSourceSha: stamp.hostSourceSha, module: stamp.module,
+        moduleSha256: stamp.moduleSha256, observedAt: stamp.observedAt,
+        verified };
+    }
+  } catch { /* Missing or corrupt deployment metadata never becomes a success. */ }
+  if (epoch !== deliveryReadEpoch) return;
+  S.delivery = delivery;
+  S.sigs.ux = null;
+  if (S.tab === 'today') renderSurfaces();
+  if (S.tab === 'talk') renderFocusPanel();
+}
+
 /* ---------- Today · World · Me ---------- */
 // Read-only views over what the Host returned. They never send, approve or claim an effect;
 // their only controls navigate to another surface or re-read the Host.
 function surfaceContext() {
   return {
     paired: S.paired === true,
+    delivery: S.delivery,
     mode: HOST_PREVIEW ? 'desktop-preview' : transport.direct ? 'direct' : 'cloud',
     connection: S.conn.label,
     connectionTone: S.conn.tone,
@@ -2960,6 +3007,7 @@ document.addEventListener('visibilitychange', () => {
   if(document.hidden){dockAssist?.reset();compose?.resetAssist?.();}
   if (document.hidden && S.tab === 'wiki') { clearTimeout(S.timer); return; }
   if (!document.hidden) {
+    void readDeliveryStamp();
     if (HOST_PREVIEW) void refreshHostPreview();
     else if (N.target === 'phone') nativeRefresh();
     else refresh();
@@ -3012,6 +3060,8 @@ if (!HOST_PREVIEW && 'serviceWorker' in navigator) {
   $('text').addEventListener('input',applyUpgrade);
   setInterval(checkWorker,60000);
 }
+void readDeliveryStamp();
+setInterval(() => { if (!document.hidden) void readDeliveryStamp(); }, 60000);
 mountUniversalDock();
 mountFirstWiki();
 startFirstWikiSourceObserver();
