@@ -169,3 +169,40 @@ test('mounted first-contact Wiki survives universal dock reparenting and both in
   assert.equal(wikiInputCalls,2);
   assert.deepEqual(appRoot.children,[composer]);
 });
+
+test('visible First Contact revalidates the same Host Wiki without another keypress',async()=>{
+  const vm=await import('node:vm');
+  const start=app.indexOf('function startFirstWikiSourceObserver(){');
+  const end=app.indexOf('\nfunction updateSend()',start);
+  assert.ok(start!==-1&&end>start);
+  let tick=null,period=null,sourceScope={key:'tailnet-owner-first-contact'};
+  const field={value:'an existing Wiki query'},seen=[];
+  const ctx={FIRST_CONTACT:true,document:{visibilityState:'visible'},
+    navigator:{onLine:true},$:()=>field,firstWikiScope:()=>sourceScope,
+    firstWikiLoad:null,firstWikiTimer:0,
+    refreshFirstWiki:request=>seen.push(request),
+    setInterval:(callback,delay)=>{tick=callback;period=delay;}};
+  vm.runInNewContext(app.slice(start,end)+'\nstartFirstWikiSourceObserver();',ctx);
+  assert.equal(period,2000);
+  tick();
+  assert.equal(seen.length,1);
+  assert.equal(seen[0].forceSource,true);
+  ctx.document.visibilityState='hidden';tick();
+  ctx.document.visibilityState='visible';ctx.firstWikiLoad=Promise.resolve();tick();
+  ctx.firstWikiLoad=null;ctx.firstWikiTimer=1;tick();
+  ctx.firstWikiTimer=0;sourceScope=null;tick();
+  sourceScope={key:'tailnet-owner-first-contact'};field.value='';tick();
+  assert.equal(seen.length,1,'never reads when hidden, busy, unauthorized or empty');
+  assert.match(app,/if\(!current\(\)\)return; \/\/ A newer human\/agent input/);
+  assert.match(app,/verifyWikiSourceStamp\(wiki,/);
+});
+
+test('a new PWA controller never reloads over an unsent draft or approval',()=>{
+  const worker=from('sw.js');
+  assert.match(worker,/var CACHE = 'vivim-relay-shell-v41'/);
+  assert.match(app,/workerRegistration\.update\(\)/);
+  assert.match(app,/!\$\('text'\)\?\.value\.trim\(\)/);
+  assert.match(app,/!transport\.pending\(\)&&!S\.busy&&!N\.pending/);
+  assert.match(app,/!chatHasApproval&&\!\(S\.files\?\.length\)/);
+  assert.match(app,/if\(hadController\)\{upgradePending=true;applyUpgrade\(\);\}/);
+});
