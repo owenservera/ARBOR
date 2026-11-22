@@ -30,6 +30,7 @@ const SHELL_FILES = [
   'control-chat.mjs',
   'control-language.mjs',
   'composer-assist.mjs',
+  'provider-handoff.mjs',
   'wiki-source-view.mjs',
   'ux/model.mjs',
   'ux/mission-experience.mjs',
@@ -226,7 +227,7 @@ test('install precaches every shell asset from the network with cache reload', a
   const keys = new Set(await cache.keys());
   const expected = expectedKeys(ROOT);
   assert.equal(SHELL_FILES.length, expected.size, 'shell list has no duplicate entries');
-  assert.equal(SHELL_FILES.length, 76);
+  assert.equal(SHELL_FILES.length, 77);
   assert.deepEqual(SHELL_FILES, SW_SHELL_PATHS, 'the suite shell list must mirror sw.js SHELL_PATHS');
   expected.delete(failure);
   assert.deepEqual(keys, expected);

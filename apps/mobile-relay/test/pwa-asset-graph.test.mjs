@@ -54,7 +54,7 @@ test('all PWA module imports exist, are served by Direct Host and cache offline'
     }
   }
   // Computed browser dynamic import roots cannot be discovered from literal import syntax.
-  for(const filename of ['generative-ui/host-revision-guard.mjs','ux/readiness.mjs',
+  for(const filename of ['provider-handoff.mjs','generative-ui/host-revision-guard.mjs','ux/readiness.mjs',
     'ux/launcher-ui.mjs','ux/local-notes-ui.mjs','ux/shell-presentation.mjs',
     'generative-ui/workspace-live-data.mjs','vec-engines/compiler.mjs','vec-engines/registry.mjs',
     'tierflow-runtime/document/import-legacy.ts','tierflow-runtime/render/dom.ts',

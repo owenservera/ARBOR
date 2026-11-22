@@ -148,6 +148,7 @@ test('direct phone authenticates proxy, bounds routes and uses the shared queue'
   assert.equal((await call('/mobile/ux/render.mjs')).status, 200);
   assert.equal((await call('/mobile/control-client.mjs')).status, 200);
   assert.equal((await call('/mobile/control-chat.mjs')).status, 200);
+  assert.equal((await call('/mobile/provider-handoff.mjs')).status, 200);
   assert.equal((await call('/mobile/generative-ui/catalog.mjs')).status, 200);
   assert.equal((await call('/mobile/generative-ui/compiler.mjs')).status, 200);
   assert.equal((await call('/mobile/generative-ui/renderer.mjs')).status, 200);

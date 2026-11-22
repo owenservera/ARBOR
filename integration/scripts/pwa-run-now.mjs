@@ -30,6 +30,7 @@ const suites = [
     'apps/mobile-relay/test/pwa-preflight-ui.test.mjs',
     'apps/mobile-relay/test/pwa-asset-graph.test.mjs',
     'apps/mobile-relay/test/chat-universal-controller.test.mjs',
+    'apps/mobile-relay/test/provider-handoff.test.mjs',
     'apps/mobile-relay/test/pwa-voice-capture.test.mjs',
     'apps/mobile-relay/test/local-dictation.test.mjs'
   ]],
@@ -58,6 +59,7 @@ const sources = [
   'apps/vivim-host/media/stream-guard.mjs',
   'apps/vivim-host/media/library-summary.mjs',
   'apps/mobile-relay/app.js',
+  'apps/mobile-relay/provider-handoff.mjs',
   'apps/mobile-relay/ux/render.mjs',
   'apps/mobile-relay/ux/readiness.mjs',
   'apps/mobile-relay/ux/launcher.mjs',
