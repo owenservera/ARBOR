@@ -11,6 +11,7 @@ import { createHostServer } from '../server.mjs';
 import { createBootstrapRuntime } from '../bootstrap/runtime.mjs';
 import { createMediaPlaybackService } from '../media/playback.mjs';
 import { createBridgeStore } from '../../../studio/src/studio/bridge-commands.mjs';
+import { createWorkerHeartbeat } from '../../../studio/src/studio/worker-heartbeat.mjs';
 import { createBootstrapCommandWorker } from '../bootstrap/command-worker.mjs';
 import { resolveBuildRequest, blankSurface } from '../../mobile-relay/build-composer.mjs';
 import { buildUndoProposal, committedUiRevision, matchesCommittedUiReadback } from '../../mobile-relay/build-canvas.mjs';
@@ -244,10 +245,20 @@ test('direct phone authenticates proxy, bounds routes and uses the shared queue'
   // Actual Direct ingress must project only source-backed metadata, then reconcile
   // Studio claim on the next authenticated status poll. Never infer reply/delivery.
   const convo='c-'+'a'.repeat(16);
-  const chat = await call(target, {method:'POST',
-    headers:{origin,'content-type':'application/json'},
-    body:JSON.stringify({text:'private user prompt',kind:'command',consumer:'harness',
-      mode:'relay-chat',conversationId:convo,target:{provider:'chatgpt'}})});
+  const phonePrompt={text:'private user prompt',kind:'command',consumer:'harness',
+    mode:'relay-chat',conversationId:convo,target:{provider:'chatgpt'}};
+  const admission=(payload)=>call(target, {method:'POST',
+    headers:{origin,'content-type':'application/json'},body:JSON.stringify(payload)});
+  assert.equal((await admission(phonePrompt)).status,503,
+    'no chat worker heartbeat means no queued provider command');
+  assert.equal(bridge.list({status:'queued',consumer:'harness',limit:200}).items.length,0);
+  const activeWorker=createWorkerHeartbeat({root,worker:'chatWorker',
+    providers:['chatgpt','claude']});
+  activeWorker.record();
+  assert.equal((await admission({...phonePrompt,target:{provider:'claude'}})).status,409,
+    'Studio account check must be verified, not just a live worker');
+  assert.equal(bridge.list({status:'queued',consumer:'harness',limit:200}).items.length,0);
+  const chat=await admission(phonePrompt);
   assert.equal(chat.status,201);
   const chatId=JSON.parse(chat.body).id;
   const firstLive=JSON.parse((await call('/mobile/api/relay?path=status')).body).snapshot.live;

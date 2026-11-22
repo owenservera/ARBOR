@@ -788,6 +788,20 @@ export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'wo
           return;
         }
         if (PHONE_SESSIONS.test(relayPath)) { json(res, 200, await phoneSessions({ method: req.method, relayPath, body })); return; }
+        if (req.method==='POST' && relayPath==='commands' &&
+            body?.consumer==='harness' && body?.mode==='relay-chat') {
+          // UI readiness can expire between paint and tap. Recheck the live,
+          // mode-specific worker and Studio account before durable queue admission.
+          // Nothing is claimed, dispatched or retried on a refusal.
+          const health=workerHealth(dataRoot,'chatWorker');
+          const selected=body?.target?.provider;
+          if(health.state!=='online'||!health.supportedProviders?.includes(selected))
+            throw failure(503,'CHAT_RELAY_CONSUMER_UNAVAILABLE');
+          const checked=projectChatProviders(providerSnapshot(),Date.now(),health);
+          if(!checked.providers.some(p=>p.id===selected&&p.queueConsumerReady===true))
+            throw failure(409,'CHAT_PROVIDER_NOT_VERIFIED');
+          authorizeDevice(req,'relay:write');
+        }
         const out = await relay({ method: req.method, path: relayPath, req: { headers: { cookie: `${COOKIE}=${sessionValue(secret)}` } }, body });
         json(res, out.status, out.body);
       } catch (error) { json(res, error.status || 500, { error: error.status ? error.message : 'Relay error' }); }
