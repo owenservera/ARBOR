@@ -927,7 +927,7 @@ impl Desktop {
             Ok(false)=>"Waiting for Windows application window".into(),
             Err(e)=>format!("Native menu unavailable; GPUI fallback: {e}"),
         };
-        cx.spawn_in(window, |this,cx| async move {
+        cx.spawn_in(window, async move |this,cx| {
             loop {
                 cx.background_executor().timer(Duration::from_millis(100)).await;
                 if !native_windows_menu::installed() {
