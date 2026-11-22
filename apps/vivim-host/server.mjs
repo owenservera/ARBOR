@@ -17,6 +17,7 @@ import { diagnoseHost } from './insights.mjs';
 import { createBootstrapRuntime } from './bootstrap/runtime.mjs';
 import { readMemoryParams } from './bootstrap/web-memory.mjs';
 import { createMediaPlaybackService } from './media/playback.mjs';
+import { createMediaLanguageService } from './media/language-service.mjs';
 import { createBootstrapCommandWorker } from './bootstrap/command-worker.mjs';
 import { createWorkerSupervisor } from './bootstrap/worker-supervisor.mjs';
 import { loadOwnerToken, verifyOwnerToken } from './bootstrap/owner-auth.mjs';
@@ -290,6 +291,10 @@ export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path
     apk, pairing
   });
   if (autoPump) onboardingService.start();
+  // Reuse the existing mapped media identity and streaming authority. The
+  // language worker does not register a second file catalog or HTTP listener.
+  const mediaPlayback = directPhone?.mediaPlayback ?? createMediaPlaybackService();
+  const mediaLanguage = directPhone ? createMediaLanguageService({ dataRoot:path.resolve(dataRoot), media:mediaPlayback }) : null;
   const direct = directPhone ? createDirectPhoneHandler({
     ...directPhone, dataRoot, worldId: runtimeFor().worldId,
     projection: () => runtimeFor().projection(),
@@ -308,6 +313,7 @@ export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path
     },
     control: controlFor, wikiProjection: () => productJournal.readPhoneWiki(),
     composerBridge,
+    mediaPlayback, mediaLanguage,
     apkRegistry: apk, pairingStore: pairing,
     onPhoneSeen: () => onboardingService.phoneSeen(),
     primary: () => onboardingService.primary()
