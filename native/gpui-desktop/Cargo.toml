@@ -13,6 +13,7 @@ desktop = ["dep:gpui", "dep:gpui-component"]
 
 [dependencies]
 serde_json = "1"
+png = "0.18"
 vivim-host-supervisor = { path = "../host-supervisor" }
 sha2 = "0.10"
 vivim-programmability-core = { path = "../../core/programmability" }
