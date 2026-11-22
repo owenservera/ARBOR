@@ -10,6 +10,7 @@ import { createBridgeStore } from '../src/studio/bridge-commands.mjs';
 import { parseRelayChatIntent } from '../src/studio/relay-chat-intent.mjs';
 import { snapshotRelayStartupFence } from '../src/studio/relay-chat-startup-fence.mjs';
 import { createWorkerHeartbeat } from '../src/studio/worker-heartbeat.mjs';
+import { probeStudioRelayReadiness } from '../src/studio/relay-chat-transport-readiness.mjs';
 import { defaultDataDir, defaultHarnessDir } from '../src/config.mjs';
 const HARNESS = defaultHarnessDir();
 const root = process.argv.includes('--root') ? process.argv[process.argv.indexOf('--root') + 1] : defaultDataDir();
@@ -77,7 +78,17 @@ const busy = new Set();
 for (;;) {
   // Record liveness only after the queue was read; this does not prove browser readiness.
   const commands = store.list({ status: 'queued', consumer: 'harness', limit: 200 }).items.reverse().filter(cmd => !startupFence.has(cmd.id) && (!transport || cmd.transport === transport));
-  try { heartbeat.record('ok'); } catch {}
+  // A running queue loop is NOT evidence that the single Studio browser owner
+  // can receive a turn. A busy, missing or malformed Studio owner fails closed:
+  // do not claim or touch a request, and report a blocked heartbeat to Host.
+  const studioReadiness = studio
+    ? await probeStudioRelayReadiness({ url: studioUrl })
+    : { ready: true, reason: 'HARNESS_LOCAL' };
+  try { heartbeat.record(studioReadiness.ready ? 'ok' : 'error'); } catch {}
+  if (!studioReadiness.ready) {
+    await new Promise(r => setTimeout(r, 2000));
+    continue;
+  }
   // Oldest first; at most one in flight per provider; different providers run in parallel.
   for (const cmd of commands) {
     if (studio?.halted()) break;
