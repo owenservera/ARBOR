@@ -23,7 +23,12 @@ const suites = [
   "apps/vivim-host/test/oracle-onboarding-prompts.test.mjs",
   "apps/vivim-host/test/onboarding.test.mjs",
   "apps/vivim-host/test/bootstrap.test.mjs",
-  "apps/vivim-host/test/bootstrap-grant.test.mjs"
+  "apps/vivim-host/test/bootstrap-grant.test.mjs",
+  "apps/vivim-host/test/oracle-wiki-wiring.test.mjs",
+  "apps/vivim-host/test/wiki-visual-contract.test.mjs",
+  "apps/vivim-host/test/product-routes.test.mjs",
+  "apps/mobile-relay/test/wiki-live-context.test.mjs",
+  "apps/mobile-relay/test/host-preview-mode.test.mjs"
 ];
 const testRun = await world.run("node", ["--test", ...suites], { output: { tail: 12000 } });
 const evidence = testRun.stdout + "\n" + testRun.stderr;
@@ -34,11 +39,11 @@ const count = (name: string): number | null => {
 const nPass = count("pass"), nFail = count("fail"), nTests = count("tests");
 const accepted = testRun.exitCode === 0 && nPass !== null && nPass > 0 && nFail === 0 && nTests === nPass;
 log("Oracle scout: SHA=" + sourceSha + " tests=" + nTests + " pass=" + nPass +
-    " fail=" + nFail + " exit=" + testRun.exitCode + " providerSends=0 modelCalls=0");
+    " fail=" + nFail + " exit=" + testRun.exitCode + " providerAccountSends=0 (ZCode model admission is external to this test runner)");
 if (!accepted) throw new Error("ORACLE_REGRESSION: " + evidence.slice(-4000));
 
 phase("Record bounded outcome and next validation boundary");
 log("PASS deterministic unit/integration simulation at SHA " + sourceSha +
-    ". UNRUN: actual signed-in ChatGPT Studio extraction, real owner-approved seven-pass ingestion, " +
+    ". UNRUN: GPUI Rust desktop executable compile, actual signed-in ChatGPT Studio extraction, real owner-approved seven-pass ingestion, " +
     "physical GPUI/PWA AutoWiki projection. No browser, Host or provider effects were attempted. " +
     "Stop after this one verification; return any failure as a repro for ChatGPT Cloud Dev.");
