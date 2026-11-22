@@ -4,6 +4,7 @@
 //! Native adapter for the canonical VIVIM Host. No local journal or dispatcher.
 pub mod control;
 pub mod desktop_menu;
+pub mod desktop_settings;
 pub mod first_contact;
 pub mod visual;
 use reqwest::blocking::Client;
