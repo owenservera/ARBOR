@@ -28,7 +28,12 @@ export function workerHealth(dataRoot, worker, { now = new Date().toISOString(),
   }
   const age = ageMs(r.observedAt, now);
   if (age === null) return { state: 'unknown', diagnosticCode: 'INVALID_HEARTBEAT_TIME', reason: 'Worker heartbeat has an invalid timestamp', nextAction: 'Check PC clock and worker process' };
-  const base = { lastHeartbeatAt: r.observedAt, observedFrom: 'local worker heartbeat', ageMs: age };
+  const allowed = new Set(['chatgpt','claude','qwen','zai']);
+  const supported = worker === 'chatWorker' && Array.isArray(r.providers) &&
+    r.providers.length <= 4 && r.providers.every(p=>allowed.has(p)) &&
+    new Set(r.providers).size===r.providers.length ? r.providers : [];
+  const base = { lastHeartbeatAt: r.observedAt, observedFrom: 'local worker heartbeat', ageMs: age,
+    ...(worker==='chatWorker'?{supportedProviders:supported}: {}) };
   if (age > ttlMs) return { ...base, state: 'stale', diagnosticCode: 'HEARTBEAT_STALE', reason: 'No recent worker cycle observed', nextAction: 'Check worker process; do not resend pending messages' };
   if (r.outcome === 'error') return { ...base, state: 'blocked', diagnosticCode: 'WORKER_CYCLE_FAILED', reason: 'Worker reported a failed cycle', nextAction: 'Inspect local worker logs and connection' };
   return { ...base, state: 'online', diagnosticCode: 'WORKER_CYCLE_OK', evidence: 'Recent successful worker cycle', nextAction: null };

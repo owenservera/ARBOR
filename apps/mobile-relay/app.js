@@ -1407,9 +1407,12 @@ function renderComposer() {
   }
   $('composer-note').textContent = N.target === 'phone'
     ? 'Continue an existing PC session · never automatically resent'
-    : combinedInbox
-      ? 'Combined inbox · one message goes to the selected signed-in AI, never all providers'
-      : 'Provider inbox · send-once through your signed-in PC browser';
+    : FIRST_CONTACT && curConv() &&
+        !S.manifest?.providers?.some(p=>p.id===curConv().provider&&p.queueConsumerReady===true)
+      ? 'AI sign-in and phone delivery are different. Worker offline: draft not sent.'
+      : combinedInbox
+        ? 'Combined inbox · one message goes to the selected signed-in AI, never all providers'
+        : 'Provider inbox · send-once through your signed-in PC browser';
   if (N.target === 'phone') {
     $('chips').hidden = true; $('modelwrap').hidden = true; $('effortwrap').hidden = true;
     $('clip').hidden = true; $('files').hidden = true; $('text').placeholder = 'Message your PC…'; $('text').maxLength = MAXTEXT;
@@ -2099,7 +2102,7 @@ async function send() {
     providerId:c.provider,projection:S.manifest?.providers,
     text:body,sending:S.sending
   })) {
-    toast('This AI is not currently verified on the paired PC. Nothing was sent.');
+    toast('AI account or delivery worker unavailable. Draft preserved; nothing sent.');
     updateSend();return;
   }
   const p = providers().find(x => x.id === c.provider); if (!p) { toast('Pick a signed-in provider'); return; }

@@ -27,3 +27,11 @@ test('malformed or non-source fields cannot forge signed-in provider state',()=>
  assert.deepEqual(m.providers.map(p=>p.id),['chatgpt','claude']);
  assert.deepEqual(m.providers.map(p=>p.signedIn),[false,false]);
 });
+
+test('a current signed-in account cannot forge readiness for an absent or incompatible worker',()=>{
+ const record={id:'chatgpt',label:'ChatGPT',check:{verified:true,state:'ready',observedAt:new Date(t).toISOString()}};
+ for(const worker of [null,{state:'stale',supportedProviders:['chatgpt']},{state:'online',supportedProviders:[]}])
+   assert.equal(projectChatProviders([record],t,worker).providers[0].queueConsumerReady,false);
+ assert.equal(projectChatProviders([record],t,{state:'online',supportedProviders:['chatgpt']}).providers[0].queueConsumerReady,true);
+ assert.equal(projectChatProviders([{...record,id:'gemini'}],t,{state:'online',supportedProviders:['chatgpt']}).providers[0].queueConsumerReady,false);
+});

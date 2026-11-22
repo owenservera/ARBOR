@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { resolveProviderHandoff, canSendVerifiedProvider } from '../provider-handoff.mjs';
 
 const checked = ['chatgpt','claude','gemini','qwen','deepseek','zai']
-  .map(id => ({id,signedIn:true}));
+  .map(id => ({id,signedIn:true,queueConsumerReady:true}));
 
 test('explicit natural-language provider handoff selects only verified Studio providers', () => {
   for (const [text,id,draft] of [
@@ -61,7 +61,9 @@ test('first-contact provider Send cannot bypass pairing or provider verification
     {paired:false},{direct:false},{sessionApproved:false},
     {target:'vivim'},{target:'phone'},{providerId:'unknown'},
     {text:'  '},{sending:true},
-    {projection:[{id:'claude',signedIn:false}]},
+    {projection:[{id:'claude',signedIn:false,queueConsumerReady:true}]},
+    {projection:[{id:'claude',signedIn:true,queueConsumerReady:false}]},
+    {projection:[{id:'claude',signedIn:true}]},
     {projection:[{id:'claude',signedIn:'true'}]},
     {projection:null}
   ])assert.equal(canSendVerifiedProvider({...base,...override}),false,JSON.stringify(override));
@@ -77,4 +79,12 @@ test('provider handoff preserves a selected draft and never silently retargets a
   assert.match(app,/handoff\.status === 'ready'/);
   assert.match(app,/Selected AI not ready on your PC\. Draft preserved; nothing was sent/);
   assert.match(app,/selected \? '\?provider='\+encodeURIComponent\(selected\)/);
+});
+
+test('a signed-in provider with no live consumer cannot send to a dead phone queue',()=>{
+  const base={paired:true,direct:true,sessionApproved:true,target:'harness',
+    providerId:'chatgpt',projection:[{id:'chatgpt',signedIn:true}],text:'Hi',sending:false};
+  assert.equal(canSendVerifiedProvider(base),false);
+  assert.equal(canSendVerifiedProvider({...base,projection:[{id:'chatgpt',signedIn:true,queueConsumerReady:true}]}),true);
+  assert.match(readFileSync(new URL('../app.js',import.meta.url),'utf8'),/Worker offline: draft not sent/);
 });

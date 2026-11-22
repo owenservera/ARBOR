@@ -20,6 +20,7 @@ import { readMemoryParams } from './bootstrap/web-memory.mjs';
 import { createMediaPlaybackService, parseMediaRange } from './media/playback.mjs';
 import { createMediaStreamGrantGuard } from './media/stream-guard.mjs';
 import { projectChatProviders } from './chat/provider-projection.mjs';
+import { workerHealth } from './diagnostics.mjs';
 import { controlErrorStatus } from './control/http-status.mjs';
 import { createPrivateShares } from './shares/private-shares.mjs';
 import { createFirstContactObservations } from './first-contact-observation.mjs';
@@ -234,7 +235,7 @@ export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'wo
       // proof that the owner is signed into a provider.
       let providerRecords=[];
       try {providerRecords=providerSnapshot()}catch{providerRecords=[]}
-      const manifest=projectChatProviders(providerRecords);
+      const manifest=projectChatProviders(providerRecords,Date.now(),workerHealth(dataRoot,'chatWorker'));
       return { at: new Date().toISOString(), snapshot: {
         bootstrap: { ...visual, cards: phoneCards, preferences: [], hardNos: [] },
         onboarding: { primary: primary() }, manifest, live: liveSummary } };
@@ -501,7 +502,7 @@ export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'wo
         // The grant may be revoked while Studio is inspecting a slow account.
         authorizeDevice(req,'control:read');
         res.setHeader('cache-control','private, no-store');
-        json(res,200,projectChatProviders(result));
+        json(res,200,projectChatProviders(result,Date.now(),workerHealth(dataRoot,'chatWorker')));
       }catch(error){
         json(res,error.status||503,{schema:'vivim.chat-provider-projection/1',
           state:'unavailable',reason:error.status?error.message:'PROVIDER_CHECK_UNAVAILABLE',providers:[]});

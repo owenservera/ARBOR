@@ -40,5 +40,6 @@ export function canSendVerifiedProvider({paired,direct,sessionApproved,target,pr
     target === 'harness' && sending !== true &&
     typeof providerId === 'string' && typeof text === 'string' && !!text.trim() &&
     Array.isArray(projection) &&
-    projection.some(p => p?.id === providerId && p?.signedIn === true);
+    projection.some(p => p?.id === providerId && p?.signedIn === true &&
+      p?.queueConsumerReady === true);
 }

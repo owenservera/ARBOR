@@ -62,7 +62,12 @@ async function handle(cmd) {
   } catch (e) { log(`${cmd.id} error ${e.message}`); try { store.reply(cmd.id, `failed before/at send: ${e.message} (request ${requestId}; not resent)`, { status: 'failed' }); } catch {} }
 }
 log(`watching ${store.file}`);
-const heartbeat = createWorkerHeartbeat({ root, worker: 'chatWorker' });
+const heartbeat = createWorkerHeartbeat({
+  root, worker: 'chatWorker',
+  // Declared mode only: Studio conversation HTTP currently accepts ChatGPT
+  // default text; the existing alternative harness router has four targets.
+  providers: studio ? ['chatgpt'] : ['chatgpt','claude','qwen','zai']
+});
 const busy = new Set();
 for (;;) {
   // Record liveness only after the queue was read; this does not prove browser readiness.

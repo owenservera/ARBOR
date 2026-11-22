@@ -22,6 +22,12 @@ test('healthy heartbeat is evidenced; stale, error, malformed and absent are nev
   assert.equal(workerHealth(root, 'relay', { now: DATE }).state, 'blocked');
   assert.equal(workerHealth(root, 'chatWorker', { now: DATE }).state, 'unknown');
   assert.throws(() => createWorkerHeartbeat({root,worker:'anything'}));
+  const chat = createWorkerHeartbeat({root,worker:'chatWorker',now:()=>DATE,providers:['chatgpt']});
+  chat.record();
+  assert.deepEqual(workerHealth(root,'chatWorker',{now:DATE}).supportedProviders,['chatgpt']);
+  assert.equal(workerHealth(root,'chatWorker',{now:'2026-10-31T10:00:20.000Z'}).state,'stale');
+  assert.throws(()=>createWorkerHeartbeat({root,worker:'chatWorker',providers:['gemini']}));
+  assert.throws(()=>createWorkerHeartbeat({root,worker:'relay',providers:['chatgpt']}));
   assert.doesNotMatch(JSON.stringify(hostSnapshot({ dataRoot: root, now: () => DATE })), /secret/);
 }));
 test('message journey distinguishes claimed, pending cloud update, cloud ack without declaring phone delivery', () => withData(root => {
