@@ -74,6 +74,9 @@ struct Desktop {
     semantic_preview: Option<control::ComposerMeaning>,
     semantic_busy: bool,
     semantic_pending: bool,
+    // A staged phone draft becomes unapprovable in GPUI after a native edit.
+    // Host independently rejects stale session/source revisions at execution.
+    phone_plan_edit_epoch: Option<u64>,
     input: Entity<InputState>,
     _input_subscription: Option<gpui::Subscription>,
     phone_draft: Option<PhoneDraft>,
@@ -183,6 +186,12 @@ impl Desktop {
     /// A native input event drives the SAME Rust Wiki search as the old
     /// Edge First Contact reference. No button, provider send or Host effect.
     fn on_composer_changed(&mut self, cx: &mut Context<Self>) {
+        // Native human input supersedes any still-pending phone draft review.
+        // No approval or delivery happens on an input event.
+        if self.phone_plan_edit_epoch.take().is_some() {
+            self.review=None;
+            self.detail.clear();
+        }
         let value=self.input.read(cx).value().to_string();
         let query=value.trim();
         self.wiki_query=if query.is_empty() {
@@ -622,6 +631,57 @@ impl Desktop {
             });
         }).detach();
     }
+    /// Owner-initiated PC -> phone proposal using the Host's existing
+    /// revision-fenced composer stage and Control plan, never a direct write.
+    /// The normal Host Control screen holds the explicit approval UI.
+    fn review_phone_draft(&mut self,cx:&mut Context<Self>) {
+        if self.busy || self.uncertain ||
+            self.review.as_ref().is_some_and(Review::needs_approval) {return;}
+        let text=self.input.read(cx).value().to_string();
+        if text.trim().is_empty() || text.len()>1000 || text.contains('\0') {
+            self.status="Phone proposal requires a nonempty PC draft up to 1000 UTF-8 bytes".into();
+            cx.notify();return;
+        }
+        let edit_epoch=self.composer_edit_epoch;
+        self.review=None;
+        self.phone_plan_edit_epoch=None;
+        self.detail.clear();
+        self.busy=true;
+        self.status="Asking Host to stage an exact phone draft · no effect performed".into();
+        cx.notify();
+        let job=cx.background_executor().spawn(async move {
+            control::prepare_phone_draft(&text)
+        });
+        cx.spawn(async move |this,cx|{
+            let result=job.await;
+            let _=this.update(cx,|view,cx|{
+                view.busy=false;
+                if view.composer_edit_epoch!=edit_epoch {
+                    view.review=None;
+                    view.phone_plan_edit_epoch=None;
+                    view.status="PC draft changed · discarded stale phone proposal".into();
+                }else{
+                    match result {
+                        Ok(review)=>{
+                            view.detail=review.detail.clone();
+                            view.review=Some(review);
+                            view.phone_plan_edit_epoch=Some(edit_epoch);
+                            view.panel=Panel::Control;
+                            view.menu_open=None;
+                            view.presentation_epoch=view.presentation_epoch.wrapping_add(1);
+                            view.status="Review exact phone draft plan · no effect until separate owner approval".into();
+                        }
+                        Err(error)=>{
+                            view.phone_plan_edit_epoch=None;
+                            view.status=format!("Phone proposal unavailable · {} · nothing delivered",error.label());
+                        }
+                    }
+                }
+                cx.notify();
+            });
+        }).detach();
+    }
+
     fn submit(&mut self, cx: &mut Context<Self>) {
         if self.busy || self.uncertain { return; }
         let text = self.input.read(cx).value().to_string();
@@ -637,6 +697,7 @@ impl Desktop {
         };
         if let Some(panel)=panel {self.select_panel(panel,cx);return;}
         self.review = None;
+        self.phone_plan_edit_epoch=None;
         self.detail.clear();
         self.busy = true;
         self.graph_detail.clear();
@@ -662,7 +723,15 @@ impl Desktop {
     }
     fn approve(&mut self,cx:&mut Context<Self>) {
         if self.busy || self.uncertain { return; }
+        if self.phone_plan_edit_epoch.is_some_and(|epoch|epoch!=self.composer_edit_epoch) {
+            self.phone_plan_edit_epoch=None;
+            self.review=None;
+            self.detail.clear();
+            self.status="Native composer changed · phone approval withdrawn".into();
+            cx.notify();return;
+        }
         let Some(key)=self.review.as_mut().and_then(Review::consume_approval) else {return};
+        self.phone_plan_edit_epoch=None;
         self.last_plan=Some(key.id().to_owned());
         self.review=None;
         self.busy=true;
@@ -1141,7 +1210,13 @@ impl Render for Desktop {
                 Panel::Devices=>{
                     page=page
                         .child(div().text_lg().child("Phone live composer"))
-                        .child(self.phone_status.clone());
+                        .child(self.phone_status.clone())
+                        .child(div().text_sm().child(
+                            "To send the current PC command field draft to the phone, request an exact Host plan. This never sends while typing and needs a separate owner approval."
+                        ))
+                        .child(Button::new("devices-propose-pc-draft")
+                            .label("Propose PC draft on phone · review required")
+                            .on_click(cx.listener(|v,_,_,cx|v.review_phone_draft(cx))));
                     if let Some(phone)=&self.phone_draft {
                         page=page.child(format!(
                             "Host revision {} · source revision {} · {}",
@@ -1429,7 +1504,8 @@ impl Render for Desktop {
             controls=controls.child(Button::new("approve").primary().label("Approve exact displayed Host plan")
                 .on_click(cx.listener(|v,_,_,cx|v.approve(cx))))
                 .child(Button::new("cancel").label("Cancel · no effect").on_click(cx.listener(|v,_,_,cx|{
-                    v.review=None;v.status="Cancelled locally · no execution sent".into();
+                    v.review=None;v.phone_plan_edit_epoch=None;
+                    v.status="Cancelled locally · no execution sent".into();
                     v.refresh(cx);cx.notify();
                 })));
         }
@@ -1508,6 +1584,7 @@ fn main() {
                         wiki_query:None,composer_edit_epoch:0,
                         last_wiki_observation_started:None,
                         semantic_preview:None,semantic_busy:false,semantic_pending:false,
+                        phone_plan_edit_epoch:None,
                         _input_subscription:None,phone_draft:None,
                         phone_status:"Waiting for owner-authorized phone observation".into(),
                         status:"First Contact ready · type to explore your Wiki".into(),overview:None,visual:None,vec_view:None,visual_status:"Not yet observed".into(),visual_guard:RevisionGuard::default(),wiki_guard:WikiRevisionGuard::default(),wiki_delta:"Not yet observed".into(),wiki_events:Vec::new(),detail:String::new(),
