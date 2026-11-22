@@ -2925,8 +2925,9 @@ if (!HOST_PREVIEW && 'serviceWorker' in navigator) {
   let hadController=!!navigator.serviceWorker.controller;
   let lastWorkerCheck=0;
   const safeUpgrade=()=>document.visibilityState==='visible'&&
-    !$('text')?.value.trim()&&!transport.pending()&&!S.busy&&!N.pending&&
-    !chatHasApproval&&!(S.files?.length);
+    !$('text')?.value.trim()&&!transport.pending()&&!S.busy&&
+    !S.sending&&!N.sending&&!N.pending&&!chatHasApproval&&!(S.files?.length)&&
+    !localNotes?.hasPendingLocalWork?.()&&!localVoice?.hasPendingLocalWork?.();
   const applyUpgrade=()=>{
     if(upgradePending&&safeUpgrade()){
       upgradePending=false;
