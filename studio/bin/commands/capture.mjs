@@ -1,7 +1,6 @@
 // start, serve, launch, targets, record, capture
 import path from 'node:path';
 import { readFileSync } from 'node:fs';
-import { spawn } from 'node:child_process';
 import { launchChrome, findChrome } from '../../src/chrome/launch.mjs';
 import { verifyBrowserOwner } from '../../src/chrome/browser-ownership.mjs';
 import { listTargets, isReachable, endpointBase } from '../../src/cdp/discovery.mjs';
@@ -15,18 +14,6 @@ import { exportTranscript, exportReport, exportKnowledge, exportBundle, exportSc
 import { define, defineGroup } from '../lib/registry.mjs';
 import { CliError, usageError, envError, fmtBytes } from '../lib/ui.mjs';
 import { capability } from '../lib/capabilities.mjs';
-
-function openUrl(url) {
-  // Windows: explorer.exe takes the URL directly, so no cmd.exe shell ever parses it.
-  const cmd = process.platform === 'win32' ? ['explorer.exe', [url]] : process.platform === 'darwin' ? ['open', [url]] : ['xdg-open', [url]];
-  try {
-    // The URL remains printable even when xdg-open/open/cmd is not installed.
-    // Missing helper binaries emit an asynchronous error, not a synchronous throw.
-    const child = spawn(cmd[0], cmd[1], { detached: true, stdio: 'ignore', windowsHide: true });
-    child.on('error', () => {});
-    child.unref();
-  } catch { /* the URL is printed anyway */ }
-}
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -65,7 +52,7 @@ define({
 
 const studioFlags = {
   'studio-port': { type: 'number', valueName: 'N', desc: 'Port for the studio UI (default 7878)' },
-  'no-open': { type: 'boolean', desc: 'Do not open the studio in a browser window' },
+  'no-open': { type: 'boolean', desc: 'Legacy compatibility; Studio no longer opens its browser dashboard' },
   url: { type: 'string', valueName: 'URL', desc: 'Page to open in the capture browser (start only)' },
   'lan-pair': { type: 'boolean', desc: 'OPT-IN: listen on the WiFi/LAN (0.0.0.0) so a phone can open the mobile surface; token required, prints a pairing URL + QR' },
   'lan-host': { type: 'string', valueName: 'IP', desc: 'With --lan-pair: which of this PC\'s IPv4 addresses to put in the pairing URL (default: best guess)' },
@@ -99,7 +86,7 @@ async function runStudio(ctx, { launch }) {
   catch (e) { cdpLock.release(); if (lanPair && /LAN pairing|--lan-host/.test(e.message)) throw envError(e.message, 'Check the network connection, or drop --lan-pair to stay loopback-only.'); throw e; }
   cdpLock.update(st.port); // the real listening port is what a second Studio probes and names
   out.emit({ url: st.url, port: st.port, ...(st.lan ? { lanPair: true, pairingUrl: st.pairingUrl, lanAddresses: st.lan.addresses } : {}) }, (o) => {
-    o.result(`Capture Studio is running at\n  ${st.url}\nKeep this window open. Press Ctrl+C to stop (an active recording is saved first).`);
+    o.result(`VIVIM Studio service is running on port ${st.port}. Use the native GPUI app. Press Ctrl+C to stop (an active recording is saved first).`);
     if (!st.lan) return;
     o.result('');
     o.result(`LAN pairing is ON (listening on 0.0.0.0:${st.port}, token required). On your phone, joined to the same WiFi, scan this QR code or open:`);
@@ -108,8 +95,8 @@ async function runStudio(ctx, { launch }) {
     if (st.lan.addresses.length > 1) o.result(`Other addresses of this PC: ${st.lan.addresses.filter((a) => a !== st.lan.address).join(', ')} (use --lan-host IP if the phone cannot reach ${st.lan.address}).`);
     o.result('Anyone with this URL can control this Studio while it runs; do not share it. Allow the firewall prompt for private networks only.');
   });
-  // Keep the desktop window on loopback even when the phone gets the LAN URL.
-  if (!flags['no-open']) openUrl(st.url);
+  // Native VIVIM owns the only local product window. Studio remains a service;
+  // signed-in provider Chrome may run, but never auto-open Studio's old HTML UI.
   // SIGTERM is the normal Linux service/container stop signal; IPC stop is used
   // by Windows supervisors. Both must close the same sole Studio runtime once.
   let shutdown = null;
@@ -127,8 +114,8 @@ async function runStudio(ctx, { launch }) {
   process.once('SIGTERM', closeStudio);
 }
 
-define({ name: 'start', section: 'Get started', summary: 'Open the capture browser and the studio UI (first-run friendly)', flags: studioFlags, async run(ctx) { await runStudio(ctx, { launch: true }); } });
-define({ name: 'serve', section: 'Get started', summary: 'Run the studio UI only', flags: studioFlags, async run(ctx) { await runStudio(ctx, { launch: false }); } });
+define({ name: 'start', section: 'Get started', summary: 'Run background Studio service and capture browser; no duplicate Studio UI', flags: studioFlags, async run(ctx) { await runStudio(ctx, { launch: true }); } });
+define({ name: 'serve', section: 'Get started', summary: 'Run Studio capture service without its retired browser UI', flags: studioFlags, async run(ctx) { await runStudio(ctx, { launch: false }); } });
 
 // ---------------------------------------------------------------------------------------------
 // Phone pairing: the link/QR the owner asks for, and "remove access from all phones".
