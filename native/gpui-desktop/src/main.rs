@@ -1304,6 +1304,12 @@ impl Render for Desktop {
                         indexed_pages:data.wiki_indexed_pages,
                         index_truncated:data.wiki_index_truncated,
                     };
+                    if let Some(progress)=&data.oracle_progress {
+                        wiki=wiki.child(div().text_sm().child(format!(
+                            "Oracle · {} reported claims · {}/{} observed discovery passes · read-only",
+                            progress.claims,progress.complete_passes,progress.observed_passes
+                        )));
+                    }
                     if let Some(found)=wiki_read::search_view(&read,query,24) {
                         wiki=wiki.child(div().text_sm().child(format!(
                             "AutoWiki · {} matches · revision {}",
@@ -1356,6 +1362,14 @@ impl Render for Desktop {
             body = body.child(format!("Host observed: {}", data.observed_at))
                 .child(format!("Active devices: {}", data.active_devices));
             if matches!(self.panel, Panel::Overview|Panel::Wiki) {
+            if let Some(progress)=&data.oracle_progress {
+                body=body.child(div().text_lg().child("Oracle · Host corpus"))
+                    .child(div().text_sm().child(format!(
+                        "{} reported claims · {} observations · {} conflicts · {}/{} observed passes. Personal statements remain owner-private.",
+                        progress.claims,progress.observations,progress.contradictions,
+                        progress.complete_passes,progress.observed_passes
+                    )));
+            }
             body=body.child(div().text_lg().child(format!("Wiki · revision {}", data.wiki_revision)));
             body=body.child(div().text_sm().child(self.wiki_delta.clone()));
             for item in &self.wiki_events {
