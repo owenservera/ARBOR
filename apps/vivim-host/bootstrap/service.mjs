@@ -490,6 +490,8 @@ export function createBootstrapService({ ledger, worldId = WORLD_DEFAULT, now = 
     if (generationId !== null) idOk(generationId, 'generationId');
     const parsedOut = compilePassOutput(response, { worldId, requestId });
     if (!DEEP_PASSES.includes(parsedOut.passId)) fail('unsupported deep pass');
+    if (generationId !== null && parsedOut.generationId !== generationId)
+      throw coded('BOOTSTRAP_GENERATION_MISMATCH', 'deep-pass response belongs to a different generation');
     const gen = generationId ?? parsedOut.generationId ?? null;
     const digest = digestOf({ passId: parsedOut.passId, observations: parsedOut.observations, assertions: parsedOut.assertions, coverage: parsedOut.coverage });
     const key = receiptKey({ worldId, pass: parsedOut.passId, requestId, generationId: gen });
