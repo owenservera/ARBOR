@@ -44,14 +44,17 @@ test('recording starts only after explicit click, stays local and downloads only
    downloadFile:(name,blob)=>files.push({name,blob})
  });
  assert.equal(capture.available,true);
+ assert.equal(capture.hasPendingLocalWork(),false);
  assert.equal(MAX_VOICE_MS,30000);assert.equal(MAX_VOICE_BYTES,6*1024*1024);
  const dialog=doc.body.children[0];
  assert.equal(dialog.open,false);
  assert.equal(files.length,0);
  capture.open();assert.equal(dialog.open,true);
+ assert.equal(capture.hasPendingLocalWork(),true,'open recording panel defers upgrades');
  dialog.find('Start recording').listeners.click();
  for(let i=0;i<4;i++)await Promise.resolve();
  assert.equal(capture.isRecording(),true);
+ assert.equal(capture.hasPendingLocalWork(),true);
  assert.equal(files.length,0);
  dialog.find('Stop recording').listeners.click();
  assert.equal(capture.isRecording(),false);
@@ -64,6 +67,7 @@ test('recording starts only after explicit click, stays local and downloads only
  assert.equal(files.length,1);
  assert.equal(files[0].name,'vivim-voice-note.webm');
  capture.close();assert.equal(dialog.open,false);
+ assert.equal(capture.hasPendingLocalWork(),false,'completed and closed capture may upgrade');
 });
 test('unsupported microphone cannot start or request access',()=>{
  const doc=fixture(),capture=mountVoiceCapture({host:doc.body,devices:null,Recorder:null});
