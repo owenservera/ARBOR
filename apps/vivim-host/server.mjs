@@ -15,6 +15,7 @@ import { workspaceManifestFile } from '../../studio/src/config.mjs';
 import { MANIFEST_FILE, MANIFEST_SCHEMA, MANIFEST_VERSION } from '../../studio/src/workspace-manifest.mjs';
 import { diagnoseHost } from './insights.mjs';
 import { createBootstrapRuntime } from './bootstrap/runtime.mjs';
+import { readDesktopCommanderLearning } from './data-intelligence/desktop-commander-learning.mjs';
 import { readMemoryParams } from './bootstrap/web-memory.mjs';
 import { createMediaPlaybackService } from './media/playback.mjs';
 import { createMediaLanguageService } from './media/language-service.mjs';
@@ -196,9 +197,12 @@ export function hostSnapshot({ dataRoot, now = () => new Date().toISOString(), j
   return { ...snapshot, recovery: projectHostRecovery(snapshot) };
 }
 
-export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path.join(here, 'public'), bootstrap = null, ownerToken = null, directPhone = null, worker = null, studioUrl = null, studioToken = null, onboarding = null, autoPump = false, developmentSources = null } = {}) {
+export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path.join(here, 'public'), bootstrap = null, ownerToken = null, directPhone = null, worker = null, studioUrl = null, studioToken = null, onboarding = null, autoPump = false, developmentSources = null, developmentLearningRoot = null } = {}) {
   // Owner-local initialization preserves existing journal replay; new workspaces are empty.
   const productJournal = createProductJournal({ dataRoot });
+  // Existing Labs archive is the single writer; Host only reads bounded learning metadata.
+  const learningArchiveRoot = developmentLearningRoot ?? process.env.VIVIM_DEVELOPMENT_LEARNING_ROOT ??
+    path.resolve(REPO_ROOT, '..', 'vivim-labs', 'ZCODE-DESKTOP-COMMANDER-OPERATIONS', '.private', 'desktop-commander-stream');
   let runtime = bootstrap;
   let token = ownerToken;
   const runtimeFor = () => {
@@ -352,7 +356,7 @@ export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path
       return;
     }
     if (pathname.startsWith('/api/host/control/')) {
-      await handleControl(req, res, pathname, host, controlFor, tokenFor, uiSessions, enrollment, runtimeFor, productJournal, nativeContext, developmentSources);
+      await handleControl(req, res, pathname, host, controlFor, tokenFor, uiSessions, enrollment, runtimeFor, productJournal, nativeContext, developmentSources, learningArchiveRoot);
       return;
     }
     const workerMatch = pathname.match(/^\/api\/host\/worker\/([^\/]+)\/(status|recover)$/);
@@ -1065,7 +1069,7 @@ function ownerAuthorized(req, res, tokenFor) {
 // UTC03 desktop surface. Reads: loopback + owner token. Writes additionally require the exact
 // same Origin and an explicit header, like bootstrap mutations. Execution happens only in the
 // dispatcher, bound to a previously returned plan digest.
-async function handleControl(req, res, pathname, host, controlFor, tokenFor, uiSessions, enrollment, runtimeFor, productJournal, nativeContext, developmentSources) {
+async function handleControl(req, res, pathname, host, controlFor, tokenFor, uiSessions, enrollment, runtimeFor, productJournal, nativeContext, developmentSources, learningArchiveRoot) {
   const route = pathname.slice('/api/host/control/'.length);
   const sameOrigin = String(req.headers.origin || '').toLowerCase() === 'http://' + host;
   const isMutation = ['plan', 'interpret', 'execute', 'ui-logout', 'devices/approve', 'devices/revoke','development/register','development/index','development/hvi-grant','development/hvi-revoke'].includes(route);
@@ -1241,6 +1245,7 @@ async function handleControl(req, res, pathname, host, controlFor, tokenFor, uiS
       try { applicationEffects = projectAppliedControlEffects(controlFor(), context.wikiChanges, context.wikiStructure); }
       catch { applicationEffects = { state: 'unavailable', code: 'CONTROL_RECEIPTS_UNAVAILABLE', items: [] }; }
       const native = await nativeContext('wiki',{owner:true});
+      const developmentLearning = await readDesktopCommanderLearning({ archiveRoot: learningArchiveRoot });
       // Recheck an authorized browser session after asynchronous native work.
       if (!verifyOwnerToken(req.headers.authorization, owner) && !uiSessions.authorized(req,{mutate:false})) {
         sendJson(res,401,{code:'OWNER_AUTH'}); return;
@@ -1252,7 +1257,7 @@ async function handleControl(req, res, pathname, host, controlFor, tokenFor, uiS
       try { oracleCorpus = runtimeFor().oracleCorpus({ limit: 16 }); }
       catch { oracleCorpus = { schema:'vivim.oracle-corpus-view/1',state:'unavailable',
         items:[],count:0,sensitiveExcluded:true,code:'ORACLE_CORPUS_UNAVAILABLE' }; }
-      const enriched = { ...context, applicationEffects, nativeContext:native, oracleCorpus, studioOutcomes:readStudioOutcomes() };
+      const enriched = { ...context, applicationEffects, nativeContext:native, oracleCorpus, developmentLearning, studioOutcomes:readStudioOutcomes() };
       sendJson(res, 200, { ...enriched, semantics: projectWikiSemantics(enriched) });
     } catch { sendJson(res, 503, { schema: 'vivim.wiki-context/1', state: 'unavailable', code: 'WIKI_CONTEXT_UNAVAILABLE' }); }
     return;
