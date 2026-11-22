@@ -58,7 +58,9 @@ const HOST_PREVIEW = new URLSearchParams(location.search).get('host-preview') ==
 // Internal loopback Host preview is explicitly read-only and never a user product UI.
 // Preserve the existing Host permissions, pairing, approvals and shared composer.
 const FIRST_CONTACT = transport.direct && !HOST_PREVIEW;
-if (FIRST_CONTACT) document.body.classList.add('first-contact');
+// Presentation is common to Direct and Cloud. FIRST_CONTACT still gates
+// only authorized Direct Host read paths and never enables cloud effects.
+if (!HOST_PREVIEW) document.body.classList.add('first-contact');
 // This action exists only inside the signed VIVIM Android shell. The online surface
 // remains the single Host-operated phone; Pocket holds local raw evidence only.
 const pocketButton = document.getElementById('pocket-native');
