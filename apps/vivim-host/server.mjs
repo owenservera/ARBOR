@@ -1249,8 +1249,11 @@ async function handleControl(req, res, pathname, host, controlFor, tokenFor, uiS
   // one-use owner browser session or local owner capability. This is not a phone
   // grant, a relay, a live-message transcript or an execution endpoint.
   if (route === 'pwa-view') {
-    if (req.method !== 'GET') { res.setHeader('allow', 'GET'); sendJson(res, 405, { code: 'METHOD' }); return; }
     if (req.headers.origin !== undefined && !sameOrigin) { sendJson(res, 403, { code: 'ORIGIN' }); return; }
+    // Authenticate BEFORE owner projections, grants and media work.
+    // The existing post-await check still catches an expired browser session.
+    if(!verifyOwnerToken(req.headers.authorization,owner)&&!uiSessions.authorized(req,{mutate:false})){sendJson(res,401,{code:'OWNER_AUTH'});return;}
+    if (req.method !== 'GET') { res.setHeader('allow', 'GET'); sendJson(res, 405, { code: 'METHOD' }); return; }
     try {
       const projected = runtimeFor().projection();
       const { cards, preferences, hardNos, ...phoneSafe } = projected;
