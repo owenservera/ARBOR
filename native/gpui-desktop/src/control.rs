@@ -289,7 +289,7 @@ mod tests {
         invalid["candidate"]["args"]=json!({"page":["malformed"]});
         assert!(project_composer_meaning(&invalid).is_err());
         invalid=p.clone();
-        invalid["candidate"]["args"]=json!({"page":"has\\ncontrol"});
+        invalid["candidate"]["args"]=json!({"page":"has\ncontrol"});
         assert!(project_composer_meaning(&invalid).is_err());
         invalid=p.clone();
         invalid["candidate"]["args"]=json!({"page":"private instruction"});
