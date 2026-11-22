@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import vm from 'node:vm';
 import {deriveReadiness,safeReadinessReport} from '../ux/readiness.mjs';
 import {capabilityCatalog,searchCapabilities} from '../ux/launcher.mjs';
 
@@ -101,4 +102,53 @@ test('Host preview has no phone actions, and stale session headers never count a
   assert.match(app,/controlRead:!!transport\.deviceHeaders\?\.\(\)/);
   assert.match(app,/S\.manifest = data\.snapshot\.manifest \?\? null/);
   assert.match(app,/S\.manifest = null;\s*S\.media = \{ state: 'unavailable' \}/);
+});
+
+test('a controlled PWA adopts new shell only when sends and local work are clear',async()=>{
+  // Run the production upgrade block, not a duplicated safety predicate.
+  const app=readFileSync(new URL('../app.js',import.meta.url),'utf8');
+  const begin=app.indexOf("if (!HOST_PREVIEW && 'serviceWorker' in navigator) {");
+  const end=app.indexOf('\nmountUniversalDock();',begin);
+  assert.ok(begin>=0&&end>begin,'production worker lifecycle exists');
+  const handlers={};let reloads=0;
+  const field={value:'',addEventListener:(type,fn)=>handlers['field:'+type]=fn};
+  const sw={controller:{},register:async()=>({update:async()=>{}}),
+    addEventListener:(type,fn)=>handlers['sw:'+type]=fn};
+  const state={notes:false,voice:false,pending:false};
+  const ctx={
+    HOST_PREVIEW:false,navigator:{onLine:true,serviceWorker:sw},
+    document:{visibilityState:'visible',addEventListener:(type,fn)=>handlers['document:'+type]=fn},
+    transport:{direct:true,pending:()=>state.pending},
+    S:{sigs:{},tab:'today',busy:false,sending:false,files:[]},
+    N:{pending:null,sending:false},chatHasApproval:false,
+    localNotes:{hasPendingLocalWork:()=>state.notes},
+    localVoice:{hasPendingLocalWork:()=>state.voice},
+    $:()=>field,window:{location:{reload:()=>{reloads++}}},
+    renderSurfaces(){},setInterval(){}
+  };
+  vm.runInNewContext(app.slice(begin,end),ctx,{filename:'app-shell-upgrade.js'});
+  await Promise.resolve();
+  state.notes=true;
+  handlers['sw:controllerchange']();
+  assert.equal(reloads,0,'unsaved Quick capture note blocks takeover');
+  state.notes=false;state.voice=true;
+  handlers['field:input']();
+  assert.equal(reloads,0,'local microphone/dictation review blocks takeover');
+  state.voice=false;ctx.S.sending=true;
+  handlers['field:input']();
+  assert.equal(reloads,0,'in-flight relay send blocks takeover');
+  ctx.S.sending=false;ctx.N.sending=true;
+  handlers['field:input']();
+  assert.equal(reloads,0,'in-flight phone send blocks takeover');
+  ctx.N.sending=false;state.pending=true;
+  handlers['field:input']();
+  assert.equal(reloads,0,'Host transport mutation blocks takeover');
+  state.pending=false;field.value='Keep this draft';
+  handlers['field:input']();
+  assert.equal(reloads,0,'composer draft blocks takeover');
+  field.value='';
+  handlers['field:input']();
+  assert.equal(reloads,1,'the retained upgrade applies once the existing gates clear');
+  handlers['field:input']();
+  assert.equal(reloads,1,'no duplicate reload on repeated input');
 });
