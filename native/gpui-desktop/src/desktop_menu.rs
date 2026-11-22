@@ -102,6 +102,7 @@ pub const SETTINGS: &[Item] = &[
 ];
 pub const HELP: &[Item] = &[
     Item::new("help-about", "About VIVIM", Navigate(About)),
+    Item::new("help-references", "Archived interface references", InspectSurfaces(Section::Help)),
 ];
 pub const fn entries(section: Section) -> &'static [Item] {
     match section {
