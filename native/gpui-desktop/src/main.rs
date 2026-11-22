@@ -28,15 +28,16 @@ fn viewport_for_window(window: &Window) -> u32 {
     viewport_for_width(f32::from(window.viewport_size().width))
 }
 
-use gpui_component::{Root, StyledExt, input::{Input, InputState}, button::{Button, ButtonVariants}};
+use gpui_component::{Root, StyledExt, input::{Input, InputState, InputEvent}, button::{Button, ButtonVariants}};
+use vivim_gpui_desktop::first_contact::{self, PhoneDraft};
 use vivim_gpui_desktop::{Overview, ReadError, ObservationTicket, passive_read_allowed, DevelopmentRevisionGuard, read_overview, read_development, control::{self, Review}, visual::{self, Visual, RevisionGuard}};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
-enum Panel { Overview, Wiki, Visual, Graph, Control }
+enum Panel { FirstContact, Overview, Wiki, Visual, Graph, Control }
 impl Panel {
     fn label(self)->&'static str {
         match self {
-            Self::Overview=>"Overview",Self::Wiki=>"Wiki",Self::Visual=>"Build",
+            Self::FirstContact=>"First Contact",Self::Overview=>"Overview",Self::Wiki=>"Wiki",Self::Visual=>"Build",
             Self::Graph=>"Knowledge graph",Self::Control=>"Host decisions",
         }
     }
@@ -56,6 +57,9 @@ struct Desktop {
     source_status: String,
     wiki_query: Option<String>,
     input: Entity<InputState>,
+    _input_subscription: Option<gpui::Subscription>,
+    phone_draft: Option<PhoneDraft>,
+    phone_status: String,
     status: String,
     overview: Option<Overview>,
     visual: Option<Visual>,
@@ -103,6 +107,71 @@ impl Desktop {
             });
         }).detach();
     }
+    /// A native input event drives the SAME Rust Wiki search as the old
+    /// Edge First Contact reference. No button, provider send or Host effect.
+    fn on_composer_changed(&mut self, cx: &mut Context<Self>) {
+        let value=self.input.read(cx).value().to_string();
+        let query=value.trim();
+        self.wiki_query=if query.is_empty() {
+            None
+        } else if query.chars().count()<=160 && !query.chars().any(char::is_control) {
+            Some(query.to_owned())
+        } else { None };
+        self.status=if value.is_empty() {
+            "First Contact ready · type to explore your Wiki".into()
+        } else if self.wiki_query.is_some() {
+            "Searching the existing Host Wiki as you type · no effect sent".into()
+        } else {
+            "Wiki query exceeds 160 visible characters · no action sent".into()
+        };
+        cx.notify();
+    }
+
+    /// Near-real-time, owner-authorized read-only phone viewport observation.
+    /// The Host LiveSystemState owns the draft and revision; GPUI never stores
+    /// a second source of truth or overwrites a concurrent native human edit.
+    fn start_phone_observer(&self, cx: &mut Context<Self>) {
+        cx.spawn(async move |this,cx| {
+            loop {
+                let allowed=match this.update(cx,|view,_|
+                    passive_read_allowed(view.busy,view.uncertain,
+                        view.review.as_ref().is_some_and(Review::needs_approval))) {
+                    Ok(allowed)=>allowed,
+                    Err(_)=>break,
+                };
+                if allowed {
+                    let job=cx.background_executor().spawn(async {first_contact::read_phone_draft()});
+                    let result=job.await;
+                    if this.update(cx,|view,cx|{
+                        if !passive_read_allowed(view.busy,view.uncertain,
+                            view.review.as_ref().is_some_and(Review::needs_approval)) {
+                            view.phone_draft=None;
+                            view.phone_status="Phone state withheld during Host review".into();
+                        } else {
+                            let (next,status)=match result {
+                                Ok(Some(draft))=>(Some(draft),"Phone live · Host source verified".to_owned()),
+                                Ok(None)=>(None,"No current visible phone draft".to_owned()),
+                                Err(error)=>(None,format!("Phone live view unavailable · {}",error.label())),
+                            };
+                            if view.phone_draft!=next || view.phone_status!=status {
+                                view.phone_draft=next;
+                                view.phone_status=status;
+                                cx.notify();
+                            }
+                        }
+                    }).is_err(){break;}
+                } else if this.update(cx,|view,cx|{
+                    if view.phone_draft.take().is_some(){
+                        view.phone_status="Phone state withheld during Host review".into();
+                        cx.notify();
+                    }
+                }).is_err(){break;}
+                // At most one owner read is in flight. No hot UI polling loop.
+                cx.background_executor().timer(Duration::from_millis(1000)).await;
+            }
+        }).detach();
+    }
+
     fn find_wiki(&mut self,cx:&mut Context<Self>){
         let raw=self.input.read(cx).value().to_string();
         let query=raw.trim();
@@ -719,6 +788,68 @@ fn mount_node(n:&VecElement,view:&VecView)->AnyElement{
 
 impl Render for Desktop {
     fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        // ONE canonical First Contact surface. The former five-panel GPUI
+        // diagnostics remain internal source, never a competing product home.
+        if self.panel==Panel::FirstContact {
+            let mut wiki=div().flex().flex_col().gap_2();
+            if let Some(data)=&self.overview {
+                wiki=wiki.child(div().text_lg().child(format!(
+                    "AutoWiki · revision {}",data.wiki_revision
+                )));
+                if let Some(query)=&self.wiki_query {
+                    let source=wiki_read::WikiRead{
+                        revision:data.wiki_revision,digest:data.wiki_digest.clone(),
+                        pages_total:data.wiki_page_total,pages:data.wiki_content.clone(),
+                        captures:data.wiki_captures.clone(),
+                        search_index:data.wiki_search_index.clone(),
+                        indexed_pages:data.wiki_indexed_pages,
+                        index_truncated:data.wiki_index_truncated,
+                    };
+                    if let Some(found)=wiki_read::search_view(&source,query,24) {
+                        wiki=wiki.child(format!(
+                            "{} matching Wiki sections for “{}”",found.matches,query
+                        ));
+                        for hit in &found.hits {
+                            wiki=wiki.child(div().p_3().bg(rgb(0x202b3a))
+                                .child(format!("{}{}",hit.page,
+                                    hit.section.as_ref().map(|s|format!(" / {s}")).unwrap_or_default()))
+                                .child(div().text_sm().child(hit.excerpt.clone())));
+                        }
+                        if found.hits.is_empty() {
+                            wiki=wiki.child("No matches in the current source-backed Wiki");
+                        }
+                    } else {
+                        wiki=wiki.child("Wiki search is not available for this query");
+                    }
+                } else {
+                    wiki=wiki.child("Start typing to explore your existing Wiki");
+                }
+            } else {
+                wiki=wiki.child(div().text_lg().child("AutoWiki"))
+                    .child(self.source_status.clone());
+            }
+            let mut phone=div().flex().flex_col().gap_1().p_3().bg(rgb(0x202b3a))
+                .child(div().font_semibold().child("Live phone viewport"));
+            if let Some(draft)=&self.phone_draft {
+                phone=phone.child(format!(
+                    "Host revision {} · source {} · {}",
+                    draft.system_revision,draft.source_revision,
+                    if draft.composing {"typing"} else {"current"}
+                )).child(div().p_2().child(draft.text.clone()));
+            } else {
+                phone=phone.child(self.phone_status.clone());
+            }
+            return div().size_full().bg(rgb(0x151b24)).text_color(rgb(0xe6edf3))
+                .flex().flex_col().p_5().gap_3()
+                .child(div().text_xl().child("VIVIM"))
+                .child(div().text_sm().child("One live surface · Native GPUI"))
+                .child(self.supervisor.snapshot().label())
+                .child(Input::new(&self.input))
+                .child(div().text_sm().child(self.status.clone()))
+                .child(phone)
+                .child(div().id("first-contact-wiki").flex_1().min_h_0()
+                    .overflow_y_scroll().child(wiki));
+        }
         let mut body = div().flex().flex_col().gap_3()
             .child(div().text_sm().child(self.source_status.clone()));
         if let Some(data) = &self.overview {
@@ -949,23 +1080,32 @@ fn main() {
         cx.open_window(WindowOptions { window_bounds: Some(WindowBounds::Windowed(bounds)), ..Default::default() },
             move |window, cx| {
                 let supervisor = Arc::clone(&supervisor);
-                let input=cx.new(|cx| InputState::new(window,cx).placeholder("Ask VIVIM or describe a Host command"));
+                let input=cx.new(|cx| InputState::new(window,cx).placeholder("Ask anything…"));
                 // Capture the viewport value, not the mutable Window borrowed again by Root.
                 let initial_viewport_px=viewport_for_window(window);
                 let view=cx.new(move |cx| {
-                    let mut view=Desktop {supervisor, input,panel:Panel::Overview,viewport_px:initial_viewport_px,
+                    let mut view=Desktop {supervisor, input,panel:Panel::FirstContact,viewport_px:initial_viewport_px,
                         viewport_epoch:0,source_epoch:0,presentation_epoch:0,read_busy:false,refresh_pending:false,
                         coherence_retry_ready:true,
                         source_status:"Host source not yet observed".into(),
-                        wiki_query:None,status:"Not yet observed".into(),overview:None,visual:None,vec_view:None,visual_status:"Not yet observed".into(),visual_guard:RevisionGuard::default(),wiki_guard:WikiRevisionGuard::default(),wiki_delta:"Not yet observed".into(),wiki_events:Vec::new(),detail:String::new(),
+                        wiki_query:None,_input_subscription:None,phone_draft:None,
+                        phone_status:"Waiting for owner-authorized phone observation".into(),
+                        status:"First Contact ready · type to explore your Wiki".into(),overview:None,visual:None,vec_view:None,visual_status:"Not yet observed".into(),visual_guard:RevisionGuard::default(),wiki_guard:WikiRevisionGuard::default(),wiki_delta:"Not yet observed".into(),wiki_events:Vec::new(),detail:String::new(),
                         review:None,last_plan:None,busy:false,uncertain:false,
                         graph_detail:String::new(),graph_status:"Graph not yet queried".into(),graph_busy:false,graph_pending:false,
                         graph_query:None,graph_guard:DevelopmentRevisionGuard::default()};
-                    view.refresh(cx);view.start_observer(cx);view
+                    view.refresh(cx);view.start_observer(cx);view.start_phone_observer(cx);view
                 });
                 // Register after construction so the Window reborrow is never moved into
                 // the Desktop entity's 'move' initializer closure.
-                view.update(cx,|_,cx|{
+                view.update(cx,|desktop,cx|{
+                    let input=desktop.input.clone();
+                    desktop._input_subscription=Some(cx.subscribe(&input,
+                        |view,_,event:&InputEvent,cx|{
+                            if matches!(event,InputEvent::Change){
+                                view.on_composer_changed(cx);
+                            }
+                        }));
                     cx.observe_window_bounds(window, |view: &mut Desktop,window,cx|{
                         view.set_viewport(viewport_for_window(window),cx);
                     }).detach();
