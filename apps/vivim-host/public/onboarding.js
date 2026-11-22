@@ -141,16 +141,16 @@ function stepMain() {
     return out;
   }
   const card = h('div', { class: 'panel-soft' }, h('span', { class: 'eyebrow', text: 'IN THE BACKGROUND' }), h('h2', { text: 'Let VIVIM learn your style' }),
-    h('p', { text: 'VIVIM will ask ChatGPT two short questions in a new chat, one at a time: what look suits you, and a first picture of you. Nothing is sent until you approve it here. If ChatGPT doesn’t know something, VIVIM leaves it blank rather than guessing.' }));
+    h('p', { text: 'VIVIM will ask ChatGPT seven bounded questions, one at a time, about presentation, projects, interests, workflows, values and unknowns. It uses only information ChatGPT can actually recall, not your complete chat archive. Nothing is sent until you review and approve each exact question here; uncertain information stays provisional.' }));
   if (['review', 'ready', 'attention', 'uncertain'].includes(pz.phase) && !review) {
     if (pz.passes.length) card.append(passList(pz.passes));
-    card.append(h('div', { class: 'actions' }, h('button', { class: 'btn primary', type: 'button', disabled: busy.has('review'), onclick: () => run('review', async () => { review = await post('/personalize/review'); }), text: pz.passes.length ? 'Review and try again' : 'Review the two questions' })));
+    card.append(h('div', { class: 'actions' }, h('button', { class: 'btn primary', type: 'button', disabled: busy.has('review'), onclick: () => run('review', async () => { review = await post('/personalize/review'); }), text: pz.passes.length ? 'Review another authorized discovery run' : 'Review seven discovery questions' })));
   } else if (review) {
     card.append(h('div', { class: 'prompts' }, review.passes.map(p => h('details', { class: 'prompt' }, h('summary', {}, h('strong', { text: p.title }), h('span', { class: 'fineprint', text: ' · exact text, fingerprint ' + p.digest.slice(0, 8) })), h('pre', { class: 'log', text: p.prompt })))),
       h('div', { class: 'actions' },
         h('button', { class: 'btn primary', type: 'button', disabled: busy.has('approve'), onclick: () => run('approve', async () => { await post('/personalize/approve', { generationId: review.generationId }); review = null; }), text: 'Approve and start' }),
         h('button', { class: 'btn', type: 'button', onclick: () => { review = null; render(); }, text: 'Not now' })),
-      h('p', { class: 'help', text: 'Approval lasts 30 minutes and covers only these two questions.' }));
+      h('p', { class: 'help', text: 'Approval lasts 30 minutes and covers only these seven exact questions. Studio never automatically retries an uncertain send.' }));
   } else if (pz.passes.length) {
     card.append(passList(pz.passes));
     if (pz.phase === 'running') card.append(h('p', { class: 'help', text: 'This runs in the background. You can continue; VIVIM keeps going and never sends the same question twice.' }));
