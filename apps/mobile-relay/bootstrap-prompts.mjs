@@ -49,12 +49,68 @@ export function extractJson(replyText) {
   }
 }
 
+
+// Deeper Oracle discovery reuses the existing D03–D07 Host validator and Studio
+// journal. Each prompt is an owner-reviewable, fresh-thread query, not a request
+// for account export, credential access, or a claim to know the user's full history.
+const DEEP_DISCOVERY = Object.freeze({
+  D03: {
+    title: 'Interests and tastes',
+    sections: 'interest, taste, hobby',
+    categories: 'interest, taste, hobby',
+    question: 'Identify well-grounded enduring interests, aesthetic tastes and hobbies. Distinguish recurring interests from one-off questions.'
+  },
+  D04: {
+    title: 'Current work and goals',
+    sections: 'role, project, goal, responsibility',
+    categories: 'role, project, goal',
+    question: 'Identify current projects and goals separately from historical activities. Do not assert employment or professional titles without reliable evidence.'
+  },
+  D05: {
+    title: 'Tools and working patterns',
+    sections: 'routine, workflow, skill, tool',
+    categories: 'routine, skill, tool',
+    question: 'Identify repeated ways of working, tools and skills, distinguishing direct instructions from suggestions.'
+  },
+  D06: {
+    title: 'Values and boundaries',
+    sections: 'relationship, value, boundary',
+    categories: 'relationship, value',
+    question: 'Identify only abstract, non-identifying collaboration preferences, stated values and boundaries. Do not name, describe or infer details about real relationships or third parties; do not infer protected beliefs.'
+  },
+  D07: {
+    title: 'Uncertainty and knowledge gaps',
+    sections: 'contradiction, confidence, coverage',
+    categories: 'contradiction, gap',
+    question: 'Identify what is uncertain, possibly outdated or internally inconsistent within what you can actually recall. Do not claim to compare other VIVIM discovery replies or unseen chats.'
+  }
+});
+export const DEEP_DISCOVERY_PASSES = Object.freeze(Object.keys(DEEP_DISCOVERY));
+export function deepDiscoveryPrompt(pass, generationId) {
+  const spec = DEEP_DISCOVERY[pass];
+  if (!spec || typeof generationId !== 'string' || !/^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,95}$/.test(generationId))
+    throw new TypeError('Unknown deep discovery pass or invalid generation');
+  return [
+    'Help initialize my private, local-first VIVIM Oracle personal corpus. Use only information that is actually available to you in this ChatGPT conversation or reliable memory. You do not have automatic access to my full ChatGPT history. Never invent conversations, quotations, dates, documents or source links. An explicit instruction differs from a remembered report or a tentative inference. It is valid to return empty arrays.',
+    'Never disclose credentials, contact information, identifying third-party details, private medical or sexual information, political or religious beliefs, or other sensitive personal details. Do not use protected traits as evidence, even when remembered. Do not issue a command, create a task, claim owner approval, browse, or change anything in my account. This is a structured, read-only reflection request.',
+    spec.question,
+    'Return exactly one compact JSON object, no Markdown, containing only keys schema, generationId, passId, observations, assertions, unknowns, viewProposals, schemaProposals, coverage.',
+    'Set schema to "vivim.bootstrap-output/1", generationId to "' + generationId + '", and passId to "' + pass + '".',
+    'observations: up to 12 objects {category,text,confidence,sensitive}. Allowed category: ' + spec.categories + '. text is a single short statement of at most 240 characters with no URLs or markup; confidence is a number 0..1; sensitive is boolean. For D06, treat values and relationship-like observations as sensitive.',
+    'assertions: up to 12 objects {section,label,value,basis,confidence,scope,freshness}. Allowed section: ' + spec.sections + '. label <=80 characters; value <=240 characters; basis must be explicitly_stated, provider_memory_report, or tentative_inference; confidence 0..1; scope global, work, personal, or unknown; freshness current, historical, or unknown. Do not label a remembered report as a verified original transcript.',
+    'unknowns: up to 8 short strings (<=140 characters). viewProposals: at most 3 inert objects {kind,title,reason}, where kind is card, collection, timeline or mode. schemaProposals: at most 2 inert objects {type,fields,reason}; each field {name,type} with type text, number, date, boolean, enum or reference. If no reliable proposal is justified, use empty arrays.',
+    'coverage: {areas:[{name,state}]} with at most 12 entries. state is covered, partial or unknown. If knowledge is weak, prefer unknown to false certainty. Avoid newline characters inside string values. Use only ordinary text, no URLs, scripts or markup. Keep the JSON brief.'
+  ].join('\n\n');
+}
+
 export const PASS_TITLES = Object.freeze({
   F02: 'Your look and feel',
-  F01: 'A first picture of you'
+  F01: 'A first picture of you',
+  ...Object.fromEntries(Object.entries(DEEP_DISCOVERY).map(([id, spec]) => [id, spec.title]))
 });
 export function promptForPass(pass, generationId) {
   if (pass === 'F02') return F02_PROMPT;
   if (pass === 'F01') return F01_PROMPT(generationId);
+  if (DEEP_DISCOVERY[pass]) return deepDiscoveryPrompt(pass, generationId);
   throw new Error('No pinned prompt for pass ' + pass);
 }
