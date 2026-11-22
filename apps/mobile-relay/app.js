@@ -1,5 +1,6 @@
 // grokbot-authored. Relay PWA shell: same-origin only, no secrets stored in JS-readable storage.
 import { transport } from './transport.mjs';
+import { resolveProviderHandoff } from './provider-handoff.mjs';
 import { mountBuildSurface } from './generative-ui/phone-surface.mjs';
 import { sha256Hex } from './generative-ui/portable-digest.mjs';
 import { mountBuildCanvas } from './build-canvas.mjs';
@@ -226,6 +227,10 @@ function updateDock() {
   const composer = $('chat-composer');
   if (!composer) return;
   const expanded = S.tab === 'talk' || dockExpanded;
+  // Minimal first-contact surface expands to the ORIGINAL provider controls only
+  // after an explicit verified handoff. No second composer or transport.
+  document.body.classList.toggle('first-contact-provider',
+    FIRST_CONTACT && S.paired && N.target === 'harness');
   // A first-time user must be able to type in Chat even before pairing
   // (host-preview used to hide the composer entirely on every first visit).
   composer.hidden = false;
@@ -2004,6 +2009,38 @@ async function send() {
   }
   if (N.target === 'vivim') {
     const field = $('text'), body = field.value.trim();
+    // An explicit provider request only switches/stages the existing Talk
+    // composer. No Host effect or provider send occurs until the next click.
+    if (FIRST_CONTACT) {
+      const handoff = resolveProviderHandoff(body,S.manifest?.providers);
+      if (handoff) {
+        if (!S.paired) {
+          toast('Pair this phone with your PC before connecting an AI. Nothing was sent.');
+          return;
+        }
+        if (handoff.status !== 'ready') {
+          field.value = ''; autogrow();
+          switchChatTarget('harness');
+          toast(handoff.label + ' is not verified. Check signed-in AIs on your PC first.');
+          return;
+        }
+        const prior = curConv();
+        // Never repoint a previously sent conversation to another provider.
+        if (!prior || prior.sent || msgsOf(prior.id).length || prior.provider !== handoff.id) {
+          const conversation = { id: 'c-' + hex16(), title: '', provider: handoff.id,
+            model: null, effort: null, sent: false, updatedAt: Date.now() };
+          S.convs.unshift(conversation); S.active = conversation.id; S.files = [];
+          saveConvs();
+        }
+        combinedInbox = false;
+        switchChatTarget('harness');
+        field.value = handoff.draft;
+        S.sigs.comp = null; S.sigs.list = null;
+        renderAll(true); autogrow(); updateSend(); field.focus();
+        toast(handoff.label + ' selected. Review the draft, then press Send.');
+        return;
+      }
+    }
     if (FIRST_CONTACT) {
       observeFirstWiki('read-only-send-blocked',{length:Math.min(body.length,1000)});
       void refreshFirstWiki();return;
