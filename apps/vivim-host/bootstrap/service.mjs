@@ -774,6 +774,39 @@ export function createBootstrapService({ ledger, worldId = WORLD_DEFAULT, now = 
     };
   }
 
+  // Owner-only Oracle corpus read model. Reuse the trusted Host SQLite writer's
+  // existing claims/provenance; never infer a source or copy a second knowledge DB.
+  // Sensitive D06 relationship/value material is excluded from this default view,
+  // and this method is never called by unauthenticated/phone bootstrap projections.
+  function oracleCorpus({ limit = 50 } = {}) {
+    if (!Number.isInteger(limit) || limit < 1 || limit > 100)
+      throw coded('ORACLE_CORPUS_LIMIT', 'limit must be an integer between 1 and 100');
+    const claims = ledger.claims.list(worldId, { limit: 200 })
+      .filter(c => ['F01','D03','D04','D05','D07'].includes(c.pass)
+        && c.section !== 'card' && c.section !== 'boundary' && c.scope !== 'sensitive')
+      .slice(0, limit)
+      .map(c => {
+        const proof = c.provenance_id ? ledger.provenance.get(c.provenance_id) : null;
+        return {
+          id: c.id, pass: c.pass, section: c.section,
+          label: c.label, statement: c.statement,
+          basis: c.basis, freshness: c.freshness, status: c.status,
+          confidence: c.confidence, scope: c.scope,
+          source: proof ? {
+            kind: proof.kind, provider: proof.provider, requestId: proof.request_id,
+            generationId: proof.generation_id, threadRef: proof.thread_ref,
+            observedAt: proof.observed_at, provenanceId: proof.id
+          } : { kind: 'unverified', provenanceId: c.provenance_id ?? null }
+        };
+      });
+    return {
+      schema: 'vivim.oracle-corpus-view/1', state: 'ready',
+      worldId, coverage: 'bounded-claims-only', sensitiveExcluded: true,
+      items: claims, count: claims.length,
+      notes: 'Provider recollections are not verified original chat transcripts. No raw chat history is available here.'
+    };
+  }
+
   // Phone-safe projection: no relationship labels, no observation bodies, no raw requests.
   function projection() {
     const full = fullStatus();
@@ -823,7 +856,7 @@ export function createBootstrapService({ ledger, worldId = WORLD_DEFAULT, now = 
     grantBootstrap, revokeGrant, requireGrant, requireGrantForSend, consumeGrantSend, grantState,
     ingestF02, choosePreset, undoTheme, ingestF01, ingestPass, setPassState,
     setHardNo, clearHardNo, setOwnerPreference, clearOwnerPreference, previewUiProposal, applyUiProposal, undoUiRevision, uiRevision, uiRevisionStatus,
-    phase, cards, fullStatus, projection, activePlan,
+    phase, cards, fullStatus, projection, oracleCorpus, activePlan,
     // exposed for tests and the CLI without reaching into the ledger directly
     ledger
   };
