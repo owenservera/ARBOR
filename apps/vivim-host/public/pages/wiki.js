@@ -229,9 +229,41 @@ function renderOracleCorpus(root, corpus) {
     root.appendChild(card);
   }
 }
+function renderDevelopmentLearning(root, learning) {
+  root.appendChild(element('h3', '', 'VIVIM Learning · development evidence'));
+  if (learning?.schema !== 'vivim.development-learning/1' ||
+      learning.source !== 'desktop-commander' || learning.privateContentIncluded !== false ||
+      learning.authority !== 'read-only-evidence' || learning.promotesLearning !== false) {
+    root.appendChild(element('p', 'empty', 'Desktop Commander learning is not connected to this Host.'));
+    return;
+  }
+  if (!['ready', 'stale', 'capturing'].includes(learning.state)) {
+    root.appendChild(element('p', 'empty', 'No verified Desktop Commander learning report is available.'));
+    return;
+  }
+  root.appendChild(element('p', 'meta',
+    'Local archive · ' + learning.state + ' · last verified capture ' +
+    present(learning.capture?.lastCapturedAt) + ' · evidence only; no automatic actions'));
+  const analysis = learning.analysis;
+  if (!analysis || !Number.isSafeInteger(analysis.indexedObservations)) {
+    root.appendChild(element('p', 'empty', 'Capture is available; learning analysis is still unavailable.'));
+    return;
+  }
+  root.appendChild(element('p', 'queue-summary',
+    analysis.indexedObservations + ' archived observations · ' +
+    analysis.upstreamOutputsOmitted + ' upstream outputs omitted · ' +
+    analysis.recordedExitNonzero + ' nonzero process exit observations' +
+    (analysis.fresh ? '' : ' · daily analysis is stale')));
+  for (const item of (Array.isArray(analysis.patterns) ? analysis.patterns : []).slice(0, 7)) {
+    if (typeof item?.label !== 'string' || !Number.isSafeInteger(item.observations)) continue;
+    root.appendChild(element('p', 'meta', item.label + ' · ' + item.observations +
+      ' observed event(s), not verified unique failures'));
+  }
+}
 function renderContext(context) {
   const root = element('div', 'stack');
   renderOracleCorpus(root, context.oracleCorpus);
+  renderDevelopmentLearning(root, context.developmentLearning);
   root.appendChild(element('p', 'queue-summary', context.totalObserved + ' user-declared observation(s) · source sequence ' + context.revision + ' · not verified facts'));
   if (!context.items.length) {
     root.appendChild(element('p', 'empty', 'No source-identified user messages yet. Send a message in Chat to begin.'));
