@@ -106,7 +106,11 @@ test('core-runtime-bridge.effectBoundary never dispatches and never authorizes r
   assert.equal(a4.reason, 'EFFECT_OWNER_MISMATCH');
   assert.equal(a4.dispatch, false);
 
-  const ok = effectBoundary({ attachment, capability, requestedEffect: 'submit', tool: 'submit_conversation_turn', owner: { id: 'capture-studio', effectExecutor: 'existing-conversation-runtime' }, lease: { owner: 'capture-studio', targetId: 't1', state: 'held' }, journal: { admitted: true, status: 'pre-dispatch', intentBindingRef: 'b1' }, preflight: { state: 'fresh', targetId: 't1', origin: 'https://example.com', sequence: 5 } });
+  const missingNativeRef = effectBoundary({ attachment, capability, requestedEffect: 'submit', tool: 'submit_conversation_turn', owner: { id: 'capture-studio', effectExecutor: 'existing-conversation-runtime' }, lease: { owner: 'capture-studio', targetId: 't1', state: 'held' }, journal: { admitted: true, status: 'pre-dispatch', intentBindingRef: 'b1' }, preflight: { state: 'fresh', targetId: 't1', origin: 'https://example.com', sequence: 5 } });
+  assert.equal(missingNativeRef.decision, 'deny');
+  assert.equal(missingNativeRef.reason, 'PREFLIGHT_NATIVE_IDENTITY_MISMATCH',
+    'matching page and owner alone must not substitute for native source identity');
+  const ok = effectBoundary({ attachment, capability, requestedEffect: 'submit', tool: 'submit_conversation_turn', owner: { id: 'capture-studio', effectExecutor: 'existing-conversation-runtime' }, lease: { owner: 'capture-studio', targetId: 't1', state: 'held' }, journal: { admitted: true, status: 'pre-dispatch', intentBindingRef: 'b1' }, preflight: { state: 'fresh', targetId: 't1', origin: 'https://example.com', sequence: 5, conversationRef: 'conv-1' } });
   assert.equal(ok.decision, 'defer-to-studio');
   assert.equal(ok.dispatch, false);
   assert.equal(ok.retryAuthorized, false);
@@ -163,8 +167,8 @@ test('integration-hub.graphOf consumes the session-kv GRAPH producer (single per
   const res = await call(hub, 'GET', `/api/v1/sessions/${sessionId}/knowledge/graph`);
   assert.equal(res.handled, true);
   assert.equal(res.status, 200);
-  assert.ok(Array.isArray(res.body.nodes));
-  assert.equal(res.body.nodes.find((n) => n.eid === 'n1').type, 'Person');
+  assert.ok(Array.isArray(res.body.nodes?.items), 'graph nodes are a bounded page, not an unbounded array');
+  assert.equal(res.body.nodes.items.find((n) => n.eid === 'n1').type, 'Person');
   assert.equal(res.body.outcome.status, 'complete');
 });
 

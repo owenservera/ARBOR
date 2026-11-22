@@ -185,7 +185,9 @@ test('ingress accepts a valid visit.observed batch, invokes the ingestVisits bri
     let received = null;
     const ingestVisits = async (payload) => { received = payload; return { accepted: 1, inserted: 1 }; };
     const publish = (type, data) => { /* UI notifications are not evidence */ };
-    const ingress = companionIngress({ root, publish, ingestVisits });
+    // The event fixture is pinned to November 20. Use the corresponding
+    // deterministic observation clock instead of weakening the 24h event fence.
+    const ingress = companionIngress({ root, publish, ingestVisits, now: () => Date.parse(at) });
     const req = makeReq({ token: cred.token, body: { schema: 'vivim.browser-companion/1', installationId, sessionId, events: [makeVisitEvent()] } });
     const reply = await ingress(req, { port: 7878, body: { schema: 'vivim.browser-companion/1', installationId, sessionId, events: [makeVisitEvent()] } });
     assert.equal(reply.status, 200);
@@ -205,7 +207,7 @@ test('ingress feeds verified inert results to native only: a 503 from the bridge
     pairCompanion(root, extId);
     const cred = JSON.parse(fs.readFileSync(path.join(root, 'browser-companion', 'credential.json'), 'utf8'));
     const ingestVisits = async () => { throw new Error('bridge down'); };
-    const ingress = companionIngress({ root, ingestVisits });
+    const ingress = companionIngress({ root, ingestVisits, now: () => Date.parse(at) });
     const req = makeReq({ token: cred.token, body: { schema: 'vivim.browser-companion/1', installationId, sessionId, events: [makeVisitEvent()] } });
     const reply = await ingress(req, { port: 7878, body: { schema: 'vivim.browser-companion/1', installationId, sessionId, events: [makeVisitEvent()] } });
     assert.equal(reply.status, 503);
@@ -213,4 +215,19 @@ test('ingress feeds verified inert results to native only: a 503 from the bridge
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
+});
+
+test('companion rejects stale visit evidence before the Rust bridge is called', async () => {
+  const root = makeRoot();
+  try {
+    const { token } = pairCompanion(root, extId);
+    let calls = 0;
+    const ingress = companionIngress({ root, ingestVisits: async () => { calls++;return {accepted:1,inserted:1}; },
+      now: () => Date.parse(at) + 86400001 });
+    const req = makeReq({ token });
+    const result = await ingress(req, { port: 7878,
+      body: { schema: 'vivim.browser-companion/1', installationId, sessionId, events: [makeVisitEvent()] } });
+    assert.equal(result.status,400);
+    assert.equal(calls,0,'expired observation cannot be admitted to native');
+  } finally { fs.rmSync(root, { recursive: true, force: true }); }
 });
