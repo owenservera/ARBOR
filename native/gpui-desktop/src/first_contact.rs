@@ -9,6 +9,28 @@ use vivim_host_supervisor::{read_owner_token, verify_host_owner};
 const BASE: &str = "http://127.0.0.1:43187";
 const MAX_RESPONSE_BYTES: u64 = 512 * 1024;
 
+/// Reading the real Host is deliberately rate limited; the native composer
+/// can filter the last authorized Wiki snapshot on every keystroke at zero IO.
+/// A new bounded observation is requested only after the edit settles and the
+/// previous source read is old enough. This does not create another poller,
+/// journal, or effect authority.
+pub const WIKI_REFRESH_MIN_INTERVAL: Duration = Duration::from_millis(2_000);
+pub const WIKI_COMPOSER_DEBOUNCE: Duration = Duration::from_millis(280);
+
+pub fn should_refresh_wiki_on_input(
+    current_query_present: bool,
+    current_edit_epoch: u64,
+    scheduled_edit_epoch: u64,
+    last_read_elapsed: Option<Duration>,
+    observation_allowed: bool,
+) -> bool {
+    current_query_present
+        && current_edit_epoch == scheduled_edit_epoch
+        && observation_allowed
+        && last_read_elapsed.is_none_or(|elapsed| elapsed >= WIKI_REFRESH_MIN_INTERVAL)
+}
+
+
 /// The actual phone's authorized, fresh source observation, NOT a second draft store.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PhoneDraft {
@@ -103,6 +125,21 @@ pub fn read_phone_draft() -> Result<Option<PhoneDraft>, ReadError> {
 mod tests {
     use super::*;
     use serde_json::json;
+
+    #[test]
+    fn live_wiki_refresh_is_debounced_and_refuses_stale_input() {
+        assert!(should_refresh_wiki_on_input(true, 9, 9, None, true));
+        assert!(should_refresh_wiki_on_input(
+            true,9,9,Some(WIKI_REFRESH_MIN_INTERVAL),true));
+        assert!(!should_refresh_wiki_on_input(
+            true,9,8,Some(Duration::from_secs(4)),true));
+        assert!(!should_refresh_wiki_on_input(
+            false,9,9,None,true));
+        assert!(!should_refresh_wiki_on_input(
+            true,9,9,None,false));
+        assert!(!should_refresh_wiki_on_input(
+            true,9,9,Some(Duration::from_millis(1999)),true));
+    }
 
     fn state() -> Value {
         json!({
