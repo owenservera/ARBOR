@@ -9,11 +9,13 @@ const source=readFileSync(path.join(root,'native/gpui-desktop/src/main.rs'),'utf
 const adapter=readFileSync(path.join(root,'native/gpui-desktop/src/lib.rs'),'utf8');
 const pkg=JSON.parse(readFileSync(path.join(root,'package.json'),'utf8'));
 const launcher=readFileSync(path.join(root,'tools/packaging/launch-gpui-only.ps1'),'utf8');
+const builder=readFileSync(path.join(root,'tools/packaging/build-gpui-native.ps1'),'utf8');
 
 test('Windows desktop launches native GPUI rather than a web app',()=>{
   assert.match(source,/Application::new\(\)\.run\(/);
   assert.match(source,/cx\.open_window\(/);
-  assert.match(pkg.scripts.desktop,/^cargo run --manifest-path native\/gpui-desktop\/Cargo\.toml --features desktop$/);
+  assert.match(pkg.scripts.desktop,/build-gpui-native\.ps1 && pwsh .*launch-gpui-only\.ps1$/);
+  assert.doesNotMatch(pkg.scripts.desktop,/\bcargo run\b|webview|edge|chrome/i);
   assert.doesNotMatch(pkg.scripts.desktop,/chrome|edge|https?:|--app=/i);
 });
 
@@ -31,4 +33,20 @@ test('native-only PowerShell launcher fails closed if the GPUI binary is missing
   assert.match(launcher,/vivim-gpui-desktop\.exe/);
   const executableLines=launcher.split(/\r?\n/).filter(line=>!line.trimStart().startsWith('#')).join('\n');
   assert.doesNotMatch(executableLines,/msedge|chrome|--app=|webview|Start-Process -FilePath ['"]?https?:/i);
+});
+
+test('retired cached GPUI binaries cannot launch without a matching native build receipt',()=>{
+  assert.match(launcher,/GPUI_ONLY_UNVERIFIED_BUILD/);
+  assert.match(launcher,/GPUI_ONLY_STALE_BUILD/);
+  assert.match(launcher,/GPUI_ONLY_SOURCE_NOT_CURRENT/);
+  assert.match(launcher,/GPUI_ONLY_DIRTY_SOURCE/);
+  assert.match(launcher,/vivim\.gpui-source-receipt\/1/);
+  assert.match(launcher,/receipt\.sourceSha -ne \$head/);
+  assert.match(launcher,/receipt\.binarySha256 -ne \$hash/);
+  assert.match(launcher,/receipt\.firstContactDefault -ne \$true/);
+  assert.match(builder,/panel\\s\*:\\s\*Panel::FirstContact/);
+  assert.match(builder,/--locked/);
+  assert.match(builder,/firstContactDefault = \$true/);
+  assert.match(builder,/Get-FileHash -LiteralPath \$exe -Algorithm SHA256/);
+  assert.doesNotMatch(pkg.scripts.desktop,/vivim-product-pure\.exe/);
 });
