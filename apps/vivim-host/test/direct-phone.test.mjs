@@ -93,7 +93,8 @@ test('direct phone authenticates proxy, bounds routes and uses the shared queue'
   assert.ok(Number.isSafeInteger(wiki.revision));
   assert.ok(wiki.pages && typeof wiki.pages === 'object');
   assert.equal((await call('/mobile/api/wiki', { method:'POST' })).status, 405);
-  assert.equal((await call('/mobile/api/wiki', { headers: { 'x-vivim-device-session': '0'.repeat(32) } })).status, 401);
+  // Session mismatch is a 403 under the current Host enrollment authority.
+  assert.equal((await call('/mobile/api/wiki', { headers: { 'x-vivim-device-session': '0'.repeat(32) } })).status, 403);
   const graphRead=await call('/mobile/api/chat/context?focus=talk');
   assert.equal(graphRead.status,200);
   const graphBody=JSON.parse(graphRead.body);

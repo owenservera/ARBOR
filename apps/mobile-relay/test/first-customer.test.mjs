@@ -106,7 +106,7 @@ test('Wiki-first typing automatically updates without submitting a command',()=>
   assert.match(app,/firstWikiNotice\('Searching Wiki…','typing'\)/);
   assert.match(app,/firstWikiNotice\('Wiki read unavailable/);
   assert.match(app,/No matching Host Wiki entries yet/);
-  assert.match(html,/body\.first-contact #send \{display:none!important\}/);
+  assert.match(html,/body\.first-contact:not\(\.first-contact-provider\) #send \{display:none!important\}/);
   assert.match(app,/if \(FIRST_CONTACT\) \{\s*observeFirstWiki\('read-only-send-blocked'/);
 });
 test('client observations are bounded metadata, with no raw typed words',()=>{

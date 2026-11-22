@@ -26,6 +26,7 @@ const dynRef=/\bimport\s*\(\s*['"]([^'"]+)['"]\s*\)/g;
 const nlcl=/^nlcl\/[a-z]+\.mjs$/;
 function directServes(p){
   const e=engine.exec(p),t=tier.exec(p);
+  if(p==='vec-engines/rust-wasm.mjs')return host.includes("'vec-engines/rust-wasm.mjs':");
   if(e)return host.includes('`vec-engines/${n}.mjs`')&&host.includes("'"+e[1]+"'");
   if(t)return host.includes("'"+p+"':")&&host.includes("'../../packages/tierflow/src/visual-runtime/"+t[1]+"'");
   if(nlcl.test(p))

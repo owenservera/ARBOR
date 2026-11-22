@@ -26,6 +26,7 @@ const SHELL_FILES = [
   'transport.mjs',
   'visual-bootstrap.mjs',
   'control-phone.mjs',
+  'private-shares-ui.mjs',
   'control-client.mjs',
   'control-chat.mjs',
   'control-language.mjs',
@@ -52,6 +53,8 @@ const SHELL_FILES = [
   'vec-engines/registry.mjs',
   'vec-engines/catalog.mjs',
   'vec-engines/validators.mjs',
+  'vec-engines/rust-wasm.mjs',
+  'wasm/vivim_programmability_core.wasm',
   'vec-engines/enum-choices.mjs',
   'generative-ui/bootstrap-adapters.mjs',
   'generative-ui/catalog.mjs',
@@ -227,7 +230,7 @@ test('install precaches every shell asset from the network with cache reload', a
   const keys = new Set(await cache.keys());
   const expected = expectedKeys(ROOT);
   assert.equal(SHELL_FILES.length, expected.size, 'shell list has no duplicate entries');
-  assert.equal(SHELL_FILES.length, 77);
+  assert.equal(SHELL_FILES.length, 80);
   assert.deepEqual(SHELL_FILES, SW_SHELL_PATHS, 'the suite shell list must mirror sw.js SHELL_PATHS');
   expected.delete(failure);
   assert.deepEqual(keys, expected);
