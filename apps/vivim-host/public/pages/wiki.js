@@ -198,8 +198,40 @@ function renderSemanticKnowledge(root, context) {
   if (knowledge.rows.length > 32) root.appendChild(element('p', 'empty', (knowledge.rows.length - 32) + ' additional relationships in the Host read model.'));
   root.appendChild(element('p', 'meta', 'Snapshot digest ' + knowledge.digest));
 }
+function renderOracleCorpus(root, corpus) {
+  root.appendChild(element('h3', '', 'Oracle · personal corpus'));
+  if (corpus?.schema !== 'vivim.oracle-corpus-view/1' ||
+      corpus.state !== 'ready' || corpus.sensitiveExcluded !== true ||
+      !Array.isArray(corpus.items) || corpus.items.length > 100) {
+    root.appendChild(element('p', 'empty', 'Oracle corpus unavailable from the Host ledger. No cached or invented personal facts displayed.'));
+    return;
+  }
+  root.appendChild(element('p', 'queue-summary', corpus.items.length +
+    ' bounded provider-reported claim(s) · private Host ledger · not verified original chats'));
+  if (!corpus.items.length) {
+    root.appendChild(element('p', 'empty',
+      'No Oracle claims yet. Review and start ChatGPT discovery from VIVIM onboarding.'));
+    return;
+  }
+  for (const item of corpus.items.slice(0, 16)) {
+    if (typeof item?.id !== 'string' || typeof item.statement !== 'string' ||
+        typeof item.source?.provenanceId !== 'string' ||
+        !['F01','D03','D04','D05','D07'].includes(item.pass)) continue;
+    const card = element('article', 'section');
+    card.dataset.corpusId = item.id;
+    card.appendChild(element('p', 'body', item.statement));
+    card.appendChild(element('div', 'meta',
+      item.pass + ' · ' + present(item.section) + ' · ' + present(item.status) +
+      ' · confidence ' + present(item.confidence) +
+      ' · source ' + item.source.provenanceId +
+      ' · generation ' + present(item.source.generationId) +
+      ' · provider-reported, not independently verified'));
+    root.appendChild(card);
+  }
+}
 function renderContext(context) {
   const root = element('div', 'stack');
+  renderOracleCorpus(root, context.oracleCorpus);
   root.appendChild(element('p', 'queue-summary', context.totalObserved + ' user-declared observation(s) · source sequence ' + context.revision + ' · not verified facts'));
   if (!context.items.length) {
     root.appendChild(element('p', 'empty', 'No source-identified user messages yet. Send a message in Chat to begin.'));
