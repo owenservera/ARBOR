@@ -48,3 +48,14 @@ Each scout reads and tests only the approved source and **reports** issues. Chat
 - `d5e605a`: delayed Wiki refresh schedule respects bounded recent Host observations.
 
 **Acceptance warning:** these are Rust source+tests, not a successful physical GPUI typing / Android PWA parity demo yet. Native binary and device evidence remain separate gates.
+
+## First actual execution receipt — 2026-11-22
+
+- **Cloud source:** GPUI Host composer meaning bridge `e455bb7`, native UI `3beaf36`; bounded delayed Wiki refresh `d5e605a`.
+- **Windows immutable source** `3beaf36b7a955fd514bb80ad45bf347630e4bec1`, device `DESKTOP-9KB03LU`: `cargo test --manifest-path native/gpui-desktop/Cargo.toml --lib --offline` **41/41 PASS**; `cargo check --manifest-path native/gpui-desktop/Cargo.toml --features desktop --offline --locked` **PASS**.
+- `node --test apps/vivim-host/test/vlang-command-compilation.test.mjs apps/vivim-host/test/control-intent-planner.test.mjs apps/vivim-host/test/command-intent-native.test.mjs apps/mobile-relay/test/composer-assist.test.mjs`: **26/26 PASS**, including test annotations that full native binary parity is **UNRUN** in parts of the Node harness.
+- Real deterministic Host compiler sampling: `create wiki page notes` → `candidate wiki.page.create` R1 source_wired; `edit wiki section notes/tasks saying item` → `candidate wiki.section.edit` R1 source_wired; `stop all traffic` → `clarification_required` with the exact question about pausing VIVIM traffic versus disconnecting the machine. The native adapter tests admission but real GPU visual feedback on this SHA **UNRUN**.
+- **ZCode scout pilot actually launched** through CLI in plan/read-only mode against the immutable source. The configured OpenRouter `baidu/ernie-5.5-flash-preview:free` provider returned **HTTP 429 upstream TPM rate limit**, so **no model-generated finding or completed improvement pass** exists. The scoped pilot process was terminated; no retry or other model lane was launched. No claims of independent ZCode verifier success.
+- The saved `arbor-life` build/loop scripts were **not** executed because their older routes and source-edit permissions violate today's owner workflow. The deterministic test path remains usable without model fanout.
+
+**Next execution order:** (1) native UI physical typing/meaning and Wiki test on rebuilt exact SHA; (2) add one real, independently reproduced natural-language failure as a regression before editing parser rules; (3) when a healthy authorized provider is available, retry **one** read-only ZCode scout with a hard budget, then expand to two independent lanes; (4) no unbounded model retries or paid-provider fallback without owner direction. Core code remains ChatGPT-owned.
