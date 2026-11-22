@@ -176,3 +176,10 @@
 - **Regression source added:** `refuses_non_owner_or_wrong_product_phone_draft`, `refuses_noncanonical_phone_session_identity`; existing unversioned-source test extended to zero revisions. Test cases use the actual `agent-composer-bridge.mjs` observation fields and existing Host local revision contract.
 - **Verification:** CODED/PUSHED and independently SOURCE RE-READ on `main`. Native cargo test, desktop compile check, live PC screenshot, and Android two-device sync for this exact SHA **UNRUN**, not PASS. The connected Windows Remote Desktop Commander replied online, but a PowerShell command session returned no usable command/build output; no source was modified on the PC.
 - **Ledger impact:** CS-052 (source-admission substep) strengthened **IN CODE, DEVICE UNVERIFIED**. CS-053–059 and CS-091–099 stay TODO until real device/Host evidence. No launch shortcut or phone URL changes. Next: repeat post-push immutable Windows build and verify foreground GPUI typing/menu; implement PC-origin staged composer edits only through the existing Host Control owner-approval/receipt contract; prove cross-device source revisions and race behavior.
+
+### R002 native/VLANG development cycle — 2026-11-22
+
+- [Exact source commits, unit-test receipts and unresolved native acceptance](DEV-CYCLE-NATIVE-VLANG-R002-20261122.md).
+- Verified isolated Windows source `e3f8b0d`: **43/43 GPUI Rust library tests PASS** and **26/26 deterministic Host/VLANG tests PASS**; node-native subchecks remain UNRUN.
+- Newer `main` commits harden the native screenshot inspector and show model-free no-match/refusal feedback. **Latest-SHA build, physical GPUI typing, and Android parity remain UNVERIFIED** until tests prove otherwise.
+- CI startup failure (zero jobs) is NOT a source test failure or pass. Preserve the existing launcher, phone URL and dirty local development workspace.
