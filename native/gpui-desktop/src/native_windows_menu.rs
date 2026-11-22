@@ -40,6 +40,11 @@ mod win {
     const WM_COMMAND:u32=0x0111;
     const WM_NCDESTROY:u32=0x0082;
     const GWLP_WNDPROC:i32=-4;
+    const SWP_NOSIZE:u32=0x0001;
+    const SWP_NOMOVE:u32=0x0002;
+    const SWP_NOZORDER:u32=0x0004;
+    const SWP_NOACTIVATE:u32=0x0010;
+    const SWP_FRAMECHANGED:u32=0x0020;
     static HWND:AtomicIsize=AtomicIsize::new(0);
     static OLD_PROC:AtomicIsize=AtomicIsize::new(0);
     static COMMANDS:Mutex<VecDeque<u16>>=Mutex::new(VecDeque::new());
@@ -56,6 +61,8 @@ mod win {
         fn SetMenu(hwnd:Handle,menu:Handle)->i32;
         fn GetMenu(hwnd:Handle)->Handle;
         fn DrawMenuBar(hwnd:Handle)->i32;
+        fn GetMenuItemRect(hwnd:Handle,menu:Handle,item:u32,rect:*mut Rect)->i32;
+        fn SetWindowPos(hwnd:Handle,insert_after:Handle,x:i32,y:i32,w:i32,h:i32,flags:u32)->i32;
         fn DestroyMenu(menu:Handle)->i32;
         fn SetWindowLongPtrW(hwnd:Handle,index:i32,value:isize)->isize;
         fn CallWindowProcW(old:Option<unsafe extern "system" fn(Handle,u32,Wparam,Lparam)->Lresult>,
@@ -106,6 +113,21 @@ mod win {
     }
     fn wide(label:&str)->Vec<u16> {label.encode_utf16().chain(iter::once(0)).collect()}
     pub fn installed()->bool {HWND.load(Ordering::Acquire)!=0}
+    /// An installed HMENU does not prove its chrome is actually visible.
+    /// Keep the app-shell fallback until Windows exposes native geometry.
+    pub fn visually_ready()->bool {
+        let raw=HWND.load(Ordering::Acquire);
+        if raw==0 {return false;}
+        // SAFETY: read-only Win32 geometry probe for the owned window.
+        unsafe {
+            let hwnd=raw as Handle;
+            let menu=GetMenu(hwnd);
+            if menu.is_null(){return false;}
+            let mut rect=Rect::default();
+            GetMenuItemRect(hwnd,menu,0,&mut rect)!=0 &&
+                rect.right>rect.left+4 && rect.bottom>rect.top+4
+        }
+    }
     pub fn install()->Result<bool,String> {
         if installed(){return Ok(true)}
         let mut hwnd:Handle=ptr::null_mut();
@@ -151,6 +173,11 @@ mod win {
                 }
                 OLD_PROC.store(old,Ordering::Release);
                 HWND.store(hwnd as isize,Ordering::Release);
+                // Recalculate the nonclient frame after HMENU attachment
+                // without changing bounds, activation or z-order.
+                SetWindowPos(hwnd,ptr::null_mut(),0,0,0,0,
+                    SWP_NOMOVE|SWP_NOSIZE|SWP_NOZORDER|
+                    SWP_NOACTIVATE|SWP_FRAMECHANGED);
                 DrawMenuBar(hwnd);
                 Ok(())
             })();
@@ -171,11 +198,15 @@ pub fn install()->Result<bool,String> {win::install()}
 #[cfg(windows)]
 pub fn installed()->bool {win::installed()}
 #[cfg(windows)]
+pub fn visually_ready()->bool {win::visually_ready()}
+#[cfg(windows)]
 pub fn take_command()->Option<Intent> {win::take_command()}
 #[cfg(not(windows))]
 pub fn install()->Result<bool,String> {Ok(false)}
 #[cfg(not(windows))]
 pub fn installed()->bool {false}
+#[cfg(not(windows))]
+pub fn visually_ready()->bool {false}
 #[cfg(not(windows))]
 pub fn take_command()->Option<Intent> {None}
 
