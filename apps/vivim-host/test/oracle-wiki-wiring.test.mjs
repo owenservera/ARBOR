@@ -5,6 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { createBootstrapRuntime } from '../bootstrap/runtime.mjs';
 import { createHostServer } from '../server.mjs';
+import { createProductJournal } from '../chat/product-journal.mjs';
 
 const TOKEN = 'oracle-private-owner-0123456789abcdef0123456789abcdef';
 const deep = {
@@ -32,6 +33,7 @@ test('Oracle reuses the existing owner-private AutoWiki Host context and never c
     runtime.close();
     rmSync(dir, { recursive: true, force: true });
   });
+  const initialWiki = await createProductJournal({ dataRoot: dir }).readPhoneWiki();
   runtime.grantBootstrap({ scope: 'full-bootstrap' });
   runtime.ingestPass({ response: deep, requestId: 'oracle-wiki-d03', generationId: 'gen-oracle-wiki-1', threadRef: 'chatgpt-thread-ref' });
   runtime.ingestPass({ response: sensitive, requestId: 'oracle-wiki-d06', generationId: 'gen-oracle-wiki-1', threadRef: 'chatgpt-thread-ref' });
@@ -57,7 +59,7 @@ test('Oracle reuses the existing owner-private AutoWiki Host context and never c
   assert.doesNotMatch(JSON.stringify(view), /CONFIDENTIAL-RELATIONSHIP-DETAIL/);
   const publicWiki = await (await fetch(base + '/api/wiki')).json();
   assert.doesNotMatch(JSON.stringify(publicWiki), /Enjoys geometry|CONFIDENTIAL/);
-  assert.equal(publicWiki.revision, 0);
+  assert.equal(publicWiki.revision, initialWiki.revision, 'corpus port never commits a Wiki revision');
   const js = await (await fetch(base + '/wiki.js')).text();
   assert.match(js, /renderOracleCorpus\(root, context\.oracleCorpus\)/);
   assert.match(js, /provider-reported, not independently verified/);
