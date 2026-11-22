@@ -3,10 +3,10 @@
 //! a second product state, Host command authority, or browser renderer.
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Section { File, Edit, View, Tools, Settings, Help }
+pub enum Section { File, Edit, View, Tools, Developer, Settings, Help }
 impl Section {
-    pub const ALL: [Section; 6] = [
-        Self::File, Self::Edit, Self::View, Self::Tools, Self::Settings, Self::Help
+    pub const ALL: [Section; 7] = [
+        Self::File, Self::Edit, Self::View, Self::Tools, Self::Developer, Self::Settings, Self::Help
     ];
     pub const fn label(self) -> &'static str {
         match self {
@@ -14,6 +14,7 @@ impl Section {
             Self::Edit => "Edit",
             Self::View => "View",
             Self::Tools => "Tools",
+            Self::Developer => "Developer",
             Self::Settings => "Settings",
             Self::Help => "Help",
         }
@@ -24,6 +25,7 @@ impl Section {
             Self::Edit => "bar-edit",
             Self::View => "bar-view",
             Self::Tools => "bar-tools",
+            Self::Developer => "bar-developer",
             Self::Settings => "bar-settings",
             Self::Help => "bar-help",
         }
@@ -33,7 +35,7 @@ impl Section {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Destination {
     FirstContact, WikiInspector, Devices, HostStatus, Build, KnowledgeGraph,
-    HostDecisions, Preferences, About
+    HostDecisions, DeveloperTools, Preferences, About
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Intent {
@@ -41,6 +43,9 @@ pub enum Intent {
     RefreshSources,
     FocusComposer,
     ClearComposer,
+    CaptureWindow,
+    OpenScreenshotsFolder,
+    SaveDiagnostics,
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Item {
@@ -74,6 +79,18 @@ pub const TOOLS: &[Item] = &[
     Item::new("tools-graph", "Knowledge graph", Navigate(KnowledgeGraph)),
     Item::new("tools-decisions", "Host decisions", Navigate(HostDecisions)),
 ];
+pub const DEVELOPER: &[Item] = &[
+    Item::new("developer-home", "Developer tools", Navigate(DeveloperTools)),
+    Item::new("developer-capture", "Capture GPUI screenshot", CaptureWindow),
+    Item::new("developer-open-captures", "Open screenshot folder", OpenScreenshotsFolder),
+    Item::new("developer-report", "Save diagnostic report", SaveDiagnostics),
+    Item::new("developer-refresh", "Refresh Host/Wiki state", RefreshSources),
+    Item::new("developer-host", "Inspect Host", Navigate(HostStatus)),
+    Item::new("developer-wiki", "Inspect Wiki", Navigate(WikiInspector)),
+    Item::new("developer-vec", "Inspect visual compiler", Navigate(Build)),
+    Item::new("developer-graph", "Inspect knowledge graph", Navigate(KnowledgeGraph)),
+    Item::new("developer-phone", "Inspect phone state", Navigate(Devices)),
+];
 pub const SETTINGS: &[Item] = &[
     Item::new("settings-preferences", "Preferences…", Navigate(Preferences)),
 ];
@@ -86,6 +103,7 @@ pub const fn entries(section: Section) -> &'static [Item] {
         Section::Edit => EDIT,
         Section::View => VIEW,
         Section::Tools => TOOLS,
+        Section::Developer => DEVELOPER,
         Section::Settings => SETTINGS,
         Section::Help => HELP,
     }
@@ -95,9 +113,9 @@ mod tests {
     use super::*;
     use std::collections::HashSet;
     #[test]
-    fn standard_desktop_menu_bar_has_six_categories() {
+    fn standard_desktop_menu_bar_includes_developer() {
         assert_eq!(Section::ALL.map(Section::label),
-            ["File", "Edit", "View", "Tools", "Settings", "Help"]);
+            ["File", "Edit", "View", "Tools", "Developer", "Settings", "Help"]);
         assert!(Section::ALL.iter().all(|section| !entries(*section).is_empty()));
     }
     #[test]
@@ -114,7 +132,7 @@ mod tests {
             .flat_map(|section| entries(*section).iter().map(|item| item.intent)).collect();
         for destination in [
             FirstContact, WikiInspector, Devices, HostStatus, Build,
-            KnowledgeGraph, HostDecisions, Preferences, About
+            KnowledgeGraph, HostDecisions, DeveloperTools, Preferences, About
         ] {
             assert!(all.contains(&Navigate(destination)));
         }
@@ -126,8 +144,12 @@ mod tests {
         assert!(all.contains(&FocusComposer));
         assert!(all.contains(&ClearComposer));
         assert!(all.contains(&RefreshSources));
+        assert!(all.contains(&CaptureWindow));
+        assert!(all.contains(&OpenScreenshotsFolder));
+        assert!(all.contains(&SaveDiagnostics));
         assert!(all.iter().all(|intent| matches!(
-            intent, Navigate(_) | RefreshSources | FocusComposer | ClearComposer
+            intent, Navigate(_) | RefreshSources | FocusComposer | ClearComposer |
+                CaptureWindow | OpenScreenshotsFolder | SaveDiagnostics
         )));
     }
 }
