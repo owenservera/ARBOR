@@ -138,7 +138,8 @@ mod tests {
         assert_eq!(project_phone_draft(&s),Err(ReadError::InvalidProjection));
         s=state();s["effectPerformed"]=json!(true);
         assert_eq!(project_phone_draft(&s),Err(ReadError::InvalidProjection));
-        s=state();s["regions"].as_array_mut().unwrap().push(s["regions"][0].clone());
+        s=state();let duplicate=s["regions"][0].clone();
+        s["regions"].as_array_mut().unwrap().push(duplicate);
         assert_eq!(project_phone_draft(&s),Err(ReadError::InvalidProjection));
     }
     #[test] fn refuses_oversized_or_unversioned_source() {
