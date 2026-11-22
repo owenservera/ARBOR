@@ -1,6 +1,6 @@
 // grokbot-authored. Relay PWA shell: same-origin only, no secrets stored in JS-readable storage.
 import { transport } from './transport.mjs';
-import { resolveProviderHandoff } from './provider-handoff.mjs';
+import { resolveProviderHandoff, canSendVerifiedProvider } from './provider-handoff.mjs';
 import { mountBuildSurface } from './generative-ui/phone-surface.mjs';
 import { sha256Hex } from './generative-ui/portable-digest.mjs';
 import { mountBuildCanvas } from './build-canvas.mjs';
@@ -1646,10 +1646,27 @@ function mountFirstWiki(){
 function updateSend() {
   if (HOST_PREVIEW || (!S.paired && !FIRST_CONTACT)) { $('send').disabled = true; return; }
   if (FIRST_CONTACT) {
-    // This first-customer surface is Wiki-as-you-type. Host effects and
-    // provider sends are NOT bound to this read-only composer.
-    $('send').disabled=true;
-    return;
+    // Wiki text remains read-only. Only an EXPLICIT provider command makes
+    // the original Send button visible, and its first tap ONLY stages a draft.
+    const handoff = N.target === 'vivim'
+      ? resolveProviderHandoff($('text').value,S.manifest?.providers) : null;
+    document.body.classList.toggle('first-contact-handoff',S.paired && !!handoff);
+    if (N.target === 'vivim') {
+      $('send').disabled = !S.paired || !transport.direct || !handoff;
+      $('send').setAttribute('aria-label','Choose AI (review before sending)');
+      return;
+    }
+    if (N.target === 'harness') {
+      $('send').disabled = !canSendVerifiedProvider({
+        paired:S.paired,direct:transport.direct,
+        sessionApproved:!!transport.deviceHeaders?.(),target:N.target,
+        providerId:curConv()?.provider,projection:S.manifest?.providers,
+        text:$('text').value,sending:S.sending
+      });
+      $('send').setAttribute('aria-label','Send to selected signed-in AI');
+      return;
+    }
+    $('send').disabled=true;return;
   }
   $('send').disabled = N.target === 'vivim'
     ? !transport.direct || vivimChat.busy() || !$('text').value.trim() || $('text').value.trim().length > 1000
@@ -2074,6 +2091,15 @@ async function send() {
   if (N.target === 'phone') return nativeSend();
   if (S.sending) return;
   const c = curConv(), ta = $('text'), body = ta.value.trim(); if (!c || !body) return;
+  if (FIRST_CONTACT && !canSendVerifiedProvider({
+    paired:S.paired,direct:transport.direct,
+    sessionApproved:!!transport.deviceHeaders?.(),target:N.target,
+    providerId:c.provider,projection:S.manifest?.providers,
+    text:body,sending:S.sending
+  })) {
+    toast('This AI is not currently verified on the paired PC. Nothing was sent.');
+    updateSend();return;
+  }
   const p = providers().find(x => x.id === c.provider); if (!p) { toast('Pick a signed-in provider'); return; }
   const prefix = mkPrefix(c);
   if (prefix.length + body.length > MAXTEXT) { toast('Message too long (max ' + MAXTEXT + ' incl. routing prefix)'); return; }

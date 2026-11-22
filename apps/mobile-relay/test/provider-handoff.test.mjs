@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { resolveProviderHandoff } from '../provider-handoff.mjs';
+import { resolveProviderHandoff, canSendVerifiedProvider } from '../provider-handoff.mjs';
 
 const checked = ['chatgpt','claude','gemini','qwen','deepseek','zai']
   .map(id => ({id,signedIn:true}));
@@ -42,7 +42,27 @@ test('same real mobile composer is reused; no new provider network or effect wri
   assert.match(app,/switchChatTarget\('harness'\)/);
   assert.match(app,/first-contact-provider/);
   assert.match(host,/'provider-handoff\.mjs': \['provider-handoff\.mjs'/);
-  assert.match(html,/body\.first-contact:not\(\.first-contact-provider\) #send/);
+  assert.match(html,/body\.first-contact:not\(\.first-contact-provider\):not\(\.first-contact-handoff\) #send/);
+  assert.match(app,/document\.body\.classList\.toggle\('first-contact-handoff'/);
+  assert.match(app,/if \(FIRST_CONTACT && !canSendVerifiedProvider\(/);
   assert.equal((html.match(/id="chat-composer"/g)||[]).length,1);
   assert.doesNotMatch(module,/\bfetch\s*\(|\bWebSocket\s*\(|\bXMLHttpRequest\b|\.request\s*\(/);
+});
+
+// The first tap only selects the AI; later Send requires an actual device
+// session and exact verified provider. Local Wiki text never passes this gate.
+test('first-contact provider Send cannot bypass pairing or provider verification', () => {
+  const base={
+    paired:true,direct:true,sessionApproved:true,target:'harness',
+    providerId:'claude',projection:checked,text:'Explain this',sending:false
+  };
+  assert.equal(canSendVerifiedProvider(base),true);
+  for(const override of [
+    {paired:false},{direct:false},{sessionApproved:false},
+    {target:'vivim'},{target:'phone'},{providerId:'unknown'},
+    {text:'  '},{sending:true},
+    {projection:[{id:'claude',signedIn:false}]},
+    {projection:[{id:'claude',signedIn:'true'}]},
+    {projection:null}
+  ])assert.equal(canSendVerifiedProvider({...base,...override}),false,JSON.stringify(override));
 });

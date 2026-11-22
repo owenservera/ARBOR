@@ -32,3 +32,13 @@ export function resolveProviderHandoff(input, projection) {
     draft: (match[2] || '').trim(), sendsAutomatically: false
   });
 }
+
+// This gate is pure and has no effect authority. It is checked both when
+// painting Send and immediately before the existing relay-chat queue call.
+export function canSendVerifiedProvider({paired,direct,sessionApproved,target,providerId,projection,text,sending}) {
+  return paired === true && direct === true && sessionApproved === true &&
+    target === 'harness' && sending !== true &&
+    typeof providerId === 'string' && typeof text === 'string' && !!text.trim() &&
+    Array.isArray(projection) &&
+    projection.some(p => p?.id === providerId && p?.signedIn === true);
+}
