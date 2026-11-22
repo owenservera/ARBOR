@@ -9,10 +9,15 @@ use super::{BASE, LIMIT, Endpoint, ReadError, get, owner_token, validate_health}
 use reqwest::blocking::Client;
 use serde_json::{Value, json};
 use vivim_programmability_core::control_plan_presentation;
-use std::{io::Read, time::Duration};
+use std::{io::Read, time::{Duration, SystemTime, UNIX_EPOCH},
+    sync::atomic::{AtomicU64, Ordering}};
+use sha2::{Digest, Sha256};
 
 const CONTROL: &str = "/api/host/control/";
 const MAX_COMMAND: usize = 16 * 1024;
+const PHONE_ACTION: &str = "pwa.composer.draft.set";
+const PHONE_DRAFT_LIMIT: usize = 1000;
+static PHONE_CORRELATION: AtomicU64 = AtomicU64::new(1);
 
 fn hex(s: &str, n: usize) -> bool {
     s.len() == n && s.bytes().all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
@@ -100,6 +105,141 @@ fn request(route: &str, body: Option<Value>) -> Result<Value, ReadError> {
     if bytes.len() as u64 > LIMIT { return Err(ReadError::InvalidProjection); }
     serde_json::from_slice(&bytes).map_err(|_| ReadError::InvalidProjection)
 }
+/// The existing Host agent-composer bridge already owns stage, Control
+/// approval, one-shot delivery, ACK and verified source readback. The native
+/// desktop only submits an explicit owner-requested draft to that contract.
+#[derive(Debug)]
+struct PhoneFence {
+    epoch: String,
+    sequence: u64,
+    view_revision: u64,
+    source_revision: u64,
+    session_id: String,
+    current_draft: String,
+}
+fn phone_fence(snapshot: &Value) -> Result<PhoneFence, ReadError> {
+    if snapshot["schema"]!="vivim.host-live-system/1" ||
+        snapshot["state"]!="source-backed" ||
+        snapshot["authority"]!="read-only-projection" ||
+        snapshot["executionAuthorized"]!=false ||
+        snapshot["effectPerformed"]!=false {
+        return Err(ReadError::InvalidProjection);
+    }
+    let epoch=snapshot["epoch"].as_str().filter(|s|!s.is_empty() && s.len()<=128)
+        .ok_or(ReadError::InvalidProjection)?;
+    let sequence=snapshot["revision"].as_u64().filter(|&v|v>0)
+        .ok_or(ReadError::InvalidProjection)?;
+    let regions=snapshot["regions"].as_array().ok_or(ReadError::InvalidProjection)?;
+    let mut found=regions.iter().filter(|r|r["id"]=="phone.composer");
+    let region=found.next().ok_or(ReadError::InvalidProjection)?;
+    if found.next().is_some() ||
+        region["kind"]!="input" || region["freshness"]!="current" ||
+        region["sourceId"]!="host.first-contact-composer" ||
+        region["exposure"]!="owner" ||
+        region["data"]["target"]!="vivim" ||
+        region["data"]["visible"]!=true ||
+        region["data"]["composing"]!=false ||
+        !region["writable"].as_array().is_some_and(|items|
+            items.iter().any(|item|item["pointer"]=="/draft" &&
+                item["primitive"]=="text" && item["actionId"]==PHONE_ACTION)) {
+        return Err(ReadError::InvalidProjection);
+    }
+    let view_revision=region["viewRevision"].as_u64().filter(|&v|v>0)
+        .ok_or(ReadError::InvalidProjection)?;
+    let source_revision=region["sourceRevision"].as_u64().filter(|&v|v>0)
+        .ok_or(ReadError::InvalidProjection)?;
+    let local_revision=region["data"]["localRevision"].as_u64().filter(|&v|v>0)
+        .ok_or(ReadError::InvalidProjection)?;
+    let session_id=region["data"]["sessionId"].as_str()
+        .filter(|s|s.len()==32 && s.bytes().all(|b|b.is_ascii_digit() ||
+            (b'a'..=b'f').contains(&b)))
+        .ok_or(ReadError::InvalidProjection)?;
+    let current_draft=region["data"]["draft"].as_str()
+        .filter(|s|s.len()<=PHONE_DRAFT_LIMIT && !s.contains('\0'))
+        .ok_or(ReadError::InvalidProjection)?;
+    let _=local_revision;
+    Ok(PhoneFence {
+        epoch:epoch.to_owned(),sequence,view_revision,source_revision,
+        session_id:session_id.to_owned(),current_draft:current_draft.to_owned(),
+    })
+}
+fn phone_stage_id<'a>(stage: &'a Value, correlation: &str, expected_digest: &str)
+    -> Result<&'a str, ReadError> {
+    if stage["schema"]!="vivim.composer-stage/1" ||
+        stage["state"]!="staged" ||
+        stage["regionId"]!="phone.composer" ||
+        stage["correlationId"]!=correlation ||
+        stage["digest"]!=expected_digest ||
+        stage["executionAuthorized"]!=false ||
+        stage["effectPerformed"]!=false {
+        return Err(ReadError::InvalidProjection);
+    }
+    stage["stageId"].as_str().filter(|s|hex(s,32))
+        .ok_or(ReadError::InvalidProjection)
+}
+fn phone_correlation_id() -> Result<String, ReadError> {
+    let time=SystemTime::now().duration_since(UNIX_EPOCH)
+        .map_err(|_|ReadError::Unavailable)?;
+    Ok(format!("gpui.{:x}.{:x}.{:x}",std::process::id(),
+        time.as_nanos(),PHONE_CORRELATION.fetch_add(1,Ordering::Relaxed)))
+}
+fn owner_request(client:&Client, token:&str, path:&str, body:Option<Value>,
+    success:u16) -> Result<Value,ReadError> {
+    // Only hard-coded Host paths, after the same preflight as Control.
+    let url=format!("{BASE}{path}");
+    let req=match body {
+        Some(body)=>client.post(url).header("origin",BASE)
+            .header("x-vivim-control","1").json(&body),
+        None=>client.get(url),
+    }.bearer_auth(token);
+    let response=req.send().map_err(|_|ReadError::Offline)?;
+    match response.status().as_u16() {
+        s if s==success=>{},
+        401|403=>return Err(ReadError::OwnerRequired),
+        _=>return Err(ReadError::Unavailable),
+    }
+    let mut bytes=Vec::new();
+    response.take(512*1024+1).read_to_end(&mut bytes)
+        .map_err(|_|ReadError::Unavailable)?;
+    if bytes.len()>512*1024{return Err(ReadError::InvalidProjection)}
+    serde_json::from_slice(&bytes).map_err(|_|ReadError::InvalidProjection)
+}
+/// Explicitly stage the *current PC draft* as a proposed replacement for a
+/// visible, non-composing phone draft. No delivery or effect happens here:
+/// the returned review must be approved via the existing GPUI Host plan UI.
+/// A stale phone source, non-owner region, expired stage or racing phone edit
+/// is rejected by the existing Host fences. No model or second writer.
+pub fn prepare_phone_draft(text:&str) -> Result<Review,ReadError> {
+    if text.trim().is_empty() || text.len()>PHONE_DRAFT_LIMIT || text.contains('\0') {
+        return Err(ReadError::InvalidInput);
+    }
+    let (client,token)=connected()?;
+    let snapshot=owner_request(&client,&token,"/api/host/live-system",None,200)?;
+    let fence=phone_fence(&snapshot)?;
+    if text==fence.current_draft {return Err(ReadError::InvalidInput)}
+    let correlation=phone_correlation_id()?;
+    let digest=format!("{:x}",Sha256::digest(text.as_bytes()));
+    let stage=owner_request(&client,&token,"/api/host/live-system/composer/stage",
+        Some(json!({
+            "sessionId":fence.session_id,
+            "intent":{"epoch":fence.epoch,"regionId":"phone.composer",
+                "pointer":"/draft","expectedSequence":fence.sequence,
+                "expectedViewRevision":fence.view_revision,
+                "expectedSourceRevision":fence.source_revision,
+                "correlationId":correlation,"operation":"replace","text":text}
+        })),202)?;
+    let stage_id=phone_stage_id(&stage,&correlation,&digest)?;
+    let plan=owner_request(&client,&token,"/api/host/control/plan",
+        Some(json!({"actionId":PHONE_ACTION,"args":{"stage_id":stage_id}})),200)?;
+    if plan["actionId"]!=PHONE_ACTION || plan["outcome"]!="approval_required" ||
+        plan["risk"]!="R1" || plan["args"]["stage_id"]!=stage_id {
+        return Err(ReadError::InvalidProjection);
+    }
+    let review=parse_review(plan)?;
+    if !review.needs_approval(){return Err(ReadError::InvalidProjection)}
+    Ok(review)
+}
+
 pub fn plan(text: &str) -> Result<Review, ReadError> {
     let text = text.trim();
     if text.is_empty() || text.len() > MAX_COMMAND { return Err(ReadError::InvalidInput); }
@@ -333,6 +473,60 @@ mod tests {
         }
         value=base.clone();value["outcome"]=json!("candidate");
         assert!(project_composer_meaning(&value).is_err());
+    }
+    fn phone_snapshot() -> Value {
+        json!({"schema":"vivim.host-live-system/1","state":"source-backed",
+            "authority":"read-only-projection","executionAuthorized":false,
+            "effectPerformed":false,"epoch":"host.unit","revision":8,
+            "regions":[{"id":"phone.composer","kind":"input",
+                "freshness":"current","sourceId":"host.first-contact-composer",
+                "exposure":"owner","sourceRevision":3,"viewRevision":7,
+                "data":{"sessionId":"a".repeat(32),"target":"vivim",
+                    "draft":"existing","localRevision":2,
+                    "visible":true,"composing":false},
+                "writable":[{"pointer":"/draft","primitive":"text",
+                    "actionId":PHONE_ACTION}]}]})
+    }
+    #[test] fn only_owner_writable_current_phone_source_may_be_staged() {
+        let valid=phone_fence(&phone_snapshot()).unwrap();
+        assert_eq!(valid.current_draft,"existing");
+        assert_eq!(valid.sequence,8);
+        assert_eq!(valid.source_revision,3);
+        for (field,value) in [("exposure",json!("public")),
+            ("freshness",json!("stale")),("sourceRevision",json!(0)),
+            ("viewRevision",json!(0))] {
+            let mut changed=phone_snapshot();changed["regions"][0][field]=value;
+            assert!(phone_fence(&changed).is_err(),"{field}");
+        }
+        for (field,value) in [("visible",json!(false)),
+            ("composing",json!(true)),("target",json!("other")),
+            ("localRevision",json!(0))] {
+            let mut changed=phone_snapshot();changed["regions"][0]["data"][field]=value;
+            assert!(phone_fence(&changed).is_err(),"{field}");
+        }
+        let mut changed=phone_snapshot();
+        changed["regions"][0]["writable"]=json!([]);
+        assert!(phone_fence(&changed).is_err());
+        changed=phone_snapshot();
+        let duplicate=changed["regions"][0].clone();
+        changed["regions"].as_array_mut().unwrap().push(duplicate);
+        assert!(phone_fence(&changed).is_err());
+    }
+    #[test] fn staged_phone_draft_is_never_equivalent_to_owner_approval() {
+        let expected=format!("{:x}",Sha256::digest(b"from GPUI"));
+        let stage=json!({"schema":"vivim.composer-stage/1","state":"staged",
+            "stageId":"a".repeat(32),"regionId":"phone.composer",
+            "correlationId":"gpui.test","digest":expected,
+            "executionAuthorized":false,"effectPerformed":false});
+        assert_eq!(phone_stage_id(&stage,"gpui.test",&expected),Ok("a".repeat(32).as_str()));
+        let mut forged=stage.clone();
+        forged["effectPerformed"]=json!(true);
+        assert!(phone_stage_id(&forged,"gpui.test",&expected).is_err());
+        forged=stage.clone();forged["digest"]=json!("b".repeat(64));
+        assert!(phone_stage_id(&forged,"gpui.test",&expected).is_err());
+        forged=stage.clone();forged["stageId"]=json!("../execute");
+        assert!(phone_stage_id(&forged,"gpui.test",&expected).is_err());
+        assert!(phone_stage_id(&stage,"gpui.wrong",&expected).is_err());
     }
     #[test] fn inspect_path_is_not_user_controlled() {
         assert!(valid_id("ctl-0123456789abcdef"));
