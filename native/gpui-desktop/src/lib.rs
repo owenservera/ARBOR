@@ -262,8 +262,20 @@ pub fn project_double_bracketed(
        pwa_after["schema"]!="vivim.host-pwa-view/1" {
         return Err(ReadError::InvalidProjection);
     }
+    // The Host refreshes bootstrap.observedAt for every read even when the
+    // authoritative bootstrap state and all other source fields are unchanged.
+    // Exclude only that ephemeral observation timestamp from the coherence
+    // bracket; changes to phase, generation, approvals, devices, control, or
+    // Wiki still invalidate the mixed read.
+    fn stable_snapshot(pwa:&Value)->Value {
+        let mut snapshot=pwa["snapshot"].clone();
+        if let Some(bootstrap)=snapshot["bootstrap"].as_object_mut() {
+            bootstrap.remove("observedAt");
+        }
+        snapshot
+    }
     if pwa_before["state"]!=pwa_after["state"] ||
-       pwa_before["snapshot"]!=pwa_after["snapshot"] {
+       stable_snapshot(pwa_before)!=stable_snapshot(pwa_after) {
         return Err(ReadError::SnapshotChanged);
     }
     project_bracketed(pwa_after,wiki_before,wiki_after)
@@ -461,6 +473,30 @@ mod tests {
         assert_ne!(one.source_digest,two.source_digest);
         assert!(guard.accept(&two).is_err());
     }
+    #[test] fn bootstrap_observation_clock_is_not_authoritative_state_drift() {
+        let wiki=json!({"revision":7,"pages":{"work":{"sections":{}}}});
+        let mut before=pwa();
+        before["snapshot"]["bootstrap"]=json!({
+            "schema":"vivim.bootstrap-onboarding/1",
+            "generationId":"gen-1","phase":"deepening",
+            "observedAt":"2026-11-22T16:00:00.000Z"
+        });
+        let mut after=before.clone();
+        after["snapshot"]["bootstrap"]["observedAt"]=
+            json!("2026-11-22T16:00:00.350Z");
+        assert!(project_double_bracketed(&before,&after,&wiki,&wiki).is_ok());
+
+        // Only the observation clock is transient. Never ignore a genuine
+        // onboarding generation, phase, approval, or other source change.
+        after["snapshot"]["bootstrap"]["phase"]=json!("ready");
+        assert_eq!(project_double_bracketed(&before,&after,&wiki,&wiki),
+            Err(ReadError::SnapshotChanged));
+        after=before.clone();
+        after["snapshot"]["bootstrap"]["generationId"]=json!("gen-2");
+        assert_eq!(project_double_bracketed(&before,&after,&wiki,&wiki),
+            Err(ReadError::SnapshotChanged));
+    }
+
     #[test] fn double_bracket_detects_control_and_device_drift_but_not_observation_time() {
         let wiki=json!({"revision":7,"pages":{"work":{"sections":{}}}});
         let before=pwa();
