@@ -32,6 +32,10 @@ test('readback follows exact remembered composer instead of first matching edita
   assert.equal(state.draft.chars,11);
   assert.equal(state.controls.composerEnabled,true);
 });
+test('a connected but old remembered editor cannot override another focused editor',()=>{
+  const old=editor('stale'),current=editor('current');
+  assert.equal(observe({a:old,b:current,remembered:old,active:current}).draft.text,'current');
+});
 test('no stale remembered editor can override current focused visible composer',()=>{
   const a=editor('other'),b=editor('new draft'),stale=editor('stale',{connected:false});
   assert.equal(observe({a,b,remembered:stale,active:b}).draft.text,'new draft');

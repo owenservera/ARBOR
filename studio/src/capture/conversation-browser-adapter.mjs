@@ -44,11 +44,12 @@ const readbackMatches = (readback, prompt) => {
 // snapshot next to persistently drifted composer content must not authorize a send.
 const TYPING_READBACK_ATTEMPTS = 3;
 const TYPING_READBACK_DELAY_MS = 250;
-const settleTypingReadback = async (read, prompt) => {
+const settleTypingReadback = async (read, prompt, noteMismatch = () => {}) => {
   for (let attempt = 0; attempt < TYPING_READBACK_ATTEMPTS; attempt++) {
     if (attempt) await sleep(TYPING_READBACK_DELAY_MS);
     const after = await read();
     if (readbackMatches(after?.draft?.text, prompt)) return after;
+    noteMismatch(after); // count-only diagnostics; never log text
   }
   return null;
 };
@@ -638,12 +639,18 @@ export function createConversationBrowserAdapter({ paths, profileStore, familySt
         try {
           const typed = await d.typeText(recorder.page, prompt, { ...typeOptions(prompt), beforeInsert: async () => { await guard(); beforeEffect?.(); } });
           await check();
+          let lastDraftChars=null;
           const after = await settleTypingReadback(async () => {
             const page = await d.readTurnPage(recorder.page, siteAdapter);
             if (parseThread(siteAdapter.id, `${binding.origin}${page?.pathname ?? ''}`)) throw problem('PREEXISTING_THREAD');
             return page;
-          }, prompt);
-          if (!typed.ok || !after) throw problem('TYPING_UNCONFIRMED');
+          }, prompt, page => { lastDraftChars=Number.isSafeInteger(page?.draft?.chars)?page.draft.chars:null; });
+          if (!typed.ok || !after) {
+            const e=problem('TYPING_UNCONFIRMED');
+            e.typingDetail={insertedOk:typed.ok===true,expectedChars:prompt.length,
+              typedChars:typeof typed.typed==='string'?typed.typed.length:null,lastDraftChars};
+            throw e;
+          }
         } catch (e) { await cleanupTypedFailure(prompt); throw e; }
         return;
       }

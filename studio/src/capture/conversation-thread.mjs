@@ -127,10 +127,11 @@ export function turnObservationExpression(adapter = {}) {
     // The keyboard path uses the focused editor remembered by findComposer/typeText.
     // Reading a different first-matching field creates false TYPING_UNCONFIRMED,
     // and could eventually authorize a stale draft. Prefer the exact visible
-    // stored editor, then the focused visible editor; never guess when ambiguous.
+    // focused editor, then the stored visible editor; never guess when ambiguous.
     const remembered=globalThis.__aionDrive?.el, focused=document.activeElement;
-    const composer=editors.includes(remembered) ? remembered :
-      editors.find(el=>el===focused||(focused&&el.contains(focused))) ??
+    const focusedEditor=editors.find(el=>el===focused||(focused&&el.contains(focused)));
+    const composer=focusedEditor ??
+      (editors.includes(remembered)?remembered:null) ??
       (editors.length===1?editors[0]:null);
     const text=composer?String(composer.value??composer.innerText??composer.textContent??'').replace(/\\r\\n/g,'\\n'):null;
     const stop=all(${JSON.stringify(adapter.assistant?.streamingSelectors ?? [])}).length>0;

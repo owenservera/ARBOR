@@ -366,7 +366,16 @@ export function createConversationService({ dataDir, id = randomUUID(), adapter,
         beforeEffect: () => { if (submissionStopped) throw Object.assign(error('SUBMISSION_STOPPED'), { notTyped: true }); } });
     } catch (e) {
       if ((e?.code === 'PREEXISTING_THREAD' || e?.code === 'SUBMISSION_STOPPED') && e.notTyped === true) { prove(); if (e.code === 'SUBMISSION_STOPPED') attempt.reason = 'SUBMISSION_STOPPED'; return finish(); }
-      console.error('[conv] creation type-step failed:', e?.code, e?.message); creationFailure('type-step', e); uncertain('CREATION_UNPINNED'); return finish();
+      console.error('[conv] creation type-step failed:', e?.code, e?.message);
+      const values=e?.typingDetail;
+      const count=v=>Number.isSafeInteger(v)&&v>=0&&v<=250000?v:null;
+      const safe=values&&typeof values==='object'?{
+        insertedOk:values.insertedOk===true,
+        expectedChars:count(values.expectedChars),
+        typedChars:count(values.typedChars),
+        lastDraftChars:count(values.lastDraftChars)
+      }:undefined;
+      creationFailure('type-step',e,safe); uncertain('CREATION_UNPINNED'); return finish();
     }
     if (stopEarly()) return finish();
     updateAttempt(attempt, 'dispatching', 'submitting'); save();
