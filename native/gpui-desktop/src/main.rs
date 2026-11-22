@@ -934,7 +934,7 @@ impl Render for Desktop {
             return div().size_full().bg(rgb(0x111214)).text_color(rgb(0xeeece7))
                 .flex().flex_col()
                 .child(menu)
-                .child(div().flex_1().min_h_0().overflow_y_scroll()
+                .child(div().id("native-preferences-and-tools").flex_1().min_h_0().overflow_y_scroll()
                     .child(div().p_5().child(page)));
         }
         // ONE canonical First Contact surface. The former five-panel GPUI
