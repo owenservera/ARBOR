@@ -1,6 +1,6 @@
 // grokbot-authored. Relay PWA shell: same-origin only, no secrets stored in JS-readable storage.
 import { transport } from './transport.mjs';
-import { resolveProviderHandoff, canSendVerifiedProvider } from './provider-handoff.mjs';
+import { resolveProviderHandoff, canSendVerifiedProvider, listProviderConnections, canRetargetProviderDraft } from './provider-handoff.mjs';
 import { mountBuildSurface } from './generative-ui/phone-surface.mjs';
 import { sha256Hex } from './generative-ui/portable-digest.mjs';
 import { mountBuildCanvas } from './build-canvas.mjs';
@@ -113,7 +113,7 @@ function md(src) {
 }
 
 /* ---------- state ---------- */
-const FALLBACK = [['chatgpt', 'ChatGPT'], ['claude', 'Claude'], ['qwen', 'Qwen'], ['zai', 'Z.ai']]
+const FALLBACK = [['chatgpt', 'ChatGPT'], ['claude', 'Claude'], ['gemini', 'Gemini'], ['qwen', 'Qwen'], ['zai', 'Z.ai'], ['deepseek', 'DeepSeek']]
   .map(([id, label]) => ({ id, label, signedIn: false, models: [], thinkingLevels: [], newChat: true, attachments: false }));
 const S = {
   tab: 'talk', manifest: null, convs: lsGet('relay.convs.v1', []), active: lsGet('relay.active.v1', null),
@@ -1429,6 +1429,7 @@ function renderList() {
 }
 function fmtSize(n) { return n < 1024 ? n + ' B' : n < 1048576 ? (n / 1024).toFixed(0) + ' KB' : (n / 1048576).toFixed(1) + ' MB'; }
 function renderComposer() {
+  $('provider-connection-state').hidden = !FIRST_CONTACT || N.target !== 'harness';
   $('dock-provider-refresh').hidden = N.target !== 'harness' ||
     HOST_PREVIEW || !transport.direct || !S.paired;
   $('dock-provider-refresh').disabled = providerRefreshBusy;
@@ -1458,8 +1459,18 @@ function renderComposer() {
   }
   $('chips').hidden = false;
   normalizeConv();
-  const c = curConv(), ps = providers(), p = c && ps.find(x => x.id === c.provider);
-  const sig = JSON.stringify([ps, combinedInbox, c && [c.id, c.provider, c.model, c.effort],
+  const c = curConv(), ps = providers();
+  const choices = FIRST_CONTACT ? listProviderConnections(S.manifest?.providers) : ps;
+  const p = c && choices.find(x => x.id === c.provider);
+  if (FIRST_CONTACT) {
+    const status = $('provider-connection-state');
+    status.textContent = !c ? 'Choose an AI. This only creates a local draft.'
+      : !p ? 'Selected AI not available. Nothing can be sent.'
+      : p.queueConsumerReady ? p.label + ' · PC relay accepting. Review before Send.'
+      : p.signedIn ? p.label + ' · signed in on PC; relay unavailable. Draft preserved.'
+      : p.label + ' · PC sign-in not verified. Check my signed-in AIs; draft preserved.';
+  }
+  const sig = JSON.stringify([choices, combinedInbox, c && [c.id, c.provider, c.model, c.effort],
     S.files.map(f => f.name + f.size)]);
   if (S.sigs.comp !== sig) {
     S.sigs.comp = sig;
@@ -1469,11 +1480,16 @@ function renderComposer() {
     combined.setAttribute('aria-pressed',String(combinedInbox));
     combined.title='All conversations. Sends only to the selected provider.';
     chips.append(combined);
-    for (const x of ps) { const b = el('button', 'chip', x.label || x.id); b.type = 'button';
-      b.dataset.p = x.id;
-      b.setAttribute('aria-pressed', String(!combinedInbox && !!c && x.id === c.provider));
-      chips.append(b); }
-    if (!ps.length) chips.append(el('span', 'muted', 'No signed-in providers'));
+    for (const x of choices) {
+      const label=x.queueConsumerReady?'Ready on PC':x.signedIn?'Signed in · relay offline':'Sign-in not verified';
+      const b=el('button','chip',(x.label||x.id)+(FIRST_CONTACT?(x.queueConsumerReady?' ✓':x.signedIn?' ·':' ○'):''));
+      b.type='button';b.dataset.p=x.id;
+      b.title=(x.label||x.id)+' · '+label;
+      b.setAttribute('aria-label',(x.label||x.id)+' · '+label);
+      b.setAttribute('aria-pressed',String(!combinedInbox&&!!c&&x.id===c.provider));
+      chips.append(b);
+    }
+    if (!choices.length) chips.append(el('span','muted','No AI accounts available'));
     const models = (p && p.models) || [], cur = models.find(m => m.current);
     $('modelwrap').hidden = !models.length;
     const ms = $('model'); ms.replaceChildren(new Option('Default' + (cur ? ' (' + (cur.label || cur.id) + ')' : ''), ''), ...models.map(m => new Option(m.label || m.id, m.id)));
@@ -1737,7 +1753,13 @@ function updateSend() {
     ? !transport.direct || vivimChat.busy() || !$('text').value.trim() || $('text').value.trim().length > 1000
     : N.target === 'phone'
       ? !transport.direct || !N.session || N.sending || !!N.pending || !$('text').value.trim()
-      : S.sending || !curConv() || !providers().length || !$('text').value.trim();
+      : transport.direct
+        ? !canSendVerifiedProvider({
+          paired:S.paired,direct:true,sessionApproved:!!transport.deviceHeaders?.(),
+          target:N.target,providerId:curConv()?.provider,projection:S.manifest?.providers,
+          text:$('text').value,sending:S.sending
+        })
+        : S.sending || !curConv() || !providers().length || !$('text').value.trim();
 }
 function autogrow() { const t = $('text'); t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 160) + 'px'; }
 function dots(st) { const d = el('span', 'dots'); d.setAttribute('role', 'status'); d.setAttribute('aria-label', st === 'claimed' ? 'Working' : 'Queued'); d.append(el('i'), el('i'), el('i')); return d; }
@@ -2154,7 +2176,7 @@ async function send() {
   if (N.target === 'phone') return nativeSend();
   if (S.sending) return;
   const c = curConv(), ta = $('text'), body = ta.value.trim(); if (!c || !body) return;
-  if (FIRST_CONTACT && !canSendVerifiedProvider({
+  if (transport.direct && !canSendVerifiedProvider({
     paired:S.paired,direct:transport.direct,
     sessionApproved:!!transport.deviceHeaders?.(),target:N.target,
     providerId:c.provider,projection:S.manifest?.providers,
@@ -2783,12 +2805,31 @@ $('chips').addEventListener('click', e => {
   if(e.target.closest('[data-combined]')){
     combinedInbox=true;S.sigs.comp=null;S.sigs.list=null;renderAll();return;
   }
-  const b=e.target.closest('[data-p]'),c=curConv();
-  if(!b||!c)return;
-  const changed=c.provider!==b.dataset.p;
+  const b=e.target.closest('[data-p]');
+  if(!b)return;
+  const id=b.dataset.p;
+  const options=FIRST_CONTACT?listProviderConnections(S.manifest?.providers):providers();
+  const selected=options.find(p=>p.id===id);
+  if(!selected)return;
+  let c=curConv();
   combinedInbox=false;
-  if(changed){c.provider=b.dataset.p;c.model=c.effort=null;saveConvs();}
-  S.sigs.comp=null;S.sigs.list=null;renderAll();
+  if(!c||c.provider!==id){
+    // A sent conversation is an immutable provider history; make a fresh draft.
+    if(!canRetargetProviderDraft(c,!!c&&msgsOf(c.id).length>0)){
+      c={id:'c-'+hex16(),title:'',provider:id,model:null,effort:null,
+        sent:false,updatedAt:Date.now()};
+      S.convs.unshift(c);S.active=c.id;
+    }else{
+      c.provider=id;c.model=c.effort=null;c.updatedAt=Date.now();
+    }
+    S.files=[];saveConvs();
+  }
+  S.sigs.comp=null;S.sigs.list=null;renderAll(true);updateSend();
+  if(FIRST_CONTACT)toast(selected.queueConsumerReady
+    ? selected.label+' selected. Draft only · review before Send.'
+    : selected.signedIn
+      ? selected.label+' signed in; PC relay offline. Draft kept.'
+      : selected.label+' selected. Sign-in not verified; draft kept.');
 });
 $('model').addEventListener('change', e => { const c = curConv(); if (c) { c.model = e.target.value || null; saveConvs(); renderAll(); } });
 $('effort').addEventListener('change', e => { const c = curConv(); if (c) { c.effort = e.target.value || null; saveConvs(); renderAll(); } });
@@ -2806,6 +2847,19 @@ $('text').addEventListener('keydown', e => {
   if (e.key === 'Enter' && !e.shiftKey && !e.isComposing &&
       (FIRST_CONTACT || matchMedia('(pointer:fine)').matches)) {
     e.preventDefault();if(S.tab!=='talk')goTab('talk');void send();
+  }
+});
+$('choose-ai').hidden=!FIRST_CONTACT;
+$('choose-ai').addEventListener('click',()=>{
+  if(!FIRST_CONTACT)return;
+  if(!S.paired||!transport.deviceHeaders?.()){
+    toast('Approve this phone on your PC to choose an AI. Nothing was sent.');
+    return;
+  }
+  switchChatTarget('harness');
+  if(N.target==='harness'){
+    renderAll(true);autogrow();$('text').focus();
+    toast('Choose an AI. Your text stays a draft until Send.');
   }
 });
 $('dock-provider-refresh').addEventListener('click', async () => {
@@ -2843,9 +2897,11 @@ $('dock-provider-refresh').addEventListener('click', async () => {
     S.manifest=result;S.sigs.comp=null;renderAll(true);
     const count=result.providers.filter(p=>p.signedIn===true).length;
     toast(selected
-      ? result.providers.some(p=>p.id===selected&&p.signedIn===true)
-        ? 'Selected AI verified. Review your draft, then press Send.'
-        : 'Selected AI not ready on your PC. Draft preserved; nothing was sent.'
+      ? result.providers.some(p=>p.id===selected&&p.signedIn===true&&p.queueConsumerReady===true)
+        ? 'Selected AI and PC relay ready. Review your draft, then press Send.'
+        : result.providers.some(p=>p.id===selected&&p.signedIn===true)
+          ? 'AI signed in; PC relay unavailable. Draft preserved.'
+          : 'Selected AI not verified on your PC. Draft preserved; nothing was sent.'
       : count ? count+' signed-in AIs verified by your PC.' : 'No AI login verified. Check your PC browser.');
   }catch{toast('Provider check unavailable. Nothing was sent.')}
   finally{

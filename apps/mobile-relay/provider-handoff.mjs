@@ -43,3 +43,19 @@ export function canSendVerifiedProvider({paired,direct,sessionApproved,target,pr
     projection.some(p => p?.id === providerId && p?.signedIn === true &&
       p?.queueConsumerReady === true);
 }
+
+const PRIMARY_CONNECTIONS=Object.freeze(['chatgpt','claude','gemini','qwen','zai','deepseek']);
+// A known account may be selected for a LOCAL DRAFT before login. This is never a send.
+export function listProviderConnections(projection) {
+  const records=Array.isArray(projection)?projection:[];
+  return PRIMARY_CONNECTIONS.map(id=>{
+    const source=records.find(p=>p?.id===id) ?? null;
+    const signedIn=source?.signedIn===true;
+    const queueConsumerReady=signedIn&&source?.queueConsumerReady===true;
+    return Object.freeze({...source,id,label:LABELS[id],signedIn,queueConsumerReady,
+      connectionState:queueConsumerReady?'ready':signedIn?'relay-offline':'unverified'});
+  });
+}
+export function canRetargetProviderDraft(conversation,hasHistory=false) {
+  return !!conversation && conversation.sent!==true && hasHistory!==true;
+}
