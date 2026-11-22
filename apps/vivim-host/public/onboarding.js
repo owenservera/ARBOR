@@ -140,8 +140,14 @@ function stepMain() {
       h('p', { text: 'VIVIM learns your style from ChatGPT today. You can still use ' + (o.providers.find(p => p.id === o.primary)?.label ?? 'your AI') + ' for everything else, and sign in to ChatGPT later to personalize.' })));
     return out;
   }
-  const card = h('div', { class: 'panel-soft' }, h('span', { class: 'eyebrow', text: 'IN THE BACKGROUND' }), h('h2', { text: 'Let VIVIM learn your style' }),
+  const card = h('div', { class: 'panel-soft' }, h('span', { class: 'eyebrow', text: 'IN THE BACKGROUND' }), h('h2', { text: 'Build your private Oracle corpus' }),
     h('p', { text: 'VIVIM will ask ChatGPT seven bounded questions, one at a time, about presentation, projects, interests, workflows, values and unknowns. It uses only information ChatGPT can actually recall, not your complete chat archive. Nothing is sent until you review and approve each exact question here; uncertain information stays provisional.' }));
+  if (pz.corpus) {
+    card.append(h('p', { class: 'help', text:
+      'Oracle corpus: ' + pz.corpus.claims + ' source-backed claim records, ' +
+      pz.corpus.observations + ' observations, and ' + pz.corpus.contradictions +
+      ' unresolved conflict records. These are provider-reported until independently verified.' }));
+  }
   if (['review', 'ready', 'attention', 'uncertain'].includes(pz.phase) && !review) {
     if (pz.passes.length) card.append(passList(pz.passes));
     card.append(h('div', { class: 'actions' }, h('button', { class: 'btn primary', type: 'button', disabled: busy.has('review'), onclick: () => run('review', async () => { review = await post('/personalize/review'); }), text: pz.passes.length ? 'Review another authorized discovery run' : 'Review seven discovery questions' })));
