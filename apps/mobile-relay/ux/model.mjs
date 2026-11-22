@@ -383,7 +383,7 @@ export function todayModel(status, commands, ctx = {}) {
     ? { sourceSha: sourceSha.slice(0, 12), hostSourceSha: /^[a-f0-9]{40}$/.test(hostSourceSha)
         ? hostSourceSha.slice(0, 12) : null,
       verified: stamp.verified === true,
-      observedAt: /^\\d{4}-\\d{2}-\\d{2}T/.test(str(stamp.observedAt))
+      observedAt: /^\d{4}-\d{2}-\d{2}T/.test(str(stamp.observedAt))
         ? clip(stamp.observedAt, 30) : null,
       scope: 'PWA module only — not Host/Studio deployment or phone acceptance' }
     : null;
