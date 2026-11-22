@@ -57,6 +57,45 @@ pub const SURFACES:&[Surface]=&[
     Surface{id:"wiki-browse",source:"wiki/index.html",placement:Placement::Developer,disposition:Disposition::Reference},
     Surface{id:"tauri-webview-shell",source:"src-tauri/src/main.rs",placement:Placement::Developer,disposition:Disposition::RetiredShell},
 ];
+// Read-only donor inventory: duplicates and research pages are not another
+// VIVIM UI runtime. No donor repository is mutated by this projection.
+#[derive(Clone, Copy, Debug)]
+pub struct DonorSurface {
+    pub repo: &'static str,
+    pub source: &'static str,
+    pub target_menu: Placement,
+}
+pub const DONOR_SURFACES:&[DonorSurface]=&[
+    DonorSurface{repo:"vivim-labs",source:"adaptors-providers/ui/index.html",target_menu:Placement::Tools},
+    DonorSurface{repo:"vivim-labs",source:"capability-observatory/lane-d/dashboard.html",target_menu:Placement::Developer},
+    DonorSurface{repo:"vivim-web-harness",source:"apps/browser-companion/options.html",target_menu:Placement::Settings},
+    DonorSurface{repo:"vivim-web-harness",source:"apps/mobile-relay/grokbot.html",target_menu:Placement::Developer},
+    DonorSurface{repo:"vivim-web-harness",source:"apps/mobile-relay/index.html",target_menu:Placement::View},
+    DonorSurface{repo:"vivim-web-harness",source:"apps/share-web/index.html",target_menu:Placement::View},
+    DonorSurface{repo:"vivim-web-harness",source:"apps/vivim-host/public/index.html",target_menu:Placement::Tools},
+    DonorSurface{repo:"vivim-web-harness",source:"apps/vivim-host/public/onboarding.html",target_menu:Placement::Settings},
+    DonorSurface{repo:"vivim-web-harness",source:"studio/architecture/atlas.html",target_menu:Placement::Developer},
+    DonorSurface{repo:"vivim-web-harness",source:"studio/marketing/index.html",target_menu:Placement::Help},
+    DonorSurface{repo:"vivim-web-harness",source:"studio/marketing/product.html",target_menu:Placement::Help},
+    DonorSurface{repo:"vivim-web-harness",source:"studio/src/studio/ui/chat.html",target_menu:Placement::View},
+    DonorSurface{repo:"vivim-web-harness",source:"studio/src/studio/ui/drive.html",target_menu:Placement::File},
+    DonorSurface{repo:"vivim-web-harness",source:"studio/src/studio/ui/index.html",target_menu:Placement::Tools},
+    DonorSurface{repo:"vivim-web-harness",source:"studio/src/studio/ui/live.html",target_menu:Placement::Developer},
+    DonorSurface{repo:"vivim-web-harness",source:"studio/src/studio/ui/mobile.html",target_menu:Placement::View},
+    DonorSurface{repo:"vivim-web-harness",source:"studio/src/studio/ui/personal-agent.html",target_menu:Placement::Tools},
+    DonorSurface{repo:"vivim-web-harness",source:"studio/src/studio/ui/platform.html",target_menu:Placement::Developer},
+    DonorSurface{repo:"vivim-ui",source:"web/index.html",target_menu:Placement::Developer},
+    DonorSurface{repo:"vivim-ui",source:"wiki/index.html",target_menu:Placement::Developer},
+    DonorSurface{repo:"craft-anything",source:"apps/craft-anything-web/index.html",target_menu:Placement::Developer},
+    DonorSurface{repo:"craft-anything",source:"vendor/wgpu-hal/examples/raw-gles.em.html",target_menu:Placement::Developer},
+    DonorSurface{repo:"repos_hq",source:".work/canvas-check/hq-canvas.html",target_menu:Placement::Developer},
+    DonorSurface{repo:"repos_hq",source:".work/canvas-v2/hq-canvas.html",target_menu:Placement::Developer},
+    DonorSurface{repo:"repos_hq",source:".work/dashboard/DASHBOARD-PREVIEW.html",target_menu:Placement::Developer},
+    DonorSurface{repo:"repos_hq",source:".work/dashboard/shots/harness.html",target_menu:Placement::Developer},
+    DonorSurface{repo:"repos_hq",source:".work/dashboard/shots/interact.html",target_menu:Placement::Developer},
+    DonorSurface{repo:"repos_hq",source:".work/dashboard/shots/measure.html",target_menu:Placement::Developer},
+    DonorSurface{repo:"repos_hq",source:".work/pm-check/hq-pm.html",target_menu:Placement::Developer},
+];
 pub const PRODUCT_TABS:[&str;7]=["Today","Talk","Build","World","Wiki","Me","Control"];
 pub const NATIVE_MENU_SECTIONS:[&str;7]=["File","Edit","View","Tools","Developer","Settings","Help"];
 pub fn group_count(placement:Placement)->usize {
@@ -132,6 +171,20 @@ mod tests {
         for path in registered {
             assert!(root.join(path).is_file(), "inventory references missing UI: {path}");
         }
+    }
+    #[test]
+    fn donor_ui_sources_are_read_only_and_categorized_not_launched() {
+        let mut names=BTreeSet::new();
+        for row in DONOR_SURFACES {
+            assert!(names.insert((row.repo,row.source)));
+            assert!(row.source.ends_with(".html"));
+            assert!(!row.source.contains(".."));
+            assert!(matches!(row.target_menu,Placement::File|Placement::View|
+                Placement::Tools|Placement::Developer|Placement::Settings|Placement::Help));
+        }
+        assert_eq!(DONOR_SURFACES.len(),29);
+        assert_eq!(SURFACES.iter().filter(|s|s.source.ends_with(".html")).count()
+            + DONOR_SURFACES.len(),49);
     }
     #[test]
     fn legacy_sources_are_never_counted_as_native_accepted() {
