@@ -192,5 +192,10 @@ export function mountVoiceCapture({
   doc.addEventListener?.('visibilitychange',()=>{
     if(doc.hidden){if(requesting||recorder?.state==='recording')stopRecording();if(['checking','ready','listening','stopping'].includes(dictation.state()))dictation.cancel();}
   });
-  return Object.freeze({available,open,stop:stopRecording,close:closeDialog,isRecording:()=>recorder?.state==='recording'});
+  // A live permission request, dictation, review or not-yet-discarded clip is
+  // purely local. Never reload the shell while that work could be lost.
+  return Object.freeze({available,open,stop:stopRecording,close:closeDialog,
+    isRecording:()=>recorder?.state==='recording',
+    hasPendingLocalWork:()=>dialog.open||requesting||stopping||!!clip||dictated||
+      !!transcript.value.trim()||recorder?.state==='recording'});
 }
