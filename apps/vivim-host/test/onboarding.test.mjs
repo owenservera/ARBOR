@@ -40,6 +40,21 @@ const f01 = generationId => ({
   suggestedCards: [{ title: 'VIVIM project', focus: 'VIVIM local-first harness' }]
 });
 
+// A deep-pass fixture uses the exact typed contract already trusted by Host.
+// It is test data, never used as a live personal corpus or AI-source substitute.
+const deepPass = (pass, generationId) => {
+  const category = {D03:'interest',D04:'project',D05:'tool',D06:'value',D07:'gap'}[pass];
+  const section = {D03:'interest',D04:'project',D05:'tool',D06:'value',D07:'coverage'}[pass];
+  return {
+    schema:'vivim.bootstrap-output/1',generationId,passId:pass,
+    observations:[{category,text:'A grounded '+section+' report',confidence:0.65,sensitive:pass==='D06'}],
+    assertions:[{section,label:'A '+section,value:'A grounded '+section+' report',
+      basis:'provider_memory_report',confidence:0.65,scope:'work',freshness:'current'}],
+    unknowns:[],viewProposals:[],schemaProposals:[],
+    coverage:{areas:[{name:section,state:'partial'}]}
+  };
+};
+
 // A fake Studio that behaves like the real conversation API: fresh owned tabs, one journaled turn per key.
 function fakeStudio({ signedIn = true, reply = 'fenced' } = {}) {
   const conversations = new Map();
@@ -57,7 +72,11 @@ function fakeStudio({ signedIn = true, reply = 'fenced' } = {}) {
     },
     async submit(id, { key, prompt }) {
       log.submits++;
-      const body = prompt.includes('bootstrap-f02/2') ? F02 : f01(/generationId` must equal `"([^"]+)"/.exec(prompt)?.[1]);
+      const deep = /\bD0[3-7]\b/.exec(prompt)?.[0] ?? null;
+      const generationId = /generationId to "([^"]+)"/.exec(prompt)?.[1];
+      const body = prompt.includes('bootstrap-f02/2') ? F02
+        : deep ? deepPass(deep, generationId)
+        : f01(/generationId` must equal `"([^"]+)"`/.exec(prompt)?.[1]);
       const text = reply === 'fenced' ? 'Here you go:\n```json\n' + JSON.stringify(body) + '\n```' : JSON.stringify(body);
       conversations.get(id).turns.push({ key, phase: 'observed', send: { state: 'observed' }, reply: { verified: true, settled: true, text } });
       return {};
@@ -116,20 +135,21 @@ test('approved prompts run in the background, once each, and personalise the Wor
     f.svc.setPrimary('chatgpt');
     await assert.rejects(async () => f.svc.approveAndStart({ generationId: 'never-reviewed' }), { code: 'ONBOARDING_STALE' });
     const review = f.svc.review();
-    assert.deepEqual(review.passes.map(p => p.pass), ['F02', 'F01']);
+    assert.deepEqual(review.passes.map(p => p.pass), ['F02', 'F01', 'D03', 'D04', 'D05', 'D06', 'D07']);
     assert.match(review.passes[0].digest, /^[0-9a-f]{64}$/);
     f.svc.approveAndStart({ generationId: review.generationId });
-    for (let i = 0; i < 6; i++) await f.svc.pump();
+    for (let i = 0; i < 14; i++) await f.svc.pump();
     const status = await f.svc.status();
     assert.equal(status.personalization.phase, 'done');
-    assert.deepEqual(status.personalization.passes.map(p => p.status), ['complete', 'complete']);
-    assert.equal(f.studio.log.submits, 2, 'each approved prompt is sent exactly once');
+    assert.deepEqual(status.personalization.passes.map(p => p.status), Array(7).fill('complete'));
+    assert.ok(f.runtime.ledger?.claims?.list('world-local').some(c => c.pass === 'D03'), 'D03 facts must reach existing Host ledger');
+    assert.equal(f.studio.log.submits, 7, 'each approved prompt is sent exactly once');
     const theme = f.runtime.status().theme;
     assert.equal(theme.source.kind, 'provider-inference', 'the visual signature came from the approved ChatGPT reply');
     assert.equal(theme.status, 'active');
     assert.equal(status.personalization.cards.length > 0, true);
     await f.svc.pump(); await f.svc.pump();
-    assert.equal(f.studio.log.submits, 2, 'finished work is never resent');
+    assert.equal(f.studio.log.submits, 7, 'finished work is never resent');
   } finally { f.dispose(); }
 });
 
