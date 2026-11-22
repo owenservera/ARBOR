@@ -1341,6 +1341,55 @@ async function openMediaPlayer(mediaId, title) {
   }
 }
 
+// Translate an existing registered file without re-uploading it. This is an
+// explicit device-approved Host effect, not a model prompt or a second app.
+const languagePending = new Set();
+async function listenInSpanish(mediaId,title) {
+  if(HOST_PREVIEW||!S.paired||!transport.direct||S.tab!=='world'||
+     !S.device.scopes?.includes('control:execute')||
+     !/^[a-f0-9]{32}$/.test(mediaId||'')||languagePending.has(mediaId))return;
+  const device=transport.deviceHeaders?.();
+  if(!device?.['x-vivim-grant-id']||!device?.['x-vivim-device-session'])return;
+  const stillAuthorized=()=>S.paired&&S.tab==='world'&&!HOST_PREVIEW&&
+    transport.deviceHeaders?.()?.['x-vivim-grant-id']===device['x-vivim-grant-id']&&
+    transport.deviceHeaders?.()?.['x-vivim-device-session']===device['x-vivim-device-session'];
+  languagePending.add(mediaId);
+  try {
+    const response=await fetch('/mobile/api/media/language/start',{
+      method:'POST',credentials:'same-origin',cache:'no-store',
+      headers:{...device,origin:location.origin,
+        'x-vivim-media-language':'1','content-type':'application/json'},
+      body:JSON.stringify({mediaId,targetLanguage:'es-ES'})
+    });
+    const started=await response.json().catch(()=>({}));
+    if(!stillAuthorized())return;
+    if(!response.ok||started?.schema!=='vivim.media-language-job/1'||
+       !/^[a-f0-9]{32}$/.test(started.jobId||''))
+      throw new Error(started.code||'PC language conversion unavailable');
+    toast('Spanish conversion ' + (started.status==='ready'?'ready':'started on your PC') + '.');
+    let latest=started;
+    for(let attempt=0;attempt<900&&latest.status==='running';attempt++){
+      await new Promise(resolve=>setTimeout(resolve,2000));
+      if(!stillAuthorized()||document.hidden)return;
+      const check=await fetch('/mobile/api/media/language/jobs/'+started.jobId,{
+        method:'GET',credentials:'same-origin',cache:'no-store',headers:{...device}
+      });
+      const result=await check.json().catch(()=>({}));
+      if(!stillAuthorized())return;
+      if(!check.ok||result.schema!=='vivim.media-language-job/1'||
+         result.jobId!==started.jobId)throw new Error(result.code||'Conversion status unavailable');
+      latest=result;
+    }
+    if(latest.status==='ready'&&latest.mediaId===started.jobId&&stillAuthorized()){
+      toast('Spanish audio ready. Opening your translated version.');
+      await openMediaPlayer(latest.mediaId,String(title||'Audio')+' · Spanish');
+    }else if(latest.status==='failed')throw new Error(latest.code||'Conversion failed');
+    else if(latest.status==='running')toast('Spanish conversion continues on your PC.');
+  }catch(error){
+    if(stillAuthorized())toast('Spanish audio: '+String(error?.message||'Conversion unavailable').slice(0,110));
+  }finally{languagePending.delete(mediaId);}
+}
+
 // Owner media metadata travels over a separate Direct-only, device-scoped read.
 // It never uses the cloud relay, reveals local file paths, or starts playback.
 let mediaGeneration = 0;
@@ -1445,6 +1494,8 @@ function renderSurfaces() {
     onRefreshMedia: HOST_PREVIEW ? () => { void refreshHostPreview(); }
       : S.paired && transport.direct ? () => { void refreshMedia(true); } : undefined,
     onPlayMedia: transport.direct && S.paired && !HOST_PREVIEW ? openMediaPlayer : undefined,
+    onTranslateMedia: transport.direct && S.paired && !HOST_PREVIEW &&
+      S.device.scopes?.includes('control:execute') ? listenInSpanish : undefined,
     onMediaPage: transport.direct && S.paired && !HOST_PREVIEW
       ? offset => { void refreshMedia(true, offset); } : undefined,
     onInstall: !HOST_PREVIEW && deferredInstallPrompt ? requestPwaInstall : undefined,
