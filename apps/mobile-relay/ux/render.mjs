@@ -290,6 +290,13 @@ export function renderWorld(host, model, options = {}) {
           play.setAttribute('aria-label', 'Play ' + item.title);
           play.addEventListener('click', () => options.onPlayMedia(item.mediaId, item.title));
           entry.append(play);
+          if (item.canTranslate === true && typeof options.onTranslateMedia === 'function') {
+            const listen = make(doc,'button','btn sm ux-secondary','Listen in Spanish');
+            listen.type='button';
+            listen.setAttribute('aria-label','Translate and listen to ' + item.title + ' in Spanish');
+            listen.addEventListener('click',()=>options.onTranslateMedia(item.mediaId,item.title));
+            entry.append(listen);
+          }
         } else if (item.state === 'complete') {
           entry.append(make(doc, 'span', 'ux-item-detail',
             'No verified playable file mapped on this PC'));
