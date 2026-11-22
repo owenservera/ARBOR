@@ -227,19 +227,27 @@ function runStats(dataDir, out) {
 // the root URL (observed 2026-11-03: every create resolved to reason CREATION_UNPINNED).
 // Trade recorded in docs/chatgpt-channel/CONTRACT.md: the channel keeps its own send-once receipt
 // store keyed by requestId; Studio's per-thread turn journal is not reached on this path.
-function createDriveTransport({ binPath, timeoutSeconds = 120, exec = spawnSync }) {
+function createDriveTransport({ binPath, timeoutSeconds = 120, exec = spawnSync, isolatedThreads = false }) {
   return {
     async createThread() {
-      // The drive path owns tab continuity: the reused tab IS the thread.
-      return { threadId: 'chatgpt-live-tab' };
+      // Legacy seat uses its existing tab. Explicit isolated phone sessions use
+      // a fresh Studio-owned tab, and must get a real /c/<uuid> back before OK.
+      return { threadId: isolatedThreads ? 'chatgpt-new-tab' : 'chatgpt-live-tab' };
     },
     async send({ threadId, prompt, requestId, deadline, attachment }) {
       // The drive child must be allowed the whole budget the caller granted. A fixed cap here cut
       // every slow high-effort send off at the cap instead of the deadline (observed: a 122.9 s
       // answer against a 120 s cap), which surfaced as an empty reply.
       const remaining = Math.max(5, Math.min(600, Math.ceil((deadline.getTime() - Date.now()) / 1000)));
+      // A phone conversation cannot be safely mapped to whichever ChatGPT tab
+      // happens to be active. Isolated mode always opens Studio's own tab; a
+      // continuation names the proven native /c/<uuid> URL explicitly.
+      const pinned = /^chatgpt-c:([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/.exec(threadId ?? '');
+      if (isolatedThreads && threadId !== 'chatgpt-new-tab' && !pinned)
+        return { effect: 'FAILED', reply: null, threadId, journalKey: requestId, reason: 'CHATGPT_THREAD_UNVERIFIED' };
+      const target = isolatedThreads && pinned ? 'https://chatgpt.com/c/' + pinned[1] : 'chatgpt';
       const driveArgs = [
-        binPath, 'drive', 'chatgpt', '--reuse-tab', '--prompt', prompt,
+        binPath, 'drive', target, ...(isolatedThreads ? [] : ['--reuse-tab']), '--prompt', prompt,
         '--timeout', String(remaining), '--no-record', '--json',
       ];
       // Fast typing is ~2x quicker but has been seen to drop characters on long prompts, so it is
@@ -258,11 +266,24 @@ function createDriveTransport({ binPath, timeoutSeconds = 120, exec = spawnSync 
       if (parsed.authWall && parsed.authWall.blocked) {
         return { effect: 'FAILED', threadId, reply: null, journalKey: requestId, reason: parsed.authWall.reason ?? 'AUTH_WALL' };
       }
+      if (isolatedThreads && parsed.ok === true) {
+        const proven = /^chatgpt-c:([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/.exec(parsed.threadRef ?? '');
+        // The page may have sent despite a missing native thread identity:
+        // never mark that as safe-to-retry or deliver a false positive.
+        if (!proven || (pinned && parsed.threadRef !== threadId))
+          return { effect: 'UNCERTAIN', threadId, reply: null, journalKey: requestId, reason: 'CHATGPT_THREAD_NOT_PROVEN' };
+        const clean = sanitizeReply(parsed.reply);
+        if (!clean.length)
+          return { effect: 'UNCERTAIN', threadId: parsed.threadRef, reply: null, journalKey: requestId, reason: 'CHATGPT_REPLY_NOT_SETTLED' };
+        return { effect: 'OK', threadId: parsed.threadRef, reply: clean, journalKey: requestId };
+      }
       if (parsed.ok === true && typeof parsed.reply === 'string' && parsed.reply.length) {
         const clean = sanitizeReply(parsed.reply);
         if (!clean.length) return { effect: 'FAILED', threadId, reply: null, journalKey: requestId, reason: 'DISCLAIMER_ONLY' };
         return { effect: 'OK', threadId, reply: clean, journalKey: requestId };
       }
+      if (isolatedThreads && parsed.uncertain === true)
+        return { effect: 'UNCERTAIN', threadId, reply: null, journalKey: requestId, reason: 'STUDIO_DRIVE_DELIVERY_UNCERTAIN' };
       return { effect: 'FAILED', threadId, reply: null, journalKey: requestId, reason: (parsed.errors && parsed.errors[0]) || 'DRIVE_NO_REPLY' };
     },
   };
@@ -375,7 +396,7 @@ function runChannelCommand(ctx, sub, flags) {
   const { out, paths, settings } = ctx;
   const store = createFileStore({ dataDir: paths.root });
   const site = typeof flags.site === 'string' && flags.site.length ? flags.site : 'chatgpt';
-  const transport = channelTransportFor(site, settings);
+  const transport = channelTransportFor(site, settings, { isolatedThread: flags['isolated-thread'] === true });
   const channel = createChatChannel({
     transport,
     store,
@@ -393,15 +414,16 @@ function runChannelCommand(ctx, sub, flags) {
  * One browser owner (Studio), one transport per site. The site rides in the scope string; an
  * unknown site is a usage error here and a CHANNEL_DENIED in the core, so it never reaches a send.
  */
-function channelTransportFor(site, settings) {
+function channelTransportFor(site, settings, { isolatedThread = false } = {}) {
+  if (isolatedThread && site !== 'chatgpt') throw usageError('Isolated-thread channel currently supports ChatGPT only');
   if (site === 'gemini') return createGeminiTransport({ binPath: STUDIO_BIN });
   if (site === 'claude') return createClaudeTransport({ binPath: STUDIO_BIN });
   if (site !== 'chatgpt') throw usageError(`unsupported chat site "${site}"`);
   // Default is the proven drive path. VIVIM_CHAT_TRANSPORT=conversation selects the pinned-thread
   // conversation API instead, for use if the ChatGPT UI starts pinning /c/<uuid> again.
-  return process.env.VIVIM_CHAT_TRANSPORT === 'conversation'
+  return !isolatedThread && process.env.VIVIM_CHAT_TRANSPORT === 'conversation'
     ? createStudioChatTransport({ port: settings.studioPort })
-    : createDriveTransport({ binPath: STUDIO_BIN });
+    : createDriveTransport({ binPath: STUDIO_BIN, isolatedThreads: isolatedThread });
 }
 
 function runAsk(channel, flags, out, site) {
@@ -503,6 +525,7 @@ define({
     fresh: { type: 'boolean', desc: 'Request a new Studio-owned tab' },
     thread: { type: 'string', valueName: 'ID|new', desc: 'Thread id, or "new" to create one (chat ask / chat work)' },
     'request-id': { type: 'string', valueName: 'ID', desc: 'Replay key; repeating it returns the original receipt without sending (chat ask)' },
+    'isolated-thread': { type: 'boolean', desc: 'Require fresh or exact pinned ChatGPT Studio tab; refuse ambiguous thread binding' },
     effort: { type: 'string', valueName: 'instant|medium|high', desc: 'Reasoning tier; default auto (high for coding/brainstorm/algorithm, instant for short look-ups, else medium)' },
     attach: { type: 'string', valueName: 'PATH', desc: 'Attach one file to the turn before typing the prompt (chat ask)' },
     site: { type: 'string', valueName: 'SITE', desc: 'Agent-channel target site: chatgpt (default), claude or gemini (chat ask / chat work)' },

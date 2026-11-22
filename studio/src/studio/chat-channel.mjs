@@ -203,6 +203,26 @@ export function createChatChannel({ transport, verify, store, now = () => new Da
       return { receipt: existing, outcome: cached ?? replayOutcome(existing) };
     }
 
+    // An interrupted child may have dispatched a provider turn after its write-ahead
+    // marker but before producing a receipt. A reused key MUST NOT send again.
+    // Leave that original pending file intact for manual reconciliation.
+    const pending = typeof store.getPending === 'function' ? await store.getPending(requestId) : null;
+    if (pending) {
+      const effect = 'UNCERTAIN';
+      return {
+        receipt: baseReceipt({
+          requestId, taskId: input.taskId ?? null, actor: asActor(input.actor),
+          scope: typeof input.scope === 'string' ? input.scope : `${DEFAULT_SITE}.send`,
+          thread: { before: '', after: '' }, effect, promptDigest, replyDigest: null,
+          journalKey: requestId, journalPath: null, turns: 0, refusals: [REF_UNCERTAIN],
+          createdAt: now().toISOString(),
+        }),
+        outcome: { effect, reply: '', solution: null, turns: [], verifiedLocally: [],
+          assertedByModel: [], open: ['unresolved prior dispatch; pending receipt preserved; never resent'],
+          requestId, threadId: null },
+      };
+    }
+
     const requestedScope = typeof input.scope === 'string' && input.scope.length ? input.scope : `${DEFAULT_SITE}.send`;
     const resolvedScope = resolveScope(requestedScope);
     const scope = resolvedScope ? resolvedScope.scope : requestedScope;
@@ -407,6 +427,10 @@ export function createChatChannel({ transport, verify, store, now = () => new Da
         break;
       }
       replyText = turnReply;
+      // The transport may prove a native thread AFTER the first turn creates it.
+      // Persist that returned identity in the EXISTING receipt and outcome so an
+      // approved follow-up can target the exact /c/<uuid>, not an arbitrary tab.
+      if (typeof result.threadId === 'string' && result.threadId.length) after = result.threadId;
       const turnJournalKey = typeof result.journalKey === 'string' && result.journalKey.length
         ? result.journalKey : requestId;
       // Invariant 7: model prose is only ever evidence of what the model asserted.
