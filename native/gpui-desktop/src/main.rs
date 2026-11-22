@@ -18,6 +18,25 @@ use vivim_programmability_core::wiki_read::{self, RevisionGuard as WikiRevisionG
 use vivim_programmability_core::vec::{View as VecView, Element as VecElement};
 use gpui::{AnyElement, App, Application, Bounds, Context, Entity, Focusable, Window, WindowBounds, WindowOptions, div, prelude::*, px, relative, rgb, size};
 
+// GPUI 0.2.2 otherwise hides the Windows caption when titlebar is None.
+// Attach HMENU only to an actual system-caption window. This is Windows-only
+// application chrome, never a second product surface or Host authority.
+fn vivim_window_options(bounds: Bounds<gpui::Pixels>) -> WindowOptions {
+    let mut options=WindowOptions {
+        window_bounds: Some(WindowBounds::Windowed(bounds)),
+        ..Default::default()
+    };
+    #[cfg(windows)]
+    {
+        options.titlebar=Some(gpui::TitlebarOptions {
+            title: Some("VIVIM".into()),
+            appears_transparent: false,
+            ..Default::default()
+        });
+    }
+    options
+}
+
 // GPUI 0.2.2 drawable viewport logical pixels, minus workspace padding.
 // The Host remains responsible for admitting and planning this exact width.
 fn viewport_for_width(width: f32) -> u32 {
@@ -1283,10 +1302,13 @@ impl Render for Desktop {
             // a blank graphite canvas, one bottom composer, no diagnostics.
             // Host supervision, phone observation and Wiki reads still run,
             // but never create visible panels before the owner begins typing.
-            let mut surface=div().size_full()
+            // The fallback menu must touch the application viewport's top edge.
+            // Padding belongs to the First Contact canvas below the app menu.
+            let surface=div().size_full()
                 .bg(rgb(0x111214)).text_color(rgb(0xeeece7))
+                .flex().flex_col().child(menu);
+            let mut canvas=div().flex_1().min_h_0()
                 .flex().flex_col().p_4().gap_2()
-                .child(menu)
                 .child(div().flex_1());
 
             // AutoWiki is contextual, just like the Direct PWA. Empty text
@@ -1333,7 +1355,7 @@ impl Render for Desktop {
                         "AutoWiki source unavailable · no cached results shown"
                     ));
                 }
-                surface=surface.child(div().w_full().flex().justify_center()
+                canvas=canvas.child(div().w_full().flex().justify_center()
                     .child(div().id("first-contact-wiki").w_full().max_w(px(790.)).max_h(px(350.))
                         .overflow_y_scroll().child(wiki)));
             }
@@ -1342,7 +1364,7 @@ impl Render for Desktop {
             // existing compiler owns the interpretation, and user typing can
             // never authorize a plan or execute an effect.
             if let Some(meaning)=&self.semantic_preview {
-                surface=surface.child(div().w_full().flex().justify_center()
+                canvas=canvas.child(div().w_full().flex().justify_center()
                     .child(div().w_full().max_w(px(760.)).p_2()
                         .bg(rgb(0x20252a)).rounded(px(12.))
                         .child(div().text_sm().child(meaning.hint.clone()))));
@@ -1350,11 +1372,11 @@ impl Render for Desktop {
 
             // There is no separate native dashboard, toolbar, phone mirror
             // panel, browser frame or Send action in the first empty screen.
-            return surface.child(div().w_full().flex().justify_center()
+            return surface.child(canvas.child(div().w_full().flex().justify_center()
                 .child(div().w_full().max_w(px(760.)).p_2()
                     .bg(rgb(0x212327)).rounded(px(22.))
                     .border_1().border_color(rgb(0x50525a))
-                    .child(Input::new(&self.input).appearance(false).w_full())));
+                    .child(Input::new(&self.input).appearance(false).w_full()))));
         }
         let mut body = div().flex().flex_col().gap_3()
             .child(div().text_sm().child(self.source_status.clone()));
@@ -1581,7 +1603,7 @@ fn main() {
     Application::new().run(move |cx: &mut App| {
         gpui_component::init(cx);
         let bounds = Bounds::centered(None, size(px(1000.), px(740.)), cx);
-        cx.open_window(WindowOptions { window_bounds: Some(WindowBounds::Windowed(bounds)), ..Default::default() },
+        cx.open_window(vivim_window_options(bounds),
             move |window, cx| {
                 let supervisor = Arc::clone(&supervisor);
                 let input=cx.new(|cx| InputState::new(window,cx).placeholder("Ask anything…"));
@@ -1632,6 +1654,17 @@ fn main() {
 #[cfg(test)]
 mod viewport_tests {
     use super::viewport_for_width;
+    #[cfg(windows)]
+    #[test]
+    fn native_windows_menu_needs_opaque_system_titlebar() {
+        let options=super::vivim_window_options(gpui::Bounds {
+            origin:gpui::point(gpui::px(0.),gpui::px(0.)),
+            size:gpui::size(gpui::px(900.),gpui::px(600.)),
+        });
+        let titlebar=options.titlebar.expect("Windows-owned titlebar required");
+        assert!(!titlebar.appears_transparent);
+        assert!(titlebar.title.is_some());
+    }
     #[test]
     fn real_window_width_is_bounded_and_not_a_preset() {
         assert_eq!(viewport_for_width(1000.),960);
