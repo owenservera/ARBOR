@@ -157,5 +157,5 @@ export function mountLocalNotes({host,storage,copyText,saveFile,now,makeId,onCap
   // Browser-local drafts have no Host journal. A shell upgrade must not silently
   // discard text left in Quick capture, even if the drawer was closed.
   return Object.freeze({open,close,draft,list:()=>notebook.list(),
-    hasPendingLocalWork:()=>dialog.open||input.value.trim().length>0});
+    hasPendingLocalWork:()=>dialog.open||!!input.value?.trim()});
 }
