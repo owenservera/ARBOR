@@ -159,7 +159,7 @@ test('PWA Host view is scoped to the owner browser session and never exposes dev
     assert.equal((await fetch(base + route, { method: 'POST', headers })).status, 405);
     const response = await fetch(base + route, { headers });
     assert.equal(response.status, 200);
-    assert.equal(response.headers.get('cache-control'), 'no-store');
+    assert.equal(response.headers.get('cache-control'), 'private, no-store');
     const data = await response.json();
     assert.equal(data.schema, 'vivim.host-pwa-view/1');
     assert.equal(data.snapshot.control.schema, 'vivim.control-recent/1');

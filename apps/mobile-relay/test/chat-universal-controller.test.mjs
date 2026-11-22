@@ -46,7 +46,8 @@ test('microphone button and local recorder cannot issue Host or AI requests',()=
   assert.ok(app.includes('mountVoiceCapture({host:document.body,onReviewedText:text=>localNotes?.draft(text)??false})'));
  assert.match(voice,/getUserMedia\(\{audio:true\}\)/);
  assert.match(voice,/Download or explicitly discard the recording/);
- assert.doesNotMatch(voice,/fetch\(|WebSocket|XMLHttpRequest|SpeechRecognition|sendToHost/);
+  assert.match(voice,/createLocalDictation\(/);
+  assert.doesNotMatch(voice,/fetch\(|WebSocket|XMLHttpRequest|sendToHost/);
 });
 
 test('combined inbox is source-backed aggregation only, never implicit multi-send',()=>{

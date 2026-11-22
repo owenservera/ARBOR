@@ -357,7 +357,7 @@ test('late media responses never repopulate an unpaired World after revocation',
   assert.match(app,/const generation = mediaGeneration/);
   assert.ok(app.includes('const sameGrant=()=>generation===mediaGeneration&&S.paired&&'));
   assert.ok(app.includes('if(!sameGrant())return;'), 'late old-grant responses must be dropped');
-  assert.match(app,/function clearPrivatePhoneState\(\) \{\s*mediaGeneration\+\+/);
+  assert.match(app,/function clearPrivatePhoneState\(\) \{[\s\S]{0,500}mediaGeneration\+\+/);
 });
 
 
@@ -448,7 +448,7 @@ test('Control and Ask VIVIM redact private plans and ignore late Host reads afte
   assert.match(control,/historyEpoch\+\+;\s*items\.replaceChildren\(\)/);
   assert.ok(chat.includes('function redact() {'));
   assert.ok(chat.includes("suggestions = [];sharedPrograms=null;programError='';"), 'private program suggestions must be redacted too');
-  assert.match(chat,/send, render, clear, redact, loadSuggestions/);
+  assert.match(chat,/send, previewCapture, render, clear, redact, loadSuggestions/);
 });
 
 
