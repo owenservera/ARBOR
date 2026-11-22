@@ -229,3 +229,12 @@
   - `gpui-autowiki-7a5ade3-typed-20261122.png`, SHA256 `1B4C8B3B96114AF0DA2F336783B04A9E21DE7BA999163BA9A0C8C0B0D7F22BA1`: native OS keyboard typed `wiki`; AutoWiki displayed **3 real source-backed matches, revision 1** (Main/About, Main/HowTo, Main/Sources); inert VLANG displayed no deterministic command match and **no action taken**.
   - `gpui-autowiki-7a5ade3-cleared-20261122.png`, SHA256 `A9BC150CB511DF7A35CC39128365931090E2C9308B0FA67268BB2D6294A7848F`: real Ctrl+A/Backspace restored empty composer and removed contextual Wiki/VLANG cards.
 - **Acceptance disposition:** actual blank→type→AutoWiki→clear interaction **PASS on Windows GPUI**. GPUI fallback seven-section File/Edit/View/Tools/Developer/Settings/Help menu visibly rendered; real Win32 native menu painting, menu interactions, Android and PC↔phone revision/effect delivery remain **UNVERIFIED**. This test confirms read-only local Host Wiki coherence and inert command preview, not approval or execution authority.
+
+### R004 exact-SHA Windows verification recovery — 2026-11-22
+
+- **Exact source:** `13892cbca7a6c8213f21dcbb6a2b131cdbbec079`, detached Windows checkout `C:\\0-BlackBoxProject-0\\.arbor-gpui-releases\\verify-13892cb`; application source untouched.
+- **Rust library:** `cargo test --manifest-path native/gpui-desktop/Cargo.toml --lib --offline --locked` **PASS 47/47 exit 0**; prior shared Cargo lock released and the phone owner/stage safety tests passed.
+- **Desktop compilation:** `cargo check --manifest-path native/gpui-desktop/Cargo.toml --features desktop --offline --locked` **PASS exit 0**; only upstream `proc-macro-error2 v2.0.1` future-compat warning.
+- **Host regression:** `node --test` over `agent-composer-bridge.test.mjs`, `vlang-command-compilation.test.mjs`, `composer-assist.test.mjs` **PASS 13/13 exit 0**.
+- **Executable link:** `cargo build --features desktop --offline --locked` **BLOCKED exit 1** because Windows rejected replacing the existing shared-target `vivim-gpui-desktop.exe` (`os error 5: Access is denied`). A running native app was observed; do not kill the current session to force a pass. Use isolated alternate target for next build. No Rust compiler diagnostic was emitted.
+- **Visual evidence:** inspected `gpui-cutover-5f0b4d4-typed-wiki-20261122.png`: native typed `wiki` and inert no-match feedback are visible; AutoWiki says source unavailable. This predates `7a5ade3` timestamp-drift fix and cannot verify it. No permanent launcher/phone URL replacement performed here.
