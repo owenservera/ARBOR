@@ -7,7 +7,7 @@
 import { createHash, randomBytes } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import { createBootstrapScheduler } from '../bootstrap/scheduler.mjs';
+import { createBootstrapScheduler, PASS_ORDER } from '../bootstrap/scheduler.mjs';
 import { createEnrollment } from '../apk/enrollment.mjs';
 import { createBootstrapBindingStore, createStudioBootstrapOwnerAdapter } from '../../../studio/src/studio/bootstrap-owner-adapter.mjs';
 import { promptForPass, extractJson, PASS_TITLES } from '../../mobile-relay/bootstrap-prompts.mjs';
@@ -21,7 +21,7 @@ export const PROVIDERS = Object.freeze([
   { id: 'zai', label: 'Z.ai', url: 'https://chat.z.ai/', personalizes: false },
   { id: 'deepseek', label: 'DeepSeek', url: 'https://chat.deepseek.com/', personalizes: false }
 ]);
-const PASSES = Object.freeze(['F02', 'F01']);
+const PASSES = PASS_ORDER;
 const APPROVAL_TTL_MS = 30 * 60 * 1000;
 const READY_TTL_MS = 45 * 1000;
 const IN_FLIGHT = new Set(['dispatching', 'awaiting', 'uncertain', 'ingesting']);
