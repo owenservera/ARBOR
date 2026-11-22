@@ -1,5 +1,7 @@
 // Loopback HTTP port to the Studio conversation API. Studio stays the only browser owner and
 // send-once journal; this file only speaks its documented routes and never touches CDP or Chrome.
+// Shared with Studio CLI relay default; no second browser owner or embedded provider token.
+export const DEFAULT_STUDIO_ORIGIN = 'http://127.0.0.1:38787';
 const CODE = /^[A-Z][A-Z0-9_]{0,79}$/;
 const enc = encodeURIComponent;
 
