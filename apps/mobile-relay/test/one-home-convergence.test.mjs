@@ -28,7 +28,7 @@ test('cloud and Direct use the exact same canonical PWA assets at /mobile',()=>{
     ['/mobile/(.*)','/$1'],
   ]) assert.ok(deploy.rewrites.some(x=>x.source===source&&x.destination===destination),
     'missing shared PWA route '+source);
-  assert.match(sw,/vivim-relay-shell-v44/);
+  assert.match(sw,/vivim-relay-shell-v45/);
 });
 test('home does not bypass existing Host grants or auto-repeat an uncertain send',()=>{
   assert.match(app,/clearPrivatePhoneState\(\); showHomeWithoutGrant\(\)/);
@@ -39,4 +39,11 @@ test('home does not bypass existing Host grants or auto-repeat an uncertain send
     app.indexOf(" $('connect-pc').addEventListener".trim()));
   assert.ok(source.includes("$('app').hidden = false"));
   assert.doesNotMatch(source,/\bfetch\(|\bapi\(|\bexecute\(|\bsend\(/);
+});
+
+test('Cloud and Direct render one graphite First Contact Home, without granting Host authority',()=>{
+  assert.match(app,/const FIRST_CONTACT = transport\.direct && !HOST_PREVIEW/);
+  assert.match(app,/if \(!HOST_PREVIEW\) document\.body\.classList\.add\('first-contact'\)/);
+  assert.match(html,/body\.first-contact:not\(\.first-contact-provider\) #chat-composer > :not\(\.row\):not\(#connect-pc\)/);
+  assert.match(app,/if \(!S\.paired && !HOST_PREVIEW && !FIRST_CONTACT\)/);
 });
