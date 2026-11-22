@@ -16,12 +16,12 @@ if (-not (Test-Path -LiteralPath $exe -PathType Leaf)) {
 if (-not (Test-Path -LiteralPath $receiptFile -PathType Leaf)) {
     throw "GPUI_ONLY_UNVERIFIED_BUILD: Refusing to launch an old cached GPUI binary without source receipt."
 }
-$head = (& git -C $repoRoot rev-parse HEAD | Select-Object -First 1)
-$origin = (& git -C $repoRoot rev-parse origin/main | Select-Object -First 1)
-if ($LASTEXITCODE -ne 0 -or -not $head -or $head -ne $origin) {
+$head = (& git.exe -C $repoRoot rev-parse HEAD | Select-Object -First 1)
+$origin = (& git.exe -C $repoRoot rev-parse origin/main | Select-Object -First 1)
+if (-not $head -or -not $origin -or $head -ne $origin) {
     throw 'GPUI_ONLY_SOURCE_NOT_CURRENT: synchronize ARBOR main before launching.'
 }
-$changes = @(& git -C $repoRoot status --porcelain=v1)
+$changes = @(& git.exe -C $repoRoot status --porcelain=v1)
 if ($LASTEXITCODE -ne 0 -or $changes.Count -gt 0) {
     throw 'GPUI_ONLY_DIRTY_SOURCE: refuse unpinned native launch.'
 }
