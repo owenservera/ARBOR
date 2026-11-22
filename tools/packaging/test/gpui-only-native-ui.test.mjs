@@ -10,6 +10,7 @@ const adapter=readFileSync(path.join(root,'native/gpui-desktop/src/lib.rs'),'utf
 const pkg=JSON.parse(readFileSync(path.join(root,'package.json'),'utf8'));
 const launcher=readFileSync(path.join(root,'tools/packaging/launch-gpui-only.ps1'),'utf8');
 const builder=readFileSync(path.join(root,'tools/packaging/build-gpui-native.ps1'),'utf8');
+const nativeDelivery=readFileSync(path.join(root,'native/gpui-desktop/src/live_delivery.rs'),'utf8');
 
 test('Windows desktop launches native GPUI rather than a web app',()=>{
   assert.match(source,/Application::new\(\)\.run\(/);
@@ -53,4 +54,15 @@ test('retired cached GPUI binaries cannot launch without a matching native build
   assert.match(builder,/firstContactDefault = \$true/);
   assert.match(builder,/Get-FileHash -LiteralPath \$exe -Algorithm SHA256/);
   assert.doesNotMatch(pkg.scripts.desktop,/vivim-product-pure\.exe/);
+});
+
+test('live build inspection is a Rust GPUI capability inside Developer menu, not a second UI',()=>{
+  assert.match(source,/Button::new\("dev-live-build"\)/);
+  assert.match(source,/live_delivery::inspect_live_delivery\(\)/);
+  assert.match(source,/Panel::Developer/);
+  assert.match(nativeDelivery,/pub fn inspect_live_delivery\(\)/);
+  assert.match(nativeDelivery,/fn get_static\(/);
+  assert.match(nativeDelivery,/Sha256::digest\(module\)/);
+  assert.match(nativeDelivery,/phone acceptance unproven/);
+  assert.doesNotMatch(nativeDelivery,/webview|edge\.exe|chrome\.exe|Start-Process|post\(/i);
 });
