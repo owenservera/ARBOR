@@ -23,6 +23,16 @@
 - `cargo check --manifest-path native/gpui-desktop/Cargo.toml --features desktop --offline --locked`: **IN PROGRESS at this receipt**; compilation is not success.
 - Changes from `74df0d3`, `31d2a12`, `ce9bbf3`, and `4a26454` were pushed **after** the pinned `e3f8b0d` checkout. Their exact-SHA tests are **UNRUN at this receipt**, must be tested before release acceptance.
 
+## Final exact-source regression recheck
+
+**Immutable Windows test checkout** `C:\\0-BlackBoxProject-0\\.arbor-gpui-releases\\verify-4a26454`, pinned to source `4a264544ec5cf48004031df92a40adc305725553` (includes all six code/test commits above):
+
+- `node --test apps/vivim-host/test/vlang-command-compilation.test.mjs apps/vivim-host/test/control-intent-planner.test.mjs apps/vivim-host/test/command-intent-native.test.mjs apps/mobile-relay/test/composer-assist.test.mjs`: **27 PASS / 0 FAIL / exit 0**. The new deterministic help/status/wiki list test passed.
+- `cargo test --manifest-path native/gpui-desktop/Cargo.toml --lib --offline --locked`: **45 PASS / 0 FAIL / exit 0**. The latest Rust no-match and fixed-root filesystem tests passed.
+- The exact-SHA desktop-feature `cargo check --manifest-path native/gpui-desktop/Cargo.toml --features desktop --offline --locked` was started after restoring the prior isolated cached target; **PENDING final command result** at this update.
+- Local test-only `Cargo.lock` was copied into the isolated checkout. No tracked source or owner working tree was edited through Desktop Commander.
+- Native executable launch, actual GPUI physical typing, Alt/mouse Windows menu painting and Android synchronized viewport: **UNRUN**.
+
 ## CI truth
 
 GitHub Actions push run [45045596759](https://github.com/owenservera/ARBOR/actions/runs/45045596759), for `ce9bbf3`, concluded `startup_failure` with zero jobs. This is not code test evidence.
