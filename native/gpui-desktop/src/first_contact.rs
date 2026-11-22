@@ -58,7 +58,7 @@ pub fn project_phone_draft(source: &Value) -> Result<Option<PhoneDraft>, ReadErr
         .filter(|s| s.len() == 32 && s.bytes().all(|b| b.is_ascii_hexdigit()))
         .ok_or(ReadError::InvalidProjection)?;
     let text = region["data"]["draft"].as_str()
-        .filter(|s| s.len() <= 1000 && !s.contains('\\0'))
+        .filter(|s| s.len() <= 1000 && !s.contains('\0'))
         .ok_or(ReadError::InvalidProjection)?;
     let composing = region["data"]["composing"].as_bool()
         .ok_or(ReadError::InvalidProjection)?;
