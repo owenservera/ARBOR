@@ -53,6 +53,7 @@ use vivim_gpui_desktop::first_contact::{self, PhoneDraft};
 use vivim_gpui_desktop::desktop_menu::{self, Section, Destination, Intent};
 use vivim_gpui_desktop::desktop_settings::{self, Preferences};
 use vivim_gpui_desktop::desktop_capture;
+use vivim_gpui_desktop::live_delivery;
 use vivim_gpui_desktop::{Overview, ReadError, ObservationTicket, passive_read_allowed, DevelopmentRevisionGuard, read_overview, read_development, control::{self, Review}, visual::{self, Visual, RevisionGuard}};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -74,6 +75,8 @@ struct Desktop {
     preferences: Preferences,
     preferences_status: String,
     developer_status: String,
+    delivery_status: String,
+    delivery_busy: bool,
     capture_busy: bool,
     viewport_px: u32,
     viewport_epoch: u64,
@@ -1032,6 +1035,27 @@ impl Desktop {
         }
         cx.notify();
     }
+    // Native-only Developer action over the canonical Host/PWA source bytes.
+    fn inspect_live_build(&mut self,cx:&mut Context<Self>) {
+        if self.delivery_busy { return; }
+        self.delivery_busy=true;
+        self.delivery_status="Reading existing Host PWA build evidence…".into();
+        cx.notify();
+        let job=cx.background_executor().spawn(async {
+            live_delivery::inspect_live_delivery()
+        });
+        cx.spawn(async move |this,cx| {
+            let result=job.await;
+            let _=this.update(cx,|view,cx| {
+                view.delivery_busy=false;
+                view.delivery_status=match result {
+                    Ok(report)=>report.status(),
+                    Err(error)=>format!("Build evidence unavailable · {}",error.label()),
+                };
+                cx.notify();
+            });
+        }).detach();
+    }
     fn capture_native_window(&mut self,cx:&mut Context<Self>) {
         if self.capture_busy {
             self.developer_status="A native screenshot is already in progress".into();
@@ -1251,6 +1275,11 @@ impl Render for Desktop {
                         .child(Button::new("dev-save-report").label("Save diagnostic report")
                             .on_click(cx.listener(|v,_,_,cx|v.save_developer_diagnostics(cx))))
                         .child(div().text_sm().child(self.developer_status.clone()))
+                        .child(div().text_lg().child("PWA delivery evidence"))
+                        .child(Button::new("dev-live-build").label(
+                            if self.delivery_busy {"Checking live PWA build…"} else {"Verify live PWA module"}
+                        ).on_click(cx.listener(|v,_,_,cx|v.inspect_live_build(cx))))
+                        .child(div().text_sm().child(self.delivery_status.clone()))
                         .child(div().text_lg().child("Live diagnostic readback"))
                         .child(format!("Host {:?} · runtime {:?} · PID {:?}",host.readiness,host.origin,host.pid))
                         .child(format!("Wiki source {} · revision {}",if self.overview.is_some() {"available"} else {"unavailable"},self.overview.as_ref().map(|s|s.wiki_revision).unwrap_or_default()))
@@ -1600,7 +1629,9 @@ fn main() {
                     let mut view=Desktop {supervisor, input,panel:Panel::FirstContact,menu_open:None,
                         preferences:desktop_settings::load().unwrap_or_default(),
                         preferences_status:"Windows-only presentation preference".into(),
-                        developer_status:"No developer action requested".into(),capture_busy:false,
+                        developer_status:"No developer action requested".into(),
+                        delivery_status:"Not yet verified on this PC · check in Developer".into(),
+                        delivery_busy:false,capture_busy:false,
                         viewport_px:initial_viewport_px,
                         viewport_epoch:0,source_epoch:0,presentation_epoch:0,read_busy:false,refresh_pending:false,
                         coherence_retry_ready:true,
