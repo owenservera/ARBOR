@@ -3,7 +3,7 @@
 
 ## Shipping state
 - **Live Host:** `127.0.0.1:43187`; retains existing owner data root and existing Tailscale phone URL.
-- **Live source release:** `972dd30f4f51817d067ff9a1b2f1369446881126`; deployment script returned `CUTOVER_PASS samePhoneURL=true`.
+- **Live source release:** `10006454b433efd53affc74e5e7a3d6518f96432`; deployment script returned `CUTOVER_PASS samePhoneURL=true`.
 - **Test evidence:** focused `node --test` checks passed; `node integration/scripts/pwa-run-now.mjs` full mobile/Host/PWA suite passed from a pinned isolated worktree at that SHA. Live /mobile/app.js, /mobile/provider-handoff.mjs, /mobile/sw.js each HTTP 200; unauthenticated /api/host/control/pwa-view HTTP 401; Studio /api/v1/conversations HTTP 200.
 - **Signed-in Studio browser:** dedicated existing Windows VIVIM Chrome profile, CDP 38702, same Studio owner at loopback 38730. No provider APIs, credentials, second browser executor or implicit resend.
 - **User-visible integration:** one mobile composer, explicit `Ask ChatGPT: ...` / `Ask Gemini: ...` handoff, original Host/Studio queue and phone session projections; unverified draft preserved; conversation target not silently changed; selected-provider read-only freshness check; no send without owner pairing, verified account and compatible live chatWorker heartbeat.
@@ -36,3 +36,8 @@ All six probes used Studio's existing owned-tab `/api/v1/conversations/create` a
 
 ## Policies
 GitHub `main` remains the source writer. ZCode and Desktop Commander provide context, local operations, tests and review, never substitute for the source owner. Rust is default for new core logic, TypeScript 7+ where browser contracts require it. Provider APIs and Playwright/Puppeteer are not part of this architecture. No prompt or reply bodies, device tokens, personal account identifiers, or sign-in credentials are included in this record.
+
+## Final Direct-ingress amendment — 2026-11-22
+- The Host now checks a current `chatWorker` heartbeat, a mode-declared supported provider and a fresh Studio `signedIn` verification **at the authenticated `POST /mobile/api/relay?path=commands` boundary**, immediately before queue admission. The device is re-authorized for `relay:write`. Missing worker fails 503, unverified provider fails 409, and neither adds a queued command. These are in addition to the phone's disabled Send gate.
+- Revision `10006454b433efd53affc74e5e7a3d6518f96432` passed focused Direct-phone tests and the full PWA/Host Node suite from an isolated release worktree. Deployment returned `CUTOVER_PASS samePhoneURL=true`; post-cutover mobile assets responded HTTP 200, unauthenticated owner PWA returned HTTP 401, and Studio remained reachable.
+- **Still not accepted:** the live chat worker is not running and the single Studio ChatGPT creation attempt remains `CREATION_UNPINNED / uncertain`. No resend, no verified settled reply, no physical phone end-to-end success assertion.
