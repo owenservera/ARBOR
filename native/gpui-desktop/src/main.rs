@@ -983,9 +983,10 @@ impl Desktop {
 
 impl Render for Desktop {
     fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        // GPUI's painted header is only a failsafe for platforms lacking
-        // an OS menu. Windows mounts a genuine HMENU above the canvas.
-        let menu=if native_windows_menu::installed() {
+        // The drawn app-shell menu remains accessible until Win32 actually
+        // reports a usable nonclient menu rectangle. A bare HMENU handle
+        // does not count as human-visible menu acceptance.
+        let menu=if native_windows_menu::visually_ready() {
             div().into_any_element()
         } else {
             self.surface_menu(cx)
