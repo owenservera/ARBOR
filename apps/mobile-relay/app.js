@@ -716,6 +716,42 @@ function renderSemanticKnowledge(card, context) {
   if (knowledge.rows.length > 32) card.append(el('p','ux-note',(knowledge.rows.length - 32) + ' additional relationships in the Host read model.'));
   card.append(el('p','ux-note','Snapshot digest ' + knowledge.digest));
 }
+// Reuse the owner-private AutoWiki context already fetched for Host Preview.
+// The paired Direct phone deliberately has no owner-private corpus permission.
+function validOracleCorpusView(corpus) {
+  if (corpus === undefined) return true; // Older Host: existing context still valid.
+  if (corpus?.schema !== 'vivim.oracle-corpus-view/1' ||
+      corpus.sensitiveExcluded !== true || !Array.isArray(corpus.items)) return false;
+  if (corpus.state === 'unavailable') return corpus.items.length === 0;
+  return corpus.state === 'ready' && corpus.items.length <= 16 &&
+    Number.isSafeInteger(corpus.count) && corpus.count === corpus.items.length &&
+    corpus.items.every(item => typeof item?.id === 'string' &&
+      typeof item.statement === 'string' && item.statement.length <= 2000 &&
+      ['F01','D03','D04','D05','D07'].includes(item.pass) &&
+      typeof item.source?.provenanceId === 'string' &&
+      item.source.provenanceId.length > 0 &&
+      typeof item.status === 'string' && typeof item.basis === 'string');
+}
+function renderOracleInExistingWiki(card, corpus) {
+  card.append(el('h3', 'ux-card-title', 'Oracle · personal corpus'));
+  if (!corpus || corpus.state !== 'ready') {
+    card.append(el('p','ux-note','Oracle corpus unavailable or not connected; no cached personal facts.'));
+    return;
+  }
+  card.append(el('p','ux-note',corpus.count+
+    ' bounded provider-reported claim(s) · private Host ledger · not verified transcripts'));
+  if (!corpus.items.length) card.append(el('p','ux-note',
+    'No Oracle claims yet. Discovery requires owner review and approval.'));
+  for (const item of corpus.items) {
+    const row=el('div','ux-item');
+    row.append(el('p','ux-note',item.statement),
+      el('p','ux-note',item.pass+' · '+item.status+' · '+item.basis+
+        ' · source '+item.source.provenanceId+' · generation '+
+        (item.source.generationId ?? 'unknown')+
+        ' · provider-reported, not independently verified'));
+    card.append(row);
+  }
+}
 function renderWikiContext() {
   const card = el('section', 'ux-card');
   card.append(el('h3', 'ux-card-title', 'AutoWiki · source-backed context'));
@@ -724,6 +760,7 @@ function renderWikiContext() {
     card.append(el('p', 'ux-note', S.wikiContextError || 'Owner-private context unavailable.'));
     return card;
   }
+  renderOracleInExistingWiki(card,context.oracleCorpus);
   card.append(el('p', 'ux-note', 'User statements (unverified) · journal sequence ' + context.revision));
   if (!context.items.length) card.append(el('p', 'ux-note', 'No source-identified observations.'));
   for (const item of context.items.slice().reverse()) {
@@ -792,7 +829,8 @@ function validWikiContext(context, wiki) {
     Number.isSafeInteger(item.sequence) && item.sequence >= 1 && item.sequence <= context.revision;
   return context?.schema === 'vivim.wiki-context/1' && context.state === 'source-backed' &&
     Number.isSafeInteger(context.revision) && context.revision >= 0 && context.wikiRevision === wiki.revision &&
-    validAppliedEffects(context.applicationEffects) && Array.isArray(context.items) && context.items.length <= 24 &&
+    validAppliedEffects(context.applicationEffects) && validOracleCorpusView(context.oracleCorpus) &&
+    Array.isArray(context.items) && context.items.length <= 24 &&
     Number.isSafeInteger(context.omitted) && context.omitted >= 0 &&
     context.items.every(item => validEntry(item) && item.status === 'user-statement-unverified' && typeof item.text === 'string') &&
     Array.isArray(context.wikiChanges?.items) && context.wikiChanges.items.length <= 24 &&
