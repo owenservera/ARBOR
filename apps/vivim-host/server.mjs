@@ -1233,7 +1233,14 @@ async function handleControl(req, res, pathname, host, controlFor, tokenFor, uiS
       if (!verifyOwnerToken(req.headers.authorization, owner) && !uiSessions.authorized(req,{mutate:false})) {
         sendJson(res,401,{code:'OWNER_AUTH'}); return;
       }
-      const enriched = { ...context, applicationEffects, nativeContext:native, studioOutcomes:readStudioOutcomes() };
+      // Oracle uses the existing Host ledger and owner-private Wiki context. Never
+      // poll a second corpus endpoint from the browser or merge provider
+      // recollections into committed Wiki journal semantics.
+      let oracleCorpus;
+      try { oracleCorpus = runtimeFor().oracleCorpus({ limit: 16 }); }
+      catch { oracleCorpus = { schema:'vivim.oracle-corpus-view/1',state:'unavailable',
+        items:[],count:0,sensitiveExcluded:true,code:'ORACLE_CORPUS_UNAVAILABLE' }; }
+      const enriched = { ...context, applicationEffects, nativeContext:native, oracleCorpus, studioOutcomes:readStudioOutcomes() };
       sendJson(res, 200, { ...enriched, semantics: projectWikiSemantics(enriched) });
     } catch { sendJson(res, 503, { schema: 'vivim.wiki-context/1', state: 'unavailable', code: 'WIKI_CONTEXT_UNAVAILABLE' }); }
     return;
