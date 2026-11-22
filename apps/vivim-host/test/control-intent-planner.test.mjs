@@ -21,6 +21,21 @@ test('exact deterministic theme intent becomes a typed plan needing approval, ne
   assert.equal(p.origin, 'deterministic');
   assert.equal(p.language.feedback.status, 'ok');
 });
+test('common owner commands compile deterministically without an LLM or effect', () => {
+  const planner = createControlPlanner();
+  for (const [spoken, expected] of [
+    ['help', 'control.catalog.list'],
+    ['status', 'vivim.status.show'],
+    ['list wiki pages', 'wiki.pages.list'],
+  ]) {
+    const result = planner.planText(spoken);
+    assert.equal(result.actionId, expected, spoken);
+    assert.equal(result.origin, 'deterministic', spoken);
+    assert.equal(result.executionPerformed, false, spoken);
+    assert.notEqual(result.outcome, 'interpretation_required', spoken);
+    assert.notEqual(result.outcome, 'refused', spoken);
+  }
+});
 test('unknown language routes to AI candidate only, not execution', () => {
   const p = createControlPlanner().planText('make me a private workspace');
   assert.equal(p.outcome, 'interpretation_required');
