@@ -106,6 +106,16 @@ test('D05: a staged runtime missing the importer fails closed', t => {
     'the importer gap must be named, got: ' + report.problems.join('; '));
 });
 
+test('D05: a source-only PWA release cannot claim a working live-system without Rust', t => {
+  assert.ok(PACKAGED_BINARIES.includes('vivim-product-pure'));
+  const base=syntheticRuntime(t);
+  rmSync(path.join(base,'native','bin','vivim-product-pure.exe'));
+  const report=verifyStagedRuntime(base);
+  assert.equal(report.ok,false);
+  assert.ok(report.problems.includes(
+    'missing staged native binary: native/bin/vivim-product-pure.exe'));
+});
+
 test('D05: a cargo target tree in the runtime is refused as a debug fallback', t => {
   const base = syntheticRuntime(t);
   mkdirSync(path.join(base, 'target', 'debug'), { recursive: true });
