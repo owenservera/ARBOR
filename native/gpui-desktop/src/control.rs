@@ -159,8 +159,17 @@ pub fn project_composer_meaning(response: &Value) -> Result<Option<ComposerMeani
             outcome:outcome.into(),action_id:None,risk:None,
             hint:"Incomplete command · continue typing".into()
         })),
-        // No deterministic match is NOT evidence of an executable command.
-        "refused"|"interpretation_required"|"empty" => Ok(None),
+        // A deterministic non-match must be visible on the command surface:
+        // never silently imply that an LLM was used or an effect was sent.
+        "interpretation_required" => Ok(Some(ComposerMeaning {
+            outcome:outcome.into(),action_id:None,risk:None,
+            hint:"No deterministic command match · no action taken".into()
+        })),
+        "refused" => Ok(Some(ComposerMeaning {
+            outcome:outcome.into(),action_id:None,risk:None,
+            hint:"Command refused by Host policy · no action taken".into()
+        })),
+        "empty" => Ok(None),
         _ => Err(ReadError::InvalidProjection)
     }
 }
@@ -258,9 +267,23 @@ mod tests {
         let preview=project_composer_meaning(&value).unwrap().unwrap();
         assert!(preview.hint.contains("Which Wiki section?"));
         assert!(preview.action_id.is_none());
-        for state in ["refused","interpretation_required","empty"] {
+        for (state, expected) in [
+            ("refused", Some("refused by Host policy")),
+            ("interpretation_required", Some("No deterministic command match")),
+            ("empty", None),
+        ] {
             value=base.clone();value["outcome"]=json!(state);
-            assert_eq!(project_composer_meaning(&value).unwrap(),None);
+            let projection=project_composer_meaning(&value).unwrap();
+            match expected {
+                Some(label)=>{
+                    let preview=projection.expect("unsupported commands need truthful feedback");
+                    assert_eq!(preview.outcome,state);
+                    assert!(preview.hint.contains(label));
+                    assert!(preview.action_id.is_none());
+                    assert!(preview.risk.is_none());
+                }
+                None=>assert!(projection.is_none()),
+            }
         }
         value=base.clone();value["outcome"]=json!("candidate");
         assert!(project_composer_meaning(&value).is_err());
