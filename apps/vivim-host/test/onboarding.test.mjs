@@ -142,6 +142,8 @@ test('approved prompts run in the background, once each, and personalise the Wor
     for (let i = 0; i < 14; i++) await f.svc.pump();
     const status = await f.svc.status();
     assert.equal(status.personalization.phase, 'done');
+    assert.ok(status.personalization.corpus?.claims >= 1, 'real ledger count appears in onboarding');
+    assert.ok(status.personalization.corpus?.observations >= 1, 'real observations appear in onboarding');
     assert.deepEqual(status.personalization.passes.map(p => p.status), Array(7).fill('complete'));
     assert.ok(f.runtime.ledger?.claims?.list('world-local').some(c => c.pass === 'D03'), 'D03 facts must reach existing Host ledger');
     assert.equal(f.studio.log.submits, 7, 'each approved prompt is sent exactly once');
