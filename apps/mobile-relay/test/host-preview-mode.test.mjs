@@ -19,7 +19,7 @@ test('preview blocks send/update paths and renders read-only shell state', () =>
     app,
     /if \(HOST_PREVIEW\) \{\s*toast\('This is your phone preview\. Pair a phone or open Host Control to perform actions\.'\);\s*return;/
   );
-  assert.match(app, /function updateSend\(\) \{\s*if \(HOST_PREVIEW \|\| !S\.paired\) \{ \$\('send'\)\.disabled = true; return; \}/);
+  assert.match(app, /function updateSend\(\) \{\s*if \(HOST_PREVIEW \|\| \(!S\.paired && !FIRST_CONTACT\)\) \{ \$\('send'\)\.disabled = true; return; \}/);
   assert.match(app, /S\.paired = false;\s*S\.cmds = \[\]; S\.convs = \[\]; S\.active = null;/);
   assert.match(app, /setConn\('Desktop preview [^']*owner authorization required', true\);/);
 });
