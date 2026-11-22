@@ -104,6 +104,7 @@ export function createBootstrapRuntime({ dataRoot, worldId = WORLD_DEFAULT, file
       catch (cause) { return { schema: 'vivim.data-inventory/1', state: 'unavailable',
         code: cause?.code ?? 'INVENTORY_FAILED', reason: String(cause?.message ?? cause).slice(0, 160) }; }
     },
+    oracleCorpus: args => requireService().oracleCorpus(args),
     grantBootstrap: args => requireService().grantBootstrap(args),
     revokeGrant: () => requireService().revokeGrant(),
     ingestF02: args => requireService().ingestF02(args),
