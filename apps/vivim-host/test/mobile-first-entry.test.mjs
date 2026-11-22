@@ -135,6 +135,9 @@ test('PWA Host view is scoped to the owner browser session and never exposes dev
     const route = '/api/host/control/pwa-view';
     assert.equal((await fetch(base + route)).status, 401);
     assert.equal((await fetch(base + route, { method: 'POST' })).status, 401);
+    const order = source('../server.mjs').split("if (route === 'pwa-view') {")[1];
+    assert.ok(order.indexOf("if(!verifyOwnerToken") < order.indexOf("const media = await"),
+      'unauthorized callers must not trigger private reads');
     const issue = await fetch(base + '/api/host/control/ui-session', {
       method: 'POST',
       headers: { authorization: 'Bearer ' + ownerToken, origin: base, 'x-vivim-control': '1' }
@@ -267,6 +270,7 @@ test('owner desktop PWA uses the same read-only HQ media summary and clears priv
   assert.match(server, /schema: 'vivim.host-pwa-view\/1', observedAt: new Date\(\)\.toISOString\(\),\s*media,/);
   assert.match(app, /function clearPrivatePhoneState\(\)/);
   assert.match(app, /if \(device\.status !== 'active'\) \{\s*clearPrivatePhoneState\(\)/);
-  assert.match(app, /Device session changed while opening the stream/);
+  assert.ok(app.includes('const sameGrant=()=>generation===mediaGeneration&&S.paired&&'));
+  assert.ok(app.includes('if(!sameGrant())return;'));
   assert.match(app, /S\.media = data\.media\?\.schema === 'vivim.media-library-summary\/1'/);
 });

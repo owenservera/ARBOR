@@ -61,11 +61,7 @@ const statusOf = snapshot => ({ at: '2026-11-05T10:00:00.000Z', snapshot });
 // Only the button markup defines the tab strip; the stylesheet also contains
 // .tab[data-tab=...] pseudo-element rules that must not count as tabs.
 const tabsIn = () => [...html.matchAll(/<button[^>]*\bdata-tab="([^"]+)"/g)].map(m => m[1]);
-const stubHiddenTabs = () => {
-  const rule = app.match(/\$\('v-soon'\)\.hidden\s*=\s*\[([^\]]*)\]\.includes\(S\.tab\)/);
-  assert.ok(rule, 'the retired stub panel must stay explicitly hidden');
-  return [...rule[1].matchAll(/'([^']+)'/g)].map(m => m[1]);
-};
+const stubAlwaysHidden = () => app.includes("$('v-soon').hidden = true");
 
 /* ---------- the tab strip ---------- */
 test('the tab strip exposes Today, Talk, Build, World, Wiki, Me and Control — and no Agents or Self', () => {
@@ -82,7 +78,7 @@ test('the tab strip exposes Today, Talk, Build, World, Wiki, Me and Control — 
 test('reintroducing a stub panel for World or Me fails this suite', () => {
   // The retired panel is hidden for every local tab in the strip, so no tab can fall back to it.
   // Wiki is exempt: it has no local panel at all — the tab navigates to /wiki (app.js:419-421).
-  assert.deepEqual(stubHiddenTabs().slice().sort(), tabsIn().filter(t => t !== 'wiki').slice().sort());
+  assert.equal(stubAlwaysHidden(),true,'legacy stub is unconditionally hidden');
   // The stub wording survives nowhere in the phone shell.
   assert.doesNotMatch(html, /coming soon/i, 'index.html must not carry the stub wording');
   assert.doesNotMatch(app, /coming soon/i, 'app.js must not carry the stub wording');
@@ -280,10 +276,10 @@ test('every surface keeps one thumb-reachable primary action and issues no other
   tiles.forEach(tile => tile.events.click());
   if (prevLocation === undefined) delete globalThis.location;
   else globalThis.location = prevLocation;
-  assert.deepEqual(routes, ['talk', 'build', 'world', 'me', 'control'],
-    'shortcuts can only navigate local tabs and never invoke a Host effect');
-  assert.deepEqual(external, ['/wiki'],
-    'the Wiki shortcut opens the real host page instead of a local surface');
+  assert.deepEqual(routes, ['talk', 'build', 'world', 'wiki', 'me', 'control'],
+    'shortcuts navigate only within the unified product and never invoke a Host effect');
+  assert.deepEqual(external, [],
+    'Wiki stays on the same product surface, not an external page');
 });
 
 test('the Today primary action leads to a real surface and never claims an effect happened', () => {
@@ -348,7 +344,8 @@ test('offline shell blocks all sends and clears private paired state',()=>{
   assert.match(app,/function showOfflineShell\(\)/);
   assert.match(app,/clearPrivatePhoneState\(\);\s*\$\('pairbox'\)\.hidden = true/);
   assert.match(app,/Offline · local PWA shell only/);
-  assert.match(app,/if \(HOST_PREVIEW \|\| !S\.paired\) \{ \$\('send'\)\.disabled = true/);
+  assert.ok(app.includes("if (HOST_PREVIEW || (!S.paired && !FIRST_CONTACT)) { $('send').disabled = true; return; }"));
+  assert.ok(app.includes('if (FIRST_CONTACT && !canSendVerifiedProvider('), 'first-contact AI sends require the verified provider guard');
   assert.match(app,/if \(!S\.paired && !HOST_PREVIEW\) \{/);
   assert.match(app,/window\.addEventListener\('offline'/);
   assert.match(app,/window\.addEventListener\('online'/);
@@ -358,7 +355,8 @@ test('offline shell blocks all sends and clears private paired state',()=>{
 test('late media responses never repopulate an unpaired World after revocation',()=>{
   assert.match(app,/let mediaGeneration = 0/);
   assert.match(app,/const generation = mediaGeneration/);
-  assert.match(app,/if \(generation !== mediaGeneration \|\| !S\.paired \|\|/);
+  assert.ok(app.includes('const sameGrant=()=>generation===mediaGeneration&&S.paired&&'));
+  assert.ok(app.includes('if(!sameGrant())return;'), 'late old-grant responses must be dropped');
   assert.match(app,/function clearPrivatePhoneState\(\) \{\s*mediaGeneration\+\+/);
 });
 
@@ -413,7 +411,9 @@ test('media session expiry clears sensitive views but scope denial keeps unrelat
   assert.match(app,/transport\.setDeviceSession\(null\);\s*clearPrivatePhoneState\(\)/);
   assert.match(app,/S\.media = \{ state: 'not-authorized' \}/);
   assert.match(app,/transport\.deviceHeaders\?\.\(\)\?\.\['x-vivim-device-session'\]/);
-  assert.match(app,/if \(generation === mediaGeneration\) \{\s*S\.mediaAt = Date\.now\(\);\s*S\.mediaLoading = false/);
+  assert.ok(app.includes('if(generation===mediaGeneration){'));
+  assert.ok(app.includes('S.mediaAt=sameGrant()?Date.now():0;'));
+  assert.ok(app.includes("if(!sameGrant())S.media={state:'not-authorized'};"));
 });
 
 
@@ -446,7 +446,8 @@ test('Control and Ask VIVIM redact private plans and ignore late Host reads afte
   assert.match(control,/let historyEpoch = 0/);
   assert.match(control,/if \(epoch !== historyEpoch\) return;\s*if \(!r\.ok\)/);
   assert.match(control,/historyEpoch\+\+;\s*items\.replaceChildren\(\)/);
-  assert.match(chat,/function redact\(\) \{\s*suggestionEpoch\+\+;\s*messages = \[\];\s*suggestions = \[\];\s*redraw\(\)/);
+  assert.ok(chat.includes('function redact() {'));
+  assert.ok(chat.includes("suggestions = [];sharedPrograms=null;programError='';"), 'private program suggestions must be redacted too');
   assert.match(chat,/send, render, clear, redact, loadSuggestions/);
 });
 

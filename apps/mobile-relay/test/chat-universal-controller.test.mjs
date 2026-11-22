@@ -24,14 +24,15 @@ test('L0 and L1 navigate existing Talk modes and source-backed focused surfaces 
  }
  for(const target of ['vivim','harness','phone'])assert.ok(html.includes('data-chat-target="'+target+'"'));
  assert.match(app,/N\.target!=='harness'/);
- assert.match(app,/\['today','talk','build','world','me','control'\]/);
+  assert.ok(app.includes("const CHAT_FOCUS = Object.freeze(['today','talk','build','world','wiki','me','control'])"));
  assert.match(app,/current\.mission\?\.schema==='vivim\.mission-card\/1'/);
  assert.match(html,/No invented ETA/);
 });
 test('Direct to Rust context is read-only, grant-bound and never an approval token',()=>{
  assert.match(direct,/if \(route === 'api\/chat\/context'\)/);
  assert.match(direct,/authorizeDevice\(req,'control:read'\)/);
- assert.match(server,/chatContext: createRustChatContext\(\)/);
+  assert.ok(server.includes('chatContext: nativeContext'));
+  assert.ok(server.includes('const nativeContext = createRustChatContext({dataRoot:path.resolve(dataRoot),productJournal,control:controlFor})'));
  assert.match(rust,/shell:false,windowsHide:true/);
  assert.match(rust,/RUST_CORE_NOT_CONFIGURED/);
  assert.match(app,/chatContextEpoch\+\+;/);
@@ -42,7 +43,7 @@ test('Direct to Rust context is read-only, grant-bound and never an approval tok
 test('microphone button and local recorder cannot issue Host or AI requests',()=>{
  const voice=source('../ux/voice-capture.mjs');
  assert.match(html,/id="dock-mic"/);
- assert.match(app,/mountVoiceCapture\(\{host:document\.body\}\)/);
+  assert.ok(app.includes('mountVoiceCapture({host:document.body,onReviewedText:text=>localNotes?.draft(text)??false})'));
  assert.match(voice,/getUserMedia\(\{audio:true\}\)/);
  assert.match(voice,/Download or explicitly discard the recording/);
  assert.doesNotMatch(voice,/fetch\(|WebSocket|XMLHttpRequest|SpeechRecognition|sendToHost/);

@@ -27,7 +27,8 @@ test('Build source does not allow a deterministic candidate to enter provider se
   const send = source.indexOf('const id = await send(prompt, provider)', local);
   assert.ok(local > 0 && send > local);
   const localBranch = source.slice(local, send);
-  assert.match(localBranch, /return set\(\{ name: 'ready', \.\.\.local/);
+  assert.ok(localBranch.includes("return ready({ ...local, surface, origin: 'vec' })"));
+  assert.doesNotMatch(localBranch, /\bsend\s*\(/, 'locally compiled UI never routes to an AI');
   assert.match(source, /origin === 'vec' \? 'COMPILED LOCALLY/);
 });
 test('paired Direct exposes only reviewed read-only JS modules; SW shell preloads both', () => {

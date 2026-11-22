@@ -10,7 +10,7 @@ test('phone Control is an actual reachable tab with a panel',()=>{
  assert.match(html,/id="control-text"/);
  assert.match(html,/src="control-phone\.mjs"/);
  assert.match(app,/\$\('v-control'\)\.hidden\s*=\s*S\.tab\s*!==\s*'control'/);
- assert.match(app,/\$\('v-soon'\)\.hidden\s*=\s*\[[^\]]*'control'[^\]]*\]\.includes\(S\.tab\)/);
+  assert.ok(app.includes("$('v-soon').hidden = true"), 'legacy stub cannot appear on any tab');
 });
 
 
