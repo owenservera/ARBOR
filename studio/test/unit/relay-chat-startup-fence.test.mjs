@@ -45,7 +45,7 @@ test('missing ledger allows first-run future commands without creating a new que
 
 test('corrupt or torn ledger refuses startup rather than sending uncertain messages', () =>
   withLedger(file => {
-    writeFileSync(file, '{"id":\n');
+    writeFileSync(file, '{"id":');
     assert.throws(() => snapshotRelayStartupFence(file), /TORN_TAIL/);
     writeFileSync(file, '{"id":\n\n');
     assert.throws(() => snapshotRelayStartupFence(file), /CORRUPT/);
