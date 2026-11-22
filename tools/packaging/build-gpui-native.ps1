@@ -13,7 +13,7 @@ $exe = Join-Path $repoRoot ("native\gpui-desktop\target\$Configuration\vivim-gpu
 $receiptFile = $exe + '.source-receipt.json'
 $head = (& git.exe -C $repoRoot rev-parse HEAD | Select-Object -First 1)
 $origin = (& git.exe -C $repoRoot rev-parse origin/main | Select-Object -First 1)
-if ($LASTEXITCODE -ne 0 -or -not $head -or -not $origin -or $head -ne $origin) {
+if (-not $head -or -not $origin -or $head -ne $origin) {
     throw 'GPUI_BUILD_SOURCE_NOT_CURRENT: ARBOR HEAD must equal origin/main.'
 }
 if (@(& git.exe -C $repoRoot status --porcelain=v1).Count -gt 0) {
