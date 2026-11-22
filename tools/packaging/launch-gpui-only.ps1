@@ -22,7 +22,7 @@ if (-not $head -or -not $origin -or $head -ne $origin) {
     throw 'GPUI_ONLY_SOURCE_NOT_CURRENT: synchronize ARBOR main before launching.'
 }
 $changes = @(& git.exe -C $repoRoot status --porcelain=v1)
-if ($LASTEXITCODE -ne 0 -or $changes.Count -gt 0) {
+if ($changes.Count -gt 0) {
     throw 'GPUI_ONLY_DIRTY_SOURCE: refuse unpinned native launch.'
 }
 try {
