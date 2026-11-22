@@ -827,6 +827,26 @@ async function handleBootstrap(req, res, pathname, host, runtime, tokenFor) {
   const origin = req.headers.origin;
   const expected = 'http://' + host;
   if (origin !== undefined && String(origin).toLowerCase() !== expected) { sendJson(res, 403, { error: 'Cross-origin bootstrap request refused', code: 'ORIGIN' }); return; }
+  if (pathname === '/api/host/bootstrap/corpus') {
+    if (req.method !== 'GET') { res.setHeader('allow', 'GET'); sendJson(res, 405, { code: 'METHOD' }); return; }
+    let token;
+    try { token = tokenFor(); } catch { sendJson(res, 503, { code: 'OWNER_TOKEN_UNAVAILABLE' }); return; }
+    if (!verifyOwnerToken(req.headers.authorization, token)) {
+      sendJson(res, 401, { code: 'OWNER_AUTH' }); return;
+    }
+    const query = new URL(req.url, expected).searchParams;
+    if ([...query.keys()].some(k => k !== 'limit') || query.getAll('limit').length > 1 ||
+      (query.has('limit') && !/^(?:[1-9]|[1-9][0-9]|100)$/.test(query.get('limit')))) {
+      sendJson(res, 400, { code: 'ORACLE_CORPUS_QUERY_INVALID' }); return;
+    }
+    try {
+      res.setHeader('cache-control', 'private, no-store');
+      sendJson(res, 200, runtime.oracleCorpus({ limit: Number(query.get('limit') ?? 50) }));
+    } catch {
+      sendJson(res, 503, { code: 'ORACLE_CORPUS_UNAVAILABLE' });
+    }
+    return;
+  }
   if (pathname === '/api/host/bootstrap/status') {
     if (req.method !== 'GET' && req.method !== 'HEAD') { sendJson(res, 405, { error: 'GET only', code: 'METHOD' }); return; }
     sendJson(res, 200, runtime.status()); return;
