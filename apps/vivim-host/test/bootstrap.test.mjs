@@ -180,6 +180,16 @@ test('deep passes are typed, idempotent and bounded', () => {
   assert.equal(svc.phase(), 'deepening');
 });
 
+test('deep-pass generation mismatch cannot modify personal corpus', () => {
+  const { svc } = service();
+  const prior = svc.ledger.stats('world-local');
+  assert.throws(
+    () => svc.ingestPass({ response: D03, requestId: 'req-cross-gen', generationId: 'gen-other' }),
+    error => error?.code === 'BOOTSTRAP_GENERATION_MISMATCH'
+  );
+  assert.deepEqual(svc.ledger.stats('world-local'), prior, 'no facts or receipts may be written');
+});
+
 test('projection stays bounded and carries no relationship bodies', () => {
   const { svc } = service();
   svc.ingestF01({ response: F01, requestId: 'req-f01-a' });
