@@ -698,9 +698,13 @@ export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path
         try{mirrorState=(await liveSystemMirror.publish(observed)).state}
         catch{/* read-only observation remains available when file mirror fails */}
         sendJson(res,200,{...observed,mirror:{state:mirrorState}});
-      } catch {
+      } catch (error) {
+        // Owner-only, bounded diagnosis; never reveal paths, binary names,
+        // credentials, stderr or filesystem details to the PWA client.
+        const code=error?.code==='LIVE_SYSTEM_NATIVE_NOT_PACKAGED'
+          ? 'LIVE_SYSTEM_NATIVE_NOT_PACKAGED' : 'LIVE_SYSTEM_UNAVAILABLE';
         sendJson(res,503,{schema:'vivim.host-live-system/1',state:'unavailable',
-          code:'LIVE_SYSTEM_UNAVAILABLE',authority:'none',executionAuthorized:false,effectPerformed:false});
+          code,authority:'none',executionAuthorized:false,effectPerformed:false});
       }
       return;
     }
