@@ -17,6 +17,14 @@ const statusOnly = obj => {
 };
 const fail = code => Object.assign(Error(code), {code});
 const verifyRust = (reply, op) => {
+  // A source-only PWA checkout can serve HTTP while omitting its required Rust
+  // kernel. Preserve an owner-safe, actionable failure rather than treating
+  // that deployment error as a legitimate empty live-system snapshot.
+  if(reply?.schema === 'vivim.product-pure-response/1' &&
+     reply.operation === 'live-system' && reply.state === 'unavailable' &&
+     reply.code === 'NATIVE_NOT_PACKAGED' && reply.authority === 'none' &&
+     reply.executionAuthorized === false && reply.effectPerformed === false)
+    throw fail('LIVE_SYSTEM_NATIVE_NOT_PACKAGED');
   if(reply?.schema !== 'vivim.product-pure-response/1' ||
      reply?.operation !== 'live-system' || reply?.state !== 'computed' ||
      reply?.authority !== 'none' || reply?.executionAuthorized !== false ||
