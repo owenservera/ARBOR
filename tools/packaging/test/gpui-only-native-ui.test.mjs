@@ -21,7 +21,11 @@ test('Windows desktop launches native GPUI rather than a web app',()=>{
 
 test('native desktop does not offer or silently launch a browser UI',()=>{
   assert.doesNotMatch(source,/open_owner_controls|host-controls|owner_control_session_url/);
-  assert.doesNotMatch(source,/explorer\.exe|xdg-open|chrome\.exe|msedge\.exe|start-process|std::process::Command::new/i);
+  assert.doesNotMatch(source,/xdg-open|chrome\.exe|msedge\.exe|start-process/i);
+  // Windows Explorer is permitted for an explicit owner-selected screenshot
+  // folder action; it must not be mistaken for a browser UI fallback.
+  assert.match(source,/std::process::Command::new\("explorer\.exe"\)\.arg\(&folder\)\.spawn\(\)\?/);
+  assert.match(source,/panel:\s*Panel::FirstContact/);
   assert.doesNotMatch(adapter,/owner_control_session_url|mint_owner_ui_session/);
   assert.match(source,/Button::new\("host-reconnect"\)/);
   assert.match(source,/Button::new\("plan"\)/);
