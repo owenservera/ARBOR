@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createLocalNotebook,NOTES_KEY,MAX_NOTE_LENGTH,extractReviewedTasks} from '../ux/local-notes.mjs';
+import {mountLocalNotes} from '../ux/local-notes-ui.mjs';
 
 function memory(){
   const data=new Map();
@@ -61,4 +62,35 @@ test('reviewed checklist extraction is explicit and batch persistence is all or 
  book.saveBatch(rows);assert.deepEqual(book.list().map(n=>n.text),rows);
  const before=book.exportAll();assert.throws(()=>book.saveBatch(['valid','']),/EMPTY_OR_TOO_LONG/);assert.equal(book.exportAll(),before);
  assert.throws(()=>book.saveBatch(Array(11).fill('more')),/NOTES_FULL/);assert.equal(book.exportAll(),before);
+});
+
+test('Quick capture reports unsaved browser-only drafts to the shell upgrade gate',()=>{
+  class Element {
+    constructor(doc,text=''){this.ownerDocument=doc;this.textContent=text;
+      this.value='';this.children=[];this.listeners={};this.open=false;this.isConnected=true;this.style={};}
+    append(...nodes){this.children.push(...nodes)}
+    replaceChildren(...nodes){this.children=[...nodes]}
+    setAttribute(){}
+    addEventListener(type,fn){this.listeners[type]=fn}
+    showModal(){this.open=true}
+    close(){this.open=false}
+    focus(){this.ownerDocument.activeElement=this}
+    find(text){if(this.textContent===text)return this;
+      for(const child of this.children){const match=child.find?.(text);if(match)return match}
+      return null}
+  }
+  const doc={createElement(){return new Element(doc)}};
+  const host=new Element(doc);doc.activeElement=host;
+  const notes=mountLocalNotes({host,storage:memory(),now:()=>1700000000000,
+    makeId:()=> 'note-123456'});
+  assert.equal(notes.hasPendingLocalWork(),false);
+  notes.open();
+  assert.equal(notes.hasPendingLocalWork(),true,'open editor blocks automatic reload');
+  assert.equal(notes.draft('Do not discard this browser-only note'),true);
+  notes.close();
+  assert.equal(notes.hasPendingLocalWork(),true,
+    'closing the drawer does not mean unsaved text was persisted');
+  const save=host.find('Save on this device');
+  assert.ok(save);save.listeners.click();
+  assert.equal(notes.hasPendingLocalWork(),false,'explicit local persistence releases upgrade');
 });
