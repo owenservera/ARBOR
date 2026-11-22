@@ -16,11 +16,12 @@ use serde_json::json;
 use vivim_programmability_core::navigation;
 use vivim_programmability_core::wiki_read::{self, RevisionGuard as WikiRevisionGuard};
 use vivim_programmability_core::vec::{View as VecView, Element as VecElement};
-use gpui::{AnyElement, App, Application, Bounds, Context, Entity, Focusable, Window, WindowBounds, WindowOptions, div, prelude::*, px, relative, rgb, size};
+use gpui::{AnyElement, App, Application, Bounds, Context, Entity, Focusable, Window, WindowBounds, WindowControlArea, WindowOptions, div, prelude::*, px, relative, rgb, size};
 
-// GPUI 0.2.2 otherwise hides the Windows caption when titlebar is None.
-// Attach HMENU only to an actual system-caption window. This is Windows-only
-// application chrome, never a second product surface or Host authority.
+// One native GPUI-drawn Windows titlebar: File/Edit/View/Tools/Developer/Settings/
+// Help and the OS minimize/maximize/close controls share a single top row.
+// GPUI's Windows NCHITTEST mapping handles titlebar drag and caption buttons;
+// no separate Win32 HMENU, browser window, or effect authority is introduced.
 fn vivim_window_options(bounds: Bounds<gpui::Pixels>) -> WindowOptions {
     let mut options=WindowOptions {
         window_bounds: Some(WindowBounds::Windowed(bounds)),
@@ -30,7 +31,7 @@ fn vivim_window_options(bounds: Bounds<gpui::Pixels>) -> WindowOptions {
     {
         options.titlebar=Some(gpui::TitlebarOptions {
             title: Some("VIVIM".into()),
-            appears_transparent: false,
+            appears_transparent: true,
             ..Default::default()
         });
     }
@@ -52,7 +53,6 @@ use vivim_gpui_desktop::first_contact::{self, PhoneDraft};
 use vivim_gpui_desktop::desktop_menu::{self, Section, Destination, Intent};
 use vivim_gpui_desktop::desktop_settings::{self, Preferences};
 use vivim_gpui_desktop::desktop_capture;
-use vivim_gpui_desktop::native_windows_menu;
 use vivim_gpui_desktop::{Overview, ReadError, ObservationTicket, passive_read_allowed, DevelopmentRevisionGuard, read_overview, read_development, control::{self, Review}, visual::{self, Visual, RevisionGuard}};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -1125,51 +1125,17 @@ impl Desktop {
         }
         cx.notify();
     }
-    fn start_native_menu(&mut self, window:&Window, cx:&mut Context<Self>) {
-        // No Win32 HMENU in the normal GPUI 0.2.2 window: its DirectComposition
-        // no-redirection style leaves the native menu band transparent, exposing
-        // windows behind it. Keep our one existing app-shell menu at y=0 until
-        // the actual OS paint path is solved and device-accepted.
-        if !native_windows_menu::experimental_opt_in() {
-            self.developer_status="Top-edge application menu active; native Win32 menu painting not accepted".into();
-            return;
-        }
-        // Install on the GPUI/Win32 window thread; the native callback only
-        // queues known menu IDs. The same actions run on the main UI thread.
-        let first=native_windows_menu::install();
-        self.developer_status=match first {
-            Ok(true)=>"Win32 application menu attached".into(),
-            Ok(false)=>"Waiting for Windows application window".into(),
-            Err(e)=>format!("Native menu unavailable; GPUI fallback: {e}"),
-        };
-        cx.spawn_in(window, async move |this,cx| {
-            loop {
-                cx.background_executor().timer(Duration::from_millis(100)).await;
-                if !native_windows_menu::installed() {
-                    let result=native_windows_menu::install();
-                    if this.update_in(cx,|view,_,cx|{
-                        let status=match result {
-                            Ok(true)=>"Win32 application menu attached".into(),
-                            Ok(false)=>"Waiting for Windows application window".into(),
-                            Err(e)=>format!("Native menu unavailable; GPUI fallback: {e}"),
-                        };
-                        if view.developer_status!=status {view.developer_status=status;cx.notify();}
-                    }).is_err(){break;}
-                }
-                // Bounded drain; no synchronous Host calls or UI mutations
-                // from the Win32 WndProc callback itself.
-                for _ in 0..8 {
-                    let Some(intent)=native_windows_menu::take_command() else {break;};
-                    if this.update_in(cx,|view,window,cx|
-                        view.run_menu_intent(intent,window,cx)).is_err(){return;}
-                }
-            }
-        }).detach();
-    }
-    fn surface_menu(&self, cx:&mut Context<Self>) -> AnyElement {
-        let mut bar=div().w_full().flex().flex_wrap().gap_1()
+    fn surface_menu(&self, window:&Window, cx:&mut Context<Self>) -> AnyElement {
+        // The titlebar itself is ONE row. Only VIVIM and the unused space
+        // are draggable; menu items remain ordinary GPUI interactive buttons.
+        // Win32 handles drag, double-click maximize, Snap layouts and caption
+        // clicks through GPUI's native WindowControlArea hit-testing.
+        let mut bar=div().w_full().h(px(36.)).flex().items_center().gap_1()
             .bg(rgb(0x18191c)).border_b_1().border_color(rgb(0x303136))
-            .child(div().p_2().text_sm().font_semibold().child("VIVIM"));
+            .child(div().h_full().px_3().flex().items_center()
+                .text_sm().font_semibold()
+                .window_control_area(WindowControlArea::Drag)
+                .child("VIVIM"));
         for section in Section::ALL {
             bar=bar.child(Button::new(section.key()).label(section.label())
                 .on_click(cx.listener(move |view,_,_,cx|{
@@ -1177,6 +1143,24 @@ impl Desktop {
                     cx.notify();
                 })));
         }
+        #[cfg(windows)]
+        {
+            bar=bar
+                .child(div().flex_1().h_full()
+                    .window_control_area(WindowControlArea::Drag))
+                .child(div().w(px(46.)).h_full().flex().items_center()
+                    .justify_center().text_sm().text_color(rgb(0xdadce2))
+                    .window_control_area(WindowControlArea::Min).child("—"))
+                .child(div().w(px(46.)).h_full().flex().items_center()
+                    .justify_center().text_sm().text_color(rgb(0xdadce2))
+                    .window_control_area(WindowControlArea::Max)
+                    .child(if window.is_maximized() {"❐"} else {"□"}))
+                .child(div().w(px(46.)).h_full().flex().items_center()
+                    .justify_center().text_sm().text_color(rgb(0xdadce2))
+                    .window_control_area(WindowControlArea::Close).child("×"));
+        }
+        #[cfg(not(windows))]
+        { let _=window; }
         let mut chrome=div().w_full().flex().flex_col().child(bar);
         if let Some(section)=self.menu_open {
             let mut entries=div().flex().flex_col().gap_1().p_2()
@@ -1197,15 +1181,10 @@ impl Desktop {
 }
 
 impl Render for Desktop {
-    fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        // The drawn app-shell menu remains accessible until Win32 actually
-        // reports a usable nonclient menu rectangle. A bare HMENU handle
-        // does not count as human-visible menu acceptance.
-        let menu=if native_windows_menu::visually_ready() {
-            div().into_any_element()
-        } else {
-            self.surface_menu(cx)
-        };
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        // The integrated GPUI caption is the sole Windows application chrome,
+        // not a second PWA or a menu below another Windows titlebar.
+        let menu=self.surface_menu(window,cx);
         // Native PC settings and advanced tools live *outside* the shared PWA
         // canvas. Neither can become an alternate home or effect authority.
         if matches!(self.panel, Panel::Settings|Panel::Devices|Panel::Developer|Panel::About) {
@@ -1642,7 +1621,6 @@ fn main() {
                 // the Desktop entity's 'move' initializer closure.
                 view.update(cx,|desktop,cx|{
                     let input=desktop.input.clone();
-                    desktop.start_native_menu(window,cx);
                     desktop._input_subscription=Some(cx.subscribe(&input,
                         |view,_,event:&InputEvent,cx|{
                             if matches!(event,InputEvent::Change){
@@ -1664,14 +1642,17 @@ mod viewport_tests {
     use super::viewport_for_width;
     #[cfg(windows)]
     #[test]
-    fn native_windows_menu_needs_opaque_system_titlebar() {
+    fn integrated_windows_titlebar_uses_native_hit_test_regions() {
         let options=super::vivim_window_options(gpui::Bounds {
             origin:gpui::point(gpui::px(0.),gpui::px(0.)),
             size:gpui::size(gpui::px(900.),gpui::px(600.)),
         });
-        let titlebar=options.titlebar.expect("Windows-owned titlebar required");
-        assert!(!titlebar.appears_transparent);
+        let titlebar=options.titlebar.expect("integrated titlebar required");
+        assert!(titlebar.appears_transparent);
         assert!(titlebar.title.is_some());
+        assert!(options.is_movable);
+        assert!(options.is_minimizable);
+        assert!(options.is_resizable);
     }
     #[test]
     fn real_window_width_is_bounded_and_not_a_preset() {
