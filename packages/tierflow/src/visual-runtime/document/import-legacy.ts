@@ -64,7 +64,8 @@ function fromHarness(source:Record<string,unknown>, options:LegacyImportOptions,
     if(!rec(v)||!key(v.id)||typeof v.type!=='string'||!Array.isArray(v.children)||v.children.length>L.children||depth>L.depth)throw Error('Invalid Harness tree');
     allowedFields(v,options.projectedPresentation===true?['id','type','props','children','visibility','presentation','liveBinding']:['id','type','props','children','visibility']);
     if(v.presentation!==undefined&&!rec(v.presentation))throw Error('Invalid projected presentation');
-    if(v.liveBinding!==undefined&&!['personal.open-tasks','studio.recent-outcomes'].includes(String(v.liveBinding)))throw Error('Invalid projected live binding');
+    // Keep this closed inert selector vocabulary aligned with the existing VIVIM UI catalog.
+    if(v.liveBinding!==undefined&&!['personal.open-tasks','personal.completed-tasks','personal.recent-notes','studio.recent-outcomes'].includes(String(v.liveBinding)))throw Error('Invalid projected live binding');
     if(v.visibility==='pc-private')throw Error('Private content cannot be imported without broker authorization');
     if(v.visibility!==undefined&&v.visibility!=='phone')throw Error('Unknown audience');
     const p=rec(v.props)?v.props:{};

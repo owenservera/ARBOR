@@ -107,6 +107,15 @@ function unavailable(code: string, viewportPx: number, documentId: string | null
 function isReferenceList(value: unknown): boolean {
   return value === undefined || (Array.isArray(value) && value.length <= 24 && value.every(validId));
 }
+// Action references are canonical {id, version} records, not node-id strings.
+// This render boundary only validates their shape; it never binds or executes them.
+function isActionReferenceList(value: unknown): boolean {
+  return value === undefined || (Array.isArray(value) && value.length <= 8 && value.every(ref =>
+    plain(ref) && Object.keys(ref).length === 2 &&
+    validId(own(ref, "id")) &&
+    Number.isSafeInteger(own(ref, "version")) &&
+    (own(ref, "version") as number) >= 1 && (own(ref, "version") as number) <= 1e9));
+}
 function acceptableProps(type: string, props: Data): boolean {
   const allowed: Record<string, string[]> = {
     stack: ["direction", "gap"], grid: ["columns", "gap"],
@@ -161,7 +170,7 @@ export function renderUiDocument(input: unknown, options: RenderOptions): Render
     if (!validId(id) || byId.has(id)) return unavailable("INVALID_OR_DUPLICATE_ID", viewportPx, documentId);
     const children = own(node, "children") ?? [];
     if (!isReferenceList(children)) return unavailable("INVALID_CHILDREN", viewportPx, documentId);
-    if (!isReferenceList(own(node, "bindingRefs")) || !isReferenceList(own(node, "actionRefs"))) {
+    if (!isReferenceList(own(node, "bindingRefs")) || !isActionReferenceList(own(node, "actionRefs"))) {
       return unavailable("INVALID_REFERENCE", viewportPx, documentId);
     }
     byId.set(id, node);
