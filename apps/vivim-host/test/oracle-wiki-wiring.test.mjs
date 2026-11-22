@@ -57,6 +57,18 @@ test('Oracle reuses the existing owner-private AutoWiki Host context and never c
   assert.equal(view.oracleCorpus.items[0].status, 'provider-reported');
   assert.equal(view.semantics.schema, 'vivim.autowiki-semantics/1');
   assert.doesNotMatch(JSON.stringify(view), /CONFIDENTIAL-RELATIONSHIP-DETAIL/);
+  // The authenticated PWA/native summary uses only the existing phone-safe
+  // bootstrap progress; it must never acquire owner-private Oracle text.
+  const pwaResponse = await fetch(base + '/api/host/control/pwa-view', {
+    headers: { authorization: 'Bearer ' + TOKEN }
+  });
+  assert.equal(pwaResponse.status, 200);
+  const pwaSnapshot = await pwaResponse.json();
+  assert.equal(pwaSnapshot.schema, 'vivim.host-pwa-view/1');
+  assert.ok(pwaSnapshot.snapshot.bootstrap.progress.claims >= 1,
+    'GPUI can read progress from existing Host bootstrap metadata');
+  assert.doesNotMatch(JSON.stringify(pwaSnapshot), /Enjoys geometry|CONFIDENTIAL-RELATIONSHIP-DETAIL/,
+    'private corpus statements cannot enter generic PWA/native summary');
   const publicWiki = await (await fetch(base + '/api/wiki')).json();
   assert.doesNotMatch(JSON.stringify(publicWiki), /Enjoys geometry|CONFIDENTIAL/);
   assert.equal(publicWiki.revision, initialWiki.revision, 'corpus port never commits a Wiki revision');
