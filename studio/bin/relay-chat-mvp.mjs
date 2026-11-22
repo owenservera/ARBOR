@@ -8,6 +8,7 @@ import { pathToFileURL } from 'node:url';
 import { randomUUID } from 'node:crypto';
 import { createBridgeStore } from '../src/studio/bridge-commands.mjs';
 import { parseRelayChatIntent } from '../src/studio/relay-chat-intent.mjs';
+import { snapshotRelayStartupFence } from '../src/studio/relay-chat-startup-fence.mjs';
 import { createWorkerHeartbeat } from '../src/studio/worker-heartbeat.mjs';
 import { defaultDataDir, defaultHarnessDir } from '../src/config.mjs';
 const HARNESS = defaultHarnessDir();
@@ -17,6 +18,9 @@ const transport = process.argv.includes('--transport') ? process.argv[process.ar
 if (process.argv.includes('--studio-url') && !studioUrl) throw new Error('--studio-url requires a URL');
 if (process.argv.includes('--transport') && (transport !== 'direct' || !studioUrl)) throw new Error('--transport direct requires --studio-url');
 const store = createBridgeStore({ root });
+// Never silently revive messages admitted before this worker started.
+// A durable queue is not a fresh owner instruction to send after a restart.
+const startupFence = snapshotRelayStartupFence(store.file);
 const runtime = path.resolve(HARNESS, '..', 'runtime');
 let approvals, router, studio;
 if (studioUrl) {
@@ -62,6 +66,7 @@ async function handle(cmd) {
   } catch (e) { log(`${cmd.id} error ${e.message}`); try { store.reply(cmd.id, `failed before/at send: ${e.message} (request ${requestId}; not resent)`, { status: 'failed' }); } catch {} }
 }
 log(`watching ${store.file}`);
+log(`startup admission fence: ${startupFence.size} historical command ids ignored; only post-start owner requests admitted`);
 const heartbeat = createWorkerHeartbeat({
   root, worker: 'chatWorker',
   // Declared mode only: Studio conversation HTTP currently accepts ChatGPT
@@ -71,7 +76,7 @@ const heartbeat = createWorkerHeartbeat({
 const busy = new Set();
 for (;;) {
   // Record liveness only after the queue was read; this does not prove browser readiness.
-  const commands = store.list({ status: 'queued', consumer: 'harness', limit: 200 }).items.reverse().filter(cmd => !transport || cmd.transport === transport);
+  const commands = store.list({ status: 'queued', consumer: 'harness', limit: 200 }).items.reverse().filter(cmd => !startupFence.has(cmd.id) && (!transport || cmd.transport === transport));
   try { heartbeat.record('ok'); } catch {}
   // Oldest first; at most one in flight per provider; different providers run in parallel.
   for (const cmd of commands) {
