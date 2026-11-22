@@ -32,7 +32,7 @@ import { createControlDispatcher } from './control/dispatcher.mjs';
 import { buildUniversalApi, readIntegrationTargets, searchUniversalApi, describeUniversalCapability, describeCapabilitySources } from './control/universal-api.mjs';
 import { createControlBrowserSessions, UI_COOKIE } from './control/browser-session.mjs';
 import { createOnboardingService } from './onboarding/service.mjs';
-import { createStudioPort } from './onboarding/studio-port.mjs';
+import { createStudioPort, DEFAULT_STUDIO_ORIGIN } from './onboarding/studio-port.mjs';
 import { detectEnvironment } from './onboarding/environment.mjs';
 import { controlErrorStatus } from './control/http-status.mjs';
 import { createLiveSourceSurface } from './control/live-source-surface.mjs';
@@ -1622,7 +1622,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   }
   const directPhone = process.env.VIVIM_DIRECT_ORIGIN || process.env.VIVIM_DIRECT_USER
     ? { origin: process.env.VIVIM_DIRECT_ORIGIN, user: process.env.VIVIM_DIRECT_USER } : null;
-  const studioUrl = process.env.VIVIM_STUDIO_URL || 'http://127.0.0.1:7878';
+  const studioUrl = process.env.VIVIM_STUDIO_URL || DEFAULT_STUDIO_ORIGIN;
   const server = createHostServer({ dataRoot, bootstrap: runtime, ownerToken, directPhone, worker, studioUrl, studioToken: process.env.VIVIM_STUDIO_TOKEN || null, autoPump: true });
   server.listen(port, '127.0.0.1', () => console.log(`VIVIM Host preview: http://127.0.0.1:${port}`));
   for (const signal of ['SIGINT', 'SIGTERM']) {
