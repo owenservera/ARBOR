@@ -32,16 +32,18 @@ use gpui_component::{Root, StyledExt, input::{Input, InputState, InputEvent}, bu
 use vivim_gpui_desktop::first_contact::{self, PhoneDraft};
 use vivim_gpui_desktop::desktop_menu::{self, Section, Destination, Intent};
 use vivim_gpui_desktop::desktop_settings::{self, Preferences};
+use vivim_gpui_desktop::desktop_capture;
 use vivim_gpui_desktop::{Overview, ReadError, ObservationTicket, passive_read_allowed, DevelopmentRevisionGuard, read_overview, read_development, control::{self, Review}, visual::{self, Visual, RevisionGuard}};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
-enum Panel { FirstContact, Overview, Wiki, Visual, Graph, Control, Devices, Settings, About }
+enum Panel { FirstContact, Overview, Wiki, Visual, Graph, Control, Devices, Developer, Settings, About }
 impl Panel {
     fn label(self)->&'static str {
         match self {
             Self::FirstContact=>"First Contact",Self::Overview=>"Overview",Self::Wiki=>"Wiki",Self::Visual=>"Build",
             Self::Graph=>"Knowledge graph",Self::Control=>"Host decisions",
-            Self::Devices=>"Phone and devices",Self::Settings=>"Settings",Self::About=>"About VIVIM",
+            Self::Devices=>"Phone and devices",Self::Developer=>"Developer tools",
+            Self::Settings=>"Settings",Self::About=>"About VIVIM",
         }
     }
 }
@@ -51,6 +53,8 @@ struct Desktop {
     menu_open: Option<Section>,
     preferences: Preferences,
     preferences_status: String,
+    developer_status: String,
+    capture_busy: bool,
     viewport_px: u32,
     viewport_epoch: u64,
     // Invalidates reads crossing a Host effect without weakening revision guards.
@@ -808,6 +812,7 @@ impl Desktop {
                     Destination::Build=>Panel::Visual,
                     Destination::KnowledgeGraph=>Panel::Graph,
                     Destination::HostDecisions=>Panel::Control,
+                    Destination::DeveloperTools=>Panel::Developer,
                     Destination::Preferences=>Panel::Settings,
                     Destination::About=>Panel::About,
                 };
@@ -820,12 +825,73 @@ impl Desktop {
             }
             Intent::ClearComposer=>{
                 self.input.update(cx,|input,cx|input.set_value("",window,cx));
-                // set_value intentionally emits no Change event; invalidate
-                // the Wiki query here instead of showing the prior draft.
+                // set_value emits no Change event; avoid stale Wiki.
                 self.on_composer_changed(cx);
                 self.select_panel(Panel::FirstContact,cx);
             }
+            Intent::CaptureWindow=>self.capture_native_window(cx),
+            Intent::OpenScreenshotsFolder=>self.open_captures_folder(cx),
+            Intent::SaveDiagnostics=>self.save_developer_diagnostics(cx),
         }
+        cx.notify();
+    }
+    fn capture_native_window(&mut self,cx:&mut Context<Self>) {
+        if self.capture_busy {
+            self.developer_status="A native screenshot is already in progress".into();
+            cx.notify();
+            return;
+        }
+        self.capture_busy=true;
+        self.developer_status="Capturing only this GPUI window…".into();
+        cx.notify();
+        cx.spawn(async move |this,cx| {
+            // The menu closes and GPUI repaints before the capture begins.
+            // Capture is always a direct user gesture, never periodic.
+            cx.background_executor().timer(Duration::from_millis(230)).await;
+            let job=cx.background_executor().spawn(async {
+                desktop_capture::capture_window_png()
+            });
+            let result=job.await;
+            let _=this.update(cx,|view,cx| {
+                view.capture_busy=false;
+                view.developer_status=match result {
+                    Ok(path)=>format!("GPUI screenshot saved: {}",path.display()),
+                    Err(error)=>format!("GPUI screenshot failed: {error}"),
+                };
+                cx.notify();
+            });
+        }).detach();
+    }
+    fn open_captures_folder(&mut self,cx:&mut Context<Self>) {
+        let result=desktop_capture::screenshot_dir().and_then(|folder| {
+            std::fs::create_dir_all(&folder)?;
+            std::process::Command::new("explorer.exe").arg(&folder).spawn()?;
+            Ok(folder)
+        });
+        self.developer_status=match result {
+            Ok(path)=>format!("Opened local screenshot folder: {}",path.display()),
+            Err(error)=>format!("Could not open local screenshot folder: {error}"),
+        };
+        cx.notify();
+    }
+    /// Bounded local diagnostic report with NO draft texts, private Wiki
+    /// content, tokens, URLs or approval payloads.
+    fn save_developer_diagnostics(&mut self,cx:&mut Context<Self>) {
+        let host=self.supervisor.snapshot();
+        let report=format!(
+            "VIVIM GPUI native diagnostic snapshot\\n\\nrenderer=gpui\\nmenu=Developer\\n             host_readiness={:?}\\nhost_runtime={:?}\\nhost_pid={:?}\\n             host_recoveries={}\\nsource_epoch={}\\nviewport_px={}\\n             wiki_source_available={}\\nwiki_revision={}\\nwiki_pages={}\\n             phone_source_available={}\\nvisual_source_available={}\\n             review_pending={}\\nuncertain_effect={}\\n",
+            host.readiness,host.origin,host.pid,host.recoveries,
+            self.source_epoch,self.viewport_px,
+            self.overview.is_some(),
+            self.overview.as_ref().map(|s|s.wiki_revision).unwrap_or_default(),
+            self.overview.as_ref().map(|s|s.wiki_page_total).unwrap_or_default(),
+            self.phone_draft.is_some(),self.vec_view.is_some(),
+            self.review.as_ref().is_some_and(Review::needs_approval),self.uncertain
+        );
+        self.developer_status=match desktop_capture::save_diagnostics(&report) {
+            Ok(path)=>format!("Private diagnostic report saved: {}",path.display()),
+            Err(error)=>format!("Diagnostic report failed: {error}"),
+        };
         cx.notify();
     }
     fn toggle_phone_preview(&mut self,cx:&mut Context<Self>) {
@@ -878,7 +944,7 @@ impl Render for Desktop {
         let menu=self.surface_menu(cx);
         // Native PC settings and advanced tools live *outside* the shared PWA
         // canvas. Neither can become an alternate home or effect authority.
-        if matches!(self.panel, Panel::Settings|Panel::Devices|Panel::About) {
+        if matches!(self.panel, Panel::Settings|Panel::Devices|Panel::Developer|Panel::About) {
             let mut page=div().flex().flex_col().gap_3()
                 .child(div().text_xl().child(self.panel.label()));
             match self.panel {
@@ -921,6 +987,35 @@ impl Render for Desktop {
                             page=page.child("Phone draft text hidden · enable it in Settings.");
                         }
                     }
+                }
+                Panel::Developer=>{
+                    let host=self.supervisor.snapshot();
+                    page=page
+                        .child("Developer utilities are PC-only and never alter the mobile PWA.")
+                        .child(div().text_lg().child("Capture and evidence"))
+                        .child(Button::new("dev-capture").label(
+                            if self.capture_busy {"Capturing GPUI window…"} else {"Capture GPUI screenshot"}
+                        ).on_click(cx.listener(|v,_,_,cx|v.capture_native_window(cx))))
+                        .child(Button::new("dev-open-folder").label("Open screenshots folder")
+                            .on_click(cx.listener(|v,_,_,cx|v.open_captures_folder(cx))))
+                        .child(Button::new("dev-save-report").label("Save diagnostic report")
+                            .on_click(cx.listener(|v,_,_,cx|v.save_developer_diagnostics(cx))))
+                        .child(div().text_sm().child(self.developer_status.clone()))
+                        .child(div().text_lg().child("Live diagnostic readback"))
+                        .child(format!("Host {:?} · runtime {:?} · PID {:?}",host.readiness,host.origin,host.pid))
+                        .child(format!("Wiki source {} · revision {}",if self.overview.is_some() {"available"} else {"unavailable"},self.overview.as_ref().map(|s|s.wiki_revision).unwrap_or_default()))
+                        .child(format!("VEC source {} · viewport {}px",if self.vec_view.is_some() {"available"} else {"unavailable"},self.viewport_px))
+                        .child(format!("Phone current source {}",if self.phone_draft.is_some() {"available"} else {"unavailable"}))
+                        .child(Button::new("dev-refresh").label("Refresh Host and Wiki")
+                            .on_click(cx.listener(|v,_,_,cx|v.refresh(cx))))
+                        .child(Button::new("dev-inspect-wiki").label("Wiki inspector")
+                            .on_click(cx.listener(|v,_,_,cx|v.select_panel(Panel::Wiki,cx))))
+                        .child(Button::new("dev-inspect-vec").label("VEC visual inspector")
+                            .on_click(cx.listener(|v,_,_,cx|v.select_panel(Panel::Visual,cx))))
+                        .child(Button::new("dev-inspect-graph").label("Knowledge graph")
+                            .on_click(cx.listener(|v,_,_,cx|v.select_panel(Panel::Graph,cx))))
+                        .child(Button::new("dev-inspect-devices").label("Phone observations")
+                            .on_click(cx.listener(|v,_,_,cx|v.select_panel(Panel::Devices,cx))));
                 }
                 Panel::About=>{
                     page=page
@@ -1227,6 +1322,7 @@ fn main() {
                     let mut view=Desktop {supervisor, input,panel:Panel::FirstContact,menu_open:None,
                         preferences:desktop_settings::load().unwrap_or_default(),
                         preferences_status:"Windows-only presentation preference".into(),
+                        developer_status:"No developer action requested".into(),capture_busy:false,
                         viewport_px:initial_viewport_px,
                         viewport_epoch:0,source_epoch:0,presentation_epoch:0,read_busy:false,refresh_pending:false,
                         coherence_retry_ready:true,
