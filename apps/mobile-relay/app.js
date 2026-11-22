@@ -2660,6 +2660,21 @@ async function pollBuild() {
 }
 
 /* ---------- pairing / startup ---------- */
+function showHomeWithoutGrant() {
+  // Missing or expired grants NEVER navigate to a competing pairing screen.
+  // The existing Host transport still refuses effects without authorization.
+  $('pairbox').hidden = true; $('app').hidden = false;
+  $('connect-pc').hidden = false;
+  document.body.classList.remove('paired');
+  S.paired = false; S.tab = 'talk'; N.target = 'vivim';
+  $('talk-target').value = 'vivim';
+  renderTabs(); renderComposer(); updateSend();
+}
+$('connect-pc').addEventListener('click', () => {
+  showPairingState(S.device.status || 'unpaired');
+  $('pairbox').hidden = false;
+});
+$('pair-close').addEventListener('click', () => { $('pairbox').hidden = true; });
 function showBrowserPairHelp(problem) {
   // PWA-first: a browser QR never redirects into an APK. Secure-key preflight
   // occurs before one-use redemption; the URL fragment stays available to retry.
@@ -2763,8 +2778,7 @@ async function runStart() {
       await enrollWithChallenge(challenge, { signer });
       setConn('Approval requested on PC; return here once approved', true);
       showPairingState('pending');
-      document.getElementById('app').hidden = true;
-      document.getElementById('pairbox').hidden = false;
+       showHomeWithoutGrant();
       return;
     } catch(error) { setConn('Pairing needs attention: ' + error.message, true); }
   } else if (fragment.type === 'legacy') {
@@ -2782,18 +2796,8 @@ async function runStart() {
         showPairingState(device.status);
         setConn(device.status === 'pending' ? 'PC approval required' :
           device.status === 'revoked' ? 'Device grant revoked' : 'Device not paired', true);
-        if (FIRST_CONTACT) {
-          // Tailnet-owner Wiki is deliberately useful before device pairing.
-          // No signed-in AI, Host command, control effect or grant is unlocked.
-          $('pairbox').hidden = true; $('app').hidden = false;
-          document.body.classList.remove('paired');
-          S.paired = false; S.tab = 'talk'; N.target = 'vivim';
-          $('talk-target').value = 'vivim';
-          renderComposer(); updateSend();
-          setConn('Wiki · read only', false);
-        } else {
-          $('pairbox').hidden = false; $('app').hidden = true;
-        }
+        // One public Home even without a device grant. No private data or effects.
+         showHomeWithoutGrant();
         if (device.status === 'pending' && !approvalPoll) {
           approvalPoll = setTimeout(() => { approvalPoll = null; start(); }, 5000);
         }
@@ -2818,21 +2822,22 @@ async function runStart() {
         'Current device proof cannot be resumed (' + String(error.code || error.message).slice(0, 90) +
         '). If your browser key is lost, revoke the old grant on the PC and create a fresh pairing link.');
       setConn('Secure phone session unavailable', true);
-      $('pairbox').hidden = false; $('app').hidden = true;
+       showHomeWithoutGrant();
       return;
     }
   }
   if (approvalPoll) { clearTimeout(approvalPoll); approvalPoll = null; }
   clearTimeout(S.timer);
   let paired; try { ({ paired } = await api('session')); } catch (e) {
-    clearPrivatePhoneState(); setConn(e.message, true); return;
+    clearPrivatePhoneState(); showHomeWithoutGrant(); setConn(e.message, true); return;
   }
-  $('pairbox').hidden = paired; $('app').hidden = !paired;
-  document.body.classList.toggle('paired', paired);
+  $('pairbox').hidden = true; $('app').hidden = false;
+   $('connect-pc').hidden = paired;
+   document.body.classList.toggle('paired', paired);
   if (paired) document.body.classList.remove('offline-shell');
   setConn(paired ? 'Paired' : 'Not paired', !paired);
-  if (!paired) clearPrivatePhoneState();
-  S.paired = paired; clearTimeout(S.timer); S.busy = false;
+  if (!paired) { clearPrivatePhoneState(); showHomeWithoutGrant(); }
+   S.paired = paired; clearTimeout(S.timer); S.busy = false;
   window.dispatchEvent(new CustomEvent('vivim:paired', { detail: { paired } }));
   if (paired) { renderAll(true); refresh(); }
 }
