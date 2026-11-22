@@ -510,9 +510,9 @@ async function readDeliveryStamp() {
         credentials: 'same-origin', cache: 'no-store'
       });
       let verified = false;
-      if (served.ok && window.isSecureContext && crypto?.subtle) {
+      if (served.ok && window.isSecureContext && window.crypto?.subtle) {
         const bytes = await served.arrayBuffer();
-        const digest = await crypto.subtle.digest('SHA-256', bytes);
+        const digest = await window.crypto.subtle.digest('SHA-256', bytes);
         const actual = Array.from(new Uint8Array(digest), b =>
           b.toString(16).padStart(2, '0')).join('');
         verified = actual === stamp.moduleSha256;
