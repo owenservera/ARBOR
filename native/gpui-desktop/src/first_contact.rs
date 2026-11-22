@@ -17,6 +17,18 @@ const MAX_RESPONSE_BYTES: u64 = 512 * 1024;
 pub const WIKI_REFRESH_MIN_INTERVAL: Duration = Duration::from_millis(2_000);
 pub const WIKI_COMPOSER_DEBOUNCE: Duration = Duration::from_millis(280);
 
+/// Composer meaning and Wiki search have different, existing Host limits.
+/// Do not discard a valid longer NLCL/VLANG draft just because the bounded
+/// Wiki search admits at most 160 visible characters. Typing is inert.
+pub fn composer_semantic_input(text: &str) -> Option<&str> {
+    let trimmed = text.trim();
+    if trimmed.is_empty() || trimmed.encode_utf16().count() > 1000 ||
+        trimmed.chars().any(char::is_control) {
+        return None;
+    }
+    Some(trimmed)
+}
+
 /// Return when an admitted query should attempt its next source refresh.
 /// A recent Host read postpones, but must never *drop*, the only refresh
 /// triggered by a short typing burst. A stale/empty/unauthorized query has
@@ -144,6 +156,21 @@ pub fn read_phone_draft() -> Result<Option<PhoneDraft>, ReadError> {
 mod tests {
     use super::*;
     use serde_json::json;
+
+    #[test]
+    fn semantic_input_is_independent_of_the_short_wiki_search_limit() {
+        assert_eq!(composer_semantic_input("  create wiki page notes  "),
+            Some("create wiki page notes"));
+        // The Wiki search is limited to 160 visible characters, not the
+        // existing Host NLCL request limit of 1000 UTF-16 code units.
+        assert!(composer_semantic_input(&"a".repeat(161)).is_some());
+        assert!(composer_semantic_input(&"a".repeat(1000)).is_some());
+        assert!(composer_semantic_input(&"a".repeat(1001)).is_none());
+        assert!(composer_semantic_input(&"🦀".repeat(500)).is_some());
+        assert!(composer_semantic_input(&"🦀".repeat(501)).is_none());
+        assert_eq!(composer_semantic_input("   "),None);
+        assert_eq!(composer_semantic_input("stop\\ntraffic"),None);
+    }
 
     #[test]
     fn recent_read_delays_but_does_not_drop_the_last_typed_query() {
