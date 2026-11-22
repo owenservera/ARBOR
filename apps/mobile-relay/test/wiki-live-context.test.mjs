@@ -20,6 +20,41 @@ function functionSource(source, name) {
   throw new Error('Unbalanced ' + name);
 }
 
+test('Oracle owner-preview reads the already authorized Wiki context without granting Direct phone access', () => {
+  assert.match(functionSource(app,'renderWikiContext'), /renderOracleInExistingWiki\(card,context\.oracleCorpus\)/);
+  const refresh=functionSource(app,'refreshWiki');
+  assert.match(refresh,/if \(HOST_PREVIEW\) \{[\s\S]*?fetch\('\/api\/host\/control\/wiki-context'/);
+  assert.match(refresh,/if \(HOST_PREVIEW\)ingestWikiSources\(sourceSurface\)/);
+  assert.doesNotMatch(functionSource(app,'renderOracleInExistingWiki'), /fetch\(|localStorage|sessionStorage|innerHTML|\.submit\(/);
+});
+
+test('Oracle preview view rejects sensitive pass and malformed provenance before rendering', () => {
+  const nodes=[];
+  const env={el:(tag,cls,text)=>({tag,cls,textContent:text??'',children:[],append(...children){this.children.push(...children);}})};
+  vm.createContext(env);
+  vm.runInContext(functionSource(app,'validOracleCorpusView'),env);
+  vm.runInContext(functionSource(app,'renderOracleInExistingWiki'),env);
+  const source={provenanceId:'prv-d03-a',generationId:'gen-a'};
+  const claim={id:'clm-a',pass:'D03',statement:'Enjoys geometry',status:'provider-reported',
+    section:'interest',basis:'provider_memory_report',source};
+  const corpus={schema:'vivim.oracle-corpus-view/1',state:'ready',sensitiveExcluded:true,count:1,items:[claim]};
+  assert.equal(env.validOracleCorpusView(corpus),true);
+  const card=env.el('section','');
+  env.renderOracleInExistingWiki(card,corpus);
+  const text=JSON.stringify(card);
+  assert.match(text,/Enjoys geometry/);
+  assert.match(text,/provider-reported, not independently verified/);
+  assert.equal(env.validOracleCorpusView({...corpus,items:[{...claim,pass:'D06'}]}),false);
+  assert.equal(env.validOracleCorpusView({...corpus,items:[{...claim,source:{}}]}),false);
+  assert.equal(env.validOracleCorpusView({...corpus,count:2}),false);
+  assert.equal(env.validOracleCorpusView({...corpus,sensitiveExcluded:false}),false);
+  assert.equal(env.validOracleCorpusView(undefined),true,'backward-compatible with older Host snapshots');
+  assert.equal(env.validOracleCorpusView({schema:'vivim.oracle-corpus-view/1',state:'unavailable',
+    sensitiveExcluded:true,items:[]}),true);
+  assert.equal(env.validOracleCorpusView({schema:'vivim.oracle-corpus-view/1',state:'unavailable',
+    sensitiveExcluded:true,items:[claim]}),false);
+});
+
 test('mounted Wiki reuses existing PWA timer and stops when hidden or leaving tab', () => {
   let readCount = 0;
   let armed = null;
