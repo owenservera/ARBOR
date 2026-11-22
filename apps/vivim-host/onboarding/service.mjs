@@ -224,7 +224,12 @@ export function createOnboardingService({ dataRoot, getRuntime, studio = null, d
       else phase = 'running';
     }
     const cards = (projection?.cards ?? []).slice(0, 3).map(c => ({ id: c.id, title: c.title }));
-    return { phase, passes, cards, expiresAt: generation?.expiresAt ?? null, pumpError: lastPumpError };
+    const progress = projection?.progress;
+    const corpus = progress && ['claims', 'observations', 'contradictions'].every(key =>
+      Number.isSafeInteger(progress[key]) && progress[key] >= 0)
+      ? { claims: progress.claims, observations: progress.observations, contradictions: progress.contradictions }
+      : null;
+    return { phase, passes, cards, corpus, expiresAt: generation?.expiresAt ?? null, pumpError: lastPumpError };
   }
   async function status() {
     const state = load();
