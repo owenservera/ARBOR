@@ -821,7 +821,7 @@ impl Desktop {
             Intent::RefreshSources=>self.refresh(cx),
             Intent::FocusComposer=>{
                 self.select_panel(Panel::FirstContact,cx);
-                self.input.read(cx).focus_handle(cx).focus(window,cx);
+                self.input.read(cx).focus_handle(cx).focus(window);
             }
             Intent::ClearComposer=>{
                 self.input.update(cx,|input,cx|input.set_value("",window,cx));
