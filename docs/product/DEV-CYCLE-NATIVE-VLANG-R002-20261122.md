@@ -49,3 +49,18 @@ GitHub Actions push run [45045596759](https://github.com/owenservera/ARBOR/actio
 ## Cycle closure (2026-11-22)
 
 **CODED & PUSHED:** native screenshot metadata inspection, fixed-root/Windows reparse protections, deterministic no-match/refusal feedback and no-model regression tests. **VERIFIED on exact code SHA `4a26454`:** 45/45 Rust library tests + 27/27 deterministic Node tests, both exit 0. **BLOCKED / UNVERIFIED:** GUI desktop-feature `cargo check` (intentionally terminated without result), native binary launch, real GPUI typing, Windows menu painting, and Android synchronous rendering. GitHub Actions `startup_failure` produced no jobs. No paid model, provider API, new MCP daemon, local product-source edits, shortcut changes or phone URL changes.
+
+
+## R004 continuation — typed Host arguments in native VLANG preview
+
+**November 22, 2026 — exact implementation source `1324cc2760f588dfee6fd69c4ce237d6c96db4a6`**.
+This continues R002 in the same log, rather than creating another competing planner, command grammar, MCP service or tracking system.
+
+- **Code:** [`e4f509f62dc75348603ba2a82202cd6311a386f6`](https://github.com/owenservera/ARBOR/commit/e4f509f62dc75348603ba2a82202cd6311a386f6) modifies `native/gpui-desktop/src/control.rs::project_composer_meaning`. The existing Host-produced `candidate.args` now appears in a bounded, non-authoritative GPUI command preview. Invalid fields, over-limit arguments, non-string values and control characters fail closed. Risk R2/R3 argument values are shown only as `[supplied]`; longer R0/R1 values are explicitly abbreviated. No new local NLP, LLM, planning or effects.
+- **Test correction:** [`1324cc2760f588dfee6fd69c4ce237d6c96db4a6`](https://github.com/owenservera/ARBOR/commit/1324cc2760f588dfee6fd69c4ce237d6c96db4a6) tests actual control-character rejection (not a literal backslash escape).
+- **Windows exact-source verification:** isolated verification checkout `C:\0-BlackBoxProject-0\.arbor-gpui-releases\verify-4a26454` detached to `1324cc2`; ordinary dirty application workspace untouched. `cargo test --manifest-path native/gpui-desktop/Cargo.toml --lib --offline --locked`: **45 PASS / 0 FAIL / exit 0**. The four canonical `node --test` VLANG/Host files: **27 PASS / 0 FAIL / exit 0**. The Node tests explicitly leave optional independent native-binary guard parity subchecks unrun.
+- **Physical acceptance:** no new live GPUI typing/IME screenshot, phone revision parity or Win32 menu painting evidence yet. Existing running app/Host and user URLs/shortcuts deliberately untouched. 
+- **Concurrent ownership:** a separate agent has since pushed native PC→phone handoff work. This change does not replace or duplicate that lane; rebase future verification on canonical `main`, not its older implementation source.
+- **Native desktop-feature build:** launched with `cargo build --manifest-path native/gpui-desktop/Cargo.toml --features desktop --offline --locked` using the existing shared target, **PENDING result when this log entry was authored**. Build not yet a pass; append exact exit receipt after completion.
+
+**Next:** complete the native desktop build, obtain guarded foreground GPUI text/preview and physical phone-source proof. The model-free interpretation path is source/test-proven but device acceptance remains separate.
