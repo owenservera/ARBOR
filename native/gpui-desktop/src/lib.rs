@@ -9,6 +9,7 @@ pub mod native_windows_menu;
 pub mod desktop_settings;
 pub mod first_contact;
 pub mod live_delivery;
+pub mod surface_registry;
 pub mod visual;
 use reqwest::blocking::Client;
 use serde_json::{Value,json};
