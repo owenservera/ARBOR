@@ -149,3 +149,10 @@
 - Device: DESKTOP-9KB03LU, isolated GPUI checkout; full prior build on `f2322bf` displayed First Contact but invisible native menu region. Win32 probes measured root item rectangle and seven categories, yet screenshot had Terminal chrome: **native painting BLOCKED**.
 - New source state `0541169`: local Rust tests / desktop check / screenshot must be recorded when the currently running Windows build reaches a final result. **Do not infer completion.**
 - ZCode independent read-only mission: [GPUI verifier](ZCODE-GPUI-NATIVE-MENU-VERIFIER-R001.md). ZCode brief SITREP on the device PASS as a health check (14 name-matched processes; not 14 workers), no active verifier session claim.
+
+## Native capability intake / deterministic VLANG continuation — 2026-11-22
+
+- [Implementation receipt and sequence](NATIVE-CAPABILITIES-VLANG-EXECUTION-20261122.md) tracks source-donor extraction from DesktopCommanderMCP-VIVIM **into ARBOR native code**, not an additional MCP server.
+- First slice committed on `main`: `f6633a2` bounded screenshot-directory metadata inspection; `d30e194` Developer diagnostic integration. **CODED/PUSHED; current SHA compilation and device tests UNRUN**.
+- Next product slice is existing deterministic NLCL/VLANG text → typed catalog-bound candidate → inert GPUI/mobile preview → explicit Host plan/approval → authorized command receipt. **No LLM required** for supported phrases; no auto-execution while typing.
+- Align with CS-031–060 and CS-091–099. This addendum does not mark any physical acceptance item VERIFIED.
