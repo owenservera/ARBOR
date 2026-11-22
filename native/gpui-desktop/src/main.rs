@@ -16,7 +16,7 @@ use serde_json::json;
 use vivim_programmability_core::navigation;
 use vivim_programmability_core::wiki_read::{self, RevisionGuard as WikiRevisionGuard};
 use vivim_programmability_core::vec::{View as VecView, Element as VecElement};
-use gpui::{AnyElement, App, Application, Bounds, Context, Entity, Window, WindowBounds, WindowOptions, div, prelude::*, px, relative, rgb, size};
+use gpui::{AnyElement, App, Application, Bounds, Context, Entity, Focusable, Window, WindowBounds, WindowOptions, div, prelude::*, px, relative, rgb, size};
 
 // GPUI 0.2.2 drawable viewport logical pixels, minus workspace padding.
 // The Host remains responsible for admitting and planning this exact width.
