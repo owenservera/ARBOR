@@ -2919,11 +2919,41 @@ document.addEventListener('vivim:wiki-committed', () => {
 window.addEventListener('vivim:bootstrap-refresh', () => { S.statusAt = 0; if (S.paired) refresh(); });
 
 if (!HOST_PREVIEW && 'serviceWorker' in navigator) {
-  navigator.serviceWorker.register(transport.direct ? '/mobile/sw.js' : '/sw.js').catch(() => {});
+  // The installed Android PWA must adopt newly deployed Host shell assets.
+  // Never reload over a human draft, pending send, or approval.
+  let workerRegistration=null,upgradePending=false;
+  let hadController=!!navigator.serviceWorker.controller;
+  let lastWorkerCheck=0;
+  const safeUpgrade=()=>document.visibilityState==='visible'&&
+    !$('text')?.value.trim()&&!transport.pending()&&!S.busy&&!N.pending&&
+    !chatHasApproval&&!(S.files?.length);
+  const applyUpgrade=()=>{
+    if(upgradePending&&safeUpgrade()){
+      upgradePending=false;
+      window.location.reload();
+    }
+  };
+  const checkWorker=()=>{
+    if(!workerRegistration||document.visibilityState!=='visible'||navigator.onLine===false||
+       Date.now()-lastWorkerCheck<30000)return;
+    lastWorkerCheck=Date.now();
+    void workerRegistration.update().catch(()=>{});
+    applyUpgrade();
+  };
+  navigator.serviceWorker.register(transport.direct ? '/mobile/sw.js' : '/sw.js')
+    .then(registration=>{workerRegistration=registration;checkWorker();})
+    .catch(()=>{});
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     S.sigs.ux = null;
     if (S.tab === 'me') renderSurfaces();
+    // A first-ever service worker claim is not an update. Existing controlled
+    // documents may reload once safe, without replaying API mutations.
+    if(hadController){upgradePending=true;applyUpgrade();}
+    hadController=true;
   });
+  document.addEventListener('visibilitychange',checkWorker);
+  $('text').addEventListener('input',applyUpgrade);
+  setInterval(checkWorker,60000);
 }
 mountUniversalDock();
 mountFirstWiki();
