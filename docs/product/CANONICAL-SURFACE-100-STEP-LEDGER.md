@@ -11,12 +11,12 @@
 
 ## Wave 1 — Win32 shell visibility
 
-- [ ] **CS-001** Reproduce the native menu painting defect in the isolated GPUI build. **Status:** TODO.
-- [ ] **CS-002** Record HWND, HMENU, client/nonclient geometry and OS/window styles. **Status:** TODO.
-- [ ] **CS-003** Gate native menu readiness on actual visible menu geometry. **Status:** TODO.
-- [ ] **CS-004** Keep the existing GPUI menu fallback visible when Win32 painting is unproven. **Status:** TODO.
-- [ ] **CS-005** Request safe nonclient frame recalculation after mounting HMENU. **Status:** TODO.
-- [ ] **CS-006** Confirm native menu item rectangles through Win32 geometry probes. **Status:** TODO.
+- [x] **CS-001** Reproduce the native menu painting defect in the isolated GPUI build. **Status:** VERIFIED. **Evidence:** Win32 7-menu handle and actual GPU-composited screenshot showed Terminal chrome where menu should paint; prior source and SITREP.
+- [x] **CS-002** Record HWND, HMENU, client/nonclient geometry and OS/window styles. **Status:** VERIFIED. **Evidence:** Windows style probes and GetMenuBarInfo/rect measurements captured on DESKTOP-9KB03LU.
+- [ ] **CS-003** Gate native menu readiness on actual visible menu geometry. **Status:** CODED. **Evidence:** `5296840` geometry admission added; `0541169` disables visual cutover until explicit native acceptance; physical fallback proof pending.
+- [ ] **CS-004** Keep the existing GPUI menu fallback visible when Win32 painting is unproven. **Status:** CODED. **Evidence:** `0541169` makes visible shell default unless experimental opt-in; native screenshot of this exact build pending.
+- [ ] **CS-005** Request safe nonclient frame recalculation after mounting HMENU. **Status:** CODED. **Evidence:** `682d743` calls SetWindowPos SWP_FRAMECHANGED and DrawMenuBar; menu repaint visually still unaccepted.
+- [x] **CS-006** Confirm native menu item rectangles through Win32 geometry probes. **Status:** VERIFIED. **Evidence:** GetMenuItemRect and GetMenuBarInfo returned nonempty rect 12,26..44,45; pixels contradicted the menu, so visual gate remains BLOCKED.
 - [ ] **CS-007** Exercise all seven native sections with Alt-key interaction. **Status:** TODO.
 - [ ] **CS-008** Exercise each native submenu using physical mouse interaction. **Status:** TODO.
 - [ ] **CS-009** Verify menu commands preserve editor focus and restore home. **Status:** TODO.
@@ -141,4 +141,11 @@
 
 ## Gates and evidence rules
 
-**First:** CS-001–010; **then:** evidence CS-011–020, composer CS-021–040, Host and sync CS-041–060; TierFlow and Win32 expansion support these, release CS-091–100 is last. All tasks are *next* steps, not retroactively marked done. A task is VERIFIED only when the specified visible action, source result and authorized device proof exist. Do not change the permanent launcher or mobile URL until physically accepted.
+**First:** CS-001–010; **then:** evidence CS-011–020, composer CS-021–040, Host and sync CS-041–060; TierFlow and Win32 expansion support these, release CS-091–100 is last. Status ledger records only the actions actually completed in this 2026-11-22 execution cycle; remaining tasks remain TODO. A task is VERIFIED only when the specified visible action, source result and authorized device proof exist. Do not change the permanent launcher or mobile URL until physically accepted.
+
+## First-tranche activity receipt — 2026-11-22
+
+- Code: `682d743` native menu geometry and safe Windows frame recalculation; `5296840` fallback visibility gate; `0541169` default visible app shell until human visual acceptance. These are cloud GitHub `main` source commits.
+- Device: DESKTOP-9KB03LU, isolated GPUI checkout; full prior build on `f2322bf` displayed First Contact but invisible native menu region. Win32 probes measured root item rectangle and seven categories, yet screenshot had Terminal chrome: **native painting BLOCKED**.
+- New source state `0541169`: local Rust tests / desktop check / screenshot must be recorded when the currently running Windows build reaches a final result. **Do not infer completion.**
+- ZCode independent read-only mission: [GPUI verifier](ZCODE-GPUI-NATIVE-MENU-VERIFIER-R001.md). ZCode brief SITREP on the device PASS as a health check (14 name-matched processes; not 14 workers), no active verifier session claim.
