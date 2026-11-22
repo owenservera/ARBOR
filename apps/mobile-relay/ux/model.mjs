@@ -372,8 +372,24 @@ export function todayModel(status, commands, ctx = {}) {
     reviews: str(live?.state) === 'needs-review'
       ? [...reviewItems, { id: 'timeline', state: 'needs-review' }] : reviewItems });
   const next = nextAction({ attention, running, world, snap, commandRows: actionableCommands });
+  // This is a served-asset observation, never a Host delivery or device acceptance receipt.
+  const stamp = plain(ctx.delivery) ? ctx.delivery : null;
+  const sourceSha = str(stamp?.sourceSha);
+  const hostSourceSha = str(stamp?.hostSourceSha);
+  const delivery = stamp?.schema === 'vivim.delivery-stamp/1' &&
+    /^[a-f0-9]{40}$/.test(sourceSha) &&
+    /^[a-f0-9]{64}$/.test(str(stamp?.moduleSha256)) &&
+    stamp.module === 'provider-handoff.mjs'
+    ? { sourceSha: sourceSha.slice(0, 12), hostSourceSha: /^[a-f0-9]{40}$/.test(hostSourceSha)
+        ? hostSourceSha.slice(0, 12) : null,
+      verified: stamp.verified === true,
+      observedAt: /^\\d{4}-\\d{2}-\\d{2}T/.test(str(stamp.observedAt))
+        ? clip(stamp.observedAt, 30) : null,
+      scope: 'PWA module only — not Host/Studio deployment or phone acceptance' }
+    : null;
 
   return {
+    delivery,
     hostReported: !!snap,
     connection,
     attention,
