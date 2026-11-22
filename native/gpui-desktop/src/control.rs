@@ -105,6 +105,76 @@ pub fn plan(text: &str) -> Result<Review, ReadError> {
     if text.is_empty() || text.len() > MAX_COMMAND { return Err(ReadError::InvalidInput); }
     parse_review(request("plan", Some(json!({"text":text})))?)
 }
+/// Rendered VLANG/NLCL meaning from the *existing* Host compiler. The
+/// native desktop never interprets the text independently; this is a
+/// read-only representation of the Host's `interpret?composer=true` response.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ComposerMeaning {
+    pub outcome: String,
+    pub action_id: Option<String>,
+    pub risk: Option<String>,
+    pub hint: String,
+}
+pub fn project_composer_meaning(response: &Value) -> Result<Option<ComposerMeaning>, ReadError> {
+    if response["schema"] != "vivim.control-language/1" ||
+        response["composer"]["schema"] != "vivim.composer-assist/1" ||
+        response["composer"]["authority"] != "none" {
+        return Err(ReadError::InvalidProjection);
+    }
+    let outcome = response["outcome"].as_str().ok_or(ReadError::InvalidProjection)?;
+    match outcome {
+        "candidate" => {
+            let id = response["candidate"]["actionId"].as_str()
+                .filter(|s| (3..=96).contains(&s.len()) &&
+                    s.bytes().all(|b|b.is_ascii_lowercase() || b.is_ascii_digit() ||
+                        matches!(b, b'.'|b'_'|b'-')))
+                .ok_or(ReadError::InvalidProjection)?;
+            let action=&response["composer"]["action"];
+            if action["id"] != id {return Err(ReadError::InvalidProjection)}
+            let risk=action["risk"].as_str()
+                .filter(|s|matches!(*s, "R0"|"R1"|"R2"|"R3"))
+                .ok_or(ReadError::InvalidProjection)?;
+            let readiness=action["readiness"].as_str()
+                .filter(|s|matches!(*s,"source_wired"|"verified"|
+                    "adapter_pending"|"enforcement_missing"|"unsupported"))
+                .ok_or(ReadError::InvalidProjection)?;
+            let hint=if matches!(readiness,"source_wired"|"verified") {
+                if risk=="R0" {format!("Recognized: {id} · read-only interpretation")}
+                else {format!("Recognized: {id} · {risk} · submit for a separate approved plan")}
+            } else {format!("Recognized but unavailable: {id} · {readiness}")};
+            Ok(Some(ComposerMeaning {
+                outcome:outcome.into(),action_id:Some(id.into()),
+                risk:Some(risk.into()),hint
+            }))
+        }
+        "clarification_required" => {
+            let question=response["question"].as_str()
+                .filter(|s|!s.is_empty() && s.len()<=300 &&
+                    !s.chars().any(char::is_control))
+                .ok_or(ReadError::InvalidProjection)?;
+            Ok(Some(ComposerMeaning {outcome:outcome.into(),
+                action_id:None,risk:None,hint:format!("Needs clarification: {question}")}))
+        }
+        "incomplete" => Ok(Some(ComposerMeaning {
+            outcome:outcome.into(),action_id:None,risk:None,
+            hint:"Incomplete command · continue typing".into()
+        })),
+        // No deterministic match is NOT evidence of an executable command.
+        "refused"|"interpretation_required"|"empty" => Ok(None),
+        _ => Err(ReadError::InvalidProjection)
+    }
+}
+/// Observe meaning; DOES NOT call the Host plan or execute route.
+pub fn interpret_composer(text: &str) -> Result<Option<ComposerMeaning>,ReadError> {
+    let text=text.trim();
+    if text.is_empty() || text.encode_utf16().count()>1000 ||
+        text.chars().any(char::is_control) {
+        return Err(ReadError::InvalidInput);
+    }
+    let response=request("interpret",Some(json!({"text":text,"composer":true})))?;
+    project_composer_meaning(&response)
+}
+
 #[derive(Debug)]
 pub struct Receipt {
     pub status: String,
@@ -163,6 +233,37 @@ mod tests {
             "actionId":"wiki.page.create","source":"desktop","status":"applied","executionPerformed":true});
         assert_eq!(parse_receipt(p.clone(),&key).unwrap().status,"applied");
         p["planDigest"]=json!("b".repeat(64)); assert!(parse_receipt(p,&key).is_err());
+    }
+    #[test] fn inert_command_preview_requires_exact_host_composer_admission() {
+        let p=json!({"schema":"vivim.control-language/1","outcome":"candidate",
+            "candidate":{"actionId":"wiki.page.create","args":{"page":"notes"}},
+            "composer":{"schema":"vivim.composer-assist/1","authority":"none",
+                "action":{"id":"wiki.page.create","risk":"R1","readiness":"source_wired"}}});
+        let meaning=project_composer_meaning(&p).unwrap().unwrap();
+        assert_eq!(meaning.action_id.as_deref(),Some("wiki.page.create"));
+        assert!(meaning.hint.contains("separate approved plan"));
+        let mut fake=p.clone();fake["composer"]["action"]["id"]=json!("wiki.page.move");
+        assert!(project_composer_meaning(&fake).is_err());
+        fake=p.clone();fake["composer"]["authority"]=json!("Host");
+        assert!(project_composer_meaning(&fake).is_err());
+        fake=p.clone();fake["composer"]["action"]["readiness"]=json!("unknown");
+        assert!(project_composer_meaning(&fake).is_err());
+    }
+    #[test] fn ambiguous_or_unrecognized_text_never_becomes_an_approval() {
+        let base=json!({"schema":"vivim.control-language/1",
+            "composer":{"schema":"vivim.composer-assist/1","authority":"none"}});
+        let mut value=base.clone();
+        value["outcome"]=json!("clarification_required");
+        value["question"]=json!("Which Wiki section?");
+        let preview=project_composer_meaning(&value).unwrap().unwrap();
+        assert!(preview.hint.contains("Which Wiki section?"));
+        assert!(preview.action_id.is_none());
+        for state in ["refused","interpretation_required","empty"] {
+            value=base.clone();value["outcome"]=json!(state);
+            assert_eq!(project_composer_meaning(&value).unwrap(),None);
+        }
+        value=base.clone();value["outcome"]=json!("candidate");
+        assert!(project_composer_meaning(&value).is_err());
     }
     #[test] fn inspect_path_is_not_user_controlled() {
         assert!(valid_id("ctl-0123456789abcdef"));
