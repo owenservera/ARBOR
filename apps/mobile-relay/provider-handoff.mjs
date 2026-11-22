@@ -25,10 +25,14 @@ export function resolveProviderHandoff(input, projection) {
   if (!match) return null;
   const id = ALIASES[match[1].toLowerCase()];
   if (!id) return null;
-  const verified = Array.isArray(projection) &&
-    projection.some(p => p?.id === id && p.signedIn === true);
+  const record = Array.isArray(projection) ? projection.find(p => p?.id === id) : null;
+  const signedIn = record?.signedIn === true;
+  // A browser login alone is not a usable relay. Match the existing Send
+  // admission rule and preserve the draft when the Host worker is offline.
+  const queueConsumerReady = signedIn && record?.queueConsumerReady === true;
   return Object.freeze({
-    id, label: LABELS[id], status: verified ? 'ready' : 'unverified',
+    id, label: LABELS[id],
+    status: queueConsumerReady ? 'ready' : signedIn ? 'relay-offline' : 'unverified',
     draft: (match[2] || '').trim(), sendsAutomatically: false
   });
 }
