@@ -45,6 +45,7 @@ impl Panel {
 struct Desktop {
     supervisor: Arc<HostSupervisor>,
     panel: Panel,
+    menu_open: bool,
     viewport_px: u32,
     viewport_epoch: u64,
     // Invalidates reads crossing a Host effect without weakening revision guards.
@@ -211,6 +212,7 @@ impl Desktop {
     }
     fn select_panel(&mut self, panel:Panel, cx:&mut Context<Self>){
         let changed=self.panel!=panel;
+        self.menu_open=false;
         self.panel=panel;
         if changed {
             self.presentation_epoch=self.presentation_epoch.wrapping_add(1);
@@ -786,8 +788,43 @@ fn mount_node(n:&VecElement,view:&VecView)->AnyElement{
     el.into_any_element()
 }
 
+// The only visible navigation affordance is a compact menu; legacy native
+// inspection pages are secondary tools, never an alternate product home.
+impl Desktop {
+    fn surface_menu(&self, cx:&mut Context<Self>) -> AnyElement {
+        let mut menu=div().w_full().flex().flex_col().gap_1()
+            .child(div().w_full().flex().justify_end()
+                .child(Button::new("vivim-menu").label("☰")
+                    .on_click(cx.listener(|v,_,_,cx|{
+                        v.menu_open=!v.menu_open;
+                        cx.notify();
+                    }))));
+        if self.menu_open {
+            let mut items=div().flex().flex_col().gap_1().p_3()
+                .bg(rgb(0x212327)).rounded(px(12.))
+                .border_1().border_color(rgb(0x50525a))
+                .child(div().text_sm().child("VIVIM · Menu"));
+            for (key,label,panel) in [
+                ("menu-home","First Contact",Panel::FirstContact),
+                ("menu-host","Host status",Panel::Overview),
+                ("menu-wiki","Wiki inspector",Panel::Wiki),
+                ("menu-visual","Build / VEC",Panel::Visual),
+                ("menu-graph","Knowledge graph",Panel::Graph),
+                ("menu-control","Host decisions",Panel::Control),
+            ] {
+                items=items.child(Button::new(key).label(label)
+                    .on_click(cx.listener(move |v,_,_,cx|v.select_panel(panel,cx))));
+            }
+            menu=menu.child(div().w_full().flex().justify_end()
+                .child(div().w(px(250.)).child(items)));
+        }
+        menu.into_any_element()
+    }
+}
+
 impl Render for Desktop {
     fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let menu=self.surface_menu(cx);
         // ONE canonical First Contact surface. The former five-panel GPUI
         // diagnostics remain internal source, never a competing product home.
         if self.panel==Panel::FirstContact {
@@ -798,6 +835,7 @@ impl Render for Desktop {
             let mut surface=div().size_full()
                 .bg(rgb(0x111214)).text_color(rgb(0xeeece7))
                 .flex().flex_col().p_4().gap_2()
+                .child(menu)
                 .child(div().flex_1());
 
             // AutoWiki is contextual, just like the Direct PWA. Empty text
@@ -1048,21 +1086,10 @@ impl Render for Desktop {
                 "Resize the native window to request the exact Host-planned viewport. Preview actions never execute."
             ));
         }
-        let navigation=div().flex().flex_wrap().gap_2()
-            .child(Button::new("panel-overview").label("Overview")
-                .on_click(cx.listener(|v,_,_,cx|v.select_panel(Panel::Overview,cx))))
-            .child(Button::new("panel-wiki").label("Wiki")
-                .on_click(cx.listener(|v,_,_,cx|v.select_panel(Panel::Wiki,cx))))
-            .child(Button::new("panel-build").label("Build")
-                .on_click(cx.listener(|v,_,_,cx|v.select_panel(Panel::Visual,cx))))
-            .child(Button::new("panel-graph").label("Graph")
-                .on_click(cx.listener(|v,_,_,cx|v.select_panel(Panel::Graph,cx))))
-            .child(Button::new("panel-decisions").label("Decisions")
-                .on_click(cx.listener(|v,_,_,cx|v.select_panel(Panel::Control,cx))));
+        // Diagnostic navigation lives exclusively in the compact surface menu.
         div().size_full().bg(rgb(0x151b24)).text_color(rgb(0xe6edf3))
             .flex().flex_col().p_5().gap_3()
-            .child(div().text_xl().child("VIVIM · Native workspace"))
-            .child(navigation)
+            .child(menu)
             .child(self.supervisor.snapshot().label())
             .child(self.status.clone())
             .child(Input::new(&self.input))
@@ -1085,7 +1112,7 @@ fn main() {
                 // Capture the viewport value, not the mutable Window borrowed again by Root.
                 let initial_viewport_px=viewport_for_window(window);
                 let view=cx.new(move |cx| {
-                    let mut view=Desktop {supervisor, input,panel:Panel::FirstContact,viewport_px:initial_viewport_px,
+                    let mut view=Desktop {supervisor, input,panel:Panel::FirstContact,menu_open:false,viewport_px:initial_viewport_px,
                         viewport_epoch:0,source_epoch:0,presentation_epoch:0,read_busy:false,refresh_pending:false,
                         coherence_retry_ready:true,
                         source_status:"Host source not yet observed".into(),
