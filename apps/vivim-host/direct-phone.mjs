@@ -164,7 +164,7 @@ async function readBody(req) {
 }
 
 export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'world-local', projection, control = null, apkRegistry = null, pairingStore = null, onPhoneSeen = () => {}, primary = () => null, providerSnapshot = () => [], providerRefresh = null,
-  webMemory = null, mediaPlayback = null, chatContext = null, wikiProjection = null,
+  webMemory = null, mediaPlayback = null, mediaLanguage = null, chatContext = null, wikiProjection = null,
   composerBridge = null }) {
   let url;
   try { url = new URL(origin); } catch { throw new TypeError('Direct phone origin must be an HTTPS origin'); }
@@ -176,6 +176,13 @@ export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'wo
   const live = createSourceVerifiedLiveProjection({dataRoot,worldId});
   const secret = randomBytes(32).toString('hex');
   const media = mediaPlayback ?? createMediaPlaybackService();
+  // Derived translations resolve through the same authenticated media ticket/stream.
+  // The local PC Host owns the worker; phone only requests and observes jobs.
+  const playable = async (id, fingerprint=null) => {
+    if (mediaLanguage && await mediaLanguage.status(id))
+      return mediaLanguage.resolve(id,fingerprint);
+    return media.resolve(id,fingerprint);
+  };
   // Short-lived stream capability is confined to this Host process and the
   // authenticated Tailscale owner, then checked against the live device grant.
   // Native HTML media elements cannot attach the device headers; the ticket
@@ -548,6 +555,43 @@ export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'wo
       }
       return;
     }
+    // A paired phone may explicitly request a local translation only with the
+    // existing PC-approved execute scope. No URL, path, voice or executable is
+    // accepted from the device; original media remains immutable.
+    if (route === 'api/media/language/start') {
+      if(req.method!=='POST'){json(res,405,{code:'METHOD'});return;}
+      try {
+        authorizeDevice(req,'control:execute');
+        if(req.headers.origin!==origin || req.headers['x-vivim-media-language']!=='1')
+          throw failure(403,'ORIGIN_OR_CSRF');
+        if(!mediaLanguage)throw failure(503,'MEDIA_LANGUAGE_UNAVAILABLE');
+        const body=await readBody(req);
+        if(!body||typeof body!=='object'||Array.isArray(body)||
+          Object.keys(body).length!==2||typeof body.mediaId!=='string'||
+          body.targetLanguage!=='es-ES')
+          throw failure(400,'MEDIA_LANGUAGE_INPUT_INVALID');
+        const result=await mediaLanguage.start(body.mediaId,{targetLanguage:body.targetLanguage});
+        // A scope revocation during admission must not issue a successful receipt.
+        authorizeDevice(req,'control:execute');
+        res.setHeader('cache-control','private, no-store');
+        json(res,result.status==='ready'?200:202,result);
+      }catch(error){json(res,error.status||503,{code:error.code||error.message||'MEDIA_LANGUAGE_UNAVAILABLE'});}
+      return;
+    }
+    const mediaLanguageJob=/^api\/media\/language\/jobs\/([a-f0-9]{32})$/.exec(route);
+    if(mediaLanguageJob){
+      if(req.method!=='GET'){json(res,405,{code:'METHOD'});return;}
+      try {
+        authorizeDevice(req,'control:read');
+        if(!mediaLanguage)throw failure(503,'MEDIA_LANGUAGE_UNAVAILABLE');
+        const state=await mediaLanguage.status(mediaLanguageJob[1]);
+        authorizeDevice(req,'control:read');
+        if(!state)throw failure(404,'MEDIA_LANGUAGE_JOB_NOT_FOUND');
+        res.setHeader('cache-control','private, no-store');
+        json(res,200,state);
+      }catch(error){json(res,error.status||503,{code:error.code||error.message||'MEDIA_LANGUAGE_UNAVAILABLE'});}
+      return;
+    }
     // Playback begins with a POST authenticated by the device's existing
     // control:read grant. Neither the catalog ID nor this route is a file path.
     if (route === 'api/media/open') {
@@ -561,7 +605,7 @@ export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'wo
             Object.keys(body).length !== 1 || typeof body.mediaId !== 'string')
           throw failure(400,'MEDIA_OPEN_INPUT_INVALID');
         const mediaId = body.mediaId;
-        const info = await media.resolve(mediaId);
+        const info = await playable(mediaId);
         await info.handle.close();
         pruneMediaTickets();
         // One currently selected native video per approved device session.
@@ -629,7 +673,7 @@ export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'wo
         const grant = enrollment.validateGrant({grantId:record.grantId,sessionId:record.sessionId});
         if (!Array.isArray(grant.scopes) || !grant.scopes.includes('control:read'))
           throw failure(403,'MEDIA_STREAM_SCOPE_DENIED');
-        info = await media.resolve(streamId[1],record.fingerprint);
+        info = await playable(streamId[1],record.fingerprint);
         let bytes;
         try { bytes = parseMediaRange(req.headers.range,info.size); }
         catch (cause) {
@@ -682,7 +726,12 @@ export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'wo
         const rawOffset = query.length ? query[0][1] : '0';
         if (!/^(?:0|[1-9][0-9]{0,5})$/.test(rawOffset) || Number(rawOffset) > 100000)
           throw failure(400,'MEDIA_OFFSET_INVALID');
-        json(res, 200, await media.list({offset:Number(rawOffset)}));
+        const listing = await media.list({offset:Number(rawOffset)});
+        if (listing.state==='ready' && mediaLanguage?.available()) {
+          listing.items=listing.items.map(item=>({...item,
+            canTranslate:item.playable===true && /^(?:audio|video)\//.test(item.mime||'')}));
+        }
+        json(res, 200, listing);
       } catch (error) {
         json(res, error.status || 503, { schema: 'vivim.media-library-summary/1',
           state: 'unavailable', reason: error.status ? error.message : 'MEDIA_READ_UNAVAILABLE',
