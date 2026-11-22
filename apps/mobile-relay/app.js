@@ -800,6 +800,29 @@ function renderOracleInExistingWiki(card, corpus) {
     card.append(row);
   }
 }
+// The owner Host-preview reuses the existing Wiki read, never the paired Direct phone route.
+function renderDesktopLearningInWiki(card, learning) {
+  if (learning?.schema !== 'vivim.development-learning/1' ||
+      learning.source !== 'desktop-commander' || learning.privateContentIncluded !== false ||
+      learning.promotesLearning !== false || learning.authority !== 'read-only-evidence') return;
+  card.append(el('h3','ux-card-title','VIVIM Learning · desktop development'));
+  if (!['ready','stale','capturing'].includes(learning.state)) {
+    card.append(el('p','ux-note','Verified development learning unavailable.')); return;
+  }
+  card.append(el('p','ux-note','Local Desktop Commander archive · '+learning.state+
+    ' · capture '+(learning.capture?.lastCapturedAt ?? 'unavailable')+' · read only'));
+  const a=learning.analysis;
+  if (!a || !Number.isSafeInteger(a.indexedObservations)) {
+    card.append(el('p','ux-note','Capture exists; no verified learning analysis.')); return;
+  }
+  card.append(el('p','ux-note',a.indexedObservations+' archived observations · '+
+    a.upstreamOutputsOmitted+' upstream large outputs omitted · '+
+    a.recordedExitNonzero+' nonzero exit observations (not unique failures)'));
+  for (const metric of (Array.isArray(a.patterns) ? a.patterns : []).slice(0,7)) {
+    if(typeof metric?.label === 'string' && Number.isSafeInteger(metric.observations))
+      card.append(el('p','ux-note',metric.label+' · '+metric.observations+' observed events'));
+  }
+}
 function renderWikiContext() {
   const card = el('section', 'ux-card');
   card.append(el('h3', 'ux-card-title', 'AutoWiki · source-backed context'));
@@ -809,6 +832,7 @@ function renderWikiContext() {
     return card;
   }
   renderOracleInExistingWiki(card,context.oracleCorpus);
+  renderDesktopLearningInWiki(card,context.developmentLearning);
   card.append(el('p', 'ux-note', 'User statements (unverified) · journal sequence ' + context.revision));
   if (!context.items.length) card.append(el('p', 'ux-note', 'No source-identified observations.'));
   for (const item of context.items.slice().reverse()) {
@@ -878,6 +902,11 @@ function validWikiContext(context, wiki) {
   return context?.schema === 'vivim.wiki-context/1' && context.state === 'source-backed' &&
     Number.isSafeInteger(context.revision) && context.revision >= 0 && context.wikiRevision === wiki.revision &&
     validAppliedEffects(context.applicationEffects) && validOracleCorpusView(context.oracleCorpus) &&
+    (context.developmentLearning === undefined ||
+      (context.developmentLearning?.schema === 'vivim.development-learning/1' &&
+       context.developmentLearning.privateContentIncluded === false &&
+       context.developmentLearning.promotesLearning === false &&
+       context.developmentLearning.authority === 'read-only-evidence')) &&
     Array.isArray(context.items) && context.items.length <= 24 &&
     Number.isSafeInteger(context.omitted) && context.omitted >= 0 &&
     context.items.every(item => validEntry(item) && item.status === 'user-statement-unverified' && typeof item.text === 'string') &&
