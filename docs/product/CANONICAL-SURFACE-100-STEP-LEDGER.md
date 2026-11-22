@@ -192,3 +192,11 @@
 - **Exact-source Host/NLP/onboarding:** `node --test apps/vivim-host/test/vlang-command-compilation.test.mjs apps/vivim-host/test/control-intent-planner.test.mjs apps/vivim-host/test/command-intent-native.test.mjs apps/mobile-relay/test/composer-assist.test.mjs apps/vivim-host/test/onboarding.test.mjs apps/vivim-host/test/oracle-onboarding-prompts.test.mjs` **PASS 40/40, exit 0**. Node suite logs independent native-binary parity subchecks **UNRUN**, not accepted.
 - **No duplicated active application:** post-build Windows process inspection found one already-running `vivim-gpui-desktop.exe` PID 16832 and its existing Host PID 15232, both launched from earlier `13c200e94b08` checkout. The new executable has **NOT** been run, installed or substituted for the live instance; no visual/menu/mobile device acceptance is claimed.
 - **Next:** controlled native replacement/foreground verification after preserving unsaved user draft and proving stable Host attachment, then real empty→typed→Wiki/VLANG→clear evidence and Win32 menu acceptance. Never mark CS-083 as device-verified merely because a binary links. Subsequent GitHub `main` commits require their own exact-SHA checks.
+
+
+## R004 — native deterministic argument preview (2026-11-22)
+
+- **In existing command architecture:** `native/gpui-desktop/src/control.rs` now projects Host-typed `candidate.args` as bounded inert GPUI hints, without a second NLP grammar or LLM dependency. Risk R2/R3 values are masked; invalid fields/control characters fail closed. Source: `e4f509f`, corrected regression `1324cc2`.
+- **Verified isolated Windows tests on exact `1324cc2`:** GPUI Rust library **45/45 PASS** and four-file deterministic Host/NLP **27/27 PASS**, exit 0. These do not prove physical GUI acceptance or an active provider.
+- **Native desktop build:** verification build launched separately, outcome to be recorded in [existing R002/R004 implementation log](DEV-CYCLE-NATIVE-VLANG-R002-20261122.md). Do not promote an older binary or mark visual/phone gates complete.
+- **No duplicate ownership:** another agent implements PC→phone handoff; this slice supplies its read-only VLANG argument projection and leaves Host effects/approvals unchanged.
