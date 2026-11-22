@@ -11,6 +11,7 @@ const pkg=JSON.parse(readFileSync(path.join(root,'package.json'),'utf8'));
 const launcher=readFileSync(path.join(root,'tools/packaging/launch-gpui-only.ps1'),'utf8');
 const builder=readFileSync(path.join(root,'tools/packaging/build-gpui-native.ps1'),'utf8');
 const nativeDelivery=readFileSync(path.join(root,'native/gpui-desktop/src/live_delivery.rs'),'utf8');
+const nativeStackBuild=readFileSync(path.join(root,'native/gpui-desktop/build.rs'),'utf8');
 const tauriShell=readFileSync(path.join(root,'src-tauri/src/main.rs'),'utf8');
 const surfaceCatalog=readFileSync(path.join(root,'native/gpui-desktop/src/surface_registry.rs'),'utf8');
 
@@ -78,4 +79,10 @@ test('legacy Windows WebView is not an alternate default VIVIM local UI',()=>{
   assert.match(surfaceCatalog,/pub const SURFACES/);
   assert.match(source,/dev-surface-inventory/);
   assert.match(source,/Intent::InspectSurfaces\(section\)/);
+});
+
+test('one Windows GPUI thread reserves enough stack for the merged native menu',()=>{
+  assert.match(nativeStackBuild,/cargo:rustc-link-arg-bin=vivim-gpui-desktop=\/STACK:8388608/);
+  assert.doesNotMatch(nativeStackBuild,/std::thread::spawn|WebView|Tauri|Start-Process/);
+  assert.match(source,/native_source_inventory\(group\)/);
 });
