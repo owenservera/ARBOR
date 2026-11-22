@@ -1325,6 +1325,21 @@ impl Render for Desktop {
                                 row.id,row.source,row.placement.label(),row.disposition.label()
                             )));
                         }
+                        let donors=surface_registry::DONOR_SURFACES.iter().filter(|r|
+                            all || r.target_menu.label()==group.label()
+                        ).collect::<Vec<_>>();
+                        page=page.child(div().text_lg().child(format!(
+                            "Donor-only reference pages · {}",donors.len()
+                        )))
+                        .child(div().text_sm().child(
+                            "Donor repositories are source material. No donor browser UI is mounted or relaunched."
+                        ));
+                        for row in donors {
+                            page=page.child(div().p_1().child(format!(
+                                "{} · {} → {} · donor-only",
+                                row.repo,row.source,row.target_menu.label()
+                            )));
+                        }
                     }
                 }
                 Panel::About=>{
