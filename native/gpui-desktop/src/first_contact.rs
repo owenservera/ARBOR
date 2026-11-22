@@ -17,6 +17,25 @@ const MAX_RESPONSE_BYTES: u64 = 512 * 1024;
 pub const WIKI_REFRESH_MIN_INTERVAL: Duration = Duration::from_millis(2_000);
 pub const WIKI_COMPOSER_DEBOUNCE: Duration = Duration::from_millis(280);
 
+/// Return when an admitted query should attempt its next source refresh.
+/// A recent Host read postpones, but must never *drop*, the only refresh
+/// triggered by a short typing burst. A stale/empty/unauthorized query has
+/// no scheduled refresh at all.
+pub fn wiki_refresh_delay_on_input(
+    current_query_present: bool,
+    current_edit_epoch: u64,
+    scheduled_edit_epoch: u64,
+    last_read_elapsed: Option<Duration>,
+    observation_allowed: bool,
+) -> Option<Duration> {
+    if !current_query_present || current_edit_epoch != scheduled_edit_epoch
+        || !observation_allowed {
+        return None;
+    }
+    Some(last_read_elapsed.map_or(Duration::ZERO, |elapsed|
+        WIKI_REFRESH_MIN_INTERVAL.saturating_sub(elapsed)))
+}
+/// Kept for deterministic observation admission callers.
 pub fn should_refresh_wiki_on_input(
     current_query_present: bool,
     current_edit_epoch: u64,
@@ -24,10 +43,10 @@ pub fn should_refresh_wiki_on_input(
     last_read_elapsed: Option<Duration>,
     observation_allowed: bool,
 ) -> bool {
-    current_query_present
-        && current_edit_epoch == scheduled_edit_epoch
-        && observation_allowed
-        && last_read_elapsed.is_none_or(|elapsed| elapsed >= WIKI_REFRESH_MIN_INTERVAL)
+    wiki_refresh_delay_on_input(
+        current_query_present, current_edit_epoch, scheduled_edit_epoch,
+        last_read_elapsed, observation_allowed
+    ) == Some(Duration::ZERO)
 }
 
 
@@ -125,6 +144,24 @@ pub fn read_phone_draft() -> Result<Option<PhoneDraft>, ReadError> {
 mod tests {
     use super::*;
     use serde_json::json;
+
+    #[test]
+    fn recent_read_delays_but_does_not_drop_the_last_typed_query() {
+        assert_eq!(wiki_refresh_delay_on_input(true,4,4,None,true),
+            Some(Duration::ZERO));
+        assert_eq!(wiki_refresh_delay_on_input(
+            true,4,4,Some(Duration::from_millis(250)),true),
+            Some(Duration::from_millis(1750)));
+        assert_eq!(wiki_refresh_delay_on_input(
+            true,4,4,Some(Duration::from_secs(2)),true),
+            Some(Duration::ZERO));
+        assert_eq!(wiki_refresh_delay_on_input(
+            true,4,5,Some(Duration::from_millis(200)),true),None);
+        assert_eq!(wiki_refresh_delay_on_input(
+            true,4,4,Some(Duration::from_millis(200)),false),None);
+        assert_eq!(wiki_refresh_delay_on_input(
+            false,4,4,None,true),None);
+    }
 
     #[test]
     fn live_wiki_refresh_is_debounced_and_refuses_stale_input() {
