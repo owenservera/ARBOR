@@ -78,7 +78,8 @@ mod win {
         fn GetWindowThreadProcessId(hwnd:Handle,pid:*mut u32)->u32;
         fn IsWindowVisible(hwnd:Handle)->i32;
         fn GetWindowRect(hwnd:Handle,rect:*mut Rect)->i32;
-        fn GetWindowDC(hwnd:Handle)->Handle;
+        fn GetForegroundWindow()->Handle;
+        fn GetDC(hwnd:Handle)->Handle;
         fn ReleaseDC(hwnd:Handle,dc:Handle)->i32;
     }
     #[link(name="kernel32")]
@@ -107,7 +108,7 @@ mod win {
         }
         0
     }
-    struct OwnedDc{hwnd:Handle,src:Handle,mem:Handle,bitmap:Handle,old:Handle}
+    struct OwnedDc{src:Handle,mem:Handle,bitmap:Handle,old:Handle}
     impl Drop for OwnedDc {
         fn drop(&mut self){
             // SAFETY: each resource belongs exclusively to this capture.
@@ -115,13 +116,13 @@ mod win {
                 if !self.old.is_null(){SelectObject(self.mem,self.old);}
                 if !self.bitmap.is_null(){DeleteObject(self.bitmap);}
                 if !self.mem.is_null(){DeleteDC(self.mem);}
-                if !self.src.is_null(){ReleaseDC(self.hwnd,self.src);}
+                if !self.src.is_null(){ReleaseDC(std::ptr::null_mut(),self.src);}
             }
         }
     }
     pub fn capture_own_window()->io::Result<(u32,u32,Vec<u8>)>{
-        // SAFETY: FFI calls are read-only with respect to the visible native
-        // window. We never search other processes or capture the desktop.
+        // SAFETY: FFI calls capture only the verified foreground bounds of
+        // our own window. Unfocused/occluded app capture is denied.
         unsafe {
             let mut hwnd:Handle=std::ptr::null_mut();
             EnumWindows(Some(locate),(&mut hwnd as *mut Handle) as isize);
@@ -135,9 +136,17 @@ mod win {
             if !(320..=4096).contains(&width) || !(240..=4096).contains(&height) {
                 return Err(io::Error::new(io::ErrorKind::InvalidData,"GPUI_WINDOW_DIMENSIONS"));
             }
-            let src=GetWindowDC(hwnd);
+            // A GPUI GPU-backed window often returns an entirely black bitmap
+            // from GetWindowDC. Capture the composited screen instead, but
+            // ONLY when our own window is foreground; otherwise fail closed
+            // to avoid capturing unrelated desktop/user content.
+            if GetForegroundWindow()!=hwnd {
+                return Err(io::Error::new(io::ErrorKind::PermissionDenied,
+                    "FOREGROUND_GPUI_REQUIRED"));
+            }
+            let src=GetDC(std::ptr::null_mut());
             if src.is_null(){return Err(io::Error::last_os_error())}
-            let mut owned=OwnedDc{hwnd,src,mem:std::ptr::null_mut(),
+            let mut owned=OwnedDc{src,mem:std::ptr::null_mut(),
                 bitmap:std::ptr::null_mut(),old:std::ptr::null_mut()};
             owned.mem=CreateCompatibleDC(src);
             if owned.mem.is_null(){return Err(io::Error::last_os_error())}
@@ -146,7 +155,7 @@ mod win {
             owned.old=SelectObject(owned.mem,owned.bitmap);
             if owned.old.is_null(){return Err(io::Error::last_os_error())}
             const SRCCOPY:u32=0x00CC0020;
-            if BitBlt(owned.mem,0,0,width,height,src,0,0,SRCCOPY)==0 {
+            if BitBlt(owned.mem,0,0,width,height,src,rect.left,rect.top,SRCCOPY)==0 {
                 return Err(io::Error::last_os_error());
             }
             // The bitmap must be deselected before GetDIBits.
@@ -165,6 +174,12 @@ mod win {
             let rows=GetDIBits(owned.mem,owned.bitmap,0,height as u32,
                 rgba.as_mut_ptr().cast(),&mut bitmap_info,0);
             if rows!=height {return Err(io::Error::last_os_error())}
+            // The empty First Contact screen has non-black composer chrome;
+            // refuse a blank GPU capture rather than writing a misleading PNG.
+            if rgba.chunks_exact(4).all(|p|p[0]==0 && p[1]==0 && p[2]==0) {
+                return Err(io::Error::new(io::ErrorKind::InvalidData,
+                    "EMPTY_OR_UNAVAILABLE_GPU_CAPTURE"));
+            }
             // Windows 32-bit BI_RGB bytes are BGRA. PNG expects RGBA.
             for pixel in rgba.chunks_exact_mut(4) {
                 pixel.swap(0,2);
