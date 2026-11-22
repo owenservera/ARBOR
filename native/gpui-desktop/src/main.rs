@@ -877,7 +877,7 @@ impl Render for Desktop {
                     ));
                 }
                 surface=surface.child(div().w_full().flex().justify_center()
-                    .child(div().w_full().max_w(px(790.)).max_h(px(350.))
+                    .child(div().id("first-contact-wiki").w_full().max_w(px(790.)).max_h(px(350.))
                         .overflow_y_scroll().child(wiki)));
             }
 
