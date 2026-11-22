@@ -94,7 +94,11 @@ pub fn project_phone_draft(source: &Value) -> Result<Option<PhoneDraft>, ReadErr
     let Some(region) = found.next() else { return Ok(None) };
     if found.next().is_some() ||
         region["kind"] != "input" ||
-        region["sourceId"] != "host.first-contact-composer" {
+        region["sourceId"] != "host.first-contact-composer" ||
+        // The draft is owner-private. Never project a region whose exposure
+        // or product target diverges from the actual Host composer contract.
+        region["exposure"] != "owner" ||
+        region["data"]["target"] != "vivim" {
         return Err(ReadError::InvalidProjection);
     }
     if region["freshness"] != "current" || region["data"]["visible"] != true {
@@ -102,13 +106,14 @@ pub fn project_phone_draft(source: &Value) -> Result<Option<PhoneDraft>, ReadErr
         return Ok(None);
     }
     let source_revision = region["sourceRevision"].as_u64()
-        .ok_or(ReadError::InvalidProjection)?;
+        .filter(|&rev| rev > 0).ok_or(ReadError::InvalidProjection)?;
     let view_revision = region["viewRevision"].as_u64()
-        .ok_or(ReadError::InvalidProjection)?;
+        .filter(|&rev| rev > 0).ok_or(ReadError::InvalidProjection)?;
     let local_revision = region["data"]["localRevision"].as_u64()
-        .ok_or(ReadError::InvalidProjection)?;
+        .filter(|&rev| rev > 0).ok_or(ReadError::InvalidProjection)?;
     let session_id = region["data"]["sessionId"].as_str()
-        .filter(|s| s.len() == 32 && s.bytes().all(|b| b.is_ascii_hexdigit()))
+        .filter(|s| s.len() == 32 && s.bytes().all(|b| b.is_ascii_hexdigit() &&
+            (b.is_ascii_digit() || b.is_ascii_lowercase())))
         .ok_or(ReadError::InvalidProjection)?;
     let text = region["data"]["draft"].as_str()
         .filter(|s| s.len() <= 1000 && !s.contains('\0'))
@@ -212,9 +217,9 @@ mod tests {
             "effectPerformed":false, "epoch":"host.test", "revision":9,
             "regions":[{
                 "id":"phone.composer", "kind":"input", "freshness":"current",
-                "sourceId":"host.first-contact-composer",
+                "sourceId":"host.first-contact-composer", "exposure":"owner",
                 "sourceRevision":5, "viewRevision":6,
-                "data":{"draft":"Wiki", "sessionId":"a".repeat(32),
+                "data":{"draft":"Wiki", "target":"vivim", "sessionId":"a".repeat(32),
                     "localRevision":2,"visible":true,"composing":false}
             }]
         })
@@ -247,6 +252,28 @@ mod tests {
         let mut s=state();s["regions"][0]["data"]["draft"]=json!("x".repeat(1001));
         assert_eq!(project_phone_draft(&s),Err(ReadError::InvalidProjection));
         s=state();s["regions"][0]["sourceRevision"]=Value::Null;
+        assert_eq!(project_phone_draft(&s),Err(ReadError::InvalidProjection));
+        for key in ["sourceRevision","viewRevision"] {
+            s=state();s["regions"][0][key]=json!(0);
+            assert_eq!(project_phone_draft(&s),Err(ReadError::InvalidProjection),"{key}");
+        }
+        s=state();s["regions"][0]["data"]["localRevision"]=json!(0);
+        assert_eq!(project_phone_draft(&s),Err(ReadError::InvalidProjection));
+    }
+    #[test] fn refuses_non_owner_or_wrong_product_phone_draft() {
+        let mut s=state();s["regions"][0]["exposure"]=json!("public");
+        assert_eq!(project_phone_draft(&s),Err(ReadError::InvalidProjection));
+        s=state();s["regions"][0]["exposure"]=Value::Null;
+        assert_eq!(project_phone_draft(&s),Err(ReadError::InvalidProjection));
+        s=state();s["regions"][0]["data"]["target"]=json!("provider-chat");
+        assert_eq!(project_phone_draft(&s),Err(ReadError::InvalidProjection));
+        s=state();s["regions"][0]["data"]["target"]=Value::Null;
+        assert_eq!(project_phone_draft(&s),Err(ReadError::InvalidProjection));
+    }
+    #[test] fn refuses_noncanonical_phone_session_identity() {
+        let mut s=state();s["regions"][0]["data"]["sessionId"]=json!("A".repeat(32));
+        assert_eq!(project_phone_draft(&s),Err(ReadError::InvalidProjection));
+        s=state();s["regions"][0]["data"]["sessionId"]=json!("a".repeat(31));
         assert_eq!(project_phone_draft(&s),Err(ReadError::InvalidProjection));
     }
 }
