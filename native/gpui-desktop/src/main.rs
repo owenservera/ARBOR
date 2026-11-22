@@ -10,7 +10,7 @@
 //! @hq:consumes vivim.rust-wiki-source-delta@1
 //! @hq:consumes hqkg.development-query@1
 //! @hq:consumes vivim.rust-development-projection@1
-use std::{time::Duration, sync::Arc};
+use std::{time::{Duration, Instant}, sync::Arc};
 use vivim_host_supervisor::{HostSupervisor, Readiness};
 use serde_json::json;
 use vivim_programmability_core::navigation;
@@ -67,6 +67,10 @@ struct Desktop {
     coherence_retry_ready: bool,
     source_status: String,
     wiki_query: Option<String>,
+    // Composer UI identity is not a Host source revision. It only prevents
+    // stale delayed refresh callbacks from creating redundant source reads.
+    composer_edit_epoch: u64,
+    last_wiki_observation_started: Option<Instant>,
     input: Entity<InputState>,
     _input_subscription: Option<gpui::Subscription>,
     phone_draft: Option<PhoneDraft>,
@@ -136,6 +140,30 @@ impl Desktop {
             "Wiki query exceeds 160 visible characters · no action sent".into()
         };
         cx.notify();
+        // The existing Host read path is expensive and version-bracketed.
+        // Search the current admitted Rust Wiki immediately on every edit,
+        // and schedule at most one fresh read after the typing burst settles.
+        // A superseded edit or approval must never launch a new observation.
+        self.composer_edit_epoch=self.composer_edit_epoch.wrapping_add(1);
+        let edit_epoch=self.composer_edit_epoch;
+        cx.spawn(async move |this,cx| {
+            cx.background_executor().timer(first_contact::WIKI_COMPOSER_DEBOUNCE).await;
+            let _=this.update(cx,|view,cx|{
+                let allowed=passive_read_allowed(
+                    view.busy,view.uncertain,
+                    view.review.as_ref().is_some_and(Review::needs_approval)
+                );
+                if first_contact::should_refresh_wiki_on_input(
+                    view.wiki_query.is_some(),
+                    view.composer_edit_epoch,
+                    edit_epoch,
+                    view.last_wiki_observation_started.map(|time| time.elapsed()),
+                    allowed
+                ) {
+                    view.refresh(cx);
+                }
+            });
+        }).detach();
     }
 
     /// Near-real-time, owner-authorized read-only phone viewport observation.
@@ -313,6 +341,7 @@ impl Desktop {
         self.refresh_graph(cx);
         if self.read_busy {self.refresh_pending=true;return;}
         self.read_busy=true;
+        self.last_wiki_observation_started=Some(Instant::now());
         self.refresh_pending=false;
         self.source_status="Checking owner-authorized Host source · previous read may be stale".into();
         self.visual_status="Checking Host visual · previous admission may be stale".into();
@@ -1376,7 +1405,9 @@ fn main() {
                         viewport_epoch:0,source_epoch:0,presentation_epoch:0,read_busy:false,refresh_pending:false,
                         coherence_retry_ready:true,
                         source_status:"Host source not yet observed".into(),
-                        wiki_query:None,_input_subscription:None,phone_draft:None,
+                        wiki_query:None,composer_edit_epoch:0,
+                        last_wiki_observation_started:None,
+                        _input_subscription:None,phone_draft:None,
                         phone_status:"Waiting for owner-authorized phone observation".into(),
                         status:"First Contact ready · type to explore your Wiki".into(),overview:None,visual:None,vec_view:None,visual_status:"Not yet observed".into(),visual_guard:RevisionGuard::default(),wiki_guard:WikiRevisionGuard::default(),wiki_delta:"Not yet observed".into(),wiki_events:Vec::new(),detail:String::new(),
                         review:None,last_plan:None,busy:false,uncertain:false,
