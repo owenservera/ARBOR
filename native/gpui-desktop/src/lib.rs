@@ -3,6 +3,7 @@
 //! @hq:consumes vivim.rust-wiki-read-model@1
 //! Native adapter for the canonical VIVIM Host. No local journal or dispatcher.
 pub mod control;
+pub mod desktop_capture;
 pub mod desktop_menu;
 pub mod desktop_settings;
 pub mod first_contact;
