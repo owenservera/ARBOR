@@ -7,7 +7,7 @@ import http from 'node:http';
 import { generateKeyPairSync, sign, randomBytes } from 'node:crypto';
 import { createBootstrapRuntime } from '../bootstrap/runtime.mjs';
 import { createOnboardingService } from '../onboarding/service.mjs';
-import { createStudioPort, DEFAULT_STUDIO_ORIGIN } from '../onboarding/studio-port.mjs';
+import { createStudioPort, defaultStudioOrigin } from '../onboarding/studio-port.mjs';
 import { detectEnvironment } from '../onboarding/environment.mjs';
 import { createHostServer } from '../server.mjs';
 import { createEnrollment } from '../apk/enrollment.mjs';
@@ -107,7 +107,8 @@ test('environment detection finds the browser on each platform and never invents
 });
 
 test('studio port only talks to a loopback HTTP origin', () => {
-  assert.equal(DEFAULT_STUDIO_ORIGIN, 'http://127.0.0.1:38787', 'matches the Studio CLI relay default');
+  assert.equal(defaultStudioOrigin('win32'), 'http://127.0.0.1:38730', 'matches existing Windows VIVIM.ps1 launcher');
+  assert.equal(defaultStudioOrigin('linux'), 'http://127.0.0.1:38787', 'matches existing Studio relay default');
   for (const bad of ['https://127.0.0.1:7878', 'http://example.com', 'http://user:pw@127.0.0.1:7878', 'nope'])
     assert.throws(() => createStudioPort({ url: bad }), /loopback/);
   assert.ok(createStudioPort({ url: 'http://127.0.0.1:7878' }));
