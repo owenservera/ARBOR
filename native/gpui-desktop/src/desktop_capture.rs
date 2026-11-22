@@ -37,6 +37,36 @@ pub fn save_diagnostics(summary:&str)->io::Result<PathBuf>{
     stream.sync_all()?;
     Ok(file)
 }
+
+/// Native, metadata-only directory inspection. Borrow the useful bounded
+/// filesystem-observation behavior from Desktop Commander, not its MCP server.
+/// Only an explicitly chosen VIVIM-owned directory is passed by the caller.
+/// No path names, file contents, symlink traversal, or user-home enumeration.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct DirectoryObservation {
+    pub regular_files: u32,
+    pub total_bytes: u64,
+    pub truncated: bool,
+}
+pub fn inspect_owned_directory(dir: &std::path::Path) -> io::Result<DirectoryObservation> {
+    const MAX_ENTRIES: usize = 256;
+    let meta = fs::symlink_metadata(dir)?;
+    if meta.file_type().is_symlink() || !meta.is_dir() {
+        return Err(io::Error::new(io::ErrorKind::InvalidInput, "INSPECTION_ROOT_NOT_DIRECTORY"));
+    }
+    let mut result = DirectoryObservation { regular_files: 0, total_bytes: 0, truncated: false };
+    for (index, item) in fs::read_dir(dir)?.enumerate() {
+        if index >= MAX_ENTRIES { result.truncated = true; break; }
+        let item = item?;
+        let kind = fs::symlink_metadata(item.path())?;
+        // Inspect only direct, regular entries; never traverse links or folders.
+        if !kind.is_file() || kind.file_type().is_symlink() { continue; }
+        result.regular_files += 1;
+        result.total_bytes = result.total_bytes.saturating_add(kind.len());
+    }
+    Ok(result)
+}
+
 #[cfg(windows)]
 pub fn capture_window_png()->io::Result<PathBuf>{
     let (width,height,rgba)=win::capture_own_window()?;
@@ -201,6 +231,20 @@ mod tests {
             assert!(screenshot_dir().unwrap().starts_with(&root));
             assert!(diagnostics_dir().unwrap().starts_with(&root));
         }
+    }
+    #[test]
+    fn bounded_inspection_is_metadata_only_and_rejects_files() {
+        let base=std::env::temp_dir().join(format!("vivim-inspect-{}",std::process::id()));
+        let _=fs::remove_dir_all(&base);
+        fs::create_dir(&base).unwrap();
+        let file=base.join("private-name-not-reported.txt");
+        fs::write(&file,b"secret").unwrap();
+        let observation=inspect_owned_directory(&base).unwrap();
+        assert_eq!(observation,DirectoryObservation{
+            regular_files:1,total_bytes:6,truncated:false
+        });
+        assert!(inspect_owned_directory(&file).is_err());
+        fs::remove_dir_all(&base).unwrap();
     }
     #[test]
     fn report_has_explicit_bounded_content(){
