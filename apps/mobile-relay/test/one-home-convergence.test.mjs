@@ -35,5 +35,8 @@ test('home does not bypass existing Host grants or auto-repeat an uncertain send
   assert.match(app,/resumeDeviceSession\(transport\)/);
   assert.match(app,/S\.paired = paired/);
   assert.match(app,/if \(!S\.paired && !HOST_PREVIEW && !FIRST_CONTACT\)/);
-  assert.doesNotMatch(app,/function showHomeWithoutGrant\(\)[\s\S]*?\n\}/g,);
+  const source=app.slice(app.indexOf('function showHomeWithoutGrant()'),
+    app.indexOf(" $('connect-pc').addEventListener".trim()));
+  assert.ok(source.includes("$('app').hidden = false"));
+  assert.doesNotMatch(source,/\bfetch\(|\bapi\(|\bexecute\(|\bsend\(/);
 });
