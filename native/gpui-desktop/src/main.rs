@@ -879,7 +879,15 @@ impl Desktop {
     fn save_developer_diagnostics(&mut self,cx:&mut Context<Self>) {
         let host=self.supervisor.snapshot();
         let report=format!(
-            "VIVIM GPUI native diagnostic snapshot\\n\\nrenderer=gpui\\nmenu=Developer\\n             host_readiness={:?}\\nhost_runtime={:?}\\nhost_pid={:?}\\n             host_recoveries={}\\nsource_epoch={}\\nviewport_px={}\\n             wiki_source_available={}\\nwiki_revision={}\\nwiki_pages={}\\n             phone_source_available={}\\nvisual_source_available={}\\n             review_pending={}\\nuncertain_effect={}\\n",
+            concat!(
+                "VIVIM GPUI native diagnostic snapshot\n\n",
+                "renderer=gpui\nmenu=Developer\n",
+                "host_readiness={:?}\nhost_runtime={:?}\nhost_pid={:?}\n",
+                "host_recoveries={}\nsource_epoch={}\nviewport_px={}\n",
+                "wiki_source_available={}\nwiki_revision={}\nwiki_pages={}\n",
+                "phone_source_available={}\nvisual_source_available={}\n",
+                "review_pending={}\nuncertain_effect={}\n"
+            ),
             host.readiness,host.origin,host.pid,host.recoveries,
             self.source_epoch,self.viewport_px,
             self.overview.is_some(),
