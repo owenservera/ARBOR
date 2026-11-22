@@ -138,10 +138,43 @@ pub fn project_composer_meaning(response: &Value) -> Result<Option<ComposerMeani
                 .filter(|s|matches!(*s,"source_wired"|"verified"|
                     "adapter_pending"|"enforcement_missing"|"unsupported"))
                 .ok_or(ReadError::InvalidProjection)?;
+            // Display the Host's typed argument binding; do not infer slots,
+            // reparse user prose, or create a second native command grammar.
+            // Bounded, inert preview: long values are visibly abbreviated.
+            let args=response["candidate"]["args"].as_object()
+                .ok_or(ReadError::InvalidProjection)?;
+            if args.len()>12 { return Err(ReadError::InvalidProjection); }
+            let mut fields=Vec::new();
+            for (key, value) in args {
+                if key.is_empty() || key.len()>96 ||
+                    !key.bytes().all(|b|b.is_ascii_lowercase()||b.is_ascii_digit()||
+                        matches!(b,b'.'|b'_'|b'-')) {
+                    return Err(ReadError::InvalidProjection);
+                }
+                let text=value.as_str().filter(|v|
+                    !v.is_empty() && v.encode_utf16().count()<=1000 &&
+                    !v.chars().any(char::is_control))
+                    .ok_or(ReadError::InvalidProjection)?;
+                if fields.len()<3 {
+                    // Higher-risk arguments can contain private instructions;
+                    // expose only slot presence, never duplicate their text.
+                    let shown=if matches!(risk,"R2"|"R3") {
+                        "[supplied]".to_owned()
+                    } else {
+                        let brief:String=text.chars().take(48).collect();
+                        if text.chars().count()>48 {format!("{brief}…")} else {brief}
+                    };
+                    fields.push(format!("{key}={shown}"));
+                }
+            }
+            let arg_hint=if args.is_empty(){String::new()}else{
+                format!(" · arguments: {}{}",
+                    fields.join(", "),if args.len()>3{" …"}else{""})
+            };
             let hint=if matches!(readiness,"source_wired"|"verified") {
-                if risk=="R0" {format!("Recognized: {id} · read-only interpretation")}
-                else {format!("Recognized: {id} · {risk} · submit for a separate approved plan")}
-            } else {format!("Recognized but unavailable: {id} · {readiness}")};
+                if risk=="R0" {format!("Recognized: {id}{arg_hint} · read-only interpretation")}
+                else {format!("Recognized: {id}{arg_hint} · {risk} · submit for a separate approved plan")}
+            } else {format!("Recognized but unavailable: {id}{arg_hint} · {readiness}")};
             Ok(Some(ComposerMeaning {
                 outcome:outcome.into(),action_id:Some(id.into()),
                 risk:Some(risk.into()),hint
@@ -250,7 +283,20 @@ mod tests {
                 "action":{"id":"wiki.page.create","risk":"R1","readiness":"source_wired"}}});
         let meaning=project_composer_meaning(&p).unwrap().unwrap();
         assert_eq!(meaning.action_id.as_deref(),Some("wiki.page.create"));
+        assert!(meaning.hint.contains("arguments: page=notes"));
         assert!(meaning.hint.contains("separate approved plan"));
+        let mut invalid=p.clone();
+        invalid["candidate"]["args"]=json!({"page":["malformed"]});
+        assert!(project_composer_meaning(&invalid).is_err());
+        invalid=p.clone();
+        invalid["candidate"]["args"]=json!({"page":"has\\ncontrol"});
+        assert!(project_composer_meaning(&invalid).is_err());
+        invalid=p.clone();
+        invalid["candidate"]["args"]=json!({"page":"private instruction"});
+        invalid["composer"]["action"]["risk"]=json!("R2");
+        let hidden=project_composer_meaning(&invalid).unwrap().unwrap();
+        assert!(hidden.hint.contains("page=[supplied]"));
+        assert!(!hidden.hint.contains("private instruction"));
         let mut fake=p.clone();fake["composer"]["action"]["id"]=json!("wiki.page.move");
         assert!(project_composer_meaning(&fake).is_err());
         fake=p.clone();fake["composer"]["authority"]=json!("Host");
