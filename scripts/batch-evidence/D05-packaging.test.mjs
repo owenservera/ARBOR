@@ -145,7 +145,13 @@ test('D05: the frozen manifest detects an edited installed file', t => {
     'manifest must hash real payload files, verified ' + untouched.checks.manifestFilesVerified);
 
   const victim = path.join(base, 'native', 'bin', 'hqkg-personal.exe');
-  writeFileSync(victim, readFileSync(victim, 'utf8') + 'tampered\n');
+  // Keep the byte count unchanged so this actually proves the digest check,
+  // not merely the earlier length fence.
+  const original = readFileSync(victim, 'utf8');
+  const altered = original.replace('synthetic', 'SYNTHETIC');
+  assert.notEqual(altered, original);
+  assert.equal(Buffer.byteLength(altered), Buffer.byteLength(original));
+  writeFileSync(victim, altered);
   const tampered = verifyStagedRuntime(base, { manifest });
   assert.equal(tampered.ok, false);
   assert.ok(tampered.problems.includes('runtime file does not match the frozen manifest: native/bin/hqkg-personal.exe'),
