@@ -733,6 +733,14 @@ fn validate_native_program(request: serde_json::Value) -> serde_json::Value {
 }
 
 fn main() {
+    // Retired competing Windows WebView shell. The ONLY default desktop UI is
+    // the source-pinned Rust GPUI application. Keep this source for deliberate
+    // rollback/migration analysis, but never open an old browser-like surface
+    // or start a second Host as an accidental developer/customer entrypoint.
+    if std::env::var("VIVIM_LEGACY_TAURI_ALLOW").as_deref() != Ok("1") {
+        eprintln!("TAURI_UI_RETIRED: Launch the native GPUI VIVIM application.");
+        return;
+    }
     tauri::Builder::default()
         .manage(Arc::new(HostProcess::new()))
         .setup(|app| {
