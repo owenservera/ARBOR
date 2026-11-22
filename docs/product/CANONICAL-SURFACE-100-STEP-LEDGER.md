@@ -180,6 +180,6 @@
 ### R002 native/VLANG development cycle — 2026-11-22
 
 - [Exact source commits, unit-test receipts and unresolved native acceptance](DEV-CYCLE-NATIVE-VLANG-R002-20261122.md).
-- Verified isolated Windows source `e3f8b0d`: **43/43 GPUI Rust library tests PASS** and **26/26 deterministic Host/VLANG tests PASS**; node-native subchecks remain UNRUN.
-- Newer `main` commits harden the native screenshot inspector and show model-free no-match/refusal feedback. **Latest-SHA build, physical GPUI typing, and Android parity remain UNVERIFIED** until tests prove otherwise.
+- Verified exact source `4a26454` on isolated Windows: **45/45 GPUI Rust library tests PASS** and **27/27 deterministic Host/VLANG tests PASS**; node-native subchecks remain UNRUN.
+- The latest native source and model-free feedback are library-test verified at `4a26454`; **desktop-feature compilation was interrupted without pass**, and physical GPUI typing, native menu painting, and Android parity remain UNVERIFIED.
 - CI startup failure (zero jobs) is NOT a source test failure or pass. Preserve the existing launcher, phone URL and dirty local development workspace.
