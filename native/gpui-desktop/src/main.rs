@@ -791,13 +791,23 @@ impl Render for Desktop {
         // ONE canonical First Contact surface. The former five-panel GPUI
         // diagnostics remain internal source, never a competing product home.
         if self.panel==Panel::FirstContact {
-            let mut wiki=div().flex().flex_col().gap_2();
-            if let Some(data)=&self.overview {
-                wiki=wiki.child(div().text_lg().child(format!(
-                    "AutoWiki · revision {}",data.wiki_revision
-                )));
-                if let Some(query)=&self.wiki_query {
-                    let source=wiki_read::WikiRead{
+            // First Contact matches the proven Direct PWA empty-state contract:
+            // a blank graphite canvas, one bottom composer, no diagnostics.
+            // Host supervision, phone observation and Wiki reads still run,
+            // but never create visible panels before the owner begins typing.
+            let mut surface=div().size_full()
+                .bg(rgb(0x111214)).text_color(rgb(0xeeece7))
+                .flex().flex_col().p_4().gap_2()
+                .child(div().flex_1());
+
+            // AutoWiki is contextual, just like the Direct PWA. Empty text
+            // must not render a Wiki header, revision log or error panel.
+            if let Some(query)=&self.wiki_query {
+                let mut wiki=div().flex().flex_col().gap_2().p_3()
+                    .bg(rgb(0x181a1e)).rounded(px(14.))
+                    .border_1().border_color(rgb(0x41444b));
+                if let Some(data)=&self.overview {
+                    let read=wiki_read::WikiRead{
                         revision:data.wiki_revision,digest:data.wiki_digest.clone(),
                         pages_total:data.wiki_page_total,pages:data.wiki_content.clone(),
                         captures:data.wiki_captures.clone(),
@@ -805,50 +815,41 @@ impl Render for Desktop {
                         indexed_pages:data.wiki_indexed_pages,
                         index_truncated:data.wiki_index_truncated,
                     };
-                    if let Some(found)=wiki_read::search_view(&source,query,24) {
-                        wiki=wiki.child(format!(
-                            "{} matching Wiki sections for “{}”",found.matches,query
-                        ));
+                    if let Some(found)=wiki_read::search_view(&read,query,24) {
+                        wiki=wiki.child(div().text_sm().child(format!(
+                            "AutoWiki · {} matches · revision {}",
+                            found.matches,found.revision
+                        )));
                         for hit in &found.hits {
-                            wiki=wiki.child(div().p_3().bg(rgb(0x202b3a))
+                            wiki=wiki.child(div().p_2()
+                                .border_t_1().border_color(rgb(0x353740))
                                 .child(format!("{}{}",hit.page,
                                     hit.section.as_ref().map(|s|format!(" / {s}")).unwrap_or_default()))
                                 .child(div().text_sm().child(hit.excerpt.clone())));
                         }
                         if found.hits.is_empty() {
-                            wiki=wiki.child("No matches in the current source-backed Wiki");
+                            wiki=wiki.child(div().text_sm().child("No matching Wiki sections"));
                         }
                     } else {
-                        wiki=wiki.child("Wiki search is not available for this query");
+                        wiki=wiki.child(div().text_sm().child("Wiki search unavailable for this query"));
                     }
                 } else {
-                    wiki=wiki.child("Start typing to explore your existing Wiki");
+                    wiki=wiki.child(div().text_sm().child(
+                        "AutoWiki source unavailable · no cached results shown"
+                    ));
                 }
-            } else {
-                wiki=wiki.child(div().text_lg().child("AutoWiki"))
-                    .child(self.source_status.clone());
+                surface=surface.child(div().w_full().flex().justify_center()
+                    .child(div().w_full().max_w(px(790.)).max_h(px(350.))
+                        .overflow_y_scroll().child(wiki)));
             }
-            let mut phone=div().flex().flex_col().gap_1().p_3().bg(rgb(0x202b3a))
-                .child(div().font_semibold().child("Live phone viewport"));
-            if let Some(draft)=&self.phone_draft {
-                phone=phone.child(format!(
-                    "Host revision {} · source {} · {}",
-                    draft.system_revision,draft.source_revision,
-                    if draft.composing {"typing"} else {"current"}
-                )).child(div().p_2().child(draft.text.clone()));
-            } else {
-                phone=phone.child(self.phone_status.clone());
-            }
-            return div().size_full().bg(rgb(0x151b24)).text_color(rgb(0xe6edf3))
-                .flex().flex_col().p_5().gap_3()
-                .child(div().text_xl().child("VIVIM"))
-                .child(div().text_sm().child("One live surface · Native GPUI"))
-                .child(self.supervisor.snapshot().label())
-                .child(Input::new(&self.input))
-                .child(div().text_sm().child(self.status.clone()))
-                .child(phone)
-                .child(div().id("first-contact-wiki").flex_1().min_h_0()
-                    .overflow_y_scroll().child(wiki));
+
+            // There is no separate native dashboard, toolbar, phone mirror
+            // panel, browser frame or Send action in the first empty screen.
+            return surface.child(div().w_full().flex().justify_center()
+                .child(div().w_full().max_w(px(760.)).p_2()
+                    .bg(rgb(0x212327)).rounded(px(22.))
+                    .border_1().border_color(rgb(0x50525a))
+                    .child(Input::new(&self.input).appearance(false).w_full())));
         }
         let mut body = div().flex().flex_col().gap_3()
             .child(div().text_sm().child(self.source_status.clone()));
