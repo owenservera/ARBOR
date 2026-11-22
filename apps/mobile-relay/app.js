@@ -565,6 +565,7 @@ function surfaceContext() {
 }
 function goTab(tab) {
   if (!tab || !TABS.includes(tab)) return;
+  if (tab === 'today') void readDeliveryStamp();
   // Leaving World stops an in-flight media open or current native playback.
   // The Host has to release temporary stream access, not just hide the video.
   if (S.tab === 'world' && tab !== 'world' && playerActive) stopMediaPlayer();
@@ -3020,7 +3021,7 @@ document.addEventListener('vivim:wiki-committed', () => {
   dockAssist?.reset();compose?.resetAssist?.();
   if (S.tab === 'wiki') void refreshWiki();
 });
-window.addEventListener('vivim:bootstrap-refresh', () => { S.statusAt = 0; if (S.paired) refresh(); });
+window.addEventListener('vivim:bootstrap-refresh', () => { S.statusAt = 0; void readDeliveryStamp(); if (S.paired) refresh(); });
 
 if (!HOST_PREVIEW && 'serviceWorker' in navigator) {
   // The installed Android PWA must adopt newly deployed Host shell assets.
@@ -3062,7 +3063,6 @@ if (!HOST_PREVIEW && 'serviceWorker' in navigator) {
 }
 mountUniversalDock();
 void readDeliveryStamp();
-setInterval(() => { if (!document.hidden) void readDeliveryStamp(); }, 60000);
 mountFirstWiki();
 startFirstWikiSourceObserver();
 // A visual acknowledgment is shown ONLY after the existing Host has verified
