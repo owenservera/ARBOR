@@ -46,6 +46,7 @@ pub enum Intent {
     CaptureWindow,
     OpenScreenshotsFolder,
     SaveDiagnostics,
+    InspectSurfaces(Section),
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Item {
@@ -63,6 +64,7 @@ use Intent::*;
 pub const FILE: &[Item] = &[
     Item::new("file-first-contact", "First Contact", Navigate(FirstContact)),
     Item::new("file-refresh", "Refresh sources", RefreshSources),
+    Item::new("file-workspace-migration", "Workspace / Drive migration", InspectSurfaces(Section::File)),
 ];
 pub const EDIT: &[Item] = &[
     Item::new("edit-focus", "Focus composer", FocusComposer),
@@ -72,12 +74,14 @@ pub const VIEW: &[Item] = &[
     Item::new("view-home", "First Contact", Navigate(FirstContact)),
     Item::new("view-wiki", "Wiki inspector", Navigate(WikiInspector)),
     Item::new("view-devices", "Phone and devices", Navigate(Devices)),
+    Item::new("view-shared-surface-migration", "Shared surface parity", InspectSurfaces(Section::View)),
 ];
 pub const TOOLS: &[Item] = &[
     Item::new("tools-host", "Host status", Navigate(HostStatus)),
     Item::new("tools-build", "Build / VEC", Navigate(Build)),
     Item::new("tools-graph", "Knowledge graph", Navigate(KnowledgeGraph)),
     Item::new("tools-decisions", "Host decisions", Navigate(HostDecisions)),
+    Item::new("tools-legacy-migration", "Studio / Host migration", InspectSurfaces(Section::Tools)),
 ];
 pub const DEVELOPER: &[Item] = &[
     Item::new("developer-home", "Developer tools", Navigate(DeveloperTools)),
@@ -90,9 +94,11 @@ pub const DEVELOPER: &[Item] = &[
     Item::new("developer-vec", "Inspect visual compiler", Navigate(Build)),
     Item::new("developer-graph", "Inspect knowledge graph", Navigate(KnowledgeGraph)),
     Item::new("developer-phone", "Inspect phone state", Navigate(Devices)),
+    Item::new("developer-surfaces", "All UI source surfaces", InspectSurfaces(Section::Developer)),
 ];
 pub const SETTINGS: &[Item] = &[
     Item::new("settings-preferences", "Preferences…", Navigate(Preferences)),
+    Item::new("settings-onboarding-migration", "Onboarding migration", InspectSurfaces(Section::Settings)),
 ];
 pub const HELP: &[Item] = &[
     Item::new("help-about", "About VIVIM", Navigate(About)),
@@ -147,9 +153,10 @@ mod tests {
         assert!(all.contains(&CaptureWindow));
         assert!(all.contains(&OpenScreenshotsFolder));
         assert!(all.contains(&SaveDiagnostics));
+        assert!(all.contains(&InspectSurfaces(Section::Developer)));
         assert!(all.iter().all(|intent| matches!(
             intent, Navigate(_) | RefreshSources | FocusComposer | ClearComposer |
-                CaptureWindow | OpenScreenshotsFolder | SaveDiagnostics
+                CaptureWindow | OpenScreenshotsFolder | SaveDiagnostics | InspectSurfaces(_)
         )));
     }
 }
