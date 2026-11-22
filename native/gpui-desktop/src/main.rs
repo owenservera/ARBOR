@@ -1210,6 +1210,48 @@ impl Desktop {
     }
 }
 
+
+fn native_source_inventory(group:Section)->AnyElement {
+    // Render source metadata only. No second web view or operational authority.
+    // Isolated from Desktop::render so even a very large donor catalog does not
+    // enlarge the native Windows event/render frame when First Contact is shown.
+    let all=group==Section::Developer;
+    let rows=surface_registry::SURFACES.iter().filter(|row|
+        all || row.placement.label()==group.label()
+    ).collect::<Vec<_>>();
+    let donors=surface_registry::DONOR_SURFACES.iter().filter(|row|
+        all || row.target_menu.label()==group.label()
+    ).collect::<Vec<_>>();
+    let mut panel=div().flex().flex_col().gap_1()
+        .child(div().text_lg().child(format!(
+            "UI consolidation · {} · {} source entries",
+            if all {"All menu groups"}else{group.label()},rows.len()
+        )))
+        .child(div().text_sm().child(
+            "One GPUI local window + one shared phone PWA. Legacy pages are migration inputs, NOT functioning native features until ported. Retired references never launch."
+        ));
+    for row in rows {
+        panel=panel.child(div().p_1().child(format!(
+            "{} · {} → {} · {}",
+            row.id,row.source,row.placement.label(),row.disposition.label()
+        )));
+    }
+    panel=panel
+        .child(div().text_lg().child(format!(
+            "Donor-only reference pages · {}",donors.len()
+        )))
+        .child(div().text_sm().child(
+            "Donor repositories are source material. No donor browser UI is mounted or relaunched."
+        ));
+    for row in donors {
+        panel=panel.child(div().p_1().child(format!(
+            "{} · {} → {} · donor-only",
+            row.repo,row.source,row.target_menu.label()
+        )));
+    }
+    panel.into_any_element()
+}
+
 impl Render for Desktop {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         // The integrated GPUI caption is the sole Windows application chrome,
@@ -1306,40 +1348,9 @@ impl Render for Desktop {
                                 v.surface_group=Some(Section::Developer);cx.notify();
                             })));
                     if let Some(group)=self.surface_group {
-                        // The single local window owns this inventory. It is
-                        // source classification, not a fake native parity claim.
-                        let all=group==Section::Developer;
-                        let rows=surface_registry::SURFACES.iter().filter(|row|
-                            all || row.placement.label()==group.label()
-                        ).collect::<Vec<_>>();
-                        page=page.child(div().text_lg().child(format!(
-                            "UI consolidation · {} · {} source entries",
-                            if all {"All menu groups"}else{group.label()},rows.len()
-                        )))
-                        .child(div().text_sm().child(
-                            "One GPUI local window + one shared phone PWA. Legacy pages are migration inputs, NOT functioning native features until ported. Retired references never launch."
-                        ));
-                        for row in rows {
-                            page=page.child(div().p_1().child(format!(
-                                "{} · {} → {} · {}",
-                                row.id,row.source,row.placement.label(),row.disposition.label()
-                            )));
-                        }
-                        let donors=surface_registry::DONOR_SURFACES.iter().filter(|r|
-                            all || r.target_menu.label()==group.label()
-                        ).collect::<Vec<_>>();
-                        page=page.child(div().text_lg().child(format!(
-                            "Donor-only reference pages · {}",donors.len()
-                        )))
-                        .child(div().text_sm().child(
-                            "Donor repositories are source material. No donor browser UI is mounted or relaunched."
-                        ));
-                        for row in donors {
-                            page=page.child(div().p_1().child(format!(
-                                "{} · {} → {} · donor-only",
-                                row.repo,row.source,row.target_menu.label()
-                            )));
-                        }
+                        // Box inventory rendering outside the massive main
+                        // GPUI render frame. Windows' default stack is small.
+                        page=page.child(native_source_inventory(group));
                     }
                 }
                 Panel::About=>{
