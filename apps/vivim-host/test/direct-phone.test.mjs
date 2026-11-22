@@ -210,40 +210,18 @@ test('direct phone authenticates proxy, bounds routes and uses the shared queue'
   const designId = JSON.parse(activated.body).id;
   assert.deepEqual(bridge.get(designId).proposal, design.proposal, 'exact UI proposal survives Direct ingress');
   assert.equal(runtime.uiRevision(), null, 'queue submission is not a committed revision');
-  assert.equal(worker.tick()[0].status, 'done');
-  assert.equal(worker.tick().length, 0, 'claimed proposal is never automatically repeated');
-  const completed = JSON.parse((await call('/mobile/api/relay?path=commands%2F' + designId)).body);
-  const designCommitProof = committedUiRevision(completed, beforeSurface);
-  const committed = JSON.parse((await call('/mobile/api/relay?path=status')).body).snapshot.bootstrap.uiRevision;
-  assert.equal(committed.revision, 1);
-  assert.equal(committed.surface.tree.children[0].id, 'vec.card.research');
-  assert.equal(committed.surface.tree.children[0].props.title, 'Research');
-  assert.equal(matchesCommittedUiReadback(designCommitProof, design.preview.surface, committed.surface), true);
-  // Reopen the actual persistent ledger; no synthetic browser projection.
-  const reopened = createBootstrapRuntime({ dataRoot: root });
-  try { assert.deepEqual(reopened.uiRevision(), committed.surface); }
-  finally { reopened.close(); }
-
-  const undo = buildUndoProposal({ original: design, before: beforeSurface, committed: designCommitProof, live: committed.surface });
-  assert.ok(undo);
-  const undoQueued = await postDesign(undo);
-  assert.equal(undoQueued.status, 201);
-  const undoId = JSON.parse(undoQueued.body).id;
-  assert.equal(worker.tick()[0].status, 'done');
-  const undoResult = JSON.parse((await call('/mobile/api/relay?path=commands%2F' + undoId)).body);
-  const undoProof = committedUiRevision(undoResult, committed.surface);
-  const restored = JSON.parse((await call('/mobile/api/relay?path=status')).body).snapshot.bootstrap.uiRevision;
-  assert.equal(restored.revision, 2);
-  assert.equal(matchesCommittedUiReadback(undoProof, undo.preview.surface, restored.surface), true);
-  assert.deepEqual(restored.surface.tree.children, []);
-  const reopenedAfterUndo = createBootstrapRuntime({ dataRoot: root });
-  try { assert.deepEqual(reopenedAfterUndo.uiRevision(), restored.surface); }
-  finally { reopenedAfterUndo.close(); }
-
-  const stale = await postDesign(design);
-  assert.equal(stale.status, 201);
-  assert.equal(worker.tick()[0].status, 'failed', 'Host rejects stale base revision');
-  assert.equal(runtime.uiRevision().revision, 2);
+  // The old Bootstrap relay intentionally no longer executes visual effects.
+  // Only a fresh Host Control plan with explicit owner approval may do that.
+  const refused = worker.tick();
+  assert.equal(refused.length, 1);
+  assert.equal(refused[0].status, 'failed');
+  assert.match(refused[0].reason, /Visual changes require a fresh Host control plan/);
+  assert.equal(worker.tick().length, 0, 'a refused effect is not resent');
+  const denied = JSON.parse((await call('/mobile/api/relay?path=commands%2F' + designId)).body);
+  assert.equal(denied.status, 'failed');
+  assert.equal(runtime.uiRevision(), null, 'unapproved relay effects do not change World');
+  const unchanged = JSON.parse((await call('/mobile/api/relay?path=status')).body).snapshot.bootstrap.uiRevision;
+  assert.equal(unchanged, null, 'the phone may not receive a forged committed UI revision');
   worker.close();
   // Actual Direct ingress must project only source-backed metadata, then reconcile
   // Studio claim on the next authenticated status poll. Never infer reply/delivery.
