@@ -191,7 +191,12 @@ export function createMediaLanguageService({
       source.fingerprint,targetLanguage,'es_ES-davefx-medium']));
     const jobId=identity.slice(0,32);
     const current=await status(jobId);
-    if(current){await source.handle.close();return current;}
+    if(current?.status==='ready'||current?.status==='running'){
+      await source.handle.close();return current;
+    }
+    // A failed local conversion is never an immutable receipt. Once the owner
+    // fixes or installs an engine, the same explicit gesture may retry safely.
+    if(current?.status==='failed')active.delete(jobId);
     if(!present()){await source.handle.close();throw invalid('MEDIA_LANGUAGE_ENGINE_UNAVAILABLE',503);}
     if([...active.values()].filter(x=>x.status==='running').length>=MAX_CONCURRENT){
       await source.handle.close();throw invalid('MEDIA_LANGUAGE_BUSY',429);
