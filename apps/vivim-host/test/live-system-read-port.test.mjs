@@ -89,6 +89,18 @@ test('invalid or unavailable native responses fail closed',async()=>{
     readStatus:async()=>({})});
   await assert.rejects(port.snapshot(),{code:'LIVE_SYSTEM_NATIVE_UNAVAILABLE'});
 });
+test('unpackaged Rust kernel is reported explicitly, without a fabricated live view', async()=>{
+  const port=createLiveSystemReadPort({
+    compute:async()=>({schema:'vivim.product-pure-response/1',
+      operation:'live-system',state:'unavailable',code:'NATIVE_NOT_PACKAGED',
+      authority:'none',executionAuthorized:false,effectPerformed:false}),
+    clock:()=>123456,
+    readWiki:async()=>({wiki:{revision:1,pages:{}}}),
+    readStatus:async()=>({host:{state:'online'}})
+  });
+  await assert.rejects(port.snapshot(),{code:'LIVE_SYSTEM_NATIVE_NOT_PACKAGED'});
+  await assert.rejects(port.snapshot(),{code:'LIVE_SYSTEM_NATIVE_NOT_PACKAGED'});
+});
 test('bad Wiki revision or unexpected structure is unavailable', async()=>{
   const kernel=wire();
   const port=createLiveSystemReadPort({compute:kernel.compute,
