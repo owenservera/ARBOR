@@ -11,6 +11,8 @@ const pkg=JSON.parse(readFileSync(path.join(root,'package.json'),'utf8'));
 const launcher=readFileSync(path.join(root,'tools/packaging/launch-gpui-only.ps1'),'utf8');
 const builder=readFileSync(path.join(root,'tools/packaging/build-gpui-native.ps1'),'utf8');
 const nativeDelivery=readFileSync(path.join(root,'native/gpui-desktop/src/live_delivery.rs'),'utf8');
+const tauriShell=readFileSync(path.join(root,'src-tauri/src/main.rs'),'utf8');
+const surfaceCatalog=readFileSync(path.join(root,'native/gpui-desktop/src/surface_registry.rs'),'utf8');
 
 test('Windows desktop launches native GPUI rather than a web app',()=>{
   assert.match(source,/Application::new\(\)\.run\(/);
@@ -65,4 +67,15 @@ test('live build inspection is a Rust GPUI capability inside Developer menu, not
   assert.match(nativeDelivery,/Sha256::digest\(module\)/);
   assert.match(nativeDelivery,/phone acceptance unproven/);
   assert.doesNotMatch(nativeDelivery,/webview|edge\.exe|chrome\.exe|Start-Process|post\(/i);
+});
+
+test('legacy Windows WebView is not an alternate default VIVIM local UI',()=>{
+  assert.match(tauriShell,/VIVIM_LEGACY_TAURI_ALLOW/);
+  assert.match(tauriShell,/TAURI_UI_RETIRED/);
+  assert.match(tauriShell,/tauri::Builder::default/);
+  assert.match(surfaceCatalog,/pub const PRODUCT_TABS/);
+  assert.match(surfaceCatalog,/pub const DONOR_SURFACES/);
+  assert.match(surfaceCatalog,/pub const SURFACES/);
+  assert.match(source,/dev-surface-inventory/);
+  assert.match(source,/Intent::InspectSurfaces\(section\)/);
 });
