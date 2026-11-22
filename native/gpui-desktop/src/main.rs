@@ -54,6 +54,7 @@ use vivim_gpui_desktop::desktop_menu::{self, Section, Destination, Intent};
 use vivim_gpui_desktop::desktop_settings::{self, Preferences};
 use vivim_gpui_desktop::desktop_capture;
 use vivim_gpui_desktop::live_delivery;
+use vivim_gpui_desktop::surface_registry;
 use vivim_gpui_desktop::{Overview, ReadError, ObservationTicket, passive_read_allowed, DevelopmentRevisionGuard, read_overview, read_development, control::{self, Review}, visual::{self, Visual, RevisionGuard}};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -72,6 +73,7 @@ struct Desktop {
     supervisor: Arc<HostSupervisor>,
     panel: Panel,
     menu_open: Option<Section>,
+    surface_group: Option<Section>,
     preferences: Preferences,
     preferences_status: String,
     developer_status: String,
@@ -1032,6 +1034,10 @@ impl Desktop {
             Intent::CaptureWindow=>self.capture_native_window(cx),
             Intent::OpenScreenshotsFolder=>self.open_captures_folder(cx),
             Intent::SaveDiagnostics=>self.save_developer_diagnostics(cx),
+            Intent::InspectSurfaces(section)=>{
+                self.surface_group=Some(section);
+                self.select_panel(Panel::Developer,cx);
+            },
         }
         cx.notify();
     }
@@ -1294,7 +1300,32 @@ impl Render for Desktop {
                         .child(Button::new("dev-inspect-graph").label("Knowledge graph")
                             .on_click(cx.listener(|v,_,_,cx|v.select_panel(Panel::Graph,cx))))
                         .child(Button::new("dev-inspect-devices").label("Phone observations")
-                            .on_click(cx.listener(|v,_,_,cx|v.select_panel(Panel::Devices,cx))));
+                            .on_click(cx.listener(|v,_,_,cx|v.select_panel(Panel::Devices,cx))))
+                        .child(Button::new("dev-surface-inventory").label("Inspect all UI source surfaces")
+                            .on_click(cx.listener(|v,_,_,cx|{
+                                v.surface_group=Some(Section::Developer);cx.notify();
+                            })));
+                    if let Some(group)=self.surface_group {
+                        // The single local window owns this inventory. It is
+                        // source classification, not a fake native parity claim.
+                        let all=group==Section::Developer;
+                        let rows=surface_registry::SURFACES.iter().filter(|row|
+                            all || row.placement.label()==group.label()
+                        ).collect::<Vec<_>>();
+                        page=page.child(div().text_lg().child(format!(
+                            "UI consolidation · {} · {} source entries",
+                            if all {"All menu groups"}else{group.label()},rows.len()
+                        )))
+                        .child(div().text_sm().child(
+                            "One GPUI local window + one shared phone PWA. Legacy pages are migration inputs, NOT functioning native features until ported. Retired references never launch."
+                        ));
+                        for row in rows {
+                            page=page.child(div().p_1().child(format!(
+                                "{} · {} → {} · {}",
+                                row.id,row.source,row.placement.label(),row.disposition.label()
+                            )));
+                        }
+                    }
                 }
                 Panel::About=>{
                     page=page
@@ -1626,7 +1657,7 @@ fn main() {
                 // Capture the viewport value, not the mutable Window borrowed again by Root.
                 let initial_viewport_px=viewport_for_window(window);
                 let view=cx.new(move |cx| {
-                    let mut view=Desktop {supervisor, input,panel:Panel::FirstContact,menu_open:None,
+                    let mut view=Desktop {supervisor, input,panel:Panel::FirstContact,menu_open:None,surface_group:None,
                         preferences:desktop_settings::load().unwrap_or_default(),
                         preferences_status:"Windows-only presentation preference".into(),
                         developer_status:"No developer action requested".into(),
