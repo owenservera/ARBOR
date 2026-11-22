@@ -1008,8 +1008,7 @@ impl Desktop {
         // Desktop Commander-derived native capability, folded into the existing
         // Developer report. Only metadata from VIVIM's own screenshot folder,
         // with no filenames, screenshot bytes, external process or MCP service.
-        let screenshot_observation=desktop_capture::screenshot_dir()
-            .and_then(|dir|desktop_capture::inspect_owned_directory(&dir));
+        let screenshot_observation=desktop_capture::inspect_screenshot_directory();
         let report=match screenshot_observation {
             Ok(stats)=>format!(
                 "{report}screenshot_files={}\\nscreenshot_bytes={}\\nscreenshot_scan_truncated={}\\n",
