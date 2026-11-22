@@ -71,6 +71,9 @@ struct Desktop {
     // stale delayed refresh callbacks from creating redundant source reads.
     composer_edit_epoch: u64,
     last_wiki_observation_started: Option<Instant>,
+    semantic_preview: Option<control::ComposerMeaning>,
+    semantic_busy: bool,
+    semantic_pending: bool,
     input: Entity<InputState>,
     _input_subscription: Option<gpui::Subscription>,
     phone_draft: Option<PhoneDraft>,
@@ -122,6 +125,56 @@ impl Desktop {
             });
         }).detach();
     }
+    /// Ask the existing Host NLCL/VLANG compiler for an inert reading, never
+    /// a plan. Only one request is in flight; a late answer cannot overwrite
+    /// the newest draft and the latest edit is retried after the current read.
+    fn read_composer_semantics(&mut self, cx:&mut Context<Self>) {
+        if self.wiki_query.is_none() {
+            self.semantic_preview=None;
+            self.semantic_pending=false;
+            cx.notify();
+            return;
+        }
+        let allowed=passive_read_allowed(self.busy,self.uncertain,
+            self.review.as_ref().is_some_and(Review::needs_approval));
+        if !allowed {
+            self.semantic_preview=None;
+            self.semantic_pending=false;
+            cx.notify();
+            return;
+        }
+        if self.semantic_busy {
+            self.semantic_pending=true;
+            return;
+        }
+        let text=self.input.read(cx).value().to_string();
+        let epoch=self.composer_edit_epoch;
+        self.semantic_busy=true;
+        self.semantic_pending=false;
+        let job=cx.background_executor().spawn(async move {
+            control::interpret_composer(&text)
+        });
+        cx.spawn(async move |this,cx| {
+            let result=job.await;
+            let _=this.update(cx,|view,cx| {
+                view.semantic_busy=false;
+                let allowed=passive_read_allowed(view.busy,view.uncertain,
+                    view.review.as_ref().is_some_and(Review::needs_approval));
+                if view.composer_edit_epoch==epoch && allowed &&
+                    view.wiki_query.is_some() {
+                    view.semantic_preview=result.unwrap_or(None);
+                }
+                // If typing changed while the network was in flight, never
+                // display the old meaning. Request only the newest draft.
+                let retry=view.semantic_pending && view.wiki_query.is_some()
+                    && allowed && view.composer_edit_epoch!=epoch;
+                view.semantic_pending=false;
+                if retry {view.read_composer_semantics(cx);}
+                cx.notify();
+            });
+        }).detach();
+    }
+
     /// A native input event drives the SAME Rust Wiki search as the old
     /// Edge First Contact reference. No button, provider send or Host effect.
     fn on_composer_changed(&mut self, cx: &mut Context<Self>) {
@@ -145,19 +198,38 @@ impl Desktop {
         // and schedule at most one fresh read after the typing burst settles.
         // A superseded edit or approval must never launch a new observation.
         self.composer_edit_epoch=self.composer_edit_epoch.wrapping_add(1);
+        self.semantic_preview=None;
+        if self.semantic_busy {self.semantic_pending=true;}
         let edit_epoch=self.composer_edit_epoch;
         cx.spawn(async move |this,cx| {
             cx.background_executor().timer(first_contact::WIKI_COMPOSER_DEBOUNCE).await;
+            // Run one bounded source refresh after the last edit. A recent
+            // Host read delays the refresh instead of dropping it altogether.
+            let delay=this.update(cx,|view,cx|{
+                if view.composer_edit_epoch==edit_epoch {
+                    view.read_composer_semantics(cx);
+                }
+                let allowed=passive_read_allowed(
+                    view.busy,view.uncertain,
+                    view.review.as_ref().is_some_and(Review::needs_approval)
+                );
+                first_contact::wiki_refresh_delay_on_input(
+                    view.wiki_query.is_some(),view.composer_edit_epoch,edit_epoch,
+                    view.last_wiki_observation_started.map(|instant|instant.elapsed()),
+                    allowed)
+            }).ok().flatten();
+            let Some(delay)=delay else{return;};
+            if !delay.is_zero() {
+                cx.background_executor().timer(delay).await;
+            }
             let _=this.update(cx,|view,cx|{
                 let allowed=passive_read_allowed(
                     view.busy,view.uncertain,
                     view.review.as_ref().is_some_and(Review::needs_approval)
                 );
                 if first_contact::should_refresh_wiki_on_input(
-                    view.wiki_query.is_some(),
-                    view.composer_edit_epoch,
-                    edit_epoch,
-                    view.last_wiki_observation_started.map(|time| time.elapsed()),
+                    view.wiki_query.is_some(),view.composer_edit_epoch,edit_epoch,
+                    view.last_wiki_observation_started.map(|instant|instant.elapsed()),
                     allowed
                 ) {
                     view.refresh(cx);
@@ -1166,6 +1238,16 @@ impl Render for Desktop {
                         .overflow_y_scroll().child(wiki)));
             }
 
+            // VLANG/NLCL meaning is a contextual, inert preview. The Host's
+            // existing compiler owns the interpretation, and user typing can
+            // never authorize a plan or execute an effect.
+            if let Some(meaning)=&self.semantic_preview {
+                surface=surface.child(div().w_full().flex().justify_center()
+                    .child(div().w_full().max_w(px(760.)).p_2()
+                        .bg(rgb(0x20252a)).rounded(px(12.))
+                        .child(div().text_sm().child(meaning.hint.clone()))));
+            }
+
             // There is no separate native dashboard, toolbar, phone mirror
             // panel, browser frame or Send action in the first empty screen.
             return surface.child(div().w_full().flex().justify_center()
@@ -1407,6 +1489,7 @@ fn main() {
                         source_status:"Host source not yet observed".into(),
                         wiki_query:None,composer_edit_epoch:0,
                         last_wiki_observation_started:None,
+                        semantic_preview:None,semantic_busy:false,semantic_pending:false,
                         _input_subscription:None,phone_draft:None,
                         phone_status:"Waiting for owner-authorized phone observation".into(),
                         status:"First Contact ready · type to explore your Wiki".into(),overview:None,visual:None,vec_view:None,visual_status:"Not yet observed".into(),visual_guard:RevisionGuard::default(),wiki_guard:WikiRevisionGuard::default(),wiki_delta:"Not yet observed".into(),wiki_events:Vec::new(),detail:String::new(),
