@@ -33,6 +33,7 @@ use vivim_gpui_desktop::first_contact::{self, PhoneDraft};
 use vivim_gpui_desktop::desktop_menu::{self, Section, Destination, Intent};
 use vivim_gpui_desktop::desktop_settings::{self, Preferences};
 use vivim_gpui_desktop::desktop_capture;
+use vivim_gpui_desktop::native_windows_menu;
 use vivim_gpui_desktop::{Overview, ReadError, ObservationTicket, passive_read_allowed, DevelopmentRevisionGuard, read_overview, read_development, control::{self, Review}, visual::{self, Visual, RevisionGuard}};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -917,6 +918,39 @@ impl Desktop {
         }
         cx.notify();
     }
+    fn start_native_menu(&mut self, window:&Window, cx:&mut Context<Self>) {
+        // Install on the GPUI/Win32 window thread; the native callback only
+        // queues known menu IDs. The same actions run on the main UI thread.
+        let first=native_windows_menu::install();
+        self.developer_status=match first {
+            Ok(true)=>"Win32 application menu attached".into(),
+            Ok(false)=>"Waiting for Windows application window".into(),
+            Err(e)=>format!("Native menu unavailable; GPUI fallback: {e}"),
+        };
+        cx.spawn_in(window, |this,cx| async move {
+            loop {
+                cx.background_executor().timer(Duration::from_millis(100)).await;
+                if !native_windows_menu::installed() {
+                    let result=native_windows_menu::install();
+                    if this.update_in(cx,|view,_,cx|{
+                        let status=match result {
+                            Ok(true)=>"Win32 application menu attached".into(),
+                            Ok(false)=>"Waiting for Windows application window".into(),
+                            Err(e)=>format!("Native menu unavailable; GPUI fallback: {e}"),
+                        };
+                        if view.developer_status!=status {view.developer_status=status;cx.notify();}
+                    }).is_err(){break;}
+                }
+                // Bounded drain; no synchronous Host calls or UI mutations
+                // from the Win32 WndProc callback itself.
+                for _ in 0..8 {
+                    let Some(intent)=native_windows_menu::take_command() else {break;};
+                    if this.update_in(cx,|view,window,cx|
+                        view.run_menu_intent(intent,window,cx)).is_err(){return;}
+                }
+            }
+        }).detach();
+    }
     fn surface_menu(&self, cx:&mut Context<Self>) -> AnyElement {
         let mut bar=div().w_full().flex().flex_wrap().gap_1()
             .bg(rgb(0x18191c)).border_b_1().border_color(rgb(0x303136))
@@ -949,7 +983,13 @@ impl Desktop {
 
 impl Render for Desktop {
     fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let menu=self.surface_menu(cx);
+        // GPUI's painted header is only a failsafe for platforms lacking
+        // an OS menu. Windows mounts a genuine HMENU above the canvas.
+        let menu=if native_windows_menu::installed() {
+            div().into_any_element()
+        } else {
+            self.surface_menu(cx)
+        };
         // Native PC settings and advanced tools live *outside* the shared PWA
         // canvas. Neither can become an alternate home or effect authority.
         if matches!(self.panel, Panel::Settings|Panel::Devices|Panel::Developer|Panel::About) {
@@ -1347,6 +1387,7 @@ fn main() {
                 // the Desktop entity's 'move' initializer closure.
                 view.update(cx,|desktop,cx|{
                     let input=desktop.input.clone();
+                    desktop.start_native_menu(window,cx);
                     desktop._input_subscription=Some(cx.subscribe(&input,
                         |view,_,event:&InputEvent,cx|{
                             if matches!(event,InputEvent::Change){
