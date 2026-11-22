@@ -39,6 +39,40 @@ pub struct Overview {
     pub wiki_search_index: Vec<WikiSearchDocument>,
     pub wiki_indexed_pages: usize,
     pub wiki_index_truncated: bool,
+    /// The existing Host bootstrap phone-safe ledger aggregates. Never a
+    /// personal statement, user relationship or verified fact.
+    pub oracle_progress: Option<OracleProgress>,
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct OracleProgress {
+    pub claims: u64,
+    pub observations: u64,
+    pub contradictions: u64,
+    pub complete_passes: u64,
+    pub observed_passes: u64,
+}
+/// Reuse the Host's existing bootstrap.progress; no new endpoint or local store.
+fn project_oracle_progress(bootstrap:&Value)->Result<Option<OracleProgress>,ReadError>{
+    let p=&bootstrap["progress"];
+    if p.is_null(){return Ok(None);}
+    if bootstrap["schema"]!="vivim.bootstrap-phone/1" {return Err(ReadError::InvalidProjection);}
+    let claims=p["claims"].as_u64().ok_or(ReadError::InvalidProjection)?;
+    let observations=p["observations"].as_u64().ok_or(ReadError::InvalidProjection)?;
+    let contradictions=p["contradictions"].as_u64().ok_or(ReadError::InvalidProjection)?;
+    let passes=p["passes"].as_array().ok_or(ReadError::InvalidProjection)?;
+    if passes.len()>7 {return Err(ReadError::InvalidProjection);}
+    let mut ids=std::collections::BTreeSet::new();
+    let mut complete_passes=0_u64;
+    for pass in passes {
+        let id=pass["pass"].as_str().ok_or(ReadError::InvalidProjection)?;
+        if !matches!(id,"F02"|"F01"|"D03"|"D04"|"D05"|"D06"|"D07")
+            || !ids.insert(id) || pass["status"].as_str().is_none() {
+            return Err(ReadError::InvalidProjection);
+        }
+        if pass["status"]=="complete" {complete_passes+=1;}
+    }
+    Ok(Some(OracleProgress{claims,observations,contradictions,
+        complete_passes,observed_passes:passes.len() as u64}))
 }
 
 /// The GPUI-only identity of one authorized read attempt. This does not
@@ -178,6 +212,7 @@ pub fn project(pwa: &Value, wiki: &Value) -> Result<Overview, ReadError> {
             })
         }).collect::<Result<Vec<_>, ReadError>>()?;
     let read = wiki_read::read(wiki).map_err(|_| ReadError::InvalidProjection)?;
+    let oracle_progress=project_oracle_progress(&snapshot["bootstrap"])?;
     let wiki_pages = read.pages.iter().map(|page| page.name.clone()).collect();
     let host_snapshot_digest=source_sha256(snapshot)?;
     Ok(Overview {
@@ -189,6 +224,7 @@ pub fn project(pwa: &Value, wiki: &Value) -> Result<Overview, ReadError> {
         wiki_search_index: read.search_index,
         wiki_indexed_pages: read.indexed_pages,
         wiki_index_truncated: read.index_truncated,
+        oracle_progress,
     })
 }
 
@@ -387,6 +423,27 @@ mod tests {
         assert_eq!(result.host_snapshot_digest.len(),64);
         assert_eq!(result.wiki_pages, vec!["work".to_string()]);
         assert_eq!(result.recent, vec!["wiki.page.create · applied".to_string()]);
+    }
+    #[test] fn native_oracle_progress_uses_host_ledger_metadata_only() {
+        let mut p=pwa();
+        p["snapshot"]["bootstrap"]=json!({
+            "schema":"vivim.bootstrap-phone/1",
+            "progress":{"claims":8,"observations":12,"contradictions":1,
+                "passes":[{"pass":"F02","status":"complete"},
+                          {"pass":"F01","status":"complete"},
+                          {"pass":"D03","status":"queued"}]}
+        });
+        let wiki=json!({"revision":1,"pages":{}});
+        let overview=project(&p,&wiki).unwrap();
+        let status=overview.oracle_progress.unwrap();
+        assert_eq!((status.claims,status.observations,status.contradictions),(8,12,1));
+        assert_eq!((status.complete_passes,status.observed_passes),(2,3));
+        let mut malformed=p.clone();
+        malformed["snapshot"]["bootstrap"]["progress"]["passes"][1]["pass"]=json!("F02");
+        assert_eq!(project(&malformed,&wiki),Err(ReadError::InvalidProjection));
+        malformed=p;
+        malformed["snapshot"]["bootstrap"]["progress"]["claims"]=json!("user raw chat");
+        assert_eq!(project(&malformed,&wiki),Err(ReadError::InvalidProjection));
     }
     #[test] fn fails_closed() {
         let mut p = pwa(); p["state"] = json!("unavailable");
