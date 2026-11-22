@@ -3060,9 +3060,9 @@ if (!HOST_PREVIEW && 'serviceWorker' in navigator) {
   $('text').addEventListener('input',applyUpgrade);
   setInterval(checkWorker,60000);
 }
+mountUniversalDock();
 void readDeliveryStamp();
 setInterval(() => { if (!document.hidden) void readDeliveryStamp(); }, 60000);
-mountUniversalDock();
 mountFirstWiki();
 startFirstWikiSourceObserver();
 // A visual acknowledgment is shown ONLY after the existing Host has verified
