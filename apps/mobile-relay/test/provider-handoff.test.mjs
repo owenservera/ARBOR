@@ -29,7 +29,10 @@ test('unknown, unverified and ordinary Wiki questions never become AI sends', ()
   assert.equal(resolveProviderHandoff('hello',checked),null);
   assert.equal(resolveProviderHandoff('@claude hello',[]).status,'unverified');
   assert.equal(resolveProviderHandoff('@claude hello',[{id:'claude',signedIn:false}]).status,'unverified');
-  assert.equal(resolveProviderHandoff('@qwen hello',[{id:'qwen',signedIn:true}]).status,'ready');
+  assert.equal(resolveProviderHandoff('@qwen hello',[{id:'qwen',signedIn:true}]).status,'relay-offline');
+  assert.equal(resolveProviderHandoff('@qwen hello',[{id:'qwen',signedIn:true,queueConsumerReady:false}]).status,'relay-offline');
+  assert.equal(resolveProviderHandoff('@qwen hello',[{id:'qwen',signedIn:true,queueConsumerReady:true}]).status,'ready');
+  assert.equal(resolveProviderHandoff('@qwen hello',[{id:'qwen',signedIn:false,queueConsumerReady:true}]).status,'unverified');
   assert.equal(resolveProviderHandoff('@claude hello',[{id:'claude',signedIn:'true'}]).status,'unverified');
   assert.equal(resolveProviderHandoff('@claude ' + 'x'.repeat(1001),checked),null);
 });
@@ -91,4 +94,14 @@ test('a signed-in provider with no live consumer cannot send to a dead phone que
   assert.equal(canSendVerifiedProvider(base),false);
   assert.equal(canSendVerifiedProvider({...base,projection:[{id:'chatgpt',signedIn:true,queueConsumerReady:true}]}),true);
   assert.match(readFileSync(new URL('../app.js',import.meta.url),'utf8'),/Worker offline: draft not sent/);
+});
+
+test('signed-in but worker-offline handoff keeps the draft without advertising send readiness',()=>{
+  const projected=[{id:'chatgpt',signedIn:true,queueConsumerReady:false}];
+  const handoff=resolveProviderHandoff('Ask ChatGPT: Is this live?',projected);
+  assert.equal(handoff.status,'relay-offline');
+  assert.equal(handoff.draft,'Is this live?');
+  assert.equal(handoff.sendsAutomatically,false);
+  assert.equal(canSendVerifiedProvider({paired:true,direct:true,sessionApproved:true,target:'harness',
+    providerId:'chatgpt',projection:projected,text:handoff.draft,sending:false}),false);
 });
