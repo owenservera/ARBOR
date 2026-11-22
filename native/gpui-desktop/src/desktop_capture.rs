@@ -48,10 +48,23 @@ pub struct DirectoryObservation {
     pub total_bytes: u64,
     pub truncated: bool,
 }
-pub fn inspect_owned_directory(dir: &std::path::Path) -> io::Result<DirectoryObservation> {
+/// Public read is fixed to the application's own screenshot directory:
+/// callers cannot use this observer to enumerate arbitrary host paths.
+pub fn inspect_screenshot_directory() -> io::Result<DirectoryObservation> {
+    inspect_owned_directory(&screenshot_dir()?)
+}
+#[cfg(windows)]
+fn is_windows_reparse(meta: &fs::Metadata) -> bool {
+    use std::os::windows::fs::MetadataExt;
+    meta.file_attributes() & 0x400 != 0
+}
+#[cfg(not(windows))]
+fn is_windows_reparse(_: &fs::Metadata) -> bool { false }
+
+fn inspect_owned_directory(dir: &std::path::Path) -> io::Result<DirectoryObservation> {
     const MAX_ENTRIES: usize = 256;
     let meta = fs::symlink_metadata(dir)?;
-    if meta.file_type().is_symlink() || !meta.is_dir() {
+    if meta.file_type().is_symlink() || !meta.is_dir() || is_windows_reparse(&meta) {
         return Err(io::Error::new(io::ErrorKind::InvalidInput, "INSPECTION_ROOT_NOT_DIRECTORY"));
     }
     let mut result = DirectoryObservation { regular_files: 0, total_bytes: 0, truncated: false };
@@ -60,7 +73,7 @@ pub fn inspect_owned_directory(dir: &std::path::Path) -> io::Result<DirectoryObs
         let item = item?;
         let kind = fs::symlink_metadata(item.path())?;
         // Inspect only direct, regular entries; never traverse links or folders.
-        if !kind.is_file() || kind.file_type().is_symlink() { continue; }
+        if !kind.is_file() || kind.file_type().is_symlink() || is_windows_reparse(&kind) { continue; }
         result.regular_files += 1;
         result.total_bytes = result.total_bytes.saturating_add(kind.len());
     }
