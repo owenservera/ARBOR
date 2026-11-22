@@ -19,12 +19,16 @@ function previousCommand(store, cmd, provider) {
   let previous = null, count = 0;
   for (const record of records.values()) {
     if (record.id === cmd.id) return { previous, count };
-    if (record.conversationId === cmd.conversationId && record.transport === cmd.transport && providerOf(record) === provider) { previous = record; count++; }
+    if (record.conversationId === cmd.conversationId && record.transport === cmd.transport) {
+      if (providerOf(record) !== provider) throw new Error('STUDIO_CONVERSATION_PROVIDER_CHANGED');
+      previous = record; count++;
+    }
   }
   throw new Error('BRIDGE_COMMAND_MISSING');
 }
 
-export function createStudioRelayChat({ url, store, fetchImpl = fetch, isolatedChannel = null }) {
+export function createStudioRelayChat({ url, store, fetchImpl = fetch,
+  isolatedChannel = null, channelRun = runExistingStudioChatAsk }) {
   if (isolatedChannel !== null && (typeof isolatedChannel?.root !== 'string' ||
       !Number.isSafeInteger(isolatedChannel?.port) ||
       isolatedChannel.port < 1 || isolatedChannel.port > 65535))
@@ -72,7 +76,7 @@ export function createStudioRelayChat({ url, store, fetchImpl = fetch, isolatedC
           : cmd.newChat === true ? 'new' : null;
         if (!thread) { fail('STUDIO_CHANNEL_THREAD_UNVERIFIED'); return; }
         try {
-          const result = await runExistingStudioChatAsk({
+          const result = await channelRun({
             root: isolatedChannel.root, port: isolatedChannel.port,
             requestId: key, prompt, thread
           });
