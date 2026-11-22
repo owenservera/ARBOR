@@ -129,12 +129,16 @@ impl Desktop {
     /// a plan. Only one request is in flight; a late answer cannot overwrite
     /// the newest draft and the latest edit is retried after the current read.
     fn read_composer_semantics(&mut self, cx:&mut Context<Self>) {
-        if self.wiki_query.is_none() {
+        // Wiki search has its own shorter limit. NLCL meaning can remain
+        // useful for a longer valid draft, and must never cause an effect.
+        let raw=self.input.read(cx).value().to_string();
+        let Some(text)=first_contact::composer_semantic_input(&raw) else {
             self.semantic_preview=None;
             self.semantic_pending=false;
             cx.notify();
             return;
-        }
+        };
+        let text=text.to_owned();
         let allowed=passive_read_allowed(self.busy,self.uncertain,
             self.review.as_ref().is_some_and(Review::needs_approval));
         if !allowed {
@@ -147,7 +151,6 @@ impl Desktop {
             self.semantic_pending=true;
             return;
         }
-        let text=self.input.read(cx).value().to_string();
         let epoch=self.composer_edit_epoch;
         self.semantic_busy=true;
         self.semantic_pending=false;
@@ -160,13 +163,15 @@ impl Desktop {
                 view.semantic_busy=false;
                 let allowed=passive_read_allowed(view.busy,view.uncertain,
                     view.review.as_ref().is_some_and(Review::needs_approval));
-                if view.composer_edit_epoch==epoch && allowed &&
-                    view.wiki_query.is_some() {
+                let current_semantic=first_contact::composer_semantic_input(
+                    &view.input.read(cx).value().to_string()
+                ).is_some();
+                if view.composer_edit_epoch==epoch && allowed && current_semantic {
                     view.semantic_preview=result.unwrap_or(None);
                 }
                 // If typing changed while the network was in flight, never
                 // display the old meaning. Request only the newest draft.
-                let retry=view.semantic_pending && view.wiki_query.is_some()
+                let retry=view.semantic_pending && current_semantic
                     && allowed && view.composer_edit_epoch!=epoch;
                 view.semantic_pending=false;
                 if retry {view.read_composer_semantics(cx);}
@@ -185,12 +190,14 @@ impl Desktop {
         } else if query.chars().count()<=160 && !query.chars().any(char::is_control) {
             Some(query.to_owned())
         } else { None };
-        self.status=if value.is_empty() {
+        self.status=if value.trim().is_empty() {
             "First Contact ready · type to explore your Wiki".into()
         } else if self.wiki_query.is_some() {
             "Searching the existing Host Wiki as you type · no effect sent".into()
+        } else if first_contact::composer_semantic_input(&value).is_some() {
+            "Wiki search limited to 160 characters · longer command meaning remains read-only".into()
         } else {
-            "Wiki query exceeds 160 visible characters · no action sent".into()
+            "Composer preview unavailable for this input · no effect sent".into()
         };
         cx.notify();
         // The existing Host read path is expensive and version-bracketed.
