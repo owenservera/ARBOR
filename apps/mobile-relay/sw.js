@@ -5,7 +5,7 @@
 // on the next load; the cache is only the fallback. ES5 syntax on purpose: older Android WebViews
 // can run this file, and it deliberately avoids optional chaining, nullish coalescing, arrow
 // functions and top-level await.
-var CACHE = 'vivim-relay-shell-v43';
+var CACHE = 'vivim-relay-shell-v44';
 var CACHE_PREFIX = 'vivim-relay-shell-';
 // Paths are relative to the worker's scope, so the same file serves both the Direct Host mount
 // (scope /mobile/, files at /mobile/app.js) and the cloud deployment (scope /, files at /app.js).
