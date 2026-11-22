@@ -206,6 +206,27 @@ test('projection stays bounded and carries no relationship bodies', () => {
   assert.equal(svc.ledger.stats('world-local').relationships, 1);
 });
 
+test('Oracle corpus reads grounded Host claims with provenance and excludes D06 sensitive material', () => {
+  const { svc } = service();
+  svc.ingestPass({ response: D03, requestId: 'req-corpus-d03', generationId: 'gen-d03-1', threadRef: 'chatgpt-c:test-source' });
+  svc.ingestPass({ response: {
+    schema: 'vivim.bootstrap-output/1', generationId: 'gen-corpus-d06', passId: 'D06',
+    observations: [{ category: 'relationship', text: 'Private name omitted', confidence: 0.5 }],
+    assertions: [{ section: 'relationship', label: 'Private relationship', value: 'Private personal details',
+      basis: 'provider_memory_report', confidence: 0.5, scope: 'personal', freshness: 'current' }],
+    unknowns: [], viewProposals: [], schemaProposals: [], coverage: { areas: [] }
+  }, requestId: 'req-corpus-d06', generationId: 'gen-corpus-d06' });
+  const out = svc.oracleCorpus({ limit: 10 });
+  assert.equal(out.schema, 'vivim.oracle-corpus-view/1');
+  assert.equal(out.items.length, 1);
+  assert.equal(out.items[0].pass, 'D03');
+  assert.equal(out.items[0].source.requestId, 'req-corpus-d03');
+  assert.equal(out.items[0].source.generationId, 'gen-d03-1');
+  assert.equal(out.items[0].basis, 'provider_memory_report');
+  assert.doesNotMatch(JSON.stringify(out), /Private personal details|Private name omitted/);
+  assert.throws(() => svc.oracleCorpus({ limit: 101 }), /limit/);
+});
+
 test('HTTP bootstrap mutations require the owner token, scope and a valid body', async () => {
   const dir = mkdtempSync(path.join(os.tmpdir(), 'vivim-bootstrap-'));
   const runtime = createBootstrapRuntime({ dataRoot: dir, file: ':memory:' });
@@ -221,6 +242,17 @@ test('HTTP bootstrap mutations require the owner token, scope and a valid body',
   try {
     const status = await fetch(base + '/api/host/status');
     assert.equal(status.status, 200);
+    const corpusWithoutToken = await fetch(base + '/api/host/bootstrap/corpus');
+    assert.equal(corpusWithoutToken.status, 401, 'corpus must not be publicly readable');
+    const corpusWithWrongToken = await fetch(base + '/api/host/bootstrap/corpus', { headers: { authorization: 'Bearer wrong' } });
+    assert.equal(corpusWithWrongToken.status, 401);
+    const corpusWithOwner = await fetch(base + '/api/host/bootstrap/corpus?limit=2', { headers: auth });
+    assert.equal(corpusWithOwner.status, 200);
+    assert.equal((await corpusWithOwner.json()).schema, 'vivim.oracle-corpus-view/1');
+    const corpusMalformed = await fetch(base + '/api/host/bootstrap/corpus?limit=999', { headers: auth });
+    assert.equal(corpusMalformed.status, 400);
+    const corpusCrossOrigin = await fetch(base + '/api/host/bootstrap/corpus', { headers: { ...auth, origin: 'https://evil.example' } });
+    assert.equal(corpusCrossOrigin.status, 403);
     const snapshot = await status.json();
     assert.equal(snapshot.bootstrap.state, 'ready');
     assert.equal(snapshot.bootstrap.schema, 'vivim.bootstrap-phone/1');
