@@ -1005,6 +1005,18 @@ impl Desktop {
             self.phone_draft.is_some(),self.vec_view.is_some(),
             self.review.as_ref().is_some_and(Review::needs_approval),self.uncertain
         );
+        // Desktop Commander-derived native capability, folded into the existing
+        // Developer report. Only metadata from VIVIM's own screenshot folder,
+        // with no filenames, screenshot bytes, external process or MCP service.
+        let screenshot_observation=desktop_capture::screenshot_dir()
+            .and_then(|dir|desktop_capture::inspect_owned_directory(&dir));
+        let report=match screenshot_observation {
+            Ok(stats)=>format!(
+                "{report}screenshot_files={}\\nscreenshot_bytes={}\\nscreenshot_scan_truncated={}\\n",
+                stats.regular_files,stats.total_bytes,stats.truncated
+            ),
+            Err(_)=>format!("{report}screenshot_inspection=unavailable\\n"),
+        };
         self.developer_status=match desktop_capture::save_diagnostics(&report) {
             Ok(path)=>format!("Private diagnostic report saved: {}",path.display()),
             Err(error)=>format!("Diagnostic report failed: {error}"),
