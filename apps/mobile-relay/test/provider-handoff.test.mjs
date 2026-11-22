@@ -44,7 +44,9 @@ test('same real mobile composer is reused; no new provider network or effect wri
   assert.match(host,/'provider-handoff\.mjs': \['provider-handoff\.mjs'/);
   assert.match(html,/body\.first-contact:not\(\.first-contact-provider\):not\(\.first-contact-handoff\) #send/);
   assert.match(app,/document\.body\.classList\.toggle\('first-contact-handoff'/);
-  assert.match(app,/if \(FIRST_CONTACT && !canSendVerifiedProvider\(/);
+  assert.match(app,/if \(transport\.direct && !canSendVerifiedProvider\(/);
+  // Every Direct-phone provider send now uses the same stricter gate,
+  // not only the first-contact mode.
   assert.equal((html.match(/id="chat-composer"/g)||[]).length,1);
   assert.doesNotMatch(module,/\bfetch\s*\(|\bWebSocket\s*\(|\bXMLHttpRequest\b|\.request\s*\(/);
 });
@@ -77,7 +79,9 @@ test('provider handoff preserves a selected draft and never silently retargets a
   assert.doesNotMatch(normalization,/c\.provider\s*=/);
   assert.doesNotMatch(app,/field\.value = ''; autogrow\(\);\s*switchChatTarget\('harness'\)/);
   assert.match(app,/handoff\.status === 'ready'/);
-  assert.match(app,/Selected AI not ready on your PC\. Draft preserved; nothing was sent/);
+  assert.match(app,/Selected AI not verified on your PC\. Draft preserved; nothing was sent/);
+  assert.match(app,/AI signed in; PC relay unavailable\. Draft preserved/);
+  assert.match(app,/Selected AI and PC relay ready\. Review your draft/);
   assert.match(app,/selected \? '\?provider='\+encodeURIComponent\(selected\)/);
 });
 

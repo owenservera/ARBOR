@@ -345,7 +345,8 @@ test('offline shell blocks all sends and clears private paired state',()=>{
   assert.match(app,/clearPrivatePhoneState\(\);\s*\$\('pairbox'\)\.hidden = true/);
   assert.match(app,/Offline · local PWA shell only/);
   assert.ok(app.includes("if (HOST_PREVIEW || (!S.paired && !FIRST_CONTACT)) { $('send').disabled = true; return; }"));
-  assert.ok(app.includes('if (FIRST_CONTACT && !canSendVerifiedProvider('), 'first-contact AI sends require the verified provider guard');
+  assert.ok(app.includes('if (transport.direct && !canSendVerifiedProvider('),
+    'all Direct AI sends require the verified provider and live-consumer guard');
   assert.match(app,/if \(!S\.paired && !HOST_PREVIEW\) \{/);
   assert.match(app,/window\.addEventListener\('offline'/);
   assert.match(app,/window\.addEventListener\('online'/);
