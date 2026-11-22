@@ -118,6 +118,15 @@ mod win {
     pub fn visually_ready()->bool {
         let raw=HWND.load(Ordering::Acquire);
         if raw==0 {return false;}
+        // An OS-supplied rectangle can exist even when GPUI's GPU window
+        // compositor fails to paint that region. The owner-visible GPUI
+        // app shell is the safe default. Native visual cutover requires an
+        // explicit opt-in for experimental Windows menu acceptance; ordinary
+        // startup must not silently hide the only accessible menu.
+        if std::env::var_os("VIVIM_EXPERIMENTAL_WIN32_MENU").as_deref()
+            !=Some(std::ffi::OsStr::new("1")) {
+            return false;
+        }
         // SAFETY: read-only Win32 geometry probe for the owned window.
         unsafe {
             let hwnd=raw as Handle;
