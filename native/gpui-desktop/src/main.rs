@@ -1212,8 +1212,9 @@ impl Render for Desktop {
                         .child(div().text_lg().child("Phone live composer"))
                         .child(self.phone_status.clone())
                         .child(div().text_sm().child(
-                            "To send the current PC command field draft to the phone, request an exact Host plan. This never sends while typing and needs a separate owner approval."
+                            "Edit this PC draft before requesting a Host plan. This never sends while typing and needs a separate owner approval."
                         ))
+                        .child(Input::new(&self.input))
                         .child(Button::new("devices-propose-pc-draft")
                             .label("Propose PC draft on phone · review required")
                             .on_click(cx.listener(|v,_,_,cx|v.review_phone_draft(cx))));
