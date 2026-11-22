@@ -38,3 +38,20 @@ Use the **already-working Edge First Contact release solely as the visual and be
 - Ship each migration slice through refreshed ARBOR `main` using the cloud-first ChatGPT coding rule in `AGENTS.md`; Desktop Commander is for Windows runtime observation/verification and explicitly approved post-push deployment only.
 - Tests must distinguish source integration, native compilation, deployed GPUI behavior, on-device phone behavior, and **proven** cross-viewport propagation.
 - Treat this rule as an invariant in all product planning, migration, agent handoffs and acceptance; do not silently return to an Edge-based PC UI or two independently maintained visual products.
+
+
+## Windows native application shell — TOP-LAYER RULE (owner amendment, 2026-11-22)
+
+The PC application has a **persistent top-level Windows app shell**, separate from the VIVIM product surface. The shell is the place for native PC functionality as the application grows; it must **never** become an independent second PWA-like product experience.
+
+**Hierarchy:** Windows native application chrome and menus -> one canonical PWA-parity First Contact canvas -> contextual results such as AutoWiki.
+
+- The initial main product screen remains **blank graphite with one composer**, matching the successful Edge/PWA reference. AutoWiki appears only contextually. No developer cards, Host status, phone mirror or diagnostic workspace on the empty home.
+- The PC app exposes recognizable **File, Edit, View, Tools, Developer, Settings, Help** groups. Screenshots, local evidence, Host/Wiki diagnostics, debug inspectors, connection controls and Windows-only preferences all belong to the app layer. Only explicit owner actions may capture a screenshot or write diagnostic reports.
+- Preserve **one menu hierarchy and one set of underlying actions**. Avoid another launcher, a separate diagnostic application, a second internal product surface, or a new state/effect authority.
+- PC-only capabilities can expand within the app shell while First Contact product behavior, state and semantics remain shared with the mobile PWA.
+- **Native window-level acceptance:** the menu is application-owned chrome, independent of the PWA content and persists when the product screen changes. Prefer actual Win32 window menu/title-bar integration when supported, with keyboard access and native discoverability. A GPUI-drawn header/menu is a **temporary compatibility implementation, not proof of an OS-native Windows HMENU/title bar**. The pinned GPUI 0.2.2 Windows backend stores \`set_menus\` but does not itself render Win32 menus; a verified Windows integration will be needed before asserting native system-menu parity.
+- Screenshots go to \`%LOCALAPPDATA%\\VIVIM\\Screenshots\`; diagnostics to \`%LOCALAPPDATA%\\VIVIM\\Diagnostics\`. No automatic recording; avoid secrets or private draft content in reports, and obtain explicit clicks for screenshot capture.
+- Keep the verified desktop launcher and existing phone URL stable until a built, locally captured, physically accepted native release is ready. New source builds are not automatic cutovers.
+
+This rule supersedes the previous ad-hoc "hamburger menu in the product canvas" interpretation. A menu must not be one more widget inside the canonical VIVIM phone/PWA surface.
