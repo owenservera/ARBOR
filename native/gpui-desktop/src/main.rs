@@ -30,22 +30,27 @@ fn viewport_for_window(window: &Window) -> u32 {
 
 use gpui_component::{Root, StyledExt, input::{Input, InputState, InputEvent}, button::{Button, ButtonVariants}};
 use vivim_gpui_desktop::first_contact::{self, PhoneDraft};
+use vivim_gpui_desktop::desktop_menu::{self, Section, Destination, Intent};
+use vivim_gpui_desktop::desktop_settings::{self, Preferences};
 use vivim_gpui_desktop::{Overview, ReadError, ObservationTicket, passive_read_allowed, DevelopmentRevisionGuard, read_overview, read_development, control::{self, Review}, visual::{self, Visual, RevisionGuard}};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
-enum Panel { FirstContact, Overview, Wiki, Visual, Graph, Control }
+enum Panel { FirstContact, Overview, Wiki, Visual, Graph, Control, Devices, Settings, About }
 impl Panel {
     fn label(self)->&'static str {
         match self {
             Self::FirstContact=>"First Contact",Self::Overview=>"Overview",Self::Wiki=>"Wiki",Self::Visual=>"Build",
             Self::Graph=>"Knowledge graph",Self::Control=>"Host decisions",
+            Self::Devices=>"Phone and devices",Self::Settings=>"Settings",Self::About=>"About VIVIM",
         }
     }
 }
 struct Desktop {
     supervisor: Arc<HostSupervisor>,
     panel: Panel,
-    menu_open: bool,
+    menu_open: Option<Section>,
+    preferences: Preferences,
+    preferences_status: String,
     viewport_px: u32,
     viewport_epoch: u64,
     // Invalidates reads crossing a Host effect without weakening revision guards.
@@ -212,7 +217,7 @@ impl Desktop {
     }
     fn select_panel(&mut self, panel:Panel, cx:&mut Context<Self>){
         let changed=self.panel!=panel;
-        self.menu_open=false;
+        self.menu_open=None;
         self.panel=panel;
         if changed {
             self.presentation_epoch=self.presentation_epoch.wrapping_add(1);
@@ -788,43 +793,150 @@ fn mount_node(n:&VecElement,view:&VecView)->AnyElement{
     el.into_any_element()
 }
 
-// The only visible navigation affordance is a compact menu; legacy native
-// inspection pages are secondary tools, never an alternate product home.
+// Conventional native PC menu chrome around the shared First Contact surface.
+// It is an app menu, not another product state or another UI renderer.
 impl Desktop {
-    fn surface_menu(&self, cx:&mut Context<Self>) -> AnyElement {
-        let mut menu=div().w_full().flex().flex_col().gap_1()
-            .child(div().w_full().flex().justify_end()
-                .child(Button::new("vivim-menu").label("☰")
-                    .on_click(cx.listener(|v,_,_,cx|{
-                        v.menu_open=!v.menu_open;
-                        cx.notify();
-                    }))));
-        if self.menu_open {
-            let mut items=div().flex().flex_col().gap_1().p_3()
-                .bg(rgb(0x212327)).rounded(px(12.))
-                .border_1().border_color(rgb(0x50525a))
-                .child(div().text_sm().child("VIVIM · Menu"));
-            for (key,label,panel) in [
-                ("menu-home","First Contact",Panel::FirstContact),
-                ("menu-host","Host status",Panel::Overview),
-                ("menu-wiki","Wiki inspector",Panel::Wiki),
-                ("menu-visual","Build / VEC",Panel::Visual),
-                ("menu-graph","Knowledge graph",Panel::Graph),
-                ("menu-control","Host decisions",Panel::Control),
-            ] {
-                items=items.child(Button::new(key).label(label)
-                    .on_click(cx.listener(move |v,_,_,cx|v.select_panel(panel,cx))));
+    fn run_menu_intent(&mut self, intent:Intent, window:&mut Window, cx:&mut Context<Self>) {
+        self.menu_open=None;
+        match intent {
+            Intent::Navigate(destination) => {
+                let panel=match destination {
+                    Destination::FirstContact=>Panel::FirstContact,
+                    Destination::WikiInspector=>Panel::Wiki,
+                    Destination::Devices=>Panel::Devices,
+                    Destination::HostStatus=>Panel::Overview,
+                    Destination::Build=>Panel::Visual,
+                    Destination::KnowledgeGraph=>Panel::Graph,
+                    Destination::HostDecisions=>Panel::Control,
+                    Destination::Preferences=>Panel::Settings,
+                    Destination::About=>Panel::About,
+                };
+                self.select_panel(panel,cx);
             }
-            menu=menu.child(div().w_full().flex().justify_end()
-                .child(div().w(px(250.)).child(items)));
+            Intent::RefreshSources=>self.refresh(cx),
+            Intent::FocusComposer=>{
+                self.select_panel(Panel::FirstContact,cx);
+                self.input.read(cx).focus_handle(cx).focus(window,cx);
+            }
+            Intent::ClearComposer=>{
+                self.input.update(cx,|input,cx|input.set_value("",window,cx));
+                // set_value intentionally emits no Change event; invalidate
+                // the Wiki query here instead of showing the prior draft.
+                self.on_composer_changed(cx);
+                self.select_panel(Panel::FirstContact,cx);
+            }
         }
-        menu.into_any_element()
+        cx.notify();
+    }
+    fn toggle_phone_preview(&mut self,cx:&mut Context<Self>) {
+        let next=Preferences {
+            show_phone_draft_in_devices:!self.preferences.show_phone_draft_in_devices
+        };
+        match desktop_settings::save(next) {
+            Ok(())=>{
+                self.preferences=next;
+                self.preferences_status="Saved local desktop preference".into();
+            }
+            Err(_)=>{
+                self.preferences_status="Preference could not be saved; original privacy setting retained".into();
+            }
+        }
+        cx.notify();
+    }
+    fn surface_menu(&self, cx:&mut Context<Self>) -> AnyElement {
+        let mut bar=div().w_full().flex().flex_wrap().gap_1()
+            .bg(rgb(0x18191c)).border_b_1().border_color(rgb(0x303136))
+            .child(div().p_2().text_sm().font_semibold().child("VIVIM"));
+        for section in Section::ALL {
+            bar=bar.child(Button::new(section.key()).label(section.label())
+                .on_click(cx.listener(move |view,_,_,cx|{
+                    view.menu_open=if view.menu_open==Some(section){None}else{Some(section)};
+                    cx.notify();
+                })));
+        }
+        let mut chrome=div().w_full().flex().flex_col().child(bar);
+        if let Some(section)=self.menu_open {
+            let mut entries=div().flex().flex_col().gap_1().p_2()
+                .bg(rgb(0x212327)).border_1().border_color(rgb(0x50525a))
+                .rounded(px(8.));
+            for item in desktop_menu::entries(section) {
+                let intent=item.intent;
+                entries=entries.child(Button::new(item.key).label(item.label)
+                    .on_click(cx.listener(move |view,_,window,cx|{
+                        view.run_menu_intent(intent,window,cx);
+                    })));
+            }
+            chrome=chrome.child(div().flex().justify_start()
+                .child(div().w(px(270.)).child(entries)));
+        }
+        chrome.into_any_element()
     }
 }
 
 impl Render for Desktop {
     fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let menu=self.surface_menu(cx);
+        // Native PC settings and advanced tools live *outside* the shared PWA
+        // canvas. Neither can become an alternate home or effect authority.
+        if matches!(self.panel, Panel::Settings|Panel::Devices|Panel::About) {
+            let mut page=div().flex().flex_col().gap_3()
+                .child(div().text_xl().child(self.panel.label()));
+            match self.panel {
+                Panel::Settings=>{
+                    page=page
+                        .child(div().text_lg().child("General"))
+                        .child("Startup: First Contact (the canonical PWA-style home)")
+                        .child("Renderer: native GPUI · no Edge, Chrome or WebView")
+                        .child(div().text_lg().child("Appearance"))
+                        .child("Graphite · matches the current First Contact PWA")
+                        .child(div().text_lg().child("Privacy"))
+                        .child("Phone draft contents are hidden in the PC Devices tool by default.")
+                        .child(Button::new("settings-phone-preview")
+                            .label(if self.preferences.show_phone_draft_in_devices {
+                                "Hide phone draft text in Devices"
+                            } else {
+                                "Show phone draft text in Devices"
+                            }).on_click(cx.listener(|v,_,_,cx|v.toggle_phone_preview(cx))))
+                        .child(div().text_sm().child(self.preferences_status.clone()))
+                        .child(div().text_lg().child("Connection"))
+                        .child("Host owns commands, grants, approvals, effects and receipts.")
+                        .child(Button::new("settings-reconnect")
+                            .label("Reconnect Host")
+                            .on_click(cx.listener(|v,_,_,cx|v.reconnect_host(cx))));
+                }
+                Panel::Devices=>{
+                    page=page
+                        .child(div().text_lg().child("Phone live composer"))
+                        .child(self.phone_status.clone());
+                    if let Some(phone)=&self.phone_draft {
+                        page=page.child(format!(
+                            "Host revision {} · source revision {} · {}",
+                            phone.system_revision,phone.source_revision,
+                            if phone.composing {"composing"}else{"current"}
+                        ));
+                        if self.preferences.show_phone_draft_in_devices {
+                            page=page.child(div().p_3().bg(rgb(0x212327))
+                                .child(phone.text.clone()));
+                        } else {
+                            page=page.child("Phone draft text hidden · enable it in Settings.");
+                        }
+                    }
+                }
+                Panel::About=>{
+                    page=page
+                        .child("VIVIM · Native Windows GPUI")
+                        .child("One canonical product surface, shared with the phone PWA.")
+                        .child("TierFlow capabilities migrate into the Rust/VEC/GPUI runtime.")
+                        .child("The PC menu and settings are Windows-specific chrome, not a second product.");
+                }
+                _=>{}
+            }
+            return div().size_full().bg(rgb(0x111214)).text_color(rgb(0xeeece7))
+                .flex().flex_col()
+                .child(menu)
+                .child(div().flex_1().min_h_0().overflow_y_scroll()
+                    .child(div().p_5().child(page)));
+        }
         // ONE canonical First Contact surface. The former five-panel GPUI
         // diagnostics remain internal source, never a competing product home.
         if self.panel==Panel::FirstContact {
@@ -1112,7 +1224,10 @@ fn main() {
                 // Capture the viewport value, not the mutable Window borrowed again by Root.
                 let initial_viewport_px=viewport_for_window(window);
                 let view=cx.new(move |cx| {
-                    let mut view=Desktop {supervisor, input,panel:Panel::FirstContact,menu_open:false,viewport_px:initial_viewport_px,
+                    let mut view=Desktop {supervisor, input,panel:Panel::FirstContact,menu_open:None,
+                        preferences:desktop_settings::load().unwrap_or_default(),
+                        preferences_status:"Windows-only presentation preference".into(),
+                        viewport_px:initial_viewport_px,
                         viewport_epoch:0,source_epoch:0,presentation_epoch:0,read_busy:false,refresh_pending:false,
                         coherence_retry_ready:true,
                         source_status:"Host source not yet observed".into(),
