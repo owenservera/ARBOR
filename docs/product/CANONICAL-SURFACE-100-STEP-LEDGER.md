@@ -198,7 +198,7 @@
 
 - **In existing command architecture:** `native/gpui-desktop/src/control.rs` now projects Host-typed `candidate.args` as bounded inert GPUI hints, without a second NLP grammar or LLM dependency. Risk R2/R3 values are masked; invalid fields/control characters fail closed. Source: `e4f509f`, corrected regression `1324cc2`.
 - **Verified isolated Windows tests on exact `1324cc2`:** GPUI Rust library **45/45 PASS** and four-file deterministic Host/NLP **27/27 PASS**, exit 0. These do not prove physical GUI acceptance or an active provider.
-- **Native desktop build:** verification build launched separately, outcome to be recorded in [existing R002/R004 implementation log](DEV-CYCLE-NATIVE-VLANG-R002-20261122.md). Do not promote an older binary or mark visual/phone gates complete.
+- **Native desktop build:** exact `1324cc2` `cargo build --features desktop --offline --locked` **UNVERIFIED**, deliberately terminated after 570.52 seconds while compiling Rust core; no compiler diagnostic. See [R002/R004 evidence log](DEV-CYCLE-NATIVE-VLANG-R002-20261122.md). The older `e3f8b0d` binary did build successfully, but it does not certify newer source. No launcher/phone URL change and no live-device parity claimed.
 - **No duplicate ownership:** another agent implements PC→phone handoff; this slice supplies its read-only VLANG argument projection and leaves Host effects/approvals unchanged.
 
 ## Native PC→phone draft proposal — R004 (2026-11-22)
