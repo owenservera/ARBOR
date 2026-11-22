@@ -169,7 +169,7 @@ mod tests {
         assert!(composer_semantic_input(&"🦀".repeat(500)).is_some());
         assert!(composer_semantic_input(&"🦀".repeat(501)).is_none());
         assert_eq!(composer_semantic_input("   "),None);
-        assert_eq!(composer_semantic_input("stop\\ntraffic"),None);
+        assert_eq!(composer_semantic_input("stop\ntraffic"),None);
     }
 
     #[test]
