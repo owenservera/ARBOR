@@ -66,3 +66,15 @@ test('first-contact provider Send cannot bypass pairing or provider verification
     {projection:null}
   ])assert.equal(canSendVerifiedProvider({...base,...override}),false,JSON.stringify(override));
 });
+
+// A suspended sign-in or draft cannot authorize a send or silently reroute it.
+test('provider handoff preserves a selected draft and never silently retargets an existing conversation',()=>{
+  const app=readFileSync(new URL('../app.js',import.meta.url),'utf8');
+  const normalization=app.slice(app.indexOf('function normalizeConv()'),app.indexOf('function newConv()'));
+  assert.match(normalization,/if \(!p\) return;/);
+  assert.doesNotMatch(normalization,/c\.provider\s*=/);
+  assert.doesNotMatch(app,/field\.value = ''; autogrow\(\);\s*switchChatTarget\('harness'\)/);
+  assert.match(app,/handoff\.status === 'ready'/);
+  assert.match(app,/Selected AI not ready on your PC\. Draft preserved; nothing was sent/);
+  assert.match(app,/selected \? '\?provider='\+encodeURIComponent\(selected\)/);
+});

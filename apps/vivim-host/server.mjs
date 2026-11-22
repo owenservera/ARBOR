@@ -296,11 +296,13 @@ export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path
     webMemory: opts => runtimeFor().webMemory(opts),
     chatContext: nativeContext,
     providerSnapshot: () => onboardingService.providerSnapshot(),
-    providerRefresh: async () => {
-      // Only explicit phone request; existing Studio owner owns the browser.
-      // Exactly six known providers, sequential to avoid parallel tab pressure.
-      for(const id of ['chatgpt','claude','gemini','qwen','zai','deepseek']){
-        try {await onboardingService.check(id)}catch{ /* failed check never becomes signed-in */ }
+    providerRefresh: async (selected = null) => {
+      // Studio owns the browser. An explicit selected draft checks ONLY that
+      // account; full discovery retains the existing serial six-site probe.
+      const known=['chatgpt','claude','gemini','qwen','zai','deepseek'];
+      if(selected!==null&&!known.includes(selected))throw new Error('INVALID_PROVIDER');
+      for(const id of selected===null?known:[selected]){
+        try {await onboardingService.check(id)}catch{ /* a failed probe never becomes signed-in */ }
       }
       return onboardingService.providerSnapshot();
     },

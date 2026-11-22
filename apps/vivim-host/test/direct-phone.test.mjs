@@ -21,7 +21,14 @@ test('direct phone authenticates proxy, bounds routes and uses the shared queue'
   const runtime = createBootstrapRuntime({ dataRoot: root });
   assert.equal(runtime.state, 'ready');
   let trustedPhonePresence = 0;
-  const onboarding = { phoneSeen: () => { trustedPhonePresence++; }, primary: () => null };
+  const providerChecks=[];
+  const onboarding = { phoneSeen: () => { trustedPhonePresence++; }, primary: () => null,
+    check: async id => {providerChecks.push(id);return {verified:id==='chatgpt'};},
+    providerSnapshot: () => [
+      {id:'chatgpt',label:'ChatGPT',check:{state:'ready',verified:true,observedAt:new Date().toISOString()}},
+      {id:'claude',label:'Claude',check:{state:'signed_out',verified:false,observedAt:new Date().toISOString()}}
+    ]
+  };
   // Pin an EMPTY media store. Without this the test reads the developer machine's
   // real store (C:/VIVIM/channel/vivim/torrent-store) and its assertions stop being
   // about the route contract at all.
@@ -87,6 +94,17 @@ test('direct phone authenticates proxy, bounds routes and uses the shared queue'
     method:'POST',headers:{origin,'x-vivim-ack':'1','content-type':'application/json'},
     body:JSON.stringify(falseAck)})).status,401);
   deviceHeaders={'x-vivim-grant-id':grant.grantId,'x-vivim-device-session':session.sessionId};
+  assert.equal((await call('/mobile/api/chat/providers/refresh?provider=chatgpt', {
+    method:'POST',headers:{origin,'x-vivim-providers':'1'}
+  })).status,200);
+  assert.deepEqual(providerChecks,['chatgpt'],'single-site refresh must not inspect other accounts');
+  assert.equal((await call('/mobile/api/chat/providers/refresh?provider=chatgpt&provider=claude', {
+    method:'POST',headers:{origin,'x-vivim-providers':'1'}
+  })).status,400,'ambiguous provider query must refuse before probing');
+  assert.equal((await call('/mobile/api/chat/providers/refresh?provider=chatgpt', {
+    method:'POST',headers:{origin:'https://wrong.ts.net','x-vivim-providers':'1'}
+  })).status,403,'foreign origin cannot refresh providers');
+  assert.deepEqual(providerChecks,['chatgpt']);
   const wikiRead = await call('/mobile/api/wiki');
   assert.equal(wikiRead.status, 200);
   const wiki = JSON.parse(wikiRead.body);

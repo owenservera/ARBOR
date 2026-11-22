@@ -493,7 +493,13 @@ export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'wo
         if(req.headers.origin!==origin||req.headers['x-vivim-providers']!=='1')
           throw failure(403,'ORIGIN_OR_CSRF');
         if(typeof providerRefresh!=='function')throw failure(503,'STUDIO_PROVIDER_CHECK_UNAVAILABLE');
-        const result=await providerRefresh();
+        const params=[...new URL(req.url,origin).searchParams.entries()];
+        if(params.length>1||params.some(([key])=>key!=='provider')||
+           (params.length===1&&!/^[a-z][a-z0-9_-]{1,31}$/.test(params[0][1])))
+          throw failure(400,'INVALID_PROVIDER_QUERY');
+        const result=await providerRefresh(params.length?params[0][1]:null);
+        // The grant may be revoked while Studio is inspecting a slow account.
+        authorizeDevice(req,'control:read');
         res.setHeader('cache-control','private, no-store');
         json(res,200,projectChatProviders(result));
       }catch(error){

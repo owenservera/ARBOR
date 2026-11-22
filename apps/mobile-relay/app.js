@@ -410,8 +410,11 @@ function mountUniversalDock() {
 function normalizeConv() {
   const c = curConv(); if (!c) return;
   const ps = providers(); if (!ps.length) return;
-  let p = ps.find(x => x.id === c.provider), dirty = false;
-  if (!p) { p = ps[0]; c.provider = p.id; c.model = c.effort = null; dirty = true; }
+  // A chosen provider is an immutable conversation destination, even if it
+  // later signs out or its browser readiness check expires. Never retarget it.
+  const p = ps.find(x => x.id === c.provider);
+  if (!p) return;
+  let dirty = false;
   if (c.model && !(p.models || []).some(m => m.id === c.model)) { c.model = null; dirty = true; }
   const lv = (p.thinkingLevels || []).find(l => l.id === c.effort);
   if (c.effort && (!lv || lv.locked)) { c.effort = null; dirty = true; }
@@ -1441,7 +1444,8 @@ function renderComposer() {
     $('clip').hidden = !(p && p.attachments);
     const fb = $('files'); fb.replaceChildren(); fb.hidden = !S.files.length;
     S.files.forEach((f, i) => { const chip = el('span', 'file'); const n = el('span', '', f.name + ' · ' + fmtSize(f.size)); const x = el('button', '', '×'); x.type = 'button'; x.dataset.i = i; x.setAttribute('aria-label', 'Remove ' + f.name); chip.append(n, x); fb.append(chip); });
-    $('text').placeholder = p ? 'Message ' + (p.label || p.id) + '…' : 'Message…';
+    $('text').placeholder = p ? 'Message ' + (p.label || p.id) + '…'
+      : FIRST_CONTACT && c ? 'Draft for ' + String(c.provider).slice(0,32) + ' · verify on PC…' : 'Message…';
     $('text').maxLength = c ? Math.max(1, MAXTEXT - mkPrefix(c).length) : MAXTEXT;
   }
   updateSend();
@@ -2035,12 +2039,8 @@ async function send() {
           toast('Pair this phone with your PC before connecting an AI. Nothing was sent.');
           return;
         }
-        if (handoff.status !== 'ready') {
-          field.value = ''; autogrow();
-          switchChatTarget('harness');
-          toast(handoff.label + ' is not verified. Check signed-in AIs on your PC first.');
-          return;
-        }
+        // Stage even when not currently verified. Draft text never enters
+        // the relay until the owner explicitly sends from an approved session.
         const prior = curConv();
         // Never repoint a previously sent conversation to another provider.
         if (!prior || prior.sent || msgsOf(prior.id).length || prior.provider !== handoff.id) {
@@ -2054,7 +2054,9 @@ async function send() {
         field.value = handoff.draft;
         S.sigs.comp = null; S.sigs.list = null;
         renderAll(true); autogrow(); updateSend(); field.focus();
-        toast(handoff.label + ' selected. Review the draft, then press Send.');
+        toast(handoff.status === 'ready'
+          ? handoff.label + ' selected. Review the draft, then press Send.'
+          : handoff.label + ' draft kept. Tap Check my signed-in AIs before sending.');
         return;
       }
     }
@@ -2754,7 +2756,13 @@ $('dock-provider-refresh').addEventListener('click', async () => {
   providerRefreshBusy=true;$('dock-provider-refresh').disabled=true;
   $('dock-provider-refresh').textContent='Checking browser accounts…';
   try{
-    const response=await fetch('/mobile/api/chat/providers/refresh',{
+    // Explicitly selected drafts get a fast single-site freshness check.
+    // The ordinary discovery button still checks all known accounts.
+    const selected = FIRST_CONTACT && N.target==='harness' && !combinedInbox &&
+      curConv() && !curConv().sent ? curConv().provider : null;
+    const url='/mobile/api/chat/providers/refresh' +
+      (selected ? '?provider='+encodeURIComponent(selected) : '');
+    const response=await fetch(url,{
       method:'POST',cache:'no-store',credentials:'same-origin',
       headers:{...headers,origin:location.origin,'x-vivim-providers':'1'}
     });
@@ -2773,7 +2781,11 @@ $('dock-provider-refresh').addEventListener('click', async () => {
     }
     S.manifest=result;S.sigs.comp=null;renderAll(true);
     const count=result.providers.filter(p=>p.signedIn===true).length;
-    toast(count?count+' signed-in AIs verified by your PC.':'No AI login verified. Check your PC browser.');
+    toast(selected
+      ? result.providers.some(p=>p.id===selected&&p.signedIn===true)
+        ? 'Selected AI verified. Review your draft, then press Send.'
+        : 'Selected AI not ready on your PC. Draft preserved; nothing was sent.'
+      : count ? count+' signed-in AIs verified by your PC.' : 'No AI login verified. Check your PC browser.');
   }catch{toast('Provider check unavailable. Nothing was sent.')}
   finally{
     providerRefreshBusy=false;
