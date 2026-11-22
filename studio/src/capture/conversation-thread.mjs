@@ -123,7 +123,15 @@ export function turnObservationExpression(adapter = {}) {
       return inner?(inner.getAttribute('data-chatgpt-selection-message-id')||inner.getAttribute('data-dil-source-message-id')||null):null; };
     const textOf=el=>{ const body=TEXT_SEL?el.querySelector(TEXT_SEL):null; const src=body||el; return String(src.innerText??src.textContent??'').replace(/\\r\\n/g,'\\n'); };
     const messages=kept.map(el=>{ return {role:users.includes(el)?'user':'assistant',id:idOf(el),text:textOf(el)}; });
-    const composer=all(${JSON.stringify(adapter.composer?.selectors ?? [])})[0];
+    const editors=all(${JSON.stringify(adapter.composer?.selectors ?? [])});
+    // The keyboard path uses the focused editor remembered by findComposer/typeText.
+    // Reading a different first-matching field creates false TYPING_UNCONFIRMED,
+    // and could eventually authorize a stale draft. Prefer the exact visible
+    // stored editor, then the focused visible editor; never guess when ambiguous.
+    const remembered=globalThis.__aionDrive?.el, focused=document.activeElement;
+    const composer=editors.includes(remembered) ? remembered :
+      editors.find(el=>el===focused||(focused&&el.contains(focused))) ??
+      (editors.length===1?editors[0]:null);
     const text=composer?String(composer.value??composer.innerText??composer.textContent??'').replace(/\\r\\n/g,'\\n'):null;
     const stop=all(${JSON.stringify(adapter.assistant?.streamingSelectors ?? [])}).length>0;
     const sendBtn=all(${JSON.stringify(idleControlSelectors(adapter))}).length>0;
