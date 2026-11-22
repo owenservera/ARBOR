@@ -1,7 +1,10 @@
 // Loopback HTTP port to the Studio conversation API. Studio stays the only browser owner and
 // send-once journal; this file only speaks its documented routes and never touches CDP or Chrome.
-// Shared with Studio CLI relay default; no second browser owner or embedded provider token.
-export const DEFAULT_STUDIO_ORIGIN = 'http://127.0.0.1:38787';
+// Match existing Windows VIVIM.ps1 launcher (38730) and Studio relay default (38787).
+// Explicit VIVIM_STUDIO_URL remains authoritative for custom launcher ports.
+export function defaultStudioOrigin(platform = process.platform) {
+  return platform === 'win32' ? 'http://127.0.0.1:38730' : 'http://127.0.0.1:38787';
+}
 const CODE = /^[A-Z][A-Z0-9_]{0,79}$/;
 const enc = encodeURIComponent;
 
