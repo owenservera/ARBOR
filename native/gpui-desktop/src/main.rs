@@ -1126,6 +1126,14 @@ impl Desktop {
         cx.notify();
     }
     fn start_native_menu(&mut self, window:&Window, cx:&mut Context<Self>) {
+        // No Win32 HMENU in the normal GPUI 0.2.2 window: its DirectComposition
+        // no-redirection style leaves the native menu band transparent, exposing
+        // windows behind it. Keep our one existing app-shell menu at y=0 until
+        // the actual OS paint path is solved and device-accepted.
+        if !native_windows_menu::experimental_opt_in() {
+            self.developer_status="Top-edge application menu active; native Win32 menu painting not accepted".into();
+            return;
+        }
         // Install on the GPUI/Win32 window thread; the native callback only
         // queues known menu IDs. The same actions run on the main UI thread.
         let first=native_windows_menu::install();
