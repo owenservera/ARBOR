@@ -91,6 +91,21 @@ export function renderToday(host, model, options = {}) {
   }
   scroll.append(connection);
 
+  // This card reports only the bytes observed from the same-origin PWA.
+  // It never claims that the Host, Studio or another handset was upgraded.
+  if (m.delivery) {
+    const build = card(doc, 'Live build');
+    build.append(make(doc, 'strong', 'ux-item-title',
+      m.delivery.verified ? 'PWA module verified on this device' : 'PWA module not verified'));
+    build.append(rows(doc, [
+      {label:'PWA source',value:m.delivery.sourceSha},
+      {label:'Host source',value:m.delivery.hostSourceSha || 'Not reported'},
+      {label:'Observed',value:m.delivery.observedAt || 'Time unavailable'}
+    ]));
+    build.append(make(doc, 'p', 'ux-note', m.delivery.scope));
+    scroll.append(build);
+  }
+
   // These are the five already-shipped phone sections, not duplicate pages or
   // claimed live capabilities. Navigation stays local; Host effects remain gated.
   if (typeof options.onNavigate === 'function') {
