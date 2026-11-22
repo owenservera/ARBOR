@@ -1589,7 +1589,7 @@ function renderFirstWiki(text,source) {
   if(found.indexTruncated)firstWikiPanel.append(el('small','',
     'Search is limited to the admitted Rust source index.'));
 }
-async function refreshFirstWiki(){
+async function refreshFirstWiki({forceSource=false}={}){
   const text=$('text').value.trim(),scope=firstWikiScope();
   if(!text){resetFirstWiki();return;}
   if(!scope){firstWikiNotice('Read-only Wiki connection unavailable','source-error');
@@ -1609,11 +1609,16 @@ async function refreshFirstWiki(){
   const epoch=++firstWikiEpoch;
   const current=()=>epoch===firstWikiEpoch&&firstWikiScope()?.key===scope.key&&
     $('text').value.trim()===text;
-  if(firstWikiSource&&Date.now()-firstWikiAt<8000){
-    if(current())renderFirstWiki(text,firstWikiSource);return;
+  const previous=firstWikiSource;
+  if(previous&&!forceSource&&Date.now()-firstWikiAt<8000){
+    if(current())renderFirstWiki(text,previous);return;
   }
-  firstWikiSource=null;
-  firstWikiNotice('Reading current Host Wiki…','search-start');
+  // Background revalidation keeps the verified Wiki visible until the new
+  // source has passed the existing Rust provenance and revision checks.
+  if(!forceSource){
+    firstWikiSource=null;
+    firstWikiNotice('Reading current Host Wiki…','search-start');
+  }
   observeFirstWiki('search-start',{length:Math.min(text.length,1000)});
   if(!firstWikiLoad){
     firstWikiAbort=new AbortController();
@@ -1637,14 +1642,16 @@ async function refreshFirstWiki(){
   }
   try {
     const source=await firstWikiLoad;
-    if(firstWikiScope()?.key!==scope.key)return;
+    if(!current())return; // A newer human/agent input or grant won the race.
     firstWikiSource=source;firstWikiAt=Date.now();firstWikiHighWater=source.stamp;
-    if(current()){
+    if(!forceSource||!previous||previous.stamp.digest!==source.stamp.digest||
+       previous.stamp.revision!==source.stamp.revision){
       observeFirstWiki('source-ok',{revision:source.stamp.revision});
       renderFirstWiki(text,source);
     }
   }catch(error){
     if(current()&&firstWikiPanel){
+      firstWikiSource=null;
       firstWikiNotice('Wiki read unavailable. Retry by typing again.','source-error');
       observeFirstWiki('source-error',{code:
         error?.message==='WIKI_SOURCE_INVALID'?'WIKI_SOURCE_INVALID':
@@ -1686,6 +1693,19 @@ function mountFirstWiki(){
   document.addEventListener('visibilitychange',()=>{
     if(document.hidden)resetFirstWiki();
   });
+}
+
+// Refresh the SAME authenticated Host Wiki source while the phone is in the
+// foreground. PC-committed Wiki changes now appear without another keystroke.
+// This is a read-only source observation; it never mirrors an unapproved draft,
+// creates a second journal, or changes the Host's approval/effect boundary.
+function startFirstWikiSourceObserver(){
+  if(!FIRST_CONTACT)return;
+  setInterval(()=>{
+    if(document.visibilityState!=='visible'||navigator.onLine===false||
+       !$('text')?.value.trim()||!firstWikiScope()||firstWikiLoad||firstWikiTimer)return;
+    void refreshFirstWiki({forceSource:true});
+  },2000);
 }
 
 function updateSend() {
@@ -2907,6 +2927,7 @@ if (!HOST_PREVIEW && 'serviceWorker' in navigator) {
 }
 mountUniversalDock();
 mountFirstWiki();
+startFirstWikiSourceObserver();
 // A visual acknowledgment is shown ONLY after the existing Host has verified
 // the source revision and Control receipt. This dot is not a synthetic touch,
 // authority claim, chat send or record of the private draft text.
