@@ -24,7 +24,7 @@ test('Oracle owner-preview reads the already authorized Wiki context without gra
   assert.match(functionSource(app,'renderWikiContext'), /renderOracleInExistingWiki\(card,context\.oracleCorpus\)/);
   const refresh=functionSource(app,'refreshWiki');
   assert.match(refresh,/if \(HOST_PREVIEW\) \{[\s\S]*?fetch\('\/api\/host\/control\/wiki-context'/);
-  assert.match(refresh,/if \(HOST_PREVIEW\)ingestWikiSources\(sourceSurface\)/);
+  assert.match(refresh,/if\s*\(HOST_PREVIEW\)ingestWikiSources\(sourceSurface\)/);
   assert.doesNotMatch(functionSource(app,'renderOracleInExistingWiki'), /fetch\(|localStorage|sessionStorage|innerHTML|\.submit\(/);
 });
 
