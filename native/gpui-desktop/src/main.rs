@@ -55,7 +55,7 @@ use vivim_gpui_desktop::desktop_settings::{self, Preferences};
 use vivim_gpui_desktop::desktop_capture;
 use vivim_gpui_desktop::live_delivery;
 use vivim_gpui_desktop::surface_registry;
-use vivim_gpui_desktop::{Overview, ReadError, ObservationTicket, passive_read_allowed, DevelopmentRevisionGuard, read_overview, read_development, control::{self, Review}, visual::{self, Visual, RevisionGuard}};
+use vivim_gpui_desktop::{Overview, ThemeTokens, ReadError, ObservationTicket, passive_read_allowed, DevelopmentRevisionGuard, read_overview, read_development, control::{self, Review}, visual::{self, Visual, RevisionGuard}};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Panel { FirstContact, Overview, Wiki, Visual, Graph, Control, Devices, Developer, Settings, About }
@@ -130,6 +130,12 @@ struct Desktop {
     uncertain: bool,
 }
 impl Desktop {
+    // Styling is an inert read of the SAME owner-authorized Host projection
+    // the phone PWA uses. No duplicate desktop palette store or write authority.
+    fn native_theme(&self) -> ThemeTokens {
+        self.overview.as_ref().and_then(|v|v.theme)
+            .unwrap_or_else(ThemeTokens::graphite)
+    }
     // GPUI-only Windows surface: Host control, plans and receipts render above.
     // Never start Edge, Chrome or a system browser from the native workspace.
     fn reconnect_host(&mut self,cx:&mut Context<Self>) {
@@ -1219,12 +1225,13 @@ impl Desktop {
         cx.notify();
     }
     fn surface_menu(&self, window:&Window, cx:&mut Context<Self>) -> AnyElement {
+        let theme=self.native_theme();
         // The titlebar itself is ONE row. Only VIVIM and the unused space
         // are draggable; menu items remain ordinary GPUI interactive buttons.
         // Win32 handles drag, double-click maximize, Snap layouts and caption
         // clicks through GPUI's native WindowControlArea hit-testing.
         let mut bar=div().w_full().h(px(36.)).flex().items_center().gap_1()
-            .bg(rgb(0x18191c)).border_b_1().border_color(rgb(0x303136))
+            .bg(rgb(theme.surface)).border_b_1().border_color(rgb(theme.border))
             .child(div().h_full().px_3().flex().items_center()
                 .text_sm().font_semibold()
                 .window_control_area(WindowControlArea::Drag)
@@ -1242,14 +1249,14 @@ impl Desktop {
                 .child(div().flex_1().h_full()
                     .window_control_area(WindowControlArea::Drag))
                 .child(div().w(px(46.)).h_full().flex().items_center()
-                    .justify_center().text_sm().text_color(rgb(0xdadce2))
+                    .justify_center().text_sm().text_color(rgb(theme.text))
                     .window_control_area(WindowControlArea::Min).child("—"))
                 .child(div().w(px(46.)).h_full().flex().items_center()
-                    .justify_center().text_sm().text_color(rgb(0xdadce2))
+                    .justify_center().text_sm().text_color(rgb(theme.text))
                     .window_control_area(WindowControlArea::Max)
                     .child(if window.is_maximized() {"❐"} else {"□"}))
                 .child(div().w(px(46.)).h_full().flex().items_center()
-                    .justify_center().text_sm().text_color(rgb(0xdadce2))
+                    .justify_center().text_sm().text_color(rgb(theme.text))
                     .window_control_area(WindowControlArea::Close).child("×"));
         }
         #[cfg(not(windows))]
@@ -1257,7 +1264,7 @@ impl Desktop {
         let mut chrome=div().w_full().flex().flex_col().child(bar);
         if let Some(section)=self.menu_open {
             let mut entries=div().flex().flex_col().gap_1().p_2()
-                .bg(rgb(0x212327)).border_1().border_color(rgb(0x50525a))
+                .bg(rgb(theme.raised)).border_1().border_color(rgb(theme.border))
                 .rounded(px(8.));
             for item in desktop_menu::entries(section) {
                 let intent=item.intent;
@@ -1317,6 +1324,7 @@ fn native_source_inventory(group:Section)->AnyElement {
 
 impl Render for Desktop {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let theme=self.native_theme();
         // The integrated GPUI caption is the sole Windows application chrome,
         // not a second PWA or a menu below another Windows titlebar.
         let menu=self.surface_menu(window,cx);
@@ -1332,7 +1340,11 @@ impl Render for Desktop {
                         .child("Startup: First Contact (the canonical PWA-style home)")
                         .child("Renderer: native GPUI · no Edge, Chrome or WebView")
                         .child(div().text_lg().child("Appearance"))
-                        .child("Graphite · matches the current First Contact PWA")
+                        .child(if self.overview.as_ref().and_then(|v|v.theme).is_some() {
+                            format!("Theme: Host-owned palette revision {} · same tokens as phone PWA",theme.revision)
+                        } else {
+                            "Theme: native graphite fallback · Host source not admitted".to_owned()
+                        })
                         .child(div().text_lg().child("Privacy"))
                         .child("Phone draft contents are hidden in the PC Devices tool by default.")
                         .child(Button::new("settings-phone-preview")
@@ -1366,7 +1378,7 @@ impl Render for Desktop {
                             if phone.composing {"composing"}else{"current"}
                         ));
                         if self.preferences.show_phone_draft_in_devices {
-                            page=page.child(div().p_3().bg(rgb(0x212327))
+                            page=page.child(div().p_3().bg(rgb(theme.raised))
                                 .child(phone.text.clone()));
                         } else {
                             page=page.child("Phone draft text hidden · enable it in Settings.");
@@ -1500,7 +1512,7 @@ impl Render for Desktop {
                 }
                 _=>{}
             }
-            return div().size_full().bg(rgb(0x111214)).text_color(rgb(0xeeece7))
+            return div().size_full().bg(rgb(theme.background)).text_color(rgb(theme.text))
                 .flex().flex_col()
                 .child(menu)
                 .child(div().id("native-preferences-and-tools").flex_1().min_h_0().overflow_y_scroll()
@@ -1516,7 +1528,7 @@ impl Render for Desktop {
             // The fallback menu must touch the application viewport's top edge.
             // Padding belongs to the First Contact canvas below the app menu.
             let surface=div().size_full()
-                .bg(rgb(0x111214)).text_color(rgb(0xeeece7))
+                .bg(rgb(theme.background)).text_color(rgb(theme.text))
                 .flex().flex_col().child(menu);
             let mut canvas=div().flex_1().min_h_0()
                 .flex().flex_col().p_4().gap_2()
@@ -1526,8 +1538,8 @@ impl Render for Desktop {
             // must not render a Wiki header, revision log or error panel.
             if let Some(query)=&self.wiki_query {
                 let mut wiki=div().flex().flex_col().gap_2().p_3()
-                    .bg(rgb(0x181a1e)).rounded(px(14.))
-                    .border_1().border_color(rgb(0x41444b));
+                    .bg(rgb(theme.surface)).rounded(px(14.))
+                    .border_1().border_color(rgb(theme.border));
                 if let Some(data)=&self.overview {
                     let read=wiki_read::WikiRead{
                         revision:data.wiki_revision,digest:data.wiki_digest.clone(),
@@ -1550,7 +1562,7 @@ impl Render for Desktop {
                         )));
                         for hit in &found.hits {
                             wiki=wiki.child(div().p_2()
-                                .border_t_1().border_color(rgb(0x353740))
+                                .border_t_1().border_color(rgb(theme.border))
                                 .child(format!("{}{}",hit.page,
                                     hit.section.as_ref().map(|s|format!(" / {s}")).unwrap_or_default()))
                                 .child(div().text_sm().child(hit.excerpt.clone())));
@@ -1577,7 +1589,7 @@ impl Render for Desktop {
             if let Some(meaning)=&self.semantic_preview {
                 canvas=canvas.child(div().w_full().flex().justify_center()
                     .child(div().w_full().max_w(px(760.)).p_2()
-                        .bg(rgb(0x20252a)).rounded(px(12.))
+                        .bg(rgb(theme.accent_soft)).rounded(px(12.))
                         .child(div().text_sm().child(meaning.hint.clone()))));
             }
 
@@ -1629,8 +1641,8 @@ impl Render for Desktop {
             // No second composer, browser frame or product dashboard.
             return surface.child(canvas.child(div().w_full().flex().justify_center()
                 .child(div().w_full().max_w(px(760.)).p_2()
-                    .bg(rgb(0x212327)).rounded(px(22.))
-                    .border_1().border_color(rgb(0x50525a))
+                    .bg(rgb(theme.raised)).rounded(px(22.))
+                    .border_1().border_color(rgb(theme.border))
                     .child(Input::new(&self.input).appearance(false).w_full()))));
         }
         let mut body = div().flex().flex_col().gap_3()
@@ -1703,7 +1715,7 @@ impl Render for Desktop {
                         else{"indexed source complete"}
                     )));
                     for hit in &found.hits {
-                        body=body.child(div().p_2().bg(rgb(0x202b3a))
+                        body=body.child(div().p_2().bg(rgb(theme.raised))
                             .child(format!(
                                 "{}{} · {}",
                                 hit.page,hit.section.as_ref().map(|s|format!(" / {s}")).unwrap_or_default(),
@@ -1719,7 +1731,7 @@ impl Render for Desktop {
             } else {
             for page in &data.wiki_content {
                 let mut page_view=div().flex().flex_col().gap_2().p_3()
-                    .bg(rgb(0x202b3a))
+                    .bg(rgb(theme.raised))
                     .child(div().text_lg().child(page.name.clone()));
                 if !page.links.is_empty() {
                     page_view=page_view.child(div().text_sm()
@@ -1810,7 +1822,7 @@ impl Render for Desktop {
             if !self.graph_detail.is_empty(){
                 // Render the actual, bounded Rust graph projection line by line.
                 // No synthetic nodes, schema remapping or DOM/HTML interpretation.
-                let mut lines=div().flex().flex_col().gap_1().p_3().bg(rgb(0x202b3a));
+                let mut lines=div().flex().flex_col().gap_1().p_3().bg(rgb(theme.raised));
                 for line in self.graph_detail.lines().take(120) {
                     lines=lines.child(div().text_sm().child(line.to_owned()));
                 }
@@ -1824,7 +1836,7 @@ impl Render for Desktop {
         }
         if matches!(self.panel,Panel::Overview|Panel::Control) && !self.detail.is_empty() {
             body=body.child(div().text_lg().child("Canonical Host response"))
-                .child(div().p_3().bg(rgb(0x202b3a)).child(self.detail.clone()));
+                .child(div().p_3().bg(rgb(theme.raised)).child(self.detail.clone()));
         }
         let mut actions=div().flex().flex_col().gap_2().child(controls);
         if matches!(self.panel,Panel::Overview|Panel::Wiki){
@@ -1840,7 +1852,7 @@ impl Render for Desktop {
             ));
         }
         // Diagnostic navigation lives exclusively in the compact surface menu.
-        div().size_full().bg(rgb(0x151b24)).text_color(rgb(0xe6edf3))
+        div().size_full().bg(rgb(theme.background)).text_color(rgb(theme.text))
             .flex().flex_col().p_5().gap_3()
             .child(menu)
             .child(self.supervisor.snapshot().label())
