@@ -194,12 +194,20 @@ export function transcriptExpression({ userSelectors = TRANSCRIPT_SELECTORS.user
         }
       }
     }
-    let draft = { present: null, chars: null }, composerEl = null;
-    for (const sel of COMPOSER) {
-      let el = null; try { el = document.querySelector(sel); } catch (e) { el = null; }
-      if (!el) continue;
-      const value = typeof el.value === 'string' ? el.value : String(el.innerText ?? el.textContent ?? '');
-      const chars = value.replace(/\\s+/g, ' ').trim().length; draft = { present: chars > 0, chars }; composerEl = el; break;
+    // Match the turn reader's composer selection. Transcript reads must not
+    // silently switch to an unrelated or hidden first selector match: report
+    // unknown draft rather than misattribute another editor to this thread.
+    const editors = all(COMPOSER).filter(visible);
+    const remembered = globalThis.__aionDrive?.el, focused = document.activeElement;
+    const focusedEditor = editors.find(el => el === focused || (focused && el.contains(focused)));
+    const composerEl = focusedEditor ??
+      (editors.includes(remembered) ? remembered : null) ??
+      (editors.length === 1 ? editors[0] : null);
+    let draft = { present: null, chars: null };
+    if (composerEl) {
+      const value = typeof composerEl.value === 'string' ? composerEl.value : String(composerEl.innerText ?? composerEl.textContent ?? '');
+      const chars = value.replace(/\\s+/g, ' ').trim().length;
+      draft = { present: chars > 0, chars };
     }
     const stop = all(STREAMING).some(visible);
     const sendBtn = all(SEND).some(visible);
