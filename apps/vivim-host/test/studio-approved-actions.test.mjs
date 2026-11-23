@@ -35,11 +35,12 @@ test('four Studio actions are typed desktop-only plans and never run before exac
   };
   const c=fixture(t,studio);
   for(const[id,args,method,value,risk]of actions){
+    const previousPlans=c.recent().length;
     const mobile=c.plan({actionId:id,args},{source:'mobile',actor:'phone'});
     assert.equal(mobile.outcome,'unavailable',id+' must not produce a phone executable plan');
     const ownerText=c.plan({actionId:id,args},{source:'text',actor:'owner'});
     assert.equal(ownerText.outcome,'unavailable');
-    assert.equal(c.recent().length,0,'no plans for non-owner surfaces');
+    assert.equal(c.recent().length,previousPlans,'no plans for non-owner surfaces');
     const plan=c.plan({actionId:id,args},SOURCE);
     assert.equal(plan.outcome,'approval_required');
     assert.deepEqual(plan.approval.channels,['desktop-owner-token']);
