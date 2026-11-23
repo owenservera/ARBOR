@@ -48,7 +48,7 @@ test('capture and Drive projection retains only bounded source-backed operating 
   assert.equal(projectStudioOperations(rawStatus,{jobs:Array.from({length:21},()=>rawJobs.jobs[0])}).drive.state,'unavailable');
 });
 
-test('Studio port performs four bounded GET reads and fails closed on offline sources',async()=>{
+test('Studio port skips CDP tab scans during active recording and handles offline sources',async()=>{
   const seen=[];
   const port=createStudioPort({url:'http://127.0.0.1:38730',token:'secret-private-owner-token',
     fetchImpl:async(url,opts)=>{
@@ -61,16 +61,38 @@ test('Studio port performs four bounded GET reads and fails closed on offline so
   const view=await port.operations();
   assert.equal(view.capture.recorderState,'recording');
   assert.equal(view.drive.shown,1);
-  assert.equal(seen.length,4);
-  assert.deepEqual(seen.map(x=>x.method),['GET','GET','GET','GET']);
+  assert.equal(seen.length,3);
+  assert.deepEqual(seen.map(x=>x.method),['GET','GET','GET']);
   assert.ok(seen.every(x=>x.headers['x-studio-token']==='secret-private-owner-token'));
   assert.deepEqual(seen.map(x=>new URL(x.url).pathname),[
-    '/api/status','/api/v1/drive/jobs','/api/targets','/api/v1/drive/sites'
+    '/api/status','/api/v1/drive/jobs','/api/v1/drive/sites'
   ],'capture compatibility uses Studio legacy API while Drive uses versioned API');
   assert.ok(!JSON.stringify(view).includes('secret-private-owner-token'));
   const offline=createStudioPort({url:'http://127.0.0.1:38730',
     fetchImpl:async()=>{throw Error('offline') }});
   assert.equal((await offline.operations()).state,'unavailable');
+});
+
+test('Studio only enumerates exact browser targets when idle and owner-verified',async()=>{
+  const paths=[];
+  const status={...rawStatus,recorder:{state:'idle'}};
+  const port=createStudioPort({url:'http://127.0.0.1:38730',fetchImpl:async(url,opts)=>{
+    const pathname=new URL(url).pathname;
+    paths.push([opts.method,pathname]);
+    const body=pathname==='/api/status'?status:pathname==='/api/targets'?rawTargets:
+      pathname==='/api/v1/drive/jobs'?rawJobs:rawSites;
+    return new Response(JSON.stringify(body),{status:200,
+      headers:{'content-type':'application/json'}});
+  }});
+  const view=await port.operations();
+  assert.deepEqual(paths,[['GET','/api/status'],['GET','/api/v1/drive/jobs'],
+    ['GET','/api/v1/drive/sites'],['GET','/api/targets']]);
+  assert.deepEqual(view.capture.targets,[{id:targetId,host:'chatgpt.com'}]);
+  assert.ok(!JSON.stringify(view).includes('PRIVATE THREAD'));
+  paths.length=0;status.browserConnection={state:'not-running',verified:false};
+  const off=await port.operations();
+  assert.equal(paths.length,3,'offline browser must not trigger CDP enumeration');
+  assert.deepEqual(off.capture.targets,[]);
 });
 
 test('Host owner PWA view gets sanitized Studio operations, unauthorized callers trigger no Studio read',async()=>{
@@ -100,9 +122,9 @@ test('Host owner PWA view gets sanitized Studio operations, unauthorized callers
     assert.equal(body.snapshot.studioOperations.schema,'vivim.studio-operations/1');
     assert.equal(body.snapshot.studioOperations.drive.active,1);
     assert.equal(body.snapshot.studioOperations.capture.recorderState,'recording');
-    assert.deepEqual(seen.map(x=>x[1]),['GET','GET','GET','GET']);
+    assert.deepEqual(seen.map(x=>x[1]),['GET','GET','GET']);
     assert.deepEqual(seen.map(x=>x[0]),['/api/status','/api/v1/drive/jobs',
-      '/api/targets','/api/v1/drive/sites']);
+      '/api/v1/drive/sites']);
     assert.ok(seen.every(x=>x[2]==='studio-service-secret'));
     const serialized=JSON.stringify(body.snapshot.studioOperations);
     assert.ok(!serialized.includes('private.invalid'));
