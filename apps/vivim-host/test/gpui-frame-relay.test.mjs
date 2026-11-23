@@ -184,3 +184,57 @@ test('close is idempotent and never leaves a frame or live subscription',async()
   assert.equal(f.relay.publish(owner,frame(2)).state,'refused');
   assert.equal((await f.relay.receivePointer(phone,pointer())).state,'refused');
 });
+
+test('paired IME commit is forwarded only as a native-focused inert text packet',async()=>{
+  const f=fixture();f.relay.publish(owner,frame());
+  const packet={kind:'vivim.gpui.text/1',session:SESSION,revision:1,
+    sequence:1,phase:'ime-commit',text:'日本語🔹'};
+  const result=await f.relay.receiveText(phone,packet);
+  assert.equal(result.state,'submitted_to_native_unverified');
+  assert.deepEqual(f.forwarded,[packet]);
+  assert.equal(Object.hasOwn(f.forwarded[0],'controlId'),false);
+  assert.equal(Object.hasOwn(f.forwarded[0],'approved'),false);
+  f.relay.close();
+});
+test('pointer and text share one device replay sequence across reconnects',async()=>{
+  const f=fixture();f.relay.publish(owner,frame());
+  assert.equal((await f.relay.receivePointer(phone,pointer(5))).state,
+    'submitted_to_native_unverified');
+  const type=(sequence)=>({kind:'vivim.gpui.text/1',session:SESSION,revision:1,
+    sequence,phase:'key-down',text:'a'});
+  assert.equal((await f.relay.receiveText(phone,type(5))).reason,'GPUI_INPUT_REPLAY');
+  assert.equal((await f.relay.receiveText(phone,type(6))).state,'submitted_to_native_unverified');
+  assert.equal((await f.relay.receivePointer(phone,pointer(6))).reason,'GPUI_INPUT_REPLAY');
+  assert.equal(f.forwarded.length,2);
+  f.relay.close();
+});
+test('malformed unicode, phase, metadata or owner-forged focus never reaches native GPUI',async()=>{
+  const f=fixture();f.relay.publish(owner,frame());
+  const p={kind:'vivim.gpui.text/1',session:SESSION,revision:1,
+    sequence:1,phase:'ime-commit',text:'a'};
+  for(const bad of [{...p,phase:'host-approve'},{...p,text:'\ud800'},
+    {...p,session:'f'.repeat(32)},{...p,revision:2},
+    {...p,controlId:42,kind:'host.execute'},{...p,text:'\u0000'}])
+    assert.equal((await f.relay.receiveText(phone,bad)).state,'refused');
+  assert.equal(f.forwarded.length,0);
+  assert.equal((await f.relay.receiveText(phone,p)).state,'submitted_to_native_unverified');
+  f.relay.close();
+});
+test('revoked phone cannot submit IME even if it knows native session metadata',async()=>{
+  const f=fixture();f.relay.publish(owner,frame());
+  f.setPaired(false);
+  const p={kind:'vivim.gpui.text/1',session:SESSION,revision:1,
+    sequence:1,phase:'key-down',text:'Enter'};
+  assert.equal((await f.relay.receiveText(phone,p)).reason,'GPUI_PHONE_NOT_ADMITTED');
+  assert.equal(f.forwarded.length,0);
+  f.relay.close();
+});
+test('uncertain native IME submission consumes sequence without a hidden retry',async()=>{
+  const f=fixture();f.relay.publish(owner,frame());
+  f.setForward(async()=>{throw new Error('native wait unknown');});
+  const p={kind:'vivim.gpui.text/1',session:SESSION,revision:1,
+    sequence:1,phase:'ime-commit',text:'safe'};
+  assert.equal((await f.relay.receiveText(phone,p)).state,'native_delivery_uncertain');
+  assert.equal((await f.relay.receiveText(phone,p)).reason,'GPUI_INPUT_REPLAY');
+  f.relay.close();
+});
