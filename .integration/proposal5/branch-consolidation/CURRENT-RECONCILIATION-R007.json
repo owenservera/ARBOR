@@ -3,7 +3,7 @@
   "mainSha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8",
   "observedDateUtc": "2026-11-23T22:35:46.330Z",
   "expectedNonMainBranches": 77,
-  "completedComparisons": 44,
+  "completedComparisons": 55,
   "state": "INCOMPLETE",
   "deletionAuthorized": false,
   "note": "Read-only exact-tip ancestry capture. Do not archive/delete branches from this evidence; review live owners and unique content.",
@@ -803,112 +803,200 @@
     {
       "name": "work/p5-p2-highvalue-labs",
       "tipSha": "3e6954d21bd70eeccc6e00a310bcb337c3164f50",
-      "comparison": null,
-      "status": "unverified",
-      "ahead": null,
-      "behind": null,
-      "disposition": "UNKNOWN_PRESERVE",
-      "canDelete": false
+      "comparison": {
+        "status": "diverged",
+        "ahead_by": 1,
+        "behind_by": 1705,
+        "base_commit": {
+          "sha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8"
+        }
+      },
+      "status": "diverged",
+      "ahead": 1,
+      "behind": 1705,
+      "disposition": "UNIQUE_COMMITS_PRESERVE",
+      "canDelete": false,
+      "comparisonAttempted": true
     },
     {
       "name": "work/p5-p2-preg-interop-r001",
       "tipSha": "73b1ea769de6023dfff857d7e9c4003731f3b112",
-      "comparison": null,
-      "status": "unverified",
-      "ahead": null,
-      "behind": null,
-      "disposition": "UNKNOWN_PRESERVE",
-      "canDelete": false
+      "comparison": {
+        "status": "diverged",
+        "ahead_by": 38,
+        "behind_by": 1705,
+        "base_commit": {
+          "sha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8"
+        }
+      },
+      "status": "diverged",
+      "ahead": 38,
+      "behind": 1705,
+      "disposition": "UNIQUE_COMMITS_PRESERVE",
+      "canDelete": false,
+      "comparisonAttempted": true
     },
     {
       "name": "work/p5-p2-preg-knowledge-r001",
       "tipSha": "4db9e0c2068be36ab42663a76186422c8f9813a1",
-      "comparison": null,
-      "status": "unverified",
-      "ahead": null,
-      "behind": null,
-      "disposition": "UNKNOWN_PRESERVE",
-      "canDelete": false
+      "comparison": {
+        "status": "diverged",
+        "ahead_by": 39,
+        "behind_by": 1705,
+        "base_commit": {
+          "sha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8"
+        }
+      },
+      "status": "diverged",
+      "ahead": 39,
+      "behind": 1705,
+      "disposition": "UNIQUE_COMMITS_PRESERVE",
+      "canDelete": false,
+      "comparisonAttempted": true
     },
     {
       "name": "work/p5-p2-preg-tests-r001",
       "tipSha": "c807010e52b4a9f82ea9578a979befd38f74cb31",
-      "comparison": null,
-      "status": "unverified",
-      "ahead": null,
-      "behind": null,
-      "disposition": "UNKNOWN_PRESERVE",
-      "canDelete": false
+      "comparison": {
+        "status": "diverged",
+        "ahead_by": 37,
+        "behind_by": 1705,
+        "base_commit": {
+          "sha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8"
+        }
+      },
+      "status": "diverged",
+      "ahead": 37,
+      "behind": 1705,
+      "disposition": "UNIQUE_COMMITS_PRESERVE",
+      "canDelete": false,
+      "comparisonAttempted": true
     },
     {
       "name": "work/p5-phase2-readiness-docs-r001",
       "tipSha": "a9caad49347749cb0630ae1719bc2d7a8621d645",
-      "comparison": null,
-      "status": "unverified",
-      "ahead": null,
-      "behind": null,
-      "disposition": "UNKNOWN_PRESERVE",
-      "canDelete": false
+      "comparison": {
+        "status": "diverged",
+        "ahead_by": 5,
+        "behind_by": 1705,
+        "base_commit": {
+          "sha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8"
+        }
+      },
+      "status": "diverged",
+      "ahead": 5,
+      "behind": 1705,
+      "disposition": "UNIQUE_COMMITS_PRESERVE",
+      "canDelete": false,
+      "comparisonAttempted": true
     },
     {
       "name": "work/p5-pre-g-convergence-r001",
       "tipSha": "8b23c73bf450738a76b256bf0fa17ecbf86db591",
-      "comparison": null,
-      "status": "unverified",
-      "ahead": null,
-      "behind": null,
-      "disposition": "UNKNOWN_PRESERVE",
-      "canDelete": false
+      "comparison": {
+        "status": "diverged",
+        "ahead_by": 31,
+        "behind_by": 1705,
+        "base_commit": {
+          "sha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8"
+        }
+      },
+      "status": "diverged",
+      "ahead": 31,
+      "behind": 1705,
+      "disposition": "UNIQUE_COMMITS_PRESERVE",
+      "canDelete": false,
+      "comparisonAttempted": true
     },
     {
       "name": "work/p5-preg-autowiki-r001",
       "tipSha": "827d21d1c33aa8597c600b45179452abc35c7af9",
-      "comparison": null,
-      "status": "unverified",
-      "ahead": null,
-      "behind": null,
-      "disposition": "UNKNOWN_PRESERVE",
-      "canDelete": false
+      "comparison": {
+        "status": "diverged",
+        "ahead_by": 37,
+        "behind_by": 1705,
+        "base_commit": {
+          "sha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8"
+        }
+      },
+      "status": "diverged",
+      "ahead": 37,
+      "behind": 1705,
+      "disposition": "UNIQUE_COMMITS_PRESERVE",
+      "canDelete": false,
+      "comparisonAttempted": true
     },
     {
       "name": "work/p5-preg-intelligence-convergence-r001",
       "tipSha": "9359aa0695edbc5e2b91563f688c12983f429f90",
-      "comparison": null,
-      "status": "unverified",
-      "ahead": null,
-      "behind": null,
-      "disposition": "UNKNOWN_PRESERVE",
-      "canDelete": false
+      "comparison": {
+        "status": "diverged",
+        "ahead_by": 38,
+        "behind_by": 1705,
+        "base_commit": {
+          "sha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8"
+        }
+      },
+      "status": "diverged",
+      "ahead": 38,
+      "behind": 1705,
+      "disposition": "UNIQUE_COMMITS_PRESERVE",
+      "canDelete": false,
+      "comparisonAttempted": true
     },
     {
       "name": "work/p5-preg-n0-io-r001",
       "tipSha": "cde3b6e5521d5b17215ab10088cb8090f8b87e6f",
-      "comparison": null,
-      "status": "unverified",
-      "ahead": null,
-      "behind": null,
-      "disposition": "UNKNOWN_PRESERVE",
-      "canDelete": false
+      "comparison": {
+        "status": "diverged",
+        "ahead_by": 34,
+        "behind_by": 1705,
+        "base_commit": {
+          "sha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8"
+        }
+      },
+      "status": "diverged",
+      "ahead": 34,
+      "behind": 1705,
+      "disposition": "UNIQUE_COMMITS_PRESERVE",
+      "canDelete": false,
+      "comparisonAttempted": true
     },
     {
       "name": "work/p5-preg-semantic-wiki-r001",
       "tipSha": "d7e59a389a6ec5278595e317dfa904a801783c5b",
-      "comparison": null,
-      "status": "unverified",
-      "ahead": null,
-      "behind": null,
-      "disposition": "UNKNOWN_PRESERVE",
-      "canDelete": false
+      "comparison": {
+        "status": "diverged",
+        "ahead_by": 36,
+        "behind_by": 1705,
+        "base_commit": {
+          "sha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8"
+        }
+      },
+      "status": "diverged",
+      "ahead": 36,
+      "behind": 1705,
+      "disposition": "UNIQUE_COMMITS_PRESERVE",
+      "canDelete": false,
+      "comparisonAttempted": true
     },
     {
       "name": "work/p5-preg-visual-language-r001",
       "tipSha": "7ad5b3c49aefdf1fdd8b212e5b7eea0e7b92338e",
-      "comparison": null,
-      "status": "unverified",
-      "ahead": null,
-      "behind": null,
-      "disposition": "UNKNOWN_PRESERVE",
-      "canDelete": false
+      "comparison": {
+        "status": "diverged",
+        "ahead_by": 33,
+        "behind_by": 1705,
+        "base_commit": {
+          "sha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8"
+        }
+      },
+      "status": "diverged",
+      "ahead": 33,
+      "behind": 1705,
+      "disposition": "UNIQUE_COMMITS_PRESERVE",
+      "canDelete": false,
+      "comparisonAttempted": true
     },
     {
       "name": "work/p5-rescore-1000-r001",
@@ -1133,9 +1221,9 @@
   ],
   "summary": {
     "total": 77,
-    "attempted": 44,
-    "uniquePreserve": 15,
+    "attempted": 55,
+    "uniquePreserve": 26,
     "ancestorReview": 29,
-    "unknownPreserve": 33
+    "unknownPreserve": 22
   }
 }
