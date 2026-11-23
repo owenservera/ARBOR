@@ -54,6 +54,11 @@ fn preview(input: &str) -> (String, bool) { preview_chars(input,PREVIEW_CHARS) }
 pub fn read(wiki: &Value) -> Result<WikiRead, ReadError> {
     let revision = wiki["revision"].as_u64().ok_or(ReadError::InvalidProjection)?;
     let pages = wiki["pages"].as_object().ok_or(ReadError::InvalidProjection)?;
+    // The display and search views are deliberately bounded, but identity is
+    // computed over every source page. Validate the *entire* source before
+    // stamping it; malformed pages/sections/links beyond view limits must not
+    // receive a trustworthy-looking digest or partial readback.
+    complete_delta_pages(wiki).ok_or(ReadError::InvalidProjection)?;
     let encoded = serde_json::to_vec(&wiki["pages"]).map_err(|_| ReadError::InvalidProjection)?;
     let digest = format!("{:x}", Sha256::digest(&encoded));
     let mut output = Vec::new();
