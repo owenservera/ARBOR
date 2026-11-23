@@ -21,8 +21,9 @@ const localPreflight = code => Object.assign(new Error(code),{code});
 // Immutable, bounded and read-only compatibility projection. Never propagate
 // Studio's source URLs, session details, prompts, raw replies, owner credentials
 // or driver errors through the general Host/PWA summary.
-export function projectStudioOperations(status, drive) {
-  const capture = { state:'unavailable', recorderState:null, browserState:null, browserVerified:false };
+export function projectStudioOperations(status, drive, targets = null, sites = null) {
+  const capture = { state:'unavailable', recorderState:null, browserState:null, browserVerified:false,
+    targetsState:'unavailable',targets:[] };
   if (status && CAPTURE_STATES.has(status.recorder?.state) &&
       BROWSER_STATES.has(status.browserConnection?.state) &&
       typeof status.browserConnection?.verified === 'boolean') {
@@ -32,6 +33,22 @@ export function projectStudioOperations(status, drive) {
     capture.browserVerified=status.browserConnection.verified === true &&
       capture.browserState === 'available';
   }
+  // Project opaque exact CDP tab IDs and hostnames only. Never send page URLs,
+  // titles, query strings, cookies, or arbitrary CDP target objects to GPUI.
+  if (Array.isArray(targets) && targets.length<=32 && targets.every(t=>t && typeof t==='object')) {
+    capture.targetsState='source-backed';
+    const seenTargets=new Set();
+    capture.targets=targets.filter(t=>t.type==='page'&&TARGET_ID.test(t.id)&&!seenTargets.has(t.id)&&seenTargets.add(t.id))
+      .slice(0,8).map(t=>{
+        let host='Page';
+        try {const url=new URL(t.url);if(['http:','https:'].includes(url.protocol))
+          host=url.hostname.slice(0,96)||'Page';}catch{}
+        return {id:t.id,host};
+      });
+  }
+  const siteRows=Array.isArray(sites?.sites)&&sites.sites.length<=32 &&
+    sites.sites.every(t=>t&&SITE_ID.test(t.id))
+    ? [...new Set(sites.sites.map(t=>t.id))].slice(0,12) : [];
   const jobs = drive?.jobs;
   const safe = Array.isArray(jobs) && jobs.length <= 20 &&
     jobs.every(j=>j && UUID.test(j.id) && DRIVE_STATES.has(j.state) &&
@@ -39,10 +56,11 @@ export function projectStudioOperations(status, drive) {
   const archive = safe ? {
     state:'source-backed', shown:jobs.length,
     active:jobs.filter(j=>j.state==='running'||j.state==='queued').length,
+    sites:siteRows,
     jobs:jobs.slice(0,8).map(j=>({
       id:j.id, state:j.state, mode:j.mode, dryRun:j.dryRun
     }))
-  } : {state:'unavailable',shown:0,active:0,jobs:[]};
+  } : {state:'unavailable',shown:0,active:0,sites:siteRows,jobs:[]};
   return {schema:'vivim.studio-operations/1',
     state:capture.state==='source-backed'||archive.state==='source-backed'
       ? 'source-backed':'unavailable',
@@ -140,14 +158,19 @@ export function createStudioPort({ url, token = null, fetchImpl = fetch, timeout
     origin: base.origin,
     captureStart, captureStop, driveDryRun, driveCancel,
     // A listing succeeds only when the Studio owner process is up and answering.
-    // Two bounded Studio-owner GETs, never a browser action, provider send or
-    // Drive job command. Unavailable sources are not silently treated as idle.
+    // Four bounded owner-only Studio GETs. These expose safe selection IDs for
+    // explicit review buttons; they never control the browser, start capture,
+    // create a Drive job or grant an owner approval.
     operations: async () => {
-      const [capture,drive]=await Promise.allSettled([
-        request('/status',undefined,1200),request('/drive/jobs',undefined,1200)
+      const [capture,drive,targets,sites]=await Promise.allSettled([
+        request('/status',undefined,1200),request('/drive/jobs',undefined,1200),
+        request('/targets',undefined,1200),request('/drive/sites',undefined,1200)
       ]);
-      return projectStudioOperations(capture.status==='fulfilled'?capture.value:null,
-        drive.status==='fulfilled'?drive.value:null);
+      return projectStudioOperations(
+        capture.status==='fulfilled'?capture.value:null,
+        drive.status==='fulfilled'?drive.value:null,
+        targets.status==='fulfilled'?targets.value:null,
+        sites.status==='fulfilled'?sites.value:null);
     },
     reachable: async () => { try { await request('/conversations'); return true; } catch { return false; } },
     sites: async () => (await request('/conversation-targets')).sites ?? [],
