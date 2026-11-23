@@ -173,3 +173,29 @@ test('phone relay refuses unsafe continuation and changed provider without effec
     effort:null,prompt:'Hi'});
   assert.equal(changedStore.get(changed.id).status,'failed');assert.equal(calls,0);
 }));
+
+test('corrupted historical bridge revision blocks a fresh same-conversation send without replay',()=>sandbox(async root=>{
+  const earlier=cmd(1,'chatgpt',{status:'done',newChat:true,studioThreadRef:THREAD});
+  const next=cmd(2,'chatgpt',{newChat:true});
+  const journalFile=path.join(root,'bridge','commands.jsonl');
+  mkdirSync(path.dirname(journalFile),{recursive:true});
+  const valid=JSON.stringify(earlier)+'\\n'+JSON.stringify(next)+'\\n';
+  const cases=[
+    JSON.stringify(earlier)+'\\n'+'{not-json}\\n'+JSON.stringify(next)+'\\n',
+    JSON.stringify(earlier)+'\\n'+JSON.stringify({id:'not-a-command'})+'\\n'+JSON.stringify(next)+'\\n',
+    valid+'{"id":'
+  ];
+  for(const journal of cases){
+    writeFileSync(journalFile,journal);
+    let calls=0;
+    const failures=[];
+    const store={file:journalFile,reply:(id,result,options)=>failures.push({id,result,options})};
+    const adapter=createStudioRelayChat({url:'http://127.0.0.1:38730',store,
+      isolatedChannel:{root,port:38702},
+      channelRun:async()=>{calls++;throw Error('must never send');}});
+    await adapter.handle({cmd:next,rec:next,provider:'chatgpt',model:null,effort:null,prompt:'Hi'});
+    assert.equal(calls,0,'corrupt journal must never reach the browser');
+    assert.deepEqual(failures,[{id:next.id,result:'STUDIO_RELAY_HISTORY_UNVERIFIED',
+      options:{status:'failed'}}]);
+  }
+}));
