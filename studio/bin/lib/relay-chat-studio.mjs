@@ -27,6 +27,18 @@ function previousCommand(store, cmd, provider) {
     if (!record || typeof record !== 'object' ||
         !/^cmd-[0-9a-f]{16}$/.test(record.id))
       throw new Error('STUDIO_RELAY_HISTORY_UNVERIFIED');
+    // Revisions of one command may update status/receipts, never its owner
+    // instruction, conversation scope or target. A last-write-wins map alone
+    // could hide an earlier uncertain send under a rewritten conversation ID.
+    const prior = records.get(record.id);
+    if (prior && (
+        !Number.isSafeInteger(prior.rev) || !Number.isSafeInteger(record.rev) ||
+        record.rev <= prior.rev ||
+        ['conversationId','transport','text','consumer','newChat','mode']
+          .some(field => record[field] !== prior[field]) ||
+        ['provider','model','effort'].some(field =>
+          (record.target?.[field] ?? null) !== (prior.target?.[field] ?? null))
+    )) throw new Error('STUDIO_RELAY_HISTORY_UNVERIFIED');
     records.set(record.id, record);
   }
   let previous = null, count = 0;
