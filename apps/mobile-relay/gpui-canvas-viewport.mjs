@@ -61,7 +61,11 @@ export function mountGpuiCanvasViewport({
   };
   const reconnect=()=>{
     if(closed)return false;
-    if(!admitted(null))return false;
+    // The new GPUI session is not known until its first real frame arrives.
+    // Pairing is checked here; exact viewport authorization is checked per frame.
+    let paired=false;
+    try{paired=channel.isAuthenticated()===true;}catch{}
+    if(!paired)return false;
     connected=true;
     safeStatus(onStatus,'connecting');
     return true;
@@ -80,7 +84,11 @@ export function mountGpuiCanvasViewport({
     try {
       // Copy before async decode: a transport-owned typed array may be reused.
       bitmap=await decodePng(frame.png.slice());
-      if(closed || !connected || epoch!==paintEpoch || !admitted(meta) ||
+      if(!admitted(meta)) {
+        disconnect(); // pairing was lost during async decode: scrub old pixels
+        return {state:'refused',reason:'GPUI_PAIRING_OR_SESSION_UNVERIFIED'};
+      }
+      if(closed || !connected || epoch!==paintEpoch ||
           (current && meta.session===current.session && meta.revision<=current.revision))
         return {state:'discarded',reason:'GPUI_FRAME_SUPERSEDED'};
       if(!bitmap || bitmap.width!==meta.width || bitmap.height!==meta.height)
