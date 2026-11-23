@@ -15,6 +15,13 @@ import { probeStudioChannelEndpoint } from '../src/studio/relay-chat-channel-pre
 import { defaultDataDir, defaultHarnessDir } from '../src/config.mjs';
 const HARNESS = defaultHarnessDir();
 const root = process.argv.includes('--root') ? process.argv[process.argv.indexOf('--root') + 1] : defaultDataDir();
+// The Host's queue/heartbeat directory can differ from Studio's signed-in profile.
+// Keep --root for Studio browser receipts; use --bridge-root ONLY for the Host ledger.
+const bridgeFlagCount = process.argv.filter(arg => arg === '--bridge-root').length;
+const bridgeRootArg = bridgeFlagCount ? process.argv[process.argv.indexOf('--bridge-root') + 1] : null;
+if (bridgeFlagCount > 1 || (bridgeFlagCount && (!bridgeRootArg || !path.isAbsolute(bridgeRootArg))))
+  throw new Error('--bridge-root requires exactly one absolute Host data directory');
+const bridgeRoot = bridgeRootArg ?? root;
 const studioUrl = process.argv.includes('--studio-url') ? process.argv[process.argv.indexOf('--studio-url') + 1] : process.env.VIVIM_STUDIO_URL;
 const transport = process.argv.includes('--transport') ? process.argv[process.argv.indexOf('--transport') + 1] : null;
 // Opt-in only. Reuses Studio's existing receipt-backed chat ask and drive lease;
@@ -26,7 +33,7 @@ if (channelEnabled && (!studioUrl || !channelPort || channelPort > 65535 || !pat
   throw new Error('--studio-channel requires --studio-url, --root and --cdp-port');
 if (process.argv.includes('--studio-url') && !studioUrl) throw new Error('--studio-url requires a URL');
 if (process.argv.includes('--transport') && (transport !== 'direct' || !studioUrl)) throw new Error('--transport direct requires --studio-url');
-const store = createBridgeStore({ root });
+const store = createBridgeStore({ root: bridgeRoot });
 // Never silently revive messages admitted before this worker started.
 // A durable queue is not a fresh owner instruction to send after a restart.
 const startupFence = snapshotRelayStartupFence(store.file);
@@ -42,7 +49,7 @@ if (studioUrl) {
   approvals = createApprovals({ dir: path.join(runtime, 'approvals'), print: () => {} });
   router = await createRouter({ approvals });
 }
-const threadsFile = path.join(root, 'bridge', 'relay-chat-threads.json');
+const threadsFile = path.join(bridgeRoot, 'bridge', 'relay-chat-threads.json');
 const threads = existsSync(threadsFile) ? JSON.parse(readFileSync(threadsFile, 'utf8')) : {};
 const log = m => console.error(`[relay-chat ${new Date().toISOString()}] ${m}`);
 const interim = (rec, text) => appendFileSync(store.file, JSON.stringify({ ...rec, result: text, updatedAt: new Date().toISOString(), rev: rec.rev + 1 }) + '\n', { mode: 0o600 });
@@ -78,7 +85,7 @@ async function handle(cmd) {
 log(`watching ${store.file}`);
 log(`startup admission fence: ${startupFence.size} historical command ids ignored; only post-start owner requests admitted`);
 const heartbeat = createWorkerHeartbeat({
-  root, worker: 'chatWorker',
+  root: bridgeRoot, worker: 'chatWorker',
   // Declared mode only: Studio conversation HTTP currently accepts ChatGPT
   // default text; the existing alternative harness router has four targets.
   providers: studio ? ['chatgpt'] : ['chatgpt','claude','qwen','zai']
