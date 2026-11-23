@@ -1,0 +1,782 @@
+{
+  "schema": "arbor.branch-ancestry-reconciliation/1",
+  "mainSha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8",
+  "observedDateUtc": "2026-11-23T22:35:46.330Z",
+  "expectedNonMainBranches": 77,
+  "completedComparisons": 0,
+  "state": "INCOMPLETE",
+  "deletionAuthorized": false,
+  "note": "Read-only exact-tip ancestry capture. Do not archive/delete branches from this evidence; review live owners and unique content.",
+  "branches": [
+    {
+      "name": "architecture/node0-prime-backbone-r001",
+      "tipSha": "5d71f02a52282c9239a4f127b26260d6390296eb",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "architecture/proposal4-composable-system-truth",
+      "tipSha": "ef175ea088ebf9dfa938f8b37deeb4ea440b8e5e",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "architecture/proposal5-beta-first-centralization",
+      "tipSha": "6ab7e6976c02cac2ee71f030deda3f6541f8102f",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "archive/pre-cleanup-20261113",
+      "tipSha": "a05464144a658f14a7eaa72d3912f6071870ba2b",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "audit/p5-web-tierflow-delta-20261112",
+      "tipSha": "f817a40bea3003d935cbdab9c0cb556ab4e85881",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "docs/p5-vlang-program-sitrep-r001",
+      "tipSha": "2286a36aa4f3f853b01540eb605de2a574159b64",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "docs/vivim-taglines-reasoning-economics-20261112",
+      "tipSha": "f4f36fd97b569892f6144859fbe8467647d96dc4",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "integrate/p5-hq-version-intelligence-r001",
+      "tipSha": "aead9174d893027193941fc747009bbc517df0e4",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "integrate/proposal5-beta-r001",
+      "tipSha": "cdc74102ddac960d01ac390b4ffc68abf5d6ca3f",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/accel-r002-w1-a-host-authority",
+      "tipSha": "13a77e617ef1f009f985cdf9fe9642001c969b18",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/accel-r002-w1-b-runtime-proof",
+      "tipSha": "d888945718a5f69a7a0b357436eff5529be5b1a2",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/accel-r002-w1-c-wiki-visual",
+      "tipSha": "46e20152882a70dc85095effe9986d2705c49542",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/accel-r002-w1-d-evidence-truth",
+      "tipSha": "9cf98329e979598661aa437b3a7dac072309b29a",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/accel-r002-w1-e-feedback-compiler",
+      "tipSha": "81ba6d3aa4a8017589820c9758239925140a9789",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/accel-r002-w1-integration-keeper",
+      "tipSha": "6610b9ea53354ce94a9c8e516e8571b771dfcba7",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/arbor-r003-g-build-recovery",
+      "tipSha": "2a42f1af025db8aacb965326b11c73da671ffb3f",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/arbor-r004-d",
+      "tipSha": "87c35576f142978a11071737b5815911308901a2",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/arbor-r004-evidence",
+      "tipSha": "62a76117c5840760602a468499dd62a318aefe3b",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/arbor-r004-g-keeper",
+      "tipSha": "c323e8cfd9a692c73dbeacef7712453fdf6c4d4f",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/branch-content-consolidation-20261113",
+      "tipSha": "452c82eb48db6fa5f95b47a778d664723359bb63",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/host-mobile-first-r001",
+      "tipSha": "1fea377e68d995e98288ab2386f11b816c561e88",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/p5-fa-pg00-source-truth-r001",
+      "tipSha": "f8415bb793b1a88b920b3ac509f4820e7a4f5e46",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/p5-fa-pg01-native-abi-r001",
+      "tipSha": "78e43165f76c1f6ad18a63b725d75d40501259ce",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/p5-fa-pg02-semantic-fabric-r001",
+      "tipSha": "021864846783d28679b29e563490d4bb100ac079",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/p5-fa-pg03-pwa-storage-r001",
+      "tipSha": "82fcffc1217ac58dd323627c698d71ed422a9534",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/p5-fa-pgz-convergence-r001",
+      "tipSha": "f0b0ce2522eef0929af498a6d0cc31c3294f61b3",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/p5-foundational-architecture-prep-r001",
+      "tipSha": "80c29fbc0d45afbce0fadde5388a8f912cdd2762",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/p5-hq-version-intelligence-prep-r001",
+      "tipSha": "384c2b9ae0ef236e18b7952a43805c3ac0612b58",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/p5-hvi-first-real-audit-local-mission-r001",
+      "tipSha": "0cfe0f227160b65a59e5770cf549b0cfaafe488d",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/p5-hvi-launch-update-r001",
+      "tipSha": "10a79dd689d009829c1b497cc7b75be5c007fa51",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/p5-hvi-s0-source-lock-r001",
+      "tipSha": "2ef7a9f66419d681e040b459ba4762a63aa9564f",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/p5-hvi-tooling-only-update-r001",
+      "tipSha": "1c9c83f4b2f0000f4dfa0dad95bd00860dea7b77",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/p5-hvi-vision-lab-r001",
+      "tipSha": "eeaad8009b079fc1e3a448c20a0e843771a50db5",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/p5-hvi-vision-optimizations-r001",
+      "tipSha": "4c4553e34045ad0d378dbfd44871c42995cefe58",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/p5-hvi-w1-a-snapshots-r001",
+      "tipSha": "53d4bddf4c2a8fd22f12c8d7f3949aac5fd2fe38",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/p5-hvi-w1-b-identity-r001",
+      "tipSha": "1206a343ab98a6e7abe0c19a9549c6b8c32ea9e0",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/p5-hvi-w1-c-compare-r001",
+      "tipSha": "7f72c1415d75a7904eb5c267c2a55a9172d33cd8",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/p5-hvi-w1-d-parity-r001",
+      "tipSha": "622569e9b20f1d6dfae474594eecf544d4fe3d9d",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/p5-hvi-w1-e-reports-r001",
+      "tipSha": "d8080a4056361266702f38cf47f2a0885fe892eb",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/p5-hvi-w1-f-verify-r001",
+      "tipSha": "34f5c1568007977e0e3bf0286d4c1ec730d6af26",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/p5-hvi-w1-z-referee-r001",
+      "tipSha": "c789227038b28483c3bbd6703f539d7c13331ce6",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/p5-hvi-w2-h-host-r001",
+      "tipSha": "d24daa9966abb222cd25210f41dcbb4758aa1209",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/p5-hvi-w2-u-inspector-r001",
+      "tipSha": "5836e9c9f5ba3bee36dbe6896ebfd22364b4c450",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/p5-hvi-w2-z-referee-r001",
+      "tipSha": "725132c640a1f21d3af5c4b9123b314e4df3133d",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/p5-p2-highvalue-labs",
+      "tipSha": "3e6954d21bd70eeccc6e00a310bcb337c3164f50",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/p5-p2-preg-interop-r001",
+      "tipSha": "73b1ea769de6023dfff857d7e9c4003731f3b112",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/p5-p2-preg-knowledge-r001",
+      "tipSha": "4db9e0c2068be36ab42663a76186422c8f9813a1",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/p5-p2-preg-tests-r001",
+      "tipSha": "c807010e52b4a9f82ea9578a979befd38f74cb31",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/p5-phase2-readiness-docs-r001",
+      "tipSha": "a9caad49347749cb0630ae1719bc2d7a8621d645",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/p5-pre-g-convergence-r001",
+      "tipSha": "8b23c73bf450738a76b256bf0fa17ecbf86db591",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/p5-preg-autowiki-r001",
+      "tipSha": "827d21d1c33aa8597c600b45179452abc35c7af9",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/p5-preg-intelligence-convergence-r001",
+      "tipSha": "9359aa0695edbc5e2b91563f688c12983f429f90",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/p5-preg-n0-io-r001",
+      "tipSha": "cde3b6e5521d5b17215ab10088cb8090f8b87e6f",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/p5-preg-semantic-wiki-r001",
+      "tipSha": "d7e59a389a6ec5278595e317dfa904a801783c5b",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/p5-preg-visual-language-r001",
+      "tipSha": "7ad5b3c49aefdf1fdd8b212e5b7eea0e7b92338e",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/p5-rescore-1000-r001",
+      "tipSha": "d8eada9f06cf338ff09f191e73b5f7596f4f842c",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/p5-rescore-cadence-r001",
+      "tipSha": "ef211b5466f9e8e056afa70b0647284bf57faddc",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/p5-rescore-expansion-r001",
+      "tipSha": "3002b667e45d5a43c89304034046d61e2892e896",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/p5-scf-s0-lock-r001",
+      "tipSha": "605665b9389163128b10b9639c8ecd1d68420271",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/p5-semantic-capability-fabric-r001",
+      "tipSha": "0e35c54105f7b8ee8a772b3159d243c6788fb7d4",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/p5-semantic-engineering-program-scaffold-r001",
+      "tipSha": "e41b943e2eb0fd0c60b73918596b219c087f0052",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/p5-vec-pwa-ui-kernel-r001",
+      "tipSha": "d5a5d09b37fbd2d7dfe2a746a6f0cc054f5b1096",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/p5-vec-ui-engine-foundation-r001",
+      "tipSha": "d29c3b4d7eed3d61c285e089c928e74ab7e0f2d6",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/p5-w01-a-native",
+      "tipSha": "dda546a11294920d6521a0f64ab7ee62ec993c70",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/p5-w01-b-host",
+      "tipSha": "78a5105a9c1f1880d658f350e130b1e2632d3532",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/p5-w01-c-studio",
+      "tipSha": "f950b91685927f37b48d020433aa8d2d3c271419",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/p5-w01-d-hq",
+      "tipSha": "ad55fe28c2c331841675f308f9199ee4c2add86a",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/p5-w01-e-ui",
+      "tipSha": "1a5cf26ce14ebce4e31d9a4373060ace61852645",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/p5-w01-f-verify",
+      "tipSha": "be458f3c4cdb7eb38d47b1de2a00d441b7cdc704",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/p5-w01g-b-pwa-static-closure-r001",
+      "tipSha": "b8d1b80b57bd41fe3a6e5cb3a8fa809e59de1bd3",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/p5-w01g-r001-a-pwa-packaging-review",
+      "tipSha": "fb5591c4f19544c6afd7dd3a2d899062f6e8bd5b",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/provider-hub-W0-A-r001",
+      "tipSha": "b90831ea28869762f86e074ed4fb4f8d79697de7",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/provider-hub-W1-B-r001",
+      "tipSha": "3509ba5076f6ac05d2e4286ed20d8c7ddc6fd17e",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/provider-hub-W1-C-r001",
+      "tipSha": "c70e6fe1dd226608dd1e5dd74824d535a4311b22",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/provider-hub-W1-D-r001",
+      "tipSha": "7353569cde87117cc048f389606d9587cae432fe",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/provider-hub-W1-E-r001",
+      "tipSha": "d802be6e29e21cd55ab86ed42cb66b70faa02593",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    },
+    {
+      "name": "work/provider-hub-W1-F-r001",
+      "tipSha": "1ccc56cdf7787f980bcd79aaaa7d770fd5f702b4",
+      "comparison": null,
+      "status": "unverified",
+      "ahead": null,
+      "behind": null,
+      "disposition": "UNKNOWN_PRESERVE",
+      "canDelete": false
+    }
+  ]
+}
