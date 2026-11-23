@@ -155,6 +155,14 @@ test('CAS conflict distinct; lost response uncertain, no automatic retry',async(
   await raises(lost.admission.submit(request(),{}),'WORK_COMMIT_UNCERTAIN');
   assert.equal(lost.events.writes.length,1);
 });
+test('uninitialized Studio preflight is definite; ambiguous POST is uncertain',async()=>{
+  const unavailable=setup({writerError:'STUDIO_WORK_NOT_READY'});
+  await raises(unavailable.admission.submit(request(),{}),'WORK_STORE_NOT_READY');
+  assert.equal(unavailable.events.writes.length,1); // adapter invoked; no underlying POST
+  const uncertain=setup({writerError:'STUDIO_WORK_POST_UNCERTAIN'});
+  await raises(uncertain.admission.submit(request(),{}),'WORK_COMMIT_UNCERTAIN');
+  assert.equal(uncertain.events.writes.length,1);
+});
 test('unexpected Work writer receipt cannot certify a persisted Work',async()=>{
   const x=setup({result:{version:0}});
   await raises(x.admission.submit(request(),{}),'WORK_COMMIT_UNCERTAIN');
