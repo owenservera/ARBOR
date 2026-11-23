@@ -3,7 +3,7 @@
   "mainSha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8",
   "observedDateUtc": "2026-11-23T22:35:46.330Z",
   "expectedNonMainBranches": 77,
-  "completedComparisons": 22,
+  "completedComparisons": 33,
   "state": "INCOMPLETE",
   "deletionAuthorized": false,
   "note": "Read-only exact-tip ancestry capture. Do not archive/delete branches from this evidence; review live owners and unique content.",
@@ -407,112 +407,200 @@
     {
       "name": "work/p5-fa-pg01-native-abi-r001",
       "tipSha": "78e43165f76c1f6ad18a63b725d75d40501259ce",
-      "comparison": null,
-      "status": "unverified",
-      "ahead": null,
-      "behind": null,
-      "disposition": "UNKNOWN_PRESERVE",
-      "canDelete": false
+      "comparison": {
+        "status": "diverged",
+        "ahead_by": 67,
+        "behind_by": 1705,
+        "base_commit": {
+          "sha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8"
+        }
+      },
+      "status": "diverged",
+      "ahead": 67,
+      "behind": 1705,
+      "disposition": "UNIQUE_COMMITS_PRESERVE",
+      "canDelete": false,
+      "comparisonAttempted": true
     },
     {
       "name": "work/p5-fa-pg02-semantic-fabric-r001",
       "tipSha": "021864846783d28679b29e563490d4bb100ac079",
-      "comparison": null,
-      "status": "unverified",
-      "ahead": null,
-      "behind": null,
-      "disposition": "UNKNOWN_PRESERVE",
-      "canDelete": false
+      "comparison": {
+        "status": "diverged",
+        "ahead_by": 68,
+        "behind_by": 1705,
+        "base_commit": {
+          "sha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8"
+        }
+      },
+      "status": "diverged",
+      "ahead": 68,
+      "behind": 1705,
+      "disposition": "UNIQUE_COMMITS_PRESERVE",
+      "canDelete": false,
+      "comparisonAttempted": true
     },
     {
       "name": "work/p5-fa-pg03-pwa-storage-r001",
       "tipSha": "82fcffc1217ac58dd323627c698d71ed422a9534",
-      "comparison": null,
-      "status": "unverified",
-      "ahead": null,
-      "behind": null,
-      "disposition": "UNKNOWN_PRESERVE",
-      "canDelete": false
+      "comparison": {
+        "status": "diverged",
+        "ahead_by": 67,
+        "behind_by": 1705,
+        "base_commit": {
+          "sha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8"
+        }
+      },
+      "status": "diverged",
+      "ahead": 67,
+      "behind": 1705,
+      "disposition": "UNIQUE_COMMITS_PRESERVE",
+      "canDelete": false,
+      "comparisonAttempted": true
     },
     {
       "name": "work/p5-fa-pgz-convergence-r001",
       "tipSha": "f0b0ce2522eef0929af498a6d0cc31c3294f61b3",
-      "comparison": null,
-      "status": "unverified",
-      "ahead": null,
-      "behind": null,
-      "disposition": "UNKNOWN_PRESERVE",
-      "canDelete": false
+      "comparison": {
+        "status": "diverged",
+        "ahead_by": 67,
+        "behind_by": 1705,
+        "base_commit": {
+          "sha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8"
+        }
+      },
+      "status": "diverged",
+      "ahead": 67,
+      "behind": 1705,
+      "disposition": "UNIQUE_COMMITS_PRESERVE",
+      "canDelete": false,
+      "comparisonAttempted": true
     },
     {
       "name": "work/p5-foundational-architecture-prep-r001",
       "tipSha": "80c29fbc0d45afbce0fadde5388a8f912cdd2762",
-      "comparison": null,
-      "status": "unverified",
-      "ahead": null,
-      "behind": null,
-      "disposition": "UNKNOWN_PRESERVE",
-      "canDelete": false
+      "comparison": {
+        "status": "diverged",
+        "ahead_by": 66,
+        "behind_by": 1705,
+        "base_commit": {
+          "sha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8"
+        }
+      },
+      "status": "diverged",
+      "ahead": 66,
+      "behind": 1705,
+      "disposition": "UNIQUE_COMMITS_PRESERVE",
+      "canDelete": false,
+      "comparisonAttempted": true
     },
     {
       "name": "work/p5-hq-version-intelligence-prep-r001",
       "tipSha": "384c2b9ae0ef236e18b7952a43805c3ac0612b58",
-      "comparison": null,
-      "status": "unverified",
-      "ahead": null,
-      "behind": null,
-      "disposition": "UNKNOWN_PRESERVE",
-      "canDelete": false
+      "comparison": {
+        "status": "behind",
+        "ahead_by": 0,
+        "behind_by": 1586,
+        "base_commit": {
+          "sha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8"
+        }
+      },
+      "status": "behind",
+      "ahead": 0,
+      "behind": 1586,
+      "disposition": "ANCESTOR_REVIEW_ONLY",
+      "canDelete": false,
+      "comparisonAttempted": true
     },
     {
       "name": "work/p5-hvi-first-real-audit-local-mission-r001",
       "tipSha": "0cfe0f227160b65a59e5770cf549b0cfaafe488d",
-      "comparison": null,
-      "status": "unverified",
-      "ahead": null,
-      "behind": null,
-      "disposition": "UNKNOWN_PRESERVE",
-      "canDelete": false
+      "comparison": {
+        "status": "diverged",
+        "ahead_by": 2,
+        "behind_by": 1427,
+        "base_commit": {
+          "sha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8"
+        }
+      },
+      "status": "diverged",
+      "ahead": 2,
+      "behind": 1427,
+      "disposition": "UNIQUE_COMMITS_PRESERVE",
+      "canDelete": false,
+      "comparisonAttempted": true
     },
     {
       "name": "work/p5-hvi-launch-update-r001",
       "tipSha": "10a79dd689d009829c1b497cc7b75be5c007fa51",
-      "comparison": null,
-      "status": "unverified",
-      "ahead": null,
-      "behind": null,
-      "disposition": "UNKNOWN_PRESERVE",
-      "canDelete": false
+      "comparison": {
+        "status": "behind",
+        "ahead_by": 0,
+        "behind_by": 1584,
+        "base_commit": {
+          "sha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8"
+        }
+      },
+      "status": "behind",
+      "ahead": 0,
+      "behind": 1584,
+      "disposition": "ANCESTOR_REVIEW_ONLY",
+      "canDelete": false,
+      "comparisonAttempted": true
     },
     {
       "name": "work/p5-hvi-s0-source-lock-r001",
       "tipSha": "2ef7a9f66419d681e040b459ba4762a63aa9564f",
-      "comparison": null,
-      "status": "unverified",
-      "ahead": null,
-      "behind": null,
-      "disposition": "UNKNOWN_PRESERVE",
-      "canDelete": false
+      "comparison": {
+        "status": "behind",
+        "ahead_by": 0,
+        "behind_by": 1577,
+        "base_commit": {
+          "sha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8"
+        }
+      },
+      "status": "behind",
+      "ahead": 0,
+      "behind": 1577,
+      "disposition": "ANCESTOR_REVIEW_ONLY",
+      "canDelete": false,
+      "comparisonAttempted": true
     },
     {
       "name": "work/p5-hvi-tooling-only-update-r001",
       "tipSha": "1c9c83f4b2f0000f4dfa0dad95bd00860dea7b77",
-      "comparison": null,
-      "status": "unverified",
-      "ahead": null,
-      "behind": null,
-      "disposition": "UNKNOWN_PRESERVE",
-      "canDelete": false
+      "comparison": {
+        "status": "behind",
+        "ahead_by": 0,
+        "behind_by": 1582,
+        "base_commit": {
+          "sha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8"
+        }
+      },
+      "status": "behind",
+      "ahead": 0,
+      "behind": 1582,
+      "disposition": "ANCESTOR_REVIEW_ONLY",
+      "canDelete": false,
+      "comparisonAttempted": true
     },
     {
       "name": "work/p5-hvi-vision-lab-r001",
       "tipSha": "eeaad8009b079fc1e3a448c20a0e843771a50db5",
-      "comparison": null,
-      "status": "unverified",
-      "ahead": null,
-      "behind": null,
-      "disposition": "UNKNOWN_PRESERVE",
-      "canDelete": false
+      "comparison": {
+        "status": "behind",
+        "ahead_by": 0,
+        "behind_by": 1577,
+        "base_commit": {
+          "sha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8"
+        }
+      },
+      "status": "behind",
+      "ahead": 0,
+      "behind": 1577,
+      "disposition": "ANCESTOR_REVIEW_ONLY",
+      "canDelete": false,
+      "comparisonAttempted": true
     },
     {
       "name": "work/p5-hvi-vision-optimizations-r001",
@@ -957,9 +1045,9 @@
   ],
   "summary": {
     "total": 77,
-    "attempted": 22,
-    "uniquePreserve": 6,
-    "ancestorReview": 16,
-    "unknownPreserve": 55
+    "attempted": 33,
+    "uniquePreserve": 12,
+    "ancestorReview": 21,
+    "unknownPreserve": 44
   }
 }
