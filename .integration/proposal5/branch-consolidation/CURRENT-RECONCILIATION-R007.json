@@ -3,7 +3,7 @@
   "mainSha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8",
   "observedDateUtc": "2026-11-23T22:35:46.330Z",
   "expectedNonMainBranches": 77,
-  "completedComparisons": 0,
+  "completedComparisons": 11,
   "state": "INCOMPLETE",
   "deletionAuthorized": false,
   "note": "Read-only exact-tip ancestry capture. Do not archive/delete branches from this evidence; review live owners and unique content.",
@@ -11,112 +11,200 @@
     {
       "name": "architecture/node0-prime-backbone-r001",
       "tipSha": "5d71f02a52282c9239a4f127b26260d6390296eb",
-      "comparison": null,
-      "status": "unverified",
-      "ahead": null,
-      "behind": null,
-      "disposition": "UNKNOWN_PRESERVE",
-      "canDelete": false
+      "comparison": {
+        "status": "behind",
+        "ahead_by": 0,
+        "behind_by": 1803,
+        "base_commit": {
+          "sha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8"
+        }
+      },
+      "status": "behind",
+      "ahead": 0,
+      "behind": 1803,
+      "disposition": "ANCESTOR_REVIEW_ONLY",
+      "canDelete": false,
+      "comparisonAttempted": true
     },
     {
       "name": "architecture/proposal4-composable-system-truth",
       "tipSha": "ef175ea088ebf9dfa938f8b37deeb4ea440b8e5e",
-      "comparison": null,
-      "status": "unverified",
-      "ahead": null,
-      "behind": null,
-      "disposition": "UNKNOWN_PRESERVE",
-      "canDelete": false
+      "comparison": {
+        "status": "behind",
+        "ahead_by": 0,
+        "behind_by": 1796,
+        "base_commit": {
+          "sha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8"
+        }
+      },
+      "status": "behind",
+      "ahead": 0,
+      "behind": 1796,
+      "disposition": "ANCESTOR_REVIEW_ONLY",
+      "canDelete": false,
+      "comparisonAttempted": true
     },
     {
       "name": "architecture/proposal5-beta-first-centralization",
       "tipSha": "6ab7e6976c02cac2ee71f030deda3f6541f8102f",
-      "comparison": null,
-      "status": "unverified",
-      "ahead": null,
-      "behind": null,
-      "disposition": "UNKNOWN_PRESERVE",
-      "canDelete": false
+      "comparison": {
+        "status": "behind",
+        "ahead_by": 0,
+        "behind_by": 1705,
+        "base_commit": {
+          "sha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8"
+        }
+      },
+      "status": "behind",
+      "ahead": 0,
+      "behind": 1705,
+      "disposition": "ANCESTOR_REVIEW_ONLY",
+      "canDelete": false,
+      "comparisonAttempted": true
     },
     {
       "name": "archive/pre-cleanup-20261113",
       "tipSha": "a05464144a658f14a7eaa72d3912f6071870ba2b",
-      "comparison": null,
-      "status": "unverified",
-      "ahead": null,
-      "behind": null,
-      "disposition": "UNKNOWN_PRESERVE",
-      "canDelete": false
+      "comparison": {
+        "status": "diverged",
+        "ahead_by": 192,
+        "behind_by": 1427,
+        "base_commit": {
+          "sha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8"
+        }
+      },
+      "status": "diverged",
+      "ahead": 192,
+      "behind": 1427,
+      "disposition": "UNIQUE_COMMITS_PRESERVE",
+      "canDelete": false,
+      "comparisonAttempted": true
     },
     {
       "name": "audit/p5-web-tierflow-delta-20261112",
       "tipSha": "f817a40bea3003d935cbdab9c0cb556ab4e85881",
-      "comparison": null,
-      "status": "unverified",
-      "ahead": null,
-      "behind": null,
-      "disposition": "UNKNOWN_PRESERVE",
-      "canDelete": false
+      "comparison": {
+        "status": "diverged",
+        "ahead_by": 9,
+        "behind_by": 1585,
+        "base_commit": {
+          "sha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8"
+        }
+      },
+      "status": "diverged",
+      "ahead": 9,
+      "behind": 1585,
+      "disposition": "UNIQUE_COMMITS_PRESERVE",
+      "canDelete": false,
+      "comparisonAttempted": true
     },
     {
       "name": "docs/p5-vlang-program-sitrep-r001",
       "tipSha": "2286a36aa4f3f853b01540eb605de2a574159b64",
-      "comparison": null,
-      "status": "unverified",
-      "ahead": null,
-      "behind": null,
-      "disposition": "UNKNOWN_PRESERVE",
-      "canDelete": false
+      "comparison": {
+        "status": "diverged",
+        "ahead_by": 4,
+        "behind_by": 1568,
+        "base_commit": {
+          "sha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8"
+        }
+      },
+      "status": "diverged",
+      "ahead": 4,
+      "behind": 1568,
+      "disposition": "UNIQUE_COMMITS_PRESERVE",
+      "canDelete": false,
+      "comparisonAttempted": true
     },
     {
       "name": "docs/vivim-taglines-reasoning-economics-20261112",
       "tipSha": "f4f36fd97b569892f6144859fbe8467647d96dc4",
-      "comparison": null,
-      "status": "unverified",
-      "ahead": null,
-      "behind": null,
-      "disposition": "UNKNOWN_PRESERVE",
-      "canDelete": false
+      "comparison": {
+        "status": "diverged",
+        "ahead_by": 2,
+        "behind_by": 1556,
+        "base_commit": {
+          "sha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8"
+        }
+      },
+      "status": "diverged",
+      "ahead": 2,
+      "behind": 1556,
+      "disposition": "UNIQUE_COMMITS_PRESERVE",
+      "canDelete": false,
+      "comparisonAttempted": true
     },
     {
       "name": "integrate/p5-hq-version-intelligence-r001",
       "tipSha": "aead9174d893027193941fc747009bbc517df0e4",
-      "comparison": null,
-      "status": "unverified",
-      "ahead": null,
-      "behind": null,
-      "disposition": "UNKNOWN_PRESERVE",
-      "canDelete": false
+      "comparison": {
+        "status": "behind",
+        "ahead_by": 0,
+        "behind_by": 1429,
+        "base_commit": {
+          "sha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8"
+        }
+      },
+      "status": "behind",
+      "ahead": 0,
+      "behind": 1429,
+      "disposition": "ANCESTOR_REVIEW_ONLY",
+      "canDelete": false,
+      "comparisonAttempted": true
     },
     {
       "name": "integrate/proposal5-beta-r001",
       "tipSha": "cdc74102ddac960d01ac390b4ffc68abf5d6ca3f",
-      "comparison": null,
-      "status": "unverified",
-      "ahead": null,
-      "behind": null,
-      "disposition": "UNKNOWN_PRESERVE",
-      "canDelete": false
+      "comparison": {
+        "status": "behind",
+        "ahead_by": 0,
+        "behind_by": 1596,
+        "base_commit": {
+          "sha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8"
+        }
+      },
+      "status": "behind",
+      "ahead": 0,
+      "behind": 1596,
+      "disposition": "ANCESTOR_REVIEW_ONLY",
+      "canDelete": false,
+      "comparisonAttempted": true
     },
     {
       "name": "work/accel-r002-w1-a-host-authority",
       "tipSha": "13a77e617ef1f009f985cdf9fe9642001c969b18",
-      "comparison": null,
-      "status": "unverified",
-      "ahead": null,
-      "behind": null,
-      "disposition": "UNKNOWN_PRESERVE",
-      "canDelete": false
+      "comparison": {
+        "status": "behind",
+        "ahead_by": 0,
+        "behind_by": 1288,
+        "base_commit": {
+          "sha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8"
+        }
+      },
+      "status": "behind",
+      "ahead": 0,
+      "behind": 1288,
+      "disposition": "ANCESTOR_REVIEW_ONLY",
+      "canDelete": false,
+      "comparisonAttempted": true
     },
     {
       "name": "work/accel-r002-w1-b-runtime-proof",
       "tipSha": "d888945718a5f69a7a0b357436eff5529be5b1a2",
-      "comparison": null,
-      "status": "unverified",
-      "ahead": null,
-      "behind": null,
-      "disposition": "UNKNOWN_PRESERVE",
-      "canDelete": false
+      "comparison": {
+        "status": "behind",
+        "ahead_by": 0,
+        "behind_by": 1285,
+        "base_commit": {
+          "sha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8"
+        }
+      },
+      "status": "behind",
+      "ahead": 0,
+      "behind": 1285,
+      "disposition": "ANCESTOR_REVIEW_ONLY",
+      "canDelete": false,
+      "comparisonAttempted": true
     },
     {
       "name": "work/accel-r002-w1-c-wiki-visual",
@@ -778,5 +866,12 @@
       "disposition": "UNKNOWN_PRESERVE",
       "canDelete": false
     }
-  ]
+  ],
+  "summary": {
+    "total": 77,
+    "attempted": 11,
+    "uniquePreserve": 4,
+    "ancestorReview": 7,
+    "unknownPreserve": 66
+  }
 }
