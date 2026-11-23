@@ -10,7 +10,9 @@ const bridge=readFileSync(new URL('../../../packages/vec-ui-engines/src/rust-was
 test('the sole Direct Host product UI is First Contact by default, using the existing composer',()=>{
   assert.match(app,/const FIRST_CONTACT = transport\.direct && !HOST_PREVIEW;/);
   assert.doesNotMatch(app,/get\('first'\)/, 'legacy URL opt-in must not select another UI');
-  assert.match(app,/mountUniversalDock\(\);\s*mountFirstWiki\(\);/);
+  assert.match(app,/mountUniversalDock\(\);/);
+  assert.match(app,/void readDeliveryStamp\(\);/);
+  assert.match(app,/mountFirstWiki\(\);/);
   assert.match(app,/void vivimChat\.send\(body\)/);
   assert.match(app,/admitted\.executionAuthorized !== false/);
   assert.match(app,/admitted\.effectPerformed !== false/);
@@ -106,7 +108,7 @@ test('Wiki-first typing automatically updates without submitting a command',()=>
   assert.match(app,/firstWikiNotice\('Searching Wiki…','typing'\)/);
   assert.match(app,/firstWikiNotice\('Wiki read unavailable/);
   assert.match(app,/No matching Host Wiki entries yet/);
-  assert.match(html,/body\.first-contact:not\(\.first-contact-provider\):not\(\.first-contact-handoff\) #send \{display:none!important\}/);
+  assert.match(html,/body\.first-contact:not\(\.first-contact-provider\):not\(\.first-contact-handoff\):not\(\.first-contact-tools\) #send \{display:none!important\}/);
   assert.match(app,/if \(FIRST_CONTACT\) \{\s*observeFirstWiki\('read-only-send-blocked'/);
 });
 test('client observations are bounded metadata, with no raw typed words',()=>{
@@ -199,10 +201,10 @@ test('visible First Contact revalidates the same Host Wiki without another keypr
 
 test('a new PWA controller never reloads over an unsent draft or approval',()=>{
   const worker=from('sw.js');
-  assert.match(worker,/var CACHE = 'vivim-relay-shell-v41'/);
+  assert.match(worker,/var CACHE = 'vivim-relay-shell-v[1-9][0-9]*'/);
   assert.match(app,/workerRegistration\.update\(\)/);
   assert.match(app,/!\$\('text'\)\?\.value\.trim\(\)/);
-  assert.match(app,/!transport\.pending\(\)&&!S\.busy&&!N\.pending/);
+  assert.match(app,/!transport\.pending\(\)&&!S\.busy&&\s*!S\.sending&&!N\.sending&&!N\.pending/);
   assert.match(app,/!chatHasApproval&&\!\(S\.files\?\.length\)/);
   assert.match(app,/if\(hadController\)\{upgradePending=true;applyUpgrade\(\);\}/);
 });

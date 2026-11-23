@@ -44,7 +44,7 @@ test('unknown, stale catalog/world and malformed context never become commands',
   assert.equal(run('send all my passwords').outcome, 'interpretation_required');
   assert.equal(planner.interpretCommand('Set my theme to dusk', { catalogRevision: catalog.version + 1 }).refusal.code, 'STALE_CATALOG');
   assert.equal(planner.interpretCommand('Set my theme to dusk', { worldRevision: -1 }).refusal.code, 'STALE_WORLD');
-  assert.equal(planner.interpretCommand('Set my theme to dusk', { source: 'remote-root' }).refusal.code, 'INVALID_SCOPE');
+  assert.throws(() => planner.interpretCommand('Set my theme to dusk', { source: 'remote-root' }), { code: 'CONTROL_SOURCE_INVALID' });
 });
 
 test('missing parameters and genuine ambiguity are explicit and not executable', () => {
