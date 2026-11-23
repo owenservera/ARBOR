@@ -109,6 +109,10 @@ struct Desktop {
     phone_status: String,
     status: String,
     overview: Option<Overview>,
+    // Last verified Host color tokens are presentation-only cache. Holding
+    // them through one-shot effects avoids flashing graphite while authoritative
+    // Wiki and control readback are deliberately invalidated.
+    last_theme: Option<ThemeTokens>,
     visual: Option<Visual>,
     vec_view: Option<VecView>,
     visual_status: String,
@@ -134,7 +138,7 @@ impl Desktop {
     // the phone PWA uses. No duplicate desktop palette store or write authority.
     fn native_theme(&self) -> ThemeTokens {
         self.overview.as_ref().and_then(|v|v.theme)
-            .unwrap_or_else(ThemeTokens::graphite)
+            .or(self.last_theme).unwrap_or_else(ThemeTokens::graphite)
     }
     // GPUI-only Windows surface: Host control, plans and receipts render above.
     // Never start Edge, Chrome or a system browser from the native workspace.
@@ -223,6 +227,12 @@ impl Desktop {
         let phone_plan=self.phone_plan_edit_epoch.take().is_some();
         let composer_plan=self.composer_plan_edit_epoch.take().is_some();
         if phone_plan || composer_plan {
+            self.review=None;
+            self.detail.clear();
+        }
+        // A previous completed receipt belongs in the Host journal, not below
+        // a new command draft. Preserve pending approvals and in-flight effects.
+        if !self.busy && !self.review.as_ref().is_some_and(Review::needs_approval) {
             self.review=None;
             self.detail.clear();
         }
@@ -574,6 +584,7 @@ impl Desktop {
                             view.graph_detail.clear();
                             view.graph_status="Host snapshot, Wiki or device source changed · graph readback invalidated".into();
                         }
+                        if let Some(tokens)=data.theme {view.last_theme=Some(tokens);}
                         if view.overview.as_ref()!=Some(&data){view.overview=Some(data);}
                     }
                     Err(error) => {
@@ -1342,6 +1353,8 @@ impl Render for Desktop {
                         .child(div().text_lg().child("Appearance"))
                         .child(if self.overview.as_ref().and_then(|v|v.theme).is_some() {
                             format!("Theme: Host-owned palette revision {} · same tokens as phone PWA",theme.revision)
+                        } else if self.last_theme.is_some() {
+                            format!("Theme: last observed Host palette rev {} · current source pending",theme.revision)
                         } else {
                             "Theme: native graphite fallback · Host source not admitted".to_owned()
                         })
@@ -1893,7 +1906,7 @@ fn main() {
                         phone_plan_edit_epoch:None,composer_plan_edit_epoch:None,
                         _input_subscription:None,phone_draft:None,
                         phone_status:"Waiting for owner-authorized phone observation".into(),
-                        status:"First Contact ready · type to explore your Wiki".into(),overview:None,visual:None,vec_view:None,visual_status:"Not yet observed".into(),visual_guard:RevisionGuard::default(),wiki_guard:WikiRevisionGuard::default(),wiki_delta:"Not yet observed".into(),wiki_events:Vec::new(),detail:String::new(),
+                        status:"First Contact ready · type to explore your Wiki".into(),overview:None,last_theme:None,visual:None,vec_view:None,visual_status:"Not yet observed".into(),visual_guard:RevisionGuard::default(),wiki_guard:WikiRevisionGuard::default(),wiki_delta:"Not yet observed".into(),wiki_events:Vec::new(),detail:String::new(),
                         review:None,last_plan:None,busy:false,uncertain:false,
                         graph_detail:String::new(),graph_status:"Graph not yet queried".into(),graph_busy:false,graph_pending:false,
                         graph_query:None,graph_guard:DevelopmentRevisionGuard::default()};
