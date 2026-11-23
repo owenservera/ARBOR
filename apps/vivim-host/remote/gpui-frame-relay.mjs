@@ -25,10 +25,18 @@ export function createGpuiHostFrameRelay({
     if(latest?.png)latest.png.fill(0); // do not retain previous private pixels
     latest=null;
   };
+  const drop=record=>{
+    listeners.delete(record.id);
+    try{record.onDisconnect?.();}catch{}
+  };
+  const suspend=()=>{
+    clear();
+    for(const record of [...listeners.values()])drop(record);
+  };
   const deliver=(record,frame)=>{
     if(!listeners.has(record.id))return false;
     if(!admit(authorizePhone,record.context,meta(frame))){
-      listeners.delete(record.id);return false;
+      drop(record);return false;
     }
     if(record.pending)return false; // bounded backpressure, send only latest
     if(record.lastSession===frame.session&&record.lastRevision>=frame.revision)
@@ -45,10 +53,10 @@ export function createGpuiHostFrameRelay({
           record.pending=false;
           if(latest&&!closed&&listeners.has(record.id))
             deliver(record,latest);
-        },()=>{listeners.delete(record.id);});
+        },()=>{drop(record);});
       }
       return true;
-    }catch{listeners.delete(record.id);return false;}
+    }catch{drop(record);return false;}
   };
   const publish=(context,frame)=>{
     if(closed)return refused('GPUI_RELAY_CLOSED');
@@ -56,7 +64,7 @@ export function createGpuiHostFrameRelay({
     try{next=validateGpuiFrame(frame,latest);}
     catch{return refused('INVALID_OR_STALE_GPUI_FRAME');}
     if(!admit(authorizeNative,context,next)){
-      clear();
+      suspend();
       return refused('NATIVE_GPUI_OWNER_NOT_ADMITTED');
     }
     const owned={kind:'vivim.gpui.pixels/1',
@@ -69,13 +77,14 @@ export function createGpuiHostFrameRelay({
     return Object.freeze({state:'published',session:next.session,revision:next.revision,
       subscribersDelivered:delivered});
   };
-  const subscribe=(context,onFrame)=>{
+  const subscribe=(context,onFrame,onDisconnect=()=>{})=>{
     if(closed)throw new Error('GPUI_RELAY_CLOSED');
     if(!deviceId(context?.deviceId)||typeof onFrame!=='function'||
+       typeof onDisconnect!=='function'||
        !admit(authorizePhone,context,meta(latest)))
       throw new Error('GPUI_PHONE_NOT_ADMITTED');
     if(listeners.size>=maxSubscribers)throw new Error('GPUI_SUBSCRIBERS_FULL');
-    const record={id:++nextSubscription,context,onFrame,pending:false,
+    const record={id:++nextSubscription,context,onFrame,onDisconnect,pending:false,
       lastSession:null,lastRevision:0};
     listeners.set(record.id,record);
     if(latest)deliver(record,latest);
@@ -114,7 +123,7 @@ export function createGpuiHostFrameRelay({
   };
   const close=()=>{
     if(closed)return;
-    closed=true;clear();listeners.clear();lastInputs.clear();
+    closed=true;suspend();lastInputs.clear();
   };
   return Object.freeze({
     publish,subscribe,receivePointer,close,
