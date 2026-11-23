@@ -237,19 +237,26 @@ fn project_oracle_progress(bootstrap:&Value)->Result<Option<OracleProgress>,Read
     let observations=p["observations"].as_u64().ok_or(ReadError::InvalidProjection)?;
     let contradictions=p["contradictions"].as_u64().ok_or(ReadError::InvalidProjection)?;
     let passes=p["passes"].as_array().ok_or(ReadError::InvalidProjection)?;
-    if passes.len()>7 {return Err(ReadError::InvalidProjection);}
+    // F00 is the Host's visual/theme bootstrap milestone. Accept it as
+    // an authoritative milestone but do not inflate Oracle discovery counts.
+    // Reject duplicates, unknown IDs and untyped statuses as before.
+    if passes.len()>8 {return Err(ReadError::InvalidProjection);}
     let mut ids=std::collections::BTreeSet::new();
     let mut complete_passes=0_u64;
+    let mut observed_passes=0_u64;
     for pass in passes {
         let id=pass["pass"].as_str().ok_or(ReadError::InvalidProjection)?;
-        if !matches!(id,"F02"|"F01"|"D03"|"D04"|"D05"|"D06"|"D07")
+        if !matches!(id,"F00"|"F02"|"F01"|"D03"|"D04"|"D05"|"D06"|"D07")
             || !ids.insert(id) || pass["status"].as_str().is_none() {
             return Err(ReadError::InvalidProjection);
         }
-        if pass["status"]=="complete" {complete_passes+=1;}
+        if id!="F00" {
+            observed_passes+=1;
+            if pass["status"]=="complete" {complete_passes+=1;}
+        }
     }
     Ok(Some(OracleProgress{claims,observations,contradictions,
-        complete_passes,observed_passes:passes.len() as u64}))
+        complete_passes,observed_passes}))
 }
 
 /// The GPUI-only identity of one authorized read attempt. This does not
@@ -681,6 +688,16 @@ mod tests {
         let status=overview.oracle_progress.unwrap();
         assert_eq!((status.claims,status.observations,status.contradictions),(8,12,1));
         assert_eq!((status.complete_passes,status.observed_passes),(2,3));
+        // The owner-selected preset writes F00:complete to the SAME Host ledger.
+        // It must not blank the Wiki or falsely count as an Oracle discovery.
+        p["snapshot"]["bootstrap"]["progress"]["passes"]
+            .as_array_mut().unwrap().insert(0,json!({"pass":"F00","status":"complete"}));
+        let themed=project(&p,&wiki).unwrap();
+        assert_eq!((themed.oracle_progress.unwrap().complete_passes,
+            project(&p,&wiki).unwrap().oracle_progress.unwrap().observed_passes),(2,3));
+        let mut malformed=p.clone();
+        malformed["snapshot"]["bootstrap"]["progress"]["passes"][0]["pass"]=json!("UNLISTED");
+        assert_eq!(project(&malformed,&wiki),Err(ReadError::InvalidProjection));
         let mut malformed=p.clone();
         malformed["snapshot"]["bootstrap"]["progress"]["passes"][1]["pass"]=json!("F02");
         assert_eq!(project(&malformed,&wiki),Err(ReadError::InvalidProjection));
