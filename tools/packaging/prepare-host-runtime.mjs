@@ -31,6 +31,30 @@ export function stagingPaths(mode) {
    previous:path.join(resourceRoot,'.runtime-previous-'+process.pid)
  };
 }
+
+// Stage replacement is intentionally a separate, testable no-effect operation.
+// Keep the prior verified generation intact until an explicit owner-controlled
+// acceptance/cleanup. Deleting it here makes a failed Host/phone cutover
+// impossible to reverse, even when the new frozen manifest verified locally.
+export function activateFrozenRuntime({runtime:targetRuntime,stage:targetStage,previous:targetPrevious}) {
+ if(!existsSync(targetStage))refuse('missing verified runtime candidate: '+targetStage);
+ if(existsSync(targetPrevious))refuse('rollback slot is occupied: '+targetPrevious);
+ const hadPrevious=existsSync(targetRuntime);
+ if(hadPrevious)renameSync(targetRuntime,targetPrevious);
+ try {
+  renameSync(targetStage,targetRuntime);
+ } catch(error) {
+  if(hadPrevious) {
+   try {renameSync(targetPrevious,targetRuntime);}
+   catch(restoreError) {
+    refuse('runtime activation failed and previous runtime could not be restored: '+
+      String(error)+'; restore failure: '+String(restoreError));
+   }
+  }
+  throw error;
+ }
+ return {runtime:targetRuntime,rollbackRuntime:hadPrevious?targetPrevious:null};
+}
 // Frozen staging contract. STAGED_DIRS are workspace trees copied verbatim;
 // STAGED_TOP_FILES are single product files the Host reads at runtime.
 export const STAGED_DIRS=['apps/vivim-host','apps/mobile-relay','studio','harness','hq','packages/tierflow','packages/vec-ui-engines','contracts'];
@@ -382,12 +406,11 @@ checkInputs({requireLock:true,requireTauri:mode!=='--stage-gpui'});
   writeFrozenManifest(targetStage);
   const report=verifyStagedRuntime(targetStage,{manifest:JSON.parse(readFileSync(path.join(targetStage,RUNTIME_MANIFEST_NAME),'utf8')),requireManifest:true});
   if(!report.ok)refuse('staged runtime failed verification: '+report.problems.join('; '));
-  if(existsSync(targetRuntime))renameSync(targetRuntime,targetPrevious);
-  try{renameSync(targetStage,targetRuntime);}catch(e){if(existsSync(targetPrevious))renameSync(targetPrevious,targetRuntime);throw e;}
-  if(existsSync(targetPrevious))rmSync(targetPrevious,{recursive:true,force:true});
-  console.log(JSON.stringify({status:'STAGED_NOT_ACCEPTED',runtime:targetRuntime,nodeSha256:process.env.ARBOR_NODE24_SHA256,apk:'DEFERRED',
+  const activated=activateFrozenRuntime(location);
+  console.log(JSON.stringify({status:'STAGED_NOT_ACCEPTED',runtime:targetRuntime,rollbackRuntime:activated.rollbackRuntime,
+   nodeSha256:process.env.ARBOR_NODE24_SHA256,apk:'DEFERRED',
    manifestFiles:report.checks.manifestFilesVerified,runtimeClosureFiles:report.checks.runtimeClosureFiles,
-   note:'Cargo/Bun/security/device acceptance still required'}));
+   note:'Previous generation retained for manual rollback; Cargo/Bun/security/device acceptance still required'}));
  }catch(e){if(existsSync(targetStage))rmSync(targetStage,{recursive:true,force:true});throw e;}
 }
 }

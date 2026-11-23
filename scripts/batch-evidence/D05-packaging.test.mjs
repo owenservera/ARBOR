@@ -29,7 +29,7 @@ import { fileURLToPath } from 'node:url';
 
 import {
   PACKAGED_BINARIES, CARGO_BUILDS, cargoArgs, STAGED_DIRS, STAGED_TOP_FILES,
-  RUNTIME_MANIFEST_NAME, verifyStagedRuntime, writeFrozenManifest
+  RUNTIME_MANIFEST_NAME, verifyStagedRuntime, writeFrozenManifest, activateFrozenRuntime
 } from '../../tools/packaging/prepare-host-runtime.mjs';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
@@ -174,6 +174,55 @@ test('D05: hqkg-import has a production port in the staged workspace', () => {
     assert.ok(/spawnSync\('cargo'/.test(source), caller + ' still spawns cargo (lane A swaps it)');
   }
   assert.ok(STAGED_DIRS.includes('hq'), 'the importer callers must be inside the staged payload');
+});
+
+test('D05: a staged replacement retains the previous generation for manual rollback', t => {
+  const base=mkdtempSync(path.join(os.tmpdir(), 'arbor-d05-rollback-'));
+  t.after(()=>rmSync(base,{recursive:true,force:true}));
+  const paths={runtime:path.join(base,'runtime'),stage:path.join(base,'candidate'),previous:path.join(base,'previous')};
+  mkdirSync(paths.runtime);
+  mkdirSync(paths.stage);
+  writeFileSync(path.join(paths.runtime,'proof.txt'),'old-source\n');
+  writeFileSync(path.join(paths.stage,'proof.txt'),'new-source\n');
+  const activated=activateFrozenRuntime(paths);
+  assert.equal(activated.rollbackRuntime,paths.previous);
+  assert.equal(readFileSync(path.join(paths.runtime,'proof.txt'),'utf8'),'new-source\n');
+  assert.equal(readFileSync(path.join(paths.previous,'proof.txt'),'utf8'),'old-source\n');
+});
+
+test('D05: an occupied rollback slot refuses replacement without touching either generation', t => {
+  const base=mkdtempSync(path.join(os.tmpdir(), 'arbor-d05-occupied-'));
+  t.after(()=>rmSync(base,{recursive:true,force:true}));
+  const paths={runtime:path.join(base,'runtime'),stage:path.join(base,'candidate'),previous:path.join(base,'previous')};
+  for(const name of ['runtime','stage','previous']){
+    mkdirSync(paths[name]);
+    writeFileSync(path.join(paths[name],'proof.txt'),name);
+  }
+  assert.throws(()=>activateFrozenRuntime(paths),/rollback slot is occupied/);
+  for(const name of ['runtime','stage','previous'])
+    assert.equal(readFileSync(path.join(paths[name],'proof.txt'),'utf8'),name);
+});
+
+test('D05: a missing candidate refuses activation and leaves the installed runtime untouched', t => {
+  const base=mkdtempSync(path.join(os.tmpdir(), 'arbor-d05-no-candidate-'));
+  t.after(()=>rmSync(base,{recursive:true,force:true}));
+  const paths={runtime:path.join(base,'runtime'),stage:path.join(base,'missing'),previous:path.join(base,'previous')};
+  mkdirSync(paths.runtime);
+  writeFileSync(path.join(paths.runtime,'proof.txt'),'protected');
+  assert.throws(()=>activateFrozenRuntime(paths),/missing verified runtime candidate/);
+  assert.equal(readFileSync(path.join(paths.runtime,'proof.txt'),'utf8'),'protected');
+  assert.equal(existsSync(paths.previous),false);
+});
+
+test('D05: first installation activates without pretending a rollback generation exists', t => {
+  const base=mkdtempSync(path.join(os.tmpdir(), 'arbor-d05-first-install-'));
+  t.after(()=>rmSync(base,{recursive:true,force:true}));
+  const paths={runtime:path.join(base,'runtime'),stage:path.join(base,'candidate'),previous:path.join(base,'previous')};
+  mkdirSync(paths.stage);
+  writeFileSync(path.join(paths.stage,'proof.txt'),'new-only');
+  assert.deepEqual(activateFrozenRuntime(paths),{runtime:paths.runtime,rollbackRuntime:null});
+  assert.equal(readFileSync(path.join(paths.runtime,'proof.txt'),'utf8'),'new-only');
+  assert.equal(existsSync(paths.previous),false);
 });
 
 // ---------------------------------------------------------------------------
