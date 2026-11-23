@@ -134,6 +134,22 @@ test('unknown or malformed command effect cannot be silently automatic', () => {
     'categorization must not forge Host permission claims');
 });
 
+test('normalized receipt identity remains unique across review classes', () => {
+  const long='x'.repeat(120);
+  const policy=organizeInterruptions([
+    {id:'  review   item  ',effect:'permission'},
+    {id:'review item',effect:'read',safeAuthorized:true,readOnly:true},
+    {id:long+'a',effect:'irreversible'},
+    {id:long+'b',effect:'read',safeAuthorized:true,readOnly:true},
+    {id:'another item',effect:'read',safeAuthorized:true,readOnly:true}
+  ]);
+  assert.deepEqual(policy.immediate.map(x=>x.id),['review item',long]);
+  assert.deepEqual(policy.automatic.map(x=>x.id),['another item']);
+  assert.deepEqual(policy.batch,[]);
+  const all=[...policy.immediate,...policy.automatic,...policy.batch].map(x=>x.id);
+  assert.equal(new Set(all).size,all.length,'one visible receipt ID is never presented twice');
+  assert.deepEqual(policy.grants,[]);
+});
 test('malformed inputs cannot manufacture missions', () => {
   assert.equal(projectOrchestratorMission({ state: 'complete', result: { answer: 'hello' } }), null);
   assert.equal(projectCommandMission({ status: 'done' }), null);
