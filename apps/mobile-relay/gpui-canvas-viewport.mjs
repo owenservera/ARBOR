@@ -4,6 +4,7 @@
 // or effect dispatcher is constructed here. A caller MUST inject the EXISTING
 // authenticated Host/phone channel and prove each native viewport session.
 import {validateGpuiFrame,nativePointerFromClient} from './gpui-viewport-contract.mjs';
+import {nativeTextFromPhone} from './gpui-text-input-contract.mjs';
 
 const safeStatus=(callback,value)=>{try{callback(value);}catch{/* diagnostics are not authority */}};
 async function decodeNativePng(png){
@@ -11,11 +12,12 @@ async function decodeNativePng(png){
     throw new Error('GPUI_BITMAP_DECODER_UNAVAILABLE');
   return createImageBitmap(new Blob([png],{type:'image/png'}));
 }
-function validChannel(channel){
+function validChannel(channel,textTarget){
   return channel && typeof channel.isAuthenticated==='function' &&
     typeof channel.authorizeFrame==='function' &&
     typeof channel.subscribeFrames==='function' &&
-    typeof channel.submitPointer==='function';
+    typeof channel.submitPointer==='function' &&
+    (!textTarget||typeof channel.submitText==='function');
 }
 
 /**
@@ -30,19 +32,22 @@ function validChannel(channel){
  * The adapter fails closed when pairing/session proof disappears.
  */
 export function mountGpuiCanvasViewport({
-  canvas,channel,decodePng=decodeNativePng,onStatus=()=>{}
+  canvas,channel,textTarget=null,decodePng=decodeNativePng,onStatus=()=>{}
 }={}){
   if(!canvas || typeof canvas.getContext!=='function' ||
       typeof canvas.addEventListener!=='function' ||
       typeof canvas.removeEventListener!=='function' ||
       typeof canvas.getBoundingClientRect!=='function' ||
-      !validChannel(channel) || typeof decodePng!=='function' ||
+      !validChannel(channel,textTarget) ||
+      (textTarget && (typeof textTarget.addEventListener!=='function' ||
+        typeof textTarget.removeEventListener!=='function')) ||
+      typeof decodePng!=='function' ||
       typeof onStatus!=='function')throw new Error('GPUI_VIEWPORT_DEPENDENCY_INVALID');
   const ctx=canvas.getContext('2d',{alpha:false});
   if(!ctx || typeof ctx.drawImage!=='function' ||
       typeof ctx.clearRect!=='function')throw new Error('GPUI_VIEWPORT_CANVAS_UNAVAILABLE');
 
-  let current=null,closed=false,connected=true;
+  let current=null,closed=false,connected=true,composing=false;
   let paintEpoch=0,nextSequence=0;
   const admitted=meta=>{
     try{return channel.isAuthenticated()===true && channel.authorizeFrame(meta)===true;}
@@ -56,6 +61,7 @@ export function mountGpuiCanvasViewport({
   const disconnect=()=>{
     paintEpoch++;
     connected=false;
+    composing=false;
     clear();
     safeStatus(onStatus,'disconnected');
   };
@@ -108,6 +114,19 @@ export function mountGpuiCanvasViewport({
       try{bitmap?.close?.();}catch{}
     }
   };
+  // A resolved Host refusal is still a refusal, not a successful tap/key.
+  // "submitted" only means handed toward GPUI, never a Host effect.
+  const observeInputOutcome=completion=>{
+    const receipt=result=>{
+      if(result?.state==='refused'||result?.state==='native_delivery_uncertain')
+        safeStatus(onStatus,'input-rejected');
+      else if(result?.state==='submitted_to_native_unverified')
+        safeStatus(onStatus,'input-submitted-unverified');
+    };
+    if(completion&&typeof completion.then==='function')
+      void Promise.resolve(completion).then(receipt,()=>safeStatus(onStatus,'input-rejected'));
+    else receipt(completion);
+  };
   const pointerdown=event=>{
     if(closed || !connected || !current)return;
     if(event?.isPrimary===false || (event?.button!==undefined && event.button!==0))return;
@@ -124,27 +143,66 @@ export function mountGpuiCanvasViewport({
       const completion=channel.submitPointer({
         kind:'vivim.gpui.pointer/1',phase:'down',...packet
       });
-      // A resolved Host refusal is still a refusal, not a successful tap.
-      // "submitted" only means handed toward GPUI: it is NOT a Host effect.
-      const receipt=result=>{
-        if(result?.state==='refused'||result?.state==='native_delivery_uncertain')
-          safeStatus(onStatus,'input-rejected');
-        else if(result?.state==='submitted_to_native_unverified')
-          safeStatus(onStatus,'input-submitted-unverified');
-      };
-      if(completion && typeof completion.then==='function')
-        void Promise.resolve(completion).then(receipt,()=>safeStatus(onStatus,'input-rejected'));
-      else receipt(completion);
+      observeInputOutcome(completion);
       event.preventDefault?.();
     }catch{safeStatus(onStatus,'input-rejected');}
+  };
+  // A pre-existing hidden textarea/input may be passed by the incumbent
+  // PWA only as a mobile IME transport control. This module creates no
+  // visible DOM composer or second renderer.
+  const textHandlers=[];
+  const bindText=(name,fn)=>{
+    textTarget.addEventListener(name,fn);
+    textHandlers.push([name,fn]);
+  };
+  const sendText=(phase,value)=>{
+    if(closed||!connected||!current)return;
+    if(!admitted(current)){disconnect();return;}
+    if(!Number.isSafeInteger(nextSequence+1))return;
+    let packet;
+    try{packet=nativeTextFromPhone(current,phase,value,++nextSequence);}
+    catch{return;}
+    try{observeInputOutcome(channel.submitText(packet));}
+    catch{safeStatus(onStatus,'input-rejected');}
+  };
+  const connectText=()=>{
+    if(!textTarget)return;
+    bindText('compositionstart',()=>{composing=true;sendText('ime-start','');});
+    bindText('compositionupdate',event=>{
+      if(composing&&typeof event?.data==='string'&&event.data)
+        sendText('ime-update',event.data);
+    });
+    bindText('compositionend',event=>{
+      if(!composing)return;
+      composing=false;
+      const value=typeof event?.data==='string'?event.data:'';
+      sendText(value?'ime-commit':'ime-cancel',value);
+    });
+    bindText('keydown',event=>{
+      if(composing||event?.isComposing||typeof event?.key!=='string'||
+          event.key==='Unidentified'||event.key==='Process')return;
+      sendText('key-down',event.key);
+    });
+    bindText('keyup',event=>{
+      if(composing||event?.isComposing||typeof event?.key!=='string'||
+          event.key==='Unidentified'||event.key==='Process')return;
+      sendText('key-up',event.key);
+    });
+  };
+  const removeText=()=>{
+    for(const [name,fn] of textHandlers)textTarget.removeEventListener(name,fn);
+    textHandlers.length=0;
   };
   canvas.addEventListener('pointerdown',pointerdown);
   let unsubscribe;
   try{
     unsubscribe=channel.subscribeFrames(frame=>{void receiveFrame(frame);});
     if(typeof unsubscribe!=='function')throw new Error('GPUI_FRAME_SUBSCRIPTION_INVALID');
+    connectText();
   }catch(error){
     closed=true;canvas.removeEventListener('pointerdown',pointerdown);
+    removeText();
+    try{unsubscribe?.();}catch{}
     clear();
     throw error;
   }
@@ -152,6 +210,7 @@ export function mountGpuiCanvasViewport({
     if(closed)return;
     closed=true;disconnect();
     canvas.removeEventListener('pointerdown',pointerdown);
+    removeText();
     try{unsubscribe();}catch{}
   };
   return Object.freeze({
