@@ -47,6 +47,8 @@ pub struct Overview {
     /// The same read-only, hash-linked Studio outcome projection used by the PWA.
     /// No provider prompts/replies, browser ownership or native send authority.
     pub studio_activity: Option<StudioActivity>,
+    /// Inert Studio capture and Drive activity from the same authorized Host owner view.
+    pub studio_operations: Option<StudioOperations>,
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OracleProgress {
@@ -65,6 +67,73 @@ pub struct StudioActivity {
     pub total: u64,
     pub rows: Vec<String>,
 }
+/// No Studio browser/controller, provider driver, job runner or owner grant
+/// is created in GPUI. This value is a validated read-only Host projection.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct StudioOperations {
+    pub capture: String,
+    pub browser: String,
+    pub drive: String,
+    pub jobs: Vec<String>,
+}
+fn project_studio_operations(snapshot:&Value)->Option<StudioOperations>{
+    let value=&snapshot["studioOperations"];
+    if value["schema"]!="vivim.studio-operations/1" ||
+       value["authority"]!="read-only" ||
+       !matches!(value["state"].as_str(),Some("source-backed"|"unavailable")){
+        return None;
+    }
+    let capture=&value["capture"];
+    let (capture_label,browser_label)=match capture["state"].as_str()?{
+        "unavailable"=>("Capture source unavailable".to_owned(),
+            "Browser source unavailable".to_owned()),
+        "source-backed"=>{
+            let state=capture["recorderState"].as_str()?;
+            let browser=capture["browserState"].as_str()?;
+            if !matches!(state,"idle"|"recording"|"stopping"|"paused"|"disconnected"|"error")||
+               !matches!(browser,"available"|"not-running"|"profile-unverified")||
+               !capture["browserVerified"].is_boolean(){return None}
+            (format!("Capture · {state}"),format!("Provider browser · {browser} · {}",
+                if capture["browserVerified"]==true && browser=="available"{
+                    "owner verified"
+                }else{"not ready"}))
+        },
+        _=>return None
+    };
+    let drive=&value["drive"];
+    let (drive_label,rows)=match drive["state"].as_str()? {
+        "unavailable"=>("Drive job source unavailable".to_owned(),Vec::new()),
+        "source-backed"=>{
+            let shown=drive["shown"].as_u64()?;
+            let active=drive["active"].as_u64()?;
+            let jobs=drive["jobs"].as_array()?;
+            if shown>20||active>shown||jobs.len()>8||jobs.len() as u64>shown {
+                return None;
+            }
+            let mut seen=std::collections::BTreeSet::new();
+            let mut rows=Vec::new();
+            for job in jobs {
+                let id=job["id"].as_str()?;
+                if id.len()!=36||!id.bytes().all(|b|
+                    b.is_ascii_hexdigit()||b==b'-')||!seen.insert(id){return None}
+                let state=job["state"].as_str()?;
+                let mode=job["mode"].as_str()?;
+                let dry=job["dryRun"].as_bool()?;
+                if !matches!(state,"queued"|"running"|"done"|"failed"|"cancelled")||
+                   !matches!(mode,"drive"|"campaign"){return None}
+                rows.push(format!("{mode} · {state} · {} · job {id}",
+                    if dry{"dry run"}else{"effect status from Studio"}));
+            }
+            (format!("Drive · {shown} recent jobs · {active} active"),rows)
+        },
+        _=>return None
+    };
+    if value["state"]=="unavailable" &&
+        (capture["state"]!="unavailable"||drive["state"]!="unavailable"){return None}
+    Some(StudioOperations{capture:capture_label,browser:browser_label,
+        drive:drive_label,jobs:rows})
+}
+
 fn source_digest_hex(value:&Value)->bool {
     value.as_str().is_some_and(|text| text.len()==64 &&
         text.bytes().all(|b|b.is_ascii_digit()||(b'a'..=b'f').contains(&b)))
@@ -273,6 +342,7 @@ pub fn project(pwa: &Value, wiki: &Value) -> Result<Overview, ReadError> {
     let read = wiki_read::read(wiki).map_err(|_| ReadError::InvalidProjection)?;
     let oracle_progress=project_oracle_progress(&snapshot["bootstrap"])?;
     let studio_activity=project_studio_activity(snapshot);
+    let studio_operations=project_studio_operations(snapshot);
     let wiki_pages = read.pages.iter().map(|page| page.name.clone()).collect();
     let host_snapshot_digest=source_sha256(snapshot)?;
     Ok(Overview {
@@ -284,7 +354,7 @@ pub fn project(pwa: &Value, wiki: &Value) -> Result<Overview, ReadError> {
         wiki_search_index: read.search_index,
         wiki_indexed_pages: read.indexed_pages,
         wiki_index_truncated: read.index_truncated,
-        oracle_progress,studio_activity,
+        oracle_progress,studio_activity,studio_operations,
     })
 }
 
@@ -483,6 +553,33 @@ mod tests {
         assert_eq!(result.host_snapshot_digest.len(),64);
         assert_eq!(result.wiki_pages, vec!["work".to_string()]);
         assert_eq!(result.recent, vec!["wiki.page.create · applied".to_string()]);
+    }
+    #[test] fn gpui_reads_only_studio_capture_and_drive_metadata(){
+        let mut p=pwa();
+        let wiki=json!({"revision":1,"pages":{}});
+        assert_eq!(project(&p,&wiki).unwrap().studio_operations,None);
+        p["snapshot"]["studioOperations"]=json!({
+            "schema":"vivim.studio-operations/1",
+            "authority":"read-only","state":"source-backed",
+            "capture":{"state":"source-backed","recorderState":"recording",
+              "browserState":"available","browserVerified":true},
+            "drive":{"state":"source-backed","shown":1,"active":1,
+              "jobs":[{"id":"11111111-1111-4111-8111-111111111111",
+                "mode":"drive","state":"running","dryRun":true,
+                "privatePrompt":"never print raw content"}]}
+        });
+        let view=project(&p,&wiki).unwrap().studio_operations.unwrap();
+        assert!(view.capture.contains("recording"));
+        assert!(view.browser.contains("owner verified"));
+        assert!(view.drive.contains("1 active"));
+        assert!(view.jobs[0].contains("dry run"));
+        assert!(!format!("{view:?}").contains("privatePrompt"));
+        let mut conflict=p.clone();
+        conflict["snapshot"]["studioOperations"]["drive"]["jobs"][0]["state"]=json!("sent");
+        assert_eq!(project(&conflict,&wiki).unwrap().studio_operations,None);
+        conflict=p;
+        conflict["snapshot"]["studioOperations"]["capture"]["browserState"]=json!("verified");
+        assert_eq!(project(&conflict,&wiki).unwrap().studio_operations,None);
     }
     #[test] fn gpui_reuses_verified_studio_history_without_provider_messages(){
         let mut p=pwa();
