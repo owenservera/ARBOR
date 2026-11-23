@@ -64,7 +64,9 @@ test('Studio port performs four bounded GET reads and fails closed on offline so
   assert.equal(seen.length,4);
   assert.deepEqual(seen.map(x=>x.method),['GET','GET','GET','GET']);
   assert.ok(seen.every(x=>x.headers['x-studio-token']==='secret-private-owner-token'));
-  assert.ok(seen.every(x=>x.url.startsWith('http://127.0.0.1:38730/api/v1/')));
+  assert.deepEqual(seen.map(x=>new URL(x.url).pathname),[
+    '/api/status','/api/v1/drive/jobs','/api/targets','/api/v1/drive/sites'
+  ],'capture compatibility uses Studio legacy API while Drive uses versioned API');
   assert.ok(!JSON.stringify(view).includes('secret-private-owner-token'));
   const offline=createStudioPort({url:'http://127.0.0.1:38730',
     fetchImpl:async()=>{throw Error('offline') }});
@@ -76,8 +78,8 @@ test('Host owner PWA view gets sanitized Studio operations, unauthorized callers
   const seen=[];
   const studio=http.createServer((req,res)=>{
     seen.push([req.url,req.method,req.headers['x-studio-token']]);
-    const value=req.url==='/api/v1/status'?rawStatus:req.url==='/api/v1/drive/jobs'?rawJobs:
-      req.url==='/api/v1/targets'?rawTargets:req.url==='/api/v1/drive/sites'?rawSites:null;
+    const value=req.url==='/api/status'?rawStatus:req.url==='/api/v1/drive/jobs'?rawJobs:
+      req.url==='/api/targets'?rawTargets:req.url==='/api/v1/drive/sites'?rawSites:null;
     res.writeHead(value?200:404,{'content-type':'application/json'});
     res.end(JSON.stringify(value??{code:'NOT_FOUND'}));
   });
@@ -99,6 +101,8 @@ test('Host owner PWA view gets sanitized Studio operations, unauthorized callers
     assert.equal(body.snapshot.studioOperations.drive.active,1);
     assert.equal(body.snapshot.studioOperations.capture.recorderState,'recording');
     assert.deepEqual(seen.map(x=>x[1]),['GET','GET','GET','GET']);
+    assert.deepEqual(seen.map(x=>x[0]),['/api/status','/api/v1/drive/jobs',
+      '/api/targets','/api/v1/drive/sites']);
     assert.ok(seen.every(x=>x[2]==='studio-service-secret'));
     const serialized=JSON.stringify(body.snapshot.studioOperations);
     assert.ok(!serialized.includes('private.invalid'));
