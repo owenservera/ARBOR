@@ -4,7 +4,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { runInNewContext } from 'node:vm';
-import { turnObservationExpression } from '../../src/capture/conversation-thread.mjs';
+import { turnObservationExpression, transcriptExpression } from '../../src/capture/conversation-thread.mjs';
 
 const adapter={id:'chatgpt',composer:{selectors:['.composer-a','.composer-b']},
   assistant:{streamingSelectors:[]},send:{buttonSelectors:[]}};
@@ -53,4 +53,47 @@ test('one visible editor remains usable before any typing or saved focus',()=>{
   assert.equal(state.draft.text,'');
   assert.equal(state.draft.chars,0);
   assert.equal(state.controls.composerEnabled,true);
+});
+
+
+function observeTranscript({a,b,remembered=null,active=null}={}){
+  const candidates={'.composer-a':[a],'.composer-b':[b]};
+  const document={
+    activeElement:active,
+    querySelectorAll:s=>candidates[s]||[]
+  };
+  return runInNewContext(transcriptExpression({
+    userSelectors:[],assistantSelectors:[],composerSelectors:['.composer-a','.composer-b'],
+    streamingSelectors:[],sendSelectors:[]
+  }),{
+    document,location:{origin:'https://chatgpt.com',pathname:'/'},
+    getComputedStyle:()=>({display:'block',visibility:'visible',contentVisibility:'visible',overflowY:'visible'}),
+    __aionDrive:remembered?{el:remembered}:undefined
+  });
+}
+test('transcript read follows the visible focused composer, not another earlier selector',()=>{
+  const a=editor('unrelated'),b=editor('expected draft');
+  const observation=observeTranscript({a,b,active:b});
+  assert.equal(observation.draft.present,true);
+  assert.equal(observation.draft.chars,14);
+  assert.equal(observation.controls.composerEnabled,true);
+});
+test('transcript read uses the exact remembered composer when focus is absent',()=>{
+  const a=editor('older draft'),b=editor('newer draft');
+  const observation=observeTranscript({a,b,remembered:b});
+  assert.equal(observation.draft.present,true);
+  assert.equal(observation.draft.chars,11);
+});
+test('transcript read refuses to infer a draft from two ambiguous visible editors',()=>{
+  const observation=observeTranscript({a:editor(''),b:editor('other'),active:null});
+  assert.equal(observation.draft.present,null);
+  assert.equal(observation.draft.chars,null);
+  assert.equal(observation.controls.composerEnabled,false);
+});
+test('transcript read skips hidden first editor and refuses a hidden remembered editor',()=>{
+  const hidden=editor('secret',{hidden:true}),live=editor('safe visible');
+  const observation=observeTranscript({a:hidden,b:live,remembered:hidden});
+  assert.equal(observation.draft.present,true);
+  assert.equal(observation.draft.chars,12);
+  assert.equal(observation.controls.composerEnabled,true);
 });
