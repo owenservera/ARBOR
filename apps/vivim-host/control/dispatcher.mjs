@@ -818,11 +818,16 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
         cause?.code??'CONTROL_EFFECT_UNCERTAIN';
       const definitive=cause?.status===409||VALIDATION_ERROR_CODES.has(fallbackCode)||
         (wikiMutation(rec.plan.actionId)&&[400,404,413,428].includes(cause?.status));
-      const status=native?.disposition==='computed'&&
-        ['applied','failed','uncertain'].includes(native.status)&&
-        (cause?native.status!=='applied':native.status==='applied')
-        ?native.status:!cause?'applied':definitive?'failed':'uncertain';
-      const code=native?.disposition==='computed'&&typeof native.code==='string'
+      // Never let a stale packaged Rust helper reinterpret a known pre-send
+      // rejection as an uncertain effect (or an unknown post-send outcome as
+      // definitely failed). The Host has the current executor error and the
+      // matching source-side validation allowlist. Rust pure computation may
+      // corroborate that decision, but cannot override its safety class.
+      const expectedStatus=!cause?'applied':definitive?'failed':'uncertain';
+      const nativeAgrees=native?.disposition==='computed' &&
+        native.status===expectedStatus;
+      const status=nativeAgrees?native.status:expectedStatus;
+      const code=cause&&nativeAgrees&&native.code===fallbackCode
         ?native.code:fallbackCode;
       const error = cause ? { code: short(code, 64), message: short(cause.message ?? cause, 200) } : null;
       const receipt = { schema: RECEIPT_SCHEMA, planId, planDigest: stored, actionId: rec.plan.actionId, args: rec.plan.args,
