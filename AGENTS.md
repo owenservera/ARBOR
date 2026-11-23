@@ -37,3 +37,7 @@ For every requested code change: repository / refreshed base SHA; cloud-changed 
 ## Current full handoff — 2026-11-22 (mandatory first read for this program)
 
 The up-to-date transfer pack for GPUI/Windows app shell, one PWA/PC surface, AutoWiki, VLANG/NLP-to-command, TierFlow migration, 100-step tracker, ZCode parallel iteration, known blockers, exact tested SHAs and next-agent mission is [FULL-HANDOFF-GPUI-PWA-VLANG-ZCODE-20261122.md](docs/product/FULL-HANDOFF-GPUI-PWA-VLANG-ZCODE-20261122.md). **Read before continuing this program.** Refresh GitHub HEAD and reproduce tests; historical PASS evidence in the handoff is not a claim that the current working tree or physical device is deployed.
+
+## Current now-to-future wiring and agent packets — 2026-11-23
+
+Before planning, source editing or handoff for the current program, read [source-backed NOW→FUTURE wiring audit](docs/product/ARBOR-NOW-FUTURE-WIRING-20261123.md) and the [existing Labs R001 execution pack with R002 delta](https://github.com/owenservera/vivim-labs/blob/main/ZCODE-DESKTOP-COMMANDER-OPERATIONS/DEVOPS-PLANNING/PACKS/EXECUTION-20261123-R001/WIRING-DELTA-R002.md). **No second backlog:** #33 remains the 71-task canonical oversight ledger; #32 provider delivery and #31 source-pinned release/device parity remain the P0 implementation issues. Reconcile Labs `TASK-CLAIMS.md` with any concurrent agent before touching shared source paths. Publication is not an automatic claim, provider send, phone acceptance or live-agent notification.
