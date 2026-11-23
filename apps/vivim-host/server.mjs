@@ -34,7 +34,7 @@ import { createControlDispatcher } from './control/dispatcher.mjs';
 import { buildUniversalApi, readIntegrationTargets, searchUniversalApi, describeUniversalCapability, describeCapabilitySources } from './control/universal-api.mjs';
 import { createControlBrowserSessions, UI_COOKIE } from './control/browser-session.mjs';
 import { createOnboardingService } from './onboarding/service.mjs';
-import { createStudioPort, defaultStudioOrigin } from './onboarding/studio-port.mjs';
+import { createStudioPort, defaultStudioOrigin, projectStudioOperations } from './onboarding/studio-port.mjs';
 import { detectEnvironment } from './onboarding/environment.mjs';
 import { controlErrorStatus } from './control/http-status.mjs';
 import { createLiveSourceSurface } from './control/live-source-surface.mjs';
@@ -283,10 +283,12 @@ export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path
   // the onboarding wizard is redeemable by the phone without a second source of truth.
   const pairing = createPairingStore({ dataRoot });
   // One Host-owned onboarding service shares Studio, APK and pairing authority.
+  // Reuse ONE existing Studio port adapter for onboarding and native/phone
+  // diagnostics. It owns no browser and its operations projection is GET-only.
+  const studioPort = studioUrl ? createStudioPort({url:studioUrl,token:studioToken}) : null;
   const onboardingService = onboarding ?? createOnboardingService({
     dataRoot, getRuntime: runtimeFor, directOrigin: directPhone?.origin ?? null,
-    studio: studioUrl ? createStudioPort({ url: studioUrl, token: studioToken }) : null,
-    apk, pairing
+    studio: studioPort, apk, pairing
   });
   if (autoPump) onboardingService.start();
   // Reuse the existing mapped media identity and streaming authority. The
@@ -1291,6 +1293,9 @@ async function handleControl(req, res, pathname, host, controlFor, tokenFor, uiS
       // Owner-authenticated read-only PWA can display the same HQ catalog.
       // Desktop preview never gains a phone stream grant or file path.
       const media = await createMediaPlaybackService().list();
+      const studioOperations = studioPort
+        ? await studioPort.operations().catch(()=>projectStudioOperations(null,null))
+        : projectStudioOperations(null,null);
       if(!verifyOwnerToken(req.headers.authorization,owner)&&!uiSessions.authorized(req,{mutate:false})){sendJson(res,401,{code:'OWNER_AUTH'});return;}
       res.setHeader('cache-control','private, no-store');
       sendJson(res, 200, {
@@ -1302,7 +1307,7 @@ async function handleControl(req, res, pathname, host, controlFor, tokenFor, uiS
             id: c.id, title: c.title, basis: c.basis
           })) : [], preferences: [], hardNos: [] },
           control: { schema: 'vivim.control-recent/1', recent },
-          studioOutcomes:readStudioOutcomes(),
+          studioOutcomes:readStudioOutcomes(),studioOperations,
           devices: { schema: 'vivim.device-counts/1', total: grants.length,
             pending: grants.filter(g => g.status === 'pending').length,
             active: grants.filter(g => g.status === 'active').length }
