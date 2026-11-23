@@ -22,6 +22,27 @@ test('private observation never appears in phone semantic objects',()=>{
 test('D06 all private on phone, PC retains meaning',()=>{
   const s=projectBootstrapSemantics(input('D06',deep('D06')));const out=projectSemanticsForAudience(s);assert.equal(out.objects.length,0);assert.equal(out.views.length,0);assert.equal(projectSemanticsForAudience(s,{audience:'pc'}).views.length,1);
 });
+test('audience projection drops unexpected metadata at every level',()=>{
+  const base=projectBootstrapSemantics(input('F01',f01));
+  const altered={...base,privateDebug:'never reach phone',
+    objects:base.objects.map(o=>({...o,debugToken:'private-object'})),
+    views:base.views.map(v=>({...v,internalNote:'private-view'})),
+    edges:base.edges.map(e=>({...e,privateLink:'private-edge'}))};
+  const before=JSON.stringify(altered);
+  for(const audience of ['phone','pc']){
+    const out=projectSemanticsForAudience(altered,{audience});
+    const serialized=JSON.stringify(out);
+    assert.doesNotMatch(serialized,/never reach phone|private-object|private-view|private-edge/);
+    assert.deepEqual(out.objects.map(o=>o.objectRef),base.objects.map(o=>o.objectRef));
+    assert.deepEqual(out.views.map(v=>v.componentId),base.views.map(v=>v.componentId));
+    assert.deepEqual(out.edges,base.edges);
+    assert.equal(out.effects,'none');
+    assert.equal(out.persisted,false);
+    assert.notEqual(out.views[0].objectRefs,altered.views[0].objectRefs,
+      'no alias to source objectRefs');
+  }
+  assert.equal(JSON.stringify(altered),before,'projection never edits source data');
+});
 test('D07 cannot become active schema or grant',()=>{
   const s=projectBootstrapSemantics(input('D07',deep('D07')));assert.equal(s.effects,'none');assert.equal(s.persisted,false);
 });
