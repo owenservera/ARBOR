@@ -3,7 +3,7 @@
   "mainSha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8",
   "observedDateUtc": "2026-11-23T22:35:46.330Z",
   "expectedNonMainBranches": 77,
-  "completedComparisons": 11,
+  "completedComparisons": 22,
   "state": "INCOMPLETE",
   "deletionAuthorized": false,
   "note": "Read-only exact-tip ancestry capture. Do not archive/delete branches from this evidence; review live owners and unique content.",
@@ -209,112 +209,200 @@
     {
       "name": "work/accel-r002-w1-c-wiki-visual",
       "tipSha": "46e20152882a70dc85095effe9986d2705c49542",
-      "comparison": null,
-      "status": "unverified",
-      "ahead": null,
-      "behind": null,
-      "disposition": "UNKNOWN_PRESERVE",
-      "canDelete": false
+      "comparison": {
+        "status": "behind",
+        "ahead_by": 0,
+        "behind_by": 1290,
+        "base_commit": {
+          "sha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8"
+        }
+      },
+      "status": "behind",
+      "ahead": 0,
+      "behind": 1290,
+      "disposition": "ANCESTOR_REVIEW_ONLY",
+      "canDelete": false,
+      "comparisonAttempted": true
     },
     {
       "name": "work/accel-r002-w1-d-evidence-truth",
       "tipSha": "9cf98329e979598661aa437b3a7dac072309b29a",
-      "comparison": null,
-      "status": "unverified",
-      "ahead": null,
-      "behind": null,
-      "disposition": "UNKNOWN_PRESERVE",
-      "canDelete": false
+      "comparison": {
+        "status": "behind",
+        "ahead_by": 0,
+        "behind_by": 1286,
+        "base_commit": {
+          "sha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8"
+        }
+      },
+      "status": "behind",
+      "ahead": 0,
+      "behind": 1286,
+      "disposition": "ANCESTOR_REVIEW_ONLY",
+      "canDelete": false,
+      "comparisonAttempted": true
     },
     {
       "name": "work/accel-r002-w1-e-feedback-compiler",
       "tipSha": "81ba6d3aa4a8017589820c9758239925140a9789",
-      "comparison": null,
-      "status": "unverified",
-      "ahead": null,
-      "behind": null,
-      "disposition": "UNKNOWN_PRESERVE",
-      "canDelete": false
+      "comparison": {
+        "status": "behind",
+        "ahead_by": 0,
+        "behind_by": 1285,
+        "base_commit": {
+          "sha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8"
+        }
+      },
+      "status": "behind",
+      "ahead": 0,
+      "behind": 1285,
+      "disposition": "ANCESTOR_REVIEW_ONLY",
+      "canDelete": false,
+      "comparisonAttempted": true
     },
     {
       "name": "work/accel-r002-w1-integration-keeper",
       "tipSha": "6610b9ea53354ce94a9c8e516e8571b771dfcba7",
-      "comparison": null,
-      "status": "unverified",
-      "ahead": null,
-      "behind": null,
-      "disposition": "UNKNOWN_PRESERVE",
-      "canDelete": false
+      "comparison": {
+        "status": "behind",
+        "ahead_by": 0,
+        "behind_by": 1258,
+        "base_commit": {
+          "sha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8"
+        }
+      },
+      "status": "behind",
+      "ahead": 0,
+      "behind": 1258,
+      "disposition": "ANCESTOR_REVIEW_ONLY",
+      "canDelete": false,
+      "comparisonAttempted": true
     },
     {
       "name": "work/arbor-r003-g-build-recovery",
       "tipSha": "2a42f1af025db8aacb965326b11c73da671ffb3f",
-      "comparison": null,
-      "status": "unverified",
-      "ahead": null,
-      "behind": null,
-      "disposition": "UNKNOWN_PRESERVE",
-      "canDelete": false
+      "comparison": {
+        "status": "behind",
+        "ahead_by": 0,
+        "behind_by": 1291,
+        "base_commit": {
+          "sha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8"
+        }
+      },
+      "status": "behind",
+      "ahead": 0,
+      "behind": 1291,
+      "disposition": "ANCESTOR_REVIEW_ONLY",
+      "canDelete": false,
+      "comparisonAttempted": true
     },
     {
       "name": "work/arbor-r004-d",
       "tipSha": "87c35576f142978a11071737b5815911308901a2",
-      "comparison": null,
-      "status": "unverified",
-      "ahead": null,
-      "behind": null,
-      "disposition": "UNKNOWN_PRESERVE",
-      "canDelete": false
+      "comparison": {
+        "status": "behind",
+        "ahead_by": 0,
+        "behind_by": 1246,
+        "base_commit": {
+          "sha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8"
+        }
+      },
+      "status": "behind",
+      "ahead": 0,
+      "behind": 1246,
+      "disposition": "ANCESTOR_REVIEW_ONLY",
+      "canDelete": false,
+      "comparisonAttempted": true
     },
     {
       "name": "work/arbor-r004-evidence",
       "tipSha": "62a76117c5840760602a468499dd62a318aefe3b",
-      "comparison": null,
-      "status": "unverified",
-      "ahead": null,
-      "behind": null,
-      "disposition": "UNKNOWN_PRESERVE",
-      "canDelete": false
+      "comparison": {
+        "status": "behind",
+        "ahead_by": 0,
+        "behind_by": 1246,
+        "base_commit": {
+          "sha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8"
+        }
+      },
+      "status": "behind",
+      "ahead": 0,
+      "behind": 1246,
+      "disposition": "ANCESTOR_REVIEW_ONLY",
+      "canDelete": false,
+      "comparisonAttempted": true
     },
     {
       "name": "work/arbor-r004-g-keeper",
       "tipSha": "c323e8cfd9a692c73dbeacef7712453fdf6c4d4f",
-      "comparison": null,
-      "status": "unverified",
-      "ahead": null,
-      "behind": null,
-      "disposition": "UNKNOWN_PRESERVE",
-      "canDelete": false
+      "comparison": {
+        "status": "behind",
+        "ahead_by": 0,
+        "behind_by": 1246,
+        "base_commit": {
+          "sha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8"
+        }
+      },
+      "status": "behind",
+      "ahead": 0,
+      "behind": 1246,
+      "disposition": "ANCESTOR_REVIEW_ONLY",
+      "canDelete": false,
+      "comparisonAttempted": true
     },
     {
       "name": "work/branch-content-consolidation-20261113",
       "tipSha": "452c82eb48db6fa5f95b47a778d664723359bb63",
-      "comparison": null,
-      "status": "unverified",
-      "ahead": null,
-      "behind": null,
-      "disposition": "UNKNOWN_PRESERVE",
-      "canDelete": false
+      "comparison": {
+        "status": "behind",
+        "ahead_by": 0,
+        "behind_by": 1421,
+        "base_commit": {
+          "sha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8"
+        }
+      },
+      "status": "behind",
+      "ahead": 0,
+      "behind": 1421,
+      "disposition": "ANCESTOR_REVIEW_ONLY",
+      "canDelete": false,
+      "comparisonAttempted": true
     },
     {
       "name": "work/host-mobile-first-r001",
       "tipSha": "1fea377e68d995e98288ab2386f11b816c561e88",
-      "comparison": null,
-      "status": "unverified",
-      "ahead": null,
-      "behind": null,
-      "disposition": "UNKNOWN_PRESERVE",
-      "canDelete": false
+      "comparison": {
+        "status": "diverged",
+        "ahead_by": 10,
+        "behind_by": 1427,
+        "base_commit": {
+          "sha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8"
+        }
+      },
+      "status": "diverged",
+      "ahead": 10,
+      "behind": 1427,
+      "disposition": "UNIQUE_COMMITS_PRESERVE",
+      "canDelete": false,
+      "comparisonAttempted": true
     },
     {
       "name": "work/p5-fa-pg00-source-truth-r001",
       "tipSha": "f8415bb793b1a88b920b3ac509f4820e7a4f5e46",
-      "comparison": null,
-      "status": "unverified",
-      "ahead": null,
-      "behind": null,
-      "disposition": "UNKNOWN_PRESERVE",
-      "canDelete": false
+      "comparison": {
+        "status": "diverged",
+        "ahead_by": 67,
+        "behind_by": 1705,
+        "base_commit": {
+          "sha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8"
+        }
+      },
+      "status": "diverged",
+      "ahead": 67,
+      "behind": 1705,
+      "disposition": "UNIQUE_COMMITS_PRESERVE",
+      "canDelete": false,
+      "comparisonAttempted": true
     },
     {
       "name": "work/p5-fa-pg01-native-abi-r001",
@@ -869,9 +957,9 @@
   ],
   "summary": {
     "total": 77,
-    "attempted": 11,
-    "uniquePreserve": 4,
-    "ancestorReview": 7,
-    "unknownPreserve": 66
+    "attempted": 22,
+    "uniquePreserve": 6,
+    "ancestorReview": 16,
+    "unknownPreserve": 55
   }
 }
