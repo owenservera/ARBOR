@@ -1,10 +1,7 @@
-// VIVIM mobile surface: same owner, same Studio APIs, fixed trusted components only.
-// Phone-shaped working view served by the user's own PC: loopback by default, or reachable from a phone on
-// the same WiFi only when the PC runs `studio start|serve --lan-pair` (explicit opt-in, token required;
-// see docs/architecture/MOBILE-LAN-PAIRING.md). Installable as a PWA (manifest + shell-only service
-// worker; the shell opens offline, but data and every mutation always need the live PC). Chrome only
-// installs/registers the worker in a secure context (https, localhost, or `adb reverse`); over plain
-// http://<LAN-IP> it still works as a normal page. NOT an APK, cloud sync, or offline data/queued writes.
+// Legacy Studio personal-app capability view: retained while its unique functions
+// migrate into the canonical apps/mobile-relay PWA. It is NOT another installable
+// VIVIM PWA. Studio continues to own existing sessions, personal-app data and APIs.
+// This route is a compatibility/recovery view only, not a default product home.
 export const MOBILE_API = '/api/v1/personal-apps';
 const APP_ID = /^app-[a-f0-9]{32}$/;
 const ITEM_ID = /^item-[a-f0-9]{32}$/;
@@ -1523,14 +1520,25 @@ export function mountMobile({
   } else if (app) openApp(app); else if (new URLSearchParams(search).get('view') === 'bootstrap') openBootstrap(); else loadIndex();
   return { loadIndex, openApp, chooseScreen, loadContent, openAsk, askSend, openBootstrap, bootSend, render, state };
 }
-// Registers the shell-only service worker (/mobile-sw.js, scope /mobile). Needs a secure context; resolves
-// false (never throws) when the browser or origin does not allow it.
-export function registerMobileShell(nav = typeof navigator !== 'undefined' ? navigator : null,
+// Retirement: never register a second VIVIM service worker. Only unregister
+// the historical Studio-owned worker; the canonical Host/PWA lives on another
+// origin and must not be touched. No user data or recorded sessions are deleted.
+export function retireMobileShell(nav = typeof navigator !== 'undefined' ? navigator : null,
   secure = typeof isSecureContext !== 'undefined' && isSecureContext) {
-  if (!secure || !nav?.serviceWorker) return Promise.resolve(false);
-  return nav.serviceWorker.register('/mobile-sw.js', { scope: '/mobile' }).then(() => true, () => false);
+  if (!secure || !nav?.serviceWorker?.getRegistration) return Promise.resolve(false);
+  return nav.serviceWorker.getRegistration('/mobile').then(reg => {
+    const script = reg?.active?.scriptURL ?? reg?.waiting?.scriptURL ??
+      reg?.installing?.scriptURL;
+    if (typeof script !== 'string') return false;
+    let url;
+    try { url = new URL(script); } catch { return false; }
+    if (url.pathname !== '/mobile-sw.js' ||
+        (typeof location !== 'undefined' && url.origin !== location.origin))
+      return false;
+    return reg.unregister();
+  }).catch(() => false);
 }
 if (typeof document !== 'undefined' && document.getElementById('mobileRoot')) {
   mountMobile({ document, root: document.getElementById('mobileRoot') });
-  registerMobileShell();
+  void retireMobileShell();
 }
