@@ -154,6 +154,24 @@ async function call(hub, method, pathname, body = {}) {
   return { handled, status: res.statusCode, body: res.body ? JSON.parse(res.body) : null };
 }
 
+test('integration hub yields legacy Studio routes to their sole existing service owner', async (t) => {
+  const { hub } = makeHub(t);
+  for (const pathname of ['/api/v1/status','/api/v1/targets',
+    '/api/v1/record/start','/api/v1/record/stop','/api/v1/unregistered-route']) {
+    const result = await call(hub, 'GET', pathname);
+    assert.equal(result.handled, false, pathname + ' belongs to the next Studio router');
+    assert.equal(result.status, 0, 'hub must not write a response on fallback');
+    assert.equal(result.body, null);
+  }
+  const healthy = await call(hub, 'GET', '/api/v1/health');
+  assert.equal(healthy.handled, true);
+  assert.equal(healthy.status, 200, 'known integration health stays in this router');
+  const wrongMethod = await call(hub, 'POST', '/api/v1/health');
+  assert.equal(wrongMethod.handled, true);
+  assert.equal(wrongMethod.status, 405, 'known hub route must keep its method guard');
+  assert.equal(wrongMethod.body.code, 'METHOD_NOT_ALLOWED');
+});
+
 test('integration-hub.mutate requires expectedRevision (CAS guard, single persistence owner)', async (t) => {
   const { hub } = makeHub(t);
   const res = await call(hub, 'POST', '/api/v1/learning/proposals', { scope: 'chat', name: 'n', role: 'reviewer', d: {}, ctx: {}, actor: 'me', note: 'x' });
