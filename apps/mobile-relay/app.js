@@ -70,8 +70,6 @@ if (pocketButton && (navigator.userAgent || '').includes('VIVIM/1.0.0')) {
     window.location.href = 'vivim://pocket';
   });
 }
-// This entry point exists only for Direct Host; never advertise it on the Cloud PWA.
-if (!transport.direct) document.getElementById('grokbot-direct-link')?.setAttribute('hidden', '');
 async function pair(secret) { await api('pair', { method: 'POST', body: JSON.stringify({ secret }) }); }
 
 /* ---------- helpers ---------- */
