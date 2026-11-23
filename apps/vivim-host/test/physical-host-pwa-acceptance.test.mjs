@@ -52,10 +52,16 @@ test('physical Windows Host boots isolated and the mutate/state loop verifies', 
     assert.equal(child.exitCode, null, 'Host child must stay running');
     assert.ok(up, 'physical Windows Host must answer /api/state on ' + base);
 
-    // Desktop entry opens the real phone PWA first (R001 mobile-first cutover).
+    // The legacy desktop iframe is retired: the Host root now resolves to
+    // the existing canonical PWA preview, without an intermediate product UI.
+    const redirect = await fetch(base + '/', { redirect: 'manual' });
+    assert.equal(redirect.status, 308);
+    assert.equal(redirect.headers.get('location'), '/mobile/?host-preview=1');
     const home = await fetch(base + '/');
     assert.equal(home.status, 200);
-    assert.match(await home.text(), /id="phone-surface"/);
+    const body = await home.text();
+    assert.match(body, /id="v-talk"/);
+    assert.doesNotMatch(body, /id="phone-surface"/);
 
     // Read-only diagnostics: GET/HEAD-only, never a mutation surface.
     const status = await fetch(base + '/api/host/status');
