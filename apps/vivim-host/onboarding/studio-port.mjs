@@ -170,9 +170,72 @@ export function createStudioPort({ url, token = null, fetchImpl = fetch, timeout
       state:response.job.state,
       note:'Cancellation is after the current site; this does not cancel a provider reply already sent.'};
   }
+  // PY-001: delegate storage to the *existing* Studio Personal Agent Work CAS.
+  // The Host's separately reviewed action is the only permitted caller of
+  // workCreate: there is intentionally no new unauthenticated HTTP route here.
+  // This is local Work persistence, NOT a provider send or a Dev dispatcher.
+  const WORK_KEY=/^[a-zA-Z0-9][a-zA-Z0-9._:-]{7,127}$/;
+  const WORK_ID=/^work-[a-f0-9]{32}$/;
+  const WORK_SCOPE=/^local-dir-sha256:[a-f0-9]{64}$/;
+  const WORK_STATES=new Set(['queued','active','blocked','completed','cancelled']);
+  const validWorkText=(s,max)=>typeof s==='string'&&s.length<=max&&
+    s.trim()===s&&s.length>0&&!/[\\u0000-\\u001f\\u007f]/.test(s);
+  function validWorkStatus(row){
+    return row?.initialized===true&&row.scope==='local-data-directory'&&
+      WORK_SCOPE.test(row.scopeFingerprint??'')&&
+      Number.isSafeInteger(row.version)&&row.version>=1;
+  }
+  async function workStatus(){
+    const state=await preflightRead('/personal-agent/status');
+    if(!validWorkStatus(state))throw localPreflight('STUDIO_WORK_NOT_READY');
+    return {schema:'vivim.studio-work-status/1',state:'source-backed',
+      scopeFingerprint:state.scopeFingerprint,version:state.version,
+      execution:'not-dispatched'};
+  }
+  async function workCreate(input){
+    if(!input||typeof input!=='object'||Array.isArray(input)||
+       Object.keys(input).some(k=>!['expectedVersion','title','objective','idempotencyKey'].includes(k))||
+       !Number.isSafeInteger(input.expectedVersion)||input.expectedVersion<1||
+       !validWorkText(input.title,160)||!validWorkText(input.objective,4000)||
+       !WORK_KEY.test(input.idempotencyKey??''))
+      throw localPreflight('STUDIO_WORK_INPUT_INVALID');
+    const before=await workStatus();
+    let written;
+    try {
+      // Exactly one POST. A missing or invalid response after this call is
+      // uncertain even if the local Studio store successfully committed.
+      written=await request('/personal-agent/work',input,10000);
+    } catch(error) {
+      if(['PERSONAL_AGENT_VERSION_CONFLICT','PERSONAL_AGENT_WORK_IDEMPOTENCY_CONFLICT'].includes(error?.code))
+        throw error;
+      throw localPreflight('STUDIO_WORK_POST_UNCERTAIN');
+    }
+    const item=written?.item;
+    if(!validWorkStatus(written)||written.scopeFingerprint!==before.scopeFingerprint||
+       !item||!WORK_ID.test(item.id??'')||!WORK_STATES.has(item.status)||
+       item.title!==input.title||item.objective!==input.objective||
+       typeof written.replayed!=='boolean')
+      throw localPreflight('STUDIO_WORK_POST_UNCERTAIN');
+    let readback;
+    try {readback=await request('/personal-agent/work',undefined,3000);}
+    catch {throw localPreflight('STUDIO_WORK_READBACK_UNCERTAIN');}
+    const matching=Array.isArray(readback?.items)?
+      readback.items.filter(row=>row?.id===item.id):[];
+    if(!Number.isSafeInteger(readback?.version)||
+       readback.version<written.version||matching.length!==1||
+       matching[0].title!==input.title||matching[0].objective!==input.objective||
+       !WORK_STATES.has(matching[0].status)||
+       readback.execution!=='not-dispatched')
+      throw localPreflight('STUDIO_WORK_READBACK_UNCERTAIN');
+    return {item:{id:matching[0].id,status:matching[0].status,
+      title:matching[0].title,objective:matching[0].objective},
+      version:readback.version,replayed:written.replayed,
+      execution:'not-dispatched'};
+  }
+
   return {
     origin: base.origin,
-    captureStart, captureStop, driveDryRun, driveCancel,
+    captureStart, captureStop, driveDryRun, driveCancel, workStatus, workCreate,
     // A listing succeeds only when the Studio owner process is up and answering.
     // Four bounded owner-only Studio GETs. These expose safe selection IDs for
     // explicit review buttons; they never control the browser, start capture,
