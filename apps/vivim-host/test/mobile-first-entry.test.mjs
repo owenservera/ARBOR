@@ -8,18 +8,27 @@ import { createHostServer } from '../server.mjs';
 
 const source = relative => readFileSync(new URL(relative, import.meta.url), 'utf8');
 
-test('Host default loads only the actual mobile PWA, not legacy desktop modules', async () => {
+test('Host default retires the iframe and redirects to the one canonical PWA preview', async () => {
   const root = mkdtempSync(path.join(os.tmpdir(), 'vivim-phone-first-'));
   const server = createHostServer({ dataRoot: root });
   try {
     await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
     const base = 'http://127.0.0.1:' + server.address().port;
+    const entry = await fetch(base + '/', { redirect: 'manual' });
+    assert.equal(entry.status, 308);
+    assert.equal(entry.headers.get('location'), '/mobile/?host-preview=1');
+    assert.equal(entry.headers.get('cache-control'), 'no-store');
+    assert.doesNotMatch(await entry.text(), /<iframe|phone-surface/);
     const home = await fetch(base + '/');
-    assert.equal(home.status, 200);
+    assert.equal(home.status, 200, 'the canonical PWA is the landing product');
     const page = await home.text();
-    assert.match(page, /id="phone-surface"/);
-    assert.match(page, /mobile-first\.js/);
-    assert.doesNotMatch(page, /host\.js|control-panel\.js|onboarding\.js/);
+    assert.match(page, /id="v-talk"/);
+    assert.doesNotMatch(page, /id="phone-surface"|mobile-first\.js/);
+    for (const old of ['/mobile-first.js', '/mobile-first.css']) {
+      assert.equal((await fetch(base + old)).status, 404, 'retired root asset: ' + old);
+    }
+    const denied = await fetch(base + '/', { method: 'POST', redirect: 'manual' });
+    assert.equal(denied.status, 405, 'retired entry must not redirect a mutation');
 
     const phone = await fetch(base + '/mobile/?host-preview=1');
     assert.equal(phone.status, 200);
@@ -42,11 +51,14 @@ test('Host default loads only the actual mobile PWA, not legacy desktop modules'
 test('preview is local and cannot silently send or enroll a phone', () => {
   const transport = source('../../mobile-relay/transport.mjs');
   const app = source('../../mobile-relay/app.js');
-  const wrapper = source('../public/mobile-first.js');
+  const legacy = source('../public/mobile-first.js');
+  const host = source('../server.mjs');
   assert.match(app, /HOST_PREVIEW/);
   assert.match(app, /if \(HOST_PREVIEW\) \{\s*toast\('This is your phone preview/);
   assert.match(app, /if \(HOST_PREVIEW\) void startHostPreview\(\); else start\(\)/);
-  assert.match(wrapper, /\^#control-session=/);
+  assert.match(host, /location: '\/mobile\/\?host-preview=1'/);
+  assert.doesNotMatch(host, /'\/': 'mobile-first\.html'/);
+  assert.match(legacy, /\^#control-session=/, 'retired source retained for recovery provenance');
   assert.match(transport, /x-vivim-device-session/);
 });
 
