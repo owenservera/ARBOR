@@ -136,6 +136,7 @@ pub fn changes(input:&Value)->Value {
     let mut identified=Vec::new();
     let mut previous_revision=None;
     let mut previous_sequence=None;
+    let mut seen_entry_ids=HashSet::new();
     for entry in entries {
         let Some(page)=entry["page"].as_str().filter(|s|!s.is_empty())
             else{return refuse()};
@@ -171,6 +172,11 @@ pub fn changes(input:&Value)->Value {
         let sequence=entry["sequence"].as_u64().expect("validated sequence");
         if previous_sequence.is_some_and(|old|sequence<=old){return refuse()}
         previous_sequence=Some(sequence);
+        // One committed journal entry must denote exactly one mutation.
+        // Valid UUID shape and ordering alone do not prevent a duplicated
+        // identity from being projected twice as independent provenance.
+        let id=entry["entryId"].as_str().expect("validated entry id");
+        if !seen_entry_ids.insert(id){return refuse()}
         identified.push(entry);
     }
     let selected:Vec<&Value>=identified.into_iter().filter(|entry|{
