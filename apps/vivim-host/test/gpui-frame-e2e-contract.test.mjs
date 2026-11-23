@@ -30,7 +30,11 @@ function build(){
   const owner={role:'native'},phone={deviceId:DEVICE,grant:'valid'};
   let paired=true,disconnected=0;
   const forwarded=[],drawn=[],cleared=[],messages=[];
-  const listeners=new Map();
+  const listeners=new Map(),textListeners=new Map();
+  const textTarget={
+    addEventListener:(kind,fn)=>textListeners.set(kind,fn),
+    removeEventListener:kind=>textListeners.delete(kind)
+  };
   const canvas={width:0,height:0,
     getContext:()=>({drawImage:(...args)=>drawn.push(args),
       clearRect:(...args)=>cleared.push(args)}),
@@ -44,7 +48,9 @@ function build(){
       (!meta||meta.session===SESSION),
     forwardToGpui:async(_ctx,touch)=>{
       // Substitute only the deterministic owning native InputFence contract.
-      const control=(touch.x>=12&&touch.x<112&&touch.y>=24&&touch.y<72)?42:null;
+      const control=touch.kind==='vivim.gpui.text/1'
+        ? 42 // native-focused control supplied by owning GPUI in this fixture
+        : (touch.x>=12&&touch.x<112&&touch.y>=24&&touch.y<72)?42:null;
       forwarded.push({touch,control});
       return control===null?{state:'no-control'}:{state:'inert-control',controlId:control};
     }
@@ -55,7 +61,8 @@ function build(){
     authorizeFrame:meta=>paired&&Boolean(meta)&&relay.status().available&&
       relay.status().session===meta.session&&relay.status().revision>=meta.revision,
     subscribeFrames:callback=>relay.subscribe(phone,callback,()=>{disconnected++;view?.disconnect();}),
-    submitPointer:packet=>relay.receivePointer(phone,packet)
+    submitPointer:packet=>relay.receivePointer(phone,packet),
+    submitText:packet=>relay.receiveText(phone,packet)
   };
   const decodePng=async()=>({width:360,height:800,close(){}});
   const mount=()=>{view=mountGpuiCanvasViewport({canvas,channel,decodePng,
@@ -64,7 +71,9 @@ function build(){
     const event={clientX,clientY,isPrimary:true,button:0,preventDefault(){}};
     listeners.get('pointerdown')?.(event);
   };
-  return {relay,mount,tap,owner,phone,canvas,drawn,cleared,forwarded,messages,
+  return {relay,mount,tap,
+    type:(key)=>textListeners.get('keydown')?.({key}),
+    owner,phone,canvas,drawn,cleared,forwarded,messages,
     setPaired:x=>{paired=x;},get disconnected(){return disconnected;}};
 }
 test('native frame -> existing Host admission -> thin PWA canvas -> native input contract',async()=>{
@@ -81,6 +90,11 @@ test('native frame -> existing Host admission -> thin PWA canvas -> native input
   assert.equal(s.forwarded[0].touch.y,40);
   assert.equal(s.forwarded[0].touch.revision,1);
   assert.equal(Object.hasOwn(s.forwarded[0].touch,'approved'),false);
+  s.type('a');await tick();
+  assert.equal(s.forwarded.length,2,'text follows pointer on same Host/native channel');
+  assert.equal(s.forwarded[1].touch.kind,'vivim.gpui.text/1');
+  assert.equal(s.forwarded[1].touch.sequence,2);
+  assert.equal(s.forwarded[1].control,42,'only owning native GPUI fixture supplies focus');
   view.dispose();s.relay.close();
 });
 test('loss of existing phone grant removes transport, scrubs canvas and forbids further taps',async()=>{
@@ -91,7 +105,7 @@ test('loss of existing phone grant removes transport, scrubs canvas and forbids 
   assert.equal(s.disconnected,1);
   assert.equal(view.getFrame(),null);
   assert.ok(s.cleared.length>0);
-  s.tap(20,20);await tick();
+  s.tap(20,20);s.type('a');await tick();
   assert.equal(s.forwarded.length,0);
   view.dispose();s.relay.close();
 });
