@@ -26,6 +26,12 @@ test('unknown, unverified and ordinary Wiki questions never become AI sends', ()
   assert.equal(resolveProviderHandoff('Compare Claude and ChatGPT',checked),null);
   assert.equal(resolveProviderHandoff('Ask about Claude: what is it?',checked),null);
   assert.equal(resolveProviderHandoff('@unknown test',checked),null);
+  // Prototype keys are not installed provider aliases, even when truthy on
+  // ordinary objects. Never stage a fake provider from user input.
+  for(const inherited of ['constructor','toString','valueOf','hasOwnProperty']){
+    assert.equal(resolveProviderHandoff('@'+inherited+' hello',checked),null,inherited);
+    assert.equal(resolveProviderHandoff('Ask '+inherited+': hello',checked),null,inherited);
+  }
   assert.equal(resolveProviderHandoff('hello',checked),null);
   assert.equal(resolveProviderHandoff('@claude hello',[]).status,'unverified');
   assert.equal(resolveProviderHandoff('@claude hello',[{id:'claude',signedIn:false}]).status,'unverified');
@@ -114,6 +120,7 @@ test('Chrome Commander slash commands are read-only and cannot be confused with 
   ])assert.equal(resolveReadOnlyChatTool(input),expected);
   for(const input of ['/chrome start','/chrome capture','/chrome stop',
     '/corpus ingest','/ai ChatGPT: message','/tools;send',
+    '/constructor','/toString','/valueOf','/hasOwnProperty',
     'Ask ChatGPT: hello','/browser https://example.com','/delete','/chrome\nrun']){
     assert.equal(resolveReadOnlyChatTool(input),null,input);
   }
