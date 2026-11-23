@@ -314,6 +314,19 @@ pub struct SearchRead {
     pub matches: usize,
     pub hits: Vec<SearchHit>,
 }
+/// Map an offset in Unicode-lowercased bytes back to the source scalar index.
+/// Some characters (for example U+0130) expand to multiple scalars on lowercasing.
+/// Counting scalars in the folded text and skipping that count in the original
+/// can move a readback excerpt *past* the matched word.
+fn original_scalar_match_offset(text:&str,folded_byte:usize)->usize {
+    let mut consumed=0usize;
+    for (source_scalar,ch) in text.chars().enumerate() {
+        let folded_len=ch.to_lowercase().map(|lowered|lowered.len_utf8()).sum::<usize>();
+        consumed+=folded_len;
+        if folded_byte<consumed{return source_scalar}
+    }
+    0
+}
 /// Query the admitted, deliberately bounded Wiki read surface.
 pub fn search_view(view: &WikiRead, query: &str, limit: usize) -> Option<SearchRead> {
     let term=query.trim();
@@ -335,7 +348,8 @@ pub fn search_view(view: &WikiRead, query: &str, limit: usize) -> Option<SearchR
             // sliced at arbitrary UTF-8 bytes. The index itself is bounded.
             let lowered=document.text.to_lowercase();
             let offset=lowered.find(&needle)
-                .map(|byte|lowered[..byte].chars().count()).unwrap_or(0);
+                .map(|byte|original_scalar_match_offset(&document.text,byte))
+                .unwrap_or(0);
             let start=offset.saturating_sub(40);
             let prefix=if start>0{"…"}else{""};
             let excerpt=format!("{}{}",prefix,
