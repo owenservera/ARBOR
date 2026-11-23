@@ -211,7 +211,8 @@ function plausible(action, input, taught) {
 
 // Pre-NLCL safety grammar. NLCL may drop negators or punctuation during frame scoring.
 // These checks must run before device fast paths, help/teach recognizers and slot extraction.
-// Quoted literal text is data, not an imperative clause.
+// Quoted literal text is data, not an imperative clause. Preserve apostrophes
+  // within ordinary words (don't, l'usuari), which remain safety syntax.
 function safeSyntaxFeedback(world) {
   return { status: 'refused', confidence: 0, canonical: null, reading: null,
     nlclVersion: NCLL_VERSION, worldV: world?.v,
@@ -219,7 +220,7 @@ function safeSyntaxFeedback(world) {
 }
 export function guardControlSyntax(text, { catalog, world }) {
   const raw = String(text ?? '');
-  const unquoted = raw.replace(/"(?:\\.|[^"\\])*"|“[^”]*”|«[^»]*»/g,
+  const unquoted = raw.replace(/"(?:\\.|[^"\\])*"|“[^”]*”|«[^»]*»|‘[^’]*’|(?<![\p{L}\p{N}_])'(?:\\.|[^'\\])*'/gu,
     match => ' '.repeat(match.length));
   const normalized = fold(unquoted).replace(/\u2019/g, "'").trim();
   const make = (outcome, code, message) => ({
