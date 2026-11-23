@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { resolveProviderHandoff, canSendVerifiedProvider } from '../provider-handoff.mjs';
+import { resolveProviderHandoff, canSendVerifiedProvider, resolveReadOnlyChatTool, projectReadOnlyChatTool } from '../provider-handoff.mjs';
 
 const checked = ['chatgpt','claude','gemini','qwen','deepseek','zai']
   .map(id => ({id,signedIn:true,queueConsumerReady:true}));
@@ -45,7 +45,7 @@ test('same real mobile composer is reused; no new provider network or effect wri
   assert.match(app,/switchChatTarget\('harness'\)/);
   assert.match(app,/first-contact-provider/);
   assert.match(host,/'provider-handoff\.mjs': \['provider-handoff\.mjs'/);
-  assert.match(html,/body\.first-contact:not\(\.first-contact-provider\):not\(\.first-contact-handoff\) #send/);
+  assert.match(html,/body\.first-contact:not\(\.first-contact-provider\):not\(\.first-contact-handoff\):not\(\.first-contact-tools\) #send/);
   assert.match(app,/document\.body\.classList\.toggle\('first-contact-handoff'/);
   assert.match(app,/if \(transport\.direct && !canSendVerifiedProvider\(/);
   // Every Direct-phone provider send now uses the same stricter gate,
@@ -104,4 +104,55 @@ test('signed-in but worker-offline handoff keeps the draft without advertising s
   assert.equal(handoff.sendsAutomatically,false);
   assert.equal(canSendVerifiedProvider({paired:true,direct:true,sessionApproved:true,target:'harness',
     providerId:'chatgpt',projection:projected,text:handoff.draft,sending:false}),false);
+});
+
+test('Chrome Commander slash commands are read-only and cannot be confused with provider sends',()=>{
+  for(const [input,expected] of [
+    ['/tools','connections'],['/AI STATUS','connections'],['/chrome','chrome'],
+    ['/browser status','chrome'],['/corpus','corpus'],['/memory status','corpus'],
+    ['/feedback','delivery'],['/delivery status','delivery'],['/settings','settings']
+  ])assert.equal(resolveReadOnlyChatTool(input),expected);
+  for(const input of ['/chrome start','/chrome capture','/chrome stop',
+    '/corpus ingest','/ai ChatGPT: message','/tools;send',
+    'Ask ChatGPT: hello','/browser https://example.com','/delete','/chrome\nrun']){
+    assert.equal(resolveReadOnlyChatTool(input),null,input);
+  }
+  const module=readFileSync(new URL('../provider-handoff.mjs',import.meta.url),'utf8');
+  assert.doesNotMatch(module,/\bfetch\s*\(|\bWebSocket\s*\(|\bXMLHttpRequest\b|\.request\s*\(/);
+});
+test('read-only live connection, Chrome and corpus feedback is source-backed and strips private bytes',()=>{
+  const secret='SECRET_UNTRUSTED_PROVIDER_BODY';
+  const providers=[{id:'chatgpt',signedIn:true,queueConsumerReady:false,prompt:secret},
+    {id:'claude',signedIn:true,queueConsumerReady:true}];
+  const studio={schema:'vivim.studio-operations/1',authority:'read-only',
+    capture:{state:'source-backed',recorderState:'idle',browserState:'available',browserVerified:true,url:secret},
+    drive:{state:'source-backed',active:0,shown:4,jobs:[{title:secret}]}};
+  const personalization={phase:'running',corpus:{claims:2,observations:3,contradictions:1},
+    passes:[{pass:'F02',status:'running',prompt:secret}]};
+  const commands=[{mode:'relay-chat',delivery:{state:'uncertain'},text:secret}];
+  const options={providers,studio,personalization,commands,details:true};
+  const ai=projectReadOnlyChatTool('connections',options);
+  assert.equal(ai.rows.find(r=>r.label==='ChatGPT').value,'Signed in · relay unavailable');
+  assert.equal(ai.rows.find(r=>r.label==='Claude').value,'Signed in · relay ready');
+  assert.equal(projectReadOnlyChatTool('chrome',options).rows[0].value,'Verified owner connection');
+  assert.equal(projectReadOnlyChatTool('corpus',options).rows.find(r=>r.label==='Claims').value,'2');
+  assert.match(projectReadOnlyChatTool('delivery',options).rows[0].value,/Uncertain/);
+  assert.equal(projectReadOnlyChatTool('settings',options).readOnly,true);
+  for(const tool of ['connections','chrome','corpus','delivery','settings']){
+    assert.doesNotMatch(JSON.stringify(projectReadOnlyChatTool(tool,options)),/SECRET_UNTRUSTED_PROVIDER_BODY/);
+  }
+  assert.equal(projectReadOnlyChatTool('chrome',{studio:{...studio,authority:'effect-owner'}}).rows[0].value,'Source unavailable');
+  assert.equal(projectReadOnlyChatTool('corpus',{personalization:{phase:'done',corpus:{claims:-1}}}).rows[1].value,'Not reported');
+  assert.equal(projectReadOnlyChatTool('not-a-tool',options),null);
+});
+test('chat tools use the existing composer and redact projections on revoked grants',()=>{
+  const app=readFileSync(new URL('../app.js',import.meta.url),'utf8');
+  const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
+  assert.equal((html.match(/id="chat-composer"/g)||[]).length,1);
+  assert.equal((html.match(/id="chat-tools-button"/g)||[]).length,1);
+  assert.match(app,/resolveReadOnlyChatTool\(body\)/);
+  assert.match(app,/if\(tool\)\{renderChatToolPanel\(tool\);field\.value='';autogrow\(\);updateSend\(\);return;\}/);
+  assert.match(app,/chatToolsPanel\.replaceChildren\(\);chatToolsPanel\.hidden=true/);
+  assert.match(app,/projectReadOnlyChatTool\(tool/);
+  assert.match(html,/first-contact-tools/);
 });

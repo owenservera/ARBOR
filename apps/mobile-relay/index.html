@@ -429,7 +429,7 @@ body.first-contact #msgs > .vivim-shared-programs,
 body.first-contact #msgs > .vivim-programs,
 body.first-contact #msgs > section.vivim-plan,
 body.first-contact:not(.first-contact-provider) #chat-composer > :not(.row):not(#connect-pc),
-body.first-contact:not(.first-contact-provider) #chat-composer .row > :not(#text):not(#send):not(#choose-ai) {
+body.first-contact:not(.first-contact-provider) #chat-composer .row > :not(#text):not(#send):not(#choose-ai):not(#chat-tools-button) {
   display:none!important;
 }
 body.first-contact #app > :not(#v-talk):not(#chat-composer) {display:none!important}
@@ -456,7 +456,7 @@ body.first-contact #chat-composer .row:focus-within {border-color:#8e929a}
 body.first-contact #send {
   width:38px;height:38px;border-radius:50%;background:#eee;color:#111;border:0;
 }
-body.first-contact:not(.first-contact-provider):not(.first-contact-handoff) #send {display:none!important}
+body.first-contact:not(.first-contact-provider):not(.first-contact-handoff):not(.first-contact-tools) #send {display:none!important}
 body.first-contact #first-wiki .first-wiki-label {
   overflow-wrap:anywhere;
 }
@@ -491,6 +491,21 @@ body.first-contact #first-wiki .first-wiki-item p {
 }
 body.first-contact #first-wiki .first-wiki-empty {color:#aeb2bc;font-size:12px;margin:4px}
 body.first-contact #first-wiki small {color:#9ea2ac;font-size:11px}
+/* Read-only connection/Chrome/Oracle feedback lives above the same composer. */
+.chat-tools-panel[hidden]{display:none!important}
+.chat-tools-panel{flex:none;max-height:min(42dvh,370px);overflow:auto;margin:4px 14px;
+  padding:12px 14px;border:1px solid #424650;background:#1b1d22;color:#eee;
+  border-radius:15px;font-size:13px;line-height:1.45}
+.chat-tools-head,.chat-tools-item,.chat-tools-actions{display:flex;gap:10px;align-items:center;justify-content:space-between}
+.chat-tools-head strong{font-size:14px}
+.chat-tools-tabs,.chat-tools-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
+.chat-tools-tabs .btn[aria-pressed="true"]{outline:2px solid #acb3c2}
+.chat-tools-rows{margin:10px 0 0;display:grid;gap:3px}
+.chat-tools-item{padding:5px 0;border-bottom:1px solid #333842}
+.chat-tools-item dt{color:#b6bbc5;min-width:100px}
+.chat-tools-item dd{margin:0;text-align:right;overflow-wrap:anywhere;max-width:65%}
+.chat-tools-note{margin:9px 0 0;color:#afb4c0;font-size:12px}
+body.first-contact #chat-tools-button{width:38px;height:38px;flex-shrink:0;font-size:20px}
 </style>
 </head>
 <body>
@@ -601,6 +616,7 @@ body.first-contact #first-wiki small {color:#9ea2ac;font-size:11px}
             <button type="button" class="round" id="dock-mic" hidden
               aria-label="Record a local voice note" title="Local voice · no automatic send">♩</button>
              <button id="choose-ai" class="btn sm" type="button" hidden aria-label="Choose an AI account" title="ChatGPT, Claude, Gemini and other AI web accounts">AI</button>
+            <button id="chat-tools-button" class="round" type="button" title="Connections · Chrome Commander · Corpus · Delivery" aria-label="Connection tools and visual feedback">⌘</button>
             <textarea id="text" rows="1" placeholder="Message…" aria-label="Message"></textarea>
             <button id="send" class="round" type="button" aria-label="Send" disabled>
               <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>

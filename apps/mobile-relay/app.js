@@ -1,6 +1,6 @@
 // grokbot-authored. Relay PWA shell: same-origin only, no secrets stored in JS-readable storage.
 import { transport } from './transport.mjs';
-import { resolveProviderHandoff, canSendVerifiedProvider, listProviderConnections, canRetargetProviderDraft } from './provider-handoff.mjs';
+import { resolveProviderHandoff, canSendVerifiedProvider, listProviderConnections, canRetargetProviderDraft, resolveReadOnlyChatTool, projectReadOnlyChatTool } from './provider-handoff.mjs';
 import { mountBuildSurface } from './generative-ui/phone-surface.mjs';
 import { sha256Hex } from './generative-ui/portable-digest.mjs';
 import { mountBuildCanvas } from './build-canvas.mjs';
@@ -1204,6 +1204,7 @@ function clearPrivatePhoneState() {
   clearTimeout(S.timer); S.timer = 0;
   S.paired = false; S.cmds = []; S.statusObj = null; S.manifest = null;
   vivimChat.redact();
+  if(chatToolsPanel){chatToolsPanel.replaceChildren();chatToolsPanel.hidden=true;}
   S.files = []; N.messages = []; N.sessions = []; N.session = '';
   // The native panel's own pending record is private phone state too: a lost
   // grant must erase it from memory and from sessionStorage, so no queued or
@@ -1555,6 +1556,68 @@ function renderList() {
   }
   if (!items.length) box.append(el('p', 'muted pad', 'No conversations yet.'));
 }
+// One read-only Chrome Commander/AI/corpus/receipt panel over the existing
+// Host projection. No Chrome channel, duplicate corpus, or effect executor.
+let chatToolsPanel=null,activeChatTool='connections';
+let chatToolDetails=lsGet('vivim.chat-tools-detail.v1',false)===true;
+function renderChatToolPanel(tool=activeChatTool) {
+  activeChatTool=tool;
+  const authorized=HOST_PREVIEW||S.paired;
+  const view=projectReadOnlyChatTool(tool,{
+    providers:authorized?S.manifest?.providers:null,
+    studio:authorized?S.statusObj?.snapshot?.studioOperations:null,
+    personalization:authorized?S.statusObj?.snapshot?.onboarding?.personalization:null,
+    commands:authorized?S.cmds:null,details:chatToolDetails
+  });
+  if(!view)return;
+  if(!chatToolsPanel){
+    chatToolsPanel=el('aside','chat-tools-panel');
+    chatToolsPanel.id='chat-tools-panel';
+    chatToolsPanel.setAttribute('role','region');
+    chatToolsPanel.setAttribute('aria-label','VIVIM live connection and Chrome Commander feedback');
+    chatToolsPanel.setAttribute('aria-live','polite');
+    $('v-talk').querySelector('.chat').append(chatToolsPanel);
+  }
+  const root=chatToolsPanel;
+  root.hidden=false;root.replaceChildren();
+  const head=el('div','chat-tools-head');
+  head.append(el('strong','',view.title));
+  const close=el('button','btn sm','Close');close.type='button';close.setAttribute('aria-label','Close chat tools');
+  close.addEventListener('click',()=>{root.replaceChildren();root.hidden=true;});
+  head.append(close);root.append(head);
+  const tabs=el('div','chat-tools-tabs');
+  for(const [id,label] of [['connections','AIs'],['chrome','Chrome'],['corpus','Corpus'],['delivery','Receipts'],['settings','Options']]){
+    const b=el('button','btn sm',label);
+    b.type='button';b.setAttribute('aria-pressed',String(id===tool));
+    b.addEventListener('click',()=>renderChatToolPanel(id));tabs.append(b);
+  }
+  root.append(tabs);
+  const list=el('dl','chat-tools-rows');
+  for(const row of view.rows){
+    const cell=el('div','chat-tools-item');
+    cell.append(el('dt','',row.label),el('dd','',row.value));list.append(cell);
+  }
+  root.append(list,el('p','chat-tools-note',view.note));
+  const actions=el('div','chat-tools-actions');
+  if(tool==='settings'||tool==='delivery'||tool==='corpus'){
+    const toggle=el('button','btn sm','Feedback detail · '+(chatToolDetails?'On':'Off'));
+    toggle.type='button';toggle.setAttribute('aria-pressed',String(chatToolDetails));
+    toggle.addEventListener('click',()=>{
+      chatToolDetails=!chatToolDetails;
+      lsSet('vivim.chat-tools-detail.v1',chatToolDetails);
+      renderChatToolPanel(activeChatTool);
+    });
+    actions.append(toggle);
+  }
+  const refreshButton=el('button','btn sm','Refresh read-only state');
+  refreshButton.type='button';refreshButton.disabled=!authorized;
+  refreshButton.addEventListener('click',()=>{
+    if(HOST_PREVIEW)void refreshHostPreview().then(()=>renderChatToolPanel(activeChatTool));
+    else if(S.paired)void refresh().then(()=>renderChatToolPanel(activeChatTool));
+  });
+  actions.append(refreshButton);
+  root.append(actions);
+}
 function fmtSize(n) { return n < 1024 ? n + ' B' : n < 1048576 ? (n / 1024).toFixed(0) + ' KB' : (n / 1048576).toFixed(1) + ' MB'; }
 function renderComposer() {
   $('provider-connection-state').hidden = !FIRST_CONTACT || N.target !== 'harness';
@@ -1859,10 +1922,12 @@ function updateSend() {
     // the original Send button visible, and its first tap ONLY stages a draft.
     const handoff = N.target === 'vivim'
       ? resolveProviderHandoff($('text').value,S.manifest?.providers) : null;
+    const tool = N.target === 'vivim' ? resolveReadOnlyChatTool($('text').value) : null;
     document.body.classList.toggle('first-contact-handoff',S.paired && !!handoff);
+    document.body.classList.toggle('first-contact-tools',!!tool);
     if (N.target === 'vivim') {
-      $('send').disabled = !S.paired || !transport.direct || !handoff;
-      $('send').setAttribute('aria-label','Choose AI (review before sending)');
+      $('send').disabled = tool ? false : !S.paired || !transport.direct || !handoff;
+      $('send').setAttribute('aria-label',tool?'Show read-only tools':'Choose AI (review before sending)');
       return;
     }
     if (N.target === 'harness') {
@@ -2001,7 +2066,7 @@ function renderDebug() {
     d.append(el('pre', '', c.text || '')); if (c.result) d.append(el('pre', 'muted', '↳ ' + c.result)); box.append(d);
   }
 }
-function renderAll(force) { renderTabs(); renderList(); renderComposer(); renderMsgs(force); renderDebug(); renderSurfaces(); }
+function renderAll(force) { renderTabs(); renderList(); renderComposer(); renderMsgs(force); renderDebug(); renderSurfaces(); if(chatToolsPanel&&!chatToolsPanel.hidden)renderChatToolPanel(); }
 
 /* ---------- drawer / debug ---------- */
 function closeDrawer() { $('drawer').classList.remove('open'); $('scrim').hidden = true; }
@@ -2248,6 +2313,8 @@ async function send() {
   }
   if (N.target === 'vivim') {
     const field = $('text'), body = field.value.trim();
+    const tool=resolveReadOnlyChatTool(body);
+    if(tool){renderChatToolPanel(tool);field.value='';autogrow();updateSend();return;}
     // An explicit provider request only switches/stages the existing Talk
     // composer. No Host effect or provider send occurs until the next click.
     if (FIRST_CONTACT) {
@@ -2988,6 +3055,10 @@ $('text').addEventListener('keydown', e => {
       (FIRST_CONTACT || matchMedia('(pointer:fine)').matches)) {
     e.preventDefault();if(S.tab!=='talk')goTab('talk');void send();
   }
+});
+$('chat-tools-button').addEventListener('click',()=>{
+  if(S.tab!=='talk')goTab('talk');
+  renderChatToolPanel(chatToolsPanel&&!chatToolsPanel.hidden?activeChatTool:'connections');
 });
 $('choose-ai').hidden=!FIRST_CONTACT;
 $('choose-ai').addEventListener('click',()=>{

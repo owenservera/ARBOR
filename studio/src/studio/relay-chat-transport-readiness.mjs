@@ -3,9 +3,11 @@
 // the bridge polling loop is still running. Never touches tabs, logs prompts,
 // launches Studio, repairs sessions or retries a turn.
 const allowedSites = new Set(['chatgpt']);
-// Only known non-writing lifecycle states are safe to admit. Unknown states,
-// active ownership and unresolved historical sends must never yield READY.
-const passiveStates = new Set(['ready','closed','blocked']);
+// Historical unreconciled turns are retained and their original command IDs
+// remain fenced by the relay ledger. They must not deadlock a *new* independent
+// conversation when Studio confirms no active writer. Never admit unknown or
+// active states, and never turn an uncertain previous turn into a resend.
+const passiveStates = new Set(['ready','closed','blocked','needs-reconciliation']);
 const validLoopback = value => {
   try {
     const url = new URL(value);
@@ -40,10 +42,13 @@ export async function probeStudioRelayReadiness({ url, fetchImpl = fetch, timeou
     const conversations = await read('/conversations');
     if (!Array.isArray(conversations?.conversations))
       return { ready:false, reason:'STUDIO_OWNER_STATE_UNAVAILABLE' };
-    // The browser owner is single-writer. Another in-flight capture means
-    // this worker must defer, regardless of which provider owns that capture.
+    // Studio owns the browser and exposes authoritative per-conversation
+    // writer.active. A historical unresolved session with no writer is safe
+    // to leave quarantined while creating a fresh unrelated thread; a missing
+    // writer field, busy/attaching state, or unknown state is NOT safe.
     if (conversations.conversations.some(row =>
-      !row || typeof row !== 'object' || !passiveStates.has(row.state)))
+      !row || typeof row !== 'object' || !passiveStates.has(row.state) ||
+      row.writer?.active !== false))
       return { ready:false, reason:'STUDIO_WRITER_BUSY_OR_UNKNOWN' };
     return { ready:true, reason:'STUDIO_OWNER_IDLE', supportedProviders:[...allowedSites] };
   } catch {
