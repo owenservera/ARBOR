@@ -186,9 +186,18 @@ pub fn replay(input:&Value)->Value{
     let mut chat=Vec::new();
     let mut product_revision=0u64;
     for (i,e) in records.iter().enumerate(){
-        if !e["entryId"].is_null() {
-            let Some(id)=e["entryId"].as_str()else{return refused("INVALID_ENTRY_ID")};
-            if !ids.insert(id)||e["sequence"].as_u64()!=Some((i+1)as u64){
+        // The Host permits legacy entries without either journal identity.
+        // Reject half-identified entries: an anonymous sequence number must
+        // never be promoted into a committed provenance replay.
+        let entry_id=&e["entryId"];
+        let sequence=&e["sequence"];
+        if entry_id.is_null() {
+            if !sequence.is_null(){return refused("INVALID_SEQUENCE")}
+        } else {
+            let Some(id)=entry_id.as_str().filter(|id|id.len()==36&&
+                id.bytes().all(|b|b.is_ascii_digit()||(b'a'..=b'f').contains(&b)||b==b'-'))
+                else{return refused("INVALID_ENTRY_ID")};
+            if !ids.insert(id)||sequence.as_u64()!=Some((i+1) as u64){
                 return refused("INVALID_SEQUENCE")
             }
         }
@@ -197,7 +206,9 @@ pub fn replay(input:&Value)->Value{
                 let Some(received)=e["receivedAt"].as_str()else{return refused("INVALID_DATE")};
                 let Some(actor)=e["actor"].as_str()else{return refused("INVALID_ACTOR")};
                 let Some(text)=e["text"].as_str()else{return refused("INVALID_CHAT")};
-                product_revision+=1;
+                let Some(advanced)=product_revision.checked_add(1)
+                    else{return refused("PRODUCT_REVISION_OVERFLOW")};
+                product_revision=advanced;
                 chat.push(json!({"actor":actor,
                     "who":if actor=="owner-browser"||actor=="human"{"user"}else{"system"},
                     "text":text,"schemaVersion":e["schemaVersion"],
@@ -214,7 +225,12 @@ pub fn replay(input:&Value)->Value{
                     edit_structure(&mut pages,&e["edit"])
                 };
                 if let Err(code)=result{return refused(code)}
-                revision+=1;product_revision+=1;
+                let Some(advanced)=revision.checked_add(1)
+                    else{return refused("WIKI_REVISION_OVERFLOW")};
+                let Some(product_advanced)=product_revision.checked_add(1)
+                    else{return refused("PRODUCT_REVISION_OVERFLOW")};
+                revision=advanced;
+                product_revision=product_advanced;
                 let Some(received)=e["receivedAt"].as_str()else{return refused("INVALID_DATE")};
                 at=received.to_owned();
             },
