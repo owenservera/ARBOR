@@ -91,3 +91,30 @@ test('accepts real PNG sliced from nonzero byteOffset without reading adjacent b
   assert.equal(extracted.byteOffset>0,true);
   assert.equal(validateGpuiFrame({...frame(),png:extracted}).width,360);
 });
+
+test('pointer refuses fabricated or malformed GPUI frame identity instead of inventing an input packet',()=>{
+  const bounds={left:0,top:0,width:360,height:800};
+  const good=validateGpuiFrame(frame());
+  const bad=[
+    {width:360,height:800},
+    {...good,session:'not-a-real-session'},
+    {...good,session:'A'.repeat(32)},
+    {...good,revision:0},
+    {...good,revision:-1},
+    {...good,revision:1.5},
+    {...good,width:0},
+    {...good,height:0},
+    {...good,width:4097},
+    {...good,height:4097},
+    {...good,width:Infinity}
+  ];
+  for(const descriptor of bad)
+    assert.throws(()=>nativePointerFromClient(descriptor,bounds,10,10,1),/INVALID_GPUI_POINTER/);
+});
+test('valid metadata still translates first touch and does not grant authority',()=>{
+  const descriptor=validateGpuiFrame(frame());
+  const touch=nativePointerFromClient(descriptor,{left:1,top:2,width:360,height:800},2,3,0);
+  assert.deepEqual(touch,{session:'a'.repeat(32),revision:1,sequence:0,x:1,y:1});
+  assert.ok(!Object.hasOwn(touch,'controlId'));
+  assert.ok(!Object.hasOwn(touch,'approved'));
+});
