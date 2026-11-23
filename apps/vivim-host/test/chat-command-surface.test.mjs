@@ -179,7 +179,9 @@ test('lost execution response exposes original plan inspection, never auto retri
     await until(() => ui.text('control-status').includes('Owner session active'));
     ui.elements.get('t').value = 'set my theme to ink';
     await ui.elements.get('f').fire('submit');
-    assert.ok(findButton(ui, 'Approve & apply on PC'));
+    // The control preview is loaded asynchronously from the real Host. Never
+    // turn a transient slow reply into a false missing-action regression.
+    await until(() => !!findButton(ui, 'Approve & apply on PC'));
     shared.loseResponse = true;
     await findButton(ui, 'Approve & apply on PC').fire('click');
     await until(() => ui.text('control-result').includes('Execution response unconfirmed'));
