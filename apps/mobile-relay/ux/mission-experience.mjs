@@ -144,11 +144,17 @@ export function organizeInterruptions(requests) {
   for (const entry of rows(requests)) {
     if (!plain(entry) || !value(entry.id, 120) || seen.has(entry.id)) continue;
     seen.add(entry.id);
-    const effect = ['spend', 'external-message', 'irreversible', 'permission'].includes(entry.effect);
-    const urgent = effect || entry.requiresApproval === true || entry.outcomeUncertain === true
+    // An explicit effect is review-critical unless its exact known contract
+    // names a read-only/no-effect operation. Never infer harmlessness from an
+    // unrecognized or malformed effect value, even when a source self-reports
+    // safeAuthorized/readOnly. This only categorizes UI, never grants approval.
+    const effect = value(entry.effect, 40);
+    const harmlessEffect = entry.effect === undefined ||
+      (typeof entry.effect === 'string' && ['none', 'read', 'read-only'].includes(effect.toLowerCase()));
+    const urgent = !harmlessEffect || entry.requiresApproval === true || entry.outcomeUncertain === true
       || entry.consequential === true || entry.severity === 'critical';
     const record = { id: value(entry.id, 120), reason: value(entry.reason, 300),
-      requiresApproval: entry.requiresApproval === true, effect: value(entry.effect, 40) || null };
+      requiresApproval: entry.requiresApproval === true, effect: effect || null };
     if (urgent) immediate.push(record);
     else if (entry.safeAuthorized === true && entry.readOnly === true) automatic.push(record);
     else batch.push(record);
