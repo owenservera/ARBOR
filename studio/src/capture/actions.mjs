@@ -364,8 +364,15 @@ export async function sendMessage(page, adapter = null, deps = {}) {
   let method = 'enter';
   if (strategy === 'button') {
     let button;
-    try { button = await d.findSendButton(page, adapter); }
-    catch { return notAttempted('button', 'send button inspection failed'); }
+    // Real ChatGPT hydration can enable its single submit control after the
+    // composer already reads as nonempty. Poll only the READ-ONLY preflight;
+    // never repeat or change the chosen send action. Total extra wait <=1s.
+    for (let probe = 0; probe < 6; probe++) {
+      try { button = await d.findSendButton(page, adapter); }
+      catch { return notAttempted('button', 'send button inspection failed'); }
+      if (button?.found) break;
+      if (probe < 5) await d.sleep(200);
+    }
     if (!button?.found) return notAttempted('button',
       typeof button?.reason === 'string' && button.reason.length <= 180
         ? button.reason : 'strategy is "button" but no visible, enabled send button was found; not falling back to Enter');
