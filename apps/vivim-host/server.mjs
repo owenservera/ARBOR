@@ -365,7 +365,7 @@ export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path
       return;
     }
     if (pathname.startsWith('/api/host/control/')) {
-      await handleControl(req, res, pathname, host, controlFor, tokenFor, uiSessions, enrollment, runtimeFor, productJournal, nativeContext, developmentSources, learningArchiveRoot);
+      await handleControl(req, res, pathname, host, controlFor, tokenFor, uiSessions, enrollment, runtimeFor, productJournal, nativeContext, studioPort, developmentSources, learningArchiveRoot);
       return;
     }
     const workerMatch = pathname.match(/^\/api\/host\/worker\/([^\/]+)\/(status|recover)$/);
@@ -1078,7 +1078,7 @@ function ownerAuthorized(req, res, tokenFor) {
 // UTC03 desktop surface. Reads: loopback + owner token. Writes additionally require the exact
 // same Origin and an explicit header, like bootstrap mutations. Execution happens only in the
 // dispatcher, bound to a previously returned plan digest.
-async function handleControl(req, res, pathname, host, controlFor, tokenFor, uiSessions, enrollment, runtimeFor, productJournal, nativeContext, developmentSources, learningArchiveRoot) {
+async function handleControl(req, res, pathname, host, controlFor, tokenFor, uiSessions, enrollment, runtimeFor, productJournal, nativeContext, studioPort, developmentSources, learningArchiveRoot) {
   const route = pathname.slice('/api/host/control/'.length);
   const sameOrigin = String(req.headers.origin || '').toLowerCase() === 'http://' + host;
   const isMutation = ['plan', 'interpret', 'execute', 'ui-logout', 'devices/approve', 'devices/revoke','development/register','development/index','development/hvi-grant','development/hvi-revoke'].includes(route);
