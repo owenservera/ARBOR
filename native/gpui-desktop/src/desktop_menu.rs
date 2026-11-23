@@ -64,7 +64,7 @@ use Intent::*;
 pub const FILE: &[Item] = &[
     Item::new("file-first-contact", "First Contact", Navigate(FirstContact)),
     Item::new("file-refresh", "Refresh sources", RefreshSources),
-    Item::new("file-workspace-migration", "Workspace / Drive migration", InspectSurfaces(Section::File)),
+    Item::new("file-workspace-migration", "Drive jobs · read-only", Navigate(DeveloperTools)),
 ];
 pub const EDIT: &[Item] = &[
     Item::new("edit-focus", "Focus composer", FocusComposer),
@@ -81,7 +81,7 @@ pub const TOOLS: &[Item] = &[
     Item::new("tools-build", "Build / VEC", Navigate(Build)),
     Item::new("tools-graph", "Knowledge graph", Navigate(KnowledgeGraph)),
     Item::new("tools-decisions", "Host decisions", Navigate(HostDecisions)),
-    Item::new("tools-legacy-migration", "Studio / Host migration", InspectSurfaces(Section::Tools)),
+    Item::new("tools-legacy-migration", "Studio capture · read-only", Navigate(DeveloperTools)),
 ];
 pub const DEVELOPER: &[Item] = &[
     Item::new("developer-home", "Developer tools", Navigate(DeveloperTools)),
@@ -155,6 +155,8 @@ mod tests {
         assert!(all.contains(&OpenScreenshotsFolder));
         assert!(all.contains(&SaveDiagnostics));
         assert!(all.contains(&InspectSurfaces(Section::Developer)));
+        assert!(FILE.iter().any(|item|item.label.contains("Drive jobs")&&item.intent==Navigate(DeveloperTools)));
+        assert!(TOOLS.iter().any(|item|item.label.contains("Studio capture")&&item.intent==Navigate(DeveloperTools)));
         assert!(all.iter().all(|intent| matches!(
             intent, Navigate(_) | RefreshSources | FocusComposer | ClearComposer |
                 CaptureWindow | OpenScreenshotsFolder | SaveDiagnostics | InspectSurfaces(_)
