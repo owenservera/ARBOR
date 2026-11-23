@@ -137,7 +137,8 @@ export function createStudioRelayChat({ url, store, fetchImpl = fetch,
         const prior = await request(`/conversations/${encodeURIComponent(previous.studioConversationId)}`);
         blockedInitial = prior?.id === previous.studioConversationId && prior.site === provider && ['closed', 'blocked'].includes(prior.state) && prior.readiness?.reason === 'DRAFT_PRESENT' && Array.isArray(prior.turns) && prior.turns.length === 0;
       }
-      if (previous && !cmd.newChat && !blockedInitial) {
+      const freshConversation = !(previous && !cmd.newChat && !blockedInitial);
+      if (!freshConversation) {
         if (previous.status !== 'done' || !previous.studioConversationId || !previous.studioTurnKey) { fail('UNSUPPORTED_STUDIO_CONTINUATION: no verified previous binding'); return; }
         const prior = await request(`/conversations/${encodeURIComponent(previous.studioConversationId)}`);
         const turn = prior?.turns?.find(item => item.key === previous.studioTurnKey);
@@ -159,6 +160,21 @@ export function createStudioRelayChat({ url, store, fetchImpl = fetch,
       // A blocked response retains the existing explicit DRAFT_PRESENT fence.
       if (created.state !== 'ready' && created.state !== 'blocked') {
         fail('STUDIO_CONVERSATION_NOT_READY'); return;
+      }
+      // A ready HTTP state is not an identity proof. The existing Studio runtime
+      // must supply the correct provider, released writer and fresh tab binding
+      // before a potentially effectful POST /turns.
+      if (created.site !== provider || created.writer?.active !== false ||
+          created.recovery?.pending === true ||
+          (freshConversation && (created.identity?.state !== 'unbound' ||
+            created.identity?.reason !== 'NEW_CHAT' ||
+            created.binding?.ownedByStudio !== true ||
+            created.binding.thread != null ||
+            typeof created.binding?.targetId !== 'string' ||
+            !created.binding.targetId.trim() ||
+            created.binding.targetId === 'pending-' + id ||
+            !['https://chatgpt.com', 'https://chat.openai.com'].includes(created.binding.origin)))) {
+        fail('STUDIO_CONVERSATION_BINDING_UNVERIFIED'); return;
       }
       safeToFinish = true;
       // The durable claimed revision binds the caller-owned key and conversation before any submit.
