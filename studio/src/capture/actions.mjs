@@ -366,7 +366,9 @@ export async function sendMessage(page, adapter = null, deps = {}) {
     let button;
     try { button = await d.findSendButton(page, adapter); }
     catch { return notAttempted('button', 'send button inspection failed'); }
-    if (!button?.found) return notAttempted('button', 'strategy is "button" but no visible, enabled send button was found; not falling back to Enter');
+    if (!button?.found) return notAttempted('button',
+      typeof button?.reason === 'string' && button.reason.length <= 180
+        ? button.reason : 'strategy is "button" but no visible, enabled send button was found; not falling back to Enter');
     method = 'button';
   }
 
@@ -1583,7 +1585,15 @@ export async function driveSite({ adapter, prompt, port = 9222, dataDir, record 
     }
     if (sent.uncertain) result.uncertain = true;
     emit({ type: 'sent', ...sent });
-    if (!sent.ok) { errors.push(sent.dispatched ? `send did not take (${sent.method})` : `send not attempted (${sent.method})`); result.reason = 'send-failed'; return; }
+    if (!sent.ok) {
+      errors.push(sent.dispatched ? `send did not take (${sent.method})` : `send not attempted (${sent.method})`);
+      // Preserve a bounded structural preflight reason for diagnosis. The
+      // message body is not logged and this never causes a second send.
+      if (!sent.dispatched && typeof sent.reason === 'string')
+        errors.push(`send preflight: ${sent.reason.slice(0, 180)}`);
+      result.reason = 'send-failed';
+      return;
+    }
 
     // The thread a send just created must be identified now: without it the conversation cannot be
     // continued and the captured page has no durable native identity. A new chat moves from / to
