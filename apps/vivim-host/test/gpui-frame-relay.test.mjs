@@ -60,7 +60,7 @@ test('one authorized native frame reaches only authorized paired subscribers',()
   assert.equal(f.relay.publish(owner,frame()).state,'published');
   assert.equal(f.published.length,1);
   assert.equal(f.published[0].revision,1);
-  assert.deepEqual(f.published[0].png,Buffer.from(png));
+  assert.deepEqual(f.published[0].png,Uint8Array.from(png));
   assert.equal(f.relay.status().subscribers,1);
   assert.equal(f.relay.status().available,true);
   assert.equal(JSON.stringify(f.relay.status()).includes('png'),false);
@@ -73,6 +73,19 @@ test('subscriber mutation does not corrupt owner pixels or another phone subscri
   const got=[];f.listen(phone,p=>got.push(p));
   assert.equal(got[0].png[0],137);
   assert.equal(f.relay.status().revision,1);
+  f.relay.close();
+});
+test('owned PNG bytes do not alias source Buffer and scrub cannot mutate future frames',()=>{
+  const f=fixture();
+  const source=Buffer.from(png);
+  f.listen();
+  assert.equal(f.relay.publish(owner,{...frame(),png:source}).state,'published');
+  source.fill(0); // simulate source-side pool buffer reuse after publish
+  assert.equal(f.published[0].png[0],137);
+  f.relay.publish(owner,frame(2)); // scrubs previous owner buffer only
+  assert.equal(png[0],137,'fixture source pixels cannot be mutated by Host cleanup');
+  assert.equal(f.published[0].png[0],137,'a delivered packet is an independent snapshot');
+  assert.equal(f.published[1].png[0],137);
   f.relay.close();
 });
 test('stale, duplicate and corrupted PNG frames never publish',()=>{
