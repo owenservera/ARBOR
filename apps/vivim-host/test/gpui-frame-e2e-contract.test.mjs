@@ -65,7 +65,7 @@ function build(){
     submitText:packet=>relay.receiveText(phone,packet)
   };
   const decodePng=async()=>({width:360,height:800,close(){}});
-  const mount=()=>{view=mountGpuiCanvasViewport({canvas,channel,decodePng,
+  const mount=()=>{view=mountGpuiCanvasViewport({canvas,channel,textTarget,decodePng,
     onStatus:s=>messages.push(s)});return view;};
   const tap=(clientX=20,clientY=20)=>{
     const event={clientX,clientY,isPrimary:true,button:0,preventDefault(){}};
