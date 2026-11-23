@@ -108,6 +108,8 @@ test('reconnected client cannot replay previously submitted pointer sequence',as
   assert.equal(second.getFrame()?.revision,1,'reconnected phone received real latest frame');
   s.tap(20,20);await tick();
   assert.equal(s.forwarded.length,1);
+  assert.ok(s.messages.includes('input-rejected'),
+    'a duplicate Host refusal must be visible to the thin PWA client');
   assert.equal(second.getFrame()?.revision,1);
   second.dispose();s.relay.close();
 });
