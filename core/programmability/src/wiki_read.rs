@@ -456,6 +456,22 @@ pub fn source_delta(input:&Value)->Value{
             },
             (Some(before),Some(after))=>{
                 let mut changed=false;
+                // The source digest covers the entire page object, not just
+                // sections and links. Preserve that identity in delta feedback
+                // without emitting metadata values (which may be private).
+                let before_fields=before.as_object().expect("validated page");
+                let after_fields=after.as_object().expect("validated page");
+                let metadata_changed=before_fields.iter().any(|(key,value)|{
+                    !matches!(key.as_str(),"sections"|"links") &&
+                    after_fields.get(key)!=Some(value)
+                }) || after_fields.keys().any(|key|{
+                    !matches!(key.as_str(),"sections"|"links") &&
+                    !before_fields.contains_key(key)
+                });
+                if metadata_changed {
+                    changed=true;
+                    record("page-metadata-changed",page,None);
+                }
                 if before.get("links")!=after.get("links"){
                     changed=true;changed_links+=1;
                     record("links-changed",page,None);
