@@ -227,7 +227,7 @@ function runStats(dataDir, out) {
 // the root URL (observed 2026-11-03: every create resolved to reason CREATION_UNPINNED).
 // Trade recorded in docs/chatgpt-channel/CONTRACT.md: the channel keeps its own send-once receipt
 // store keyed by requestId; Studio's per-thread turn journal is not reached on this path.
-function createDriveTransport({ binPath, timeoutSeconds = 120, exec = spawnSync, isolatedThreads = false }) {
+export function createDriveTransport({ binPath, timeoutSeconds = 120, exec = spawnSync, isolatedThreads = false, dataDir, port }) {
   return {
     async createThread() {
       // Legacy seat uses its existing tab. Explicit isolated phone sessions use
@@ -246,9 +246,16 @@ function createDriveTransport({ binPath, timeoutSeconds = 120, exec = spawnSync,
       if (isolatedThreads && threadId !== 'chatgpt-new-tab' && !pinned)
         return { effect: 'FAILED', reply: null, threadId, journalKey: requestId, reason: 'CHATGPT_THREAD_UNVERIFIED' };
       const target = isolatedThreads && pinned ? 'https://chatgpt.com/c/' + pinned[1] : 'chatgpt';
+      // The parent CLI's --data-dir and --port are NOT inherited by a subprocess.
+      // Without them the child may attach to a different CDP listener/profile.
+      // Refuse the send instead of silently falling back to global defaults.
+      if (typeof dataDir !== 'string' || !path.isAbsolute(dataDir) ||
+          !Number.isSafeInteger(port) || port < 1 || port > 65535)
+        return { effect: 'FAILED', reply: null, threadId, journalKey: requestId, reason: 'STUDIO_DRIVE_CONTEXT_UNVERIFIED' };
       const driveArgs = [
         binPath, 'drive', target, ...(isolatedThreads ? [] : ['--reuse-tab']), '--prompt', prompt,
-        '--timeout', String(remaining), '--no-record', '--json',
+        '--timeout', String(remaining), '--no-record', '--data-dir', dataDir,
+        '--port', String(port), '--json',
       ];
       // Fast typing is ~2x quicker but has been seen to drop characters on long prompts, so it is
       // used only for short ones. Anything substantial types at human pace.
@@ -393,10 +400,13 @@ function traceFrame({ kind, receipt, outcome, startedAt, thread }) {
 }
 
 function runChannelCommand(ctx, sub, flags) {
-  const { out, paths, settings } = ctx;
+  const { out, paths, settings, port } = ctx;
   const store = createFileStore({ dataDir: paths.root });
   const site = typeof flags.site === 'string' && flags.site.length ? flags.site : 'chatgpt';
-  const transport = channelTransportFor(site, settings, { isolatedThread: flags['isolated-thread'] === true });
+  const transport = channelTransportFor(site, settings, {
+    isolatedThread: flags['isolated-thread'] === true,
+    dataDir: paths.root, cdpPort: port
+  });
   const channel = createChatChannel({
     transport,
     store,
@@ -414,7 +424,7 @@ function runChannelCommand(ctx, sub, flags) {
  * One browser owner (Studio), one transport per site. The site rides in the scope string; an
  * unknown site is a usage error here and a CHANNEL_DENIED in the core, so it never reaches a send.
  */
-function channelTransportFor(site, settings, { isolatedThread = false } = {}) {
+function channelTransportFor(site, settings, { isolatedThread = false, dataDir, cdpPort } = {}) {
   if (isolatedThread && site !== 'chatgpt') throw usageError('Isolated-thread channel currently supports ChatGPT only');
   if (site === 'gemini') return createGeminiTransport({ binPath: STUDIO_BIN });
   if (site === 'claude') return createClaudeTransport({ binPath: STUDIO_BIN });
@@ -423,7 +433,8 @@ function channelTransportFor(site, settings, { isolatedThread = false } = {}) {
   // conversation API instead, for use if the ChatGPT UI starts pinning /c/<uuid> again.
   return !isolatedThread && process.env.VIVIM_CHAT_TRANSPORT === 'conversation'
     ? createStudioChatTransport({ port: settings.studioPort })
-    : createDriveTransport({ binPath: STUDIO_BIN, isolatedThreads: isolatedThread });
+    : createDriveTransport({ binPath: STUDIO_BIN, isolatedThreads: isolatedThread,
+        dataDir, port: cdpPort });
 }
 
 function runAsk(channel, flags, out, site) {
