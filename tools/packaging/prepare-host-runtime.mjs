@@ -13,6 +13,7 @@ import path from 'node:path';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {spawnSync} from 'node:child_process';
 import {createHash} from 'node:crypto';
+import {isDeepStrictEqual} from 'node:util';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
 const resources=path.join(root,'src-tauri','resources');
 const runtime=path.join(resources,'runtime');
@@ -244,8 +245,27 @@ export function writeFrozenManifest(base){
 export function verifyStagedRuntime(base,{manifest=null,requireManifest=false}={}){
  const problems=[];
  if(requireManifest&&!manifest)problems.push('missing frozen runtime manifest');
- if(requireManifest&&!existsSync(path.join(base,RUNTIME_MANIFEST_NAME)))
-   problems.push('missing installed runtime.manifest.json');
+ // The manifest is excluded from its own digest list; its file identity must
+ // therefore be checked independently. Never follow a manifest symlink or
+ // certify an in-memory manifest different from the installed evidence.
+ if(requireManifest){
+  const manifestPath=path.join(base,RUNTIME_MANIFEST_NAME);
+  if(!existsSync(manifestPath))problems.push('missing installed runtime.manifest.json');
+  else {
+   const stat=lstatSync(manifestPath);
+   if(!stat.isFile()||stat.isSymbolicLink())
+    problems.push('installed runtime manifest is not a regular standalone file');
+   else {
+    try {
+     const stored=JSON.parse(readFileSync(manifestPath,'utf8'));
+     if(manifest&&!isDeepStrictEqual(stored,manifest))
+      problems.push('installed runtime manifest does not match supplied manifest evidence');
+    } catch {
+     problems.push('invalid installed runtime manifest JSON');
+    }
+   }
+  }
+ }
  // A source-only preflight is intentionally backwards-compatible; installed
  // runtime acceptance must require the actual Host entrypoint.
  if(requireManifest&&!existsSync(path.join(base,HOST_ENTRY)))
@@ -355,7 +375,8 @@ if(mode==='--verify'){
  const base=rest.length===2?path.resolve(process.cwd(),rest[1]):runtime;
  if(!existsSync(base)){console.log(JSON.stringify({ok:false,problems:['runtime tree not found: '+base],checks:{}}));process.exit(2);}
  const manifestPath=path.join(base,RUNTIME_MANIFEST_NAME);
- const manifest=existsSync(manifestPath)?JSON.parse(readFileSync(manifestPath,'utf8')):null;
+ const manifest=(existsSync(manifestPath)&&lstatSync(manifestPath).isFile()&&!lstatSync(manifestPath).isSymbolicLink())
+  ?(()=>{try{return JSON.parse(readFileSync(manifestPath,'utf8'));}catch{return null;}})():null;
  const report=verifyStagedRuntime(base,{manifest,requireManifest:true});
  console.log(JSON.stringify({status:report.ok?'RUNTIME_VERIFIED':'RUNTIME_INVALID',runtime:base,...report}));
  process.exit(report.ok?0:1);
