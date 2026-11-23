@@ -175,14 +175,24 @@ export function createStudioPort({ url, token = null, fetchImpl = fetch, timeout
     // explicit review buttons; they never control the browser, start capture,
     // create a Drive job or grant an owner approval.
     operations: async () => {
-      const [capture,drive,targets,sites]=await Promise.allSettled([
+      const [capture,drive,sites]=await Promise.allSettled([
         request('/status',undefined,1200),request('/drive/jobs',undefined,1200),
-        request('/targets',undefined,1200),request('/drive/sites',undefined,1200)
+        request('/drive/sites',undefined,1200)
       ]);
-      return projectStudioOperations(
-        capture.status==='fulfilled'?capture.value:null,
+      const observed=capture.status==='fulfilled'?capture.value:null;
+      // No CDP tab scan when Studio has no verified owner browser, or an
+      // active recording. These GETs run in a passive GPUI/PWA observer loop;
+      // only enumerate browser targets when a Start button can be reviewed.
+      let targets=null;
+      if (observed?.recorder?.state==='idle' &&
+          observed.browserConnection?.state==='available' &&
+          observed.browserConnection.verified===true) {
+        try { targets=await request('/targets',undefined,1200); }
+        catch { /* no current target choices; never synthesize a target */ }
+      }
+      return projectStudioOperations(observed,
         drive.status==='fulfilled'?drive.value:null,
-        targets.status==='fulfilled'?targets.value:null,
+        targets,
         sites.status==='fulfilled'?sites.value:null);
     },
     reachable: async () => { try { await request('/conversations'); return true; } catch { return false; } },
