@@ -71,13 +71,28 @@ export function projectBootstrapSemantics({pass,compiled,worldId,requestId,surfa
 export function projectSemanticsForAudience(projection,{audience='phone'}={}){
   if(!projection||projection.schema!==SEMANTIC_SCHEMA)invalid('invalid semantic projection');
   if(!['pc','phone'].includes(audience))invalid('unknown audience');
-  // Always reconstruct sanitized output; never trust client-authored privacy or allow shallow leaks.
-  const objects=(projection.objects??[]).filter(o=>audience==='pc'||o.privacy==='phone');
+  // Rebuild each projection layer from known semantic fields. A source object
+  // may carry private/internal metadata that must not ride along via a shallow
+  // spread into the phone-facing response. This grants no UI/effect authority.
+  const pick=(row,keys)=>Object.fromEntries(keys.filter(k=>Object.hasOwn(row,k)).map(k=>[k,row[k]]));
+  const objects=(Array.isArray(projection.objects)?projection.objects:[])
+    .filter(o=>o&&typeof o==='object'&&(audience==='pc'||o.privacy==='phone'))
+    .map(o=>pick(o,['id','objectRef','kind','pass','label','privacy','basis','freshness','confidence']));
   const visible=new Set(objects.map(o=>o.id));
-  const views=(projection.views??[]).filter(v=>(audience==='pc'||v.privacy==='phone')&&v.objectRefs.every(r=>visible.has('k.'+r)));
+  const views=(Array.isArray(projection.views)?projection.views:[])
+    .filter(v=>v&&typeof v==='object'&&(audience==='pc'||v.privacy==='phone')&&
+      Array.isArray(v.objectRefs)&&v.objectRefs.every(r=>typeof r==='string'&&visible.has('k.'+r)))
+    .map(v=>({...pick(v,['componentId','canonicalId','viewKind','layoutIntent','privacy','suggested','sourceRef']),
+      objectRefs:[...v.objectRefs]}));
   const viewIds=new Set(views.map(v=>v.componentId));
-  const edges=(projection.edges??[]).filter(e=>viewIds.has(e.from)&&visible.has(e.to));
-  return {...projection,objects,views,edges,unknowns:audience==='pc'?projection.unknowns:[],effects:'none',persisted:false};
+  const edges=(Array.isArray(projection.edges)?projection.edges:[])
+    .filter(e=>e&&typeof e==='object'&&viewIds.has(e.from)&&visible.has(e.to))
+    .map(e=>pick(e,['from','to','relation','basis']));
+  return {...pick(projection,['schema','worldId','surfaceId','pass','requestId','revision','authority']),
+    objects,views,edges,
+    unknowns:audience==='pc'&&Array.isArray(projection.unknowns)
+      ?projection.unknowns.filter(v=>typeof v==='string') :[],
+    effects:'none',persisted:false};
 }
 export const VISUAL_INTENTS=Object.freeze(['select','preview-layout','preview-style','inspect-meaning']);
 export const INTENT_INPUTS=Object.freeze(['tap','language','glyph','gesture','keyboard']);
