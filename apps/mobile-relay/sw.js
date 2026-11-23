@@ -5,7 +5,7 @@
 // on the next load; the cache is only the fallback. ES5 syntax on purpose: older Android WebViews
 // can run this file, and it deliberately avoids optional chaining, nullish coalescing, arrow
 // functions and top-level await.
-var CACHE = 'vivim-relay-shell-v47';
+var CACHE = 'vivim-relay-shell-v48';
 var CACHE_PREFIX = 'vivim-relay-shell-';
 // Paths are relative to the worker's scope, so the same file serves both the Direct Host mount
 // (scope /mobile/, files at /mobile/app.js) and the cloud deployment (scope /, files at /app.js).
@@ -131,6 +131,12 @@ function isCacheableShell(response) {
   return !!response && response.ok === true && response.type === 'basic' && response.redirected !== true;
 }
 
+// Never replace a known-good offline shell with an installation lacking its entrypoints.
+// Optional secondary assets may fail; the document and its boot script may not.
+function isCriticalShell(entry) {
+  return entry === '' || entry === 'index.html' || entry === 'app.js';
+}
+
 function hasHeader(request, name) {
   try {
     if (!request.headers || typeof request.headers.get !== 'function') return false;
@@ -172,20 +178,29 @@ self.addEventListener('install', function (event) {
           var target;
           try { target = new URL(entry, BASE).href; } catch (error) { return Promise.resolve(); }
           // cache: 'reload' bypasses the HTTP cache so an upgrade never precaches an old copy.
+          var critical = isCriticalShell(entry);
           return fetch(target, { cache: 'reload', credentials: 'same-origin' }).then(function (response) {
-            if (!isCacheableShell(response)) return null;
+            if (!isCacheableShell(response)) {
+              if (critical) throw new Error('Critical PWA shell asset was not cacheable: ' + entry);
+              return null;
+            }
             return cache.put(cacheKey(new URL(target).pathname), response);
-          }).catch(function () { return null; });
+          }).catch(function (error) {
+            if (critical) throw error;
+            return null;
+          });
         }(path)));
       }
-      // One missing or broken asset must not abort install; the rest of the shell stays usable.
+      // Optional assets are best effort; a missing core entrypoint rejects this update.
       return Promise.all(jobs).then(function () { return null; });
     });
   }()).then(function () {
     return self.skipWaiting();
-  }).catch(function () {
-    // Even a broken install activates, so a bad rollout can be replaced by the next version.
-    return self.skipWaiting();
+  }).catch(function (error) {
+    // Reject the broken generation rather than activate it and delete the last good cache.
+    return caches.delete(CACHE).catch(function () { return false; }).then(function () {
+      throw error;
+    });
   }));
 });
 
