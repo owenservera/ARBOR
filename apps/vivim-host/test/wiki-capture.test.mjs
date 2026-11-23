@@ -1,9 +1,14 @@
-import test from 'node:test';
+import test,{after} from 'node:test';
 import assert from 'node:assert/strict';
 import {mkdtemp,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
+import {closeNativeProductKernel} from '../control/native-product-kernel.mjs';
+
 import {createProductJournal,previewWikiCapture,projectPersonalCaptures,projectProgramSources} from '../chat/product-journal.mjs';
+
+// The pure Rust kernel persists in production; test hosts explicitly close it.
+after(()=>closeNativeProductKernel());
 const input={capture_id:'capture-0001',kind:'task',content:'Call the supplier\nConfirm order'};
 test('reviewed capture is one durable Wiki append, native source record, and cannot overwrite existing page',async()=>{
  const root=await mkdtemp(path.join(tmpdir(),'vivim-capture-'));

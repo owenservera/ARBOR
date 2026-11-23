@@ -1,10 +1,15 @@
-import test from 'node:test';
+import test,{after} from 'node:test';
 import assert from 'node:assert/strict';
 import {mkdtemp,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
+import {closeNativeProductKernel} from '../control/native-product-kernel.mjs';
+
 import {createProductJournal,previewWikiCapture,projectAppliedControlEffects} from '../chat/product-journal.mjs';
 import {buildNativeKnowledge} from '../chat/rust-context.mjs';
+
+// The pure Rust kernel persists in production; test hosts explicitly close it.
+after(()=>closeNativeProductKernel());
 test('committed capture creates a durable page/section and matching native receipt link',async()=>{
  const dataRoot=await mkdtemp(path.join(tmpdir(),'native-capture-'));
  try{
