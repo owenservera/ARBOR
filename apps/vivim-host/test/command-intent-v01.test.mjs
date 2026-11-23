@@ -130,6 +130,23 @@ test('quoted negation is data, not a command negator', () => {
   assert.equal(guardControlSyntax('remember "do not delete this"', { catalog, world }), null);
   assert.equal(guardControlSyntax('never mention "do not contact"', { catalog, world }), null);
 });
+test('single-quoted literal command content is inert data; unquoted commands remain gated', () => {
+  for (const quoted of [
+    "remember 'do not delete this'",
+    "edit wiki section main/about saying 'hello and goodbye'",
+    "never mention ‘do not contact’",
+    "edit wiki section main/about saying 'don\\'t delete it and then restore it'",
+  ]) assert.equal(guardControlSyntax(quoted, { catalog, world }), null, quoted);
+  for (const unsafe of ["don't remember my salary", 'no cambies el tema a dusk']) {
+    const result = guardControlSyntax(unsafe, { catalog, world });
+    assert.equal(result?.outcome, 'refused', unsafe);
+    assert.equal(result.refusal.code, 'NEGATED_ACTION', unsafe);
+  }
+  const compound = guardControlSyntax(
+    'edit wiki section main/about saying hello and show status', { catalog, world });
+  assert.equal(compound?.outcome, 'clarification_required');
+  assert.equal(compound?.question, 'Please give one command at a time, or quote literal lists.');
+});
 test('AI suggestion is bounded, cannot smuggle privileges, and never authorizes', () => {
   const text = 'send this to Peter';
   assert.equal(planner.validateCommandCandidate(text,
