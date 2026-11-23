@@ -66,3 +66,18 @@ test('worker uses boot admission fence before any bridge claim', () => {
 function requireSource(file) {
   return readFileSync(file,'utf8');
 }
+
+// Separate roots are required when the local Host uses its legacy AION ledger
+// while Studio owns the signed-in browser workspace at a different location.
+test('Host bridge root stays separate from Studio channel profile and cannot bypass boot fence', () => {
+  const worker = new URL('../../bin/relay-chat-mvp.mjs', import.meta.url);
+  const source = readFileSync(worker, 'utf8');
+  assert.match(source, /const bridgeRoot = bridgeRootArg \\?\\? root/);
+  assert.match(source, /createBridgeStore\\(\\{ root: bridgeRoot \\}\\)/);
+  assert.match(source, /snapshotRelayStartupFence\\(store\\.file\\)/);
+  assert.match(source, /path\\.join\\(bridgeRoot, 'bridge', 'relay-chat-threads\\.json'\\)/);
+  assert.match(source, /root: bridgeRoot, worker: 'chatWorker'/);
+  assert.match(source, /isolatedChannel: channelEnabled \\? \\{ root, port: channelPort \\} : null/);
+  assert.match(source, /bridgeFlagCount > 1/);
+  assert.match(source, /path\\.isAbsolute\\(bridgeRootArg\\)/);
+});
