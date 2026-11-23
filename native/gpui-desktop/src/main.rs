@@ -1598,7 +1598,7 @@ impl Render for Desktop {
                 }
                 if let Some(review)=&self.review {
                     command=command.child(div().text_sm().child(self.status.clone()))
-                        .child(div().max_h(px(156.)).overflow_y_scroll()
+                        .child(div().id("first-contact-command-review").max_h(px(156.)).overflow_y_scroll()
                             .text_sm().child(review.detail.clone()));
                     if review.needs_approval() && !self.busy && !self.uncertain {
                         command=command.child(div().flex().gap_2()
@@ -1618,7 +1618,7 @@ impl Render for Desktop {
                     }
                 } else if !self.detail.is_empty() {
                     command=command.child(div().text_sm().child(self.status.clone()))
-                        .child(div().max_h(px(156.)).overflow_y_scroll()
+                        .child(div().id("first-contact-command-receipt").max_h(px(156.)).overflow_y_scroll()
                             .text_sm().child(self.detail.clone()));
                 } else if self.uncertain {
                     command=command.child(div().text_sm()
