@@ -12,7 +12,7 @@
 //! @hq:consumes vivim.rust-development-projection@1
 use std::{time::{Duration, Instant}, sync::Arc};
 use vivim_host_supervisor::{HostSupervisor, Readiness};
-use serde_json::json;
+use serde_json::{json,Value};
 use vivim_programmability_core::navigation;
 use vivim_programmability_core::wiki_read::{self, RevisionGuard as WikiRevisionGuard};
 use vivim_programmability_core::vec::{View as VecView, Element as VecElement};
@@ -745,6 +745,45 @@ impl Desktop {
             });
         }).detach();
     }
+    /// Explicit native button -> typed Host plan -> separate visible review.
+    /// No Studio effect or model/provider request on selection alone.
+    fn plan_studio_action(&mut self,action:&'static str,args:Value,cx:&mut Context<Self>){
+        if !passive_read_allowed(self.busy,self.uncertain,
+            self.review.as_ref().is_some_and(Review::needs_approval)) {
+            self.status="Finish or cancel the current Host decision before planning Studio work".into();
+            cx.notify();return;
+        }
+        self.busy=true;
+        self.status="Requesting a reviewed Studio Host plan · nothing executed".into();
+        self.detail.clear();
+        cx.notify();
+        let task=cx.background_executor().spawn(async move{
+            control::plan_studio_action(action,args)
+        });
+        cx.spawn(async move |this,cx| {
+            let result=task.await;
+            let _=this.update(cx,|view,cx|{
+                view.busy=false;
+                match result {
+                    Ok(review)=>{
+                        view.status=if review.needs_approval(){
+                            "Review the exact Studio Host plan; nothing executed yet"
+                        }else{"Studio action unavailable; no effect attempted"}.into();
+                        view.detail=review.detail.clone();
+                        view.review=Some(review);
+                        view.menu_open=None;
+                        view.panel=Panel::Control;
+                        view.presentation_epoch=view.presentation_epoch.wrapping_add(1);
+                    },
+                    Err(e)=>{
+                        view.status=format!("Studio planning unavailable: {} · no effect attempted",e.label());
+                    }
+                }
+                cx.notify();
+            });
+        }).detach();
+    }
+
     fn approve(&mut self,cx:&mut Context<Self>) {
         if self.busy || self.uncertain { return; }
         if self.phone_plan_edit_epoch.is_some_and(|epoch|epoch!=self.composer_edit_epoch) {
@@ -1369,7 +1408,7 @@ impl Render for Desktop {
                     // state into existing native PC tools. This is an inert,
                     // owner-authorized Host projection; Studio still owns all
                     // recording/Drive actions until explicitly ported.
-                    page=page.child(div().text_lg().child("Studio capture and Drive · status only"));
+                    page=page.child(div().text_lg().child("Studio capture and Drive · owner-approved actions"));
                     if let Some(operations)=self.overview.as_ref()
                         .and_then(|o|o.studio_operations.as_ref()) {
                         page=page
@@ -1380,8 +1419,43 @@ impl Render for Desktop {
                             page=page.child(div().text_sm().child(job.clone()));
                         }
                         page=page.child(div().text_sm().child(
-                            "Actions remain in the existing Studio owner until review and Host authorization are ported."
+                            "Choose a capability below to create a Host plan. A separate approval is required before any Studio effect."
                         ));
+                        if operations.capture_running {
+                            page=page.child(Button::new("studio-stop-capture")
+                                .label("Stop active Studio capture · review")
+                                .on_click(cx.listener(|v,_,_,cx|{
+                                    v.plan_studio_action("studio.capture.stop",json!({}),cx)
+                                })));
+                        }
+                        if operations.capture_ready {
+                            for target in &operations.targets {
+                                let id=target.id.clone();
+                                let title=format!("Start Studio capture · {} ({}) · review",
+                                    target.host,&id[..id.len().min(10)]);
+                                page=page.child(Button::new(format!("studio-start-{}",id))
+                                    .label(title)
+                                    .on_click(cx.listener(move |v,_,_,cx|{
+                                        v.plan_studio_action("studio.capture.start",json!({"target":id}),cx)
+                                    })));
+                            }
+                        }
+                        for site in &operations.sites {
+                            let site_id=site.clone();
+                            page=page.child(Button::new(format!("studio-dry-run-{}",site_id))
+                                .label(format!("Preview Drive · {} · dry run only",site_id))
+                                .on_click(cx.listener(move |v,_,_,cx|{
+                                    v.plan_studio_action("studio.drive.dry_run",json!({"site":site_id}),cx)
+                                })));
+                        }
+                        for id in &operations.cancelable_jobs {
+                            let job_id=id.clone();
+                            page=page.child(Button::new(format!("studio-cancel-{}",job_id))
+                                .label(format!("Request Drive cancellation · {} · review",job_id))
+                                .on_click(cx.listener(move |v,_,_,cx|{
+                                    v.plan_studio_action("studio.drive.cancel",json!({"job_id":job_id}),cx)
+                                })));
+                        }
                     }else{
                         page=page.child(div().text_sm().child(
                             "Studio operations source unavailable · no recording or Drive state inferred."
