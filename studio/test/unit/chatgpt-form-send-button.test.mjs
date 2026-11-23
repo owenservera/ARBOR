@@ -112,3 +112,49 @@ test('button never becomes ready: bounded reads, zero dispatch, no Enter fallbac
   assert.equal(clicks,0);
   assert.equal(enters,0);
 });
+
+test('stale editor rebinds only to the one visible form editor holding identical draft',async()=>{
+  const good=control({name:'Enviar'});
+  const form={isConnected:true,getBoundingClientRect:()=>box,querySelectorAll:()=>[good]};
+  const stale={isConnected:true,tagName:'DIV',innerText:'exact draft',
+    closest:()=>null,getBoundingClientRect:()=>box};
+  const current={isConnected:true,tagName:'DIV',isContentEditable:true,innerText:'exact draft',
+    closest:selector=>selector==='form'?form:null,getBoundingClientRect:()=>box};
+  const globals={__aionDrive:{el:stale}};
+  const page={async send(method,params){
+    const value=runInNewContext(params.expression,{
+      globalThis:globals,
+      document:{querySelectorAll:selector=>
+        selector.startsWith('form [contenteditable')?[current]:[]},
+      getComputedStyle:()=>visible
+    });
+    return {result:{value}};
+  }};
+  const result=await findSendButton(page,adapter);
+  assert.equal(result.found,true);
+  assert.equal(result.selector,'unique-named-send-in-composer-form');
+  assert.equal(globals.__aionDrive.el,current);
+  assert.equal(globals.__aionSendBtn,good);
+});
+test('different draft content cannot rebind editor or grant a send control',async()=>{
+  const good=control({name:'Enviar'});
+  const form={isConnected:true,getBoundingClientRect:()=>box,querySelectorAll:()=>[good]};
+  const stale={isConnected:true,tagName:'DIV',innerText:'user draft A',
+    closest:()=>null,getBoundingClientRect:()=>box};
+  const different={isConnected:true,tagName:'DIV',isContentEditable:true,innerText:'user draft B',
+    closest:selector=>selector==='form'?form:null,getBoundingClientRect:()=>box};
+  const globals={__aionDrive:{el:stale}};
+  const page={async send(method,params){
+    const value=runInNewContext(params.expression,{
+      globalThis:globals,
+      document:{querySelectorAll:selector=>
+        selector.startsWith('form [contenteditable')?[different]:[]},
+      getComputedStyle:()=>visible
+    });
+    return {result:{value}};
+  }};
+  const result=await findSendButton(page,adapter);
+  assert.equal(result.found,false);
+  assert.equal(globals.__aionDrive.el,stale);
+  assert.equal(globals.__aionSendBtn,null);
+});
