@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createControlPlanner } from '../../vivim-host/control/intent-planner.mjs';
 import { composeDraftHints, composerResponse, describeDraft, draftSuggestions,
-  mountComposerAssist, semanticDraftSlots, correctedSlotDraft, matchesSlotCorrection } from '../composer-assist.mjs';
+  mountComposerAssist, semanticDraftSlots, correctedSlotDraft, matchesSlotCorrection,
+  needsWikiDraftContext } from '../composer-assist.mjs';
 
 const planner=createControlPlanner(),catalog=planner.describe();
 const interpret=text=>planner.interpretText(text,{source:'mobile'});
@@ -28,6 +29,16 @@ test('canonical compiler validates current Wiki completions without leaking cont
   assert.equal(draftSuggestions('delete wiki page ',response('delete wiki page ')).length,0);
   const literal='edit wiki section Main/About saying EXACT Literal';
   assert.equal(draftSuggestions(literal,response(literal)).length,0);
+});
+
+test('malformed Host choices do not crash or trigger Wiki draft-context reads',()=>{
+  const text='ordinary draft with no Wiki target';
+  assert.equal(needsWikiDraftContext(text,{choices:[{},null,7]}),false);
+  assert.equal(needsWikiDraftContext(text,{choices:{0:'wiki.section.read'}}),false);
+  assert.equal(needsWikiDraftContext(text,{candidate:{actionId:{value:'wiki.section.read'}}}),false);
+  assert.equal(needsWikiDraftContext(text,{choices:['other.action','wiki.section.read']}),true);
+  assert.equal(needsWikiDraftContext(text,{candidate:{actionId:'wiki.section.read'}}),true);
+  assert.equal(needsWikiDraftContext(text,{outcome:'refused',choices:['wiki.section.read']}),false);
 });
 
 test('draft route is canonical, inert and reports unsupported action truthfully',()=>{
