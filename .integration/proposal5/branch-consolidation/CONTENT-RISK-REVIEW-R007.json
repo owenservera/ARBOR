@@ -4,8 +4,8 @@
   "sourceAncestryBlob": "48be727c8c0c2c8b5faa62bb92f238a4adb44c23",
   "observedAtUtc": "2026-11-23T22:52:52.686Z",
   "planned": 37,
-  "reviewed": 27,
-  "status": "INCOMPLETE",
+  "reviewed": 37,
+  "status": "COMPARED_PRESERVE_ALL",
   "allowDeletion": false,
   "allowMerge": false,
   "branches": [
@@ -2761,137 +2761,778 @@
       "tipSha": "0e35c54105f7b8ee8a772b3159d243c6788fb7d4",
       "baseSha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8",
       "ahead": 9,
-      "comparisonAttempted": false,
-      "fileListComplete": false,
-      "areas": [],
-      "listedFiles": 0,
-      "disposition": "INCOMPLETE_COMPARE_PRESERVE",
+      "comparisonAttempted": true,
+      "fileListComplete": true,
+      "areas": [
+        "documentation"
+      ],
+      "listedFiles": 74,
+      "disposition": "MANUAL_CONTENT_REVIEW_REQUIRED",
       "canDelete": false,
-      "canMerge": false
+      "canMerge": false,
+      "sampleFiles": [
+        {
+          "path": ".integration/proposal5/semantic-capability-fabric/00-SOURCE-SITREP.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/semantic-capability-fabric/01-PRODUCT-VISION.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/semantic-capability-fabric/02-AGENT-CONTRIBUTOR-PROTOCOL.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/semantic-capability-fabric/03-SEMANTIC-COMMENT-LANGUAGE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/semantic-capability-fabric/04-SEMANTIC-FACT-ABI.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/semantic-capability-fabric/05-INCREMENTAL-COMPILER-AND-WIKI.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/semantic-capability-fabric/06-HVI-MIGRATION-OPTIMIZATION.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/semantic-capability-fabric/07-INTERACTION-AND-UX.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/semantic-capability-fabric/08-UPGRADE-WAVES-AND-OWNERS.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/semantic-capability-fabric/09-ACCEPTANCE-MATRIX.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/semantic-capability-fabric/10-DECISIONS-AND-HANDOFF.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/semantic-capability-fabric/README.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/semantic-capability-fabric/implementation-ready/00-SOURCE-LOCK.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/semantic-capability-fabric/implementation-ready/01-DECISION-LOCK.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/semantic-capability-fabric/implementation-ready/02-TARGET-FILE-PLAN.json",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/semantic-capability-fabric/implementation-ready/03-DEPS-AND-INTERFACES.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/semantic-capability-fabric/implementation-ready/04-ABI-ERROR-SEMANTICS.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/semantic-capability-fabric/implementation-ready/05-TEST-AND-RELEASE-GATES.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/semantic-capability-fabric/implementation-ready/06-INTEGRATION-ROLLBACK.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/semantic-capability-fabric/implementation-ready/07-AGENT-SDK-TEMPLATE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/semantic-capability-fabric/implementation-ready/08-LAUNCH-INDEX.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/semantic-capability-fabric/implementation-ready/README.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/semantic-capability-fabric/implementation-ready/contracts/capability-passport.v0.schema.json",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/semantic-capability-fabric/implementation-ready/contracts/diagnostic.v0.schema.json",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/semantic-capability-fabric/implementation-ready/contracts/semantic-delta.v0.schema.json",
+          "area": "documentation",
+          "status": "added"
+        }
+      ]
     },
     {
       "name": "work/p5-semantic-engineering-program-scaffold-r001",
       "tipSha": "e41b943e2eb0fd0c60b73918596b219c087f0052",
       "baseSha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8",
       "ahead": 4,
-      "comparisonAttempted": false,
-      "fileListComplete": false,
-      "areas": [],
-      "listedFiles": 0,
-      "disposition": "INCOMPLETE_COMPARE_PRESERVE",
+      "comparisonAttempted": true,
+      "fileListComplete": true,
+      "areas": [
+        "documentation"
+      ],
+      "listedFiles": 19,
+      "disposition": "MANUAL_CONTENT_REVIEW_REQUIRED",
       "canDelete": false,
-      "canMerge": false
+      "canMerge": false,
+      "sampleFiles": [
+        {
+          "path": ".integration/proposal5/semantic-engineering-program/00-CHARTER-AND-END-STATE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/semantic-engineering-program/01-SOURCE-TRUTH-AND-INTAKE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/semantic-engineering-program/02-ARCHITECTURE-AND-OWNERSHIP.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/semantic-engineering-program/03-WORKSTREAMS-AND-CANDIDATE-SLICES.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/semantic-engineering-program/04-CONTRACTS-AND-EVIDENCE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/semantic-engineering-program/05-DEPENDENCIES-AND-PHASES.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/semantic-engineering-program/06-ACCEPTANCE-AND-REFEREE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/semantic-engineering-program/07-REUSE-AND-MIGRATION.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/semantic-engineering-program/08-BRANCHES-LANES-AND-HANDOFFS.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/semantic-engineering-program/09-DEEP-PREP-BACKLOG.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/semantic-engineering-program/10-RISKS-AND-OPEN-DECISIONS.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/semantic-engineering-program/11-LAUNCH-BOARD.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/semantic-engineering-program/12-VLANG-MASTER-CONVERGENCE-R002.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/semantic-engineering-program/README.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/semantic-engineering-program/predev-convergence.r002.json",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/semantic-engineering-program/program-manifest.json",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/semantic-engineering-program/prompts/README.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/semantic-engineering-program/templates/OWNER-HANDOFF.template.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/semantic-engineering-program/templates/PROOF-RECEIPT.template.md",
+          "area": "documentation",
+          "status": "added"
+        }
+      ]
     },
     {
       "name": "work/p5-vec-pwa-ui-kernel-r001",
       "tipSha": "d5a5d09b37fbd2d7dfe2a746a6f0cc054f5b1096",
       "baseSha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8",
       "ahead": 9,
-      "comparisonAttempted": false,
-      "fileListComplete": false,
-      "areas": [],
-      "listedFiles": 0,
-      "disposition": "INCOMPLETE_COMPARE_PRESERVE",
+      "comparisonAttempted": true,
+      "fileListComplete": true,
+      "areas": [
+        "documentation",
+        "host-authority",
+        "mobile-visual"
+      ],
+      "listedFiles": 30,
+      "disposition": "MANUAL_CONTENT_REVIEW_REQUIRED",
       "canDelete": false,
-      "canMerge": false
+      "canMerge": false,
+      "sampleFiles": [
+        {
+          "path": ".integration/proposal5/vec-pwa/00-SOURCE-TRUTH.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/vec-pwa/01-COMPILER-CONTRACT.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/vec-pwa/02-WORKSTREAMS.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/vec-pwa/03-PAIRED-PWA-ACCEPTANCE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/vec-pwa/04-IMPLEMENTATION-WORK-ORDERS.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/vec-pwa/D0-STATIC-PROOF-AND-CI-STATUS.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/vec-pwa/README.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/vec-pwa/machine/source-pins.json",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/vec-pwa/machine/ui-component-passports.v1.json",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/vec-pwa/machine/ui-taxonomy.v1.json",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/vec-pwa/machine/workstreams.json",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/vec-pwa/ui-taxonomy/01-COMPONENT-CONTRACT.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/vec-pwa/ui-taxonomy/02-FAMILY-MATRIX.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/vec-pwa/ui-taxonomy/03-CROSSWALK-AND-GATES.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/vec-pwa/ui-taxonomy/04-EXTENSION-PROTOCOL.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/vec-pwa/ui-taxonomy/05-STANDARDS.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/vec-pwa/ui-taxonomy/README.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": "apps/mobile-relay/build-canvas.mjs",
+          "area": "mobile-visual",
+          "status": "modified"
+        },
+        {
+          "path": "apps/mobile-relay/build-composer.mjs",
+          "area": "mobile-visual",
+          "status": "modified"
+        },
+        {
+          "path": "apps/mobile-relay/sw.js",
+          "area": "mobile-visual",
+          "status": "modified"
+        },
+        {
+          "path": "apps/mobile-relay/test/build-vec-routing.test.mjs",
+          "area": "mobile-visual",
+          "status": "added"
+        },
+        {
+          "path": "apps/mobile-relay/test/service-worker.test.mjs",
+          "area": "mobile-visual",
+          "status": "modified"
+        },
+        {
+          "path": "apps/mobile-relay/test/vec-ui-compiler.test.mjs",
+          "area": "mobile-visual",
+          "status": "added"
+        },
+        {
+          "path": "apps/mobile-relay/test/vec-ui-taxonomy.test.mjs",
+          "area": "mobile-visual",
+          "status": "added"
+        },
+        {
+          "path": "apps/mobile-relay/vec/README.md",
+          "area": "mobile-visual",
+          "status": "added"
+        }
+      ]
     },
     {
       "name": "work/p5-vec-ui-engine-foundation-r001",
       "tipSha": "d29c3b4d7eed3d61c285e089c928e74ab7e0f2d6",
       "baseSha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8",
       "ahead": 19,
-      "comparisonAttempted": false,
-      "fileListComplete": false,
-      "areas": [],
-      "listedFiles": 0,
-      "disposition": "INCOMPLETE_COMPARE_PRESERVE",
+      "comparisonAttempted": true,
+      "fileListComplete": true,
+      "areas": [
+        "build-ci",
+        "documentation",
+        "host-authority",
+        "mobile-visual"
+      ],
+      "listedFiles": 160,
+      "disposition": "MANUAL_CONTENT_REVIEW_REQUIRED",
       "canDelete": false,
-      "canMerge": false
+      "canMerge": false,
+      "sampleFiles": [
+        {
+          "path": ".github/workflows/vec-ui-engines.yml",
+          "area": "build-ci",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/vec-pwa/00-SOURCE-TRUTH.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/vec-pwa/01-COMPILER-CONTRACT.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/vec-pwa/02-WORKSTREAMS.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/vec-pwa/03-PAIRED-PWA-ACCEPTANCE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/vec-pwa/04-IMPLEMENTATION-WORK-ORDERS.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/vec-pwa/D0-STATIC-PROOF-AND-CI-STATUS.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/vec-pwa/README.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/vec-pwa/machine/source-pins.json",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/vec-pwa/machine/ui-component-passports.v1.json",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/vec-pwa/machine/ui-taxonomy.v1.json",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/vec-pwa/machine/workstreams.json",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/vec-pwa/ui-taxonomy/01-COMPONENT-CONTRACT.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/vec-pwa/ui-taxonomy/02-FAMILY-MATRIX.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/vec-pwa/ui-taxonomy/03-CROSSWALK-AND-GATES.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/vec-pwa/ui-taxonomy/04-EXTENSION-PROTOCOL.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/vec-pwa/ui-taxonomy/05-STANDARDS.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/vec-pwa/ui-taxonomy/README.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/vec-ui-engines/00-MASTER-ARCHITECTURE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/vec-ui-engines/01-CONTRACTS-AND-OWNERSHIP.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/vec-ui-engines/02-WAVE-AND-MERGE-GATES.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/vec-ui-engines/03-100-AGENT-FLEET.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/vec-ui-engines/04-DEPENDENCY-CASCADE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/vec-ui-engines/05-STANDARDS-AND-COMPATIBILITY.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/vec-ui-engines/06-ENGINE-FAMILY-ATLAS.md",
+          "area": "documentation",
+          "status": "added"
+        }
+      ]
     },
     {
       "name": "work/provider-hub-W0-A-r001",
       "tipSha": "b90831ea28869762f86e074ed4fb4f8d79697de7",
       "baseSha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8",
       "ahead": 2,
-      "comparisonAttempted": false,
-      "fileListComplete": false,
-      "areas": [],
-      "listedFiles": 0,
-      "disposition": "INCOMPLETE_COMPARE_PRESERVE",
+      "comparisonAttempted": true,
+      "fileListComplete": true,
+      "areas": [
+        "documentation"
+      ],
+      "listedFiles": 2,
+      "disposition": "MANUAL_CONTENT_REVIEW_REQUIRED",
       "canDelete": false,
-      "canMerge": false
+      "canMerge": false,
+      "sampleFiles": [
+        {
+          "path": "docs/provider-hub/reports/W0-A.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": "docs/provider-hub/worker-reports/W0-A.md",
+          "area": "documentation",
+          "status": "added"
+        }
+      ]
     },
     {
       "name": "work/provider-hub-W1-B-r001",
       "tipSha": "3509ba5076f6ac05d2e4286ed20d8c7ddc6fd17e",
       "baseSha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8",
       "ahead": 3,
-      "comparisonAttempted": false,
-      "fileListComplete": false,
-      "areas": [],
-      "listedFiles": 0,
-      "disposition": "INCOMPLETE_COMPARE_PRESERVE",
+      "comparisonAttempted": true,
+      "fileListComplete": true,
+      "areas": [
+        "documentation",
+        "host-authority"
+      ],
+      "listedFiles": 3,
+      "disposition": "MANUAL_CONTENT_REVIEW_REQUIRED",
       "canDelete": false,
-      "canMerge": false
+      "canMerge": false,
+      "sampleFiles": [
+        {
+          "path": "apps/vivim-host/provider-hub/core/provider-hub.mjs",
+          "area": "host-authority",
+          "status": "added"
+        },
+        {
+          "path": "apps/vivim-host/provider-hub/core/provider-hub.test.mjs",
+          "area": "host-authority",
+          "status": "added"
+        },
+        {
+          "path": "docs/provider-hub/worker-reports/W1-B.md",
+          "area": "documentation",
+          "status": "added"
+        }
+      ]
     },
     {
       "name": "work/provider-hub-W1-C-r001",
       "tipSha": "c70e6fe1dd226608dd1e5dd74824d535a4311b22",
       "baseSha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8",
       "ahead": 9,
-      "comparisonAttempted": false,
-      "fileListComplete": false,
-      "areas": [],
-      "listedFiles": 0,
-      "disposition": "INCOMPLETE_COMPARE_PRESERVE",
+      "comparisonAttempted": true,
+      "fileListComplete": true,
+      "areas": [
+        "documentation",
+        "host-authority"
+      ],
+      "listedFiles": 8,
+      "disposition": "MANUAL_CONTENT_REVIEW_REQUIRED",
       "canDelete": false,
-      "canMerge": false
+      "canMerge": false,
+      "sampleFiles": [
+        {
+          "path": "apps/vivim-host/provider-hub/ports/world/README.md",
+          "area": "host-authority",
+          "status": "added"
+        },
+        {
+          "path": "apps/vivim-host/provider-hub/ports/world/account-isolation.test.mjs",
+          "area": "host-authority",
+          "status": "added"
+        },
+        {
+          "path": "apps/vivim-host/provider-hub/ports/world/fake-world-port.mjs",
+          "area": "host-authority",
+          "status": "added"
+        },
+        {
+          "path": "apps/vivim-host/provider-hub/ports/world/fake-world-port.test.mjs",
+          "area": "host-authority",
+          "status": "added"
+        },
+        {
+          "path": "apps/vivim-host/provider-hub/ports/world/index.mjs",
+          "area": "host-authority",
+          "status": "added"
+        },
+        {
+          "path": "apps/vivim-host/provider-hub/ports/world/world-port.d.ts",
+          "area": "host-authority",
+          "status": "added"
+        },
+        {
+          "path": "apps/vivim-host/provider-hub/ports/world/world-port.mjs",
+          "area": "host-authority",
+          "status": "added"
+        },
+        {
+          "path": "docs/provider-hub/worker-reports/W1-C.md",
+          "area": "documentation",
+          "status": "added"
+        }
+      ]
     },
     {
       "name": "work/provider-hub-W1-D-r001",
       "tipSha": "7353569cde87117cc048f389606d9587cae432fe",
       "baseSha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8",
       "ahead": 2,
-      "comparisonAttempted": false,
-      "fileListComplete": false,
-      "areas": [],
-      "listedFiles": 0,
-      "disposition": "INCOMPLETE_COMPARE_PRESERVE",
+      "comparisonAttempted": true,
+      "fileListComplete": true,
+      "areas": [
+        "documentation",
+        "host-authority"
+      ],
+      "listedFiles": 4,
+      "disposition": "MANUAL_CONTENT_REVIEW_REQUIRED",
       "canDelete": false,
-      "canMerge": false
+      "canMerge": false,
+      "sampleFiles": [
+        {
+          "path": "apps/vivim-host/provider-hub/ports/actions/mock-host-action-port.d.ts",
+          "area": "host-authority",
+          "status": "added"
+        },
+        {
+          "path": "apps/vivim-host/provider-hub/ports/actions/mock-host-action-port.mjs",
+          "area": "host-authority",
+          "status": "added"
+        },
+        {
+          "path": "apps/vivim-host/provider-hub/ports/actions/mock-host-action-port.test.mjs",
+          "area": "host-authority",
+          "status": "added"
+        },
+        {
+          "path": "docs/provider-hub/worker-reports/W1-D.md",
+          "area": "documentation",
+          "status": "added"
+        }
+      ]
     },
     {
       "name": "work/provider-hub-W1-E-r001",
       "tipSha": "d802be6e29e21cd55ab86ed42cb66b70faa02593",
       "baseSha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8",
       "ahead": 4,
-      "comparisonAttempted": false,
-      "fileListComplete": false,
-      "areas": [],
-      "listedFiles": 0,
-      "disposition": "INCOMPLETE_COMPARE_PRESERVE",
+      "comparisonAttempted": true,
+      "fileListComplete": true,
+      "areas": [
+        "documentation",
+        "host-authority"
+      ],
+      "listedFiles": 4,
+      "disposition": "MANUAL_CONTENT_REVIEW_REQUIRED",
       "canDelete": false,
-      "canMerge": false
+      "canMerge": false,
+      "sampleFiles": [
+        {
+          "path": "apps/vivim-host/provider-hub/ports/graph/README.md",
+          "area": "host-authority",
+          "status": "added"
+        },
+        {
+          "path": "apps/vivim-host/provider-hub/ports/graph/index.mjs",
+          "area": "host-authority",
+          "status": "added"
+        },
+        {
+          "path": "apps/vivim-host/provider-hub/ports/graph/index.test.mjs",
+          "area": "host-authority",
+          "status": "added"
+        },
+        {
+          "path": "docs/provider-hub/worker-reports/W1-E.md",
+          "area": "documentation",
+          "status": "added"
+        }
+      ]
     },
     {
       "name": "work/provider-hub-W1-F-r001",
       "tipSha": "1ccc56cdf7787f980bcd79aaaa7d770fd5f702b4",
       "baseSha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8",
       "ahead": 3,
-      "comparisonAttempted": false,
-      "fileListComplete": false,
-      "areas": [],
-      "listedFiles": 0,
-      "disposition": "INCOMPLETE_COMPARE_PRESERVE",
+      "comparisonAttempted": true,
+      "fileListComplete": true,
+      "areas": [
+        "documentation",
+        "host-authority"
+      ],
+      "listedFiles": 3,
+      "disposition": "MANUAL_CONTENT_REVIEW_REQUIRED",
       "canDelete": false,
-      "canMerge": false
+      "canMerge": false,
+      "sampleFiles": [
+        {
+          "path": "apps/vivim-host/provider-hub/mock/seeded-source.mjs",
+          "area": "host-authority",
+          "status": "added"
+        },
+        {
+          "path": "apps/vivim-host/provider-hub/mock/seeded-source.test.mjs",
+          "area": "host-authority",
+          "status": "added"
+        },
+        {
+          "path": "docs/provider-hub/worker-reports/W1-F.md",
+          "area": "documentation",
+          "status": "added"
+        }
+      ]
     }
   ],
   "summary": {
-    "reviewed": 27,
-    "complete": 27,
+    "reviewed": 37,
+    "complete": 37,
     "incomplete": 0,
     "riskAreas": [
+      "build-ci",
       "documentation",
       "host-authority",
       "mobile-visual",
