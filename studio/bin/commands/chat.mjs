@@ -291,7 +291,14 @@ export function createDriveTransport({ binPath, timeoutSeconds = 120, exec = spa
       }
       if (isolatedThreads && parsed.uncertain === true)
         return { effect: 'UNCERTAIN', threadId, reply: null, journalKey: requestId, reason: 'STUDIO_DRIVE_DELIVERY_UNCERTAIN' };
-      return { effect: 'FAILED', threadId, reply: null, journalKey: requestId, reason: (parsed.errors && parsed.errors[0]) || 'DRIVE_NO_REPLY' };
+      const errors = Array.isArray(parsed.errors) ? parsed.errors.filter(x => typeof x === 'string') : [];
+      const refusal = errors.find(x => x.startsWith('send preflight: '));
+      const first = errors[0] ?? 'DRIVE_NO_REPLY';
+      // The provider-facing receipt must show the *existing* structural refusal,
+      // not only the generic "send not attempted" envelope. Never include prompt
+      // text or raw DOM in this diagnostic; Drive bounds these reason strings.
+      const reason = refusal && first !== refusal ? first + '; ' + refusal.slice(0, 200) : first;
+      return { effect: 'FAILED', threadId, reply: null, journalKey: requestId, reason };
     },
   };
 }
