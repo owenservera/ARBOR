@@ -33,7 +33,17 @@ test('capture and Drive projection retains only bounded source-backed operating 
   assert.equal(view.drive.active,1);
   assert.deepEqual(view.drive.jobs,[{id:jobId,mode:'drive',state:'running',dryRun:true}]);
   const withChoices=projectStudioOperations(rawStatus,rawJobs,rawTargets,rawSites);
-  assert.deepEqual(withChoices.capture.targets,[{id:targetId,host:'chatgpt.com'}]);
+  assert.deepEqual(withChoices.capture.targets,[], 'active recording must not offer another capture target');
+  assert.equal(withChoices.capture.targetsState,'unavailable');
+  const idleChoices=projectStudioOperations({...rawStatus,recorder:{state:'idle'}},rawJobs,rawTargets,rawSites);
+  assert.deepEqual(idleChoices.capture.targets,[{id:targetId,host:'chatgpt.com'}]);
+  const offlineChoices=projectStudioOperations({...rawStatus,recorder:{state:'idle'},
+    browserConnection:{state:'not-running',verified:false}},rawJobs,rawTargets,rawSites);
+  assert.deepEqual(offlineChoices.capture.targets,[]);
+  assert.equal(offlineChoices.capture.targetsState,'unavailable');
+  const malformedChoices=projectStudioOperations({...rawStatus,recorder:{state:'idle'},
+    browserConnection:{state:'available',verified:'yes'}},rawJobs,rawTargets,rawSites);
+  assert.deepEqual(malformedChoices.capture.targets,[]);
   assert.deepEqual(withChoices.drive.sites,['chatgpt']);
   assert.doesNotMatch(JSON.stringify(withChoices),/PRIVATE THREAD|private\/path|token=hidden/);
   const serialized=JSON.stringify(view);
