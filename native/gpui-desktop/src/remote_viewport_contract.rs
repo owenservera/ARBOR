@@ -29,6 +29,26 @@ pub struct InertAck { pub control_id: u64, pub sequence: u64, pub revision: u64 
 /// A phone may supply text and phase, never a claimed Host effect or focus grant.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TextPhase { KeyDown, KeyUp, ImeStart, ImeUpdate, ImeCommit, ImeCancel }
+impl TextPhase {
+    /// Exact browser wire phase mapping; an unknown command cannot turn into
+    /// keyboard input. The native GPUI focus still owns its target control.
+    pub fn from_wire(value: &str) -> Option<Self> {
+        Some(match value {
+            "key-down" => Self::KeyDown, "key-up" => Self::KeyUp,
+            "ime-start" => Self::ImeStart, "ime-update" => Self::ImeUpdate,
+            "ime-commit" => Self::ImeCommit, "ime-cancel" => Self::ImeCancel,
+            _ => return None,
+        })
+    }
+    pub fn wire(self) -> &'static str {
+        match self {
+            Self::KeyDown => "key-down", Self::KeyUp => "key-up",
+            Self::ImeStart => "ime-start", Self::ImeUpdate => "ime-update",
+            Self::ImeCommit => "ime-commit", Self::ImeCancel => "ime-cancel",
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct TextInput<'a> {
     pub session: u128,
@@ -181,6 +201,16 @@ mod tests {
             text(2,TextPhase::ImeCommit,"")),Err(Refusal::InvalidText));
         assert!(fence.acknowledge_text(viewport(),&button(),Some(42),
             text(2,TextPhase::ImeCancel,"")).is_ok());
+    }
+
+    #[test] fn wire_phases_match_exact_phone_keyboard_and_ime_names() {
+        for phase in [TextPhase::KeyDown,TextPhase::KeyUp,TextPhase::ImeStart,
+            TextPhase::ImeUpdate,TextPhase::ImeCommit,TextPhase::ImeCancel] {
+            assert_eq!(TextPhase::from_wire(phase.wire()),Some(phase));
+        }
+        for bad in ["","execute","host-approve","IME-COMMIT","key-down\0"] {
+            assert_eq!(TextPhase::from_wire(bad),None);
+        }
     }
 
 }
