@@ -48,8 +48,8 @@ function setup(){
     const img={width:360,height:800,close(){decoded.push('closed');}};
     return img;
   };
-  const mount=()=>mountGpuiCanvasViewport({
-    canvas,channel,decodePng,onStatus:s=>status.push(s)
+  const mount=(options={})=>mountGpuiCanvasViewport({
+    canvas,channel,decodePng,onStatus:s=>status.push(s),...options
   });
   const pointer=(x=100,y=220,extra={})=>{
     const e={clientX:x,clientY:y,isPrimary:true,button:0,
@@ -238,5 +238,78 @@ test('forwarded-but-unverified pointer is not represented as an approved effect'
   await new Promise(resolve=>setImmediate(resolve));
   assert.ok(f.status.includes('input-submitted-unverified'));
   assert.equal(f.status.includes('approved'),false);
+  view.dispose();
+});
+
+function existingTextTarget(){
+  const handlers=new Map();
+  return {
+    handlers,
+    addEventListener:(name,fn)=>handlers.set(name,fn),
+    removeEventListener:(name,fn)=>{if(handlers.get(name)===fn)handlers.delete(name);},
+    emit:(name,data={})=>handlers.get(name)?.(data)
+  };
+}
+test('existing mobile text target emits native key/IME with one pointer+text sequence',async()=>{
+  const f=setup(),target=existingTextTarget(),textPackets=[];
+  f.channel.submitText=packet=>{textPackets.push(packet);return Promise.resolve({
+    state:'submitted_to_native_unverified'
+  });};
+  const view=f.mount({textTarget:target});
+  await view.receiveFrame(frame());
+  target.emit('keydown',{key:'a'});
+  target.emit('compositionstart');
+  target.emit('compositionupdate',{data:'日'});
+  target.emit('compositionend',{data:'日本語'});
+  f.pointer();
+  assert.deepEqual(textPackets.map(p=>p.phase),[
+    'key-down','ime-start','ime-update','ime-commit']);
+  assert.deepEqual(textPackets.map(p=>p.sequence),[1,2,3,4]);
+  assert.equal(textPackets[3].text,'日本語');
+  assert.equal(textPackets[3].session,'a'.repeat(32));
+  assert.equal(f.sent[0].sequence,5);
+  assert.ok(textPackets.every(p=>!Object.hasOwn(p,'controlId')));
+  view.dispose();
+  assert.equal(target.handlers.size,0);
+});
+test('mobile IME composition suppresses duplicate keydown and maps empty end to cancel',async()=>{
+  const f=setup(),target=existingTextTarget(),packets=[];
+  f.channel.submitText=packet=>{packets.push(packet);};
+  const view=f.mount({textTarget:target});
+  await view.receiveFrame(frame());
+  target.emit('compositionstart');
+  target.emit('keydown',{key:'Unidentified',isComposing:true});
+  target.emit('compositionupdate',{data:''});
+  target.emit('compositionend',{data:''});
+  assert.deepEqual(packets.map(p=>p.phase),['ime-start','ime-cancel']);
+  view.dispose();
+});
+test('text transport missing a Host-authenticated send capability cannot mount',()=>{
+  const f=setup(),target=existingTextTarget();
+  assert.throws(()=>f.mount({textTarget:target}),/GPUI_VIEWPORT_DEPENDENCY_INVALID/);
+  assert.equal(target.handlers.size,0);
+});
+test('revocation disables existing text transport and stale composition events',async()=>{
+  const f=setup(),target=existingTextTarget(),packets=[];
+  f.channel.submitText=packet=>packets.push(packet);
+  const view=f.mount({textTarget:target});
+  await view.receiveFrame(frame());
+  f.setPaired(false);
+  target.emit('keydown',{key:'a'});
+  target.emit('compositionstart');
+  target.emit('compositionend',{data:'secret'});
+  assert.equal(packets.length,0);
+  assert.equal(view.getFrame(),null);
+  view.dispose();
+});
+test('text rejection returned by Host is visible but not an approved native control',async()=>{
+  const f=setup(),target=existingTextTarget();
+  f.channel.submitText=async()=>({state:'refused',reason:'GPUI_INPUT_REPLAY'});
+  const view=f.mount({textTarget:target});
+  await view.receiveFrame(frame());
+  target.emit('keydown',{key:'a'});
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.ok(f.status.includes('input-rejected'));
+  assert.equal(f.sent.length,0);
   view.dispose();
 });
