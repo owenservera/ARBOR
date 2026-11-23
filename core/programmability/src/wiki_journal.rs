@@ -134,6 +134,7 @@ pub fn changes(input:&Value)->Value {
     let current_only=input["currentOnly"]==true;
     let mut latest=std::collections::HashMap::new();
     let mut identified=Vec::new();
+    let mut previous_revision=None;
     for entry in entries {
         let Some(page)=entry["page"].as_str().filter(|s|!s.is_empty())
             else{return refuse()};
@@ -141,7 +142,13 @@ pub fn changes(input:&Value)->Value {
             else{return refuse()};
         let Some(revision)=entry["expectedRevision"].as_u64()
             else{return refuse()};
-        if revision==u64::MAX{return refuse()}
+        // These are already-committed Host journal entries in source order.
+        // A reversed or duplicated revision could otherwise mark a stale
+        // section as current because the last array element wins.
+        // Fail closed rather than converting corrupt provenance into proof.
+        if revision==u64::MAX||
+            previous_revision.is_some_and(|old|revision<=old){return refuse()}
+        previous_revision=Some(revision);
         if !matches!(entry["action"].as_str(),Some("set-section"|"capture-note"|"capture-task")){
             return refuse()
         }
