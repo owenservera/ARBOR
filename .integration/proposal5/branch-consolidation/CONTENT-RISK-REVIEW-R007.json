@@ -4,7 +4,7 @@
   "sourceAncestryBlob": "48be727c8c0c2c8b5faa62bb92f238a4adb44c23",
   "observedAtUtc": "2026-11-23T22:52:52.686Z",
   "planned": 37,
-  "reviewed": 9,
+  "reviewed": 18,
   "status": "INCOMPLETE",
   "allowDeletion": false,
   "allowMerge": false,
@@ -888,117 +888,805 @@
       "tipSha": "f0b0ce2522eef0929af498a6d0cc31c3294f61b3",
       "baseSha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8",
       "ahead": 67,
-      "comparisonAttempted": false,
-      "fileListComplete": false,
-      "areas": [],
-      "listedFiles": 0,
-      "disposition": "INCOMPLETE_COMPARE_PRESERVE",
+      "comparisonAttempted": true,
+      "fileListComplete": true,
+      "areas": [
+        "documentation"
+      ],
+      "listedFiles": 57,
+      "disposition": "MANUAL_CONTENT_REVIEW_REQUIRED",
       "canDelete": false,
-      "canMerge": false
+      "canMerge": false,
+      "sampleFiles": [
+        {
+          "path": ".integration/proposal5/README.md",
+          "area": "documentation",
+          "status": "modified"
+        },
+        {
+          "path": ".integration/proposal5/foundations/DECISIONS-AND-DEFERRED.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/foundations/FOUNDATIONAL-ARCHITECTURE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/foundations/FOUNDATIONAL-PRD.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/foundations/GAP-REGISTER.v1.json",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/foundations/IMPLEMENTATION-WAVES.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/foundations/NATIVE-MACHINERY-AND-CONTRACTS.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/foundations/PROMPT-FACTORY-SCAFFOLD.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/foundations/PWA-FIRST-DELIVERY.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/foundations/README.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/foundations/SOURCE-ATLAS.v1.json",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/foundations/VALIDATION-REPORT.v1.json",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/foundations/VERIFICATION-AND-ACCEPTANCE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/foundations/WAVE-MANIFEST.v1.json",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/foundations/contracts/capability-manifest.v0.schema.json",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/foundations/prompts/00-SHARED-PRE-G-CONTRACT.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/foundations/prompts/COHORT-VALIDATION.v1.json",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/foundations/prompts/FA-PG00-SOURCE-TRUTH.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/foundations/prompts/FA-PG01-NATIVE-ABI.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/foundations/prompts/FA-PG02-SEMANTIC-FABRIC.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/foundations/prompts/FA-PG03-PWA-ROCK-SECURITY.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/foundations/prompts/FA-PGZ-CONVERGENCE-REFEREE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/foundations/prompts/LANE-REGISTRY.v1.json",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/foundations/prompts/README.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/foundations/prompts/validate-cohort.mjs",
+          "area": "documentation",
+          "status": "added"
+        }
+      ]
     },
     {
       "name": "work/p5-foundational-architecture-prep-r001",
       "tipSha": "80c29fbc0d45afbce0fadde5388a8f912cdd2762",
       "baseSha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8",
       "ahead": 66,
-      "comparisonAttempted": false,
-      "fileListComplete": false,
-      "areas": [],
-      "listedFiles": 0,
-      "disposition": "INCOMPLETE_COMPARE_PRESERVE",
+      "comparisonAttempted": true,
+      "fileListComplete": true,
+      "areas": [
+        "documentation"
+      ],
+      "listedFiles": 50,
+      "disposition": "MANUAL_CONTENT_REVIEW_REQUIRED",
       "canDelete": false,
-      "canMerge": false
+      "canMerge": false,
+      "sampleFiles": [
+        {
+          "path": ".integration/proposal5/README.md",
+          "area": "documentation",
+          "status": "modified"
+        },
+        {
+          "path": ".integration/proposal5/foundations/DECISIONS-AND-DEFERRED.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/foundations/FOUNDATIONAL-ARCHITECTURE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/foundations/FOUNDATIONAL-PRD.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/foundations/GAP-REGISTER.v1.json",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/foundations/IMPLEMENTATION-WAVES.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/foundations/NATIVE-MACHINERY-AND-CONTRACTS.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/foundations/PROMPT-FACTORY-SCAFFOLD.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/foundations/PWA-FIRST-DELIVERY.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/foundations/README.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/foundations/SOURCE-ATLAS.v1.json",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/foundations/VALIDATION-REPORT.v1.json",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/foundations/VERIFICATION-AND-ACCEPTANCE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/foundations/WAVE-MANIFEST.v1.json",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/foundations/contracts/capability-manifest.v0.schema.json",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/foundations/prompts/00-SHARED-PRE-G-CONTRACT.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/foundations/prompts/COHORT-VALIDATION.v1.json",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/foundations/prompts/FA-PG00-SOURCE-TRUTH.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/foundations/prompts/FA-PG01-NATIVE-ABI.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/foundations/prompts/FA-PG02-SEMANTIC-FABRIC.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/foundations/prompts/FA-PG03-PWA-ROCK-SECURITY.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/foundations/prompts/FA-PGZ-CONVERGENCE-REFEREE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/foundations/prompts/LANE-REGISTRY.v1.json",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/foundations/prompts/README.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/foundations/prompts/validate-cohort.mjs",
+          "area": "documentation",
+          "status": "added"
+        }
+      ]
     },
     {
       "name": "work/p5-hvi-first-real-audit-local-mission-r001",
       "tipSha": "0cfe0f227160b65a59e5770cf549b0cfaafe488d",
       "baseSha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8",
       "ahead": 2,
-      "comparisonAttempted": false,
-      "fileListComplete": false,
-      "areas": [],
-      "listedFiles": 0,
-      "disposition": "INCOMPLETE_COMPARE_PRESERVE",
+      "comparisonAttempted": true,
+      "fileListComplete": true,
+      "areas": [
+        "documentation"
+      ],
+      "listedFiles": 6,
+      "disposition": "MANUAL_CONTENT_REVIEW_REQUIRED",
       "canDelete": false,
-      "canMerge": false
+      "canMerge": false,
+      "sampleFiles": [
+        {
+          "path": ".integration/proposal5/hq-version-intelligence/operator-first-run/EXECUTE-LOCAL-MISSION.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/hq-version-intelligence/operator-first-run/LOCAL-AGENT-STARTER.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/hq-version-intelligence/operator-first-run/README.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/hq-version-intelligence/operator-first-run/REPORT-CONTRACT.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/hq-version-intelligence/operator-first-run/SOURCE-CONNECTOR-CONTRACT.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/hq-version-intelligence/operator-first-run/SOURCE-SET.json",
+          "area": "documentation",
+          "status": "added"
+        }
+      ]
     },
     {
       "name": "work/p5-hvi-w2-h-host-r001",
       "tipSha": "d24daa9966abb222cd25210f41dcbb4758aa1209",
       "baseSha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8",
       "ahead": 4,
-      "comparisonAttempted": false,
-      "fileListComplete": false,
-      "areas": [],
-      "listedFiles": 0,
-      "disposition": "INCOMPLETE_COMPARE_PRESERVE",
+      "comparisonAttempted": true,
+      "fileListComplete": true,
+      "areas": [
+        "documentation",
+        "host-authority"
+      ],
+      "listedFiles": 7,
+      "disposition": "MANUAL_CONTENT_REVIEW_REQUIRED",
       "canDelete": false,
-      "canMerge": false
+      "canMerge": false,
+      "sampleFiles": [
+        {
+          "path": ".integration/proposal5/hq-version-intelligence/proofs/H/SECURITY-READ-BOUNDARY.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/hq-version-intelligence/proofs/H/SOURCE-PORT-PREPARATION.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/hq-version-intelligence/proofs/H/W2-ADMISSION-OWNER-WAIVER.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": "apps/vivim-host/control/action-catalog.v1.json",
+          "area": "host-authority",
+          "status": "modified"
+        },
+        {
+          "path": "apps/vivim-host/control/hvi-capability.mjs",
+          "area": "host-authority",
+          "status": "added"
+        },
+        {
+          "path": "apps/vivim-host/control/hvi-native-guide.json",
+          "area": "host-authority",
+          "status": "added"
+        },
+        {
+          "path": "apps/vivim-host/test/hvi-capability.test.mjs",
+          "area": "host-authority",
+          "status": "added"
+        }
+      ]
     },
     {
       "name": "work/p5-hvi-w2-u-inspector-r001",
       "tipSha": "5836e9c9f5ba3bee36dbe6896ebfd22364b4c450",
       "baseSha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8",
       "ahead": 9,
-      "comparisonAttempted": false,
-      "fileListComplete": false,
-      "areas": [],
-      "listedFiles": 0,
-      "disposition": "INCOMPLETE_COMPARE_PRESERVE",
+      "comparisonAttempted": true,
+      "fileListComplete": true,
+      "areas": [
+        "documentation",
+        "mobile-visual"
+      ],
+      "listedFiles": 8,
+      "disposition": "MANUAL_CONTENT_REVIEW_REQUIRED",
       "canDelete": false,
-      "canMerge": false
+      "canMerge": false,
+      "sampleFiles": [
+        {
+          "path": ".integration/proposal5/hq-version-intelligence/proofs/U/FINAL-INSPECTOR-CLOSEOUT.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/hq-version-intelligence/proofs/U/FINAL-INSPECTOR-RECEIPT.json",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/hq-version-intelligence/proofs/U/SOURCE-INSPECTOR-PREPARATION.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/hq-version-intelligence/proofs/U/TEST-RECEIPTS.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/hq-version-intelligence/proofs/U/W2-ADMISSION-OWNER-WAIVER.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": "packages/tierflow/src/visual-runtime/knowledge/hvi-inspector.mjs",
+          "area": "mobile-visual",
+          "status": "added"
+        },
+        {
+          "path": "packages/tierflow/src/visual-runtime/render/hvi-inspector.mjs",
+          "area": "mobile-visual",
+          "status": "added"
+        },
+        {
+          "path": "packages/tierflow/tests/hvi-inspector.test.mjs",
+          "area": "mobile-visual",
+          "status": "added"
+        }
+      ]
     },
     {
       "name": "work/p5-hvi-w2-z-referee-r001",
       "tipSha": "725132c640a1f21d3af5c4b9123b314e4df3133d",
       "baseSha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8",
       "ahead": 1,
-      "comparisonAttempted": false,
-      "fileListComplete": false,
-      "areas": [],
-      "listedFiles": 0,
-      "disposition": "INCOMPLETE_COMPARE_PRESERVE",
+      "comparisonAttempted": true,
+      "fileListComplete": true,
+      "areas": [
+        "documentation"
+      ],
+      "listedFiles": 5,
+      "disposition": "MANUAL_CONTENT_REVIEW_REQUIRED",
       "canDelete": false,
-      "canMerge": false
+      "canMerge": false,
+      "sampleFiles": [
+        {
+          "path": ".integration/proposal5/hq-version-intelligence/proofs/Z2/CHANGED-PATHS.json",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/hq-version-intelligence/proofs/Z2/GAP-AND-SECURITY-MATRIX.json",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/hq-version-intelligence/proofs/Z2/HANDOFF-G2.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/hq-version-intelligence/proofs/Z2/QA-RECEIPTS.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/hq-version-intelligence/proofs/Z2/RESULT.md",
+          "area": "documentation",
+          "status": "added"
+        }
+      ]
     },
     {
       "name": "work/p5-p2-highvalue-labs",
       "tipSha": "3e6954d21bd70eeccc6e00a310bcb337c3164f50",
       "baseSha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8",
       "ahead": 1,
-      "comparisonAttempted": false,
-      "fileListComplete": false,
-      "areas": [],
-      "listedFiles": 0,
-      "disposition": "INCOMPLETE_COMPARE_PRESERVE",
+      "comparisonAttempted": true,
+      "fileListComplete": true,
+      "areas": [
+        "documentation"
+      ],
+      "listedFiles": 4,
+      "disposition": "MANUAL_CONTENT_REVIEW_REQUIRED",
       "canDelete": false,
-      "canMerge": false
+      "canMerge": false,
+      "sampleFiles": [
+        {
+          "path": ".integration/proposal5/phase2/highvalue/DEPENDENCIES.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/highvalue/HANDOFF-G.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/highvalue/PRIORITIES.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/highvalue/cards.json",
+          "area": "documentation",
+          "status": "added"
+        }
+      ]
     },
     {
       "name": "work/p5-p2-preg-interop-r001",
       "tipSha": "73b1ea769de6023dfff857d7e9c4003731f3b112",
       "baseSha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8",
       "ahead": 38,
-      "comparisonAttempted": false,
-      "fileListComplete": false,
-      "areas": [],
-      "listedFiles": 0,
-      "disposition": "INCOMPLETE_COMPARE_PRESERVE",
+      "comparisonAttempted": true,
+      "fileListComplete": true,
+      "areas": [
+        "documentation"
+      ],
+      "listedFiles": 30,
+      "disposition": "MANUAL_CONTENT_REVIEW_REQUIRED",
       "canDelete": false,
-      "canMerge": false
+      "canMerge": false,
+      "sampleFiles": [
+        {
+          "path": ".integration/proposal5/README.md",
+          "area": "documentation",
+          "status": "modified"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/C-interop/README.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/C-interop/acceptance.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/C-interop/interop-read.mjs",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/C-interop/interop-read.test.mjs",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/C-interop/interop.types.ts",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/C-interop/owner-handoff.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/C-interop/source-delta.json",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/01-CONVERGENCE-AND-FREEZE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/02-DEPENDENCY-AND-RELEASE-BLOCKERS.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/03-READY-TO-MERGE-LEDGER.json",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/04-REFRESHED-DECISION-AND-PHASE2-SLOTS.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/05-LAUNCH-ORDER-AFTER-FOLLOWUPS.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/README.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/A-FINALIZE-AND-FREEZE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/B-FINALIZE-AND-FREEZE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/C-FINALIZE-AND-FREEZE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/D-FINALIZE-AND-FREEZE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/E-FINALIZE-AND-FREEZE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/F-FINALIZE-AND-FREEZE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/G0-PRE-INTEGRATION-HANDOFF.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/H-PREG-REFEREE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/P2-C-PREP.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/P2-K-PREP.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/P2-T-PREP.md",
+          "area": "documentation",
+          "status": "added"
+        }
+      ]
     },
     {
       "name": "work/p5-p2-preg-knowledge-r001",
       "tipSha": "4db9e0c2068be36ab42663a76186422c8f9813a1",
       "baseSha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8",
       "ahead": 39,
-      "comparisonAttempted": false,
-      "fileListComplete": false,
-      "areas": [],
-      "listedFiles": 0,
-      "disposition": "INCOMPLETE_COMPARE_PRESERVE",
+      "comparisonAttempted": true,
+      "fileListComplete": true,
+      "areas": [
+        "documentation"
+      ],
+      "listedFiles": 31,
+      "disposition": "MANUAL_CONTENT_REVIEW_REQUIRED",
       "canDelete": false,
-      "canMerge": false
+      "canMerge": false,
+      "sampleFiles": [
+        {
+          "path": ".integration/proposal5/README.md",
+          "area": "documentation",
+          "status": "modified"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/K-knowledge/README.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/K-knowledge/acceptance.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/K-knowledge/migration-dag.json",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/K-knowledge/negative-cases.json",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/K-knowledge/owner-handoff.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/K-knowledge/pre-g-contract.test.mjs",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/K-knowledge/proposed-ports.d.ts",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/K-knowledge/source-delta.json",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/01-CONVERGENCE-AND-FREEZE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/02-DEPENDENCY-AND-RELEASE-BLOCKERS.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/03-READY-TO-MERGE-LEDGER.json",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/04-REFRESHED-DECISION-AND-PHASE2-SLOTS.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/05-LAUNCH-ORDER-AFTER-FOLLOWUPS.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/README.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/A-FINALIZE-AND-FREEZE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/B-FINALIZE-AND-FREEZE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/C-FINALIZE-AND-FREEZE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/D-FINALIZE-AND-FREEZE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/E-FINALIZE-AND-FREEZE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/F-FINALIZE-AND-FREEZE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/G0-PRE-INTEGRATION-HANDOFF.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/H-PREG-REFEREE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/P2-C-PREP.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/P2-K-PREP.md",
+          "area": "documentation",
+          "status": "added"
+        }
+      ]
     },
     {
       "name": "work/p5-p2-preg-tests-r001",
@@ -1249,8 +1937,8 @@
     }
   ],
   "summary": {
-    "reviewed": 9,
-    "complete": 9,
+    "reviewed": 18,
+    "complete": 18,
     "incomplete": 0,
     "riskAreas": [
       "documentation",
