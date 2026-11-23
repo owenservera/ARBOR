@@ -1134,6 +1134,30 @@ async function handleControl(req, res, pathname, host, controlFor, tokenFor, uiS
     runtime:runtimeFor(),sessionId:developmentSession??'owner-token',
     stillOwner:developmentStillOwner
   });
+  // PY-001: owner-only, GET-only status of the EXISTING local Work CAS.
+  // Never initializes the Personal Agent, lists private Work, sends a provider
+  // message or upgrades a paired phone's grant. Native GPUI can inspect it
+  // using the same authenticated Host owner route as the existing controls.
+  if(route==='work-status'){
+    if(req.method!=='GET'){sendJson(res,405,{code:'METHOD'});return;}
+    if(req.headers.origin!==undefined&&!sameOrigin){
+      sendJson(res,403,{code:'ORIGIN'});return;
+    }
+    if(!studioPort||typeof studioPort.workStatus!=='function'){
+      sendJson(res,503,{schema:'vivim.studio-work-status/1',
+        state:'unavailable',code:'STUDIO_WORK_UNAVAILABLE'});return;
+    }
+    try{
+      const observed=await studioPort.workStatus();
+      if(!developmentStillOwner()){sendJson(res,401,{code:'OWNER_AUTH'});return;}
+      res.setHeader('cache-control','private, no-store');
+      sendJson(res,200,observed);
+    }catch{
+      sendJson(res,503,{schema:'vivim.studio-work-status/1',
+        state:'unavailable',code:'STUDIO_WORK_UNAVAILABLE'});
+    }
+    return;
+  }
   if(route.startsWith('development/')){
     const op=route.slice('development/'.length);
     if(!['status','graph','register','index','hvi-grant','hvi-revoke'].includes(op)){sendJson(res,404,{code:'NOT_FOUND'});return;}
