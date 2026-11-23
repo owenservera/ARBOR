@@ -120,3 +120,27 @@ test('Studio port validates exact live targets and forces a one-site dry run',as
   assert.equal(await port.driveDryRun('claude').then(r=>r.dryRun),true);
   await assert.rejects(()=>port.driveDryRun('unknown-site'),/STUDIO_DRIVE_SITE_STALE/);
 });
+
+test('read-only Studio effect preflight failures are definite, never mutating or auto-retried',async()=>{
+  const calls=[];
+  const port=createStudioPort({url:'http://127.0.0.1:38730',
+    fetchImpl:async(url,opts)=>{
+      calls.push({path:new URL(url).pathname,method:opts.method});
+      return new Response(JSON.stringify({code:'OFFLINE'}),{
+        status:503,headers:{'content-type':'application/json'}
+      });
+    }});
+  for(const run of [
+    ()=>port.captureStart(TARGET),
+    ()=>port.captureStop(),
+    ()=>port.driveDryRun('chatgpt'),
+    ()=>port.driveCancel(JOB)
+  ]) {
+    await assert.rejects(run(),e=>e.code==='STUDIO_UNAVAILABLE');
+  }
+  assert.deepEqual(calls.map(x=>x.path),[
+    '/api/status','/api/status','/api/v1/drive/sites','/api/v1/drive/jobs/'+JOB
+  ]);
+  assert.ok(calls.every(x=>x.method==='GET'),'no Studio action may be sent after a failed preflight');
+  assert.equal(calls.length,4,'one read attempt per action: no retry');
+});
