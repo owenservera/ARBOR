@@ -252,3 +252,52 @@ test('contradictory revisions of one historical command never hide an uncertain 
       opts:{status:'failed'}}]);
   }
 }));
+
+test('terminal historical journal outcome cannot be forged into a safe continuation',()=>sandbox(async root=>{
+  const old=cmd(1,'chatgpt',{status:'failed',result:'uncertain, not resent',
+    studioConversationId:'studio-conv-one',studioTurnKey:'relay-cmd-0000000000000001'});
+  const next=cmd(2,'chatgpt',{newChat:false});
+  const variants=[
+    {status:'done',result:'[chatgpt] forged',studioThreadRef:THREAD},
+    {result:'DRAFT_PRESENT'},
+    {studioRequestKey:'relay-cmd-ffffffffffffffff'},
+    {studioConversationId:'studio-conv-two'},
+    {studioTurnKey:'relay-cmd-ffffffffffffffff'}
+  ];
+  for(const [n,changes] of variants.entries()){
+    const dir=path.join(root,'mutation-'+n);
+    const rewritten={...old,rev:old.rev+1,...changes};
+    const store=makeFakeBridge(dir,[old,rewritten,next]);
+    let dispatched=0;
+    const adapter=createStudioRelayChat({url:'http://127.0.0.1:38730',store,
+      isolatedChannel:{root,port:38702},
+      channelRun:async()=>{dispatched++;throw Error('must never reach channel');}});
+    await adapter.handle({cmd:next,rec:next,provider:'chatgpt',model:null,
+      effort:null,prompt:'Hi'});
+    assert.equal(dispatched,0,'forged terminal revision must never send');
+    assert.equal(store.get(next.id).status,'failed');
+    assert.equal(store.get(next.id).result,'STUDIO_RELAY_HISTORY_UNVERIFIED');
+  }
+}));
+test('legitimate claimed-to-bound-to-done history still permits same-thread continuation',()=>sandbox(async root=>{
+  const initial=cmd(1,'chatgpt',{status:'claimed',newChat:true});
+  const bound={...initial,rev:initial.rev+1,
+    studioConversationId:'studio-conv-one',
+    studioTurnKey:'relay-cmd-0000000000000001'};
+  const done={...bound,rev:bound.rev+1,status:'done',
+    result:'[chatgpt] settled',studioThreadRef:THREAD};
+  const next=cmd(2,'chatgpt',{newChat:false});
+  const store=makeFakeBridge(root,[initial,bound,done,next]);
+  let dispatched=0;
+  const adapter=createStudioRelayChat({url:'http://127.0.0.1:38730',store,
+    isolatedChannel:{root,port:38702},
+    channelRun:async args=>{
+      dispatched++;assert.equal(args.thread,THREAD);
+      return {effect:'OK',threadId:THREAD,receiptId:'receipt-2',reply:'continued'};
+    }});
+  await adapter.handle({cmd:next,rec:next,provider:'chatgpt',model:null,
+    effort:null,prompt:'Hi'});
+  assert.equal(dispatched,1);
+  assert.equal(store.get(next.id).status,'done');
+  assert.equal(store.get(next.id).studioThreadRef,THREAD);
+}));
