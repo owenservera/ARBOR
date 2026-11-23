@@ -135,6 +135,7 @@ pub fn changes(input:&Value)->Value {
     let mut latest=std::collections::HashMap::new();
     let mut identified=Vec::new();
     let mut previous_revision=None;
+    let mut previous_sequence=None;
     for entry in entries {
         let Some(page)=entry["page"].as_str().filter(|s|!s.is_empty())
             else{return refuse()};
@@ -164,6 +165,12 @@ pub fn changes(input:&Value)->Value {
            !entry["receivedAt"].as_str().is_some_and(|s|!s.is_empty()){
             return refuse()
         }
+        // Host sequence is a monotone journal identity shared with non-Wiki
+        // events. Gaps are valid; duplicate or reversed identified entries are
+        // not. Never project a corrupted sequence as a current-source receipt.
+        let sequence=entry["sequence"].as_u64().expect("validated sequence");
+        if previous_sequence.is_some_and(|old|sequence<=old){return refuse()}
+        previous_sequence=Some(sequence);
         identified.push(entry);
     }
     let selected:Vec<&Value>=identified.into_iter().filter(|entry|{
