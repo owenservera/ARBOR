@@ -114,6 +114,26 @@ test('approval, money, messages, uncertainty, and irreversible effects are never
   assert.deepEqual(result.grants, []);
 });
 
+test('unknown or malformed command effect cannot be silently automatic', () => {
+  const requests = [
+    { id: 'unknown-write', effect: 'file-system-write', safeAuthorized: true, readOnly: true },
+    { id: 'malformed-effect', effect: { kind: 'read' }, safeAuthorized: true, readOnly: true },
+    { id: 'null-effect', effect: null, safeAuthorized: true, readOnly: true },
+    { id: 'known-external', effect: 'external-message', safeAuthorized: true, readOnly: true },
+    { id: 'known-read', effect: 'read', safeAuthorized: true, readOnly: true },
+    { id: 'known-none', effect: 'none', safeAuthorized: true, readOnly: true },
+    { id: 'unspecified', safeAuthorized: true, readOnly: true }
+  ];
+  const policy = organizeInterruptions(requests);
+  assert.deepEqual(policy.immediate.map(r => r.id),
+    ['unknown-write', 'malformed-effect', 'null-effect', 'known-external']);
+  assert.deepEqual(policy.automatic.map(r => r.id), ['known-read', 'known-none', 'unspecified']);
+  assert.deepEqual(policy.batch, []);
+  assert.deepEqual(policy.grants, []);
+  assert.ok(policy.immediate.every(r => r.requiresApproval === false),
+    'categorization must not forge Host permission claims');
+});
+
 test('malformed inputs cannot manufacture missions', () => {
   assert.equal(projectOrchestratorMission({ state: 'complete', result: { answer: 'hello' } }), null);
   assert.equal(projectCommandMission({ status: 'done' }), null);
