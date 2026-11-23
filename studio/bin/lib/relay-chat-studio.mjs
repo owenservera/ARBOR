@@ -195,6 +195,20 @@ export function createStudioRelayChat({ url, store, fetchImpl = fetch,
         catch { await pause(2000); continue; }
         const turn = snapshot?.turns?.find(a => a.key === key);
         if (turn?.reply?.verified === true && turn.reply.settled === true && typeof turn.reply.text === 'string' && turn.reply.text.length) {
+          // A settled reply is not yet the claimed provider conversation.
+          // Never project a reply from another tab, provider, turn or thread
+          // onto this Host relay command. A mismatch after submit is uncertain,
+          // never a reason to resend or silently accept a different answer.
+          const bound = snapshot?.binding, threadRef = bound?.thread?.ref;
+          if (snapshot?.id !== id || snapshot.site !== provider ||
+              snapshot.identity?.state !== 'bound' ||
+              !/^chatgpt-c:[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(threadRef ?? '') ||
+              bound?.targetId !== created.binding?.targetId ||
+              bound?.origin !== created.binding?.origin ||
+              (freshConversation && bound?.ownedByStudio !== true) ||
+              (!freshConversation && threadRef !== created.binding?.thread?.ref) ||
+              turn.conversationId !== id)
+            throw new Error('STUDIO_SETTLED_REPLY_IDENTITY_UNVERIFIED');
           safeToFinish = true; store.reply(cmd.id, `[${provider}] ${turn.reply.text}`.slice(0, 60000)); return;
         }
         if (turn?.phase === 'blocked' && turn.send?.state === 'not-attempted') {
