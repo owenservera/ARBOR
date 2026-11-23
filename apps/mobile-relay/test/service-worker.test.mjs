@@ -216,7 +216,7 @@ function loadWorker({ scope = ROOT, script, fetchImpl, existing = [] } = {}) {
 }
 
 test('install precaches every shell asset from the network with cache reload', async () => {
-  const failure = new URL('app.js', ROOT).href;
+  const failure = new URL('welcome.mjs', ROOT).href;
   const seen = [];
   const worker = loadWorker({
     fetchImpl: async (url, init) => {
@@ -245,6 +245,31 @@ test('install precaches every shell asset from the network with cache reload', a
 
   assert.equal(worker.calls.skipped, 1, 'install must skipWaiting even when one asset fails');
   assert.equal(worker.calls.claimed, 0, 'install must not claim clients');
+});
+
+test('an upgrade without a core shell entrypoint is rejected and retains the old offline generation', async () => {
+  for (const missing of ['index.html', 'app.js']) {
+    for (const failMode of ['network', 'uncacheable']) {
+      const previous = 'vivim-relay-shell-v47';
+      const target = new URL(missing, ROOT).href;
+      const worker = loadWorker({
+        existing: [previous],
+        fetchImpl: async (url) => {
+          if (url !== target) return shellResponse('fresh');
+          if (failMode === 'network') throw new Error('core asset offline');
+          return shellResponse('not-ready', {ok:false, status:503});
+        }
+      });
+      const old = worker.caches.get(previous);
+      await old.put(new URL('app.js', ROOT).href, shellResponse('last-good-app'));
+      await assert.rejects(worker.install(), /core asset offline|Critical PWA shell asset/);
+      assert.equal(worker.calls.skipped, 0, missing + ' ' + failMode + ' must not activate');
+      assert.ok((await worker.caches.keys()).includes(previous), 'old version is preserved');
+      assert.ok(!(await worker.caches.keys()).includes(CACHE), 'broken new cache is discarded');
+      assert.equal((await old.match(new URL('app.js', ROOT).href)).body, 'last-good-app');
+      assert.equal(worker.calls.claimed, 0, 'a refused install must not claim clients');
+    }
+  }
 });
 
 test('install resolves shell paths against the worker scope, including the Direct Host mount', async () => {
