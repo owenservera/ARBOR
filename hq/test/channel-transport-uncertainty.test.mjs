@@ -17,7 +17,7 @@ function withFixture(fn) {
     const fs = require('node:fs');
     fs.appendFileSync(process.env.VIVIM_Z07_OFFLINE_CALLS, 'call\\n');
     if (process.argv[3] === 'slow') {
-      setTimeout(() => process.stdout.write('late answer\\n'), 2200);
+      setTimeout(() => process.stdout.write('late answer\\n'), 5000);
     } else {
       process.stdout.write('settled answer\\n');
     }
@@ -48,14 +48,14 @@ test('ordinary completed ZCode wake reports the exact single offline CLI reply',
     assert.equal(out.accepted, true);
     assert.equal(out.pending, false);
     assert.equal(out.reply, 'settled answer');
-    assert.equal(readFileSync(calls, 'utf8').trim().split('\\n').length, 1);
+    assert.equal(readFileSync(calls, 'utf8').trim().split(/\r?\n/).length, 1);
   });
 });
 
 test('timed-out turn stays uncertain and must NOT spawn a second CLI/model call', async () => {
   await withFixture(async ({dir, calls}) => {
     const out = resumeSession('slow', 'safe offline fixture', {
-      timeoutMs: 360, replyFile: join(dir, 'slow.reply'),
+      timeoutMs: 1800, replyFile: join(dir, 'slow.reply'),
     });
     assert.equal(out.accepted, false);
     assert.equal(out.pending, true);
@@ -64,8 +64,8 @@ test('timed-out turn stays uncertain and must NOT spawn a second CLI/model call'
     assert.equal(existsSync(calls), true, 'mock CLI must actually start before deadline');
     // An old implementation launched the same command detached on timeout;
     // allow enough time for that extra process to write its call marker.
-    await sleep(850);
-    assert.deepEqual(readFileSync(calls, 'utf8').trim().split('\\n'), ['call']);
+    await sleep(1100);
+    assert.deepEqual(readFileSync(calls, 'utf8').trim().split(/\r?\n/), ['call']);
   });
 });
 
