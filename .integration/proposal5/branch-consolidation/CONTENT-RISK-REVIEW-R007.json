@@ -4,7 +4,7 @@
   "sourceAncestryBlob": "48be727c8c0c2c8b5faa62bb92f238a4adb44c23",
   "observedAtUtc": "2026-11-23T22:52:52.686Z",
   "planned": 37,
-  "reviewed": 18,
+  "reviewed": 27,
   "status": "INCOMPLETE",
   "allowDeletion": false,
   "allowMerge": false,
@@ -1693,117 +1693,1068 @@
       "tipSha": "c807010e52b4a9f82ea9578a979befd38f74cb31",
       "baseSha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8",
       "ahead": 37,
-      "comparisonAttempted": false,
-      "fileListComplete": false,
-      "areas": [],
-      "listedFiles": 0,
-      "disposition": "INCOMPLETE_COMPARE_PRESERVE",
+      "comparisonAttempted": true,
+      "fileListComplete": true,
+      "areas": [
+        "documentation"
+      ],
+      "listedFiles": 29,
+      "disposition": "MANUAL_CONTENT_REVIEW_REQUIRED",
       "canDelete": false,
-      "canMerge": false
+      "canMerge": false,
+      "sampleFiles": [
+        {
+          "path": ".integration/proposal5/README.md",
+          "area": "documentation",
+          "status": "modified"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/T-tests/README.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/T-tests/acceptance.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/T-tests/fixtures.json",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/T-tests/owner-handoff.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/T-tests/source-delta.json",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/T-tests/synthetic-contracts.test.mjs",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/01-CONVERGENCE-AND-FREEZE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/02-DEPENDENCY-AND-RELEASE-BLOCKERS.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/03-READY-TO-MERGE-LEDGER.json",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/04-REFRESHED-DECISION-AND-PHASE2-SLOTS.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/05-LAUNCH-ORDER-AFTER-FOLLOWUPS.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/README.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/A-FINALIZE-AND-FREEZE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/B-FINALIZE-AND-FREEZE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/C-FINALIZE-AND-FREEZE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/D-FINALIZE-AND-FREEZE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/E-FINALIZE-AND-FREEZE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/F-FINALIZE-AND-FREEZE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/G0-PRE-INTEGRATION-HANDOFF.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/H-PREG-REFEREE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/P2-C-PREP.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/P2-K-PREP.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/P2-T-PREP.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/R2-B-FINAL-FREEZE.md",
+          "area": "documentation",
+          "status": "added"
+        }
+      ]
     },
     {
       "name": "work/p5-phase2-readiness-docs-r001",
       "tipSha": "a9caad49347749cb0630ae1719bc2d7a8621d645",
       "baseSha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8",
       "ahead": 5,
-      "comparisonAttempted": false,
-      "fileListComplete": false,
-      "areas": [],
-      "listedFiles": 0,
-      "disposition": "INCOMPLETE_COMPARE_PRESERVE",
+      "comparisonAttempted": true,
+      "fileListComplete": true,
+      "areas": [
+        "documentation"
+      ],
+      "listedFiles": 5,
+      "disposition": "MANUAL_CONTENT_REVIEW_REQUIRED",
       "canDelete": false,
-      "canMerge": false
+      "canMerge": false,
+      "sampleFiles": [
+        {
+          "path": ".integration/proposal5/phase2/README.md",
+          "area": "documentation",
+          "status": "modified"
+        },
+        {
+          "path": ".integration/proposal5/phase2/readiness/OWNER-HANDOFFS.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/readiness/PLACEMENT-MATRIX.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/readiness/README.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/readiness/SOURCE-TO-ARBOR.json",
+          "area": "documentation",
+          "status": "added"
+        }
+      ]
     },
     {
       "name": "work/p5-pre-g-convergence-r001",
       "tipSha": "8b23c73bf450738a76b256bf0fa17ecbf86db591",
       "baseSha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8",
       "ahead": 31,
-      "comparisonAttempted": false,
-      "fileListComplete": false,
-      "areas": [],
-      "listedFiles": 0,
-      "disposition": "INCOMPLETE_COMPARE_PRESERVE",
+      "comparisonAttempted": true,
+      "fileListComplete": true,
+      "areas": [
+        "documentation"
+      ],
+      "listedFiles": 23,
+      "disposition": "MANUAL_CONTENT_REVIEW_REQUIRED",
       "canDelete": false,
-      "canMerge": false
+      "canMerge": false,
+      "sampleFiles": [
+        {
+          "path": ".integration/proposal5/README.md",
+          "area": "documentation",
+          "status": "modified"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/01-CONVERGENCE-AND-FREEZE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/02-DEPENDENCY-AND-RELEASE-BLOCKERS.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/03-READY-TO-MERGE-LEDGER.json",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/04-REFRESHED-DECISION-AND-PHASE2-SLOTS.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/05-LAUNCH-ORDER-AFTER-FOLLOWUPS.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/README.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/A-FINALIZE-AND-FREEZE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/B-FINALIZE-AND-FREEZE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/C-FINALIZE-AND-FREEZE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/D-FINALIZE-AND-FREEZE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/E-FINALIZE-AND-FREEZE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/F-FINALIZE-AND-FREEZE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/G0-PRE-INTEGRATION-HANDOFF.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/H-PREG-REFEREE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/P2-C-PREP.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/P2-K-PREP.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/P2-T-PREP.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/R2-B-FINAL-FREEZE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/R2-C-FINAL-FREEZE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/R2-D-FINAL-FREEZE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/R2-E-FINAL-FREEZE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/R2-F-FINAL-FREEZE.md",
+          "area": "documentation",
+          "status": "added"
+        }
+      ]
     },
     {
       "name": "work/p5-preg-autowiki-r001",
       "tipSha": "827d21d1c33aa8597c600b45179452abc35c7af9",
       "baseSha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8",
       "ahead": 37,
-      "comparisonAttempted": false,
-      "fileListComplete": false,
-      "areas": [],
-      "listedFiles": 0,
-      "disposition": "INCOMPLETE_COMPARE_PRESERVE",
+      "comparisonAttempted": true,
+      "fileListComplete": true,
+      "areas": [
+        "documentation"
+      ],
+      "listedFiles": 32,
+      "disposition": "MANUAL_CONTENT_REVIEW_REQUIRED",
       "canDelete": false,
-      "canMerge": false
+      "canMerge": false,
+      "sampleFiles": [
+        {
+          "path": ".integration/proposal5/README.md",
+          "area": "documentation",
+          "status": "modified"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/W-autowiki/CONTRACTS.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/W-autowiki/README.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/W-autowiki/RUN-LEDGER.json",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/W-autowiki/SOURCE-MAP.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/W-autowiki/STORAGE-GUARDS.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/W-autowiki/W2-OWNER-HANDOFF.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/W-autowiki/mirror.mjs",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/W-autowiki/negative-tests.mjs",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/W-autowiki/run-tests.mjs",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/01-CONVERGENCE-AND-FREEZE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/02-DEPENDENCY-AND-RELEASE-BLOCKERS.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/03-READY-TO-MERGE-LEDGER.json",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/04-REFRESHED-DECISION-AND-PHASE2-SLOTS.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/05-LAUNCH-ORDER-AFTER-FOLLOWUPS.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/README.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/A-FINALIZE-AND-FREEZE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/B-FINALIZE-AND-FREEZE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/C-FINALIZE-AND-FREEZE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/D-FINALIZE-AND-FREEZE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/E-FINALIZE-AND-FREEZE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/F-FINALIZE-AND-FREEZE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/G0-PRE-INTEGRATION-HANDOFF.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/H-PREG-REFEREE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/P2-C-PREP.md",
+          "area": "documentation",
+          "status": "added"
+        }
+      ]
     },
     {
       "name": "work/p5-preg-intelligence-convergence-r001",
       "tipSha": "9359aa0695edbc5e2b91563f688c12983f429f90",
       "baseSha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8",
       "ahead": 38,
-      "comparisonAttempted": false,
-      "fileListComplete": false,
-      "areas": [],
-      "listedFiles": 0,
-      "disposition": "INCOMPLETE_COMPARE_PRESERVE",
+      "comparisonAttempted": true,
+      "fileListComplete": true,
+      "areas": [
+        "documentation"
+      ],
+      "listedFiles": 30,
+      "disposition": "MANUAL_CONTENT_REVIEW_REQUIRED",
       "canDelete": false,
-      "canMerge": false
+      "canMerge": false,
+      "sampleFiles": [
+        {
+          "path": ".integration/proposal5/README.md",
+          "area": "documentation",
+          "status": "modified"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/Z-convergence/DEPENDENCY-DAG.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/Z-convergence/EXACT-SOURCE-LOCK.json",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/Z-convergence/G-HANDOFF.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/Z-convergence/INTEGRATION-TRUTH.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/Z-convergence/SOURCE-DELTA.json",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/Z-convergence/UNIFIED-CONTRACT.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/Z-convergence/W2-OWNER-ORDERS.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/01-CONVERGENCE-AND-FREEZE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/02-DEPENDENCY-AND-RELEASE-BLOCKERS.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/03-READY-TO-MERGE-LEDGER.json",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/04-REFRESHED-DECISION-AND-PHASE2-SLOTS.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/05-LAUNCH-ORDER-AFTER-FOLLOWUPS.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/README.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/A-FINALIZE-AND-FREEZE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/B-FINALIZE-AND-FREEZE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/C-FINALIZE-AND-FREEZE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/D-FINALIZE-AND-FREEZE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/E-FINALIZE-AND-FREEZE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/F-FINALIZE-AND-FREEZE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/G0-PRE-INTEGRATION-HANDOFF.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/H-PREG-REFEREE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/P2-C-PREP.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/P2-K-PREP.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/P2-T-PREP.md",
+          "area": "documentation",
+          "status": "added"
+        }
+      ]
     },
     {
       "name": "work/p5-preg-n0-io-r001",
       "tipSha": "cde3b6e5521d5b17215ab10088cb8090f8b87e6f",
       "baseSha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8",
       "ahead": 34,
-      "comparisonAttempted": false,
-      "fileListComplete": false,
-      "areas": [],
-      "listedFiles": 0,
-      "disposition": "INCOMPLETE_COMPARE_PRESERVE",
+      "comparisonAttempted": true,
+      "fileListComplete": true,
+      "areas": [
+        "documentation"
+      ],
+      "listedFiles": 32,
+      "disposition": "MANUAL_CONTENT_REVIEW_REQUIRED",
       "canDelete": false,
-      "canMerge": false
+      "canMerge": false,
+      "sampleFiles": [
+        {
+          "path": ".integration/proposal5/README.md",
+          "area": "documentation",
+          "status": "modified"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/N0-io/IO-CONTRACT.json",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/N0-io/R001-DIFFERENTIAL.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/N0-io/README.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/N0-io/RUN-LEDGER.json",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/N0-io/SOURCE-MAP.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/N0-io/W2-NATIVE-HANDOFF.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/N0-io/reference.types.rs",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/N0-io/reference.types.ts",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/N0-io/synthetic-proof.mjs",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/01-CONVERGENCE-AND-FREEZE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/02-DEPENDENCY-AND-RELEASE-BLOCKERS.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/03-READY-TO-MERGE-LEDGER.json",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/04-REFRESHED-DECISION-AND-PHASE2-SLOTS.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/05-LAUNCH-ORDER-AFTER-FOLLOWUPS.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/README.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/A-FINALIZE-AND-FREEZE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/B-FINALIZE-AND-FREEZE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/C-FINALIZE-AND-FREEZE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/D-FINALIZE-AND-FREEZE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/E-FINALIZE-AND-FREEZE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/F-FINALIZE-AND-FREEZE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/G0-PRE-INTEGRATION-HANDOFF.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/H-PREG-REFEREE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/P2-C-PREP.md",
+          "area": "documentation",
+          "status": "added"
+        }
+      ]
     },
     {
       "name": "work/p5-preg-semantic-wiki-r001",
       "tipSha": "d7e59a389a6ec5278595e317dfa904a801783c5b",
       "baseSha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8",
       "ahead": 36,
-      "comparisonAttempted": false,
-      "fileListComplete": false,
-      "areas": [],
-      "listedFiles": 0,
-      "disposition": "INCOMPLETE_COMPARE_PRESERVE",
+      "comparisonAttempted": true,
+      "fileListComplete": true,
+      "areas": [
+        "documentation"
+      ],
+      "listedFiles": 38,
+      "disposition": "MANUAL_CONTENT_REVIEW_REQUIRED",
       "canDelete": false,
-      "canMerge": false
+      "canMerge": false,
+      "sampleFiles": [
+        {
+          "path": ".integration/proposal5/README.md",
+          "area": "documentation",
+          "status": "modified"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/S-semantic/COMMAND-WIKI-CROSSWALK.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/S-semantic/LANGUAGE-BASELINE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/S-semantic/OWNER-HANDOFF.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/S-semantic/README.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/S-semantic/RUN-LEDGER.json",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/S-semantic/SEMANTIC-SOURCE-MAP.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/S-semantic/fixtures/EXAMPLE-SOURCE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/S-semantic/fixtures/status.example.mjs",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/S-semantic/hq/lib/annotation-v2.mjs",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/S-semantic/inert-adapter.mjs",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/S-semantic/inert-adapter.test.mjs",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/S-semantic/research/semantic-wiki-compiler/semantic-wiki-compiler.mjs",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/S-semantic/research/semantic-wiki-compiler/test/semantic-wiki-compiler.test.mjs",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/S-semantic/semantic-ir.json",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/S-semantic/semantic-ir.schema.json",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/01-CONVERGENCE-AND-FREEZE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/02-DEPENDENCY-AND-RELEASE-BLOCKERS.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/03-READY-TO-MERGE-LEDGER.json",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/04-REFRESHED-DECISION-AND-PHASE2-SLOTS.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/05-LAUNCH-ORDER-AFTER-FOLLOWUPS.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/README.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/A-FINALIZE-AND-FREEZE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/B-FINALIZE-AND-FREEZE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/C-FINALIZE-AND-FREEZE.md",
+          "area": "documentation",
+          "status": "added"
+        }
+      ]
     },
     {
       "name": "work/p5-preg-visual-language-r001",
       "tipSha": "7ad5b3c49aefdf1fdd8b212e5b7eea0e7b92338e",
       "baseSha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8",
       "ahead": 33,
-      "comparisonAttempted": false,
-      "fileListComplete": false,
-      "areas": [],
-      "listedFiles": 0,
-      "disposition": "INCOMPLETE_COMPARE_PRESERVE",
+      "comparisonAttempted": true,
+      "fileListComplete": true,
+      "areas": [
+        "documentation"
+      ],
+      "listedFiles": 33,
+      "disposition": "MANUAL_CONTENT_REVIEW_REQUIRED",
       "canDelete": false,
-      "canMerge": false
+      "canMerge": false,
+      "sampleFiles": [
+        {
+          "path": ".integration/proposal5/README.md",
+          "area": "documentation",
+          "status": "modified"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/V-visual/NATIVE-UI-BOUNDARY.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/V-visual/OWNER-HANDOFF.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/V-visual/PROTOTYPE/fixtures.mjs",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/V-visual/PROTOTYPE/projection.mjs",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/V-visual/PROTOTYPE/projection.test.mjs",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/V-visual/README.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/V-visual/RUN-LEDGER.json",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/V-visual/SOURCE-PINS.json",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/V-visual/VISUAL-TRUTH-MATRIX.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/phase2/pre-g/V-visual/realtime-projection.schema.json",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/01-CONVERGENCE-AND-FREEZE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/02-DEPENDENCY-AND-RELEASE-BLOCKERS.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/03-READY-TO-MERGE-LEDGER.json",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/04-REFRESHED-DECISION-AND-PHASE2-SLOTS.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/05-LAUNCH-ORDER-AFTER-FOLLOWUPS.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/README.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/A-FINALIZE-AND-FREEZE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/B-FINALIZE-AND-FREEZE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/C-FINALIZE-AND-FREEZE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/D-FINALIZE-AND-FREEZE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/E-FINALIZE-AND-FREEZE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/F-FINALIZE-AND-FREEZE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/G0-PRE-INTEGRATION-HANDOFF.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/pre-g/prompts/H-PREG-REFEREE.md",
+          "area": "documentation",
+          "status": "added"
+        }
+      ]
     },
     {
       "name": "work/p5-scf-s0-lock-r001",
       "tipSha": "605665b9389163128b10b9639c8ecd1d68420271",
       "baseSha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8",
       "ahead": 1,
-      "comparisonAttempted": false,
-      "fileListComplete": false,
-      "areas": [],
-      "listedFiles": 0,
-      "disposition": "INCOMPLETE_COMPARE_PRESERVE",
+      "comparisonAttempted": true,
+      "fileListComplete": true,
+      "areas": [
+        "documentation"
+      ],
+      "listedFiles": 5,
+      "disposition": "MANUAL_CONTENT_REVIEW_REQUIRED",
       "canDelete": false,
-      "canMerge": false
+      "canMerge": false,
+      "sampleFiles": [
+        {
+          "path": ".integration/proposal5/semantic-capability-fabric/proofs/S0/ABI-DIFF.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/semantic-capability-fabric/proofs/S0/BASE-LOCK.json",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/semantic-capability-fabric/proofs/S0/GATE.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/semantic-capability-fabric/proofs/S0/OWNER-AND-COLLISION.md",
+          "area": "documentation",
+          "status": "added"
+        },
+        {
+          "path": ".integration/proposal5/semantic-capability-fabric/proofs/S0/SOURCE-SHA-MATRIX.json",
+          "area": "documentation",
+          "status": "added"
+        }
+      ]
     },
     {
       "name": "work/p5-semantic-capability-fabric-r001",
@@ -1937,8 +2888,8 @@
     }
   ],
   "summary": {
-    "reviewed": 18,
-    "complete": 18,
+    "reviewed": 27,
+    "complete": 27,
     "incomplete": 0,
     "riskAreas": [
       "documentation",
