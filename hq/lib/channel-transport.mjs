@@ -76,21 +76,16 @@ export function resumeSession(sessionId, text, { timeoutMs = 180000, cwd, replyF
     closeSync(errFd);
   }
 
-  // A synchronous wait that hits its timeout kills the turn. Start it again
-  // detached, writing to the same file, so the answer is not thrown away: that
-  // loss is the defect this function exists to avoid.
+  // spawnSync kills the CLI at its deadline, but the remote/model side may
+  // already have accepted the turn. Its outcome is therefore UNKNOWN, not
+  // refused. NEVER restart the same prompt: that can duplicate paid/model
+  // effects and create two answers for a single wake journal ID.
+  // A later transcript/owner reconciliation is the only safe recovery.
   if (r.error && /** @type {any} */ (r.error).code === 'ETIMEDOUT') {
-    const outAppend = openSync(outFile, 'a');
-    const errAppend = openSync(errFile, 'a');
-    try {
-      spawn(nodeBin(), args, { stdio: ['ignore', outAppend, errAppend], windowsHide: true, detached: true }).unref();
-    } finally {
-      closeSync(outAppend);
-      closeSync(errAppend);
-    }
     return {
-      accepted: false, pending: true, replyFile: outFile,
-      detail: `the turn outran ${Math.round(timeoutMs / 1000)}s; it continues detached and its reply lands in ${outFile}`,
+      accepted: false, pending: true, uncertain: true, replyFile: outFile,
+      transport: 'cli:--resume -p',
+      detail: `the session turn exceeded ${Math.round(timeoutMs / 1000)}s; outcome uncertain, no replay performed — inspect the original session transcript`,
     };
   }
 
