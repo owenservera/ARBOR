@@ -80,17 +80,51 @@ fn inspect_owned_directory(dir: &std::path::Path) -> io::Result<DirectoryObserva
     Ok(result)
 }
 
+// One encoder for explicit local GPUI screenshots and bounded memory frames.
+// Neither entry point starts streaming, a provider, or a Host action.
+fn write_rgba_png<W: io::Write>(output: W, width: u32, height: u32, rgba: &[u8])
+    -> io::Result<()> {
+    let expected=usize::try_from(width).ok()
+        .and_then(|w|usize::try_from(height).ok().and_then(|h|w.checked_mul(h)))
+        .and_then(|pixels|pixels.checked_mul(4));
+    if !(240..=4096).contains(&width) || !(240..=4096).contains(&height)
+        || expected!=Some(rgba.len()) {
+        return Err(io::Error::new(io::ErrorKind::InvalidInput,"INVALID_GPUI_RGBA"));
+    }
+    let mut encoder=png::Encoder::new(output,width,height);
+    encoder.set_color(png::ColorType::Rgba);
+    encoder.set_depth(png::BitDepth::Eight);
+    let mut writer=encoder.write_header().map_err(io::Error::other)?;
+    writer.write_image_data(rgba).map_err(io::Error::other)?;
+    writer.finish().map_err(io::Error::other)
+}
+
+/// Explicit foreground GPUI window capture as in-memory PNG bytes. Never
+/// writes a screenshot file. The existing native capture checks owner PID,
+/// foreground focus, dimensions and blank GPU output before returning pixels.
+/// Win32 desktop composition MAY include overlays: do not transmit these
+/// bytes without separate privacy and Host owner-grant admission.
+#[cfg(windows)]
+pub fn capture_window_png_bytes()->io::Result<(u32,u32,Vec<u8>)>{
+    let (width,height,rgba)=win::capture_own_window()?;
+    let mut bytes=Vec::new();
+    write_rgba_png(&mut bytes,width,height,&rgba)?;
+    if bytes.len()>4*1024*1024 {
+        return Err(io::Error::new(io::ErrorKind::InvalidData,"GPUI_FRAME_PNG_TOO_LARGE"));
+    }
+    Ok((width,height,bytes))
+}
+#[cfg(not(windows))]
+pub fn capture_window_png_bytes()->io::Result<(u32,u32,Vec<u8>)>{
+    Err(io::Error::new(io::ErrorKind::Unsupported,"WINDOWS_ONLY"))
+}
+
 #[cfg(windows)]
 pub fn capture_window_png()->io::Result<PathBuf>{
     let (width,height,rgba)=win::capture_own_window()?;
     let (path,file)=new_file(screenshot_dir()?,"vivim-gpui-window","png")?;
     let result=(||->io::Result<()> {
-        let mut encoder=png::Encoder::new(BufWriter::new(file),width,height);
-        encoder.set_color(png::ColorType::Rgba);
-        encoder.set_depth(png::BitDepth::Eight);
-        let mut writer=encoder.write_header().map_err(io::Error::other)?;
-        writer.write_image_data(&rgba).map_err(io::Error::other)?;
-        writer.finish().map_err(io::Error::other)
+        write_rgba_png(BufWriter::new(file),width,height,&rgba)
     })();
     if let Err(error)=result {
         let _=fs::remove_file(&path);
@@ -263,4 +297,26 @@ mod tests {
     fn report_has_explicit_bounded_content(){
         assert!(save_diagnostics(&"x".repeat(32_769)).is_err());
     }
+    #[test]
+    fn memory_frame_encodes_real_png_without_file_io() {
+        let pixels=vec![17u8;240*240*4];
+        let mut output=Vec::new();
+        write_rgba_png(&mut output,240,240,&pixels).unwrap();
+        assert!(output.starts_with(&[137,80,78,71,13,10,26,10]));
+        assert!(output.ends_with(&[0,0,0,0,73,69,78,68,174,66,96,130]));
+        assert!(output.len()<4*1024*1024);
+        let mut other=Vec::new();
+        write_rgba_png(&mut other,240,240,&pixels).unwrap();
+        assert_eq!(output,other);
+    }
+    #[test]
+    fn invalid_frame_shape_is_refused_before_any_png_bytes_are_written() {
+        let mut output=Vec::new();
+        assert!(write_rgba_png(&mut output,240,240,&[0u8;4]).is_err());
+        assert!(write_rgba_png(&mut output,0,240,&[]).is_err());
+        assert!(write_rgba_png(&mut output,240,4097,&[]).is_err());
+        assert!(write_rgba_png(&mut output,u32::MAX,240,&[]).is_err());
+        assert!(output.is_empty());
+    }
+
 }
