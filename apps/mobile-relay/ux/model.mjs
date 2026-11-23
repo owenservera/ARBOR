@@ -42,6 +42,37 @@ const when = v => Date.parse(str(v)) || 0;
 const pick = (o, k) => (plain(o) && plain(o[k]) ? o[k] : null);
 const list = v => (Array.isArray(v) ? v : []);
 
+// Host owns this source-backed read model. The loopback PWA owner preview
+// and native GPUI read the same Studio operations projection: no new API,
+// browser controller, effect executor, approval, or client persistence.
+// Permit only enumerated state/count fields in the display (never private
+// browser URLs, session data, prompts or source-provided arbitrary prose).
+export function studioOperationsStatus(value) {
+  const unavailable = {state:'unavailable',capture:'Capture source unavailable',
+    browser:'Dedicated browser source unavailable',drive:'Drive job source unavailable'};
+  if (!plain(value) || value.schema!=='vivim.studio-operations/1' ||
+      value.authority!=='read-only' || value.state!=='source-backed') return unavailable;
+  const capture=value.capture,drive=value.drive;
+  const recorderStates=['idle','recording','stopping','paused','disconnected','error'];
+  const browserStates=['available','not-running','profile-unverified'];
+  const captureValid=plain(capture)&&capture.state==='source-backed' &&
+    recorderStates.includes(capture.recorderState) &&
+    browserStates.includes(capture.browserState) &&
+    typeof capture.browserVerified==='boolean';
+  const driveValid=plain(drive)&&drive.state==='source-backed' &&
+    Number.isSafeInteger(drive.shown)&&drive.shown>=0&&drive.shown<=20 &&
+    Number.isSafeInteger(drive.active)&&drive.active>=0&&drive.active<=drive.shown;
+  if (!captureValid&&!driveValid) return unavailable;
+  const verified=captureValid&&capture.browserState==='available'&&capture.browserVerified;
+  return {
+    state:'source-backed',
+    capture:captureValid?'Capture · '+capture.recorderState:unavailable.capture,
+    browser:captureValid?'Dedicated browser · '+capture.browserState+
+      ' · '+(verified?'owner verified':'not ready'):unavailable.browser,
+    drive:driveValid?'Drive · '+drive.shown+' recent jobs · '+drive.active+' active':unavailable.drive
+  };
+}
+
 export function snapshotOf(status) {
   if (!plain(status)) return null;
   return plain(status.snapshot) ? status.snapshot : null;
