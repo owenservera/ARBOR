@@ -179,7 +179,7 @@ export function createStudioPort({ url, token = null, fetchImpl = fetch, timeout
   const WORK_SCOPE=/^local-dir-sha256:[a-f0-9]{64}$/;
   const WORK_STATES=new Set(['queued','active','blocked','completed','cancelled']);
   const validWorkText=(s,max)=>typeof s==='string'&&s.length<=max&&
-    s.trim()===s&&s.length>0&&!/[\\u0000-\\u001f\\u007f]/.test(s);
+    s.trim()===s&&s.length>0&&!/[\u0000-\u001f\u007f]/.test(s);
   function validWorkStatus(row){
     return row?.initialized===true&&row.scope==='local-data-directory'&&
       WORK_SCOPE.test(row.scopeFingerprint??'')&&
