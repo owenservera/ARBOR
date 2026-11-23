@@ -3,7 +3,7 @@
 // native /c/<uuid> proof, Chrome profile and CDP lease. NO new browser driver.
 import { spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { mkdirSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -48,6 +48,12 @@ export async function runExistingStudioChatAsk({
       !(thread==='new'||THREAD.test(thread??'')))
     throw new TypeError('STUDIO_CHANNEL_INPUT_INVALID');
 
+  // A receipt proves this key reached the existing Studio channel before.
+  // Even an unreadable/failed receipt is not permission to re-dispatch it:
+  // a prior effect may have happened, so preserve the no-retry boundary.
+  const receiptPath=path.join(root,'channel','receipts',requestId+'.json');
+  if (existsSync(receiptPath))
+    throw new Error('STUDIO_CHANNEL_PRIOR_RECEIPT');
   const staging=path.join(root,'bridge','channel-staging');
   mkdirSync(staging,{recursive:true,mode:0o700});
   const file=path.join(staging,requestId+'.txt');
@@ -76,7 +82,7 @@ export async function runExistingStudioChatAsk({
     if(typeof outcome.reply!=='string'||!outcome.reply.trim()||
        typeof outcome.receiptId!=='string'||!outcome.receiptId)
       throw new Error('STUDIO_CHANNEL_REPLY_UNVERIFIED');
-    const receiptPath=path.join(root,'channel','receipts',requestId+'.json');
+
     let receipt;
     try { receipt=JSON.parse(readFileSync(receiptPath,'utf8')); }
     catch { throw new Error('STUDIO_CHANNEL_RECEIPT_MISSING'); }
