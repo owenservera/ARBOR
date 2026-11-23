@@ -140,7 +140,13 @@ export function createPwaWorkAdmission({
         if (error?.code === 'PERSONAL_AGENT_VERSION_CONFLICT' ||
             error?.code === 'PERSONAL_AGENT_WORK_IDEMPOTENCY_CONFLICT')
           throw workAdmissionError('WORK_CAS_CONFLICT');
-        // A timed-out POST might have committed; never issue an automatic retry.
+        // Studio's verified Work-status preflight refused BEFORE any POST: it
+        // cannot have created a Work item. Do not label this uncertain.
+        if (['STUDIO_WORK_NOT_READY','STUDIO_UNAVAILABLE',
+             'STUDIO_WORK_INPUT_INVALID'].includes(error?.code))
+          throw workAdmissionError('WORK_STORE_NOT_READY', 503);
+        // A timed-out or malformed POST/GET after a possible commit is truly
+        // uncertain; never retry the same write automatically.
         throw workAdmissionError('WORK_COMMIT_UNCERTAIN', 503);
       }
       const item = saved?.item;
