@@ -5,7 +5,9 @@ import { probeStudioRelayReadiness } from '../../src/studio/relay-chat-transport
 
 const origin='http://127.0.0.1:38730';
 const reply=(v,status=200)=>({ok:status===200,status,json:async()=>v});
-const simulated=(targets,conversations)=>async url=>{
+const verified={recorder:{state:'idle'},browserConnection:{state:'available',verified:true}};
+const simulated=(targets,conversations,status=verified)=>async url=>{
+  if(url.endsWith('/api/status'))return reply(status);
   if(url.endsWith('/conversation-targets'))return reply(targets);
   if(url.endsWith('/conversations'))return reply(conversations);
   throw new Error('unexpected route');
@@ -17,8 +19,8 @@ test('read-only Studio owner admits a single verified supported browser path',as
   const state=await probeStudioRelayReadiness({url:origin,fetchImpl});
   assert.equal(state.ready,true);
   assert.deepEqual(state.supportedProviders,['chatgpt']);
-  assert.deepEqual(called.map(x=>x.method),['GET','GET']);
-  assert.ok(called.every(x=>x.url.startsWith(origin+'/api/v1/')));
+  assert.deepEqual(called.map(x=>x.method),['GET','GET','GET']);
+  assert.deepEqual(called.map(x=>x.url),[origin+'/api/status',origin+'/api/v1/conversation-targets',origin+'/api/v1/conversations']);
 });
 test('actively owned Z.ai capture blocks ChatGPT queue claims',async()=>{
   const state=await probeStudioRelayReadiness({url:origin,fetchImpl:simulated(sites,{
@@ -35,6 +37,20 @@ test('missing, malformed or failed Studio owner never produces positive heartbea
   assert.equal((await probeStudioRelayReadiness({url:'https://chatgpt.com',fetchImpl:()=>{throw new Error('must not run')}})).ready,false);
   assert.equal((await probeStudioRelayReadiness({url:origin,fetchImpl:async()=>reply({},503)})).ready,false);
   assert.equal((await probeStudioRelayReadiness({url:origin,fetchImpl:async()=>{throw new Error('offline')}})).ready,false);
+});
+test('browser offline, unverified, recording or malformed status never admits sends',async()=>{
+  for(const state of [
+    null,{},
+    {recorder:{state:'idle'},browserConnection:{state:'not-running',verified:false}},
+    {recorder:{state:'recording'},browserConnection:{state:'available',verified:true}},
+    {recorder:{state:'idle'},browserConnection:{state:'available',verified:false}}
+  ]){
+    const called=[];
+    const fetchImpl=async(url)=>{called.push(url);return simulated(sites,{conversations:[{state:'ready'}]},state)(url)};
+    const actual=await probeStudioRelayReadiness({url:origin,fetchImpl});
+    assert.deepEqual(actual,{ready:false,reason:'STUDIO_BROWSER_UNVERIFIED'});
+    assert.deepEqual(called,[origin+'/api/status']);
+  }
 });
 test('unknown and unresolved Studio lifecycle states fail closed before any relay claim',async()=>{
   for(const state of ['needs-reconciliation','disconnected','unknown','busy','attaching','finalizing']){

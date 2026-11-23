@@ -18,14 +18,21 @@ export async function probeStudioRelayReadiness({ url, fetchImpl = fetch, timeou
   if (!validLoopback(url) || typeof fetchImpl !== 'function')
     return { ready:false, reason:'STUDIO_ENDPOINT_INVALID' };
   const timeout = Number.isSafeInteger(timeoutMs) && timeoutMs >= 100 && timeoutMs <= 10000 ? timeoutMs : 2500;
-  async function read(route) {
-    const response = await fetchImpl(url + '/api/v1' + route, {
+  async function read(route, prefix = '/api/v1') {
+    const response = await fetchImpl(url + prefix + route, {
       method:'GET', redirect:'error', cache:'no-store', signal:AbortSignal.timeout(timeout)
     });
     if (!response.ok) throw new Error('STUDIO_HTTP_UNAVAILABLE');
     return response.json();
   }
   try {
+    // Site metadata and historical sessions do not prove an active signed-in
+    // browser. Studio is the single owner: require its live read-only status.
+    const status = await read('/status', '/api');
+    if (status?.recorder?.state !== 'idle' ||
+        status?.browserConnection?.state !== 'available' ||
+        status?.browserConnection?.verified !== true)
+      return { ready:false, reason:'STUDIO_BROWSER_UNVERIFIED' };
     const targets = await read('/conversation-targets');
     if (!Array.isArray(targets?.sites) ||
         !targets.sites.some(site => (typeof site === 'string' ? site : site?.id) === 'chatgpt'))
