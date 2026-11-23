@@ -144,3 +144,21 @@ test('read-only Studio effect preflight failures are definite, never mutating or
   assert.ok(calls.every(x=>x.method==='GET'),'no Studio action may be sent after a failed preflight');
   assert.equal(calls.length,4,'one read attempt per action: no retry');
 });
+
+test('malformed Drive dry-run response remains uncertain after exactly one POST',async()=>{
+  let posts=0;
+  const port=createStudioPort({url:'http://127.0.0.1:38730',
+    fetchImpl:async(url,opts)=>{
+      const route=new URL(url).pathname;
+      if(route==='/api/v1/drive/sites')
+        return new Response(JSON.stringify({sites:[{id:'chatgpt'}]}),{status:200});
+      if(route==='/api/v1/drive/jobs'&&opts.method==='POST'){
+        posts++;
+        return new Response(JSON.stringify({job:{id:JOB,mode:'drive',dryRun:true,state:'unexpected'}}),{status:202});
+      }
+      throw Error('unexpected Studio route');
+    }});
+  await assert.rejects(()=>port.driveDryRun('chatgpt'),
+    e=>e.code==='STUDIO_DRIVE_POST_UNCERTAIN');
+  assert.equal(posts,1,'never retry an effect with an invalid post-effect receipt');
+});
