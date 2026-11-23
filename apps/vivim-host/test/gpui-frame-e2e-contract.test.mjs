@@ -104,6 +104,8 @@ test('reconnected client cannot replay previously submitted pointer sequence',as
   // Synthetic new canvas listener starts at sequence=1, while Host retains
   // the paired device sequence to refuse replay across reconnect.
   const second=s.mount();
+  await tick();
+  assert.equal(second.getFrame()?.revision,1,'reconnected phone received real latest frame');
   s.tap(20,20);await tick();
   assert.equal(s.forwarded.length,1);
   assert.equal(second.getFrame()?.revision,1);
