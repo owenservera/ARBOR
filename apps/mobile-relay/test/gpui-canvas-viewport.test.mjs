@@ -197,3 +197,23 @@ test('disconnect/dispose removes input, pending frames and private visible pixel
   assert.equal(f.unsubscribed,1);
   assert.equal((await view.receiveFrame(frame(3))).state,'refused');
 });
+
+test('asynchronous PNG decoder owns its bytes when Node Buffer pool is reused',async()=>{
+  const f=setup();
+  const source=Buffer.from(PNG);
+  let received,resolveDecode;
+  f.setDecoder(bytes=>{
+    received=bytes;
+    return new Promise(resolve=>{resolveDecode=resolve;});
+  });
+  const view=f.mount();
+  const pending=view.receiveFrame({...frame(),png:source});
+  assert.ok(received instanceof Uint8Array);
+  assert.notEqual(received.buffer,source.buffer,
+    'an owned copy must not share a Buffer backing array');
+  source.fill(0); // source transport pool reused before browser decode finishes
+  assert.equal(received[0],137,'valid PNG signature survives producer mutation');
+  resolveDecode({width:360,height:800,close(){}});
+  assert.equal((await pending).state,'painted');
+  view.dispose();
+});
