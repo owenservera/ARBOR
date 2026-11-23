@@ -41,6 +41,21 @@ test('malformed Host choices do not crash or trigger Wiki draft-context reads',(
   assert.equal(needsWikiDraftContext(text,{outcome:'refused',choices:['wiki.section.read']}),false);
 });
 
+test('stale Host draft cannot donate two-TAB suggestions or semantic slots',()=>{
+  const text='read wiki page launch-plan in section ';
+  const valid=response(text);
+  assert.ok(draftSuggestions(text,valid).length>0,'current typed draft still has completions');
+  const stale={...valid,input:'read wiki page Main in section '};
+  assert.deepEqual(draftSuggestions(text,stale),[],'reject a prior draft with same prefix');
+  const staleRewrapped=composerResponse(text,stale,{catalog,wiki,interpret,source:'mobile'});
+  assert.deepEqual(staleRewrapped.composer.suggestions,[],'producer refuses old interpretation');
+  assert.deepEqual(staleRewrapped.composer.slots,[],'producer refuses old semantic slots');
+  const refused={...valid,outcome:'refused'};
+  assert.deepEqual(draftSuggestions(text,refused),[],'refusal cannot smuggle cached completions');
+  assert.deepEqual(composerResponse(text,refused,{catalog,wiki,interpret,source:'mobile'}).composer.suggestions,[]);
+  assert.deepEqual(draftSuggestions(text,{...valid,schema:'untrusted'}),[]);
+  assert.deepEqual(draftSuggestions(null,valid),[]);
+});
 test('draft route is canonical, inert and reports unsupported action truthfully',()=>{
   const local=describeDraft('open Wiki',null);
   assert.equal(local.kind,'navigate');
