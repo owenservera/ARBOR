@@ -11,6 +11,7 @@ import { parseRelayChatIntent } from '../src/studio/relay-chat-intent.mjs';
 import { snapshotRelayStartupFence } from '../src/studio/relay-chat-startup-fence.mjs';
 import { createWorkerHeartbeat } from '../src/studio/worker-heartbeat.mjs';
 import { probeStudioRelayReadiness } from '../src/studio/relay-chat-transport-readiness.mjs';
+import { probeStudioChannelEndpoint } from '../src/studio/relay-chat-channel-preflight.mjs';
 import { defaultDataDir, defaultHarnessDir } from '../src/config.mjs';
 const HARNESS = defaultHarnessDir();
 const root = process.argv.includes('--root') ? process.argv[process.argv.indexOf('--root') + 1] : defaultDataDir();
@@ -92,6 +93,17 @@ for (;;) {
   const studioReadiness = studio
     ? await probeStudioRelayReadiness({ url: studioUrl })
     : { ready: true, reason: 'HARNESS_LOCAL' };
+  // The existing Studio browser owner can be healthy while its specifically
+  // selected local CDP port has stopped or been rebound. A phone must not see
+  // a positive channel heartbeat or have a bridge command claimed until BOTH
+  // read-only checks succeed. This never opens tabs or starts another driver.
+  if (studio && channelEnabled && studioReadiness.ready) {
+    const channelReadiness = await probeStudioChannelEndpoint({ port: channelPort });
+    if (!channelReadiness.ready) {
+      studioReadiness.ready = false;
+      studioReadiness.reason = channelReadiness.reason;
+    }
+  }
   try { heartbeat.record(studioReadiness.ready ? 'ok' : 'error'); } catch {}
   if (!studioReadiness.ready) {
     await new Promise(r => setTimeout(r, 2000));
