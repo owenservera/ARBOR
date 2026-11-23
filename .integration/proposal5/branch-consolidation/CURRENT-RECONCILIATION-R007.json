@@ -3,8 +3,8 @@
   "mainSha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8",
   "observedDateUtc": "2026-11-23T22:35:46.330Z",
   "expectedNonMainBranches": 77,
-  "completedComparisons": 66,
-  "state": "INCOMPLETE",
+  "completedComparisons": 77,
+  "state": "COMPARED_PRESERVE_ALL",
   "deletionAuthorized": false,
   "note": "Read-only exact-tip ancestry capture. Do not archive/delete branches from this evidence; review live owners and unique content.",
   "branches": [
@@ -1199,119 +1199,207 @@
     {
       "name": "work/p5-w01-d-hq",
       "tipSha": "ad55fe28c2c331841675f308f9199ee4c2add86a",
-      "comparison": null,
-      "status": "unverified",
-      "ahead": null,
-      "behind": null,
-      "disposition": "UNKNOWN_PRESERVE",
-      "canDelete": false
+      "comparison": {
+        "status": "behind",
+        "ahead_by": 0,
+        "behind_by": 1709,
+        "base_commit": {
+          "sha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8"
+        }
+      },
+      "status": "behind",
+      "ahead": 0,
+      "behind": 1709,
+      "disposition": "ANCESTOR_REVIEW_ONLY",
+      "canDelete": false,
+      "comparisonAttempted": true
     },
     {
       "name": "work/p5-w01-e-ui",
       "tipSha": "1a5cf26ce14ebce4e31d9a4373060ace61852645",
-      "comparison": null,
-      "status": "unverified",
-      "ahead": null,
-      "behind": null,
-      "disposition": "UNKNOWN_PRESERVE",
-      "canDelete": false
+      "comparison": {
+        "status": "behind",
+        "ahead_by": 0,
+        "behind_by": 1671,
+        "base_commit": {
+          "sha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8"
+        }
+      },
+      "status": "behind",
+      "ahead": 0,
+      "behind": 1671,
+      "disposition": "ANCESTOR_REVIEW_ONLY",
+      "canDelete": false,
+      "comparisonAttempted": true
     },
     {
       "name": "work/p5-w01-f-verify",
       "tipSha": "be458f3c4cdb7eb38d47b1de2a00d441b7cdc704",
-      "comparison": null,
-      "status": "unverified",
-      "ahead": null,
-      "behind": null,
-      "disposition": "UNKNOWN_PRESERVE",
-      "canDelete": false
+      "comparison": {
+        "status": "behind",
+        "ahead_by": 0,
+        "behind_by": 1709,
+        "base_commit": {
+          "sha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8"
+        }
+      },
+      "status": "behind",
+      "ahead": 0,
+      "behind": 1709,
+      "disposition": "ANCESTOR_REVIEW_ONLY",
+      "canDelete": false,
+      "comparisonAttempted": true
     },
     {
       "name": "work/p5-w01g-b-pwa-static-closure-r001",
       "tipSha": "b8d1b80b57bd41fe3a6e5cb3a8fa809e59de1bd3",
-      "comparison": null,
-      "status": "unverified",
-      "ahead": null,
-      "behind": null,
-      "disposition": "UNKNOWN_PRESERVE",
-      "canDelete": false
+      "comparison": {
+        "status": "behind",
+        "ahead_by": 0,
+        "behind_by": 1604,
+        "base_commit": {
+          "sha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8"
+        }
+      },
+      "status": "behind",
+      "ahead": 0,
+      "behind": 1604,
+      "disposition": "ANCESTOR_REVIEW_ONLY",
+      "canDelete": false,
+      "comparisonAttempted": true
     },
     {
       "name": "work/p5-w01g-r001-a-pwa-packaging-review",
       "tipSha": "fb5591c4f19544c6afd7dd3a2d899062f6e8bd5b",
-      "comparison": null,
-      "status": "unverified",
-      "ahead": null,
-      "behind": null,
-      "disposition": "UNKNOWN_PRESERVE",
-      "canDelete": false
+      "comparison": {
+        "status": "behind",
+        "ahead_by": 0,
+        "behind_by": 1613,
+        "base_commit": {
+          "sha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8"
+        }
+      },
+      "status": "behind",
+      "ahead": 0,
+      "behind": 1613,
+      "disposition": "ANCESTOR_REVIEW_ONLY",
+      "canDelete": false,
+      "comparisonAttempted": true
     },
     {
       "name": "work/provider-hub-W0-A-r001",
       "tipSha": "b90831ea28869762f86e074ed4fb4f8d79697de7",
-      "comparison": null,
-      "status": "unverified",
-      "ahead": null,
-      "behind": null,
-      "disposition": "UNKNOWN_PRESERVE",
-      "canDelete": false
+      "comparison": {
+        "status": "diverged",
+        "ahead_by": 2,
+        "behind_by": 1349,
+        "base_commit": {
+          "sha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8"
+        }
+      },
+      "status": "diverged",
+      "ahead": 2,
+      "behind": 1349,
+      "disposition": "UNIQUE_COMMITS_PRESERVE",
+      "canDelete": false,
+      "comparisonAttempted": true
     },
     {
       "name": "work/provider-hub-W1-B-r001",
       "tipSha": "3509ba5076f6ac05d2e4286ed20d8c7ddc6fd17e",
-      "comparison": null,
-      "status": "unverified",
-      "ahead": null,
-      "behind": null,
-      "disposition": "UNKNOWN_PRESERVE",
-      "canDelete": false
+      "comparison": {
+        "status": "diverged",
+        "ahead_by": 3,
+        "behind_by": 1349,
+        "base_commit": {
+          "sha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8"
+        }
+      },
+      "status": "diverged",
+      "ahead": 3,
+      "behind": 1349,
+      "disposition": "UNIQUE_COMMITS_PRESERVE",
+      "canDelete": false,
+      "comparisonAttempted": true
     },
     {
       "name": "work/provider-hub-W1-C-r001",
       "tipSha": "c70e6fe1dd226608dd1e5dd74824d535a4311b22",
-      "comparison": null,
-      "status": "unverified",
-      "ahead": null,
-      "behind": null,
-      "disposition": "UNKNOWN_PRESERVE",
-      "canDelete": false
+      "comparison": {
+        "status": "diverged",
+        "ahead_by": 9,
+        "behind_by": 1349,
+        "base_commit": {
+          "sha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8"
+        }
+      },
+      "status": "diverged",
+      "ahead": 9,
+      "behind": 1349,
+      "disposition": "UNIQUE_COMMITS_PRESERVE",
+      "canDelete": false,
+      "comparisonAttempted": true
     },
     {
       "name": "work/provider-hub-W1-D-r001",
       "tipSha": "7353569cde87117cc048f389606d9587cae432fe",
-      "comparison": null,
-      "status": "unverified",
-      "ahead": null,
-      "behind": null,
-      "disposition": "UNKNOWN_PRESERVE",
-      "canDelete": false
+      "comparison": {
+        "status": "diverged",
+        "ahead_by": 2,
+        "behind_by": 1349,
+        "base_commit": {
+          "sha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8"
+        }
+      },
+      "status": "diverged",
+      "ahead": 2,
+      "behind": 1349,
+      "disposition": "UNIQUE_COMMITS_PRESERVE",
+      "canDelete": false,
+      "comparisonAttempted": true
     },
     {
       "name": "work/provider-hub-W1-E-r001",
       "tipSha": "d802be6e29e21cd55ab86ed42cb66b70faa02593",
-      "comparison": null,
-      "status": "unverified",
-      "ahead": null,
-      "behind": null,
-      "disposition": "UNKNOWN_PRESERVE",
-      "canDelete": false
+      "comparison": {
+        "status": "diverged",
+        "ahead_by": 4,
+        "behind_by": 1349,
+        "base_commit": {
+          "sha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8"
+        }
+      },
+      "status": "diverged",
+      "ahead": 4,
+      "behind": 1349,
+      "disposition": "UNIQUE_COMMITS_PRESERVE",
+      "canDelete": false,
+      "comparisonAttempted": true
     },
     {
       "name": "work/provider-hub-W1-F-r001",
       "tipSha": "1ccc56cdf7787f980bcd79aaaa7d770fd5f702b4",
-      "comparison": null,
-      "status": "unverified",
-      "ahead": null,
-      "behind": null,
-      "disposition": "UNKNOWN_PRESERVE",
-      "canDelete": false
+      "comparison": {
+        "status": "diverged",
+        "ahead_by": 3,
+        "behind_by": 1349,
+        "base_commit": {
+          "sha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8"
+        }
+      },
+      "status": "diverged",
+      "ahead": 3,
+      "behind": 1349,
+      "disposition": "UNIQUE_COMMITS_PRESERVE",
+      "canDelete": false,
+      "comparisonAttempted": true
     }
   ],
   "summary": {
     "total": 77,
-    "attempted": 66,
-    "uniquePreserve": 31,
-    "ancestorReview": 35,
-    "unknownPreserve": 11
+    "attempted": 77,
+    "uniquePreserve": 37,
+    "ancestorReview": 40,
+    "unknownPreserve": 0
   }
 }
