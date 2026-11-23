@@ -221,3 +221,34 @@ test('preexisting channel receipt prevents any repeat child dispatch even if its
       {code:'ENOENT'},'no plaintext staging permitted for a previously receipted key');
   }
 }));
+
+
+test('contradictory revisions of one historical command never hide an uncertain prior send',()=>sandbox(async root=>{
+  const earlier=cmd(1,'chatgpt',{status:'failed',result:'uncertain, not resent'});
+  const current=cmd(2,'chatgpt',{newChat:true});
+  const journalFile=path.join(root,'bridge','commands.jsonl');
+  mkdirSync(path.dirname(journalFile),{recursive:true});
+  const revisions=[
+    {conversationId:'other-phone-conversation'},
+    {text:'@chatgpt changed owner instruction'},
+    {transport:'alternate'},
+    {target:{provider:'chatgpt',model:'paid-model',effort:null}},
+    {consumer:'another-consumer'},
+    {rev:earlier.rev}
+  ];
+  for(const changes of revisions){
+    const rewritten={...earlier,rev:earlier.rev+1,...changes};
+    writeFileSync(journalFile,[earlier,rewritten,current].map(r=>JSON.stringify(r)).join('\n')+'\n');
+    let dispatched=0;
+    const failures=[];
+    const store={file:journalFile,reply:(id,result,opts)=>failures.push({id,result,opts})};
+    const adapter=createStudioRelayChat({url:'http://127.0.0.1:38730',store,
+      isolatedChannel:{root,port:38702},
+      channelRun:async()=>{dispatched++;throw Error('must never reach provider');}});
+    await adapter.handle({cmd:current,rec:current,provider:'chatgpt',model:null,
+      effort:null,prompt:'Hi'});
+    assert.equal(dispatched,0,'prior conflicting revision must not dispatch');
+    assert.deepEqual(failures,[{id:current.id,result:'STUDIO_RELAY_HISTORY_UNVERIFIED',
+      opts:{status:'failed'}}]);
+  }
+}));
