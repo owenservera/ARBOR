@@ -1347,6 +1347,24 @@ impl Render for Desktop {
                             .on_click(cx.listener(|v,_,_,cx|{
                                 v.surface_group=Some(Section::Developer);cx.notify();
                             })));
+                    // Preserve valuable Studio readback without opening its
+                    // retired browser dashboard or introducing a second AI
+                    // controller. The existing Host PWA summary is the source.
+                    page=page.child(div().text_lg().child("Studio AI delivery · verified history"));
+                    if let Some(activity)=self.overview.as_ref()
+                        .and_then(|o|o.studio_activity.as_ref()) {
+                        page=page.child(format!(
+                            "Historical Studio source rev {} · {} outcomes · {} displayed",
+                            activity.revision,activity.total,activity.rows.len()
+                        ));
+                        for item in &activity.rows {
+                            page=page.child(div().text_sm().child(item.clone()));
+                        }
+                    } else {
+                        page=page.child(div().text_sm().child(
+                            "Studio outcome source unavailable or not verified · no delivery inferred"
+                        ));
+                    }
                     if let Some(group)=self.surface_group {
                         // Box inventory rendering outside the massive main
                         // GPUI render frame. Windows' default stack is small.
