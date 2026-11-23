@@ -57,3 +57,47 @@ test('an invalid Studio conversation identity never proceeds to a turn',async()=
   assert.deepEqual(failures,[{result:'STUDIO_INVALID_CONVERSATION',
     opts:{status:'failed'}}]);
 });
+
+test('ready but unbound to the correct fresh ChatGPT tab never submits or finishes',async()=>{
+  const valid={
+    id:'conv-safe',revision:0,state:'ready',site:'chatgpt',
+    identity:{state:'unbound',reason:'NEW_CHAT'},
+    binding:{ownedByStudio:true,targetId:'target-123',
+      origin:'https://chatgpt.com',thread:null},
+    writer:{active:false},recovery:{pending:false}
+  };
+  const cases=[
+    {site:'claude'},
+    {site:undefined},
+    {identity:{state:'bound',reason:null}},
+    {identity:{state:'unverified',reason:'UNSUPPORTED_PATH'}},
+    {binding:{...valid.binding,thread:{ref:'chatgpt-c:old'}}},
+    {binding:{...valid.binding,ownedByStudio:false}},
+    {binding:{...valid.binding,targetId:'pending-conv-safe'}},
+    {binding:{...valid.binding,origin:'https://claude.ai'}},
+    {writer:{active:true}},
+    {writer:{}},
+    {recovery:{pending:true}}
+  ];
+  for(const changes of cases){
+    const calls=[],failures=[];
+    const fetchImpl=async(url,init)=>{
+      calls.push({url,method:init.method});
+      assert.ok(url.endsWith('/api/v1/conversations/create'),
+        'identity failure must not request a turn or finish the tab');
+      return {ok:true,json:async()=>({conversation:{...valid,...changes}})};
+    };
+    const store={file:'/not-a-real-bridge-journal',
+      reply:(id,result,opts)=>failures.push({id,result,opts})};
+    const adapter=createStudioRelayChat({
+      url:'http://127.0.0.1:38730',store,fetchImpl
+    });
+    const cmd=command();
+    await adapter.handle({cmd,rec:cmd,provider:'chatgpt',
+      model:null,effort:null,prompt:'Hi'});
+    assert.equal(calls.length,1);
+    assert.deepEqual(failures,[{
+      id,result:'STUDIO_CONVERSATION_BINDING_UNVERIFIED',opts:{status:'failed'}
+    }]);
+  }
+});
