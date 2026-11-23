@@ -774,7 +774,7 @@ mod tests {
         malformed["snapshot"]["bootstrap"]["progress"]["passes"][0]["pass"]=json!("UNLISTED");
         assert_eq!(project(&malformed,&wiki),Err(ReadError::InvalidProjection));
         let mut malformed=p.clone();
-        malformed["snapshot"]["bootstrap"]["progress"]["passes"][1]["pass"]=json!("F02");
+        malformed["snapshot"]["bootstrap"]["progress"]["passes"][2]["pass"]=json!("F02");
         assert_eq!(project(&malformed,&wiki),Err(ReadError::InvalidProjection));
         malformed=p;
         malformed["snapshot"]["bootstrap"]["progress"]["claims"]=json!("user raw chat");
