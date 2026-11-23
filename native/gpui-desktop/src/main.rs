@@ -1365,6 +1365,28 @@ impl Render for Desktop {
                             "Studio outcome source unavailable or not verified · no delivery inferred"
                         ));
                     }
+                    // Merge the genuinely useful Studio capture and Drive
+                    // state into existing native PC tools. This is an inert,
+                    // owner-authorized Host projection; Studio still owns all
+                    // recording/Drive actions until explicitly ported.
+                    page=page.child(div().text_lg().child("Studio capture and Drive · status only"));
+                    if let Some(operations)=self.overview.as_ref()
+                        .and_then(|o|o.studio_operations.as_ref()) {
+                        page=page
+                            .child(div().text_sm().child(operations.capture.clone()))
+                            .child(div().text_sm().child(operations.browser.clone()))
+                            .child(div().text_sm().child(operations.drive.clone()));
+                        for job in &operations.jobs {
+                            page=page.child(div().text_sm().child(job.clone()));
+                        }
+                        page=page.child(div().text_sm().child(
+                            "Actions remain in the existing Studio owner until review and Host authorization are ported."
+                        ));
+                    }else{
+                        page=page.child(div().text_sm().child(
+                            "Studio operations source unavailable · no recording or Drive state inferred."
+                        ));
+                    }
                     if let Some(group)=self.surface_group {
                         // Box inventory rendering outside the massive main
                         // GPUI render frame. Windows' default stack is small.
