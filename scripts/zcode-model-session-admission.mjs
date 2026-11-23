@@ -34,15 +34,37 @@ export function assessModelSession(receipt, approval, {sourceSha, nowMs, maxAgeM
     effect:'NONE',fallbackSelected:false};
 }
 
+// Provider and model IDs may legitimately contain '/'. A slash-joined key can
+// falsely merge distinct routes. Keep exact tuple identity, without selecting
+// a model or modifying the existing registry/fallback.
+const routeKey=(providerId,modelId)=>JSON.stringify([providerId,modelId]);
+const MAX_FLEET_ROUTES=4096;
+
 export function auditModelFleet(candidates, approvals, options) {
-  if(!Array.isArray(candidates)||!Array.isArray(approvals))throw new Error('INVALID_MODEL_AUDIT');
+  if(!Array.isArray(candidates)||!Array.isArray(approvals)||
+     candidates.length>MAX_FLEET_ROUTES||approvals.length>MAX_FLEET_ROUTES)
+    throw new Error('INVALID_MODEL_AUDIT');
+
+  const approved=new Map();
+  for(const approval of approvals){
+    if(!id(approval?.providerId)||!id(approval?.modelId))continue;
+    const key=routeKey(approval.providerId,approval.modelId);
+    // An ambiguous approval is not safely resolved by whichever array row came first.
+    if(approved.has(key))throw new Error('DUPLICATE_ROUTE_APPROVAL');
+    approved.set(key,approval);
+  }
+
   const keys=new Set();
   const rows=candidates.map(receipt=>{
-    const key=String(receipt?.providerId)+'/'+String(receipt?.modelId);
-    if(keys.has(key))throw new Error('DUPLICATE_ROUTE_RECEIPT');
-    keys.add(key);
-    const approval=approvals.find(a=>a.providerId===receipt?.providerId&&a.modelId===receipt?.modelId);
-    return assessModelSession(receipt,approval,options);
+    const valid=id(receipt?.providerId)&&id(receipt?.modelId);
+    const key=valid?routeKey(receipt.providerId,receipt.modelId):null;
+    if(key!==null){
+      if(keys.has(key))throw new Error('DUPLICATE_ROUTE_RECEIPT');
+      keys.add(key);
+    }
+    // Malformed receipts are individually denied, never conflated into a
+    // spurious valid route or given an unrelated owner's approval.
+    return assessModelSession(receipt,key!==null?approved.get(key):undefined,options);
   });
   return {schema:'vivim.zcode-model-fleet-audit/1',total:rows.length,
     admitted:rows.filter(r=>r.admitted).length,denied:rows.filter(r=>!r.admitted).length,
