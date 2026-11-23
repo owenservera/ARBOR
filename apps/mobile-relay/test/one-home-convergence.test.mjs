@@ -28,7 +28,7 @@ test('cloud and Direct use the exact same canonical PWA assets at /mobile',()=>{
     ['/mobile/(.*)','/$1'],
   ]) assert.ok(deploy.rewrites.some(x=>x.source===source&&x.destination===destination),
     'missing shared PWA route '+source);
-  assert.match(sw,/vivim-relay-shell-v46/);
+  assert.match(sw,/vivim-relay-shell-v47/);
 });
 test('home does not bypass existing Host grants or auto-repeat an uncertain send',()=>{
   assert.match(app,/clearPrivatePhoneState\(\); showHomeWithoutGrant\(\)/);
