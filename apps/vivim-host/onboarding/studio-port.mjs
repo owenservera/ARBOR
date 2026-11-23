@@ -94,18 +94,27 @@ export function createStudioPort({ url, token = null, fetchImpl = fetch, timeout
     return result;
   }
 
+  // A failed GET during owner-approved Studio preflight cannot have changed
+  // recorder, Drive or provider state. Classify it as DEFINITE unavailable,
+  // never the UNCERTAIN status reserved for a lost response AFTER a POST.
+  // This is one read attempt only: no hidden retry or browser auto-launch.
+  async function preflightRead(route) {
+    try { return await request(route,undefined,1500); }
+    catch { throw localPreflight('STUDIO_UNAVAILABLE'); }
+  }
+
   // Explicit owner actions pass through the existing Host Control plan, approval,
   // single-claim journal and effect receipt. They are NOT called by PWA reads,
   // timers, boot, status, AI candidates or application rendering.
   async function captureStart(target) {
     if(typeof target!=='string'||!TARGET_ID.test(target))
       throw localPreflight('STUDIO_CAPTURE_TARGET_INVALID');
-    const status=await request('/status',undefined,1500);
+    const status=await preflightRead('/status');
     if(status.recorder?.state!=='idle' ||
        status.browserConnection?.state!=='available' ||
        status.browserConnection.verified!==true)
       throw localPreflight('STUDIO_CAPTURE_PREFLIGHT');
-    const targets=await request('/targets',undefined,1500);
+    const targets=await preflightRead('/targets');
     if(!Array.isArray(targets)||targets.length>32 ||
        !targets.some(t=>t?.id===target&&t?.type==='page'))
       throw localPreflight('STUDIO_CAPTURE_TARGET_STALE');
@@ -117,7 +126,7 @@ export function createStudioPort({ url, token = null, fetchImpl = fetch, timeout
       note:'Recording is owned by Studio; verify its live status before proceeding.'};
   }
   async function captureStop() {
-    const status=await request('/status',undefined,1500);
+    const status=await preflightRead('/status');
     if(status.recorder?.state!=='recording' ||
        typeof status.recorder.id!=='string'||!status.recorder.id)
       throw localPreflight('STUDIO_CAPTURE_NOT_RECORDING');
@@ -130,7 +139,7 @@ export function createStudioPort({ url, token = null, fetchImpl = fetch, timeout
   async function driveDryRun(site) {
     if(typeof site!=='string'||!SITE_ID.test(site))
       throw localPreflight('STUDIO_DRIVE_SITE_INVALID');
-    const available=await request('/drive/sites',undefined,1500);
+    const available=await preflightRead('/drive/sites');
     if(!Array.isArray(available.sites)||available.sites.length>32 ||
        !available.sites.some(row=>row?.id===site))
       throw localPreflight('STUDIO_DRIVE_SITE_STALE');
@@ -148,7 +157,7 @@ export function createStudioPort({ url, token = null, fetchImpl = fetch, timeout
   async function driveCancel(jobId) {
     if(typeof jobId!=='string'||!UUID.test(jobId))
       throw localPreflight('STUDIO_DRIVE_JOB_INVALID');
-    const existing=await request('/drive/jobs/'+enc(jobId),undefined,1500);
+    const existing=await preflightRead('/drive/jobs/'+enc(jobId));
     if(existing?.job?.id!==jobId ||
        !['running','queued'].includes(existing.job.state))
       throw localPreflight('STUDIO_DRIVE_JOB_NOT_ACTIVE');
