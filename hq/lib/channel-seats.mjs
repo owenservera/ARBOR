@@ -244,6 +244,10 @@ export function wakeSeat({
   const answer = send(seat.session, record.text);
   const accepted = answer?.accepted === true;
   const pending = answer?.pending === true;
+  // A timed-out CLI might have reached the provider before it was killed.
+  // Quarantine the journaled wake as uncertain; never call it a refusal or
+  // claim that the same command is still running in a detached replacement.
+  const uncertain = answer?.uncertain === true;
   const resultPath = journalResult(root, record, {
     accepted,
     pending,
@@ -254,13 +258,15 @@ export function wakeSeat({
     answer: answer ?? null,
   });
   return {
-    decision: accepted ? 'ACCEPTED' : pending ? 'DEFERRED' : 'DENIED',
-    code: accepted ? 'WAKE_SENT' : pending ? 'WAKE_PENDING' : 'TRANSPORT_REFUSED',
+    decision: accepted ? 'ACCEPTED' : (pending || uncertain) ? 'DEFERRED' : 'DENIED',
+    code: accepted ? 'WAKE_SENT' : uncertain ? 'WAKE_UNCERTAIN' : pending ? 'WAKE_PENDING' : 'TRANSPORT_REFUSED',
     detail: accepted
       ? 'the transport accepted the prompt for that session; confirm it with `hq seat verify`'
-      : pending
-        ? 'the bridge did not answer inside the wait; the send continues detached — confirm with `hq seat verify`'
-        : 'the transport did not accept the prompt',
+      : uncertain
+        ? 'the timed-out turn may already have reached the model; no retry was made — verify the original session transcript'
+        : pending
+          ? 'the bridge did not answer inside the wait; confirm the original request with `hq seat verify`'
+          : 'the transport did not accept the prompt',
     seat: seat.id,
     state: cls.state,
     ageMinutes: cls.ageMinutes,
