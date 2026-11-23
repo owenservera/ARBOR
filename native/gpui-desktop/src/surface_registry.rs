@@ -38,7 +38,7 @@ pub const SURFACES:&[Surface]=&[
     Surface{id:"phone-canonical",source:"apps/mobile-relay/index.html",placement:Placement::View,disposition:Disposition::CanonicalPwa},
     Surface{id:"grokbot",source:"apps/mobile-relay/grokbot.html",placement:Placement::Developer,disposition:Disposition::Reference},
     Surface{id:"host-control",source:"apps/vivim-host/public/index.html",placement:Placement::Tools,disposition:Disposition::LegacyUi},
-    Surface{id:"host-first-run",source:"apps/vivim-host/public/mobile-first.html",placement:Placement::View,disposition:Disposition::LegacyUi},
+    Surface{id:"host-first-run",source:"apps/vivim-host/public/mobile-first.html",placement:Placement::View,disposition:Disposition::Reference},
     Surface{id:"host-onboarding",source:"apps/vivim-host/public/onboarding.html",placement:Placement::Settings,disposition:Disposition::LegacyUi},
     Surface{id:"host-chat",source:"apps/vivim-host/public/pages/chat.html",placement:Placement::View,disposition:Disposition::LegacyUi},
     Surface{id:"host-wiki",source:"apps/vivim-host/public/pages/wiki.html",placement:Placement::View,disposition:Disposition::LegacyUi},
@@ -193,5 +193,6 @@ mod tests {
         assert!(SURFACES.iter().any(|row|row.id=="studio-drive"&&row.placement==Placement::File));
         assert!(SURFACES.iter().any(|row|row.id=="host-onboarding"&&row.placement==Placement::Settings));
         assert!(SURFACES.iter().any(|row|row.id=="tierflow-mission-control"&&row.placement==Placement::Developer));
+        assert!(SURFACES.iter().any(|row|row.id=="host-first-run"&&row.disposition==Disposition::Reference));
     }
 }
