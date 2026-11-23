@@ -9,6 +9,35 @@
 **Baseline:** Win32 HMENU with seven categories/command mapping verified; 37/37 GPUI library tests PASS and desktop build PASS. Real painted menu nonclient region, Alt/mouse access, two-device sync UNPROVEN. Isolated source `f2322bf`.
 
 
+## 2026-11-23 — Canonical planner reconciliation (latest source-evidence view)
+
+**Audit identity:** [ARBOR issue #33](https://github.com/owenservera/ARBOR/issues/33) is the 71-item execution oversight ledger; this document is the separate 100-step GPUI/PWA acceptance checklist, not 100 more independently assigned active development jobs. [Issue #31](https://github.com/owenservera/ARBOR/issues/31) is release/two-device evidence, [issue #32](https://github.com/owenservera/ARBOR/issues/32) is provider conversations, and Labs [TASK-CLAIMS](https://github.com/owenservera/vivim-labs/blob/main/ZCODE-DESKTOP-COMMANDER-OPERATIONS/TASK-CLAIMS.md) controls exact source/file ownership. Preserve existing 100 CS identifiers and completion rules.
+
+**Recounted state:** **3/100 VERIFIED, 97 OPEN**. Only CS-001, CS-002 and CS-006 are checked. Do not turn authored code, passing isolated Node/Rust tests or historical device screenshots into new full acceptance checks without the task's exact required evidence. The accepted integrated top-row titlebar at ARBOR `e2e6902` is an important historical physical/owner acceptance but it does **not** establish every File/Edit/Tools mouse/Alt command or new-source packaged runtime.
+
+**Latest observed canonical source:** [ARBOR `a34a7f5a88afb687f86fc9fba79a7e886052f48c`](https://github.com/owenservera/ARBOR/commit/a34a7f5a88afb687f86fc9fba79a7e886052f48c). Independent actual Windows no-effect regressions at this SHA include **44/44 Host/Studio/Work** tests and **26/26 mobile/Host/Studio** tests, each separate suite. The live Work store was observed `initialized:false`; no actual owner-approved Work POST, provider message, Android acknowledgment or same-SHA full release was demonstrated.
+
+**Latest observer state on physical PC:** `local-logs/native-verifier/latest.json` exact `a34a7f5a`, finished **2026-11-23 20:14:05 UTC**, reports **BLOCKED / PARALLEL_TEST_RUNNER_EXIT_3**. Accompanying `vlang-iterations/latest.json`: **AutoWiki 12/12 PASS**, **visual 21/21 PASS**; **VLANG assertion failures plus timeout** and **safety timeout** without reliable full case totals. These are source-test findings, not CS-031–040 UI proof; older 215/215 on a different SHA is historical. The deterministic hourly native verifier remains separate from **zero verified live ZCode model-driven workflow workers** at the last audited point.
+
+| Existing CS waves | Status audited | Outstanding acceptance gate |
+|---|---|---|
+| CS-001–010 — native menu | 3 verified / 7 open | OS/GPUI physical Alt, click and focus proof on accepted menu implementation |
+| CS-011–020 — Developer evidence | 0 verified / 10 open | Real screenshots, diagnostics, negative privacy receipts |
+| CS-021–030 — First Contact | 0 verified / 10 open | Full latest-source native canvas, typing, clear and IME acceptance |
+| CS-031–040 — AutoWiki | 0 verified / 10 open | Real source-backed native Wiki queries and persisted revision/epoch |
+| CS-041–050 — Host authority | 0 verified / 10 open | End-to-end reviewed action, grant/refusal, source and receipt proof |
+| CS-051–060 — PC↔Android | 0 verified / 10 open | Actual paired two-way revision and screenshot receipts |
+| CS-061–070 — TierFlow | 0 verified / 10 open | Shared semantic parity and justified legacy retirement |
+| CS-071–080 — Windows menu | 0 verified / 10 open | Accepted physical top-level menu commands, screenshot and rollback |
+| CS-081–090 — semantic compiler | 0 verified / 10 open | Natural-language plan, VLANG guards and visual feedback on real Host data |
+| CS-091–100 — release | 0 verified / 10 open | Single immutable source package, safe promote and Android verification |
+
+**Current source-to-device ladder:** CODED/PUSHED for guarded Studio channel and Work ingress; SOURCE_TESTED for focused suites; STUDIO_CHAT_WORKER_LIVE previously verified at PID 17188 (must check current OS liveness before use); **REAL_PROVIDER_SEND, SETTLED_REPLY, HOST_CHAT_RECEIPT, PHONE_ACK, CURRENT_SAME_SHA_PACKAGE and GPUI↔ANDROID_SYNC all OPEN**. Historical uncertain ChatGPT turn must not be retried. Do not deploy/restart user runtime or change phone URL/pairing to improve checklist numbers.
+
+**Update rule for every CS row:** record exact ARBOR SHA, relevant test/run exit status, served artifact SHA if released, physical device/interaction evidence, Host source/revision/receipt and negative cases where relevant. If one element is absent keep `[ ]` and describe intermediate maturity separately. The 71-item ledger may close its documentation-reconciliation task only after this audit is committed and independently re-fetched.
+
+---
+
 ## Wave 1 — Win32 shell visibility
 
 - [x] **CS-001** Reproduce the native menu painting defect in the isolated GPUI build. **Status:** VERIFIED. **Evidence:** Win32 7-menu handle and actual GPU-composited screenshot showed Terminal chrome where menu should paint; prior source and SITREP.
