@@ -39,7 +39,9 @@ export function projectStudioOperations(status, drive, targets = null, sites = n
   }
   // Project opaque exact CDP tab IDs and hostnames only. Never send page URLs,
   // titles, query strings, cookies, or arbitrary CDP target objects to GPUI.
-  if (Array.isArray(targets) && targets.length<=32 && targets.every(t=>t && typeof t==='object')) {
+  if (capture.state==='source-backed' && capture.recorderState==='idle' &&
+      capture.browserVerified && Array.isArray(targets) && targets.length<=32 &&
+      targets.every(t=>t && typeof t==='object')) {
     capture.targetsState='source-backed';
     const seenTargets=new Set();
     capture.targets=targets.filter(t=>t.type==='page'&&TARGET_ID.test(t.id)&&!seenTargets.has(t.id)&&seenTargets.add(t.id))
