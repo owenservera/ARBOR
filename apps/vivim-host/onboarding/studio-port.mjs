@@ -187,6 +187,12 @@ export function createStudioPort({ url, token = null, fetchImpl = fetch, timeout
   }
   async function workStatus(){
     const state=await preflightRead('/personal-agent/status');
+    // First-run state is a real and safe readback, not a fabricated Work ID
+    // or an instruction to silently initialize someone's private corpus.
+    if(state?.initialized===false&&state.scope==='local-data-directory'&&
+       WORK_SCOPE.test(state.scopeFingerprint??''))
+      return {schema:'vivim.studio-work-status/1',state:'uninitialized',
+        version:null,execution:'not-dispatched'};
     if(!validWorkStatus(state))throw localPreflight('STUDIO_WORK_NOT_READY');
     return {schema:'vivim.studio-work-status/1',state:'source-backed',
       scopeFingerprint:state.scopeFingerprint,version:state.version,
@@ -200,6 +206,7 @@ export function createStudioPort({ url, token = null, fetchImpl = fetch, timeout
        !WORK_KEY.test(input.idempotencyKey??''))
       throw localPreflight('STUDIO_WORK_INPUT_INVALID');
     const before=await workStatus();
+    if(before.state!=='source-backed')throw localPreflight('STUDIO_WORK_NOT_READY');
     let written;
     try {
       // Exactly one POST. A missing or invalid response after this call is
