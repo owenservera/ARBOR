@@ -135,9 +135,10 @@ export function projectReadOnlyChatTool(tool,{providers,studio,personalization,c
     if(!filtered.length)rows.push({label:'Transport',value:'No verified recent command status'});
     for(const c of filtered){
       const phase=typeof c.deliveryState==='string'?c.deliveryState:
-        typeof c.delivery?.state==='string'?c.delivery.state:
-        typeof c.status==='string'?c.status:'';
-      rows.push({label:'Recent turn',value:DELIVERY_PHASES[phase]??'Status unverified; do not assume delivery'});
+        typeof c.delivery?.state==='string'?c.delivery.state:'';
+      // Generic command status is not proof of provider/phone delivery.
+      rows.push({label:'Recent turn',value:Object.hasOwn(DELIVERY_PHASES,phase)
+        ? DELIVERY_PHASES[phase] : 'Status unverified; do not assume delivery'});
     }
     note='Stages reflect existing Host receipts only. Uncertain or unacknowledged turns are never automatically retried.';
   }else{
