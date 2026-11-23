@@ -199,3 +199,25 @@ test('corrupted historical bridge revision blocks a fresh same-conversation send
       options:{status:'failed'}}]);
   }
 }));
+
+
+test('preexisting channel receipt prevents any repeat child dispatch even if its JSON is torn',()=>sandbox(async root=>{
+  const dir=path.join(root,'channel','receipts');
+  mkdirSync(dir,{recursive:true});
+  let dispatched=0;
+  for(const prior of [
+    JSON.stringify({schema:'vivim.chat-receipt/1',requestId:KEY,
+      receiptId:'prior',effect:'OK',thread:{after:THREAD},
+      replyDigest:digest('already replied')}),
+    '{"schema":"vivim.chat-receipt/1","effect":'
+  ]){
+    writeFileSync(path.join(dir,KEY+'.json'),prior);
+    await assert.rejects(runExistingStudioChatAsk({
+      root,port:38702,requestId:KEY,prompt:'Do not resend',thread:'new',
+      run:async()=>{dispatched++;throw Error('child must never run');}
+    }),/STUDIO_CHANNEL_PRIOR_RECEIPT/);
+    assert.equal(dispatched,0,'existing receipt must prohibit repeated effect');
+    assert.throws(()=>readFileSync(path.join(root,'bridge','channel-staging',KEY+'.txt')),
+      {code:'ENOENT'},'no plaintext staging permitted for a previously receipted key');
+  }
+}));
