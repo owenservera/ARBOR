@@ -101,6 +101,8 @@ struct Desktop {
     // A staged phone draft becomes unapprovable in GPUI after a native edit.
     // Host independently rejects stale session/source revisions at execution.
     phone_plan_edit_epoch: Option<u64>,
+    // Invalidate an exact Host command plan on every native draft edit.
+    composer_plan_edit_epoch: Option<u64>,
     input: Entity<InputState>,
     _input_subscription: Option<gpui::Subscription>,
     phone_draft: Option<PhoneDraft>,
@@ -212,7 +214,9 @@ impl Desktop {
     fn on_composer_changed(&mut self, cx: &mut Context<Self>) {
         // Native human input supersedes any still-pending phone draft review.
         // No approval or delivery happens on an input event.
-        if self.phone_plan_edit_epoch.take().is_some() {
+        let phone_plan=self.phone_plan_edit_epoch.take().is_some();
+        let composer_plan=self.composer_plan_edit_epoch.take().is_some();
+        if phone_plan || composer_plan {
             self.review=None;
             self.detail.clear();
         }
@@ -707,8 +711,11 @@ impl Desktop {
     }
 
     fn submit(&mut self, cx: &mut Context<Self>) {
-        if self.busy || self.uncertain { return; }
+        if self.busy || self.uncertain ||
+            self.review.as_ref().is_some_and(Review::needs_approval) { return; }
         let text = self.input.read(cx).value().to_string();
+        if text.trim().is_empty() { return; }
+        let edit_epoch=self.composer_edit_epoch;
         // Exact navigation is compiled by the same Rust core as PWA/Host.
         // Selecting a local panel is not a Host command or an approval.
         let destination=navigation::destination(&json!({"text":text}));
@@ -722,6 +729,7 @@ impl Desktop {
         if let Some(panel)=panel {self.select_panel(panel,cx);return;}
         self.review = None;
         self.phone_plan_edit_epoch=None;
+        self.composer_plan_edit_epoch=Some(edit_epoch);
         self.detail.clear();
         self.busy = true;
         self.graph_detail.clear();
@@ -733,6 +741,14 @@ impl Desktop {
             let result=work.await;
             let _=this.update(cx,|view,cx| {
                 view.busy=false;
+                if view.composer_edit_epoch!=edit_epoch ||
+                    view.composer_plan_edit_epoch!=Some(edit_epoch) {
+                    view.composer_plan_edit_epoch=None;
+                    view.review=None;
+                    view.detail.clear();
+                    view.status="Draft changed during planning · stale proposal discarded".into();
+                    cx.notify();return;
+                }
                 match result {
                     Ok(review) => {
                         view.status=if review.needs_approval() {"Review exact plan · nothing executed"} else {"Host decision · no native approval issued"}.into();
@@ -786,6 +802,13 @@ impl Desktop {
 
     fn approve(&mut self,cx:&mut Context<Self>) {
         if self.busy || self.uncertain { return; }
+        if self.composer_plan_edit_epoch.is_some_and(|epoch|epoch!=self.composer_edit_epoch) {
+            self.composer_plan_edit_epoch=None;
+            self.review=None;
+            self.detail.clear();
+            self.status="Edited draft · Host approval withdrawn".into();
+            cx.notify();return;
+        }
         if self.phone_plan_edit_epoch.is_some_and(|epoch|epoch!=self.composer_edit_epoch) {
             self.phone_plan_edit_epoch=None;
             self.review=None;
@@ -795,6 +818,7 @@ impl Desktop {
         }
         let Some(key)=self.review.as_mut().and_then(Review::consume_approval) else {return};
         self.phone_plan_edit_epoch=None;
+        self.composer_plan_edit_epoch=None;
         self.last_plan=Some(key.id().to_owned());
         self.review=None;
         self.busy=true;
@@ -1557,8 +1581,52 @@ impl Render for Desktop {
                         .child(div().text_sm().child(meaning.hint.clone()))));
             }
 
-            // There is no separate native dashboard, toolbar, phone mirror
-            // panel, browser frame or Send action in the first empty screen.
+            // First Contact's command review reuses Host planning and approval.
+            // Neither typing nor a semantic preview performs any effect.
+            let draft_present=!self.input.read(cx).value().trim().is_empty();
+            if draft_present || self.review.is_some() || !self.detail.is_empty() ||
+                self.busy || self.uncertain {
+                let mut command=div().w_full().max_w(px(760.))
+                    .flex().flex_col().gap_2();
+                if self.busy {
+                    command=command.child(div().text_sm()
+                        .child("Waiting for canonical Host · no effect from typing"));
+                } else if draft_present && !self.uncertain && self.review.is_none() {
+                    command=command.child(Button::new("first-contact-review-command")
+                        .label("Review command · approval before execution")
+                        .on_click(cx.listener(|view,_,_,cx|view.submit(cx))));
+                }
+                if let Some(review)=&self.review {
+                    command=command.child(div().text_sm().child(self.status.clone()))
+                        .child(div().max_h(px(156.)).overflow_y_scroll()
+                            .text_sm().child(review.detail.clone()));
+                    if review.needs_approval() && !self.busy && !self.uncertain {
+                        command=command.child(div().flex().gap_2()
+                            .child(Button::new("first-contact-approve-plan").primary()
+                                .label("Approve exact displayed Host plan")
+                                .on_click(cx.listener(|view,_,_,cx|view.approve(cx))))
+                            .child(Button::new("first-contact-cancel-plan")
+                                .label("Cancel · no effect")
+                                .on_click(cx.listener(|view,_,_,cx|{
+                                    view.review=None;
+                                    view.composer_plan_edit_epoch=None;
+                                    view.phone_plan_edit_epoch=None;
+                                    view.detail.clear();
+                                    view.status="Cancelled locally · no execution sent".into();
+                                    cx.notify();
+                                }))));
+                    }
+                } else if !self.detail.is_empty() {
+                    command=command.child(div().text_sm().child(self.status.clone()))
+                        .child(div().max_h(px(156.)).overflow_y_scroll()
+                            .text_sm().child(self.detail.clone()));
+                } else if self.uncertain {
+                    command=command.child(div().text_sm()
+                        .child("Outcome uncertain · inspect original Host plan; never retry"));
+                }
+                canvas=canvas.child(div().w_full().flex().justify_center().child(command));
+            }
+            // No second composer, browser frame or product dashboard.
             return surface.child(canvas.child(div().w_full().flex().justify_center()
                 .child(div().w_full().max_w(px(760.)).p_2()
                     .bg(rgb(0x212327)).rounded(px(22.))
@@ -1810,7 +1878,7 @@ fn main() {
                         wiki_query:None,composer_edit_epoch:0,
                         last_wiki_observation_started:None,
                         semantic_preview:None,semantic_busy:false,semantic_pending:false,
-                        phone_plan_edit_epoch:None,
+                        phone_plan_edit_epoch:None,composer_plan_edit_epoch:None,
                         _input_subscription:None,phone_draft:None,
                         phone_status:"Waiting for owner-authorized phone observation".into(),
                         status:"First Contact ready · type to explore your Wiki".into(),overview:None,visual:None,vec_view:None,visual_status:"Not yet observed".into(),visual_guard:RevisionGuard::default(),wiki_guard:WikiRevisionGuard::default(),wiki_delta:"Not yet observed".into(),wiki_events:Vec::new(),detail:String::new(),
