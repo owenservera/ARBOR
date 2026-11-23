@@ -100,9 +100,20 @@ test('Studio port validates exact live targets and forces a one-site dry run',as
   await assert.rejects(()=>port.captureStart('anything'),/STUDIO_CAPTURE_TARGET_INVALID/);
   assert.equal(calls.length,0);
   assert.equal((await port.captureStart(TARGET)).state,'start_requested');
+  assert.deepEqual(calls.slice(0,3).map(c=>[c.method,c.path]),[
+    ['GET','/api/status'],['GET','/api/targets'],['POST','/api/record/start']
+  ],'recording is owned by the preexisting legacy Studio API');
+  status.recorder.state='recording';
+  status.recorder.id='session-1';
+  assert.equal((await port.captureStop()).state,'stop_requested');
+  assert.deepEqual(calls.slice(3,5).map(c=>[c.method,c.path]),[
+    ['GET','/api/status'],['POST','/api/record/stop']
+  ]);
   const dry=await port.driveDryRun('chatgpt');
   assert.equal(dry.dryRun,true);
-  const payload=calls.find(x=>x.path.endsWith('/drive/jobs')&&x.method==='POST').body;
+  const command=calls.find(x=>x.path==='/api/v1/drive/jobs'&&x.method==='POST');
+  assert.ok(command, 'Drive effects remain in the existing versioned Studio API');
+  const payload=command.body;
   assert.deepEqual(payload,{mode:'drive',sites:['chatgpt'],dryRun:true,confirm:false});
   assert.equal((await port.driveCancel(JOB)).cancellationRequested,true);
   assert.ok(calls.filter(x=>x.method==='POST').every(x=>!x.path.endsWith('/conversations/create')));
