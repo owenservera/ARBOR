@@ -83,7 +83,7 @@ export function mountGpuiCanvasViewport({
     let bitmap;
     try {
       // Copy before async decode: a transport-owned typed array may be reused.
-      bitmap=await decodePng(frame.png.slice());
+      bitmap=await decodePng(Uint8Array.from(frame.png)); // Buffer.slice() can alias
       if(!admitted(meta)) {
         disconnect(); // pairing was lost during async decode: scrub old pixels
         return {state:'refused',reason:'GPUI_PAIRING_OR_SESSION_UNVERIFIED'};
