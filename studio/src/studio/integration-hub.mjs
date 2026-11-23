@@ -556,10 +556,17 @@ export function createIntegrationHub({ paths, profileStore, learner, recorder, c
       try { parts = url.pathname.replace(/\/$/, '').split('/').map(decodeURIComponent); }
       catch { throw problem(400, 'Malformed path encoding'); }
       const matches = routes.filter((r) => r.parts.length === parts.length && r.parts.every((v, i) => v.startsWith('{') || v === parts[i]));
+      // The versioned hub and the existing Studio service share /api/v1.
+      // A path absent from this integration registry belongs to the legacy
+      // Studio router (notably /status, /targets and /record/*). Returning
+      // 404 here orphaned live capture readiness and native GPUI controls.
+      // Only fall through for UNKNOWN paths: a known integration endpoint
+      // with the wrong HTTP method still has to return its own 405.
+      if (matches.length === 0) return false;
       const route = matches.find((r) => r.method === req.method);
       if (!route) {
-        if (matches.length) { res.setHeader('allow', [...new Set(matches.map((r) => r.method))].join(', ')); throw problem(405, 'Method not allowed', 'METHOD_NOT_ALLOWED'); }
-        throw problem(404, 'Unknown integration endpoint', 'NOT_FOUND');
+        res.setHeader('allow', [...new Set(matches.map((r) => r.method))].join(', '));
+        throw problem(405, 'Method not allowed', 'METHOD_NOT_ALLOWED');
       }
       const p = Object.fromEntries(route.parts.flatMap((v, i) => v.startsWith('{') ? [[v.slice(1, -1), parts[i]]] : []));
       const q = Object.fromEntries(url.searchParams);
