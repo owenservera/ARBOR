@@ -299,8 +299,36 @@ export async function findSendButton(page, adapter = null) {
         return { found: true, selector: sel, tag: b.tagName.toLowerCase() };
       }
     }
+    // Explicit selectors can drift as web-app markup changes. A conservative
+    // rescue is allowed ONLY inside the exact remembered composer's own form,
+    // and ONLY for one visible, enabled, semantically named Send control.
+    // Never guess an unlabeled icon, use a button elsewhere on the page, or
+    // silently fall back to Enter (which caused double sends on ChatGPT).
+    const composer = live();
+    const form = composer?.closest?.('form');
+    if (form && vis(form)) {
+      const names = /^(?:send|send message|send prompt|submit|enviar|enviar mensaje)$/i;
+      const ids = /^(?:send-button|send-message-button|composer-send-button|composer-submit|composer-submit-button|submit-prompt)$/i;
+      const candidates = [...form.querySelectorAll('button,[role="button"],input[type="submit"]')]
+        .filter(el => vis(el) && el.disabled !== true && el.getAttribute('aria-disabled') !== 'true')
+        .filter(el => {
+          const name = [el.getAttribute('aria-label'), el.getAttribute('title'),
+            el.tagName === 'INPUT' ? el.value : null].find(x => typeof x === 'string' && x.trim())?.trim() ?? '';
+          const testid = el.getAttribute('data-testid') ?? '';
+          return names.test(name) || ids.test(testid);
+        });
+      if (candidates.length === 1) {
+        globalThis.__aionSendBtn = candidates[0];
+        return { found: true, selector: 'unique-named-send-in-composer-form',
+          tag: candidates[0].tagName.toLowerCase() };
+      }
+      globalThis.__aionSendBtn = null;
+      return { found: false, reason: candidates.length > 1
+        ? 'multiple eligible send controls in composer form; refused'
+        : 'no visible enabled named send control in composer form' };
+    }
     globalThis.__aionSendBtn = null;
-    return { found: false };
+    return { found: false, reason: 'no verified composer form; refused' };
   })()`);
   return btn.ok ? btn.value : { found: false, error: btn.error };
 }
