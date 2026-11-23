@@ -52,6 +52,16 @@ export function canSendVerifiedProvider({paired,direct,sessionApproved,target,pr
 }
 
 const PRIMARY_CONNECTIONS=Object.freeze(['chatgpt','claude','gemini','qwen','zai','deepseek']);
+// The connection chooser needs only named, public capabilities. Do not copy
+// arbitrary Studio/Host metadata (thread IDs, provider bodies, origins, grants)
+// into its derived UI state or its redraw signature.
+const publicConnectionOption=(item,kind)=>{
+  if(!item||typeof item.id!=='string'||!item.id||item.id.length>120)return null;
+  const label=typeof item.label==='string'&&item.label.length<=100?item.label:item.id;
+  return Object.freeze(kind==='model'
+    ? {id:item.id,label,current:item.current===true}
+    : {id:item.id,label,locked:item.locked===true});
+};
 // A known account may be selected for a LOCAL DRAFT before login. This is never a send.
 export function listProviderConnections(projection) {
   const records=Array.isArray(projection)?projection:[];
@@ -59,8 +69,12 @@ export function listProviderConnections(projection) {
     const source=records.find(p=>p?.id===id) ?? null;
     const signedIn=source?.signedIn===true;
     const queueConsumerReady=signedIn&&source?.queueConsumerReady===true;
-    return Object.freeze({...source,id,label:LABELS[id],signedIn,queueConsumerReady,
-      connectionState:queueConsumerReady?'ready':signedIn?'relay-offline':'unverified'});
+    const options=(items,kind)=>Array.isArray(items)
+      ? Object.freeze(items.map(item=>publicConnectionOption(item,kind)).filter(Boolean).slice(0,64)) : Object.freeze([]);
+    return Object.freeze({id,label:LABELS[id],signedIn,queueConsumerReady,
+      connectionState:queueConsumerReady?'ready':signedIn?'relay-offline':'unverified',
+      models:options(source?.models,'model'),thinkingLevels:options(source?.thinkingLevels,'thinking'),
+      attachments:source?.attachments===true,newChat:source?.newChat===true});
   });
 }
 export function canRetargetProviderDraft(conversation,hasHistory=false) {
