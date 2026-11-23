@@ -63,3 +63,19 @@ test('unverified child data root or port fails before spawning the browser drive
   }
   assert.equal(calls, 0);
 });
+
+test('a pre-dispatch button refusal keeps its structural cause in the channel outcome',async()=>{
+  const transport=createDriveTransport({
+    binPath:path.join(ROOT,'studio.mjs'),dataDir:ROOT,port:38702,
+    isolatedThreads:true,
+    exec:()=>({stdout:JSON.stringify({
+      ok:false,errors:['send not attempted (button)',
+        'send preflight: no verified composer form; refused']
+    })})
+  });
+  const result=await transport.send({threadId:'chatgpt-new-tab',prompt:'ping',
+    requestId:'diagnostic-1',deadline:deadline()});
+  assert.equal(result.effect,'FAILED');
+  assert.equal(result.reason,
+    'send not attempted (button); send preflight: no verified composer form; refused');
+});
