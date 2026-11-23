@@ -72,12 +72,12 @@ function requireSource(file) {
 test('Host bridge root stays separate from Studio channel profile and cannot bypass boot fence', () => {
   const worker = new URL('../../bin/relay-chat-mvp.mjs', import.meta.url);
   const source = readFileSync(worker, 'utf8');
-  assert.match(source, /const bridgeRoot = bridgeRootArg \\?\\? root/);
-  assert.match(source, /createBridgeStore\\(\\{ root: bridgeRoot \\}\\)/);
-  assert.match(source, /snapshotRelayStartupFence\\(store\\.file\\)/);
-  assert.match(source, /path\\.join\\(bridgeRoot, 'bridge', 'relay-chat-threads\\.json'\\)/);
+  assert.match(source, /const bridgeRoot = bridgeRootArg \?\? root/);
+  assert.match(source, /createBridgeStore\(\{ root: bridgeRoot \}\)/);
+  assert.match(source, /snapshotRelayStartupFence\(store\.file\)/);
+  assert.match(source, /path\.join\(bridgeRoot, 'bridge', 'relay-chat-threads\.json'\)/);
   assert.match(source, /root: bridgeRoot, worker: 'chatWorker'/);
-  assert.match(source, /isolatedChannel: channelEnabled \\? \\{ root, port: channelPort \\} : null/);
+  assert.match(source, /isolatedChannel: channelEnabled \? \{ root, port: channelPort \} : null/);
   assert.match(source, /bridgeFlagCount > 1/);
-  assert.match(source, /path\\.isAbsolute\\(bridgeRootArg\\)/);
+  assert.match(source, /path\.isAbsolute\(bridgeRootArg\)/);
 });
