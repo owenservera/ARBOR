@@ -113,7 +113,12 @@ pub fn read(wiki: &Value) -> Result<WikiRead, ReadError> {
             });
         }
     }
-    let captures=capture_read(wiki,revision);
+    // An absent/null capture sidecar is optional. Once a Host projection
+    // claims to carry committed capture provenance, however, stale or
+    // malformed metadata must not silently become an empty capture view.
+    let captures=if wiki.get("personalCaptures").is_some_and(|value|!value.is_null()){
+        Some(capture_read(wiki,revision).ok_or(ReadError::InvalidProjection)?)
+    }else{None};
     Ok(WikiRead { revision, digest, pages_total: pages.len(), pages: output,
         captures, search_index, indexed_pages, index_truncated })
 }
