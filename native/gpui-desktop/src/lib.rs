@@ -75,6 +75,16 @@ pub struct StudioOperations {
     pub browser: String,
     pub drive: String,
     pub jobs: Vec<String>,
+    pub capture_running: bool,
+    pub capture_ready: bool,
+    pub targets: Vec<StudioTarget>,
+    pub sites: Vec<String>,
+    pub cancelable_jobs: Vec<String>,
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct StudioTarget {
+    pub id: String,
+    pub host: String,
 }
 fn project_studio_operations(snapshot:&Value)->Option<StudioOperations>{
     let value=&snapshot["studioOperations"];
@@ -100,7 +110,44 @@ fn project_studio_operations(snapshot:&Value)->Option<StudioOperations>{
         },
         _=>return None
     };
+    // The read model exposes exact selection IDs only. No URLs, titles,
+    // prompts, full profiles or provider browser operations enter GPUI.
+    let targets_state=capture["targetsState"].as_str().unwrap_or("unavailable");
+    if !matches!(targets_state,"source-backed"|"unavailable"){return None}
+    let target_rows=capture["targets"].as_array();
+    if target_rows.is_some_and(|items|items.len()>8) ||
+       targets_state=="source-backed"&&target_rows.is_none() {return None}
+    let mut targets=Vec::new();
+    let mut target_seen=std::collections::BTreeSet::new();
+    for t in target_rows.into_iter().flatten(){
+        let id=t["id"].as_str()?;
+        let host=t["host"].as_str()?;
+        if !(16..=64).contains(&id.len())||!id.bytes().all(|b|
+            b.is_ascii_alphanumeric()||b==b'_'||b==b'-')||
+            host.is_empty()||host.len()>96||host.chars().any(char::is_control)||
+            !target_seen.insert(id) {return None}
+        targets.push(StudioTarget{id:id.to_owned(),host:host.to_owned()});
+    }
+    let capture_running=capture["state"]=="source-backed" &&
+        capture["recorderState"]=="recording";
+    let capture_ready=capture["state"]=="source-backed" &&
+        capture["recorderState"]=="idle" &&
+        capture["browserState"]=="available" &&
+        capture["browserVerified"]==true;
     let drive=&value["drive"];
+    let site_rows=drive["sites"].as_array();
+    if site_rows.is_some_and(|items|items.len()>12){return None}
+    let mut sites=Vec::new();
+    let mut site_seen=std::collections::BTreeSet::new();
+    for row in site_rows.into_iter().flatten() {
+        let id=row.as_str()?;
+        if !(2..=64).contains(&id.len())||
+            !id.bytes().enumerate().all(|(i,b)|if i==0{b.is_ascii_lowercase()}
+                else{b.is_ascii_lowercase()||b.is_ascii_digit()||b==b'_'||b==b'-'})||
+            !site_seen.insert(id) {return None}
+        sites.push(id.to_owned());
+    }
+    let mut cancelable_jobs=Vec::new();
     let (drive_label,rows)=match drive["state"].as_str()? {
         "unavailable"=>("Drive job source unavailable".to_owned(),Vec::new()),
         "source-backed"=>{
@@ -121,6 +168,7 @@ fn project_studio_operations(snapshot:&Value)->Option<StudioOperations>{
                 let dry=job["dryRun"].as_bool()?;
                 if !matches!(state,"queued"|"running"|"done"|"failed"|"cancelled")||
                    !matches!(mode,"drive"|"campaign"){return None}
+                if matches!(state,"queued"|"running"){cancelable_jobs.push(id.to_owned());}
                 rows.push(format!("{mode} · {state} · {} · job {id}",
                     if dry{"dry run"}else{"effect status from Studio"}));
             }
@@ -131,7 +179,8 @@ fn project_studio_operations(snapshot:&Value)->Option<StudioOperations>{
     if value["state"]=="unavailable" &&
         (capture["state"]!="unavailable"||drive["state"]!="unavailable"){return None}
     Some(StudioOperations{capture:capture_label,browser:browser_label,
-        drive:drive_label,jobs:rows})
+        drive:drive_label,jobs:rows,capture_running,capture_ready,
+        targets,sites,cancelable_jobs})
 }
 
 fn source_digest_hex(value:&Value)->bool {
@@ -562,8 +611,11 @@ mod tests {
             "schema":"vivim.studio-operations/1",
             "authority":"read-only","state":"source-backed",
             "capture":{"state":"source-backed","recorderState":"recording",
-              "browserState":"available","browserVerified":true},
+              "browserState":"available","browserVerified":true,
+              "targetsState":"source-backed",
+              "targets":[{"id":"0123456789abcdef0123456789abcdef","host":"chatgpt.com"}]},
             "drive":{"state":"source-backed","shown":1,"active":1,
+              "sites":["chatgpt"],
               "jobs":[{"id":"11111111-1111-4111-8111-111111111111",
                 "mode":"drive","state":"running","dryRun":true,
                 "privatePrompt":"never print raw content"}]}
@@ -573,6 +625,12 @@ mod tests {
         assert!(view.browser.contains("owner verified"));
         assert!(view.drive.contains("1 active"));
         assert!(view.jobs[0].contains("dry run"));
+        assert!(view.capture_running);
+        assert!(!view.capture_ready);
+        assert_eq!(view.targets.len(),1);
+        assert_eq!(view.targets[0].host,"chatgpt.com");
+        assert_eq!(view.sites,vec!["chatgpt".to_owned()]);
+        assert_eq!(view.cancelable_jobs.len(),1);
         assert!(!format!("{view:?}").contains("privatePrompt"));
         let mut conflict=p.clone();
         conflict["snapshot"]["studioOperations"]["drive"]["jobs"][0]["state"]=json!("sent");
