@@ -156,7 +156,7 @@ export function createPwaWorkAdmission({
         replayed: saved.replayed, execution: 'not-dispatched',
         authority: 'host-reviewed-existing-work', requestDigest,
         sourceEpoch: first.epoch, sourceRevision: first.revision,
-        effectPerformed: false, providerSends: 0,
+        workPersisted: true, providerExecutionPerformed: false, providerSends: 0,
       });
     },
   });
