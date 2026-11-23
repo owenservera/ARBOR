@@ -217,3 +217,26 @@ test('asynchronous PNG decoder owns its bytes when Node Buffer pool is reused',a
   assert.equal((await pending).state,'painted');
   view.dispose();
 });
+
+test('resolved Host input rejection is visibly reported, never silently marked successful',async()=>{
+  const f=setup();
+  f.channel.submitPointer=async()=>({state:'refused',reason:'GPUI_INPUT_REPLAY'});
+  const view=f.mount();
+  await view.receiveFrame(frame());
+  f.pointer();
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.ok(f.status.includes('input-rejected'));
+  assert.equal(f.status.includes('input-submitted-unverified'),false);
+  view.dispose();
+});
+test('forwarded-but-unverified pointer is not represented as an approved effect',async()=>{
+  const f=setup();
+  f.channel.submitPointer=async()=>({state:'submitted_to_native_unverified'});
+  const view=f.mount();
+  await view.receiveFrame(frame());
+  f.pointer();
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.ok(f.status.includes('input-submitted-unverified'));
+  assert.equal(f.status.includes('approved'),false);
+  view.dispose();
+});
