@@ -151,7 +151,8 @@ export function createStudioPort({ url, token = null, fetchImpl = fetch, timeout
       mode:'drive',sites:[site],dryRun:true,confirm:false
     },30000);
     const job=accepted?.job;
-    if(!UUID.test(job?.id)||job.mode!=='drive'||job.dryRun!==true)
+    if(!UUID.test(job?.id)||job.mode!=='drive'||job.dryRun!==true ||
+       !DRIVE_STATES.has(job.state))
       throw localPreflight('STUDIO_DRIVE_POST_UNCERTAIN');
     return {jobId:job.id,mode:'drive',dryRun:true,state:job.state,
       note:'Plan only; no browser was opened or provider message sent by this action.'};
