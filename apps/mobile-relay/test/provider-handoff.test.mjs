@@ -156,3 +156,13 @@ test('chat tools use the existing composer and redact projections on revoked gra
   assert.match(app,/projectReadOnlyChatTool\(tool/);
   assert.match(html,/first-contact-tools/);
 });
+
+test('generic command completion never masquerades as provider delivery receipt',()=>{
+  const project=commands=>projectReadOnlyChatTool('delivery',{commands});
+  assert.equal(project([{mode:'relay-chat',status:'delivered'}]).rows[0].value,
+    'Status unverified; do not assume delivery');
+  assert.equal(project([{mode:'relay-chat',deliveryState:'constructor'}]).rows[0].value,
+    'Status unverified; do not assume delivery');
+  assert.equal(project([{mode:'relay-chat',delivery:{state:'delivered'}}]).rows[0].value,
+    'Delivery acknowledged');
+});
