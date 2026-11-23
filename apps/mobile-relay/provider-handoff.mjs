@@ -23,7 +23,10 @@ export function resolveProviderHandoff(input, projection) {
     /^(?:\/ai\s+|@)([a-z][a-z0-9._-]{1,30})(?:(?::\s*|\s+)([\s\S]*))?$/i.exec(text) ||
     /^(?:chat\s+with|talk\s+to|ask)\s+([a-z][a-z0-9._-]{1,30})(?::\s*([\s\S]*))?$/i.exec(text);
   if (!match) return null;
-  const id = ALIASES[match[1].toLowerCase()];
+  const alias = match[1].toLowerCase();
+  // Only declared provider aliases count. Inherited Object keys such as
+  // constructor/toString must not stage a malformed provider draft.
+  const id = Object.hasOwn(ALIASES, alias) ? ALIASES[alias] : null;
   if (!id) return null;
   const record = Array.isArray(projection) ? projection.find(p => p?.id === id) : null;
   const signedIn = record?.signedIn === true;
@@ -75,7 +78,10 @@ const TOOL_COMMANDS=Object.freeze({
 export function resolveReadOnlyChatTool(input) {
   if(typeof input!=='string'||input.length>72)return null;
   const match=/^\/([a-z]+)(?:\s+status)?$/i.exec(input.trim());
-  return match ? TOOL_COMMANDS[match[1].toLowerCase()]??null : null;
+  const key=match?.[1]?.toLowerCase();
+  // Unknown slash commands must retain the user's text instead of being
+  // swallowed by a truthy inherited Object prototype method.
+  return key&&Object.hasOwn(TOOL_COMMANDS,key) ? TOOL_COMMANDS[key] : null;
 }
 const TOOL_PHASES=new Set(['idle','review','ready','running','attention','uncertain','done','unsupported']);
 const DELIVERY_PHASES=Object.freeze({
