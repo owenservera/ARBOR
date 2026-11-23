@@ -3,7 +3,9 @@
 // the bridge polling loop is still running. Never touches tabs, logs prompts,
 // launches Studio, repairs sessions or retries a turn.
 const allowedSites = new Set(['chatgpt']);
-const blockedStates = new Set(['busy','attaching','finalizing']);
+// Only known non-writing lifecycle states are safe to admit. Unknown states,
+// active ownership and unresolved historical sends must never yield READY.
+const passiveStates = new Set(['ready','closed','blocked']);
 const validLoopback = value => {
   try {
     const url = new URL(value);
@@ -34,8 +36,7 @@ export async function probeStudioRelayReadiness({ url, fetchImpl = fetch, timeou
     // The browser owner is single-writer. Another in-flight capture means
     // this worker must defer, regardless of which provider owns that capture.
     if (conversations.conversations.some(row =>
-      !row || typeof row !== 'object' || typeof row.state !== 'string' ||
-      blockedStates.has(row.state)))
+      !row || typeof row !== 'object' || !passiveStates.has(row.state)))
       return { ready:false, reason:'STUDIO_WRITER_BUSY_OR_UNKNOWN' };
     return { ready:true, reason:'STUDIO_OWNER_IDLE', supportedProviders:[...allowedSites] };
   } catch {

@@ -13,7 +13,7 @@ const simulated=(targets,conversations)=>async url=>{
 const sites={sites:['chatgpt','claude']};
 test('read-only Studio owner admits a single verified supported browser path',async()=>{
   const called=[];
-  const fetchImpl=async(url,init)=>{called.push({url,method:init.method});return simulated(sites,{conversations:[{state:'ready'},{state:'closed'}]})(url)};
+  const fetchImpl=async(url,init)=>{called.push({url,method:init.method});return simulated(sites,{conversations:[{state:'ready'},{state:'closed'},{state:'blocked'}]})(url)};
   const state=await probeStudioRelayReadiness({url:origin,fetchImpl});
   assert.equal(state.ready,true);
   assert.deepEqual(state.supportedProviders,['chatgpt']);
@@ -35,6 +35,14 @@ test('missing, malformed or failed Studio owner never produces positive heartbea
   assert.equal((await probeStudioRelayReadiness({url:'https://chatgpt.com',fetchImpl:()=>{throw new Error('must not run')}})).ready,false);
   assert.equal((await probeStudioRelayReadiness({url:origin,fetchImpl:async()=>reply({},503)})).ready,false);
   assert.equal((await probeStudioRelayReadiness({url:origin,fetchImpl:async()=>{throw new Error('offline')}})).ready,false);
+});
+test('unknown and unresolved Studio lifecycle states fail closed before any relay claim',async()=>{
+  for(const state of ['needs-reconciliation','disconnected','unknown','busy','attaching','finalizing']){
+    const actual=await probeStudioRelayReadiness({url:origin,fetchImpl:simulated(sites,{
+      conversations:[{state}]
+    })});
+    assert.deepEqual(actual,{ready:false,reason:'STUDIO_WRITER_BUSY_OR_UNKNOWN'},state);
+  }
 });
 test('existing relay worker fences claims and reports blocked heartbeat before dispatch',()=>{
   const code=readFileSync(new URL('../../bin/relay-chat-mvp.mjs',import.meta.url),'utf8');
