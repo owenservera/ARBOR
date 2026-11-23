@@ -142,8 +142,12 @@ export function organizeInterruptions(requests) {
   const immediate = [], batch = [], automatic = [];
   const seen = new Set();
   for (const entry of rows(requests)) {
-    if (!plain(entry) || !value(entry.id, 120) || seen.has(entry.id)) continue;
-    seen.add(entry.id);
+    const projectedId = value(entry?.id, 120);
+    // Deduplicate the exact ID visible in review, not an unbounded raw input.
+    // Otherwise whitespace or 120-char truncation can present two different
+    // underlying receipts as the same actionable card.
+    if (!plain(entry) || !projectedId || seen.has(projectedId)) continue;
+    seen.add(projectedId);
     // An explicit effect is review-critical unless its exact known contract
     // names a read-only/no-effect operation. Never infer harmlessness from an
     // unrecognized or malformed effect value, even when a source self-reports
@@ -153,7 +157,7 @@ export function organizeInterruptions(requests) {
       (typeof entry.effect === 'string' && ['none', 'read', 'read-only'].includes(effect.toLowerCase()));
     const urgent = !harmlessEffect || entry.requiresApproval === true || entry.outcomeUncertain === true
       || entry.consequential === true || entry.severity === 'critical';
-    const record = { id: value(entry.id, 120), reason: value(entry.reason, 300),
+    const record = { id: projectedId, reason: value(entry.reason, 300),
       requiresApproval: entry.requiresApproval === true, effect: effect || null };
     if (urgent) immediate.push(record);
     else if (entry.safeAuthorized === true && entry.readOnly === true) automatic.push(record);
