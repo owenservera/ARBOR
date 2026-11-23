@@ -16,6 +16,10 @@ const UUID = /^[a-f0-9-]{36}$/i;
 const TARGET_ID = /^[a-zA-Z0-9_-]{16,64}$/;
 const SITE_ID = /^[a-z][a-z0-9_-]{1,63}$/;
 const localPreflight = code => Object.assign(new Error(code),{code});
+// Studio has two existing API route owners: legacy recorder/browser operations
+// under /api and the versioned integration/Drive/conversations API under
+// /api/v1. Do not invent alias routes or duplicate either implementation.
+const LEGACY_STUDIO_ROUTES = new Set(['/status','/targets','/record/start','/record/stop']);
 
 
 // Immutable, bounded and read-only compatibility projection. Never propagate
@@ -77,7 +81,7 @@ export function createStudioPort({ url, token = null, fetchImpl = fetch, timeout
 
   async function request(route, body, requestTimeoutMs = timeoutMs) {
     const headers = { ...(body === undefined ? {} : { 'content-type': 'application/json' }), ...(token ? { 'x-studio-token': token } : {}) };
-    const response = await fetchImpl(base.origin + '/api/v1' + route, {
+    const response = await fetchImpl(base.origin + (LEGACY_STUDIO_ROUTES.has(route) ? '/api' : '/api/v1') + route, {
       method: body === undefined ? 'GET' : 'POST', redirect: 'error', signal: AbortSignal.timeout(requestTimeoutMs), headers,
       ...(body === undefined ? {} : { body: JSON.stringify(body) })
     });
