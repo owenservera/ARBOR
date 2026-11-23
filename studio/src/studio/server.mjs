@@ -294,19 +294,24 @@ const hub = createIntegrationHub({ paths, profileStore, learner, recorder, conve
           },
         });
       }
-      // Installable-PWA assets for the mobile surface. Both stay behind the same token check above
-      // (the manifest link uses crossorigin="use-credentials"). The service worker caches read-only
-      // shell files only and never intercepts /api/ requests.
-      if (['/mobile.webmanifest', '/mobile-sw.js'].includes(url.pathname)) {
+      // Retired duplicate PWA: the legacy Studio mobile capability view stays
+      // accessible for migration/recovery, but cannot install a second VIVIM
+      // application. Existing Studio APIs, sessions and personal-app data remain.
+      if (url.pathname === '/mobile.webmanifest') {
         if (req.method !== 'GET') { res.setHeader('allow', 'GET'); return send(res, 405, { error: 'GET required' }); }
-        const worker = url.pathname === '/mobile-sw.js';
+        res.setHeader('cache-control', 'no-store');
+        return send(res, 410, { code: 'STUDIO_MOBILE_PWA_RETIRED' });
+      }
+      if (url.pathname === '/mobile-sw.js') {
+        if (req.method !== 'GET') { res.setHeader('allow', 'GET'); return send(res, 405, { error: 'GET required' }); }
+        // Deliver the retirement worker to previously installed clients so
+        // they can clear only Studio's shell cache and unregister safely.
         return staticFile(res, {
-          path: new URL(worker ? './ui/mobile-sw.js' : './ui/manifest.webmanifest', import.meta.url),
-          contentType: worker ? 'text/javascript; charset=utf-8' : 'application/manifest+json; charset=utf-8',
-          cacheControl: 'no-cache',
+          path: new URL('./ui/mobile-sw.js', import.meta.url),
+          contentType: 'text/javascript; charset=utf-8', cacheControl: 'no-store',
           headers: {
             'x-content-type-options': 'nosniff',
-            ...(worker ? { 'content-security-policy': "default-src 'none'; connect-src 'self'" } : {}),
+            'content-security-policy': "default-src 'none'; connect-src 'self'",
           },
         });
       }
