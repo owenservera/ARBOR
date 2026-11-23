@@ -179,10 +179,10 @@ test('corrupted historical bridge revision blocks a fresh same-conversation send
   const next=cmd(2,'chatgpt',{newChat:true});
   const journalFile=path.join(root,'bridge','commands.jsonl');
   mkdirSync(path.dirname(journalFile),{recursive:true});
-  const valid=JSON.stringify(earlier)+'\\n'+JSON.stringify(next)+'\\n';
+  const valid=JSON.stringify(earlier)+'\n'+JSON.stringify(next)+'\n';
   const cases=[
-    JSON.stringify(earlier)+'\\n'+'{not-json}\\n'+JSON.stringify(next)+'\\n',
-    JSON.stringify(earlier)+'\\n'+JSON.stringify({id:'not-a-command'})+'\\n'+JSON.stringify(next)+'\\n',
+    JSON.stringify(earlier)+'\n'+'{not-json}\n'+JSON.stringify(next)+'\n',
+    JSON.stringify(earlier)+'\n'+JSON.stringify({id:'not-a-command'})+'\n'+JSON.stringify(next)+'\n',
     valid+'{"id":'
   ];
   for(const journal of cases){
