@@ -77,7 +77,13 @@ export function validateGpuiFrame(frame, previous = null) {
     width: frame.width, height: frame.height});
 }
 export function nativePointerFromClient(frame, bounds, clientX, clientY, sequence) {
-  if (!frame || !validInt(frame.width) || !validInt(frame.height) ||
+  // A fabricated or stale descriptor must not produce a plausible touch packet.
+  // The owning Rust GPUI InputFence still verifies session/revision/replay at receipt.
+  if (!frame || typeof frame.session !== 'string' ||
+      !/^[a-f0-9]{32}$/.test(frame.session) ||
+      !validInt(frame.revision) || frame.revision === 0 ||
+      !validInt(frame.width) || frame.width < 240 || frame.width > 4096 ||
+      !validInt(frame.height) || frame.height < 240 || frame.height > 4096 ||
       !bounds || !Number.isFinite(bounds.left) || !Number.isFinite(bounds.top) ||
       !Number.isFinite(bounds.width) || !Number.isFinite(bounds.height) ||
       bounds.width <= 0 || bounds.height <= 0 || !validInt(sequence) ||
