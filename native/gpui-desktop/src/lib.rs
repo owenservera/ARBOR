@@ -49,7 +49,56 @@ pub struct Overview {
     pub studio_activity: Option<StudioActivity>,
     /// Inert Studio capture and Drive activity from the same authorized Host owner view.
     pub studio_operations: Option<StudioOperations>,
+    /// Colors consumed from the authoritative Host bootstrap phone projection;
+    /// this read-only projection is never a second theme writer or grant.
+    pub theme: Option<ThemeTokens>,
 }
+
+/// Bounded presentation tokens, translated from the same Host CSS variables
+/// used by the phone PWA. RGB values contain no alpha and cannot be effects.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ThemeTokens {
+    pub revision: u64,
+    pub background: u32,
+    pub surface: u32,
+    pub raised: u32,
+    pub border: u32,
+    pub text: u32,
+    pub muted: u32,
+    pub accent: u32,
+    pub accent_soft: u32,
+    pub accent_ink: u32,
+}
+impl ThemeTokens {
+    pub fn graphite() -> Self {
+        Self { revision: 0, background:0x111214, surface:0x181a1e,
+            raised:0x212327,border:0x41444b,text:0xeeece7,
+            muted:0xc1c1c5,accent:0x78b8f6,accent_soft:0x20252a,
+            accent_ink:0x101317 }
+    }
+}
+// Trust source-owned fields only after exact-color validation, not arbitrary
+// styling instructions or user-input-controlled CSS.
+fn theme_hex(value:&Value)->Option<u32>{
+    let s=value.as_str()?;
+    if s.len()!=7 || !s.starts_with('#') ||
+        !s[1..].bytes().all(|b|b.is_ascii_hexdigit()) {return None;}
+    u32::from_str_radix(&s[1..],16).ok()
+}
+fn project_theme(bootstrap:&Value)->Result<Option<ThemeTokens>,ReadError>{
+    if bootstrap["schema"]!="vivim.bootstrap-phone/1" {return Ok(None);}
+    let Some(vars)=bootstrap["cssVariables"].as_object() else {return Ok(None);};
+    let color=|name:&str|theme_hex(vars.get(name).unwrap_or(&Value::Null))
+        .ok_or(ReadError::InvalidProjection);
+    let revision=bootstrap["revision"].as_u64().ok_or(ReadError::InvalidProjection)?;
+    Ok(Some(ThemeTokens {
+        revision, background:color("--bg")?,surface:color("--s1")?,
+        raised:color("--s2")?,border:color("--bd")?,text:color("--tx")?,
+        muted:color("--mu")?,accent:color("--ac")?,
+        accent_soft:color("--ac2")?,accent_ink:color("--vivim-accent-ink")?,
+    }))
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OracleProgress {
     pub claims: u64,
@@ -397,6 +446,7 @@ pub fn project(pwa: &Value, wiki: &Value) -> Result<Overview, ReadError> {
         }).collect::<Result<Vec<_>, ReadError>>()?;
     let read = wiki_read::read(wiki).map_err(|_| ReadError::InvalidProjection)?;
     let oracle_progress=project_oracle_progress(&snapshot["bootstrap"])?;
+    let theme=project_theme(&snapshot["bootstrap"])?;
     let studio_activity=project_studio_activity(snapshot);
     let studio_operations=project_studio_operations(snapshot);
     let wiki_pages = read.pages.iter().map(|page| page.name.clone()).collect();
@@ -410,7 +460,7 @@ pub fn project(pwa: &Value, wiki: &Value) -> Result<Overview, ReadError> {
         wiki_search_index: read.search_index,
         wiki_indexed_pages: read.indexed_pages,
         wiki_index_truncated: read.index_truncated,
-        oracle_progress,studio_activity,studio_operations,
+        oracle_progress,studio_activity,studio_operations,theme,
     })
 }
 
@@ -673,6 +723,31 @@ mod tests {
         conflict=p;
         conflict["snapshot"]["studioOutcomes"]["items"][0]["eventDigest"]=json!("fake");
         assert_eq!(project(&conflict,&wiki).unwrap().studio_activity,None);
+    }
+    #[test] fn theme_tokens_are_host_owned_bounded_and_reject_partial_css() {
+        let mut p=pwa();
+        p["snapshot"]["bootstrap"]=json!({
+            "schema":"vivim.bootstrap-phone/1","revision":3,
+            "cssVariables":{"--bg":"#161728","--s1":"#202237","--s2":"#2c3151",
+                "--bd":"#56556a","--tx":"#ffffff","--mu":"#dddddf",
+                "--ac":"#b1a7ef","--ac2":"#363b68",
+                "--vivim-accent-ink":"#000000"}
+        });
+        let wiki=json!({"revision":1,"pages":{}});
+        let theme=project(&p,&wiki).unwrap().theme.unwrap();
+        assert_eq!(theme.revision,3);
+        assert_eq!(theme.background,0x161728);
+        assert_eq!(theme.accent,0xb1a7ef);
+        let mut bad=p.clone();
+        bad["snapshot"]["bootstrap"]["cssVariables"]["--ac"]=json!("red");
+        assert_eq!(project(&bad,&wiki),Err(ReadError::InvalidProjection));
+        bad=p.clone();
+        bad["snapshot"]["bootstrap"]["cssVariables"]["--bg"]=json!("#xyz000");
+        assert_eq!(project(&bad,&wiki),Err(ReadError::InvalidProjection));
+        bad=p;
+        bad["snapshot"]["bootstrap"]["cssVariables"].as_object_mut().unwrap().remove("--tx");
+        assert_eq!(project(&bad,&wiki),Err(ReadError::InvalidProjection));
+        assert_eq!(project(&pwa(),&wiki).unwrap().theme,None);
     }
     #[test] fn native_oracle_progress_uses_host_ledger_metadata_only() {
         let mut p=pwa();
