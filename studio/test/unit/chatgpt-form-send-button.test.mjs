@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { runInNewContext } from 'node:vm';
-import { findSendButton } from '../../src/capture/actions.mjs';
+import { findSendButton, sendMessage } from '../../src/capture/actions.mjs';
 
 const visible = {display:'block', visibility:'visible', opacity:'1'};
 const box = {width:240, height:38};
@@ -59,4 +59,19 @@ test('no remembered form means no generic page-level fallback',async()=>{
   assert.equal(result.found,false);
   assert.match(result.reason,/no verified composer form/);
   assert.equal(globals.__aionSendBtn,null);
+});
+
+test('button refusal preserves a bounded structural diagnosis and does not dispatch', async()=>{
+  let clicks=0, enters=0;
+  const actual=await sendMessage({}, {send:{strategy:'button'}}, {
+    sendState:async()=>({evalOk:true,draftChars:9}),
+    findSendButton:async()=>({found:false,reason:'no verified composer form; refused'}),
+    pressEnter:async()=>{enters++;},
+    clickSendButton:async()=>{clicks++;}
+  });
+  assert.equal(actual.dispatched,false);
+  assert.equal(actual.sendStatus,'not-attempted');
+  assert.equal(actual.reason,'no verified composer form; refused');
+  assert.equal(clicks,0);
+  assert.equal(enters,0);
 });
