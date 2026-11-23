@@ -76,14 +76,14 @@ test('Host owner PWA view gets sanitized Studio operations, unauthorized callers
   try{
     await listen(studio);
     const studioUrl='http://127.0.0.1:'+studio.address().port;
-    host=createHostServer({dataRoot:root,ownerToken:'host-unit-owner-only-123456789',
+    host=createHostServer({dataRoot:root,ownerToken:'owner-unit-test-token-for-pwa-0001',
       studioUrl,studioToken:'studio-service-secret'});
     await listen(host);
     const base='http://127.0.0.1:'+host.address().port;
     const route='/api/host/control/pwa-view';
     assert.equal((await fetch(base+route)).status,401);
     assert.equal(seen.length,0,'no Studio work before Host authentication');
-    const response=await fetch(base+route,{headers:{authorization:'Bearer host-unit-owner-only-123456789'}});
+    const response=await fetch(base+route,{headers:{authorization:'Bearer owner-unit-test-token-for-pwa-0001'}});
     assert.equal(response.status,200);
     const body=await response.json();
     assert.equal(body.snapshot.studioOperations.schema,'vivim.studio-operations/1');
