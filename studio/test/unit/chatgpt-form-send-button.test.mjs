@@ -75,3 +75,40 @@ test('button refusal preserves a bounded structural diagnosis and does not dispa
   assert.equal(clicks,0);
   assert.equal(enters,0);
 });
+
+test('hydrating ChatGPT send control is read-only polled and clicked exactly once',async()=>{
+  let checks=0, clicks=0, enters=0, waits=0, observations=0;
+  const actual=await sendMessage({}, {send:{strategy:'button'}}, {
+    sendState:async()=>++observations===1
+      ? {evalOk:true,draftChars:15,streaming:false,turns:0}
+      : {evalOk:true,draftChars:0,streaming:true,turns:1,sent:true,reason:'new turn observed'},
+    findSendButton:async()=>({found:++checks>=3,reason:'hydrating'}),
+    pressEnter:async()=>{enters++;},
+    clickSendButton:async()=>{clicks++;return {dispatched:true};},
+    sleep:async()=>{waits++;},
+    observeWaits:[0]
+  });
+  assert.equal(actual.ok,true);
+  assert.equal(actual.dispatched,true);
+  assert.equal(clicks,1);
+  assert.equal(enters,0);
+  assert.equal(checks,3);
+  assert.equal(waits,3);
+});
+
+test('button never becomes ready: bounded reads, zero dispatch, no Enter fallback',async()=>{
+  let checks=0, clicks=0, enters=0, waits=0;
+  const actual=await sendMessage({}, {send:{strategy:'button'}}, {
+    sendState:async()=>({evalOk:true,draftChars:10}),
+    findSendButton:async()=>{checks++;return {found:false,reason:'still disabled'};},
+    clickSendButton:async()=>{clicks++;return {dispatched:true};},
+    pressEnter:async()=>{enters++;},
+    sleep:async()=>{waits++;}
+  });
+  assert.equal(actual.sendStatus,'not-attempted');
+  assert.equal(actual.reason,'still disabled');
+  assert.equal(checks,6);
+  assert.equal(waits,5);
+  assert.equal(clicks,0);
+  assert.equal(enters,0);
+});
