@@ -124,8 +124,17 @@ export function mountGpuiCanvasViewport({
       const completion=channel.submitPointer({
         kind:'vivim.gpui.pointer/1',phase:'down',...packet
       });
-      if(completion && typeof completion.catch==='function')
-        void completion.catch(()=>safeStatus(onStatus,'input-rejected'));
+      // A resolved Host refusal is still a refusal, not a successful tap.
+      // "submitted" only means handed toward GPUI: it is NOT a Host effect.
+      const receipt=result=>{
+        if(result?.state==='refused'||result?.state==='native_delivery_uncertain')
+          safeStatus(onStatus,'input-rejected');
+        else if(result?.state==='submitted_to_native_unverified')
+          safeStatus(onStatus,'input-submitted-unverified');
+      };
+      if(completion && typeof completion.then==='function')
+        void Promise.resolve(completion).then(receipt,()=>safeStatus(onStatus,'input-rejected'));
+      else receipt(completion);
       event.preventDefault?.();
     }catch{safeStatus(onStatus,'input-rejected');}
   };
