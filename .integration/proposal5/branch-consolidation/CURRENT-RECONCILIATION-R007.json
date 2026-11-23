@@ -3,7 +3,7 @@
   "mainSha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8",
   "observedDateUtc": "2026-11-23T22:35:46.330Z",
   "expectedNonMainBranches": 77,
-  "completedComparisons": 55,
+  "completedComparisons": 66,
   "state": "INCOMPLETE",
   "deletionAuthorized": false,
   "note": "Read-only exact-tip ancestry capture. Do not archive/delete branches from this evidence; review live owners and unique content.",
@@ -1001,112 +1001,200 @@
     {
       "name": "work/p5-rescore-1000-r001",
       "tipSha": "d8eada9f06cf338ff09f191e73b5f7596f4f842c",
-      "comparison": null,
-      "status": "unverified",
-      "ahead": null,
-      "behind": null,
-      "disposition": "UNKNOWN_PRESERVE",
-      "canDelete": false
+      "comparison": {
+        "status": "behind",
+        "ahead_by": 0,
+        "behind_by": 1562,
+        "base_commit": {
+          "sha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8"
+        }
+      },
+      "status": "behind",
+      "ahead": 0,
+      "behind": 1562,
+      "disposition": "ANCESTOR_REVIEW_ONLY",
+      "canDelete": false,
+      "comparisonAttempted": true
     },
     {
       "name": "work/p5-rescore-cadence-r001",
       "tipSha": "ef211b5466f9e8e056afa70b0647284bf57faddc",
-      "comparison": null,
-      "status": "unverified",
-      "ahead": null,
-      "behind": null,
-      "disposition": "UNKNOWN_PRESERVE",
-      "canDelete": false
+      "comparison": {
+        "status": "behind",
+        "ahead_by": 0,
+        "behind_by": 1574,
+        "base_commit": {
+          "sha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8"
+        }
+      },
+      "status": "behind",
+      "ahead": 0,
+      "behind": 1574,
+      "disposition": "ANCESTOR_REVIEW_ONLY",
+      "canDelete": false,
+      "comparisonAttempted": true
     },
     {
       "name": "work/p5-rescore-expansion-r001",
       "tipSha": "3002b667e45d5a43c89304034046d61e2892e896",
-      "comparison": null,
-      "status": "unverified",
-      "ahead": null,
-      "behind": null,
-      "disposition": "UNKNOWN_PRESERVE",
-      "canDelete": false
+      "comparison": {
+        "status": "behind",
+        "ahead_by": 0,
+        "behind_by": 1579,
+        "base_commit": {
+          "sha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8"
+        }
+      },
+      "status": "behind",
+      "ahead": 0,
+      "behind": 1579,
+      "disposition": "ANCESTOR_REVIEW_ONLY",
+      "canDelete": false,
+      "comparisonAttempted": true
     },
     {
       "name": "work/p5-scf-s0-lock-r001",
       "tipSha": "605665b9389163128b10b9639c8ecd1d68420271",
-      "comparison": null,
-      "status": "unverified",
-      "ahead": null,
-      "behind": null,
-      "disposition": "UNKNOWN_PRESERVE",
-      "canDelete": false
+      "comparison": {
+        "status": "diverged",
+        "ahead_by": 1,
+        "behind_by": 1568,
+        "base_commit": {
+          "sha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8"
+        }
+      },
+      "status": "diverged",
+      "ahead": 1,
+      "behind": 1568,
+      "disposition": "UNIQUE_COMMITS_PRESERVE",
+      "canDelete": false,
+      "comparisonAttempted": true
     },
     {
       "name": "work/p5-semantic-capability-fabric-r001",
       "tipSha": "0e35c54105f7b8ee8a772b3159d243c6788fb7d4",
-      "comparison": null,
-      "status": "unverified",
-      "ahead": null,
-      "behind": null,
-      "disposition": "UNKNOWN_PRESERVE",
-      "canDelete": false
+      "comparison": {
+        "status": "diverged",
+        "ahead_by": 9,
+        "behind_by": 1585,
+        "base_commit": {
+          "sha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8"
+        }
+      },
+      "status": "diverged",
+      "ahead": 9,
+      "behind": 1585,
+      "disposition": "UNIQUE_COMMITS_PRESERVE",
+      "canDelete": false,
+      "comparisonAttempted": true
     },
     {
       "name": "work/p5-semantic-engineering-program-scaffold-r001",
       "tipSha": "e41b943e2eb0fd0c60b73918596b219c087f0052",
-      "comparison": null,
-      "status": "unverified",
-      "ahead": null,
-      "behind": null,
-      "disposition": "UNKNOWN_PRESERVE",
-      "canDelete": false
+      "comparison": {
+        "status": "diverged",
+        "ahead_by": 4,
+        "behind_by": 1581,
+        "base_commit": {
+          "sha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8"
+        }
+      },
+      "status": "diverged",
+      "ahead": 4,
+      "behind": 1581,
+      "disposition": "UNIQUE_COMMITS_PRESERVE",
+      "canDelete": false,
+      "comparisonAttempted": true
     },
     {
       "name": "work/p5-vec-pwa-ui-kernel-r001",
       "tipSha": "d5a5d09b37fbd2d7dfe2a746a6f0cc054f5b1096",
-      "comparison": null,
-      "status": "unverified",
-      "ahead": null,
-      "behind": null,
-      "disposition": "UNKNOWN_PRESERVE",
-      "canDelete": false
+      "comparison": {
+        "status": "diverged",
+        "ahead_by": 9,
+        "behind_by": 1556,
+        "base_commit": {
+          "sha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8"
+        }
+      },
+      "status": "diverged",
+      "ahead": 9,
+      "behind": 1556,
+      "disposition": "UNIQUE_COMMITS_PRESERVE",
+      "canDelete": false,
+      "comparisonAttempted": true
     },
     {
       "name": "work/p5-vec-ui-engine-foundation-r001",
       "tipSha": "d29c3b4d7eed3d61c285e089c928e74ab7e0f2d6",
-      "comparison": null,
-      "status": "unverified",
-      "ahead": null,
-      "behind": null,
-      "disposition": "UNKNOWN_PRESERVE",
-      "canDelete": false
+      "comparison": {
+        "status": "diverged",
+        "ahead_by": 19,
+        "behind_by": 1556,
+        "base_commit": {
+          "sha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8"
+        }
+      },
+      "status": "diverged",
+      "ahead": 19,
+      "behind": 1556,
+      "disposition": "UNIQUE_COMMITS_PRESERVE",
+      "canDelete": false,
+      "comparisonAttempted": true
     },
     {
       "name": "work/p5-w01-a-native",
       "tipSha": "dda546a11294920d6521a0f64ab7ee62ec993c70",
-      "comparison": null,
-      "status": "unverified",
-      "ahead": null,
-      "behind": null,
-      "disposition": "UNKNOWN_PRESERVE",
-      "canDelete": false
+      "comparison": {
+        "status": "behind",
+        "ahead_by": 0,
+        "behind_by": 1708,
+        "base_commit": {
+          "sha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8"
+        }
+      },
+      "status": "behind",
+      "ahead": 0,
+      "behind": 1708,
+      "disposition": "ANCESTOR_REVIEW_ONLY",
+      "canDelete": false,
+      "comparisonAttempted": true
     },
     {
       "name": "work/p5-w01-b-host",
       "tipSha": "78a5105a9c1f1880d658f350e130b1e2632d3532",
-      "comparison": null,
-      "status": "unverified",
-      "ahead": null,
-      "behind": null,
-      "disposition": "UNKNOWN_PRESERVE",
-      "canDelete": false
+      "comparison": {
+        "status": "behind",
+        "ahead_by": 0,
+        "behind_by": 1699,
+        "base_commit": {
+          "sha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8"
+        }
+      },
+      "status": "behind",
+      "ahead": 0,
+      "behind": 1699,
+      "disposition": "ANCESTOR_REVIEW_ONLY",
+      "canDelete": false,
+      "comparisonAttempted": true
     },
     {
       "name": "work/p5-w01-c-studio",
       "tipSha": "f950b91685927f37b48d020433aa8d2d3c271419",
-      "comparison": null,
-      "status": "unverified",
-      "ahead": null,
-      "behind": null,
-      "disposition": "UNKNOWN_PRESERVE",
-      "canDelete": false
+      "comparison": {
+        "status": "behind",
+        "ahead_by": 0,
+        "behind_by": 1706,
+        "base_commit": {
+          "sha": "e2fd907c35cf4b2795a37c5a67f93c2a0df6e6b8"
+        }
+      },
+      "status": "behind",
+      "ahead": 0,
+      "behind": 1706,
+      "disposition": "ANCESTOR_REVIEW_ONLY",
+      "canDelete": false,
+      "comparisonAttempted": true
     },
     {
       "name": "work/p5-w01-d-hq",
@@ -1221,9 +1309,9 @@
   ],
   "summary": {
     "total": 77,
-    "attempted": 55,
-    "uniquePreserve": 26,
-    "ancestorReview": 29,
-    "unknownPreserve": 22
+    "attempted": 66,
+    "uniquePreserve": 31,
+    "ancestorReview": 35,
+    "unknownPreserve": 11
   }
 }
