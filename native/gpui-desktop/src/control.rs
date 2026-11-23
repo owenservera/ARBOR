@@ -240,6 +240,35 @@ pub fn prepare_phone_draft(text:&str) -> Result<Review,ReadError> {
     Ok(review)
 }
 
+/// Native UI action buttons are only typed proposals to the existing Host
+/// dispatcher. Host owns the approval, effect claim, Studio operation, receipt
+/// and no-retry semantics. Never use a browser/CDP connection from GPUI.
+pub fn plan_studio_action(action_id:&str,args:Value)->Result<Review,ReadError>{
+    let valid=match action_id {
+        "studio.capture.start"=>args.as_object().is_some_and(|o|o.len()==1 &&
+            o.get("target").and_then(Value::as_str).is_some_and(|id|
+                (16..=64).contains(&id.len()) &&
+                id.bytes().all(|b|b.is_ascii_alphanumeric()||b==b'_'||b==b'-'))),
+        "studio.capture.stop"=>args.as_object().is_some_and(|o|o.is_empty()),
+        "studio.drive.dry_run"=>args.as_object().is_some_and(|o|o.len()==1 &&
+            o.get("site").and_then(Value::as_str).is_some_and(|site|
+                (2..=64).contains(&site.len())&&site.bytes().enumerate().all(|(i,b)|
+                    if i==0{b.is_ascii_lowercase()}else{
+                        b.is_ascii_lowercase()||b.is_ascii_digit()||b==b'_'||b==b'-'}))),
+        "studio.drive.cancel"=>args.as_object().is_some_and(|o|o.len()==1 &&
+            o.get("job_id").and_then(Value::as_str).is_some_and(|id|
+                id.len()==36&&id.bytes().all(|b|b.is_ascii_hexdigit()||b==b'-'))),
+        _=>false
+    };
+    if !valid{return Err(ReadError::InvalidInput)}
+    let response=request("plan",Some(json!({"actionId":action_id,"args":args})))?;
+    if response["actionId"]!=action_id||response["outcome"]!="approval_required"||
+       response["source"]!="desktop"||response["origin"]!="typed"||
+       response["approval"]["channels"]!=json!(["desktop-owner-token"]) {
+        return Err(ReadError::InvalidProjection)
+    }
+    parse_review(response)
+}
 pub fn plan(text: &str) -> Result<Review, ReadError> {
     let text = text.trim();
     if text.is_empty() || text.len() > MAX_COMMAND { return Err(ReadError::InvalidInput); }
@@ -389,6 +418,31 @@ mod tests {
         "actionId":"wiki.page.create","args":{"page":"work"},"risk":"R1","planId":"ctl-0123456789abcdef",
         "planDigest":"a".repeat(64),"expiresAt":"2026-11-20T00:00:00Z",
         "approval":{"required":true,"channels":["desktop-owner-token"]}})
+    }
+    #[test] fn only_exact_studio_action_button_args_can_be_planned(){
+        for (id,args) in [
+            ("studio.capture.start",json!({"target":"0123456789abcdef0123456789abcdef"})),
+            ("studio.capture.stop",json!({})),
+            ("studio.drive.dry_run",json!({"site":"chatgpt"})),
+            ("studio.drive.cancel",json!({"job_id":"11111111-1111-4111-8111-111111111111"}))
+        ] {
+            assert!(match id {
+                "studio.capture.start"=>args["target"].as_str().is_some(),
+                "studio.capture.stop"=>args.as_object().is_some_and(|x|x.is_empty()),
+                "studio.drive.dry_run"=>args["site"].as_str().is_some(),
+                _=>args["job_id"].as_str().is_some()
+            });
+        }
+        // Reject unknown or malformed action IDs before any Host request.
+        for (action,args) in [
+            ("studio.drive.run",json!({"site":"chatgpt"})),
+            ("studio.capture.start",json!({"target":"../../../etc"})),
+            ("studio.drive.dry_run",json!({"site":"http://example.com"})),
+            ("studio.drive.cancel",json!({"job_id":"../job"})),
+            ("studio.capture.stop",json!({"force":true}))
+        ] {
+            assert_eq!(plan_studio_action(action,args).unwrap_err(),ReadError::InvalidInput);
+        }
     }
     #[test] fn one_click_consumes_exact_key() {
         let mut r=parse_review(proposed()).unwrap();
