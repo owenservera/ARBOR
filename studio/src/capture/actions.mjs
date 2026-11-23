@@ -304,8 +304,28 @@ export async function findSendButton(page, adapter = null) {
     // and ONLY for one visible, enabled, semantically named Send control.
     // Never guess an unlabeled icon, use a button elsewhere on the page, or
     // silently fall back to Enter (which caused double sends on ChatGPT).
-    const composer = live();
-    const form = composer?.closest?.('form');
+    let composer = live();
+    let form = composer?.closest?.('form');
+    if (!form) {
+      // ChatGPT can replace its first-paint editor after typing. The earlier
+      // remembered editor may still be connected but no longer belong to the
+      // final composer form. Rebind only when ONE visible form editor holds
+      // the SAME nonempty draft; never pick another draft or arbitrary page form.
+      const read = el => el?.tagName === 'TEXTAREA' || el?.tagName === 'INPUT'
+        ? String(el.value ?? '') : String(el?.innerText ?? el?.textContent ?? '');
+      const normalize = s => s.replace(/\\s+/g, ' ').trim();
+      const expected = composer ? normalize(read(composer)) : '';
+      const editors = [...document.querySelectorAll(
+        'form [contenteditable="true"],form textarea,form [role="textbox"]')]
+        .filter(el => vis(el) && normalize(read(el)).length > 0)
+        .filter(el => !expected || normalize(read(el)) === expected);
+      if (editors.length === 1) {
+        composer = editors[0];
+        form = composer.closest('form');
+        store(composer, composer.isContentEditable ? 'contenteditable' : 'textarea',
+          composer.tagName.toLowerCase());
+      }
+    }
     if (form && vis(form)) {
       const names = /^(?:send|send message|send prompt|submit|enviar|enviar mensaje)$/i;
       const ids = /^(?:send-button|send-message-button|composer-send-button|composer-submit|composer-submit-button|submit-prompt)$/i;
