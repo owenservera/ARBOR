@@ -45,6 +45,8 @@ const WIKI_READ_PROGRAM_ACTION='program.read_wiki';
 const WIKI_WRITE_PROGRAM_ACTION='program.write_wiki';
 const HVI_ACTION='versions.compare.pinned';
 const COMPOSER_ACTION='pwa.composer.draft.set';
+const STUDIO_ACTIONS = new Set(['studio.capture.start','studio.capture.stop',
+  'studio.drive.dry_run','studio.drive.cancel']);
 // A typed VEC document is not an NL action or a string argument. Keep the existing
 // language catalog stable (including accepted learned rules); the visual contract
 // has its own version and uses the very same control plan journal and claim.
@@ -125,7 +127,7 @@ function readWikiSection(wiki,{page,section}) {
 }
 
 /** Fixed executors keyed by catalog action id. Each returns a bounded, phone-safe summary. */
-function createExecutors({ runtime, planner, lexicon, devices, productJournal, personalSemantics, nativeProgram, composerBridge }) {
+function createExecutors({ runtime, planner, lexicon, devices, productJournal, personalSemantics, nativeProgram, composerBridge, studio }) {
   const ownerExclusions = () => (runtime.status().preferences ?? [])
     .filter(p => p.hard && p.polarity === 'avoid' && p.source === 'owner')
     .slice(0, 50).map(p => ({ id: p.id, value: short(p.value, 120) }));
@@ -145,6 +147,25 @@ function createExecutors({ runtime, planner, lexicon, devices, productJournal, p
     [COMPOSER_ACTION]: ({stage_id}) => {
       if(!composerBridge)throw fail('CONTROL_COMPOSER_UNAVAILABLE');
       return composerBridge.execute(stage_id);
+    },
+    // Studio remains the only browser/recorder/Drive owner. Host Control is
+    // the sole journal, one-shot claim, local approval and receipt authority.
+    // Missing Studio always fails closed; never auto-launch a browser.
+    'studio.capture.start': ({target}) => {
+      if(!studio)throw fail('STUDIO_UNAVAILABLE');
+      return studio.captureStart(target);
+    },
+    'studio.capture.stop': () => {
+      if(!studio)throw fail('STUDIO_UNAVAILABLE');
+      return studio.captureStop();
+    },
+    'studio.drive.dry_run': ({site}) => {
+      if(!studio)throw fail('STUDIO_UNAVAILABLE');
+      return studio.driveDryRun(site);
+    },
+    'studio.drive.cancel': ({job_id}) => {
+      if(!studio)throw fail('STUDIO_UNAVAILABLE');
+      return studio.driveCancel(job_id);
     },
     'control.rule.remember': (_args,ctx) =>
       personalSemantics.remember({subject:ctx.ruleBinding.subject,approval:{receiptId:ctx.planId}}),
@@ -297,7 +318,7 @@ function createExecutors({ runtime, planner, lexicon, devices, productJournal, p
 }
 
 export function createControlDispatcher({ dataRoot, runtime, devices = null, productJournal = null, catalog = loadControlCatalog(),
-  commandScope = () => ({}), composerBridge = null,
+  commandScope = () => ({}), composerBridge = null, studio = null,
   nativeProgram=createNativeProgramValidator({productJournal}),
   now = () => Date.now(), ttlMs = 10 * 60_000, freshMs = 2 * 60_000 } = {}) {
   if (!runtime || typeof runtime.status !== 'function') throw fail('CONTROL_RUNTIME_REQUIRED');
@@ -319,7 +340,7 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
   const planner = createControlPlanner({ catalog,
     lexicon: () => lexicon.entries(), personalRules: () => personalSemantics.accepted(),
     commandScope });
-  const executors = createExecutors({ runtime, planner, lexicon, devices, productJournal, personalSemantics,nativeProgram,composerBridge });
+  const executors = createExecutors({ runtime, planner, lexicon, devices, productJournal, personalSemantics,nativeProgram,composerBridge,studio });
   // The catalog may not claim an executor the Host does not have, nor hide one it does.
   for (const a of catalog.actions) {
     const runnable = ['source_wired', 'verified'].includes(a.readiness);
@@ -568,6 +589,11 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
     else throw fail('CONTROL_INPUT_INVALID');
     if(p.actionId===COMPOSER_ACTION&&(source!=='desktop'||actor!=='desktop-owner'||p.origin!=='typed'))
       return {...p,outcome:'unavailable',executionPerformed:false,precondition:'A staged draft and authenticated desktop-owner typed approval are required.'};
+    if(STUDIO_ACTIONS.has(p.actionId) &&
+       (source!=='desktop'||actor!=='desktop-owner'||p.origin!=='typed')) {
+      return {...p,outcome:'unavailable',executionPerformed:false,
+        precondition:'Studio actions require an explicit typed plan and authenticated desktop-owner approval.'};
+    }
     if(RULE_ACTIONS.has(p.actionId)&&(source!=='desktop'||actor!=='desktop-owner'))
       return {...p,outcome:'unavailable',executionPerformed:false,precondition:'Learning requires the authenticated desktop owner.'};
     const isProgram=[WIKI_READ_PROGRAM_ACTION,WIKI_WRITE_PROGRAM_ACTION].includes(p.actionId);
@@ -646,7 +672,7 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
           expectedRevision: wikiBinding.expectedRevision } } : {}),
         ...(ruleBinding?{learningPreview:{before:ruleBinding.before,after:ruleBinding.after,targetRisk:ruleBinding.targetRisk??null}}:{}),
         approval: { required: true, freshOwner: p.risk === 'R2',
-          channels: RULE_ACTIONS.has(p.actionId)?['desktop-owner-token']:wikiMutation(p.actionId)
+          channels: (RULE_ACTIONS.has(p.actionId)||STUDIO_ACTIONS.has(p.actionId))?['desktop-owner-token']:wikiMutation(p.actionId)
             ? [source === 'mobile' ? 'direct-phone' : 'desktop-owner-token']
             : [...APPROVAL_CHANNELS] } };
     };
@@ -692,6 +718,10 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
       if(phoneProgram){if(rec.plan.origin!=='personal_rule'||approval.channel!=='direct-phone'||approval.actor!==rec.plan.actor||!rec.plan.programGrantId||approval.grantId!==rec.plan.programGrantId||typeof authorizeProgram!=='function')throw fail('CONTROL_WIKI_DEVICE_MISMATCH');authorizeProgram('control:execute');}
       else if(approval.actor!=='desktop-owner'||approval.channel!=='desktop-owner-token'||rec.plan.actor!=='desktop-owner'||rec.plan.source!=='desktop')throw fail('CONTROL_DESKTOP_APPROVAL_REQUIRED');
     }
+    if(STUDIO_ACTIONS.has(rec.plan.actionId) &&
+       (rec.plan.source!=='desktop'||rec.plan.actor!=='desktop-owner'||
+        rec.plan.origin!=='typed'||approval.channel!=='desktop-owner-token'||
+        approval.actor!=='desktop-owner'))throw fail('CONTROL_STUDIO_DESKTOP_APPROVAL_REQUIRED');
     if(rec.plan.actionId===COMPOSER_ACTION&&
        (rec.plan.source!=='desktop'||rec.plan.actor!=='desktop-owner'||
         rec.plan.origin!=='typed'||approval.channel!=='desktop-owner-token'||
