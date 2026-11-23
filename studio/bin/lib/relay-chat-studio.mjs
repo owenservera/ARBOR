@@ -11,10 +11,23 @@ const safeFailure = record => record.status === 'failed' && /^(DRAFT_PRESENT|UNS
 // Read every latest bridge revision; a 200-record preview cannot prove that an older binding is absent.
 function previousCommand(store, cmd, provider) {
   if (!cmd.conversationId) return { previous: null, count: 0 };
+  // This is the sole history gate for a continued phone conversation.
+  // Skipping even one corrupt revision could hide a prior uncertain send and
+  // accidentally admit a second provider turn. Fail closed, just as the worker
+  // startup fence does; never repair or replay this journal automatically.
+  const journal = readFileSync(store.file, 'utf8');
+  if (journal.length && !journal.endsWith('\n'))
+    throw new Error('STUDIO_RELAY_HISTORY_UNVERIFIED');
   const records = new Map();
-  for (const line of readFileSync(store.file, 'utf8').split('\n')) {
-    if (!line.trim()) continue;
-    try { const record = JSON.parse(line); if (/^cmd-[0-9a-f]{16}$/.test(record?.id)) records.set(record.id, record); } catch { /* A torn tail has no usable record. */ }
+  for (const line of journal.split('\n')) {
+    if (!line) continue;
+    let record;
+    try { record = JSON.parse(line); }
+    catch { throw new Error('STUDIO_RELAY_HISTORY_UNVERIFIED'); }
+    if (!record || typeof record !== 'object' ||
+        !/^cmd-[0-9a-f]{16}$/.test(record.id))
+      throw new Error('STUDIO_RELAY_HISTORY_UNVERIFIED');
+    records.set(record.id, record);
   }
   let previous = null, count = 0;
   for (const record of records.values()) {
