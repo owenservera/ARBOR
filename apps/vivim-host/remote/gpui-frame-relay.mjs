@@ -42,7 +42,7 @@ export function createGpuiHostFrameRelay({
     if(record.lastSession===frame.session&&record.lastRevision>=frame.revision)
       return false;
     const packet={kind:'vivim.gpui.pixels/1',
-      ...meta(frame),png:frame.png.slice()}; // never give transport our owner buffer
+      ...meta(frame),png:Uint8Array.from(frame.png)}; // owned copy: Buffer.slice() aliases
     record.lastSession=frame.session;
     record.lastRevision=frame.revision;
     try{
@@ -68,7 +68,7 @@ export function createGpuiHostFrameRelay({
       return refused('NATIVE_GPUI_OWNER_NOT_ADMITTED');
     }
     const owned={kind:'vivim.gpui.pixels/1',
-      ...next,png:frame.png.slice()};
+      ...next,png:Uint8Array.from(frame.png)};
     clear();
     latest=owned;
     let delivered=0;
