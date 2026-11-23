@@ -113,14 +113,18 @@ export function matchesSlotCorrection(before,after,key,value){
 }
 
 export function composerResponse(text,meaning,{catalog,wiki,interpret,source}={}){
+  // The Host's interpretation must describe this exact draft. A prior draft
+  // cannot donate completion text/slots into a newer two-TAB response.
+  const sourceBound=typeof text==='string'&&meaning?.schema==='vivim.control-language/1'&&
+    meaning.input===text&&meaning.outcome!=='refused';
   const actions=(catalog?.actions||[]).filter(a=>!source||!Array.isArray(a.surfaces)||a.surfaces.includes(source));
-  const selected=actions.find(a=>a.actionId===meaning?.candidate?.actionId);
+  const selected=sourceBound?actions.find(a=>a.actionId===meaning?.candidate?.actionId):null;
   return {...meaning,composer:{schema:COMPOSER_SCHEMA,authority:'none',
     ...(selected?{action:{id:selected.actionId,risk:selected.risk,readiness:selected.readiness}}:{}),
     catalogVersion:catalog?.version??null,
-    slots:semanticDraftSlots(text,meaning,selected),
+    slots:sourceBound?semanticDraftSlots(text,meaning,selected):[],
     wikiRevision:Number.isSafeInteger(wiki?.revision)?wiki.revision:null,
-    suggestions:composeDraftHints(text,{meaning,catalog:{actions},wiki,interpret})}};
+    suggestions:sourceBound?composeDraftHints(text,{meaning,catalog:{actions},wiki,interpret}):[]}};
 }
 
 export function describeDraft(text,meaning,{compileUi,hostRequired=true}={}){
@@ -151,7 +155,10 @@ export function describeDraft(text,meaning,{compileUi,hostRequired=true}={}){
 
 export function draftSuggestions(text,meaning){
   const envelope=meaning?.composer;
-  if(envelope?.schema!==COMPOSER_SCHEMA||envelope.authority!=='none'||!Array.isArray(envelope.suggestions))return [];
+  if(typeof text!=='string'||meaning?.schema!=='vivim.control-language/1'||
+    meaning.input!==text||meaning.outcome==='refused'||
+    envelope?.schema!==COMPOSER_SCHEMA||envelope.authority!=='none'||
+    !Array.isArray(envelope.suggestions))return [];
   const seen=new Set();
   return envelope.suggestions.filter(s=>{
     if(!s||typeof s.text!=='string'||s.text.length>1000||s.text.length<=text.length||
