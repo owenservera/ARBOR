@@ -144,3 +144,74 @@ fn invalid_current_source_cannot_become_a_partial_readback() {
     assert!(refused.get("events").is_none());
     assert_inert(&refused);
 }
+
+#[test]
+fn metadata_only_revision_advance_is_reported_without_private_values() {
+    let old = wiki(20, json!({
+        "Inbox": {
+            "sections": {"Note": "unchanged synthetic note"},
+            "links": [],
+            "sourceIdentity": "PRIVATE-SYNTHETIC-OLD"
+        }
+    }));
+    let next = wiki(21, json!({
+        "Inbox": {
+            "sections": {"Note": "unchanged synthetic note"},
+            "links": [],
+            "sourceIdentity": "PRIVATE-SYNTHETIC-NEW"
+        }
+    }));
+    let result = source_delta(&json!({"previous": old, "current": next}));
+    assert_eq!(result["outcome"], "changed");
+    assert_eq!(result["changedPages"], 1);
+    assert_eq!(result["changedSections"], 0);
+    assert_eq!(result["changedLinks"], 0);
+    assert_eq!(result["totalEvents"], 1);
+    assert_eq!(result["events"][0]["kind"], "page-metadata-changed");
+    assert_eq!(result["events"][0]["page"], "Inbox");
+    assert_ne!(result["from"]["digest"], result["to"]["digest"]);
+    assert!(!result.to_string().contains("PRIVATE-SYNTHETIC-"));
+    assert_inert(&result);
+}
+
+#[test]
+fn metadata_add_remove_is_observed_but_equal_metadata_is_not_a_false_change() {
+    let baseline = wiki(28, json!({
+        "Inbox": {"sections": {"Note": "same"}, "links": []}
+    }));
+    let added = wiki(29, json!({
+        "Inbox": {
+            "sections": {"Note": "same"},
+            "links": [],
+            "ownerRef": "PRIVATE-SYNTHETIC-OWNER"
+        }
+    }));
+    let changed = source_delta(&json!({"previous": baseline, "current": added}));
+    assert_eq!(changed["outcome"], "changed");
+    assert_eq!(changed["changedPages"], 1);
+    assert_eq!(changed["totalEvents"], 1);
+    assert!(!changed.to_string().contains("PRIVATE-SYNTHETIC-OWNER"));
+    assert_inert(&changed);
+
+    let stable = wiki(30, json!({
+        "Inbox": {
+            "sections": {"Note": "same"},
+            "links": [],
+            "ownerRef": "PRIVATE-SYNTHETIC-OWNER"
+        }
+    }));
+    let no_op = source_delta(&json!({"previous": added, "current": stable}));
+    assert_eq!(no_op["outcome"], "unchanged");
+    assert_eq!(no_op["changedPages"], 0);
+    assert_eq!(no_op["totalEvents"], 0);
+    assert_inert(&no_op);
+
+    let removed = wiki(31, json!({
+        "Inbox": {"sections": {"Note": "same"}, "links": []}
+    }));
+    let inverse = source_delta(&json!({"previous": stable, "current": removed}));
+    assert_eq!(inverse["outcome"], "changed");
+    assert_eq!(inverse["events"][0]["kind"], "page-metadata-changed");
+    assert_eq!(inverse["totalEvents"], 1);
+    assert_inert(&inverse);
+}
