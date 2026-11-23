@@ -37,7 +37,17 @@ function previousCommand(store, cmd, provider) {
         ['conversationId','transport','text','consumer','newChat','mode']
           .some(field => record[field] !== prior[field]) ||
         ['provider','model','effort'].some(field =>
-          (record.target?.[field] ?? null) !== (prior.target?.[field] ?? null))
+          (record.target?.[field] ?? null) !== (prior.target?.[field] ?? null)) ||
+        // A terminal failure (including an uncertain provider send) cannot
+        // later become a done receipt through an extra journal snapshot.
+        // Replaying such a forged success could dispatch an unsafe continuation.
+        (['done','failed'].includes(prior.status) &&
+          (record.status !== prior.status || record.result !== prior.result)) ||
+        // Once a request or Studio identity has been bound to the durable
+        // command, later revisions may add receipts but never rebind it.
+        ['studioRequestKey','studioConversationId','studioTurnKey',
+          'studioThreadRef','studioChannelReceiptId'].some(field =>
+          prior[field] != null && record[field] !== prior[field])
     )) throw new Error('STUDIO_RELAY_HISTORY_UNVERIFIED');
     records.set(record.id, record);
   }
