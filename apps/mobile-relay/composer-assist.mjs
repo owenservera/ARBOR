@@ -62,8 +62,12 @@ export function composeDraftHints(text,{meaning,catalog,wiki,interpret}={}){
 
 export function needsWikiDraftContext(text,meaning){
   if(typeof text!=='string'||!text.trim()||meaning?.outcome==='refused')return false;
-  if(meaning?.candidate?.actionId?.startsWith('wiki.')||
-     meaning?.choices?.some(id=>id.startsWith('wiki.')))return true;
+  // Host responses are advisory. A malformed candidate/choice must never
+  // throw during typing or turn an untrusted value into a Wiki read trigger.
+  const actionId=meaning?.candidate?.actionId;
+  if((typeof actionId==='string'&&actionId.startsWith('wiki.'))||
+     (Array.isArray(meaning?.choices)&&meaning.choices.some(
+       id=>typeof id==='string'&&id.startsWith('wiki.'))))return true;
   // Prefix matching only gates the cost of a read, never determines meaning.
   const value=text.toLowerCase();
   return value.length>=5&&[
