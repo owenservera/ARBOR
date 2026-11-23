@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { resolveProviderHandoff, canSendVerifiedProvider, resolveReadOnlyChatTool, projectReadOnlyChatTool } from '../provider-handoff.mjs';
+import { resolveProviderHandoff, canSendVerifiedProvider, listProviderConnections, resolveReadOnlyChatTool, projectReadOnlyChatTool } from '../provider-handoff.mjs';
 
 const checked = ['chatgpt','claude','gemini','qwen','deepseek','zai']
   .map(id => ({id,signedIn:true,queueConsumerReady:true}));
@@ -110,6 +110,27 @@ test('signed-in but worker-offline handoff keeps the draft without advertising s
   assert.equal(handoff.sendsAutomatically,false);
   assert.equal(canSendVerifiedProvider({paired:true,direct:true,sessionApproved:true,target:'harness',
     providerId:'chatgpt',projection:projected,text:handoff.draft,sending:false}),false);
+});
+
+test('connection chooser preserves actual selection capabilities without copying private Studio metadata',()=>{
+  const secret='PRIVATE_STUDIO_THREAD_OR_PROMPT';
+  const connections=listProviderConnections([{
+    id:'chatgpt',signedIn:true,queueConsumerReady:true,attachments:true,newChat:true,
+    threadId:secret,credentials:secret,prompt:secret,ownerOrigin:secret,
+    models:[{id:'model-1',label:'Model one',current:true,threadId:secret}],
+    thinkingLevels:[{id:'low',label:'Low',locked:false,providerBody:secret}]
+  }]);
+  assert.equal(connections.length,6);
+  assert.deepEqual(connections[0],{
+    id:'chatgpt',label:'ChatGPT',signedIn:true,queueConsumerReady:true,connectionState:'ready',
+    models:[{id:'model-1',label:'Model one',current:true}],
+    thinkingLevels:[{id:'low',label:'Low',locked:false}],
+    attachments:true,newChat:true
+  });
+  assert.equal(connections[1].connectionState,'unverified');
+  assert.equal(Object.isFrozen(connections[0]),true);
+  assert.equal(Object.isFrozen(connections[0].models),true);
+  assert.doesNotMatch(JSON.stringify(connections),/PRIVATE_STUDIO_THREAD_OR_PROMPT/);
 });
 
 test('Chrome Commander slash commands are read-only and cannot be confused with provider sends',()=>{
