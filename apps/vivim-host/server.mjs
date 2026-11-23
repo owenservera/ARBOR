@@ -60,10 +60,7 @@ const SECURITY = {
   'content-security-policy': "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'none'; form-action 'none'",
 };
 const MIME = {
-  '/': 'text/html; charset=utf-8',
   '/host/control': 'text/html; charset=utf-8',
-  '/mobile-first.css': 'text/css; charset=utf-8',
-  '/mobile-first.js': 'text/javascript; charset=utf-8',
   '/onboarding': 'text/html; charset=utf-8',
   '/host.css': 'text/css; charset=utf-8',
   '/host.js': 'text/javascript; charset=utf-8',
@@ -82,10 +79,7 @@ const MIME = {
   '/wiki.css': 'text/css; charset=utf-8',
 };
 const ASSETS = {
-  '/': 'mobile-first.html',
   '/host/control': 'index.html',
-  '/mobile-first.css': 'mobile-first.css',
-  '/mobile-first.js': 'mobile-first.js',
   '/onboarding': 'onboarding.html',
   '/host.css': 'host.css',
   '/host.js': 'host.js',
@@ -337,8 +331,21 @@ export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path
     }
     if (!localHost || !loopbackPeer) { res.writeHead(403); res.end('Forbidden'); return; }
     const pathname = new URL(req.url || '/', 'http://localhost').pathname;
+    // Retirement: the old root iframe is no longer a desktop product window.
+    // Route the owner-local root straight to the canonical PWA's read-only
+    // preview. Browsers inherit the original URL fragment on a 3xx Location
+    // without a fragment (RFC 9110); this preserves one-use legacy recovery
+    // handoffs without copying them to the server, logs or new query fields.
+    // Never redirect a mutation or a Direct/Tailscale phone request here.
+    if (pathname === '/') {
+      if (req.method !== 'GET' && req.method !== 'HEAD') {
+        res.setHeader('allow', 'GET, HEAD');
+        sendJson(res, 405, { code: 'METHOD' }); return;
+      }
+      res.writeHead(308, { location: '/mobile/?host-preview=1' }); res.end(); return;
+    }
     // Loopback-only presentation of the *same* PWA source served to paired phones.
-    // The embedded host-preview cannot obtain a phone device grant or send commands.
+    // This preview cannot obtain a phone device grant or send commands.
     if (pathname === '/mobile') {
       res.writeHead(308, { location: '/mobile/?host-preview=1' }); res.end(); return;
     }
