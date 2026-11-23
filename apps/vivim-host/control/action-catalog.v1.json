@@ -1,7 +1,7 @@
 {
   "schema": "vivim.control-action-catalog/1",
-  "version": 16,
-  "asOf": "2026-11-21",
+  "version": 17,
+  "asOf": "2026-11-23",
   "policy": {
     "allUserFacingActionsRequireTextPath": true,
     "uiSharesTypedExecutor": true,
@@ -1822,6 +1822,128 @@
       "subject": "composer",
       "priority": "P1",
       "precondition": "Explicit authenticated desktop-owner Control approval. A volatile, revision-fenced Rust draft stage must exist; no Send, provider call, or replay."
+    },
+    {
+      "id": "studio.capture.start",
+      "title": "Start a Studio recording for an exact selected browser tab",
+      "category": "studio-operations",
+      "owner": "studio-via-host-control",
+      "executor": "apps/vivim-host/control/dispatcher.mjs:createExecutors",
+      "readiness": "source_wired",
+      "risk": "R2",
+      "target": "local-studio-via-host",
+      "surfaces": [
+        "text",
+        "desktop",
+        "mobile",
+        "visual"
+      ],
+      "privacy": "authenticated-pc-owner-only",
+      "aiCandidate": false,
+      "args": {
+        "target": {
+          "type": "string",
+          "min": 16,
+          "max": 64
+        }
+      },
+      "examples": [
+        "Record the exact browser tab ID shown by Studio"
+      ],
+      "reversible": false,
+      "subject": "studio",
+      "priority": "P0",
+      "precondition": "Authenticated desktop owner must review exact selected tab. Studio verifies the owned browser and idle recorder before start."
+    },
+    {
+      "id": "studio.capture.stop",
+      "title": "Stop the active Studio recording and derive its saved session",
+      "category": "studio-operations",
+      "owner": "studio-via-host-control",
+      "executor": "apps/vivim-host/control/dispatcher.mjs:createExecutors",
+      "readiness": "source_wired",
+      "risk": "R2",
+      "target": "local-studio-via-host",
+      "surfaces": [
+        "text",
+        "desktop",
+        "mobile",
+        "visual"
+      ],
+      "privacy": "authenticated-pc-owner-only",
+      "aiCandidate": false,
+      "args": {},
+      "examples": [
+        "Stop the current Studio recording"
+      ],
+      "reversible": false,
+      "subject": "studio",
+      "priority": "P0",
+      "precondition": "Authenticated desktop owner must review. Studio must report an active recording; no other session can be stopped."
+    },
+    {
+      "id": "studio.drive.dry_run",
+      "title": "Preview one Studio Drive job without any provider send",
+      "category": "studio-operations",
+      "owner": "studio-via-host-control",
+      "executor": "apps/vivim-host/control/dispatcher.mjs:createExecutors",
+      "readiness": "source_wired",
+      "risk": "R1",
+      "target": "local-studio-via-host",
+      "surfaces": [
+        "text",
+        "desktop",
+        "mobile",
+        "visual"
+      ],
+      "privacy": "authenticated-pc-owner-only",
+      "aiCandidate": false,
+      "args": {
+        "site": {
+          "type": "string",
+          "min": 2,
+          "max": 64
+        }
+      },
+      "examples": [
+        "Preview Studio Drive dry run for chatgpt"
+      ],
+      "reversible": false,
+      "subject": "studio",
+      "priority": "P0",
+      "precondition": "Authenticated desktop owner. Fixed one known site and dryRun=true, confirm=false; no browser execution or sends."
+    },
+    {
+      "id": "studio.drive.cancel",
+      "title": "Request cancellation of one Studio Drive job",
+      "category": "studio-operations",
+      "owner": "studio-via-host-control",
+      "executor": "apps/vivim-host/control/dispatcher.mjs:createExecutors",
+      "readiness": "source_wired",
+      "risk": "R2",
+      "target": "local-studio-via-host",
+      "surfaces": [
+        "text",
+        "desktop",
+        "mobile",
+        "visual"
+      ],
+      "privacy": "authenticated-pc-owner-only",
+      "aiCandidate": false,
+      "args": {
+        "job_id": {
+          "type": "string",
+          "min": 36,
+          "max": 36
+        }
+      },
+      "examples": [
+        "Cancel Studio Drive job by exact UUID"
+      ],
+      "reversible": false,
+      "subject": "studio",
+      "priority": "P0",
+      "precondition": "Authenticated desktop owner reviews exact queued/running job. Cancellation follows current site and cannot undo a provider send."
     }
   ],
   "readinessStates": {
