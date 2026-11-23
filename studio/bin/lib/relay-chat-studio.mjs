@@ -141,6 +141,13 @@ export function createStudioRelayChat({ url, store, fetchImpl = fetch,
       }
       id = created?.id;
       if (typeof id !== 'string' || !/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,127}$/.test(id) || !Number.isSafeInteger(created.revision)) throw new Error('STUDIO_INVALID_CONVERSATION');
+      // A create/connect response may contain a valid ID and revision while
+      // Studio is still attaching, busy, reconciling or disconnected. Never
+      // POST a turn (or finish that session) from an ambiguous owner state.
+      // A blocked response retains the existing explicit DRAFT_PRESENT fence.
+      if (created.state !== 'ready' && created.state !== 'blocked') {
+        fail('STUDIO_CONVERSATION_NOT_READY'); return;
+      }
       safeToFinish = true;
       // The durable claimed revision binds the caller-owned key and conversation before any submit.
       appendFileSync(store.file, JSON.stringify({ ...rec, studioConversationId: id, studioTurnKey: key, result: 'Studio conversation bound; preparing turn', updatedAt: new Date().toISOString(), rev: rec.rev + 1 }) + '\n', { mode: 0o600 });
