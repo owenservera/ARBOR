@@ -143,7 +143,7 @@ test('conflicting payload with same idempotency key never overwrites Work',async
   const x=setup();
   await x.admission.submit(request(),{});
   await raises(x.admission.submit(request({objective:'Publish private things'}),{}),
-    'WORK_COMMIT_UNCERTAIN');
+    'WORK_CAS_CONFLICT');
   assert.equal(x.work().length,1);
   assert.equal(x.work()[0].objective,request().objective);
 });
