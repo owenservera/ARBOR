@@ -313,7 +313,7 @@ export async function findSendButton(page, adapter = null) {
       // the SAME nonempty draft; never pick another draft or arbitrary page form.
       const read = el => el?.tagName === 'TEXTAREA' || el?.tagName === 'INPUT'
         ? String(el.value ?? '') : String(el?.innerText ?? el?.textContent ?? '');
-      const normalize = s => s.replace(/\\s+/g, ' ').trim();
+      const normalize = s => s.replace(/\s+/g, ' ').trim();
       const expected = composer ? normalize(read(composer)) : '';
       const editors = [...document.querySelectorAll(
         'form [contenteditable="true"],form textarea,form [role="textbox"]')]
