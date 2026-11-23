@@ -1429,28 +1429,28 @@ impl Render for Desktop {
                                 })));
                         }
                         if operations.capture_ready {
-                            for target in &operations.targets {
+                            for (row,target) in operations.targets.iter().enumerate() {
                                 let id=target.id.clone();
                                 let title=format!("Start Studio capture · {} ({}) · review",
                                     target.host,&id[..id.len().min(10)]);
-                                page=page.child(Button::new(format!("studio-start-{}",id))
+                                page=page.child(Button::new(("studio-start",row))
                                     .label(title)
                                     .on_click(cx.listener(move |v,_,_,cx|{
                                         v.plan_studio_action("studio.capture.start",json!({"target":id}),cx)
                                     })));
                             }
                         }
-                        for site in &operations.sites {
+                        for (row,site) in operations.sites.iter().enumerate() {
                             let site_id=site.clone();
-                            page=page.child(Button::new(format!("studio-dry-run-{}",site_id))
+                            page=page.child(Button::new(("studio-dry-run",row))
                                 .label(format!("Preview Drive · {} · dry run only",site_id))
                                 .on_click(cx.listener(move |v,_,_,cx|{
                                     v.plan_studio_action("studio.drive.dry_run",json!({"site":site_id}),cx)
                                 })));
                         }
-                        for id in &operations.cancelable_jobs {
+                        for (row,id) in operations.cancelable_jobs.iter().enumerate() {
                             let job_id=id.clone();
-                            page=page.child(Button::new(format!("studio-cancel-{}",job_id))
+                            page=page.child(Button::new(("studio-cancel",row))
                                 .label(format!("Request Drive cancellation · {} · review",job_id))
                                 .on_click(cx.listener(move |v,_,_,cx|{
                                     v.plan_studio_action("studio.drive.cancel",json!({"job_id":job_id}),cx)
