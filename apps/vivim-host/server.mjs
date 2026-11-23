@@ -248,7 +248,7 @@ export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path
   // One Host-owned control dispatcher for desktop text, phone text and GUI (UTC03).
   let control = null;
   const uiSessions = createControlBrowserSessions();
-  const controlFor = () => (control ??= createControlDispatcher({ dataRoot, runtime: runtimeFor(), devices: enrollment, productJournal, composerBridge }));
+  const controlFor = () => (control ??= createControlDispatcher({ dataRoot, runtime: runtimeFor(), devices: enrollment, productJournal, composerBridge, studio: studioPort }));
   const nativeContext = createRustChatContext({dataRoot:path.resolve(dataRoot),productJournal,control:controlFor});
   // APK07 release registry, shared with the Direct phone handler so a release registered on
   // the PC is immediately downloadable by the phone (same dataRoot/apk-artifacts).
@@ -284,7 +284,7 @@ export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path
   const pairing = createPairingStore({ dataRoot });
   // One Host-owned onboarding service shares Studio, APK and pairing authority.
   // Reuse ONE existing Studio port adapter for onboarding and native/phone
-  // diagnostics. It owns no browser and its operations projection is GET-only.
+  // diagnostics and owner-approved Control actions. It never owns the browser.
   const studioPort = studioUrl ? createStudioPort({url:studioUrl,token:studioToken}) : null;
   const onboardingService = onboarding ?? createOnboardingService({
     dataRoot, getRuntime: runtimeFor, directOrigin: directPhone?.origin ?? null,
