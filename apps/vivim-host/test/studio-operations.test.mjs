@@ -1,0 +1,102 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import http from 'node:http';
+import { mkdtempSync, rmSync } from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { createStudioPort, projectStudioOperations } from '../onboarding/studio-port.mjs';
+import { createHostServer } from '../server.mjs';
+
+const jobId='11111111-1111-4111-8111-111111111111';
+const rawStatus={
+  browserConnection:{state:'available',verified:true,recoveryCommand:'SECRET'},
+  recorder:{state:'recording',id:'private-session',pageUrl:'https://private.invalid/'},
+  dataDir:'C:\\private',chrome:'secret-browser'
+};
+const rawJobs={jobs:[{id:jobId,mode:'drive',state:'running',dryRun:true,
+  sites:['https://private.invalid'],prompt:'private prompt',reply:'private reply',
+  error:'private diagnostic'}]};
+const listen=server=>new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+const close=server=>new Promise(resolve=>server.close(resolve));
+
+test('capture and Drive projection retains only bounded source-backed operating state',()=>{
+  const view=projectStudioOperations(rawStatus,rawJobs);
+  assert.equal(view.schema,'vivim.studio-operations/1');
+  assert.equal(view.authority,'read-only');
+  assert.equal(view.state,'source-backed');
+  assert.deepEqual(view.capture,{state:'source-backed',recorderState:'recording',
+    browserState:'available',browserVerified:true});
+  assert.equal(view.drive.shown,1);
+  assert.equal(view.drive.active,1);
+  assert.deepEqual(view.drive.jobs,[{id:jobId,mode:'drive',state:'running',dryRun:true}]);
+  const serialized=JSON.stringify(view);
+  for(const privateText of ['private-session','private.invalid','private prompt',
+    'private reply','private diagnostic','C:\\private','SECRET']){
+    assert.ok(!serialized.includes(privateText),privateText+' must not leak');
+  }
+  assert.deepEqual(projectStudioOperations(null,null).drive.jobs,[]);
+  assert.equal(projectStudioOperations(null,null).state,'unavailable');
+  assert.equal(projectStudioOperations({...rawStatus,recorder:{state:'unknown'}},rawJobs).capture.state,'unavailable');
+  assert.equal(projectStudioOperations(rawStatus,{jobs:[{...rawJobs.jobs[0],state:'delivered'}]}).drive.state,'unavailable');
+  assert.equal(projectStudioOperations(rawStatus,{jobs:Array.from({length:21},()=>rawJobs.jobs[0])}).drive.state,'unavailable');
+});
+
+test('Studio port performs only two bounded GET reads and fails closed on offline sources',async()=>{
+  const seen=[];
+  const port=createStudioPort({url:'http://127.0.0.1:38730',token:'secret-private-owner-token',
+    fetchImpl:async(url,opts)=>{
+      seen.push({url,method:opts.method,headers:opts.headers});
+      const body=url.endsWith('/status')?rawStatus:rawJobs;
+      return new Response(JSON.stringify(body),{status:200,
+        headers:{'content-type':'application/json'}});
+    }});
+  const view=await port.operations();
+  assert.equal(view.capture.recorderState,'recording');
+  assert.equal(view.drive.shown,1);
+  assert.equal(seen.length,2);
+  assert.deepEqual(seen.map(x=>x.method),['GET','GET']);
+  assert.ok(seen.every(x=>x.headers['x-studio-token']==='secret-private-owner-token'));
+  assert.ok(seen.every(x=>x.url.startsWith('http://127.0.0.1:38730/api/v1/')));
+  assert.ok(!JSON.stringify(view).includes('secret-private-owner-token'));
+  const offline=createStudioPort({url:'http://127.0.0.1:38730',
+    fetchImpl:async()=>{throw Error('offline') }});
+  assert.equal((await offline.operations()).state,'unavailable');
+});
+
+test('Host owner PWA view gets sanitized Studio operations, unauthorized callers trigger no Studio read',async()=>{
+  const root=mkdtempSync(path.join(os.tmpdir(),'vivim-studio-port-'));
+  const seen=[];
+  const studio=http.createServer((req,res)=>{
+    seen.push([req.url,req.method,req.headers['x-studio-token']]);
+    const value=req.url==='/api/v1/status'?rawStatus:req.url==='/api/v1/drive/jobs'?rawJobs:null;
+    res.writeHead(value?200:404,{'content-type':'application/json'});
+    res.end(JSON.stringify(value??{code:'NOT_FOUND'}));
+  });
+  let host;
+  try{
+    await listen(studio);
+    const studioUrl='http://127.0.0.1:'+studio.address().port;
+    host=createHostServer({dataRoot:root,ownerToken:'host-unit-owner-only-123456789',
+      studioUrl,studioToken:'studio-service-secret'});
+    await listen(host);
+    const base='http://127.0.0.1:'+host.address().port;
+    const route='/api/host/control/pwa-view';
+    assert.equal((await fetch(base+route)).status,401);
+    assert.equal(seen.length,0,'no Studio work before Host authentication');
+    const response=await fetch(base+route,{headers:{authorization:'Bearer host-unit-owner-only-123456789'}});
+    assert.equal(response.status,200);
+    const body=await response.json();
+    assert.equal(body.snapshot.studioOperations.schema,'vivim.studio-operations/1');
+    assert.equal(body.snapshot.studioOperations.drive.active,1);
+    assert.equal(body.snapshot.studioOperations.capture.recorderState,'recording');
+    assert.deepEqual(seen.map(x=>x[1]),['GET','GET']);
+    assert.ok(seen.every(x=>x[2]==='studio-service-secret'));
+    const serialized=JSON.stringify(body.snapshot.studioOperations);
+    assert.ok(!serialized.includes('private.invalid'));
+    assert.ok(!serialized.includes('studio-service-secret'));
+  }finally{
+    if(host)await close(host);
+    await close(studio);
+    rmSync(root,{recursive:true,force:true});
+  }
+});
