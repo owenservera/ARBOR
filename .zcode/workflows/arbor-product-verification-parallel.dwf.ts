@@ -21,9 +21,9 @@ const pinned=await world.run("git",["rev-parse","HEAD"],{output:{tail:256}});
 if(pinned.exitCode!==0||pinned.stdout.trim()!==expected)
   return {conclusion:"BLOCKED: checkout SHA differs from requested source; do not execute against a moving branch",
     expected,observed:pinned.stdout.trim(),verified:[],notCovered:["all suites"]};
-const status=await world.run("git",["status","--porcelain","-uno"],{output:{tail:512}});
-if(status.exitCode!==0||status.stdout.trim())
-  return {conclusion:"BLOCKED: checkout has modified tracked source",verified:[],notCovered:["all suites"]};
+const status=await world.run("git",["status","--porcelain","--untracked-files=all"],{output:{tail:512}});
+if(status.exitCode!==0||String(status.stdout||"").trim())
+  return {conclusion:"BLOCKED: checkout has tracked or untracked source changes",verified:[],notCovered:["all suites"]};
 phase("Run ZCode-owned independent verification lanes concurrently");
 const lanes=[
   {id:"mobile-composer",argv:["--test","apps/mobile-relay/test/provider-handoff.test.mjs",
@@ -46,6 +46,23 @@ const results:Result[]=await Promise.all(lanes.map(async lane=>{
     detail:"exit="+outcome.exitCode+" "+outcome.tail.slice(-400)},"product-regression");
   return outcome;
 }));
+// A matching HEAD at launch is not proof of the tree that actually ran.
+// Fail closed if another lane changed the checkout (including untracked
+// source that could shadow imports) while the concurrent suites executed.
+phase("Recheck exact source after suites");
+const postHead=await world.run("git",["rev-parse","HEAD"],{output:{tail:256}});
+const postStatus=await world.run("git",["status","--porcelain","--untracked-files=all"],{output:{tail:512}});
+const observedPostSha=String(postHead.stdout||"").trim();
+const postflightClean=postStatus.exitCode===0&&!String(postStatus.stdout||"").trim();
+if(postHead.exitCode!==0||observedPostSha!==expected||!postflightClean){
+  return {
+    conclusion:"BLOCKED: source SHA or checkout cleanliness changed during verification; suite results are not source-attested PASS",
+    sourceSha:expected,observedPostSha,postflightClean,
+    launchedLanes:results.length,results,verified:[],
+    notCovered:["No source-attested verification from this run",
+      "Physical phone, native GPUI and signed-in browser delivery remain separate acceptance"]
+  };
+}
 const failures=results.filter(r=>r.result!=="PASS");
 return {
   conclusion:failures.length
