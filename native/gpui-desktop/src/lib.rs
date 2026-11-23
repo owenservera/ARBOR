@@ -44,6 +44,9 @@ pub struct Overview {
     /// The existing Host bootstrap phone-safe ledger aggregates. Never a
     /// personal statement, user relationship or verified fact.
     pub oracle_progress: Option<OracleProgress>,
+    /// The same read-only, hash-linked Studio outcome projection used by the PWA.
+    /// No provider prompts/replies, browser ownership or native send authority.
+    pub studio_activity: Option<StudioActivity>,
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OracleProgress {
@@ -53,6 +56,60 @@ pub struct OracleProgress {
     pub complete_passes: u64,
     pub observed_passes: u64,
 }
+/// Only historical verified delivery metadata from the existing Host summary.
+/// A missing, malformed, or unverified feed stays unavailable; never infer a
+/// successful provider send from an installed adapter or an active session.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct StudioActivity {
+    pub revision: u64,
+    pub total: u64,
+    pub rows: Vec<String>,
+}
+fn source_digest_hex(value:&Value)->bool {
+    value.as_str().is_some_and(|text| text.len()==64 &&
+        text.bytes().all(|b|b.is_ascii_digit()||(b'a'..=b'f').contains(&b)))
+}
+fn project_studio_activity(snapshot:&Value)->Option<StudioActivity>{
+    let data=&snapshot["studioOutcomes"];
+    if data["schema"]!="vivim.studio-outcomes/1" ||
+       data["state"]!="source-backed" ||
+       data["authority"]!="read-only-historical" {
+        return None;
+    }
+    let revision=data["revision"].as_u64()?;
+    let total=data["total"].as_u64()?;
+    let items=data["items"].as_array()?;
+    if items.len()>16 || total<items.len() as u64{return None}
+    let mut seen=std::collections::BTreeSet::new();
+    let mut rows=Vec::new();
+    for item in items {
+        let id=item["id"].as_str().filter(|s| !s.is_empty() && s.len()<=120)?;
+        if !seen.insert(id){return None}
+        let (label,source)=match item["state"].as_str()? {
+            "reply_observed"=>("Reply observed","studio"),
+            "delivered"=>("Delivery acknowledged","phone"),
+            "uncertain"=>("Send uncertain","journal"),
+            "failed_before_send"=>("Failed before send","journal"),
+            "failed_after_send"=>("Possible send — review required","journal"),
+            _=>return None
+        };
+        let sequence=item["sequence"].as_u64()?;
+        let source_revision=item["sourceRevision"].as_u64()?;
+        let timestamp=item["observedAt"].as_str().filter(|s|
+            !s.is_empty()&&s.len()<=64&&s.contains('T')&&!s.chars().any(char::is_control))?;
+        let _=timestamp;
+        if sequence==0||sequence>revision||item["source"]!=source||
+            item["authority"]!="historical-source-verified-event"||
+            !source_digest_hex(&item["evidenceDigest"])||
+            !source_digest_hex(&item["eventDigest"]) {return None}
+        let provider=item["provider"].as_str().filter(|s|!s.is_empty())
+            .map(|s|s.chars().take(32).collect::<String>())
+            .unwrap_or_else(||"Provider".to_owned());
+        rows.push(format!("{provider} · {label} · historical {source} source rev {source_revision}"));
+    }
+    Some(StudioActivity{revision,total,rows})
+}
+
 /// Reuse the Host's existing bootstrap.progress; no new endpoint or local store.
 fn project_oracle_progress(bootstrap:&Value)->Result<Option<OracleProgress>,ReadError>{
     let p=&bootstrap["progress"];
@@ -215,6 +272,7 @@ pub fn project(pwa: &Value, wiki: &Value) -> Result<Overview, ReadError> {
         }).collect::<Result<Vec<_>, ReadError>>()?;
     let read = wiki_read::read(wiki).map_err(|_| ReadError::InvalidProjection)?;
     let oracle_progress=project_oracle_progress(&snapshot["bootstrap"])?;
+    let studio_activity=project_studio_activity(snapshot);
     let wiki_pages = read.pages.iter().map(|page| page.name.clone()).collect();
     let host_snapshot_digest=source_sha256(snapshot)?;
     Ok(Overview {
@@ -226,7 +284,7 @@ pub fn project(pwa: &Value, wiki: &Value) -> Result<Overview, ReadError> {
         wiki_search_index: read.search_index,
         wiki_indexed_pages: read.indexed_pages,
         wiki_index_truncated: read.index_truncated,
-        oracle_progress,
+        oracle_progress,studio_activity,
     })
 }
 
@@ -425,6 +483,34 @@ mod tests {
         assert_eq!(result.host_snapshot_digest.len(),64);
         assert_eq!(result.wiki_pages, vec!["work".to_string()]);
         assert_eq!(result.recent, vec!["wiki.page.create · applied".to_string()]);
+    }
+    #[test] fn gpui_reuses_verified_studio_history_without_provider_messages(){
+        let mut p=pwa();
+        let wiki=json!({"revision":1,"pages":{}});
+        assert_eq!(project(&p,&wiki).unwrap().studio_activity,None);
+        p["snapshot"]["studioOutcomes"]=json!({
+            "schema":"vivim.studio-outcomes/1",
+            "state":"source-backed","authority":"read-only-historical",
+            "revision":3,"total":1,
+            "items":[{
+                "id":"event-1","state":"reply_observed","sequence":3,
+                "source":"studio","sourceRevision":5,
+                "evidenceDigest":"a".repeat(64),"eventDigest":"b".repeat(64),
+                "authority":"historical-source-verified-event",
+                "observedAt":"2026-11-23T12:00:00Z","provider":"chatgpt",
+                "privateText":"this field must never appear"
+            }]
+        });
+        let activity=project(&p,&wiki).unwrap().studio_activity.unwrap();
+        assert_eq!((activity.revision,activity.total),(3,1));
+        assert!(activity.rows[0].contains("Reply observed"));
+        assert!(!activity.rows[0].contains("this field"));
+        let mut conflict=p.clone();
+        conflict["snapshot"]["studioOutcomes"]["items"][0]["source"]=json!("phone");
+        assert_eq!(project(&conflict,&wiki).unwrap().studio_activity,None);
+        conflict=p;
+        conflict["snapshot"]["studioOutcomes"]["items"][0]["eventDigest"]=json!("fake");
+        assert_eq!(project(&conflict,&wiki).unwrap().studio_activity,None);
     }
     #[test] fn native_oracle_progress_uses_host_ledger_metadata_only() {
         let mut p=pwa();
