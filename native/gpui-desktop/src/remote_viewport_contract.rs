@@ -71,11 +71,12 @@ impl InputFence {
         // Unicode contents exactly; reject NUL and unsupported control bytes.
         let units=input.text.encode_utf16().count();
         if units>1024 || input.text.chars().any(|ch|
-            (ch.is_control() && ch!='\\n' && ch!='\\t') || ch=='\\0'
+            (ch.is_control() && ch!='\n' && ch!='\t') || ch=='\0'
         ) { return Err(Refusal::InvalidText); }
         let phase_valid=match input.phase {
             TextPhase::KeyDown|TextPhase::KeyUp =>
-                (1..=64).contains(&units) && !input.text.contains(['\\n','\\t']),
+                (1..=64).contains(&units) &&
+                !input.text.contains('\n') && !input.text.contains('\t'),
             TextPhase::ImeStart|TextPhase::ImeCancel => units==0,
             TextPhase::ImeUpdate|TextPhase::ImeCommit => (1..=1024).contains(&units),
         };
@@ -161,7 +162,8 @@ mod tests {
     }
     #[test] fn invalid_text_cannot_advance_native_sequence_or_permit_false_ack() {
         let mut fence=InputFence::new();
-        for bad in ["", "\\0", "\\r", "a".repeat(1025).as_str()] {
+        let large="a".repeat(1025);
+        for bad in ["", "\0", "\r", large.as_str()] {
             assert_eq!(fence.acknowledge_text(viewport(),&button(),Some(42),
                 text(1,TextPhase::KeyDown,bad)),Err(Refusal::InvalidText));
         }
