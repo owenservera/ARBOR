@@ -3,6 +3,7 @@
 // The Host must supply existing OWNER and PAIRED-PHONE admission functions;
 // no frame or pointer is accepted on the basis of client-provided IDs alone.
 import {validateGpuiFrame} from '../../mobile-relay/gpui-viewport-contract.mjs';
+import {nativeTextFromPhone} from '../../mobile-relay/gpui-text-input-contract.mjs';
 
 const deviceId=id=>typeof id==='string'&&/^[a-f0-9]{32}$/.test(id);
 const int=n=>Number.isSafeInteger(n)&&n>=0;
@@ -121,12 +122,38 @@ export function createGpuiHostFrameRelay({
         session:inert.session,sequence:inert.sequence});
     }
   };
+  const receiveText=async(context,packet)=>{
+    if(closed)return refused('GPUI_RELAY_CLOSED');
+    if(!latest)return refused('GPUI_FRAME_UNAVAILABLE');
+    const viewport=meta(latest);
+    if(!deviceId(context?.deviceId)||!admit(authorizePhone,context,viewport))
+      return refused('GPUI_PHONE_NOT_ADMITTED');
+    let inert;
+    try{inert=nativeTextFromPhone(viewport,packet?.phase,packet?.text,packet?.sequence);}
+    catch{return refused('INVALID_GPUI_TEXT');}
+    if(packet?.kind!==inert.kind||packet.session!==inert.session||
+        packet.revision!==inert.revision)return refused('INVALID_GPUI_TEXT');
+    const prev=lastInputs.get(context.deviceId);
+    if(prev!==undefined&&inert.sequence<=prev)
+      return refused('GPUI_INPUT_REPLAY');
+    // Exactly the same replay cursor as pointer. Text and IME packets never
+    // carry a focus control ID: native GPUI owns focus before acknowledging.
+    lastInputs.set(context.deviceId,inert.sequence);
+    try{
+      await forwardToGpui(context,inert);
+      return Object.freeze({state:'submitted_to_native_unverified',
+        session:inert.session,sequence:inert.sequence});
+    }catch{
+      return Object.freeze({state:'native_delivery_uncertain',
+        session:inert.session,sequence:inert.sequence});
+    }
+  };
   const close=()=>{
     if(closed)return;
     closed=true;suspend();lastInputs.clear();
   };
   return Object.freeze({
-    publish,subscribe,receivePointer,close,
+    publish,subscribe,receivePointer,receiveText,close,
     status:()=>Object.freeze({available:!closed&&Boolean(latest),
       session:latest?.session??null,revision:latest?.revision??null,
       subscribers:listeners.size}) // never expose private pixel bytes
