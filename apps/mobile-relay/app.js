@@ -10,7 +10,7 @@ import { resolveBuildRequest, buildSurfaceFromBootstrap, themeDraftCandidates, t
 import { mountWelcome } from './welcome.mjs';
 import { parsePairFragment, redeemDevicePairToken } from './pairing-link.mjs';
 import { prepareDeviceSigner, enrollWithChallenge, resumeDeviceSession } from './device-enrollment.mjs';
-import { worldModel, meModel, todayModel, LIVE_STATE_LABELS, TABS } from './ux/model.mjs';
+import { worldModel, meModel, todayModel, LIVE_STATE_LABELS, TABS, studioOperationsStatus } from './ux/model.mjs';
 import { renderToday, renderWorld, renderMe } from './ux/render.mjs';
 import { createControlChat } from './control-chat.mjs';
 import { initializeRustUiEngine, rustUiEngineStatus as coreUiStatus, rustFirstContact } from './vec-engines/rust-wasm.mjs';
@@ -2063,17 +2063,24 @@ function renderHostPreviewActivity() {
   section.replaceChildren(el('h2', 'ux-card-title', 'Recent Host decisions'));
   if (!Array.isArray(recent) || recent.length === 0) {
     section.append(el('p', 'muted', 'No Host decisions reported in the current owner view.'));
-    return;
+  } else {
+    const list = el('ul', 'ux-list');
+    for (const record of recent.slice(0, 12)) {
+      const item = el('li', 'ux-item');
+      item.append(el('strong', 'ux-item-title', record.actionId || 'Host decision'),
+        el('span', 'ux-item-detail',
+          (record.state || 'unknown') + (record.createdAt ? ' · ' + record.createdAt : '')));
+      list.append(item);
+    }
+    section.append(list);
   }
-  const list = el('ul', 'ux-list');
-  for (const record of recent.slice(0, 12)) {
-    const item = el('li', 'ux-item');
-    item.append(el('strong', 'ux-item-title', record.actionId || 'Host decision'),
-      el('span', 'ux-item-detail',
-        (record.state || 'unknown') + (record.createdAt ? ' · ' + record.createdAt : '')));
-    list.append(item);
-  }
-  section.append(list);
+  // Same owner-authorized Host source that native GPUI Developer reads.
+  // No action buttons or browser-control path are mounted in the preview.
+  const studio=studioOperationsStatus(S.statusObj?.snapshot?.studioOperations);
+  section.append(el('h3', 'ux-card-title', 'Studio capture and Drive · read-only'),
+    el('p', 'ux-note', studio.capture), el('p', 'ux-note', studio.browser),
+    el('p', 'ux-note', studio.drive),
+    el('p', 'ux-note', 'Changes require a separate owner approval in native GPUI.'));
 }
 async function refreshHostPreview() {
   if (!HOST_PREVIEW) return;
