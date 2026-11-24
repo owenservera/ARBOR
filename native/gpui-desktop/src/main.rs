@@ -13,6 +13,7 @@
 use std::{time::{Duration, Instant}, sync::{Arc,atomic::{AtomicBool,Ordering},mpsc}};
 use vivim_host_supervisor::{HostSupervisor, Readiness};
 use serde_json::{json,Value};
+use sha2::{Digest,Sha256};
 use vivim_programmability_core::navigation;
 use vivim_programmability_core::wiki_read::{self, RevisionGuard as WikiRevisionGuard};
 use vivim_programmability_core::vec::{View as VecView, Element as VecElement};
@@ -1208,20 +1209,38 @@ impl Desktop {
                 }
             };
             let mut revision=0_u64;
+            let mut last_digest:Option<[u8;32]>=None;
             let mut failure=None;
             while !worker_stop.load(Ordering::Acquire){
                 // The compositor capture itself fails closed unless the
                 // owning GPUI window is foreground; no background recording.
                 match desktop_capture::capture_gpui_viewport_png_bytes(){
                     Ok((width,height,png))=>{
-                        revision=revision.saturating_add(1);
-                        match peer.publish_png(session,revision,width,height,&png){
-                            Ok(())=>{
-                                let _=tx.try_send(GpuiPhoneMessage::Frame{
-                                    width,height,revision
-                                });
-                            },
-                            Err(code)=>{failure=Some(code);break;}
+                        let mut digest=[0u8;32];
+                        digest.copy_from_slice(&Sha256::digest(&png));
+                        if last_digest==Some(digest){
+                            // Keep the same renderer/control revision for
+                            // pixels that are actually identical. Otherwise
+                            // a 450ms new-frame loop rejects normal phone
+                            // taps as stale before their network RTT ends.
+                            if let Err(code)=peer.refresh_frame(session,revision){
+                                failure=Some(code);break;
+                            }
+                        }else{
+                            revision=revision.saturating_add(1);
+                            if revision==u64::MAX{
+                                failure=Some("GPUI_NATIVE_REVISION_EXHAUSTED");
+                                break;
+                            }
+                            match peer.publish_png(session,revision,width,height,&png){
+                                Ok(())=>{
+                                    last_digest=Some(digest);
+                                    let _=tx.try_send(GpuiPhoneMessage::Frame{
+                                        width,height,revision
+                                    });
+                                },
+                                Err(code)=>{failure=Some(code);break;}
+                            }
                         }
                     },
                     Err(_)=>{
@@ -1325,12 +1344,17 @@ impl Desktop {
         match message{
             GpuiPhoneMessage::Frame{width,height,revision}=>{
                 if let Some(share)=self.gpui_phone_share.as_mut(){
+                    let first=share.proof.frame().is_none();
                     if share.proof.record_native_frame(
                         width,height,revision,share.scale
                     ).is_ok(){
-                        self.gpui_phone_status=format!(
-                            "GPUI pixels published to owner Host · native frame {revision}"
-                        );
+                        if first{
+                            // Avoid a self-redraw loop: changing visible status
+                            // on every frame would itself produce new pixels
+                            // and defeat content-addressed revision stability.
+                            self.gpui_phone_status=
+                                "Native GPUI pixels visible on authorized phone viewport".into();
+                        }
                     }else{
                         self.gpui_phone_status=
                             "Native viewport dimensions/revision refused".into();
