@@ -1292,12 +1292,15 @@ impl Desktop {
         }).detach();
     }
     fn stop_gpui_phone_share(&mut self,cx:&mut Context<Self>){
-        if let Some(share)=self.gpui_phone_share.take(){
+        if let Some(share)=self.gpui_phone_share.as_ref(){
+            // Keep the isolated inert proof canvas visible until native worker
+            // finishes the in-flight capture and asks the Host to revoke it.
+            // Returning to Developer before that ack risks capturing private
+            // tools/panels as the final shared frame.
             share.stop.store(true,Ordering::Release);
+            self.gpui_phone_status=
+                "Stopping native GPUI viewport · waiting for Host frame revocation".into();
         }
-        self.panel=Panel::Developer;
-        self.gpui_phone_status="GPUI viewport stopped by owner; Host frame revocation requested".into();
-        self.developer_status=self.gpui_phone_status.clone();
         cx.notify();
     }
     // Both a local GPUI click and an admitted paired phone touch call this
@@ -1347,6 +1350,9 @@ impl Desktop {
                 self.gpui_phone_share.take();
                 self.gpui_phone_status=format!("Native GPUI phone viewport stopped: {reason}");
                 self.developer_status=self.gpui_phone_status.clone();
+                // Only after the worker tried the owner revoke do we uncover
+                // any non-proof GPUI content. A failed/unknown stop remains
+                // a clear diagnostic rather than silently claiming success.
                 self.panel=Panel::Developer;
                 cx.notify();
             }
