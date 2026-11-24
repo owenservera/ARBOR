@@ -166,14 +166,14 @@ test('invalid PNG frames and malformed metadata cannot expose fake renderer fram
     method:'POST',headers:frameHeaders(),body:Buffer.from('not-a-png')})).status,409);
   assert.equal((await f.call('api/gpui/native-frame',{
     method:'POST',headers:{...frameHeaders(),'x-vivim-gpui-width':'0'},body:PNG})).status,400);
-  assert.equal((await f.read()).status,204);
+  assert.equal((await f.read()).status,410);
   f.channel.close();
 });
 test('expired frame is scrubbed, input queue emptied and replay cursor retained',async()=>{
   const f=setup();await f.nativeFrame();
   assert.equal((await f.input(pointer(7))).status,202);
   f.tick(5001);
-  assert.equal((await f.read()).status,204);
+  assert.equal((await f.read()).status,410);
   assert.equal(f.channel.status().active,false);
   assert.equal((await f.nativeInput()).status,204);
   assert.equal((await f.input(pointer(8))).status,503);
@@ -231,7 +231,7 @@ test('owner Stop immediately scrubs paired PNG and pending input, never waits fo
   const result=await f.call('api/gpui/native-stop',{method:'POST',headers:owner});
   assert.equal(result.status,200);
   assert.equal(parsed(result).state,'stopped');
-  assert.equal((await f.read()).status,204);
+  assert.equal((await f.read()).status,410);
   assert.equal((await f.nativeInput()).status,204);
   assert.equal(f.channel.status().active,false);
   assert.equal((await f.nativeFrame(2)).status,202);
@@ -250,5 +250,53 @@ test('a paired phone or forged external origin cannot stop native GPUI sharing',
     assert.equal(res.status,401);
     assert.equal((await f.read()).status,200);
   }
+  f.channel.close();
+});
+
+test('valid native owner heartbeat preserves stable pixel revision and extends frame TTL',async()=>{
+  const f=setup();await f.nativeFrame(7);
+  f.tick(4500);
+  const headers={...owner,'x-vivim-gpui-session':GPUI_SESSION,
+    'x-vivim-gpui-revision':'7'};
+  const result=await f.call('api/gpui/native-heartbeat',{method:'POST',headers});
+  assert.equal(result.status,200);
+  assert.deepEqual(parsed(result),{
+    schema:'vivim.gpui-native-heartbeat/1',
+    state:'refreshed',session:GPUI_SESSION,revision:7
+  });
+  f.tick(4500);
+  assert.equal((await f.read()).status,200);
+  assert.equal((await f.read('api/gpui/frame?session='+GPUI_SESSION+'&after=7')).status,204);
+  f.tick(5500);
+  assert.equal((await f.read()).status,410,'expired GPUI source is never a live unchanged 204');
+  f.channel.close();
+});
+test('phone cannot forge native heartbeat or extend private GPUI source lifetime',async()=>{
+  const f=setup();await f.nativeFrame(1);
+  const headers={...owner,'x-vivim-gpui-session':GPUI_SESSION,
+    'x-vivim-gpui-revision':'1'};
+  assert.equal((await f.call('api/gpui/native-heartbeat',{
+    method:'POST',headers:{...headers,authorization:undefined}
+  })).status,401);
+  assert.equal((await f.call('api/gpui/native-heartbeat',{
+    method:'POST',headers:{...headers,'x-vivim-gpui-revision':'9'}
+  })).status,409);
+  assert.equal((await f.call('api/gpui/native-heartbeat',{
+    method:'POST',headers:{...headers,origin:ORIGIN}
+  })).status,401);
+  f.tick(5001);
+  assert.equal((await f.read()).status,410);
+  f.channel.close();
+});
+test('native heartbeat may not carry private body or revive an absent frame',async()=>{
+  const f=setup();
+  const headers={...owner,'x-vivim-gpui-session':GPUI_SESSION,
+    'x-vivim-gpui-revision':'1'};
+  assert.equal((await f.call('api/gpui/native-heartbeat',{
+    method:'POST',headers
+  })).status,409);
+  assert.equal((await f.call('api/gpui/native-heartbeat',{
+    method:'POST',headers,body:'nonempty'
+  })).status,413);
   f.channel.close();
 });
