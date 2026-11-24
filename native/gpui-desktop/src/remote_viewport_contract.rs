@@ -71,11 +71,18 @@ impl InputFence {
         }
         // Consume a valid in-bounds event even if it missed a control.
         self.last_sequence = Some(touch.sequence);
-        let control = controls.iter().find(|c| {
+        // A remote coordinate cannot choose a winner among overlapping native
+        // controls. GPUI must publish a unique hit target, never rely on list order.
+        let mut hits = controls.iter().filter(|c| {
             touch.x >= c.bounds.x && touch.y >= c.bounds.y &&
             touch.x - c.bounds.x < c.bounds.width &&
             touch.y - c.bounds.y < c.bounds.height
-        }).ok_or(Refusal::NoControl)?;
+        });
+        let control = hits.next().ok_or(Refusal::NoControl)?;
+        if hits.next().is_some() ||
+            controls.iter().filter(|c| c.id == control.id).count() != 1 {
+            return Err(Refusal::NoControl);
+        }
         Ok(InertAck { control_id: control.id, sequence: touch.sequence, revision: viewport.revision })
     }
     pub fn acknowledge_text(
@@ -104,7 +111,10 @@ impl InputFence {
         let Some(focused)=native_focused_id else { return Err(Refusal::NoFocus); };
         // Phone packets never choose the target control: GPUI passes its OWN
         // focus identity, and only native controls may be acknowledged.
-        if !controls.iter().any(|c|c.id==focused) { return Err(Refusal::NoFocus); }
+        // Duplicate native identities cannot establish an unambiguous focus.
+        if controls.iter().filter(|c| c.id == focused).count() != 1 {
+            return Err(Refusal::NoFocus);
+        }
         self.last_sequence=Some(input.sequence);
         Ok(InertAck{control_id:focused,sequence:input.sequence,revision:viewport.revision})
     }
@@ -211,6 +221,37 @@ mod tests {
         for bad in ["","execute","host-approve","IME-COMMIT","key-down\0"] {
             assert_eq!(TextPhase::from_wire(bad),None);
         }
+    }
+
+    #[test]
+    fn overlapping_native_controls_refuse_without_order_dependent_ack() {
+        let a = button()[0];
+        let b = Control { id: 43, bounds: a.bounds };
+        for controls in [[a,b], [b,a]] {
+            let mut fence = InputFence::new();
+            assert_eq!(fence.acknowledge(viewport(), &controls, touch()), Err(Refusal::NoControl));
+            assert_eq!(fence.acknowledge(viewport(), &[a], touch()), Err(Refusal::Replay));
+            assert!(fence.acknowledge(viewport(), &[a], Touch { sequence: 2, ..touch() }).is_ok());
+        }
+    }
+    #[test]
+    fn duplicate_identity_refuses_even_when_only_one_rectangle_is_hit() {
+        let a = button()[0];
+        let b = Control { id: a.id, bounds: Rect { x: 200, ..a.bounds } };
+        assert_eq!(InputFence::new().acknowledge(viewport(), &[a,b], touch()), Err(Refusal::NoControl));
+        let mut fence = InputFence::new();
+        assert_eq!(fence.acknowledge_text(viewport(), &[a,b], Some(a.id),
+            text(1,TextPhase::KeyDown,"a")), Err(Refusal::NoFocus));
+        assert!(fence.acknowledge_text(viewport(), &[a], Some(a.id),
+            text(1,TextPhase::KeyDown,"a")).is_ok());
+    }
+    #[test]
+    fn distinct_adjacent_targets_preserve_half_open_boundaries() {
+        let a = button()[0];
+        let b = Control { id: 43, bounds: Rect { x: a.bounds.x + a.bounds.width, ..a.bounds } };
+        let mut fence = InputFence::new();
+        assert_eq!(fence.acknowledge(viewport(), &[a,b], Touch { x: 111, ..touch() }).unwrap().control_id,42);
+        assert_eq!(fence.acknowledge(viewport(), &[a,b], Touch { x: 112, sequence: 2, ..touch() }).unwrap().control_id,43);
     }
 
 }
