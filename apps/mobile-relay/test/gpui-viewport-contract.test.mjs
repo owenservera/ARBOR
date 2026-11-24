@@ -117,17 +117,7 @@ test('valid metadata still translates first touch and does not grant authority',
   assert.deepEqual(touch,{session:'a'.repeat(32),revision:1,sequence:0,x:1,y:1});
   assert.ok(!Object.hasOwn(touch,'controlId'));
   assert.ok(!Object.hasOwn(touch,'approved'));
-});// Structurally complete PNG fixture with IHDR, IDAT and IEND chunks.
-// The transport validator checks framing, not decoder CRC/pixel validity.
-const png = new Uint8Array(8 + 25 + 13 + 12);
-png.set([137,80,78,71,13,10,26,10],0);
-const dv = new DataView(png.buffer);
-dv.setUint32(8,13); dv.setUint32(12,0x49484452);
-dv.setUint32(16,360); dv.setUint32(20,800);
-png[24]=8; png[25]=6;
-dv.setUint32(33,1); dv.setUint32(37,0x49444154);
-dv.setUint32(46,0); dv.setUint32(50,0x49454e44);
-
+});
 
 test('rejects header-only, missing IEND and trailing bytes',()=>{
   assert.throws(()=>validateGpuiFrame({...frame(),png:png.slice(0,24)}));
