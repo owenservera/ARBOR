@@ -73,8 +73,19 @@ export function createDirectGpuiPhoneChannel({
         credentials:'same-origin',cache:'no-store',signal:ac.signal});
       if(!active||!sameIdentity(identity()))return refused('GPUI_PHONE_CHANNEL_CHANGED');
       if(response.status===204){
-        stopIfStale();failures=0;
+        // Host only returns 204 after verifying the same *LIVE* owner frame.
+        // Confirm freshness without changing the revision or invalidating
+        // a phone tap against an unchanged GPUI control tree.
+        if(!source){stop('GPUI_FRAME_UNAVAILABLE');return refused('GPUI_FRAME_UNAVAILABLE');}
+        receivedAt=now();
+        failures=0;
         return Object.freeze({state:'unchanged'});
+      }
+      if(response.status===410){
+        // A removed/expired native source is NEVER a 204 unchanged frame.
+        // Scrub all previously painted private pixels and restore fallback.
+        stop('GPUI_NATIVE_FRAME_GONE');
+        return refused('GPUI_NATIVE_FRAME_GONE');
       }
       if(response.status===401||response.status===403){
         stop('GPUI_DEVICE_GRANT_REVOKED');
