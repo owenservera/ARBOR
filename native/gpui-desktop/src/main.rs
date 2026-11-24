@@ -1244,8 +1244,16 @@ impl Desktop {
             }
             // The owner-only Host route invalidates private PNGs and queued
             // inputs immediately; a failed call is UNKNOWN, never retried.
-            let _=peer.stop_native_share();
-            let stopped=if worker_stop.load(Ordering::Acquire){
+            let revoked=peer.stop_native_share().is_ok();
+            if !revoked{
+                // The Host's finite frame TTL is 5 seconds. If an explicit
+                // owner stop is uncertain, keep the inert privacy screen
+                // visible until no old PNG can be served on a future GET.
+                std::thread::sleep(Duration::from_millis(5_500));
+            }
+            let stopped=if !revoked{
+                "GPUI_OWNER_STOP_UNCERTAIN_FRAME_TTL_ELAPSED"
+            }else if worker_stop.load(Ordering::Acquire){
                 "GPUI_OWNER_STOPPED"
             }else{failure.unwrap_or("GPUI_NATIVE_FRAME_LOOP_ENDED")};
             let _=tx.try_send(GpuiPhoneMessage::Stopped(stopped));
