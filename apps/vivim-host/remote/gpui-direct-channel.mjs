@@ -135,6 +135,19 @@ export function createGpuiDirectChannel({
           subscribersDelivered:result.subscribersDelivered});
         return true;
       }
+      if(route==='api/gpui/native-stop'){
+        if(req.method!=='POST')throw failure('GPUI_METHOD',405);
+        if(!nativeAuthorized(req))throw failure('GPUI_OWNER_REQUIRED',401);
+        if(req.headers['content-length']!==undefined &&
+           req.headers['content-length']!=='0')
+          throw failure('GPUI_STOP_BODY_UNEXPECTED',400);
+        // Explicit owner stop is stronger than TTL: clear every retained
+        // frame and pending input before replying. Device replay cursors
+        // survive reconnect, never replay uncertain native effects.
+        queue.length=0;frameAt=0;relay.invalidate();
+        json(res,200,{schema:'vivim.gpui-owner-stop/1',state:'stopped'});
+        return true;
+      }
       if(route==='api/gpui/native-input'){
         if(req.method!=='GET')throw failure('GPUI_METHOD',405);
         if(!nativeAuthorized(req))throw failure('GPUI_OWNER_REQUIRED',401);
