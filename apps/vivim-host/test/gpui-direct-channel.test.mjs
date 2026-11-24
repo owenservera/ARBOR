@@ -60,7 +60,7 @@ function setup(){
     enrollment,now:()=>clock,ownerTokenFor:()=>token});
   const call=async(route,options={})=>{
     const res=response();
-    assert.equal(await channel.handle(request(route,options),res,route),true);
+    assert.equal(await channel.handle(request(route,options),res,route.split('?')[0]),true);
     return res;
   };
   const nativeFrame=(revision=1,overrides={})=>call('api/gpui/native-frame',{
