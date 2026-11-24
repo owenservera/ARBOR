@@ -5,6 +5,7 @@
 pub mod control;
 pub mod remote_viewport_contract;
 pub mod remote_host_transport;
+pub mod remote_proof;
 pub mod desktop_capture;
 pub mod desktop_menu;
 pub mod native_windows_menu;
