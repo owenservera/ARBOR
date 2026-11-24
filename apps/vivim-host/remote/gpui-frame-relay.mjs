@@ -93,6 +93,27 @@ export function createGpuiHostFrameRelay({
   };
   // A phone packet is only forwarded to the native renderer's InputFence.
   // Returning "submitted" is NOT an acknowledgment of a control or Host effect.
+  // GET-style pull uses the *same* verified paired-phone grant as frame fanout.
+  // It returns an owned snapshot, never the relay's mutable private source
+  // buffer. A caller may provide a bounded exact session/revision cursor.
+  const readLatest=(context,cursor=null)=>{
+    if(closed)return refused('GPUI_RELAY_CLOSED');
+    if(!latest)return Object.freeze({state:'unavailable'});
+    const current=meta(latest);
+    if(!deviceId(context?.deviceId)||!admit(authorizePhone,context,current))
+      return refused('GPUI_PHONE_NOT_ADMITTED');
+    if(cursor!==null){
+      if(!cursor || typeof cursor!=='object' ||
+        typeof cursor.session!=='string' ||
+        !/^[a-f0-9]{32}$/.test(cursor.session) ||
+        !int(cursor.revision))return refused('GPUI_FRAME_CURSOR_INVALID');
+      if(cursor.session===current.session && cursor.revision>=current.revision)
+        return Object.freeze({state:'unchanged',session:current.session,
+          revision:current.revision});
+    }
+    return Object.freeze({state:'frame',kind:'vivim.gpui.pixels/1',
+      ...current,png:Uint8Array.from(latest.png)});
+  };
   const receivePointer=async(context,pointer)=>{
     if(closed)return refused('GPUI_RELAY_CLOSED');
     if(!latest)return refused('GPUI_FRAME_UNAVAILABLE');
@@ -161,7 +182,7 @@ export function createGpuiHostFrameRelay({
     closed=true;suspend();lastInputs.clear();
   };
   return Object.freeze({
-    publish,subscribe,receivePointer,receiveText,close,
+    publish,subscribe,readLatest,receivePointer,receiveText,close,
     status:()=>Object.freeze({available:!closed&&Boolean(latest),
       session:latest?.session??null,revision:latest?.revision??null,
       subscribers:listeners.size}) // never expose private pixel bytes
