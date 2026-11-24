@@ -223,3 +223,32 @@ test('closed Host memory relay cannot publish or return old owner-private pixels
   assert.equal((await f.nativeFrame(2)).status,503);
   assert.equal(f.channel.status().queuedInputs,0);
 });
+
+test('owner Stop immediately scrubs paired PNG and pending input, never waits for TTL',async()=>{
+  const f=setup();await f.nativeFrame();
+  assert.equal((await f.input(pointer(4))).status,202);
+  assert.equal((await f.read()).status,200);
+  const result=await f.call('api/gpui/native-stop',{method:'POST',headers:owner});
+  assert.equal(result.status,200);
+  assert.equal(parsed(result).state,'stopped');
+  assert.equal((await f.read()).status,204);
+  assert.equal((await f.nativeInput()).status,204);
+  assert.equal(f.channel.status().active,false);
+  assert.equal((await f.nativeFrame(2)).status,202);
+  assert.equal((await f.input(pointer(4,2))).status,409,
+    'revoked input may not be replayed after native stream resumes');
+  assert.equal((await f.input(pointer(5,2))).status,202);
+  f.channel.close();
+});
+test('a paired phone or forged external origin cannot stop native GPUI sharing',async()=>{
+  const f=setup();await f.nativeFrame();
+  for(const headers of [
+    phoneRead,{...owner,origin:ORIGIN},
+    {...owner,authorization:'Bearer stolen-owner-token'},
+  ]){
+    const res=await f.call('api/gpui/native-stop',{method:'POST',headers});
+    assert.equal(res.status,401);
+    assert.equal((await f.read()).status,200);
+  }
+  f.channel.close();
+});
