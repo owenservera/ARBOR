@@ -59,6 +59,7 @@ const assets = new Map(Object.entries({
   'gpui-canvas-viewport.mjs': ['gpui-canvas-viewport.mjs', 'text/javascript; charset=utf-8'],
   'gpui-text-input-contract.mjs': ['gpui-text-input-contract.mjs', 'text/javascript; charset=utf-8'],
   'gpui-phone-channel.mjs': ['gpui-phone-channel.mjs', 'text/javascript; charset=utf-8'],
+  'gpui-phone-mount.mjs': ['gpui-phone-mount.mjs', 'text/javascript; charset=utf-8'],
 
   'control-chat.mjs': ['control-chat.mjs', 'text/javascript; charset=utf-8'],
   'control-language.mjs': ['control-language.mjs', 'text/javascript; charset=utf-8'],
