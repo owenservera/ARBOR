@@ -164,6 +164,33 @@ impl NativeHostPeer{
         }
         Ok(())
     }
+    /// Heartbeat an UNCHANGED rendered GPUI frame without revising its
+    /// native control/input epoch. Host validates the same owner, session,
+    /// revision and source TTL; no cached pixels or Host effects are sent.
+    pub fn refresh_frame(&self,session:u128,revision:u64)
+        ->Result<(),&'static str>{
+        if revision==0||revision>MAX_SAFE_INTEGER{
+            return Err("GPUI_FRAME_HEARTBEAT_INVALID");
+        }
+        let response=self.request(reqwest::Method::POST,"native-heartbeat")
+            .header("x-vivim-gpui-session",session_wire(session))
+            .header("x-vivim-gpui-revision",revision.to_string())
+            .header("content-length","0")
+            .body(Vec::<u8>::new()).send()
+            .map_err(|_|"GPUI_FRAME_HEARTBEAT_UNAVAILABLE")?;
+        if response.status()!=reqwest::StatusCode::OK{
+            return Err("GPUI_FRAME_HEARTBEAT_REFUSED");
+        }
+        let receipt:Value=response.json()
+            .map_err(|_|"GPUI_FRAME_HEARTBEAT_RECEIPT_INVALID")?;
+        if receipt["schema"]!="vivim.gpui-native-heartbeat/1"||
+            receipt["state"]!="refreshed"||
+            receipt["session"]!=session_wire(session)||
+            receipt["revision"].as_u64()!=Some(revision){
+            return Err("GPUI_FRAME_HEARTBEAT_RECEIPT_INVALID");
+        }
+        Ok(())
+    }
     /// Explicit owner Stop scrubs Host pixels/queued input immediately.
     /// There is no automatic retry of an uncertain stop request.
     pub fn stop_native_share(&self)->Result<(),&'static str>{
