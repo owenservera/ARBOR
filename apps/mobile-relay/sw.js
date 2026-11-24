@@ -5,7 +5,7 @@
 // on the next load; the cache is only the fallback. ES5 syntax on purpose: older Android WebViews
 // can run this file, and it deliberately avoids optional chaining, nullish coalescing, arrow
 // functions and top-level await.
-var CACHE = 'vivim-relay-shell-v48';
+var CACHE = 'vivim-relay-shell-v49';
 var CACHE_PREFIX = 'vivim-relay-shell-';
 // Paths are relative to the worker's scope, so the same file serves both the Direct Host mount
 // (scope /mobile/, files at /mobile/app.js) and the cloud deployment (scope /, files at /app.js).
@@ -16,6 +16,14 @@ var SHELL_PATHS = [
   'first-contact-composer.ts',
   'agent-composer-adapter.ts',
   'transport.mjs',
+  // Optional native-GPUI viewport adapter; the critical legacy shell is
+  // kept as a rollback when no authenticated live owner frame is available.
+  // API mutations/bearers are NEVER in the precache or service worker paths.
+  'gpui-viewport-contract.mjs',
+  'gpui-canvas-viewport.mjs',
+  'gpui-text-input-contract.mjs',
+  'gpui-phone-channel.mjs',
+  'gpui-phone-mount.mjs',
   'visual-bootstrap.mjs',
   'control-phone.mjs',
   'private-shares-ui.mjs',
