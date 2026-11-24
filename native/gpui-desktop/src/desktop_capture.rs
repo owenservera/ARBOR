@@ -119,6 +119,26 @@ pub fn capture_window_png_bytes()->io::Result<(u32,u32,Vec<u8>)>{
     Err(io::Error::new(io::ErrorKind::Unsupported,"WINDOWS_ONLY"))
 }
 
+/// Capture the GPUI drawable CLIENT viewport only. The original screenshot
+/// utility includes Windows chrome; the phone input coordinate space MUST NOT.
+/// GPUI still owns the exact rendered pixels. This uses Windows composition,
+/// not a second DOM UI or independent renderer.
+#[cfg(windows)]
+pub fn capture_gpui_viewport_png_bytes()->io::Result<(u32,u32,Vec<u8>)>{
+    let (width,height,rgba)=win::capture_own_client_area()?;
+    let mut bytes=Vec::new();
+    write_rgba_png(&mut bytes,width,height,&rgba)?;
+    if bytes.len()>4*1024*1024 {
+        return Err(io::Error::new(io::ErrorKind::InvalidData,"GPUI_FRAME_PNG_TOO_LARGE"));
+    }
+    Ok((width,height,bytes))
+}
+#[cfg(not(windows))]
+pub fn capture_gpui_viewport_png_bytes()->io::Result<(u32,u32,Vec<u8>)>{
+    Err(io::Error::new(io::ErrorKind::Unsupported,"WINDOWS_ONLY"))
+}
+
+
 #[cfg(windows)]
 pub fn capture_window_png()->io::Result<PathBuf>{
     let (width,height,rgba)=win::capture_own_window()?;
@@ -143,6 +163,8 @@ mod win {
     #[repr(C)] #[derive(Default)]
     struct Rect { left:i32,top:i32,right:i32,bottom:i32 }
     #[repr(C)] #[derive(Default)]
+    struct Point { x:i32,y:i32 }
+    #[repr(C)] #[derive(Default)]
     struct BitmapInfoHeader {
         size:u32,width:i32,height:i32,planes:u16,bit_count:u16,
         compression:u32,size_image:u32,x_pels:i32,y_pels:i32,clr_used:u32,clr_important:u32
@@ -155,6 +177,8 @@ mod win {
         fn GetWindowThreadProcessId(hwnd:Handle,pid:*mut u32)->u32;
         fn IsWindowVisible(hwnd:Handle)->i32;
         fn GetWindowRect(hwnd:Handle,rect:*mut Rect)->i32;
+        fn GetClientRect(hwnd:Handle,rect:*mut Rect)->i32;
+        fn ClientToScreen(hwnd:Handle,point:*mut Point)->i32;
         fn GetForegroundWindow()->Handle;
         fn GetDC(hwnd:Handle)->Handle;
         fn ReleaseDC(hwnd:Handle,dc:Handle)->i32;
@@ -198,14 +222,37 @@ mod win {
         }
     }
     pub fn capture_own_window()->io::Result<(u32,u32,Vec<u8>)>{
+        capture_own_window_region(false)
+    }
+    pub fn capture_own_client_area()->io::Result<(u32,u32,Vec<u8>)>{
+        capture_own_window_region(true)
+    }
+    fn capture_own_window_region(client_only:bool)->io::Result<(u32,u32,Vec<u8>)>{
         // SAFETY: FFI calls capture only the verified foreground bounds of
-        // our own window. Unfocused/occluded app capture is denied.
+        // our own window. Unfocused app capture is denied. Client-only pixels
+        // and exact GPUI input coordinates exclude OS non-client chrome.
         unsafe {
             let mut hwnd:Handle=std::ptr::null_mut();
             EnumWindows(Some(locate),(&mut hwnd as *mut Handle) as isize);
             if hwnd.is_null(){return Err(io::Error::new(io::ErrorKind::NotFound,"GPUI_WINDOW_NOT_FOUND"));}
             let mut rect=Rect::default();
-            if GetWindowRect(hwnd,&mut rect)==0 {
+            if client_only {
+                if GetClientRect(hwnd,&mut rect)==0 {
+                    return Err(io::Error::last_os_error());
+                }
+                let w=rect.right-rect.left;
+                let h=rect.bottom-rect.top;
+                let mut origin=Point::default();
+                if ClientToScreen(hwnd,&mut origin)==0 {
+                    return Err(io::Error::last_os_error());
+                }
+                // Screen-coordinate BitBlt is sized to the exact GPUI
+                // drawable viewport, not Windows frame/titlebar pixels.
+                rect.left=origin.x;
+                rect.top=origin.y;
+                rect.right=origin.x.saturating_add(w);
+                rect.bottom=origin.y.saturating_add(h);
+            } else if GetWindowRect(hwnd,&mut rect)==0 {
                 return Err(io::Error::last_os_error());
             }
             let width=rect.right-rect.left;
