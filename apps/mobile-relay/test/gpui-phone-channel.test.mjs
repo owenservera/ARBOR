@@ -157,3 +157,27 @@ test('invalid frame or transport failures do not spin an unbounded poll loop',as
   assert.equal(f.disconnects.length,1);
   f.channel.close();
 });
+
+test('unchanged live 204 renews phone freshness without changing GPUI revision',async()=>{
+  const f=setup();f.subscribe();await f.channel.pollOnce();
+  f.advance(4500);
+  f.setGet(()=>response({status:204}));
+  assert.equal((await f.channel.pollOnce()).state,'unchanged');
+  f.advance(4500);
+  assert.equal(f.channel.authorizeFrame({
+    session:VIEW,revision:1,width:360,height:800
+  }),true);
+  assert.equal((await f.channel.pollOnce()).state,'unchanged');
+  assert.equal(f.frames.length,1,'native frame revision must be stable');
+  f.channel.close();
+});
+test('native expired 410 immediately disconnects instead of keeping stale private pixels',async()=>{
+  const f=setup();f.subscribe();await f.channel.pollOnce();
+  f.setGet(()=>response({status:410}));
+  assert.equal((await f.channel.pollOnce()).reason,'GPUI_NATIVE_FRAME_GONE');
+  assert.equal(f.channel.status().source,null);
+  assert.equal(f.channel.status().active,false);
+  assert.deepEqual(f.disconnects,['GPUI_NATIVE_FRAME_GONE']);
+  assert.equal((await f.channel.submitPointer(f.makePointer())).state,'refused');
+  f.channel.close();
+});
