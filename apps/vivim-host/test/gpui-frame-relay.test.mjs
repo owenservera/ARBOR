@@ -238,3 +238,22 @@ test('uncertain native IME submission consumes sequence without a hidden retry',
   assert.equal((await f.relay.receiveText(phone,p)).reason,'GPUI_INPUT_REPLAY');
   f.relay.close();
 });
+
+test('explicit native refusal propagates for pointer and text without retry',async()=>{
+  const f=fixture();f.relay.publish(owner,frame());
+  f.setForward(async()=>({state:'refused',reason:'NATIVE_FOCUS_MISSING'}));
+  const p=pointer(1);
+  assert.equal((await f.relay.receivePointer(phone,p)).reason,'NATIVE_GPUI_INPUT_REFUSED');
+  assert.equal((await f.relay.receivePointer(phone,p)).reason,'GPUI_INPUT_REPLAY');
+  const t={kind:'vivim.gpui.text/1',session:SESSION,revision:1,
+    sequence:2,phase:'key-down',text:'a'};
+  assert.equal((await f.relay.receiveText(phone,t)).reason,'NATIVE_GPUI_INPUT_REFUSED');
+  assert.equal((await f.relay.receiveText(phone,t)).reason,'GPUI_INPUT_REPLAY');
+  f.relay.close();
+});
+test('native no-control is a refusal, not a successful pointer submission',async()=>{
+  const f=fixture();f.relay.publish(owner,frame());
+  f.setForward(async()=>({state:'no-control'}));
+  assert.equal((await f.relay.receivePointer(phone,pointer())).reason,'NATIVE_GPUI_INPUT_REFUSED');
+  f.relay.close();
+});
