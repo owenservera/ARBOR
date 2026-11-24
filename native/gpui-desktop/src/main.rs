@@ -10,7 +10,7 @@
 //! @hq:consumes vivim.rust-wiki-source-delta@1
 //! @hq:consumes hqkg.development-query@1
 //! @hq:consumes vivim.rust-development-projection@1
-use std::{time::{Duration, Instant}, sync::Arc};
+use std::{time::{Duration, Instant}, sync::{Arc,atomic::{AtomicBool,Ordering},mpsc}};
 use vivim_host_supervisor::{HostSupervisor, Readiness};
 use serde_json::{json,Value};
 use vivim_programmability_core::navigation;
@@ -53,6 +53,12 @@ use vivim_gpui_desktop::first_contact::{self, PhoneDraft};
 use vivim_gpui_desktop::desktop_menu::{self, Section, Destination, Intent};
 use vivim_gpui_desktop::desktop_settings::{self, Preferences};
 use vivim_gpui_desktop::desktop_capture;
+use vivim_gpui_desktop::remote_host_transport::{
+    self,NativeHostPeer,RemoteInput
+};
+use vivim_gpui_desktop::remote_proof::{
+    RemoteProof,RemoteProofResult,PROOF_LOGICAL_BOUNDS,PROOF_CONTROL_ID
+};
 use vivim_gpui_desktop::live_delivery;
 use vivim_gpui_desktop::surface_registry;
 use vivim_gpui_desktop::{Overview, ThemeTokens, ReadError, ObservationTicket, passive_read_allowed, DevelopmentRevisionGuard, read_overview, read_development, control::{self, Review}, visual::{self, Visual, RevisionGuard}};
@@ -69,6 +75,22 @@ impl Panel {
         }
     }
 }
+
+#[derive(Debug)]
+enum GpuiPhoneMessage {
+    Frame {width:u32,height:u32,revision:u64},
+    Input(RemoteInput),
+    Stopped(&'static str),
+}
+struct GpuiPhoneShare {
+    session:u128,
+    scale:f32,
+    stop:Arc<AtomicBool>,
+    proof:RemoteProof,
+}
+impl Drop for GpuiPhoneShare {
+    fn drop(&mut self){self.stop.store(true,Ordering::Release);}
+}
 struct Desktop {
     supervisor: Arc<HostSupervisor>,
     panel: Panel,
@@ -80,6 +102,9 @@ struct Desktop {
     delivery_status: String,
     delivery_busy: bool,
     capture_busy: bool,
+    gpui_phone_share: Option<GpuiPhoneShare>,
+    gpui_phone_status: String,
+    gpui_phone_taps: u64,
     viewport_px: u32,
     viewport_epoch: u64,
     // Invalidates reads crossing a Host effect without weakening revision guards.
@@ -1142,6 +1167,180 @@ impl Desktop {
             });
         }).detach();
     }
+
+    // Owner must explicitly click the PC Developer menu before ANY frame
+    // capture. A standalone Host already owns Direct pairing; GPUI does not
+    // create another listener, renderer, token or approval channel.
+    fn start_gpui_phone_share(&mut self,window:&mut Window,cx:&mut Context<Self>){
+        if self.gpui_phone_share.is_some(){return;}
+        let scale=window.scale_factor();
+        if !(0.75..=4.).contains(&scale) {
+            self.developer_status="GPUI phone viewport unavailable at this display scale".into();
+            cx.notify();return;
+        }
+        let session=match remote_host_transport::new_native_session(){
+            Ok(value)=>value,
+            Err(code)=>{
+                self.developer_status=format!("GPUI owner session unavailable: {code}");
+                cx.notify();return;
+            }
+        };
+        let stop=Arc::new(AtomicBool::new(false));
+        let worker_stop=Arc::clone(&stop);
+        let (tx,rx)=mpsc::sync_channel::<GpuiPhoneMessage>(32);
+        std::thread::spawn(move||{
+            let peer=match NativeHostPeer::from_current_owner(){
+                Ok(peer)=>peer,
+                Err(code)=>{
+                    let _=tx.try_send(GpuiPhoneMessage::Stopped(code));
+                    return;
+                }
+            };
+            let mut revision=0_u64;
+            let mut failure=None;
+            while !worker_stop.load(Ordering::Acquire){
+                // The compositor capture itself fails closed unless the
+                // owning GPUI window is foreground; no background recording.
+                match desktop_capture::capture_gpui_viewport_png_bytes(){
+                    Ok((width,height,png))=>{
+                        revision=revision.saturating_add(1);
+                        match peer.publish_png(session,revision,width,height,&png){
+                            Ok(())=>{
+                                let _=tx.try_send(GpuiPhoneMessage::Frame{
+                                    width,height,revision
+                                });
+                            },
+                            Err(code)=>{failure=Some(code);break;}
+                        }
+                    },
+                    Err(_)=>{
+                        failure=Some("GPUI_FOREGROUND_VIEWPORT_CAPTURE_REQUIRED");
+                        break;
+                    }
+                }
+                for _ in 0..16 {
+                    if worker_stop.load(Ordering::Acquire){break;}
+                    match peer.next_input(){
+                        Ok(Some(packet))=>{
+                            let _=tx.try_send(GpuiPhoneMessage::Input(packet));
+                        },
+                        Ok(None)=>break,
+                        Err(code)=>{failure=Some(code);break;}
+                    }
+                }
+                if failure.is_some(){break;}
+                std::thread::sleep(Duration::from_millis(450));
+            }
+            // The owner-only Host route invalidates private PNGs and queued
+            // inputs immediately; a failed call is UNKNOWN, never retried.
+            let _=peer.stop_native_share();
+            let stopped=if worker_stop.load(Ordering::Acquire){
+                "GPUI_OWNER_STOPPED"
+            }else{failure.unwrap_or("GPUI_NATIVE_FRAME_LOOP_ENDED")};
+            let _=tx.try_send(GpuiPhoneMessage::Stopped(stopped));
+        });
+        self.gpui_phone_share=Some(GpuiPhoneShare{
+            session,scale,stop,proof:RemoteProof::new(session)
+        });
+        self.gpui_phone_taps=0;
+        self.gpui_phone_status="Owner-initiated GPUI viewport connecting to existing Host".into();
+        cx.notify();
+
+        // A bounded UI-thread mailbox is the sole bridge from the native
+        // input poller. Do NOT dispatch arbitrary phone mouse events into all
+        // GPUI/Host controls: this first physical proof admits only control 42.
+        cx.spawn(async move|this,cx|{
+            loop{
+                cx.background_executor().timer(Duration::from_millis(120)).await;
+                let mut events=Vec::new();
+                let mut finished=false;
+                for _ in 0..32{
+                    match rx.try_recv(){
+                        Ok(event)=>events.push(event),
+                        Err(mpsc::TryRecvError::Empty)=>break,
+                        Err(mpsc::TryRecvError::Disconnected)=>{
+                            finished=true;break;
+                        }
+                    }
+                }
+                if finished && !events.iter().any(|event|
+                    matches!(event,GpuiPhoneMessage::Stopped(_))){
+                    events.push(GpuiPhoneMessage::Stopped("GPUI_NATIVE_PEER_DISCONNECTED"));
+                }
+                let running=this.update(cx,|view,cx|{
+                    if !view.gpui_phone_share.as_ref()
+                        .is_some_and(|share|share.session==session){return false;}
+                    for event in events{
+                        view.process_gpui_phone_message(event,cx);
+                    }
+                    view.gpui_phone_share.as_ref()
+                        .is_some_and(|share|share.session==session)
+                }).unwrap_or(false);
+                if !running{break;}
+            }
+        }).detach();
+    }
+    fn stop_gpui_phone_share(&mut self,cx:&mut Context<Self>){
+        if let Some(share)=self.gpui_phone_share.take(){
+            share.stop.store(true,Ordering::Release);
+        }
+        self.panel=Panel::Developer;
+        self.gpui_phone_status="GPUI viewport stopped by owner; Host frame revocation requested".into();
+        self.developer_status=self.gpui_phone_status.clone();
+        cx.notify();
+    }
+    // Both a local GPUI click and an admitted paired phone touch call this
+    // exact inert handler. No Host effect, plan, approval or provider send.
+    fn native_phone_proof_tap(&mut self,cx:&mut Context<Self>){
+        self.gpui_phone_taps=self.gpui_phone_taps.saturating_add(1);
+        self.gpui_phone_status=format!(
+            "Actual native GPUI control #{PROOF_CONTROL_ID} · {} inert taps acknowledged",
+            self.gpui_phone_taps
+        );
+        cx.notify();
+    }
+    fn process_gpui_phone_message(&mut self,message:GpuiPhoneMessage,cx:&mut Context<Self>){
+        match message{
+            GpuiPhoneMessage::Frame{width,height,revision}=>{
+                if let Some(share)=self.gpui_phone_share.as_mut(){
+                    if share.proof.record_native_frame(
+                        width,height,revision,share.scale
+                    ).is_ok(){
+                        self.gpui_phone_status=format!(
+                            "GPUI pixels published to owner Host · native frame {revision}"
+                        );
+                    }else{
+                        self.gpui_phone_status=
+                            "Native viewport dimensions/revision refused".into();
+                    }
+                }
+                cx.notify();
+            }
+            GpuiPhoneMessage::Input(input)=>{
+                let result=self.gpui_phone_share.as_mut()
+                    .map(|share|share.proof.admit(input));
+                match result{
+                    Some(RemoteProofResult::InertButton(receipt))
+                        if receipt.control_id==PROOF_CONTROL_ID=>{
+                            self.native_phone_proof_tap(cx);
+                        }
+                    Some(RemoteProofResult::Refused(reason))=>{
+                        self.gpui_phone_status=
+                            format!("Native GPUI refused unapproved remote input: {reason:?}");
+                        cx.notify();
+                    }
+                    _=>{}
+                }
+            }
+            GpuiPhoneMessage::Stopped(reason)=>{
+                self.gpui_phone_share.take();
+                self.gpui_phone_status=format!("Native GPUI phone viewport stopped: {reason}");
+                self.developer_status=self.gpui_phone_status.clone();
+                self.panel=Panel::Developer;
+                cx.notify();
+            }
+        }
+    }
     fn capture_native_window(&mut self,cx:&mut Context<Self>) {
         if self.capture_busy {
             self.developer_status="A native screenshot is already in progress".into();
@@ -1336,6 +1535,33 @@ fn native_source_inventory(group:Section)->AnyElement {
 impl Render for Desktop {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let theme=self.native_theme();
+        // The remote acceptance screen is itself GPUI-rendered on the PC.
+        // The phone receives exactly this native pixel buffer and only the
+        // inert proof div below may be activated by a remote touch.
+        if self.gpui_phone_share.is_some(){
+            let bounds=PROOF_LOGICAL_BOUNDS;
+            return div().id("native-gpui-phone-proof")
+                .relative().size_full()
+                .bg(rgb(theme.background)).text_color(rgb(theme.text))
+                .child(div().absolute()
+                    .left(px(bounds.x as f32)).top(px(bounds.y as f32))
+                    .w(px(bounds.width as f32)).h(px(bounds.height as f32))
+                    .flex().items_center().justify_center()
+                    .bg(rgb(theme.raised)).border_1()
+                    .border_color(rgb(theme.border)).rounded(px(10.))
+                    .child("Tap this real GPUI control from Android")
+                    .on_click(cx.listener(|view,_,_,cx|{
+                        view.native_phone_proof_tap(cx);
+                    })))
+                .child(div().absolute().left(px(16.)).top(px(140.))
+                    .text_sm().child(self.gpui_phone_status.clone()))
+                .child(div().absolute().right(px(16.)).bottom(px(16.))
+                    .child(Button::new("native-phone-stop")
+                        .label("Stop phone viewport · PC owner only")
+                        .on_click(cx.listener(|view,_,_,cx|{
+                            view.stop_gpui_phone_share(cx);
+                        }))));
+        }
         // The integrated GPUI caption is the sole Windows application chrome,
         // not a second PWA or a menu below another Windows titlebar.
         let menu=self.surface_menu(window,cx);
@@ -1402,6 +1628,14 @@ impl Render for Desktop {
                     let host=self.supervisor.snapshot();
                     page=page
                         .child("Developer utilities are PC-only and never alter the mobile PWA.")
+                        .child(div().text_lg().child("Native GPUI → paired Android viewport"))
+                        .child("Explicit owner opt-in · only this foreground GPUI screen is mirrored. Phone touch can acknowledge inert native control #42 only; Host effects remain forbidden.")
+                        .child(Button::new("dev-start-gpui-phone")
+                            .label("Start native GPUI phone viewport")
+                            .on_click(cx.listener(|v,_,window,cx|{
+                                v.start_gpui_phone_share(window,cx);
+                            })))
+                        .child(div().text_sm().child(self.gpui_phone_status.clone()))
                         .child(div().text_lg().child("Capture and evidence"))
                         .child(Button::new("dev-capture").label(
                             if self.capture_busy {"Capturing GPUI window…"} else {"Capture GPUI screenshot"}
@@ -1896,6 +2130,9 @@ fn main() {
                         developer_status:"No developer action requested".into(),
                         delivery_status:"Not yet verified on this PC · check in Developer".into(),
                         delivery_busy:false,capture_busy:false,
+                        gpui_phone_share:None,
+                        gpui_phone_status:"Native phone viewport not started · owner opt-in required".into(),
+                        gpui_phone_taps:0,
                         viewport_px:initial_viewport_px,
                         viewport_epoch:0,source_epoch:0,presentation_epoch:0,read_busy:false,refresh_pending:false,
                         coherence_retry_ready:true,
@@ -1923,6 +2160,12 @@ fn main() {
                             }
                         }));
                     cx.observe_window_bounds(window, |view: &mut Desktop,window,cx|{
+                        // A resize or DPI transition invalidates client-pixel
+                        // provenance. Explicitly restart native sharing only
+                        // with fresh owner opt-in and matching new coordinates.
+                        if view.gpui_phone_share.is_some(){
+                            view.stop_gpui_phone_share(cx);
+                        }
                         view.set_viewport(viewport_for_window(window),cx);
                     }).detach();
                 });
