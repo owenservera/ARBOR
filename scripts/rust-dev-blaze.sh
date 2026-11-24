@@ -13,8 +13,8 @@ blaze="$blaze_dir/blaze"
 action="${1:-check}"
 case "$action" in
  version) exec "$blaze" --version;;
- check|build|test) ;;
- *) echo "Usage: sh scripts/rust-dev-blaze.sh [version|check|build|test] [extra flags]" >&2; exit 2;;
+ check|test) ;;
+ *) echo "Usage: sh scripts/rust-dev-blaze.sh [version|check|test] [extra flags]" >&2; exit 2;;
 esac
 if [ "$#" -gt 0 ]; then shift; fi
 if [ ! -x "$blaze" ]; then
@@ -27,4 +27,4 @@ case "$root" in /mnt/[a-z]/*) echo "Use a Linux-filesystem development checkout,
 cd "$root"
 printf 'BLAZE_DEV_ONLY version=%s checkout=%s\n' "$version" "$root"
 # Limit the first adoption to the portable programmability crate.
-exec "$blaze" "$action" --manifest-path core/programmability/Cargo.toml "$@"
+exec "$blaze" "$action" core/programmability "$@"
