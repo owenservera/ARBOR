@@ -24,6 +24,7 @@ import { workerHealth } from './diagnostics.mjs';
 import { controlErrorStatus } from './control/http-status.mjs';
 import { createPrivateShares } from './shares/private-shares.mjs';
 import { createFirstContactObservations } from './first-contact-observation.mjs';
+import {createGpuiDirectChannel} from './remote/gpui-direct-channel.mjs';
 
 const root = fileURLToPath(new URL('../mobile-relay/', import.meta.url));
 const assets = new Map(Object.entries({
@@ -262,6 +263,9 @@ export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'wo
   const apk = apkRegistry ?? createApkRegistry({ dataRoot });
   const pairing = pairingStore ?? createPairingStore({ dataRoot });
   const enrollment = createEnrollment({ dataRoot, origin, user });
+  // Same existing Direct Host: native owner PNG ingress plus paired phone
+  // frame download/input return. No second server or independent UI renderer.
+  const gpuiDirect=createGpuiDirectChannel({dataRoot,origin,enrollment});
   const shares = createPrivateShares({ dataRoot });
   // Host-owned lifecycle maintenance: expired bytes disappear even when nobody
   // creates another share. The timer is unref'd and is stopped on Host close.
@@ -295,6 +299,10 @@ export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'wo
     if (rawPath === '/mobile') { res.writeHead(308, { location: '/mobile/' }); res.end(); return; }
     if (!rawPath.startsWith('/mobile/')) { json(res, 404, { error: 'Not found' }); return; }
     const route = rawPath.slice('/mobile/'.length);
+    if(route.startsWith('api/gpui/')){
+      await gpuiDirect.handle(req,res,route);
+      return;
+    }
     // Private OpenSend-style file shares. Only approved Direct devices may
     // upload, inspect, or retrieve content; no public sharing ingress is opened.
     if (route === 'api/shares') {
@@ -969,6 +977,9 @@ export function createDirectPhoneHandler({ origin, user, dataRoot, worldId = 'wo
     try { const content = await readPhoneAsset(asset); res.setHeader('content-type', asset[1]); res.writeHead(200); res.end(req.method === 'HEAD' ? undefined : content); }
     catch { json(res, 503, { error: 'Mobile UI unavailable' }); }
   };
-  handleDirectPhone.close = () => clearInterval(shareMaintenanceTimer);
+  handleDirectPhone.close = () => {
+    clearInterval(shareMaintenanceTimer);
+    gpuiDirect.close();
+  };
   return handleDirectPhone;
 }
