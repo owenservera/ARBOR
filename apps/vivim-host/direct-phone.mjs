@@ -51,6 +51,13 @@ const assets = new Map(Object.entries({
   'control-phone.mjs': ['control-phone.mjs', 'text/javascript; charset=utf-8'],
   'private-shares-ui.mjs': ['private-shares-ui.mjs', 'text/javascript; charset=utf-8'],
   'control-client.mjs': ['control-client.mjs', 'text/javascript; charset=utf-8'],
+  // ONE native GPUI renderer: the phone only paints authenticated native
+  // PNG frames and returns touch/key/IME to the existing Host/native owner.
+  // Reuse the incumbent static PWA server; these modules define NO second UI.
+  'gpui-viewport-contract.mjs': ['gpui-viewport-contract.mjs', 'text/javascript; charset=utf-8'],
+  'gpui-canvas-viewport.mjs': ['gpui-canvas-viewport.mjs', 'text/javascript; charset=utf-8'],
+  'gpui-text-input-contract.mjs': ['gpui-text-input-contract.mjs', 'text/javascript; charset=utf-8'],
+
   'control-chat.mjs': ['control-chat.mjs', 'text/javascript; charset=utf-8'],
   'control-language.mjs': ['control-language.mjs', 'text/javascript; charset=utf-8'],
   'composer-assist.mjs': ['composer-assist.mjs', 'text/javascript; charset=utf-8'],
