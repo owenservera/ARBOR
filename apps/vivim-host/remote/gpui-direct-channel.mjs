@@ -135,12 +135,34 @@ export function createGpuiDirectChannel({
           subscribersDelivered:result.subscribersDelivered});
         return true;
       }
+      if(route==='api/gpui/native-heartbeat'){
+        if(req.method!=='POST')throw failure('GPUI_METHOD',405);
+        if(!nativeAuthorized(req))throw failure('GPUI_OWNER_REQUIRED',401);
+        if((await readLimited(req,0)).length!==0)
+          throw failure('GPUI_HEARTBEAT_BODY_UNEXPECTED');
+        const session=req.headers['x-vivim-gpui-session'];
+        const revision=req.headers['x-vivim-gpui-revision'];
+        if(!hex32(session)||!integer(revision)||Number(revision)<1)
+          throw failure('GPUI_HEARTBEAT_METADATA_INVALID');
+        const current=relay.status();
+        if(!frameAt||!current.available||current.session!==session||
+           current.revision!==Number(revision))
+          throw failure('GPUI_HEARTBEAT_FRAME_MISMATCH',409);
+        // Existing owner prove + EXACT native revision: no new PNG or changed
+        // phone input fence. Every heartbeat is bounded and leaves pixels
+        // solely inside the one Host's private in-memory relay.
+        frameAt=now();
+        json(res,200,{schema:'vivim.gpui-native-heartbeat/1',state:'refreshed',
+          session,revision:Number(revision)});
+        return true;
+      }
       if(route==='api/gpui/native-stop'){
         if(req.method!=='POST')throw failure('GPUI_METHOD',405);
         if(!nativeAuthorized(req))throw failure('GPUI_OWNER_REQUIRED',401);
         if(req.headers['content-length']!==undefined &&
            req.headers['content-length']!=='0')
           throw failure('GPUI_STOP_BODY_UNEXPECTED',400);
+        await readLimited(req,0);
         // Explicit owner stop is stronger than TTL: clear every retained
         // frame and pending input before replying. Device replay cursors
         // survive reconnect, never replay uncertain native effects.
@@ -174,7 +196,13 @@ export function createGpuiDirectChannel({
           return true;
         }
         const snapshot=relay.readLatest(context,cursorFromUrl(req,origin));
-        if(snapshot.state==='unavailable'||snapshot.state==='unchanged'){
+        if(snapshot.state==='unavailable'){
+          // Distinguish a live, unchanged 204 frame from a removed source:
+          // otherwise PWA can keep painting stale private PNG indefinitely.
+          json(res,410,{code:'GPUI_NATIVE_FRAME_UNAVAILABLE'});
+          return true;
+        }
+        if(snapshot.state==='unchanged'){
           noContent(res);return true;
         }
         if(snapshot.state!=='frame')throw failure(snapshot.reason||'GPUI_PHONE_NOT_ADMITTED',403);
