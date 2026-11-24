@@ -164,6 +164,23 @@ impl NativeHostPeer{
         }
         Ok(())
     }
+    /// Explicit owner Stop scrubs Host pixels/queued input immediately.
+    /// There is no automatic retry of an uncertain stop request.
+    pub fn stop_native_share(&self)->Result<(),&'static str>{
+        let response=self.request(reqwest::Method::POST,"native-stop")
+            .header("content-length","0")
+            .body(Vec::<u8>::new()).send()
+            .map_err(|_|"GPUI_NATIVE_STOP_UNCERTAIN")?;
+        if response.status()!=reqwest::StatusCode::OK{
+            return Err("GPUI_NATIVE_STOP_REFUSED");
+        }
+        let receipt:Value=response.json().map_err(|_|"GPUI_NATIVE_STOP_RECEIPT_INVALID")?;
+        if receipt["schema"]!="vivim.gpui-owner-stop/1"||
+            receipt["state"]!="stopped"{
+            return Err("GPUI_NATIVE_STOP_RECEIPT_INVALID");
+        }
+        Ok(())
+    }
     pub fn next_input(&self)->Result<Option<RemoteInput>,&'static str>{
         let response=self.request(reqwest::Method::GET,"native-input")
             .send().map_err(|_|"GPUI_INPUT_READ_UNAVAILABLE")?;
