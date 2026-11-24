@@ -1188,7 +1188,18 @@ impl Desktop {
         let stop=Arc::new(AtomicBool::new(false));
         let worker_stop=Arc::clone(&stop);
         let (tx,rx)=mpsc::sync_channel::<GpuiPhoneMessage>(32);
+        let (ready_tx,ready_rx)=mpsc::sync_channel::<()>(1);
+        // Never stream the prior Developer screen. Start the capture worker
+        // only AFTER the new inert GPUI proof surface has actually repainted.
+        window.on_next_frame(move |_,_|{
+            let _=ready_tx.try_send(());
+        });
         std::thread::spawn(move||{
+            if ready_rx.recv_timeout(Duration::from_secs(3)).is_err(){
+                let _=tx.try_send(GpuiPhoneMessage::Stopped(
+                    "GPUI_REMOTE_PROOF_SCREEN_NOT_PAINTED"));
+                return;
+            }
             let peer=match NativeHostPeer::from_current_owner(){
                 Ok(peer)=>peer,
                 Err(code)=>{
@@ -1540,8 +1551,7 @@ impl Render for Desktop {
         // inert proof div below may be activated by a remote touch.
         if self.gpui_phone_share.is_some(){
             let bounds=PROOF_LOGICAL_BOUNDS;
-            return div().id("native-gpui-phone-proof")
-                .relative().size_full()
+            return div().relative().size_full()
                 .bg(rgb(theme.background)).text_color(rgb(theme.text))
                 .child(div().absolute()
                     .left(px(bounds.x as f32)).top(px(bounds.y as f32))
