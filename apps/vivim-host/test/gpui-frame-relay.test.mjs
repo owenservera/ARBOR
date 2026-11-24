@@ -296,3 +296,21 @@ test('source owner revocation clears authorized frame snapshot and prevents repl
   f.relay.close();
   assert.equal(f.relay.readLatest(phone).reason,'GPUI_RELAY_CLOSED');
 });
+
+test('explicit source expiry destroys private frame without resetting input replay cursor',async()=>{
+  const f=fixture();f.listen();
+  assert.equal(f.relay.publish(owner,frame(1)).state,'published');
+  assert.equal((await f.relay.receivePointer(phone,pointer(5))).state,
+    'submitted_to_native_unverified');
+  f.relay.invalidate();
+  assert.equal(f.relay.status().available,false);
+  assert.equal(f.relay.status().subscribers,0);
+  assert.equal(f.disconnected.length,1);
+  assert.equal(f.relay.readLatest(phone).state,'unavailable');
+  assert.equal(f.relay.publish(owner,frame(2)).state,'published');
+  assert.equal((await f.relay.receivePointer(phone,pointer(5,2))).reason,
+    'GPUI_INPUT_REPLAY');
+  assert.equal((await f.relay.receivePointer(phone,pointer(6,2))).state,
+    'submitted_to_native_unverified');
+  f.relay.close();
+});
