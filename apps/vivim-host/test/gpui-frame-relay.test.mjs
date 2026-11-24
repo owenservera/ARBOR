@@ -257,3 +257,42 @@ test('native no-control is a refusal, not a successful pointer submission',async
   assert.equal((await f.relay.receivePointer(phone,pointer())).reason,'NATIVE_GPUI_INPUT_REFUSED');
   f.relay.close();
 });
+
+test('readLatest returns exact owned PNG only to a presently authorized paired phone',()=>{
+  const f=fixture();
+  assert.equal(f.relay.readLatest(phone).state,'unavailable');
+  f.relay.publish(owner,frame());
+  const result=f.relay.readLatest(phone);
+  assert.equal(result.state,'frame');
+  assert.equal(result.kind,'vivim.gpui.pixels/1');
+  assert.equal(result.revision,1);
+  assert.equal(result.width,360);
+  assert.equal(result.png[0],137);
+  const original=f.relay.readLatest(phone);
+  result.png[0]=0;
+  assert.equal(original.png[0],137);
+  assert.equal(f.relay.readLatest({deviceId:DEVICE}).reason,'GPUI_PHONE_NOT_ADMITTED');
+  f.setPaired(false);
+  assert.equal(f.relay.readLatest(phone).reason,'GPUI_PHONE_NOT_ADMITTED');
+  f.relay.close();
+});
+test('frame cursor refuses malformed state and suppresses duplicate revision traffic',()=>{
+  const f=fixture();f.relay.publish(owner,frame(7));
+  assert.equal(f.relay.readLatest(phone,{session:SESSION,revision:7}).state,'unchanged');
+  assert.equal(f.relay.readLatest(phone,{session:SESSION,revision:8}).state,'unchanged');
+  assert.equal(f.relay.readLatest(phone,{session:'c'.repeat(32),revision:7}).state,'frame',
+    'different native session must deliver new pixels even with same revision');
+  for(const cursor of [{session:SESSION,revision:-1},{session:'invalid',revision:1},
+    {session:SESSION,revision:1.5},{session:SESSION}])
+    assert.equal(f.relay.readLatest(phone,cursor).reason,'GPUI_FRAME_CURSOR_INVALID');
+  f.relay.close();
+});
+test('source owner revocation clears authorized frame snapshot and prevents replay',()=>{
+  const f=fixture();f.relay.publish(owner,frame());
+  assert.equal(f.relay.readLatest(phone).state,'frame');
+  f.setNative(false);
+  assert.equal(f.relay.publish(owner,frame(2)).reason,'NATIVE_GPUI_OWNER_NOT_ADMITTED');
+  assert.equal(f.relay.readLatest(phone).state,'unavailable');
+  f.relay.close();
+  assert.equal(f.relay.readLatest(phone).reason,'GPUI_RELAY_CLOSED');
+});
