@@ -59,6 +59,29 @@ function wellFormedPng(bytes, view) {
   }
   return false; // no valid terminal IEND
 }
+
+// PNG structure must be complete before any pixels are exposed. CRC and IDAT
+// decoding remain the image decoder's job; reject truncated/forged envelopes.
+function completePng(bytes) {
+  let offset = 8, sawData = false, sawEnd = false, chunks = 0;
+  while (offset + 12 <= bytes.length && chunks++ < 4096) {
+    const view = new DataView(bytes.buffer, bytes.byteOffset + offset, 8);
+    const length = view.getUint32(0);
+    const type = view.getUint32(4);
+    if (length > MAX_BYTES || offset + 12 + length > bytes.length) return false;
+    if (chunks === 1 && (type !== 0x49484452 || length !== 13)) return false;
+    if (type === 0x49484452 && chunks !== 1) return false;
+    if (type === 0x49444154) sawData = true;
+    if (type === 0x49454e44) {
+      if (!sawData || length !== 0 || offset + 12 !== bytes.length) return false;
+      sawEnd = true;
+      break;
+    }
+    offset += 12 + length;
+  }
+  return sawEnd;
+}
+
 export function validateGpuiFrame(frame, previous = null) {
   if (!frame || frame.kind !== 'vivim.gpui.pixels/1' ||
       typeof frame.session !== 'string' || !/^[a-f0-9]{32}$/.test(frame.session) ||
@@ -66,7 +89,7 @@ export function validateGpuiFrame(frame, previous = null) {
       !validInt(frame.width) || frame.width < 240 || frame.width > 4096 ||
       !validInt(frame.height) || frame.height < 240 || frame.height > 4096 ||
       !(frame.png instanceof Uint8Array) || frame.png.length < 33 || frame.png.length > MAX_BYTES ||
-      !PNG.every((byte, i) => frame.png[i] === byte)) throw new Error('INVALID_GPUI_FRAME');
+      !PNG.every((byte, i) => frame.png[i] === byte) || !completePng(frame.png)) throw new Error('INVALID_GPUI_FRAME');
   const view = new DataView(frame.png.buffer, frame.png.byteOffset, frame.png.byteLength);
   if (view.getUint32(12) !== 0x49484452 || view.getUint32(16) !== frame.width ||
       view.getUint32(20) !== frame.height) throw new Error('INVALID_GPUI_PNG_DIMENSIONS');
