@@ -196,7 +196,7 @@ export function mountGpuiCanvasViewport({
   canvas.addEventListener('pointerdown',pointerdown);
   let unsubscribe;
   try{
-    unsubscribe=channel.subscribeFrames(frame=>{void receiveFrame(frame);});
+    unsubscribe=channel.subscribeFrames(frame=>receiveFrame(frame),()=>disconnect());
     if(typeof unsubscribe!=='function')throw new Error('GPUI_FRAME_SUBSCRIPTION_INVALID');
     connectText();
   }catch(error){
