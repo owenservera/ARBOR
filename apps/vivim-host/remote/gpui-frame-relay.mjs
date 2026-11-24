@@ -114,7 +114,11 @@ export function createGpuiHostFrameRelay({
       session:pointer.session,revision:pointer.revision,
       sequence:pointer.sequence,x:pointer.x,y:pointer.y};
     try{
-      await forwardToGpui(context,inert);
+      const outcome=await forwardToGpui(context,inert);
+      // A native explicit refusal is not a successful handoff. Do not retry:
+      // the device sequence was reserved before crossing the native boundary.
+      if(outcome?.state==='refused'||outcome?.state==='no-control')
+        return refused('NATIVE_GPUI_INPUT_REFUSED');
       return Object.freeze({state:'submitted_to_native_unverified',
         session:inert.session,sequence:inert.sequence});
     }catch{
@@ -140,7 +144,11 @@ export function createGpuiHostFrameRelay({
     // carry a focus control ID: native GPUI owns focus before acknowledging.
     lastInputs.set(context.deviceId,inert.sequence);
     try{
-      await forwardToGpui(context,inert);
+      const outcome=await forwardToGpui(context,inert);
+      // A native explicit refusal is not a successful handoff. Do not retry:
+      // the device sequence was reserved before crossing the native boundary.
+      if(outcome?.state==='refused'||outcome?.state==='no-control')
+        return refused('NATIVE_GPUI_INPUT_REFUSED');
       return Object.freeze({state:'submitted_to_native_unverified',
         session:inert.session,sequence:inert.sequence});
     }catch{
