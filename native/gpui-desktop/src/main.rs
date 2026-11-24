@@ -1567,7 +1567,7 @@ impl Render for Desktop {
             let bounds=PROOF_LOGICAL_BOUNDS;
             return div().relative().size_full()
                 .bg(rgb(theme.background)).text_color(rgb(theme.text))
-                .child(div().absolute()
+                .child(div().id("native-gpui-phone-proof-button").absolute()
                     .left(px(bounds.x as f32)).top(px(bounds.y as f32))
                     .w(px(bounds.width as f32)).h(px(bounds.height as f32))
                     .flex().items_center().justify_center()
