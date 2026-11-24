@@ -6,7 +6,7 @@
 //! controls and effect-specific approval policy. Native screen capture must be
 //! exactly the client viewport; titlebar/Windows composition cannot shift it.
 use crate::remote_viewport_contract::{
-    Control,InputFence,InertAck,Rect,Refusal,Touch,Viewport
+    Control,InputFence,InertAck,Rect,Refusal,Viewport
 };
 use crate::remote_host_transport::RemoteInput;
 
@@ -79,6 +79,7 @@ impl RemoteProof{
 #[cfg(test)]
 mod tests{
     use super::*;
+    use crate::remote_viewport_contract::Touch;
     fn proof()->RemoteProof{
         let mut proof=RemoteProof::new(7);
         proof.record_native_frame(360,800,1,1.).unwrap();
