@@ -177,12 +177,19 @@ export function createGpuiHostFrameRelay({
         session:inert.session,sequence:inert.sequence});
     }
   };
+  // Source liveness expired or the owner explicitly withdrew sharing.
+  // Scrub every retained PNG and detach phone subscribers, but preserve the
+  // device replay cursor across a later native reconnect.
+  const invalidate=()=>{
+    if(closed)return;
+    suspend();
+  };
   const close=()=>{
     if(closed)return;
     closed=true;suspend();lastInputs.clear();
   };
   return Object.freeze({
-    publish,subscribe,readLatest,receivePointer,receiveText,close,
+    publish,subscribe,readLatest,receivePointer,receiveText,invalidate,close,
     status:()=>Object.freeze({available:!closed&&Boolean(latest),
       session:latest?.session??null,revision:latest?.revision??null,
       subscribers:listeners.size}) // never expose private pixel bytes
