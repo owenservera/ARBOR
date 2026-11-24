@@ -1,0 +1,2 @@
+# Linux/WSL development entrypoint must retain LF in Windows archives.
+/scripts/rust-dev-blaze.sh text eol=lf
