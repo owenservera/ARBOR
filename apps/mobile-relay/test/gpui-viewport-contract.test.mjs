@@ -125,3 +125,10 @@ test('rejects header-only, missing IEND and trailing bytes',()=>{
   const trailing=new Uint8Array(png.length+1);trailing.set(png);
   assert.throws(()=>validateGpuiFrame({...frame(),png:trailing}));
 });
+
+test('bounds PNG chunk traversal while allowing the exact 4096-chunk limit',()=>{
+  const p=parts(), ancillary=chunk('tEXt',Buffer.from('x\0y'));
+  const make=(n)=>Buffer.concat([signature,p.header,...Array(n).fill(ancillary),chunk('IDAT',p.data),p.end]);
+  assert.equal(validateGpuiFrame({...frame(),png:make(4093)}).width,360);
+  assert.throws(()=>validateGpuiFrame({...frame(),png:make(4094)}),/INVALID_GPUI_PNG_STRUCTURE/);
+});
