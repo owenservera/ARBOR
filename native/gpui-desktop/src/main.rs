@@ -1858,8 +1858,8 @@ impl Render for Desktop {
                 .flex().flex_col().p_4().gap_2()
                 .child(div().flex_1());
 
-            // AutoWiki is contextual, just like the Direct PWA. Empty text
-            // must not render a Wiki header, revision log or error panel.
+            // AutoWiki stays available as a neutral live surface, even before typing.
+            // Empty input never discloses personal Wiki content.
             if let Some(query)=&self.wiki_query {
                 let mut wiki=div().flex().flex_col().gap_2().p_3()
                     .bg(rgb(theme.surface)).rounded(px(14.))
@@ -1879,19 +1879,20 @@ impl Render for Desktop {
                             progress.claims,progress.complete_passes,progress.observed_passes
                         )));
                     }
-                    if let Some(found)=wiki_read::search_view(&read,query,24) {
+                    let live=vivim_programmability_core::realtime_command::project_wiki(query,Some(&read));
+                    if live["status"]=="indexed_snapshot" {
                         wiki=wiki.child(div().text_sm().child(format!(
                             "AutoWiki · {} matches · revision {}",
-                            found.matches,found.revision
+                            live["matches"],live["revision"]
                         )));
-                        for hit in &found.hits {
+                        for hit in live["hits"].as_array().into_iter().flatten() {
                             wiki=wiki.child(div().p_2()
                                 .border_t_1().border_color(rgb(theme.border))
-                                .child(format!("{}{}",hit.page,
-                                    hit.section.as_ref().map(|s|format!(" / {s}")).unwrap_or_default()))
-                                .child(div().text_sm().child(hit.excerpt.clone())));
+                                .child(format!("{}{}",hit["page"].as_str().unwrap_or(""),
+                                    hit["section"].as_str().map(|s|format!(" / {s}")).unwrap_or_default()))
+                                .child(div().text_sm().child(hit["excerpt"].as_str().unwrap_or("").to_owned())));
                         }
-                        if found.hits.is_empty() {
+                        if live["hits"].as_array().is_some_and(|hits|hits.is_empty()) {
                             wiki=wiki.child(div().text_sm().child("No matching Wiki sections"));
                         }
                     } else {
@@ -1905,6 +1906,12 @@ impl Render for Desktop {
                 canvas=canvas.child(div().w_full().flex().justify_center()
                     .child(div().id("first-contact-wiki").w_full().max_w(px(790.)).max_h(px(350.))
                         .overflow_y_scroll().child(wiki)));
+            } else {
+                canvas=canvas.child(div().w_full().flex().justify_center()
+                    .child(div().w_full().max_w(px(790.)).p_2()
+                        .text_sm().child(if self.input.read(cx).value().trim().is_empty(){
+                            "AutoWiki · ready · type to explore"
+                        } else {"AutoWiki · query unavailable · no effect sent"})));
             }
 
             // VLANG/NLCL meaning is a contextual, inert preview. The Host's

@@ -10,6 +10,7 @@ pub struct ComposerMeaning {
     pub action_id: Option<String>,
     pub risk: Option<String>,
     pub hint: String,
+    pub argument_names: Vec<String>,
     pub registered: Option<bool>,
     pub readiness: Option<String>,
     pub executor_wired: Option<bool>,
@@ -86,7 +87,7 @@ pub fn project_composer_meaning(response: &Value) -> Result<Option<ComposerMeani
             Ok(Some(ComposerMeaning {
                 outcome:outcome.into(),action_id:Some(id.into()),
                 risk:Some(risk.into()),hint,
-                registered:Some(true),readiness:Some(readiness.into()),
+                argument_names:args.keys().cloned().collect(),registered:Some(true),readiness:Some(readiness.into()),
                 executor_wired:Some(matches!(readiness,"source_wired"|"verified")),live_verified:Some(readiness=="verified"),
                 catalog_revision,world_revision,wiki_revision,execution_authorized:false,effect_performed:false
             }))
@@ -98,12 +99,12 @@ pub fn project_composer_meaning(response: &Value) -> Result<Option<ComposerMeani
                 .ok_or(ProjectionError::InvalidProjection)?;
             Ok(Some(ComposerMeaning {outcome:outcome.into(),
                 action_id:None,risk:None,
-            registered:None,readiness:None,executor_wired:None,live_verified:None,
+            argument_names:Vec::new(),registered:None,readiness:None,executor_wired:None,live_verified:None,
             catalog_revision,world_revision,wiki_revision,execution_authorized:false,effect_performed:false,hint:format!("Needs clarification: {question}")}))
         }
         "incomplete" => Ok(Some(ComposerMeaning {
             outcome:outcome.into(),action_id:None,risk:None,
-            registered:None,readiness:None,executor_wired:None,live_verified:None,
+            argument_names:Vec::new(),registered:None,readiness:None,executor_wired:None,live_verified:None,
             catalog_revision,world_revision,wiki_revision,execution_authorized:false,effect_performed:false,
             hint:"Incomplete command · continue typing".into()
         })),
@@ -111,13 +112,13 @@ pub fn project_composer_meaning(response: &Value) -> Result<Option<ComposerMeani
         // never silently imply that an LLM was used or an effect was sent.
         "interpretation_required" => Ok(Some(ComposerMeaning {
             outcome:outcome.into(),action_id:None,risk:None,
-            registered:None,readiness:None,executor_wired:None,live_verified:None,
+            argument_names:Vec::new(),registered:None,readiness:None,executor_wired:None,live_verified:None,
             catalog_revision,world_revision,wiki_revision,execution_authorized:false,effect_performed:false,
             hint:"No deterministic command match · no action taken".into()
         })),
         "refused" => Ok(Some(ComposerMeaning {
             outcome:outcome.into(),action_id:None,risk:None,
-            registered:None,readiness:None,executor_wired:None,live_verified:None,
+            argument_names:Vec::new(),registered:None,readiness:None,executor_wired:None,live_verified:None,
             catalog_revision,world_revision,wiki_revision,execution_authorized:false,effect_performed:false,
             hint:"Command refused by Host policy · no action taken".into()
         })),
@@ -143,6 +144,53 @@ pub fn project_current_draft(text:&str,response:&Value)->Result<Option<ComposerM
         return Err(ProjectionError::InvalidProjection);
     }
     Ok(reading)
+}
+
+/// Native Wiki projection for the same draft. The admitted Wiki snapshot
+/// is independently revisioned. No full Wiki is returned to a testing client.
+pub fn project_wiki(text:&str,view:Option<&crate::wiki_read::WikiRead>)->Value{
+    use serde_json::json;
+    let query=text.trim();
+    if query.is_empty(){
+        return json!({"status":"ready","revision":null,"hits":[],"authority":"none"});
+    }
+    if query.chars().count()>160||query.chars().any(char::is_control){
+        return json!({"status":"query_unavailable","revision":null,"hits":[],"authority":"none"});
+    }
+    let Some(view)=view else {
+        return json!({"status":"source_unavailable","revision":null,"hits":[],"authority":"none"});
+    };
+    let Some(found)=crate::wiki_read::search_view(view,query,24) else{
+        return json!({"status":"query_unavailable","revision":null,"hits":[],"authority":"none"});
+    };
+    json!({"status":"indexed_snapshot","revision":found.revision,"digest":found.digest,
+      "matches":found.matches,"indexTruncated":found.index_truncated,
+      "hits":found.hits.iter().map(|h|json!({"page":h.page,"section":h.section,"excerpt":h.excerpt})).collect::<Vec<_>>(),
+      "authority":"none"})
+}
+
+/// Read-only live-user-context bundle for native clients. No authority token,
+/// no raw draft persistence and no implied coherence across independent reads.
+/// Client must fence publication against its current draft revision.
+pub fn project_user_context(text:&str,draft_revision:u64,response:Option<&Value>,wiki:Option<&crate::wiki_read::WikiRead>)->Result<Value,ProjectionError>{
+    use serde_json::json;
+    if draft_revision==0||text.encode_utf16().count()>1000||text.chars().any(char::is_control){
+        return Err(ProjectionError::InvalidProjection);
+    }
+    let trimmed=text.trim();
+    let command=match response {
+        Some(v) if !trimmed.is_empty()=>serde_json::to_value(project_current_draft(trimmed,v)?).map_err(|_|ProjectionError::InvalidProjection)?,
+        Some(_)=>return Err(ProjectionError::InvalidProjection),
+        None=>Value::Null,
+    };
+    let w=project_wiki(text,wiki);
+    let pinned=command["wikiRevision"].as_u64();
+    let observed=w["revision"].as_u64();
+    let relation=match (pinned,observed){(Some(a),Some(b)) if a==b=>"matched_revision",(Some(_),Some(_))=>"different_revisions",_=>"not_bracketed"};
+    Ok(json!({"schema":"vivim.live-user-context/1","draftRevision":draft_revision,
+      "commandStatus":if trimmed.is_empty(){"ready"}else if command.is_null(){"unavailable_or_pending"}else{"interpreted"},
+      "command":command,"wiki":w,"wikiRevisionRelation":relation,
+      "authority":"none","executionAuthorized":false,"effectPerformed":false}))
 }
 
 #[cfg(test)]
@@ -177,6 +225,16 @@ mod tests {
         assert!(project_current_draft("create wiki page notes",&v).is_err());
         v=candidate();v["composer"]["action"]["id"]=json!("wiki.page.move");
         assert!(project_current_draft("create wiki page notes",&v).is_err());
+    }
+    #[test] fn user_context_keeps_wiki_and_command_revisions_separate(){
+        let wiki=crate::wiki_read::read(&json!({"revision":5,"pages":{"Notes":{"sections":{"About":"create wiki page notes"},"links":[]}}})).unwrap();
+        let v=candidate();
+        let result=project_user_context("create wiki page notes",1,Some(&v),Some(&wiki)).unwrap();
+        assert_eq!(result["wiki"]["revision"],5);assert_eq!(result["wiki"]["matches"],1);
+        assert_eq!(result["command"]["wikiRevision"],4);assert_eq!(result["wikiRevisionRelation"],"different_revisions");
+        assert_eq!(result["executionAuthorized"],false);
+        assert_eq!(project_user_context("",2,None,Some(&wiki)).unwrap()["wiki"]["status"],"ready");
+        assert!(project_user_context("different",3,Some(&v),Some(&wiki)).is_err());
     }
     #[test] fn unknown_is_not_unregistered_or_executable(){
         let mut v=candidate();v["outcome"]=json!("interpretation_required");
