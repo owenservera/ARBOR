@@ -431,14 +431,17 @@ function collectRecent(db, projectName, add) {
   }
 }
 
-function collectCandidates(db, { task, projectName, sourceSemanticIds = [], strict = false }) {
+function collectCandidates(db, { task, projectName, sourceSemanticIds = [], strict = false, allowedSourceRefs }) {
   const collector = createCollector(db);
   const tokens = tokenize(task).slice(0, TOKEN_QUERIES);
 
   // Compiled contract identities are exact source lookups, not free-text synonyms
   // or grants. Prioritize them before identities in the free-text task.
   const semanticQuery = strict ? sourceSemanticIds.join(' ') : [...sourceSemanticIds, task].join(' ');
-  for (const hit of searchSemanticReferences(db, { query: semanticQuery, project: projectName, limit: strict?100:CONTENT_HITS }).results) {
+  const semanticHits = searchSemanticReferences(db, { query: semanticQuery, project: projectName,
+    limit: strict?100:CONTENT_HITS, ...(strict ? { allowedSourceRefs } : {}) });
+  if (strict && semanticHits.truncated) return null;
+  for (const hit of semanticHits.results) {
     collector.add(hit, 'semantic', { semantic: hit });
   }
   if(strict)return collector.candidates();
@@ -840,8 +843,9 @@ export function composeContext(db, options = {}) {
   if (allowedSourceRefs !== undefined && !(allowedSourceRefs instanceof Set))
     throw new TypeError('HQ_INVALID_SOURCE_SCOPE');
   if(strict&&(!sourceSemanticIds.length||allowedSourceRefs===undefined||allowedSourceRefs.size>16||maxFiles>3))throw new TypeError('HQ_STRICT_CONTEXT_REQUIRES_SCOPE');
-  const candidates = collectCandidates(db, { task, projectName: project.name, sourceSemanticIds,strict })
-    .filter(candidate => allowedSourceRefs === undefined || allowedSourceRefs.has(candidate.ref));
+  const collected = collectCandidates(db, { task, projectName: project.name, sourceSemanticIds, strict, allowedSourceRefs });
+  if (collected === null) return finishEmpty('incomplete');
+  const candidates = collected.filter(candidate => allowedSourceRefs === undefined || allowedSourceRefs.has(candidate.ref));
   prepareCandidates(db, candidates, { task, projectName: project.name, nowMs,
     preferredSemanticAnchor: options.preferredSemanticAnchor,strict });
 
