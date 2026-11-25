@@ -7,6 +7,7 @@ import path from 'node:path';
 import {createBootstrapRuntime} from '../bootstrap/runtime.mjs';
 import {createControlDispatcher} from '../control/dispatcher.mjs';
 import {createWorkstationSessionPort,SESSION_START,SESSION_STATUS,SESSION_OUTPUT,SESSION_INPUT,SESSION_CANCEL} from '../control/workstation-session-port.mjs';
+import {encodeWorkstationText as enc} from '../control/workstation-text-codec.mjs';
 const owner={source:'desktop',actor:'desktop-owner'},approval={channel:'desktop-owner-token',actor:'desktop-owner'};
 const hash=f=>createHash('sha256').update(readFileSync(f)).digest('hex');
 function fixture(t){
@@ -44,7 +45,7 @@ test('real native worker: Host approval, version, cursors, replay, interactive i
  const result=await output(f,p.planId,process.version);assert.equal(result.r.status.exitCode,0);
  const more=await f.read(SESSION_OUTPUT,{session_id:p.planId,stdout_cursor:String(result.r.stdout.next),stderr_cursor:String(result.r.stderr.next)});assert.equal(more.stdout.hex,'');
  assert.equal(f.control.plan({actionId:SESSION_STATUS,args:{session_id:p.planId}},{source:'mobile'}).outcome,'unavailable');
- const interactive=await f.execute(SESSION_START,{recipe:'node-interactive'});const queued=await f.execute(SESSION_INPUT,{session_id:interactive.planId,input:'hello'});assert.equal(queued.result.queuedBytes,5);
+ const interactive=await f.execute(SESSION_START,{recipe:'node-interactive'});const queued=await f.execute(SESSION_INPUT,{session_id:interactive.planId,input:enc('hello\n')});assert.equal(queued.result.queuedBytes,6);
  assert.ok((await output(f,interactive.planId,'ECHO:hello')).stdout.includes('ECHO:hello'));
  const long=await f.execute(SESSION_START,{recipe:'node-sleep'});assert.equal((await f.read(SESSION_STATUS,{session_id:long.planId})).state,'running');
  const stopped=await f.execute(SESSION_CANCEL,{session_id:long.planId});assert.equal(stopped.result.state,'exited');

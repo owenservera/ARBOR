@@ -5,6 +5,7 @@ import {createHash,randomBytes} from 'node:crypto';
 import {readFileSync,realpathSync,statSync,lstatSync} from 'node:fs';
 import {isAbsolute,basename} from 'node:path';
 import {spawn} from 'node:child_process';
+import {decodeWorkstationText} from './workstation-text-codec.mjs';
 export const SESSION_START='workstation.session.start',SESSION_STATUS='workstation.session.status',
  SESSION_OUTPUT='workstation.session.output',SESSION_CANCEL='workstation.session.cancel',SESSION_INPUT='workstation.session.input';
 export const WORKSTATION_SESSION_ACTIONS=new Set([SESSION_START,SESSION_STATUS,SESSION_OUTPUT,SESSION_CANCEL,SESSION_INPUT]);
@@ -85,7 +86,7 @@ export function createWorkstationSessionPort({env=process.env,spawnWorker=spawn,
    return resolve(args.recipe).binding;
   }
   const s=known(args?.session_id,action!==SESSION_CANCEL);
-  if(action===SESSION_INPUT&&(!s.interactive||typeof args.input!=='string'||!args.input||Buffer.byteLength(args.input)>4096||args.input.includes('\0')))throw fail('WORKSTATION_INPUT_INVALID');
+  if(action===SESSION_INPUT&&(!s.interactive||!decodeWorkstationText(args.input,4096)))throw fail('WORKSTATION_INPUT_INVALID');
   if(action!==SESSION_CANCEL&&action!==SESSION_INPUT)throw fail('WORKSTATION_SESSION_OPERATION_INVALID');
   return {schema:'vivim.workstation-session-mutation/1',generation,sessionId:args.session_id,action,bindingDigest:digest({args,generation,sessionId:args.session_id,configSha:s.configSha})};
  }
@@ -152,7 +153,7 @@ export function createWorkstationSessionPort({env=process.env,spawnWorker=spawn,
  async function mutate(action,args,binding){
   if(digest(prepare(action,args))!==digest(binding))throw fail('WORKSTATION_SESSION_BINDING_STALE');
   const sessionId=args.session_id;
-  return validate(await rpc(action===SESSION_CANCEL?{op:'cancel',sessionId}:{op:'input',sessionId,input:args.input}),sessionId);
+  return validate(await rpc(action===SESSION_CANCEL?{op:'cancel',sessionId}:{op:'input',sessionId,input:decodeWorkstationText(args.input,4096)}),sessionId);
  }
  return Object.freeze({prepare,start,read,mutate,close:terminate});
 }

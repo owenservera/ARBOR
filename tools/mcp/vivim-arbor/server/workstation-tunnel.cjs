@@ -84,7 +84,7 @@ function createWorkstationTools({directory=path.join(__dirname,'..','session-aut
   if(action===S+'start'){if(!g.recipes.includes(args.recipe))bad();}
   else if(action.startsWith(S)){
    const s=owns(args.session_id);
-   if(action===S+'input'&&(!g.interactiveRecipes.includes(s.recipe)||typeof args.input!=='string'||Buffer.byteLength(args.input)>4096))bad();
+   if(action===S+'input'&&(!g.interactiveRecipes.includes(s.recipe)||typeof args.input!=='string'||args.input.length>5468))bad();
   }else{
    if(!g.roots.includes(args.root_id)||typeof args.path!=='string'||args.path.length>1024||
     args.path.startsWith('/')||args.path.includes('\\')||args.path.includes(':')||
@@ -141,7 +141,7 @@ function createWorkstationTools({directory=path.join(__dirname,'..','session-aut
   const required=mutating?[...fields,'request_id']:fields;
   tools.push([name,'Use only the locally granted Host '+action+' capability. '+(mutating?'Supply a unique 32-character lowercase hexadecimal request_id; repeat only the same ID to inspect an uncertain receipt.':'Read-only, scoped to granted workspace or owned session.'),
    {type:'object',properties:Object.fromEntries(required.map(k=>[k,{type:'string'}])),required,additionalProperties:false},
-   a=>{const args=Object.fromEntries(fields.map(k=>[k,a[k]]));return mutating?mutation(action,args,a.request_id):readAction(action,args);},!mutating]);
+   a=>{const args=Object.fromEntries(fields.map(k=>{if(['content','old_text','new_text','input'].includes(k)){const v=a[k];if(typeof v!=='string'||v.includes('\0')||Buffer.byteLength(v)>(k==='input'?4096:5997))bad();return [k,'b64:'+Buffer.from(v,'utf8').toString('base64')];}return [k,a[k]];}));return mutating?mutation(action,args,a.request_id):readAction(action,args);},!mutating]);
  }
  return tools;
 }

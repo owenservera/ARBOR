@@ -1,6 +1,6 @@
 {
   "schema": "vivim.control-action-catalog/1",
-  "version": 20,
+  "version": 21,
   "asOf": "2026-11-23",
   "policy": {
     "allUserFacingActionsRequireTextPath": true,
@@ -2141,8 +2141,8 @@
         },
         "input": {
           "type": "string",
-          "min": 1,
-          "max": 4096
+          "min": 4,
+          "max": 5468
         }
       },
       "examples": [
@@ -2151,7 +2151,7 @@
       "reversible": false,
       "subject": "workstation",
       "priority": "P0",
-      "precondition": "Locally registered hash-pinned recipe or owned session. No remote-selected executable, path or environment. Mutations require exact Host approval."
+      "precondition": "Locally registered hash-pinned recipe or owned session. No remote-selected executable, path or environment. Mutations require exact Host approval. Typed input is b64: plus canonical UTF-8 base64; no secret input."
     },
     {
       "id": "workstation.file.read",
@@ -2336,7 +2336,7 @@
         },
         "content": {
           "type": "string",
-          "min": 1,
+          "min": 4,
           "max": 8000
         }
       },
@@ -2346,7 +2346,7 @@
       "reversible": false,
       "subject": "workstation",
       "priority": "P0",
-      "precondition": "Hash-pinned local root and native helper; exact desktop approval for writes."
+      "precondition": "Hash-pinned local root and native helper; exact desktop approval for writes. Typed text fields are b64: plus canonical UTF-8 base64 to preserve exact bytes."
     },
     {
       "id": "workstation.file.edit",
@@ -2383,12 +2383,12 @@
         },
         "old_text": {
           "type": "string",
-          "min": 1,
+          "min": 4,
           "max": 8000
         },
         "new_text": {
           "type": "string",
-          "min": 1,
+          "min": 4,
           "max": 8000
         }
       },
@@ -2398,7 +2398,7 @@
       "reversible": false,
       "subject": "workstation",
       "priority": "P0",
-      "precondition": "Hash-pinned local root and native helper; exact desktop approval for writes."
+      "precondition": "Hash-pinned local root and native helper; exact desktop approval for writes. Typed text fields are b64: plus canonical UTF-8 base64 to preserve exact bytes."
     }
   ],
   "readinessStates": {

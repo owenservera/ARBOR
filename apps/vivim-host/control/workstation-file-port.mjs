@@ -3,6 +3,7 @@ import {createHash} from 'node:crypto';
 import {readFileSync,realpathSync,lstatSync,statSync} from 'node:fs';
 import {isAbsolute,basename} from 'node:path';
 import {spawnSync} from 'node:child_process';
+import {decodeWorkstationText} from './workstation-text-codec.mjs';
 export const FILE_READ='workstation.file.read',FILE_INSPECT='workstation.file.inspect',DIR_LIST='workstation.directory.list',
  DIR_CREATE='workstation.directory.create',FILE_WRITE='workstation.file.write',FILE_EDIT='workstation.file.edit';
 export const WORKSTATION_FILE_ACTIONS=new Set([FILE_READ,FILE_INSPECT,DIR_LIST,DIR_CREATE,FILE_WRITE,FILE_EDIT]);
@@ -34,8 +35,8 @@ export function createWorkstationFilePort({env=process.env,run=spawnSync}={}){
   const op=operations.get(action);if(!op||typeof args.path!=='string'||args.path.length>1024)throw fail('WORKSTATION_FILE_INPUT_INVALID');
   const input={root:b.root,path:args.path,op,phase};
   if(action===FILE_WRITE||action===FILE_EDIT)input.expectedDigest=args.expected_digest;
-  if(action===FILE_WRITE)input.content=args.content;
-  if(action===FILE_EDIT){input.oldText=args.old_text;input.newText=args.new_text;}
+  if(action===FILE_WRITE)input.content=decodeWorkstationText(args.content);
+  if(action===FILE_EDIT){input.oldText=decodeWorkstationText(args.old_text);input.newText=decodeWorkstationText(args.new_text);}
   const childEnv={};if(process.platform==='win32'&&process.env.SystemRoot)childEnv.SystemRoot=process.env.SystemRoot;
   const r=run(b.helperPath,[],{input:JSON.stringify(input),encoding:'utf8',env:childEnv,shell:false,windowsHide:true,timeout:10000,maxBuffer:524288});
   if(r.error||r.status!==0)throw fail('WORKSTATION_FILE_OUTCOME_UNCERTAIN',503);
