@@ -9,6 +9,11 @@ import { loadControlCatalog } from '../control/intent-planner.mjs';
 import {createSurface} from '../../mobile-relay/generative-ui/catalog.mjs';
 import {projectAppliedControlEffects} from '../chat/product-journal.mjs';
 import {buildNativeKnowledge} from '../chat/rust-context.mjs';
+import {closeNativeProductKernel} from '../control/native-product-kernel.mjs';
+
+// Standalone dispatcher tests do not own an HTTP server whose close handler
+// normally tears down the process-wide persistent native kernel.
+test.after(()=>closeNativeProductKernel());
 
 const DESKTOP = { channel: 'desktop-owner-token', actor: 'owner' };
 const PHONE = { channel: 'direct-phone', actor: 'owner@example.com' };
@@ -18,7 +23,7 @@ function fixture(t, { grant = 'full-bootstrap', clock = { t: Date.parse('2026-11
   const runtime = createBootstrapRuntime({ dataRoot, file: ':memory:', now: () => new Date(clock.t).toISOString() });
   if (grant) runtime.grantBootstrap({ scope: grant });
   const control = createControlDispatcher({ dataRoot, runtime, now: () => clock.t });
-  t.after(() => { runtime.close(); rmSync(dataRoot, { recursive: true, force: true }); });
+  t.after(() => { control.closeWorkstationSessions(); runtime.close(); rmSync(dataRoot, { recursive: true, force: true }); });
   return { dataRoot, runtime, control, clock };
 }
 
