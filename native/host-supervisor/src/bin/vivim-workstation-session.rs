@@ -4,7 +4,11 @@ use serde_json::{Value,json};
 use std::{collections::BTreeMap,ffi::OsString,io::{self,BufRead,Write},path::PathBuf,
  sync::mpsc,thread,time::{Duration,Instant}};
 use vivim_host_supervisor::workstation_process::{LocalProcessSpec,OwnedProcess,OutputTail};
+const MAX_RUNNING:usize=8;
+const MAX_RETAINED:usize=64;
+const RETENTION:Duration=Duration::from_secs(600);
 struct Session{child:OwnedProcess,started:Instant,deadline:Duration,finished:Option<Instant>,timed_out:bool}
+fn capacity(running:usize,retained:usize)->bool{running<MAX_RUNNING&&retained<MAX_RETAINED}
 fn error(code:&str)->Result<Value,String>{Err(code.into())}
 fn text<'a>(v:&'a Value,k:&str)->Result<&'a str,String>{v.get(k).and_then(Value::as_str).ok_or("INVALID_REQUEST".into())}
 fn number(v:&Value,k:&str)->Result<u64,String>{v.get(k).and_then(Value::as_u64).ok_or("INVALID_REQUEST".into())}
@@ -30,13 +34,17 @@ impl Session{
  fn status(&mut self,id:&str)->Result<Value,String>{
   self.update()?;let status=self.child.poll().map_err(|_|"POLL_FAILED")?;
   Ok(json!({"sessionId":id,"state":if self.timed_out{"timed-out"}else if status.is_some(){"exited"}else{"running"},
-   "exitCode":status.and_then(|s|s.code()),"success":status.map(|s|s.success()),"elapsedMs":self.started.elapsed().as_millis().min(u64::MAX as u128)as u64}))
+   "exitCode":status.and_then(|s|s.code()),"success":status.map(|s|s.success()),"elapsedMs":self.finished.unwrap_or_else(Instant::now).duration_since(self.started).as_millis().min(u64::MAX as u128)as u64}))
  }
 }
 fn execute(v:&Value,sessions:&mut BTreeMap<String,Session>)->Result<Value,String>{
  let op=text(v,"op")?;let id=text(v,"sessionId")?;if !valid_id(id){return error("INVALID_SESSION");}
  if op=="start"{
-  if !keys(v,&["id","op","sessionId","executable","workspace","args","environment","interactive","timeoutMs"])||sessions.len()>=8||sessions.contains_key(id){return error("SESSION_LIMIT_OR_DUPLICATE");}
+  if !keys(v,&["id","op","sessionId","executable","workspace","args","environment","interactive","timeoutMs"])||sessions.contains_key(id){return error("SESSION_LIMIT_OR_DUPLICATE");}
+  // Completed sessions retain their output without consuming a running slot.
+  // A separate retained bound prevents unbounded output memory usage.
+  let running=sessions.values().filter(|s|s.finished.is_none()).count();
+  if !capacity(running,sessions.len()){return error("SESSION_LIMIT_OR_DUPLICATE");}
   let args=v.get("args").and_then(Value::as_array).ok_or("INVALID_ARGS")?;
   let env=v.get("environment").and_then(Value::as_object).ok_or("INVALID_ENV")?;
   if args.len()>64||env.len()>32{return error("INVALID_SPEC");}
@@ -66,7 +74,7 @@ fn main(){
  let mut sessions=BTreeMap::new();let mut out=io::stdout().lock();
  loop{
   // Expiry is evaluated even when the remote client disconnects or is idle.
-  sessions.retain(|_,s:&mut Session|{let _=s.update();s.finished.is_none_or(|t|t.elapsed()<Duration::from_secs(600))});
+  sessions.retain(|_,s:&mut Session|{let _=s.update();s.finished.is_none_or(|t|t.elapsed()<RETENTION)});
   match rx.recv_timeout(Duration::from_millis(100)){
    Ok(line)=>{let v:Value=match serde_json::from_str(&line){Ok(v)=>v,Err(_)=>break};
     let Some(id)=v.get("id").and_then(Value::as_u64)else{break};
@@ -81,6 +89,8 @@ fn main(){
  // containment requires a platform job/process-group adapter, not PID guesses.
 }
 #[cfg(test)]mod tests{use super::*;
+ #[test]fn completed_sessions_do_not_consume_running_capacity(){assert!(capacity(0,8));assert!(capacity(7,63));assert!(!capacity(8,8));assert!(!capacity(0,64));}
+ #[test]fn output_cursor_preserves_exact_bytes_across_pages(){let mut bytes=vec![b'x';4095];bytes.extend_from_slice("é".as_bytes());let t=OutputTail{observed_bytes:bytes.len()as u64,bytes,closed:true,read_failed:false};let a=page(t.clone(),0).unwrap();let b=page(t,4096).unwrap();assert_eq!(a["next"],4096);assert!(a["hex"].as_str().unwrap().ends_with("c3"));assert_eq!(b["hex"],"a9");assert_eq!(b["next"],4097);}
  #[test]fn cursor_gap_and_paging(){let t=OutputTail{bytes:vec![65,66,67],observed_bytes:10,closed:true,read_failed:false};let p=page(t.clone(),0).unwrap();assert_eq!(p["gap"],true);assert_eq!(p["first"],7);assert_eq!(p["next"],10);assert_eq!(p["hex"],"414243");assert!(page(t,11).is_err());}
  #[test]fn unknown_and_foreign_pid_refused(){let mut s=BTreeMap::new();assert!(execute(&json!({"id":1,"op":"cancel","sessionId":"ctl-0123456789abcdef","pid":1}),&mut s).is_err());assert!(execute(&json!({"id":2,"op":"cancel","sessionId":"123"}),&mut s).is_err());}
 }
