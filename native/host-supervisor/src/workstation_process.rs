@@ -279,6 +279,26 @@ mod tests {
         assert!(unrelated.poll().unwrap().is_none(),"unrelated job was affected");
         unrelated.cancel().unwrap();
     }
+    #[cfg(windows)]
+    #[test]
+    fn dropping_owned_job_closes_descendant_pipes() {
+        let tree=OwnedProcess::start(spec("tree",4096)).unwrap();
+        let start=Instant::now();
+        loop {
+            let(out,_)=tree.output().unwrap();
+            if String::from_utf8_lossy(&out.bytes).contains("VIVIM_DESCENDANT_STARTED"){break;}
+            assert!(start.elapsed()<Duration::from_secs(5),"descendant did not start");
+            thread::sleep(Duration::from_millis(10));
+        }
+        let stdout=Arc::clone(&tree.stdout);let stderr=Arc::clone(&tree.stderr);
+        drop(tree);
+        let start=Instant::now();
+        loop {
+            if stdout.lock().unwrap().closed&&stderr.lock().unwrap().closed{break;}
+            assert!(start.elapsed()<Duration::from_secs(5),"job drop did not close descendant pipes");
+            thread::sleep(Duration::from_millis(10));
+        }
+    }
     #[test]
     fn rejects_relative_executable_and_invalid_capacity() {
         let mut s=spec("emit",128);s.executable=PathBuf::from("relative");

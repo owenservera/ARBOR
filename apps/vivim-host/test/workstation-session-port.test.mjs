@@ -55,3 +55,21 @@ test('real native worker: Host approval, version, cursors, replay, interactive i
  assert.throws(()=>f.control.status(p.planId,{source:'mobile'}),/CONTROL_PLAN_UNKNOWN/);
  console.log('NATIVE_SESSION_RECEIPT='+JSON.stringify({planId:p.planId,status:first.status,version:result.stdout.trim(),interactive:true,cancelled:true,timeout:true}));
 });
+
+test('cargo recipe binds exact compiler and documentation tools, refuses changes and foreign paths',t=>{
+ const root=mkdtempSync(path.join(os.tmpdir(),'vivim-toolchain-'));
+ t.after(()=>rmSync(root,{recursive:true,force:true}));
+ const suffix=process.platform==='win32'?'.exe':'';
+ const helper=path.join(root,'vivim-workstation-session'+suffix),cargo=path.join(root,'cargo'+suffix),
+  rustc=path.join(root,'rustc'+suffix),rustdoc=path.join(root,'rustdoc'+suffix);
+ for(const file of [helper,cargo,rustc,rustdoc])writeFileSync(file,path.basename(file));
+ const config=path.join(root,'recipes.json');
+ const recipe={id:'cargo-host-tests',executable:cargo,executableSha256:hash(cargo),workspace:root,args:['test','--offline','--locked'],
+  environment:[],interactive:false,timeoutMs:1000,toolchain:{rustc:{path:rustc,sha256:hash(rustc)},rustdoc:{path:rustdoc,sha256:hash(rustdoc)}}};
+ const env={...process.env,VIVIM_WORKSTATION_RECIPES:config,VIVIM_WORKSTATION_SESSION_EXE:helper,VIVIM_WORKSTATION_SESSION_SHA256:hash(helper)};
+ function prepare(){writeFileSync(config,JSON.stringify({schema:'vivim.workstation-recipes/1',recipes:[recipe]}));env.VIVIM_WORKSTATION_RECIPES_SHA256=hash(config);return createWorkstationSessionPort({env}).prepare(SESSION_START,{recipe:recipe.id});}
+ const before=prepare();assert.equal(before.recipe,recipe.id);
+ writeFileSync(rustc,'changed');assert.throws(prepare,/WORKSTATION_SESSION_BINDING_INVALID/);
+ recipe.toolchain.rustc.sha256=hash(rustc);assert.notEqual(prepare().bindingDigest,before.bindingDigest);
+ recipe.toolchain.rustdoc={path:rustc,sha256:hash(rustc)};assert.throws(prepare,/WORKSTATION_SESSION_BINDING_INVALID/);
+});

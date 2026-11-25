@@ -1,9 +1,9 @@
 // Host-owned native session port. Local hash-pinned recipes only; no caller
 // executable/path/argument/environment. Host journal is the approval authority.
-// This first worker owns direct children, not descendant process trees.
+// Windows workers contain descendant trees in their own creation-time jobs.
 import {createHash,randomBytes} from 'node:crypto';
 import {readFileSync,realpathSync,statSync,lstatSync} from 'node:fs';
-import {isAbsolute,basename} from 'node:path';
+import {isAbsolute,basename,dirname} from 'node:path';
 import {spawn} from 'node:child_process';
 import {decodeWorkstationText} from './workstation-text-codec.mjs';
 export const SESSION_START='workstation.session.start',SESSION_STATUS='workstation.session.status',
@@ -26,6 +26,26 @@ function regular(file,max){
 }
 function exactFile(file,sha,max){
  const b=regular(file,max);if(!hex(sha)||b.sha!==sha)throw fail('WORKSTATION_SESSION_BINDING_INVALID');return b;
+}
+function resolveCargoToolchain(recipe,exe){
+ if(recipe.toolchain===undefined)return null;
+ const t=recipe.toolchain;
+ if(!/^cargo(?:\.exe)?$/i.test(basename(exe.path))||
+    !keys(t,['rustc','rustdoc']))throw fail('WORKSTATION_SESSION_BINDING_INVALID');
+ const result={};
+ for(const name of ['rustc','rustdoc']){
+  const v=t[name];
+  if(!keys(v,['path','sha256'])||typeof v.path!=='string'||!hex(v.sha256))
+   throw fail('WORKSTATION_SESSION_BINDING_INVALID');
+  const pinned=exactFile(v.path,v.sha256,256*1024*1024);
+  const expected=process.platform==='win32'?name+'.exe':name;
+  const normalize=s=>process.platform==='win32'?s.toLowerCase():s;
+  if(normalize(basename(pinned.path))!==expected||
+     normalize(dirname(pinned.path))!==normalize(dirname(exe.path)))
+   throw fail('WORKSTATION_SESSION_BINDING_INVALID');
+  result[name]=pinned;
+ }
+ return result;
 }
 function envValue(env,name){
  if(process.platform!=='win32')return env[name];
@@ -54,7 +74,7 @@ export function createWorkstationSessionPort({env=process.env,spawnWorker=spawn,
    if(!keys(c,['schema','recipes'])||c.schema!=='vivim.workstation-recipes/1'||!Array.isArray(c.recipes)||!c.recipes.length||c.recipes.length>32)throw Error();
    const ids=new Set();
    for(const r of c.recipes){
-    if(!keys(r,['id','executable','executableSha256','workspace','args','environment','interactive','timeoutMs'])||
+    if(!keys(r,['id','executable','executableSha256','workspace','args','environment','interactive','timeoutMs','toolchain'])||
       !recipeId(r.id)||ids.has(r.id)||!isAbsolute(r.executable)||!hex(r.executableSha256)||!isAbsolute(r.workspace)||
       !Array.isArray(r.args)||r.args.length>64||r.args.some(a=>typeof a!=='string'||a.length>4096||a.includes('\0'))||
       !Array.isArray(r.environment)||r.environment.length>32||r.environment.some(n=>typeof n!=='string'||!envNames.has(n.toUpperCase()))||
@@ -71,8 +91,11 @@ export function createWorkstationSessionPort({env=process.env,spawnWorker=spawn,
   const exe=exactFile(r.executable,r.executableSha256,256*1024*1024),workspace=realpathSync(r.workspace);
   if(!statSync(workspace).isDirectory()||(process.platform==='win32'&&!/\.exe$/i.test(exe.path)))throw fail('WORKSTATION_SESSION_BINDING_INVALID');
   const environment=windowsRuntimeEnvironment(env);for(const n of r.environment){if(process.platform==='win32'&&['SYSTEMROOT','WINDIR'].includes(n.toUpperCase()))continue;const v=envValue(env,n);if(v!==undefined){if(typeof v!=='string'||v.length>32768||v.includes('\0'))throw fail('WORKSTATION_SESSION_BINDING_INVALID');environment[n]=v;}}
+  const toolchain=resolveCargoToolchain(r,exe);
+  // Values come from the exact local recipe, never from remote args or ambient wrappers.
+  if(toolchain){environment.RUSTC=toolchain.rustc.path;environment.RUSTDOC=toolchain.rustdoc.path;}
   const spec={executable:exe.path,workspace,args:r.args,environment,interactive:r.interactive,timeoutMs:r.timeoutMs};
-  return {helper,configSha:c.configSha,recipe,spec,binding:{schema:'vivim.workstation-session-binding/1',recipe,configSha:c.configSha,bindingDigest:digest({helper,exe,recipe,spec,configSha:c.configSha})}};
+  return {helper,configSha:c.configSha,recipe,spec,binding:{schema:'vivim.workstation-session-binding/1',recipe,configSha:c.configSha,bindingDigest:digest({helper,exe,recipe,spec,toolchain,configSha:c.configSha})}};
  }
  function known(sessionId,requireCurrent=true){
   if(!id(sessionId))throw fail('WORKSTATION_SESSION_UNKNOWN');
@@ -95,7 +118,7 @@ export function createWorkstationSessionPort({env=process.env,spawnWorker=spawn,
   for(const p of pending.values()){clearTimeout(p.timer);p.reject(fail('WORKSTATION_SESSION_OUTCOME_UNCERTAIN',503));}pending.clear();
   if(w&&!w.killed){
    // Closing the pipe first lets the native worker reap owned children. Only
-   // force-stop the worker if it fails to exit; descendant containment is open.
+   // force-stop the worker if it fails to exit. Windows job handles close on worker exit.
    try{w.stdin.end();}catch{}
    const timer=setTimeout(()=>{if(w.exitCode===null&&!w.killed)try{w.kill()}catch{}},2000);timer.unref?.();
    w.once('exit',()=>clearTimeout(timer));

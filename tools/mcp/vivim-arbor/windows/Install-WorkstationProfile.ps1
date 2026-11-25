@@ -31,6 +31,13 @@ try {
  if($LASTEXITCODE -ne 0 -or $cargoPaths.Count -ne 1){throw 'Rustup could not resolve active Cargo toolchain'}
  $cargo=(Resolve-Path -LiteralPath $cargoPaths[0].Trim()).Path
  if([IO.Path]::GetFileName($cargo) -ine 'cargo.exe'){throw 'Resolved executable is not Cargo'}
+ $rustcPaths=@(& $rustup which rustc)
+ if($LASTEXITCODE -ne 0 -or $rustcPaths.Count -ne 1){throw 'Rustc toolchain unavailable'}
+ $rustdocPaths=@(& $rustup which rustdoc)
+ if($LASTEXITCODE -ne 0 -or $rustdocPaths.Count -ne 1){throw 'Rustdoc toolchain unavailable'}
+ $rustc=(Resolve-Path -LiteralPath $rustcPaths[0].Trim()).Path
+ $rustdoc=(Resolve-Path -LiteralPath $rustdocPaths[0].Trim()).Path
+ if([IO.Path]::GetFileName($rustc) -ine 'rustc.exe' -or [IO.Path]::GetFileName($rustdoc) -ine 'rustdoc.exe' -or (Split-Path -Parent $cargo) -ine (Split-Path -Parent $rustc) -or (Split-Path -Parent $cargo) -ine (Split-Path -Parent $rustdoc)){throw 'Cargo, rustc and rustdoc must be in one toolchain'}
  $cargoVersion=@(& $cargo --version)
  if($LASTEXITCODE -ne 0 -or ($cargoVersion -join ' ') -notmatch '^cargo [0-9]+\.[0-9]+\.[0-9]+'){throw 'Cargo toolchain verification failed'}
 }finally{Pop-Location}
@@ -80,7 +87,9 @@ $recipes+=Recipe 'git-head' $git @('rev-parse','HEAD') $RepoRoot 15000
 $recipes+=Recipe 'git-fetch-main' $git @('fetch','--no-tags','origin','main') $RepoRoot 180000
 $recipes+=Recipe 'git-fast-forward-main' $ps @('-NoLogo','-NoProfile','-NonInteractive','-File',$ff) $RepoRoot 120000
 $recipes+=Recipe 'cargo-version' $cargo @('--version') $RepoRoot 15000
-$recipes+=Recipe 'cargo-host-tests' $cargo @('test','--offline','--locked','-p','vivim-host-supervisor') $RepoRoot 1800000
+$cargoTests=Recipe 'cargo-host-tests' $cargo @('test','--offline','--locked','-j','2','-p','vivim-host-supervisor') $RepoRoot 1800000
+$cargoTests.toolchain=@{rustc=@{path=$rustc;sha256=Hash $rustc};rustdoc=@{path=$rustdoc;sha256=Hash $rustdoc}}
+$recipes+=$cargoTests
 $recipes+=Recipe 'node-host-tests' $node @('--test','apps/vivim-host/test/control-dispatcher.test.mjs') $RepoRoot 300000
 $recipes+=Recipe 'node-interactive-test' $node @('-e','process.stdin.on("data",b=>process.stdout.write("ECHO:"+b.toString(),()=>process.exit(0)))') $scratch 60000 $true
 $zcode='C:\Program Files\ZCode\resources\glm\zcode.cjs'

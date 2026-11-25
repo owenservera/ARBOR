@@ -1,6 +1,6 @@
 {
   "schema": "vivim.control-action-catalog/1",
-  "version": 22,
+  "version": 23,
   "asOf": "2026-11-23",
   "policy": {
     "allUserFacingActionsRequireTextPath": true,
@@ -2086,7 +2086,7 @@
     },
     {
       "id": "workstation.session.cancel",
-      "title": "Cancel owned direct child",
+      "title": "Cancel owned process session",
       "category": "workstation",
       "owner": "host-control",
       "executor": "apps/vivim-host/control/dispatcher.mjs:createExecutors",
@@ -2109,12 +2109,12 @@
         }
       },
       "examples": [
-        "Cancel owned direct child using authenticated desktop owner controls"
+        "Cancel owned process session using authenticated desktop owner controls"
       ],
       "reversible": false,
       "subject": "workstation",
       "priority": "P0",
-      "precondition": "Locally registered hash-pinned recipe or owned session. No remote-selected executable, path or environment. Mutations require exact Host approval."
+      "precondition": "Locally registered hash-pinned recipe or owned session. No remote-selected executable, path or environment. Mutations require exact Host approval. Windows native worker cancels the owned Job Object; other platforms currently cancel only the direct child."
     },
     {
       "id": "workstation.session.input",
