@@ -70,3 +70,13 @@ test('terminal seal binds exact policy, explicit grant, programs and workspace p
  f.grant.terminal.programs.push('foreign');f.put('profile/session-authority/grant.json',f.grant);
  assert.throws(()=>inspectCandidate(f.release,f.receiptPath,now));
 });
+
+test('expanded profile manifest requires reviewed selection and terminal policy digests',t=>{
+ const f=fixture(t),m=f.manifest,run=x=>validateEvidence(x,f.receipt,f.grant,f.recipes,f.roots,now);
+ assert.throws(()=>run({...m,ownerProfile:'expanded'}),/EVIDENCE_INVALID/);
+ assert.throws(()=>run({...m,ownerSelectionSha256:'a'.repeat(64)}),/EVIDENCE_INVALID/);
+ assert.throws(()=>run({...m,ownerProfile:'expanded',ownerSelectionSha256:'a'.repeat(64)}),/EVIDENCE_INVALID/);
+ const extended={...m,ownerProfile:'expanded',ownerSelectionSha256:'a'.repeat(64),terminalConfigSha:'b'.repeat(64)};
+ assert.equal(run(extended).sourceSha,m.sourceSha);
+ assert.notEqual(runtimeBindingDigest(extended),runtimeBindingDigest({...extended,ownerSelectionSha256:'c'.repeat(64)}));
+});
