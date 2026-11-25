@@ -27,7 +27,7 @@ define({
     'profile-dir': { type: 'string', valueName: 'DIR', desc: 'Chrome profile folder (default: the data folder chrome-profile; vivim start passes the manifest profile)' } },
   async run(ctx) {
     const profileDir = ctx.flags['profile-dir'] ?? ctx.paths.chromeProfile;
-    const r = await launchChrome({ profileDir, port: ctx.port, url: ctx.flags.url ?? 'about:blank', headless: !!ctx.flags.headless });
+    const r = await launchChrome({ profileDir, executable: ctx.paths.chromeExecutable, port: ctx.port, url: ctx.flags.url ?? 'about:blank', headless: !!ctx.flags.headless });
     ctx.out.emit(r, (o) => o.result(r.alreadyRunning ? `Capture browser already running (${r.browser}) on port ${ctx.port}.` : `Capture browser opened (${r.browser}). Sign in to the sites you want to capture in this window.`));
   },
 });
@@ -74,7 +74,7 @@ async function runStudio(ctx, { launch }) {
   if (launch) {
     // Always validate the ownership marker, even when the CDP port is already listening.
     let r;
-    try { r = await launchChrome({ profileDir: ctx.paths.chromeProfile, port: ctx.port, url: flags.url ?? 'about:blank' }); }
+    try { r = await launchChrome({ profileDir: ctx.paths.chromeProfile, executable: ctx.paths.chromeExecutable, port: ctx.port, url: flags.url ?? 'about:blank' }); }
     catch (e) { cdpLock.release(); throw e; }
     if (!r.alreadyRunning) out.info(`Capture browser opened (${r.browser}).`);
   }
@@ -398,7 +398,7 @@ define({
     if (flags['no-launch'] && !(await isReachable({ port: ctx.port })))
       throw envError(`No capture browser on port ${ctx.port}.`, 'Run "studio start".');
     // One-command capture, but never reuse another browser simply because the port is reachable.
-    const r = await launchChrome({ profileDir: ctx.paths.chromeProfile, port: ctx.port, url: 'about:blank' });
+    const r = await launchChrome({ profileDir: ctx.paths.chromeProfile, executable: ctx.paths.chromeExecutable, port: ctx.port, url: 'about:blank' });
     if (!r.alreadyRunning) out.info(`Capture browser opened (${r.browser}).`);
     const results = [];
     for (const url of urls) {
