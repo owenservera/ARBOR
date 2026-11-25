@@ -38,7 +38,7 @@ printf 'BLAZE_DEV_ONLY version=%s checkout=%s\n' "$version" "$root"
 if [ "$version" = 0.20261029.7 ]; then
  # Build scripts need a native C linker even for check; avoid wasting a cold compile.
  if ! command -v cc >/dev/null 2>&1; then
-  echo "BLAZE_C_LINKER_MISSING: install your distribution\x27s native C build tools (Ubuntu: build-essential)" >&2; exit 3
+  echo "BLAZE_C_LINKER_MISSING: install native C build tools (Ubuntu: build-essential)" >&2; exit 3
  fi
  exec "$blaze" "$action" -p vivim-programmability-core "$@"
 fi
