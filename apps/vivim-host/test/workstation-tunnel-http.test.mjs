@@ -24,6 +24,13 @@ test('real MCP stdio, protected owner auth, Host HTTP, native session reconnect 
   VIVIM_WORKSTATION_SESSION_SHA256:hash(process.env.VIVIM_WORKSTATION_SESSION_EXE),
   VIVIM_WORKSTATION_ROOTS:roots,VIVIM_WORKSTATION_ROOTS_SHA256:hash(roots),
   VIVIM_WORKSTATION_FILES_SHA256:hash(process.env.VIVIM_WORKSTATION_FILES_EXE)};
+ const sdk=process.env.VIVIM_TEST_PROTOCOL_EXE;
+ const actualSource=process.env.VIVIM_TEST_PROTOCOL_SOURCE;
+ if(sdk){
+  const binding=path.join(root,'development-binding.json');
+  writeFileSync(binding,JSON.stringify({schema:'vivim.coding-context-binding/1',sdkPath:realpathSync(sdk),sdkSha256:hash(sdk),sdkSource:process.env.VIVIM_TEST_PROTOCOL_SOURCE_SHA||'2773e22044c5f5d44023b04e29e1103ac058fdee',projects:[{id:'sdk-test',root:workspace,instructions:['Use the existing Meta-VLANG grammar. Preserve code behavior and test changes.']}]}));
+  config.VIVIM_META_VLANG_CONFIG=binding;config.VIVIM_META_VLANG_CONFIG_SHA256=hash(binding);
+ }
  const before=Object.fromEntries(Object.keys(config).map(k=>[k,process.env[k]]));Object.assign(process.env,config);
  const server=createHostServer({dataRoot:data,ownerToken:token,autoPump:false});
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
@@ -60,5 +67,18 @@ test('real MCP stdio, protected owner auth, Host HTTP, native session reconnect 
  assert.equal(created.status,'applied');assert.equal(written.status,'applied');assert.equal(readback.text,'hello');
  const [edited,final]=await calls([['vivim_file_edit',{root_id:'repo',path:'src/test.txt',expected_digest:readback.digest,old_text:'hello',new_text:'VIVIM',request_id:rid()}],['vivim_file_read',{root_id:'repo',path:'src/test.txt'}]]);
  assert.equal(edited.status,'applied');assert.equal(final.text,'VIVIM');
+ if(sdk){
+  const text=actualSource?readFileSync(actualSource,'utf8'):'//! @hq:context Test source\nfn main() {}\n';
+  writeFileSync(path.join(workspace,'src','sdk.rs'),text);
+  const args={root_id:'repo',path:'src/sdk.rs'};
+  const [ordinary,development]=await calls([['vivim_file_read',args],['vivim_development_file_read',args]]);
+  assert.equal(ordinary.text,text);assert.equal(ordinary.codingContext,undefined);
+  assert.equal(development.text,ordinary.text);assert.equal(development.digest,ordinary.digest);
+  const c=development.codingContext;assert.equal(c.status,'compiled',JSON.stringify(c));
+  assert.equal(c.semantic.sourceDigest,ordinary.digest);
+  assert.equal(c.policy.authority,'locally-pinned-project-policy');
+  assert.ok(c.semantic.declarations.some(d=>d.tag==='context'&&d.assurance==='source-assertion'));
+  console.log('DEVELOPMENT_MCP_PROOF='+JSON.stringify({sourceDigest:c.sourceDigest,actualSource:Boolean(actualSource),policy:c.policy,semantic:c.semantic,genericUnchanged:true}));
+ }
  console.log('MCP_WORKSTATION_RECEIPTS='+JSON.stringify({session:start.planId,version:output.stdout.text.trim(),edit:edited.planId,readback:true,reconnected:true}));
 });
