@@ -2,6 +2,7 @@
 //! @hq:capability vivim.product-kernel@1
 //! No filesystem, network, authorization, device I/O or effects.
 use serde_json::{json,Value};
+mod application_intelligence;
 pub const REQUEST_SCHEMA:&str="vivim.product-pure-request/1";
 pub const RESPONSE_SCHEMA:&str="vivim.product-pure-response/1";
 pub const MAX_WIRE_BYTES:usize=512*1024;
@@ -62,6 +63,9 @@ pub fn dispatch(request:&Value)->Value{
         "activity-semantic-handoff"=>crate::activity_fabric::dispatch("activity-semantic-handoff", input),
         "activity-observation"=>crate::activity_fabric::dispatch("activity-observation", input),
         "development-projection"=>crate::development_projection::project(input),
+        "application-intelligence-projection"=>match application_intelligence::project(input){
+            Ok(value)=>value,Err(code)=>return refuse(op,code),
+        },
         "control-plan-preview"=>crate::control_plan_presentation::project(input),
         "control-receipt-preview"=>crate::control_plan_presentation::receipt_project(input),
         "control-inspection-preview"=>crate::control_plan_presentation::inspection_project(input),
