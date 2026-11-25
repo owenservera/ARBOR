@@ -5,11 +5,11 @@
 //! No graph mutations, personal data, provider calls or Host effect grants.
 use hqkg::{Error,Graph,Journal,Result};
 use hqkg::semantic_source;
-use hqkg::native_program::{build_semantic_program, SemanticTask};
+use hqkg::native_program::{DevelopmentSession, SemanticProgram, SemanticTask};
 use hqkg::development_relations;
 use hqkg::engine::{Budget,CancellationToken,EngineRegistry};
 use hqkg::development_engine::install_development_engine;
-use hqkg::typed_dag::{GraphDomain,Namespace,RevisionToken,IncrementalCache,RunState};
+use hqkg::typed_dag::{GraphDomain,Namespace,RevisionToken,IncrementalCache,RunState,DagReport};
 use vivim_programmability_core::{DataClass,PolicyLimits,Risk,Program,SourceRef,TransformStep,TransformKind,wire};
 use serde_json::{json,Value};
 use std::{fs,io::{self,Read},path::Path};
@@ -82,6 +82,9 @@ fn compute_program(graph:&Graph,epoch:u64,program:&Program,operation:&str)->Resu
     let mut cache=IncrementalCache::new();
     let report=hqkg::native_program::run_indexed_program(graph,&expected,program,&fixed_policy(),
         &registry,&mut cache,Budget::default(),&CancellationToken::new())?;
+    format_report(report,epoch,program,operation)
+}
+fn format_report(report:DagReport,epoch:u64,program:&Program,operation:&str)->Result<Value>{
     if report.state!=RunState::Complete{
         return Err(Error::Conflict(format!("development computation incomplete: {:?}; step={}; reason={}",
             report.state, report.failed_step.as_deref().unwrap_or("none"), report.failure.as_deref().unwrap_or("not available"))))
@@ -101,14 +104,12 @@ fn compute_program(graph:&Graph,epoch:u64,program:&Program,operation:&str)->Resu
             "state":format!("{:?}",out.state).to_lowercase(),"result":value}));
     }
     Ok(json!({"schema":SCHEMA,"state":"computed","authority":"read-only",
-        "operation":operation,"computation":"source-backed-graph","epoch":graph.epoch(),
+        "operation":operation,"computation":"source-backed-graph","epoch":epoch,
         "programId":program.id,"programRevision":program.revision,
         "outputs":outputs,"complete":complete,"executionAuthorized":false,"effectPerformed":false}))
 }
-fn semantic_program(graph:&Graph,semantic_id:&str,task:SemanticTask)->Result<Value>{
-    let expected=RevisionToken{namespace:Namespace{domain:GraphDomain::Development,owner:"local-hq".into()},graph_epoch:graph.epoch()};
-    let compiled=build_semantic_program(graph,&expected,semantic_id,task,&fixed_policy())?;
-    let mut result=compute_program(graph,expected.graph_epoch,&compiled.program,"semantic-program")?;
+fn semantic_projection(compiled:SemanticProgram,report:DagReport,epoch:u64,semantic_id:&str,task:SemanticTask)->Result<Value>{
+    let mut result=format_report(report,epoch,&compiled.program,"semantic-program")?;
     result["semanticId"]=json!(semantic_id);
     result["task"]=json!(task.name());
     result["semanticAnchor"]=json!({"id":compiled.anchor.anchor_id,"fileId":compiled.anchor.file_id,
@@ -116,6 +117,64 @@ fn semantic_program(graph:&Graph,semantic_id:&str,task:SemanticTask)->Result<Val
         "annotation":compiled.anchor.annotation_kind,"state":compiled.anchor.state,
         "line":compiled.anchor.first_line,"occurrences":compiled.anchor.occurrence_count});
     Ok(result)
+}
+fn revision(epoch:u64)->RevisionToken{
+    RevisionToken{namespace:Namespace{domain:GraphDomain::Development,owner:"local-hq".into()},graph_epoch:epoch}
+}
+fn semantic_program(graph:Graph,semantic_id:&str,task:SemanticTask)->Result<Value>{
+    let expected=revision(graph.epoch());
+    let mut session=DevelopmentSession::new(graph,expected.clone())?;
+    let (compiled,report)=session.execute_semantic(&expected,semantic_id,task,&fixed_policy(),Budget::default(),&CancellationToken::new())?;
+    semantic_projection(compiled,report,expected.graph_epoch,semantic_id,task)
+}
+
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct BatchRequest { schema:String, requests:Vec<SemanticRequest> }
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields,rename_all="camelCase")]
+struct SemanticRequest { semantic_id:String, task:String }
+
+/// One explicitly epoch-pinned finite batch, never an open-ended service.
+/// No partial response on failure; no new process authority or source grant.
+fn semantic_batch(graph:Graph,epoch:u64)->Result<Value>{
+    const MAX_BATCH_BYTES:usize=16*1024;
+    const MAX_BATCH_REQUESTS:usize=32;
+    const MAX_BATCH_OUTPUT:usize=1024*1024;
+    let mut input=String::new();
+    io::stdin().lock().take((MAX_BATCH_BYTES+1) as u64).read_to_string(&mut input)?;
+    if input.len()>MAX_BATCH_BYTES{return Err(Error::Invalid("semantic batch input exceeds budget".into()))}
+    let batch:BatchRequest=serde_json::from_str(&input).map_err(|_|Error::Invalid("invalid semantic batch envelope".into()))?;
+    if batch.schema!="hqkg.semantic-batch/1"||batch.requests.is_empty()||batch.requests.len()>MAX_BATCH_REQUESTS{
+        return Err(Error::Invalid("semantic batch schema or request count refused".into()))
+    }
+    let mut requests=Vec::new();
+    for request in batch.requests{
+        if request.semantic_id.is_empty()||request.semantic_id.len()>180{return Err(Error::Invalid("invalid semantic batch key".into()))}
+        requests.push((request.semantic_id,SemanticTask::parse(&request.task)?));
+    }
+    let expected=revision(epoch);
+    let mut session=DevelopmentSession::new(graph,expected.clone())?;
+    let policy=fixed_policy();
+    let cancel=CancellationToken::new();
+    let mut results=Vec::new();
+    let mut bytes=0usize;
+    let start=std::time::Instant::now();
+    let budget=Budget::default();
+    for (key,task) in requests{
+        let remaining=budget.max_elapsed_ms.saturating_sub(start.elapsed().as_millis());
+        if remaining==0{return Err(Error::Invalid("semantic batch elapsed budget exhausted".into()))}
+        let (compiled,report)=session.execute_semantic(&expected,&key,task,&policy,
+            Budget{max_elapsed_ms:remaining,..budget},&cancel)?;
+        let row=semantic_projection(compiled,report,epoch,&key,task)?;
+        bytes=bytes.checked_add(row.to_string().len()).ok_or_else(||Error::Invalid("semantic batch output overflow".into()))?;
+        if bytes>MAX_BATCH_OUTPUT{return Err(Error::Invalid("semantic batch output exceeds budget".into()))}
+        results.push(row);
+    }
+    if start.elapsed().as_millis()>budget.max_elapsed_ms{return Err(Error::Invalid("semantic batch elapsed budget exhausted".into()))}
+    let complete=results.iter().all(|r|r["complete"]==true);
+    Ok(json!({"schema":"hqkg.semantic-batch/1","epoch":epoch,"authority":"read-only",
+        "complete":complete,"results":results,"executionAuthorized":false,"effectPerformed":false}))
 }
 fn execute_program(graph:&Graph,epoch:u64)->Result<Value>{
     let mut input=String::new();
@@ -150,13 +209,17 @@ fn compute_source(graph:&Graph,id:&str)->Result<Value>{
 }
 fn run()->Result<Value>{
     let args=std::env::args().skip(1).collect::<Vec<_>>();
-    if args.len()<3||args.len()>4{return Err(Error::Invalid("usage: hqkg-development <absolute-journal> sources|symbols|impact|wiring <key> [depth] | program <epoch> | compute <source-file-id> | semantic-program <semantic-id> inspect|impact|compose".into()))}
+    if args.len()<3||args.len()>4{return Err(Error::Invalid("usage: hqkg-development <absolute-journal> sources|symbols|impact|wiring <key> [depth] | program <epoch> | compute <source-file-id> | semantic-program <semantic-id> inspect|impact|compose | semantic-batch <epoch>".into()))}
     let graph=open(Path::new(&args[0]))?;
-    graph.check_indexes()?;
+    if args[1]=="semantic-batch"{
+        if args.len()!=3{return Err(Error::Invalid("semantic-batch requires exact graph epoch".into()))}
+        return semantic_batch(graph,args[2].parse().map_err(|_|Error::Invalid("invalid graph epoch".into()))?)
+    }
     if args[1]=="semantic-program"{
         if args.len()!=4{return Err(Error::Invalid("semantic-program requires exact semantic ID and task".into()))}
-        return semantic_program(&graph,&args[2],SemanticTask::parse(&args[3])?);
+        return semantic_program(graph,&args[2],SemanticTask::parse(&args[3])?);
     }
+    graph.check_indexes()?;
     if args[1]=="compute"{
         if args.len()!=3{return Err(Error::Invalid("compute requires one exact source-file ID".into()))}
         return compute_source(&graph,&args[2])
