@@ -118,3 +118,62 @@ fn malformed_importer_cannot_appear_as_current_impact_evidence() {
     let mut g=Graph::new();e.apply(&mut g).unwrap();
     assert!(impact(&g,"vivim.native-visual-validation@1",1).is_err());
 }
+
+fn syntax_fixture()->Exchange {
+    let mut x=fixture();
+    let a=x.nodes.get_mut("a").unwrap();
+    a.properties.insert("bound_symbol_id".into(),"sym".into());
+    a.properties.insert("assurance".into(),"syntax-only".into());
+    let mut n=Node::new("sym",NodeKind::Other("source-symbol".into()),"extract");
+    for (k,v) in [("hqkg.exchange.source","repos-hq.index"),("source_path","arbor/core.rs"),
+        ("symbol_name","extract"),("qualified_name","inner::extract"),("symbol_kind","function"),
+        ("assurance","syntax-only"),("status","indexed-not-live-checked"),
+        ("first_line","4"),("occurrence_count","1")] {
+        n.properties.insert(k.into(),v.into());
+    }
+    n.properties.insert("content_sha256".into(),"a".repeat(64));
+    n.properties.insert("syntax_digest".into(),"c".repeat(64));
+    n.properties.insert("signature_digest".into(),"d".repeat(64));
+    x.nodes.insert(n.id.clone(),n);
+    for (id,from,relation,to) in [("owner","f","contains-indexed-symbol","sym"),
+        ("binding","a","binds-indexed-symbol","sym")] {
+        let mut e=Edge::new(id,from,relation,to);
+        e.properties.insert("hqkg.exchange.source".into(),"repos-hq.index".into());
+        if id=="binding" {
+            e.properties.insert("content_sha256".into(),"a".repeat(64));
+            e.properties.insert("source_line".into(),"2".into());
+            e.properties.insert("evidence_class".into(),"rust-ast-doc-ownership".into());
+        }
+        x.edges.insert(e.id.clone(),e);
+    }
+    x
+}
+#[test]
+fn syntax_binding_requires_exact_owned_source_and_symbol() {
+    let mut g=Graph::new();syntax_fixture().apply(&mut g).unwrap();
+    let view=sources(&g,"vivim.native-visual-validation@1").unwrap();
+    let b=view.anchors[0].bound_symbol.as_ref().unwrap();
+    assert_eq!(b.symbol_id,"sym");
+    assert_eq!(b.qualified_name,"inner::extract");
+    assert_eq!(b.syntax_digest,"c".repeat(64));
+    assert_eq!(b.signature_digest,"d".repeat(64));
+    let mut old=Graph::new();fixture().apply(&mut old).unwrap();
+    assert!(sources(&old,"vivim.native-visual-validation@1").unwrap().anchors[0].bound_symbol.is_none());
+}
+#[test]
+fn corrupted_syntax_bindings_fail_closed() {
+    for variant in 0..6 {
+        let mut x=syntax_fixture();
+        match variant {
+            0=>{x.edges.remove("binding");}
+            1=>{x.nodes.get_mut("sym").unwrap().properties.insert("content_sha256".into(),"b".repeat(64));}
+            2=>{x.edges.get_mut("owner").unwrap().from="g".into();}
+            3=>{x.nodes.get_mut("sym").unwrap().properties.insert("occurrence_count".into(),"2".into());}
+            4=>{x.edges.get_mut("binding").unwrap().properties.insert("source_line".into(),"5".into());}
+            5=>{x.nodes.get_mut("a").unwrap().properties.remove("bound_symbol_id");}
+            _=>unreachable!(),
+        }
+        let mut g=Graph::new();x.apply(&mut g).unwrap();
+        assert!(sources(&g,"vivim.native-visual-validation@1").is_err(),"variant {variant}");
+    }
+}

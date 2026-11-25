@@ -28,11 +28,64 @@ fn valid_semantic(s: &str) -> bool {
         && name.bytes().all(|b|b.is_ascii_lowercase()||b.is_ascii_digit()||b"._-".contains(&b))
         && version.split('.').all(|part|!part.is_empty()&&part.bytes().all(|b|b.is_ascii_digit()))
 }
+/// An importer-owned AST observation, not a type-check or authority proof.
+#[derive(Debug, PartialEq, Eq)]
+pub struct SyntaxBinding {
+    pub symbol_id: String,
+    pub qualified_name: String,
+    pub syntax_digest: String,
+    pub signature_digest: String,
+}
+fn valid_digest(v: &str) -> bool {
+    v.len()==64 && v.bytes().all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+}
+fn syntax_binding(graph: &Graph, anchor: &Node, file: &Node, line: u64, count: u64) -> Result<Option<SyntaxBinding>> {
+    let edges: Vec<_> = graph.outgoing(&anchor.id,Some("binds-indexed-symbol"))?
+        .into_iter().filter(|e|owned(&e.properties)).collect();
+    let Some(id)=prop(anchor,"bound_symbol_id") else {
+        if !edges.is_empty() || prop(anchor,"assurance")==Some("syntax-only") {
+            return Err(Error::Corrupt("orphan syntax binding".into()))
+        }
+        return Ok(None)
+    };
+    if edges.len()!=1 || edges[0].to!=id || count!=1 || prop(anchor,"assurance")!=Some("syntax-only") {
+        return Err(Error::Corrupt("ambiguous syntax binding".into()))
+    }
+    let edge=edges[0];
+    let symbol=graph.node(id).ok_or_else(||Error::Corrupt("missing syntax symbol".into()))?;
+    let qualified=prop(symbol,"qualified_name").unwrap_or("");
+    let name=prop(symbol,"symbol_name").unwrap_or("");
+    let kind=prop(symbol,"symbol_kind").unwrap_or("");
+    let syntax=prop(symbol,"syntax_digest").unwrap_or("");
+    let signature=prop(symbol,"signature_digest").unwrap_or("");
+    let first=prop(symbol,"first_line").and_then(|v|v.parse::<u64>().ok()).unwrap_or(0);
+    let parents:Vec<_>=graph.incoming(id,Some("contains-indexed-symbol"))?
+        .into_iter().filter(|e|owned(&e.properties)).collect();
+    if !owned(&symbol.properties) || symbol.kind.as_str()!="source-symbol"
+        || prop(symbol,"assurance")!=Some("syntax-only")
+        || prop(symbol,"status")!=Some("indexed-not-live-checked")
+        || prop(symbol,"occurrence_count")!=Some("1")
+        || prop(symbol,"source_path")!=prop(file,"source_path")
+        || prop(symbol,"content_sha256")!=prop(file,"content_sha256")
+        || edge.properties.get("content_sha256").map(String::as_str)!=prop(file,"content_sha256")
+        || edge.properties.get("source_line").and_then(|v|v.parse::<u64>().ok())!=Some(line)
+        || edge.properties.get("evidence_class").map(String::as_str)!=Some("rust-ast-doc-ownership")
+        || first<line || name.is_empty() || name.len()>180 || name.chars().any(char::is_control)
+        || qualified.is_empty() || qualified.len()>512 || qualified.chars().any(char::is_control)
+        || !(qualified==name || qualified.ends_with(&format!("::{name}")))
+        || kind.is_empty() || !valid_digest(syntax) || !valid_digest(signature)
+        || parents.len()!=1 || parents[0].from!=file.id {
+        return Err(Error::Corrupt("syntax binding provenance mismatch".into()))
+    }
+    Ok(Some(SyntaxBinding{symbol_id:id.into(),qualified_name:qualified.into(),
+        syntax_digest:syntax.into(),signature_digest:signature.into()}))
+}
 #[derive(Debug, PartialEq, Eq)]
 pub struct SourceAnchor {
     pub file_id: String, pub path: String, pub content_digest: String,
     pub anchor_id: String, pub annotation_kind: String, pub state: String,
     pub first_line: u64, pub occurrence_count: u64,
+    pub bound_symbol: Option<SyntaxBinding>,
 }
 #[derive(Debug, PartialEq, Eq)]
 pub struct SemanticSources {
@@ -83,7 +136,8 @@ pub fn sources(graph: &Graph, semantic_id: &str) -> Result<SemanticSources> {
         }
         if anchors.len()>=MAX_MATCHES {return Err(Error::Invalid("semantic match limit exceeded".into()))}
         anchors.push(SourceAnchor{file_id:file.id.clone(),path:path.into(),content_digest:digest.into(),
-            anchor_id:anchor.id.clone(),annotation_kind:tag.into(),state:state.into(),first_line,occurrence_count});
+            anchor_id:anchor.id.clone(),annotation_kind:tag.into(),state:state.into(),first_line,occurrence_count,
+            bound_symbol:syntax_binding(graph,anchor,file,first_line,occurrence_count)?});
     }
     anchors.sort_by(|a,b|(&a.path,&a.annotation_kind,&a.anchor_id).cmp(&(&b.path,&b.annotation_kind,&b.anchor_id)));
     Ok(SemanticSources{epoch:graph.epoch(),semantic_id:semantic_id.into(),anchors})

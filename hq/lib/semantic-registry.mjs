@@ -34,7 +34,7 @@ const INDEXED_ANCHOR_KINDS=['type','capability','contract','emits','consumes','a
 export function indexedSemanticAnchors(db,{fileId,project,path,hash}={}){
   if(!Number.isSafeInteger(fileId)||typeof project!=='string'||typeof path!=='string'||
       isSecretPath(path)||typeof hash!=='string'||!(/^[a-f0-9]{64}$/).test(hash))return [];
-  const rows=db.prepare('SELECT kind,ref,line FROM annotations WHERE file_id=? AND kind IN ('+
+  const rows=db.prepare('SELECT * FROM annotations WHERE file_id=? AND kind IN ('+
     INDEXED_ANCHOR_KINDS.map(()=>'?').join(',')+') AND ref IS NOT NULL ORDER BY kind,ref,line')
     .all(fileId,...INDEXED_ANCHOR_KINDS.map(k=>'v2:'+k));
   const groups=new Map();
@@ -42,14 +42,30 @@ export function indexedSemanticAnchors(db,{fileId,project,path,hash}={}){
     if(!isVersionedId(row.ref))continue;
     const annotationKind=row.kind.slice(3);
     const key=JSON.stringify([project,path,annotationKind,row.ref]);
-    if(!groups.has(key))groups.set(key,{semanticId:row.ref,annotationKind,lines:[]});
+    if(!groups.has(key))groups.set(key,{semanticId:row.ref,annotationKind,lines:[],bindings:[]});
     groups.get(key).lines.push(row.line);
+    groups.get(key).bindings.push([row.symbol_qualified_name,row.symbol_kind]);
   }
   return [...groups].map(([key,group])=>{
     const anchorId='hq:file-anchor:'+sha256('hq.indexed-anchor/1\0'+key);
-    return {anchorId,...group,granularity:'file-conservative',
+    const {bindings,...observation}=group;
+    let syntaxBinding=null;
+    const [qualified,kind]=bindings[0]??[];
+    if(group.lines.length===1&&typeof qualified==='string'&&qualified&&typeof kind==='string'&&kind){
+      const symbols=db.prepare('SELECT * FROM symbols WHERE file_id=? AND qualified_name=? AND kind=? LIMIT 2')
+        .all(fileId,qualified,kind);
+      if(symbols.length===1&&/^[a-f0-9]{64}$/.test(symbols[0].syntax_digest??'')
+        &&/^[a-f0-9]{64}$/.test(symbols[0].signature_digest??'')){
+        syntaxBinding={qualifiedName:qualified,symbolKind:kind,syntaxDigest:symbols[0].syntax_digest,
+          signatureDigest:symbols[0].signature_digest,assurance:'syntax-only'};
+      }
+    }
+    const fingerprintInputs=[anchorId,hash,group.lines];
+    if(syntaxBinding)fingerprintInputs.push(syntaxBinding);
+    return {anchorId,...observation,granularity:'file-conservative',
+      ...(syntaxBinding?{syntaxBinding}:{}),
       state:group.lines.length===1?'indexed':'ambiguous',
-      fingerprint:sha256('hq.indexed-anchor-fingerprint/1\0'+JSON.stringify([anchorId,hash,group.lines])),
+      fingerprint:sha256('hq.indexed-anchor-fingerprint/1\0'+JSON.stringify(fingerprintInputs)),
       contentHash:hash};
   }).sort((a,b)=>compare(a.anchorId,b.anchorId));
 }

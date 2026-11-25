@@ -9,7 +9,7 @@ import { tmpdir } from 'node:os';
 import { openMemoryDb } from '../lib/schema.mjs';
 import { indexProject } from '../lib/indexer.mjs';
 import { exportGraphExchange, importGraphExchange, acknowledgeGraphExport } from '../lib/kg-export.mjs';
-import { execFileSync } from 'node:child_process';
+import { indexedSemanticAnchors } from '../lib/semantic-registry.mjs';
 
 test('actual AST annotation binds unique symbol and remains stable through edits', {
   skip:process.env.VIVIM_HQKG_BIN_DIR?false:'exact-source native binary directory required'
@@ -52,6 +52,10 @@ test('actual AST annotation binds unique symbol and remains stable through edits
     assert.equal(doc.symbol_kind,'function');
     assert.equal(db.prepare("SELECT count(*) AS n FROM annotations WHERE kind='v2:contract' AND ref=?").get(capability).n,1);
     const first=binding(rows());
+    const file=db.prepare("SELECT id,hash,path FROM files WHERE path='rust_syntax.rs'").get();
+    const anchor=indexedSemanticAnchors(db,{fileId:file.id,project:'real-native',path:file.path,hash:file.hash}).find(x=>x.semanticId===capability);
+    assert.equal(anchor.syntaxBinding.qualifiedName,'extract');
+    assert.equal(anchor.syntaxBinding.syntaxDigest,a.syntax_digest);
     assert.equal(run().changed,0);
     writeFileSync(src,'\n'+original);
     assert.deepEqual(run().errors,[]);
