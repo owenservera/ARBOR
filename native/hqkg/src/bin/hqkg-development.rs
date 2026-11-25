@@ -128,13 +128,6 @@ fn semantic_program(graph:Graph,semantic_id:&str,task:SemanticTask)->Result<Valu
     semantic_projection(compiled,report,expected.graph_epoch,semantic_id,task)
 }
 
-#[derive(serde::Deserialize)]
-#[serde(deny_unknown_fields)]
-struct BatchRequest { schema:String, requests:Vec<SemanticRequest> }
-#[derive(serde::Deserialize)]
-#[serde(deny_unknown_fields,rename_all="camelCase")]
-struct SemanticRequest { semantic_id:String, task:String }
-
 /// One explicitly epoch-pinned finite batch, never an open-ended service.
 /// No partial response on failure; no new process authority or source grant.
 fn semantic_batch(graph:Graph,epoch:u64)->Result<Value>{
@@ -144,14 +137,21 @@ fn semantic_batch(graph:Graph,epoch:u64)->Result<Value>{
     let mut input=String::new();
     io::stdin().lock().take((MAX_BATCH_BYTES+1) as u64).read_to_string(&mut input)?;
     if input.len()>MAX_BATCH_BYTES{return Err(Error::Invalid("semantic batch input exceeds budget".into()))}
-    let batch:BatchRequest=serde_json::from_str(&input).map_err(|_|Error::Invalid("invalid semantic batch envelope".into()))?;
-    if batch.schema!="hqkg.semantic-batch/1"||batch.requests.is_empty()||batch.requests.len()>MAX_BATCH_REQUESTS{
+    let batch:Value=serde_json::from_str(&input).map_err(|_|Error::Invalid("invalid semantic batch envelope".into()))?;
+    let object=batch.as_object().filter(|o|o.len()==2 && o.contains_key("schema") && o.contains_key("requests"))
+        .ok_or_else(||Error::Invalid("invalid semantic batch fields".into()))?;
+    let rows=object["requests"].as_array().ok_or_else(||Error::Invalid("semantic batch requests must be an array".into()))?;
+    if object["schema"]!="hqkg.semantic-batch/1"||rows.is_empty()||rows.len()>MAX_BATCH_REQUESTS{
         return Err(Error::Invalid("semantic batch schema or request count refused".into()))
     }
     let mut requests=Vec::new();
-    for request in batch.requests{
-        if request.semantic_id.is_empty()||request.semantic_id.len()>180{return Err(Error::Invalid("invalid semantic batch key".into()))}
-        requests.push((request.semantic_id,SemanticTask::parse(&request.task)?));
+    for row in rows{
+        let row=row.as_object().filter(|o|o.len()==2 && o.contains_key("semanticId") && o.contains_key("task"))
+            .ok_or_else(||Error::Invalid("invalid semantic request fields".into()))?;
+        let key=row["semanticId"].as_str().filter(|k|!k.is_empty()&&k.len()<=180)
+            .ok_or_else(||Error::Invalid("invalid semantic batch key".into()))?;
+        let task=row["task"].as_str().ok_or_else(||Error::Invalid("invalid semantic batch task".into()))?;
+        requests.push((key.to_owned(),SemanticTask::parse(task)?));
     }
     let expected=revision(epoch);
     let mut session=DevelopmentSession::new(graph,expected.clone())?;
