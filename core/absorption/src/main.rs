@@ -4,11 +4,15 @@ use vivim_absorption::{discovery::Scope, store::Inbox};
 const LIMIT: usize = 4 * 1024 * 1024;
 fn run() -> Result<Value, &'static str> {
     let args: Vec<_> = std::env::args().skip(1).collect();
-    if args.len() != 2 { return Err("USAGE_INTAKE_OR_READ_STORE"); }
+    if args.len() != 2 && !(args.len()==4 && args[0]=="uia") { return Err("USAGE_INTAKE_OR_READ_STORE"); }
     let store = Inbox::open(Path::new(&args[1]))?;
     let mut input = Vec::new();
     io::stdin().take((LIMIT + 1) as u64).read_to_end(&mut input).map_err(|_| "INPUT_FAILED")?;
     if input.len() > LIMIT { return Err("SIZE_LIMIT"); }
+    if args[0] == "uia" {
+        if args.len()!=4{return Err("UIA_SCOPE_REQUIRED")}
+        return store.ingest_uia(&input,&Scope{site_id:args[2].clone(),origin:args[3].clone()});
+    }
     if args[0] == "uia-facebook" {
         return store.ingest_facebook_uia(&input,&Scope{site_id:"facebook".into(),origin:"https://www.facebook.com".into()});
     }
