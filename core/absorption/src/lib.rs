@@ -210,3 +210,5 @@ pub mod discovery;
 pub mod store;
 
 pub mod uia;
+
+pub mod handoff;
