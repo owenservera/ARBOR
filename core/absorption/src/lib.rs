@@ -204,3 +204,5 @@ impl Queue {
     pub fn get(&self, application: &str) -> Option<&Target> { self.targets.get(application) }
     pub fn targets(&self) -> impl Iterator<Item = &Target> { self.targets.values() }
 }
+
+pub mod discovery;
