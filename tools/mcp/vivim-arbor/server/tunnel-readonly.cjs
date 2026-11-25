@@ -4,11 +4,12 @@
 const readline = require('node:readline');
 const createDiscovery = require('./host-discovery.cjs');
 const {createProbe,name:probeName}=require('./workstation-probe-tunnel.cjs');
+const {createAcceptance}=require('./probe-acceptance.cjs');
 const VERSIONS = ['2025-03-26', '2025-06-18', '2025-11-25'];
 const HOST_NAMES = new Set(['vivim_host_sources', 'vivim_host_capabilities', 'vivim_host_targets', 'vivim_host_capability']);
 const isRecord = x => x !== null && typeof x === 'object' && !Array.isArray(x);
-function createProfile(env = process.env, {fetcher=globalThis.fetch}={}) {
-  const probe=createProbe({env,fetcher});
+function createProfile(env = process.env, {fetcher=globalThis.fetch,acceptance=null}={}) {
+  const probe=createProbe({env,fetcher})??acceptance;
   const tools = [
     ['vivim_tunnel_health', 'Read the private VIVIM transport profile health. No personal data or actions.',
       {type:'object',properties:{},required:[],additionalProperties:false},
@@ -40,7 +41,7 @@ function createProfile(env = process.env, {fetcher=globalThis.fetch}={}) {
       // A repeated valid initialize is an idempotent negotiation, not a new grant.
       // Preserve readiness: the fixed read-only tool surface has no session-specific authority.
       negotiated = true;
-      return reply(id,{protocolVersion:VERSIONS.includes(m.params.protocolVersion)?m.params.protocolVersion:VERSIONS.at(-1),capabilities:{tools:{listChanged:false}},serverInfo:{name:'vivim-arbor-private-tunnel',version:'0.1.2'}});
+      return reply(id,{protocolVersion:VERSIONS.includes(m.params.protocolVersion)?m.params.protocolVersion:VERSIONS.at(-1),capabilities:{tools:{listChanged:false}},serverInfo:{name:'vivim-arbor-private-tunnel',version:'0.1.3'}});
     }
     if (m.method === 'ping') return reply(id,{});
     if (!initialized) return error(id,-32002,'Server not initialized');
@@ -62,7 +63,7 @@ function createProfile(env = process.env, {fetcher=globalThis.fetch}={}) {
   return {dispatch};
 }
 async function main() {
-  const profile=createProfile();
+  const profile=createProfile(process.env,{acceptance:createAcceptance()});
   const input=readline.createInterface({input:process.stdin,crlfDelay:Infinity});
   // Sequential dispatch prevents concurrent reads against the existing Host.
   for await (const line of input) {
