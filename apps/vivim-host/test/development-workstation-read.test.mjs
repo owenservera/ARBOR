@@ -62,3 +62,11 @@ test('cancellation before or during read refuses result',async()=>{
  await assert.rejects(f.port.readWorkstation(request(),{signal:controller.signal}),{code:'HVI_READ_CANCELLED'});
  assert.equal(f.reads(),1);
 });
+
+test('content search carries only selected paths and literal query under exact owner grant',async()=>{
+ const f=fixture(),input={schema,source:{repo:'owner/repo',sha},operation:'search',paths:['src/lib.rs'],query:{literal:'fn',limit:5}};
+ assert.equal((await f.port.readWorkstation(input)).operation,'search');
+ assert.deepEqual(f.observed().input.query,input.query);assert.deepEqual(f.observed().input.paths,input.paths);
+ await assert.rejects(f.port.readWorkstation({...input,query:{literal:'fn',regex:true}}),{code:'HVI_SELECTION_INVALID'});
+ assert.equal(f.reads(),1);
+});

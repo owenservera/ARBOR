@@ -98,11 +98,13 @@ export function createDevelopmentReadPort({config={},runtime,actorId='desktop-ow
       typeof input.source.repo!=='string'||typeof input.source.sha!=='string'||
       !/^[0-9a-f]{40}$/.test(input.source.sha)||
       (input.source.subPath!==undefined&&typeof input.source.subPath!=='string')||
-      !['metadata','files'].includes(input.operation))fail('HVI_SELECTION_INVALID');
+      !['metadata','files','search'].includes(input.operation))fail('HVI_SELECTION_INVALID');
     const operation=input.operation;
     if(operation==='metadata'&&(!keys(input.query,['prefix','contains','exactPath','after','limit'])||input.paths!==undefined))fail('HVI_SELECTION_INVALID');
-    if(operation==='files'&&(!Array.isArray(input.paths)||input.paths.length<1||input.paths.length>16||
-      Array.from(input.paths).some(v=>typeof v!=='string')||input.query!==undefined))fail('HVI_SELECTION_INVALID');
+    if(operation!=='metadata'&&(!Array.isArray(input.paths)||input.paths.length<1||input.paths.length>16||
+      Array.from(input.paths).some(v=>typeof v!=='string')))fail('HVI_SELECTION_INVALID');
+    if(operation==='files'&&input.query!==undefined)fail('HVI_SELECTION_INVALID');
+    if(operation==='search'&&!keys(input.query,['literal','limit']))fail('HVI_SELECTION_INVALID');
     const repo=canonicalRepo(input.source.repo),sha=input.source.sha;
     const store=grants(),grant=store?.status();
     if(!grant?.granted||grant.expired||grant.revoked||typeof grant.id!=='string'||!grant.id)
@@ -111,7 +113,8 @@ export function createDevelopmentReadPort({config={},runtime,actorId='desktop-ow
       fail('HVI_SOURCE_NOT_GRANTED',403);
     const grantId=grant.id;
     const request={schema:input.schema,source:{...input.source,repo},operation,
-      ...(operation==='metadata'?{query:{...input.query}}:{paths:[...input.paths]})};
+      ...(operation==='metadata'?{query:{...input.query}}:{paths:[...input.paths]}),
+      ...(operation==='search'?{query:{...input.query}}:{})};
     // Pin original authority, repository and commit across every inner callback.
     const verifyGrant=ctx=>{
       if(stillOwner()!==true||signal?.aborted||ctx?.sourceGrantRef!==grantId||

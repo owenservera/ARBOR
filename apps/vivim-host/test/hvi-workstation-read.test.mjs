@@ -46,3 +46,18 @@ test('owner revocation during read returns no batch',async()=>{
   await assert.rejects(port({verifySession:()=>allowed}).readWorkstation(req('files',{paths:['src/first.mjs','src/shared.mjs']}),{adapter,sourceGrantRef:grant}),{code:'SOURCE_UNAUTHORIZED'});
   assert.equal(f.calls.blobs.length,1);
 });
+
+test('content search uses exact committed batch, no bytes or authority expansion',async()=>{
+ const f=syntheticSource(),p=port();
+ const r=await p.readWorkstation(req('search',{paths:['src/first.mjs','src/shared.mjs'],query:{literal:'export const',limit:1}}),options(f));
+ assert.equal(r.result.schema,'arbor.hvi.pinned-text-search/1');
+ assert.equal(r.result.matches[0].path,'src/first.mjs');assert.equal(r.result.truncated,true);
+ assert.equal(r.result.matches[0].columnUtf16,1);assert.equal('bytes' in r.result.matches[0],false);
+ assert.equal(r.remoteAccepted,false);assert.equal(f.calls.blobs.length,2);
+});
+test('search rejects invalid query and excluded paths before source access',async()=>{
+ const f=syntheticSource(),p=port();
+ await assert.rejects(p.readWorkstation(req('search',{paths:['src/first.mjs'],query:{literal:'x',regex:true}}),options(f)),{code:'RESOURCE_LIMIT'});
+ await assert.rejects(p.readWorkstation(req('search',{paths:['.env.production'],query:{literal:'x'}}),options(f)),{code:'SCOPE_ESCAPE'});
+ assert.equal(f.calls.tree.length,0);assert.equal(f.calls.blobs.length,0);
+});

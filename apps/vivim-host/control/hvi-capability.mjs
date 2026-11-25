@@ -3,6 +3,7 @@
 import { loadControlCatalog, createControlPlanner } from './intent-planner.mjs';
 import { runHviTool, HVI_CAPABILITY_ID, HVI_TOOL_REQUEST_SCHEMA } from '../../../hq/version-intelligence/integration/index.mjs';
 import { resolvePin, snapshotAt, queryPinnedEntries, readPinnedBlobs } from '../../../hq/version-intelligence/sources/snapshots.mjs';
+import { searchPinnedText, validatePinnedTextQuery } from '../../../hq/version-intelligence/sources/pinned-text-search.mjs';
 import { verifyOwnerToken } from '../bootstrap/owner-auth.mjs';
 import { projectAuthorizedHviInspector } from '../../../hq/version-intelligence/integration/host-inspector-projection.mjs';
 import { canonicalRepo, safePath, sensitivePath } from '../../../hq/version-intelligence/sources/common.mjs';
@@ -128,7 +129,7 @@ export function createHviHostReadPort({actorId,sessionId,verifySession,verifyGra
       input.schema!=='vivim.host.hvi-workstation-read-request/1'||
       !keys(input.source,['repo','sha','subPath'])||typeof input.source.repo!=='string'||
       typeof input.source.sha!=='string'||!/^[0-9a-f]{40}$/.test(input.source.sha)||
-      !['metadata','files'].includes(input.operation))fail('INVALID_REQUEST');
+      !['metadata','files','search'].includes(input.operation))fail('INVALID_REQUEST');
     const {operation}=input;
     const repo=canonicalRepo(input.source.repo,'github');
     const sha=input.source.sha;
@@ -147,7 +148,8 @@ export function createHviHostReadPort({actorId,sessionId,verifySession,verifyGra
       if(query.limit!==undefined&&(!Number.isSafeInteger(query.limit)||query.limit<1||query.limit>100))fail('INVALID_REQUEST');
       if(query.exactPath!==undefined&&(query.prefix||query.contains||query.after!==undefined))fail('INVALID_REQUEST');
     }else{
-      if(input.query!==undefined||!Array.isArray(input.paths)||input.paths.length<1||input.paths.length>16)fail('INVALID_REQUEST');
+      if((operation==='files'&&input.query!==undefined)||!Array.isArray(input.paths)||input.paths.length<1||input.paths.length>16)fail('INVALID_REQUEST');
+      if(operation==='search')query=validatePinnedTextQuery(input.query);
       paths=Array.from(input.paths,path=>safePath(path));
       if(new Set(paths).size!==paths.length)fail('INVALID_REQUEST');
       if(paths.some(path=>sensitivePath(path)||!inside(path)))fail('SCOPE_ESCAPE');
@@ -165,9 +167,10 @@ export function createHviHostReadPort({actorId,sessionId,verifySession,verifyGra
     const pin=await resolvePin({provider:'github',repo,sha,subPath,
       approvedScope:'development',sourceGrantRef},{adapter,authorize:check});
     const manifest=await snapshotAt(pin,{adapter,authorize:check,signal,inspectContent:false});
+    const batch=operation==='metadata'?null:await readPinnedBlobs(manifest.pin,paths,{adapter,authorize:check,manifest,signal});
     const result=operation==='metadata'
       ?await queryPinnedEntries(manifest.pin,query,{adapter,authorize:check,manifest,signal})
-      :await readPinnedBlobs(manifest.pin,paths,{adapter,authorize:check,manifest,signal});
+      :operation==='search'?searchPinnedText(batch,query,{signal}):batch;
     await check({operation:'source.snapshot.read',path:subPath||undefined});
     return Object.freeze({schema:'vivim.host.hvi-workstation-read/1',operation,
       result,grantCheckCount:checks,authority:'injected-local-Host-callbacks-not-production-attested',
