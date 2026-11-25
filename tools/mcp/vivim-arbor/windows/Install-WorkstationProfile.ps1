@@ -115,8 +115,16 @@ if($EnableGeneralTerminal){
   if($p.id -eq 'cargo'){$p.toolchain=$cargoTests.toolchain}
   $terminalPrograms+=$p
  }
- $pwsh=Get-Command pwsh.exe -CommandType Application -ErrorAction SilentlyContinue|Select-Object -First 1
- if($pwsh){$terminalPrograms+=@{id='pwsh';path=$pwsh.Source;sha256=Hash $pwsh.Source;environment=@($environment)}}
+ # Microsoft Store execution aliases may be inaccessible placeholders, not
+ # native executables. PowerShell 5.1 is already registered independently.
+ foreach($pwsh in @(Get-Command pwsh.exe -All -CommandType Application -ErrorAction SilentlyContinue)){
+  if($pwsh.Source -match '(?i)[\\/]Microsoft[\\/]WindowsApps[\\/]'){continue}
+  try{$pwshPath=(Resolve-Path -LiteralPath $pwsh.Source -ErrorAction Stop).Path;$pwshHash=Hash $pwshPath}
+  catch{Write-Warning 'Skipping inaccessible optional PowerShell 7 executable';continue}
+  if($pwshHash -notmatch '^[a-f0-9]{64}$'){continue}
+  $terminalPrograms+=@{id='pwsh';path=$pwshPath;sha256=$pwshHash;environment=@($environment)}
+  break
+ }
  $terminalFile=Join-Path $config 'terminal-policy.json'
  Write-Json $terminalFile @{schema='vivim.workstation-terminal-policy/1';enabled=$true;expiresAt=$grant.expiresAt;programs=@($terminalPrograms);roots=@(@{id='arbor';path=$RepoRoot},@{id='scratch';path=$scratch});maxTimeoutMs=1800000;allowInteractive=$true}
  $grant.terminal=@{configSha=Hash $terminalFile;programs=@($terminalPrograms|ForEach-Object{$_.id});roots=@($grant.roots);allowInteractive=$true}
