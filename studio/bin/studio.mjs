@@ -16,6 +16,7 @@ import { createOutput, reportError } from './lib/ui.mjs';
 
 import './commands/system.mjs';
 import './commands/capture.mjs';
+import './commands/craft.mjs';
 import './commands/sessions.mjs';
 import './commands/replay.mjs';
 import './commands/mirror.mjs';
