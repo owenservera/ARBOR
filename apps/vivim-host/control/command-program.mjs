@@ -7,6 +7,9 @@ const own = v => v !== null && typeof v==='object' && !Array.isArray(v) &&
   (Object.getPrototypeOf(v)===Object.prototype || Object.getPrototypeOf(v)===null) &&
   Object.values(Object.getOwnPropertyDescriptors(v)).every(d=>'value' in d);
 const only = (v,allowed)=>own(v)&&Object.keys(v).every(k=>allowed.includes(k));
+const validReadinessMetadata=catalog=>!Object.hasOwn(catalog,'readinessStates')||
+  (only(catalog.readinessStates,['verified','source_wired','adapter_pending','enforcement_missing','unsupported'])&&
+    Object.values(catalog.readinessStates).every(v=>typeof v==='string'));
 const ID=/^[a-z][a-z0-9._:-]{0,79}$/;
 const risks=['R0','R1','R2','R3'];
 const fail=(reason,stepId=null)=>({schema:COMMAND_PROGRAM_SCHEMA,outcome:'refused',
@@ -27,7 +30,8 @@ export function compileCommandProgram({steps,catalog,programId='command-program'
   const native=runNativeProductPureSync('command-program',{steps,catalog,programId,expectedCatalogVersion});
   if(native)return native;
   if(!Array.isArray(steps)||steps.length<1||steps.length>32||
-    !only(catalog,['schema','version','asOf','policy','actions','languageGroups'])||
+    !only(catalog,['schema','version','asOf','policy','actions','languageGroups','readinessStates'])||
+    !validReadinessMetadata(catalog)||
     catalog.schema!=='vivim.control-action-catalog/1'||
     !Number.isSafeInteger(catalog.version)||!Array.isArray(catalog.actions)||
     !ID.test(programId))return fail('INVALID_PROGRAM');

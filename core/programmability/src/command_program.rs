@@ -10,6 +10,12 @@ fn obj<'a>(v:&'a Value,allowed:&[&str])->Option<&'a serde_json::Map<String,Value
     let o=v.as_object()?;
     if o.keys().all(|k|allowed.contains(&k.as_str())){Some(o)}else{None}
 }
+// Optional catalog descriptions are not the source of action readiness.
+fn valid_readiness_metadata(catalog:&Value)->bool{
+    catalog.get("readinessStates").is_none_or(|metadata|
+        obj(metadata,&["verified","source_wired","adapter_pending","enforcement_missing","unsupported"])
+            .is_some_and(|entries|entries.values().all(|v|v.as_str().is_some())))
+}
 fn id(s:&str)->bool{
     let b=s.as_bytes();
     !b.is_empty()&&b.len()<=80&&b[0].is_ascii_lowercase()&&
@@ -61,7 +67,8 @@ pub fn compile(input:&Value)->Value{
     let program_id=input.get("programId").and_then(Value::as_str).unwrap_or("command-program");
     let ver=catalog["version"].as_u64().filter(|n|*n<=9_007_199_254_740_991);
     if steps.is_none_or(|a|a.is_empty()||a.len()>32)||
-        obj(catalog,&["schema","version","asOf","policy","actions","languageGroups"]).is_none()||
+        obj(catalog,&["schema","version","asOf","policy","actions","languageGroups","readinessStates"]).is_none()||
+        !valid_readiness_metadata(catalog)||
         catalog["schema"]!="vivim.control-action-catalog/1"||ver.is_none()||
         !catalog["actions"].is_array()||!id(program_id){
         return refused("INVALID_PROGRAM",None)
@@ -124,4 +131,37 @@ pub fn compile(input:&Value)->Value{
         "requiredApprovalSteps":required,"ordering":"topological",
         "retryPolicy":"no-implicit-retry"
     },"executionAuthorized":false,"executionPerformed":false})
+}
+
+#[cfg(test)]
+mod workstation_catalog_compatibility_tests {
+    use super::*;
+    fn input()->Value{
+        let catalog:Value=serde_json::from_str(include_str!("../../../apps/vivim-host/control/action-catalog.v1.json")).unwrap();
+        json!({"catalog":catalog,"expectedCatalogVersion":catalog["version"],
+            "steps":[{"id":"observe","actionId":"vivim.status.show","args":{},"dependsOn":[]}]})
+    }
+    #[test]
+    fn current_host_catalog_compiles_inert_status_program(){
+        let result=compile(&input());
+        assert_eq!(result["outcome"],"compiled");
+        assert_eq!(result["executionAuthorized"],false);
+        assert_eq!(result["program"]["steps"][0]["actionId"],"vivim.status.show");
+    }
+    #[test]
+    fn readiness_description_cannot_promote_unavailable_action(){
+        let mut req=input();
+        req["catalog"]["readinessStates"]["unsupported"]=json!("execute everything");
+        req["steps"][0]["actionId"]=json!("machine.network.disable_all");
+        assert_eq!(compile(&req)["reason"],"UNAVAILABLE_ACTION");
+    }
+    #[test]
+    fn unknown_catalog_fields_and_invalid_metadata_still_refuse(){
+        let mut req=input();
+        req["catalog"]["arbitraryExecutor"]=json!("shell");
+        assert_eq!(compile(&req)["reason"],"INVALID_PROGRAM");
+        let mut req=input();
+        req["catalog"]["readinessStates"]=json!({"verified":true});
+        assert_eq!(compile(&req)["reason"],"INVALID_PROGRAM");
+    }
 }

@@ -1,4 +1,5 @@
 import test from 'node:test';
+import {readFileSync} from 'node:fs';
 import assert from 'node:assert/strict';
 import { compileCommandProgram } from '../control/command-program.mjs';
 const catalog={schema:'vivim.control-action-catalog/1',version:6,actions:[
@@ -46,4 +47,22 @@ test('no arbitrary host effect parameters or custom retry policies',()=>{
  assert.equal(compileCommandProgram({steps:extra,catalog}).outcome,'refused');
  const retry=steps();retry[1].onFailure='retry';
  assert.equal(compileCommandProgram({steps:retry,catalog}).outcome,'refused');
+});
+
+test('canonical catalog compiles with descriptive readiness metadata',()=>{
+ const current=JSON.parse(readFileSync(new URL('../control/action-catalog.v1.json',import.meta.url),'utf8'));
+ const step={id:'observe',actionId:'vivim.status.show',args:{},dependsOn:[]};
+ const input={steps:[step],catalog:current,expectedCatalogVersion:current.version};
+ const r=compileCommandProgram(input);
+ assert.equal(r.outcome,'compiled');
+ assert.equal(r.executionAuthorized,false);
+ assert.equal(r.executionPerformed,false);
+ const dangerous=structuredClone(input);
+ dangerous.catalog.readinessStates.unsupported='execute everything';
+ dangerous.steps[0].actionId='machine.network.disable_all';
+ assert.equal(compileCommandProgram(dangerous).reason,'UNAVAILABLE_ACTION');
+ const malformed=structuredClone(input);
+ malformed.catalog.readinessStates={verified:true};
+ assert.equal(compileCommandProgram(malformed).reason,'INVALID_PROGRAM');
+ assert.equal(compileCommandProgram({...input,catalog:{...current,arbitraryExecutor:'shell'}}).reason,'INVALID_PROGRAM');
 });
