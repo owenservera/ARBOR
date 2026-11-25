@@ -6,9 +6,11 @@ param(
  [string]$RepoRoot='C:\0-BlackBoxProject-0\ARBOR',
  [string]$ConnectRoot='C:\0-BlackBoxProject-0\VIVIM-ARBOR-CONNECT',
  [switch]$Activate,
- [switch]$EnableGeneralTerminal
+ [switch]$EnableGeneralTerminal,
+ [string]$OwnerProfilePath
 )
 $ErrorActionPreference='Stop'
+if($OwnerProfilePath -and (!$EnableGeneralTerminal -or $Activate)){throw 'Expanded owner profile requires general terminal and stage-only operation; local supervised promotion required'}
 $utf8=New-Object Text.UTF8Encoding($false)
 function Hash([string]$p){(Get-FileHash -LiteralPath $p -Algorithm SHA256).Hash.ToLowerInvariant()}
 function Write-Json([string]$p,$obj){[IO.File]::WriteAllText($p,($obj|ConvertTo-Json -Depth 12 -Compress),$utf8)}
@@ -99,7 +101,8 @@ if(Test-Path -LiteralPath $zcode -PathType Leaf){
  $recipes+=Recipe 'zcode-help' $node @($zcode,'--help') $RepoRoot 30000
 }
 Write-Json $recipeFile @{schema='vivim.workstation-recipes/1';recipes=@($recipes)}
-Write-Json $rootFile @{schema='vivim.workstation-roots/1';roots=@(@{id='arbor';path=$RepoRoot},@{id='scratch';path=$scratch})}
+$rootEntries=@(@{id='arbor';path=$RepoRoot},@{id='scratch';path=$scratch})
+Write-Json $rootFile @{schema='vivim.workstation-roots/1';roots=$rootEntries}
 Push-Location $runtime
 try{$dataRoot=(& $node --input-type=module -e "import {studioDataDir} from './apps/vivim-host/server.mjs';process.stdout.write(studioDataDir())").Trim();if($LASTEXITCODE -ne 0 -or -not [IO.Path]::IsPathRooted($dataRoot)){throw 'Host data root unavailable'}}finally{Pop-Location}
 $auth=(Resolve-Path -LiteralPath (Join-Path $runtime 'apps\vivim-host\bootstrap\owner-auth.mjs')).Path
@@ -125,13 +128,40 @@ if($EnableGeneralTerminal){
   $terminalPrograms+=@{id='pwsh';path=$pwshPath;sha256=$pwshHash;environment=@($environment)}
   break
  }
+ if($OwnerProfilePath){
+  # The input is a local operator selection, not a remote authorization API.
+  # Keep the selection outside the candidate and never copy it into public Git.
+  $selection=(Resolve-Path -LiteralPath $OwnerProfilePath -ErrorAction Stop).Path
+  $contextFile=Join-Path $config 'owner-selection-context.json'
+  $protected=@($ConnectRoot,$dataRoot,$env:APPDATA,$env:LOCALAPPDATA,(Join-Path $env:USERPROFILE '.ssh'),(Join-Path $env:USERPROFILE '.aws'),(Join-Path $env:USERPROFILE '.azure'),(Join-Path $env:USERPROFILE '.config'),(Join-Path $env:USERPROFILE '.gnupg'),(Join-Path $env:USERPROFILE '.codex'),(Join-Path $env:USERPROFILE '.claude'),$env:WINDIR)|Where-Object {$_}
+  Write-Json $contextFile @{baseRoots=$rootEntries;basePrograms=$terminalPrograms;protectedPaths=@($protected)}
+  try{
+   $projected=@(& $node (Join-Path $src 'server\owner-profile-selection.mjs') $selection $contextFile)
+   if($LASTEXITCODE -ne 0 -or $projected.Count -ne 1){throw 'Expanded owner selection rejected'}
+   $expanded=$projected[0]|ConvertFrom-Json
+   if($expanded.schema -ne 'vivim.owner-workstation-selection-result/1'){throw 'Invalid expanded projection'}
+   $rootEntries=@($expanded.roots)
+   $terminalPrograms=@($expanded.programs|ForEach-Object{
+     if(-not $_.PSObject.Properties['environment']){$_|Add-Member -NotePropertyName environment -NotePropertyValue @($environment)}
+     $_
+   })
+   $grant.expiresAt=[DateTimeOffset]::UtcNow.AddMinutes($expanded.expiresInMinutes).ToUnixTimeMilliseconds()
+   $grant.allowWrites=[bool]$expanded.allowWrites
+   $grant.roots=@($rootEntries|ForEach-Object{$_.id})
+   if(-not $expanded.allowInteractive){$grant.interactiveRecipes=@()}
+   $allowTerminalInteractive=[bool]$expanded.allowInteractive
+   Write-Json $rootFile @{schema='vivim.workstation-roots/1';roots=$rootEntries}
+   $grant.rootConfigSha=Hash $rootFile
+  }finally{Remove-Item -LiteralPath $contextFile -ErrorAction Stop}
+ }else{$allowTerminalInteractive=$true}
  $terminalFile=Join-Path $config 'terminal-policy.json'
- Write-Json $terminalFile @{schema='vivim.workstation-terminal-policy/1';enabled=$true;expiresAt=$grant.expiresAt;programs=@($terminalPrograms);roots=@(@{id='arbor';path=$RepoRoot},@{id='scratch';path=$scratch});maxTimeoutMs=1800000;allowInteractive=$true}
- $grant.terminal=@{configSha=Hash $terminalFile;programs=@($terminalPrograms|ForEach-Object{$_.id});roots=@($grant.roots);allowInteractive=$true}
+ Write-Json $terminalFile @{schema='vivim.workstation-terminal-policy/1';enabled=$true;expiresAt=$grant.expiresAt;programs=@($terminalPrograms);roots=$rootEntries;maxTimeoutMs=1800000;allowInteractive=$allowTerminalInteractive}
+ $grant.terminal=@{configSha=Hash $terminalFile;programs=@($terminalPrograms|ForEach-Object{$_.id});roots=@($grant.roots);allowInteractive=$allowTerminalInteractive}
 }
 Write-Json (Join-Path $grantDir 'grant.json') $grant
 $m=@{schema='vivim.workstation-runtime/1';sourceSha=$SourceSha;nativeBuildSha=$NativeBuildSha;nodeExe=$node;nodeSha256=Hash $node;dataRoot=$dataRoot;hostSha256=Hash (Join-Path $runtime 'apps\vivim-host\server.mjs');cargoTargetDir=(Split-Path -Parent $NativeBinRoot);recipes=@($grant.recipes);roots=$grant.roots;helperSha256=@{session=Hash (Join-Path $bin 'vivim-workstation-session.exe');files=Hash (Join-Path $bin 'vivim-workstation-files.exe');probe=Hash (Join-Path $bin 'vivim-workstation-probe.exe')};recipeConfigSha=$grant.recipeConfigSha;rootConfigSha=$grant.rootConfigSha}
 if($EnableGeneralTerminal){$m.terminalConfigSha=$grant.terminal.configSha}
+if($OwnerProfilePath){$m.ownerProfile='expanded'}
 Write-Json (Join-Path $release 'manifest.json') $m
 Copy-Item -LiteralPath (Join-Path $src 'windows\Start-WorkstationHost.ps1') -Destination (Join-Path $release 'Start-WorkstationHost.ps1')
 Push-Location $runtime
@@ -141,7 +171,9 @@ $lines=@($messages|& $node (Join-Path $profile 'server\tunnel-readonly.cjs'))
 if($LASTEXITCODE -ne 0 -or $lines.Count -ne 2){throw 'Candidate handshake failed'}
 $names=@(($lines[1]|ConvertFrom-Json).result.tools|ForEach-Object name)
 $expectedTools=if($EnableGeneralTerminal){16}else{15}
-if($names.Count -ne $expectedTools -or $names -notcontains 'vivim_session_start' -or $names -notcontains 'vivim_file_edit' -or ($EnableGeneralTerminal -and $names -notcontains 'vivim_terminal_start')){throw 'Candidate tools mismatch'}
+if($OwnerProfilePath -and -not $grant.allowWrites){$expectedTools-=3}
+if($OwnerProfilePath -and -not $grant.terminal.allowInteractive){$expectedTools-=1}
+if($names.Count -ne $expectedTools -or $names -notcontains 'vivim_session_start' -or ($grant.allowWrites -and $names -notcontains 'vivim_file_edit') -or ($EnableGeneralTerminal -and $names -notcontains 'vivim_terminal_start')){throw 'Candidate tools mismatch'}
 Write-Output ('STAGED_SOURCE='+$SourceSha);Write-Output ('STAGED_TOOLS='+($names -join ','))
 if(-not $Activate){return}
 # Same supervisor, replace only the MCP child after the production Host passed.

@@ -4,12 +4,15 @@ param(
  [string]$RepoRoot='C:\0-BlackBoxProject-0\ARBOR',
  [string]$ConnectRoot='C:\0-BlackBoxProject-0\VIVIM-ARBOR-CONNECT',
  [Parameter(Mandatory=$true)][string]$TargetDir,
- [switch]$EnableGeneralTerminal
+ [switch]$EnableGeneralTerminal,
+ [string]$OwnerProfilePath
 )
 # Local operator entrypoint. Build/test/stage only. Does not stop a running
 # Host or tunnel, modify live grants, or promote a candidate. No remote caller
 # gets authority from this script; a separately authorized promotion is needed.
 $ErrorActionPreference='Stop'
+if($OwnerProfilePath -and -not $EnableGeneralTerminal){throw 'Expanded owner profile requires general terminal'}
+if($OwnerProfilePath){$OwnerProfilePath=(Resolve-Path -LiteralPath $OwnerProfilePath -ErrorAction Stop).Path}
 $utf8=New-Object Text.UTF8Encoding($false)
 function Hash([string]$p){(Get-FileHash -LiteralPath $p -Algorithm SHA256).Hash.ToLowerInvariant()}
 function Exe([string]$n){(Get-Command $n -CommandType Application -ErrorAction Stop|Select-Object -First 1).Source}
@@ -75,14 +78,14 @@ try{
  $env:VIVIM_WORKSTATION_PROBE_EXE=Join-Path $bin 'vivim-workstation-probe.exe'
  $env:VIVIM_WORKSTATION_PROBE_SHA256=Hash $env:VIVIM_WORKSTATION_PROBE_EXE
  # Require normal exit, never --test-force-exit. No production Host is started.
- $tests=@('apps/vivim-host/test/workstation-terminal-policy.test.mjs','apps/vivim-host/test/workstation-terminal-request.test.mjs','apps/vivim-host/test/workstation-file-port.test.mjs','apps/vivim-host/test/workstation-session-port.test.mjs','apps/vivim-host/test/workstation-process-port.test.mjs','apps/vivim-host/test/workstation-probe-http.test.mjs','apps/vivim-host/test/workstation-tunnel-http.test.mjs','apps/vivim-host/test/control-dispatcher.test.mjs','tools/mcp/vivim-arbor/tests/workstation-tunnel.test.cjs','tools/mcp/vivim-arbor/tests/tunnel-readonly.test.cjs','tools/mcp/vivim-arbor/tests/probe-acceptance.test.cjs','tools/mcp/vivim-arbor/tests/workstation-probe-tunnel.test.cjs','tools/mcp/vivim-arbor/tests/release-evidence.test.mjs','tools/mcp/vivim-arbor/tests/live-upgrade-plan.test.mjs','tools/mcp/vivim-arbor/tests/maintenance-gate.test.cjs','tools/mcp/vivim-arbor/tests/release-sequence.test.mjs','tools/mcp/vivim-arbor/tests/release-journal.test.mjs')
+ $tests=@('apps/vivim-host/test/workstation-terminal-policy.test.mjs','apps/vivim-host/test/workstation-terminal-request.test.mjs','apps/vivim-host/test/workstation-file-port.test.mjs','apps/vivim-host/test/workstation-session-port.test.mjs','apps/vivim-host/test/workstation-process-port.test.mjs','apps/vivim-host/test/workstation-probe-http.test.mjs','apps/vivim-host/test/workstation-tunnel-http.test.mjs','apps/vivim-host/test/control-dispatcher.test.mjs','tools/mcp/vivim-arbor/tests/workstation-tunnel.test.cjs','tools/mcp/vivim-arbor/tests/tunnel-readonly.test.cjs','tools/mcp/vivim-arbor/tests/probe-acceptance.test.cjs','tools/mcp/vivim-arbor/tests/workstation-probe-tunnel.test.cjs','tools/mcp/vivim-arbor/tests/release-evidence.test.mjs','tools/mcp/vivim-arbor/tests/live-upgrade-plan.test.mjs','tools/mcp/vivim-arbor/tests/maintenance-gate.test.cjs','tools/mcp/vivim-arbor/tests/release-sequence.test.mjs','tools/mcp/vivim-arbor/tests/release-journal.test.mjs','tools/mcp/vivim-arbor/tests/owner-profile-selection.test.mjs')
  Invoke-Checked $node (@('--test','--test-timeout=120000')+$tests) 'Host and MCP integration tests'
  foreach($name in $names){if((Hash $tools[$name].path) -ne $tools[$name].sha256){throw 'Toolchain changed during verification'}}
  $receipt=@{schema='vivim.workstation-build-receipt/1';sourceSha=$SourceSha;nativeTests='passed';hostTests='passed';toolchain=$tools;helpers=@{session=Hash $env:VIVIM_WORKSTATION_SESSION_EXE;files=Hash $env:VIVIM_WORKSTATION_FILES_EXE;probe=Hash $env:VIVIM_WORKSTATION_PROBE_EXE};verifiedAt=[DateTime]::UtcNow.ToString('o');promotionPerformed=$false}
  [IO.File]::WriteAllText((Join-Path $build 'build-receipt.json'),($receipt|ConvertTo-Json -Depth 8 -Compress),$utf8)
  $installer=Join-Path $source 'tools\mcp\vivim-arbor\windows\Install-WorkstationProfile.ps1'
  # Deliberately omit -Activate. The installer stages and validates only.
- & $installer -SourceSha $SourceSha -NativeBuildSha $SourceSha -NativeBinRoot $bin -RepoRoot $RepoRoot -ConnectRoot $ConnectRoot -EnableGeneralTerminal:$EnableGeneralTerminal
+ & $installer -SourceSha $SourceSha -NativeBuildSha $SourceSha -NativeBinRoot $bin -RepoRoot $RepoRoot -ConnectRoot $ConnectRoot -EnableGeneralTerminal:$EnableGeneralTerminal -OwnerProfilePath $OwnerProfilePath
  if(-not (Test-Path -LiteralPath (Join-Path $release 'manifest.json') -PathType Leaf)){throw 'Release manifest not staged'}
  $manifest=Get-Content -LiteralPath (Join-Path $release 'manifest.json') -Raw|ConvertFrom-Json
  if($manifest.sourceSha -cne $SourceSha -or $manifest.nativeBuildSha -cne $SourceSha -or $manifest.helperSha256.session -cne $receipt.helpers.session -or $manifest.helperSha256.files -cne $receipt.helpers.files -or $manifest.helperSha256.probe -cne $receipt.helpers.probe){throw 'Release manifest disagrees with tested build'}
