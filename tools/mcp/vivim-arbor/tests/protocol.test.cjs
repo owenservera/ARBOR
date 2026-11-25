@@ -16,7 +16,7 @@ const call=(name,args={})=>({jsonrpc:'2.0',id:1,method:'tools/call',params:{name
 function rpc(m){const r=spawnSync(process.execPath,[path.join(__dirname,'../server/operations.cjs')],{input:JSON.stringify(m)+'\n',encoding:'utf8',env:{...process.env,VIVIM_PROJECT_ROOT:root},timeout:10000});assert.equal(r.status,0,r.stderr);return JSON.parse(r.stdout).result;}
 function body(r){assert.notEqual(r.isError,true);return JSON.parse(r.content[0].text)}
 test('initialize negotiates protocol and release',()=>{const r=rpc({jsonrpc:'2.0',id:1,method:'initialize',params:{protocolVersion:'2025-03-26'}});assert.equal(r.serverInfo.version,'0.4.0');assert.equal(r.protocolVersion,'2025-03-26')});
-test('discovery preserves twelve and adds four, read only',()=>{const r=rpc({jsonrpc:'2.0',id:1,method:'tools/list'});assert.equal(r.tools.length,16);assert.equal(new Set(r.tools.map(x=>x.name)).size,16);assert.ok(r.tools.every(x=>x.annotations.readOnlyHint));});
+test('discovery preserves sixteen and adds local Codex observer, read only',()=>{const r=rpc({jsonrpc:'2.0',id:1,method:'tools/list'});assert.equal(r.tools.length,17);assert.equal(new Set(r.tools.map(x=>x.name)).size,17);assert.ok(r.tools.every(x=>x.annotations.readOnlyHint));});
 test('claims source',()=>assert.equal(body(rpc(call('vivim_task_claims'))).content,'claim ledger fixture'));
 test('lane planning source',()=>assert.equal(body(rpc(call('vivim_lane_plan',{document:'LANE-BOARD.md'}))).content,'lane plan fixture'));
 test('wiki source',()=>assert.equal(body(rpc(call('vivim_wiki_source',{document:'capabilities.md'}))).content,'wiki fixture'));
@@ -29,6 +29,6 @@ test('extra args rejected',()=>assert.equal(rpc(call('vivim_task_claims',{path:'
 test('capabilities differentiates live action from source',()=>{const r=body(rpc(call('vivim_capabilities')));assert.equal(r.version,'0.4.0');assert.ok(r.notImplemented.includes('remote HTTPS/tunnel'))});
 process.on('exit',()=>{fs.rmSync(root,{recursive:true,force:true});fs.rmSync(outside,{recursive:true,force:true})});
 
-test('catalog distinguishes targets from active adapters',()=>{const r=body(rpc(call('vivim_ecosystem_catalog')));assert.equal(r.targets.length,13);assert.equal(r.targets.filter(x=>x.implementation!=='planned').length,1);assert.equal(r.targets.find(x=>x.id==='claude-web').kind,'web');assert.equal(r.targets.find(x=>x.id==='antigravity-cli').command,'agy')});
+test('catalog distinguishes targets from active adapters',()=>{const r=body(rpc(call('vivim_ecosystem_catalog')));assert.equal(r.targets.length,13);assert.equal(r.targets.filter(x=>x.implementation!=='planned').length,2);assert.equal(r.targets.find(x=>x.id==='claude-web').kind,'web');assert.equal(r.targets.find(x=>x.id==='antigravity-cli').command,'agy')});
 test('CLI discovery reports no execution or auth claims',()=>{const r=body(rpc(call('vivim_cli_inventory')));assert.equal(r.cli.length,6);assert.ok(r.cli.every(x=>x.health==='unverified'&&x.authenticated==='unknown'&&Number.isInteger(x.candidateCount)));assert.ok(r.cli.every(x=>!('path' in x)))});
 test('inventory rejects arbitrary commands',()=>assert.equal(rpc(call('vivim_cli_inventory',{command:'unknown'})).isError,true));
