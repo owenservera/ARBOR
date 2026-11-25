@@ -2,6 +2,109 @@
 
 Owner direction 2026-11-25: all workstation capabilities belong in ARBOR's existing Rust command layer, not in a parallel agent/authority. Reference MIT fork `owenservera/DesktopCommanderMCP-VIVIM` at `9a101b17e44577f0baefa4c7120f087881c5cc56`; preserve upstream license and credits when porting code. Its 25 declared tools are the reference, not a claim of runtime parity. No vendor relay cloning or access-control bypass.
 
+## R031 — Complete 48-deliverable independence and acceleration register (2026-11-25)
+
+Owner requested preservation and enhancement of the original three-era checklist. This is the consolidated view of the original 32 milestones, eight R021 accelerators and eight R023 live-evolution extensions. It is an evidence/acceptance projection of the existing N01–N07, B01–B10 and U01–U12 scope, **not a separate ownership ledger**. Original milestone names are preserved from the recovered conversation list; where the verbatim original was unavailable, labels were reconstructed from R020/R021 and not represented as exact historical quotations.
+
+**Snapshot:** original checklist 15/32 accepted, 9 partial, 8 open (previous frozen R021 baseline 14/32; +1 for R030 direct general terminal). Expanded view 17/48 accepted, 19 partial, 12 open. Extensions overlap original criteria; never add extension completions to the 32-item score. This is a documentation reconciliation based on prior receipts, not a new runtime test. A = accepted at the milestone's defined scope; T = partial/tested; O = open/unverified; P = preserve accepted behavior; P0 = critical-path closure; P1 = acceleration/parity; P2 = later integration.
+
+Evidence references are revision anchors in [HANDOFF.md](HANDOFF.md), unless marked N/B/U/R021/R023 (historical sections here or [PLAN.md](PLAN.md)). A source commit, successful stage or version probe alone does not prove live end-to-end acceptance.
+
+### Era I — Bootstrap and remote execution
+
+| ID | Deliverable | State | Priority | Dependencies | Closure evidence | Current provenance |
+|---|---|---|---|---|---|---|
+| 01 | Secure independent MCP connection | A | P | — | Independent authenticated transport; reconnect, denial and revocation evidence retained. | R020/R030 |
+| 02 | Native Rust process execution | A | P | 01 | Actual native child with exact argv, exit and captured output. | R019/R030 |
+| 03 | Host command approval and receipts | A | P | 02 | Plan/digest, local approval, idempotent receipt and denied scope evidence. | R019/R020 |
+| 04 | MCP-to-Host execution bridge | A | P | 03 | Real client-to-Host execution with correlated session receipt. | R020/R030 |
+| 05 | Live Windows plugin upgrade | A | P | 04 | Source-pinned candidate activated, previous runtime retained, reconnect verified. | R030 |
+| 06 | ChatGPT tool discovery | A | P | 05 | Client tools/list exposes installed actions; refresh accepted and actual call succeeds. | R030 |
+| 07 | First real remote native command | A | P | 06 | Harmless direct command completes with exit 0 and actual output. | R020/R030 |
+
+### Era II — Eliminate Desktop Commander dependency
+
+| ID | Deliverable | State | Priority | Dependencies | Closure evidence | Current provenance |
+|---|---|---|---|---|---|---|
+| 08 | Permanent production Host integration | A | P | 04 | Installed Host exposes native actions; authenticated readiness and live effects. | R020/R030 |
+| 09 | General authorized terminal commands | A | P | 08 | Dynamic typed argv and cwd via current local grant; actual ChatGPT invocation, not recipe-only. | R030: ctl-c07d97d3f4ed802b |
+| 10 | Persistent process sessions | A | P | 08 | Owned session survives connector reconnect; resume status/output within retention. | R020 |
+| 11 | Incremental stdout/stderr retrieval | A | P | 10 | Cursor-based separate streams, no duplicate or lost bytes within retention; settled exit. | R020/R030 |
+| 12 | Interactive terminal input | A | P | 10 | Live input receipt, actual echo and exit; piped input only; full PTY is 26 subcriterion. | R020 |
+| 13 | Process-tree cancellation | T | P0 | 10 | Live remote owned descendant tree cancelled; timeout/drop containment; unrelated process survives. | R030 Windows native tests; remote descendant proof open |
+| 14 | Live filesystem read and listing | A | P | 08 | Real granted root list/read with exact bytes and denial outside scope. | R020 |
+| 15 | Live filesystem write and editing | A | P | 14 | Scratch create/edit/readback, stale digest refusal; no unrelated source mutation. | R020 |
+| 16 | Native Git synchronization | A | P | 09 | Fetch and non-destructive fast-forward to exact GitHub SHA, verified readback. | R020 |
+| 17 | Independent Rust and Node builds | T | P0 | 09,16 | VIVIM-only source-pinned Rust and Node build/test runs, real exit 0, logs and artifact hashes; no Commander. | R030 build via temporary bridge |
+| 18 | Self-update and rollback | T | P0 | 13,17,L+01–07 | VIVIM-owned supervised stage/promote/reconnect, failed-candidate rollback, stable data and grants; no Commander. | R030 assisted handover |
+| 19 | Real ZCode agent development task | O | P0 | 09,11,12 | Direct CLI bounded real claimed task; actual selected approved Codex OAuth model, output, test and Git evidence; no workflow or silent fallback. | R030 version only; R027 model constraints |
+| 20 | Two complete independent development cycles | O | P0 | 13,16–19 | Two consecutive cloud-code → VIVIM sync/build/test/receipt cycles, one upgrades the runtime; zero Commander calls. | B09 open |
+
+### Era III-A — Original full parity and beyond
+
+| ID | Deliverable | State | Priority | Dependencies | Closure evidence | Current provenance |
+|---|---|---|---|---|---|---|
+| 21 | Streaming filesystem search | T | P1 | 14 | Recursive bounded search, streamed pages, cancellation, exclude rules and real large-tree measurement. | R021 selected literal search only |
+| 22 | File metadata and multi-file operations | T | P1 | 14 | Typed metadata, batch reads, per-file failures, limits and symlink/reparse denial, live calls. | R021 selected multi-read/basic metadata |
+| 23 | File creation, move and rename | T | P1 | 15 | Create directories/files, CAS-bound move/rename with collision and recovery proof. | R020 scratch create/edit |
+| 24 | Native PDF, DOCX and Excel operations | O | P2 | 14,15 | Read/create/edit supported documents with fidelity, limits and round-trip verification using owned document tooling. | N03 |
+| 25 | Advanced fuzzy editing and diff | O | P1 | 15 | Unique match preview, ambiguity/stale refusal, digest-bound patch, diff and reversible receipt. | N01 exact preview only |
+| 26 | Process discovery and management | T | P1 | 10,13 | Authorized process listing, identity-safe owned termination, resource stats; ConPTY/PTY resize, Unicode and terminal control acceptance. | N04/R030 piped sessions |
+| 27 | Configuration and operational statistics | O | P1 | 03,08 | Typed centrally owned configuration, revision and permissions, usage/latency/errors, receipt readback and revocation. | N05 |
+| 28 | Multi-device management | O | P2 | 01,08 | Explicit per-device identity, scoped pairing, command routing, disconnect/reconnect and revocation; no cross-device leakage. | N07 |
+| 29 | Native agent integration | T | P1 | 19,A+05 | Approved adapters for relevant installed agents; common lifecycle, model verification, budget and cancellation receipts. | R027/R030 direct CLI version |
+| 30 | VLANG and AutoWiki integration | O | P2 | A+07 | Existing registry projects command descriptions and actual execution receipts into VLANG/AutoWiki; no second compiler or graph. | N07 |
+| 31 | GPUI and mobile operational parity | O | P2 | 28,A+07 | One GPUI surface mirrored to paired phone, same commands and actual physical device receipts. | N07 |
+| 32 | Retire transitional Commander engine | T | P1 | 20,21–31 | Inventory remaining reference operations, verify owned equivalents and remove routine dependency; preserve supported emergency recovery. | R030 routine policy cutover |
+
+### Era III-B — Original acceleration extensions
+
+| ID | Deliverable | State | Priority | Dependencies | Closure evidence | Current provenance |
+|---|---|---|---|---|---|---|
+| A+01 | Source-pinned development pipeline | T | P0 | 16,17 | Exact SHA, approved edit scope, resumable build/test logs, exit and receipt; no dirty checkout overwrite. | B06/R030 |
+| A+02 | Intelligent test selection | O | P1 | A+01,A+07 | Existing HQKG impact selection compared with full suite; track false negatives, periodic complete runs. | R021 |
+| A+03 | Rust build acceleration | T | P0 | 17 | Reuse existing cache/Blaze tooling where available; measured cold/warm speed, disk/RAM ceilings and correctness parity. | R030 cache reuse; acceleration benchmark open |
+| A+04 | Automated release lifecycle | T | P0 | 18,L+01–07 | Immutable manifests, supported staging, supervised promotion and rollback, grant renewal and real recovery. | R030 assisted handover |
+| A+05 | Native agent task contracts | T | P0 | 19 | Existing claim/task binding, explicit model and budget, progress, pause/cancel/resume and evidence handoff. | R027/R030 |
+| A+06 | Parallel native development | O | P1 | A+01,A+05 | Resource-bounded jobs and isolated outputs using existing HQ/Host coordination, no duplicate writers; owner-approved concurrency. | R021 |
+| A+07 | Universal capability descriptions | T | P1 | 08 | Existing typed catalogue projected to MCP/VLANG/GPUI/AutoWiki/graph; revision consistency and no duplicate registry. | R030 catalogue v24; projections open |
+| A+08 | Development-cycle benchmarks | O | P1 | 20,A+01–06 | Measure baseline vs improvements: edit-to-verified result, cold/warm builds, manual interventions, retries, resource use and relay calls. | R021 |
+
+### Era III-C — Original future-proof live-evolution extensions
+
+| ID | Deliverable | State | Priority | Dependencies | Closure evidence | Current provenance |
+|---|---|---|---|---|---|---|
+| L+01 | Exact release and runtime-binding evidence | A | P | 17 | Seal exact candidate, tests and runtime identity; tamper rejection and real staging readback. | R030 sealed release |
+| L+02 | Minimum-interruption change classification | T | P0 | L+01 | Classify doc-only/no restart, compatible reload, catalogue refresh, full handover; verify each path. | R023 |
+| L+03 | Stable control plane and maintenance | A | P | 08 | Live health persists, drain admitted calls, new effects blocked, status/output retained; supervised maintenance clear. | R030 live maintenance |
+| L+04 | Generation-pinned native workers | T | P0 | 13,L+03 | Existing sessions finish on old generation; new sessions use verified next; durable output and receipts. | R023/R030 containment only |
+| L+05 | Supervised Host handover | T | P0 | L+01,L+03,L+04 | Host-wide quiescence, data binding, one writer, readiness and reconnect via owned lifecycle. | R030 bridge-assisted handover |
+| L+06 | Transactional promotion and recovery | T | P0 | L+05 | Durable transaction and previous runtime, deliberate failed-candidate recovery, crash/restart and no duplicate effects. | R030 rollback backup only |
+| L+07 | Compatible contracts and authorization lifecycle | T | P0 | L+02,L+03 | Versioned contracts, explicit supported renewal/revocation, Studio UI refresh and actual new-client call. | R030 refresh and direct call; renewal open |
+| L+08 | Component-level live replaceability | O | P1 | L+04,L+06,L+07 | Independently replace worker/adapter/semantic projection with measured interruption and rollback; reuse existing owners. | R023 |
+
+### Execution order — immediately actionable critical path
+
+1. **Preserve existing access:** discover actual tools, health and current grant; read [R030 startup contract](HANDOFF.md#r030--production-general-terminal-accepted-mandatory-vivim-first-migration-2026-11-25). PowerShell 7+ only; never assume a time-limited grant is still valid. Record exact source/runtime identity. Coordinate via existing TASK-CLAIMS and canonical ARBOR tracker before source changes.
+2. **Close 13/17 and A+01/A+03:** use direct VIVIM sessions for real descendant cancellation and exact-source Rust/Node build/test with actual exit. Use bounded scratch fixtures, resource headroom, and no unrelated process termination.
+3. **Close 19 and A+05:** direct installed ZCode CLI (no workflows), discover actual registered Codex OAuth model ID, verify actual model usage on a bounded approved task. Preferred GPT-6.2 Sol, GPT-6 only as owner-named alternative if verified and admitted; no silent fallback. Avoid shared config mutation. Run in isolation, maintain task claim and read back changes; ChatGPT/GitHub retains primary source authority.
+4. **Close 18 with L+01–07/A+04:** build and seal a candidate, use the supported locally authorized release lifecycle, keep previous known-good runtime, drain all affected work, test failed-candidate recovery and verify connector recovery. Native Studio settings navigation/scroll/Tools/Refresh tools and actual client discovery become a reusable supported operation. If a required authority is unavailable, report blocker rather than bypassing the installed grant. No routine Desktop Commander.
+5. **Close 20 and A+08:** record two successive complete independent cycles, one actual upgrade, with zero commercial Commander calls; establish measured baseline and only then claim independence at the broader scope.
+6. **Expand Era III:** N02/N03/N04/N05 parity breadth → A+02/A+06/A+07/L+08 → N06/N07 integration, coordinated with existing product owners. Continue allowed non-conflicting parallel work without delaying critical path.
+
+### Enhanced future-proof acceptance refinements (subcriteria, not new numbered milestones)
+
+- **18/L+06/L+07 — one-click onboarding and recovery:** versioned installer exposes optional computer control after signed-in provider selection, explicit authorization, pairing, tool discovery, expiry/revoke and recovery; prove clean install and repeat install on separate development candidate, never overwrite working production to test.
+- **26/L+04 — terminal fidelity:** distinguish current piped sessions from actual ConPTY/PTY. Verify resize, Ctrl-C semantics, Unicode, long output, backpressure, reconnect and bounded retention; no claim of full terminal emulation until accepted.
+- **27/L+07 — central settings ownership:** use existing Host configuration and revision authority; surface scoped settings and grant status in GPUI/paired viewport; audit without exporting secrets; no second settings store.
+- **29/A+05/A+06 — agent acceleration:** use direct CLI adapters and existing model registry, observable model identity, approved costs, cancellation, non-overlapping work and measured parallel gain; no duplicate scheduler or default delegation.
+- **31/A+07/L+08 — reusable UI operations:** Studio understands external software; VLANG internal capability descriptions. Use existing typed registry, proven browser interactions, Host receipts and single GPUI surface. Respect current product-workstream owners; this lane owns the tooling integration only.
+- **A+08 — measurement and reproducibility:** measure real wall time, memory, free disk, cache hits, manual interventions, retry count, evidence integrity and zero commercial calls. Compare like-for-like source and toolchain; separate local verification from cloud code/test evidence.
+
+### Receipt and status update contract
+
+For each attempted closure capture: milestone ID, existing claim/owner, timestamp, canonical source SHA and deployed runtime SHA (separate), exact non-secret command or operation, approved scope, plan/session receipt identifier, exit and stream completion, artifact digest or observable readback, test environment, negative test and remaining blocker. Record evidence in HANDOFF and canonical existing tracker/claim, then update this projection. Never infer acceptance from a listed tool or source-only implementation. Keep historical checkpoint sections unchanged. No new scheduling or grants implied by this register.
+
 ## R030 — Live production terminal accepted
 
 General terminal is operational in production and directly callable from ChatGPT. [Handoff R030](https://github.com/owenservera/ARBOR/blob/main/tools/mcp/vivim-arbor/HANDOFF.md) records verified release, tests, client refresh and actual native command receipt. Routine local operations are VIVIM-first. Remaining parity is not yet complete; the historical strict checklist must be reconciled against evidence before increasing its count.

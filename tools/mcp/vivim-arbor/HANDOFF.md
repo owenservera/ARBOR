@@ -2,6 +2,10 @@
 2026-11-25 | R001 | Read this before continuing development.
 
 
+## R031 — Owner-directed preservation and enhancement of original roadmap (2026-11-25)
+
+The full 48-deliverable register is saved in [NATIVE-WORKSTATION-PARITY.md R031](NATIVE-WORKSTATION-PARITY.md#r031--complete-48-deliverable-independence-and-acceleration-register-2026-11-25). Evidence reconciliation: 15/32 original milestones accepted (R021 14/32 + R030 general terminal), 9 partial, 8 open; extensions tracked separately. No runtime operation or new test was performed by this documentation update. Read R031 critical path and R030 operating contract before continuing. Existing task-claim owners unchanged.
+
 ## R030 — Production general terminal accepted; mandatory VIVIM-first migration (2026-11-25)
 
 Owner decision: all ChatGPT sessions use VIVIM ARBOR for authorized workstation operations moving forward. Routine Desktop Commander use is retired; exceptions must be specific and explicitly authorized. Cloud-first source engineering remains unchanged. Direct ZCode CLI only; PowerShell 7+ default.

@@ -1,6 +1,10 @@
 # VIVIM ARBOR — Universal Personal AI engineering plan
 Revision R002 | 2026-11-25 | Owner-directed product evolution
 
+## R031 — Complete three-era execution register
+
+The original 32 milestones and all 16 original extensions are consolidated, with acceptance criteria, dependencies, priority and status, in [Native workstation parity — R031](NATIVE-WORKSTATION-PARITY.md#r031--complete-48-deliverable-independence-and-acceleration-register-2026-11-25). It is the scope projection for this lane, not a new task ledger. R030 live production supersedes historical recipe-only/health-only descriptions below. Source engineering remains cloud/GitHub; authorized local operations VIVIM-first, pwsh 7+, direct ZCode CLI only. Preserve existing claims.
+
 ## Mission
 One personal AI operating layer, independent of any individual model, agent, device or interface. My machine, my data, my AI. Build capabilities once, reuse them deterministically where possible, and retain evidence. The private MCP is an access surface for ARBOR, not a separate orchestration engine.
 
