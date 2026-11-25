@@ -3,8 +3,9 @@ import path from 'node:path';
 import {define} from '../lib/registry.mjs';
 import {usageError} from '../lib/ui.mjs';
 import {craftCatalog,craftScreenshot} from '../../src/studio/craft-runtime.mjs';
+import {captureSurface} from '../../src/studio/craft-surface.mjs';
 define({
- name:'craft',section:'Capture',usage:'<catalog|screenshot> --craft-exe PATH',
+ name:'craft',section:'Capture',usage:'<catalog|screenshot|surface> --craft-exe PATH',
  summary:'Use the native Craft Anything runtime from Studio',
  flags:{
    'craft-exe':{type:'string',valueName:'PATH',desc:'Absolute installed Craft CLI executable'},
@@ -13,6 +14,10 @@ define({
  },
  async run(ctx){
    const sub=ctx.args[0],executable=ctx.flags['craft-exe']??process.env.VIVIM_CRAFT_EXE;
+   if(sub==='surface'){
+     const r=await captureSurface({profileDir:ctx.paths.chromeProfile,port:ctx.port,target:ctx.flags.target,origin:ctx.flags.origin,evidenceRoot:path.join(ctx.paths.root,'craft-runtime-evidence')});
+     return ctx.out.emit(r,o=>{o.result('Observed '+r.controls.length+' accessibility controls');for(const c of r.controls.filter(x=>x.label))o.line(c.role+'  '+c.label);});
+   }
    if(!executable)throw usageError('Supply --craft-exe or VIVIM_CRAFT_EXE');
    if(sub==='catalog'){
      const r=await craftCatalog(executable);
