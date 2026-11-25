@@ -38,6 +38,11 @@ impl Inbox {
         let count=record["observations"].as_array().ok_or("UIA_ROWS_INVALID")?.len();
         self.publish(record,scope,count)
     }
+    pub fn ingest_uia(&self,raw:&[u8],scope:&Scope)->Result<Value,&'static str>{
+        let record=crate::uia::normalize_uia(raw,scope)?;
+        let count=record["observations"].as_array().ok_or("UIA_ROWS_INVALID")?.len();
+        self.publish(record,scope,count)
+    }
     pub fn ingest_handoff(&self, h:&crate::handoff::Handoff)->Result<Value,&'static str>{
         let source=self.read(&h.source_id)?;
         let record=crate::handoff::validate(h,&source)?;
