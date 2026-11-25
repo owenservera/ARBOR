@@ -17,7 +17,7 @@ struct Pure {
 }
 impl ComputeEngine for Pure {
     fn descriptor(&self) -> EngineDescriptor {
-        EngineDescriptor::new("pure", self.implementation, PURE_INTERFACE, &["evaluate"])
+        EngineDescriptor::new("pure", self.implementation, PURE_INTERFACE, &["evaluate", "interpret"])
     }
     fn execute(&self, req: &EngineRequest) -> Result<EngineOutput> {
         self.calls.fetch_add(1, Ordering::SeqCst);
@@ -347,4 +347,42 @@ fn cache_retention_is_bounded_without_failing_valid_computation() {
     let mut no_cache = IncrementalCache::with_limits(0, 0);
     assert_eq!(execute(&reg, &p, &mut no_cache).state, RunState::Complete);
     assert_eq!(no_cache.len(), 0);
+}
+
+#[test]
+fn changed_operation_and_snapshot_cannot_reuse_previous_output() {
+    let (reg, calls) = registry();
+    let mut cache = IncrementalCache::new();
+    let mut p = plan(ns(GraphDomain::Development));
+    execute(&reg, &p, &mut cache);
+    p.steps.iter_mut().find(|s| s.id == "b").unwrap().operation = "interpret".into();
+    let report = execute(&reg, &p, &mut cache);
+    assert_eq!(report.outputs[0].state, OutputState::Reused);
+    assert_eq!(report.outputs[1].state, OutputState::Computed);
+    assert_eq!(calls.load(Ordering::SeqCst), 3);
+    p.expected.graph_epoch += 1;
+    let report = execute(&reg, &p, &mut cache);
+    assert!(report.outputs.iter().all(|x| x.state == OutputState::Computed));
+    assert_eq!(calls.load(Ordering::SeqCst), 5);
+}
+
+#[test]
+fn source_invalidation_includes_transitive_consumers_without_direct_sources() {
+    let (reg, _) = registry();
+    let mut cache = IncrementalCache::new();
+    let mut p = plan(ns(GraphDomain::Development));
+    p.steps.iter_mut().find(|s| s.id == "b").unwrap().sources.clear();
+    let mut leaf = step("c", &["b"], &p.namespace);
+    leaf.sources.clear();
+    p.steps.push(leaf);
+    let report = execute(&reg, &p, &mut cache);
+    assert_eq!(report.state, RunState::Complete);
+    let mut graph = hqkg::Graph::new();
+    let mut ledger = hqkg::graph_change_set::ApplyLedger::new();
+    let change = hqkg::graph_change_set::GraphChangeSet::new("transitive", "owner").put_node(
+        hqkg::Node::new("source", hqkg::NodeKind::Document, "changed"),
+    );
+    let applied = hqkg::graph_change_set::apply(&mut graph, &change, &mut ledger).unwrap();
+    assert_eq!(cache.invalidate_changes(&p.namespace, &applied), 3);
+    assert_eq!(cache.len(), 0);
 }
