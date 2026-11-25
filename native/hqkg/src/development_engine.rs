@@ -22,6 +22,9 @@ fn property<'a>(node: &'a Node, key: &str) -> Option<&'a str> {
     node.properties.get(key).map(String::as_str)
 }
 fn source_node(graph: &Graph, id: &str, version: u64, digest: &str) -> Result<Value> {
+    if version == 0 || digest.len() != 64 || !digest.bytes().all(|b| b.is_ascii_hexdigit() && !b.is_ascii_uppercase()) {
+        return Err(Error::Invalid("invalid indexed source revision or digest".into()));
+    }
     let node = graph.node(id).ok_or_else(|| Error::Missing("indexed source absent".into()))?;
     if node.kind.as_str() != "source-file"
         || property(node, "hqkg.exchange.source") != Some(OWNER)
@@ -141,6 +144,51 @@ impl ComputeEngine for DevelopmentGraphEngine {
         for (id,revision,digest) in sources {
             canonical.insert(id.to_string(),source_node(&self.graph,id,revision,digest)?);
         }
+        // A source-free dependent step binds to actual upstream materializations.
+        // Select-context contributes its bounded import closure for interpretation
+        // and evaluation. Other transforms carry their canonical source identities.
+        // Explicit source bindings retain their original meaning.
+        let derive = canonical.is_empty() && !upstream.is_empty();
+        let mut previous = Vec::new();
+        let mut bindings = BTreeMap::<String,BTreeSet<String>>::new();
+        for (id,data) in upstream {
+            let value:Value=serde_json::from_str(data)
+                .map_err(|_|Error::Invalid("upstream computation is not structured graph data".into()))?;
+            if value["schema"]!="hqkg.development-transform/1"
+                || value["authority"]!="none"
+                || value["executionAuthorized"]!=false
+                || value["effectPerformed"]!=false
+                || value["graphEpoch"].as_u64()!=Some(self.graph.epoch()) {
+                return Err(Error::Conflict("upstream compute contract mismatch".into()));
+            }
+            if derive {
+                if value["truncated"] != false {
+                    return Err(Error::Conflict("cannot bind incomplete upstream graph selection".into()));
+                }
+                let use_imports = value["operation"] == "select-context"
+                    && matches!(request.operation.as_str(), "interpret" | "evaluate");
+                let fields: &[&str] = if use_imports { &["sources","imports"] } else { &["sources"] };
+                for name in fields {
+                    let rows=value[*name].as_array()
+                        .ok_or_else(||Error::Invalid("upstream source collection missing".into()))?;
+                    for row in rows {
+                        let source_id=row["id"].as_str().ok_or_else(||Error::Invalid("upstream source identity missing".into()))?;
+                        let revision=row["revision"].as_u64().ok_or_else(||Error::Invalid("upstream source revision missing".into()))?;
+                        let digest=row["digest"].as_str().ok_or_else(||Error::Invalid("upstream source digest missing".into()))?;
+                        let verified=source_node(&self.graph,source_id,revision,digest)?;
+                        canonical.insert(source_id.into(),verified);
+                        bindings.entry(source_id.into()).or_default().insert(id.into());
+                        if canonical.len()>MAX_SOURCES {
+                            return Err(Error::Invalid("derived source selection exceeds budget".into()));
+                        }
+                    }
+                }
+            }
+            previous.push(json!({"stepId":id,"operation":value["operation"],
+                "sourceCount":value["sourceCount"],"importCount":value["importCount"],
+                "symbolCount":value["symbolCount"],"semanticCount":value["semanticCount"],
+                "dependentCount":value["dependentCount"]}));
+        }
         let mut imports = BTreeMap::<String,Value>::new();
         let mut dependents = BTreeMap::<String,Value>::new();
         let mut symbols = BTreeMap::<String,Value>::new();
@@ -182,22 +230,6 @@ impl ComputeEngine for DevelopmentGraphEngine {
                 }
             }
         }
-        // Dependency data is actually produced by upstream native steps.
-        // Decode it as a versioned, bounded development read model.
-        let mut previous = Vec::new();
-        for (id,data) in upstream {
-            let value:Value=serde_json::from_str(data)
-                .map_err(|_|Error::Invalid("upstream computation is not structured graph data".into()))?;
-            if value["schema"]!="hqkg.development-transform/1"
-                || value["authority"]!="none"
-                ||value["graphEpoch"].as_u64()!=Some(self.graph.epoch()) {
-                return Err(Error::Conflict("upstream compute contract mismatch".into()));
-            }
-            previous.push(json!({"stepId":id,"operation":value["operation"],
-                "sourceCount":value["sourceCount"],"importCount":value["importCount"],
-                "symbolCount":value["symbolCount"],"semanticCount":value["semanticCount"],
-                "dependentCount":value["dependentCount"]}));
-        }
         let state=if canonical.is_empty(){"no-bound-sources"}else{"indexed-source-backed"};
         let output=json!({
             "schema":"hqkg.development-transform/1","authority":"none",
@@ -213,7 +245,8 @@ impl ComputeEngine for DevelopmentGraphEngine {
             "semantics":semantic.into_values().collect::<Vec<_>>(),
             "dependents":dependents.into_values().collect::<Vec<_>>(),
             "potentialWiring":potential_wiring.into_values().collect::<Vec<_>>(),
-            "upstream":previous,"executionAuthorized":false,"effectPerformed":false
+            "upstream":previous,"derivedSourceBindings":bindings,
+            "executionAuthorized":false,"effectPerformed":false
         });
         let text=serde_json::to_string(&output).map_err(|e|Error::Invalid(e.to_string()))?;
         if text.len()>MAX_RESULT_BYTES {return Err(Error::Invalid("computed graph projection exceeds budget".into()))}
