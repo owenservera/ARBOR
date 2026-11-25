@@ -2,7 +2,7 @@
 // This file creates no new network endpoint, scheduler, source grant or executor.
 import { loadControlCatalog, createControlPlanner } from './intent-planner.mjs';
 import { runHviTool, HVI_CAPABILITY_ID, HVI_TOOL_REQUEST_SCHEMA } from '../../../hq/version-intelligence/integration/index.mjs';
-import { resolvePin, snapshotAt } from '../../../hq/version-intelligence/sources/snapshots.mjs';
+import { resolvePin, snapshotAt, queryPinnedEntries, readPinnedBlobs } from '../../../hq/version-intelligence/sources/snapshots.mjs';
 import { verifyOwnerToken } from '../bootstrap/owner-auth.mjs';
 import { projectAuthorizedHviInspector } from '../../../hq/version-intelligence/integration/host-inspector-projection.mjs';
 import { canonicalRepo, safePath, sensitivePath } from '../../../hq/version-intelligence/sources/common.mjs';
@@ -117,8 +117,64 @@ export function createHviHostReadPort({actorId,sessionId,verifySession,verifyGra
         observedAt:uiRevision.at??null}:null,
       authority:'injected-local-Host-callbacks-not-production-attested'};
   }
+
+  // Internal workstation reads, not a new catalog action or remote transport.
+  // sourceGrantRef comes from the trusted Host admission, never the request body.
+  const readWorkstation=async(input,{adapter,sourceGrantRef,signal}={})=>{
+    if(!enabled)fail('HOST_FEATURE_DISABLED');
+    if(adapter?.authorizedDevelopmentSource!==true||!id(sourceGrantRef))fail('SOURCE_UNAUTHORIZED');
+    if(signal?.aborted)fail('CANCELLED');
+    if(!keys(input,['schema','source','operation','query','paths'])||
+      input.schema!=='vivim.host.hvi-workstation-read-request/1'||
+      !keys(input.source,['repo','sha','subPath'])||typeof input.source.repo!=='string'||
+      typeof input.source.sha!=='string'||!/^[0-9a-f]{40}$/.test(input.source.sha)||
+      !['metadata','files'].includes(input.operation))fail('INVALID_REQUEST');
+    const {operation}=input;
+    const repo=canonicalRepo(input.source.repo,'github');
+    const sha=input.source.sha;
+    const subPath=safePath(input.source.subPath??'',{allowEmpty:true});
+    if(sensitivePath(subPath))fail('SCOPE_ESCAPE');
+    const inside=path=>!subPath||path===subPath||path.startsWith(subPath+'/');
+    let query,paths;
+    if(operation==='metadata'){
+      if(input.paths!==undefined||!keys(input.query,['prefix','contains','exactPath','after','limit']))fail('INVALID_REQUEST');
+      query={...input.query};
+      for(const field of ['prefix','exactPath','after'])if(query[field]!==undefined){
+        const path=safePath(query[field],{allowEmpty:field==='prefix'});
+        if(sensitivePath(path)||(path&&!inside(path)))fail('SCOPE_ESCAPE');
+      }
+      if(query.contains!==undefined&&(typeof query.contains!=='string'||query.contains.length>160||/[\x00-\x1f\x7f]/.test(query.contains)))fail('INVALID_REQUEST');
+      if(query.limit!==undefined&&(!Number.isSafeInteger(query.limit)||query.limit<1||query.limit>100))fail('INVALID_REQUEST');
+      if(query.exactPath!==undefined&&(query.prefix||query.contains||query.after!==undefined))fail('INVALID_REQUEST');
+    }else{
+      if(input.query!==undefined||!Array.isArray(input.paths)||input.paths.length<1||input.paths.length>16)fail('INVALID_REQUEST');
+      paths=Array.from(input.paths,path=>safePath(path));
+      if(new Set(paths).size!==paths.length)fail('INVALID_REQUEST');
+      if(paths.some(path=>sensitivePath(path)||!inside(path)))fail('SCOPE_ESCAPE');
+    }
+    let checks=0;
+    const check=async ctx=>{
+      if(signal?.aborted)fail('CANCELLED');
+      checks++;
+      const allowed=await live({...ctx,repoIdentity:repo,sourceGrantRef,
+        resolvedCommitSha:sha,workstationReadOperation:operation});
+      if(signal?.aborted)fail('CANCELLED');
+      return allowed;
+    };
+    await check({operation:'source.select',path:subPath||undefined});
+    const pin=await resolvePin({provider:'github',repo,sha,subPath,
+      approvedScope:'development',sourceGrantRef},{adapter,authorize:check});
+    const manifest=await snapshotAt(pin,{adapter,authorize:check,signal,inspectContent:false});
+    const result=operation==='metadata'
+      ?await queryPinnedEntries(manifest.pin,query,{adapter,authorize:check,manifest,signal})
+      :await readPinnedBlobs(manifest.pin,paths,{adapter,authorize:check,manifest,signal});
+    await check({operation:'source.snapshot.read',path:subPath||undefined});
+    return Object.freeze({schema:'vivim.host.hvi-workstation-read/1',operation,
+      result,grantCheckCount:checks,authority:'injected-local-Host-callbacks-not-production-attested',
+      remoteAccepted:false,runtimeAccepted:false,effectPerformed:false});
+  };
   return Object.freeze({schema:HVI_HOST_BINDING_SCHEMA,action,capabilityId:HVI_CAPABILITY_ID,
-    discover,invoke,enabled,remoteAccessible:false,readiness:action.readiness});
+    discover,invoke,readWorkstation,enabled,remoteAccessible:false,readiness:action.readiness});
 }
 
 
