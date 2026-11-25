@@ -187,6 +187,14 @@ fn semantic_coverage(graph:&Graph,key:&str,direction:&str)->Result<Value>{
     if value.to_string().len()>1024*1024{return Err(Error::Invalid("coverage output exceeds byte budget".into()))}
     Ok(value)
 }
+fn semantic_closure(graph:Graph,key:&str,direction:&str)->Result<Value>{
+    let reverse=match direction{"imports"=>false,"dependents"=>true,
+        _=>return Err(Error::Invalid("closure direction must be imports or dependents".into()))};
+    let expected=revision(graph.epoch());
+    let mut session=DevelopmentSession::new(graph,expected.clone())?;
+    session.interpret_closure(&expected,key,reverse,&fixed_policy(),
+        Budget{max_tasks:513,..Budget::default()},&CancellationToken::new())
+}
 fn execute_program(graph:&Graph,epoch:u64)->Result<Value>{
     let mut input=String::new();
     io::stdin().lock().take(65_537).read_to_string(&mut input)?;
@@ -220,7 +228,7 @@ fn compute_source(graph:&Graph,id:&str)->Result<Value>{
 }
 fn run()->Result<Value>{
     let args=std::env::args().skip(1).collect::<Vec<_>>();
-    if args.len()<3||args.len()>4{return Err(Error::Invalid("usage: hqkg-development <absolute-journal> sources|symbols|impact|wiring <key> [depth] | program <epoch> | compute <source-file-id> | semantic-program <semantic-id> inspect|impact|compose | semantic-batch <epoch> | semantic-coverage <semantic-id> imports|dependents".into()))}
+    if args.len()<3||args.len()>4{return Err(Error::Invalid("usage: hqkg-development <absolute-journal> sources|symbols|impact|wiring <key> [depth] | program <epoch> | compute <source-file-id> | semantic-program <semantic-id> inspect|impact|compose | semantic-batch <epoch> | semantic-coverage <semantic-id> imports|dependents | semantic-closure <semantic-id> imports|dependents".into()))}
     let graph=open(Path::new(&args[0]))?;
     if args[1]=="semantic-batch"{
         if args.len()!=3{return Err(Error::Invalid("semantic-batch requires exact graph epoch".into()))}
@@ -229,6 +237,10 @@ fn run()->Result<Value>{
     if args[1]=="semantic-program"{
         if args.len()!=4{return Err(Error::Invalid("semantic-program requires exact semantic ID and task".into()))}
         return semantic_program(graph,&args[2],SemanticTask::parse(&args[3])?);
+    }
+    if args[1]=="semantic-closure"{
+        if args.len()!=4{return Err(Error::Invalid("semantic-closure requires exact semantic ID and direction".into()))}
+        return semantic_closure(graph,&args[2],&args[3])
     }
     graph.check_indexes()?;
     if args[1]=="semantic-coverage"{
