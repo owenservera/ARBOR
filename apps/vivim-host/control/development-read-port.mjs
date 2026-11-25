@@ -6,6 +6,7 @@ import {createLiveSourceSurface} from './live-source-surface.mjs';
 import {createHviHostReadPort} from './hvi-capability.mjs';
 import {createHviSourceGrantStore} from './hvi-source-grant.mjs';
 import {canonicalRepo} from '../../../hq/version-intelligence/sources/common.mjs';
+import {validDevelopmentGraphRead} from '../../../hq/lib/kg-export.mjs';
 const fail=(code,status=400)=>{throw Object.assign(Error(code),{code,status})};
 const plain=v=>v&&typeof v==='object'&&!Array.isArray(v)&&Object.getPrototypeOf(v)===Object.prototype;
 const keys=(v,allowed)=>plain(v)&&Object.keys(v).every(k=>allowed.includes(k));
@@ -46,11 +47,7 @@ export function createDevelopmentReadPort({config={},runtime,actorId='desktop-ow
   }
   async function graph(input){
     authorize();
-    if(!keys(input,['operation','key','depth'])||!['sources','symbols','impact','wiring','compute'].includes(input.operation)
-       ||typeof input.key!=='string'||input.key.length<1||input.key.length>180
-       ||/[\u0000-\u001f\u007f]/.test(input.key)
-       ||(input.depth!==undefined&&(!Number.isSafeInteger(input.depth)||input.depth<0||input.depth>8)))
-      fail('HQ_GRAPH_QUERY_INVALID');
+    if(!validDevelopmentGraphRead(input))fail('HQ_GRAPH_QUERY_INVALID');
     const p=await surface('status');authorize();
     const value=await p.graph(input);
     authorize();return value;
