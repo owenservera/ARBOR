@@ -454,3 +454,40 @@ fn shared_provenance_is_deduplicated_across_diamond_dependencies() {
         assert_eq!(out.provenance, vec!["trusted-source".to_string()]);
     }
 }
+
+struct ConstantOutput;
+impl ComputeEngine for ConstantOutput {
+    fn descriptor(&self) -> EngineDescriptor {
+        EngineDescriptor::new("pure", "constant-test", PURE_INTERFACE, &["evaluate"])
+    }
+    fn execute(&self, _req: &EngineRequest) -> Result<EngineOutput> {
+        Ok(EngineOutput { data: "unchanged value".into() })
+    }
+}
+
+#[test]
+fn reused_materialization_refreshes_changed_transitive_sources_and_provenance() {
+    let reg = EngineRegistry::new();
+    reg.install(Arc::new(ConstantOutput), None).unwrap();
+    let mut p = plan(ns(GraphDomain::Development));
+    p.steps.iter_mut().find(|s| s.id == "b").unwrap().sources.clear();
+    let mut cache = IncrementalCache::new();
+    assert_eq!(execute(&reg, &p, &mut cache).state, RunState::Complete);
+    let root = p.steps.iter_mut().find(|s| s.id == "a").unwrap();
+    root.sources[0].id = "new-source".into();
+    root.sources[0].provenance = "new-provenance".into();
+    let report = execute(&reg, &p, &mut cache);
+    assert_eq!(report.outputs[0].state, OutputState::Computed);
+    assert_eq!(report.outputs[1].state, OutputState::Reused);
+    assert_eq!(report.outputs[1].provenance, vec!["new-provenance".to_string()]);
+    let warm = execute(&reg, &p, &mut cache);
+    assert!(warm.outputs.iter().all(|out| out.state == OutputState::Reused));
+    assert_eq!(warm.outputs[1].provenance, report.outputs[1].provenance);
+    let mut graph = hqkg::Graph::new();
+    let mut ledger = hqkg::graph_change_set::ApplyLedger::new();
+    let changes = hqkg::graph_change_set::GraphChangeSet::new("new-source-change", "owner")
+        .put_node(hqkg::Node::new("new-source", hqkg::NodeKind::Document, "changed"));
+    let applied = hqkg::graph_change_set::apply(&mut graph, &changes, &mut ledger).unwrap();
+    assert_eq!(cache.invalidate_changes(&p.namespace, &applied), 2);
+    assert_eq!(cache.len(), 0);
+}
