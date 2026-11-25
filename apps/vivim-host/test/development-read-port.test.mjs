@@ -26,3 +26,26 @@ test('compare pins live grant and refuses revocation before report',async()=>{
  const selection={schema:'vivim.host.hvi-source-request/1',sources:[{repo:'owner/repo',sha:'a'.repeat(40)},{repo:'owner/repo',sha:'b'.repeat(40)}],targetIndex:1};
  await assert.rejects(port.compare(JSON.stringify(selection)),{code:'HVI_SOURCE_GRANT_STALE'});assert.equal(calls,1);
 });
+
+test('owner graph port accepts exact semantic identifiers, rejects control characters and rechecks revocation',async()=>{
+ let live=true,calls=0;
+ const root=path.resolve('approved-repo');
+ const key='vivim.product-pure-host-bridge@2';
+ const port=createDevelopmentReadPort({config:{approvedRoots:[root]},sessionId:'local',stillOwner:()=>live,
+  createSurface:async opts=>({graph:async input=>{
+   calls++;
+   assert.equal(opts.authorize({actorId:'desktop-owner',sessionId:'local',domain:'development',operation:'source.read'}),true);
+   assert.equal(opts.authorize({actorId:'desktop-owner',sessionId:'local',domain:'development',operation:'source.index'}),false);
+   assert.equal(input.key,key);
+   if(calls===2)live=false;
+   return {schema:'hqkg.development-query/1',state:'indexed-snapshot',authority:'read-only'};
+  }})});
+ for(const char of ['\u0000','\u001f','\u007f']){
+  await assert.rejects(port.graph({operation:'sources',key:key+char}),{code:'HQ_GRAPH_QUERY_INVALID'});
+ }
+ assert.equal(calls,0);
+ assert.equal((await port.graph({operation:'sources',key})).state,'indexed-snapshot');
+ await assert.rejects(port.graph({operation:'sources',key}),{code:'OWNER_AUTH'});
+ await assert.rejects(port.graph({operation:'sources',key}),{code:'OWNER_AUTH'});
+ assert.equal(calls,2);
+});
