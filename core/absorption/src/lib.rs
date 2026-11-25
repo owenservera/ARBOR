@@ -206,3 +206,5 @@ impl Queue {
 }
 
 pub mod discovery;
+
+pub mod store;
