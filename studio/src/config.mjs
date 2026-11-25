@@ -70,6 +70,7 @@ export function dataPaths(dataDir = defaultDataDir()) {
     families: path.join(dataDir, 'families'),
     learner: path.join(dataDir, 'learner'),
     chromeProfile: sameRoot ? workspace.chrome.profileDir : path.join(dataDir, 'chrome-profile'),
+    chromeExecutable: sameRoot ? (workspace.chrome.executable ?? null) : null,
     exports: path.join(dataDir, 'exports'),
     config: path.join(dataDir, 'config.json'),
   };
