@@ -49,3 +49,32 @@ test('owner graph port accepts exact semantic identifiers, rejects control chara
  await assert.rejects(port.graph({operation:'sources',key}),{code:'OWNER_AUTH'});
  assert.equal(calls,2);
 });
+
+test('semantic reads admit only closed task and direction combinations with live owner scope',async()=>{
+ const key='vivim.product-pure-host-bridge@2';
+ const observed=[];let live=true;
+ const port=createDevelopmentReadPort({config:{approvedRoots:[path.resolve('approved-repo')]},sessionId:'local',stillOwner:()=>live,
+  createSurface:async opts=>({graph:async input=>{
+   assert.equal(opts.authorize({actorId:'desktop-owner',sessionId:'local',domain:'development',operation:'source.read'}),true);
+   assert.equal(opts.authorize({actorId:'desktop-owner',sessionId:'local',domain:'personal',operation:'source.read'}),false);
+   observed.push(input);return {authority:'none',executionAuthorized:false,effectPerformed:false};
+  }})});
+ const valid=[
+  {operation:'semantic-program',key,task:'inspect'},
+  {operation:'semantic-program',key,task:'impact'},
+  {operation:'semantic-program',key,task:'compose'},
+  {operation:'semantic-coverage',key,direction:'imports'},
+  {operation:'semantic-closure',key,direction:'dependents'}
+ ];
+ for(const input of valid)assert.equal((await port.graph(input)).effectPerformed,false);
+ for(const input of [
+  {operation:'semantic-program',key,task:'effect'},
+  {operation:'semantic-program',key,task:'inspect',direction:'imports'},
+  {operation:'semantic-program',key:'unversioned',task:'inspect'},
+  {operation:'semantic-closure',key,direction:'all'},
+  {operation:'semantic-coverage',key,direction:'imports',root:'unapproved'},
+  {operation:'program',key,program:'{}'}
+ ])await assert.rejects(port.graph(input),{code:'HQ_GRAPH_QUERY_INVALID'});
+ assert.deepEqual(observed,valid);
+ live=false;await assert.rejects(port.graph(valid[0]),{code:'OWNER_AUTH'});
+});
