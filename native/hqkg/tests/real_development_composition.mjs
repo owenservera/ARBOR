@@ -27,6 +27,10 @@ assert.equal(sync.state,'source-backed',JSON.stringify(sync));
 const indexMs=performance.now()-startIndex;
 const journal=join(data,'.hq','kg-journal.hqj');
 const semanticId='vivim.product-pure-host-bridge@2';
+// The read port must accept real versioned capability IDs, but never controls.
+for (const key of [semanticId+'\u0000',semanticId+'\u001f',semanticId+'\u007f']) {
+  assert.throws(()=>service.nativeGraphQuery({operation:'sources',key}),/HQ_GRAPH_QUERY_INVALID/);
+}
 const anchorResult=service.nativeGraphQuery({operation:'sources',key:semanticId});
 assert.equal(anchorResult.state,'indexed-snapshot',JSON.stringify(anchorResult));
 const anchor=anchorResult.result.anchors.find(a=>a.path==='arbor-host/control/native-product-pure.mjs');
