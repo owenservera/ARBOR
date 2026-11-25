@@ -7,6 +7,11 @@
 - U01 basic live connectivity milestone achieved. Full authorization/revocation, timeout and reconnect acceptance remain open. Browser-facing tool surface is health-only; Host discovery disabled. Do not expose personal data or effect tools until separate per-user authorization, scope checks and denial/revocation are verified.
 - Keep original local plugin and remote tunnel plugin distinct until supported identity convergence; no further commercial relay calls for health probes. U02 and native agent integrations remain open.
 
+
+## R004 — bounded HTTP authorization adapter (source only)
+- Separate loopback-only stateless legacy MCP HTTP module `server/remote-http.cjs`, per-request and pre-disclosure authorization with existing verifier, separate Host credential, explicit local discovery opt-in, minimal projections and bounded requests/concurrency. No public listener, token issuer, deployment, or change to working secure tunnel. No CLI auto-start: trusted issuer policy must be supplied by an authorized local integrator. Modern MCP 2026 protocol and real OAuth/Host acceptance remain open.
+- Regression entry: `node --test tests/remote-http.test.cjs`. Test status pending independent execution; fixture Host is not real Host acceptance.
+
 ## Objective and owner authorization
 Continue the all-in-one VIVIM ARBOR personal AI control plane until implemented, integrated and genuinely tested. Core ARBOR upgrades are authorized where needed. VIVIM ARBOR first; commercial Desktop Commander only as a bounded bootstrap/fallback to close a specific missing capability. Use GitHub directly for cloud coding. Do not burn commercial relay credits on routine work. Reuse native protocols, existing Host/Studio/HQ and existing model registry; Rust-first, single GPUI renderer and thin phone viewport. See [PLAN.md](PLAN.md) for work packages and acceptance conditions.
 
@@ -38,7 +43,7 @@ Continue the all-in-one VIVIM ARBOR personal AI control plane until implemented,
 6. After each safe increment, commit main, test exact revision, write evidence and update task claims. Keep this handoff current when work changes the actual state. Prefer further productive independent tasks over repeated SITREP-only turns.
 
 ## Current critical blockers
-- Browser-to-PC authenticated transport not established; browser session cannot invoke private plugin.
+- Browser-to-PC health transport independently verified; scoped Host OAuth, revocation and live integration still open.
 - Workstation installed plugin remains v0.2.1 until verified upgrade.
 - No live v0.4.0 Host-authenticated tool acceptance.
 - Native CLI agents beyond ZCode observer are catalogued/version-probed only; web AI dispatch and full task lifecycle still incomplete.
