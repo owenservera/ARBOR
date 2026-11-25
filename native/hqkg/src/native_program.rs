@@ -143,3 +143,52 @@ pub fn build_semantic_program(
     bind_indexed_program(graph, expected, &program, policy)?;
     Ok(SemanticProgram { anchor, program })
 }
+
+/// Owner-scoped immutable computation session, using the existing registry,
+/// validator and bounded cache. The owner must check its current authorization
+/// and snapshot identity before each call. Not an effect or permission boundary.
+pub struct DevelopmentSession {
+    graph: std::sync::Arc<Graph>,
+    expected: RevisionToken,
+    registry: EngineRegistry,
+    cache: IncrementalCache,
+}
+impl DevelopmentSession {
+    pub fn new(graph: Graph, expected: RevisionToken) -> Result<Self> {
+        if expected.namespace.domain != GraphDomain::Development
+            || expected.graph_epoch == 0 || expected.graph_epoch != graph.epoch() {
+            return Err(Error::Conflict("stale or non-development session snapshot".into()));
+        }
+        expected.namespace.validate()?;
+        graph.check_indexes()?;
+        let graph = std::sync::Arc::new(graph);
+        let registry = EngineRegistry::new();
+        crate::development_engine::install_shared_development_engine(&registry, std::sync::Arc::clone(&graph))?;
+        Ok(Self { graph, expected, registry, cache: IncrementalCache::new() })
+    }
+    fn check_revision(&self, current: &RevisionToken) -> Result<()> {
+        if &self.expected != current {
+            return Err(Error::Conflict("development session revision changed; open a new snapshot".into()));
+        }
+        Ok(())
+    }
+    pub fn execute_program(&mut self, current: &RevisionToken, program: &Program,
+        policy: &PolicyLimits, budget: Budget, cancel: &CancellationToken) -> Result<DagReport> {
+        self.check_revision(current)?;
+        run_indexed_program(&self.graph, current, program, policy, &self.registry,
+            &mut self.cache, budget, cancel)
+    }
+    pub fn execute_semantic(&mut self, current: &RevisionToken, semantic_id: &str,
+        task: SemanticTask, policy: &PolicyLimits, budget: Budget,
+        cancel: &CancellationToken) -> Result<(SemanticProgram, DagReport)> {
+        self.check_revision(current)?;
+        if cancel.is_cancelled() {
+            return Err(Error::Conflict("semantic computation cancelled before compilation".into()));
+        }
+        let compiled = build_semantic_program(&self.graph, current, semantic_id, task, policy)?;
+        let report = self.execute_program(current, &compiled.program, policy, budget, cancel)?;
+        Ok((compiled, report))
+    }
+    pub fn cache_entries(&self) -> usize { self.cache.len() }
+    pub fn cache_approximate_bytes(&self) -> usize { self.cache.approximate_bytes() }
+}
