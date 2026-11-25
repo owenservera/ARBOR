@@ -142,7 +142,16 @@ async function runAtoms(ctx, sub, flags) {
     let dispatch;
     try { dispatch = await import('../../src/studio/atom-dispatch.mjs'); }
     catch { throw envError('The atom dispatcher is not installed', 'Build studio/src/studio/atom-dispatch.mjs, then run this again.'); }
-    const result = await dispatch.runAtom(atom, parseArgsJson(flags), { execute: Boolean(flags.execute) });
+    // The CLI previously always passed page:null. Attach only to an explicitly selected,
+    // verified page for fixed read primitives. Effects still require the Host path.
+    const safeRead = new Set(['viewport','count','getBox','getStyles','waitForSelector','waitForLoad','waitForNetworkIdle']);
+    if (atom.effect !== 'read' || !safeRead.has(atom.primitive)) {
+      throw usageError('This atom requires its owning Host/Studio runtime; no direct CLI page effect is available.');
+    }
+    if (!flags.target || !flags.origin) throw usageError('Live read requires --target and --origin.');
+    const { withVerifiedReadPage } = await import('../../src/studio/craft-surface.mjs');
+    const { result } = await withVerifiedReadPage({profileDir:ctx.paths.chromeProfile,port:ctx.port,target:flags.target,origin:flags.origin},
+      page => dispatch.runAtom(atom,parseArgsJson(flags),{page,execute:false}));
     if (flags.json) return emitJson(out, { schema: 'vivim.browser-atoms.run/1', ...result });
     return out.emit(result, (o) => {
       o.result(`${atom.id}  ${result.ok ? 'ok' : 'failed'}  effect=${atom.effect}  ${result.ms}ms`);
@@ -173,7 +182,9 @@ define({
     text: { type: 'string', valueName: 'T', desc: 'Free-text match on id and summary' },
     id: { type: 'string', valueName: 'ATOM_ID', desc: 'Atom id for show/plan/run' },
     args: { type: 'string', valueName: 'JSON', desc: 'JSON object of atom arguments' },
-    execute: { type: 'boolean', desc: 'Authorize a non-read atom to run' },
+    execute: { type: 'boolean', desc: 'Explicit intent to run a non-read atom through its owner' },
+    target: {type:'string',desc:'Explicit live Studio browser target'},
+    origin: {type:'string',desc:'Expected HTTPS origin'},
     json: { type: 'boolean', desc: 'Machine-readable output' },
   },
   examples: [
