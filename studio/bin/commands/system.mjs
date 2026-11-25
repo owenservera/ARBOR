@@ -49,7 +49,7 @@ define({
     const major = Number(process.versions.node.split('.')[0]);
     add('node', major >= 22 ? 'ok' : 'fail', process.version, major >= 22 ? '' : 'Install Node 22 or newer (built-in WebSocket is required).');
 
-    let chrome = null; try { chrome = findChrome(); } catch { /* reported below */ }
+    let chrome = null; try { chrome = findChrome(process.env, process.platform, paths.chromeExecutable); } catch { /* reported below */ }
     add('chrome', chrome ? 'ok' : 'fail', chrome ?? 'not found', chrome ? '' : 'Install Google Chrome (or Edge) or set CHROME_PATH.');
 
     // The owner's complete workspace manifest names the Studio CDP port; probe that, not the generic default.
