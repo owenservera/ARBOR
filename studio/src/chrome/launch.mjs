@@ -8,22 +8,29 @@ import { isReachable, browserVersion, waitForReachable, discoveryProbe } from '.
 import { browserMarkerPath, recordBrowserOwner, verifyBrowserOwner } from './browser-ownership.mjs';
 import { assertNoForeignCdpOwner } from '../studio/cdp-owner-lock.mjs';
 
+// Restricted Host process environments may retain mixed-case Windows variable names.
+function windowsEnv(env, name) {
+  const key = Object.keys(env).find(k => k.toUpperCase() === name.toUpperCase());
+  return key === undefined ? undefined : env[key];
+}
+
 // One implementation for native Windows, Linux, and macOS: no which/where shell.
 function searchDirs(env, platform) {
   const impl = platform === 'win32' ? path.win32 : path.posix;
-  const variable = platform === 'win32' ? (env.Path ?? env.PATH ?? env.path) : env.PATH;
+  const variable = platform === 'win32' ? windowsEnv(env, 'PATH') : env.PATH;
   return String(variable ?? '').split(impl.delimiter).filter(Boolean);
 }
 export function chromeCandidates(env = process.env, platform = process.platform) {
   const c = [], impl = platform === 'win32' ? path.win32 : path.posix;
   const dirs = searchDirs(env, platform);
-  if (env.CHROME_PATH) {
-    c.push(env.CHROME_PATH);
-    if (!impl.isAbsolute(env.CHROME_PATH) && !env.CHROME_PATH.includes('/') && !env.CHROME_PATH.includes('\\'))
-      for (const dir of dirs) c.push(impl.join(dir, env.CHROME_PATH));
+  const configured = platform === 'win32' ? windowsEnv(env,'CHROME_PATH') : env.CHROME_PATH;
+  if (configured) {
+    c.push(configured);
+    if (!impl.isAbsolute(configured) && !configured.includes('/') && !configured.includes('\\'))
+      for (const dir of dirs) c.push(impl.join(dir, configured));
   }
   if (platform === 'win32') {
-    for (const base of [env.PROGRAMFILES, env['PROGRAMFILES(X86)'], env.LOCALAPPDATA].filter(Boolean)) {
+    for (const base of [windowsEnv(env,'PROGRAMFILES'), windowsEnv(env,'PROGRAMFILES(X86)'), windowsEnv(env,'LOCALAPPDATA'), windowsEnv(env,'PROGRAMW6432')].filter(Boolean)) {
       c.push(impl.join(base, 'Google', 'Chrome', 'Application', 'chrome.exe'));
       c.push(impl.join(base, 'Google', 'Chrome Beta', 'Application', 'chrome.exe'));
       c.push(impl.join(base, 'Google', 'Chrome SxS', 'Application', 'chrome.exe'));
