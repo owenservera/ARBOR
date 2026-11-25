@@ -9,7 +9,9 @@ import { basename, dirname, isAbsolute, join, posix, relative } from 'node:path'
 import { componentOf, languageLabel } from './lang.mjs';
 import { glossaryMarkdown, VIVIM_TAXONOMY } from './nomenclature.mjs';
 import { sessionRows, sessionTimeline, toolUsage } from './session-views.mjs';
-import { digestOf, toPosix, tokenize, truncate } from './util.mjs';
+import { digestOf, toPosix, tokenize, truncate, sha256 } from './util.mjs';
+import { indexedSemanticAnchors, indexedAnnotationEvidence, annotationResolution } from './semantic-registry.mjs';
+import { isSensitiveSourcePath } from './search.mjs';
 import { buildActions } from './action-registry.mjs';
 import { VERBS } from './actions/verbs.mjs';
 import { DOMAINS as ACTION_DOMAINS_1 } from './actions/domains-1.mjs';
@@ -1948,11 +1950,42 @@ export function buildWiki({ db, root, projects, outDir = 'wiki', force = false, 
       return {state:'indexed-bytes-match',file:matches[0]};
     };
 
+    // Project actual indexed source occurrences even when the semantic
+    // registry has no entry. Reuse the same conservative anchors as context
+    // search, never create a registry entry or grant from a comment.
+    const annotationFiles = new Set((model.annotationRows || [])
+      .filter(row => ['v2:type','v2:capability','v2:contract','v2:emits','v2:consumes','v2:action'].includes(row.kind))
+      .map(row => row.file_id));
+    const eligibleFiles = (model.allFiles || []).filter(file => annotationFiles.has(file.id) &&
+      file.kind === 'source' && !file.is_generated && !isSensitiveSourcePath(file.path))
+      .sort((a,b) => cmpStr(a.project_name,b.project_name) || cmpStr(a.path,b.path));
+    const occurrenceLimit = 400, fileLimit = 512;
+    const occurrences = [];
+    let unreadableFiles = 0, scannedFiles = 0, occurrenceCount = 0;
+    const indexedContent = db.prepare('SELECT content FROM content_fts WHERE rowid=?');
+    for (const file of eligibleFiles.slice(0,fileLimit)) {
+      scannedFiles++;
+      const content = indexedContent.get(file.id)?.content;
+      if (typeof content !== 'string' || sha256(content) !== file.hash) {
+        unreadableFiles++; continue;
+      }
+      const anchors = indexedSemanticAnchors(db,{fileId:file.id,project:file.project_name,path:file.path,hash:file.hash});
+      occurrenceCount += anchors.length;
+      for (const anchor of anchors) {
+        if (occurrences.length >= occurrenceLimit) break;
+        const {resolution} = annotationResolution(db,anchor.semanticId,anchor.annotationKind);
+        occurrences.push({file,anchor,evidence:indexedAnnotationEvidence(anchor,resolution)});
+      }
+    }
+
     out.push('## Coverage', '');
     out.push(
       makeTable(
         ['Fact', 'Count'],
         [
+          ['Indexed annotation anchors scanned', String(occurrenceCount)],
+          ['Annotation files scanned / eligible', scannedFiles + ' / ' + eligibleFiles.length],
+          ['Annotation files with unverified index bytes', String(unreadableFiles)],
           ['Semantic identities', String(identities.length)],
           ['...current', String(identities.filter((identity) => identity.status === 'current').length)],
           ['...proposed', String(identities.filter((identity) => identity.status === 'proposed').length)],
@@ -1967,8 +2000,22 @@ export function buildWiki({ db, root, projects, outDir = 'wiki', force = false, 
 
     if (!identities.length) {
       out.push('_No semantic identity is registered in this index._', '');
-      return out;
     }
+
+    out.push('## Indexed semantic occurrences', '');
+    out.push('Extracted from indexed source bytes. Unknown identities remain unknown; these are not registered commands or runtime receipts.', '');
+    if (occurrences.length) {
+      out.push(makeTable(['Identity','Annotation','Indexed source','Registry resolution','Assurance','Anchor ID','Fingerprint','Content hash'],
+        occurrences.map(({file,anchor,evidence}) => [
+          codeSpan(anchor.semanticId),mdCell(anchor.annotationKind),
+          fileLink(page,file,file.project_name+':'+file.path+':'+anchor.lines.join(',')),
+          mdCell(evidence.resolution),mdCell(evidence.assurance),codeSpan(anchor.anchorId),
+          codeSpan(anchor.fingerprint),codeSpan(anchor.contentHash),
+        ])), '');
+    } else out.push('_No source-backed annotation occurrences in this bounded projection._', '');
+    if (eligibleFiles.length > scannedFiles || occurrenceCount > occurrences.length || unreadableFiles)
+      out.push('_Incomplete projection: '+(eligibleFiles.length-scannedFiles)+' files not scanned; '+
+        (occurrenceCount-occurrences.length)+' indexed anchors not shown; '+unreadableFiles+' files lack matching indexed bytes._', '');
 
     out.push('## Identities', '');
     out.push(
