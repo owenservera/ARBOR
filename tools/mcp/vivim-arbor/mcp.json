@@ -1,0 +1,7 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
+  "mcpServers": {
+    "vivim-arbor-operations": {"type":"stdio","command":"node","args":["${PLUGIN_ROOT}/server/operations.cjs"],"cwd":"${PLUGIN_ROOT}"},
+    "vivim-commander": {"type":"stdio","command":"node","args":["${PLUGIN_ROOT}/server/commander.cjs"],"cwd":"${PLUGIN_ROOT}"}
+  }
+}

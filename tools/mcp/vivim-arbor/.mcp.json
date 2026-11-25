@@ -1,0 +1,22 @@
+{
+  "mcpServers": {
+    "vivim-arbor-operations": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "${PLUGIN_ROOT}/server/operations.cjs"
+      ],
+      "env": {},
+      "cwd": "${PLUGIN_ROOT}"
+    },
+    "vivim-commander": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "${PLUGIN_ROOT}/server/commander.cjs"
+      ],
+      "env": {},
+      "cwd": "${PLUGIN_ROOT}"
+    }
+  }
+}

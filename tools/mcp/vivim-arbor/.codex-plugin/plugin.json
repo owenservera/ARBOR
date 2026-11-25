@@ -1,0 +1,23 @@
+{
+  "interface": {
+    "displayName": "VIVIM ARBOR",
+    "shortDescription": "Your AI development workspace",
+    "longDescription": "Inspect local project and agent state, discover AI CLI candidates, and query the existing owner-authenticated ARBOR Host capability and integration inventory. Native execution and browser transport remain pending.",
+    "developerName": "owen wallace-servera",
+    "category": "Productivity",
+    "capabilities": [
+      "Interactive"
+    ],
+    "defaultPrompt": "Run a full VIVIM ARBOR SITREP from live source and lane handoffs."
+  },
+  "name": "vivim-arbor-plugin",
+  "version": "0.4.0",
+  "description": "VIVIM ARBOR unified AI control plane with project intelligence, native ZCode observation, CLI discovery and authenticated Host capability discovery.",
+  "author": {
+    "name": "owen wallace-servera"
+  },
+  "keywords": [],
+  "repository": "https://github.com/owenservera/ARBOR",
+  "skills": "./skills",
+  "mcpServers": "./.mcp.json"
+}
