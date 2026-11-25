@@ -71,7 +71,11 @@ async function main() {
   const healthOnly=process.env.VIVIM_TUNNEL_FORCE_HEALTH_ONLY==='1';
   const profile=createProfile(process.env,{acceptance:healthOnly?null:createAcceptance(),workstation:healthOnly?[]:createWorkstationTools(),maintenance:healthOnly?()=>null:createMaintenanceGate()});
   const input=readline.createInterface({input:process.stdin,crlfDelay:Infinity});
-  // Sequential dispatch prevents concurrent reads against the existing Host.
+  await serve(profile,input,line=>process.stdout.write(line));
+}
+async function serve(profile,input,write) {
+  // Keep normal calls serialized; bounded read-only waits must not block the tool queue.
+  const waits=new Set();
   for await (const line of input) {
     let response;
     try {
@@ -79,11 +83,17 @@ async function main() {
       else {
         let m;
         try {m=JSON.parse(line);} catch {response={jsonrpc:'2.0',id:null,error:{code:-32700,message:'Parse error'}};}
+        if (!response && m?.method==='tools/call' && m.params?.name==='vivim_session_wait' && waits.size<4) {
+          const pending=profile.dispatch(m).then(r=>{if(r)write(JSON.stringify(r)+'\n');},()=>{write(JSON.stringify({jsonrpc:'2.0',id:m.id??null,error:{code:-32603,message:'Internal error'}})+'\n');});
+          waits.add(pending);pending.finally(()=>waits.delete(pending));continue;
+        }
+        if (!response && m?.method==='tools/call' && m.params?.name==='vivim_session_wait') response={jsonrpc:'2.0',id:m.id??null,error:{code:-32000,message:'Wait capacity reached'}};
         if (!response) response=await profile.dispatch(m);
       }
     } catch {response={jsonrpc:'2.0',id:null,error:{code:-32603,message:'Internal error'}};}
-    if (response) process.stdout.write(JSON.stringify(response)+'\n');
+    if (response) write(JSON.stringify(response)+'\n');
   }
+  await Promise.allSettled(waits);
 }
 if (require.main===module) main().catch(()=>{process.exitCode=1;});
-module.exports={createProfile};
+module.exports={createProfile,serve};

@@ -158,3 +158,23 @@ test('development ledger admits new work after 256 claims and preserves prior re
  assert.equal(fs.readdirSync(ledger).filter(n=>n.endsWith('.claim.json')).length,257);
  assert.deepEqual(await start({recipe:'node-version',request_id:'e'.repeat(32)}),b);assert.equal(posts,2);
 });
+
+test('session wait reports new cursor, quiet timeout, terminal and rejects foreign sessions',async t=>{
+ const f=fixture(t);let reads=0,mode='output';
+ const channel=(cursor,next)=>({requested:Number(cursor),next,closed:false,gap:false,readFailed:false});
+ const tools=createWorkstationTools({directory:f.directory,credential:async()=> 'test-only-token',fetcher:async(_,o)=>{
+  const b=JSON.parse(o.body);reads++;
+  assert.equal(b.actionId,'workstation.session.output');
+  const next=mode==='output'&&reads>1?5:Number(b.args.stdout_cursor);
+  return json({outcome:'done',actionId:b.actionId,args:b.args,effect:'read',result:{status:{sessionId:planId,state:mode==='terminal'?'exited':'running'},stdout:channel(b.args.stdout_cursor,next),stderr:channel(b.args.stderr_cursor,0)}});
+ }});
+ const wait=tools.find(x=>x[0]==='vivim_session_wait')[3];
+ const a={session_id:planId,stdout_cursor:'0',stderr_cursor:'0',wait_ms:'1000'};
+ await assert.rejects(wait(a));assert.equal(reads,0);
+ const ledger=path.join(f.directory,'ledger-'+f.g.id);
+ fs.writeFileSync(path.join(ledger,planId+'.session.json'),JSON.stringify({grant:require('node:crypto').createHash('sha256').update(fs.readFileSync(f.file)).digest('hex'),sessionId:planId,recipe:'node-version'}),{mode:0o600});
+ const first=await wait(a);assert.equal(first.reason,'output');assert.equal(first.stdout.next,5);
+ mode='quiet';const quiet=await wait({...a,stdout_cursor:'5',wait_ms:'250'});assert.equal(quiet.reason,'timeout');assert.equal(quiet.stdout.next,5);
+ mode='terminal';assert.equal((await wait({...a,stdout_cursor:'5'})).reason,'terminal');
+ fs.unlinkSync(f.file);await assert.rejects(wait(a));
+});

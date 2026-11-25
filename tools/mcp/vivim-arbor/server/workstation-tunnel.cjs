@@ -66,11 +66,11 @@ function createWorkstationTools({directory=path.join(__dirname,'..','session-aut
   const loaded=mod.loadOwnerToken({dataRoot:g.dataRoot,env,create:false});
   if(typeof loaded.token!=='string'||loaded.token.length<32)bad();return loaded.token;
  }
- async function request(route,body){
+ async function request(route,body,timeoutMs=30000){
   const bearer=await token();check();const origin='http://127.0.0.1:'+g.port;
   const r=await fetcher(origin+'/api/host/control/'+route,{method:body?'POST':'GET',
    headers:{authorization:'Bearer '+bearer,origin,accept:'application/json',...(body?{'content-type':'application/json','x-vivim-control':'1'}:{})},
-   ...(body?{body:JSON.stringify(body)}:{}),redirect:'error',signal:AbortSignal.timeout(30000)});
+   ...(body?{body:JSON.stringify(body)}:{}),redirect:'error',signal:AbortSignal.timeout(timeoutMs)});
   if(!r.ok){await r.body?.cancel();bad();}
   const reader=r.body?.getReader();if(!reader)bad();let size=0;const chunks=[];
   try{while(true){const {done,value}=await reader.read();if(done)break;size+=value.byteLength;if(size>524288)bad();chunks.push(Buffer.from(value));}}
@@ -147,12 +147,39 @@ function createWorkstationTools({directory=path.join(__dirname,'..','session-aut
   // digest, fresh desktop-owner approval, preclaim and one-shot receipt.
   const r=await request('execute',binding);return projection(r,binding,action,args);
  }
- async function readAction(action,args){
-  authorize(action,args,false);const p=await request('plan',{actionId:action,args});
+ async function readAction(action,args,timeoutMs=30000){
+  authorize(action,args,false);const p=await request('plan',{actionId:action,args},timeoutMs);
   if(p?.outcome!=='done'||p.actionId!==action||!same(p.args,args)||p.effect!=='read'||!obj(p.result))bad();
   if(action.startsWith(S)){if((action===S+'output'?p.result.status?.sessionId:p.result.sessionId)!==args.session_id)bad();}
   else if(p.result.schema!=='vivim.workstation-file-read/1'||p.result.rootId!==args.root_id||p.result.path!==args.path||p.result.configSha!==g.rootConfigSha)bad();
   authorize(action,args,false);return p.result;
+ }
+ // Bounded cursor-driven wait. No new Host effects or unsolicited client turns.
+ let activeWaits=0;
+ async function waitOutput(a){
+  const {session_id,stdout_cursor,stderr_cursor,wait_ms}=a;
+  const cursor=x=>typeof x==='string'&&/^(0|[1-9][0-9]{0,15})$/.test(x)&&Number.isSafeInteger(Number(x));
+  if(!cursor(stdout_cursor)||!cursor(stderr_cursor)||typeof wait_ms!=='string'||!/^[0-9]{1,5}$/.test(wait_ms)||Number(wait_ms)<250||Number(wait_ms)>20000)bad();
+  owns(session_id);check();
+  if(activeWaits>=4)throw Error('WORKSTATION_WAIT_BUSY');
+  activeWaits++;
+  const started=performance.now(),deadline=started+Number(wait_ms);
+  try{
+   while(true){
+    const remaining=Math.max(1,Math.ceil(deadline-performance.now()));
+    const out=await readAction(S+'output',{session_id,stdout_cursor,stderr_cursor},remaining);
+    const channels=[out.stdout,out.stderr];
+    if(channels.some(c=>!obj(c)||!Number.isSafeInteger(c.next)))bad();
+    const changed=channels.some((c,i)=>c.next!==Number(i?stderr_cursor:stdout_cursor)||c.gap||c.readFailed);
+    const terminal=out.status.state!=='running'&&out.status.state!=='starting';
+    if(changed||terminal||performance.now()>=deadline){
+     check();return {schema:'vivim.workstation-session-wait/1',reason:changed?'output':terminal?'terminal':'timeout',elapsed_ms:Math.round(performance.now()-started),...out};
+    }
+    await new Promise(resolve=>setTimeout(resolve,Math.min(250,Math.max(1,deadline-performance.now()))));
+    check();
+    if(performance.now()>=deadline)return {schema:'vivim.workstation-session-wait/1',reason:'timeout',elapsed_ms:Math.round(performance.now()-started),...out};
+   }
+  }finally{activeWaits--;}
  }
  const tools=[['vivim_workstation_recipes','List currently locally granted recipe IDs and workspace IDs; no executable paths or credentials.',
   {type:'object',properties:{},required:[],additionalProperties:false},()=>{check();return {schema:'vivim.workstation-tunnel-grant-summary/1',recipes:g.recipes,roots:g.roots,interactiveRecipes:g.interactiveRecipes,allowWrites:g.allowWrites,expiresAt:g.expiresAt,...(g.machineScope===true?{machineScope:true}:{}),...(g.terminal?{terminal:{programs:g.terminal.programs,roots:g.terminal.roots,allowInteractive:g.terminal.allowInteractive}}:{})};},true]];
@@ -166,6 +193,10 @@ function createWorkstationTools({directory=path.join(__dirname,'..','session-aut
   tools.push([name,(action==='workstation.development.file.read'?'Development only: read source with project-scoped Meta-VLANG coding context. Use for coding tasks, not generic file reads. ':action===TERMINAL?(g.machineScope===true?'Owner-machine mode: root_id machine accepts absolute local cwd and resolved executable path/name; OS permissions apply. ':'')+'Start an explicitly locally authorized terminal session. request_json is JSON with program (granted ID), args (string array), root_id (granted root), cwd (relative path or .), interactive (boolean), timeout_ms (integer 100–1800000). Limit 5997 UTF-8 bytes; never include credentials. ':'Use only the locally granted Host '+action+' capability. ')+(mutating?'Supply a unique 32-character lowercase hexadecimal request_id; repeat only the same ID to inspect an uncertain receipt.':'Read-only, scoped to granted workspace or owned session.'),
    {type:'object',properties:Object.fromEntries(required.map(k=>[k,{type:'string'}])),required,additionalProperties:false},
    a=>{if(action===TERMINAL){const v=a.request_json;if(typeof v!=='string'||Buffer.byteLength(v)>5997)bad();return mutation(action,{request:'b64:'+Buffer.from(v,'utf8').toString('base64')},a.request_id);}const args=Object.fromEntries(fields.map(k=>{if(['content','old_text','new_text','input','literal'].includes(k)){const v=a[k];if(typeof v!=='string'||v.includes('\0')||Buffer.byteLength(v)>(k==='input'?4096:k==='literal'?160:5997))bad();return [k,'b64:'+Buffer.from(v,'utf8').toString('base64')];}return [k,a[k]];}));return mutating?mutation(action,args,a.request_id):readAction(action,args);},!mutating]);
+ }
+ if(g.recipes.length||g.terminal){
+  const required=['session_id','stdout_cursor','stderr_cursor','wait_ms'];
+  tools.push(['vivim_session_wait','Wait 250–20000 ms for output, cursor gap, read failure or terminal state from an owned session. Resume with returned next cursors. Read-only; does not subscribe to unsolicited chat events.',{type:'object',properties:Object.fromEntries(required.map(k=>[k,{type:'string'}])),required,additionalProperties:false},waitOutput,true]);
  }
  return tools;
 }

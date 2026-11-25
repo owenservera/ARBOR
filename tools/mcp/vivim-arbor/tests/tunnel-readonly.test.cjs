@@ -87,3 +87,12 @@ test('relay reuses the same stdio process for multiple initialize and health cal
  assert.ok(out.every(x=>x.result&&!x.error));
  for(const id of [4,6]) assert.equal(JSON.parse(out.find(x=>x.id===id).result.content[0].text).status,'ready');
 });
+
+require('node:test').test('bounded wait does not block health or other calls on stdio',async()=>{
+ const {serve}=require('../server/tunnel-readonly.cjs');
+ let release;const hold=new Promise(r=>{release=r;});const seen=[];
+ const profile={dispatch:async m=>{if(m.params?.name==='vivim_session_wait')await hold;return {jsonrpc:'2.0',id:m.id,result:{}};}};
+ const messages=[{jsonrpc:'2.0',id:1,method:'tools/call',params:{name:'vivim_session_wait'}},{jsonrpc:'2.0',id:2,method:'ping'}].map(JSON.stringify);
+ await serve(profile,messages,line=>{const m=JSON.parse(line);seen.push(m.id);if(m.id===2)release();});
+ require('node:assert/strict').deepEqual(seen,[2,1]);
+});
