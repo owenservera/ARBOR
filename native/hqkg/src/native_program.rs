@@ -18,6 +18,14 @@ pub fn bind_indexed_program(graph:&Graph,expected:&RevisionToken,program:&Progra
     }
     expected.namespace.validate()?;
     for step in &program.steps{
+        // Graph-derived bindings can include internal indexed metadata. A
+        // source-free consumer cannot claim public output or an external destination.
+        if step.inputs.is_empty() && !step.dependencies.is_empty()
+            && (step.output_data_class != DataClass::Internal
+                || policy.max_input_class < DataClass::Internal
+                || step.destination.is_some()) {
+            return Err(Error::Conflict("derived development sources require internal read-only policy".into()))
+        }
         for source in &step.inputs{
             if !matches!(source.data_class,DataClass::Public|DataClass::Internal){
                 return Err(Error::Conflict("private sources cannot enter development computation".into()))
