@@ -399,3 +399,29 @@ test('a zero-delta reindex leaves indexed_at untouched; real changes bump it', (
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+
+test('Rust import resolution refuses ambiguous module layouts and ancestors', () => {
+  const files = new Map([['src/lib.rs',1],['src/feature.rs',2],['src/feature/mod.rs',3],['src/feature/deep.rs',4]]);
+  const query = (specifier,importKind='use') => resolveImport({file:'src/lib.rs',specifier,importerLang:'rust',importKind,fileIndex:files});
+  assert.equal(query('feature','mod').file_id,null);
+  assert.equal(query('crate::feature::deep::run').file_id,null);
+  files.delete('src/feature.rs');
+  assert.equal(query('feature','mod').file_id,3);
+  assert.equal(query('crate::feature::deep::run').file_id,4);
+});
+
+test('Rust reindex removes stale resolved imports on module collision and restores them on deletion', () => {
+  const dir=fixture({'src/lib.rs':'pub mod feature;\n','src/feature.rs':'pub fn run() {}\n'});
+  const db=openMemoryDb();
+  const run=()=>indexProject({root:dir,db,project:{name:'rust-layout',path:dir},options:{useGit:false}});
+  const target=()=>db.prepare("SELECT f.path AS path FROM imports i LEFT JOIN files f ON i.resolved_file_id=f.id WHERE i.specifier='feature'").get()?.path;
+  try{
+    assert.equal(run().errors.length,0);assert.equal(target(),'src/feature.rs');
+    mkdirSync(join(dir,'src/feature'),{recursive:true});
+    writeFileSync(join(dir,'src/feature/mod.rs'),'pub fn run() {}\n');
+    assert.equal(run().errors.length,0);assert.equal(target(),null);
+    unlinkSync(join(dir,'src/feature/mod.rs'));
+    assert.equal(run().errors.length,0);assert.equal(target(),'src/feature.rs');
+  }finally{db.close();rmSync(dir,{recursive:true,force:true});}
+});

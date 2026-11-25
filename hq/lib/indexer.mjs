@@ -383,16 +383,16 @@ function resolveRustLocal({importerPath,specifier,kind,index,rustCrates=null}){
       return {file_id:index.get(rootFile),project_id:null,kind:'file'};
     }
   }
-  // Prefer the deepest concrete module actually present. This handles both
-  // src/module.rs and src/module/mod.rs and paths to re-exported symbols.
-  for(let length=parts.length;length>=1;length--){
+  // Rust rejects dual module layouts; do not guess a winner even when a
+  // deeper file happens to exist beneath an ambiguous module ancestor.
+  let deepest=null;
+  for(let length=1;length<=parts.length;length++){
     const base=posix.join(rootDir,...parts.slice(0,length));
-    for(const candidate of [base+'.rs',posix.join(base,'mod.rs')]){
-      if(candidate!==path&&index.has(candidate)){
-        return {file_id:index.get(candidate),project_id:null,kind:'file'};
-      }
-    }
+    const candidates=[base+'.rs',posix.join(base,'mod.rs')].filter(p=>index.has(p));
+    if(candidates.length>1)return miss;
+    if(candidates.length===1&&candidates[0]!==path)deepest=candidates[0];
   }
+  if(deepest!==null)return {file_id:index.get(deepest),project_id:null,kind:'file'};
   return miss;
 }
 
