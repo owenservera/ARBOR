@@ -1914,7 +1914,16 @@ impl Render for Desktop {
                 canvas=canvas.child(div().w_full().flex().justify_center()
                     .child(div().w_full().max_w(px(760.)).p_2()
                         .bg(rgb(theme.accent_soft)).rounded(px(12.))
-                        .child(div().text_sm().child(meaning.hint.clone()))));
+                        .flex().flex_col().gap_1()
+                        .child(div().text_sm().child(format!("Real-time command · {}",meaning.outcome)))
+                        .child(div().text_sm().child(meaning.hint.clone()))
+                        .child(div().text_sm().child(format!(
+                            "Registered: {} · executor: {} · live verification: {}",
+                            if meaning.registered==Some(true) {"yes"} else {"not resolved"},
+                            meaning.readiness.as_deref().unwrap_or("not resolved"),
+                            if meaning.live_verified==Some(true) {"verified"} else {"not established"}
+                        )))
+                        .child(div().text_sm().child("Execution: none · separate Host review required"))));
             }
 
             // First Contact's command review reuses Host planning and approval.

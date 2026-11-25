@@ -18,6 +18,7 @@ pub mod wiki_write_recipe;
 pub mod wiki_read_recipe;
 pub mod command_ai_guard;
 pub mod command_intent_projection;
+pub mod realtime_command;
 pub mod control_lexicon;
 pub mod personal_rule_selection;
 pub mod personal_rule_transition;

@@ -277,103 +277,11 @@ pub fn plan(text: &str) -> Result<Review, ReadError> {
 /// Rendered VLANG/NLCL meaning from the *existing* Host compiler. The
 /// native desktop never interprets the text independently; this is a
 /// read-only representation of the Host's `interpret?composer=true` response.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct ComposerMeaning {
-    pub outcome: String,
-    pub action_id: Option<String>,
-    pub risk: Option<String>,
-    pub hint: String,
-}
-pub fn project_composer_meaning(response: &Value) -> Result<Option<ComposerMeaning>, ReadError> {
-    if response["schema"] != "vivim.control-language/1" ||
-        response["composer"]["schema"] != "vivim.composer-assist/1" ||
-        response["composer"]["authority"] != "none" {
-        return Err(ReadError::InvalidProjection);
-    }
-    let outcome = response["outcome"].as_str().ok_or(ReadError::InvalidProjection)?;
-    match outcome {
-        "candidate" => {
-            let id = response["candidate"]["actionId"].as_str()
-                .filter(|s| (3..=96).contains(&s.len()) &&
-                    s.bytes().all(|b|b.is_ascii_lowercase() || b.is_ascii_digit() ||
-                        matches!(b, b'.'|b'_'|b'-')))
-                .ok_or(ReadError::InvalidProjection)?;
-            let action=&response["composer"]["action"];
-            if action["id"] != id {return Err(ReadError::InvalidProjection)}
-            let risk=action["risk"].as_str()
-                .filter(|s|matches!(*s, "R0"|"R1"|"R2"|"R3"))
-                .ok_or(ReadError::InvalidProjection)?;
-            let readiness=action["readiness"].as_str()
-                .filter(|s|matches!(*s,"source_wired"|"verified"|
-                    "adapter_pending"|"enforcement_missing"|"unsupported"))
-                .ok_or(ReadError::InvalidProjection)?;
-            // Display the Host's typed argument binding; do not infer slots,
-            // reparse user prose, or create a second native command grammar.
-            // Bounded, inert preview: long values are visibly abbreviated.
-            let args=response["candidate"]["args"].as_object()
-                .ok_or(ReadError::InvalidProjection)?;
-            if args.len()>12 { return Err(ReadError::InvalidProjection); }
-            let mut fields=Vec::new();
-            for (key, value) in args {
-                if key.is_empty() || key.len()>96 ||
-                    !key.bytes().all(|b|b.is_ascii_lowercase()||b.is_ascii_digit()||
-                        matches!(b,b'.'|b'_'|b'-')) {
-                    return Err(ReadError::InvalidProjection);
-                }
-                let text=value.as_str().filter(|v|
-                    !v.is_empty() && v.encode_utf16().count()<=1000 &&
-                    !v.chars().any(char::is_control))
-                    .ok_or(ReadError::InvalidProjection)?;
-                if fields.len()<3 {
-                    // Higher-risk arguments can contain private instructions;
-                    // expose only slot presence, never duplicate their text.
-                    let shown=if matches!(risk,"R2"|"R3") {
-                        "[supplied]".to_owned()
-                    } else {
-                        let brief:String=text.chars().take(48).collect();
-                        if text.chars().count()>48 {format!("{brief}…")} else {brief}
-                    };
-                    fields.push(format!("{key}={shown}"));
-                }
-            }
-            let arg_hint=if args.is_empty(){String::new()}else{
-                format!(" · arguments: {}{}",
-                    fields.join(", "),if args.len()>3{" …"}else{""})
-            };
-            let hint=if matches!(readiness,"source_wired"|"verified") {
-                if risk=="R0" {format!("Recognized: {id}{arg_hint} · read-only interpretation")}
-                else {format!("Recognized: {id}{arg_hint} · {risk} · submit for a separate approved plan")}
-            } else {format!("Recognized but unavailable: {id}{arg_hint} · {readiness}")};
-            Ok(Some(ComposerMeaning {
-                outcome:outcome.into(),action_id:Some(id.into()),
-                risk:Some(risk.into()),hint
-            }))
-        }
-        "clarification_required" => {
-            let question=response["question"].as_str()
-                .filter(|s|!s.is_empty() && s.len()<=300 &&
-                    !s.chars().any(char::is_control))
-                .ok_or(ReadError::InvalidProjection)?;
-            Ok(Some(ComposerMeaning {outcome:outcome.into(),
-                action_id:None,risk:None,hint:format!("Needs clarification: {question}")}))
-        }
-        "incomplete" => Ok(Some(ComposerMeaning {
-            outcome:outcome.into(),action_id:None,risk:None,
-            hint:"Incomplete command · continue typing".into()
-        })),
-        // A deterministic non-match must be visible on the command surface:
-        // never silently imply that an LLM was used or an effect was sent.
-        "interpretation_required" => Ok(Some(ComposerMeaning {
-            outcome:outcome.into(),action_id:None,risk:None,
-            hint:"No deterministic command match · no action taken".into()
-        })),
-        "refused" => Ok(Some(ComposerMeaning {
-            outcome:outcome.into(),action_id:None,risk:None,
-            hint:"Command refused by Host policy · no action taken".into()
-        })),
-        "empty" => Ok(None),
-        _ => Err(ReadError::InvalidProjection)
-    }
+pub use vivim_programmability_core::realtime_command::ComposerMeaning;
+#[cfg(test)]
+pub fn project_composer_meaning(response:&Value)->Result<Option<ComposerMeaning>,ReadError>{
+    vivim_programmability_core::realtime_command::project_composer_meaning(response)
+        .map_err(|_|ReadError::InvalidProjection)
 }
 /// Observe meaning; DOES NOT call the Host plan or execute route.
 pub fn interpret_composer(text: &str) -> Result<Option<ComposerMeaning>,ReadError> {
@@ -383,7 +291,8 @@ pub fn interpret_composer(text: &str) -> Result<Option<ComposerMeaning>,ReadErro
         return Err(ReadError::InvalidInput);
     }
     let response=request("interpret",Some(json!({"text":text,"composer":true})))?;
-    project_composer_meaning(&response)
+    vivim_programmability_core::realtime_command::project_current_draft(text,&response)
+        .map_err(|_|ReadError::InvalidProjection)
 }
 
 #[derive(Debug)]
