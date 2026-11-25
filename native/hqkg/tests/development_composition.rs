@@ -290,3 +290,34 @@ fn finite_batch_cli_reuses_mixed_programs_and_never_emits_partial_response() {
     }
     std::fs::remove_file(&path).unwrap();
 }
+
+#[test]
+fn partitioned_coverage_expands_beyond_strict_depth_with_explicit_bounds() {
+    use hqkg::development_relations::{imports,partitioned_imports};
+    let graph=semantic_graph(false,20,0);
+    let old=imports(&graph,"file-0",false,3).unwrap();
+    assert!(old.truncated);
+    let coverage=partitioned_imports(&graph,"file-0",false).unwrap();
+    assert_eq!(coverage["complete"],true);
+    assert_eq!(coverage["sourceCount"],20);
+    assert_eq!(coverage["partitionCount"],2);
+    assert_eq!(coverage["executionAuthorized"],false);
+    let rows=coverage["partitions"].as_array().unwrap().iter()
+        .flat_map(|p|p["sources"].as_array().unwrap()).collect::<Vec<_>>();
+    assert_eq!(rows.len(),20);
+    for (i,row) in rows.iter().enumerate(){
+        assert_eq!(row["depth"],i+1);
+        assert_eq!(row["id"],format!("file-{}",i+1));
+        let node=graph.node(row["id"].as_str().unwrap()).unwrap();
+        assert_eq!(row["digest"],node.properties["content_sha256"]);
+        assert_eq!(row["revision"],node.version);
+    }
+    let reverse=partitioned_imports(&graph,"file-20",true).unwrap();
+    assert_eq!(reverse["complete"],true);
+    assert_eq!(reverse["sourceCount"],20);
+    let larger=semantic_graph(false,33,0);
+    let limited=partitioned_imports(&larger,"file-0",false).unwrap();
+    assert_eq!(limited["complete"],false);
+    assert_eq!(limited["depthLimited"],true);
+    assert_eq!(limited["sourceCount"],32);
+}
