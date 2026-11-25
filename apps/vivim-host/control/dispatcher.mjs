@@ -10,6 +10,7 @@
 // plan digest; a claimed plan is never re-executed (crash ⇒ `uncertain`, surfaced to the
 // owner); executors are fixed Host functions — no shell, SQL, URL or generated code.
 import { createHash } from 'node:crypto';
+import {createWorkstationProcessPort,WORKSTATION_PROCESS_ACTION} from './workstation-process-port.mjs';
 import { createControlPlanner, loadControlCatalog } from './intent-planner.mjs';
 import { runNativeProductPureSync } from './native-product-pure-sync.mjs';
 import { createControlJournal, newPlanId } from './journal.mjs';
@@ -131,7 +132,7 @@ function readWikiSection(wiki,{page,section}) {
 }
 
 /** Fixed executors keyed by catalog action id. Each returns a bounded, phone-safe summary. */
-function createExecutors({ runtime, planner, lexicon, devices, productJournal, personalSemantics, nativeProgram, composerBridge, studio }) {
+function createExecutors({ runtime, planner, lexicon, devices, productJournal, personalSemantics, nativeProgram, composerBridge, studio, workstationProcess }) {
   const ownerExclusions = () => (runtime.status().preferences ?? [])
     .filter(p => p.hard && p.polarity === 'avoid' && p.source === 'owner')
     .slice(0, 50).map(p => ({ id: p.id, value: short(p.value, 120) }));
@@ -148,6 +149,7 @@ function createExecutors({ runtime, planner, lexicon, devices, productJournal, p
       entryId:entry.entryId,sequence:entry.sequence};
   };
   return {
+    [WORKSTATION_PROCESS_ACTION]: (args,ctx) => workstationProcess.start(args,ctx.workstationBinding),
     [COMPOSER_ACTION]: ({stage_id}) => {
       if(!composerBridge)throw fail('CONTROL_COMPOSER_UNAVAILABLE');
       return composerBridge.execute(stage_id);
@@ -324,6 +326,7 @@ function createExecutors({ runtime, planner, lexicon, devices, productJournal, p
 export function createControlDispatcher({ dataRoot, runtime, devices = null, productJournal = null, catalog = loadControlCatalog(),
   commandScope = () => ({}), composerBridge = null, studio = null,
   nativeProgram=createNativeProgramValidator({productJournal}),
+  workstationProcess=createWorkstationProcessPort(),
   now = () => Date.now(), ttlMs = 10 * 60_000, freshMs = 2 * 60_000 } = {}) {
   if (!runtime || typeof runtime.status !== 'function') throw fail('CONTROL_RUNTIME_REQUIRED');
   const iso = () => new Date(now()).toISOString();
@@ -344,7 +347,7 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
   const planner = createControlPlanner({ catalog,
     lexicon: () => lexicon.entries(), personalRules: () => personalSemantics.accepted(),
     commandScope });
-  const executors = createExecutors({ runtime, planner, lexicon, devices, productJournal, personalSemantics,nativeProgram,composerBridge,studio });
+  const executors = createExecutors({ runtime, planner, lexicon, devices, productJournal, personalSemantics,nativeProgram,composerBridge,studio,workstationProcess });
   // The catalog may not claim an executor the Host does not have, nor hide one it does.
   for (const a of catalog.actions) {
     const runnable = ['source_wired', 'verified'].includes(a.readiness);
@@ -591,6 +594,8 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
     else if (keys.length === 1 && keys[0] === 'candidate') p = planner.planCandidate(input.candidate, { source });
     else if (keys.every(k => ['actionId', 'args'].includes(k))) p = planner.planTyped({ actionId: input.actionId, args: input.args ?? {}, source, origin: 'typed' });
     else throw fail('CONTROL_INPUT_INVALID');
+    if(p.actionId===WORKSTATION_PROCESS_ACTION&&(source!=='desktop'||actor!=='desktop-owner'||p.origin!=='typed'))
+      return {...p,outcome:'unavailable',executionPerformed:false,precondition:'Explicit typed desktop-owner process approval required.'};
     if(p.actionId===COMPOSER_ACTION&&(source!=='desktop'||actor!=='desktop-owner'||p.origin!=='typed'))
       return {...p,outcome:'unavailable',executionPerformed:false,precondition:'A staged draft and authenticated desktop-owner typed approval are required.'};
     if(STUDIO_ACTIONS.has(p.actionId) &&
@@ -651,6 +656,7 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
         scopeDigest: digest(activeScope),...(rule.template?{invocation:input.text,templateDigest:digest(rule.template)}:{}),...(rule.writeProgram?{invocation:input.text,writeProgramDigest:digest(rule.writeProgram),boundStepsDigest:digest(writeSteps)}:{}) };
     }
     const ruleBinding=RULE_ACTIONS.has(p.actionId)?prepareRuleBinding(p.actionId,p.args):null;
+    const workstationBinding=p.actionId===WORKSTATION_PROCESS_ACTION?workstationProcess.prepare(p.args):null;
     const savePlan = wikiBinding => {
       if(mobileProgram)authorizeProgram(programScope);
       if(p.actionId===WIKI_WRITE_PROGRAM_ACTION&&semanticRuleBinding){
@@ -665,6 +671,7 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
         createdAt, expiresAt: new Date(now() + ttlMs).toISOString(),
         ...(semanticRuleBinding ? { semanticRuleBinding } : {}),
         ...(ruleBinding?{ruleBinding}:{}),
+        ...(workstationBinding?{workstationBinding}:{}),
         ...(wikiBinding ? { wikiBinding,approvalMeaning } : {}),
         ...(p.actionId===CAPTURE_ACTION&&source==='mobile'?{captureGrantId:grantId}:{}),...(mobileProgram?{programGrantId:grantId}:{}) };
       const record = { ...body, planDigest: digest(body) };
@@ -674,9 +681,10 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
         ...(wikiBinding ? { preview: { target: wikiBinding.target ?? wikiBinding.page + '/' + wikiBinding.section,
           before: wikiBinding.before, after: p.actionId===WIKI_WRITE_PROGRAM_ACTION||wikiBinding.edit ? wikiBinding.after : p.args.content,
           expectedRevision: wikiBinding.expectedRevision } } : {}),
+        ...(workstationBinding?{workstationBinding}:{}),
         ...(ruleBinding?{learningPreview:{before:ruleBinding.before,after:ruleBinding.after,targetRisk:ruleBinding.targetRisk??null}}:{}),
         approval: { required: true, freshOwner: p.risk === 'R2',
-          channels: (RULE_ACTIONS.has(p.actionId)||STUDIO_ACTIONS.has(p.actionId))?['desktop-owner-token']:wikiMutation(p.actionId)
+          channels: (RULE_ACTIONS.has(p.actionId)||STUDIO_ACTIONS.has(p.actionId)||p.actionId===WORKSTATION_PROCESS_ACTION)?['desktop-owner-token']:wikiMutation(p.actionId)
             ? [source === 'mobile' ? 'direct-phone' : 'desktop-owner-token']
             : [...APPROVAL_CHANNELS] } };
     };
@@ -722,6 +730,9 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
       if(phoneProgram){if(rec.plan.origin!=='personal_rule'||approval.channel!=='direct-phone'||approval.actor!==rec.plan.actor||!rec.plan.programGrantId||approval.grantId!==rec.plan.programGrantId||typeof authorizeProgram!=='function')throw fail('CONTROL_WIKI_DEVICE_MISMATCH');authorizeProgram('control:execute');}
       else if(approval.actor!=='desktop-owner'||approval.channel!=='desktop-owner-token'||rec.plan.actor!=='desktop-owner'||rec.plan.source!=='desktop')throw fail('CONTROL_DESKTOP_APPROVAL_REQUIRED');
     }
+    if(rec.plan.actionId===WORKSTATION_PROCESS_ACTION&&
+       (rec.plan.source!=='desktop'||rec.plan.actor!=='desktop-owner'||rec.plan.origin!=='typed'||
+        approval.channel!=='desktop-owner-token'||approval.actor!=='desktop-owner'))throw fail('CONTROL_WORKSTATION_DESKTOP_APPROVAL_REQUIRED');
     if(STUDIO_ACTIONS.has(rec.plan.actionId) &&
        (rec.plan.source!=='desktop'||rec.plan.actor!=='desktop-owner'||
         rec.plan.origin!=='typed'||approval.channel!=='desktop-owner-token'||
@@ -840,6 +851,8 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
       return journal.finish(planId, receipt);
     }
     function claimAndRun() {
+      if(rec.plan.actionId===WORKSTATION_PROCESS_ACTION&&digest(workstationProcess.prepare(rec.plan.args))!==digest(rec.plan.workstationBinding))
+        throw fail('WORKSTATION_PROCESS_BINDING_STALE');
       if(phoneProgram)authorizeProgram('control:execute');
       // Rust returns eligibility evidence, never an approval or effect grant.
       // Existing Host policy and revision checks above remain mandatory.
@@ -864,7 +877,7 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
             ? runtime.applyUiProposal({proposal:rec.plan.visualProposal,surface:approvedVisual.current.surface,
                 approvedRefs:[],requestId:'utc-'+planId,actor:rec.plan.actor,approvalBinding:approvedVisual.meaning})
             : executors[rec.plan.actionId](rec.plan.args,
-                { requestId: 'utc-' + planId, planId, planDigest:stored, wikiBinding: rec.plan.wikiBinding,ruleBinding:rec.plan.ruleBinding });
+                { requestId: 'utc-' + planId, planId, planDigest:stored, wikiBinding: rec.plan.wikiBinding,ruleBinding:rec.plan.ruleBinding,workstationBinding:rec.plan.workstationBinding });
         } finally {activeRuleCommit=null;}
         if(approvedVisual){
           const expected={...approvedVisual.current.preview.surface,revision:approvedVisual.meaning.targetRevision+1};
@@ -932,6 +945,7 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
     if(rec.plan.actionId===VISUAL_ACTION&&source==='mobile'&&(actor!==rec.plan.actor||grantId!==rec.plan.approvalMeaning?.deviceGrantId))throw fail('CONTROL_PLAN_UNKNOWN');
     if(rec.plan.actionId===CAPTURE_ACTION&&source==='mobile'&&(rec.plan.source!=='mobile'||actor!==rec.plan.actor||grantId!==rec.plan.captureGrantId))throw fail('CONTROL_PLAN_UNKNOWN');
     if(source==='mobile'&&rec.plan.actionId===WIKI_WRITE_PROGRAM_ACTION&&(rec.plan.source!=='mobile'||rec.plan.actor!==actor||rec.plan.programGrantId!==grantId||!grantId))throw fail('CONTROL_PLAN_UNKNOWN');
+    if(source==='mobile'&&rec.plan.actionId===WORKSTATION_PROCESS_ACTION)throw fail('CONTROL_PLAN_UNKNOWN');
     if(source==='mobile'&&(RULE_ACTIONS.has(rec.plan.actionId)||(rec.plan.origin==='personal_rule'&&rec.plan.source==='desktop')))
       throw fail('CONTROL_PLAN_UNKNOWN');
     return { planId, state: rec.state, actionId: rec.plan.actionId, risk: rec.plan.risk, args: rec.plan.args,
@@ -966,6 +980,6 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
         rules:entries.map(r=>({id:r.id, revision:r.revision, state:r.state, scope:r.scope,
           actionId:r.actionId, catalogVersion:r.catalogVersion}))}; },
     ownerRules:()=>personalSemantics.snapshot(),
-    sharedPrograms,plan, execute, status, inspectOwnerPlan, recent: (limit,{source='desktop',actor=null,grantId=null}={}) => journal.recent(limit).filter(r=>{if(source!=='mobile')return true;if(RULE_ACTIONS.has(r.actionId))return false;if(r.actionId!==WIKI_WRITE_PROGRAM_ACTION)return true;const rec=journal.get(r.planId);return !!grantId&&rec?.plan.source==='mobile'&&rec.plan.actor===actor&&rec.plan.programGrantId===grantId;}),
+    sharedPrograms,plan, execute, status, inspectOwnerPlan, recent: (limit,{source='desktop',actor=null,grantId=null}={}) => journal.recent(limit).filter(r=>{if(source!=='mobile')return true;if(RULE_ACTIONS.has(r.actionId)||r.actionId===WORKSTATION_PROCESS_ACTION)return false;if(r.actionId!==WIKI_WRITE_PROGRAM_ACTION)return true;const rec=journal.get(r.planId);return !!grantId&&rec?.plan.source==='mobile'&&rec.plan.actor===actor&&rec.plan.programGrantId===grantId;}),
   };
 }

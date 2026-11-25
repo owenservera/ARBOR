@@ -1,6 +1,6 @@
 {
   "schema": "vivim.control-action-catalog/1",
-  "version": 17,
+  "version": 18,
   "asOf": "2026-11-23",
   "policy": {
     "allUserFacingActionsRequireTextPath": true,
@@ -1944,6 +1944,39 @@
       "subject": "studio",
       "priority": "P0",
       "precondition": "Authenticated desktop owner reviews exact queued/running job. Cancellation follows current site and cannot undo a provider send."
+    },
+    {
+      "id": "workstation.process.start",
+      "title": "Run a fixed native workstation runtime probe",
+      "category": "workstation",
+      "owner": "host-control",
+      "executor": "apps/vivim-host/control/dispatcher.mjs:createExecutors",
+      "readiness": "source_wired",
+      "risk": "R2",
+      "target": "local-workstation",
+      "surfaces": [
+        "text",
+        "desktop",
+        "mobile",
+        "visual"
+      ],
+      "privacy": "authenticated-pc-owner-only",
+      "aiCandidate": false,
+      "args": {
+        "recipe": {
+          "type": "enum",
+          "values": [
+            "node-version"
+          ]
+        }
+      },
+      "examples": [
+        "Run the fixed Node version probe using an exact desktop-owner plan"
+      ],
+      "reversible": false,
+      "subject": "workstation",
+      "priority": "P0",
+      "precondition": "Configured hash-pinned native helper, explicit typed authenticated desktop owner approval; no arbitrary shell or arguments."
     }
   ],
   "readinessStates": {
