@@ -470,7 +470,8 @@ impl<'a> DagExecutor<'a> {
         };
         let by_id: BTreeMap<&str, &TransformStep> =
             plan.steps.iter().map(|s| (s.id.as_str(), s)).collect();
-        let mut resolved: BTreeMap<String, MaterializedOutput> = BTreeMap::new();
+        // Report owns each output once; dependency lookup stores only its index.
+        let mut resolved: BTreeMap<String, usize> = BTreeMap::new();
         let mut staged: BTreeMap<(Namespace, String), Cached> = BTreeMap::new();
         let mut run_generations: BTreeMap<String, Arc<()>> = BTreeMap::new();
         let start = std::time::Instant::now();
@@ -544,12 +545,15 @@ impl<'a> DagExecutor<'a> {
             let mut deps = step.after.clone();
             deps.sort();
             for dep in deps {
-                let previous = &resolved[&dep];
+                let previous = &report.outputs[resolved[&dep]];
                 field(&mut input, &dep);
                 field(&mut input, &previous.data);
                 provenance.extend(previous.provenance.iter().cloned());
                 // Inherit transitive dependencies, including for source-free steps.
-                source_ids.extend(staged[&(plan.namespace.clone(), dep.clone())].source_ids.iter().cloned());
+                let dep_key = (plan.namespace.clone(), dep.clone());
+                let dependency = staged.get(&dep_key).or_else(|| cache.values.get(&dep_key))
+                    .expect("completed dependency has staged or retained cache metadata");
+                source_ids.extend(dependency.source_ids.iter().cloned());
             }
             field(&mut input, &lease.generation().to_string());
             if input.len() > budget.max_output_bytes {
@@ -668,7 +672,13 @@ impl<'a> DagExecutor<'a> {
                     break;
                 }
             };
-            staged.insert(
+            // A reused output need not be copied back into the cache. Provenance
+            // and transitive source IDs are compared independently because they
+            // can change even when the dependency's materialized bytes do not.
+            let unchanged = state == OutputState::Reused && cached.is_some_and(|c|
+                c.provenance == provenance && c.source_ids == source_ids);
+            if !unchanged {
+                staged.insert(
                 key,
                 Cached {
                     generation,
@@ -681,7 +691,8 @@ impl<'a> DagExecutor<'a> {
                     provenance: provenance.clone(),
                     source_ids,
                 },
-            );
+                );
+            }
             let output = MaterializedOutput {
                 step_id: id.clone(),
                 engine: step.engine.clone(),
@@ -691,21 +702,16 @@ impl<'a> DagExecutor<'a> {
                 provenance,
                 state,
             };
-            resolved.insert(id, output.clone());
+            resolved.insert(id, report.outputs.len());
             report.outputs.push(output);
         }
-        // Recheck every participating slot, not merely the last operation.
-        // A replacement during another engine's work invalidates this run.
-        if report.state == RunState::Complete {
-            for (slot, identity) in &run_generations {
-                if !Arc::ptr_eq(identity, &self.registry.pin(slot)?.cache_identity()) {
-                    report.state = RunState::StaleGeneration;
-                    report.failure = Some("engine replaced before DAG completion".into());
-                    break;
-                }
-            }
+        // One read-lock observation fences every participating engine slot.
+        if report.state == RunState::Complete
+            && !self.registry.cache_identities_current(&run_generations)? {
+            report.state = RunState::StaleGeneration;
+            report.failure = Some("engine replaced before DAG completion".into());
         }
-        if report.state == RunState::Complete {
+        if report.state == RunState::Complete && !staged.is_empty() {
             cache.values.extend(staged);
             cache.enforce_limits();
         }
