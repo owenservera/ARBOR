@@ -8,9 +8,11 @@ param(
  [switch]$Activate,
  [switch]$EnableGeneralTerminal,
  [string]$OwnerProfilePath,
- [string]$OwnerProfileSha256
+ [string]$OwnerProfileSha256,
+ [switch]$EnableOwnerMachine
 )
 $ErrorActionPreference='Stop'
+if($EnableOwnerMachine -and (-not $EnableGeneralTerminal -or $OwnerProfilePath -or $Activate)){throw 'Owner-machine requires explicit general terminal, stage only, no expanded selection'}
 if($OwnerProfilePath){if($OwnerProfileSha256 -cnotmatch '^[a-f0-9]{64}$'){throw 'Reviewed owner selection SHA-256 required'}}elseif($OwnerProfileSha256){throw 'Selection digest requires owner profile path'}
 if($OwnerProfilePath -and (!$EnableGeneralTerminal -or $Activate)){throw 'Expanded owner profile requires general terminal and stage-only operation; local supervised promotion required'}
 $utf8=New-Object Text.UTF8Encoding($false)
@@ -156,14 +158,23 @@ if($EnableGeneralTerminal){
    $grant.rootConfigSha=Hash $rootFile
   }finally{Remove-Item -LiteralPath $contextFile -ErrorAction Stop}
  }else{$allowTerminalInteractive=$true}
+
  $terminalFile=Join-Path $config 'terminal-policy.json'
- Write-Json $terminalFile @{schema='vivim.workstation-terminal-policy/1';enabled=$true;expiresAt=$grant.expiresAt;programs=@($terminalPrograms);roots=$rootEntries;maxTimeoutMs=1800000;allowInteractive=$allowTerminalInteractive}
+ $terminalPolicy=@{schema='vivim.workstation-terminal-policy/1';enabled=$true;expiresAt=$grant.expiresAt;programs=@($terminalPrograms);roots=$rootEntries;maxTimeoutMs=1800000;allowInteractive=$allowTerminalInteractive}
+ if($EnableOwnerMachine){
+  $protected=@($ConnectRoot,$dataRoot,(Join-Path $env:USERPROFILE '.ssh'),(Join-Path $env:USERPROFILE '.aws'),(Join-Path $env:USERPROFILE '.azure'),(Join-Path $env:USERPROFILE '.gnupg'),(Join-Path $env:USERPROFILE '.codex'),(Join-Path $env:USERPROFILE '.claude'),(Join-Path $env:LOCALAPPDATA 'Google\Chrome\User Data'),(Join-Path $env:LOCALAPPDATA 'Microsoft\Edge\User Data'))|Where-Object {$_}|Sort-Object -Unique
+  $machine=@{schema='vivim.owner-machine-scope/1';expiresAt=$grant.expiresAt;protectedPaths=@($protected)}
+  $terminalPolicy.machineScope=$machine;$grant.machineScope=$true
+  Write-Json $rootFile @{schema='vivim.workstation-roots/1';roots=$rootEntries;machineScope=$machine};$grant.rootConfigSha=Hash $rootFile
+ }
+ Write-Json $terminalFile $terminalPolicy
  $grant.terminal=@{configSha=Hash $terminalFile;programs=@($terminalPrograms|ForEach-Object{$_.id});roots=@($grant.roots);allowInteractive=$allowTerminalInteractive}
 }
 Write-Json (Join-Path $grantDir 'grant.json') $grant
 $m=@{schema='vivim.workstation-runtime/1';sourceSha=$SourceSha;nativeBuildSha=$NativeBuildSha;nodeExe=$node;nodeSha256=Hash $node;dataRoot=$dataRoot;hostSha256=Hash (Join-Path $runtime 'apps\vivim-host\server.mjs');cargoTargetDir=(Split-Path -Parent $NativeBinRoot);recipes=@($grant.recipes);roots=$grant.roots;helperSha256=@{session=Hash (Join-Path $bin 'vivim-workstation-session.exe');files=Hash (Join-Path $bin 'vivim-workstation-files.exe');probe=Hash (Join-Path $bin 'vivim-workstation-probe.exe')};recipeConfigSha=$grant.recipeConfigSha;rootConfigSha=$grant.rootConfigSha}
 if($EnableGeneralTerminal){$m.terminalConfigSha=$grant.terminal.configSha}
 if($OwnerProfilePath){$m.ownerProfile='expanded';$m.ownerSelectionSha256=$OwnerProfileSha256}
+if($EnableOwnerMachine){$m.ownerProfile='machine'}
 Write-Json (Join-Path $release 'manifest.json') $m
 Copy-Item -LiteralPath (Join-Path $src 'windows\Start-WorkstationHost.ps1') -Destination (Join-Path $release 'Start-WorkstationHost.ps1')
 Push-Location $runtime

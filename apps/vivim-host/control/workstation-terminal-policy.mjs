@@ -3,6 +3,7 @@
 import {createHash} from 'node:crypto';
 import {readFileSync,realpathSync,lstatSync,statSync} from 'node:fs';
 import {isAbsolute,resolve,relative,sep,extname} from 'node:path';
+import {validateMachineScope,resolveMachineCwd,resolveMachineProgram} from './workstation-machine-path.mjs';
 import {normalizeTerminalRequest} from './workstation-terminal-request.mjs';
 const fail=code=>Object.assign(Error(code),{code,status:409});
 const hash=b=>createHash('sha256').update(b).digest('hex');
@@ -20,12 +21,14 @@ function pinned(path,expected,max){
  return {path:canonical,bytes,sha:expected};
 }
 export function validateTerminalPolicy(p,now){
- if(!exact(p,['schema','enabled','expiresAt','programs','roots','maxTimeoutMs','allowInteractive'])||
+ const fields=['schema','enabled','expiresAt','programs','roots','maxTimeoutMs','allowInteractive'];
+ if(!(exact(p,fields)||exact(p,[...fields,'machineScope']))||
     p.schema!=='vivim.workstation-terminal-policy/1'||p.enabled!==true||
     !Number.isSafeInteger(p.expiresAt)||p.expiresAt<=now||p.expiresAt-now>86400000||
     !Number.isSafeInteger(p.maxTimeoutMs)||p.maxTimeoutMs<100||p.maxTimeoutMs>1800000||
     typeof p.allowInteractive!=='boolean'||!Array.isArray(p.programs)||p.programs.length<1||p.programs.length>64||
     !Array.isArray(p.roots)||p.roots.length<1||p.roots.length>16)throw fail('WORKSTATION_TERMINAL_POLICY_INVALID');
+ if(p.machineScope!==undefined){try{validateMachineScope(p.machineScope,now);if(p.machineScope.expiresAt!==p.expiresAt)throw Error()}catch{throw fail('WORKSTATION_TERMINAL_POLICY_INVALID')}}
  const programs=new Set(),roots=new Set();
  for(const v of p.programs){
   if(!(exact(v,['id','path','sha256','environment'])||exact(v,['id','path','sha256','environment','toolchain']))||!programId(v.id)||programs.has(v.id.toLowerCase())||
@@ -58,6 +61,15 @@ export function createTerminalPolicy({env=process.env,now=Date.now}={}){
  function bind(input){
   const request=normalizeTerminalRequest(input),{policy,configSha}=load();
   const program=policy.programs.find(p=>p.id===request.program),root=policy.roots.find(r=>r.id===request.root_id);
+  if(request.root_id==='machine'){
+   if(!policy.machineScope||request.timeout_ms>policy.maxTimeoutMs||request.timeout_ms>policy.expiresAt-now()||request.interactive&&!policy.allowInteractive)throw fail('WORKSTATION_TERMINAL_NOT_GRANTED');
+   try{
+    const workspace=resolveMachineCwd(request.cwd,policy.machineScope,now());
+    const executable=resolveMachineProgram(program?.path??request.program,policy.machineScope,env,now());
+    if(program&&executable.sha!==program.sha256)throw Error();
+    return {request,configSha,executable,workspace,environmentNames:program?.environment??['SystemRoot','WINDIR','PATH','PATHEXT','HOME','USERPROFILE','APPDATA','LOCALAPPDATA','TEMP','TMP','LANG','TERM','NO_COLOR'],toolchain:program?.toolchain??null,expiresAt:policy.expiresAt};
+   }catch{throw fail('WORKSTATION_TERMINAL_CWD_INVALID')}
+  }
   if(!program||!root||request.timeout_ms>policy.maxTimeoutMs||request.timeout_ms>policy.expiresAt-now()||request.interactive&&!policy.allowInteractive)throw fail('WORKSTATION_TERMINAL_NOT_GRANTED');
   try{
    const executable=pinned(program.path,program.sha256,256*1024*1024);

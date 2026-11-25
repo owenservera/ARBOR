@@ -40,7 +40,7 @@ function createWorkstationTools({directory=path.join(__dirname,'..','session-aut
  let g,initial;
  function load(){
   const raw=privateBytes(path.join(directory,'grant.json'),16384),v=JSON.parse(raw);
-  if(!keys(v,['schema','id','expiresAt','port','dataRoot','ownerAuthModule','ownerAuthSha256','recipeConfigSha','rootConfigSha','recipes','roots','interactiveRecipes','allowWrites','terminal'])||
+  if(!keys(v,['schema','id','expiresAt','port','dataRoot','ownerAuthModule','ownerAuthSha256','recipeConfigSha','rootConfigSha','recipes','roots','interactiveRecipes','allowWrites','terminal','machineScope'])||
    v.schema!=='vivim.workstation-tunnel-grant/1'||!hex(v.id,32)||!Number.isSafeInteger(v.expiresAt)||
    v.expiresAt<=now()||v.expiresAt-now()>86400000||!Number.isSafeInteger(v.port)||v.port<1024||v.port>65535||
    typeof v.dataRoot!=='string'||!path.isAbsolute(v.dataRoot)||typeof v.ownerAuthModule!=='string'||!path.isAbsolute(v.ownerAuthModule)||
@@ -49,6 +49,7 @@ function createWorkstationTools({directory=path.join(__dirname,'..','session-aut
    !Array.isArray(v.roots)||v.roots.length>16||!v.roots.every(identifier)||
    !Array.isArray(v.interactiveRecipes)||!v.interactiveRecipes.every(x=>v.recipes.includes(x))||typeof v.allowWrites!=='boolean')bad();
   if(v.terminal!==undefined&&(!keys(v.terminal,['configSha','programs','roots','allowInteractive'])||!hex(v.terminal.configSha,64)||!Array.isArray(v.terminal.programs)||v.terminal.programs.length<1||v.terminal.programs.length>64||!v.terminal.programs.every(p=>typeof p==='string'&&/^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/.test(p))||!Array.isArray(v.terminal.roots)||!v.terminal.roots.length||!v.terminal.roots.every(r=>v.roots.includes(r))||typeof v.terminal.allowInteractive!=='boolean'))bad();
+  if(v.machineScope!==undefined&&(v.machineScope!==true||!v.terminal))bad();
   return {v,h:hash(raw)};
  }
  try{({v:g,h:initial}=load())}catch{return []}
@@ -90,7 +91,7 @@ function createWorkstationTools({directory=path.join(__dirname,'..','session-aut
   if(bytes.toString('base64')!==args.request.slice(4))bad();
   const v=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes));
   if(!keys(v,['program','args','root_id','cwd','interactive','timeout_ms'])||Object.keys(v).length!==6||
-    !g.terminal.programs.includes(v.program)||!g.terminal.roots.includes(v.root_id)||typeof v.interactive!=='boolean'||
+    !(v.root_id==='machine'?g.machineScope===true&&typeof v.program==='string'&&v.program.length<=1024&&typeof v.cwd==='string'&&/^[a-z]:[\\/]/i.test(v.cwd):g.terminal.programs.includes(v.program)&&g.terminal.roots.includes(v.root_id))||typeof v.interactive!=='boolean'||
     (v.interactive&&!g.terminal.allowInteractive)||!Array.isArray(v.args)||!v.args.every(a=>typeof a==='string')||
     typeof v.cwd!=='string'||!Number.isSafeInteger(v.timeout_ms))bad();
   return v;
@@ -103,8 +104,8 @@ function createWorkstationTools({directory=path.join(__dirname,'..','session-aut
    const s=owns(args.session_id);
    if(action===S+'input'&&(!(s.mode==='terminal'?g.terminal.allowInteractive&&s.interactive:g.interactiveRecipes.includes(s.recipe))||typeof args.input!=='string'||args.input.length>5468))bad();
   }else{
-   if(!g.roots.includes(args.root_id)||typeof args.path!=='string'||args.path.length>1024||
-    args.path.startsWith('/')||args.path.includes('\\')||args.path.includes(':')||
+   if(typeof args.path!=='string'||args.path.length>1024||
+    !(args.root_id==='machine'?g.machineScope===true&&/^[a-z]:[\\/]/i.test(args.path):g.roots.includes(args.root_id)&&!args.path.startsWith('/')&&!args.path.includes('\\')&&!args.path.includes(':'))||
     (mutating&&!g.allowWrites))bad();
   }
  }
@@ -151,7 +152,7 @@ function createWorkstationTools({directory=path.join(__dirname,'..','session-aut
   authorize(action,args,false);return p.result;
  }
  const tools=[['vivim_workstation_recipes','List currently locally granted recipe IDs and workspace IDs; no executable paths or credentials.',
-  {type:'object',properties:{},required:[],additionalProperties:false},()=>{check();return {schema:'vivim.workstation-tunnel-grant-summary/1',recipes:g.recipes,roots:g.roots,interactiveRecipes:g.interactiveRecipes,allowWrites:g.allowWrites,expiresAt:g.expiresAt,...(g.terminal?{terminal:{programs:g.terminal.programs,roots:g.terminal.roots,allowInteractive:g.terminal.allowInteractive}}:{})};},true]];
+  {type:'object',properties:{},required:[],additionalProperties:false},()=>{check();return {schema:'vivim.workstation-tunnel-grant-summary/1',recipes:g.recipes,roots:g.roots,interactiveRecipes:g.interactiveRecipes,allowWrites:g.allowWrites,expiresAt:g.expiresAt,...(g.machineScope===true?{machineScope:true}:{}),...(g.terminal?{terminal:{programs:g.terminal.programs,roots:g.terminal.roots,allowInteractive:g.terminal.allowInteractive}}:{})};},true]];
  for(const [name,action,fields,mutating]of definitions){
   if(action===TERMINAL&&!g.terminal)continue;
   if(action===S+'start'&&!g.recipes.length)continue;
@@ -159,7 +160,7 @@ function createWorkstationTools({directory=path.join(__dirname,'..','session-aut
   if(action===S+'input'&&!g.interactiveRecipes.length&&!g.terminal?.allowInteractive)continue;
   if(!action.startsWith(S)&&(!g.roots.length||(mutating&&!g.allowWrites)))continue;
   const required=mutating?[...fields,'request_id']:fields;
-  tools.push([name,(action===TERMINAL?'Start an explicitly locally authorized terminal session. request_json is JSON with program (granted ID), args (string array), root_id (granted root), cwd (relative path or .), interactive (boolean), timeout_ms (integer 100–1800000). Limit 5997 UTF-8 bytes; never include credentials. ':'Use only the locally granted Host '+action+' capability. ')+(mutating?'Supply a unique 32-character lowercase hexadecimal request_id; repeat only the same ID to inspect an uncertain receipt.':'Read-only, scoped to granted workspace or owned session.'),
+  tools.push([name,(action===TERMINAL?(g.machineScope===true?'Owner-machine mode: root_id machine accepts absolute local cwd and resolved executable path/name; OS permissions apply. ':'')+'Start an explicitly locally authorized terminal session. request_json is JSON with program (granted ID), args (string array), root_id (granted root), cwd (relative path or .), interactive (boolean), timeout_ms (integer 100–1800000). Limit 5997 UTF-8 bytes; never include credentials. ':'Use only the locally granted Host '+action+' capability. ')+(mutating?'Supply a unique 32-character lowercase hexadecimal request_id; repeat only the same ID to inspect an uncertain receipt.':'Read-only, scoped to granted workspace or owned session.'),
    {type:'object',properties:Object.fromEntries(required.map(k=>[k,{type:'string'}])),required,additionalProperties:false},
    a=>{if(action===TERMINAL){const v=a.request_json;if(typeof v!=='string'||Buffer.byteLength(v)>5997)bad();return mutation(action,{request:'b64:'+Buffer.from(v,'utf8').toString('base64')},a.request_id);}const args=Object.fromEntries(fields.map(k=>{if(['content','old_text','new_text','input','literal'].includes(k)){const v=a[k];if(typeof v!=='string'||v.includes('\0')||Buffer.byteLength(v)>(k==='input'?4096:k==='literal'?160:5997))bad();return [k,'b64:'+Buffer.from(v,'utf8').toString('base64')];}return [k,a[k]];}));return mutating?mutation(action,args,a.request_id):readAction(action,args);},!mutating]);
  }

@@ -30,7 +30,7 @@ export function validateEvidence(manifest,receipt,grant,recipes,roots,now=Date.n
  for(const k of Object.keys(helperNames))
   if(!sha(manifest.helperSha256?.[k])||manifest.helperSha256[k]!==receipt.helpers?.[k])deny();
  if(manifest.ownerProfile!==undefined||manifest.ownerSelectionSha256!==undefined){
-  if(manifest.ownerProfile!=='expanded'||!sha(manifest.ownerSelectionSha256)||!sha(manifest.terminalConfigSha))deny();
+  if(!sha(manifest.terminalConfigSha)||!(manifest.ownerProfile==='expanded'&&sha(manifest.ownerSelectionSha256)||manifest.ownerProfile==='machine'&&manifest.ownerSelectionSha256===undefined))deny();
  }
  if(grant?.schema!=='vivim.workstation-tunnel-grant/1'||!sha(grant.id,32)||grant.port!==43187||
   !Number.isSafeInteger(grant.expiresAt)||grant.expiresAt<=now||grant.expiresAt-now>86400000||
@@ -91,6 +91,8 @@ export function inspectCandidate(releaseRoot,buildReceiptPath,now=Date.now()){
   const terminal=json(path.join(root,'config','terminal-policy.json'));
   if(terminal.digest!==m.terminalConfigSha)deny();
   const p=validateTerminalPolicy(terminal.value,now);
+  const machine=m.ownerProfile==='machine';
+  if(machine!==(g.machineScope===true)||machine!==(p.machineScope!==undefined)||machine!==(roots.value.machineScope!==undefined)||(machine&&!same(canonical(p.machineScope),canonical(roots.value.machineScope))))deny();
   if(p.expiresAt!==g.expiresAt||p.allowInteractive!==g.terminal.allowInteractive||!Array.isArray(g.terminal.programs)||!Array.isArray(g.terminal.roots)||!same(sorted(p.programs.map(x=>x.id)),sorted(g.terminal.programs))||!same(sorted(p.roots.map(x=>x.id)),sorted(g.terminal.roots))||p.roots.some(x=>!roots.value.roots.some(r=>r.id===x.id&&r.path===x.path)))deny();
   for(const entry of p.programs){pinned(entry.path,entry.sha256,256*1024*1024);if(entry.toolchain)for(const tool of Object.values(entry.toolchain))pinned(tool.path,tool.sha256,256*1024*1024);}
  }
