@@ -57,7 +57,13 @@ name = "hqkg-development"
 path = "src/bin/hqkg-development.rs"
 required-features = ["importer", "native-program"]
 
+[[bin]]
+name = "hqkg-rust-syntax"
+path = "src/bin/hqkg-rust-syntax.rs"
+required-features = ["rust-syntax"]
+
 [features]
+rust-syntax = ["importer", "dep:syn", "dep:quote", "dep:proc-macro2"]
 default = []
 native-program = ["dep:vivim-programmability-core", "dep:serde_json"]
 importer = ["dep:serde_json", "dep:sha2"]
@@ -66,6 +72,9 @@ postgres = ["dep:postgres"]
 databases = ["sqlite", "postgres"]
 
 [dependencies]
+syn = { version = "2", optional = true, features = ["full"] }
+quote = { version = "1", optional = true }
+proc-macro2 = { version = "1", optional = true, features = ["span-locations"] }
 vivim-programmability-core = { path = "../../core/programmability", optional = true }
 rusqlite = { version = "0.32", optional = true, features = ["bundled"] }
 postgres = { version = "0.19", optional = true }

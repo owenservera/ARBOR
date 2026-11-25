@@ -25,6 +25,8 @@ pub mod observability;
 pub mod reconcile;
 pub mod scoped_graph;
 pub mod semantic_source;
+#[cfg(feature = "rust-syntax")]
+pub mod rust_syntax;
 #[cfg(feature = "native-program")]
 pub mod native_program;
 #[cfg(feature = "native-program")]

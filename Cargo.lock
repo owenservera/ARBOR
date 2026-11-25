@@ -430,9 +430,12 @@ name = "hq-knowledge-graph"
 version = "0.1.0"
 dependencies = [
  "postgres",
+ "proc-macro2",
+ "quote",
  "rusqlite",
  "serde_json",
  "sha2 0.10.9",
+ "syn 2.0.119",
  "vivim-programmability-core",
 ]
 
