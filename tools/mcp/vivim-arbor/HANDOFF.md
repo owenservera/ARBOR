@@ -2,6 +2,11 @@
 2026-11-25 | R001 | Read this before continuing development.
 
 
+## R027 — Owner correction: direct ZCode CLI (2026-11-25)
+- No ZCode workflows. ChatGPT orchestrates direct CLI commands using existing Codex OAuth, preferably ChatGPT 6.2 Sol; verify actual registry IDs and actual model usage. ChatGPT 6 is the owner-named alternative. Historical MODEL-PIN-HEADLESS.md shows silent fallback and that /model inside -p is not a selector. Do not assume current flags or change shared defaults without coordination.
+- Live VIVIM health ready; 12 workstation tools, 11 recipes. zcode-help start denied or uncertain; no task execution. Existing grant only exposes ZCode version/help. Prior fast-forward receipt unchanged uncertain/HOST_EFFECT_NOT_APPLIED; fresh git-head exit 0 at 892a0774d95a54fddecb7bd9858c4242366ecd25; tracked main clean, cached origin/main 2 commits ahead; GitHub main was 11 ahead with no divergence. No second fast-forward. No deployment or plugin refresh. Strict 14/32 unchanged.
+- Next: supported direct CLI admission and verified model selection; reconcile old receipt, build exact main, stage and promote without disrupting current tunnel. No commercial Desktop Commander calls.
+
 ## R026 — Native lifecycle and owner-authorized local integration bridge (2026-11-25)
 - Owner authorizes development on their own Windows PC, requests hands-off native deployment + Studio refresh of VIVIM's ChatGPT plugin in existing signed-in profile; explicitly allows ZCode as temporary local integration bridge. Commercial Desktop Commander stays unused. Do not add unnecessary product onboarding/approval friction to this developer workflow; preserve incumbent Host authority and actual tool scope.
 - 33593cef connects dispatcher trusted-local lifecycle hooks beginWorkstationDrain and workstationSessionInventory to native session port. 451b1086 adds explicit persistent Rust product-kernel teardown at standalone dispatcher suite end, addressing likely cause of prior 23-pass/no-exit result. Both committed and read back; Windows regression not yet run. Initial installer still requires a new supervised replacement path for already-running Host.
