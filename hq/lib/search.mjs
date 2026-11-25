@@ -33,8 +33,18 @@ export function searchSemanticReferences(db, options = {}) {
   const ids = semanticIdsIn(options.query);
   const limit = Math.min(SEMANTIC_ROW_LIMIT, toCount(options.limit, 40));
   if (!ids.length || !limit) return { total: 0, results: [] };
+  const scope = options.allowedSourceRefs;
+  if (scope !== undefined && (!(scope instanceof Set) || scope.size > 16 ||
+      [...scope].some(ref => typeof ref !== 'string' || !ref)))
+    throw new TypeError('HQ_INVALID_SOURCE_SCOPE');
+  if (scope?.size === 0) return { total: 0, results: [], truncated: false };
   const filters = [];
   const params = [...ids, ...SEMANTIC_KINDS.map(kind => 'v2:' + kind)];
+  // Scope the scan before LIMIT; unrelated files must not starve authorized sources.
+  if (scope !== undefined) {
+    filters.push(`(p.name || ':' || f.path) IN (${[...scope].map(() => '?').join(',')})`);
+    params.push(...scope);
+  }
   if (options.project) { filters.push('lower(p.name) = lower(?)'); params.push(options.project); }
   if (options.lang) { filters.push('lower(f.lang) = lower(?)'); params.push(options.lang); }
   if (options.kind) { filters.push('lower(f.kind) = lower(?)'); params.push(options.kind); }
@@ -49,7 +59,10 @@ export function searchSemanticReferences(db, options = {}) {
       ${filters.length ? 'AND ' + filters.join(' AND ') : ''}
     ORDER BY p.name, f.path, a.line, a.kind, a.ref LIMIT ?`)
     .all(...params.slice(0, ids.length + SEMANTIC_KINDS.length), SEMANTIC_SOURCE_BYTES,
-      ...params.slice(ids.length + SEMANTIC_KINDS.length), SEMANTIC_ROW_LIMIT);
+      ...params.slice(ids.length + SEMANTIC_KINDS.length), SEMANTIC_ROW_LIMIT + (scope !== undefined ? 1 : 0));
+  // Do not present partial scans as complete strict source evidence.
+  if (scope !== undefined && rows.length > SEMANTIC_ROW_LIMIT)
+    return { total: 0, results: [], truncated: true };
   const content = db.prepare('SELECT content FROM content_fts WHERE rowid=?');
   const results = [];
   let priorFile = null;
@@ -79,7 +92,8 @@ export function searchSemanticReferences(db, options = {}) {
       snippet: parts.slice(start - 1, end).join('\n').slice(0, 4096),
     });
   }
-  return { total: results.length, results: results.slice(0, limit) };
+  return { total: results.length, results: results.slice(0, limit),
+    ...(scope !== undefined ? { truncated: results.length > limit } : {}) };
 }
 
 const DEFAULT_CONTENT_LIMIT = 20;
