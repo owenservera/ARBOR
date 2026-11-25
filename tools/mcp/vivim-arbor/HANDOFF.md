@@ -1,6 +1,12 @@
 # VIVIM ARBOR MCP — Browser session restart handoff
 2026-11-25 | R001 | Read this before continuing development.
 
+## R003 — first successful independent browser call (2026-11-25)
+- Live ChatGPT browser `vivim_tunnel_health({})` returned `{"schema":"vivim.tunnel-health/1","status":"ready","profile":"private-readonly","hostDiscovery":false}` via the user-created Secure MCP Tunnel plugin, without Desktop Commander for the call.
+- Windows launcher installed at `C:\\0-BlackBoxProject-0\\VIVIM-ARBOR-CONNECT\\windows\\VIVIM-ARBOR.cmd`; official client v0.0.21 checksum-verified; installed server revision `5b58aabc727756874f6cf10ccb695f9f8cc168a1`, 33/33 exact-source Windows regression PASS. After local ID reset and user reentered restricted runtime credential, actual browser tool execution succeeded.
+- U01 basic live connectivity milestone achieved. Full authorization/revocation, timeout and reconnect acceptance remain open. Browser-facing tool surface is health-only; Host discovery disabled. Do not expose personal data or effect tools until separate per-user authorization, scope checks and denial/revocation are verified.
+- Keep original local plugin and remote tunnel plugin distinct until supported identity convergence; no further commercial relay calls for health probes. U02 and native agent integrations remain open.
+
 ## Objective and owner authorization
 Continue the all-in-one VIVIM ARBOR personal AI control plane until implemented, integrated and genuinely tested. Core ARBOR upgrades are authorized where needed. VIVIM ARBOR first; commercial Desktop Commander only as a bounded bootstrap/fallback to close a specific missing capability. Use GitHub directly for cloud coding. Do not burn commercial relay credits on routine work. Reuse native protocols, existing Host/Studio/HQ and existing model registry; Rust-first, single GPUI renderer and thin phone viewport. See [PLAN.md](PLAN.md) for work packages and acceptance conditions.
 
