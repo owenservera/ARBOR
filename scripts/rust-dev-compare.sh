@@ -1,8 +1,8 @@
 #!/bin/sh
 # Linux/WSL development measurement only. Never alters the source checkout.
 set -eu
-if [ "$#" -ne 2 ]; then
-  echo 'Usage: sh scripts/rust-dev-compare.sh <40-hex commit SHA> <new absolute Linux scratch directory>' >&2
+if [ "$#" -lt 2 ] || [ "$#" -gt 3 ]; then
+  echo 'Usage: sh scripts/rust-dev-compare.sh <40-hex commit SHA> <new absolute Linux scratch directory> [source Git repository]' >&2
   exit 2
 fi
 sha=$1
@@ -16,7 +16,12 @@ parent=$(dirname -- "$out")
 parent_real=$(CDPATH= cd -- "$parent" && pwd -P)
 [ "$parent_real" = "$parent" ] || { echo 'SCRATCH_PARENT_NOT_CANONICAL' >&2; exit 2; }
 case "$parent_real" in /mnt|/mnt/*) echo 'LINUX_FILESYSTEM_REQUIRED' >&2; exit 2;; esac
-root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd -P)
+if [ "$#" -eq 3 ]; then
+  root=$(CDPATH= cd -- "$3" && pwd -P)
+else
+  root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd -P)
+fi
+[ "$(git -C "$root" rev-parse --show-toplevel)" = "$root" ] || { echo 'SOURCE_REPOSITORY_ROOT_REQUIRED' >&2; exit 2; }
 [ "$(git -C "$root" rev-parse --verify "$sha^{commit}")" = "$sha" ] || { echo 'SOURCE_SHA_NOT_FOUND' >&2; exit 2; }
 command -v cargo >/dev/null || { echo 'CARGO_MISSING' >&2; exit 3; }
 command -v cc >/dev/null || { echo 'C_LINKER_MISSING' >&2; exit 3; }
