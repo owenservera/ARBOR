@@ -7,12 +7,28 @@ const MAX=65536, VERSIONS=new Set(['2025-03-26','2025-06-18','2025-11-25']);
 const record=x=>x!==null&&typeof x==='object'&&!Array.isArray(x);
 const str=x=>typeof x==='string'&&/^[a-zA-Z0-9._-]{1,96}$/.test(x)?x:undefined;
 const count=x=>Number.isSafeInteger(x)&&x>=0?x:undefined;
-const projectEntry=e=>({id:str(e?.id),category:str(e?.category),risk:str(e?.risk),readiness:str(e?.readiness),tier:str(e?.tier),executable:typeof e?.executable==='boolean'?e.executable:undefined,available:typeof e?.available==='boolean'?e.available:undefined});
+const digest=x=>typeof x==='string'&&/^[0-9a-f]{64}$/.test(x)?x:undefined;
+const oneOf=(x,values)=>values.includes(x)?x:undefined;
+const readiness=['adapter_pending','enforcement_missing','unsupported','source_wired','verified'];
+function projectEntry(e){
+ const id=str(e?.id);
+ if(!id)throw Error('Invalid discovery identity');
+ return {id,category:str(e?.category),risk:oneOf(e?.risk,['R0','R1','R2','R3']),readiness:oneOf(e?.readiness,readiness),tier:oneOf(e?.tier,['P0','P1','P2','P3']),executable:typeof e?.executable==='boolean'?e.executable:undefined,available:typeof e?.available==='boolean'?e.available:undefined};
+}
 function project(data){
  if(data?.schema==='vivim.tunnel-health/1')return {schema:data.schema,status:'ready',profile:'private-readonly',hostDiscovery:data.hostDiscovery===true};
- if(data?.schema==='vivim.discovery-page/1'&&['actions','targets'].includes(data.kind)&&Array.isArray(data.entries)&&data.entries.length<=25)return {schema:data.schema,kind:data.kind,authority:data.kind==='actions'?'catalog-description-only':'research-only',total:count(data.total),entries:data.entries.map(projectEntry),nextCursor:typeof data.nextCursor==='string'&&data.nextCursor.length<=1024&&/^[A-Za-z0-9_.-]+$/.test(data.nextCursor)?data.nextCursor:null};
- if(data?.schema==='vivim.capability-description/1')return {schema:data.schema,authority:'catalog-description-only',capability:projectEntry(data.capability),authorization:'not-evaluated'};
- if(data?.schema==='vivim.capability-sources/1')return {schema:data.schema,authority:'discovery-only',host:{count:count(data.host?.count)},researchTargets:{count:count(data.researchTargets?.count)},studio:{count:count(data.studio?.count)},liveAcceptance:'not-established-by-source-coverage'};
+ if(data?.schema==='vivim.discovery-page/1'&&['actions','targets'].includes(data.kind)&&Array.isArray(data.entries)&&data.entries.length<=25){
+  const entries=data.entries.map(projectEntry);
+  if(new Set(entries.map(e=>e.id)).size!==entries.length)throw Error('Duplicate discovery identity');
+  return {schema:data.schema,kind:data.kind,authority:data.kind==='actions'?'catalog-description-only':'research-only',revision:digest(data.revision),total:count(data.total),entries,nextCursor:typeof data.nextCursor==='string'&&data.nextCursor.length<=1024&&/^[A-Za-z0-9_.-]+$/.test(data.nextCursor)?data.nextCursor:null};
+ }
+ if(data?.schema==='vivim.capability-description/1'){
+  const capability=projectEntry(data.capability);
+  const source=data.source;
+  if(source!==undefined&&(!record(source)||source.actionId!==capability.id))throw Error('Discovery source identity mismatch');
+  return {schema:data.schema,authority:'catalog-description-only',capability,...(source?{source:{actionId:capability.id,catalogVersion:count(source.catalogVersion),revision:digest(source.revision)}}:{}),authorization:'not-evaluated'};
+ }
+ if(data?.schema==='vivim.capability-sources/1')return {schema:data.schema,authority:'discovery-only',host:{count:count(data.host?.count),version:count(data.host?.version),revision:digest(data.host?.revision)},researchTargets:{count:count(data.researchTargets?.count),revision:digest(data.researchTargets?.revision)},studio:{count:count(data.studio?.count),status:oneOf(data.studio?.status,['unavailable','descriptor-partial','descriptor-complete'])},countsAreNotAdditive:true,liveAcceptance:'not-established-by-source-coverage'};
  throw Error('Unexpected discovery result');
 }
 function createRemoteHttp({getPolicy=()=>null,env=process.env}={}){

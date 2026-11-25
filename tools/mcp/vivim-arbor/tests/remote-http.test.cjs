@@ -48,3 +48,26 @@ test('projection never copies arbitrary title, args, invocation or credentials',
  const p=project({schema:'vivim.capability-description/1',capability:{id:'test.read',title:'private',args:{token:'secret'},available:true},invocation:{path:'/execute'}});
  assert.deepEqual(JSON.parse(JSON.stringify(p)),{schema:'vivim.capability-description/1',authority:'catalog-description-only',capability:{id:'test.read',available:true},authorization:'not-evaluated'});
 });
+
+test('projection preserves canonical revisions and distinguishes source coverage from live acceptance',()=>{
+ const rev='a'.repeat(64);
+ const result=JSON.parse(JSON.stringify(project({schema:'vivim.capability-sources/1',host:{count:43,version:17,revision:rev,secret:'omit'},researchTargets:{count:1000,revision:rev},studio:{status:'descriptor-partial',count:20},countsAreNotAdditive:false,liveAcceptance:'verified'})));
+ assert.deepEqual(result.host,{count:43,version:17,revision:rev});
+ assert.deepEqual(result.researchTargets,{count:1000,revision:rev});
+ assert.deepEqual(result.studio,{status:'descriptor-partial',count:20});
+ assert.equal(result.countsAreNotAdditive,true);
+ assert.equal(result.liveAcceptance,'not-established-by-source-coverage');
+ const page=JSON.parse(JSON.stringify(project({schema:'vivim.discovery-page/1',kind:'actions',revision:rev,total:1,entries:[{id:'test.read',risk:'R0',readiness:'source_wired',title:'omit'}]})));
+ assert.equal(page.revision,rev);assert.deepEqual(page.entries,[{id:'test.read',risk:'R0',readiness:'source_wired'}]);
+});
+test('projection refuses missing, duplicate and mismatched source identities',()=>{
+ const schema='vivim.capability-description/1',rev='b'.repeat(64);
+ assert.throws(()=>project({schema,capability:{title:'unknown'}}));
+ assert.throws(()=>project({schema,capability:{id:'test.read'},source:{actionId:'other.read'}}));
+ assert.throws(()=>project({schema:'vivim.discovery-page/1',kind:'actions',entries:[{id:'same'},{id:'same'}]}));
+ const detail=JSON.parse(JSON.stringify(project({schema,capability:{id:'test.read',risk:'wrong',readiness:'wrong'},source:{actionId:'test.read',catalogVersion:17,revision:rev,privatePath:'omit'},authorization:'granted'})));
+ assert.deepEqual(detail.source,{actionId:'test.read',catalogVersion:17,revision:rev});
+ assert.deepEqual(detail.capability,{id:'test.read'});assert.equal(detail.authorization,'not-evaluated');
+ const invalid=JSON.parse(JSON.stringify(project({schema,capability:{id:'test.read'},source:{actionId:'test.read',revision:'not-a-digest',catalogVersion:-1}})));
+ assert.deepEqual(invalid.source,{actionId:'test.read'});
+});
