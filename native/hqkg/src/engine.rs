@@ -163,6 +163,14 @@ impl EngineRegistry {
             generation,
         })
     }
+    /// One read lock gives the DAG a coherent completion observation of all
+    /// participating slots, even if another thread replaces engines.
+    pub(crate) fn cache_identities_current(&self, identities: &BTreeMap<String, Arc<()>>) -> Result<bool> {
+        let map = self.active.read().map_err(|_| Error::Conflict("registry poisoned".into()))?;
+        Ok(identities.iter().all(|(slot, identity)| {
+            map.get(slot).is_some_and(|generation| Arc::ptr_eq(identity, &generation.cache_identity))
+        }))
+    }
     pub fn active_generation(&self, slot: &str) -> Result<Option<u64>> {
         let map = self
             .active
