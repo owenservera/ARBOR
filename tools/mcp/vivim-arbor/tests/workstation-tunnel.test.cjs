@@ -136,3 +136,25 @@ test('invalid request ID reports pre-submission failure and never contacts Host'
  }
  assert.equal(calls,0);
 });
+
+test('development ledger admits new work after 256 claims and preserves prior receipt replay',async t=>{
+ const f=fixture(t);let posts=0;
+ const receipt={schema:'vivim.control-receipt/1',planId,planDigest,actionId:action,args,approvedVia:'desktop-owner-token',status:'applied',executionPerformed:true,result:{sessionId:planId,state:'running'}};
+ const tools=createWorkstationTools({directory:f.directory,credential:async()=> 'test-only-token',fetcher:async(url,o)=>{
+  if(url.endsWith('/execute')){posts++;return json(receipt);}
+  if(url.endsWith('/plans/'+planId))return json({receipt});
+  return json({outcome:'approval_required',risk:'R2',actionId:action,args,planId,planDigest,workstationBinding:{configSha:recipeConfigSha}});
+ }});
+ const start=tools.find(x=>x[0]==='vivim_session_start')[3];
+ const first='f'.repeat(32);
+ const a=await start({recipe:'node-version',request_id:first});
+ const ledger=path.join(f.directory,'ledger-'+f.g.id);
+ for(let i=0;i<255;i++)fs.writeFileSync(path.join(ledger,i.toString(16).padStart(32,'0')+'.claim.json'),'{}',{flag:'wx',mode:0o600});
+ assert.equal(fs.readdirSync(ledger).filter(n=>n.endsWith('.claim.json')).length,256);
+ assert.deepEqual(await start({recipe:'node-version',request_id:first}),a);
+ assert.equal(posts,1);
+ const b=await start({recipe:'node-version',request_id:'e'.repeat(32)});
+ assert.equal(b.status,'applied');assert.equal(posts,2);
+ assert.equal(fs.readdirSync(ledger).filter(n=>n.endsWith('.claim.json')).length,257);
+ assert.deepEqual(await start({recipe:'node-version',request_id:'e'.repeat(32)}),b);assert.equal(posts,2);
+});
