@@ -12,7 +12,8 @@
 import { createHash } from 'node:crypto';
 import {createWorkstationProcessPort,WORKSTATION_PROCESS_ACTION} from './workstation-process-port.mjs';
 import {createWorkstationSessionPort,WORKSTATION_SESSION_ACTIONS,SESSION_START,SESSION_STATUS,SESSION_OUTPUT,SESSION_CANCEL,SESSION_INPUT} from './workstation-session-port.mjs';
-const workstationAction=id=>id===WORKSTATION_PROCESS_ACTION||WORKSTATION_SESSION_ACTIONS.has(id);
+import {createWorkstationFilePort,WORKSTATION_FILE_ACTIONS,FILE_READ,FILE_INSPECT,DIR_LIST,DIR_CREATE,FILE_WRITE,FILE_EDIT} from './workstation-file-port.mjs';
+const workstationAction=id=>id===WORKSTATION_PROCESS_ACTION||WORKSTATION_SESSION_ACTIONS.has(id)||WORKSTATION_FILE_ACTIONS.has(id);
 import { createControlPlanner, loadControlCatalog } from './intent-planner.mjs';
 import { runNativeProductPureSync } from './native-product-pure-sync.mjs';
 import { createControlJournal, newPlanId } from './journal.mjs';
@@ -134,7 +135,7 @@ function readWikiSection(wiki,{page,section}) {
 }
 
 /** Fixed executors keyed by catalog action id. Each returns a bounded, phone-safe summary. */
-function createExecutors({ runtime, planner, lexicon, devices, productJournal, personalSemantics, nativeProgram, composerBridge, studio, workstationProcess, workstationSession }) {
+function createExecutors({ runtime, planner, lexicon, devices, productJournal, personalSemantics, nativeProgram, composerBridge, studio, workstationProcess, workstationSession, workstationFile }) {
   const ownerExclusions = () => (runtime.status().preferences ?? [])
     .filter(p => p.hard && p.polarity === 'avoid' && p.source === 'owner')
     .slice(0, 50).map(p => ({ id: p.id, value: short(p.value, 120) }));
@@ -157,6 +158,12 @@ function createExecutors({ runtime, planner, lexicon, devices, productJournal, p
     [SESSION_OUTPUT]: args=>workstationSession.read(SESSION_OUTPUT,args),
     [SESSION_CANCEL]: (args,ctx)=>workstationSession.mutate(SESSION_CANCEL,args,ctx.workstationBinding),
     [SESSION_INPUT]: (args,ctx)=>workstationSession.mutate(SESSION_INPUT,args,ctx.workstationBinding),
+    [FILE_READ]: args=>workstationFile.read(FILE_READ,args),
+    [FILE_INSPECT]: args=>workstationFile.read(FILE_INSPECT,args),
+    [DIR_LIST]: args=>workstationFile.read(DIR_LIST,args),
+    [DIR_CREATE]: (args,ctx)=>workstationFile.mutate(DIR_CREATE,args,ctx.workstationBinding),
+    [FILE_WRITE]: (args,ctx)=>workstationFile.mutate(FILE_WRITE,args,ctx.workstationBinding),
+    [FILE_EDIT]: (args,ctx)=>workstationFile.mutate(FILE_EDIT,args,ctx.workstationBinding),
     [COMPOSER_ACTION]: ({stage_id}) => {
       if(!composerBridge)throw fail('CONTROL_COMPOSER_UNAVAILABLE');
       return composerBridge.execute(stage_id);
@@ -333,7 +340,7 @@ function createExecutors({ runtime, planner, lexicon, devices, productJournal, p
 export function createControlDispatcher({ dataRoot, runtime, devices = null, productJournal = null, catalog = loadControlCatalog(),
   commandScope = () => ({}), composerBridge = null, studio = null,
   nativeProgram=createNativeProgramValidator({productJournal}),
-  workstationProcess=createWorkstationProcessPort(), workstationSession=createWorkstationSessionPort(),
+  workstationProcess=createWorkstationProcessPort(), workstationSession=createWorkstationSessionPort(), workstationFile=createWorkstationFilePort(),
   now = () => Date.now(), ttlMs = 10 * 60_000, freshMs = 2 * 60_000 } = {}) {
   if (!runtime || typeof runtime.status !== 'function') throw fail('CONTROL_RUNTIME_REQUIRED');
   const iso = () => new Date(now()).toISOString();
@@ -354,7 +361,7 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
   const planner = createControlPlanner({ catalog,
     lexicon: () => lexicon.entries(), personalRules: () => personalSemantics.accepted(),
     commandScope });
-  const executors = createExecutors({ runtime, planner, lexicon, devices, productJournal, personalSemantics,nativeProgram,composerBridge,studio,workstationProcess,workstationSession });
+  const executors = createExecutors({ runtime, planner, lexicon, devices, productJournal, personalSemantics,nativeProgram,composerBridge,studio,workstationProcess,workstationSession,workstationFile });
   // The catalog may not claim an executor the Host does not have, nor hide one it does.
   for (const a of catalog.actions) {
     const runnable = ['source_wired', 'verified'].includes(a.readiness);
@@ -664,7 +671,7 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
         scopeDigest: digest(activeScope),...(rule.template?{invocation:input.text,templateDigest:digest(rule.template)}:{}),...(rule.writeProgram?{invocation:input.text,writeProgramDigest:digest(rule.writeProgram),boundStepsDigest:digest(writeSteps)}:{}) };
     }
     const ruleBinding=RULE_ACTIONS.has(p.actionId)?prepareRuleBinding(p.actionId,p.args):null;
-    const workstationBinding=p.actionId===WORKSTATION_PROCESS_ACTION?workstationProcess.prepare(p.args):WORKSTATION_SESSION_ACTIONS.has(p.actionId)?workstationSession.prepare(p.actionId,p.args):null;
+    const workstationBinding=p.actionId===WORKSTATION_PROCESS_ACTION?workstationProcess.prepare(p.args):WORKSTATION_SESSION_ACTIONS.has(p.actionId)?workstationSession.prepare(p.actionId,p.args):WORKSTATION_FILE_ACTIONS.has(p.actionId)?workstationFile.prepare(p.actionId,p.args):null;
     const savePlan = wikiBinding => {
       if(mobileProgram)authorizeProgram(programScope);
       if(p.actionId===WIKI_WRITE_PROGRAM_ACTION&&semanticRuleBinding){
@@ -862,6 +869,7 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
       if(rec.plan.actionId===WORKSTATION_PROCESS_ACTION&&digest(workstationProcess.prepare(rec.plan.args))!==digest(rec.plan.workstationBinding))
         throw fail('WORKSTATION_PROCESS_BINDING_STALE');
       if(WORKSTATION_SESSION_ACTIONS.has(rec.plan.actionId)&&digest(workstationSession.prepare(rec.plan.actionId,rec.plan.args))!==digest(rec.plan.workstationBinding))throw fail('WORKSTATION_SESSION_BINDING_STALE');
+      if(WORKSTATION_FILE_ACTIONS.has(rec.plan.actionId)&&digest(workstationFile.prepare(rec.plan.actionId,rec.plan.args))!==digest(rec.plan.workstationBinding))throw fail('WORKSTATION_FILE_BINDING_STALE');
       if(phoneProgram)authorizeProgram('control:execute');
       // Rust returns eligibility evidence, never an approval or effect grant.
       // Existing Host policy and revision checks above remain mandatory.

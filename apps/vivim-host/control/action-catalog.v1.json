@@ -1,6 +1,6 @@
 {
   "schema": "vivim.control-action-catalog/1",
-  "version": 19,
+  "version": 20,
   "asOf": "2026-11-23",
   "policy": {
     "allUserFacingActionsRequireTextPath": true,
@@ -2152,6 +2152,253 @@
       "subject": "workstation",
       "priority": "P0",
       "precondition": "Locally registered hash-pinned recipe or owned session. No remote-selected executable, path or environment. Mutations require exact Host approval."
+    },
+    {
+      "id": "workstation.file.read",
+      "title": "Read scoped UTF-8 file",
+      "category": "workstation",
+      "owner": "host-control",
+      "executor": "apps/vivim-host/control/dispatcher.mjs:createExecutors",
+      "readiness": "source_wired",
+      "risk": "R0",
+      "target": "local-workstation",
+      "surfaces": [
+        "text",
+        "desktop",
+        "mobile",
+        "visual"
+      ],
+      "privacy": "authenticated-pc-owner-only",
+      "aiCandidate": false,
+      "args": {
+        "root_id": {
+          "type": "string",
+          "min": 1,
+          "max": 64
+        },
+        "path": {
+          "type": "string",
+          "min": 1,
+          "max": 1024
+        }
+      },
+      "examples": [
+        "Read scoped UTF-8 file in locally authorized workspace"
+      ],
+      "reversible": false,
+      "subject": "workstation",
+      "priority": "P0",
+      "precondition": "Hash-pinned local root and native helper; exact desktop approval for writes."
+    },
+    {
+      "id": "workstation.file.inspect",
+      "title": "Inspect scoped file metadata",
+      "category": "workstation",
+      "owner": "host-control",
+      "executor": "apps/vivim-host/control/dispatcher.mjs:createExecutors",
+      "readiness": "source_wired",
+      "risk": "R0",
+      "target": "local-workstation",
+      "surfaces": [
+        "text",
+        "desktop",
+        "mobile",
+        "visual"
+      ],
+      "privacy": "authenticated-pc-owner-only",
+      "aiCandidate": false,
+      "args": {
+        "root_id": {
+          "type": "string",
+          "min": 1,
+          "max": 64
+        },
+        "path": {
+          "type": "string",
+          "min": 1,
+          "max": 1024
+        }
+      },
+      "examples": [
+        "Inspect scoped file metadata in locally authorized workspace"
+      ],
+      "reversible": false,
+      "subject": "workstation",
+      "priority": "P0",
+      "precondition": "Hash-pinned local root and native helper; exact desktop approval for writes."
+    },
+    {
+      "id": "workstation.directory.list",
+      "title": "List scoped directory",
+      "category": "workstation",
+      "owner": "host-control",
+      "executor": "apps/vivim-host/control/dispatcher.mjs:createExecutors",
+      "readiness": "source_wired",
+      "risk": "R0",
+      "target": "local-workstation",
+      "surfaces": [
+        "text",
+        "desktop",
+        "mobile",
+        "visual"
+      ],
+      "privacy": "authenticated-pc-owner-only",
+      "aiCandidate": false,
+      "args": {
+        "root_id": {
+          "type": "string",
+          "min": 1,
+          "max": 64
+        },
+        "path": {
+          "type": "string",
+          "min": 1,
+          "max": 1024
+        }
+      },
+      "examples": [
+        "List scoped directory in locally authorized workspace"
+      ],
+      "reversible": false,
+      "subject": "workstation",
+      "priority": "P0",
+      "precondition": "Hash-pinned local root and native helper; exact desktop approval for writes."
+    },
+    {
+      "id": "workstation.directory.create",
+      "title": "Create scoped directory",
+      "category": "workstation",
+      "owner": "host-control",
+      "executor": "apps/vivim-host/control/dispatcher.mjs:createExecutors",
+      "readiness": "source_wired",
+      "risk": "R2",
+      "target": "local-workstation",
+      "surfaces": [
+        "text",
+        "desktop",
+        "mobile",
+        "visual"
+      ],
+      "privacy": "authenticated-pc-owner-only",
+      "aiCandidate": false,
+      "args": {
+        "root_id": {
+          "type": "string",
+          "min": 1,
+          "max": 64
+        },
+        "path": {
+          "type": "string",
+          "min": 1,
+          "max": 1024
+        }
+      },
+      "examples": [
+        "Create scoped directory in locally authorized workspace"
+      ],
+      "reversible": false,
+      "subject": "workstation",
+      "priority": "P0",
+      "precondition": "Hash-pinned local root and native helper; exact desktop approval for writes."
+    },
+    {
+      "id": "workstation.file.write",
+      "title": "Write scoped file with expected digest",
+      "category": "workstation",
+      "owner": "host-control",
+      "executor": "apps/vivim-host/control/dispatcher.mjs:createExecutors",
+      "readiness": "source_wired",
+      "risk": "R2",
+      "target": "local-workstation",
+      "surfaces": [
+        "text",
+        "desktop",
+        "mobile",
+        "visual"
+      ],
+      "privacy": "authenticated-pc-owner-only",
+      "aiCandidate": false,
+      "args": {
+        "root_id": {
+          "type": "string",
+          "min": 1,
+          "max": 64
+        },
+        "path": {
+          "type": "string",
+          "min": 1,
+          "max": 1024
+        },
+        "expected_digest": {
+          "type": "string",
+          "min": 6,
+          "max": 64
+        },
+        "content": {
+          "type": "string",
+          "min": 1,
+          "max": 8000
+        }
+      },
+      "examples": [
+        "Write scoped file with expected digest in locally authorized workspace"
+      ],
+      "reversible": false,
+      "subject": "workstation",
+      "priority": "P0",
+      "precondition": "Hash-pinned local root and native helper; exact desktop approval for writes."
+    },
+    {
+      "id": "workstation.file.edit",
+      "title": "Apply unique exact file edit",
+      "category": "workstation",
+      "owner": "host-control",
+      "executor": "apps/vivim-host/control/dispatcher.mjs:createExecutors",
+      "readiness": "source_wired",
+      "risk": "R2",
+      "target": "local-workstation",
+      "surfaces": [
+        "text",
+        "desktop",
+        "mobile",
+        "visual"
+      ],
+      "privacy": "authenticated-pc-owner-only",
+      "aiCandidate": false,
+      "args": {
+        "root_id": {
+          "type": "string",
+          "min": 1,
+          "max": 64
+        },
+        "path": {
+          "type": "string",
+          "min": 1,
+          "max": 1024
+        },
+        "expected_digest": {
+          "type": "string",
+          "min": 64,
+          "max": 64
+        },
+        "old_text": {
+          "type": "string",
+          "min": 1,
+          "max": 8000
+        },
+        "new_text": {
+          "type": "string",
+          "min": 1,
+          "max": 8000
+        }
+      },
+      "examples": [
+        "Apply unique exact file edit in locally authorized workspace"
+      ],
+      "reversible": false,
+      "subject": "workstation",
+      "priority": "P0",
+      "precondition": "Hash-pinned local root and native helper; exact desktop approval for writes."
     }
   ],
   "readinessStates": {
