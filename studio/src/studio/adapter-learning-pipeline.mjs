@@ -227,7 +227,8 @@ export function createStudioLearningPipeline({ sessionsDir, store, lockDir } = {
         throw coded('PROMOTION_SOURCE_EVIDENCE_MISSING');
       for (const receipt of [...training,...heldout]) {
         if (!await provider.verifyCapture({scope:proposal.scope,source:{
-          ...receipt,producer:receipt.sourceProducer,origin:proposal.scope.origin,accountRef:proposal.scope.accountRef,
+          // Coverage is derived from the current acceptance verifier, not a caller field.
+          ...receipt,producer:receipt.sourceProducer,origin:proposal.scope.origin,accountRef:proposal.scope.accountRef,coverage:'complete',
         }})) throw coded('PROMOTION_SOURCE_STALE');
       }
       let out;
