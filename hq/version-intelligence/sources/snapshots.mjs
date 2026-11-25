@@ -429,3 +429,72 @@ export async function readPinnedBlobs(pin, paths, {
     repoIdentity: pin.repoIdentity, resolvedCommitSha: pin.resolvedCommitSha,
     manifestDigest: pin.manifestDigest, totalBytes, files: Object.freeze(files) });
 }
+
+/** Bounded metadata-only list/search/inspect of a Host-owned immutable source. */
+export async function queryPinnedEntries(pin, query, { adapter, authorize, manifest, signal } = {}) {
+  checkPin(pin);
+  checkCancel(signal);
+  if (!query || Object.getPrototypeOf(query) !== Object.prototype ||
+      Object.keys(query).some(k => !['prefix', 'contains', 'exactPath', 'after', 'limit'].includes(k)))
+    fail('RESOURCE_LIMIT', 'invalid_metadata_query');
+  const prefix = safePath(query.prefix ?? '', { allowEmpty: true });
+  const contains = query.contains ?? '';
+  const exactPath = query.exactPath === undefined ? null : safePath(query.exactPath);
+  const after = query.after === undefined ? null : safePath(query.after);
+  const limit = query.limit ?? 50;
+  if (typeof contains !== 'string' || contains.length > 160 || /[\x00-\x1f\x7f]/.test(contains) ||
+      !Number.isSafeInteger(limit) || limit < 1 || limit > 100 ||
+      (exactPath !== null && (prefix || contains || after !== null)))
+    fail('RESOURCE_LIMIT', 'invalid_metadata_query');
+  const inPrefix = (path, root) => !root || path === root || path.startsWith(root + '/');
+  if ([prefix, exactPath, after].some(path => path && sensitivePath(path)) ||
+      [prefix, exactPath, after].some(path => path && !inPrefix(path, pin.subPath)))
+    fail('SOURCE_UNAUTHORIZED', 'metadata_scope_denied');
+  const sealed = () => {
+    if (!pin.manifestDigest || !manifest || manifest.schema !== MANIFEST_SCHEMA ||
+        manifest.pinId !== pin.pinId || manifest.repoIdentity !== pin.repoIdentity ||
+        manifest.resolvedCommitSha !== pin.resolvedCommitSha || manifest.rootTreeSha !== pin.rootTreeSha ||
+        manifest.subPath !== pin.subPath || !Array.isArray(manifest.entries))
+      fail('ID_CONFLICT', 'sealed_manifest_required');
+    if (manifest.manifestDigest !== pin.manifestDigest || manifestDigestOf(manifest) !== pin.manifestDigest)
+      fail('DIGEST_CONFLICT', 'manifest_modified');
+  };
+  const ctx = path => ({ repoIdentity: pin.repoIdentity, commitSha: pin.resolvedCommitSha,
+    sourceGrantRef: pin.sourceGrantRef, ...(path ? { path } : {}) });
+  const check = async (operation, path) => {
+    checkCancel(signal);
+    await authorized(adapter, authorize, operation, pin.scope, ctx(path));
+    checkCancel(signal);
+  };
+  await check('source.snapshot.read', exactPath ?? (prefix || pin.subPath));
+  sealed();
+  await commitAt(pin, adapter);
+  const needle = contains.toLowerCase();
+  const rows = [];
+  const seen = new Set();
+  for (const entry of manifest.entries) {
+    checkCancel(signal);
+    const path = safePath(entry.path);
+    if (seen.has(path)) fail('ID_CONFLICT', 'duplicate_git_tree_path');
+    seen.add(path);
+    if (sensitivePath(path) || entry.excludedReason || !inPrefix(path, pin.subPath) ||
+        !inPrefix(path, prefix) || (exactPath !== null && path !== exactPath) ||
+        (after !== null && path <= after) || !path.toLowerCase().includes(needle)) continue;
+    if (!['file', 'symlink', 'submodule'].includes(entry.kind)) fail('INCOMPLETE_SCAN', 'unsupported_tree_record');
+    rows.push(Object.freeze({ path, kind: entry.kind, mode: entry.mode,
+      blobSha: assertSha(entry.blobSha), bytes: entry.bytes, parseStatus: entry.parseStatus }));
+  }
+  rows.sort((a, b) => a.path < b.path ? -1 : a.path > b.path ? 1 : 0);
+  const entries = rows.slice(0, limit);
+  // Metadata is also scoped: no names, counts, link targets or content escape a denial.
+  for (const entry of entries) await check('source.snapshot.read', entry.path);
+  sealed();
+  await check('source.snapshot.read', exactPath ?? (prefix || pin.subPath));
+  sealed();
+  return Object.freeze({ schema: 'arbor.hvi.pinned-metadata/1', pinId: pin.pinId,
+    repoIdentity: pin.repoIdentity, resolvedCommitSha: pin.resolvedCommitSha,
+    manifestDigest: pin.manifestDigest, completeness: manifest.completeness,
+    entries: Object.freeze(entries),
+    // A full page can be followed by an empty page. Never count undisclosed candidates.
+    nextAfter: exactPath === null && entries.length === limit ? entries.at(-1).path : null });
+}
