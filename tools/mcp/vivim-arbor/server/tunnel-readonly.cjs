@@ -32,9 +32,12 @@ function createProfile(env = process.env) {
     if (!(typeof m.id === 'string' || (typeof m.id === 'number' && Number.isSafeInteger(m.id)))) return error(null,-32600,'Invalid request ID');
     const id=m.id;
     if (m.method === 'initialize') {
-      if (negotiated || !isRecord(m.params) || typeof m.params.protocolVersion !== 'string') return error(id,-32602,'Invalid initialization');
+      if (!isRecord(m.params) || typeof m.params.protocolVersion !== 'string' || !m.params.protocolVersion.length) return error(id,-32602,'Invalid initialization');
+      // The secure relay can reuse a stdio child across logical MCP clients.
+      // A repeated valid initialize is an idempotent negotiation, not a new grant.
+      // Preserve readiness: the fixed read-only tool surface has no session-specific authority.
       negotiated = true;
-      return reply(id,{protocolVersion:VERSIONS.includes(m.params.protocolVersion)?m.params.protocolVersion:VERSIONS.at(-1),capabilities:{tools:{listChanged:false}},serverInfo:{name:'vivim-arbor-private-tunnel',version:'0.1.0'}});
+      return reply(id,{protocolVersion:VERSIONS.includes(m.params.protocolVersion)?m.params.protocolVersion:VERSIONS.at(-1),capabilities:{tools:{listChanged:false}},serverInfo:{name:'vivim-arbor-private-tunnel',version:'0.1.1'}});
     }
     if (m.method === 'ping') return reply(id,{});
     if (!initialized) return error(id,-32002,'Server not initialized');

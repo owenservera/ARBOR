@@ -53,7 +53,9 @@ test('initialization, notifications and reconnection are isolated',async()=>{
   assert.equal((await p.dispatch(request(2,'tools/list'))).error.code,-32002);
   await p.dispatch(notification);
   assert.ok((await p.dispatch(request(2,'tools/list'))).result);
-  assert.equal((await p.dispatch(request(4,'initialize',{protocolVersion:'2025-11-25'}))).error.code,-32602);
+  assert.equal((await p.dispatch(request(4,'initialize',{protocolVersion:'2025-11-25'}))).result.protocolVersion,'2025-11-25');
+  assert.ok((await p.dispatch(request(5,'tools/list'))).result);
+  assert.equal((await p.dispatch(request(6,'initialize',{}))).error.code,-32602);
   const fresh=createProfile({});
   assert.equal((await fresh.dispatch(request(2,'tools/list'))).error.code,-32002);
 });
@@ -72,4 +74,16 @@ test('real stdio process handshake, malformed and oversized lines',()=>{
   assert.equal(out[2].error.code,-32600);
   assert.equal(out[3].result.tools.length,1);
   assert.equal(JSON.parse(out[4].result.content[0].text).status,'ready');
+});
+
+test('relay reuses the same stdio process for multiple initialize and health calls',()=>{
+ const init=id=>request(id,'initialize',{protocolVersion:'2025-11-25',capabilities:{},clientInfo:{name:'relay-client',version:'1'}});
+ const health=id=>request(id,'tools/call',{name:'vivim_tunnel_health',arguments:{}});
+ const messages=[init(1),notification,request(2,'tools/list'),init(3),notification,health(4),init(5),health(6)];
+ const r=spawnSync(process.execPath,[path.join(__dirname,'../server/tunnel-readonly.cjs')],{input:messages.map(x=>JSON.stringify(x)).join('\n')+'\n',encoding:'utf8',env:{...process.env,VIVIM_TUNNEL_HOST_DISCOVERY:'0'},timeout:10000});
+ assert.equal(r.status,0,r.stderr);
+ const out=r.stdout.trim().split('\n').map(JSON.parse);
+ assert.equal(out.length,6);
+ assert.ok(out.every(x=>x.result&&!x.error));
+ for(const id of [4,6]) assert.equal(JSON.parse(out.find(x=>x.id===id).result.content[0].text).status,'ready');
 });
