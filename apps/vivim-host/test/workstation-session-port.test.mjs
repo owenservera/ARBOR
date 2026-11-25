@@ -51,6 +51,9 @@ test('real native worker: Host approval, version, cursors, replay, interactive i
  const stopped=await f.execute(SESSION_CANCEL,{session_id:long.planId});assert.equal(stopped.result.state,'exited');
  const ttl=await f.execute(SESSION_START,{recipe:'node-timeout'});await sleep(400);assert.equal((await f.read(SESSION_STATUS,{session_id:ttl.planId})).state,'timed-out');
  const stale=f.plan(SESSION_START,{recipe:'node-version'});
+ const original=readFileSync(f.file);writeFileSync(f.file,'changed');
+ assert.throws(()=>f.control.execute({planId:stale.planId,planDigest:stale.planDigest,approval}),/WORKSTATION_SESSION_BINDING_INVALID/);
+ writeFileSync(f.file,original);
  const inventory=await f.session.inventory();assert.ok(inventory.retained>=4);assert.equal(inventory.running,0);
  assert.equal(inventory.snapshotOnly,true);
  f.session.beginDrain();
@@ -58,7 +61,6 @@ test('real native worker: Host approval, version, cursors, replay, interactive i
  assert.throws(()=>f.session.prepare(SESSION_START,{recipe:'node-version'}),/WORKSTATION_SESSION_DRAINING/);
  await assert.rejects(f.session.start(stale.args,stale.workstationBinding,stale.planId),/WORKSTATION_SESSION_DRAINING/);
  assert.equal((await f.read(SESSION_STATUS,{session_id:p.planId})).state,'exited');
- writeFileSync(f.file,'changed');
  assert.throws(()=>f.control.execute({planId:stale.planId,planDigest:stale.planDigest,approval}),/WORKSTATION_SESSION_DRAINING/);
  assert.throws(()=>f.control.status(p.planId,{source:'mobile'}),/CONTROL_PLAN_UNKNOWN/);
  console.log('NATIVE_SESSION_RECEIPT='+JSON.stringify({planId:p.planId,status:first.status,version:result.stdout.trim(),interactive:true,cancelled:true,timeout:true}));
