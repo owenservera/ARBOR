@@ -50,7 +50,7 @@ export function createWorkstationFilePort({env=process.env,run=spawnSync}={}){
   const b=resolve(args.root_id),preview=request(action,args,b,'preview');
   return {schema:'vivim.workstation-file-binding/1',rootId:b.rootId,configSha:b.configSha,preview,bindingDigest:digest({b,action,args,preview})};
  }
- function read(action,args){if(!WORKSTATION_FILE_READS.has(action))throw fail('WORKSTATION_FILE_INPUT_INVALID');return request(action,args,resolve(args.root_id),'read');}
+ function read(action,args){if(!WORKSTATION_FILE_READS.has(action))throw fail('WORKSTATION_FILE_INPUT_INVALID');const b=resolve(args.root_id);return {schema:'vivim.workstation-file-read/1',rootId:b.rootId,configSha:b.configSha,path:args.path,...request(action,args,b,'read')};}
  function mutate(action,args,binding){
   const current=prepare(action,args);if(digest(current)!==digest(binding))throw fail('WORKSTATION_FILE_BINDING_STALE');
   const b=resolve(args.root_id);

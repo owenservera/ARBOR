@@ -1,0 +1,42 @@
+'use strict';
+const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),os=require('node:os'),path=require('node:path');
+const {createWorkstationTools}=require('../server/workstation-tunnel.cjs');
+const planId='ctl-0123456789abcdef',planDigest='a'.repeat(64),recipeConfigSha='b'.repeat(64),rootConfigSha='c'.repeat(64);
+const action='workstation.session.start',args={recipe:'node-version'};
+const json=x=>new Response(JSON.stringify(x),{status:200});
+function fixture(t){
+ const directory=fs.mkdtempSync(path.join(os.tmpdir(),'vivim-workstation-tunnel-'));
+ t.after(()=>fs.rmSync(directory,{recursive:true,force:true}));
+ const g={schema:'vivim.workstation-tunnel-grant/1',id:'a'.repeat(32),expiresAt:Date.now()+600000,port:43187,dataRoot:directory,ownerAuthModule:path.join(directory,'owner-auth.mjs'),ownerAuthSha256:'d'.repeat(64),recipeConfigSha,rootConfigSha,recipes:['node-version'],roots:['repo'],interactiveRecipes:[],allowWrites:true};
+ const file=path.join(directory,'grant.json');fs.writeFileSync(file,JSON.stringify(g),{mode:0o600});
+ return {directory,g,file};
+}
+test('default closed, expired grant rejected',t=>{const f=fixture(t);assert.equal(createWorkstationTools({directory:f.directory,now:()=>f.g.expiresAt+1}).length,0);fs.unlinkSync(f.file);assert.equal(createWorkstationTools({directory:f.directory}).length,0)});
+test('fixed recipe uses exact Host plan, one execution, durable session ownership and receipt replay',async t=>{
+ const f=fixture(t);let posts=0;
+ const receipt={schema:'vivim.control-receipt/1',planId,planDigest,actionId:action,args,approvedVia:'desktop-owner-token',status:'applied',executionPerformed:true,result:{sessionId:planId,state:'running'}};
+ const tools=createWorkstationTools({directory:f.directory,credential:async()=> 'test-only-token',fetcher:async(url,o)=>{
+  assert.equal(o.headers.authorization,'Bearer test-only-token');assert.equal(o.redirect,'error');
+  if(url.endsWith('/execute')){posts++;assert.deepEqual(JSON.parse(o.body),{planId,planDigest});return json(receipt);}
+  if(url.endsWith('/plans/'+planId))return json({receipt});
+  const b=JSON.parse(o.body);
+  if(b.actionId===action){assert.deepEqual(b.args,args);return json({outcome:'approval_required',risk:'R2',actionId:action,args,planId,planDigest,workstationBinding:{configSha:recipeConfigSha}});}
+  assert.equal(b.actionId,'workstation.session.status');return json({outcome:'done',actionId:b.actionId,args:b.args,effect:'read',result:{sessionId:planId,state:'running'}});
+ }});
+ const call=(name,a)=>tools.find(x=>x[0]===name)[3](a);
+ assert.ok(!tools.some(x=>x[0]==='vivim_session_input'));
+ await assert.rejects(call('vivim_session_start',{recipe:'not-allowed',request_id:'e'.repeat(32)}));
+ await assert.rejects(call('vivim_session_status',{session_id:planId}));
+ const a=await call('vivim_session_start',{recipe:'node-version',request_id:'f'.repeat(32)});assert.equal(a.status,'applied');
+ assert.deepEqual(await call('vivim_session_start',{recipe:'node-version',request_id:'f'.repeat(32)}),a);assert.equal(posts,1);
+ assert.equal((await call('vivim_session_status',{session_id:planId})).state,'running');
+ fs.unlinkSync(f.file);await assert.rejects(call('vivim_session_status',{session_id:planId}));
+});
+test('foreign binding or root is refused before execute; ambiguous request is not resubmitted',async t=>{
+ const f=fixture(t);let requests=0;
+ const tools=createWorkstationTools({directory:f.directory,credential:async()=> 'test-only-token',fetcher:async(_,o)=>{requests++;const b=JSON.parse(o.body);return json({outcome:'approval_required',risk:'R2',actionId:b.actionId,args:b.args,planId,planDigest,workstationBinding:{configSha:'e'.repeat(64)}})}});
+ const call=(name,a)=>tools.find(x=>x[0]===name)[3](a);
+ await assert.rejects(call('vivim_file_read',{root_id:'unknown',path:'x'}));assert.equal(requests,0);
+ await assert.rejects(call('vivim_session_start',{recipe:'node-version',request_id:'f'.repeat(32)}));assert.equal(requests,1);
+ await assert.rejects(call('vivim_session_start',{recipe:'node-version',request_id:'f'.repeat(32)}));assert.equal(requests,1);
+});

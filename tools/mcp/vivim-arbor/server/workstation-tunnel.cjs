@@ -1,0 +1,148 @@
+'use strict';
+// Private tunnel projection of the existing Host. Local grant is authoritative
+// for its exact recipe/root subset. The adapter never exports an owner token,
+// accepts a shell command/absolute path, or creates an independent executor.
+const fs=require('node:fs'),path=require('node:path'),{pathToFileURL}=require('node:url'),{createHash}=require('node:crypto');
+const hash=b=>createHash('sha256').update(b).digest('hex');
+const stable=x=>Array.isArray(x)?x.map(stable):x&&typeof x==='object'?Object.fromEntries(Object.keys(x).sort().map(k=>[k,stable(x[k])])):x;
+const digest=x=>hash(JSON.stringify(stable(x)));
+const hex=(s,n)=>typeof s==='string'&&s.length===n&&/^[a-f0-9]+$/.test(s);
+const ctl=s=>typeof s==='string'&&/^ctl-[a-f0-9]{16}$/.test(s);
+const identifier=s=>typeof s==='string'&&/^[a-z][a-z0-9-]{0,63}$/.test(s);
+const obj=x=>x!==null&&typeof x==='object'&&!Array.isArray(x);
+const keys=(x,a)=>obj(x)&&Object.keys(x).every(k=>a.includes(k));
+const bad=()=>{throw Error('Workstation request denied or outcome uncertain')};
+const same=(a,b)=>digest(a)===digest(b);
+const S='workstation.session.',F='workstation.file.',D='workstation.directory.';
+const definitions=[
+ ['vivim_session_start',S+'start',['recipe'],true],
+ ['vivim_session_status',S+'status',['session_id'],false],
+ ['vivim_session_output',S+'output',['session_id','stdout_cursor','stderr_cursor'],false],
+ ['vivim_session_cancel',S+'cancel',['session_id'],true],
+ ['vivim_session_input',S+'input',['session_id','input'],true],
+ ['vivim_file_read',F+'read',['root_id','path'],false],
+ ['vivim_file_inspect',F+'inspect',['root_id','path'],false],
+ ['vivim_directory_list',D+'list',['root_id','path'],false],
+ ['vivim_directory_create',D+'create',['root_id','path'],true],
+ ['vivim_file_write',F+'write',['root_id','path','expected_digest','content'],true],
+ ['vivim_file_edit',F+'edit',['root_id','path','expected_digest','old_text','new_text'],true]
+];
+function privateBytes(file,max){
+ const st=fs.lstatSync(file);
+ if(!st.isFile()||st.isSymbolicLink()||st.size>max||(process.platform!=='win32'&&(st.mode&0o077)))bad();
+ return fs.readFileSync(file);
+}
+function createWorkstationTools({directory=path.join(__dirname,'..','session-authority'),now=Date.now,fetcher=globalThis.fetch,credential=null}={}){
+ let g,initial;
+ function load(){
+  const raw=privateBytes(path.join(directory,'grant.json'),16384),v=JSON.parse(raw);
+  if(!keys(v,['schema','id','expiresAt','port','dataRoot','ownerAuthModule','ownerAuthSha256','recipeConfigSha','rootConfigSha','recipes','roots','interactiveRecipes','allowWrites'])||
+   v.schema!=='vivim.workstation-tunnel-grant/1'||!hex(v.id,32)||!Number.isSafeInteger(v.expiresAt)||
+   v.expiresAt<=now()||v.expiresAt-now()>86400000||!Number.isSafeInteger(v.port)||v.port<1024||v.port>65535||
+   typeof v.dataRoot!=='string'||!path.isAbsolute(v.dataRoot)||typeof v.ownerAuthModule!=='string'||!path.isAbsolute(v.ownerAuthModule)||
+   path.basename(v.ownerAuthModule)!=='owner-auth.mjs'||!hex(v.ownerAuthSha256,64)||!hex(v.recipeConfigSha,64)||!hex(v.rootConfigSha,64)||
+   !Array.isArray(v.recipes)||v.recipes.length>32||!v.recipes.every(identifier)||
+   !Array.isArray(v.roots)||v.roots.length>16||!v.roots.every(identifier)||
+   !Array.isArray(v.interactiveRecipes)||!v.interactiveRecipes.every(x=>v.recipes.includes(x))||typeof v.allowWrites!=='boolean')bad();
+  return {v,h:hash(raw)};
+ }
+ try{({v:g,h:initial}=load())}catch{return []}
+ function check(){if(load().h!==initial)bad();}
+ async function token(){
+  check();if(credential)return credential();
+  const real=fs.realpathSync(g.ownerAuthModule);if(real!==g.ownerAuthModule||hash(fs.readFileSync(real))!==g.ownerAuthSha256)bad();
+  const mod=await import(pathToFileURL(real).href);
+  // Use incumbent private owner-token loader, never create or copy a token here.
+  const env={};if(process.platform==='win32'&&process.env.SystemRoot)env.SystemRoot=process.env.SystemRoot;
+  const loaded=mod.loadOwnerToken({dataRoot:g.dataRoot,env,create:false});
+  if(typeof loaded.token!=='string'||loaded.token.length<32)bad();return loaded.token;
+ }
+ async function request(route,body){
+  const bearer=await token();check();const origin='http://127.0.0.1:'+g.port;
+  const r=await fetcher(origin+'/api/host/control/'+route,{method:body?'POST':'GET',
+   headers:{authorization:'Bearer '+bearer,origin,accept:'application/json',...(body?{'content-type':'application/json','x-vivim-control':'1'}:{})},
+   ...(body?{body:JSON.stringify(body)}:{}),redirect:'error',signal:AbortSignal.timeout(30000)});
+  if(!r.ok){await r.body?.cancel();bad();}
+  const reader=r.body?.getReader();if(!reader)bad();let size=0;const chunks=[];
+  try{while(true){const {done,value}=await reader.read();if(done)break;size+=value.byteLength;if(size>524288)bad();chunks.push(Buffer.from(value));}}
+  finally{await reader.cancel().catch(()=>{});reader.releaseLock();}
+  check();return JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(Buffer.concat(chunks)));
+ }
+ const state=path.join(directory,'ledger-'+g.id);
+ try{fs.mkdirSync(state,{mode:0o700});}catch(e){if(e.code!=='EEXIST')return [];}
+ try{const st=fs.lstatSync(state);if(!st.isDirectory()||st.isSymbolicLink())return [];}catch{return [];}
+ const file=(id,suffix)=>path.join(state,id+'.'+suffix+'.json');
+ function read(id,suffix){return JSON.parse(privateBytes(file(id,suffix),65536));}
+ function create(id,suffix,value){fs.writeFileSync(file(id,suffix),JSON.stringify(value)+'\n',{flag:'wx',mode:0o600});}
+ function owns(sessionId){
+  if(!ctl(sessionId))bad();const s=read(sessionId,'session');
+  if(s.grant!==initial||s.sessionId!==sessionId||!g.recipes.includes(s.recipe))bad();
+  return s;
+ }
+ function authorize(action,args,mutating){
+  check();
+  if(action===S+'start'){if(!g.recipes.includes(args.recipe))bad();}
+  else if(action.startsWith(S)){
+   const s=owns(args.session_id);
+   if(action===S+'input'&&(!g.interactiveRecipes.includes(s.recipe)||typeof args.input!=='string'||Buffer.byteLength(args.input)>4096))bad();
+  }else{
+   if(!g.roots.includes(args.root_id)||typeof args.path!=='string'||args.path.length>1024||
+    args.path.startsWith('/')||args.path.includes('\\')||args.path.includes(':')||
+    (mutating&&!g.allowWrites))bad();
+  }
+ }
+ function projection(r,p,action,args){
+  if(r?.schema!=='vivim.control-receipt/1'||r.planId!==p.planId||r.planDigest!==p.planDigest||
+   r.actionId!==action||!same(r.args,args)||r.approvedVia!=='desktop-owner-token'||!['applied','failed','uncertain'].includes(r.status))bad();
+  if(r.status==='applied'&&(!r.executionPerformed||!obj(r.result)))bad();
+  if(r.status==='applied'&&action===S+'start'){
+   if(r.result.sessionId!==r.planId)bad();
+   const ownership={grant:initial,sessionId:r.planId,recipe:args.recipe};
+   try{create(r.planId,'session',ownership)}catch(e){if(e.code!=='EEXIST'||!same(read(r.planId,'session'),ownership))bad();}
+  }
+  return {schema:'vivim.workstation-tunnel-receipt/1',planId:r.planId,actionId:action,status:r.status,
+   ...(r.status==='applied'?{result:r.result}:{code:'HOST_EFFECT_NOT_APPLIED'})};
+ }
+ async function mutation(action,args,requestId){
+  if(!hex(requestId,32))bad();
+  authorize(action,args,true);const intent={grant:initial,action,argsDigest:digest(args)};
+  let existing=false;
+  try{if(fs.readdirSync(state).filter(n=>n.endsWith('.claim.json')).length>=256&&!fs.existsSync(file(requestId,'claim')))bad();create(requestId,'claim',intent);}
+  catch(e){if(e.code!=='EEXIST')throw e;existing=true;if(!same(read(requestId,'claim'),intent))bad();}
+  if(existing){
+   // Never resubmit an effect after an ambiguous delivery. Only read Host truth.
+   const p=read(requestId,'plan'),status=await request('plans/'+p.planId);
+   if(!status?.receipt)bad();return projection(status.receipt,p,action,args);
+  }
+  const p=await request('plan',{actionId:action,args});
+  if(p?.outcome!=='approval_required'||p.actionId!==action||p.risk!=='R2'||!same(p.args,args)||!ctl(p.planId)||!hex(p.planDigest,64))bad();
+  if(action===S+'start'&&p.workstationBinding?.configSha!==g.recipeConfigSha)bad();
+  if(!action.startsWith(S)&&p.workstationBinding?.configSha!==g.rootConfigSha)bad();
+  const binding={planId:p.planId,planDigest:p.planDigest};
+  create(requestId,'plan',binding);
+  authorize(action,args,true);
+  // Exact locally admitted request. The incumbent Host still enforces plan
+  // digest, fresh desktop-owner approval, preclaim and one-shot receipt.
+  const r=await request('execute',binding);return projection(r,binding,action,args);
+ }
+ async function readAction(action,args){
+  authorize(action,args,false);const p=await request('plan',{actionId:action,args});
+  if(p?.outcome!=='done'||p.actionId!==action||!same(p.args,args)||p.effect!=='read'||!obj(p.result))bad();
+  if(action.startsWith(S)){if((action===S+'output'?p.result.status?.sessionId:p.result.sessionId)!==args.session_id)bad();}
+  else if(p.result.schema!=='vivim.workstation-file-read/1'||p.result.rootId!==args.root_id||p.result.path!==args.path||p.result.configSha!==g.rootConfigSha)bad();
+  authorize(action,args,false);return p.result;
+ }
+ const tools=[['vivim_workstation_recipes','List currently locally granted recipe IDs and workspace IDs; no executable paths or credentials.',
+  {type:'object',properties:{},required:[],additionalProperties:false},()=>{check();return {schema:'vivim.workstation-tunnel-grant-summary/1',recipes:g.recipes,roots:g.roots,interactiveRecipes:g.interactiveRecipes,allowWrites:g.allowWrites,expiresAt:g.expiresAt};},true]];
+ for(const [name,action,fields,mutating]of definitions){
+  if(action.startsWith(S)&&!g.recipes.length)continue;
+  if(action===S+'input'&&!g.interactiveRecipes.length)continue;
+  if(!action.startsWith(S)&&(!g.roots.length||(mutating&&!g.allowWrites)))continue;
+  const required=mutating?[...fields,'request_id']:fields;
+  tools.push([name,'Use only the locally granted Host '+action+' capability. '+(mutating?'Supply a unique 32-character lowercase hexadecimal request_id; repeat only the same ID to inspect an uncertain receipt.':'Read-only, scoped to granted workspace or owned session.'),
+   {type:'object',properties:Object.fromEntries(required.map(k=>[k,{type:'string'}])),required,additionalProperties:false},
+   a=>{const args=Object.fromEntries(fields.map(k=>[k,a[k]]));return mutating?mutation(action,args,a.request_id):readAction(action,args);},!mutating]);
+ }
+ return tools;
+}
+module.exports={createWorkstationTools};
