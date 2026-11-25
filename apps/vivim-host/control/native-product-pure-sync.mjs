@@ -20,7 +20,8 @@ const operations=Object.freeze({
   'personal-rule-selection':'vivim.personal-rule-selection/1',
   'personal-rule-transition':'vivim.personal-rule-transition/1',
   'control-catalog-compatibility':'vivim.control-catalog-compatibility/1',
-  'semantic-observation':'vivim.semantic-observation/1'
+  'semantic-observation':'vivim.semantic-observation/1',
+  'application-intelligence-projection':'vivim.application-intelligence-native/1'
 });
 // Existing consumers retain null-on-unavailable compatibility. An opt-in
 // caller can require a valid response once a packaged binary was resolved;
