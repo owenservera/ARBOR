@@ -30,10 +30,10 @@ const BASELINE: [(&str, &str, Option<&str>); 25] = [
     ("list_searches", "search", Some("workstation.search.list")),
     ("get_file_info", "filesystem", Some("workstation.file.inspect")),
     ("edit_block", "editing", Some("workstation.file.edit")),
-    ("start_process", "process", Some("workstation.process.start")),
-    ("read_process_output", "process", Some("workstation.process.output")),
-    ("interact_with_process", "process", Some("workstation.process.input")),
-    ("force_terminate", "process", Some("workstation.process.cancel")),
+    ("start_process", "process", Some("workstation.session.start")),
+    ("read_process_output", "process", Some("workstation.session.output")),
+    ("interact_with_process", "process", Some("workstation.session.input")),
+    ("force_terminate", "process", Some("workstation.session.cancel")),
     ("list_sessions", "process", Some("workstation.process.sessions")),
     ("list_processes", "process", Some("workstation.process.list")),
     ("kill_process", "process", Some("workstation.process.terminate")),
@@ -163,7 +163,8 @@ mod tests {
         let r=coverage(&json!({"catalog":c}));
         assert_eq!(r["referenceTools"],25);
         assert_eq!(r["proposedOperations"],24);
-        assert_eq!(r["catalogRegistered"],0);
+        let expected=BASELINE.iter().filter(|(_,_,target)| target.is_some_and(|id| c["actions"].as_array().unwrap().iter().any(|a|a["id"]==id))).count();
+        assert_eq!(r["catalogRegistered"],expected);
         assert_eq!(r["hostCatalogActions"],c["actions"].as_array().unwrap().len());
         let rows=r["rows"].as_array().unwrap();
         assert_eq!(rows.iter().map(|row|row["referenceTool"].as_str().unwrap()).collect::<std::collections::BTreeSet<_>>().len(),25);
@@ -173,9 +174,10 @@ mod tests {
     #[test]
     fn catalog_declaration_never_promotes_live_acceptance() {
         let mut c=catalog();
-        c["actions"].as_array_mut().unwrap().push(json!({"id":"workstation.file.edit","readiness":"verified"}));
+        let baseline=coverage(&json!({"catalog":c.clone()}))["catalogRegistered"].as_u64().unwrap();
+        c["actions"].as_array_mut().unwrap().push(json!({"id":"workstation.document.pdf","readiness":"verified"}));
         let r=coverage(&json!({"catalog":c}));
-        assert_eq!(r["catalogRegistered"],1);
+        assert_eq!(r["catalogRegistered"],baseline+1);
         assert_eq!(r["liveAccepted"],0);
         assert!(r["rows"].as_array().unwrap().iter().all(|x|x["liveAccepted"]==false));
     }

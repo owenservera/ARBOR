@@ -11,3 +11,4 @@ serde_json = "1"
 sha2 = "0.10"
 hmac = "0.12"
 getrandom = "0.3"
+vivim-programmability-core = { path = "../../core/programmability" }
