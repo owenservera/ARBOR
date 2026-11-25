@@ -15,7 +15,7 @@ import { listSemanticIds, getSemanticId, indexedSemanticAnchors, indexedAnnotati
 import { scanCapabilitySource, persistCapabilityScan, capabilityStatus } from './capabilities.mjs';
 import { head as gitHead } from './git.mjs';
 import { sha256 } from './util.mjs';
-import { exportGraphExchange, importGraphExchange, acknowledgeGraphExport, queryDevelopmentGraph, SOURCE_NAMESPACE } from './kg-export.mjs';
+import { exportGraphExchange, importGraphExchange, acknowledgeGraphExport, queryDevelopmentGraph, validDevelopmentGraphRead, SOURCE_NAMESPACE } from './kg-export.mjs';
 
 export const DEV_INTELLIGENCE_CONTRACT = 'arbor.dev-intelligence/1';
 export const DEVELOPMENT_DOMAIN = 'development';
@@ -318,14 +318,10 @@ export function createDevIntelligence({
         epoch:imported.epochAfter,exported:exported.stats,imported:true,acked:true};
     },'source.index',true);
   }
-  function nativeGraphQuery({operation,key,depth}={}) {
-    if(!['sources','symbols','impact','wiring','compute'].includes(operation)
-      ||typeof key!=='string'||key.length<1||key.length>180||/[\u0000-\u001f\u007f]/.test(key)
-      ||(depth!==undefined&&(!Number.isSafeInteger(depth)||depth<0||depth>8)))
-      throw new Error('HQ_GRAPH_QUERY_INVALID');
+  function nativeGraphQuery(input={}) {
+    if(!validDevelopmentGraphRead(input))throw new Error('HQ_GRAPH_QUERY_INVALID');
     return withDatabase(db => {
-      return queryDevelopmentGraph({root,journal:join(dbDir,'kg-journal.hqj'),
-        operation,key,depth});
+      return queryDevelopmentGraph({root,journal:join(dbDir,'kg-journal.hqj'),...input});
     },'source.read',true);
   }
   function wiki({ force = false, maxFilePages = MAX_WIKI_PAGES } = {}) {
