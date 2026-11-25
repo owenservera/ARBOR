@@ -505,14 +505,60 @@ export function resolveGraphImporter(options = {}) {
   return resolveGraphBinary(IMPORTER_BIN,'importer',options);
 }
 
+// Closed owner-read request contract. The native binary independently verifies
+// semantic IDs, source provenance and graph epochs; this is never a source grant.
+const SEMANTIC_TASKS=['inspect','impact','compose'];
+const SEMANTIC_DIRECTIONS=['imports','dependents'];
+const GRAPH_READ_OPERATIONS=['sources','symbols','impact','wiring','compute','semantic-program','semantic-coverage','semantic-closure'];
+const plainGraphRecord=v=>v!==null&&typeof v==='object'&&!Array.isArray(v)&&Object.getPrototypeOf(v)===Object.prototype;
+const validGraphKey=v=>typeof v==='string'&&v.length>=1&&v.length<=180&&!/[\u0000-\u001f\u007f]/.test(v);
+export function validDevelopmentGraphRead(input){
+  if(!plainGraphRecord(input)||!GRAPH_READ_OPERATIONS.includes(input.operation)||!validGraphKey(input.key))return false;
+  const allowed=['operation','key'];
+  if(input.operation==='semantic-program'){
+    allowed.push('task');
+    if(!SEMANTIC_TASKS.includes(input.task))return false;
+  }else if(['semantic-coverage','semantic-closure'].includes(input.operation)){
+    allowed.push('direction');
+    if(!SEMANTIC_DIRECTIONS.includes(input.direction))return false;
+  }else{
+    allowed.push('depth');
+    if(input.depth!==undefined&&(!Number.isSafeInteger(input.depth)||input.depth<0||input.depth>8))return false;
+  }
+  return Object.keys(input).every(k=>allowed.includes(k));
+}
+
+function validNativeGraphRead(value,operation,key,task,direction){
+  if(!plainGraphRecord(value)||!Number.isSafeInteger(value.epoch)||value.epoch<0)return false;
+  if(operation==='semantic-program'){
+    return value.schema==='hqkg.development-query/1'&&value.authority==='read-only'&&value.operation===operation&&
+      value.semanticId===key&&value.task===task&&value.state==='computed'&&typeof value.complete==='boolean'&&
+      value.executionAuthorized===false&&value.effectPerformed===false&&Array.isArray(value.outputs);
+  }
+  if(operation==='semantic-coverage'||operation==='semantic-closure'){
+    return value.schema===(operation==='semantic-coverage'?'hqkg.partitioned-import-coverage/1':'hqkg.semantic-closure/1')&&
+      value.authority==='none'&&value.semanticId===key&&value.direction===direction&&typeof value.complete==='boolean'&&
+      value.executionAuthorized===false&&value.effectPerformed===false&&Array.isArray(value.partitions)&&
+      (operation!=='semantic-closure'||value.coverageComplete===true);
+  }
+  return value.schema==='hqkg.development-query/1'&&value.authority==='read-only'&&value.operation===operation;
+}
+
 // Existing native binary discovery, fixed read-only operation and bounded stdio.
-export function queryDevelopmentGraph({root,journal,operation,key,depth,program,env=process.env}={}){
-  if(!['sources','symbols','impact','wiring','program','compute'].includes(operation))throw Error('UNKNOWN_GRAPH_OPERATION');
+// Retain the diagnostic typed program entry point; it is not an owner-read request.
+export function queryDevelopmentGraph({root,journal,operation,key,depth,task,direction,program,env=process.env}={}){
+  if(operation!=='program'){
+    const input={operation,key,...(depth===undefined?{}:{depth}),...(task===undefined?{}:{task}),...(direction===undefined?{}:{direction})};
+    if(!validDevelopmentGraphRead(input)||program!==undefined)throw Error('HQ_GRAPH_QUERY_INVALID');
+  }else if(typeof program!=='string'||Buffer.byteLength(program)>65536||depth!==undefined||task!==undefined||direction!==undefined){
+    throw Error('INVALID_PROGRAM');
+  }
   const native=resolveGraphBinary('hqkg-development','importer,native-program',{root,env});
   if(!native.available) return {schema:'hqkg.development-query/1',state:'unavailable',reason:native.reason};
   const args=[...native.args,journal,operation,String(key)];
   if(operation==='impact'&&depth!==undefined)args.push(String(depth));
-  if(operation==='program'&&(typeof program!=='string'||Buffer.byteLength(program)>65536))throw Error('INVALID_PROGRAM');
+  if(operation==='semantic-program')args.push(task);
+  if(['semantic-coverage','semantic-closure'].includes(operation))args.push(direction);
   const result=spawnSync(native.program,args,{cwd:native.cwd??undefined,input:operation==='program'?program:undefined,
     encoding:'utf8',windowsHide:true,shell:false,timeout:15000,maxBuffer:2*1024*1024});
   if(result.error||result.status!==0)return {schema:'hqkg.development-query/1',state:'unavailable',
@@ -520,8 +566,7 @@ export function queryDevelopmentGraph({root,journal,operation,key,depth,program,
     detail:String(result.stderr??'').trim().slice(0,1000)};
   try{
     const value=JSON.parse(result.stdout);
-    if(value.schema!=='hqkg.development-query/1'||value.authority!=='read-only'||value.operation!==operation||
-       !Number.isSafeInteger(value.epoch)||value.epoch<0)throw Error('invalid response');
+    if(!validNativeGraphRead(value,operation,key,task,direction))throw Error('invalid response');
     return value;
   }catch{return {schema:'hqkg.development-query/1',state:'unavailable',reason:'native_graph_response_invalid'};}
 }
