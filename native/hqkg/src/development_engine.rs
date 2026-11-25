@@ -130,7 +130,8 @@ fn linked(graph: &Graph, id: &str, relation: &str, reverse: bool) -> Result<(Vec
 }
 pub struct DevelopmentGraphEngine { graph: Arc<Graph> }
 impl DevelopmentGraphEngine {
-    pub fn new(graph: Graph) -> Self {Self{graph:Arc::new(graph)}}
+    pub fn new(graph: Graph) -> Self {Self::shared(Arc::new(graph))}
+    pub(crate) fn shared(graph: Arc<Graph>) -> Self {Self{graph}}
 }
 impl ComputeEngine for DevelopmentGraphEngine {
     fn descriptor(&self) -> EngineDescriptor {
@@ -267,4 +268,10 @@ impl ComputeEngine for DevelopmentGraphEngine {
 /// one clone of the indexed graph snapshot for the duration of this computation.
 pub fn install_development_engine(registry:&EngineRegistry,graph:Graph)->Result<SwapReceipt>{
     registry.install(Arc::new(DevelopmentGraphEngine::new(graph)),None)
+}
+
+    // The session owns the immutable snapshot; the engine holds the same Arc.
+    // Do not clone the graph or expose the shared registry to external callers.
+pub(crate) fn install_shared_development_engine(registry:&EngineRegistry,graph:Arc<Graph>)->Result<SwapReceipt>{
+    registry.install(Arc::new(DevelopmentGraphEngine::shared(graph)),None)
 }
