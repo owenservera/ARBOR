@@ -1,5 +1,7 @@
 //! Dev-only onboarding transition contract. No provider, browser, or process effects here.
 //! Host owns durable claims, actual evidence collection, secure storage and execution.
+pub mod journal;
+pub mod preflight;
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Step {
     Entitlement, ProvisionPrivateTunnel, StoreRuntimeCredential, VerifyClient,
@@ -79,7 +81,7 @@ pub struct Observation {
 pub enum Status { Offered, Skipped, InProgress, AwaitingAuthorization, Unavailable, Reconcile, Ready, Revoked }
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Error { InvalidBinding, InvalidOperation, InvalidState, ClaimPending, WrongClaim, WrongEvidence, ReusedOperation }
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Setup {
     binding: Binding,
     status: Status,
