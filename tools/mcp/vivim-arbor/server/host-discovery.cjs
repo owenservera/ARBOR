@@ -18,7 +18,9 @@ function createDiscovery({env=process.env,fetcher=globalThis.fetch}={}){
   const reader=response.body?.getReader(); if(!reader)throw Error('Host response missing');
   const chunks=[];let size=0;
   try{while(true){const {done,value}=await reader.read();if(done)break;size+=value.byteLength;if(size>1024*1024)throw Error('Host discovery response too large');chunks.push(Buffer.from(value));}}finally{await reader.cancel().catch(()=>{});reader.releaseLock();}
-  let data;try{data=JSON.parse(Buffer.concat(chunks).toString('utf8'));}catch{throw Error('Invalid Host JSON response');}
+  // Do not release a result fetched under a replaced local credential or endpoint.
+  if(env.VIVIM_MCP_HOST_TOKEN!==token||(env.VIVIM_HOST_PORT||'43187')!==port)throw Error('Local Host binding changed');
+  let data;try{data=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(Buffer.concat(chunks)));}catch{throw Error('Invalid Host JSON response');}
   if(data?.schema!==expected)throw Error('Unexpected Host discovery schema');
   return data;
  }
@@ -31,7 +33,7 @@ function createDiscovery({env=process.env,fetcher=globalThis.fetch}={}){
  ['vivim_host_sources','Read authenticated live Host, Studio descriptor and research inventory coverage. Does not grant permissions.',schema(),()=>read('capability-sources',{},'vivim.capability-sources/1')],
  ['vivim_host_capabilities','Search existing Host capability catalog with a bounded page and optional opaque cursor. No action executes.',schema({q:str,cursor:str},['q']),a=>search('actions',a)],
  ['vivim_host_targets','Search the canonical research-only integration inventory, not a list of working adapters.',schema({q:str,cursor:str},['q']),a=>search('targets',a)],
- ['vivim_host_capability','Describe one exact Host action contract; authorization remains unevaluated.',schema({actionId:str},['actionId']),a=>{if(typeof a.actionId!=='string'||!(/^[a-z][a-z0-9._-]{2,95}$/).test(a.actionId))throw Error('Invalid action ID');return read('capabilities/'+a.actionId,{},'vivim.capability-description/1');}]
+ ['vivim_host_capability','Describe one exact Host action contract; authorization remains unevaluated.',schema({actionId:str},['actionId']),a=>{if(typeof a.actionId!=='string'||!(/^[a-z][a-z0-9._-]{2,95}$/).test(a.actionId))throw Error('Invalid action ID');const actionId=a.actionId;return read('capabilities/'+actionId,{},'vivim.capability-description/1').then(data=>{if(data.capability?.id!==actionId||data.source?.actionId!==actionId||data.authority!=='catalog-description-only'||data.authorization!=='not-evaluated')throw Error('Unexpected Host capability identity or authority');return data;});}]
  ];
 }
 module.exports=createDiscovery;
