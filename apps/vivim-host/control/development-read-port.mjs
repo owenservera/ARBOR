@@ -87,5 +87,49 @@ export function createDevelopmentReadPort({config={},runtime,actorId='desktop-ow
     if(sources.some(s=>!verifyGrant({sourceGrantRef:grant.id,repoIdentity:s.repo})))fail('HVI_SOURCE_GRANT_STALE',403);
     return result;
   }
-  return Object.freeze({status,graph,register,refresh,issueGrant,revokeGrant,compare});
+  // Internal owner-scoped committed-source reads. No new route or grant.
+  async function readWorkstation(input,{signal}={}){
+    authorize();
+    if(signal?.aborted)fail('HVI_READ_CANCELLED',409);
+    if(!hviReady)fail('HVI_SOURCE_ADAPTER_UNAVAILABLE',503);
+    if(!keys(input,['schema','source','operation','query','paths'])||
+      input.schema!=='vivim.host.hvi-workstation-read-request/1'||
+      !keys(input.source,['repo','sha','subPath'])||
+      typeof input.source.repo!=='string'||typeof input.source.sha!=='string'||
+      !/^[0-9a-f]{40}$/.test(input.source.sha)||
+      (input.source.subPath!==undefined&&typeof input.source.subPath!=='string')||
+      !['metadata','files'].includes(input.operation))fail('HVI_SELECTION_INVALID');
+    const operation=input.operation;
+    if(operation==='metadata'&&(!keys(input.query,['prefix','contains','exactPath','after','limit'])||input.paths!==undefined))fail('HVI_SELECTION_INVALID');
+    if(operation==='files'&&(!Array.isArray(input.paths)||input.paths.length<1||input.paths.length>16||
+      Array.from(input.paths).some(v=>typeof v!=='string')||input.query!==undefined))fail('HVI_SELECTION_INVALID');
+    const repo=canonicalRepo(input.source.repo),sha=input.source.sha;
+    const store=grants(),grant=store?.status();
+    if(!grant?.granted||grant.expired||grant.revoked||typeof grant.id!=='string'||!grant.id)
+      fail('HVI_SOURCE_GRANT_REQUIRED',403);
+    if(!repos.includes(repo)||!Array.isArray(grant.repoIdentities)||!grant.repoIdentities.includes(repo))
+      fail('HVI_SOURCE_NOT_GRANTED',403);
+    const grantId=grant.id;
+    const request={schema:input.schema,source:{...input.source,repo},operation,
+      ...(operation==='metadata'?{query:{...input.query}}:{paths:[...input.paths]})};
+    // Pin original authority, repository and commit across every inner callback.
+    const verifyGrant=ctx=>{
+      if(stillOwner()!==true||signal?.aborted||ctx?.sourceGrantRef!==grantId||
+        ctx.repoIdentity!==repo||ctx.resolvedCommitSha!==sha||
+        ctx.workstationReadOperation!==operation)return false;
+      const v=store.verify({repoIdentity:repo});
+      return v?.ok===true&&v.grant?.id===grantId;
+    };
+    const context={sourceGrantRef:grantId,repoIdentity:repo,resolvedCommitSha:sha,
+      workstationReadOperation:operation};
+    if(!verifyGrant(context))fail('HVI_SOURCE_GRANT_STALE',403);
+    const port=createHviPort({actorId,sessionId,verifySession:()=>stillOwner()===true&&!signal?.aborted,
+      verifyGrant,approvedRepositories:repos,enabled:true});
+    const result=await port.readWorkstation(request,{adapter,sourceGrantRef:grantId,signal});
+    authorize();
+    if(signal?.aborted)fail('HVI_READ_CANCELLED',409);
+    if(!verifyGrant(context))fail('HVI_SOURCE_GRANT_STALE',403);
+    return result;
+  }
+  return Object.freeze({status,graph,register,refresh,issueGrant,revokeGrant,compare,readWorkstation});
 }
