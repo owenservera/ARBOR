@@ -9,6 +9,9 @@ fn run() -> Result<Value, &'static str> {
     let mut input = Vec::new();
     io::stdin().take((LIMIT + 1) as u64).read_to_end(&mut input).map_err(|_| "INPUT_FAILED")?;
     if input.len() > LIMIT { return Err("SIZE_LIMIT"); }
+    if args[0] == "uia-facebook" {
+        return store.ingest_facebook_uia(&input,&Scope{site_id:"facebook".into(),origin:"https://www.facebook.com".into()});
+    }
     let v: Value = serde_json::from_slice(&input).map_err(|_| "INPUT_INVALID")?;
     match args[0].as_str() {
         "intake" => {
