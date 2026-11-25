@@ -113,7 +113,7 @@ fn semantic_graph(ambiguous: bool, chain_len: usize, symbol_count: usize) -> Gra
     let mut identity = owned_node("identity", "semantic-id");
     identity.properties.insert("semantic_id".into(), "vivim.example-capability@1".into());
     nodes.insert("identity".into(), identity);
-    for i in 0..=usize::from(ambiguous) {
+    for i in 0..=(if ambiguous { 1 } else { 0 }) {
         let id = format!("anchor-{i}");
         let mut anchor = owned_node(&id, "semantic-file-anchor");
         for (key, value) in [
