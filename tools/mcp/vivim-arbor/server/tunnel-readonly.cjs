@@ -62,7 +62,7 @@ function createProfile(env = process.env, {fetcher=globalThis.fetch,acceptance=n
     } catch(e) {
       if(e?.message==='WORKSTATION_MAINTENANCE')return reply(id,{isError:true,content:[{type:'text',text:'VIVIM is draining for local maintenance; no new effect was admitted.'}]});
       // No underlying exception strings, URLs, credentials or stack traces.
-      return reply(id,{isError:true,content:[{type:'text',text:p.name===probeName?'Exact probe unavailable or denied; inspect local Host receipt before retrying':p.name.startsWith('vivim_session_')||p.name.startsWith('vivim_file_')||p.name.startsWith('vivim_directory_')?'Local workstation request denied or outcome uncertain; use same request ID for receipt inspection, never automatically repeat effects':'Local discovery unavailable or denied'}]});
+      return reply(id,{isError:true,content:[{type:'text',text:p.name===probeName?'Exact probe unavailable or denied; inspect local Host receipt before retrying':p.name.startsWith('vivim_terminal_')||p.name.startsWith('vivim_session_')||p.name.startsWith('vivim_file_')||p.name.startsWith('vivim_directory_')?'Local workstation request denied or outcome uncertain; use same request ID for receipt inspection, never automatically repeat effects':'Local discovery unavailable or denied'}]});
     }
   }
   return {dispatch};

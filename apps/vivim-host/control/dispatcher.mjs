@@ -11,7 +11,7 @@
 // owner); executors are fixed Host functions — no shell, SQL, URL or generated code.
 import { createHash } from 'node:crypto';
 import {createWorkstationProcessPort,WORKSTATION_PROCESS_ACTION} from './workstation-process-port.mjs';
-import {createWorkstationSessionPort,WORKSTATION_SESSION_ACTIONS,SESSION_START,SESSION_STATUS,SESSION_OUTPUT,SESSION_CANCEL,SESSION_INPUT} from './workstation-session-port.mjs';
+import {createWorkstationSessionPort,WORKSTATION_SESSION_ACTIONS,TERMINAL_START,SESSION_START,SESSION_STATUS,SESSION_OUTPUT,SESSION_CANCEL,SESSION_INPUT} from './workstation-session-port.mjs';
 import {createWorkstationFilePort,WORKSTATION_FILE_ACTIONS,FILE_READ,FILE_INSPECT,DIR_LIST,DIR_CREATE,FILE_WRITE,FILE_EDIT,FILES_READ,FILES_SEARCH} from './workstation-file-port.mjs';
 const workstationAction=id=>id===WORKSTATION_PROCESS_ACTION||WORKSTATION_SESSION_ACTIONS.has(id)||WORKSTATION_FILE_ACTIONS.has(id);
 import { createControlPlanner, loadControlCatalog } from './intent-planner.mjs';
@@ -154,6 +154,7 @@ function createExecutors({ runtime, planner, lexicon, devices, productJournal, p
   return {
     [WORKSTATION_PROCESS_ACTION]: (args,ctx) => workstationProcess.start(args,ctx.workstationBinding),
     [SESSION_START]: (args,ctx)=>workstationSession.start(args,ctx.workstationBinding,ctx.planId),
+    [TERMINAL_START]: (args,ctx)=>workstationSession.start(args,ctx.workstationBinding,ctx.planId,TERMINAL_START),
     [SESSION_STATUS]: args=>workstationSession.read(SESSION_STATUS,args),
     [SESSION_OUTPUT]: args=>workstationSession.read(SESSION_OUTPUT,args),
     [SESSION_CANCEL]: (args,ctx)=>workstationSession.mutate(SESSION_CANCEL,args,ctx.workstationBinding),

@@ -57,7 +57,7 @@ export function createTerminalPolicy({env=process.env,now=Date.now}={}){
  function bind(input){
   const request=normalizeTerminalRequest(input),{policy,configSha}=load();
   const program=policy.programs.find(p=>p.id===request.program),root=policy.roots.find(r=>r.id===request.root_id);
-  if(!program||!root||request.timeout_ms>policy.maxTimeoutMs||request.interactive&&!policy.allowInteractive)throw fail('WORKSTATION_TERMINAL_NOT_GRANTED');
+  if(!program||!root||request.timeout_ms>policy.maxTimeoutMs||request.timeout_ms>policy.expiresAt-now()||request.interactive&&!policy.allowInteractive)throw fail('WORKSTATION_TERMINAL_NOT_GRANTED');
   try{
    const executable=pinned(program.path,program.sha256,256*1024*1024);
    if(process.platform==='win32'&&extname(executable.path).toLowerCase()!=='.exe')throw fail('WORKSTATION_TERMINAL_POLICY_INVALID');

@@ -1,6 +1,6 @@
 {
   "schema": "vivim.control-action-catalog/1",
-  "version": 23,
+  "version": 24,
   "asOf": "2026-11-23",
   "policy": {
     "allUserFacingActionsRequireTextPath": true,
@@ -2009,6 +2009,38 @@
       "subject": "workstation",
       "priority": "P0",
       "precondition": "Locally registered hash-pinned recipe or owned session. No remote-selected executable, path or environment. Mutations require exact Host approval."
+    },
+    {
+      "id": "workstation.session.terminal_start",
+      "title": "Start locally authorized general terminal session",
+      "category": "workstation",
+      "owner": "host-control",
+      "executor": "apps/vivim-host/control/dispatcher.mjs:createExecutors",
+      "readiness": "source_wired",
+      "risk": "R2",
+      "target": "local-workstation",
+      "surfaces": [
+        "text",
+        "desktop",
+        "mobile",
+        "visual"
+      ],
+      "privacy": "authenticated-pc-owner-only",
+      "aiCandidate": false,
+      "args": {
+        "request": {
+          "type": "string",
+          "min": 8,
+          "max": 8000
+        }
+      },
+      "examples": [
+        "Start a locally authorized general terminal session with exact typed arguments"
+      ],
+      "reversible": false,
+      "subject": "workstation",
+      "priority": "P0",
+      "precondition": "Explicit locally enabled terminal policy, pinned executable and root, exact Host owner approval. The authorized CLI runs with local-user privileges; cwd is not a sandbox. Never pass credentials in arguments."
     },
     {
       "id": "workstation.session.status",

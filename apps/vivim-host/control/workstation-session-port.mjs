@@ -1,14 +1,17 @@
-// Host-owned native session port. Local hash-pinned recipes only; no caller
-// executable/path/argument/environment. Host journal is the approval authority.
+// Host-owned native session port. Registered recipes or explicitly enabled
+// terminal policy; never implicit authority. Host journal owns approval.
 // Windows workers contain descendant trees in their own creation-time jobs.
 import {createHash,randomBytes} from 'node:crypto';
 import {readFileSync,realpathSync,statSync,lstatSync} from 'node:fs';
 import {isAbsolute,basename,dirname} from 'node:path';
 import {spawn} from 'node:child_process';
 import {decodeWorkstationText} from './workstation-text-codec.mjs';
+import {createTerminalPolicy} from './workstation-terminal-policy.mjs';
+import {decodeTerminalAction} from './workstation-terminal-request.mjs';
+export const TERMINAL_START='workstation.session.terminal_start';
 export const SESSION_START='workstation.session.start',SESSION_STATUS='workstation.session.status',
  SESSION_OUTPUT='workstation.session.output',SESSION_CANCEL='workstation.session.cancel',SESSION_INPUT='workstation.session.input';
-export const WORKSTATION_SESSION_ACTIONS=new Set([SESSION_START,SESSION_STATUS,SESSION_OUTPUT,SESSION_CANCEL,SESSION_INPUT]);
+export const WORKSTATION_SESSION_ACTIONS=new Set([SESSION_START,SESSION_STATUS,SESSION_OUTPUT,SESSION_CANCEL,SESSION_INPUT,TERMINAL_START]);
 const fail=(code,status=409)=>Object.assign(Error(code),{code,status});
 const hash=b=>createHash('sha256').update(b).digest('hex');
 const digest=x=>hash(JSON.stringify(x));
@@ -64,6 +67,7 @@ function windowsRuntimeEnvironment(env){
 function cursor(s){if(typeof s!=='string'||!/^(0|[1-9][0-9]{0,14})$/.test(s))throw fail('WORKSTATION_CURSOR_INVALID');return Number(s);}
 export function createWorkstationSessionPort({env=process.env,spawnWorker=spawn,now=Date.now}={}){
  let worker=null,dead=false,sequence=0,admissionClosed=false;const pending=new Map(),sessions=new Map(),generation=randomBytes(16).toString('hex');
+ const terminal=createTerminalPolicy({env,now});
  function config(){
   if(!env.VIVIM_WORKSTATION_RECIPES||!env.VIVIM_WORKSTATION_RECIPES_SHA256||
      !env.VIVIM_WORKSTATION_SESSION_EXE||!env.VIVIM_WORKSTATION_SESSION_SHA256)throw fail('WORKSTATION_SESSIONS_DISABLED');
@@ -97,17 +101,34 @@ export function createWorkstationSessionPort({env=process.env,spawnWorker=spawn,
   const spec={executable:exe.path,workspace,args:r.args,environment,interactive:r.interactive,timeoutMs:r.timeoutMs};
   return {helper,configSha:c.configSha,recipe,spec,binding:{schema:'vivim.workstation-session-binding/1',recipe,configSha:c.configSha,bindingDigest:digest({helper,exe,recipe,spec,toolchain,configSha:c.configSha})}};
  }
+ function resolveTerminal(args){
+  const t=terminal.bind(decodeTerminalAction(args));
+  const helper=exactFile(env.VIVIM_WORKSTATION_SESSION_EXE,env.VIVIM_WORKSTATION_SESSION_SHA256,64*1024*1024);
+  if(!/^vivim-workstation-session(?:\.exe)?$/i.test(basename(helper.path)))throw fail('WORKSTATION_SESSION_BINDING_INVALID');
+  const environment=windowsRuntimeEnvironment(env);
+  for(const n of t.environmentNames){
+   if(process.platform==='win32'&&['SYSTEMROOT','WINDIR'].includes(n.toUpperCase()))continue;
+   const v=envValue(env,n);
+   if(v!==undefined){if(typeof v!=='string'||v.length>32768||v.includes('\0'))throw fail('WORKSTATION_SESSION_BINDING_INVALID');environment[n]=v;}
+  }
+  const spec={executable:t.executable.path,workspace:t.workspace,args:t.request.args,environment,interactive:t.request.interactive,timeoutMs:t.request.timeout_ms};
+  return {helper,configSha:t.configSha,mode:'terminal',spec,binding:{schema:'vivim.workstation-terminal-binding/1',configSha:t.configSha,bindingDigest:digest({helper,t,spec})}};
+ }
+ function resolveStart(action,args){
+  if(action===TERMINAL_START)return resolveTerminal(args);
+  if(action!==SESSION_START||!keys(args,['recipe'])||!recipeId(args.recipe))throw fail('WORKSTATION_RECIPE_INVALID');
+  return resolve(args.recipe);
+ }
  function known(sessionId,requireCurrent=true){
   if(!id(sessionId))throw fail('WORKSTATION_SESSION_UNKNOWN');
   const s=sessions.get(sessionId);if(!s||dead||!worker||now()>s.expiresAt)throw fail('WORKSTATION_SESSION_UNKNOWN');
-  if(requireCurrent&&config().configSha!==s.configSha)throw fail('WORKSTATION_SESSION_REVOKED');
+  if(requireCurrent&&(s.mode==='terminal'?terminal.current():config().configSha)!==s.configSha)throw fail('WORKSTATION_SESSION_REVOKED');
   return s;
  }
  function prepare(action,args){
-  if(action===SESSION_START){
+  if(action===SESSION_START||action===TERMINAL_START){
    if(admissionClosed)throw fail('WORKSTATION_SESSION_DRAINING',503);
-   if(!keys(args,['recipe'])||!recipeId(args.recipe))throw fail('WORKSTATION_RECIPE_INVALID');
-   return resolve(args.recipe).binding;
+   return resolveStart(action,args).binding;
   }
   const s=known(args?.session_id,action!==SESSION_CANCEL);
   if(action===SESSION_INPUT&&(!s.interactive||!decodeWorkstationText(args.input,4096)))throw fail('WORKSTATION_INPUT_INVALID');
@@ -157,15 +178,15 @@ export function createWorkstationSessionPort({env=process.env,spawnWorker=spawn,
   });
  }
  function validate(r,sessionId){if(!record(r)||r.sessionId!==sessionId)throw fail('WORKSTATION_SESSION_OUTCOME_UNCERTAIN',503);return r;}
- async function start(args,binding,sessionId){
+ async function start(args,binding,sessionId,action=SESSION_START){
   if(admissionClosed)throw fail('WORKSTATION_SESSION_DRAINING',503);
   if(!id(sessionId)||sessions.has(sessionId))throw fail('WORKSTATION_SESSION_UNKNOWN');
-  const r=resolve(args.recipe);if(digest(r.binding)!==digest(binding))throw fail('WORKSTATION_SESSION_BINDING_STALE');
+  const r=resolveStart(action,args);if(digest(r.binding)!==digest(binding))throw fail('WORKSTATION_SESSION_BINDING_STALE');
   for(const [k,v]of sessions)if(now()>v.expiresAt)sessions.delete(k);
   if(sessions.size>=64)throw fail('WORKSTATION_SESSION_LIMIT');
   boot(r.helper);
   // Record intent before calling native worker; ambiguous start is never retried.
-  sessions.set(sessionId,{configSha:r.configSha,interactive:r.spec.interactive,expiresAt:now()+r.spec.timeoutMs+600000});
+  sessions.set(sessionId,{mode:r.mode??'recipe',configSha:r.configSha,interactive:r.spec.interactive,expiresAt:now()+r.spec.timeoutMs+600000});
   return validate(await rpc({op:'start',sessionId,...r.spec}),sessionId);
  }
  // Trusted-local lifecycle interface, not an MCP action or an authorization.
@@ -202,7 +223,7 @@ export function createWorkstationSessionPort({env=process.env,spawnWorker=spawn,
  }
  async function read(action,args){
   known(args?.session_id);const sessionId=args.session_id;
-  if(action===SESSION_STATUS)return validate(await rpc({op:'status',sessionId}),sessionId);
+  if(action===SESSION_STATUS){const r=validate(await rpc({op:'status',sessionId}),sessionId);known(sessionId);return r;}
   if(action!==SESSION_OUTPUT)throw fail('WORKSTATION_SESSION_OPERATION_INVALID');
   const result=await rpc({op:'output',sessionId,stdoutCursor:cursor(args.stdout_cursor),stderrCursor:cursor(args.stderr_cursor)});
   validate(result.status,sessionId);known(sessionId);return result;

@@ -14,7 +14,9 @@ const keys=(x,a)=>obj(x)&&Object.keys(x).every(k=>a.includes(k));
 const bad=()=>{throw Error('Workstation request denied or outcome uncertain')};
 const same=(a,b)=>digest(a)===digest(b);
 const S='workstation.session.',F='workstation.file.',D='workstation.directory.';
+const TERMINAL=S+'terminal_start';
 const definitions=[
+ ['vivim_terminal_start',TERMINAL,['request_json'],true],
  ['vivim_session_start',S+'start',['recipe'],true],
  ['vivim_session_status',S+'status',['session_id'],false],
  ['vivim_session_output',S+'output',['session_id','stdout_cursor','stderr_cursor'],false],
@@ -38,7 +40,7 @@ function createWorkstationTools({directory=path.join(__dirname,'..','session-aut
  let g,initial;
  function load(){
   const raw=privateBytes(path.join(directory,'grant.json'),16384),v=JSON.parse(raw);
-  if(!keys(v,['schema','id','expiresAt','port','dataRoot','ownerAuthModule','ownerAuthSha256','recipeConfigSha','rootConfigSha','recipes','roots','interactiveRecipes','allowWrites'])||
+  if(!keys(v,['schema','id','expiresAt','port','dataRoot','ownerAuthModule','ownerAuthSha256','recipeConfigSha','rootConfigSha','recipes','roots','interactiveRecipes','allowWrites','terminal'])||
    v.schema!=='vivim.workstation-tunnel-grant/1'||!hex(v.id,32)||!Number.isSafeInteger(v.expiresAt)||
    v.expiresAt<=now()||v.expiresAt-now()>86400000||!Number.isSafeInteger(v.port)||v.port<1024||v.port>65535||
    typeof v.dataRoot!=='string'||!path.isAbsolute(v.dataRoot)||typeof v.ownerAuthModule!=='string'||!path.isAbsolute(v.ownerAuthModule)||
@@ -46,6 +48,7 @@ function createWorkstationTools({directory=path.join(__dirname,'..','session-aut
    !Array.isArray(v.recipes)||v.recipes.length>32||!v.recipes.every(identifier)||
    !Array.isArray(v.roots)||v.roots.length>16||!v.roots.every(identifier)||
    !Array.isArray(v.interactiveRecipes)||!v.interactiveRecipes.every(x=>v.recipes.includes(x))||typeof v.allowWrites!=='boolean')bad();
+  if(v.terminal!==undefined&&(!keys(v.terminal,['configSha','programs','roots','allowInteractive'])||!hex(v.terminal.configSha,64)||!Array.isArray(v.terminal.programs)||v.terminal.programs.length<1||v.terminal.programs.length>64||!v.terminal.programs.every(p=>typeof p==='string'&&/^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/.test(p))||!Array.isArray(v.terminal.roots)||!v.terminal.roots.length||!v.terminal.roots.every(r=>v.roots.includes(r))||typeof v.terminal.allowInteractive!=='boolean'))bad();
   return {v,h:hash(raw)};
  }
  try{({v:g,h:initial}=load())}catch{return []}
@@ -78,15 +81,27 @@ function createWorkstationTools({directory=path.join(__dirname,'..','session-aut
  function create(id,suffix,value){fs.writeFileSync(file(id,suffix),JSON.stringify(value)+'\n',{flag:'wx',mode:0o600});}
  function owns(sessionId){
   if(!ctl(sessionId))bad();const s=read(sessionId,'session');
-  if(s.grant!==initial||s.sessionId!==sessionId||!g.recipes.includes(s.recipe))bad();
+  if(s.grant!==initial||s.sessionId!==sessionId||(s.mode==='terminal'?!g.terminal:!g.recipes.includes(s.recipe)))bad();
   return s;
+ }
+ function terminalRequest(args){
+  if(!g.terminal||!keys(args,['request'])||typeof args.request!=='string'||!args.request.startsWith('b64:')||args.request.length>8000)bad();
+  const bytes=Buffer.from(args.request.slice(4),'base64');
+  if(bytes.toString('base64')!==args.request.slice(4))bad();
+  const v=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes));
+  if(!keys(v,['program','args','root_id','cwd','interactive','timeout_ms'])||Object.keys(v).length!==6||
+    !g.terminal.programs.includes(v.program)||!g.terminal.roots.includes(v.root_id)||typeof v.interactive!=='boolean'||
+    (v.interactive&&!g.terminal.allowInteractive)||!Array.isArray(v.args)||!v.args.every(a=>typeof a==='string')||
+    typeof v.cwd!=='string'||!Number.isSafeInteger(v.timeout_ms))bad();
+  return v;
  }
  function authorize(action,args,mutating){
   check();
-  if(action===S+'start'){if(!g.recipes.includes(args.recipe))bad();}
+  if(action===TERMINAL){terminalRequest(args);}
+  else if(action===S+'start'){if(!g.recipes.includes(args.recipe))bad();}
   else if(action.startsWith(S)){
    const s=owns(args.session_id);
-   if(action===S+'input'&&(!g.interactiveRecipes.includes(s.recipe)||typeof args.input!=='string'||args.input.length>5468))bad();
+   if(action===S+'input'&&(!(s.mode==='terminal'?g.terminal.allowInteractive&&s.interactive:g.interactiveRecipes.includes(s.recipe))||typeof args.input!=='string'||args.input.length>5468))bad();
   }else{
    if(!g.roots.includes(args.root_id)||typeof args.path!=='string'||args.path.length>1024||
     args.path.startsWith('/')||args.path.includes('\\')||args.path.includes(':')||
@@ -97,9 +112,9 @@ function createWorkstationTools({directory=path.join(__dirname,'..','session-aut
   if(r?.schema!=='vivim.control-receipt/1'||r.planId!==p.planId||r.planDigest!==p.planDigest||
    r.actionId!==action||!same(r.args,args)||r.approvedVia!=='desktop-owner-token'||!['applied','failed','uncertain'].includes(r.status))bad();
   if(r.status==='applied'&&(!r.executionPerformed||!obj(r.result)))bad();
-  if(r.status==='applied'&&action===S+'start'){
+  if(r.status==='applied'&&(action===S+'start'||action===TERMINAL)){
    if(r.result.sessionId!==r.planId)bad();
-   const ownership={grant:initial,sessionId:r.planId,recipe:args.recipe};
+   const ownership=action===TERMINAL?{grant:initial,sessionId:r.planId,mode:'terminal',interactive:terminalRequest(args).interactive}:{grant:initial,sessionId:r.planId,recipe:args.recipe};
    try{create(r.planId,'session',ownership)}catch(e){if(e.code!=='EEXIST'||!same(read(r.planId,'session'),ownership))bad();}
   }
   return {schema:'vivim.workstation-tunnel-receipt/1',planId:r.planId,actionId:action,status:r.status,
@@ -119,6 +134,7 @@ function createWorkstationTools({directory=path.join(__dirname,'..','session-aut
   const p=await request('plan',{actionId:action,args});
   if(p?.outcome!=='approval_required'||p.actionId!==action||p.risk!=='R2'||!same(p.args,args)||!ctl(p.planId)||!hex(p.planDigest,64))bad();
   if(action===S+'start'&&p.workstationBinding?.configSha!==g.recipeConfigSha)bad();
+  if(action===TERMINAL&&(p.workstationBinding?.schema!=='vivim.workstation-terminal-binding/1'||p.workstationBinding?.configSha!==g.terminal.configSha))bad();
   if(!action.startsWith(S)&&p.workstationBinding?.configSha!==g.rootConfigSha)bad();
   const binding={planId:p.planId,planDigest:p.planDigest};
   create(requestId,'plan',binding);
@@ -135,15 +151,17 @@ function createWorkstationTools({directory=path.join(__dirname,'..','session-aut
   authorize(action,args,false);return p.result;
  }
  const tools=[['vivim_workstation_recipes','List currently locally granted recipe IDs and workspace IDs; no executable paths or credentials.',
-  {type:'object',properties:{},required:[],additionalProperties:false},()=>{check();return {schema:'vivim.workstation-tunnel-grant-summary/1',recipes:g.recipes,roots:g.roots,interactiveRecipes:g.interactiveRecipes,allowWrites:g.allowWrites,expiresAt:g.expiresAt};},true]];
+  {type:'object',properties:{},required:[],additionalProperties:false},()=>{check();return {schema:'vivim.workstation-tunnel-grant-summary/1',recipes:g.recipes,roots:g.roots,interactiveRecipes:g.interactiveRecipes,allowWrites:g.allowWrites,expiresAt:g.expiresAt,...(g.terminal?{terminal:{programs:g.terminal.programs,roots:g.terminal.roots,allowInteractive:g.terminal.allowInteractive}}:{})};},true]];
  for(const [name,action,fields,mutating]of definitions){
-  if(action.startsWith(S)&&!g.recipes.length)continue;
-  if(action===S+'input'&&!g.interactiveRecipes.length)continue;
+  if(action===TERMINAL&&!g.terminal)continue;
+  if(action===S+'start'&&!g.recipes.length)continue;
+  if(action.startsWith(S)&&!g.recipes.length&&!g.terminal)continue;
+  if(action===S+'input'&&!g.interactiveRecipes.length&&!g.terminal?.allowInteractive)continue;
   if(!action.startsWith(S)&&(!g.roots.length||(mutating&&!g.allowWrites)))continue;
   const required=mutating?[...fields,'request_id']:fields;
   tools.push([name,'Use only the locally granted Host '+action+' capability. '+(mutating?'Supply a unique 32-character lowercase hexadecimal request_id; repeat only the same ID to inspect an uncertain receipt.':'Read-only, scoped to granted workspace or owned session.'),
    {type:'object',properties:Object.fromEntries(required.map(k=>[k,{type:'string'}])),required,additionalProperties:false},
-   a=>{const args=Object.fromEntries(fields.map(k=>{if(['content','old_text','new_text','input','literal'].includes(k)){const v=a[k];if(typeof v!=='string'||v.includes('\0')||Buffer.byteLength(v)>(k==='input'?4096:k==='literal'?160:5997))bad();return [k,'b64:'+Buffer.from(v,'utf8').toString('base64')];}return [k,a[k]];}));return mutating?mutation(action,args,a.request_id):readAction(action,args);},!mutating]);
+   a=>{if(action===TERMINAL){const v=a.request_json;if(typeof v!=='string'||Buffer.byteLength(v)>5997)bad();return mutation(action,{request:'b64:'+Buffer.from(v,'utf8').toString('base64')},a.request_id);}const args=Object.fromEntries(fields.map(k=>{if(['content','old_text','new_text','input','literal'].includes(k)){const v=a[k];if(typeof v!=='string'||v.includes('\0')||Buffer.byteLength(v)>(k==='input'?4096:k==='literal'?160:5997))bad();return [k,'b64:'+Buffer.from(v,'utf8').toString('base64')];}return [k,a[k]];}));return mutating?mutation(action,args,a.request_id):readAction(action,args);},!mutating]);
  }
  return tools;
 }
