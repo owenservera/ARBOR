@@ -12,12 +12,19 @@ const MAX_RESULTS:usize=80;
 fn prop<'a>(n:&'a Node,key:&str)->Option<&'a str>{n.properties.get(key).map(String::as_str)}
 fn owned(n:&Node)->bool{prop(n,"hqkg.exchange.source")==Some(OWNER)}
 fn file(n:&Node)->bool{owned(n)&&n.kind.as_str()=="source-file"
-    &&prop(n,"source_path").is_some()&&prop(n,"content_sha256").is_some()}
+    &&prop(n,"source_path").is_some_and(|p| !p.is_empty())
+    &&prop(n,"content_sha256").is_some_and(|d| d.len()==64 && d.bytes().all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b)))}
 fn owned_edge(e:&crate::Edge)->bool{
     e.properties.get("hqkg.exchange.source").map(String::as_str)==Some(OWNER)
 }
 #[derive(Default)]
-pub struct Walk {pub nodes:Vec<Value>,pub truncated:bool,pub returns_to_source:bool}
+pub struct Walk {
+    pub nodes:Vec<Value>,
+    pub truncated:bool,
+    pub depth_limited:bool,
+    pub result_limited:bool,
+    pub returns_to_source:bool,
+}
 /// Traverse actual resolved import edges. Depth is bounded even for cyclic
 /// repositories. A shared descendant is not misclassified as an import cycle.
 pub fn imports(graph:&Graph,root:&str,reverse:bool,depth:usize)->Result<Walk>{
@@ -37,10 +44,12 @@ pub fn imports(graph:&Graph,root:&str,reverse:bool,depth:usize)->Result<Walk>{
             if !owned_edge(edge){continue}
             let to=if reverse{&edge.from}else{&edge.to};
             if to==root {walk.returns_to_source=true;continue}
-            if !graph.node(to).is_some_and(file){continue}
+            if !graph.node(to).is_some_and(file){
+                return Err(Error::Corrupt("invalid owned import endpoint provenance".into()));
+            }
             if seen.contains(to){continue}
-            if level==depth {walk.truncated=true;continue}
-            if results.len()>=MAX_RESULTS{walk.truncated=true;continue}
+            if level==depth {walk.truncated=true;walk.depth_limited=true;continue}
+            if results.len()>=MAX_RESULTS{walk.truncated=true;walk.result_limited=true;continue}
             seen.insert(to.clone());
             results.insert(to.clone(),(level+1,id.clone()));
             queue.push_back((to.clone(),level+1));
