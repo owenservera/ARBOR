@@ -515,6 +515,7 @@ const validGraphKey=v=>typeof v==='string'&&v.length>=1&&v.length<=180&&!/[\u000
 export function validDevelopmentGraphRead(input){
   if(!plainGraphRecord(input)||!GRAPH_READ_OPERATIONS.includes(input.operation)||!validGraphKey(input.key))return false;
   const allowed=['operation','key'];
+  if(input.operation.startsWith('semantic-')&&!/^[a-z0-9][a-z0-9._-]*@\d+(?:\.\d+)*$/.test(input.key))return false;
   if(input.operation==='semantic-program'){
     allowed.push('task');
     if(!SEMANTIC_TASKS.includes(input.task))return false;
@@ -547,6 +548,9 @@ function validNativeGraphRead(value,operation,key,task,direction){
 // Existing native binary discovery, fixed read-only operation and bounded stdio.
 // Retain the diagnostic typed program entry point; it is not an owner-read request.
 export function queryDevelopmentGraph({root,journal,operation,key,depth,task,direction,program,env=process.env}={}){
+  // The diagnostic CLI supplies numeric flag values as strings. Normalize
+  // only its legacy impact depth; the owner port still requires an integer.
+  if(operation==='impact'&&typeof depth==='string'&&/^[0-8]$/.test(depth))depth=Number(depth);
   if(operation!=='program'){
     const input={operation,key,...(depth===undefined?{}:{depth}),...(task===undefined?{}:{task}),...(direction===undefined?{}:{direction})};
     if(!validDevelopmentGraphRead(input)||program!==undefined)throw Error('HQ_GRAPH_QUERY_INVALID');
