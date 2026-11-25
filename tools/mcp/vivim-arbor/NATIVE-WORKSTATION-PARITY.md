@@ -101,6 +101,20 @@ Evidence references are revision anchors in [HANDOFF.md](HANDOFF.md), unless mar
 - **31/A+07/L+08 — reusable UI operations:** Studio understands external software; VLANG internal capability descriptions. Use existing typed registry, proven browser interactions, Host receipts and single GPUI surface. Respect current product-workstream owners; this lane owns the tooling integration only.
 - **A+08 — measurement and reproducibility:** measure real wall time, memory, free disk, cache hits, manual interventions, retry count, evidence integrity and zero commercial calls. Compare like-for-like source and toolchain; separate local verification from cloud code/test evidence.
 
+### R032 — Expanded owner workstation profile (Craft integration handoff)
+
+Source: [OWNER-WORKSTATION-GOD-MODE-R001](https://github.com/owenservera/vivim-labs/blob/3ea9ec5ec9f16df7b64e30148bcaed3b50734d54/craft-anything-arbor-adapter/docs/OWNER-WORKSTATION-GOD-MODE-R001.md). Treat this as a requirement handoff, not an installed grant. The private owner workstation profile should support explicitly selected local drives, repositories, installed programs and applications within existing OS privileges. Ordinary onboarding retains narrower defaults. All operations remain within the existing Host authority and native workstation engine; no competing executor or remote self-grant.
+
+| Subcriterion | Existing R031 mapping | Acceptance |
+| --- | --- | --- |
+| Owner-selected expanded profile | 18, 27, L+07 | Local owner can inspect, select, approve, expire and revoke a distinct profile through supported configuration; ordinary profile stays unchanged. |
+| Coherent staged configuration | A+04, L+01, L+06 | Installer stages consistent root, terminal, tunnel and runtime manifest digests; verifies candidate independently and preserves known-good runtime for rollback. No direct modification of live authority files by remote tools. |
+| Additional development roots and applications | 22, 23, 26, 29 | Start with explicitly selected Craft and Labs roots and compiled Craft CLI; verify harmless directory listing/read and version command in each approved root; extend other owner-selected roots incrementally. |
+| OS and private-data boundaries | 03, 14, 15, 27 | Enforce OS ACLs, path and reparse-point checks, authority/credential protection, bounded responses, authenticated identity and revocation. Broad local access is not authorization for third-party effects or credential extraction. |
+| Live onboarding and recovery | 05, 06, 18, L+05–07 | Separate development candidate, supported local authorization and promotion, real client discovery/receipt, revoked-access denial and rollback verification; never overwrite the sole working production connection to test. |
+
+Ownership: native workstation lane owns installer/profile/configuration/transport integration; Craft/Studio lane owns external application semantics and Craft CLI behavior. Existing task claims remain authoritative. Initial implementation target is a separate development profile; do not silently change the installed production profile. This adds acceptance refinements, not new milestone IDs or accepted completions. R030 supersedes the source handoff's historical terminal probe denial: production general terminal is accepted, whereas expanded-root authority is still unverified. No permissions are changed by this documentation update.
+
 ### Receipt and status update contract
 
 For each attempted closure capture: milestone ID, existing claim/owner, timestamp, canonical source SHA and deployed runtime SHA (separate), exact non-secret command or operation, approved scope, plan/session receipt identifier, exit and stream completion, artifact digest or observable readback, test environment, negative test and remaining blocker. Record evidence in HANDOFF and canonical existing tracker/claim, then update this projection. Never infer acceptance from a listed tool or source-only implementation. Keep historical checkpoint sections unchanged. No new scheduling or grants implied by this register.
