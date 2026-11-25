@@ -2,6 +2,24 @@
 2026-11-25 | R001 | Read this before continuing development.
 
 
+## R030 — Production general terminal accepted; mandatory VIVIM-first migration (2026-11-25)
+
+Owner decision: all ChatGPT sessions use VIVIM ARBOR for authorized workstation operations moving forward. Routine Desktop Commander use is retired; exceptions must be specific and explicitly authorized. Cloud-first source engineering remains unchanged. Direct ZCode CLI only; PowerShell 7+ default.
+
+Verified deployed source: c73c44c79db06a6ca8e41bd4ecdfcb29b017d1e0. Windows build/stage exited 0: 92/92 Host/MCP, 28/28 native Rust and 16/16 candidate adapter tests reported passed. Production Host catalogue v24 activated with existing tunnel supervisor and rollback retained; maintenance cleared. Production terminal commands for dynamic Node argv, pwsh, Git, Cargo and ZCode --version passed. Legacy PowerShell 5.1 initialization failed; use pwsh. The ChatGPT plugin tools were refreshed through the existing authenticated Chrome UI with VIVIM browser primitives and a temporary Desktop Commander bridge.
+
+**End-to-end acceptance:** this ChatGPT session discovered 16 total VIVIM tools (health plus 15 workstation tools), including vivim_terminal_start. Direct VIVIM-only invocation of pwsh printed 7.6.3 and VIVIM_DIRECT_TERMINAL_OK, exit 0, session ctl-c07d97d3f4ed802b, 1.988 s. No Desktop Commander involved in that command. Fresh health ready/private-workstation, 15 workstation tools; hostDiscovery=false is not a terminal failure. Grant summary includes terminal programs node, git, powershell, cargo, rustc, rustdoc, pwsh, roots arbor and scratch, interactive allowed. These are observed capabilities, not permanent entitlements: inspect current grant and expiry before work. Do not expose private local configuration or credentials.
+
+### Session startup and terminal invocation
+1. Discover the installed VIVIM ARBOR connector. Call vivim_tunnel_health({}) and vivim_workstation_recipes({}); verify ready, terminal program and root admission.
+2. Call vivim_terminal_start with request_json containing the following JSON (encode as a JSON string for the tool) and a unique 32-character lowercase hexadecimal request_id:
+```json
+{"program":"pwsh","args":["-NoLogo","-NoProfile","-NonInteractive","-Command","$PSVersionTable.PSVersion.ToString(); Write-Output 'VIVIM_DIRECT_TERMINAL_OK'"],"root_id":"scratch","cwd":".","interactive":false,"timeout_ms":30000}
+```
+3. Read applied receipt planId as session ID; poll vivim_session_output with stdout_cursor and stderr_cursor initially "0", then use returned next cursors. Verify state exited, streams closed and exitCode. Existing status/input/cancel tools remain available for owned sessions. Repeat an uncertain effect only with its identical request ID; reconcile before a new mutation. Request JSON limit 5997 UTF-8 bytes; cwd is relative, not a sandbox; no credentials in argv.
+4. If the server has the tool but the client does not, open signed-in ChatGPT Settings → Plugins (Spanish Ajustes → Complementos) → VIVIM ARBOR → scroll to Tools → Refresh tools (Actualizar herramientas). Recheck actual client tool inventory and smoke test; refresh is not proven merely by clicking. Do not disconnect or reinstall. Native Studio-driven refresh is still pending.
+5. Keep GitHub main as source truth, honor active claims, and avoid resetting dirty work. VIVIM for all authorized local builds, verification, deployment and runtime operations. ZCode via direct CLI only; exact Codex OAuth model and inference still unverified. Full PTY parity, autonomous self-upgrade, grant renewal and broader independence checklist remain open. Do not claim full parity from this terminal milestone or revise the strict 32-item count without evidence mapping.
+
 ## R029 — General terminal Host/MCP vertical slice (2026-11-25)
 - Main bfda9e6 integrates the terminal action, exact typed request, Host dispatcher and shared native session worker, separate locally enabled terminal policy, MCP vivim_terminal_start and receipt/ownership checks. Old recipe grant remains valid and cannot authorize terminal. 4f04347 adds opt-in Windows staging, policy-hash release seal and readiness, Cargo toolchain pinning, regression tests for real native child and MCP contract, and build suite wiring. No new process engine or ZCode workflows. Sessions are piped, not ConPTY/PTY.
 - Exact cloud Node v22.16.0 source blobs verified: request 086c9704a276fdcf1c01b3096dcc5f760843078c, codec 3a70896571ef31eecfc7aa4b97935dab7758c143, request test ed9c896f2da2f8e638039a1cd9688179518de1fc, policy e58f9e35761dfe1ef0933ce0e2acc7cb5e537f1f and new policy test 9b6d73d3a1d5dac6d6e26da36a465160d73a7f94. Actual Node tests 8/8 PASS, exit 0, real filesystem/executable resolution and symlink refusal; not a Windows native worker or full Host test. 

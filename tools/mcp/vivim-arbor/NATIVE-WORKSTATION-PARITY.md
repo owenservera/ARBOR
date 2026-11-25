@@ -2,7 +2,11 @@
 
 Owner direction 2026-11-25: all workstation capabilities belong in ARBOR's existing Rust command layer, not in a parallel agent/authority. Reference MIT fork `owenservera/DesktopCommanderMCP-VIVIM` at `9a101b17e44577f0baefa4c7120f087881c5cc56`; preserve upstream license and credits when porting code. Its 25 declared tools are the reference, not a claim of runtime parity. No vendor relay cloning or access-control bypass.
 
-## R028 — Owner P0 override: general terminal
+## R030 — Live production terminal accepted
+
+General terminal is operational in production and directly callable from ChatGPT. [Handoff R030](https://github.com/owenservera/ARBOR/blob/main/tools/mcp/vivim-arbor/HANDOFF.md) records verified release, tests, client refresh and actual native command receipt. Routine local operations are VIVIM-first. Remaining parity is not yet complete; the historical strict checklist must be reconciled against evidence before increasing its count.
+
+## R028 (historical) — Owner P0 override: general terminal
 
 General-purpose terminal execution is the sole immediate MCP independence priority. Reuse the current Rust worker and Host plan/receipt/session lifecycle; replace per-command recipes for this explicitly locally authorized mode with a general argv/cwd/program contract. Source 596ff8c and tests 8fb581b define its initial strict request shape; 18 focused V8 checks passed, not deployed. Next: locally authorized program resolution and explicit terminal grant, Host dispatcher/session wiring, private MCP projection, supervised install and live Windows acceptance. Existing recipe grant does not authorize this new mode. A working directory is not a sandbox. Accept real dynamic argv, interactive input, cancellation, reconnect, denial without grant, then direct ZCode CLI using verified Codex OAuth model selection. Defer all unrelated work; retain working tunnel. Strict 14/32 unchanged.
 
