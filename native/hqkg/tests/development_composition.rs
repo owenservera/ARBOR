@@ -85,3 +85,135 @@ fn derived_graph_bindings_require_internal_policy_and_no_destination() {
     program.steps[0].destination = Some("external".into());
     assert!(hqkg::native_program::bind_indexed_program(&graph, &token, &program, &policy).is_err());
 }
+
+fn semantic_graph(ambiguous: bool, chain_len: usize, symbol_count: usize) -> Graph {
+    let mut nodes = BTreeMap::new();
+    let owned_node = |id: &str, kind: &str| {
+        let mut n = Node::new(id, NodeKind::Other(kind.into()), id);
+        n.properties.insert("hqkg.exchange.source".into(), "repos-hq.index".into());
+        n
+    };
+    let owned_edge = |id: &str, from: &str, relation: &str, to: &str| {
+        let mut e = Edge::new(id, from, relation, to);
+        e.properties.insert("hqkg.exchange.source".into(), "repos-hq.index".into());
+        e
+    };
+    let mut edges = BTreeMap::new();
+    for i in 0..=chain_len {
+        let id = format!("file-{i}");
+        let mut n = owned_node(&id, "source-file");
+        n.properties.insert("source_path".into(), format!("arbor/file-{i}.rs"));
+        n.properties.insert("content_sha256".into(), "a".repeat(64));
+        nodes.insert(id.clone(), n);
+        if i > 0 {
+            let edge_id = format!("import-{i}");
+            edges.insert(edge_id.clone(), owned_edge(&edge_id, &format!("file-{}", i-1), "imports", &id));
+        }
+    }
+    let mut identity = owned_node("identity", "semantic-id");
+    identity.properties.insert("semantic_id".into(), "vivim.example-capability@1".into());
+    nodes.insert("identity".into(), identity);
+    for i in 0..=usize::from(ambiguous) {
+        let id = format!("anchor-{i}");
+        let mut anchor = owned_node(&id, "semantic-file-anchor");
+        for (key, value) in [
+            ("semantic_id", "vivim.example-capability@1"), ("annotation_kind", "capability"),
+            ("status", "indexed-not-live-checked"), ("first_line", "1"), ("occurrence_count", "1"),
+        ] { anchor.properties.insert(key.into(), value.into()); }
+        anchor.properties.insert("source_path".into(), format!("arbor/file-{i}.rs"));
+        anchor.properties.insert("content_sha256".into(), "a".repeat(64));
+        nodes.insert(id.clone(), anchor);
+        let link = format!("anchor-source-{i}");
+        edges.insert(link.clone(), owned_edge(&link, &format!("file-{i}"), "has-semantic-anchor", &id));
+        let link = format!("anchor-identity-{i}");
+        edges.insert(link.clone(), owned_edge(&link, &id, "references-semantic-id", "identity"));
+    }
+    for i in 0..symbol_count {
+        let id = format!("symbol-{i}");
+        let mut n = owned_node(&id, "source-symbol");
+        n.properties.insert("source_path".into(), "arbor/file-0.rs".into());
+        n.properties.insert("content_sha256".into(), "a".repeat(64));
+        n.properties.insert("symbol_name".into(), format!("symbol_{i}"));
+        nodes.insert(id.clone(), n);
+        let link = format!("symbol-edge-{i}");
+        edges.insert(link.clone(), owned_edge(&link, "file-0", "contains-indexed-symbol", &id));
+    }
+    let exchange = Exchange {
+        manifest: Manifest { source: "repos-hq.index".into(), digest: String::new(), node_count: nodes.len(), edge_count: edges.len(), tombstone_count: 0, reconcile_edges: true },
+        nodes, edges, tombstones: Default::default()
+    };
+    let mut graph = Graph::new();
+    exchange.apply(&mut graph).unwrap();
+    graph
+}
+
+#[test]
+fn semantic_identity_compiles_to_existing_program_and_refuses_ambiguous_or_stale_inputs() {
+    use hqkg::native_program::{build_semantic_program, SemanticTask};
+    let graph = semantic_graph(false, 1, 0);
+    let (_, policy, mut token) = task(&graph_for_policy());
+    token.graph_epoch = graph.epoch();
+    let compiled = build_semantic_program(&graph, &token, "vivim.example-capability@1", SemanticTask::Compose, &policy).unwrap();
+    assert_eq!(compiled.anchor.file_id, "file-0");
+    assert!(compiled.program.steps.iter().filter(|s| s.id != "source").all(|s| s.inputs.is_empty()));
+    let registry = EngineRegistry::new();
+    install_development_engine(&registry, graph.clone()).unwrap();
+    let report = hqkg::native_program::run_indexed_program(&graph, &token, &compiled.program, &policy, &registry,
+        &mut IncrementalCache::new(), Budget::default(), &CancellationToken::new()).unwrap();
+    assert_eq!(report.state, RunState::Complete, "{:?}", report.failure);
+    let impact: Value = serde_json::from_str(&report.outputs.iter().find(|o| o.step_id == "impact").unwrap().data).unwrap();
+    assert_eq!(impact["sourceCount"], 2);
+    assert_eq!(impact["derivedSourceBindings"]["file-1"][0], "source");
+    let mut stale = token.clone(); stale.graph_epoch += 1;
+    assert!(build_semantic_program(&graph, &stale, "vivim.example-capability@1", SemanticTask::Inspect, &policy).is_err());
+    let ambiguous = semantic_graph(true, 1, 0);
+    token.graph_epoch = ambiguous.epoch();
+    assert!(build_semantic_program(&ambiguous, &token, "vivim.example-capability@1", SemanticTask::Inspect, &policy).is_err());
+    assert!(SemanticTask::parse("effect").is_err());
+}
+
+fn graph_for_policy() -> Graph { graph() }
+
+#[test]
+fn scoped_inspection_works_when_strict_import_composition_exceeds_depth() {
+    use hqkg::native_program::{build_semantic_program, SemanticTask};
+    let graph = semantic_graph(false, 5, 0);
+    let (_, policy, mut token) = task(&graph_for_policy());
+    token.graph_epoch = graph.epoch();
+    let registry = EngineRegistry::new();
+    install_development_engine(&registry, graph.clone()).unwrap();
+    let execute = |task_kind| {
+        let p = build_semantic_program(&graph, &token, "vivim.example-capability@1", task_kind, &policy).unwrap();
+        hqkg::native_program::run_indexed_program(&graph, &token, &p.program, &policy, &registry,
+            &mut IncrementalCache::new(), Budget::default(), &CancellationToken::new()).unwrap()
+    };
+    let composition = execute(SemanticTask::Compose);
+    assert_eq!(composition.state, RunState::Failed);
+    assert!(composition.failure.unwrap().contains("incomplete upstream"));
+    let inspected = execute(SemanticTask::Inspect);
+    assert_eq!(inspected.state, RunState::Complete);
+    let meaning: Value = serde_json::from_str(&inspected.outputs[1].data).unwrap();
+    assert_eq!(meaning["sourceCount"], 1);
+    assert_eq!(meaning["truncated"], false);
+    assert_eq!(meaning["semantics"][0]["semanticId"], "vivim.example-capability@1");
+    let walk = hqkg::development_relations::imports(&graph, "file-0", false, 3).unwrap();
+    assert!(walk.truncated && walk.depth_limited && !walk.result_limited);
+}
+
+#[test]
+fn symbol_projection_reports_limit_instead_of_silently_omitting_rows() {
+    use hqkg::native_program::{build_semantic_program, SemanticTask};
+    let graph = semantic_graph(false, 1, 49);
+    let (_, policy, mut token) = task(&graph_for_policy());
+    token.graph_epoch = graph.epoch();
+    let p = build_semantic_program(&graph, &token, "vivim.example-capability@1", SemanticTask::Inspect, &policy).unwrap();
+    let registry = EngineRegistry::new();
+    install_development_engine(&registry, graph.clone()).unwrap();
+    let report = hqkg::native_program::run_indexed_program(&graph, &token, &p.program, &policy, &registry,
+        &mut IncrementalCache::new(), Budget::default(), &CancellationToken::new()).unwrap();
+    assert_eq!(report.state, RunState::Complete);
+    let meaning: Value = serde_json::from_str(&report.outputs[1].data).unwrap();
+    assert_eq!(meaning["symbolCount"], 48);
+    assert_eq!(meaning["truncated"], true);
+    assert!(meaning["limitsReached"].as_array().unwrap().iter().any(|x| x == "symbol-results"));
+}
