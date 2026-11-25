@@ -38,6 +38,11 @@ impl Inbox {
         let count=record["observations"].as_array().ok_or("UIA_ROWS_INVALID")?.len();
         self.publish(record,scope,count)
     }
+    pub fn ingest_handoff(&self, h:&crate::handoff::Handoff)->Result<Value,&'static str>{
+        let source=self.read(&h.source_id)?;
+        let record=crate::handoff::validate(h,&source)?;
+        self.publish(record,&h.scope,h.candidates.len())
+    }
     fn publish(&self, record:Value, scope:&Scope, evidence_count:usize)->Result<Value,&'static str>{
         let bytes = serde_json::to_vec(&record).map_err(|_| "ENCODE_FAILED")?;
         if bytes.len() > LIMIT { return Err("SIZE_LIMIT"); }
