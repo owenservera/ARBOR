@@ -50,8 +50,16 @@ test('real native worker: Host approval, version, cursors, replay, interactive i
  const long=await f.execute(SESSION_START,{recipe:'node-sleep'});assert.equal((await f.read(SESSION_STATUS,{session_id:long.planId})).state,'running');
  const stopped=await f.execute(SESSION_CANCEL,{session_id:long.planId});assert.equal(stopped.result.state,'exited');
  const ttl=await f.execute(SESSION_START,{recipe:'node-timeout'});await sleep(400);assert.equal((await f.read(SESSION_STATUS,{session_id:ttl.planId})).state,'timed-out');
- const stale=f.plan(SESSION_START,{recipe:'node-version'});writeFileSync(f.file,'changed');
- assert.throws(()=>f.control.execute({planId:stale.planId,planDigest:stale.planDigest,approval}),/WORKSTATION_SESSION_BINDING_INVALID/);
+ const stale=f.plan(SESSION_START,{recipe:'node-version'});
+ const inventory=await f.session.inventory();assert.ok(inventory.retained>=4);assert.equal(inventory.running,0);
+ assert.equal(inventory.snapshotOnly,true);
+ f.session.beginDrain();
+ const drained=await f.session.inventory();assert.equal(drained.admissionClosed,true);assert.equal(drained.running,0);
+ assert.throws(()=>f.session.prepare(SESSION_START,{recipe:'node-version'}),/WORKSTATION_SESSION_DRAINING/);
+ await assert.rejects(f.session.start(stale.args,stale.workstationBinding,stale.planId),/WORKSTATION_SESSION_DRAINING/);
+ assert.equal((await f.read(SESSION_STATUS,{session_id:p.planId})).state,'exited');
+ writeFileSync(f.file,'changed');
+ assert.throws(()=>f.control.execute({planId:stale.planId,planDigest:stale.planDigest,approval}),/WORKSTATION_SESSION_DRAINING/);
  assert.throws(()=>f.control.status(p.planId,{source:'mobile'}),/CONTROL_PLAN_UNKNOWN/);
  console.log('NATIVE_SESSION_RECEIPT='+JSON.stringify({planId:p.planId,status:first.status,version:result.stdout.trim(),interactive:true,cancelled:true,timeout:true}));
 });
@@ -72,4 +80,14 @@ test('cargo recipe binds exact compiler and documentation tools, refuses changes
  writeFileSync(rustc,'changed');assert.throws(prepare,/WORKSTATION_SESSION_BINDING_INVALID/);
  recipe.toolchain.rustc.sha256=hash(rustc);assert.notEqual(prepare().bindingDigest,before.bindingDigest);
  recipe.toolchain.rustdoc={path:rustc,sha256:hash(rustc)};assert.throws(prepare,/WORKSTATION_SESSION_BINDING_INVALID/);
+});
+
+test('local drain never spawns a worker or admits a new session; closed worker remains unknown',async()=>{
+ let spawned=0;const port=createWorkstationSessionPort({env:{},spawnWorker:()=>{spawned++;throw Error('not allowed');}});
+ assert.equal((await port.inventory()).state,'idle');assert.equal((await port.inventory()).snapshotOnly,true);
+ port.beginDrain();port.beginDrain();const drained=await port.inventory();
+ assert.equal(drained.admissionClosed,true);assert.equal(drained.running,0);assert.equal(drained.snapshotOnly,false);
+ assert.throws(()=>port.prepare(SESSION_START,{recipe:'node-version'}),/WORKSTATION_SESSION_DRAINING/);
+ await assert.rejects(port.start({recipe:'node-version'},{},'ctl-0123456789abcdef'),/WORKSTATION_SESSION_DRAINING/);
+ port.close();assert.equal((await port.inventory()).state,'unknown');assert.equal(spawned,0);
 });
