@@ -31,7 +31,8 @@ export function projectVisibleControls(nodes){
   }
   return {controls,counts,redactedLabels:unnamed,truncated:Object.values(counts).reduce((a,b)=>a+b,0)>controls.length};
 }
-export async function captureSurface({profileDir,port,target,origin,evidenceRoot}){
+// Shared verified read-only page attachment. Internal consumers supply fixed read operations.
+export async function withVerifiedReadPage({profileDir,port,target,origin},read){
   if(!target||!origin||new URL(origin).origin!==origin||!origin.startsWith('https://'))throw Error('SURFACE_EXPLICIT_TARGET_AND_ORIGIN_REQUIRED');
   const version=await browserVersion({port});
   const owner=await verifyBrowserOwner({profileDir,port,version});
@@ -43,18 +44,23 @@ export async function captureSurface({profileDir,port,target,origin,evidenceRoot
     session=await connection.attach(t.id);
     const originOf=async()=> (await session.send('Runtime.evaluate',{expression:'location.origin',returnByValue:true})).result?.value;
     if(await originOf()!==origin)throw Error('SURFACE_ORIGIN_MISMATCH');
-    const result=await session.send('Accessibility.getFullAXTree',{});
+    const result=await read(session);
     if(await originOf()!==origin)throw Error('SURFACE_ORIGIN_CHANGED');
     const after=await verifyBrowserOwner({profileDir,port});
     const current=(await listTargets({port})).find(x=>x.id===t.id);
     if(after.browserIdentity!==owner.browserIdentity||!current||current.url!==t.url)throw Error('SURFACE_TARGET_CHANGED');
-    const projection=projectVisibleControls(result.nodes);
-    const dir=path.join(evidenceRoot,randomUUID());
-    await mkdir(dir,{recursive:true});
-    const receipt={schema:'vivim.craft-surface/1',origin,targetId:t.id,source:'studio-accessibility',coverage:'current-accessibility-tree-only',executionAuthorized:false,evidenceDirectory:dir,...projection};
-    await writeFile(path.join(dir,'surface.json'),JSON.stringify(receipt,null,2),{flag:'wx'});
-    return receipt;
+    return {result,targetId:t.id};
   }finally{
     try{if(session)await connection.detach(session.sessionId)}finally{connection.close()}
   }
+}
+
+export async function captureSurface({profileDir,port,target,origin,evidenceRoot}){
+  const {result,targetId}=await withVerifiedReadPage({profileDir,port,target,origin},session=>session.send('Accessibility.getFullAXTree',{}));
+  const projection=projectVisibleControls(result.nodes);
+  const dir=path.join(evidenceRoot,randomUUID());
+  await mkdir(dir,{recursive:true});
+  const receipt={schema:'vivim.craft-surface/1',origin,targetId,source:'studio-accessibility',coverage:'current-accessibility-tree-only',executionAuthorized:false,evidenceDirectory:dir,...projection};
+  await writeFile(path.join(dir,'surface.json'),JSON.stringify(receipt,null,2),{flag:'wx'});
+  return receipt;
 }
