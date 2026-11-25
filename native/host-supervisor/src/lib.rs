@@ -1,4 +1,5 @@
 //! Shared native Host supervision. No effect, grant, journal or provider authority.
+pub mod workstation_process;
 use reqwest::blocking::Client;
 use serde_json::Value;
 use sha2::{Digest, Sha256};
