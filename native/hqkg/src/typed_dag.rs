@@ -8,6 +8,7 @@
 use crate::engine::{Budget, CancellationToken, EngineRegistry, Scheduler, Task};
 use crate::{Error, Result};
 use std::collections::{BTreeMap, BTreeSet};
+use std::sync::Arc;
 
 pub use crate::engine::{PURE_ENGINE_SLOT, PURE_INTERFACE, PURE_OPERATIONS};
 
@@ -228,6 +229,7 @@ pub struct DagReport {
 #[derive(Clone, Debug)]
 struct Cached {
     generation: u64,
+    cache_identity: Arc<()>,
     engine: String,
     operation: String,
     graph_epoch: u64,
@@ -470,6 +472,7 @@ impl<'a> DagExecutor<'a> {
             plan.steps.iter().map(|s| (s.id.as_str(), s)).collect();
         let mut resolved: BTreeMap<String, MaterializedOutput> = BTreeMap::new();
         let mut staged: BTreeMap<(Namespace, String), Cached> = BTreeMap::new();
+        let mut run_generations: BTreeMap<String, Arc<()>> = BTreeMap::new();
         let start = std::time::Instant::now();
         let mut bytes = 0usize;
         for id in ordered {
@@ -491,6 +494,16 @@ impl<'a> DagExecutor<'a> {
                     break;
                 }
             };
+            let cache_identity = lease.cache_identity();
+            if let Some(prior) = run_generations.get(&step.engine) {
+                if !Arc::ptr_eq(prior, &cache_identity) {
+                    fail(&mut report, &id, RunState::StaleGeneration,
+                        Error::Conflict("engine replaced between dependent steps".into()));
+                    break;
+                }
+            } else {
+                run_generations.insert(step.engine.clone(), Arc::clone(&cache_identity));
+            }
             if lease.descriptor().interface != PURE_INTERFACE {
                 fail(
                     &mut report,
@@ -514,7 +527,7 @@ impl<'a> DagExecutor<'a> {
             field(&mut input, &step.input);
             field(&mut input, "sources");
             field(&mut input, &step.sources.len().to_string());
-            let mut provenance = Vec::new();
+            let mut provenance = BTreeSet::new();
             let mut source_ids: BTreeSet<String> = step.sources.iter().map(|s| s.id.clone()).collect();
             let mut sources = step.sources.iter().collect::<Vec<_>>();
             sources.sort_by(|a, b| {
@@ -524,7 +537,7 @@ impl<'a> DagExecutor<'a> {
                 field(&mut input, &src.id);
                 field(&mut input, &src.revision.to_string());
                 field(&mut input, &src.digest);
-                provenance.push(src.provenance.clone());
+                provenance.insert(src.provenance.clone());
             }
             field(&mut input, "dependencies");
             field(&mut input, &step.after.len().to_string());
@@ -545,10 +558,12 @@ impl<'a> DagExecutor<'a> {
                 report.failure = Some("framed input exceeds byte budget".into());
                 break;
             }
+            let provenance: Vec<String> = provenance.into_iter().collect();
             let key = (plan.namespace.clone(), id.clone());
             let cached = cache.values.get(&key);
             let (data, state, generation) = match cached {
                 Some(c) if c.generation == lease.generation()
+                    && Arc::ptr_eq(&c.cache_identity, &cache_identity)
                     && c.engine == step.engine && c.operation == step.operation
                     && c.graph_epoch == actual.graph_epoch && c.stamp == input => {
                     (c.data.clone(), OutputState::Reused, c.generation)
@@ -657,6 +672,7 @@ impl<'a> DagExecutor<'a> {
                 key,
                 Cached {
                     generation,
+                    cache_identity,
                     engine: step.engine.clone(),
                     operation: step.operation.clone(),
                     graph_epoch: actual.graph_epoch,
@@ -677,6 +693,17 @@ impl<'a> DagExecutor<'a> {
             };
             resolved.insert(id, output.clone());
             report.outputs.push(output);
+        }
+        // Recheck every participating slot, not merely the last operation.
+        // A replacement during another engine's work invalidates this run.
+        if report.state == RunState::Complete {
+            for (slot, identity) in &run_generations {
+                if !Arc::ptr_eq(identity, &self.registry.pin(slot)?.cache_identity()) {
+                    report.state = RunState::StaleGeneration;
+                    report.failure = Some("engine replaced before DAG completion".into());
+                    break;
+                }
+            }
         }
         if report.state == RunState::Complete {
             cache.values.extend(staged);
