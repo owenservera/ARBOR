@@ -1470,9 +1470,10 @@ impl Desktop {
     }
     fn toggle_phone_preview(&mut self,cx:&mut Context<Self>) {
         let next=Preferences {
-            show_phone_draft_in_devices:!self.preferences.show_phone_draft_in_devices
+            show_phone_draft_in_devices:!self.preferences.show_phone_draft_in_devices,
+            ..self.preferences.clone()
         };
-        match desktop_settings::save(next) {
+        match desktop_settings::save(next.clone()) {
             Ok(())=>{
                 self.preferences=next;
                 self.preferences_status="Saved local desktop preference".into();
@@ -1481,6 +1482,15 @@ impl Desktop {
                 self.preferences_status="Preference could not be saved; original privacy setting retained".into();
             }
         }
+        cx.notify();
+    }
+    fn toggle_menu_preference(&mut self,section:Section,cx:&mut Context<Self>){
+        let mut next=self.preferences.clone();
+        if next.toggle_menu(section.key()).is_ok()&&desktop_settings::save(next.clone()).is_ok(){
+            self.preferences=next;
+            if !self.preferences.menu_visible(section.key())&&self.menu_open==Some(section){self.menu_open=None;}
+            self.preferences_status="Saved local menu visibility".into();
+        }else{self.preferences_status="Could not save menu visibility; previous setting retained".into();}
         cx.notify();
     }
     fn surface_menu(&self, window:&Window, cx:&mut Context<Self>) -> AnyElement {
@@ -1496,6 +1506,7 @@ impl Desktop {
                 .window_control_area(WindowControlArea::Drag)
                 .child("VIVIM"));
         for section in Section::ALL {
+            if !self.preferences.menu_visible(section.key()){continue;}
             bar=bar.child(Button::new(section.key()).label(section.label())
                 .on_click(cx.listener(move |view,_,_,cx|{
                     view.menu_open=if view.menu_open==Some(section){None}else{Some(section)};
@@ -1646,6 +1657,24 @@ impl Render for Desktop {
                         .child(Button::new("settings-reconnect")
                             .label("Reconnect Host")
                             .on_click(cx.listener(|v,_,_,cx|v.reconnect_host(cx))));
+                    page=page.child(div().text_lg().child("Configuration · interface visibility"))
+                        .child("Hide menus without changing capability permissions. Settings always remains accessible.");
+                    if let Ok(registry)=vivim_programmability_core::configuration::Registry::embedded(){
+                        for (i,d) in registry.settings.iter().enumerate(){
+                            if d.local_menu(){
+                                if let Some(section)=Section::ALL.into_iter().find(|s|d.id==format!("ui.menu.{}",s.key())){
+                                    let visible=self.preferences.menu_visible(section.key());
+                                    page=page.child(Button::new(("configuration-menu",i))
+                                        .label(format!("{} · {}",d.label,if visible{"Visible"}else{"Hidden"}))
+                                        .on_click(cx.listener(move |v,_,_,cx|v.toggle_menu_preference(section,cx))));
+                                }
+                            }
+                        }
+                        page=page.child(div().text_lg().child("Background operation · adapter pending"));
+                        for d in registry.settings.iter().filter(|d|!d.local_menu()){
+                            page=page.child(div().text_sm().child(format!("{} · options: {} · not wired",d.label,d.options.join(" / "))));
+                        }
+                    }
                 }
                 Panel::Devices=>{
                     page=page

@@ -1,25 +1,40 @@
 //! GPUI-only Windows preferences; presentation options, NOT canonical
 //! product state. Host remains sole authority for input, effects and receipts.
-use std::{env,fs,io,path::{Path,PathBuf}};
+use std::{env,fs,io,collections::BTreeMap,path::{Path,PathBuf},sync::atomic::{AtomicU64,Ordering},io::Write};
+use vivim_programmability_core::configuration::Registry;
 use serde_json::{json,Value};
-const SCHEMA: &str = "vivim.gpui-desktop-preferences/1";
+const SCHEMA: &str = "vivim.gpui-desktop-preferences/2";
+const LEGACY: &str = "vivim.gpui-desktop-preferences/1";
+static TEMP:AtomicU64=AtomicU64::new(0);
 const LIMIT: u64 = 4096;
 
-#[derive(Clone,Copy,Debug,Default,PartialEq,Eq)]
+#[derive(Clone,Debug,Default,PartialEq,Eq)]
 pub struct Preferences {
     /// Privacy-safe by default: do not reveal an in-progress phone draft
     /// even in the PC-only Devices tool without owner opt-in.
     pub show_phone_draft_in_devices: bool,
+    pub configuration:BTreeMap<String,String>,
 }
 impl Preferences {
-    pub fn project(self) -> Value {
-        json!({"schema":SCHEMA,"showPhoneDraftInDevices":self.show_phone_draft_in_devices})
+    pub fn project(&self)->Value{
+        json!({"schema":SCHEMA,"showPhoneDraftInDevices":self.show_phone_draft_in_devices,"configuration":self.configuration})
     }
-    pub fn parse(value:&Value) -> Option<Self> {
+    pub fn parse(value:&Value)->Option<Self>{
         let map=value.as_object()?;
-        if map.len()!=2 || value["schema"]!=SCHEMA {return None;}
         let show=value["showPhoneDraftInDevices"].as_bool()?;
-        Some(Self{show_phone_draft_in_devices:show})
+        if map.len()==2&&value["schema"]==LEGACY{return Some(Self{show_phone_draft_in_devices:show,..Self::default()});}
+        if map.len()!=3||value["schema"]!=SCHEMA{return None;}
+        let configuration=serde_json::from_value(value["configuration"].clone()).ok()?;
+        if !Registry::embedded().ok()?.validate_local(&configuration){return None;}
+        Some(Self{show_phone_draft_in_devices:show,configuration})
+    }
+    pub fn menu_visible(&self,key:&str)->bool{
+        Registry::embedded().ok().and_then(|r|r.effective_local(&format!("ui.menu.{key}"),&self.configuration).map(str::to_owned)).as_deref()!=Some("hidden")
+    }
+    pub fn toggle_menu(&mut self,key:&str)->Result<(),String>{
+        let id=format!("ui.menu.{key}");
+        let next=if self.menu_visible(key){"hidden"}else{"visible"};
+        Registry::embedded()?.set_local(&mut self.configuration,&id,next)
     }
 }
 pub fn path() -> io::Result<PathBuf> {
@@ -54,7 +69,13 @@ pub fn save_at(file:&Path,settings:Preferences) -> io::Result<()> {
     if bytes.len() as u64>LIMIT {
         return Err(io::Error::new(io::ErrorKind::InvalidInput,"PREFERENCES_TOO_LARGE"));
     }
-    fs::write(file,bytes)
+    if file.exists(){read_at(file)?;}
+    if Preferences::parse(&settings.project()).is_none(){return Err(io::Error::new(io::ErrorKind::InvalidInput,"INVALID_PREFERENCES"));}
+    let temp=parent.join(format!(".desktop-preferences-{}-{}.tmp",std::process::id(),TEMP.fetch_add(1,Ordering::Relaxed)));
+    let mut out=fs::OpenOptions::new().write(true).create_new(true).open(&temp)?;
+    let result=(||{out.write_all(&bytes)?;out.sync_all()?;drop(out);fs::rename(&temp,file)})();
+    if result.is_err(){let _=fs::remove_file(&temp);}
+    result
 }
 pub fn load() -> io::Result<Preferences> {read_at(&path()?)}
 pub fn save(settings:Preferences) -> io::Result<()> {save_at(&path()?,settings)}
@@ -66,7 +87,7 @@ mod tests {
     #[test]
     fn default_is_inert_and_private() {
         assert_eq!(Preferences::default().show_phone_draft_in_devices,false);
-        assert_eq!(Preferences::parse(&json!({"schema":SCHEMA,
+        assert_eq!(Preferences::parse(&json!({"schema":LEGACY,
             "showPhoneDraftInDevices":false})),Some(Preferences::default()));
     }
     #[test]
@@ -83,8 +104,11 @@ mod tests {
         let dir=env::temp_dir().join(format!("vivim-desktop-preferences-{}-{nonce}",std::process::id()));
         let file=dir.join("desktop-preferences.json");
         assert_eq!(read_at(&file).unwrap(),Preferences::default());
-        let enabled=Preferences{show_phone_draft_in_devices:true};
-        save_at(&file,enabled).unwrap();
+        let mut enabled=Preferences{show_phone_draft_in_devices:true,..Preferences::default()};
+        enabled.toggle_menu("bar-developer").unwrap();
+        assert!(!enabled.menu_visible("bar-developer"));
+        assert!(enabled.toggle_menu("bar-settings").is_err());
+        save_at(&file,enabled.clone()).unwrap();
         assert_eq!(read_at(&file).unwrap(),enabled);
         fs::remove_dir_all(dir).unwrap();
     }

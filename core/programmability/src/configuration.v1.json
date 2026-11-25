@@ -1,0 +1,235 @@
+{
+  "schema": "vivim.configuration-registry/1",
+  "settings": [
+    {
+      "id": "ui.menu.bar-file",
+      "label": "File menu",
+      "category": "Interface",
+      "domain": "gpui",
+      "scope": "device",
+      "kind": "choice",
+      "default": "visible",
+      "options": [
+        "visible",
+        "hidden"
+      ],
+      "status": "local-menu",
+      "apply": "immediate",
+      "description": "Show or hide GPUI menu; does not change permissions."
+    },
+    {
+      "id": "ui.menu.bar-edit",
+      "label": "Edit menu",
+      "category": "Interface",
+      "domain": "gpui",
+      "scope": "device",
+      "kind": "choice",
+      "default": "visible",
+      "options": [
+        "visible",
+        "hidden"
+      ],
+      "status": "local-menu",
+      "apply": "immediate",
+      "description": "Show or hide GPUI menu; does not change permissions."
+    },
+    {
+      "id": "ui.menu.bar-view",
+      "label": "View menu",
+      "category": "Interface",
+      "domain": "gpui",
+      "scope": "device",
+      "kind": "choice",
+      "default": "visible",
+      "options": [
+        "visible",
+        "hidden"
+      ],
+      "status": "local-menu",
+      "apply": "immediate",
+      "description": "Show or hide GPUI menu; does not change permissions."
+    },
+    {
+      "id": "ui.menu.bar-tools",
+      "label": "Tools menu",
+      "category": "Interface",
+      "domain": "gpui",
+      "scope": "device",
+      "kind": "choice",
+      "default": "visible",
+      "options": [
+        "visible",
+        "hidden"
+      ],
+      "status": "local-menu",
+      "apply": "immediate",
+      "description": "Show or hide GPUI menu; does not change permissions."
+    },
+    {
+      "id": "ui.menu.bar-developer",
+      "label": "Developer menu",
+      "category": "Interface",
+      "domain": "gpui",
+      "scope": "device",
+      "kind": "choice",
+      "default": "visible",
+      "options": [
+        "visible",
+        "hidden"
+      ],
+      "status": "local-menu",
+      "apply": "immediate",
+      "description": "Show or hide GPUI menu; does not change permissions."
+    },
+    {
+      "id": "ui.menu.bar-help",
+      "label": "Help menu",
+      "category": "Interface",
+      "domain": "gpui",
+      "scope": "device",
+      "kind": "choice",
+      "default": "visible",
+      "options": [
+        "visible",
+        "hidden"
+      ],
+      "status": "local-menu",
+      "apply": "immediate",
+      "description": "Show or hide GPUI menu; does not change permissions."
+    },
+    {
+      "id": "runtime.mcp.window",
+      "label": "VIVIM plugin window",
+      "category": "Background operation",
+      "domain": "mcp",
+      "scope": "device",
+      "kind": "choice",
+      "default": "background",
+      "options": [
+        "visible",
+        "minimized",
+        "background"
+      ],
+      "status": "pending",
+      "apply": "restart",
+      "description": "Presentation of VIVIM-owned runtime only; adapter and live verification required. Preserve authorized access and diagnostics."
+    },
+    {
+      "id": "runtime.host.window",
+      "label": "Host service window",
+      "category": "Background operation",
+      "domain": "host",
+      "scope": "device",
+      "kind": "choice",
+      "default": "background",
+      "options": [
+        "visible",
+        "minimized",
+        "background"
+      ],
+      "status": "pending",
+      "apply": "restart",
+      "description": "Presentation of VIVIM-owned runtime only; adapter and live verification required. Preserve authorized access and diagnostics."
+    },
+    {
+      "id": "runtime.studio.window",
+      "label": "Studio service window",
+      "category": "Background operation",
+      "domain": "studio",
+      "scope": "device",
+      "kind": "choice",
+      "default": "background",
+      "options": [
+        "visible",
+        "minimized",
+        "background"
+      ],
+      "status": "pending",
+      "apply": "restart",
+      "description": "Presentation of VIVIM-owned runtime only; adapter and live verification required. Preserve authorized access and diagnostics."
+    },
+    {
+      "id": "runtime.terminal.window",
+      "label": "Terminal window",
+      "category": "Background operation",
+      "domain": "host",
+      "scope": "device",
+      "kind": "choice",
+      "default": "background",
+      "options": [
+        "visible",
+        "minimized",
+        "background"
+      ],
+      "status": "pending",
+      "apply": "next-launch",
+      "description": "Presentation of VIVIM-owned runtime only; adapter and live verification required. Preserve authorized access and diagnostics."
+    },
+    {
+      "id": "runtime.studio.chrome.window",
+      "label": "Chrome window",
+      "category": "Background operation",
+      "domain": "studio",
+      "scope": "device",
+      "kind": "choice",
+      "default": "visible",
+      "options": [
+        "visible",
+        "minimized",
+        "background",
+        "headless"
+      ],
+      "status": "pending",
+      "apply": "restart",
+      "description": "Presentation of VIVIM-owned runtime only; adapter and live verification required. Preserve authorized access and diagnostics."
+    },
+    {
+      "id": "ui.capability.terminal",
+      "label": "terminal controls",
+      "category": "Capability visibility",
+      "domain": "host",
+      "scope": "owner",
+      "kind": "choice",
+      "default": "visible",
+      "options": [
+        "visible",
+        "hidden"
+      ],
+      "status": "pending",
+      "apply": "immediate",
+      "description": "VIVIM-owned controls only, not authorization or external provider UI."
+    },
+    {
+      "id": "ui.capability.chrome",
+      "label": "chrome controls",
+      "category": "Capability visibility",
+      "domain": "studio",
+      "scope": "owner",
+      "kind": "choice",
+      "default": "visible",
+      "options": [
+        "visible",
+        "hidden"
+      ],
+      "status": "pending",
+      "apply": "immediate",
+      "description": "VIVIM-owned controls only, not authorization or external provider UI."
+    },
+    {
+      "id": "ui.capability.mcp",
+      "label": "mcp controls",
+      "category": "Capability visibility",
+      "domain": "mcp",
+      "scope": "owner",
+      "kind": "choice",
+      "default": "visible",
+      "options": [
+        "visible",
+        "hidden"
+      ],
+      "status": "pending",
+      "apply": "immediate",
+      "description": "VIVIM-owned controls only, not authorization or external provider UI."
+    }
+  ]
+}

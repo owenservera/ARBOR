@@ -44,6 +44,7 @@ pub mod live_system;
 pub mod agent_composer;
 pub mod activity_fabric;
 pub mod media_language;
+pub mod configuration;
 #[cfg(target_arch="wasm32")]
 pub mod browser_abi;
 mod lineage;
