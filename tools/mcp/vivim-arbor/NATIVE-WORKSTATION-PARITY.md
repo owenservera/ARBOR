@@ -2,6 +2,10 @@
 
 Owner direction 2026-11-25: all workstation capabilities belong in ARBOR's existing Rust command layer, not in a parallel agent/authority. Reference MIT fork `owenservera/DesktopCommanderMCP-VIVIM` at `9a101b17e44577f0baefa4c7120f087881c5cc56`; preserve upstream license and credits when porting code. Its 25 declared tools are the reference, not a claim of runtime parity. No vendor relay cloning or access-control bypass.
 
+## R028 — Owner P0 override: general terminal
+
+General-purpose terminal execution is the sole immediate MCP independence priority. Reuse the current Rust worker and Host plan/receipt/session lifecycle; replace per-command recipes for this explicitly locally authorized mode with a general argv/cwd/program contract. Source 596ff8c and tests 8fb581b define its initial strict request shape; 18 focused V8 checks passed, not deployed. Next: locally authorized program resolution and explicit terminal grant, Host dispatcher/session wiring, private MCP projection, supervised install and live Windows acceptance. Existing recipe grant does not authorize this new mode. A working directory is not a sandbox. Accept real dynamic argv, interactive input, cancellation, reconnect, denial without grant, then direct ZCode CLI using verified Codex OAuth model selection. Defer all unrelated work; retain working tunnel. Strict 14/32 unchanged.
+
 ## Native execution contract
 Use `core/programmability` typed deterministic planning, preclaim and effect disposition; the existing `vivim-product-pure` kernel for pure transformations. Host alone owns local source grants, command catalog, approval/claim, effects, CAS, receipts, revocation and recovery. Existing HQ work orders, provider admissions and model router remain authoritative. GPUI is the one product renderer; PWA remains its remote viewport. The existing local stdio compatibility adapter is transitional, never imported into the health-only browser tunnel.
 
