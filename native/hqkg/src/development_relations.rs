@@ -23,12 +23,16 @@ pub struct Walk {
     pub truncated:bool,
     pub depth_limited:bool,
     pub result_limited:bool,
+    pub edge_limited:bool,
     pub returns_to_source:bool,
 }
 /// Traverse actual resolved import edges. Depth is bounded even for cyclic
 /// repositories. A shared descendant is not misclassified as an import cycle.
 pub fn imports(graph:&Graph,root:&str,reverse:bool,depth:usize)->Result<Walk>{
     if depth>MAX_DEPTH{return Err(Error::Invalid("source traversal depth exceeds four".into()))}
+    walk_imports(graph,root,reverse,depth,MAX_RESULTS,usize::MAX)
+}
+fn walk_imports(graph:&Graph,root:&str,reverse:bool,depth:usize,max_results:usize,max_edges:usize)->Result<Walk>{
     if !graph.node(root).is_some_and(file){
         return Err(Error::Invalid("source traversal needs an imported source file".into()))
     }
@@ -37,10 +41,13 @@ pub fn imports(graph:&Graph,root:&str,reverse:bool,depth:usize)->Result<Walk>{
     let mut queue=VecDeque::from([(root.to_owned(),0usize)]);
     let mut results=BTreeMap::<String,(usize,String)>::new();
     let mut walk=Walk::default();
-    while let Some((id,level))=queue.pop_front(){
+    let mut scanned=0usize;
+    'walk: while let Some((id,level))=queue.pop_front(){
         let edges=if reverse{graph.incoming(&id,Some("imports"))?}
             else{graph.outgoing(&id,Some("imports"))?};
         for edge in edges{
+            if scanned>=max_edges{walk.truncated=true;walk.edge_limited=true;break 'walk}
+            scanned+=1;
             if !owned_edge(edge){continue}
             let to=if reverse{&edge.from}else{&edge.to};
             if to==root {walk.returns_to_source=true;continue}
@@ -49,7 +56,7 @@ pub fn imports(graph:&Graph,root:&str,reverse:bool,depth:usize)->Result<Walk>{
             }
             if seen.contains(to){continue}
             if level==depth {walk.truncated=true;walk.depth_limited=true;continue}
-            if results.len()>=MAX_RESULTS{walk.truncated=true;walk.result_limited=true;continue}
+            if results.len()>=max_results{walk.truncated=true;walk.result_limited=true;continue}
             seen.insert(to.clone());
             results.insert(to.clone(),(level+1,id.clone()));
             queue.push_back((to.clone(),level+1));
@@ -70,6 +77,32 @@ pub fn imports(graph:&Graph,root:&str,reverse:bool,depth:usize)->Result<Walk>{
     });
     Ok(walk)
 }
+
+/// Bounded larger static coverage, separate from strict typed composition.
+/// Each partition contains at most sixteen verified source identities.
+/// Partitions are not execution plans and do not imply complete interpretation.
+pub fn partitioned_imports(graph:&Graph,root:&str,reverse:bool)->Result<Value>{
+    const COVERAGE_DEPTH:usize=32;
+    const COVERAGE_RESULTS:usize=512;
+    const COVERAGE_EDGES:usize=32768;
+    const PARTITION_SIZE:usize=16;
+    let walk=walk_imports(graph,root,reverse,COVERAGE_DEPTH,COVERAGE_RESULTS,COVERAGE_EDGES)?;
+    let source=graph.node(root).ok_or_else(||Error::Missing("coverage root absent".into()))?;
+    let root=json!({"id":source.id,"path":prop(source,"source_path"),
+        "revision":source.version,"digest":prop(source,"content_sha256"),"depth":0});
+    let partitions:Vec<_>=walk.nodes.chunks(PARTITION_SIZE).enumerate()
+        .map(|(i,rows)|json!({"index":i,"sources":rows})).collect();
+    Ok(json!({"schema":"hqkg.partitioned-import-coverage/1","epoch":graph.epoch(),
+        "authority":"none","evidence":"indexed-static-only","root":root,
+        "direction":if reverse{"dependents"}else{"imports"},
+        "complete":!walk.truncated,"depthLimited":walk.depth_limited,
+        "resultLimited":walk.result_limited,"edgeLimited":walk.edge_limited,
+        "returnsToSource":walk.returns_to_source,
+        "sourceCount":walk.nodes.len(),"partitionCount":partitions.len(),"partitions":partitions,
+        "bounds":{"depth":COVERAGE_DEPTH,"sources":COVERAGE_RESULTS,"edges":COVERAGE_EDGES,"partitionSize":PARTITION_SIZE},
+        "executionAuthorized":false,"effectPerformed":false}))
+}
+
 #[derive(Default)]
 pub struct SemanticView{
     pub observations:Vec<Value>,pub potential_wiring:Vec<Value>,pub truncated:bool,
