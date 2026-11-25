@@ -1,3 +1,5 @@
+> **ARBOR core subsystem — 2026-11-25.** Studio is the incumbent external-software observation, reconstruction, capability-learning and browser-actuation engine of VIVIM, not a second product application. See [Studio Core convergence contract](../docs/product/STUDIO-CORE-CONVERGENCE-R001.md) for current source census, ownership and migration priorities. Native GPUI is the only product renderer; the paired PWA is its remote viewport. Existing Studio browser custody, journals and local data remain intact; Host alone authorizes product effects. Historical standalone preview instructions below are retained as donor context, not the current canonical ARBOR launch procedure or live acceptance.
+
 <div align="center">
 
 ![VIVIM — Your AI. Your world.](assets/vivim-repo-banner.svg)
