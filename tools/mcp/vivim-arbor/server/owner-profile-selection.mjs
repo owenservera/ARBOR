@@ -34,14 +34,14 @@ export function resolveOwnerSelection(selection,{baseRoots,basePrograms,protecte
   rootIds.add(r.id);roots.push({id:r.id,path});
  }
  for(const v of selection.programs){
-  if(!exact(v,['id','path'])||!programId(v.id)||programIds.has(v.id))fail();
+  if(!exact(v,['id','path','sha256'])||!programId(v.id)||programIds.has(v.id)||!sha(v.sha256))fail();
   const path=clean(resolvePath(clean(v.path),'file'));
   if(p.extname(path).toLowerCase()!=='.exe'||/\\Microsoft\\WindowsApps\\/i.test(path))fail();
   // A program may live inside an approved workspace; it may not live in
   // private authority, credential, or runtime directories.
   rejectProtected(path,protectedCanonical);
   if(programs.some(x=>pathKey(x.path)===pathKey(path)))fail();
-  const sha256=hashProgram(path);if(!sha(sha256))fail();
+  const sha256=hashProgram(path);if(!sha(sha256)||sha256!==v.sha256)fail();
   programIds.add(v.id);programs.push({id:v.id,path,sha256});
  }
  return {schema:'vivim.owner-workstation-selection-result/1',roots,programs,expiresInMinutes:selection.expiresInMinutes,allowInteractive:selection.allowInteractive,allowWrites:selection.allowWrites};
@@ -58,9 +58,16 @@ function existing(s,kind){
 }
 function readJson(s,max=65536){const st=lstatSync(s);if(!st.isFile()||st.isSymbolicLink()||st.size>max)fail();return JSON.parse(readFileSync(s,'utf8'));}
 function hashProgram(s){const st=lstatSync(s);if(st.size<1||st.size>256*1024*1024)fail();return createHash('sha256').update(readFileSync(s)).digest('hex');}
+export function readOwnerSelection(file,expectedSha){
+ if(!sha(expectedSha))fail();
+ const st=lstatSync(file);if(!st.isFile()||st.isSymbolicLink()||st.size<1||st.size>65536)fail();
+ const bytes=readFileSync(file);
+ if(bytes.length!==st.size||createHash('sha256').update(bytes).digest('hex')!==expectedSha)fail();
+ return JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes));
+}
 function main(){
- if(process.platform!=='win32'||process.argv.length!==4)fail();
- const selection=readJson(process.argv[2]),context=readJson(process.argv[3]);
+ if(process.platform!=='win32'||process.argv.length!==5)fail();
+ const selection=readOwnerSelection(process.argv[2],process.argv[4]),context=readJson(process.argv[3]);
  if(!exact(context,['baseRoots','basePrograms','protectedPaths'])||!Array.isArray(context.baseRoots)||!Array.isArray(context.basePrograms)||!Array.isArray(context.protectedPaths)||context.protectedPaths.length<2)fail();
  const result=resolveOwnerSelection(selection,{...context,resolvePath:existing,hashProgram});
  process.stdout.write(JSON.stringify(result)+'\n');

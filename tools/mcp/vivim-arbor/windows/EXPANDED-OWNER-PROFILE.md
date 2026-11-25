@@ -20,7 +20,8 @@ Example selection shape (illustrative paths, not discovered machine facts):
   "programs": [
     {
       "id": "craft-cli",
-      "path": "D:\\work\\craft-anything\\target\\release\\craft-anything-cli.exe"
+      "path": "D:\\work\\craft-anything\\target\\release\\craft-anything-cli.exe",
+      "sha256": "REPLACE_WITH_REVIEWED_64_CHARACTER_LOWERCASE_SHA256"
     }
   ],
   "expiresInMinutes": 120,
@@ -29,8 +30,10 @@ Example selection shape (illustrative paths, not discovered machine facts):
 }
 ```
 
-Local discovery: use the read-only PowerShell 7 helper below to enumerate specifically requested installed executable names; review exact paths and approve only required programs. For Craft, select the actual compiled executable, not an assumed path. Browser discovery is read-only; signed-in browser work belongs to existing Studio/Host ownership, not a second control plane.
+Local discovery: run `Find-OwnerProgramCandidates.ps1 -Names @('craft-anything-cli.exe','chrome.exe') -ExplicitPaths @('<actual compiled Craft CLI path>')` in PowerShell 7. It checks PATH, Windows App Paths (both registry views) and explicit paths; it does not launch anything. Review exact paths and SHA-256 fingerprints; copy the approved digest into each selected program entry. Discovery is not permission. The selected program hash must still match at staging. For Craft, select the actual compiled executable, not an assumed path. Browser discovery is read-only; signed-in browser work belongs to existing Studio/Host ownership, not a second control plane.
 
-Stage the verified current source from PowerShell 7 locally, using the existing Build-WorkstationRelease.ps1 with -EnableGeneralTerminal -OwnerProfilePath <private selection path>. Never use -Activate with this selection. The same existing root, program, grant and release seal checks apply. Tool count may change for read-only and noninteractive selections. The exact runtime/manifest and locally approved promotion remain necessary. Test the separate candidate before activation. No autonomous grant issuance or live changes were added.
+Stage the verified current source from PowerShell 7 locally, using the existing Build-WorkstationRelease.ps1 with -EnableGeneralTerminal -OwnerProfilePath <private selection path> -OwnerProfileSha256 <reviewed selection file SHA-256>. Compute the reviewed selection file digest locally with `(Get-FileHash -LiteralPath $selectionFile -Algorithm SHA256).Hash.ToLowerInvariant()` after reviewing the file. The installer rechecks the exact bytes after building; the manifest binds the reviewed digest. `allowWrites` controls the file-mutation tools only; it is not an OS sandbox for an admitted terminal program. Never use -Activate with this selection. The same existing root, program, grant and release seal checks apply. Tool count may change for read-only and noninteractive selections. The exact runtime/manifest and locally approved promotion remain necessary. Test the separate candidate before activation. No autonomous grant issuance or live changes were added.
 
 Acceptance: ordinary default unchanged; explicit roots and binary hashes bound; negative cases rejected; source-pinned Windows build/stage and seal; supported owner-approved activation; actual grant summary and safe root/program tests; revoke and rollback. Studio and GPUI owner integration, centralized settings surface and real Craft/desktop acceptance remain open.
+
+No second browser interaction surface: Studio/Harness convergence is held for its separate owner session (R033). The executable discovery helper does not control browser sessions or change the existing Host or GPUI configuration authority.

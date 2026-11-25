@@ -29,6 +29,9 @@ export function validateEvidence(manifest,receipt,grant,recipes,roots,now=Date.n
   !sha(manifest.recipeConfigSha)||!sha(manifest.rootConfigSha))deny();
  for(const k of Object.keys(helperNames))
   if(!sha(manifest.helperSha256?.[k])||manifest.helperSha256[k]!==receipt.helpers?.[k])deny();
+ if(manifest.ownerProfile!==undefined||manifest.ownerSelectionSha256!==undefined){
+  if(manifest.ownerProfile!=='expanded'||!sha(manifest.ownerSelectionSha256)||!sha(manifest.terminalConfigSha))deny();
+ }
  if(grant?.schema!=='vivim.workstation-tunnel-grant/1'||!sha(grant.id,32)||grant.port!==43187||
   !Number.isSafeInteger(grant.expiresAt)||grant.expiresAt<=now||grant.expiresAt-now>86400000||
   grant.dataRoot!==manifest.dataRoot||grant.recipeConfigSha!==manifest.recipeConfigSha||grant.rootConfigSha!==manifest.rootConfigSha||
