@@ -157,7 +157,7 @@ function rawSpan(text, interp, key, action) {
 // Text slots with an explicit preposition are literal owner content. NLCL's
 // token projection is folded for interpretation, so slice the ORIGINAL sentence.
 function literalAfterPrep(text, preps) {
-  const folded = text.toLowerCase();
+  const folded = maskControlLiterals(text).toLowerCase();
   for (let i = 0; i < text.length; i++) {
     if (i > 0 && !/\s/.test(text[i - 1])) continue;
     for (const prep of preps) {
@@ -176,7 +176,7 @@ function argsFrom(action, interp, text) {
   for (const [key, type] of Object.entries(action.args)) {
     const hint = action.language?.slots?.[key] ?? {};
     let v = payload?.[key];
-    if (hint.match) { const m = String(text).match(new RegExp('(?:^|\\s)(' + hint.match + ')(?=$|\\s|[.!?])', 'i')); v = m ? m[1] : null; }
+    if (hint.match) { const m = maskControlLiterals(text).match(new RegExp('(?:^|\\s)(' + hint.match + ')(?=$|\\s|[.!?])', 'i')); v = m ? m[1] : null; }
     else if (hint.kind === 'rest' || hint.kind === 'text') {
       v = hint.kind === 'text' && Array.isArray(hint.preps) && hint.preps.length
         ? literalAfterPrep(text, hint.preps) // absent separator => incomplete, never guess
@@ -213,6 +213,12 @@ function plausible(action, input, taught) {
 // These checks must run before device fast paths, help/teach recognizers and slot extraction.
 // Quoted literal text is data, not an imperative clause. Preserve apostrophes
   // within ordinary words (don't, l'usuari), which remain safety syntax.
+// Preserve source offsets while excluding quoted owner content from structural
+// scope matching, target detection and command-separator checks.
+function maskControlLiterals(text) {
+  return String(text ?? '').replace(/"(?:\\.|[^"\\])*"|“[^”]*”|«[^»]*»|‘[^’]*’|(?<![\p{L}\p{N}_])'(?:\\.|[^'\\])*'/gu,
+    match => ' '.repeat(match.length));
+}
 function safeSyntaxFeedback(world) {
   return { status: 'refused', confidence: 0, canonical: null, reading: null,
     nlclVersion: NCLL_VERSION, worldV: world?.v,
@@ -220,8 +226,7 @@ function safeSyntaxFeedback(world) {
 }
 export function guardControlSyntax(text, { catalog, world }) {
   const raw = String(text ?? '');
-  const unquoted = raw.replace(/"(?:\\.|[^"\\])*"|“[^”]*”|«[^»]*»|‘[^’]*’|(?<![\p{L}\p{N}_])'(?:\\.|[^'\\])*'/gu,
-    match => ' '.repeat(match.length));
+  const unquoted = maskControlLiterals(raw);
   const normalized = fold(unquoted).replace(/\u2019/g, "'").trim();
   const make = (outcome, code, message) => ({
     schema: LANGUAGE_SCHEMA, input: raw, outcome,
@@ -312,7 +317,7 @@ export function interpretControl(text, { catalog, world }) {
   // Composite commands ("x and stop y") are not split yet: one typed action per approval.
   // A clause boundary followed by another catalog verb is a second command, not slot text.
   const verbs = new Set(catalog.actions.flatMap(a => a.language?.verbs ?? []).map(fold));
-  const clauses = fold(text).split(/\s*(?:\band then\b|\bthen\b|\band\b|&|;)\s*/).filter(Boolean);
+  const clauses = fold(maskControlLiterals(text)).split(/\s*(?:\band then\b|\bthen\b|\band\b|&|;)\s*/).filter(Boolean);
   if ((interp.tokens ?? []).some(t => t.family === '&') ||
       clauses.slice(1).some(c => verbs.has(c.split(/[^a-z0-9]+/).filter(Boolean)[0]))) {
     return { ...base, outcome: 'clarification_required', question: 'Please give one command at a time.', choices: [] };
@@ -321,7 +326,7 @@ export function interpretControl(text, { catalog, world }) {
   if (!primary?.language) return { ...base, outcome: 'interpretation_required' };
 
   // ---- scope resolution: verbs like "stop" / "show" are shared across actions ----
-  const input = words(text);
+  const input = words(maskControlLiterals(text));
   const verb = fold(ir.provenance?.verbs?.[0] ?? '');
   const pool = new Map([[primary.id, primary]]);
   for (const alt of interp.alternatives ?? []) if (byId.get(alt.intent)?.language) pool.set(alt.intent, byId.get(alt.intent));
