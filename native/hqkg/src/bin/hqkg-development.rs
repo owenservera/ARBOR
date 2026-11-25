@@ -5,7 +5,7 @@
 //! No graph mutations, personal data, provider calls or Host effect grants.
 use hqkg::{Error,Graph,Journal,Result};
 use hqkg::semantic_source;
-use hqkg::native_program::{DevelopmentSession, SemanticProgram, SemanticTask};
+use hqkg::native_program::{build_semantic_program, DevelopmentSession, SemanticProgram, SemanticTask};
 use hqkg::development_relations;
 use hqkg::engine::{Budget,CancellationToken,EngineRegistry};
 use hqkg::development_engine::install_development_engine;
@@ -176,6 +176,17 @@ fn semantic_batch(graph:Graph,epoch:u64)->Result<Value>{
     Ok(json!({"schema":"hqkg.semantic-batch/1","epoch":epoch,"authority":"read-only",
         "complete":complete,"results":results,"executionAuthorized":false,"effectPerformed":false}))
 }
+fn semantic_coverage(graph:&Graph,key:&str,direction:&str)->Result<Value>{
+    let reverse=match direction{"imports"=>false,"dependents"=>true,
+        _=>return Err(Error::Invalid("coverage direction must be imports or dependents".into()))};
+    let expected=revision(graph.epoch());
+    let compiled=build_semantic_program(graph,&expected,key,SemanticTask::Inspect,&fixed_policy())?;
+    let mut value=development_relations::partitioned_imports(graph,&compiled.anchor.file_id,reverse)?;
+    value["semanticId"]=json!(key);
+    value["anchorId"]=json!(compiled.anchor.anchor_id);
+    if value.to_string().len()>1024*1024{return Err(Error::Invalid("coverage output exceeds byte budget".into()))}
+    Ok(value)
+}
 fn execute_program(graph:&Graph,epoch:u64)->Result<Value>{
     let mut input=String::new();
     io::stdin().lock().take(65_537).read_to_string(&mut input)?;
@@ -209,7 +220,7 @@ fn compute_source(graph:&Graph,id:&str)->Result<Value>{
 }
 fn run()->Result<Value>{
     let args=std::env::args().skip(1).collect::<Vec<_>>();
-    if args.len()<3||args.len()>4{return Err(Error::Invalid("usage: hqkg-development <absolute-journal> sources|symbols|impact|wiring <key> [depth] | program <epoch> | compute <source-file-id> | semantic-program <semantic-id> inspect|impact|compose | semantic-batch <epoch>".into()))}
+    if args.len()<3||args.len()>4{return Err(Error::Invalid("usage: hqkg-development <absolute-journal> sources|symbols|impact|wiring <key> [depth] | program <epoch> | compute <source-file-id> | semantic-program <semantic-id> inspect|impact|compose | semantic-batch <epoch> | semantic-coverage <semantic-id> imports|dependents".into()))}
     let graph=open(Path::new(&args[0]))?;
     if args[1]=="semantic-batch"{
         if args.len()!=3{return Err(Error::Invalid("semantic-batch requires exact graph epoch".into()))}
@@ -220,6 +231,10 @@ fn run()->Result<Value>{
         return semantic_program(graph,&args[2],SemanticTask::parse(&args[3])?);
     }
     graph.check_indexes()?;
+    if args[1]=="semantic-coverage"{
+        if args.len()!=4{return Err(Error::Invalid("semantic-coverage requires exact semantic ID and direction".into()))}
+        return semantic_coverage(&graph,&args[2],&args[3])
+    }
     if args[1]=="compute"{
         if args.len()!=3{return Err(Error::Invalid("compute requires one exact source-file ID".into()))}
         return compute_source(&graph,&args[2])
