@@ -30,4 +30,7 @@ test('native SDK compiles the exact already-read file', {skip:!process.env.VIVIM
  const x=setup(t);const result=createCodingContext({env:x.env})(x.project,'lib.rs',x.result);
  assert.equal(result.status,'compiled',JSON.stringify(result));assert.equal(result.semantic.protocolGeneration,1);
  assert.equal(result.semantic.declarations[0].value,'Actual source');assert.equal(result.semantic.declarations[0].scope,'unbound');
+ assert.equal(result.semantic.language.availableTags.length,18);
+ assert.equal(result.semantic.language.definitions.find(d=>d.id==='annotation.context').revision,1);
+ assert.equal(result.semantic.language.definitions.find(d=>d.id==='annotation.context').meaning,'Purpose and semantic orientation');
 });

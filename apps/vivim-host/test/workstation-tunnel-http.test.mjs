@@ -78,6 +78,8 @@ test('real MCP stdio, protected owner auth, Host HTTP, native session reconnect 
   assert.equal(c.semantic.sourceDigest,ordinary.digest);
   assert.equal(c.policy.authority,'locally-pinned-project-policy');
   assert.ok(c.semantic.declarations.some(d=>d.tag==='context'&&d.assurance==='source-assertion'));
+  assert.equal(c.semantic.language.availableTags.length,18);
+  assert.equal(c.semantic.language.definitions.find(d=>d.id==='annotation.context').meaning,'Purpose and semantic orientation');
   console.log('DEVELOPMENT_MCP_PROOF='+JSON.stringify({sourceDigest:c.sourceDigest,actualSource:Boolean(actualSource),policy:c.policy,semantic:c.semantic,genericUnchanged:true}));
  }
  console.log('MCP_WORKSTATION_RECEIPTS='+JSON.stringify({session:start.planId,version:output.stdout.text.trim(),edit:edited.planId,readback:true,reconnected:true}));
