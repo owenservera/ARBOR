@@ -42,3 +42,31 @@ Baseline: clone reference 25 tools (24 general plus vendor feedback); ARBOR main
 Critical path B01→B02→B03→B04→B05→B06→B07→B09. B08 is the requested practical agent demonstration after B03/B04 with source/workspace safety; it is not a prerequisite to ordinary Git/Rust/Node self-development. B10 may be developed in parallel only where it does not delay the cutover. Host/catalog, transport and local deployment must advance as a vertical slice instead of accumulating disconnected pure primitives.
 
 Prioritize the live process launch/output/cancel slice before richer filesystem formats, fuzzy editing, broad search, other agent adapters or UI work. Use direct GitHub for source work now; use commercial Commander once per genuinely local installation/test batch, not repeated polling when avoidable. No background continuation implied without a verified running scheduler. Current first actionable gap B02/B03 remains OPEN; no new capability is activated by this plan.
+
+## R021 — Dedicated independence and acceleration ownership (2026-11-25)
+
+Current observed baseline: 7/7 Era 1, 7/13 Era 2, 0/12 Era 3 = 14/32 strictly live-accepted. This is a conservative checklist count, not percentage of all engineering work. Live VIVIM health ready/private-workstation/12 tools; eleven recipes in the current grant, arbor and scratch roots. Previous actual remote operations are documented in R020 HANDOFF. Do not regress this baseline. Source implementation alone is not acceptance.
+
+| Era 2 remaining | Evidence and next action |
+| --- | --- |
+| General authorized terminal commands | Registered recipe execution works; broaden typed development operations only via locally admitted recipes/Host. |
+| Process-tree cancellation | Windows creation-time Job Object source fca7d0e; additional drop test d9d8998; compile, real descendant cancellation, timeout and unrelated-job protection, then live deployment. |
+| Independent Rust and Node builds | Cargo previously launched Rustup; Node printed passes but timed out. Toolchain pinning d9d8998 and local build/stage entrypoint 7ccd378 are source-only. Verify actual exit, not TAP lines alone. |
+| Self-update and rollback | Stage entrypoint exists; installed profile has no builder/promotion recipe. Need supported locally admitted build capability, coordinated replacement, prior runtime recovery, reconnect and rollback proof. No bypass or use of commercial Commander. |
+| Real ZCode task | Existing grant includes version/help only; use native protocol, scoped actual work order and existing provider admission. |
+| Two independent development cycles | Each real cycle syncs, implements, builds, tests and records evidence using VIVIM/GitHub; one cycle includes an upgrade. |
+
+Era 3: keep all 12 original deliverables: streaming filesystem search; metadata/multi-file; create/move/rename; PDF/DOCX/Excel; fuzzy edit/diff; process discovery/management; config/statistics; multi-device; native agent integration; VLANG/AutoWiki integration; GPUI/mobile parity; retire transitional Commander engine. Existing selected multi-read and selected literal search source 4c00dd7 are partial, not recursive streaming or live acceptance. Basic file metadata, directory creation and exact edits have live evidence but do not complete their larger Era 3 checklist items.
+
+**Beyond parity, focused acceleration extensions (not a competing backlog):**
+- A+01: source-pinned edit/build/test pipeline and resumable logs, with actual exit and receipt.
+- A+02: incremental source/impact-driven relevant test selection using existing HQKG source intelligence; compare full suite and retain periodic complete verification.
+- A+03: reuse existing Rust build acceleration/cache tooling; choose CPU/RAM/disk-aware job limits, measure cold/warm rebuilds, avoid duplicate caches.
+- A+04: exact source/runtime manifests, staged release, supervised promotion/rollback and supported authorization renewal; never overwrite sole known-good runtime.
+- A+05: native agent task contracts (ZCode first), task-claim/source ownership, scoped cost admission, pause/cancel/resume, evidence handoff.
+- A+06: parallel isolated build and agent workloads, concurrency/resource scheduling through existing HQ/Host contracts; no competing orchestrator.
+- A+07: canonical machine-readable typed capability descriptions consumed by existing VLANG/MCP/GPUI/AutoWiki/graph surfaces, without a second registry or renderer.
+- A+08: real development-cycle benchmarks: time from approved source change to verified local result, cold/warm rebuild, failed retries, manual interventions, local resource consumption and zero commercial relay calls.
+
+Priority: finish Era 2 before broad Era 3 expansion; implement A+01/A+03/A+04 on the critical path, then A+05/A+02/A+06/A+07/A+08 as they accelerate the vision. Research and product intelligence workstreams are consumers, not ownership targets. Rust first. Existing Host remains effect authority. Update the existing claims ledger and tracker rather than adding independent work ownership. All source changes to main use compare-and-set and exact readback.
+

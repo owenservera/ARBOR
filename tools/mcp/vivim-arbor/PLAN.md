@@ -21,6 +21,14 @@ Execution order: (1) existing Host-approved scoped file read/list/inspect/multi-
 
 Parity acceptance: each of the 24 general operations in the pinned 25-tool reference must have a working owned equivalent and real client-to-Host-to-workstation proof; vendor-specific feedback is replaced by VIVIM feedback. A catalogue, fixture, local wrapper around the reference engine, or native Codex observer alone does not establish parity.
 
+## Owner scope and priority — R021 (2026-11-25)
+
+This dedicated workstream owns workstation independence (original 32-item checklist) **plus development acceleration**. Its purpose is to enable faster implementation of [VIVIM V1.0](https://github.com/owenservera/vivim-labs/tree/main/VIVIM%20V1.0), not absorb or duplicate the Rust graph, Studio, VLANG, AutoWiki, Oracle or GPUI workstreams. It owns developer infrastructure, native tool contracts, execution/verification, release lifecycle, agent adapters and their integration surfaces. Product intelligence remains with the existing owners; integrate through canonical contracts and receipts. This clarification supersedes earlier commercial Commander fallback guidance: owner explicitly directed STOP using commercial Desktop Commander. Use GitHub and VIVIM only. If local activation requires explicit owner action, state it; do not expand a grant through an indirect route.
+
+P0 critical path: B04 Windows Job Object acceptance and session capacity -> B06 actual Cargo/rustc/rustdoc + Node build/test completion -> B07 authorized release staging/promotion/reconnect/rollback and bounded grant lifecycle -> B08 real approved ZCode development task -> B09 two successive independent development cycles including an upgrade. General commands mean typed, authorized development operations, not unscoped arbitrary shell. Current live profile is sufficient for basic workstation work, not complete self-development. No general intelligence work or ancillary format support should displace this critical path.
+
+After cutover, prioritize capabilities that accelerate all existing sessions: source-grounded impacted-test selection, build-cache reuse and resource-aware concurrency; reliable agent work-order handoff, evidence and cancellation; isolated parallel workspaces and conflict-free integration to main; one canonical capability description projected into existing VLANG, MCP, AutoWiki and GPUI contracts. Benchmark real edit-to-verified-change wall time, test execution and cache reuse, operator intervention, successful independent cycles, memory/disk pressure and receipt integrity. No throughput improvement claimed until measured. Preserve the original 32 acceptance criteria; the additional acceleration work is an extension of existing U08/U10/U11/U12 and N06/N07, not another task ledger.
+
 ## Ordered delivery plan
 | ID | Priority | Work | Acceptance evidence |
 |---|---|---|---|
