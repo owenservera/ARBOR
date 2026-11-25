@@ -27,3 +27,6 @@ Next: source-pin existing Host adapters, implement protected state journal and e
 - https://developers.openai.com/api/docs/guides/secure-mcp-tunnels
 - https://github.com/openai/tunnel-client/blob/master/docs/onboarding.md
 - https://developers.openai.com/plugins/deploy/connect-chatgpt
+
+## R001 Windows verification
+Exact source e02549620de333f6c6958e94fd736a9fa4c87afa extracted into a distinct temporary development directory, compiled with rustc --edition=2021 --test, executed on the owner's Windows workstation. 11 passed, 0 failed, 0 ignored; exit 0. No production deployment, grant, profile, tunnel or credential changed. VIVIM health ready; dynamic git fetch request and harmless pwsh version request returned denied or uncertain, including same-ID inspection of the fetch. No ambiguous effect replay. Desktop Commander used solely as temporary test transport, not a new runtime dependency. Development provisioning, journal persistence, GPUI integration and fresh-account phone proof remain unimplemented.
