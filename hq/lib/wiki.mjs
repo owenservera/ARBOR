@@ -1932,8 +1932,21 @@ export function buildWiki({ db, root, projects, outDir = 'wiki', force = false, 
     const identities = model.semanticIds || [];
     const commands = model.commands || [];
     const commandById = new Map(commands.map((command) => [command.id, command]));
-    const fileByPath = new Map();
-    for (const file of model.allFiles || []) fileByPath.set(`${file.project_name}\u0000${file.path}`, file);
+    const filesByPath = new Map();
+    for (const file of model.allFiles || []) pushMap(filesByPath, file.path, file);
+    // Registry links contain a relative path and a pinned content hash, not a
+    // project ID. Never guess a project when identical paths occur in several.
+    const resolveSource = link => {
+      const candidates = filesByPath.get(link.path) || [];
+      const pinned = typeof link.content_hash === 'string' && /^[a-f0-9]{64}$/i.test(link.content_hash);
+      const matches = pinned ? candidates.filter(file => file.hash === link.content_hash) : [];
+      if (link.status !== 'current') return {state:'non-current-link'};
+      if (!pinned) return {state:'missing-source-pin'};
+      if (!candidates.length) return {state:'source-not-in-index'};
+      if (!matches.length) return {state:'stale-source-pin'};
+      if (matches.length !== 1) return {state:'ambiguous-source-pin'};
+      return {state:'indexed-bytes-match',file:matches[0]};
+    };
 
     out.push('## Coverage', '');
     out.push(
@@ -2001,14 +2014,13 @@ export function buildWiki({ db, root, projects, outDir = 'wiki', force = false, 
         out.push('- No source link. This identity is declared without a pinned source location.', '');
       } else {
         for (const link of identity.links) {
-          const file = fileByPath.get(`${'repos-hq'}\u0000${link.path}`)
-            || [...fileByPath.values()].find((candidate) => candidate.path === link.path);
+          const {state,file} = resolveSource(link);
           const location = file
-            ? fileLink(page, file, `${link.path}:${link.line ?? '?'}`)
+            ? fileLink(page, file, `${file.project_name}:${link.path}:${link.line ?? '?'}`)
             : mdCell(`${link.path}:${link.line ?? '?'}`);
-          const graphNode = model.graphIndex?.bySourceFile.get(`${link.path}\u0000${link.content_hash}`);
+          const graphNode = file ? model.graphIndex?.bySourceFile.get(`${link.path}\u0000${link.content_hash}`) : null;
           out.push(
-            `- ${location} · ${mdCell(link.kind || 'link')} · ${mdCell(link.status || '')}`
+            `- ${location} · ${mdCell(link.kind || 'link')} · registry ${mdCell(link.status || '')} · ${state}`
             + ` · bytes \`${mdCell(String(link.content_hash || '').slice(0, 12))}\``
             + (link.symbol ? ` · \`${mdCell(link.symbol)}\`` : '')
             + (graphNode ? ` · graph \`${mdCell(graphNode.id)}\`` : ''),
@@ -2066,7 +2078,7 @@ export function buildWiki({ db, root, projects, outDir = 'wiki', force = false, 
     out.push('## What this page does not claim', '');
     out.push('- A command is *wired* when the canonical action registry binds it to a handler. That is a source declaration, not a runtime receipt.', '');
     out.push('- A semantic identity is *current* only when the canonical semantic registry says so. A comment never creates or promotes one.', '');
-    out.push('- A source link is shown with the bytes it was pinned to. A link whose bytes no longer match is stale and is reported as such by the index.', '');
+    out.push('- Source links require one matching indexed path and content hash. Missing, stale, non-current or ambiguous pins remain visible without a guessed file or graph link. Indexed bytes are not a live filesystem or execution receipt.', '');
     out.push('- Generated wiki pages are read-only; edit the source or the registry and rebuild.', '');
     return out.join('\n');
   }
