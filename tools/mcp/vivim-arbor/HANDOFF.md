@@ -2,6 +2,12 @@
 2026-11-25 | R001 | Read this before continuing development.
 
 
+## R018 — FIRST REAL CHATGPT → VIVIM → WINDOWS NATIVE COMMAND (2026-11-25)
+- Owner refreshed the existing custom MCP connection. This conversation now exposes both vivim_tunnel_health and vivim_workstation_probe.
+- Actual browser call to vivim_workstation_probe returned {"schema":"vivim.tunnel-workstation-receipt/1","planId":"ctl-9974cfe1165ffd40","actionId":"workstation.process.start","status":"applied","recipe":"node-version","version":"v24.22.1","exitCode":0}. No commercial Desktop Commander call in this turn.
+- B03 fixed-probe browser acceptance PASS. This is real native execution via the time-limited isolated acceptance profile, not general terminal execution or production Host acceptance. Grant expires 2026-11-25T15:14:29Z; replay is not a fresh execution.
+- Next: move beyond one-shot probe by implementing B04 production Host-owned persistent scoped process sessions and output/cancel, followed by B05 live filesystem, B06 isolated Git/build/test loop and B07 supervised promotion/recovery. No claim of unrestricted shell or ZCode task execution. Keep existing authorization, exact work orders and safe rollback. Do not extend the isolated test Host into a parallel production authority.
+
 ## R017 — live tunnel upgrade activated; refresh ChatGPT metadata (2026-11-25)
 - Owner explicitly authorized integration/deployment and is at PC. Production standard port 43187 had no observed listener; normal Host/data not replaced. [4994ea2](https://github.com/owenservera/ARBOR/commit/4994ea2e29a3ed57d587aecbe0f1861b063371c6) adds isolated time-limited fixed native probe acceptance profile using the incumbent Host, generated ephemeral local token, exact Host journal plan/receipt, native helper, and exclusive local one-shot claim. No remote command/path input or production credentials; expired/changed grants fail closed. This is an acceptance harness, not a second production authority.
 - Actual staged Windows exact-source tests 19/19 PASS, 0 skipped/fail, PID 13872 exit 0 23.04s. Staged stdio list contained health and probe; real staged receipt ctl-3ca8aed2b851e800 applied node-version v24.22.1 exit 0, identical replay. Native helper source unchanged from compiled 85f16d6.
