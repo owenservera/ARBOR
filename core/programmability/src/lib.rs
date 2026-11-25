@@ -33,6 +33,7 @@ pub mod recovery_diagnosis;
 pub mod ui_value;
 pub mod first_contact;
 pub mod product_kernel;
+pub mod workstation_capabilities;
 pub mod ui_tokens;
 pub mod navigation;
 pub mod vec_admission;

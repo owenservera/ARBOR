@@ -21,6 +21,8 @@ pub fn dispatch(request:&Value)->Value{
     let input=&request["input"];
     let result=match op{
         "command-program"=>crate::command_program::compile(input),
+        "workstation-coverage"=>crate::workstation_capabilities::coverage(input),
+        "workstation-edit-preview"=>crate::workstation_capabilities::edit_preview(input),
         "context-grounding"=>crate::context_grounding::resolve(input),
         "wiki-target"=>crate::wiki_target::resolve(input),
         "wiki-target-batch"=>crate::wiki_target::resolve_batch(input),
