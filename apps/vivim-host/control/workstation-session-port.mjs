@@ -63,7 +63,7 @@ function windowsRuntimeEnvironment(env){
 }
 function cursor(s){if(typeof s!=='string'||!/^(0|[1-9][0-9]{0,14})$/.test(s))throw fail('WORKSTATION_CURSOR_INVALID');return Number(s);}
 export function createWorkstationSessionPort({env=process.env,spawnWorker=spawn,now=Date.now}={}){
- let worker=null,dead=false,sequence=0;const pending=new Map(),sessions=new Map(),generation=randomBytes(16).toString('hex');
+ let worker=null,dead=false,sequence=0,admissionClosed=false;const pending=new Map(),sessions=new Map(),generation=randomBytes(16).toString('hex');
  function config(){
   if(!env.VIVIM_WORKSTATION_RECIPES||!env.VIVIM_WORKSTATION_RECIPES_SHA256||
      !env.VIVIM_WORKSTATION_SESSION_EXE||!env.VIVIM_WORKSTATION_SESSION_SHA256)throw fail('WORKSTATION_SESSIONS_DISABLED');
@@ -105,6 +105,7 @@ export function createWorkstationSessionPort({env=process.env,spawnWorker=spawn,
  }
  function prepare(action,args){
   if(action===SESSION_START){
+   if(admissionClosed)throw fail('WORKSTATION_SESSION_DRAINING',503);
    if(!keys(args,['recipe'])||!recipeId(args.recipe))throw fail('WORKSTATION_RECIPE_INVALID');
    return resolve(args.recipe).binding;
   }
@@ -157,6 +158,7 @@ export function createWorkstationSessionPort({env=process.env,spawnWorker=spawn,
  }
  function validate(r,sessionId){if(!record(r)||r.sessionId!==sessionId)throw fail('WORKSTATION_SESSION_OUTCOME_UNCERTAIN',503);return r;}
  async function start(args,binding,sessionId){
+  if(admissionClosed)throw fail('WORKSTATION_SESSION_DRAINING',503);
   if(!id(sessionId)||sessions.has(sessionId))throw fail('WORKSTATION_SESSION_UNKNOWN');
   const r=resolve(args.recipe);if(digest(r.binding)!==digest(binding))throw fail('WORKSTATION_SESSION_BINDING_STALE');
   for(const [k,v]of sessions)if(now()>v.expiresAt)sessions.delete(k);
@@ -165,6 +167,38 @@ export function createWorkstationSessionPort({env=process.env,spawnWorker=spawn,
   // Record intent before calling native worker; ambiguous start is never retried.
   sessions.set(sessionId,{configSha:r.configSha,interactive:r.spec.interactive,expiresAt:now()+r.spec.timeoutMs+600000});
   return validate(await rpc({op:'start',sessionId,...r.spec}),sessionId);
+ }
+ // Trusted-local lifecycle interface, not an MCP action or an authorization.
+ // Fence new admissions synchronously before observing worker state. Previously
+ // authorized output/status/cancel remain available. Host-wide drain is separate.
+ function beginDrain(){admissionClosed=true;}
+ async function inventory(){
+  const schema='vivim.workstation-host-session-inventory/1';
+  const snapshotOnly=!admissionClosed;
+  if(dead)return {schema,generation,state:'unknown',reason:'worker-lost',admissionClosed,snapshotOnly:true};
+  if(!worker)return {schema,generation,state:'idle',running:0,retained:0,unsettledOutput:0,sessions:[],admissionClosed,snapshotOnly};
+  if(pending.size)return {schema,generation,state:'unknown',reason:'requests-in-flight',admissionClosed,snapshotOnly:true};
+  const r=await rpc({op:'inventory'});
+  if(r.schema!=='vivim.workstation-session-inventory/1'||!Array.isArray(r.sessions)||
+    r.sessions.length>64||r.retained!==r.sessions.length||
+    !Number.isSafeInteger(r.running)||r.running<0||r.running>r.retained||
+    !Number.isSafeInteger(r.unsettledOutput)||r.unsettledOutput<0||r.unsettledOutput>r.retained||
+    r.maxRunning!==8||r.maxRetained!==64)throw fail('WORKSTATION_SESSION_OUTCOME_UNCERTAIN',503);
+  const seen=new Set();let running=0,unsettled=0;
+  for(const row of r.sessions){
+   const s=row?.status;
+   if(!id(s?.sessionId)||seen.has(s.sessionId)||!sessions.has(s.sessionId)||
+     !['running','exited','timed-out'].includes(s.state)||
+     !['windows-job','direct-child'].includes(s.containment)||
+     !['stdoutClosed','stderrClosed','stdoutReadFailed','stderrReadFailed'].every(k=>typeof row[k]==='boolean'))
+    throw fail('WORKSTATION_SESSION_OUTCOME_UNCERTAIN',503);
+   seen.add(s.sessionId);if(s.state==='running')running++;
+   if(!row.stdoutClosed||!row.stderrClosed||row.stdoutReadFailed||row.stderrReadFailed)unsettled++;
+  }
+  if(running!==r.running||unsettled!==r.unsettledOutput)throw fail('WORKSTATION_SESSION_OUTCOME_UNCERTAIN',503);
+  return {schema,generation,state:pending.size?'unknown':running||unsettled?'busy':'idle',
+   running,retained:r.retained,unsettledOutput:unsettled,maxRunning:r.maxRunning,maxRetained:r.maxRetained,
+   sessions:r.sessions,admissionClosed,snapshotOnly:snapshotOnly||pending.size>0};
  }
  async function read(action,args){
   known(args?.session_id);const sessionId=args.session_id;
@@ -178,5 +212,5 @@ export function createWorkstationSessionPort({env=process.env,spawnWorker=spawn,
   const sessionId=args.session_id;
   return validate(await rpc(action===SESSION_CANCEL?{op:'cancel',sessionId}:{op:'input',sessionId,input:decodeWorkstationText(args.input,4096)}),sessionId);
  }
- return Object.freeze({prepare,start,read,mutate,close:terminate});
+ return Object.freeze({prepare,start,read,mutate,beginDrain,inventory,close:terminate});
 }
