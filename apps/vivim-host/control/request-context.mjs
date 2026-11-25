@@ -3,6 +3,7 @@
 // never from a client-supplied candidate, path, identity list or permission.
 import { createHash } from 'node:crypto';
 import { sectionId } from '../chat/wiki-semantics.mjs';
+import { loadControlCatalog, validateControlCatalog } from './intent-planner.mjs';
 
 export const REQUEST_CONTEXT_SCHEMA = 'vivim.request-context/1';
 const MAX_PAGES = 6, MAX_SECTIONS = 8;
@@ -24,6 +25,43 @@ export function requestSourceIds(text, plan) {
   // can ground the request. This is identity extraction, not a second interpreter.
   if(plan?.outcome!=='interpretation_required' || typeof text!=='string')return [];
   return [...new Set([...text.matchAll(idPattern)].map(m=>m[1]).filter(id=>id.length<=160))].sort(compare).slice(0,4);
+}
+
+// Read-only catalog projection, bound to the actual canonical VEC candidate.
+// The catalog declares argument constraints and required scopes. It does not
+// independently verify the handler, effective access policy or current grant.
+export function selectRequestActionContract(plan,catalog) {
+  const compiled=plan?.language?.vec, intent=compiled?.proposal, provenance=intent?.provenance;
+  if(compiled?.schema!=='vivim.vec-compile/0.1'||compiled.domain!=='command'||
+     compiled.outcome!=='candidate'||compiled.authorization!=='none'||
+     compiled.executed!==false||compiled.persisted!==false||
+     intent?.schema!=='vivim.command-intent/0.1'||intent.outcome!=='candidate'||
+     intent.actionId!==plan.actionId||provenance?.authority!=='none'||
+     !Number.isSafeInteger(provenance.catalogRevision)||!Number.isSafeInteger(provenance.worldRevision))return null;
+  try{validateControlCatalog(catalog)}catch{return unavailable()}
+  if(catalog.version!==provenance.catalogRevision)return {status:'stale'};
+  const action=catalog.actions.find(a=>a.id===intent.actionId);
+  if(!action||action.risk!==intent.risk||action.readiness!==intent.readiness||action.owner!==intent.owner)return unavailable();
+  const args=intent.args,planArgs=plan.args;
+  if(!args||!planArgs||Object.keys(args).length!==Object.keys(action.args).length||
+     Object.keys(planArgs).length!==Object.keys(action.args).length)return unavailable();
+  const slots=[];
+  for(const name of Object.keys(action.args).sort(compare)){
+    const constraint=action.args[name],value=args[name];
+    if(!Object.hasOwn(args,name)||!Object.hasOwn(planArgs,name)||value!==planArgs[name]||
+       typeof value!=='string'||!value||value!==value.trim()||
+       (constraint.type==='enum'?!constraint.values.includes(value):value.length<constraint.min||value.length>constraint.max))return unavailable();
+    // Never include argument values (which may be owner-private text).
+    slots.push({name,type:constraint.type,required:true,...(constraint.type==='enum'?
+      {values:[...constraint.values]}:{min:constraint.min,max:constraint.max})});
+  }
+  const requiredScopes=[...(action.requiredScopes??[])].sort(compare);
+  if(!Array.isArray(intent.requiredScopes)||JSON.stringify([...intent.requiredScopes].sort(compare))!==JSON.stringify(requiredScopes))return unavailable();
+  const declaration={actionId:action.id,catalogRevision:catalog.version,risk:action.risk,
+    owner:action.owner,readiness:action.readiness,slots,requiredScopes};
+  return {status:'declared',authority:'read-only',planningEligible:false,
+    ...declaration,catalogDigest:createHash('sha256').update(JSON.stringify(declaration)).digest('hex'),
+    worldRevision:provenance.worldRevision,missing:['verified-action-contract','effective-access-policy']};
 }
 
 function resolvePage(wiki, value) {
@@ -92,15 +130,20 @@ export function selectRequestWiki(wiki, plan) {
     authority:'read-only',pages};
 }
 
-export async function attachRequestContext(plan,{text,readWiki,compileSources}={}) {
+export async function attachRequestContext(plan,{text,readWiki,compileSources,readCatalog=loadControlCatalog}={}) {
   if(typeof text!=='string'||!text.trim()||text.length>1000||
       !plan||plan.outcome==='refused')return plan;
-  let wiki=null,source=null;
+  let wiki=null,source=null,action=null;
   if(typeof readWiki==='function'&&plan.actionId?.startsWith('wiki.')&&
      ['approval_required','done','incomplete','clarification_required'].includes(plan.outcome)){
     try{wiki=selectRequestWiki(await readWiki(),plan)}catch{wiki=unavailable()}
   }
   if(typeof compileSources==='function'){
+    // Source and action contract metadata are scoped to the existing owner
+    // source-context path, not the paired-phone Wiki-only projection.
+    if(plan.language?.vec?.proposal?.provenance?.authority==='none'){
+      try{action=selectRequestActionContract(plan,readCatalog())}catch{action=unavailable()}
+    }
     const sourceSemanticIds=requestSourceIds(text,plan);
     if(sourceSemanticIds.length){
       try{source=await compileSources({task:text,sourceSemanticIds})}catch{source=unavailable()}
@@ -111,7 +154,7 @@ export async function attachRequestContext(plan,{text,readWiki,compileSources}={
     try{if((await readWiki()).revision!==wiki.wikiRevision)wiki={status:'stale'}}
     catch{wiki=unavailable()}
   }
-  if(!wiki&&!source)return plan;
+  if(!wiki&&!source&&!action)return plan;
   return {...plan,requestContext:{schema:REQUEST_CONTEXT_SCHEMA,authority:'read-only',
-    ...(wiki?{wiki}:{}),...(source?{source}:{})}};
+    ...(wiki?{wiki}:{}),...(source?{source}:{}),...(action?{action}:{})}};
 }
