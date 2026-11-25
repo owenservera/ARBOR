@@ -103,8 +103,9 @@ fn request_parts<'a>(request: &'a EngineRequest) -> Result<(Vec<(&'a str,u64,&'a
     }
     Ok((sources,deps))
 }
-fn linked(graph: &Graph, id: &str, relation: &str, reverse: bool) -> Result<Vec<Value>> {
+fn linked(graph: &Graph, id: &str, relation: &str, reverse: bool) -> Result<(Vec<Value>, bool)> {
     let mut out = Vec::new();
+    let mut limited = false;
     let mut seen = BTreeSet::new();
     let edges = if reverse { graph.incoming(id,Some(relation))? }
         else { graph.outgoing(id,Some(relation))? };
@@ -116,7 +117,7 @@ fn linked(graph: &Graph, id: &str, relation: &str, reverse: bool) -> Result<Vec<
         if property(node,"hqkg.exchange.source") != Some(OWNER) {continue}
         let path = property(node,"source_path").unwrap_or("");
         if path.is_empty() {continue}
-        if out.len() >= MAX_LINKS {break}
+        if out.len() >= MAX_LINKS {limited = true; break}
         out.push(json!({"id":node.id,"kind":node.kind.as_str(),"path":path,
             "name":property(node,"symbol_name").or_else(||property(node,"semantic_id")),
             "relation":relation,"revision":node.version,
@@ -125,7 +126,7 @@ fn linked(graph: &Graph, id: &str, relation: &str, reverse: bool) -> Result<Vec<
     }
     out.sort_by(|a,b| a["path"].as_str().cmp(&b["path"].as_str())
         .then(a["id"].as_str().cmp(&b["id"].as_str())));
-    Ok(out)
+    Ok((out, limited))
 }
 pub struct DevelopmentGraphEngine { graph: Arc<Graph> }
 impl DevelopmentGraphEngine {
@@ -195,11 +196,14 @@ impl ComputeEngine for DevelopmentGraphEngine {
         let mut semantic = BTreeMap::<String,Value>::new();
         let mut potential_wiring=BTreeMap::<String,Value>::new();
         let mut truncated=false;
+        let mut limits=BTreeSet::new();
         let mut returns_to_source=false;
         for id in canonical.keys() {
             if matches!(request.operation.as_str(),"select-context"|"compile"|"project") {
                 let walk=development_relations::imports(&self.graph,id,false,3)?;
                 truncated|=walk.truncated;
+                if walk.depth_limited {limits.insert("import-depth");}
+                if walk.result_limited {limits.insert("import-results");}
                 returns_to_source|=walk.returns_to_source;
                 for row in walk.nodes {
                     if let Some(key)=row["id"].as_str(){imports.insert(key.into(),row);}
@@ -208,17 +212,22 @@ impl ComputeEngine for DevelopmentGraphEngine {
             if matches!(request.operation.as_str(),"evaluate"|"project") {
                 let walk=development_relations::imports(&self.graph,id,true,3)?;
                 truncated|=walk.truncated;
+                if walk.depth_limited {limits.insert("import-depth");}
+                if walk.result_limited {limits.insert("import-results");}
                 returns_to_source|=walk.returns_to_source;
                 for row in walk.nodes {
                     if let Some(key)=row["id"].as_str(){dependents.insert(key.into(),row);}
                 }
             }
             if matches!(request.operation.as_str(),"interpret"|"compile"|"project") {
-                for row in linked(&self.graph,id,"contains-indexed-symbol",false)? {
+                let (rows, limited)=linked(&self.graph,id,"contains-indexed-symbol",false)?;
+                if limited {truncated=true;limits.insert("symbol-results");}
+                for row in rows {
                     if let Some(key)=row["id"].as_str(){symbols.insert(key.into(),row);}
                 }
                 let found=development_relations::semantic(&self.graph,id)?;
                 truncated|=found.truncated;
+                if found.truncated {limits.insert("semantic-results");}
                 for row in found.observations {
                     if let Some(key)=row["anchorId"].as_str(){semantic.insert(key.into(),row);}
                 }
@@ -238,6 +247,7 @@ impl ComputeEngine for DevelopmentGraphEngine {
             "importCount":imports.len(),"symbolCount":symbols.len(),
             "semanticCount":semantic.len(),"dependentCount":dependents.len(),
             "potentialWiringCount":potential_wiring.len(),"truncated":truncated,
+            "limitsReached":limits,
             "returnsToSource":returns_to_source,
             "sources":canonical.into_values().collect::<Vec<_>>(),
             "imports":imports.into_values().collect::<Vec<_>>(),
