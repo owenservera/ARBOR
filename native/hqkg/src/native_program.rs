@@ -189,6 +189,91 @@ impl DevelopmentSession {
         let report = self.execute_program(current, &compiled.program, policy, budget, cancel)?;
         Ok((compiled, report))
     }
+    /// Interpret every indexed file in a complete, bounded static closure via
+    /// the incumbent typed program executor. Summaries are static evidence;
+    /// no source bytes, external effects, or authorization are produced.
+    /// A failed partition never produces a successful closure response.
+    pub fn interpret_closure(&mut self, current:&RevisionToken, semantic_id:&str,
+        reverse:bool, policy:&PolicyLimits, budget:Budget, cancel:&CancellationToken) -> Result<serde_json::Value> {
+        use serde_json::{json,Value};
+        self.check_revision(current)?;
+        if cancel.is_cancelled(){return Err(Error::Conflict("closure computation cancelled".into()))}
+        let start=std::time::Instant::now();
+        let compiled=build_semantic_program(&self.graph,current,semantic_id,SemanticTask::Inspect,policy)?;
+        let coverage=crate::development_relations::partitioned_imports(&self.graph,&compiled.anchor.file_id,reverse)?;
+        if coverage["complete"]!=true{return Err(Error::Conflict("cannot interpret incomplete dependency coverage".into()))}
+        let mut sources=vec![coverage["root"].clone()];
+        for partition in coverage["partitions"].as_array().ok_or_else(||Error::Corrupt("coverage partitions missing".into()))?{
+            sources.extend(partition["sources"].as_array().ok_or_else(||Error::Corrupt("coverage sources missing".into()))?.iter().cloned());
+        }
+        if sources.len()>513||sources.len()>budget.max_tasks {
+            return Err(Error::Invalid("closure source count exceeds task budget".into()));
+        }
+        let direction=if reverse{"dependents"}else{"imports"};
+        let mut partitions=Vec::new();
+        let mut total_bytes=0usize;
+        let mut complete=true;
+        let mut truncated_sources=0usize;
+        for (index,group) in sources.chunks(16).enumerate(){
+            if cancel.is_cancelled(){return Err(Error::Conflict("closure computation cancelled".into()))}
+            let remaining=budget.max_elapsed_ms.saturating_sub(start.elapsed().as_millis());
+            if remaining==0{return Err(Error::Invalid("closure elapsed budget exhausted".into()))}
+            let mut steps=Vec::new();
+            for (position,row) in group.iter().enumerate(){
+                let id=row["id"].as_str().ok_or_else(||Error::Corrupt("closure source identity absent".into()))?;
+                let revision=row["revision"].as_u64().ok_or_else(||Error::Corrupt("closure source revision absent".into()))?;
+                let digest=row["digest"].as_str().ok_or_else(||Error::Corrupt("closure source digest absent".into()))?;
+                steps.push(core::TransformStep{id:format!("file-{position:02}"),kind:TransformKind::Interpret,
+                    dependencies:vec![],inputs:vec![SourceRef{source_id:id.into(),revision,digest:digest.into(),data_class:DataClass::Internal}],
+                    output_data_class:DataClass::Internal,risk:Risk::R0,destination:None});
+            }
+            let program=Program{id:format!("closure.{}.{direction}.{index}",compiled.anchor.anchor_id),
+                revision:compiled.program.revision,policy_id:policy.id.clone(),policy_revision:policy.revision,steps};
+            let remaining_bytes=budget.max_output_bytes.saturating_sub(total_bytes);
+            let report=self.execute_program(current,&program,policy,Budget{max_tasks:group.len(),
+                max_elapsed_ms:remaining,max_output_bytes:remaining_bytes},cancel)?;
+            if report.state!=crate::typed_dag::RunState::Complete||report.effect_authorized||report.outputs.len()!=group.len(){
+                return Err(Error::Conflict(format!("closure partition {index} failed: {:?}: {}",report.state,report.failure.as_deref().unwrap_or("incomplete output"))))
+            }
+            let mut rows=Vec::new();
+            for (position,out) in report.outputs.into_iter().enumerate(){
+                total_bytes=total_bytes.checked_add(out.data.len()).filter(|n|*n<=budget.max_output_bytes)
+                    .ok_or_else(||Error::Invalid("closure materialization exceeds byte budget".into()))?;
+                let result:Value=serde_json::from_str(&out.data).map_err(|_|Error::Corrupt("invalid closure materialization".into()))?;
+                let source=&group[position];
+                if out.step_id!=format!("file-{position:02}")||result["schema"]!="hqkg.development-transform/1"
+                    ||result["operation"]!="interpret"||result["authority"]!="none"
+                    ||result["graphEpoch"].as_u64()!=Some(current.graph_epoch)
+                    ||result["executionAuthorized"]!=false||result["effectPerformed"]!=false
+                    ||result["sourceCount"]!=1||result["sources"][0]["id"]!=source["id"]
+                    ||result["sources"][0]["revision"]!=source["revision"]||result["sources"][0]["digest"]!=source["digest"]
+                    ||!result["truncated"].is_boolean(){
+                    return Err(Error::Corrupt("closure materialization source or authority mismatch".into()))
+                }
+                let source_complete=result["truncated"]==false;
+                complete &= source_complete;
+                if !source_complete{truncated_sources+=1;}
+                rows.push(json!({"source":source,"complete":source_complete,
+                    "state":format!("{:?}",out.state).to_lowercase(),
+                    "symbolCount":result["symbolCount"],"semanticCount":result["semanticCount"],
+                    "semantics":result["semantics"],"potentialWiringCount":result["potentialWiringCount"],
+                    "limitsReached":result["limitsReached"]}));
+            }
+            partitions.push(json!({"index":index,"sources":rows}));
+        }
+        if cancel.is_cancelled()||start.elapsed().as_millis()>budget.max_elapsed_ms{
+            return Err(Error::Conflict("closure cancelled or elapsed budget exhausted".into()))
+        }
+        let value=json!({"schema":"hqkg.semantic-closure/1","epoch":current.graph_epoch,
+            "semanticId":semantic_id,"anchorId":compiled.anchor.anchor_id,"direction":direction,
+            "authority":"none","evidence":"indexed-static-only","coverageComplete":true,
+            "complete":complete,"sourceCount":sources.len(),"truncatedSources":truncated_sources,
+            "partitionCount":partitions.len(),"partitions":partitions,
+            "materializedBytes":total_bytes,"executionAuthorized":false,"effectPerformed":false});
+        if value.to_string().len()>budget.max_output_bytes{return Err(Error::Invalid("closure projection exceeds byte budget".into()))}
+        Ok(value)
+    }
+
     pub fn cache_entries(&self) -> usize { self.cache.len() }
     pub fn cache_approximate_bytes(&self) -> usize { self.cache.approximate_bytes() }
 }
