@@ -228,6 +228,9 @@ pub struct DagReport {
 #[derive(Clone, Debug)]
 struct Cached {
     generation: u64,
+    engine: String,
+    operation: String,
+    graph_epoch: u64,
     stamp: String,
     data: String,
     provenance: Vec<String>,
@@ -266,6 +269,8 @@ impl IncrementalCache {
             .map(|((scope, id), v)| {
                 scope.owner.len()
                     + id.len()
+                    + v.engine.len()
+                    + v.operation.len()
                     + v.stamp.len()
                     + v.data.len()
                     + v.provenance.iter().map(String::len).sum::<usize>()
@@ -280,6 +285,8 @@ impl IncrementalCache {
                 Some(((scope, id), v)) => {
                     let removed = scope.owner.len()
                         + id.len()
+                        + v.engine.len()
+                        + v.operation.len()
                         + v.stamp.len()
                         + v.data.len()
                         + v.provenance.iter().map(String::len).sum::<usize>()
@@ -508,6 +515,7 @@ impl<'a> DagExecutor<'a> {
             field(&mut input, "sources");
             field(&mut input, &step.sources.len().to_string());
             let mut provenance = Vec::new();
+            let mut source_ids: BTreeSet<String> = step.sources.iter().map(|s| s.id.clone()).collect();
             let mut sources = step.sources.iter().collect::<Vec<_>>();
             sources.sort_by(|a, b| {
                 (&a.id, a.revision, &a.digest).cmp(&(&b.id, b.revision, &b.digest))
@@ -527,6 +535,8 @@ impl<'a> DagExecutor<'a> {
                 field(&mut input, &dep);
                 field(&mut input, &previous.data);
                 provenance.extend(previous.provenance.iter().cloned());
+                // Inherit transitive dependencies, including for source-free steps.
+                source_ids.extend(staged[&(plan.namespace.clone(), dep.clone())].source_ids.iter().cloned());
             }
             field(&mut input, &lease.generation().to_string());
             if input.len() > budget.max_output_bytes {
@@ -538,7 +548,9 @@ impl<'a> DagExecutor<'a> {
             let key = (plan.namespace.clone(), id.clone());
             let cached = cache.values.get(&key);
             let (data, state, generation) = match cached {
-                Some(c) if c.generation == lease.generation() && c.stamp == input => {
+                Some(c) if c.generation == lease.generation()
+                    && c.engine == step.engine && c.operation == step.operation
+                    && c.graph_epoch == actual.graph_epoch && c.stamp == input => {
                     (c.data.clone(), OutputState::Reused, c.generation)
                 }
                 _ => {
@@ -645,10 +657,13 @@ impl<'a> DagExecutor<'a> {
                 key,
                 Cached {
                     generation,
+                    engine: step.engine.clone(),
+                    operation: step.operation.clone(),
+                    graph_epoch: actual.graph_epoch,
                     stamp: input.clone(),
                     data: data.clone(),
                     provenance: provenance.clone(),
-                    source_ids: step.sources.iter().map(|s| s.id.clone()).collect(),
+                    source_ids,
                 },
             );
             let output = MaterializedOutput {
