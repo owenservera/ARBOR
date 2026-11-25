@@ -97,7 +97,11 @@ export function createTrustedManifestProvider({ sessionsDir } = {}) {
     return { session, acceptance: doc, rawDigest: rd.digest, domDigest: dd, seqRange: doc.binding.seqRange ?? null };
   };
   async function verifyCapture({ scope, source } = {}) {
-    if (!source || typeof source.sessionId !== 'string') return false;
+    // Accepted capture digests do not attest a provider account. Until the existing
+    // trusted account owner supplies artifact-bound evidence, no caller label can
+    // claim core verification (including on the internal event-driven entry point).
+    if (!source || typeof source.sessionId !== 'string' ||
+        source.accountBinding === 'core-verified') return false;
     const v = verifySession(source.sessionId);
     if (!v) return false;
     if (v.rawDigest !== source.rawDigest) return false;
@@ -162,7 +166,13 @@ export function createStudioLearningPipeline({ sessionsDir, store, lockDir } = {
       return proposal;
   };
   const api = {
-    propose: proposeCore,
+    // Production observation bodies must come from the saved-session hydrator.
+    // The event entry point is retained for all-synthetic, explicitly test-only previews.
+    async propose(args = {}) {
+      if (args.testOnly !== true || !allSynthetic(args.training) || !allSynthetic(args.heldout))
+        throw coded('PRODUCTION_SESSION_IDS_REQUIRED');
+      return proposeCore(args);
+    },
     async proposeFromSessions(args = {}) {
       // HTTP accepts session IDs only. Neither observation bodies nor claimed
       // source hashes may be supplied by the client through this entry point.
@@ -197,11 +207,9 @@ export function createStudioLearningPipeline({ sessionsDir, store, lockDir } = {
     // Safe unattended promotion additionally requires Core-verified account binding.
     async evolve(args={}) {
       if(args.testOnly===true)throw coded('AUTONOMOUS_PRODUCTION_ONLY');
-      const proposal=await proposeCore({...args,testOnly:false});
-      if(proposal.status!=='ready-for-read-only-promotion')
-        return {status:'abstained',reason:proposal.status,proposalDigest:proposal.proposalDigest,
-          metrics:proposal.metrics,sendPermission:false};
-      return api.promoteQualified(proposal);
+      // Never qualify caller-provided observation bodies. The saved-session path
+      // is the sole production producer until another trusted owner is wired.
+      return api.evolveFromSessions(args);
     },
     async evolveFromSessions(args={}) {
       if(args.testOnly===true)throw coded('AUTONOMOUS_PRODUCTION_ONLY');
@@ -212,13 +220,14 @@ export function createStudioLearningPipeline({ sessionsDir, store, lockDir } = {
       return api.promoteQualified(proposal);
     },
     async promoteQualified(proposal) {
-      const sources=[...(proposal.evidence.trainingSources??[]),...(proposal.evidence.heldoutSources??[])];
-      if(!sources.length||sources.some(r=>r.accountBinding!=='core-verified'))
-        return {status:'abstained',reason:'ACCOUNT_BINDING_NOT_CORE_VERIFIED',
-          proposalDigest:proposal.proposalDigest,metrics:proposal.metrics,sendPermission:false};
-      const saved=await api.promote(proposal.proposalDigest);
-      return {status:'promoted',version:saved.version,proposalDigest:proposal.proposalDigest,
-        metrics:proposal.metrics,sendPermission:false};
+      const entry = typeof proposal?.proposalDigest === 'string' ? ledger.get(proposal.proposalDigest) : null;
+      if (!entry) throw coded('PROPOSAL_NOT_SERVER_MINTED');
+      const canonical = entry.proposal;
+      // Qualify only the immutable server-minted proposal, never a caller's copy.
+      // The current accepted-session producer cannot establish account identity.
+      // Do not infer authority from a matching digest or from caller metadata.
+      return {status:'abstained',reason:'ACCOUNT_BINDING_NOT_CORE_VERIFIED',
+        proposalDigest:canonical.proposalDigest,metrics:canonical.metrics,sendPermission:false};
     },
     rollback: (scope, targetVersion, expectedVersion) => pipeline.rollback(scope, targetVersion, expectedVersion),
     resolveRead: (scope, seed, opts) => pipeline.resolveRead(scope, seed, opts),
