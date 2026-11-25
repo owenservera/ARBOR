@@ -18,6 +18,7 @@ import { extractSymbols, extractImports, extractAnnotations } from './extract.mj
 import { parseAnnotationV2, isVersionedId } from './annotation-v2.mjs';
 import { getSemanticId, indexedSemanticAnchors, semanticAnchorChanges } from './semantic-registry.mjs';
 import { isSensitiveSourcePath } from './search.mjs';
+import { configuredRustSyntax, extractRustSyntax } from './rust-syntax-adapter.mjs';
 
 // The existing v2 scanner is a JS-style lexer, not a universal language parser.
 // Do not treat JSX markup, Python strings, Rust raw strings, etc. as JS comments.
@@ -157,15 +158,15 @@ function prepareStatements(db) {
     deleteFts: db.prepare('DELETE FROM content_fts WHERE rowid = ?'),
     insertFts: db.prepare('INSERT INTO content_fts(rowid, path, content, project, lang) VALUES (?,?,?,?,?)'),
     insertSymbol: db.prepare(
-      `INSERT INTO symbols(file_id, project_id, name, kind, line, end_line, signature, exported, doc)
-       VALUES (?,?,?,?,?,?,?,?,?)`,
+      `INSERT INTO symbols(file_id, project_id, name, kind, line, end_line, signature, exported, doc, qualified_name, syntax_digest, signature_digest)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
     ),
     insertImport: db.prepare(
       'INSERT INTO imports(file_id, project_id, specifier, kind, line) VALUES (?,?,?,?,?)',
     ),
     insertAnnotation: db.prepare(
-      `INSERT INTO annotations(file_id, project_id, line, kind, text, owner, ref)
-       VALUES (?,?,?,?,?,?,?)`,
+      `INSERT INTO annotations(file_id, project_id, line, kind, text, owner, ref, symbol_qualified_name, symbol_kind)
+       VALUES (?,?,?,?,?,?,?,?,?)`,
     ),
     projectImports: db.prepare(
       `SELECT i.id, i.specifier, i.kind AS import_kind, f.path AS file_path, f.lang AS importer_lang
@@ -512,6 +513,14 @@ export function indexProject({ root, db, project, options = {} }) {
     const rustIndexKey='rust_local_imports_v2:'+projectRow.id+':'+absPath;
     const refreshRustIndex=getMeta(db,rustIndexKey)!=='2';
 
+    const syntaxKey='rust_syntax_adapter:'+projectRow.id+':'+absPath;
+    const priorSyntax=getMeta(db,syntaxKey);
+    const rustSyntax=configuredRustSyntax();
+    if(priorSyntax && !rustSyntax)throw Error('rust_syntax_required_for_existing_index');
+    const refreshSyntax=!!rustSyntax && priorSyntax!=='1';
+    // Persist mode even for partial scans; do not silently downgrade.
+    if(refreshSyntax)setMeta(db,syntaxKey,'pending');
+
     const existing = new Map();
     for (const row of stmts.filesForProject.all(projectRow.id)) existing.set(row.path, row);
 
@@ -526,7 +535,7 @@ export function indexProject({ root, db, project, options = {} }) {
       const prev = existing.get(entry.rel) || null;
 
       const refreshV2 = backfillV2 && supportsV2(entry);
-      const refreshRust=refreshRustIndex&&entry.lang==='rust';
+      const refreshRust=(refreshRustIndex||refreshSyntax)&&entry.lang==='rust';
       if (!opts.force && !refreshV2 && prev && !isSourceLang(entry.lang) && prev.size === entry.size && prev.mtime_ms === entry.mtimeMs) {
         result.unchanged++;
         continue;
@@ -558,7 +567,11 @@ export function indexProject({ root, db, project, options = {} }) {
       let annotations = [];
       try {
         if (source) {
-          symbols = extract.symbols(lang, text) || [];
+          const syntax = rustSyntax && rustHeader(entry) ? extractRustSyntax(rustSyntax,text,{
+            projectId:String(projectRow.id),path:entry.rel,contentHash:hash,
+            registry:{lookup:id=>getSemanticId(db,id)}
+          }) : null;
+          symbols = syntax ? syntax.symbols : (extract.symbols(lang, text) || []);
           imports = extract.imports(lang, text) || [];
           annotations = extract.annotations(lang, text) || [];
           if (supportsV2(entry) && text.includes('@hq:')) {
@@ -572,6 +585,10 @@ export function indexProject({ root, db, project, options = {} }) {
             }))];
             // Unknown/deprecated IDs remain observations, not registry writes.
             // Malformed/secret values are not emitted by the existing parser.
+          }
+          if(syntax){
+            const bound=new Set(syntax.annotations.map(a=>JSON.stringify([a.line,a.kind,a.text])));
+            annotations=annotations.filter(a=>!bound.has(JSON.stringify([a.line,a.kind,a.text]))).concat(syntax.annotations);
           }
         } else if (lang === 'markdown') {
           annotations = extract.annotations(lang, text) || [];
@@ -611,6 +628,7 @@ export function indexProject({ root, db, project, options = {} }) {
           symbol.signature ? String(symbol.signature) : null,
           symbol.exported ? 1 : 0,
           symbol.doc ? String(symbol.doc) : null,
+          symbol.qualifiedName??null, symbol.syntaxDigest??null, symbol.signatureDigest??null,
         );
         result.symbols++;
       }
@@ -633,6 +651,7 @@ export function indexProject({ root, db, project, options = {} }) {
           String(annotation.kind), String(annotation.text ?? ''),
           annotation.owner ? String(annotation.owner) : null,
           annotation.ref ? String(annotation.ref) : null,
+          annotation.symbolQualifiedName??null, annotation.symbolKind??null,
         );
         result.annotations++;
       }
@@ -703,6 +722,7 @@ export function indexProject({ root, db, project, options = {} }) {
 
     if (backfillV2 && errors.length === 0) setMeta(db, v2Key, '4');
     if (refreshRustIndex && errors.length === 0 && result.incomplete.length === 0) setMeta(db,rustIndexKey,'2');
+    if(refreshSyntax && errors.length===0 && result.incomplete.length===0)setMeta(db,syntaxKey,'1');
     return stmts.projectById.get(projectRow.id);
   });
 

@@ -517,6 +517,11 @@ function migrate(db) {
       db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${decl}`);
     }
   };
+  ensureColumn('symbols', 'qualified_name', 'TEXT');
+  ensureColumn('symbols', 'syntax_digest', 'TEXT');
+  ensureColumn('symbols', 'signature_digest', 'TEXT');
+  ensureColumn('annotations', 'symbol_qualified_name', 'TEXT');
+  ensureColumn('annotations', 'symbol_kind', 'TEXT');
   ensureColumn('documents', 'binds_to', 'TEXT');
   ensureColumn('decisions', 'valid_from', 'TEXT');
   ensureColumn('decisions', 'valid_to', 'TEXT');
