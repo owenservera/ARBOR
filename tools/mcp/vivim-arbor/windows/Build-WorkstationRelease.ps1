@@ -74,7 +74,7 @@ try{
  $env:VIVIM_WORKSTATION_PROBE_EXE=Join-Path $bin 'vivim-workstation-probe.exe'
  $env:VIVIM_WORKSTATION_PROBE_SHA256=Hash $env:VIVIM_WORKSTATION_PROBE_EXE
  # Require normal exit, never --test-force-exit. No production Host is started.
- $tests=@('apps/vivim-host/test/workstation-file-port.test.mjs','apps/vivim-host/test/workstation-session-port.test.mjs','apps/vivim-host/test/workstation-process-port.test.mjs','apps/vivim-host/test/workstation-probe-http.test.mjs','apps/vivim-host/test/workstation-tunnel-http.test.mjs','apps/vivim-host/test/control-dispatcher.test.mjs','tools/mcp/vivim-arbor/tests/workstation-tunnel.test.cjs','tools/mcp/vivim-arbor/tests/tunnel-readonly.test.cjs','tools/mcp/vivim-arbor/tests/probe-acceptance.test.cjs','tools/mcp/vivim-arbor/tests/workstation-probe-tunnel.test.cjs')
+ $tests=@('apps/vivim-host/test/workstation-file-port.test.mjs','apps/vivim-host/test/workstation-session-port.test.mjs','apps/vivim-host/test/workstation-process-port.test.mjs','apps/vivim-host/test/workstation-probe-http.test.mjs','apps/vivim-host/test/workstation-tunnel-http.test.mjs','apps/vivim-host/test/control-dispatcher.test.mjs','tools/mcp/vivim-arbor/tests/workstation-tunnel.test.cjs','tools/mcp/vivim-arbor/tests/tunnel-readonly.test.cjs','tools/mcp/vivim-arbor/tests/probe-acceptance.test.cjs','tools/mcp/vivim-arbor/tests/workstation-probe-tunnel.test.cjs','tools/mcp/vivim-arbor/tests/release-evidence.test.mjs')
  Invoke-Checked $node (@('--test','--test-timeout=120000')+$tests) 'Host and MCP integration tests'
  foreach($name in $names){if((Hash $tools[$name].path) -ne $tools[$name].sha256){throw 'Toolchain changed during verification'}}
  $receipt=@{schema='vivim.workstation-build-receipt/1';sourceSha=$SourceSha;nativeTests='passed';hostTests='passed';toolchain=$tools;helpers=@{session=Hash $env:VIVIM_WORKSTATION_SESSION_EXE;files=Hash $env:VIVIM_WORKSTATION_FILES_EXE;probe=Hash $env:VIVIM_WORKSTATION_PROBE_EXE};verifiedAt=[DateTime]::UtcNow.ToString('o');promotionPerformed=$false}
@@ -85,6 +85,10 @@ try{
  if(-not (Test-Path -LiteralPath (Join-Path $release 'manifest.json') -PathType Leaf)){throw 'Release manifest not staged'}
  $manifest=Get-Content -LiteralPath (Join-Path $release 'manifest.json') -Raw|ConvertFrom-Json
  if($manifest.sourceSha -cne $SourceSha -or $manifest.nativeBuildSha -cne $SourceSha -or $manifest.helperSha256.session -cne $receipt.helpers.session -or $manifest.helperSha256.files -cne $receipt.helpers.files -or $manifest.helperSha256.probe -cne $receipt.helpers.probe){throw 'Release manifest disagrees with tested build'}
+ # Seal the complete staged tree against the successful exact-source build.
+ $seal=Join-Path $build 'release-seal.json'
+ Invoke-Checked $node @((Join-Path $source 'tools\mcp\vivim-arbor\server\release-evidence.mjs'),'seal',$release,(Join-Path $build 'build-receipt.json'),$seal) 'Release evidence seal'
+ Invoke-Checked $node @((Join-Path $source 'tools\mcp\vivim-arbor\server\release-evidence.mjs'),'verify',$release,(Join-Path $build 'build-receipt.json'),$seal) 'Release evidence readback'
  Write-Output ('VERIFIED_STAGED_RELEASE='+$SourceSha)
  Write-Output ('BUILD_RECEIPT='+ (Join-Path $build 'build-receipt.json'))
  Write-Output 'LIVE_HOST_UNCHANGED=True'
