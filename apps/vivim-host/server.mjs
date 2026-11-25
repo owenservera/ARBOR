@@ -799,6 +799,9 @@ export function createHostServer({ dataRoot = studioDataDir(), staticRoot = path
       .then(module=>module.closeNativeProductKernel()).catch(()=>{});
   });
   // A runtime this server opened lazily is its own to release; a caller-supplied one is not.
+  // The incumbent Host owns native workstation sessions. Closing this Host
+  // closes the worker input pipe and prevents orphaned direct-child sessions.
+  server.on('close', () => { try { control?.closeWorkstationSessions(); } catch { /* best-effort local shutdown */ } });
   if (!bootstrap) server.on('close', () => { try { runtime?.close(); } catch { /* already closed */ } });
   return server;
 }
