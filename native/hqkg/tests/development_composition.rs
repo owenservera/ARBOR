@@ -321,3 +321,54 @@ fn partitioned_coverage_expands_beyond_strict_depth_with_explicit_bounds() {
     assert_eq!(limited["depthLimited"],true);
     assert_eq!(limited["sourceCount"],32);
 }
+
+#[test]
+fn closure_interpretation_executes_all_partition_sources_and_reuses_exact_materializations(){
+    use hqkg::native_program::DevelopmentSession;
+    let graph=semantic_graph(false,20,0);
+    let (_,policy,mut token)=task(&graph_for_policy());
+    token.graph_epoch=graph.epoch();
+    let mut session=DevelopmentSession::new(graph,token.clone()).unwrap();
+    let cancel=CancellationToken::new();
+    let key="vivim.example-capability@1";
+    let report=session.interpret_closure(&token,key,false,&policy,Budget::default(),&cancel).unwrap();
+    assert_eq!(report["sourceCount"],21);
+    assert_eq!(report["partitionCount"],2);
+    assert_eq!(report["coverageComplete"],true);
+    assert_eq!(report["complete"],true);
+    assert_eq!(report["effectPerformed"],false);
+    let rows=|v:&Value|v["partitions"].as_array().unwrap().iter().flat_map(|p|p["sources"].as_array().unwrap().iter().cloned()).collect::<Vec<_>>();
+    let first=rows(&report);
+    assert!(first.iter().all(|r|r["state"]=="computed"));
+    assert_eq!(first[0]["semanticCount"],1);
+    assert_eq!(session.cache_entries(),21);
+    let warm=session.interpret_closure(&token,key,false,&policy,Budget::default(),&cancel).unwrap();
+    let repeated=rows(&warm);
+    for (a,b) in first.iter().zip(repeated.iter()){
+        assert_eq!(b["state"],"reused");
+        let mut a=a.clone();a["state"]=serde_json::json!("reused");assert_eq!(&a,b);
+    }
+    let denied=Budget{max_tasks:20,..Budget::default()};
+    assert!(session.interpret_closure(&token,key,false,&policy,denied,&cancel).is_err());
+    let mut stale=token.clone();stale.graph_epoch+=1;
+    assert!(session.interpret_closure(&stale,key,false,&policy,Budget::default(),&cancel).is_err());
+    let graph=semantic_graph(false,33,0);
+    token.graph_epoch=graph.epoch();
+    let mut session=DevelopmentSession::new(graph,token.clone()).unwrap();
+    assert!(session.interpret_closure(&token,key,false,&policy,Budget::default(),&cancel).is_err());
+    assert_eq!(session.cache_entries(),0);
+}
+
+#[test]
+fn closure_distinguishes_complete_dependency_coverage_from_limited_interpretation(){
+    use hqkg::native_program::DevelopmentSession;
+    let graph=semantic_graph(false,1,49);
+    let (_,policy,mut token)=task(&graph_for_policy());
+    token.graph_epoch=graph.epoch();
+    let mut session=DevelopmentSession::new(graph,token.clone()).unwrap();
+    let report=session.interpret_closure(&token,"vivim.example-capability@1",false,&policy,Budget::default(),&CancellationToken::new()).unwrap();
+    assert_eq!(report["coverageComplete"],true);
+    assert_eq!(report["complete"],false);
+    assert_eq!(report["truncatedSources"],1);
+    assert_eq!(report["partitions"][0]["sources"][0]["limitsReached"][0],"symbol-results");
+}
