@@ -178,3 +178,43 @@ test('bounded retrieval without a graph index names nothing (no graph authority)
     rmSync(fixture.root, { recursive: true, force: true });
   }
 });
+
+
+test('semantic Wiki joins only unique pinned source bytes and invalidates stale or ambiguous links', () => {
+  const fixture = buildFixture();
+  const {db, root, outDir, projectDir} = fixture;
+  const path = 'hq/lib/wiki.mjs';
+  const original = readFileSync(new URL('../lib/wiki.mjs', import.meta.url), 'utf8');
+  const hash = createHash('sha256').update(original).digest('hex');
+  try {
+    const first = db.prepare('SELECT id FROM projects WHERE name=?').get('demo').id;
+    const secondDir = join(root, 'other');
+    mkdirSync(secondDir, {recursive:true});
+    const second = addProject(db, {name:'other',dir:secondDir});
+    const actual = addFile(db, first, projectDir, path, original);
+    const unrelated = addFile(db, second, secondDir, path, original + '\n// different bytes\n');
+    db.prepare('UPDATE files SET hash=? WHERE id=?').run(hash,actual);
+    db.prepare('UPDATE files SET hash=? WHERE id=?').run('b'.repeat(64),unrelated);
+    db.prepare('UPDATE semantic_link SET content_hash=? WHERE semantic_id=?').run(hash,SEM_CURRENT);
+    const page = () => {
+      buildWiki(fixture);
+      return readPage(outDir,'semantics.md');
+    };
+    let rendered = page();
+    assert.match(rendered, /\[demo:hq\/lib\/wiki\.mjs:533\]\([^)]+\) · def · registry current · indexed-bytes-match/);
+    assert.ok(!rendered.includes('[other:hq/lib/wiki.mjs:533]'));
+    db.prepare('UPDATE files SET hash=? WHERE id=?').run(hash,unrelated);
+    rendered = page();
+    assert.match(rendered, /hq\/lib\/wiki\.mjs:533 · def · registry current · ambiguous-source-pin/);
+    assert.ok(!rendered.includes('[demo:hq/lib/wiki.mjs:533]'));
+    db.prepare('UPDATE files SET hash=? WHERE id=?').run('c'.repeat(64),actual);
+    db.prepare('UPDATE files SET hash=? WHERE id=?').run('b'.repeat(64),unrelated);
+    rendered = page();
+    assert.match(rendered, /hq\/lib\/wiki\.mjs:533 · def · registry current · stale-source-pin/);
+    assert.ok(!rendered.includes('[demo:hq/lib/wiki.mjs:533]'));
+    assert.ok(!rendered.includes('[other:hq/lib/wiki.mjs:533]'));
+  } finally {
+    db.close();
+    rmSync(root,{recursive:true,force:true});
+  }
+});
