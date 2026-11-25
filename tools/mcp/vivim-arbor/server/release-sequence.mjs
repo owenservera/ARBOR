@@ -28,7 +28,7 @@ export function releaseNext(plan,events){
  let phase='forward',position=0,last=null,seenClaim=false;
  for(let i=0;i<events.length;i++){
   const e=events[i];
-  if(!e||Object.keys(e).some(k=>!['sequence','kind','activeTree','candidateTree','evidenceDigest'].includes(k))||
+  if(!e||typeof e!=='object'||Array.isArray(e)||typeof e.kind!=='string'||Object.keys(e).length!==5||Object.keys(e).some(k=>!['sequence','kind','activeTree','candidateTree','evidenceDigest'].includes(k))||
     e.sequence!==i+1||e.activeTree!==plan.activeTree||e.candidateTree!==plan.candidateTree||!hex(e.evidenceDigest,64))deny();
   if(phase==='forward'&&e.kind==='candidate-failed'){
    if(!seenClaim||!['promotion-observed','candidate-health-observed','client-contract-observed'].includes(last))deny();
@@ -44,7 +44,7 @@ export function releaseNext(plan,events){
    deny();
   }
   const steps=phase==='forward'?forward:rollback;
-  if(e.kind!==steps[position])deny();
+  if(position>=steps.length||e.kind!==steps[position])deny();
   if(e.kind==='promotion-claimed')seenClaim=true;
   position++;last=e.kind;
  }
