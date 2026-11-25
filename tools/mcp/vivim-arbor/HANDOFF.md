@@ -2,6 +2,11 @@
 2026-11-25 | R001 | Read this before continuing development.
 
 
+## R024 — Durable release transaction evidence (2026-11-25)
+- 892a0774 implements pure promotion/rollback sequencing; 13 direct logic checks passed; VIVIM fetch and fast-forward ctl-64949eee1f54f4d1 exited 0, exact local source readback. 13788903 implements exclusive, digest-chained release event journal with fsync of each staged record, plan identity, compare-and-set append and reconciliation of unresolved claims. Cloud Node 22.16.0 exact Git blob readback (journal c194e46cc0ea396d2e5e15eb584ec305b2646fcc; sequence 77d44724704562c7335dad3a9e1098461ed2e523; tests e9d35f9e52bbe31731d967f4af1a3f8f538d58f5) 3/3 actual filesystem tests passed. Not a Host effect executor; Windows/power-loss durability and live activation unverified.
+- VIVIM git fetch ctl-4633d626abf96c68 exited 0 through 13788903. Fast-forward request a7c741e2cd5543d8a91ecf512018cc09, plan ctl-a96a061881b2d1b2 returned uncertain/HOST_EFFECT_NOT_APPLIED. Subsequent file read denied/unavailable. Do not repeat the uncertain effect; reconcile installed Host receipt and checkout first. Health remains ready/private-workstation/12, grant still original 11 recipes. No plugin refresh needed currently. No commercial Desktop Commander calls.
+- Strict independence 14/32 unchanged. Need supported local builder admission and actual Windows build/controlled deployment; no automatic policy expansion. Next release transaction work is trusted Host integration, generation lifecycle and verified recovery, not remote callers supplying arbitrary observations.
+
 ## R023 — Source synchronization and live-evolution backlog (2026-11-25)
 - Live health ready/private-workstation, 12 tools, 11 recipes. VIVIM git-status ctl-1bc08277bad4067d exit 0 clean tracked main; fetch ctl-5494d298d7efba1d exit 0; fast-forward ctl-bd2fc25efcd5bb30 exit 0 to bc7dd64f. Local maintenance-gate.cjs readback 1686 bytes, SHA256 d6d3f6871f087c80ebda40eeb723f6bd9aaef39073fcd2a355e79231f43ab. Running Host unchanged, no commercial relay calls.
 - Tighten release classifier: source provenance alone may be ignored, but all other manifest fields are hashed into runtimeBindingSha256, including unknown fields. Missing digest or changed execution binding cannot be classified as no-restart. Regression tests added; Windows execution remains pending.
