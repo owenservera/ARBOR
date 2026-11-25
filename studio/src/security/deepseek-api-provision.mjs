@@ -1,14 +1,12 @@
 // Windows-only local provider enrollment. Studio owns the browser; the OS owns secrets.
- // No credential input, credential output, browser capture, or password-manager inspection.
- // The provisioning page is intentionally a user-operated sensitive surface until a private
- // capture-exclusion contract and its live selectors are verified.
+// No remote credential input, credential output, browser capture, or password-manager inspection.
+// The provisioning page is intentionally a user-operated sensitive surface until a private
+// capture-exclusion contract and its live selectors are verified.
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { resolve } from 'node:path';
-import { CdpConnection } from '../cdp/client.mjs';
-import { browserVersion } from '../cdp/discovery.mjs';
-import { verifyBrowserOwner } from '../chrome/browser-ownership.mjs';
-import { dataPaths, loadUserConfig } from '../config.mjs';
+import { resolve, join, sep } from 'node:path';
+import { existsSync, realpathSync } from 'node:fs';
+import { dataPaths } from '../config.mjs';
 
 export const PLATFORM = 'https://platform.deepseek.com/api_keys';
 export const API = 'https://api.deepseek.com';
@@ -24,17 +22,30 @@ export function projectReceipt(value) {
     ...(models.length ? {credentialRef:'local:deepseek:dpapi-current-user',models,baseUrl:API} : {})};
 }
 
-// Only Studio's verified existing profile is permitted. No login, password autofill,
-// or account selection is performed here; Chrome/Windows may request local verification.
+// Studio currently defaults to local-raw capture. Never open the enrollment surface
+// in its capture profile or attach CDP to the credential page. Use the ordinary
+// Chrome profile only, with a native local user completing any authentication.
 export async function openEnrollmentPage() {
+  if (process.platform !== 'win32' || !process.env.LOCALAPPDATA) throw fail('WINDOWS_OWNER_SESSION_REQUIRED');
   const paths = dataPaths();
-  const port = Number(process.env.CAPTURE_STUDIO_CDP_PORT || loadUserConfig(paths.config).values.cdpPort || 9222);
-  const version = await browserVersion({port});
-  await verifyBrowserOwner({profileDir:paths.chromeProfile,port,version});
-  const conn = await CdpConnection.connect(version.webSocketDebuggerUrl,{requestTimeoutMs:10000});
-  try {
-    await conn.send('Target.createTarget',{url:PLATFORM});
-  } finally { conn.close(); }
+  const normal = join(process.env.LOCALAPPDATA,'Google','Chrome','User Data');
+  const canon = p => (existsSync(p) ? realpathSync(p) : resolve(p)).toLowerCase();
+  const capture = canon(paths.chromeProfile), ordinary = canon(normal);
+  if (capture === ordinary || ordinary.startsWith(capture + sep) || capture.startsWith(ordinary + sep))
+    throw fail('PROVISION_CAPTURE_PROFILE_CONFLICT');
+  const candidates = [
+    paths.chromeExecutable,
+    ...[process.env.ProgramFiles,process.env['ProgramFiles(x86)'],process.env.LOCALAPPDATA]
+      .filter(Boolean).map(p=>join(p,'Google','Chrome','Application','chrome.exe'))
+  ].filter(Boolean);
+  const chrome = candidates.find(p=>existsSync(p) && p.toLowerCase().endsWith('chrome.exe'));
+  if (!chrome) throw fail('PROVISION_CHROME_UNAVAILABLE');
+  await new Promise((resolve,reject)=>{
+    const child=spawn(chrome,['--user-data-dir='+normal,'--new-window',PLATFORM],
+      {detached:true,stdio:'ignore'});
+    child.once('error',()=>reject(fail('PROVISION_CHROME_LAUNCH_FAILED')));
+    child.once('spawn',()=>{child.unref();resolve();});
+  });
 }
 
 // The helper executes in the interactive owner's Windows session. Its stdout is a
@@ -67,6 +78,8 @@ export async function vaultOperation(mode) {
 
 export async function provisionDeepSeek() {
   if (process.platform !== 'win32') throw fail('WINDOWS_OWNER_SESSION_REQUIRED');
+  const existing = await vaultOperation('verify');
+  if (existing.state !== 'not_configured') return existing;
   await openEnrollmentPage();
   return vaultOperation('import');
 }
