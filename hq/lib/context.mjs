@@ -101,12 +101,20 @@ function isSecretPath(value) {
 
 // readPrefix — read at most maxBytes from the start of a file. Returns null on
 // any read failure so a single bad file never aborts a bundle.
-function readPrefix(absPath, maxBytes) {
+function readPrefix(absPath, maxBytes, { completeLines = false } = {}) {
   let fd = null;
   try {
     fd = openSync(absPath, 'r');
-    const buffer = Buffer.alloc(maxBytes);
-    const read = readSync(fd, buffer, 0, maxBytes, 0);
+    // Read one sentinel byte for ordinary excerpts. A truncated final line
+    // (or UTF-8 code point) cannot be reproduced by a line-based verifier.
+    const cap = maxBytes + (completeLines ? 1 : 0);
+    const buffer = Buffer.alloc(cap);
+    const read = readSync(fd, buffer, 0, cap, 0);
+    if (completeLines && read > maxBytes) {
+      const prefix = buffer.subarray(0, maxBytes);
+      const lastLf = prefix.lastIndexOf(0x0a);
+      return lastLf < 0 ? '' : prefix.subarray(0, lastLf + 1).toString('utf8');
+    }
     return buffer.subarray(0, read).toString('utf8');
   } catch {
     return null;
@@ -570,7 +578,8 @@ function prepareCandidates(db, candidates, { task, projectName, nowMs, preferred
   for (const candidate of candidates) {
     const semantic = strict?candidate.semanticReferences.filter(r=>r.semanticAnchor?.state==='indexed'&& !['invalid_kind','deprecated'].includes(r.resolution)):candidate.semanticReferences;
     if(strict&&!semantic.length){candidate.unreadable=true;continue;}
-    const raw = readPrefix(candidate.absPath, semantic.length ? SEMANTIC_VERIFY_BYTES : MAX_FILE_BYTES);
+    const raw = readPrefix(candidate.absPath, semantic.length ? SEMANTIC_VERIFY_BYTES : MAX_FILE_BYTES,
+      { completeLines: !semantic.length });
     if (semantic.length && (raw == null || sha256(raw) !== semantic[0].contentHash)) {
       candidate.unreadable = true;
       continue;
