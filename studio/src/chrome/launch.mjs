@@ -51,13 +51,15 @@ export function chromeCandidates(env = process.env, platform = process.platform)
   for (const dir of dirs) for (const name of names) c.push(impl.join(dir, name));
   return [...new Set(c)];
 }
-export function findChrome(env = process.env, platform = process.platform) {
+export function findChrome(env = process.env, platform = process.platform, configuredExecutable = null) {
+  const impl = platform === 'win32' ? path.win32 : path.posix;
+  if (typeof configuredExecutable === 'string' && impl.isAbsolute(configuredExecutable) && existsSync(configuredExecutable)) return configuredExecutable;
   const hit = chromeCandidates(env, platform).find((p) => p && existsSync(p));
   if (!hit) throw new Error('Chrome/Chromium/Edge not found. Install one or set CHROME_PATH to its executable.');
   return hit;
 }
 
-export async function launchChrome({ profileDir, port = 9222, url = 'about:blank', headless = false, extraArgs = [], dataRoot = null } = {}) {
+export async function launchChrome({ profileDir, port = 9222, url = 'about:blank', headless = false, extraArgs = [], dataRoot = null, executable = null } = {}) {
   // Even when CDP is already reachable, it may belong to an unrelated browser.
   // No tab operations or sends are permitted before proving continuity with this profile.
   browserMarkerPath(profileDir);
@@ -71,7 +73,7 @@ export async function launchChrome({ profileDir, port = 9222, url = 'about:blank
   if (dataRoot) await assertNoForeignCdpOwner(dataRoot, port);
   // Chrome 136+ refuses remote debugging on the default profile.
   mkdirSync(profileDir, { recursive: true });
-  const exe = findChrome();
+  const exe = findChrome(process.env, process.platform, executable);
   // Local-integrator escape hatch (owner machines and synthetic-https test fixtures): extra,
   // explicitly operator-provided Chrome flags. Opt-in via environment only; never set by
   // Capture Studio itself, and the listener stays loopback-only regardless of the flags.
