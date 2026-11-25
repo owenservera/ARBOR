@@ -1,6 +1,7 @@
 // Opt-in source-backed benchmark. Never run on a live Host data directory.
 // Usage: node real_development_composition.mjs <exact archive root> <new sibling data dir> <native bin dir>
-// The source root is only apps/vivim-host in the exact archive; no personal corpus.
+// Explicit bounded control-subtree task; whole-host selection exceeds the current closure limit.
+// This is a scope-specific demonstration, not a whole-repository completeness benchmark.
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync, realpathSync } from 'node:fs';
 import { resolve, join } from 'node:path';
@@ -11,7 +12,7 @@ import { performance } from 'node:perf_hooks';
 const [archiveArg, dataArg, binArg] = process.argv.slice(2);
 assert(archiveArg && dataArg && binArg, 'exact archive, new data directory and bin directory required');
 const archive = realpathSync(archiveArg);
-const root = realpathSync(join(archive, 'apps', 'vivim-host'));
+const root = realpathSync(join(archive, 'apps', 'vivim-host', 'control'));
 const data = resolve(dataArg);
 assert(!existsSync(data), 'benchmark requires new data directory');
 process.env.HQKG_IMPORT_MODE = 'packaged';
@@ -19,7 +20,7 @@ process.env.VIVIM_HQKG_BIN_DIR = realpathSync(binArg);
 const { createDevIntelligence } = await import(pathToFileURL(join(archive, 'hq/lib/arbor-service.mjs')));
 const { queryDevelopmentGraph } = await import(pathToFileURL(join(archive, 'hq/lib/kg-export.mjs')));
 const service = createDevIntelligence({ dataDir:data, approvedRoots:[root], mode:'diagnostic' });
-service.registerSource({name:'arbor-host',path:root});
+service.registerSource({name:'arbor-control',path:root});
 const startIndex=performance.now();
 const index=service.index({force:true,useGit:false});
 const sync=service.syncNativeGraph();
@@ -33,7 +34,7 @@ for (const key of [semanticId+'\u0000',semanticId+'\u001f',semanticId+'\u007f'])
 }
 const anchorResult=service.nativeGraphQuery({operation:'sources',key:semanticId});
 assert.equal(anchorResult.state,'indexed-snapshot',JSON.stringify(anchorResult));
-const anchor=anchorResult.result.anchors.find(a=>a.path==='arbor-host/control/native-product-pure.mjs');
+const anchor=anchorResult.result.anchors.find(a=>a.path==='arbor-control/native-product-pure.mjs');
 assert(anchor,'real capability anchor missing');
 const policy={id:'development-preview',revision:1,max_risk:'R0',max_input_class:'internal',max_output_class:'internal',allowed_destinations:[],allow_effect_candidates:false};
 const step=(id,kind,dependencies,inputs)=>({id,kind,dependencies,inputs,output_data_class:'internal',risk:'R0',destination:null});
@@ -83,15 +84,15 @@ assert.deepEqual(ids(impact.dependents),[...expectedImpact].sort());
 for(const row of impact.sources){
   const file=files.get(row.id);
   assert.equal(row.path,file.metadata.source_path);
-  const bytes=readFileSync(join(root,row.path.slice('arbor-host/'.length)));
+  const bytes=readFileSync(join(root,row.path.slice('arbor-control/'.length)));
   assert.equal(createHash('sha256').update(bytes).digest('hex'),row.digest);
   assert(impact.derivedSourceBindings[row.id].includes('select'));
 }
 assert(meaning.semantics.some(row=>row.semanticId===semanticId),'actual semantic annotation missing');
-assert(impact.dependents.some(row=>row.path==='arbor-host/control/command-program.mjs'),'known real consumer missing');
+assert(impact.dependents.some(row=>row.path==='arbor-control/agent-composer-bridge.mjs'),'known real consumer missing');
 const timings=[];
 for(let i=0;i<5;i++){
  const before=performance.now();const again=run();timings.push(performance.now()-before);
  assert.deepEqual(again,computed,'same-source independent subprocess result differs');
 }
-console.log(JSON.stringify({schema:'arbor.real-development-composition/1',result:'PASS',scope:'exact archived apps/vivim-host only',semanticId,anchor,graphEpoch:sync.epoch,indexMs,coldSubprocessMs:coldMs,repeatedSubprocessMs:timings,sourceCount:impact.sourceCount,dependentCount:impact.dependentCount,semanticCount:meaning.semanticCount,verifiedSourcePaths:impact.sources.map(r=>r.path),knownConsumer:'arbor-host/control/command-program.mjs',llmCalls:0,effects:0,note:'Repeated subprocesses have separate in-process caches. No LLM baseline, full repository completeness or natural-language resolver acceptance claimed.'}));
+console.log(JSON.stringify({schema:'arbor.real-development-composition/1',result:'PASS',scope:'exact archived apps/vivim-host/control only',semanticId,anchor,graphEpoch:sync.epoch,indexMs,coldSubprocessMs:coldMs,repeatedSubprocessMs:timings,sourceCount:impact.sourceCount,dependentCount:impact.dependentCount,semanticCount:meaning.semanticCount,verifiedSourcePaths:impact.sources.map(r=>r.path),knownConsumer:'arbor-control/agent-composer-bridge.mjs',llmCalls:0,effects:0,note:'Repeated subprocesses have separate in-process caches. No LLM baseline, full repository completeness or natural-language resolver acceptance claimed.'}));
