@@ -2,6 +2,10 @@
 2026-11-25 | R001 | Read this before continuing development.
 
 
+## R034 — Expanded workstation profile authoring and discovery (2026-11-25)
+
+See [R034 parity register](NATIVE-WORKSTATION-PARITY.md#r034--reviewed-expanded-workstation-profile-and-discovery-implementation-2026-11-25) for source and real Windows receipts. 16/16 Node tests, 3/3 script parse checks and actual Node/PowerShell discovery passed; private proposal creation/readback and overwrite refusal verified. Production unchanged. Studio/Harness R033 hold remains. Actual Craft/Labs live roots and owner-approved activation are pending. No further grant was created and no Desktop Commander used.
+
 ## R031 — Owner-directed preservation and enhancement of original roadmap (2026-11-25)
 
 The full 48-deliverable register is saved in [NATIVE-WORKSTATION-PARITY.md R031](NATIVE-WORKSTATION-PARITY.md#r031--complete-48-deliverable-independence-and-acceleration-register-2026-11-25). Evidence reconciliation: 15/32 original milestones accepted (R021 14/32 + R030 general terminal), 9 partial, 8 open; extensions tracked separately. No runtime operation or new test was performed by this documentation update. Read R031 critical path and R030 operating contract before continuing. Existing task-claim owners unchanged.
