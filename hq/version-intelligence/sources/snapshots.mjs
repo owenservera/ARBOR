@@ -199,8 +199,8 @@ function note(errors, code, detail) {
   if (!errors.some(e => e.code === code && e.detail === detail)) errors.push({ code, detail });
 }
 function bufferFrom(value) {
-  if (Buffer.isBuffer(value)) return value;
-  if (value instanceof Uint8Array) return Buffer.from(value);
+  // Own the verified bytes: an adapter must not mutate a returned Buffer alias.
+  if (Buffer.isBuffer(value) || value instanceof Uint8Array) return Buffer.from(value);
   fail('INCOMPLETE_SCAN', 'binary_blob_required');
 }
 async function readVerifiedBlob(adapter, pin, sha, maxBytes) {
@@ -337,15 +337,22 @@ export async function readPinnedBlob(pin, path, {
   adapter, authorize, manifest, maxBytes = DEFAULT_LIMITS.maxBlobBytes,
 } = {}) {
   checkPin(pin);
-  await authorized(adapter, authorize, 'source.blob.read', pin.scope,
-    { repoIdentity: pin.repoIdentity, commitSha: pin.resolvedCommitSha,
-      sourceGrantRef: pin.sourceGrantRef, path: safePath(path) });
-  if (!manifest || manifest.pinId !== pin.pinId) fail('ID_CONFLICT', 'manifest_required');
-  if (manifest.manifestDigest !== manifestDigestOf(manifest)) fail('DIGEST_CONFLICT', 'manifest_modified');
+  const rel = safePath(path);
+  const ctx = { repoIdentity: pin.repoIdentity, commitSha: pin.resolvedCommitSha,
+    sourceGrantRef: pin.sourceGrantRef, path: rel };
+  await authorized(adapter, authorize, 'source.blob.read', pin.scope, ctx);
+  if (!manifest || manifest.schema !== MANIFEST_SCHEMA || manifest.pinId !== pin.pinId ||
+      manifest.repoIdentity !== pin.repoIdentity || manifest.resolvedCommitSha !== pin.resolvedCommitSha ||
+      manifest.rootTreeSha !== pin.rootTreeSha || manifest.subPath !== pin.subPath ||
+      !Array.isArray(manifest.entries)) fail('ID_CONFLICT', 'manifest_pin_conflict');
+  if (manifest.manifestDigest !== manifestDigestOf(manifest) ||
+      (pin.manifestDigest && pin.manifestDigest !== manifest.manifestDigest))
+    fail('DIGEST_CONFLICT', 'manifest_modified');
+  if (pin.subPath && !(rel === pin.subPath || rel.startsWith(pin.subPath + '/')))
+    fail('SOURCE_UNAUTHORIZED', 'blob_outside_pin');
   if (!Number.isSafeInteger(maxBytes) || maxBytes < 1 || maxBytes > DEFAULT_LIMITS.maxBlobBytes) {
     fail('RESOURCE_LIMIT', 'invalid_blob_limit');
   }
-  const rel = safePath(path);
   const entry = manifest.entries.find(e => e.path === rel);
   if (!entry || entry.kind !== 'file' || entry.excludedReason || sensitivePath(rel)) {
     fail('SOURCE_UNAUTHORIZED', 'blob_not_readable');
@@ -354,5 +361,8 @@ export async function readPinnedBlob(pin, path, {
   await commitAt(pin, adapter);
   const bytes = await readVerifiedBlob(adapter, pin, entry.blobSha, maxBytes);
   if (entry.bytes !== null && bytes.length !== entry.bytes) fail('DIGEST_CONFLICT', 'blob_length_mismatch');
+  // A live grant may expire or be revoked while the object adapter is awaiting I/O.
+  // Reuse the identical Host authorization context immediately before disclosure.
+  await authorized(adapter, authorize, 'source.blob.read', pin.scope, ctx);
   return bytes;
 }

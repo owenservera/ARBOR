@@ -191,3 +191,44 @@ test('T07/T19 immutable metadata, oversized blobs and no speculative text inspec
   assert(uninspected.some(e => e.parseStatus === 'uninspected'));
   assert.equal(f.calls.blobs.length, 0);
 });
+
+test('N02 pinned blob refuses revocation during read and returns no adapter-owned buffer alias', async () => {
+  const f = syntheticSource();
+  const p = await pin(f);
+  const m = await snapshotAt(p, { adapter: f.adapter, authorize: f.authorize });
+  const entry = m.entries.find(e => e.path === 'src/first.mjs');
+  let allowed = true;
+  const revokeDuringRead = { ...f.adapter, readBlob: async i => {
+    const bytes = await f.adapter.readBlob(i);
+    allowed = false;
+    return bytes;
+  }};
+  await assert.rejects(readPinnedBlob(m.pin, entry.path, {
+    adapter: revokeDuringRead, authorize: () => allowed, manifest: m,
+  }), { code: 'SOURCE_UNAUTHORIZED' });
+  allowed = true;
+  const owned = await readPinnedBlob(m.pin, entry.path, {
+    adapter: f.adapter, authorize: () => allowed, manifest: m,
+  });
+  const original = f.bytes.get(entry.blobSha);
+  assert.notEqual(owned, original);
+  original.fill(0);
+  assert.equal(gitBlobSha(owned), entry.blobSha);
+});
+
+test('N02 refuses a recomputed manifest that conflicts with the sealed pin or source identity', async () => {
+  const f = syntheticSource();
+  const p = await pin(f);
+  const m = await snapshotAt(p, { adapter: f.adapter, authorize: f.authorize });
+  const different = { ...m, rootTreeSha: 'f'.repeat(40) };
+  different.manifestDigest = manifestDigestOf(different);
+  await assert.rejects(readPinnedBlob(p, 'src/first.mjs', {
+    adapter: f.adapter, authorize: f.authorize, manifest: different,
+  }), { code: 'ID_CONFLICT' });
+  const changed = { ...m, entries: m.entries.filter(e => e.path !== 'src/shared.mjs') };
+  changed.manifestDigest = manifestDigestOf(changed);
+  await assert.rejects(readPinnedBlob(m.pin, 'src/first.mjs', {
+    adapter: f.adapter, authorize: f.authorize, manifest: changed,
+  }), { code: 'DIGEST_CONFLICT' });
+  assert.equal(f.calls.blobs.length, 0);
+});
