@@ -5,6 +5,7 @@ import {isAbsolute,basename} from 'node:path';
 import {spawnSync} from 'node:child_process';
 import {verifyMachineFileTarget,machineBatchTarget} from './workstation-machine-path.mjs';
 import {decodeWorkstationText} from './workstation-text-codec.mjs';
+import {createCodingContext} from './workstation-coding-context.mjs';
 export const FILE_READ='workstation.file.read',FILE_INSPECT='workstation.file.inspect',DIR_LIST='workstation.directory.list',
  DIR_CREATE='workstation.directory.create',FILE_WRITE='workstation.file.write',FILE_EDIT='workstation.file.edit',
  FILES_READ='workstation.files.read',FILES_SEARCH='workstation.files.search_selected';
@@ -20,6 +21,7 @@ function pinned(file,expected,limit){
  const bytes=readFileSync(p);if(hash(bytes)!==expected)throw fail('WORKSTATION_FILE_BINDING_INVALID');return {path:p,bytes,sha:expected};
 }
 export function createWorkstationFilePort({env=process.env,run=spawnSync,now=Date.now}={}){
+ const codingContext=createCodingContext({env});
  function resolve(rootId,target){
   try{
    const config=pinned(env.VIVIM_WORKSTATION_ROOTS,env.VIVIM_WORKSTATION_ROOTS_SHA256,65536);
@@ -65,7 +67,13 @@ export function createWorkstationFilePort({env=process.env,run=spawnSync,now=Dat
   const b=resolve(args.root_id,args.path),preview=request(action,args,b,'preview');
   return {schema:'vivim.workstation-file-binding/1',rootId:b.rootId,configSha:b.configSha,preview,bindingDigest:digest({b,action,args,preview})};
  }
- function read(action,args){if(!WORKSTATION_FILE_READS.has(action))throw fail('WORKSTATION_FILE_INPUT_INVALID');const b=resolve(args.root_id,args.path);return {schema:'vivim.workstation-file-read/1',rootId:b.rootId,configSha:b.configSha,path:args.path,...request(action,args,b,'read')};}
+ function read(action,args){
+  if(!WORKSTATION_FILE_READS.has(action))throw fail('WORKSTATION_FILE_INPUT_INVALID');
+  const b=resolve(args.root_id,args.path),result=request(action,args,b,'read');
+  // Project only the exact, already authorized bytes. Never widen file access.
+  const coding=action===FILE_READ?codingContext(b.root,b.relativePath??args.path,result):null;
+  return {schema:'vivim.workstation-file-read/1',rootId:b.rootId,configSha:b.configSha,path:args.path,...result,...(coding?{codingContext:coding}:{})};
+ }
  function mutate(action,args,binding){
   const current=prepare(action,args);if(digest(current)!==digest(binding))throw fail('WORKSTATION_FILE_BINDING_STALE');
   const b=resolve(args.root_id,args.path);
