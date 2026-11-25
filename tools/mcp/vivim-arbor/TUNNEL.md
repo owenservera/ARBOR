@@ -17,3 +17,12 @@ If browser eligibility or tunnel provisioning is unavailable, keep the local des
 ## Regression
 `node --test tests/tunnel-readonly.test.cjs tests/protocol.test.cjs tests/host-discovery.test.cjs`
 Source coverage: allowlist, local opt-in, redacted denial, argument validation, handshake/reconnect, duplicate read semantics and actual stdio process. The 64 KiB line check occurs after readline buffers the line; upstream authenticated transport must impose payload and rate limits. Not a public-facing resource-exhaustion boundary. Tunnel transport authentication, revocation, live Host reachability and real browser acceptance remain separate required evidence.
+
+## R002 — remote plugin alternative (Context7 validated)
+The installed Desktop Commander plugin works in the owner's current browser account. This proves the installed-plugin route is available for that plugin, not that every custom connection is entitled. Do not prescribe a plan upgrade before checking the actual plugin creation/installation UI.
+
+Official [plugin packaging](https://developers.openai.com/plugins/build/plugins) documents `streamable-http` and OAuth under `extensions.com.openai.auth`; [connection instructions](https://developers.openai.com/plugins/deploy/connect-chatgpt) cover endpoint testing. [Rust SDK](https://github.com/modelcontextprotocol/rust-sdk) supports Streamable HTTP with Tower/Axum but does not verify user tokens automatically. [MCP 2026-07-28](https://modelcontextprotocol.io/specification/2026-07-28) removes the legacy handshake/session model for modern clients; the existing tunnel stdio bootstrap is explicitly legacy 2025-compatible, not proof of modern HTTP support.
+
+For a provisioned OAuth-enabled public gateway, run `node server/remote-manifest.cjs <actual HTTPS /mcp endpoint>` to produce a separate remote-only manifest. No secrets or stdio Commander in that output. CIMD is the documented client registration preference; actual authorization server discovery and client support must be verified. The generator validates syntax and rejects obvious local/example/IP addresses; it does not resolve DNS, prove control or check endpoint reachability. Do not use fixture URLs in account configuration. Keep existing local plugin manifest until remote deployment and authorization are accepted. For private tunnel provisioning prefer the official client and its own configuration flow. Neither route has been activated in this session.
+
+Run `node --test tests/remote-manifest.test.cjs` for manifest contract regressions.

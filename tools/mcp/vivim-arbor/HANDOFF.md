@@ -4,6 +4,13 @@
 ## Objective and owner authorization
 Continue the all-in-one VIVIM ARBOR personal AI control plane until implemented, integrated and genuinely tested. Core ARBOR upgrades are authorized where needed. VIVIM ARBOR first; commercial Desktop Commander only as a bounded bootstrap/fallback to close a specific missing capability. Use GitHub directly for cloud coding. Do not burn commercial relay credits on routine work. Reuse native protocols, existing Host/Studio/HQ and existing model registry; Rust-first, single GPUI renderer and thin phone viewport. See [PLAN.md](PLAN.md) for work packages and acceptance conditions.
 
+## R002 — 2026-11-25 connectivity progress
+- Exact source [6c8fe74](https://github.com/owenservera/ARBOR/commit/6c8fe74fdcea9ca37be13a18ca0b239e95ddd3bc): dedicated private tunnel stdio profile, one harmless health tool by default; explicit local opt-in adds four existing read-only Host discovery tools. No Commander, private Wiki, or effects exposed.
+- Real Windows source archive regression Node v24.22.1, Desktop Commander PID 16324, 28/28 PASS, exit 0. Not a live browser connection or installed release upgrade.
+- Owner clarified that Desktop Commander is already callable on this Plus account; do not assume subscription upgrade required. Official OpenAI plugin manifest supports remote streamable HTTP and OAuth; use existing private identity and supported activation, not a duplicate or entitlement bypass. Context7 sources: `/websites/developers_openai`, `/modelcontextprotocol/rust-sdk`, `/modelcontextprotocol/modelcontextprotocol`.
+- Added remote-only manifest generator; it requires an actual provisioned endpoint and does not change the current stdio package or publish a fictitious endpoint. See [TUNNEL.md](TUNNEL.md).
+- Next: verify actual private plugin installation and remote endpoint/tunnel entitlement; provision authorized OAuth or Secure MCP Tunnel, then actual browser health call. No public terminal. U02 local v0.4.0 installation and Host-auth acceptance still pending.
+
 ## Source and release baseline
 - Canonical source: `owenservera/ARBOR`, main, `tools/mcp/vivim-arbor/`.
 - Verified implementation commit: `65f036a799cc8152cc69b86cde1ca57b93e2bee2` (refresh main; this is a historical baseline, not a claim about current head).
