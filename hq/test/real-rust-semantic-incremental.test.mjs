@@ -20,7 +20,7 @@ const ext = process.platform === 'win32' ? '.exe' : '';
 const capability = 'hqkg.semantic-source-query@1';
 const src = 'src/semantic_source.rs';
 const consumer = 'src/bin/hqkg-development.rs';
-const unrelated = 'src/observability.rs';
+const unrelated = 'src/bin/hqkg-control.rs';
 const projectName = 'actual-hqkg';
 const pathOf = path => projectName + '/' + path;
 
@@ -114,6 +114,22 @@ test('real Rust source changes preserve identity and refresh the existing native
         .find(a=>a.path===pathOf(src)&&a.annotation==='capability');
       assert.equal(cleanAnchor.anchorId,next.anchorId);
       assert.equal(cleanAnchor.digest,next.digest);
+      // Rename only the versioned declaration; the consumer continues to
+      // reference the old version. The old declaration must be tombstoned,
+      // not silently reassigned to the new semantic identity.
+      const changedText=readFileSync(join(project,src),'utf8');
+      writeFileSync(join(project,src),changedText.replace(
+        '@hq:capability '+capability, '@hq:capability hqkg.semantic-source-query@2'));
+      const renamed=refresh(db,'capability-version-edit',journal,state);
+      assert.equal(renamed.indexed.changed,1);
+      assert.ok(renamed.exported.tombstonedIds.includes(next.anchorId));
+      assert.equal(sourceView(),undefined);
+      const replacement=query(journal,'sources','hqkg.semantic-source-query@2').result.anchors
+        .find(a=>a.path===pathOf(src)&&a.annotation==='capability');
+      assert.ok(replacement);
+      assert.notEqual(replacement.anchorId,next.anchorId);
+      assert.equal(replacement.fileId,next.fileId);
+      assert.equal(sourceSymbol().id,nextSymbol.id);
       t.diagnostic(JSON.stringify({scope:'five actual tracked files; static source observations only',metrics,
         providerCalls:0,capability,anchorId:next.anchorId,symbolId:nextSymbol.id}));
     } finally {
