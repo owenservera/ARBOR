@@ -323,7 +323,7 @@ function resolveRustLocal({importerPath,specifier,kind,index,rustCrates=null}){
   if(!importerPath.endsWith('.rs')||!['use','mod'].includes(kind))return miss;
   const path=toPosix(importerPath);
   // A bin under src/bin is a distinct crate, not a module of src/lib.rs.
-  const bin=/(^|\\/)src\\/bin\\/.test(path);
+  const bin=/(^|\/)src\/bin\//.test(path);
   let rootDir=null,rootFile=null,dir=posix.dirname(path);
   while(dir&&dir!=='.'){
     for(const name of ['lib.rs','main.rs']){
@@ -350,7 +350,7 @@ function resolveRustLocal({importerPath,specifier,kind,index,rustCrates=null}){
   }
   let parts;
   if(kind==='mod'){
-    if(!/^[A-Za-z_]\\w*$/.test(specifier))return miss;
+    if(!/^[A-Za-z_]\w*$/.test(specifier))return miss;
     parts=[...components,specifier];
   }else{
     const tokens=String(specifier).trim().split('::');
@@ -375,7 +375,7 @@ function resolveRustLocal({importerPath,specifier,kind,index,rustCrates=null}){
       rootDir=target.rootDir;rootFile=target.rootFile;parts=[];
     }
     for(const token of tokens){
-      if(!/^[A-Za-z_]\\w*$/.test(token))break;
+      if(!/^[A-Za-z_]\w*$/.test(token))break;
       parts.push(token);
     }
     // crate::{Error,Graph} names exactly the library root, not a module.
