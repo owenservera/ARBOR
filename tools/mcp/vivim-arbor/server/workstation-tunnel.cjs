@@ -23,6 +23,7 @@ const definitions=[
  ['vivim_session_cancel',S+'cancel',['session_id'],true],
  ['vivim_session_input',S+'input',['session_id','input'],true],
  ['vivim_file_read',F+'read',['root_id','path'],false],
+ ['vivim_development_file_read','workstation.development.file.read',['root_id','path'],false],
  ['vivim_file_inspect',F+'inspect',['root_id','path'],false],
  ['vivim_file_read_many','workstation.files.read',['root_id','path','paths_json'],false],
  ['vivim_file_search_selected','workstation.files.search_selected',['root_id','path','paths_json','literal'],false],
@@ -160,7 +161,7 @@ function createWorkstationTools({directory=path.join(__dirname,'..','session-aut
   if(action===S+'input'&&!g.interactiveRecipes.length&&!g.terminal?.allowInteractive)continue;
   if(!action.startsWith(S)&&(!g.roots.length||(mutating&&!g.allowWrites)))continue;
   const required=mutating?[...fields,'request_id']:fields;
-  tools.push([name,(action===TERMINAL?(g.machineScope===true?'Owner-machine mode: root_id machine accepts absolute local cwd and resolved executable path/name; OS permissions apply. ':'')+'Start an explicitly locally authorized terminal session. request_json is JSON with program (granted ID), args (string array), root_id (granted root), cwd (relative path or .), interactive (boolean), timeout_ms (integer 100–1800000). Limit 5997 UTF-8 bytes; never include credentials. ':'Use only the locally granted Host '+action+' capability. ')+(mutating?'Supply a unique 32-character lowercase hexadecimal request_id; repeat only the same ID to inspect an uncertain receipt.':'Read-only, scoped to granted workspace or owned session.'),
+  tools.push([name,(action==='workstation.development.file.read'?'Development only: read source with project-scoped Meta-VLANG coding context. Use for coding tasks, not generic file reads. ':action===TERMINAL?(g.machineScope===true?'Owner-machine mode: root_id machine accepts absolute local cwd and resolved executable path/name; OS permissions apply. ':'')+'Start an explicitly locally authorized terminal session. request_json is JSON with program (granted ID), args (string array), root_id (granted root), cwd (relative path or .), interactive (boolean), timeout_ms (integer 100–1800000). Limit 5997 UTF-8 bytes; never include credentials. ':'Use only the locally granted Host '+action+' capability. ')+(mutating?'Supply a unique 32-character lowercase hexadecimal request_id; repeat only the same ID to inspect an uncertain receipt.':'Read-only, scoped to granted workspace or owned session.'),
    {type:'object',properties:Object.fromEntries(required.map(k=>[k,{type:'string'}])),required,additionalProperties:false},
    a=>{if(action===TERMINAL){const v=a.request_json;if(typeof v!=='string'||Buffer.byteLength(v)>5997)bad();return mutation(action,{request:'b64:'+Buffer.from(v,'utf8').toString('base64')},a.request_id);}const args=Object.fromEntries(fields.map(k=>{if(['content','old_text','new_text','input','literal'].includes(k)){const v=a[k];if(typeof v!=='string'||v.includes('\0')||Buffer.byteLength(v)>(k==='input'?4096:k==='literal'?160:5997))bad();return [k,'b64:'+Buffer.from(v,'utf8').toString('base64')];}return [k,a[k]];}));return mutating?mutation(action,args,a.request_id):readAction(action,args);},!mutating]);
  }

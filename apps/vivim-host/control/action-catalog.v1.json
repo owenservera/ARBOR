@@ -1,6 +1,6 @@
 {
   "schema": "vivim.control-action-catalog/1",
-  "version": 24,
+  "version": 25,
   "asOf": "2026-11-23",
   "policy": {
     "allUserFacingActionsRequireTextPath": true,
@@ -2184,6 +2184,43 @@
       "subject": "workstation",
       "priority": "P0",
       "precondition": "Locally registered hash-pinned recipe or owned session. No remote-selected executable, path or environment. Mutations require exact Host approval. Typed input is b64: plus canonical UTF-8 base64; no secret input."
+    },
+    {
+      "id": "workstation.development.file.read",
+      "title": "Read source for development with Meta-VLANG context",
+      "category": "workstation",
+      "owner": "host-control",
+      "executor": "apps/vivim-host/control/dispatcher.mjs:createExecutors",
+      "readiness": "source_wired",
+      "risk": "R0",
+      "target": "local-workstation",
+      "surfaces": [
+        "text",
+        "desktop",
+        "mobile",
+        "visual"
+      ],
+      "privacy": "authenticated-pc-owner-only",
+      "aiCandidate": false,
+      "args": {
+        "root_id": {
+          "type": "string",
+          "min": 1,
+          "max": 64
+        },
+        "path": {
+          "type": "string",
+          "min": 1,
+          "max": 1024
+        }
+      },
+      "examples": [
+        "Read authorized source as a coding task with project instructions and source assertions"
+      ],
+      "reversible": false,
+      "subject": "workstation",
+      "priority": "P0",
+      "precondition": "Existing authorized file read; optional locally pinned development context binding. Never grants edit authority."
     },
     {
       "id": "workstation.file.read",

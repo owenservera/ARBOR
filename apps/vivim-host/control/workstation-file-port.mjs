@@ -6,12 +6,12 @@ import {spawnSync} from 'node:child_process';
 import {verifyMachineFileTarget,machineBatchTarget} from './workstation-machine-path.mjs';
 import {decodeWorkstationText} from './workstation-text-codec.mjs';
 import {createCodingContext} from './workstation-coding-context.mjs';
-export const FILE_READ='workstation.file.read',FILE_INSPECT='workstation.file.inspect',DIR_LIST='workstation.directory.list',
+export const DEV_FILE_READ='workstation.development.file.read',FILE_READ='workstation.file.read',FILE_INSPECT='workstation.file.inspect',DIR_LIST='workstation.directory.list',
  DIR_CREATE='workstation.directory.create',FILE_WRITE='workstation.file.write',FILE_EDIT='workstation.file.edit',
  FILES_READ='workstation.files.read',FILES_SEARCH='workstation.files.search_selected';
-export const WORKSTATION_FILE_ACTIONS=new Set([FILE_READ,FILE_INSPECT,DIR_LIST,DIR_CREATE,FILE_WRITE,FILE_EDIT,FILES_READ,FILES_SEARCH]);
-export const WORKSTATION_FILE_READS=new Set([FILE_READ,FILE_INSPECT,DIR_LIST,FILES_READ,FILES_SEARCH]);
-const operations=new Map([[FILE_READ,'read'],[FILE_INSPECT,'inspect'],[DIR_LIST,'list'],[DIR_CREATE,'mkdir'],[FILE_WRITE,'write'],[FILE_EDIT,'edit'],[FILES_READ,'read-many'],[FILES_SEARCH,'search-selected']]);
+export const WORKSTATION_FILE_ACTIONS=new Set([DEV_FILE_READ,FILE_READ,FILE_INSPECT,DIR_LIST,DIR_CREATE,FILE_WRITE,FILE_EDIT,FILES_READ,FILES_SEARCH]);
+export const WORKSTATION_FILE_READS=new Set([DEV_FILE_READ,FILE_READ,FILE_INSPECT,DIR_LIST,FILES_READ,FILES_SEARCH]);
+const operations=new Map([[DEV_FILE_READ,'read'],[FILE_READ,'read'],[FILE_INSPECT,'inspect'],[DIR_LIST,'list'],[DIR_CREATE,'mkdir'],[FILE_WRITE,'write'],[FILE_EDIT,'edit'],[FILES_READ,'read-many'],[FILES_SEARCH,'search-selected']]);
 const fail=(code,status=409)=>Object.assign(Error(code),{code,status});
 const hash=b=>createHash('sha256').update(b).digest('hex'),digest=x=>hash(JSON.stringify(x));
 const sha=x=>typeof x==='string'&&/^[a-f0-9]{64}$/.test(x);
@@ -71,7 +71,7 @@ export function createWorkstationFilePort({env=process.env,run=spawnSync,now=Dat
   if(!WORKSTATION_FILE_READS.has(action))throw fail('WORKSTATION_FILE_INPUT_INVALID');
   const b=resolve(args.root_id,args.path),result=request(action,args,b,'read');
   // Project only the exact, already authorized bytes. Never widen file access.
-  const coding=action===FILE_READ?codingContext(b.root,b.relativePath??args.path,result):null;
+  const coding=action===DEV_FILE_READ?(codingContext(b.root,b.relativePath??args.path,result)??{schema:'vivim.coding-context/1',status:'development_context_unavailable',sourceDigest:result.digest}):null;
   return {schema:'vivim.workstation-file-read/1',rootId:b.rootId,configSha:b.configSha,path:args.path,...result,...(coding?{codingContext:coding}:{})};
  }
  function mutate(action,args,binding){

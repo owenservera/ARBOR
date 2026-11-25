@@ -12,7 +12,7 @@
 import { createHash } from 'node:crypto';
 import {createWorkstationProcessPort,WORKSTATION_PROCESS_ACTION} from './workstation-process-port.mjs';
 import {createWorkstationSessionPort,WORKSTATION_SESSION_ACTIONS,TERMINAL_START,SESSION_START,SESSION_STATUS,SESSION_OUTPUT,SESSION_CANCEL,SESSION_INPUT} from './workstation-session-port.mjs';
-import {createWorkstationFilePort,WORKSTATION_FILE_ACTIONS,FILE_READ,FILE_INSPECT,DIR_LIST,DIR_CREATE,FILE_WRITE,FILE_EDIT,FILES_READ,FILES_SEARCH} from './workstation-file-port.mjs';
+import {createWorkstationFilePort,WORKSTATION_FILE_ACTIONS,DEV_FILE_READ,FILE_READ,FILE_INSPECT,DIR_LIST,DIR_CREATE,FILE_WRITE,FILE_EDIT,FILES_READ,FILES_SEARCH} from './workstation-file-port.mjs';
 const workstationAction=id=>id===WORKSTATION_PROCESS_ACTION||WORKSTATION_SESSION_ACTIONS.has(id)||WORKSTATION_FILE_ACTIONS.has(id);
 import { createControlPlanner, loadControlCatalog } from './intent-planner.mjs';
 import { runNativeProductPureSync } from './native-product-pure-sync.mjs';
@@ -160,6 +160,7 @@ function createExecutors({ runtime, planner, lexicon, devices, productJournal, p
     [SESSION_CANCEL]: (args,ctx)=>workstationSession.mutate(SESSION_CANCEL,args,ctx.workstationBinding),
     [SESSION_INPUT]: (args,ctx)=>workstationSession.mutate(SESSION_INPUT,args,ctx.workstationBinding),
     [FILE_READ]: args=>workstationFile.read(FILE_READ,args),
+    [DEV_FILE_READ]: args=>workstationFile.read(DEV_FILE_READ,args),
     [FILE_INSPECT]: args=>workstationFile.read(FILE_INSPECT,args),
     [FILES_READ]: args=>workstationFile.read(FILES_READ,args),
     [FILES_SEARCH]: args=>workstationFile.read(FILES_SEARCH,args),
