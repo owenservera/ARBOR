@@ -1,7 +1,7 @@
 # One-click development installer — local MCP slice.
 # Run only from a source-pinned development bundle, never the live Connect root.
 [CmdletBinding()]
-param()
+param([switch]$Rollback)
 $ErrorActionPreference='Stop'
 $bundle=Split-Path -Parent $PSScriptRoot
 if((Split-Path -Leaf $bundle) -cnotmatch '^vivim-dev-setup-[a-f0-9]{12}$'){throw 'Expected a dedicated development bundle'}
@@ -70,6 +70,51 @@ $lockPath=Join-Path $root 'install.lock'
 if(Test-Path -LiteralPath $lockPath){Assert-Plain $lockPath}
 $lock=[IO.File]::Open($lockPath,[IO.FileMode]::OpenOrCreate,[IO.FileAccess]::ReadWrite,[IO.FileShare]::None)
 try{
+ if($Rollback){
+  $active=Join-Path $root 'active.json'
+  Assert-Plain $active
+  $current=Get-Content -LiteralPath $active -Raw|ConvertFrom-Json
+  if($current.schema -ne 'vivim.dev-install/1' -or $current.previousSourceSha -cnotmatch '^[a-f0-9]{40}
+ if(Test-Path -LiteralPath $generation){
+  if((Inventory $generation) -cne $inventory){throw 'Installed generation differs; leave active pointer untouched'}
+ }else{
+  $stage=Join-Path $root ('.stage-'+[guid]::NewGuid().ToString('N'))
+  Copy-Item -LiteralPath $source -Destination $stage -Recurse
+  try{
+   if((Inventory $stage) -cne $inventory){throw 'Staging mismatch'}
+   Probe $stage
+   [IO.Directory]::Move($stage,$generation)
+  }finally{if(Test-Path -LiteralPath $stage){Remove-Item -LiteralPath $stage -Recurse -Force}}
+ }
+ Probe $generation
+ $active=Join-Path $root 'active.json'
+ if(Test-Path -LiteralPath $active){Assert-Plain $active}
+ $old=if(Test-Path -LiteralPath $active){Get-Content -LiteralPath $active -Raw|ConvertFrom-Json}else{$null}
+ if($old -and ($old.schema -ne 'vivim.dev-install/1' -or $old.sourceSha -cnotmatch '^[a-f0-9]{40}$')){throw 'Invalid active pointer'}
+ if(-not $old -or $old.sourceSha -cne $sha){
+  $pending=Join-Path $root ('.active-'+[guid]::NewGuid().ToString('N'))
+  $record=@{schema='vivim.dev-install/1';sourceSha=$sha;previousSourceSha=if($old){$old.sourceSha}else{$null};scope='local-health-only';remoteConnected=$false}
+  $bytes=[Text.Encoding]::UTF8.GetBytes(($record|ConvertTo-Json -Compress))
+  $stream=[IO.File]::Open($pending,[IO.FileMode]::CreateNew)
+  try{$stream.Write($bytes,0,$bytes.Length);$stream.Flush($true)}finally{$stream.Dispose()}
+  $backup=Join-Path $root ('active.previous-'+[guid]::NewGuid().ToString('N')+'.json')
+  try{if($old){[IO.File]::Replace($pending,$active,$backup)}else{[IO.File]::Move($pending,$active)}}finally{if(Test-Path -LiteralPath $pending){Remove-Item -LiteralPath $pending}}
+ }
+ $readback=Get-Content -LiteralPath $active -Raw|ConvertFrom-Json
+ if($readback.sourceSha -cne $sha -or $readback.remoteConnected -ne $false){throw 'Active pointer readback failed'}
+ Write-Output ('VIVIM_DEV_READY='+$sha)
+ Write-Output 'MCP_HEALTH_ONLY=PASS; FORBIDDEN_TERMINAL=DENIED; REMOTE_CONNECTED=False'
+}finally{$lock.Dispose()}
+){throw 'No retained prior generation'}
+  $sha=$current.previousSourceSha
+  $priorBundle=Join-Path $parent ('vivim-dev-setup-'+$sha.Substring(0,12))
+  Assert-Plain $priorBundle
+  if((Get-Content -LiteralPath (Join-Path $priorBundle 'source-sha.txt') -Raw).Trim() -cne $sha){throw 'Prior bundle source mismatch'}
+  $source=Join-Path $priorBundle 'server'
+  $inventory=Inventory $source
+  $expected=(Get-Content -LiteralPath (Join-Path $priorBundle 'server-inventory.txt') -Raw).TrimEnd()
+  if($inventory -cne $expected -or -not(Test-Path -LiteralPath (Join-Path $root $sha))){throw 'Prior generation missing or invalid'}
+ }
  $generation=Join-Path $root $sha
  if(Test-Path -LiteralPath $generation){
   if((Inventory $generation) -cne $inventory){throw 'Installed generation differs; leave active pointer untouched'}
