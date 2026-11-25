@@ -31,7 +31,7 @@ const supportsV2 = entry => rustHeader(entry) ||
 function annotationText(entry,text){
   if(!rustHeader(entry))return text;
   const lines=[];
-  for(const line of text.split('\n')){
+  for(const line of text.split(/\r?\n/)){
     if(/^\s*(?:\/\/.*)?$/.test(line)){lines.push(line);continue;}
     break;
   }
@@ -507,7 +507,7 @@ export function indexProject({ root, db, project, options = {} }) {
     const stmts = prepareStatements(db);
     // Backfill existing database files on the first successful v2 index only.
     const v2Key = 'annotation_v2:' + projectRow.id + ':' + absPath;
-    const backfillV2 = getMeta(db, v2Key) !== '3';
+    const backfillV2 = getMeta(db, v2Key) !== '4';
     // Re-extract existing Rust mod/use records once after resolver expansion.
     const rustIndexKey='rust_local_imports_v2:'+projectRow.id+':'+absPath;
     const refreshRustIndex=getMeta(db,rustIndexKey)!=='2';
@@ -701,7 +701,7 @@ export function indexProject({ root, db, project, options = {} }) {
     // Zero-delta reindex on an unchanged tree: counts already correct,
     // indexed_at stays — nothing happened worth churning derived pages for.
 
-    if (backfillV2 && errors.length === 0) setMeta(db, v2Key, '3');
+    if (backfillV2 && errors.length === 0) setMeta(db, v2Key, '4');
     if (refreshRustIndex && errors.length === 0 && result.incomplete.length === 0) setMeta(db,rustIndexKey,'2');
     return stmts.projectById.get(projectRow.id);
   });

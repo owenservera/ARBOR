@@ -425,3 +425,15 @@ test('Rust reindex removes stale resolved imports on module collision and restor
     assert.equal(run().errors.length,0);assert.equal(target(),'src/feature.rs');
   }finally{db.close();rmSync(dir,{recursive:true,force:true});}
 });
+
+
+test('Rust CRLF and LF headers preserve typed annotations and exact line numbers',()=>{
+  const dir=fixture({'src/lib.rs':'//! Module docs\r\n//! @hq:capability hqkg.crlf-test@1\r\npub fn run() {}\r\n','src/other.rs':'//! Module docs\n//! @hq:capability hqkg.lf-test@1\npub fn run() {}\n'});
+  const db=openMemoryDb();
+  try{
+    const result=indexProject({root:dir,db,project:{name:'rust-crlf',path:dir},options:{useGit:false}});
+    assert.equal(result.errors.length,0);
+    const rows=db.prepare("SELECT a.ref,a.line FROM annotations a WHERE a.kind='v2:capability' ORDER BY a.ref").all();
+    assert.deepEqual(rows.map(r=>[r.ref,r.line]),[['hqkg.crlf-test@1',2],['hqkg.lf-test@1',2]]);
+  }finally{db.close();rmSync(dir,{recursive:true,force:true});}
+});
