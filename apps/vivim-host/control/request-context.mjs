@@ -60,7 +60,7 @@ export function selectRequestActionContract(plan,catalog) {
   const declaration={actionId:action.id,catalogRevision:catalog.version,risk:action.risk,
     owner:action.owner,readiness:action.readiness,slots,requiredScopes};
   return {status:'declared',authority:'read-only',planningEligible:false,
-    ...declaration,catalogDigest:createHash('sha256').update(JSON.stringify(declaration)).digest('hex'),
+    ...declaration,declarationDigest:createHash('sha256').update(JSON.stringify(declaration)).digest('hex'),
     worldRevision:provenance.worldRevision,missing:['verified-action-contract','effective-access-policy']};
 }
 
@@ -139,11 +139,6 @@ export async function attachRequestContext(plan,{text,readWiki,compileSources,re
     try{wiki=selectRequestWiki(await readWiki(),plan)}catch{wiki=unavailable()}
   }
   if(typeof compileSources==='function'){
-    // Source and action contract metadata are scoped to the existing owner
-    // source-context path, not the paired-phone Wiki-only projection.
-    if(plan.language?.vec?.proposal?.provenance?.authority==='none'){
-      try{action=selectRequestActionContract(plan,readCatalog())}catch{action=unavailable()}
-    }
     const sourceSemanticIds=requestSourceIds(text,plan);
     if(sourceSemanticIds.length){
       try{source=await compileSources({task:text,sourceSemanticIds})}catch{source=unavailable()}
@@ -153,6 +148,11 @@ export async function attachRequestContext(plan,{text,readWiki,compileSources,re
   if(source&&wiki?.wikiRevision!==undefined){
     try{if((await readWiki()).revision!==wiki.wikiRevision)wiki={status:'stale'}}
     catch{wiki=unavailable()}
+  }
+  // Read catalog after async source/Wiki work to catch catalog revision drift.
+  // This metadata stays on the owner source-context path, not paired-phone Wiki.
+  if(typeof compileSources==='function'&&plan.language?.vec?.proposal?.provenance?.authority==='none'){
+    try{action=selectRequestActionContract(plan,readCatalog())}catch{action=unavailable()}
   }
   if(!wiki&&!source&&!action)return plan;
   return {...plan,requestContext:{schema:REQUEST_CONTEXT_SCHEMA,authority:'read-only',
