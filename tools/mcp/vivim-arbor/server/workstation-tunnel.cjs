@@ -12,6 +12,8 @@ const identifier=s=>typeof s==='string'&&/^[a-z][a-z0-9-]{0,63}$/.test(s);
 const obj=x=>x!==null&&typeof x==='object'&&!Array.isArray(x);
 const keys=(x,a)=>obj(x)&&Object.keys(x).every(k=>a.includes(k));
 const bad=()=>{throw Error('Workstation request denied or outcome uncertain')};
+// Bounded disk quota, not an authorization decision. Never delete replay claims to make room.
+const MAX_LEDGER_CLAIMS=8192;
 const same=(a,b)=>digest(a)===digest(b);
 const S='workstation.session.',F='workstation.file.',D='workstation.directory.';
 const TERMINAL=S+'terminal_start';
@@ -126,7 +128,7 @@ function createWorkstationTools({directory=path.join(__dirname,'..','session-aut
   if(!hex(requestId,32))throw Error('WORKSTATION_REQUEST_ID_INVALID: expected exactly 32 lowercase hexadecimal characters; rejected before submission');
   authorize(action,args,true);const intent={grant:initial,action,argsDigest:digest(args)};
   let existing=false;
-  try{if(fs.readdirSync(state).filter(n=>n.endsWith('.claim.json')).length>=256&&!fs.existsSync(file(requestId,'claim')))bad();create(requestId,'claim',intent);}
+  try{if(!fs.existsSync(file(requestId,'claim'))&&fs.readdirSync(state).filter(n=>n.endsWith('.claim.json')).length>=MAX_LEDGER_CLAIMS)throw Error('WORKSTATION_LEDGER_CAPACITY: request not submitted; local operator must renew the grant or resolve capacity');create(requestId,'claim',intent);}
   catch(e){if(e.code!=='EEXIST')throw e;existing=true;if(!same(read(requestId,'claim'),intent))bad();}
   if(existing){
    // Never resubmit an effect after an ambiguous delivery. Only read Host truth.
