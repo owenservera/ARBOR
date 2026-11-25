@@ -26,6 +26,20 @@ function regular(file,max){
 function exactFile(file,sha,max){
  const b=regular(file,max);if(!hex(sha)||b.sha!==sha)throw fail('WORKSTATION_SESSION_BINDING_INVALID');return b;
 }
+function envValue(env,name){
+ if(process.platform!=='win32')return env[name];
+ // A copied process.env becomes a case-sensitive JS object. Windows itself
+ // treats environment names as case-insensitive; reject conflicting aliases.
+ const matches=Object.entries(env).filter(([k])=>k.toUpperCase()===name.toUpperCase());
+ if(matches.some(([,v])=>v!==matches[0][1]))throw fail('WORKSTATION_ENV_AMBIGUOUS');
+ return matches[0]?.[1];
+}
+function windowsRuntimeEnvironment(env){
+ if(process.platform!=='win32')return {};
+ const root=envValue(env,'SystemRoot');
+ if(typeof root!=='string'||!isAbsolute(root)||!statSync(root).isDirectory())throw fail('WORKSTATION_WINDOWS_RUNTIME_ENV_REQUIRED');
+ return {SystemRoot:root,WINDIR:root};
+}
 function cursor(s){if(typeof s!=='string'||!/^(0|[1-9][0-9]{0,14})$/.test(s))throw fail('WORKSTATION_CURSOR_INVALID');return Number(s);}
 export function createWorkstationSessionPort({env=process.env,spawnWorker=spawn,now=Date.now}={}){
  let worker=null,dead=false,sequence=0;const pending=new Map(),sessions=new Map(),generation=randomBytes(16).toString('hex');
@@ -55,7 +69,7 @@ export function createWorkstationSessionPort({env=process.env,spawnWorker=spawn,
   if(!/^vivim-workstation-session(?:\.exe)?$/i.test(basename(helper.path)))throw fail('WORKSTATION_SESSION_BINDING_INVALID');
   const exe=exactFile(r.executable,r.executableSha256,256*1024*1024),workspace=realpathSync(r.workspace);
   if(!statSync(workspace).isDirectory()||(process.platform==='win32'&&!/\.exe$/i.test(exe.path)))throw fail('WORKSTATION_SESSION_BINDING_INVALID');
-  const environment={};for(const n of r.environment){const v=env[n];if(v!==undefined){if(typeof v!=='string'||v.length>32768||v.includes('\0'))throw fail('WORKSTATION_SESSION_BINDING_INVALID');environment[n]=v;}}
+  const environment=windowsRuntimeEnvironment(env);for(const n of r.environment){if(process.platform==='win32'&&['SYSTEMROOT','WINDIR'].includes(n.toUpperCase()))continue;const v=envValue(env,n);if(v!==undefined){if(typeof v!=='string'||v.length>32768||v.includes('\0'))throw fail('WORKSTATION_SESSION_BINDING_INVALID');environment[n]=v;}}
   const spec={executable:exe.path,workspace,args:r.args,environment,interactive:r.interactive,timeoutMs:r.timeoutMs};
   return {helper,configSha:c.configSha,recipe,spec,binding:{schema:'vivim.workstation-session-binding/1',recipe,configSha:c.configSha,bindingDigest:digest({helper,exe,recipe,spec,configSha:c.configSha})}};
  }
@@ -78,12 +92,18 @@ export function createWorkstationSessionPort({env=process.env,spawnWorker=spawn,
  function terminate(){
   dead=true;const w=worker;worker=null;
   for(const p of pending.values()){clearTimeout(p.timer);p.reject(fail('WORKSTATION_SESSION_OUTCOME_UNCERTAIN',503));}pending.clear();
-  if(w&&!w.killed){try{w.stdin.end();w.kill();}catch{}}
+  if(w&&!w.killed){
+   // Closing the pipe first lets the native worker reap owned children. Only
+   // force-stop the worker if it fails to exit; descendant containment is open.
+   try{w.stdin.end();}catch{}
+   const timer=setTimeout(()=>{if(w.exitCode===null&&!w.killed)try{w.kill()}catch{}},2000);timer.unref?.();
+   w.once('exit',()=>clearTimeout(timer));
+  }
  }
  function boot(helper){
   if(dead)throw fail('WORKSTATION_SESSION_RECOVERY_REQUIRED',503);
   if(worker){if(worker.helperSha!==helper.sha||worker.helperPath!==helper.path)throw fail('WORKSTATION_SESSION_RECOVERY_REQUIRED',503);return;}
-  const clean={};if(process.platform==='win32'&&process.env.SystemRoot)clean.SystemRoot=process.env.SystemRoot;
+  const clean=windowsRuntimeEnvironment(env);
   const w=spawnWorker(helper.path,[],{env:clean,stdio:['pipe','pipe','ignore'],shell:false,windowsHide:true});
   worker=w;w.helperSha=helper.sha;w.helperPath=helper.path;
   let buffer='';

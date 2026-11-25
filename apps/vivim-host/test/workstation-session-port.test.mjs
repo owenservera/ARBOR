@@ -15,7 +15,7 @@ function fixture(t){
  const worker=process.env.VIVIM_WORKSTATION_SESSION_EXE;
  const make=(id,args,interactive=false,timeoutMs=15000)=>({id,executable:exe,executableSha256:hash(exe),workspace:root,args,environment:process.platform==='win32'?['SystemRoot']:[],interactive,timeoutMs});
  writeFileSync(file,JSON.stringify({schema:'vivim.workstation-recipes/1',recipes:[
- make('node-version',['--version']),make('node-interactive',['-e','process.stdin.on("data",b=>{console.log("ECHO:"+b.toString().trim());process.exit(0)})'],true),
+ make('node-version',['--version']),make('node-interactive',['-e','process.stdin.on("data",b=>{process.stdout.write("ECHO:"+b.toString().trim()+"\\n",()=>process.exit(0))})'],true),
  make('node-sleep',['-e','setInterval(()=>{},1000)']),make('node-timeout',['-e','setInterval(()=>{},1000)'],false,150)]}));
  const env={...process.env,VIVIM_WORKSTATION_RECIPES:file,VIVIM_WORKSTATION_RECIPES_SHA256:hash(file),VIVIM_WORKSTATION_SESSION_EXE:worker,VIVIM_WORKSTATION_SESSION_SHA256:hash(worker)};
  const session=createWorkstationSessionPort({env}),runtime=createBootstrapRuntime({dataRoot:root,file:':memory:'});
@@ -28,10 +28,10 @@ function fixture(t){
 }
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 async function output(f,sessionId,marker){
- let stdout='';let c='0',e='0';
- for(let i=0;i<80;i++){const r=await f.read(SESSION_OUTPUT,{session_id:sessionId,stdout_cursor:c,stderr_cursor:e});stdout+=r.stdout.text;c=String(r.stdout.next);e=String(r.stderr.next);
+ let stdout='',stderr='',last=null;let c='0',e='0';
+ for(let i=0;i<80;i++){const r=await f.read(SESSION_OUTPUT,{session_id:sessionId,stdout_cursor:c,stderr_cursor:e});stdout+=r.stdout.text;stderr+=r.stderr.text;last=r.status;c=String(r.stdout.next);e=String(r.stderr.next);
  if(stdout.includes(marker)&&r.status.state==='exited'&&r.stdout.closed)return {stdout,r};await sleep(50);}
- throw Error('Output did not settle: '+stdout);
+ throw Error('Output did not settle: '+JSON.stringify({stdout,stderr,last}));
 }
 test('disabled configuration cannot plan a start',()=>{assert.throws(()=>createWorkstationSessionPort({env:{}}).prepare(SESSION_START,{recipe:'node-version'}),/WORKSTATION_SESSIONS_DISABLED/)});
 test('real native worker: Host approval, version, cursors, replay, interactive input, cancel and timeout',{skip:!process.env.VIVIM_WORKSTATION_SESSION_EXE,timeout:90000},async t=>{

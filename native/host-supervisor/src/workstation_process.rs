@@ -75,8 +75,8 @@ fn drain<R: Read + Send + 'static>(mut pipe: R, tail: Arc<Mutex<Tail>>) -> io::R
 }
 
 /// An owned child handle, never a PID supplied by a caller. Output is local-only
-/// until the Host projects it for the authorized audience. Descendant process
-/// trees and interactive stdin are deliberately outside this first primitive.
+/// until the Host projects it for the authorized audience. Interactive stdin
+/// is explicitly enabled; descendant process-tree containment remains separate.
 pub struct OwnedProcess {
     child: Child,
     status: Option<ExitStatus>,
