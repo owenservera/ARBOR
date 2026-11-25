@@ -111,8 +111,10 @@ export function createWorkstationSessionPort({env=process.env,spawnWorker=spawn,
    const v=envValue(env,n);
    if(v!==undefined){if(typeof v!=='string'||v.length>32768||v.includes('\0'))throw fail('WORKSTATION_SESSION_BINDING_INVALID');environment[n]=v;}
   }
+  const toolchain=t.toolchain?resolveCargoToolchain({toolchain:t.toolchain},t.executable):null;
+  if(toolchain){environment.RUSTC=toolchain.rustc.path;environment.RUSTDOC=toolchain.rustdoc.path;}
   const spec={executable:t.executable.path,workspace:t.workspace,args:t.request.args,environment,interactive:t.request.interactive,timeoutMs:t.request.timeout_ms};
-  return {helper,configSha:t.configSha,mode:'terminal',spec,binding:{schema:'vivim.workstation-terminal-binding/1',configSha:t.configSha,bindingDigest:digest({helper,t,spec})}};
+  return {helper,configSha:t.configSha,mode:'terminal',spec,binding:{schema:'vivim.workstation-terminal-binding/1',configSha:t.configSha,bindingDigest:digest({helper,t,spec,toolchain})}};
  }
  function resolveStart(action,args){
   if(action===TERMINAL_START)return resolveTerminal(args);

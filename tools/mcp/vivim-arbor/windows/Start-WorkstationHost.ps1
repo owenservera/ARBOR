@@ -13,6 +13,12 @@ $env:VIVIM_WORKSTATION_RECIPES=Join-Path $config 'recipes.json'
 $env:VIVIM_WORKSTATION_ROOTS=Join-Path $config 'roots.json'
 $env:VIVIM_WORKSTATION_RECIPES_SHA256=$m.recipeConfigSha
 $env:VIVIM_WORKSTATION_ROOTS_SHA256=$m.rootConfigSha
+Remove-Item Env:VIVIM_WORKSTATION_TERMINAL_POLICY,Env:VIVIM_WORKSTATION_TERMINAL_POLICY_SHA256 -ErrorAction SilentlyContinue
+if($m.terminalConfigSha){
+ $terminal=Join-Path $config 'terminal-policy.json'
+ if((Hash $terminal) -ne $m.terminalConfigSha){throw 'Terminal policy digest mismatch'}
+ $env:VIVIM_WORKSTATION_TERMINAL_POLICY=$terminal;$env:VIVIM_WORKSTATION_TERMINAL_POLICY_SHA256=$m.terminalConfigSha
+}
 if((Hash $env:VIVIM_WORKSTATION_RECIPES) -ne $m.recipeConfigSha -or (Hash $env:VIVIM_WORKSTATION_ROOTS) -ne $m.rootConfigSha){throw 'Config digest mismatch'}
 $env:VIVIM_WORKSTATION_SESSION_EXE=Join-Path $bin 'vivim-workstation-session.exe'
 $env:VIVIM_WORKSTATION_FILES_EXE=Join-Path $bin 'vivim-workstation-files.exe'
@@ -39,6 +45,6 @@ if(-not $ready){throw 'Host readiness not observed; do not promote tunnel'}
 $proof=@(& $node (Join-Path $runtime 'tools\mcp\vivim-arbor\server\verify-workstation-host.mjs'))
 if($LASTEXITCODE -ne 0 -or $proof.Count -ne 1){throw 'Authenticated Host readiness failed'}
 $check=$proof[0]|ConvertFrom-Json
-if($check.schema -ne 'vivim.workstation-host-readiness/1' -or -not $check.filesystem -or -not $check.processPlan){throw 'Host readiness contract mismatch'}
+if($check.schema -ne 'vivim.workstation-host-readiness/1' -or -not $check.filesystem -or -not $check.processPlan -or ($m.terminalConfigSha -and -not $check.terminalPlan)){throw 'Host readiness contract mismatch'}
 Write-Output ('PRODUCTION_HOST_PID='+$p.Id)
 Write-Output ('PRODUCTION_HOST_PROOF='+$proof[0])

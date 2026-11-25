@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {normalizeTerminalRequest} from '../control/workstation-terminal-request.mjs';
+import {normalizeTerminalRequest,decodeTerminalAction} from '../control/workstation-terminal-request.mjs';
 const base={program:'cargo',args:['test','--offline'],root_id:'arbor',cwd:'.',interactive:false,timeout_ms:300000};
 test('preserves exact argv including whitespace, empty strings and Unicode',()=>{
  const request={...base,program:'node.exe',args:['C:\\Program Files\\ZCode\\resources\\glm\\zcode.cjs','-p','hello 🧪','','a;b'],cwd:'tools/mcp/vivim-arbor'};
@@ -11,4 +11,11 @@ test('rejects malformed scope, executable selector and request extensions',()=>{
 });
 test('rejects invalid argv, input controls and timeout',()=>{
  for(const r of [{...base,args:['bad\0']},{...base,args:['\ud800']},{...base,args:Array(65).fill('a')},{...base,args:Array(9).fill('x'.repeat(4096))},{...base,timeout_ms:0},{...base,interactive:'yes'}])assert.throws(()=>normalizeTerminalRequest(r),/WORKSTATION_TERMINAL_REQUEST_INVALID/);
+});
+
+test('typed encoding preserves exact request and rejects sparse argv',()=>{
+ const input={...base,args:['','a b','🧪']};
+ assert.deepEqual(decodeTerminalAction({request:'b64:'+Buffer.from(JSON.stringify(input)).toString('base64')}),input);
+ assert.throws(()=>decodeTerminalAction({request:JSON.stringify(input)}));
+ assert.throws(()=>normalizeTerminalRequest({...base,args:Array(2)}),/WORKSTATION_TERMINAL_REQUEST_INVALID/);
 });

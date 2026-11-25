@@ -5,7 +5,8 @@ param(
  [Parameter(Mandatory=$true)][string]$NativeBinRoot,
  [string]$RepoRoot='C:\0-BlackBoxProject-0\ARBOR',
  [string]$ConnectRoot='C:\0-BlackBoxProject-0\VIVIM-ARBOR-CONNECT',
- [switch]$Activate
+ [switch]$Activate,
+ [switch]$EnableGeneralTerminal
 )
 $ErrorActionPreference='Stop'
 $utf8=New-Object Text.UTF8Encoding($false)
@@ -106,8 +107,23 @@ $profile=Join-Path $release 'profile';$grantDir=Join-Path $profile 'session-auth
 New-Item -ItemType Directory -Path $grantDir -Force|Out-Null
 Copy-Item -LiteralPath (Join-Path $src 'server') -Destination (Join-Path $profile 'server') -Recurse
 $grant=@{schema='vivim.workstation-tunnel-grant/1';id=[guid]::NewGuid().ToString('N');expiresAt=[DateTimeOffset]::UtcNow.AddHours(8).ToUnixTimeMilliseconds();port=43187;dataRoot=$dataRoot;ownerAuthModule=$auth;ownerAuthSha256=Hash $auth;recipeConfigSha=Hash $recipeFile;rootConfigSha=Hash $rootFile;recipes=@($recipes|ForEach-Object{$_.id});roots=@('arbor','scratch');interactiveRecipes=@('node-interactive-test');allowWrites=$true}
+if($EnableGeneralTerminal){
+ # Local operator explicitly opts in. These are general CLI programs, not a sandbox.
+ $terminalPrograms=@()
+ foreach($entry in @(@{id='node';path=$node},@{id='git';path=$git},@{id='powershell';path=$ps},@{id='cargo';path=$cargo},@{id='rustc';path=$rustc},@{id='rustdoc';path=$rustdoc})){
+  $p=@{id=$entry.id;path=$entry.path;sha256=Hash $entry.path;environment=@($environment)}
+  if($p.id -eq 'cargo'){$p.toolchain=$cargoTests.toolchain}
+  $terminalPrograms+=$p
+ }
+ $pwsh=Get-Command pwsh.exe -CommandType Application -ErrorAction SilentlyContinue|Select-Object -First 1
+ if($pwsh){$terminalPrograms+=@{id='pwsh';path=$pwsh.Source;sha256=Hash $pwsh.Source;environment=@($environment)}}
+ $terminalFile=Join-Path $config 'terminal-policy.json'
+ Write-Json $terminalFile @{schema='vivim.workstation-terminal-policy/1';enabled=$true;expiresAt=$grant.expiresAt;programs=@($terminalPrograms);roots=@(@{id='arbor';path=$RepoRoot},@{id='scratch';path=$scratch});maxTimeoutMs=1800000;allowInteractive=$true}
+ $grant.terminal=@{configSha=Hash $terminalFile;programs=@($terminalPrograms|ForEach-Object{$_.id});roots=@($grant.roots);allowInteractive=$true}
+}
 Write-Json (Join-Path $grantDir 'grant.json') $grant
 $m=@{schema='vivim.workstation-runtime/1';sourceSha=$SourceSha;nativeBuildSha=$NativeBuildSha;nodeExe=$node;nodeSha256=Hash $node;dataRoot=$dataRoot;hostSha256=Hash (Join-Path $runtime 'apps\vivim-host\server.mjs');cargoTargetDir=(Split-Path -Parent $NativeBinRoot);recipes=@($grant.recipes);roots=$grant.roots;helperSha256=@{session=Hash (Join-Path $bin 'vivim-workstation-session.exe');files=Hash (Join-Path $bin 'vivim-workstation-files.exe');probe=Hash (Join-Path $bin 'vivim-workstation-probe.exe')};recipeConfigSha=$grant.recipeConfigSha;rootConfigSha=$grant.rootConfigSha}
+if($EnableGeneralTerminal){$m.terminalConfigSha=$grant.terminal.configSha}
 Write-Json (Join-Path $release 'manifest.json') $m
 Copy-Item -LiteralPath (Join-Path $src 'windows\Start-WorkstationHost.ps1') -Destination (Join-Path $release 'Start-WorkstationHost.ps1')
 Push-Location $runtime
@@ -116,14 +132,15 @@ $messages=@('{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVe
 $lines=@($messages|& $node (Join-Path $profile 'server\tunnel-readonly.cjs'))
 if($LASTEXITCODE -ne 0 -or $lines.Count -ne 2){throw 'Candidate handshake failed'}
 $names=@(($lines[1]|ConvertFrom-Json).result.tools|ForEach-Object name)
-if($names.Count -ne 15 -or $names -notcontains 'vivim_session_start' -or $names -notcontains 'vivim_file_edit'){throw 'Candidate tools mismatch'}
+$expectedTools=if($EnableGeneralTerminal){16}else{15}
+if($names.Count -ne $expectedTools -or $names -notcontains 'vivim_session_start' -or $names -notcontains 'vivim_file_edit' -or ($EnableGeneralTerminal -and $names -notcontains 'vivim_terminal_start')){throw 'Candidate tools mismatch'}
 Write-Output ('STAGED_SOURCE='+$SourceSha);Write-Output ('STAGED_TOOLS='+($names -join ','))
 if(-not $Activate){return}
-& (Join-Path $release 'Start-WorkstationHost.ps1') -ReleaseRoot $release
 # Same supervisor, replace only the MCP child after the production Host passed.
 $target=Join-Path $ConnectRoot 'server';$backup=Join-Path $ConnectRoot "rollback-workstation-$short"
 $liveGrant=Join-Path $ConnectRoot 'session-authority';$launcher=Join-Path $ConnectRoot 'windows\Connect-Vivim.ps1'
 if((Test-Path $backup) -or (Test-Path $liveGrant)){throw 'Existing deployment/rollback requires reconciliation'}
+& (Join-Path $release 'Start-WorkstationHost.ps1') -ReleaseRoot $release
 $exe=Join-Path $ConnectRoot 'runtime\v0.0.21\verified\tunnel-client.exe'
 $tunnels=@(Get-CimInstance Win32_Process -Filter "Name='tunnel-client.exe'"|Where-Object{$_.ExecutablePath -eq $exe})
 if($tunnels.Count -ne 1){throw 'Expected verified tunnel supervisor'}
@@ -141,7 +158,7 @@ try{
  $lines=@($messages|& $node (Join-Path $target 'tunnel-readonly.cjs'))
  if($LASTEXITCODE -ne 0 -or $lines.Count -ne 2){throw 'Installed handshake failed'}
  $names=@(($lines[1]|ConvertFrom-Json).result.tools|ForEach-Object name)
- if($names -notcontains 'vivim_session_start' -or $names -notcontains 'vivim_file_edit'){throw 'Installed tools missing'}
+ if($names -notcontains 'vivim_session_start' -or $names -notcontains 'vivim_file_edit' -or ($EnableGeneralTerminal -and $names -notcontains 'vivim_terminal_start')){throw 'Installed tools missing'}
  $child=Get-CimInstance Win32_Process -Filter ('ProcessId='+$oldPid)
  if($child.ParentProcessId -ne $supervisor -or $child.Name -ne 'node.exe' -or [string]$child.CommandLine -notmatch 'VIVIM-ARBOR-CONNECT[\\/]server[\\/]tunnel-readonly\.cjs'){throw 'Child changed before reload'}
  Stop-Process -Id $oldPid -ErrorAction Stop;Start-Sleep -Seconds 2

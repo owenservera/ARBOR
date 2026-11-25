@@ -5,6 +5,7 @@ import {createHash} from 'node:crypto';
 import {readFileSync,lstatSync,readdirSync,realpathSync,writeFileSync} from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {validateTerminalPolicy} from '../../../../apps/vivim-host/control/workstation-terminal-policy.mjs';
 const hash=b=>createHash('sha256').update(b).digest('hex');
 const sha=(s,n=64)=>typeof s==='string'&&s.length===n&&/^[0-9a-f]+$/.test(s);
 const deny=()=>{throw Error('WORKSTATION_RELEASE_EVIDENCE_INVALID')};
@@ -82,6 +83,14 @@ export function inspectCandidate(releaseRoot,buildReceiptPath,now=Date.now()){
  const m=manifest.value,g=grant.value;
  const info=validateEvidence(m,receipt.value,g,recipes.value,roots.value,now);
  if(recipes.digest!==m.recipeConfigSha||roots.digest!==m.rootConfigSha)deny();
+ if(m.terminalConfigSha!==undefined||g.terminal!==undefined){
+  if(!sha(m.terminalConfigSha)||g.terminal?.configSha!==m.terminalConfigSha)deny();
+  const terminal=json(path.join(root,'config','terminal-policy.json'));
+  if(terminal.digest!==m.terminalConfigSha)deny();
+  const p=validateTerminalPolicy(terminal.value,now);
+  if(p.expiresAt!==g.expiresAt||p.allowInteractive!==g.terminal.allowInteractive||!Array.isArray(g.terminal.programs)||!Array.isArray(g.terminal.roots)||!same(sorted(p.programs.map(x=>x.id)),sorted(g.terminal.programs))||!same(sorted(p.roots.map(x=>x.id)),sorted(g.terminal.roots))||p.roots.some(x=>!roots.value.roots.some(r=>r.id===x.id&&r.path===x.path)))deny();
+  for(const entry of p.programs){pinned(entry.path,entry.sha256,256*1024*1024);if(entry.toolchain)for(const tool of Object.values(entry.toolchain))pinned(tool.path,tool.sha256,256*1024*1024);}
+ }
  for(const [k,name]of Object.entries(helperNames))pinned(path.join(root,'bin',name),m.helperSha256[k],64*1024*1024);
  pinned(m.nodeExe,m.nodeSha256,256*1024*1024);
  pinned(path.join(root,'runtime','apps','vivim-host','server.mjs'),m.hostSha256,2*1024*1024);

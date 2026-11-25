@@ -6,7 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {createBootstrapRuntime} from '../bootstrap/runtime.mjs';
 import {createControlDispatcher} from '../control/dispatcher.mjs';
-import {createWorkstationSessionPort,SESSION_START,SESSION_STATUS,SESSION_OUTPUT,SESSION_INPUT,SESSION_CANCEL} from '../control/workstation-session-port.mjs';
+import {createWorkstationSessionPort,TERMINAL_START,SESSION_START,SESSION_STATUS,SESSION_OUTPUT,SESSION_INPUT,SESSION_CANCEL} from '../control/workstation-session-port.mjs';
 import {encodeWorkstationText as enc} from '../control/workstation-text-codec.mjs';
 const owner={source:'desktop',actor:'desktop-owner'},approval={channel:'desktop-owner-token',actor:'desktop-owner'};
 const hash=f=>createHash('sha256').update(readFileSync(f)).digest('hex');
@@ -19,13 +19,16 @@ function fixture(t){
  make('node-version',['--version']),make('node-interactive',['-e','process.stdin.on("data",b=>{process.stdout.write("ECHO:"+b.toString().trim()+"\\n",()=>process.exit(0))})'],true),
  make('node-sleep',['-e','setInterval(()=>{},1000)']),make('node-timeout',['-e','setInterval(()=>{},1000)'],false,150)]}));
  const env={...process.env,VIVIM_WORKSTATION_RECIPES:file,VIVIM_WORKSTATION_RECIPES_SHA256:hash(file),VIVIM_WORKSTATION_SESSION_EXE:worker,VIVIM_WORKSTATION_SESSION_SHA256:hash(worker)};
+ const terminalFile=path.join(root,'terminal-policy.json');
+ writeFileSync(terminalFile,JSON.stringify({schema:'vivim.workstation-terminal-policy/1',enabled:true,expiresAt:Date.now()+600000,programs:[{id:'node',path:exe,sha256:hash(exe),environment:[]}],roots:[{id:'scratch',path:root}],maxTimeoutMs:60000,allowInteractive:true}),{mode:0o600});
+ env.VIVIM_WORKSTATION_TERMINAL_POLICY=terminalFile;env.VIVIM_WORKSTATION_TERMINAL_POLICY_SHA256=hash(terminalFile);
  const session=createWorkstationSessionPort({env}),runtime=createBootstrapRuntime({dataRoot:root,file:':memory:'});
  const control=createControlDispatcher({dataRoot:root,runtime,workstationSession:session});
  t.after(()=>{session.close();runtime.close();try{rmSync(root,{recursive:true,force:true})}catch{}});
  const plan=(actionId,args)=>control.plan({actionId,args},owner);
  const execute=async(actionId,args)=>{const p=plan(actionId,args);assert.equal(p.outcome,'approval_required');const r=await control.execute({planId:p.planId,planDigest:p.planDigest,approval});assert.equal(r.status,'applied',JSON.stringify(r.error));return r;};
  const read=async(actionId,args)=>{const r=await plan(actionId,args);assert.equal(r.outcome,'done');return r.result;};
- return {control,plan,execute,read,env,file,session};
+ return {control,plan,execute,read,env,file,session,terminalFile};
 }
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 async function output(f,sessionId,marker){
@@ -92,4 +95,39 @@ test('local drain never spawns a worker or admits a new session; closed worker r
  assert.throws(()=>port.prepare(SESSION_START,{recipe:'node-version'}),/WORKSTATION_SESSION_DRAINING/);
  await assert.rejects(port.start({recipe:'node-version'},{},'ctl-0123456789abcdef'),/WORKSTATION_SESSION_DRAINING/);
  port.close();assert.equal((await port.inventory()).state,'unknown');assert.equal(spawned,0);
+});
+
+test('real native terminal: typed Host owner approval, exact dynamic argv, output and policy revocation',{skip:!process.env.VIVIM_WORKSTATION_SESSION_EXE,timeout:90000},async t=>{
+ const f=fixture(t);
+ const request=overrides=>({request:enc(JSON.stringify({program:'node',args:['-e','console.log(JSON.stringify(process.argv.slice(1)))','--','space value','unicode 🧪',''],root_id:'scratch',cwd:'.',interactive:false,timeout_ms:10000,...overrides}))});
+ assert.equal(f.control.plan({actionId:TERMINAL_START,args:request()},{source:'mobile',actor:'owner'}).outcome,'unavailable');
+ assert.throws(()=>f.plan(TERMINAL_START,request({program:'not-granted'})),/WORKSTATION_TERMINAL_NOT_GRANTED/);
+ assert.throws(()=>f.plan(TERMINAL_START,request({cwd:'..'})),/WORKSTATION_TERMINAL_REQUEST_INVALID/);
+ const p=f.plan(TERMINAL_START,request());
+ assert.equal(p.outcome,'approval_required');
+ assert.equal(p.workstationBinding.schema,'vivim.workstation-terminal-binding/1');
+ assert.throws(()=>f.control.execute({planId:p.planId,planDigest:p.planDigest,approval:{channel:'direct-phone',actor:'desktop-owner'}}),/CONTROL_WORKSTATION_DESKTOP_APPROVAL_REQUIRED/);
+ const r=await f.control.execute({planId:p.planId,planDigest:p.planDigest,approval});
+ assert.equal(r.status,'applied');
+ const marker=JSON.stringify(['space value','unicode 🧪','']);
+ const observed=await output(f,p.planId,marker);
+ assert.equal(observed.r.status.exitCode,0);
+ assert.ok(observed.stdout.includes(marker));
+ assert.equal((await f.control.execute({planId:p.planId,planDigest:p.planDigest,approval})).replayed,true);
+ const i=await f.execute(TERMINAL_START,request({args:['-e','process.stdin.on("data",b=>process.stdout.write("ECHO:"+b.toString(),()=>process.exit(0)))'],interactive:true}));
+ await f.execute(SESSION_INPUT,{session_id:i.planId,input:enc('terminal-input\n')});
+ assert.ok((await output(f,i.planId,'ECHO:terminal-input')).stdout.includes('ECHO:terminal-input'));
+ const running=await f.execute(TERMINAL_START,request({args:['-e','setInterval(()=>{},1000)']}));
+ assert.equal((await f.execute(SESSION_CANCEL,{session_id:running.planId})).result.state,'exited');
+ const saved=readFileSync(f.terminalFile);writeFileSync(f.terminalFile,'changed');
+ await assert.rejects(f.session.read(SESSION_STATUS,{session_id:p.planId}),/WORKSTATION_TERMINAL_POLICY_INVALID/);
+ writeFileSync(f.terminalFile,saved);
+ assert.equal((await f.read(SESSION_STATUS,{session_id:p.planId})).exitCode,0);
+ console.log('NATIVE_TERMINAL_RECEIPT='+JSON.stringify({planId:p.planId,exitCode:0,argv:marker,interactive:true,cancelled:true}));
+});
+test('terminal admission is disabled without a separate policy even with an existing session port',()=>{
+ const p=createWorkstationSessionPort({env:{}});
+ const args={request:enc(JSON.stringify({program:'node',args:['--version'],root_id:'scratch',cwd:'.',interactive:false,timeout_ms:1000}))};
+ assert.throws(()=>p.prepare(TERMINAL_START,args),/WORKSTATION_TERMINAL_DISABLED/);
+ p.close();
 });

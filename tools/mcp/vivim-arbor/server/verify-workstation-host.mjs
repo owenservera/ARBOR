@@ -13,4 +13,11 @@ const file=await call('plan',{actionId:'workstation.directory.list',args:{root_i
 if(file.outcome!=='done'||file.result?.configSha!==process.env.VIVIM_WORKSTATION_ROOTS_SHA256||file.result.rootId!=='scratch')throw Error('FILE_GRANT_UNAVAILABLE');
 const plan=await call('plan',{actionId:'workstation.session.start',args:{recipe:'node-version'}});
 if(plan.outcome!=='approval_required'||plan.workstationBinding?.configSha!==process.env.VIVIM_WORKSTATION_RECIPES_SHA256)throw Error('RECIPE_GRANT_UNAVAILABLE');
-process.stdout.write(JSON.stringify({schema:'vivim.workstation-host-readiness/1',catalogVersion:catalog.version,workstationActions:catalog.actions.filter(a=>a.actionId.startsWith('workstation.')).length,filesystem:true,processPlan:true})+'\n');
+let terminalPlan=false;
+if(process.env.VIVIM_WORKSTATION_TERMINAL_POLICY_SHA256){
+ const args={request:'b64:'+Buffer.from(JSON.stringify({program:'node',args:['--version'],root_id:'scratch',cwd:'.',interactive:false,timeout_ms:10000})).toString('base64')};
+ const p=await call('plan',{actionId:'workstation.session.terminal_start',args});
+ if(p.outcome!=='approval_required'||p.workstationBinding?.schema!=='vivim.workstation-terminal-binding/1'||p.workstationBinding?.configSha!==process.env.VIVIM_WORKSTATION_TERMINAL_POLICY_SHA256)throw Error('TERMINAL_GRANT_UNAVAILABLE');
+ terminalPlan=true;
+}
+process.stdout.write(JSON.stringify({schema:'vivim.workstation-host-readiness/1',catalogVersion:catalog.version,workstationActions:catalog.actions.filter(a=>a.actionId.startsWith('workstation.')).length,filesystem:true,processPlan:true,terminalPlan})+'\n');

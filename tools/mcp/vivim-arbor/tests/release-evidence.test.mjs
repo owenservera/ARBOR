@@ -55,3 +55,18 @@ test('runtime binding excludes only source provenance; data root, executable and
  for(const changed of [{dataRoot:'other'},{nodeExe:'other'},{futureBinding:'other'}])assert.notEqual(runtimeBindingDigest({...m,...changed}),d);
  assert.equal(inspectCandidate(f.release,f.receiptPath,now).runtimeBindingSha256,d);
 });
+
+test('terminal seal binds exact policy, explicit grant, programs and workspace paths',t=>{
+ const f=fixture(t);
+ const prog=f.put('bin/terminal-node.exe','terminal-node');
+ const policy={schema:'vivim.workstation-terminal-policy/1',enabled:true,expiresAt:f.grant.expiresAt,programs:[{id:'node',path:prog.file,sha256:prog.digest,environment:[]}],roots:f.roots.roots,maxTimeoutMs:1000,allowInteractive:true};
+ const config=f.put('config/terminal-policy.json',policy);
+ f.manifest.terminalConfigSha=config.digest;
+ f.grant.terminal={configSha:config.digest,programs:['node'],roots:['scratch'],allowInteractive:true};
+ f.put('manifest.json',f.manifest);f.put('profile/session-authority/grant.json',f.grant);
+ const seal=inspectCandidate(f.release,f.receiptPath,now);
+ assert.equal(seal.promotionPerformed,false);
+ assert.notEqual(seal.runtimeBindingSha256,runtimeBindingDigest(Object.fromEntries(Object.entries(f.manifest).filter(([k])=>k!=='terminalConfigSha'))));
+ f.grant.terminal.programs.push('foreign');f.put('profile/session-authority/grant.json',f.grant);
+ assert.throws(()=>inspectCandidate(f.release,f.receiptPath,now));
+});

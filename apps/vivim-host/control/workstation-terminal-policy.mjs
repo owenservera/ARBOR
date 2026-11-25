@@ -28,10 +28,11 @@ export function validateTerminalPolicy(p,now){
     !Array.isArray(p.roots)||p.roots.length<1||p.roots.length>16)throw fail('WORKSTATION_TERMINAL_POLICY_INVALID');
  const programs=new Set(),roots=new Set();
  for(const v of p.programs){
-  if(!exact(v,['id','path','sha256','environment'])||!programId(v.id)||programs.has(v.id.toLowerCase())||
+  if(!(exact(v,['id','path','sha256','environment'])||exact(v,['id','path','sha256','environment','toolchain']))||!programId(v.id)||programs.has(v.id.toLowerCase())||
     typeof v.path!=='string'||!isAbsolute(v.path)||!sha(v.sha256)||!Array.isArray(v.environment)||v.environment.length>32||
     v.environment.some(n=>typeof n!=='string'||!envNames.has(n.toUpperCase()))||
     new Set(v.environment.map(n=>n.toUpperCase())).size!==v.environment.length)throw fail('WORKSTATION_TERMINAL_POLICY_INVALID');
+  if(v.toolchain!==undefined&&(!exact(v.toolchain,['rustc','rustdoc'])||!['rustc','rustdoc'].every(n=>exact(v.toolchain[n],['path','sha256'])&&typeof v.toolchain[n].path==='string'&&isAbsolute(v.toolchain[n].path)&&sha(v.toolchain[n].sha256))))throw fail('WORKSTATION_TERMINAL_POLICY_INVALID');
   programs.add(v.id.toLowerCase());
  }
  for(const v of p.roots){
@@ -72,7 +73,7 @@ export function createTerminalPolicy({env=process.env,now=Date.now}={}){
     current=actual;
    }
    if(!inside(rootPath,current))throw fail('WORKSTATION_TERMINAL_CWD_INVALID');
-   return {request,configSha,executable:{path:executable.path,sha:executable.sha},workspace:current,environmentNames:[...program.environment],expiresAt:policy.expiresAt};
+   return {request,configSha,executable:{path:executable.path,sha:executable.sha},workspace:current,environmentNames:[...program.environment],toolchain:program.toolchain??null,expiresAt:policy.expiresAt};
   }catch(e){if(e?.code?.startsWith('WORKSTATION_TERMINAL_'))throw e;throw fail('WORKSTATION_TERMINAL_CWD_INVALID');}
  }
  return Object.freeze({bind,current:()=>load().configSha});

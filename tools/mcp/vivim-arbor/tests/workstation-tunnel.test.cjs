@@ -55,3 +55,48 @@ test('batch reads and literal search use same scoped read authority',async t=>{
  await call('vivim_file_search_selected',{...args,literal:'needle'});
  await assert.rejects(call('vivim_file_read_many',{...args,root_id:'foreign'}));assert.equal(calls,2);
 });
+
+test('general terminal is not exposed by a legacy recipe grant',t=>{
+ const f=fixture(t);
+ assert.ok(!createWorkstationTools({directory:f.directory}).some(x=>x[0]==='vivim_terminal_start'));
+});
+test('terminal projection requires matching local policy, preserves argv, and owns only applied sessions',async t=>{
+ const f=fixture(t),configSha='e'.repeat(64),terminalAction='workstation.session.terminal_start';
+ f.g.terminal={configSha,programs:['node'],roots:['repo'],allowInteractive:true};
+ fs.writeFileSync(f.file,JSON.stringify(f.g));
+ const req={program:'node',args:['--version',' a ','🧪',''],root_id:'repo',cwd:'.',interactive:true,timeout_ms:1000};
+ const encoded={request:'b64:'+Buffer.from(JSON.stringify(req)).toString('base64')};
+ let calls=0,executions=0,readCalls=0;
+ const receipt={schema:'vivim.control-receipt/1',planId,planDigest,actionId:terminalAction,args:encoded,approvedVia:'desktop-owner-token',status:'applied',executionPerformed:true,result:{sessionId:planId,state:'running'}};
+ const opts={directory:f.directory,credential:async()=> 'test-only-token',fetcher:async(url,o)=>{
+  calls++;
+  if(url.endsWith('/execute')){executions++;return json(receipt);}
+  if(url.endsWith('/plans/'+planId))return json({receipt});
+  const b=JSON.parse(o.body);
+  if(b.actionId===terminalAction){assert.deepEqual(b.args,encoded);return json({outcome:'approval_required',risk:'R2',actionId:b.actionId,args:b.args,planId,planDigest,workstationBinding:{schema:'vivim.workstation-terminal-binding/1',configSha}});}
+  readCalls++;return json({outcome:'done',actionId:b.actionId,args:b.args,effect:'read',result:{sessionId:planId,state:'running'}});
+ }};
+ const tools=createWorkstationTools(opts),call=(name,a)=>tools.find(x=>x[0]===name)[3](a);
+ assert.ok(tools.some(x=>x[0]==='vivim_session_input'));
+ await assert.rejects(call('vivim_terminal_start',{request_json:JSON.stringify({...req,program:'foreign'}),request_id:'1'.repeat(32)}));
+ assert.equal(calls,0);
+ await assert.rejects(call('vivim_session_status',{session_id:planId}));
+ const args={request_json:JSON.stringify(req),request_id:'2'.repeat(32)};
+ assert.equal((await call('vivim_terminal_start',args)).status,'applied');
+ const restarted=createWorkstationTools(opts);
+ assert.equal((await restarted.find(x=>x[0]==='vivim_terminal_start')[3](args)).status,'applied');
+ assert.equal(executions,1);
+ assert.equal((await restarted.find(x=>x[0]==='vivim_session_status')[3]({session_id:planId})).state,'running');
+ assert.equal(readCalls,1);
+ fs.unlinkSync(f.file);await assert.rejects(call('vivim_session_status',{session_id:planId}));
+});
+test('terminal plan with mismatched policy hash is never executed',async t=>{
+ const f=fixture(t);f.g.terminal={configSha:'e'.repeat(64),programs:['node'],roots:['repo'],allowInteractive:false};fs.writeFileSync(f.file,JSON.stringify(f.g));
+ let calls=0;
+ const tools=createWorkstationTools({directory:f.directory,credential:async()=> 'test-only-token',fetcher:async(url,o)=>{
+  calls++;assert.ok(url.endsWith('/plan'));const b=JSON.parse(o.body);
+  return json({outcome:'approval_required',risk:'R2',actionId:b.actionId,args:b.args,planId,planDigest,workstationBinding:{schema:'vivim.workstation-terminal-binding/1',configSha:'f'.repeat(64)}});
+ }});
+ const call=tools.find(x=>x[0]==='vivim_terminal_start')[3],a={request_json:JSON.stringify({program:'node',args:['--version'],root_id:'repo',cwd:'.',interactive:false,timeout_ms:1000}),request_id:'3'.repeat(32)};
+ await assert.rejects(call(a));await assert.rejects(call(a));assert.equal(calls,1);
+});
