@@ -21,7 +21,19 @@ function Protect([string]$p){
 function Exe([string]$n){(Get-Command $n -CommandType Application -ErrorAction Stop|Select-Object -First 1).Source}
 $RepoRoot=(Resolve-Path -LiteralPath $RepoRoot).Path;$ConnectRoot=(Resolve-Path -LiteralPath $ConnectRoot).Path
 $NativeBinRoot=(Resolve-Path -LiteralPath $NativeBinRoot).Path
-$node=Exe 'node.exe';$git=Exe 'git.exe';$cargo=Exe 'cargo.exe';$ps=Exe 'powershell.exe'
+$node=Exe 'node.exe';$git=Exe 'git.exe';$ps=Exe 'powershell.exe'
+# Rustup's cargo.exe proxy may canonicalize to rustup.exe. The native worker
+# launches canonical paths, so bind the actual toolchain executable instead.
+$rustup=Exe 'rustup.exe'
+Push-Location $RepoRoot
+try {
+ $cargoPaths=@(& $rustup which cargo)
+ if($LASTEXITCODE -ne 0 -or $cargoPaths.Count -ne 1){throw 'Rustup could not resolve active Cargo toolchain'}
+ $cargo=(Resolve-Path -LiteralPath $cargoPaths[0].Trim()).Path
+ if([IO.Path]::GetFileName($cargo) -ine 'cargo.exe'){throw 'Resolved executable is not Cargo'}
+ $cargoVersion=@(& $cargo --version)
+ if($LASTEXITCODE -ne 0 -or ($cargoVersion -join ' ') -notmatch '^cargo [0-9]+\.[0-9]+\.[0-9]+'){throw 'Cargo toolchain verification failed'}
+}finally{Pop-Location}
 $short=$SourceSha.Substring(0,12);$release=Join-Path $ConnectRoot "workstation-runtime-$short"
 if(Test-Path $release){throw 'Release already staged; reconcile before repeating'}
 if($env:VIVIM_BOOTSTRAP_TOKEN){throw 'Environment owner-token binding not supported'}
