@@ -76,3 +76,45 @@ fn fixture()->Exchange{
     g.put_node(Node::new("other",NodeKind::Fact,"Other")).unwrap();
     assert!(hqkg::native_program::bind_indexed_program(&g,&expected,&program,&policy).is_err());
 }
+
+#[test]
+fn bounded_impact_discloses_omitted_dependents_but_not_cycles() {
+    let mut exchange=fixture();
+    let mut cycle=Edge::new("cycle","f","imports","g");
+    cycle.properties.insert("hqkg.exchange.source".into(),"repos-hq.index".into());
+    exchange.edges.insert(cycle.id.clone(),cycle);
+    let mut g=Graph::new(); exchange.apply(&mut g).unwrap();
+    let id="vivim.native-visual-validation@1";
+    let shallow=impact(&g,id,0).unwrap();
+    assert_eq!(shallow.files,vec![("arbor/core.rs".into(),0)]);
+    assert!(shallow.truncated);
+    let full=impact(&g,id,1).unwrap();
+    assert_eq!(full.files,vec![("arbor/core.rs".into(),0),("arbor/main.rs".into(),1)]);
+    assert!(!full.truncated);
+}
+
+#[test]
+fn duplicate_or_conflicting_identity_edges_refuse_semantic_lookup() {
+    let id="vivim.native-visual-validation@1";
+    for target in ["s","other-semantic"] {
+        let mut e=fixture();
+        let mut other=e.nodes["s"].clone();
+        other.id="other-semantic".into();
+        other.properties.insert("semantic_id".into(),"different@1".into());
+        e.nodes.insert(other.id.clone(),other);
+        let mut edge=Edge::new("extra-reference","a","references-semantic-id",target);
+        edge.properties.insert("hqkg.exchange.source".into(),"repos-hq.index".into());
+        e.edges.insert(edge.id.clone(),edge);
+        let mut g=Graph::new();e.apply(&mut g).unwrap();
+        assert!(sources(&g,id).is_err());
+        assert!(impact(&g,id,1).is_err());
+    }
+}
+
+#[test]
+fn malformed_importer_cannot_appear_as_current_impact_evidence() {
+    let mut e=fixture();
+    e.nodes.get_mut("g").unwrap().properties.insert("content_sha256".into(),"not-a-digest".into());
+    let mut g=Graph::new();e.apply(&mut g).unwrap();
+    assert!(impact(&g,"vivim.native-visual-validation@1",1).is_err());
+}

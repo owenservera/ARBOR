@@ -14,6 +14,13 @@ fn owned(props: &crate::Properties) -> bool {
 fn prop<'a>(node: &'a Node, key: &str) -> Option<&'a str> {
     node.properties.get(key).map(String::as_str)
 }
+fn valid_file(node: &Node) -> bool {
+    owned(&node.properties) && node.kind.as_str() == "source-file"
+        && prop(node, "source_path").is_some_and(|p| !p.is_empty())
+        && prop(node, "content_sha256").is_some_and(|digest| {
+            digest.len() == 64 && digest.bytes().all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+        })
+}
 fn valid_semantic(s: &str) -> bool {
     if s.len() > 180 { return false; }
     let Some((name, version)) = s.split_once('@') else {return false};
@@ -35,15 +42,27 @@ pub struct SemanticSources {
 /// No fuzzy string matching or inferred symbol ownership.
 pub fn sources(graph: &Graph, semantic_id: &str) -> Result<SemanticSources> {
     if !valid_semantic(semantic_id) {return Err(Error::Invalid("invalid versioned semantic id".into()))}
-    let matches: Vec<_> = graph.nodes().filter(|n|owned(&n.properties)
-        && n.kind.as_str()=="semantic-id" && prop(n,"semantic_id")==Some(semantic_id)).collect();
-    if matches.len()!=1 {return Err(Error::Missing("unique imported semantic id not found".into()))}
+    let mut matches = graph.nodes().filter(|n|owned(&n.properties)
+        && n.kind.as_str()=="semantic-id" && prop(n,"semantic_id")==Some(semantic_id));
+    let identity = matches.next().ok_or_else(|| Error::Missing("imported semantic id not found".into()))?;
+    if matches.next().is_some() {return Err(Error::Conflict("imported semantic identity is ambiguous".into()))}
     let mut anchors=Vec::new();
-    for edge in graph.incoming(&matches[0].id,Some("references-semantic-id"))? {
+    let mut seen_anchors = BTreeSet::new();
+    for edge in graph.incoming(&identity.id,Some("references-semantic-id"))? {
         if !owned(&edge.properties) {continue}
-        let Some(anchor)=graph.node(&edge.from) else {continue};
+        let anchor=graph.node(&edge.from).ok_or_else(||Error::Corrupt("missing semantic anchor".into()))?;
         if !owned(&anchor.properties)||anchor.kind.as_str()!="semantic-file-anchor"
-            ||prop(anchor,"semantic_id")!=Some(semantic_id) {continue}
+            ||prop(anchor,"semantic_id")!=Some(semantic_id) {
+            return Err(Error::Corrupt("owned semantic edge has mismatched anchor".into()))
+        }
+        if !seen_anchors.insert(anchor.id.clone()) {
+            return Err(Error::Corrupt("duplicate semantic anchor reference".into()))
+        }
+        // The forward direction must also identify exactly this semantic ID.
+        let forward=graph.outgoing(&anchor.id,Some("references-semantic-id"))?;
+        if forward.iter().filter(|e|owned(&e.properties)).count()!=1 {
+            return Err(Error::Corrupt("semantic anchor identity linkage is ambiguous".into()))
+        }
         let incoming: Vec<_>=graph.incoming(&anchor.id,Some("has-semantic-anchor"))?
             .into_iter().filter(|e|owned(&e.properties)).collect();
         if incoming.len()!=1 {return Err(Error::Corrupt("semantic anchor source linkage is ambiguous".into()))}
@@ -84,16 +103,18 @@ pub fn impact(graph:&Graph, semantic_id:&str, depth:usize)->Result<Impact>{
     }
     while let Some((id,d))=queue.pop_front(){
         let Some(node)=graph.node(&id) else {continue};
-        if !owned(&node.properties)||node.kind.as_str()!="source-file"{continue}
+        if !valid_file(node){return Err(Error::Corrupt("invalid indexed impact source".into()))}
         if files.len()>=MAX_MATCHES {truncated=true;break}
         if let Some(path)=prop(node,"source_path"){files.push((path.to_owned(),d));}
-        if d==depth {continue}
         for edge in graph.incoming(&id,Some("imports"))?{
             if !owned(&edge.properties)||seen.contains(&edge.from){continue}
-            if seen.len()>=MAX_MATCHES{truncated=true;continue}
-            if graph.node(&edge.from).is_some_and(|n|owned(&n.properties)&&n.kind.as_str()=="source-file"){
-                seen.insert(edge.from.clone());queue.push_back((edge.from.clone(),d+1));
-            }
+            let importer=graph.node(&edge.from).ok_or_else(||Error::Corrupt("missing indexed importer".into()))?;
+            if !valid_file(importer){return Err(Error::Corrupt("invalid indexed importer provenance".into()))}
+            // The frontier is incomplete if a valid unseen importer is just
+            // beyond the requested depth. Cycles and already-reached nodes do
+            // not count as omitted results.
+            if d==depth||seen.len()>=MAX_MATCHES{truncated=true;continue}
+            seen.insert(edge.from.clone());queue.push_back((edge.from.clone(),d+1));
         }
     }
     files.sort_by(|a,b|a.1.cmp(&b.1).then(a.0.cmp(&b.0)));
