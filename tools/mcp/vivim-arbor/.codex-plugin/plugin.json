@@ -11,7 +11,7 @@
     "defaultPrompt": "Run a full VIVIM ARBOR SITREP from live source and lane handoffs."
   },
   "name": "vivim-arbor-plugin",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "VIVIM ARBOR unified AI control plane with project intelligence, native ZCode observation, CLI discovery and authenticated Host capability discovery.",
   "author": {
     "name": "owen wallace-servera"
