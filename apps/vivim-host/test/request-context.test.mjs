@@ -1,7 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { requestSourceIds, selectRequestWiki, attachRequestContext } from '../control/request-context.mjs';
+import { requestSourceIds, selectRequestWiki, selectRequestActionContract, attachRequestContext } from '../control/request-context.mjs';
+
+import { createControlPlanner, loadControlCatalog } from '../control/intent-planner.mjs';
 
 const wiki = { revision:4, pages:{
   Main:{sections:{About:'Private to the authorized Wiki',Notes:'Another section'},links:['Project']},
@@ -55,4 +57,35 @@ test('automatic context preserves the actual plan and isolates source failure an
   assert.equal(phone.requestContext.wiki.status,'source-backed');
   assert.equal(Object.hasOwn(phone.requestContext,'source'),false);
   assert.equal(await attachRequestContext({outcome:'refused'},{text:'read wiki',readWiki:()=>{throw new Error('must not read');}}).then(p=>p.requestContext),undefined);
+});
+
+
+test('actual catalog-bound read intent carries declared slots but never execution or access grants', async () => {
+  const catalog=loadControlCatalog();
+  const planner=createControlPlanner({catalog});
+  const text='read wiki page main in section about';
+  const typed=planner.planText(text,{source:'desktop'});
+  assert.equal(typed.actionId,'wiki.section.read');
+  assert.equal(typed.executionPerformed,false);
+  const contract=selectRequestActionContract(typed,catalog);
+  assert.equal(contract.status,'declared');
+  assert.equal(contract.catalogRevision,catalog.version);
+  assert.equal(contract.planningEligible,false);
+  assert.deepEqual(contract.slots,[{name:'page',type:'string',required:true,min:1,max:80},
+    {name:'section',type:'string',required:true,min:1,max:80}]);
+  assert.deepEqual(contract.missing,['verified-action-contract','effective-access-policy']);
+  assert.match(contract.declarationDigest,/^[a-f0-9]{64}$/);
+  assert.ok(!JSON.stringify(contract).includes('"main"'));
+  assert.ok(!JSON.stringify(contract).includes('"about"'));
+  assert.deepEqual(selectRequestActionContract({...typed,args:{...typed.args,page:'other'}},catalog),{status:'unavailable'});
+  assert.deepEqual(selectRequestActionContract(typed,{...catalog,version:catalog.version+1}),{status:'stale'});
+  const result=await attachRequestContext(typed,{text,compileSources:async()=>({status:'unavailable'}),
+    readCatalog:()=>catalog});
+  assert.deepEqual(result.requestContext.action,contract);
+  assert.equal(result.executionPerformed,false);
+  const phone=await attachRequestContext(typed,{text,readWiki:async()=>wiki});
+  assert.equal(phone.requestContext?.action,undefined);
+  const drift=await attachRequestContext(typed,{text,compileSources:async()=>({status:'unavailable'}),
+    readCatalog:()=>({...catalog,version:catalog.version+1})});
+  assert.deepEqual(drift.requestContext.action,{status:'stale'});
 });
