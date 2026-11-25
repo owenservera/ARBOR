@@ -7,7 +7,8 @@
 use crate::{Error, Graph, Result};
 use crate::engine::{Budget,CancellationToken,EngineRegistry};
 use crate::typed_dag::{self,DagExecutor,DagReport,GraphDomain,IncrementalCache,ProgramIdentity,RevisionToken,SourceBinding,TransformStep,ValidatedPureProgram};
-use vivim_programmability_core::{self as core,DataClass,PolicyLimits,Program};
+use vivim_programmability_core::{self as core,DataClass,PolicyLimits,Program,Risk,SourceRef,TransformKind};
+use crate::semantic_source::{self, SourceAnchor};
 
 /// Bind a real validator result to the currently supplied canonical development
 /// graph snapshot. The graph node version is the reference revision. Never
@@ -63,4 +64,82 @@ pub fn run_indexed_program(graph:&Graph,expected:&RevisionToken,program:&Program
     registry:&EngineRegistry,cache:&mut IncrementalCache,budget:Budget,cancel:&CancellationToken)->Result<DagReport>{
     let bound=bind_indexed_program(graph,expected,program,policy)?;
     DagExecutor::new(registry).run_validated(&bound,expected,cache,budget,cancel)
+}
+
+/// A closed set of read-only computations over an exact versioned capability.
+/// No arbitrary operation string or effect candidate enters the program.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SemanticTask {
+    Inspect,
+    Impact,
+    Compose,
+}
+impl SemanticTask {
+    pub fn parse(value: &str) -> Result<Self> {
+        match value {
+            "inspect" => Ok(Self::Inspect),
+            "impact" => Ok(Self::Impact),
+            "compose" => Ok(Self::Compose),
+            _ => Err(Error::Invalid("semantic task must be inspect, impact or compose".into())),
+        }
+    }
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::Inspect => "inspect",
+            Self::Impact => "impact",
+            Self::Compose => "compose",
+        }
+    }
+}
+pub struct SemanticProgram {
+    pub anchor: SourceAnchor,
+    pub program: Program,
+}
+/// Resolve a unique, unambiguous capability declaration in the supplied graph
+/// snapshot, then construct a normal typed program using existing operations.
+/// Annotation identity is evidence of static source meaning, not runtime
+/// capability admission. A caller still needs current owner authorization.
+pub fn build_semantic_program(
+    graph: &Graph, expected: &RevisionToken, semantic_id: &str,
+    task: SemanticTask, policy: &PolicyLimits,
+) -> Result<SemanticProgram> {
+    if expected.namespace.domain != GraphDomain::Development
+        || expected.graph_epoch == 0 || expected.graph_epoch != graph.epoch() {
+        return Err(Error::Conflict("stale or non-development semantic snapshot".into()));
+    }
+    let result = semantic_source::sources(graph, semantic_id)?;
+    let mut declarations = result.anchors.into_iter().filter(|a| a.annotation_kind == "capability");
+    let anchor = declarations.next().ok_or_else(|| Error::Missing("no indexed capability declaration".into()))?;
+    if declarations.next().is_some() || anchor.occurrence_count != 1 || anchor.state != "indexed-not-live-checked" {
+        return Err(Error::Conflict("ambiguous indexed capability declaration".into()));
+    }
+    let node = graph.node(&anchor.file_id).ok_or_else(|| Error::Missing("capability source missing".into()))?;
+    let anchor_node = graph.node(&anchor.anchor_id).ok_or_else(|| Error::Missing("capability anchor missing".into()))?;
+    let source = SourceRef {
+        source_id: anchor.file_id.clone(), revision: node.version,
+        digest: anchor.content_digest.clone(), data_class: DataClass::Internal,
+    };
+    let make_step = |id: &str, kind, dependencies: Vec<String>, inputs: Vec<SourceRef>| core::TransformStep {
+        id: id.into(), kind, dependencies, inputs, output_data_class: DataClass::Internal,
+        risk: Risk::R0, destination: None,
+    };
+    // Inspect/impact operate on the exact declared source, without requiring
+    // an exhaustive import closure. Compose requires complete selection and
+    // will refuse if the graph traversal or source budget is exceeded.
+    let first = if task == SemanticTask::Compose { TransformKind::SelectContext } else { TransformKind::Normalize };
+    let mut steps = vec![
+        make_step("source", first, vec![], vec![source]),
+        make_step("meaning", TransformKind::Interpret, vec!["source".into()], vec![]),
+    ];
+    if task != SemanticTask::Inspect {
+        steps.push(make_step("impact", TransformKind::Evaluate, vec!["source".into()], vec![]));
+    }
+    let program = Program {
+        id: format!("semantic.{}.{}", anchor.anchor_id, task.name()),
+        revision: anchor_node.version, policy_id: policy.id.clone(), policy_revision: policy.revision, steps,
+    };
+    // Validate the same normal program and source bindings before handing it
+    // back to the incumbent executor; this is not an execution grant.
+    bind_indexed_program(graph, expected, &program, policy)?;
+    Ok(SemanticProgram { anchor, program })
 }
