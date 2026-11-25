@@ -1,4 +1,4 @@
-//! Local native direct-child lifecycle primitive for the existing Host.
+//! Local native process lifecycle primitive for the existing Host.
 //! Does not grant authority. A trusted Host must bind an approved executable,
 //! arguments, workspace, environment and effect receipt before calling start.
 //! No shell expansion, external PID control, network listener or remote tool.
@@ -12,6 +12,14 @@ use std::{
     thread,
     time::{Duration, Instant},
 };
+
+#[cfg(windows)]
+#[path="workstation_windows_job.rs"]
+mod windows_job;
+#[cfg(windows)]
+use windows_job::Process as PlatformChild;
+#[cfg(not(windows))]
+use Child as PlatformChild;
 
 const MAX_TAIL: usize = 65_536;
 const MAX_WAIT: Duration = Duration::from_secs(120);
@@ -76,9 +84,9 @@ fn drain<R: Read + Send + 'static>(mut pipe: R, tail: Arc<Mutex<Tail>>) -> io::R
 
 /// An owned child handle, never a PID supplied by a caller. Output is local-only
 /// until the Host projects it for the authorized audience. Interactive stdin
-/// is explicitly enabled; descendant process-tree containment remains separate.
+/// is explicitly enabled. Windows owns a creation-time job; other platforms own the direct child only.
 pub struct OwnedProcess {
-    child: Child,
+    child: PlatformChild,
     status: Option<ExitStatus>,
     stdout: Arc<Mutex<Tail>>,
     stderr: Arc<Mutex<Tail>>,
@@ -99,20 +107,27 @@ impl OwnedProcess {
         if !executable.extension().and_then(|s|s.to_str()).is_some_and(|s|s.eq_ignore_ascii_case("exe")) {
             return Err(invalid());
         }
+        #[cfg(windows)]
+        let (child,stdout,stderr,stdin)=PlatformChild::spawn(&executable,&workspace,&spec.args,&spec.environment,interactive)?;
+        #[cfg(not(windows))]
+        let (child,stdout,stderr,stdin)={
         let mut command=Command::new(executable);
         command.current_dir(workspace).args(spec.args).env_clear().envs(spec.environment)
             .stdin(if interactive {Stdio::piped()} else {Stdio::null()}).stdout(Stdio::piped()).stderr(Stdio::piped());
-        let child=command.spawn()?;
+        let mut child=command.spawn()?;
+        let stdout=child.stdout.take().ok_or_else(invalid)?;
+        let stderr=child.stderr.take().ok_or_else(invalid)?;
+        let stdin=child.stdin.take();
+        (child,stdout,stderr,stdin)
+        };
         let mut process=Self {child,status:None,
             stdout:Arc::new(Mutex::new(Tail::new(spec.tail_bytes))),
             stderr:Arc::new(Mutex::new(Tail::new(spec.tail_bytes))),input:None};
-        // The owned guard reaps its direct child on a setup error as well.
-        let stdout=process.child.stdout.take().ok_or_else(invalid)?;
-        let stderr=process.child.stderr.take().ok_or_else(invalid)?;
+        // The owned guard cancels its child/job on a setup error as well.
         drain(stdout,Arc::clone(&process.stdout))?;
         drain(stderr,Arc::clone(&process.stderr))?;
         if interactive {
-            let mut pipe=process.child.stdin.take().ok_or_else(invalid)?;
+            let mut pipe=stdin.ok_or_else(invalid)?;
             let (tx,rx)=mpsc::sync_channel::<Vec<u8>>(8);
             thread::Builder::new().name("vivim-process-input".into()).spawn(move||{
                 while let Ok(bytes)=rx.recv(){if pipe.write_all(&bytes).and_then(|_|pipe.flush()).is_err(){break;}}
@@ -144,7 +159,7 @@ impl OwnedProcess {
             thread::sleep(remaining.min(Duration::from_millis(10)));
         }
     }
-    /// Cancel only the directly owned child. The exit is observed and reaped.
+    /// Cancel the owned Windows job (or direct child on other platforms).
     pub fn cancel(&mut self) -> io::Result<ExitStatus> {
         if let Some(status)=self.poll()? { return Ok(status); }
         self.close_input();
@@ -173,8 +188,8 @@ impl Drop for OwnedProcess {
                 Ok(None)|Err(_)=>{ if self.child.kill().is_ok() { let _=self.child.wait(); } }
             }
         }
-        // Readers are detached; do not block the Host if a descendant inherited a pipe.
-        // A future platform job/containment adapter must own descendant cleanup.
+        // Windows job-handle closure also kills remaining descendants, including
+        // on worker crash. On other platforms detached readers may outlive the direct child.
     }
 }
 
@@ -196,6 +211,17 @@ mod tests {
             Ok("emit")=>{ println!("VIVIM_STDOUT_MARKER"); eprintln!("VIVIM_STDERR_MARKER"); }
             Ok("large")=>{ let mut out=std::io::stdout().lock(); out.write_all(&vec![b'x';131_072]).unwrap();out.flush().unwrap(); }
             Ok("sleep")=>thread::sleep(Duration::from_secs(20)),
+            #[cfg(windows)]
+            Ok("tree")=>{
+                let mut spec=spec("descendant",128);
+                let mut child=Command::new(&spec.executable);
+                child.args(spec.args.drain(..)).env_clear().envs(spec.environment);
+                let _child=child.spawn().unwrap();
+                println!("VIVIM_ROOT_EXITING");
+            }
+            #[cfg(windows)]
+            Ok("descendant")=>{println!("VIVIM_DESCENDANT_STARTED");thread::sleep(Duration::from_secs(20));}
+
             _=>{}
         }
     }
@@ -234,6 +260,24 @@ mod tests {
         assert_eq!(p.poll().unwrap(),Some(status));
         assert_eq!(p.cancel().unwrap(),status);
         closed_output(&p);
+    }
+    #[cfg(windows)]
+    #[test]
+    fn root_exit_does_not_complete_job_and_cancel_closes_descendant_pipes() {
+        let mut unrelated=OwnedProcess::start(spec("sleep",128)).unwrap();
+        let mut tree=OwnedProcess::start(spec("tree",4096)).unwrap();
+        let start=Instant::now();
+        loop {
+            let(out,_)=tree.output().unwrap();
+            let text=String::from_utf8_lossy(&out.bytes);
+            if text.contains("VIVIM_ROOT_EXITING")&&text.contains("VIVIM_DESCENDANT_STARTED"){break;}
+            assert!(start.elapsed()<Duration::from_secs(5),"descendant did not start");
+            thread::sleep(Duration::from_millis(10));
+        }
+        assert!(tree.wait_for(Duration::from_millis(200)).unwrap().is_none());
+        tree.cancel().unwrap();closed_output(&tree);
+        assert!(unrelated.poll().unwrap().is_none(),"unrelated job was affected");
+        unrelated.cancel().unwrap();
     }
     #[test]
     fn rejects_relative_executable_and_invalid_capacity() {

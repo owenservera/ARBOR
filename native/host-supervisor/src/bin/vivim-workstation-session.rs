@@ -7,7 +7,7 @@ use vivim_host_supervisor::workstation_process::{LocalProcessSpec,OwnedProcess,O
 const MAX_RUNNING:usize=8;
 const MAX_RETAINED:usize=64;
 const RETENTION:Duration=Duration::from_secs(600);
-struct Session{child:OwnedProcess,started:Instant,deadline:Duration,finished:Option<Instant>,timed_out:bool}
+struct Session{child:OwnedProcess,started:Instant,deadline:Duration,finished:Option<Instant>,timed_out:bool,cancelled:bool}
 fn capacity(running:usize,retained:usize)->bool{running<MAX_RUNNING&&retained<MAX_RETAINED}
 fn error(code:&str)->Result<Value,String>{Err(code.into())}
 fn text<'a>(v:&'a Value,k:&str)->Result<&'a str,String>{v.get(k).and_then(Value::as_str).ok_or("INVALID_REQUEST".into())}
@@ -34,7 +34,7 @@ impl Session{
  fn status(&mut self,id:&str)->Result<Value,String>{
   self.update()?;let status=self.child.poll().map_err(|_|"POLL_FAILED")?;
   Ok(json!({"sessionId":id,"state":if self.timed_out{"timed-out"}else if status.is_some(){"exited"}else{"running"},
-   "exitCode":status.and_then(|s|s.code()),"success":status.map(|s|s.success()),"elapsedMs":self.finished.unwrap_or_else(Instant::now).duration_since(self.started).as_millis().min(u64::MAX as u128)as u64}))
+   "containment":if cfg!(windows){"windows-job"}else{"direct-child"},"cancelled":self.cancelled,"exitCode":status.and_then(|s|s.code()),"success":status.map(|s|s.success()&&!self.cancelled&&!self.timed_out),"elapsedMs":self.finished.unwrap_or_else(Instant::now).duration_since(self.started).as_millis().min(u64::MAX as u128)as u64}))
  }
 }
 fn execute(v:&Value,sessions:&mut BTreeMap<String,Session>)->Result<Value,String>{
@@ -53,7 +53,7 @@ fn execute(v:&Value,sessions:&mut BTreeMap<String,Session>)->Result<Value,String
   let ttl=number(v,"timeoutMs")?;if !(100..=1_800_000).contains(&ttl){return error("INVALID_TIMEOUT");}
   let interactive=v.get("interactive").and_then(Value::as_bool).ok_or("INVALID_REQUEST")?;
   let child=OwnedProcess::start_with_input(LocalProcessSpec{executable:PathBuf::from(text(v,"executable")?),workspace:PathBuf::from(text(v,"workspace")?),args:argv,environment,tail_bytes:65536},interactive).map_err(|_|"SPAWN_FAILED")?;
-  let mut session=Session{child,started:Instant::now(),deadline:Duration::from_millis(ttl),finished:None,timed_out:false};
+  let mut session=Session{child,started:Instant::now(),deadline:Duration::from_millis(ttl),finished:None,timed_out:false,cancelled:false};
   let result=session.status(id);sessions.insert(id.into(),session);return result;
  }
  let session=sessions.get_mut(id).ok_or("SESSION_UNKNOWN")?;
@@ -63,7 +63,7 @@ fn execute(v:&Value,sessions:&mut BTreeMap<String,Session>)->Result<Value,String
    Ok(json!({"status":status,"stdout":page(out,number(v,"stdoutCursor")?)?,"stderr":page(err,number(v,"stderrCursor")?)?}))
   }
   "status" if keys(v,&["id","op","sessionId"])=>session.status(id),
-  "cancel" if keys(v,&["id","op","sessionId"])=>{session.child.cancel().map_err(|_|"CANCEL_UNCERTAIN")?;session.status(id)}
+  "cancel" if keys(v,&["id","op","sessionId"])=>{if session.child.poll().map_err(|_|"POLL_FAILED")?.is_none(){session.child.cancel().map_err(|_|"CANCEL_UNCERTAIN")?;session.cancelled=true;}session.status(id)}
   "input" if keys(v,&["id","op","sessionId","input"])=>{session.update()?;let input=text(v,"input")?;session.child.send_input(input.as_bytes().to_vec()).map_err(|_|"INPUT_NOT_QUEUED")?;Ok(json!({"sessionId":id,"queuedBytes":input.len()}))}
   _=>error("INVALID_REQUEST")
  }
@@ -85,8 +85,8 @@ fn main(){
    Err(mpsc::RecvTimeoutError::Disconnected)=>break
   }
  }
- // Dropping all handles reaps directly owned children. Descendant tree
- // containment requires a platform job/process-group adapter, not PID guesses.
+ // Dropping the Windows job handles terminates owned descendant trees.
+ // Non-Windows platforms currently reap only directly owned children.
 }
 #[cfg(test)]mod tests{use super::*;
  #[test]fn completed_sessions_do_not_consume_running_capacity(){assert!(capacity(0,8));assert!(capacity(7,63));assert!(!capacity(8,8));assert!(!capacity(0,64));}
