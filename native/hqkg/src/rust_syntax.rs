@@ -2,8 +2,8 @@
 //! @hq:capability hqkg.rust-syntax@1
 //! Syntactic ownership, not name resolution, macro expansion, or rustc type checking.
 use crate::{Error, Result};
-use proc_macro2::Span;
-use quote::ToTokens;
+use proc_macro2::{Span, TokenStream};
+use quote::{quote, ToTokens};
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use syn::{spanned::Spanned, AttrStyle, Attribute, Expr, Item, Lit, Meta, Visibility};
@@ -18,6 +18,13 @@ fn digest(bytes: impl AsRef<[u8]>) -> String {
 }
 fn token_digest(tokens: &impl ToTokens) -> String {
     digest(tokens.to_token_stream().to_string())
+}
+// A declaration fingerprint is lexical, not an ABI or rustc type identity.
+// Visibility and semantic attributes are part of the callable interface;
+// doc comments are source evidence but do not change the callable signature.
+fn declaration(attrs: &[Attribute], vis: Option<&Visibility>, signature: &impl ToTokens) -> TokenStream {
+    let semantic_attrs=attrs.iter().filter(|a|!a.path().is_ident("doc"));
+    quote!(#(#semantic_attrs)* #vis #signature)
 }
 fn qualified(prefix: &str, name: &str) -> String {
     if prefix.is_empty() { name.to_owned() } else { format!("{prefix}::{name}") }
@@ -72,7 +79,7 @@ impl Extractor<'_> {
         for item in items {
             match item {
                 Item::Fn(x) => { self.push(prefix,&x.sig.ident.to_string(),"function",x.sig.ident.span(),
-                    x,x.span(),&x.sig,&x.attrs,public(&x.vis))?; }
+                    x,x.span(),&declaration(&x.attrs,Some(&x.vis),&x.sig),&x.attrs,public(&x.vis))?; }
                 Item::Struct(x) => { self.push(prefix,&x.ident.to_string(),"struct",x.ident.span(),
                     x,x.span(),x,&x.attrs,public(&x.vis))?; }
                 Item::Enum(x) => { self.push(prefix,&x.ident.to_string(),"enum",x.ident.span(),
@@ -81,13 +88,21 @@ impl Extractor<'_> {
                     x,x.span(),x,&x.attrs,public(&x.vis))?; }
                 Item::Type(x) => { self.push(prefix,&x.ident.to_string(),"type",x.ident.span(),
                     x,x.span(),x,&x.attrs,public(&x.vis))?; }
-                Item::Const(x) => { self.push(prefix,&x.ident.to_string(),"constant",x.ident.span(),
-                    x,x.span(),&x.ty,&x.attrs,public(&x.vis))?; }
-                Item::Static(x) => { self.push(prefix,&x.ident.to_string(),"static",x.ident.span(),
-                    x,x.span(),&x.ty,&x.attrs,public(&x.vis))?; }
+                Item::Const(x) => {
+                    let (ident,generics,ty)=(&x.ident,&x.generics,&x.ty);
+                    let signature=quote!(const #ident #generics : #ty);
+                    self.push(prefix,&x.ident.to_string(),"constant",x.ident.span(),
+                        x,x.span(),&declaration(&x.attrs,Some(&x.vis),&signature),&x.attrs,public(&x.vis))?;
+                }
+                Item::Static(x) => {
+                    let (ident,mutability,ty)=(&x.ident,&x.mutability,&x.ty);
+                    let signature=quote!(static #mutability #ident : #ty);
+                    self.push(prefix,&x.ident.to_string(),"static",x.ident.span(),
+                        x,x.span(),&declaration(&x.attrs,Some(&x.vis),&signature),&x.attrs,public(&x.vis))?;
+                }
                 Item::Mod(x) => {
                     let q=self.push(prefix,&x.ident.to_string(),"module",x.ident.span(),
-                        x,x.span(),&x.ident,&x.attrs,public(&x.vis))?;
+                        x,x.span(),&declaration(&x.attrs,Some(&x.vis),&x.ident),&x.attrs,public(&x.vis))?;
                     if let Some((_,inner))=&x.content { self.walk(inner,&q,depth+1)?; }
                 }
                 Item::Trait(x) => {
@@ -96,7 +111,7 @@ impl Extractor<'_> {
                     for member in &x.items {
                         if let syn::TraitItem::Fn(f)=member {
                             self.push(&q,&f.sig.ident.to_string(),"trait-method",f.sig.ident.span(),
-                                f,f.span(),&f.sig,&f.attrs,false)?;
+                                f,f.span(),&declaration(&f.attrs,None,&f.sig),&f.attrs,false)?;
                         }
                     }
                 }
@@ -110,7 +125,7 @@ impl Extractor<'_> {
                     for member in &x.items {
                         if let syn::ImplItem::Fn(f)=member {
                             self.push(&scope,&f.sig.ident.to_string(),"method",f.sig.ident.span(),
-                                f,f.span(),&f.sig,&f.attrs,public(&f.vis))?;
+                                f,f.span(),&declaration(&f.attrs,Some(&f.vis),&f.sig),&f.attrs,public(&f.vis))?;
                         }
                     }
                 }

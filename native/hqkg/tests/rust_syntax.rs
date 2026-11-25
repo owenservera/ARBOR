@@ -55,3 +55,27 @@ fn invalid_syntax_never_returns_partial_success() {
     assert!(extract("fn broken( {").is_err());
     assert!(extract(&" ".repeat(hqkg::rust_syntax::MAX_SOURCE_BYTES+1)).is_err());
 }
+
+#[test]
+fn callable_declaration_fingerprint_includes_visibility_and_cfg_not_body_or_doc() {
+    let a=extract("/// first doc\npub fn run(x:u32)->u32 {x+1}\n").unwrap();
+    let b=extract("/// replacement doc\npub fn run(x:u32)->u32 {x+2}\n").unwrap();
+    let c=extract("pub(crate) fn run(x:u32)->u32 {x+1}\n").unwrap();
+    let d=extract("#[cfg(target_os=\"windows\")]\npub fn run(x:u32)->u32 {x+1}\n").unwrap();
+    let e=extract("pub fn run(x:u64)->u64 {x+1}\n").unwrap();
+    let signature=|v:&serde_json::Value| item(v,"run")["signatureDigest"].as_str().unwrap().to_owned();
+    assert_eq!(signature(&a),signature(&b));
+    assert_ne!(item(&a,"run")["syntaxDigest"],item(&b,"run")["syntaxDigest"]);
+    assert_ne!(signature(&a),signature(&c));
+    assert_ne!(signature(&a),signature(&d));
+    assert_ne!(signature(&a),signature(&e));
+}
+#[test]
+fn static_and_constant_declaration_fingerprints_include_type_and_mutability() {
+    let a=extract("pub static X:u32=1; pub const Y:u32=1;").unwrap();
+    let b=extract("pub static mut X:u32=2; pub const Y:u32=2;").unwrap();
+    let c=extract("pub static X:u64=1; pub const Y:u64=1;").unwrap();
+    assert_ne!(item(&a,"X")["signatureDigest"],item(&b,"X")["signatureDigest"]);
+    assert_eq!(item(&a,"Y")["signatureDigest"],item(&b,"Y")["signatureDigest"]);
+    assert_ne!(item(&a,"Y")["signatureDigest"],item(&c,"Y")["signatureDigest"]);
+}
