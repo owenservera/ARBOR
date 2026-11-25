@@ -80,3 +80,22 @@ test('expanded profile manifest requires reviewed selection and terminal policy 
  assert.equal(run(extended).sourceSha,m.sourceSha);
  assert.notEqual(runtimeBindingDigest(extended),runtimeBindingDigest({...extended,ownerSelectionSha256:'c'.repeat(64)}));
 });
+
+test('machine profile seal requires matching owner mode in manifest, root config, terminal policy and grant',t=>{
+ const f=fixture(t),prog=f.put('bin/terminal-node.exe','terminal-node');
+ const scope={schema:'vivim.owner-machine-scope/1',expiresAt:f.grant.expiresAt,protectedPaths:['C:\\authority','C:\\private']};
+ const policy={schema:'vivim.workstation-terminal-policy/1',enabled:true,expiresAt:f.grant.expiresAt,programs:[{id:'node',path:prog.file,sha256:prog.digest,environment:[]}],roots:f.roots.roots,maxTimeoutMs:1000,allowInteractive:true,machineScope:scope};
+ f.roots.machineScope=scope;
+ f.manifest.rootConfigSha=f.put('config/roots.json',f.roots).digest;f.grant.rootConfigSha=f.manifest.rootConfigSha;
+ f.manifest.terminalConfigSha=f.put('config/terminal-policy.json',policy).digest;f.manifest.ownerProfile='machine';
+ f.grant.machineScope=true;f.grant.terminal={configSha:f.manifest.terminalConfigSha,programs:['node'],roots:['scratch'],allowInteractive:true};
+ f.put('manifest.json',f.manifest);f.put('profile/session-authority/grant.json',f.grant);
+ assert.equal(inspectCandidate(f.release,f.receiptPath,now).promotionPerformed,false);
+ delete f.grant.machineScope;f.put('profile/session-authority/grant.json',f.grant);
+ assert.throws(()=>inspectCandidate(f.release,f.receiptPath,now),/EVIDENCE_INVALID/);
+ f.grant.machineScope=true;f.put('profile/session-authority/grant.json',f.grant);
+ f.roots.machineScope={...scope,protectedPaths:['C:\\authority','D:\\private']};
+ f.manifest.rootConfigSha=f.put('config/roots.json',f.roots).digest;f.grant.rootConfigSha=f.manifest.rootConfigSha;
+ f.put('manifest.json',f.manifest);f.put('profile/session-authority/grant.json',f.grant);
+ assert.throws(()=>inspectCandidate(f.release,f.receiptPath,now),/EVIDENCE_INVALID/);
+});

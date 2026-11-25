@@ -32,6 +32,8 @@ export function validateEvidence(manifest,receipt,grant,recipes,roots,now=Date.n
  if(manifest.ownerProfile!==undefined||manifest.ownerSelectionSha256!==undefined){
   if(!sha(manifest.terminalConfigSha)||!(manifest.ownerProfile==='expanded'&&sha(manifest.ownerSelectionSha256)||manifest.ownerProfile==='machine'&&manifest.ownerSelectionSha256===undefined))deny();
  }
+ const machine=manifest.ownerProfile==='machine';
+ if(machine!==(grant?.machineScope===true)||machine!==(roots?.machineScope!==undefined)||(machine&&!grant?.terminal))deny();
  if(grant?.schema!=='vivim.workstation-tunnel-grant/1'||!sha(grant.id,32)||grant.port!==43187||
   !Number.isSafeInteger(grant.expiresAt)||grant.expiresAt<=now||grant.expiresAt-now>86400000||
   grant.dataRoot!==manifest.dataRoot||grant.recipeConfigSha!==manifest.recipeConfigSha||grant.rootConfigSha!==manifest.rootConfigSha||

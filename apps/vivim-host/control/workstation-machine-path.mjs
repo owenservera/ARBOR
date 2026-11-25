@@ -32,6 +32,23 @@ export function machineBatchTarget(base,relative,scope,now=Date.now()){
  if(typeof relative!=='string'||!relative.split('/').every(component))fail();
  return machineTarget(p.join(machinePath(base),...relative.split('/')),scope,now);
 }
+// Resolve every existing component for native file operations too. An alias
+// (including an 8.3 short name) must not escape the protected-path comparison.
+// Only a final nonexistent component can be forwarded for create/write.
+export function verifyMachineFileTarget(value,scope,now=Date.now()){
+ if(process.platform!=='win32')fail();
+ const target=machineTarget(value,scope,now);
+ let current=target.root;
+ const parts=target.full.slice(target.root.length).split('\\').filter(Boolean);
+ for(let i=0;i<parts.length;i++){
+  current=p.join(current,parts[i]);
+  let st;
+  try{st=lstatSync(current)}catch(e){if(e?.code==='ENOENT'&&i===parts.length-1)return target;fail();}
+  if(st.isSymbolicLink()||key(realpathSync(current))!==key(current))fail();
+  machineTarget(realpathSync(current),scope,now);
+ }
+ return target;
+}
 export function machineProgramSelector(v){
  return typeof v==='string'&&v.length<=1024&&(/^[a-z0-9][a-z0-9_.-]{0,127}$/i.test(v)||(()=>{try{return p.extname(machinePath(v)).toLowerCase()==='.exe'}catch{return false}})());
 }

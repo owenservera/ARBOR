@@ -100,3 +100,28 @@ test('terminal plan with mismatched policy hash is never executed',async t=>{
  const call=tools.find(x=>x[0]==='vivim_terminal_start')[3],a={request_json:JSON.stringify({program:'node',args:['--version'],root_id:'repo',cwd:'.',interactive:false,timeout_ms:1000}),request_id:'3'.repeat(32)};
  await assert.rejects(call(a));await assert.rejects(call(a));assert.equal(calls,1);
 });
+
+test('explicit machine scope reaches the same Host plan; legacy refuses absolute paths and executables',async t=>{
+ const f=fixture(t),configSha='e'.repeat(64);
+ f.g.terminal={configSha,programs:['node'],roots:['repo'],allowInteractive:true};
+ fs.writeFileSync(f.file,JSON.stringify(f.g));
+ let plans=0,execs=0,last;
+ const opts={directory:f.directory,credential:async()=> 'test-only-token',fetcher:async(url,o)=>{
+  if(url.endsWith('/execute')){execs++;return json({schema:'vivim.control-receipt/1',planId,planDigest,actionId:last.actionId,args:last.args,approvedVia:'desktop-owner-token',status:'applied',executionPerformed:true,result:{sessionId:planId,state:'running'}})}
+  plans++;last=JSON.parse(o.body);
+  if(last.actionId==='workstation.file.read')return json({outcome:'done',actionId:last.actionId,args:last.args,effect:'read',result:{schema:'vivim.workstation-file-read/1',rootId:'machine',path:last.args.path,configSha:rootConfigSha,text:'fixture'}});
+  return json({outcome:'approval_required',risk:'R2',actionId:last.actionId,args:last.args,planId,planDigest,workstationBinding:{schema:'vivim.workstation-terminal-binding/1',configSha}});
+ }};
+ const term={request_json:JSON.stringify({program:'D:\\tools\\fixture.exe',root_id:'machine',cwd:'C:\\work',args:['--version'],interactive:false,timeout_ms:1000}),request_id:'9'.repeat(32)};
+ const file={root_id:'machine',path:'D:\\work\\fixture.txt'};
+ const call=(tools,name,a)=>tools.find(x=>x[0]===name)[3](a);
+ const legacy=createWorkstationTools(opts);
+ await assert.rejects(call(legacy,'vivim_terminal_start',term));await assert.rejects(call(legacy,'vivim_file_read',file));assert.equal(plans,0);
+ f.g.machineScope=true;fs.writeFileSync(f.file,JSON.stringify(f.g));
+ const machine=createWorkstationTools(opts);
+ assert.equal((await call(machine,'vivim_workstation_recipes',{})).machineScope,true);
+ assert.equal((await call(machine,'vivim_file_read',file)).text,'fixture');
+ assert.equal((await call(machine,'vivim_terminal_start',term)).status,'applied');assert.equal(execs,1);
+ assert.deepEqual(JSON.parse(Buffer.from(last.args.request.slice(4),'base64').toString('utf8')),JSON.parse(term.request_json));
+ fs.unlinkSync(f.file);await assert.rejects(call(machine,'vivim_file_read',file));
+});

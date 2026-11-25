@@ -3,7 +3,7 @@ import {createHash} from 'node:crypto';
 import {readFileSync,realpathSync,lstatSync,statSync} from 'node:fs';
 import {isAbsolute,basename} from 'node:path';
 import {spawnSync} from 'node:child_process';
-import {machineTarget,machineBatchTarget} from './workstation-machine-path.mjs';
+import {verifyMachineFileTarget,machineBatchTarget} from './workstation-machine-path.mjs';
 import {decodeWorkstationText} from './workstation-text-codec.mjs';
 export const FILE_READ='workstation.file.read',FILE_INSPECT='workstation.file.inspect',DIR_LIST='workstation.directory.list',
  DIR_CREATE='workstation.directory.create',FILE_WRITE='workstation.file.write',FILE_EDIT='workstation.file.edit',
@@ -29,7 +29,7 @@ export function createWorkstationFilePort({env=process.env,run=spawnSync,now=Dat
    if(data?.schema!=='vivim.workstation-roots/1'||!Array.isArray(data.roots)||data.roots.length<1||data.roots.length>16)throw Error();
    if(rootId==='machine'){
     if(!data.machineScope||process.platform!=='win32')throw fail('WORKSTATION_ROOT_NOT_GRANTED');
-    const x=machineTarget(target,data.machineScope,now());
+    const x=verifyMachineFileTarget(target,data.machineScope,now());
     return {root:x.root,rootId,relativePath:x.relative,machineScope:data.machineScope,configSha:config.sha,helperPath:helper.path,helperSha:helper.sha};
    }
    const entries=data.roots.filter(r=>r?.id===rootId);
@@ -44,7 +44,7 @@ export function createWorkstationFilePort({env=process.env,run=spawnSync,now=Dat
   if(action===FILES_READ||action===FILES_SEARCH){
    let paths;try{paths=JSON.parse(args.paths_json)}catch{throw fail('WORKSTATION_FILE_INPUT_INVALID');}
    if(!Array.isArray(paths)||paths.length<1||paths.length>8||paths.some(p=>typeof p!=='string'||!p||p.length>1024))throw fail('WORKSTATION_FILE_INPUT_INVALID');
-   if(b.machineScope)for(const relative of paths)machineBatchTarget(args.path,relative,b.machineScope,now());
+   if(b.machineScope)for(const relative of paths){const x=machineBatchTarget(args.path,relative,b.machineScope,now());verifyMachineFileTarget(x.full,b.machineScope,now());}
    input.paths=paths;
    if(action===FILES_SEARCH)input.literal=decodeWorkstationText(args.literal,160);
   }
