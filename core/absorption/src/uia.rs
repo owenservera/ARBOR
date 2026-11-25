@@ -14,6 +14,28 @@ pub fn normalize_facebook(input:&[u8],scope:&Scope)->Result<Value,&'static str>{
     if !matches!(site.trim_end_matches('/'),"facebook"|"www.facebook.com"|"https://www.facebook.com"|"https://facebook.com"){
         return Err("UIA_SITE_INVALID")
     }
+    normalize_rows(input,scope,&v,"vivim.facebook-uia-observation/1")
+}
+
+/// Shared UIA envelope for new dev agents. Target is supplied independently by
+/// the master/operator, not inferred from the incoming observation.
+pub fn normalize_uia(input:&[u8],scope:&Scope)->Result<Value,&'static str>{
+    if input.len()>4*1024*1024{return Err("SIZE_LIMIT")}
+    let url=url::Url::parse(&scope.origin).map_err(|_|"UIA_SCOPE_MISMATCH")?;
+    if !matches!(url.scheme(),"https"|"http")||url.origin().ascii_serialization()!=scope.origin||
+        scope.site_id.is_empty()||scope.site_id.len()>80||
+        !scope.site_id.bytes().all(|b|b.is_ascii_lowercase()||b.is_ascii_digit()||b==b'-'){
+        return Err("UIA_SCOPE_MISMATCH")
+    }
+    let v:Value=serde_json::from_slice(input).map_err(|_|"UIA_JSON_INVALID")?;
+    if v["schema"]!="vivim.application-uia-observation/1"||v["target"]!=json!(scope)||
+        v["executionAuthorized"]!=false||v["privateContentPersisted"]!=false||
+        v["source"]["producer"]!="craft-anything"||v["source"]["method"]!="windows-uia"{
+        return Err("UIA_SOURCE_REJECTED")
+    }
+    normalize_rows(input,scope,&v,"vivim.application-uia-observation/1")
+}
+fn normalize_rows(input:&[u8],scope:&Scope,v:&Value,source_schema:&str)->Result<Value,&'static str>{
     let rows=v["observations"].as_array().filter(|a|!a.is_empty()&&a.len()<=2500).ok_or("UIA_ROWS_INVALID")?;
     let mut observations=Vec::new();
     for (index,o) in rows.iter().enumerate(){
@@ -25,7 +47,7 @@ pub fn normalize_facebook(input:&[u8],scope:&Scope)->Result<Value,&'static str>{
         observations.push(json!({"ordinal":index,"nodeCount":nodes,"controlCount":controls.len()}));
     }
     Ok(json!({"schema":"vivim.absorption-uia-observation/1","scope":scope,
-        "source":{"schema":"vivim.facebook-uia-observation/1","sha256":format!("{:x}",Sha256::digest(input)),
+        "source":{"schema":source_schema,"sha256":format!("{:x}",Sha256::digest(input)),
             "trust":"unattested-local-observation"},"observations":observations,
         "authority":{"executionAuthorized":false,"activationPermitted":false,"sendPermission":false}}))
 }
