@@ -123,7 +123,7 @@ function createWorkstationTools({directory=path.join(__dirname,'..','session-aut
    ...(r.status==='applied'?{result:r.result}:{code:'HOST_EFFECT_NOT_APPLIED'})};
  }
  async function mutation(action,args,requestId){
-  if(!hex(requestId,32))bad();
+  if(!hex(requestId,32))throw Error('WORKSTATION_REQUEST_ID_INVALID: expected exactly 32 lowercase hexadecimal characters; rejected before submission');
   authorize(action,args,true);const intent={grant:initial,action,argsDigest:digest(args)};
   let existing=false;
   try{if(fs.readdirSync(state).filter(n=>n.endsWith('.claim.json')).length>=256&&!fs.existsSync(file(requestId,'claim')))bad();create(requestId,'claim',intent);}

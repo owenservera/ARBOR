@@ -125,3 +125,14 @@ test('explicit machine scope reaches the same Host plan; legacy refuses absolute
  assert.deepEqual(JSON.parse(Buffer.from(last.args.request.slice(4),'base64').toString('utf8')),JSON.parse(term.request_json));
  fs.unlinkSync(f.file);await assert.rejects(call(machine,'vivim_file_read',file));
 });
+
+// Malformed request IDs are local validation failures, never uncertain effects.
+test('invalid request ID reports pre-submission failure and never contacts Host',async t=>{
+ const f=fixture(t);let calls=0;
+ const tools=createWorkstationTools({directory:f.directory,credential:async()=> 'test-only-token',fetcher:async()=>{calls++;throw Error('unexpected Host request');}});
+ const start=tools.find(x=>x[0]==='vivim_session_start')[3];
+ for(const request_id of ['a'.repeat(31),'a'.repeat(33),'A'.repeat(32),'g'.repeat(32)]){
+  await assert.rejects(start({recipe:'node-version',request_id}),/WORKSTATION_REQUEST_ID_INVALID.*rejected before submission/);
+ }
+ assert.equal(calls,0);
+});
