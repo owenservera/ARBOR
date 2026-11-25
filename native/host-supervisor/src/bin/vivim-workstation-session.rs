@@ -38,7 +38,23 @@ impl Session{
  }
 }
 fn execute(v:&Value,sessions:&mut BTreeMap<String,Session>)->Result<Value,String>{
- let op=text(v,"op")?;let id=text(v,"sessionId")?;if !valid_id(id){return error("INVALID_SESSION");}
+ let op=text(v,"op")?;
+ if op=="inventory"{
+  if !keys(v,&["id","op"]){return error("INVALID_REQUEST");}
+  let mut rows=Vec::new();let mut running=0;let mut unsettled=0;
+  for (id,session) in sessions.iter_mut(){
+   let status=session.status(id)?;
+   let (stdout,stderr)=session.child.output().map_err(|_|"OUTPUT_FAILED")?;
+   if status["state"]=="running"{running+=1;}
+   if !stdout.closed||!stderr.closed||stdout.read_failed||stderr.read_failed{unsettled+=1;}
+   rows.push(json!({"status":status,"stdoutClosed":stdout.closed,"stderrClosed":stderr.closed,
+    "stdoutReadFailed":stdout.read_failed,"stderrReadFailed":stderr.read_failed}));
+  }
+  return Ok(json!({"schema":"vivim.workstation-session-inventory/1","running":running,
+   "retained":rows.len(),"unsettledOutput":unsettled,"maxRunning":MAX_RUNNING,
+   "maxRetained":MAX_RETAINED,"sessions":rows}));
+ }
+ let id=text(v,"sessionId")?;if !valid_id(id){return error("INVALID_SESSION");}
  if op=="start"{
   if !keys(v,&["id","op","sessionId","executable","workspace","args","environment","interactive","timeoutMs"])||sessions.contains_key(id){return error("SESSION_LIMIT_OR_DUPLICATE");}
   // Completed sessions retain their output without consuming a running slot.
@@ -89,6 +105,14 @@ fn main(){
  // Non-Windows platforms currently reap only directly owned children.
 }
 #[cfg(test)]mod tests{use super::*;
+ #[test]fn inventory_is_observation_not_process_admission(){
+  let mut sessions=BTreeMap::new();
+  let r=execute(&json!({"id":1,"op":"inventory"}),&mut sessions).unwrap();
+  assert_eq!(r["running"],0);assert_eq!(r["retained"],0);assert_eq!(r["unsettledOutput"],0);
+  assert_eq!(r["maxRunning"],8);assert_eq!(r["maxRetained"],64);
+  assert!(execute(&json!({"id":1,"op":"inventory","pid":1}),&mut sessions).is_err());
+ }
+
  #[test]fn completed_sessions_do_not_consume_running_capacity(){assert!(capacity(0,8));assert!(capacity(7,63));assert!(!capacity(8,8));assert!(!capacity(0,64));}
  #[test]fn output_cursor_preserves_exact_bytes_across_pages(){let mut bytes=vec![b'x';4095];bytes.extend_from_slice("é".as_bytes());let t=OutputTail{observed_bytes:bytes.len()as u64,bytes,closed:true,read_failed:false};let a=page(t.clone(),0).unwrap();let b=page(t,4096).unwrap();assert_eq!(a["next"],4096);assert!(a["hex"].as_str().unwrap().ends_with("c3"));assert_eq!(b["hex"],"a9");assert_eq!(b["next"],4097);}
  #[test]fn cursor_gap_and_paging(){let t=OutputTail{bytes:vec![65,66,67],observed_bytes:10,closed:true,read_failed:false};let p=page(t.clone(),0).unwrap();assert_eq!(p["gap"],true);assert_eq!(p["first"],7);assert_eq!(p["next"],10);assert_eq!(p["hex"],"414243");assert!(page(t,11).is_err());}
