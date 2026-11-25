@@ -999,6 +999,10 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
         rules:entries.map(r=>({id:r.id, revision:r.revision, state:r.state, scope:r.scope,
           actionId:r.actionId, catalogVersion:r.catalogVersion}))}; },
     ownerRules:()=>personalSemantics.snapshot(),
-    sharedPrograms,plan, execute, status, inspectOwnerPlan, closeWorkstationSessions:()=>workstationSession.close(), recent: (limit,{source='desktop',actor=null,grantId=null}={}) => journal.recent(limit).filter(r=>{if(source!=='mobile')return true;if(RULE_ACTIONS.has(r.actionId)||workstationAction(r.actionId))return false;if(r.actionId!==WIKI_WRITE_PROGRAM_ACTION)return true;const rec=journal.get(r.planId);return !!grantId&&rec?.plan.source==='mobile'&&rec.plan.actor===actor&&rec.plan.programGrantId===grantId;}),
+    sharedPrograms,plan, execute, status, inspectOwnerPlan,
+    // Trusted local lifecycle, never a catalog or HTTP/MCP action.
+    beginWorkstationDrain:()=>workstationSession.beginDrain(),
+    workstationSessionInventory:()=>workstationSession.inventory(),
+    closeWorkstationSessions:()=>workstationSession.close(), recent: (limit,{source='desktop',actor=null,grantId=null}={}) => journal.recent(limit).filter(r=>{if(source!=='mobile')return true;if(RULE_ACTIONS.has(r.actionId)||workstationAction(r.actionId))return false;if(r.actionId!==WIKI_WRITE_PROGRAM_ACTION)return true;const rec=journal.get(r.planId);return !!grantId&&rec?.plan.source==='mobile'&&rec.plan.actor===actor&&rec.plan.programGrantId===grantId;}),
   };
 }
