@@ -5,10 +5,10 @@
 use std::{
     collections::VecDeque,
     ffi::OsString,
-    io::{self, Read},
+    io::{self, Read, Write},
     path::PathBuf,
     process::{Child, Command, ExitStatus, Stdio},
-    sync::{Arc, Mutex},
+    sync::{Arc, Mutex, mpsc::{self,SyncSender,TrySendError}},
     thread,
     time::{Duration, Instant},
 };
@@ -82,10 +82,12 @@ pub struct OwnedProcess {
     status: Option<ExitStatus>,
     stdout: Arc<Mutex<Tail>>,
     stderr: Arc<Mutex<Tail>>,
+    input: Option<SyncSender<Vec<u8>>>,
 }
 
 impl OwnedProcess {
-    pub fn start(spec: LocalProcessSpec) -> io::Result<Self> {
+    pub fn start(spec: LocalProcessSpec) -> io::Result<Self> {Self::start_with_input(spec,false)}
+    pub fn start_with_input(spec: LocalProcessSpec,interactive:bool) -> io::Result<Self> {
         if !spec.executable.is_absolute() || !spec.workspace.is_absolute() ||
             !(1..=MAX_TAIL).contains(&spec.tail_bytes) || spec.args.len()>MAX_ARGS ||
             spec.environment.len()>MAX_ARGS { return Err(invalid()); }
@@ -99,18 +101,33 @@ impl OwnedProcess {
         }
         let mut command=Command::new(executable);
         command.current_dir(workspace).args(spec.args).env_clear().envs(spec.environment)
-            .stdin(Stdio::null()).stdout(Stdio::piped()).stderr(Stdio::piped());
+            .stdin(if interactive {Stdio::piped()} else {Stdio::null()}).stdout(Stdio::piped()).stderr(Stdio::piped());
         let child=command.spawn()?;
         let mut process=Self {child,status:None,
             stdout:Arc::new(Mutex::new(Tail::new(spec.tail_bytes))),
-            stderr:Arc::new(Mutex::new(Tail::new(spec.tail_bytes)))};
+            stderr:Arc::new(Mutex::new(Tail::new(spec.tail_bytes))),input:None};
         // The owned guard reaps its direct child on a setup error as well.
         let stdout=process.child.stdout.take().ok_or_else(invalid)?;
         let stderr=process.child.stderr.take().ok_or_else(invalid)?;
         drain(stdout,Arc::clone(&process.stdout))?;
         drain(stderr,Arc::clone(&process.stderr))?;
+        if interactive {
+            let mut pipe=process.child.stdin.take().ok_or_else(invalid)?;
+            let (tx,rx)=mpsc::sync_channel::<Vec<u8>>(8);
+            thread::Builder::new().name("vivim-process-input".into()).spawn(move||{
+                while let Ok(bytes)=rx.recv(){if pipe.write_all(&bytes).and_then(|_|pipe.flush()).is_err(){break;}}
+            })?;
+            process.input=Some(tx);
+        }
         Ok(process)
     }
+    /// Queue bounded input; accepted means queued, not consumed by the child.
+    pub fn send_input(&mut self,bytes:Vec<u8>)->io::Result<()> {
+        if bytes.is_empty()||bytes.len()>4096||self.poll()?.is_some(){return Err(invalid());}
+        let tx=self.input.as_ref().ok_or_else(invalid)?;
+        tx.try_send(bytes).map_err(|e|match e {TrySendError::Full(_)=>io::Error::new(io::ErrorKind::WouldBlock,"input queue full"),TrySendError::Disconnected(_)=>io::Error::new(io::ErrorKind::BrokenPipe,"input closed")})
+    }
+    pub fn close_input(&mut self){self.input.take();}
     pub fn poll(&mut self) -> io::Result<Option<ExitStatus>> {
         if self.status.is_none() { self.status=self.child.try_wait()?; }
         Ok(self.status)
@@ -130,6 +147,7 @@ impl OwnedProcess {
     /// Cancel only the directly owned child. The exit is observed and reaped.
     pub fn cancel(&mut self) -> io::Result<ExitStatus> {
         if let Some(status)=self.poll()? { return Ok(status); }
+        self.close_input();
         if let Err(error)=self.child.kill() {
             if let Some(status)=self.poll()? { return Ok(status); }
             return Err(error);
@@ -148,6 +166,7 @@ impl OwnedProcess {
 }
 impl Drop for OwnedProcess {
     fn drop(&mut self) {
+        self.close_input();
         if self.status.is_none() {
             match self.child.try_wait() {
                 Ok(Some(_))=>{},
