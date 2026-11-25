@@ -70,3 +70,19 @@ Era 3: keep all 12 original deliverables: streaming filesystem search; metadata/
 
 Priority: finish Era 2 before broad Era 3 expansion; implement A+01/A+03/A+04 on the critical path, then A+05/A+02/A+06/A+07/A+08 as they accelerate the vision. Research and product intelligence workstreams are consumers, not ownership targets. Rust first. Existing Host remains effect authority. Update the existing claims ledger and tracker rather than adding independent work ownership. All source changes to main use compare-and-set and exact readback.
 
+## R023 — Future-proof live evolution (subdeliverables of B07/A+04/A+07)
+
+Owner priority: maximize in-place upgrades without weakening existing authority or interrupting unrelated work. The original 32 checklist items and eight acceleration extensions remain unchanged. These eight additional acceptance work packages refine existing scope; they are not eight extra completed checklist items.
+
+| ID | Future-proof work | Acceptance |
+| --- | --- | --- |
+| L+01 | Exact release and runtime-binding evidence | Complete candidate sealed against successful builds; changed data root/executable/config forces handover; reject tampering. |
+| L+02 | Minimum-interruption change classification | Documentation-only no restart; compatible adapter reload only; explicit contract changes refresh metadata; unknown changes conservatively require handover. |
+| L+03 | Stable control plane and maintenance | Keep tunnel and health available, drain admitted calls, reject new effects while maintaining permitted output/status. |
+| L+04 | Generation-pinned native worker lifecycle | Existing sessions finish on their original worker generation; new sessions start on verified next generation only; Windows Job Object containment and durable output/receipt reconciliation. |
+| L+05 | Supervised Host handover | Verify all affected product work is quiescent, preserve same data and authority, never overlap production writers, bounded recovery without effect replay. |
+| L+06 | Transactional promotion, rollback and crash recovery | Keep previous immutable runtime; verify local activation, reconnect and rollback through durable release transaction; prove recovery with an actual failed candidate. |
+| L+07 | Compatible contracts and authorization lifecycle | Independently version capabilities and adapters; retain scoped locally approved grant, renew through supported authorization, verify client discovery only when needed; no indirect grant expansion. |
+| L+08 | Component-level replaceability | Independently versioned workstation workers, agent adapters, computation and semantic capability projections; use existing Host/registry/GPUI contracts, verify actual interruption and resource cost. Product intelligence implementation remains with its owning workstreams. |
+
+Current: L+01–03 have source implementation and limited logic verification, not Windows deployed acceptance. L+04–08 are incomplete. Strict original acceptance remains 14/32. First prerequisite: locally admit a verified build/stage and promotion lifecycle; current production tool catalogue does not expose that operation. No commercial Desktop Commander, no unapproved indirect command path. A source fast-forward is not a runtime upgrade.

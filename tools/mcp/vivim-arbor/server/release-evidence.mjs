@@ -11,6 +11,14 @@ const deny=()=>{throw Error('WORKSTATION_RELEASE_EVIDENCE_INVALID')};
 const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
 const ids=a=>Array.isArray(a)&&a.length>0&&a.length<=32&&a.every(x=>typeof x==='string'&&/^[a-z][a-z0-9-]{0,63}$/.test(x))&&new Set(a).size===a.length;
 const sorted=a=>[...a].sort();
+// Only provenance-only fields may be omitted. Unknown future manifest fields
+// are conservatively treated as execution bindings, not silently ignored.
+const canonical=x=>Array.isArray(x)?x.map(canonical):x!==null&&typeof x==='object'?Object.fromEntries(Object.keys(x).sort().map(k=>[k,canonical(x[k])])):x;
+export function runtimeBindingDigest(manifest){
+ if(manifest?.schema!=='vivim.workstation-runtime/1'||!sha(manifest.sourceSha,40)||manifest.nativeBuildSha!==manifest.sourceSha)deny();
+ const {sourceSha,nativeBuildSha,...bindings}=manifest;
+ return hash(JSON.stringify(canonical(bindings)));
+}
 const helperNames={session:'vivim-workstation-session.exe',files:'vivim-workstation-files.exe',probe:'vivim-workstation-probe.exe'};
 export function validateEvidence(manifest,receipt,grant,recipes,roots,now=Date.now()){
  if(manifest?.schema!=='vivim.workstation-runtime/1'||receipt?.schema!=='vivim.workstation-build-receipt/1'||
@@ -81,7 +89,7 @@ export function inspectCandidate(releaseRoot,buildReceiptPath,now=Date.now()){
  if(realpathSync(g.ownerAuthModule)!==realpathSync(auth))deny();pinned(auth,g.ownerAuthSha256,1024*1024);
  const tree=inventory(root);
  return {schema:'vivim.workstation-release-seal/1',...info,manifestSha256:manifest.digest,
-  buildReceiptSha256:receipt.digest,grantSha256:grant.digest,treeSha256:hash(JSON.stringify(tree.entries)),
+  buildReceiptSha256:receipt.digest,grantSha256:grant.digest,runtimeBindingSha256:runtimeBindingDigest(m),treeSha256:hash(JSON.stringify(tree.entries)),
   entries:tree.entries.length,bytes:tree.total,promotionPerformed:false};
 }
 export function verifyCandidate(releaseRoot,buildReceiptPath,sealPath,now=Date.now()){

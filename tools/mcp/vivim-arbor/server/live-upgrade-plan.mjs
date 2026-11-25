@@ -19,7 +19,7 @@ export function planLiveUpgrade(input) {
  for(const r of [a,b]){
   if(!sha(r.sourceSha,40)||!sha(r.treeSha256,64)||!sha(r.grantSha256,64)||
      !sha(r.recipeConfigSha,64)||!sha(r.rootConfigSha,64)||
-     !sha(r.toolContractSha256,64)||r.verified!==true)deny('INVALID_RELEASE_EVIDENCE');
+     !sha(r.toolContractSha256,64)||!sha(r.runtimeBindingSha256,64)||r.verified!==true)deny('INVALID_RELEASE_EVIDENCE');
  }
  const before=index(a.entries),after=index(b.entries);
  const changed=[];
@@ -35,16 +35,17 @@ export function planLiveUpgrade(input) {
  const adapter=p=>/^(?:profile\/server|runtime\/tools\/mcp\/vivim-arbor\/server)(?:\/[^/]+\.cjs)?$/.test(p);
  const grantChanged=a.grantSha256!==b.grantSha256||a.recipeConfigSha!==b.recipeConfigSha||a.rootConfigSha!==b.rootConfigSha;
  const contractChanged=a.toolContractSha256!==b.toolContractSha256;
+ const runtimeBindingChanged=a.runtimeBindingSha256!==b.runtimeBindingSha256;
  // Metadata files may differ only if their separately bound authority fields
  // remain identical. Host/runtime files are not ignored on that basis.
  const relevant=changed.filter(p=>p!=='manifest.json'&&!doc(p));
  let mode='no-runtime-restart';
- if(grantChanged||relevant.some(p=>!adapter(p)))mode='host-handover';
+ if(grantChanged||runtimeBindingChanged||relevant.some(p=>!adapter(p)))mode='host-handover';
  else if(relevant.length||contractChanged)mode='mcp-child-reload';
  return {schema:'vivim.workstation-live-upgrade-plan/1',activeSource:a.sourceSha,candidateSource:b.sourceSha,
   activeTree:a.treeSha256,candidateTree:b.treeSha256,mode,changedCount:changed.length,
   changedPaths:changed.slice(0,200),changesTruncated:changed.length>200,
-  ownerApprovalRequired:mode!=='no-runtime-restart',grantActivationRequired:grantChanged,
+  ownerApprovalRequired:mode!=='no-runtime-restart',grantActivationRequired:grantChanged,runtimeBindingChanged,
   clientMetadataRefreshRequired:contractChanged,drainInFlightCalls:mode!=='no-runtime-restart',
   drainNativeJobs:mode==='host-handover',preserveTunnelSupervisor:true,
   preserveOldRelease:true,automaticEffectReplay:false,promotionPerformed:false};

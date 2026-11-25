@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {mkdtempSync,rmSync,mkdirSync,writeFileSync,symlinkSync} from 'node:fs';
 import {createHash} from 'node:crypto';
 import os from 'node:os';import path from 'node:path';
-import {validateEvidence,inspectCandidate,verifyCandidate,inventory} from '../server/release-evidence.mjs';
+import {validateEvidence,inspectCandidate,verifyCandidate,inventory,runtimeBindingDigest} from '../server/release-evidence.mjs';
 const hash=s=>createHash('sha256').update(s).digest('hex'),now=Date.parse('2026-11-25T10:00:00Z');
 function fixture(t){
  const root=mkdtempSync(path.join(os.tmpdir(),'vivim-release-seal-')),release=path.join(root,'release');
@@ -46,4 +46,12 @@ test('inventory refuses junction/symlink escape and changed tree contents',t=>{
  assert.notDeepEqual(inventory(f.release),before);
  symlinkSync(f.root,path.join(f.release,'escape'),process.platform==='win32'?'junction':'dir');
  assert.throws(()=>inventory(f.release),/EVIDENCE_INVALID/);
+});
+
+test('runtime binding excludes only source provenance; data root, executable and unknown fields change digest',t=>{
+ const f=fixture(t),m=f.manifest,d=runtimeBindingDigest(m);
+ assert.equal(runtimeBindingDigest({...m,sourceSha:'c'.repeat(40),nativeBuildSha:'c'.repeat(40)}),d);
+ assert.equal(runtimeBindingDigest(Object.fromEntries(Object.entries(m).reverse())),d);
+ for(const changed of [{dataRoot:'other'},{nodeExe:'other'},{futureBinding:'other'}])assert.notEqual(runtimeBindingDigest({...m,...changed}),d);
+ assert.equal(inspectCandidate(f.release,f.receiptPath,now).runtimeBindingSha256,d);
 });

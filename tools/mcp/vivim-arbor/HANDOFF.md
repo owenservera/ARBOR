@@ -2,6 +2,11 @@
 2026-11-25 | R001 | Read this before continuing development.
 
 
+## R023 — Source synchronization and live-evolution backlog (2026-11-25)
+- Live health ready/private-workstation, 12 tools, 11 recipes. VIVIM git-status ctl-1bc08277bad4067d exit 0 clean tracked main; fetch ctl-5494d298d7efba1d exit 0; fast-forward ctl-bd2fc25efcd5bb30 exit 0 to bc7dd64f. Local maintenance-gate.cjs readback 1686 bytes, SHA256 d6d3f6871f087c80ebda40eeb723f6bd9aaef39073fcd2a355e79231f43ab. Running Host unchanged, no commercial relay calls.
+- Tighten release classifier: source provenance alone may be ignored, but all other manifest fields are hashed into runtimeBindingSha256, including unknown fields. Missing digest or changed execution binding cannot be classified as no-restart. Regression tests added; Windows execution remains pending.
+- Future-proof L+01–08 acceptance work added to canonical independence plan, as subdeliverables of B07/A+04/A+07. Current production grant lacks builder/promotion; owner-operated local staging may be required, not a claim of autonomous activation. No new binaries, configuration or grant applied.
+
 ## R022 — Minimum-interruption live upgrades (2026-11-25)
 - Owner directive: maximize in-situ live upgrades, preserve active work and avoid restarting unrelated components. Commercial Desktop Commander remains unused.
 - d02955f: stage seal binds exact successful build evidence, helper/config hashes and complete immutable candidate file tree. Source readback verified; Windows build/staging not run.
