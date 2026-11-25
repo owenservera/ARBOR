@@ -5,6 +5,7 @@
 //! No graph mutations, personal data, provider calls or Host effect grants.
 use hqkg::{Error,Graph,Journal,Result};
 use hqkg::semantic_source;
+use hqkg::native_program::{build_semantic_program, SemanticTask};
 use hqkg::development_relations;
 use hqkg::engine::{Budget,CancellationToken,EngineRegistry};
 use hqkg::development_engine::install_development_engine;
@@ -53,6 +54,8 @@ fn query(graph:&Graph,operation:&str,key:&str,extra:Option<&str>)->Result<Value>
                 "semanticObservations":semantics.observations,
                 "potentialWiring":semantics.potential_wiring,
                 "truncated":truncated,
+                "depthLimited":imports.depth_limited||dependents.depth_limited,
+                "resultLimited":imports.result_limited||dependents.result_limited||semantics.truncated,
                 "returnsToSource":imports.returns_to_source||dependents.returns_to_source,
                 "evidence":"static-indexed-only"})
         }
@@ -80,22 +83,39 @@ fn compute_program(graph:&Graph,epoch:u64,program:&Program,operation:&str)->Resu
     let report=hqkg::native_program::run_indexed_program(graph,&expected,program,&fixed_policy(),
         &registry,&mut cache,Budget::default(),&CancellationToken::new())?;
     if report.state!=RunState::Complete{
-        return Err(Error::Conflict(format!("development computation incomplete: {:?}",report.state)))
+        return Err(Error::Conflict(format!("development computation incomplete: {:?}; step={}; reason={}",
+            report.state, report.failed_step.as_deref().unwrap_or("none"), report.failure.as_deref().unwrap_or("not available"))))
     }
     let mut outputs=Vec::new();
+    let mut complete=true;
     for out in report.outputs{
         let value:Value=serde_json::from_str(&out.data)
             .map_err(|_|Error::Corrupt("native graph engine returned invalid structured output".into()))?;
-        if value["schema"]!="hqkg.development-transform/1"||value["authority"]!="none"{
+        if value["schema"]!="hqkg.development-transform/1"||value["authority"]!="none"
+            ||value["executionAuthorized"]!=false||value["effectPerformed"]!=false
+            ||value["graphEpoch"].as_u64()!=Some(epoch)||!value["truncated"].is_boolean(){
             return Err(Error::Corrupt("native graph transform contract mismatch".into()))
         }
+        complete &= value["truncated"] == false;
         outputs.push(json!({"stepId":out.step_id,"generation":out.generation,
             "state":format!("{:?}",out.state).to_lowercase(),"result":value}));
     }
     Ok(json!({"schema":SCHEMA,"state":"computed","authority":"read-only",
         "operation":operation,"computation":"source-backed-graph","epoch":graph.epoch(),
         "programId":program.id,"programRevision":program.revision,
-        "outputs":outputs,"executionAuthorized":false,"effectPerformed":false}))
+        "outputs":outputs,"complete":complete,"executionAuthorized":false,"effectPerformed":false}))
+}
+fn semantic_program(graph:&Graph,semantic_id:&str,task:SemanticTask)->Result<Value>{
+    let expected=RevisionToken{namespace:Namespace{domain:GraphDomain::Development,owner:"local-hq".into()},graph_epoch:graph.epoch()};
+    let compiled=build_semantic_program(graph,&expected,semantic_id,task,&fixed_policy())?;
+    let mut result=compute_program(graph,expected.graph_epoch,&compiled.program,"semantic-program")?;
+    result["semanticId"]=json!(semantic_id);
+    result["task"]=json!(task.name());
+    result["semanticAnchor"]=json!({"id":compiled.anchor.anchor_id,"fileId":compiled.anchor.file_id,
+        "path":compiled.anchor.path,"digest":compiled.anchor.content_digest,
+        "annotation":compiled.anchor.annotation_kind,"state":compiled.anchor.state,
+        "line":compiled.anchor.first_line,"occurrences":compiled.anchor.occurrence_count});
+    Ok(result)
 }
 fn execute_program(graph:&Graph,epoch:u64)->Result<Value>{
     let mut input=String::new();
@@ -130,9 +150,13 @@ fn compute_source(graph:&Graph,id:&str)->Result<Value>{
 }
 fn run()->Result<Value>{
     let args=std::env::args().skip(1).collect::<Vec<_>>();
-    if args.len()<3||args.len()>4{return Err(Error::Invalid("usage: hqkg-development <absolute-journal> sources|symbols|impact|wiring <key> [depth] | program <epoch> | compute <source-file-id>".into()))}
+    if args.len()<3||args.len()>4{return Err(Error::Invalid("usage: hqkg-development <absolute-journal> sources|symbols|impact|wiring <key> [depth] | program <epoch> | compute <source-file-id> | semantic-program <semantic-id> inspect|impact|compose".into()))}
     let graph=open(Path::new(&args[0]))?;
     graph.check_indexes()?;
+    if args[1]=="semantic-program"{
+        if args.len()!=4{return Err(Error::Invalid("semantic-program requires exact semantic ID and task".into()))}
+        return semantic_program(&graph,&args[2],SemanticTask::parse(&args[3])?);
+    }
     if args[1]=="compute"{
         if args.len()!=3{return Err(Error::Invalid("compute requires one exact source-file ID".into()))}
         return compute_source(&graph,&args[2])
