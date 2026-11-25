@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import { createDevIntelligence } from '../lib/arbor-service.mjs';
 import { openDb } from '../lib/schema.mjs';
 import { searchSemanticReferences } from '../lib/search.mjs';
+import { composeContext, verifyContext } from '../lib/context.mjs';
 import { registerSemanticId, deprecateSemanticId, getSemanticId } from '../lib/semantic-registry.mjs';
 import { sha256 } from '../lib/util.mjs';
 
@@ -130,4 +131,46 @@ test('real approved source -> HQ index -> semantic search -> verified context', 
     if (db) db.close();
     rmSync(root, { recursive: true, force: true });
   }
+});
+
+
+test('authorized semantic context survives unrelated row pressure and refuses truncated scope', () => {
+  const root = mkdtempSync(join(tmpdir(), 'hq-semantic-scoped-'));
+  const project = join(root, 'source');
+  const dataDir = join(root, 'data');
+  const id = 'hq.scope.test@1';
+  mkdirSync(project);
+  let db;
+  try {
+    for (let n = 0; n < 101; n++) {
+      writeFileSync(join(project, 'a' + String(n).padStart(3, '0') + '.mjs'),
+        '// @hq:capability ' + id + '\nexport const value = ' + n + ';\n');
+    }
+    writeFileSync(join(project, 'z-target.mjs'), '// @hq:capability ' + id + '\nexport const target = true;\n');
+    const hq = createDevIntelligence({ dataDir, approvedRoots: [project], mode: 'diagnostic' });
+    hq.registerSource({ name: 'scope-test', path: project });
+    assert.equal(hq.index().errors.length, 0);
+    db = openDb(join(dataDir, '.hq', 'index.db'));
+    const unscoped = searchSemanticReferences(db, { query: id, limit: 100 });
+    assert.equal(unscoped.results.some(r => r.path === 'z-target.mjs'), false);
+    const allowedSourceRefs = new Set(['scope-test:z-target.mjs']);
+    const scoped = searchSemanticReferences(db, { query: id, limit: 100, allowedSourceRefs });
+    assert.equal(scoped.truncated, false);
+    assert.deepEqual(scoped.results.map(r => r.path), ['z-target.mjs']);
+    const options = { task: 'Find the authorized capability', sourceSemanticIds: [id],
+      allowedSourceRefs, budgetTokens: 2400, reservedForOutput: 400, maxFiles: 3,
+      requireSemanticCoverage: true };
+    const bundle = composeContext(db, options);
+    assert.equal(bundle.semanticPacket.status, 'complete');
+    assert.equal(bundle.semanticPacket.planningEligible, false);
+    assert.deepEqual(bundle.sources.map(s => s.path), ['z-target.mjs']);
+    assert.equal(verifyContext(bundle).valid, true);
+    assert.deepEqual(searchSemanticReferences(db, { query: id, allowedSourceRefs: new Set() }).results, []);
+    assert.throws(() => searchSemanticReferences(db, { query: id, allowedSourceRefs: ['scope-test:z-target.mjs'] }), /HQ_INVALID_SOURCE_SCOPE/);
+    const limited = searchSemanticReferences(db, { query: id, limit: 1,
+      allowedSourceRefs: new Set(['scope-test:a000.mjs', 'scope-test:z-target.mjs']) });
+    assert.equal(limited.truncated, true);
+    writeFileSync(join(project, 'z-target.mjs'), '// @hq:capability ' + id + '\nexport const target = false;\n');
+    assert.equal(verifyContext(bundle).valid, false);
+  } finally { if (db) db.close(); rmSync(root, { recursive: true, force: true }); }
 });
