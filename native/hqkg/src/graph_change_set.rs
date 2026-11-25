@@ -214,14 +214,12 @@ fn check_id(id: &str, what: &str) -> Result<()> {
 }
 
 fn snapshot_incident(graph: &Graph, id: &str) -> Result<Vec<Edge>> {
-    let mut out = Vec::new();
-    for e in graph.outgoing(id, None)? {
-        out.push(e.clone());
+    // A self-loop appears in both indexes; apply it only once.
+    let mut out = BTreeMap::new();
+    for e in graph.outgoing(id, None)?.into_iter().chain(graph.incoming(id, None)?) {
+        out.entry(e.id.clone()).or_insert_with(|| e.clone());
     }
-    for e in graph.incoming(id, None)? {
-        out.push(e.clone());
-    }
-    Ok(out)
+    Ok(out.into_values().collect())
 }
 
 /// Remove one entity and its incident edges, recording the deletion. Shared by
@@ -275,6 +273,12 @@ fn apply_op(graph: &mut Graph, op: &ChangeOp, report: &mut ApplyReport) -> Resul
         }
         ChangeOp::PutEdge(e) => {
             check_id(&e.id, "PutEdge")?;
+            // Replacement changes adjacency at the OLD endpoints as well.
+            // A consumer may have cached a negative traversal from either.
+            if let Some(old) = graph.edge(&e.id) {
+                report.invalidation_set.insert(old.from.clone());
+                report.invalidation_set.insert(old.to.clone());
+            }
             graph.put_edge_importer(e.clone())?;
             report.invalidation_set.insert(e.id.clone());
             report.invalidation_set.insert(e.from.clone());
@@ -365,6 +369,8 @@ fn apply_op(graph: &mut Graph, op: &ChangeOp, report: &mut ApplyReport) -> Resul
                 return Err(Error::Missing(format!("merge canonical {canonical_id}")));
             }
             for mut e in snapshot_incident(graph, duplicate_id)? {
+                report.invalidation_set.insert(e.from.clone());
+                report.invalidation_set.insert(e.to.clone());
                 if e.from == *duplicate_id {
                     e.from = canonical_id.clone();
                 }

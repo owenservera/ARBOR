@@ -180,7 +180,7 @@ fn merge_moves_duplicate_edges_onto_canonical_then_tombstones() {
     );
     assert_eq!(
         r.invalidation_set,
-        ["dup", "canon", "d-o", "o-d"]
+        ["dup", "canon", "d-o", "o-d", "other"]
             .into_iter()
             .map(str::to_owned)
             .collect()
@@ -355,4 +355,39 @@ fn change_ops_are_constructible_directly() {
     };
     assert_eq!(cs.parent_change_set_id.as_deref(), Some("cs-0"));
     assert_eq!(cs.ops.len(), 2);
+}
+
+#[test]
+fn replacing_dependency_invalidates_old_and_new_adjacencies_only() {
+    let mut g = Graph::new();
+    for id in ["old-a", "old-b", "new-a", "new-b", "unrelated"] {
+        g.put_node(node(id)).unwrap();
+    }
+    g.put_edge(Edge::new("dependency", "old-a", "imports", "old-b")).unwrap();
+    let mut ledger = ApplyLedger::new();
+    let report = apply(&mut g, &GraphChangeSet::new("move", "source")
+        .put_edge(Edge::new("dependency", "new-a", "imports", "new-b")), &mut ledger).unwrap();
+    assert_eq!(report.invalidation_set, ["dependency", "old-a", "old-b", "new-a", "new-b"]
+        .into_iter().map(str::to_owned).collect());
+    assert!(g.outgoing("old-a", Some("imports")).unwrap().is_empty());
+    assert!(g.incoming("old-b", Some("imports")).unwrap().is_empty());
+    assert_eq!(g.outgoing("new-a", Some("imports")).unwrap()[0].to, "new-b");
+    g.check_indexes().unwrap();
+}
+
+#[test]
+fn merging_self_loop_reindexes_once_and_preserves_dependency() {
+    let mut g = Graph::new();
+    for id in ["old", "canonical"] { g.put_node(node(id)).unwrap(); }
+    g.put_edge(Edge::new("loop", "old", "imports", "old")).unwrap();
+    let before = g.epoch();
+    let mut ledger = ApplyLedger::new();
+    let report = apply(&mut g, &GraphChangeSet::new("merge-loop", "source")
+        .merge("old", "canonical", "identity reconciled", 1), &mut ledger).unwrap();
+    assert_eq!(g.epoch(), before + 2);
+    assert_eq!(g.edge("loop").unwrap().from, "canonical");
+    assert_eq!(g.edge("loop").unwrap().to, "canonical");
+    assert_eq!(report.invalidation_set, ["old", "canonical", "loop"]
+        .into_iter().map(str::to_owned).collect());
+    g.check_indexes().unwrap();
 }
