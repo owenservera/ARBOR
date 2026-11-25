@@ -386,3 +386,71 @@ fn source_invalidation_includes_transitive_consumers_without_direct_sources() {
     assert_eq!(cache.invalidate_changes(&p.namespace, &applied), 3);
     assert_eq!(cache.len(), 0);
 }
+
+#[test]
+fn separate_registries_with_identical_numeric_generation_never_share_cache_hits() {
+    let (first, first_calls) = registry();
+    let (second, second_calls) = registry();
+    let p = plan(ns(GraphDomain::Development));
+    let mut cache = IncrementalCache::new();
+    assert_eq!(execute(&first, &p, &mut cache).state, RunState::Complete);
+    let report = execute(&second, &p, &mut cache);
+    assert!(report.outputs.iter().all(|out| out.state == OutputState::Computed));
+    assert_eq!(first_calls.load(Ordering::SeqCst), 2);
+    assert_eq!(second_calls.load(Ordering::SeqCst), 2);
+    assert!(execute(&second, &p, &mut cache).outputs.iter().all(|out| out.state == OutputState::Reused));
+}
+
+struct ReplaceEarlierEngine {
+    registry: std::sync::Weak<EngineRegistry>,
+}
+impl ComputeEngine for ReplaceEarlierEngine {
+    fn descriptor(&self) -> EngineDescriptor {
+        EngineDescriptor::new("replace", "test", PURE_INTERFACE, &["evaluate"])
+    }
+    fn execute(&self, _req: &EngineRequest) -> Result<EngineOutput> {
+        self.registry.upgrade().unwrap().install(Arc::new(Pure {
+            implementation: "v2",
+            calls: Arc::new(AtomicUsize::new(0)),
+            fail_once: Arc::new(AtomicBool::new(false)),
+        }), Some(1))?;
+        Ok(EngineOutput { data: "replacement occurred".into() })
+    }
+}
+
+#[test]
+fn replacement_of_an_earlier_engine_prevents_completed_dag_and_cache_commit() {
+    let (registry, _) = registry();
+    let registry = Arc::new(registry);
+    registry.install(Arc::new(ReplaceEarlierEngine {
+        registry: Arc::downgrade(&registry),
+    }), None).unwrap();
+    let mut p = plan(ns(GraphDomain::Development));
+    p.steps.iter_mut().find(|s| s.id == "b").unwrap().engine = "replace".into();
+    let mut cache = IncrementalCache::new();
+    let report = execute(&registry, &p, &mut cache);
+    assert_eq!(report.state, RunState::StaleGeneration);
+    assert_eq!(cache.len(), 0);
+    assert!(!report.effect_authorized);
+}
+
+#[test]
+fn shared_provenance_is_deduplicated_across_diamond_dependencies() {
+    let (registry, _) = registry();
+    let namespace = ns(GraphDomain::Development);
+    let p = TransformPlan {
+        expected: rev(&namespace, 1),
+        namespace: namespace.clone(),
+        steps: vec![
+            step("d", &["b", "c"], &namespace),
+            step("c", &["a"], &namespace),
+            step("b", &["a"], &namespace),
+            step("a", &[], &namespace),
+        ],
+    };
+    let report = execute(&registry, &p, &mut IncrementalCache::new());
+    assert_eq!(report.state, RunState::Complete);
+    for out in report.outputs {
+        assert_eq!(out.provenance, vec!["trusted-source".to_string()]);
+    }
+}
