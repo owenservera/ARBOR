@@ -53,6 +53,9 @@ pub trait ComputeEngine: Send + Sync {
 }
 struct Generation {
     generation: u64,
+    // A slot's numeric generation is local to its registry. This allocation
+    // is unique even when a second registry installs the same descriptor.
+    cache_identity: Arc<()>,
     desc: EngineDescriptor,
     engine: Arc<dyn ComputeEngine>,
 }
@@ -62,6 +65,9 @@ pub struct EngineLease {
 impl EngineLease {
     pub fn generation(&self) -> u64 {
         self.inner.generation
+    }
+    pub(crate) fn cache_identity(&self) -> Arc<()> {
+        Arc::clone(&self.inner.cache_identity)
     }
     pub fn descriptor(&self) -> &EngineDescriptor {
         &self.inner.desc
@@ -146,6 +152,7 @@ impl EngineRegistry {
             slot.clone(),
             Arc::new(Generation {
                 generation,
+                cache_identity: Arc::new(()),
                 desc,
                 engine,
             }),
