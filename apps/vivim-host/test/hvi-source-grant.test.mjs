@@ -131,3 +131,23 @@ test('the Host read port observes the UI revision instead of trusting a caller',
   assert.equal(out.remoteAccepted,false);
   assert.equal(out.runtimeAccepted,false);
 });
+
+test('a workstation read cannot inherit a replacement grant for the same repository',()=>{
+  const c=clock();const store=openStore(c);const verify=createHviSourceGrantVerifier(store);
+  const first=store.issue({actorId:'owner',repoIdentities:[REPO]});
+  const ctx={repoIdentity:REPO,sourceGrantRef:first.id,workstationReadOperation:'files'};
+  assert.equal(verify(ctx),true);
+  assert.equal(verify({...ctx,sourceGrantRef:undefined}),false);
+  assert.equal(verify({...ctx,sourceGrantRef:null}),false);
+  store.revoke({actorId:'owner'});
+  assert.equal(verify(ctx),false);
+  const second=store.issue({actorId:'owner',repoIdentities:[REPO]});
+  assert.notEqual(second.id,first.id);
+  assert.equal(verify(ctx),false);
+  assert.equal(verify({...ctx,sourceGrantRef:second.id}),true);
+  assert.equal(verify({repoIdentity:REPO,sourceGrantRef:first.id}),false);
+  assert.equal(verify({repoIdentity:REPO}),true);
+  assert.equal(verify({repoIdentity:REPO,sourceGrantRef:null}),true);
+  c.advanceMs(24*3600000);
+  assert.equal(verify({...ctx,sourceGrantRef:second.id}),false);
+});

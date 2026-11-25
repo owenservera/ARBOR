@@ -144,5 +144,15 @@ export function createHviSourceGrantStore({ ledger, now = () => new Date().toISO
  */
 export function createHviSourceGrantVerifier(store) {
   if (!store || typeof store.verify !== 'function') fail('INVALID');
-  return ctx => store.verify({ repoIdentity: ctx?.repoIdentity }).ok === true;
+  return ctx => {
+    const current = store.verify({ repoIdentity: ctx?.repoIdentity });
+    if (current?.ok !== true) return false;
+    const expected = ctx?.sourceGrantRef;
+    // An admitted workstation read is pinned to its original grant, not merely
+    // to a repository that might have been granted again during the read.
+    if (ctx?.workstationReadOperation !== undefined || (expected !== undefined && expected !== null))
+      return typeof expected === 'string' && expected.length > 0 && current.grant?.id === expected;
+    // Legacy unpinned comparison callers still use live repository membership.
+    return true;
+  };
 }
