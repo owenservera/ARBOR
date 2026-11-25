@@ -107,7 +107,7 @@ $messages=@('{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVe
 $lines=@($messages|& $node (Join-Path $profile 'server\tunnel-readonly.cjs'))
 if($LASTEXITCODE -ne 0 -or $lines.Count -ne 2){throw 'Candidate handshake failed'}
 $names=@(($lines[1]|ConvertFrom-Json).result.tools|ForEach-Object name)
-if($names.Count -ne 13 -or $names -notcontains 'vivim_session_start' -or $names -notcontains 'vivim_file_edit'){throw 'Candidate tools mismatch'}
+if($names.Count -ne 15 -or $names -notcontains 'vivim_session_start' -or $names -notcontains 'vivim_file_edit'){throw 'Candidate tools mismatch'}
 Write-Output ('STAGED_SOURCE='+$SourceSha);Write-Output ('STAGED_TOOLS='+($names -join ','))
 if(-not $Activate){return}
 & (Join-Path $release 'Start-WorkstationHost.ps1') -ReleaseRoot $release

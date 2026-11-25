@@ -40,3 +40,18 @@ test('foreign binding or root is refused before execute; ambiguous request is no
  await assert.rejects(call('vivim_session_start',{recipe:'node-version',request_id:'f'.repeat(32)}));assert.equal(requests,1);
  await assert.rejects(call('vivim_session_start',{recipe:'node-version',request_id:'f'.repeat(32)}));assert.equal(requests,1);
 });
+
+test('batch reads and literal search use same scoped read authority',async t=>{
+ const f=fixture(t);let calls=0;
+ const tools=createWorkstationTools({directory:f.directory,credential:async()=> 'test-only-token',fetcher:async(url,o)=>{
+  calls++;assert.ok(url.endsWith('/plan'));const b=JSON.parse(o.body);
+  assert.equal(b.args.root_id,'repo');assert.equal(b.args.path,'.');assert.equal(b.args.paths_json,'["a.txt"]');
+  if(b.actionId==='workstation.files.search_selected')assert.equal(b.args.literal,'b64:bmVlZGxl');
+  return json({outcome:'done',actionId:b.actionId,args:b.args,effect:'read',result:{schema:'vivim.workstation-file-read/1',rootId:'repo',path:'.',configSha:rootConfigSha}});
+ }});
+ const call=(name,a)=>tools.find(x=>x[0]===name)[3](a);
+ const args={root_id:'repo',path:'.',paths_json:'["a.txt"]'};
+ await call('vivim_file_read_many',args);
+ await call('vivim_file_search_selected',{...args,literal:'needle'});
+ await assert.rejects(call('vivim_file_read_many',{...args,root_id:'foreign'}));assert.equal(calls,2);
+});

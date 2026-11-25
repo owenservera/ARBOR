@@ -22,6 +22,8 @@ const definitions=[
  ['vivim_session_input',S+'input',['session_id','input'],true],
  ['vivim_file_read',F+'read',['root_id','path'],false],
  ['vivim_file_inspect',F+'inspect',['root_id','path'],false],
+ ['vivim_file_read_many','workstation.files.read',['root_id','path','paths_json'],false],
+ ['vivim_file_search_selected','workstation.files.search_selected',['root_id','path','paths_json','literal'],false],
  ['vivim_directory_list',D+'list',['root_id','path'],false],
  ['vivim_directory_create',D+'create',['root_id','path'],true],
  ['vivim_file_write',F+'write',['root_id','path','expected_digest','content'],true],
@@ -141,7 +143,7 @@ function createWorkstationTools({directory=path.join(__dirname,'..','session-aut
   const required=mutating?[...fields,'request_id']:fields;
   tools.push([name,'Use only the locally granted Host '+action+' capability. '+(mutating?'Supply a unique 32-character lowercase hexadecimal request_id; repeat only the same ID to inspect an uncertain receipt.':'Read-only, scoped to granted workspace or owned session.'),
    {type:'object',properties:Object.fromEntries(required.map(k=>[k,{type:'string'}])),required,additionalProperties:false},
-   a=>{const args=Object.fromEntries(fields.map(k=>{if(['content','old_text','new_text','input'].includes(k)){const v=a[k];if(typeof v!=='string'||v.includes('\0')||Buffer.byteLength(v)>(k==='input'?4096:5997))bad();return [k,'b64:'+Buffer.from(v,'utf8').toString('base64')];}return [k,a[k]];}));return mutating?mutation(action,args,a.request_id):readAction(action,args);},!mutating]);
+   a=>{const args=Object.fromEntries(fields.map(k=>{if(['content','old_text','new_text','input','literal'].includes(k)){const v=a[k];if(typeof v!=='string'||v.includes('\0')||Buffer.byteLength(v)>(k==='input'?4096:k==='literal'?160:5997))bad();return [k,'b64:'+Buffer.from(v,'utf8').toString('base64')];}return [k,a[k]];}));return mutating?mutation(action,args,a.request_id):readAction(action,args);},!mutating]);
  }
  return tools;
 }

@@ -5,10 +5,11 @@ import {isAbsolute,basename} from 'node:path';
 import {spawnSync} from 'node:child_process';
 import {decodeWorkstationText} from './workstation-text-codec.mjs';
 export const FILE_READ='workstation.file.read',FILE_INSPECT='workstation.file.inspect',DIR_LIST='workstation.directory.list',
- DIR_CREATE='workstation.directory.create',FILE_WRITE='workstation.file.write',FILE_EDIT='workstation.file.edit';
-export const WORKSTATION_FILE_ACTIONS=new Set([FILE_READ,FILE_INSPECT,DIR_LIST,DIR_CREATE,FILE_WRITE,FILE_EDIT]);
-export const WORKSTATION_FILE_READS=new Set([FILE_READ,FILE_INSPECT,DIR_LIST]);
-const operations=new Map([[FILE_READ,'read'],[FILE_INSPECT,'inspect'],[DIR_LIST,'list'],[DIR_CREATE,'mkdir'],[FILE_WRITE,'write'],[FILE_EDIT,'edit']]);
+ DIR_CREATE='workstation.directory.create',FILE_WRITE='workstation.file.write',FILE_EDIT='workstation.file.edit',
+ FILES_READ='workstation.files.read',FILES_SEARCH='workstation.files.search_selected';
+export const WORKSTATION_FILE_ACTIONS=new Set([FILE_READ,FILE_INSPECT,DIR_LIST,DIR_CREATE,FILE_WRITE,FILE_EDIT,FILES_READ,FILES_SEARCH]);
+export const WORKSTATION_FILE_READS=new Set([FILE_READ,FILE_INSPECT,DIR_LIST,FILES_READ,FILES_SEARCH]);
+const operations=new Map([[FILE_READ,'read'],[FILE_INSPECT,'inspect'],[DIR_LIST,'list'],[DIR_CREATE,'mkdir'],[FILE_WRITE,'write'],[FILE_EDIT,'edit'],[FILES_READ,'read-many'],[FILES_SEARCH,'search-selected']]);
 const fail=(code,status=409)=>Object.assign(Error(code),{code,status});
 const hash=b=>createHash('sha256').update(b).digest('hex'),digest=x=>hash(JSON.stringify(x));
 const sha=x=>typeof x==='string'&&/^[a-f0-9]{64}$/.test(x);
@@ -34,6 +35,12 @@ export function createWorkstationFilePort({env=process.env,run=spawnSync}={}){
  function request(action,args,b,phase){
   const op=operations.get(action);if(!op||typeof args.path!=='string'||args.path.length>1024)throw fail('WORKSTATION_FILE_INPUT_INVALID');
   const input={root:b.root,path:args.path,op,phase};
+  if(action===FILES_READ||action===FILES_SEARCH){
+   let paths;try{paths=JSON.parse(args.paths_json)}catch{throw fail('WORKSTATION_FILE_INPUT_INVALID');}
+   if(!Array.isArray(paths)||paths.length<1||paths.length>8||paths.some(p=>typeof p!=='string'||!p||p.length>1024))throw fail('WORKSTATION_FILE_INPUT_INVALID');
+   input.paths=paths;
+   if(action===FILES_SEARCH)input.literal=decodeWorkstationText(args.literal,160);
+  }
   if(action===FILE_WRITE||action===FILE_EDIT)input.expectedDigest=args.expected_digest;
   if(action===FILE_WRITE)input.content=decodeWorkstationText(args.content);
   if(action===FILE_EDIT){input.oldText=decodeWorkstationText(args.old_text);input.newText=decodeWorkstationText(args.new_text);}

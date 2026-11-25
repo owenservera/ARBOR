@@ -90,8 +90,55 @@ fn write_atomic(root:&Path,relative:&str,expected:&str,new:&[u8])->R<()>{
  if bytes(&target).map(|b|sha(&b)).ok()!=Some(sha(new)){return Err(err("OUTCOME_UNCERTAIN"));}
  Ok(())
 }
+// The selection is explicit and bounded: no recursive walk, ambient paths,
+// or disclosure of a partially accepted batch. The live files are not a snapshot.
+fn selected_files(root:&Path,base:&str,v:&Value)->R<Vec<(String,Vec<u8>)>>{
+ let directory=checked(root,base,false,true)?;
+ if !directory.is_dir(){return Err(err("NOT_DIRECTORY"));}
+ let paths=v.as_array().filter(|a|!a.is_empty()&&a.len()<=8).ok_or(err("INVALID_SELECTION"))?;
+ let mut seen=std::collections::BTreeSet::new();let mut result=Vec::new();let mut total=0usize;
+ for item in paths{
+  let rel=item.as_str().ok_or(err("INVALID_SELECTION"))?;
+  if rel.len()>1024||rel.split('/').any(|c|!component(c)){return Err(err("PATH_INVALID"));}
+  let key=if cfg!(windows){rel.to_lowercase()}else{rel.to_owned()};
+  if !seen.insert(key){return Err(err("INVALID_SELECTION"));}
+  let combined=if base=="."{rel.to_owned()}else{format!("{base}/{rel}")};
+  let p=checked(root,&combined,false,false)?;
+  let b=bytes(&p)?;utf8(&b)?;
+  total=total.checked_add(b.len()).ok_or(err("BATCH_LIMIT"))?;
+  if total>MAX{return Err(err("BATCH_LIMIT"));}
+  result.push((combined,b));
+ }
+ Ok(result)
+}
+fn read_selection(root:&Path,base:&str,op:&str,v:&Value)->R<Value>{
+ let files=selected_files(root,base,&v["paths"])?;
+ if op=="read-many"{
+  let rows=files.iter().map(|(path,b)|Ok(json!({"path":path,"digest":sha(b),"bytes":b.len(),"text":utf8(b)?}))).collect::<R<Vec<_>>>()?;
+  return Ok(json!({"files":rows,"consistency":"individual-live-reads"}));
+ }
+ let literal=string(v,"literal")?;
+ if literal.is_empty()||literal.len()>160||literal.chars().any(char::is_control){return Err(err("INVALID_LITERAL"));}
+ let mut matches=Vec::new();let mut truncated=false;
+ let sources:Vec<_>=files.iter().map(|(p,b)|json!({"path":p,"digest":sha(b),"bytes":b.len()})).collect();
+ 'files:for (path,b) in &files{
+  for (line,text) in utf8(b)?.split('\n').enumerate(){
+   if let Some(column)=text.find(literal){
+    if matches.len()==100{truncated=true;break 'files;}
+    matches.push(json!({"path":path,"line":line+1,"columnByte":column+1}));
+   }
+  }
+ }
+ Ok(json!({"sources":sources,"matches":matches,"truncated":truncated,
+  "matchMode":"case-sensitive-literal-first-per-line","consistency":"individual-live-reads"}))
+}
+
 fn execute(v:&Value)->R<Value>{
  let root=PathBuf::from(string(v,"root")?);let rel=string(v,"path")?;let op=string(v,"op")?;let phase=string(v,"phase")?;
+ if ["read-many","search-selected"].contains(&op){
+  if phase!="read"{return Err(err("INVALID_REQUEST"));}
+  return read_selection(&root,rel,op,v);
+ }
  if ["read","inspect","list"].contains(&op){
   if phase!="read"{return Err(err("INVALID_REQUEST"));}
   let p=checked(&root,rel,false,op=="list"||op=="inspect")?;
@@ -128,5 +175,26 @@ fn main(){
  println!("{}",reply);
 }
 #[cfg(test)]mod tests{use super::*;
+ #[test]fn selected_read_and_search_are_bounded_and_reject_escape(){
+  let mut random=[0u8;16];getrandom::fill(&mut random).unwrap();
+  let root=std::env::temp_dir().join(format!("vivim-selection-{}",sha(&random)));
+  fs::create_dir(&root).unwrap();
+  struct Cleanup(PathBuf);impl Drop for Cleanup{fn drop(&mut self){let _=fs::remove_dir_all(&self.0);}}
+  let _cleanup=Cleanup(root.clone());
+  fs::write(root.join("a.txt"),"é needle\r\nneedle\n").unwrap();
+  fs::write(root.join("b.txt"),"NEEDLE").unwrap();
+  let q=json!({"paths":["a.txt","b.txt"],"literal":"needle"});
+  let r=read_selection(&root,".","read-many",&q).unwrap();
+  assert_eq!(r["files"][0]["text"],"é needle\r\nneedle\n");
+  let s=read_selection(&root,".","search-selected",&q).unwrap();
+  assert_eq!(s["matches"].as_array().unwrap().len(),2);
+  assert_eq!(s["matches"][0]["columnByte"],4);
+  assert_eq!(s["matches"][1]["line"],2);
+  assert!(read_selection(&root,".","read-many",&json!({"paths":["a.txt","../b.txt"]})).is_err());
+  assert!(read_selection(&root,".","read-many",&json!({"paths":["a.txt","a.txt"]})).is_err());
+  fs::write(root.join("large.txt"),vec![b'x';MAX]).unwrap();
+  assert!(read_selection(&root,".","read-many",&json!({"paths":["a.txt","large.txt"]})).is_err());
+ }
+
  #[test]fn path_components(){for s in ["..","a\\b","C:","NUL.txt",".git",".env.local","x.","x ","owner-token"]{assert!(!component(s),"{s}");}assert!(component("src"));assert!(component("Cargo.toml"));}
 }

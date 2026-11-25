@@ -1,6 +1,6 @@
 {
   "schema": "vivim.control-action-catalog/1",
-  "version": 21,
+  "version": 22,
   "asOf": "2026-11-23",
   "policy": {
     "allUserFacingActionsRequireTextPath": true,
@@ -2399,6 +2399,95 @@
       "subject": "workstation",
       "priority": "P0",
       "precondition": "Hash-pinned local root and native helper; exact desktop approval for writes. Typed text fields are b64: plus canonical UTF-8 base64 to preserve exact bytes."
+    },
+    {
+      "id": "workstation.files.read",
+      "title": "Read selected scoped UTF-8 files",
+      "category": "workstation",
+      "owner": "host-control",
+      "executor": "apps/vivim-host/control/dispatcher.mjs:createExecutors",
+      "readiness": "source_wired",
+      "risk": "R0",
+      "target": "local-workstation",
+      "surfaces": [
+        "text",
+        "desktop",
+        "mobile",
+        "visual"
+      ],
+      "privacy": "authenticated-pc-owner-only",
+      "aiCandidate": false,
+      "args": {
+        "root_id": {
+          "type": "string",
+          "min": 1,
+          "max": 64
+        },
+        "path": {
+          "type": "string",
+          "min": 1,
+          "max": 1024
+        },
+        "paths_json": {
+          "type": "string",
+          "min": 3,
+          "max": 8000
+        }
+      },
+      "examples": [
+        "Read selected scoped files in a locally authorized workspace"
+      ],
+      "reversible": false,
+      "subject": "workstation",
+      "priority": "P0",
+      "precondition": "Explicit JSON array of 1–8 relative file names, combined content at most 64 KiB; individual live reads, no snapshot claim."
+    },
+    {
+      "id": "workstation.files.search_selected",
+      "title": "Search selected scoped live files",
+      "category": "workstation",
+      "owner": "host-control",
+      "executor": "apps/vivim-host/control/dispatcher.mjs:createExecutors",
+      "readiness": "source_wired",
+      "risk": "R0",
+      "target": "local-workstation",
+      "surfaces": [
+        "text",
+        "desktop",
+        "mobile",
+        "visual"
+      ],
+      "privacy": "authenticated-pc-owner-only",
+      "aiCandidate": false,
+      "args": {
+        "root_id": {
+          "type": "string",
+          "min": 1,
+          "max": 64
+        },
+        "path": {
+          "type": "string",
+          "min": 1,
+          "max": 1024
+        },
+        "paths_json": {
+          "type": "string",
+          "min": 3,
+          "max": 8000
+        },
+        "literal": {
+          "type": "string",
+          "min": 4,
+          "max": 220
+        }
+      },
+      "examples": [
+        "Find literal text in selected locally authorized files"
+      ],
+      "reversible": false,
+      "subject": "workstation",
+      "priority": "P0",
+      "precondition": "Explicit JSON array of 1–8 relative file names, combined content at most 64 KiB, literal b64: UTF-8 up to 160 bytes; first match per line, at most 100 matches."
     }
   ],
   "readinessStates": {
