@@ -1,0 +1,138 @@
+// Host-owned native session port. Local hash-pinned recipes only; no caller
+// executable/path/argument/environment. Host journal is the approval authority.
+// This first worker owns direct children, not descendant process trees.
+import {createHash,randomBytes} from 'node:crypto';
+import {readFileSync,realpathSync,statSync,lstatSync} from 'node:fs';
+import {isAbsolute,basename} from 'node:path';
+import {spawn} from 'node:child_process';
+export const SESSION_START='workstation.session.start',SESSION_STATUS='workstation.session.status',
+ SESSION_OUTPUT='workstation.session.output',SESSION_CANCEL='workstation.session.cancel',SESSION_INPUT='workstation.session.input';
+export const WORKSTATION_SESSION_ACTIONS=new Set([SESSION_START,SESSION_STATUS,SESSION_OUTPUT,SESSION_CANCEL,SESSION_INPUT]);
+const fail=(code,status=409)=>Object.assign(Error(code),{code,status});
+const hash=b=>createHash('sha256').update(b).digest('hex');
+const digest=x=>hash(JSON.stringify(x));
+const hex=x=>typeof x==='string'&&/^[0-9a-f]{64}$/.test(x);
+const id=x=>typeof x==='string'&&/^ctl-[a-f0-9]{16}$/.test(x);
+const recipeId=x=>typeof x==='string'&&/^[a-z][a-z0-9-]{2,63}$/.test(x);
+const record=x=>x!==null&&typeof x==='object'&&!Array.isArray(x);
+const keys=(o,allowed)=>record(o)&&Object.keys(o).every(k=>allowed.includes(k));
+const envNames=new Set(['SYSTEMROOT','WINDIR','PATH','PATHEXT','HOME','USERPROFILE','APPDATA','LOCALAPPDATA','TEMP','TMP','CARGO_HOME','RUSTUP_HOME','RUSTUP_TOOLCHAIN','CARGO_TARGET_DIR','GIT_CONFIG_NOSYSTEM','LANG','LC_ALL','TERM','NO_COLOR','RUST_BACKTRACE']);
+function regular(file,max){
+ if(typeof file!=='string'||!isAbsolute(file))throw fail('WORKSTATION_SESSION_BINDING_INVALID');
+ const p=realpathSync(file),st=lstatSync(p);
+ if(!st.isFile()||st.isSymbolicLink()||st.size<1||st.size>max)throw fail('WORKSTATION_SESSION_BINDING_INVALID');
+ return {path:p,sha:hash(readFileSync(p))};
+}
+function exactFile(file,sha,max){
+ const b=regular(file,max);if(!hex(sha)||b.sha!==sha)throw fail('WORKSTATION_SESSION_BINDING_INVALID');return b;
+}
+function cursor(s){if(typeof s!=='string'||!/^(0|[1-9][0-9]{0,14})$/.test(s))throw fail('WORKSTATION_CURSOR_INVALID');return Number(s);}
+export function createWorkstationSessionPort({env=process.env,spawnWorker=spawn,now=Date.now}={}){
+ let worker=null,dead=false,sequence=0;const pending=new Map(),sessions=new Map(),generation=randomBytes(16).toString('hex');
+ function config(){
+  if(!env.VIVIM_WORKSTATION_RECIPES||!env.VIVIM_WORKSTATION_RECIPES_SHA256||
+     !env.VIVIM_WORKSTATION_SESSION_EXE||!env.VIVIM_WORKSTATION_SESSION_SHA256)throw fail('WORKSTATION_SESSIONS_DISABLED');
+  try{
+   const f=exactFile(env.VIVIM_WORKSTATION_RECIPES,env.VIVIM_WORKSTATION_RECIPES_SHA256,65536);
+   const raw=readFileSync(f.path);if(hash(raw)!==f.sha)throw Error();
+   const c=JSON.parse(raw);
+   if(!keys(c,['schema','recipes'])||c.schema!=='vivim.workstation-recipes/1'||!Array.isArray(c.recipes)||!c.recipes.length||c.recipes.length>32)throw Error();
+   const ids=new Set();
+   for(const r of c.recipes){
+    if(!keys(r,['id','executable','executableSha256','workspace','args','environment','interactive','timeoutMs'])||
+      !recipeId(r.id)||ids.has(r.id)||!isAbsolute(r.executable)||!hex(r.executableSha256)||!isAbsolute(r.workspace)||
+      !Array.isArray(r.args)||r.args.length>64||r.args.some(a=>typeof a!=='string'||a.length>4096||a.includes('\0'))||
+      !Array.isArray(r.environment)||r.environment.length>32||r.environment.some(n=>typeof n!=='string'||!envNames.has(n.toUpperCase()))||
+      typeof r.interactive!=='boolean'||!Number.isSafeInteger(r.timeoutMs)||r.timeoutMs<100||r.timeoutMs>1800000)throw Error();
+    ids.add(r.id);
+   }
+   return {configSha:f.sha,recipes:c.recipes};
+  }catch{throw fail('WORKSTATION_SESSION_BINDING_INVALID');}
+ }
+ function resolve(recipe){
+  const c=config(),r=c.recipes.find(x=>x.id===recipe);if(!r)throw fail('WORKSTATION_RECIPE_UNKNOWN');
+  const helper=exactFile(env.VIVIM_WORKSTATION_SESSION_EXE,env.VIVIM_WORKSTATION_SESSION_SHA256,64*1024*1024);
+  if(!/^vivim-workstation-session(?:\.exe)?$/i.test(basename(helper.path)))throw fail('WORKSTATION_SESSION_BINDING_INVALID');
+  const exe=exactFile(r.executable,r.executableSha256,256*1024*1024),workspace=realpathSync(r.workspace);
+  if(!statSync(workspace).isDirectory()||(process.platform==='win32'&&!/\.exe$/i.test(exe.path)))throw fail('WORKSTATION_SESSION_BINDING_INVALID');
+  const environment={};for(const n of r.environment){const v=env[n];if(v!==undefined){if(typeof v!=='string'||v.length>32768||v.includes('\0'))throw fail('WORKSTATION_SESSION_BINDING_INVALID');environment[n]=v;}}
+  const spec={executable:exe.path,workspace,args:r.args,environment,interactive:r.interactive,timeoutMs:r.timeoutMs};
+  return {helper,configSha:c.configSha,recipe,spec,binding:{schema:'vivim.workstation-session-binding/1',recipe,configSha:c.configSha,bindingDigest:digest({helper,exe,recipe,spec,configSha:c.configSha})}};
+ }
+ function known(sessionId,requireCurrent=true){
+  if(!id(sessionId))throw fail('WORKSTATION_SESSION_UNKNOWN');
+  const s=sessions.get(sessionId);if(!s||dead||!worker||now()>s.expiresAt)throw fail('WORKSTATION_SESSION_UNKNOWN');
+  if(requireCurrent&&config().configSha!==s.configSha)throw fail('WORKSTATION_SESSION_REVOKED');
+  return s;
+ }
+ function prepare(action,args){
+  if(action===SESSION_START){
+   if(!keys(args,['recipe'])||!recipeId(args.recipe))throw fail('WORKSTATION_RECIPE_INVALID');
+   return resolve(args.recipe).binding;
+  }
+  const s=known(args?.session_id,action!==SESSION_CANCEL);
+  if(action===SESSION_INPUT&&(!s.interactive||typeof args.input!=='string'||!args.input||Buffer.byteLength(args.input)>4096||args.input.includes('\0')))throw fail('WORKSTATION_INPUT_INVALID');
+  if(action!==SESSION_CANCEL&&action!==SESSION_INPUT)throw fail('WORKSTATION_SESSION_OPERATION_INVALID');
+  return {schema:'vivim.workstation-session-mutation/1',generation,sessionId:args.session_id,action,bindingDigest:digest({args,generation,sessionId:args.session_id,configSha:s.configSha})};
+ }
+ function terminate(){
+  dead=true;const w=worker;worker=null;
+  for(const p of pending.values()){clearTimeout(p.timer);p.reject(fail('WORKSTATION_SESSION_OUTCOME_UNCERTAIN',503));}pending.clear();
+  if(w&&!w.killed){try{w.stdin.end();w.kill();}catch{}}
+ }
+ function boot(helper){
+  if(dead)throw fail('WORKSTATION_SESSION_RECOVERY_REQUIRED',503);
+  if(worker){if(worker.helperSha!==helper.sha||worker.helperPath!==helper.path)throw fail('WORKSTATION_SESSION_RECOVERY_REQUIRED',503);return;}
+  const clean={};if(process.platform==='win32'&&process.env.SystemRoot)clean.SystemRoot=process.env.SystemRoot;
+  const w=spawnWorker(helper.path,[],{env:clean,stdio:['pipe','pipe','ignore'],shell:false,windowsHide:true});
+  worker=w;w.helperSha=helper.sha;w.helperPath=helper.path;
+  let buffer='';
+  w.on('error',terminate);w.on('exit',terminate);w.stdin.on('error',terminate);
+  w.stdout.setEncoding('utf8');w.stdout.on('data',chunk=>{
+   buffer+=chunk;if(buffer.length>262144){terminate();return;}
+   let i;while((i=buffer.indexOf('\n'))>=0){const line=buffer.slice(0,i);buffer=buffer.slice(i+1);let r;
+    try{r=JSON.parse(line);}catch{terminate();return;}
+    const p=pending.get(r?.id);if(!p||typeof r.ok!=='boolean'){terminate();return;}
+    pending.delete(r.id);clearTimeout(p.timer);
+    if(r.ok&&record(r.result))p.resolve(r.result);
+    else p.reject(fail('WORKSTATION_NATIVE_'+(/^[A-Z_]{3,64}$/.test(r.code||'')?r.code:'FAILED'),503));
+   }
+  });
+  // Host exit closes stdin; the native worker drops owned children. Timers for
+  // pending calls keep the event loop alive. No automatic worker restart/replay.
+  w.unref?.();w.stdin.unref?.();w.stdout.unref?.();
+ }
+ function rpc(body){
+  if(dead||!worker||pending.size>=16)throw fail('WORKSTATION_SESSION_RECOVERY_REQUIRED',503);
+  const requestId=++sequence,line=JSON.stringify({id:requestId,...body})+'\n';
+  if(Buffer.byteLength(line)>262144)throw fail('WORKSTATION_SESSION_REQUEST_TOO_LARGE');
+  return new Promise((resolve,reject)=>{
+   const timer=setTimeout(()=>terminate(),10000);pending.set(requestId,{resolve,reject,timer});
+   worker.stdin.write(line,error=>{if(error)terminate();});
+  });
+ }
+ function validate(r,sessionId){if(!record(r)||r.sessionId!==sessionId)throw fail('WORKSTATION_SESSION_OUTCOME_UNCERTAIN',503);return r;}
+ async function start(args,binding,sessionId){
+  if(!id(sessionId)||sessions.has(sessionId))throw fail('WORKSTATION_SESSION_UNKNOWN');
+  const r=resolve(args.recipe);if(digest(r.binding)!==digest(binding))throw fail('WORKSTATION_SESSION_BINDING_STALE');
+  for(const [k,v]of sessions)if(now()>v.expiresAt)sessions.delete(k);
+  if(sessions.size>=64)throw fail('WORKSTATION_SESSION_LIMIT');
+  boot(r.helper);
+  // Record intent before calling native worker; ambiguous start is never retried.
+  sessions.set(sessionId,{configSha:r.configSha,interactive:r.spec.interactive,expiresAt:now()+r.spec.timeoutMs+600000});
+  return validate(await rpc({op:'start',sessionId,...r.spec}),sessionId);
+ }
+ async function read(action,args){
+  known(args?.session_id);const sessionId=args.session_id;
+  if(action===SESSION_STATUS)return validate(await rpc({op:'status',sessionId}),sessionId);
+  if(action!==SESSION_OUTPUT)throw fail('WORKSTATION_SESSION_OPERATION_INVALID');
+  const result=await rpc({op:'output',sessionId,stdoutCursor:cursor(args.stdout_cursor),stderrCursor:cursor(args.stderr_cursor)});
+  validate(result.status,sessionId);known(sessionId);return result;
+ }
+ async function mutate(action,args,binding){
+  if(digest(prepare(action,args))!==digest(binding))throw fail('WORKSTATION_SESSION_BINDING_STALE');
+  const sessionId=args.session_id;
+  return validate(await rpc(action===SESSION_CANCEL?{op:'cancel',sessionId}:{op:'input',sessionId,input:args.input}),sessionId);
+ }
+ return Object.freeze({prepare,start,read,mutate,close:terminate});
+}
