@@ -132,7 +132,7 @@ $children=@(Get-CimInstance Win32_Process -Filter ('ParentProcessId='+$superviso
 if($children.Count -ne 1){throw 'Expected one owned MCP child'}
 $oldPid=$children[0].ProcessId
 Copy-Item -LiteralPath $target -Destination $backup -Recurse;Copy-Item -LiteralPath $launcher -Destination (Join-Path $backup 'Connect-Vivim.ps1')
-$modules=@('host-discovery.cjs','workstation-probe-tunnel.cjs','probe-acceptance.cjs','workstation-tunnel.cjs','tunnel-readonly.cjs')
+$modules=@('host-discovery.cjs','workstation-probe-tunnel.cjs','probe-acceptance.cjs','workstation-tunnel.cjs','maintenance-gate.cjs','tunnel-readonly.cjs')
 try{
  New-Item -ItemType Directory -Path $liveGrant|Out-Null;Protect $liveGrant
  Copy-Item -LiteralPath (Join-Path $grantDir 'grant.json') -Destination (Join-Path $liveGrant 'grant.json')

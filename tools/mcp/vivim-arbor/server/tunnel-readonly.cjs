@@ -6,15 +6,17 @@ const createDiscovery = require('./host-discovery.cjs');
 const {createProbe,name:probeName}=require('./workstation-probe-tunnel.cjs');
 const {createAcceptance}=require('./probe-acceptance.cjs');
 const {createWorkstationTools}=require('./workstation-tunnel.cjs');
+const {createMaintenanceGate,createAdmission}=require('./maintenance-gate.cjs');
 const VERSIONS = ['2025-03-26', '2025-06-18', '2025-11-25'];
 const HOST_NAMES = new Set(['vivim_host_sources', 'vivim_host_capabilities', 'vivim_host_targets', 'vivim_host_capability']);
 const isRecord = x => x !== null && typeof x === 'object' && !Array.isArray(x);
-function createProfile(env = process.env, {fetcher=globalThis.fetch,acceptance=null,workstation=[]}={}) {
+function createProfile(env = process.env, {fetcher=globalThis.fetch,acceptance=null,workstation=[],maintenance=()=>null}={}) {
+  const admission=createAdmission(maintenance);
   const probe=createProbe({env,fetcher})??acceptance;
   const tools = [
     ['vivim_tunnel_health', 'Read the private VIVIM transport profile health. No personal data or actions.',
       {type:'object',properties:{},required:[],additionalProperties:false},
-      () => ({schema:'vivim.tunnel-health/1',status:'ready',profile:workstation.length?'private-workstation':probe?'private-fixed-probe':'private-readonly',hostDiscovery:env.VIVIM_TUNNEL_HOST_DISCOVERY === '1',...(probe?{workstationProbe:true}:{}),...(workstation.length?{workstationTools:workstation.length}:{})})]
+      () => {const maintenanceState=admission.status();return {schema:'vivim.tunnel-health/1',status:maintenanceState?'maintenance':'ready',...(maintenanceState?{maintenance:maintenanceState}:{}),profile:workstation.length?'private-workstation':probe?'private-fixed-probe':'private-readonly',hostDiscovery:env.VIVIM_TUNNEL_HOST_DISCOVERY === '1',...(probe?{workstationProbe:true}:{}),...(workstation.length?{workstationTools:workstation.length}:{})};}]
   ];
   // Explicit opt-in by the local operator, not by remote tool arguments.
   if (env.VIVIM_TUNNEL_HOST_DISCOVERY === '1') {
@@ -55,9 +57,10 @@ function createProfile(env = process.env, {fetcher=globalThis.fetch,acceptance=n
     if (!isRecord(args) || Object.keys(args).some(k=>!Object.hasOwn(schema.properties,k)||typeof args[k]!=='string') ||
         schema.required.some(k=>!Object.hasOwn(args,k))) return error(id,-32602,'Invalid tool arguments');
     try {
-      const result=await d[3](args);
+      const result=p.name==='vivim_tunnel_health'?await d[3](args):await admission.run(p.name,()=>d[3](args));
       return reply(id,{content:[{type:'text',text:JSON.stringify(result)}]});
-    } catch {
+    } catch(e) {
+      if(e?.message==='WORKSTATION_MAINTENANCE')return reply(id,{isError:true,content:[{type:'text',text:'VIVIM is draining for local maintenance; no new effect was admitted.'}]});
       // No underlying exception strings, URLs, credentials or stack traces.
       return reply(id,{isError:true,content:[{type:'text',text:p.name===probeName?'Exact probe unavailable or denied; inspect local Host receipt before retrying':p.name.startsWith('vivim_session_')||p.name.startsWith('vivim_file_')||p.name.startsWith('vivim_directory_')?'Local workstation request denied or outcome uncertain; use same request ID for receipt inspection, never automatically repeat effects':'Local discovery unavailable or denied'}]});
     }
@@ -66,7 +69,7 @@ function createProfile(env = process.env, {fetcher=globalThis.fetch,acceptance=n
 }
 async function main() {
   const healthOnly=process.env.VIVIM_TUNNEL_FORCE_HEALTH_ONLY==='1';
-  const profile=createProfile(process.env,{acceptance:healthOnly?null:createAcceptance(),workstation:healthOnly?[]:createWorkstationTools()});
+  const profile=createProfile(process.env,{acceptance:healthOnly?null:createAcceptance(),workstation:healthOnly?[]:createWorkstationTools(),maintenance:healthOnly?()=>null:createMaintenanceGate()});
   const input=readline.createInterface({input:process.stdin,crlfDelay:Infinity});
   // Sequential dispatch prevents concurrent reads against the existing Host.
   for await (const line of input) {

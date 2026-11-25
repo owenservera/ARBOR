@@ -29,7 +29,7 @@ test('real MCP stdio, protected owner auth, Host HTTP, native session reconnect 
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
  t.after(async()=>{server.closeAllConnections?.();await new Promise(resolve=>server.close(resolve));for(const[k,v]of Object.entries(before))if(v===undefined)delete process.env[k];else process.env[k]=v;try{rmSync(root,{recursive:true,force:true,maxRetries:3,retryDelay:200})}catch{}});
  const source=fileURLToPath(new URL('../../../tools/mcp/vivim-arbor/server/',import.meta.url));
- for(const name of ['tunnel-readonly.cjs','host-discovery.cjs','workstation-probe-tunnel.cjs','probe-acceptance.cjs','workstation-tunnel.cjs'])copyFileSync(path.join(source,name),path.join(serverDir,name));
+ for(const name of ['tunnel-readonly.cjs','host-discovery.cjs','workstation-probe-tunnel.cjs','probe-acceptance.cjs','workstation-tunnel.cjs','maintenance-gate.cjs'])copyFileSync(path.join(source,name),path.join(serverDir,name));
  const grant={schema:'vivim.workstation-tunnel-grant/1',id:rid(),expiresAt:Date.now()+600000,port:server.address().port,dataRoot:data,ownerAuthModule:authModule,ownerAuthSha256:hash(authModule),recipeConfigSha:hash(recipes),rootConfigSha:hash(roots),recipes:['node-version'],roots:['repo'],interactiveRecipes:[],allowWrites:true};
  writeFileSync(path.join(grantDir,'grant.json'),JSON.stringify(grant),{mode:0o600});
  async function calls(requests){
