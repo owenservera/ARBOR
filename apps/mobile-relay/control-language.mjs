@@ -281,7 +281,7 @@ function exactDeviceIntent(text, {catalog,world}) {
       nlclVersion:NCLL_VERSION,worldV:world?.v,tokens:[],suggestions:[],gaps:[]}};
 }
 
-export function interpretControl(text, { catalog, world }) {
+function interpretControlIncumbent(text, { catalog, world }) {
   const raw=String(text??'').trim();
   // Explicit read-program envelope only; ordinary compound/negated commands remain refused.
   const envelope=/^run wiki (read|change) sequence:[ \t]*\r?\n([\s\S]+)$/i.exec(raw);
@@ -371,4 +371,76 @@ export function interpretControl(text, { catalog, world }) {
   }
   if ((reading.confidence ?? 0) < MIN_CONFIDENCE) return { ...base, outcome: 'interpretation_required', candidate: { actionId: chosen.id, args } };
   return { ...base, outcome: 'candidate', candidate: { actionId: chosen.id, args } };
+}
+
+
+// A small language-neutral lexical bridge for zero-argument reads. Full
+// catalog phrases, not manually enumerated commands, supply the vocabulary.
+// The incumbent NLCL must independently resolve a catalog example to the
+// exact current action; no mutation, fuzzy match or invented slot is allowed.
+const READ_LEXEMES = Object.freeze({
+  display:'show', enumerate:'list', retrieve:'read',
+  muestra:'show', muestrame:'show', mostrar:'show', mostra:'show', mostrarme:'show',
+  consulta:'show', consultar:'show', visualiza:'show',
+  lista:'list', listar:'list', enumera:'list', enumerar:'list', llista:'list', llistar:'list',
+  lee:'read', leer:'read', llegeix:'read', llegir:'read',
+  paginas:'pages', pagines:'pages', pagina:'page',
+  tema:'theme', estado:'status', estat:'status', actual:'current',
+  mi:'my', mis:'my', meu:'my', meva:'my', meus:'my', meves:'my',
+  preferencias:'preferences', preferencies:'preferences',
+  telefonos:'phones', telefons:'phones', emparejados:'paired', aparellats:'paired',
+  capacidades:'capabilities', capacitats:'capabilities', diario:'journal', diari:'journal',
+});
+const READ_ARTICLES = new Set(['the','el','la','los','las','els','les','de','del','dels']);
+const READ_VERBS = new Set(['show','list','read','inspect','review','summarize','view']);
+function readVocabularyKey(value) {
+  const text=fold(value).trim();
+  // No punctuation except a terminal question mark/period, quotes, opaque
+  // IDs, or unconsumed clauses. All topic words must match.
+  if(!/^[a-z]+(?:\s+[a-z]+)*[.?]?$/.test(text))return null;
+  let tokens=text.replace(/[.?]$/,'').split(/\s+/);
+  if(tokens[0]==='please')tokens=tokens.slice(1);
+  if(tokens.slice(0,2).join(' ')==='por favor')tokens=tokens.slice(2);
+  if(tokens.slice(-2).join(' ')==='por favor')tokens=tokens.slice(0,-2);
+  tokens=tokens.filter(t=>!READ_ARTICLES.has(t)).map(t=>Object.hasOwn(READ_LEXEMES,t)?READ_LEXEMES[t]:t);
+  if(tokens.length<2||!READ_VERBS.has(tokens[0])||tokens.slice(1).some(t=>READ_VERBS.has(t)))return null;
+  // Zero-argument reads have no argument order to alter. Preserve all topic
+  // words and their multiplicity while allowing multilingual word order.
+  return tokens[0]+' '+tokens.slice(1).sort().join(' ');
+}
+function resolveCatalogReadVocabulary(text,{catalog,world},base) {
+  const key=readVocabularyKey(text);
+  if(!key)return base;
+  const matches=[];
+  for(const action of catalog.actions){
+    if(action.risk!=='R0'||!['source_wired','verified'].includes(action.readiness)||
+      !action.language||Object.keys(action.args).length!==0)continue;
+    const phrases=[...new Set([action.title,action.language.reading,...action.examples].filter(v=>typeof v==='string'))];
+    if(!phrases.some(phrase=>readVocabularyKey(phrase)===key))continue;
+    for(const example of action.examples){
+      const checked=interpretControlIncumbent(example,{catalog,world});
+      if(checked.outcome==='candidate'&&checked.candidate?.actionId===action.id&&
+        Object.keys(checked.candidate.args??{}).length===0){
+        matches.push({action,example,checked});break;
+      }
+    }
+  }
+  matches.sort((a,b)=>a.action.id<b.action.id?-1:a.action.id>b.action.id?1:0);
+  if(!matches.length)return base;
+  if(matches.length!==1)return {...base,outcome:'clarification_required',
+    question:'Which registered read operation do you mean?',choices:matches.slice(0,8).map(m=>m.action.id),
+    feedback:{...base.feedback,status:'ambiguous'}};
+  const {action,example,checked}=matches[0];
+  // Original source offsets remain intact. Canonical example tokens never
+  // masquerade as spans of this draft.
+  return {...base,outcome:'candidate',candidate:{actionId:action.id,args:{}},
+    feedback:{...base.feedback,status:'ok',confidence:checked.feedback.confidence,
+      canonical:checked.feedback.canonical,reading:checked.feedback.reading,gaps:[],
+      suggestions:[{kind:'correction',text:example,display:action.title,
+        detail:'Exact catalog read vocabulary; nothing executed.'}]}};
+}
+export function interpretControl(text, options) {
+  const baseline=interpretControlIncumbent(text,options);
+  if(baseline.outcome!=='interpretation_required')return baseline;
+  return resolveCatalogReadVocabulary(String(text??''),options,baseline);
 }
