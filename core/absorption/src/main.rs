@@ -20,6 +20,10 @@ fn run() -> Result<Value, &'static str> {
             let projection = serde_json::to_vec(v.get("projection").ok_or("PROJECTION_REQUIRED")?).map_err(|_| "INPUT_INVALID")?;
             store.ingest(&projection, &scope)
         },
+        "handoff" => {
+            let h = serde_json::from_value(v).map_err(|_| "HANDOFF_INVALID")?;
+            store.ingest_handoff(&h)
+        },
         "read" => store.read(v.get("id").and_then(Value::as_str).ok_or("ID_REQUIRED")?),
         _ => Err("UNKNOWN_OPERATION"),
     }
