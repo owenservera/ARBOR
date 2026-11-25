@@ -65,7 +65,8 @@ function createProfile(env = process.env, {fetcher=globalThis.fetch,acceptance=n
   return {dispatch};
 }
 async function main() {
-  const profile=createProfile(process.env,{acceptance:createAcceptance(),workstation:createWorkstationTools()});
+  const healthOnly=process.env.VIVIM_TUNNEL_FORCE_HEALTH_ONLY==='1';
+  const profile=createProfile(process.env,{acceptance:healthOnly?null:createAcceptance(),workstation:healthOnly?[]:createWorkstationTools()});
   const input=readline.createInterface({input:process.stdin,crlfDelay:Infinity});
   // Sequential dispatch prevents concurrent reads against the existing Host.
   for await (const line of input) {

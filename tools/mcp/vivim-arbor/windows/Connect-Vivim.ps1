@@ -43,13 +43,15 @@ function Install-TunnelClient {
 }
 function Test-LocalMcp {
     $env:VIVIM_TUNNEL_HOST_DISCOVERY = '0'
+    $env:VIVIM_TUNNEL_FORCE_HEALTH_ONLY = '1'
     $messages = @(
         '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25"}}',
         '{"jsonrpc":"2.0","method":"notifications/initialized"}',
         '{"jsonrpc":"2.0","id":2,"method":"tools/list"}',
         '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"vivim_tunnel_health"}}'
     )
-    $lines = @($messages | & $node $server)
+    try { $lines = @($messages | & $node $server) }
+    finally { Remove-Item Env:VIVIM_TUNNEL_FORCE_HEALTH_ONLY -ErrorAction SilentlyContinue }
     if ($LASTEXITCODE -ne 0 -or $lines.Count -ne 3) { throw 'Local MCP handshake failed.' }
     $list = $lines[1] | ConvertFrom-Json
     $response = $lines[2] | ConvertFrom-Json
