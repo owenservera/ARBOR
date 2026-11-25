@@ -217,3 +217,76 @@ fn symbol_projection_reports_limit_instead_of_silently_omitting_rows() {
     assert_eq!(meaning["truncated"], true);
     assert!(meaning["limitsReached"].as_array().unwrap().iter().any(|x| x == "symbol-results"));
 }
+
+#[test]
+fn persistent_session_reuses_mixed_programs_and_refuses_stale_scope_and_policy() {
+    use hqkg::native_program::{DevelopmentSession, SemanticTask};
+    let graph = semantic_graph(false, 1, 0);
+    let (_, policy, mut token) = task(&graph_for_policy());
+    token.graph_epoch = graph.epoch();
+    let mut session = DevelopmentSession::new(graph, token.clone()).unwrap();
+    let cancel = CancellationToken::new();
+    let key = "vivim.example-capability@1";
+    let (_, first) = session.execute_semantic(&token,key,SemanticTask::Inspect,&policy,Budget::default(),&cancel).unwrap();
+    assert_eq!(first.state,RunState::Complete);
+    assert!(first.outputs.iter().all(|o|o.state==OutputState::Computed));
+    let (_, impact) = session.execute_semantic(&token,key,SemanticTask::Impact,&policy,Budget::default(),&cancel).unwrap();
+    assert_eq!(impact.state,RunState::Complete);
+    assert_eq!(session.cache_entries(),5);
+    let (_, repeated) = session.execute_semantic(&token,key,SemanticTask::Inspect,&policy,Budget::default(),&cancel).unwrap();
+    assert!(repeated.outputs.iter().all(|o|o.state==OutputState::Reused));
+    assert_eq!(repeated.outputs.iter().map(|o|&o.data).collect::<Vec<_>>(),first.outputs.iter().map(|o|&o.data).collect::<Vec<_>>());
+    let mut stale=token.clone();stale.graph_epoch+=1;
+    assert!(session.execute_semantic(&stale,key,SemanticTask::Inspect,&policy,Budget::default(),&cancel).is_err());
+    stale=token.clone();stale.namespace.owner="another-owner".into();
+    assert!(session.execute_semantic(&stale,key,SemanticTask::Inspect,&policy,Budget::default(),&cancel).is_err());
+    let mut denied=policy.clone();denied.max_input_class=DataClass::Public;
+    assert!(session.execute_semantic(&token,key,SemanticTask::Inspect,&denied,Budget::default(),&cancel).is_err());
+    let cancelled=CancellationToken::new();cancelled.cancel();
+    assert!(session.execute_semantic(&token,key,SemanticTask::Inspect,&policy,Budget::default(),&cancelled).is_err());
+    assert_eq!(session.cache_entries(),5);
+}
+
+#[test]
+fn finite_batch_cli_reuses_mixed_programs_and_never_emits_partial_response() {
+    use std::{io::Write,process::{Command,Stdio}};
+    use serde_json::json;
+    let graph=semantic_graph(false,1,0);
+    let path=std::env::temp_dir().join(format!("hqkg-semantic-batch-{}.hqj",std::process::id()));
+    let _=std::fs::remove_file(&path);
+    hqkg::Journal::new(&path).save(&graph).unwrap();
+    let invoke=|epoch:u64,request:Value|{
+        let mut child=Command::new(env!("CARGO_BIN_EXE_hqkg-development"))
+            .arg(&path).arg("semantic-batch").arg(epoch.to_string())
+            .stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(Stdio::piped()).spawn().unwrap();
+        child.stdin.take().unwrap().write_all(request.to_string().as_bytes()).unwrap();
+        child.wait_with_output().unwrap()
+    };
+    let key="vivim.example-capability@1";
+    let inspect=json!({"semanticId":key,"task":"inspect"});
+    let impact=json!({"semanticId":key,"task":"impact"});
+    let request=json!({"schema":"hqkg.semantic-batch/1","requests":[inspect.clone(),impact,inspect.clone()]});
+    let output=invoke(graph.epoch(),request.clone());
+    assert!(output.status.success(),"{}",String::from_utf8_lossy(&output.stderr));
+    let body:Value=serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(body["complete"],true);
+    assert_eq!(body["executionAuthorized"],false);
+    assert_eq!(body["effectPerformed"],false);
+    assert!(body["results"][2]["outputs"].as_array().unwrap().iter().all(|o|o["state"]=="reused"));
+    for (a,b) in body["results"][0]["outputs"].as_array().unwrap().iter().zip(body["results"][2]["outputs"].as_array().unwrap()){
+        assert_eq!(a["result"],b["result"]);
+    }
+    let invalid=[
+        (graph.epoch()+1,request),
+        (graph.epoch(),json!({"schema":"hqkg.semantic-batch/1","requests":[inspect.clone(),{"semanticId":"missing@1","task":"inspect"}]})),
+        (graph.epoch(),json!({"schema":"hqkg.semantic-batch/1","requests":[{"semanticId":key,"task":"inspect","extra":true}]})),
+        (graph.epoch(),json!({"schema":"hqkg.semantic-batch/1","requests":vec![inspect.clone();33]})),
+        (graph.epoch(),json!({"schema":"hqkg.semantic-batch/1","requests":[{"semanticId":key,"task":"effect"}]})),
+    ];
+    for(epoch,body)in invalid{
+        let rejected=invoke(epoch,body);
+        assert!(!rejected.status.success());
+        assert!(rejected.stdout.is_empty(),"must not emit partial output");
+    }
+    std::fs::remove_file(&path).unwrap();
+}
