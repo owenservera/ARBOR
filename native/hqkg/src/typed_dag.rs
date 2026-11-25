@@ -238,9 +238,11 @@ struct Cached {
     provenance: Vec<String>,
     source_ids: BTreeSet<String>,
 }
-/// In-memory-only exact cache. Namespace is part of every cache key.
+/// In-memory-only exact cache. Namespace and validated program identity
+/// are part of each key. Bare plans retain their existing step-key scope.
+type CacheKey = (Namespace, Option<String>, String);
 pub struct IncrementalCache {
-    values: BTreeMap<(Namespace, String), Cached>,
+    values: BTreeMap<CacheKey, Cached>,
     max_entries: usize,
     max_bytes: usize,
 }
@@ -268,9 +270,10 @@ impl IncrementalCache {
     pub fn approximate_bytes(&self) -> usize {
         self.values
             .iter()
-            .map(|((scope, id), v)| {
+            .map(|((scope, program, id), v)| {
                 scope.owner.len()
                     + id.len()
+                    + program.as_ref().map_or(0, String::len)
                     + v.engine.len()
                     + v.operation.len()
                     + v.stamp.len()
@@ -284,9 +287,10 @@ impl IncrementalCache {
         let mut bytes = self.approximate_bytes();
         while self.values.len() > self.max_entries || bytes > self.max_bytes {
             match self.values.pop_first() {
-                Some(((scope, id), v)) => {
+                Some(((scope, program, id), v)) => {
                     let removed = scope.owner.len()
                         + id.len()
+                        + program.as_ref().map_or(0, String::len)
                         + v.engine.len()
                         + v.operation.len()
                         + v.stamp.len()
@@ -302,11 +306,11 @@ impl IncrementalCache {
     pub fn invalidate(&mut self, ns: &Namespace, ids: &BTreeSet<String>) -> usize {
         let before = self.values.len();
         self.values
-            .retain(|(scope, id), _| scope != ns || !ids.contains(id));
+            .retain(|(scope, _, id), _| scope != ns || !ids.contains(id));
         before - self.values.len()
     }
     pub fn clear_namespace(&mut self, ns: &Namespace) {
-        self.values.retain(|(scope, _), _| scope != ns);
+        self.values.retain(|(scope, _, _), _| scope != ns);
     }
     /// Bridge existing GraphChangeSet apply reports to namespace-scoped
     /// incremental computation. Source IDs are exact; unrelated domains
@@ -318,7 +322,7 @@ impl IncrementalCache {
         report: &crate::graph_change_set::ApplyReport,
     ) -> usize {
         let before = self.values.len();
-        self.values.retain(|(scope, _), cached| {
+        self.values.retain(|(scope, _, _), cached| {
             scope != ns || cached.source_ids.is_disjoint(&report.invalidation_set)
         });
         before - self.values.len()
@@ -443,7 +447,7 @@ impl<'a> DagExecutor<'a> {
         budget: Budget,
         cancel: &CancellationToken,
     ) -> Result<DagReport> {
-        self.run(&program.plan(), actual, cache, budget, cancel)
+        self.run_scoped(&program.plan(), Some(program.identity.stamp()), actual, cache, budget, cancel)
     }
     /// All-or-nothing cache commit. A failed/cancelled plan retains the prior cache.
     /// Dependencies pass their actual output as length-framed input to downstream steps.
@@ -457,6 +461,10 @@ impl<'a> DagExecutor<'a> {
         budget: Budget,
         cancel: &CancellationToken,
     ) -> Result<DagReport> {
+        self.run_scoped(plan, None, actual, cache, budget, cancel)
+    }
+    fn run_scoped(&self, plan: &TransformPlan, program: Option<String>, actual: &RevisionToken,
+        cache: &mut IncrementalCache, budget: Budget, cancel: &CancellationToken) -> Result<DagReport> {
         let ordered = validate(plan, actual, budget)?;
         let mut report = DagReport {
             schema: CONTRACT,
@@ -472,7 +480,7 @@ impl<'a> DagExecutor<'a> {
             plan.steps.iter().map(|s| (s.id.as_str(), s)).collect();
         // Report owns each output once; dependency lookup stores only its index.
         let mut resolved: BTreeMap<String, usize> = BTreeMap::new();
-        let mut staged: BTreeMap<(Namespace, String), Cached> = BTreeMap::new();
+        let mut staged: BTreeMap<CacheKey, Cached> = BTreeMap::new();
         let mut run_generations: BTreeMap<String, Arc<()>> = BTreeMap::new();
         let start = std::time::Instant::now();
         let mut bytes = 0usize;
@@ -550,7 +558,7 @@ impl<'a> DagExecutor<'a> {
                 field(&mut input, &previous.data);
                 provenance.extend(previous.provenance.iter().cloned());
                 // Inherit transitive dependencies, including for source-free steps.
-                let dep_key = (plan.namespace.clone(), dep.clone());
+                let dep_key = (plan.namespace.clone(), program.clone(), dep.clone());
                 let dependency = staged.get(&dep_key).or_else(|| cache.values.get(&dep_key))
                     .expect("completed dependency has staged or retained cache metadata");
                 source_ids.extend(dependency.source_ids.iter().cloned());
@@ -563,7 +571,7 @@ impl<'a> DagExecutor<'a> {
                 break;
             }
             let provenance: Vec<String> = provenance.into_iter().collect();
-            let key = (plan.namespace.clone(), id.clone());
+            let key = (plan.namespace.clone(), program.clone(), id.clone());
             let cached = cache.values.get(&key);
             let (data, state, generation) = match cached {
                 Some(c) if c.generation == lease.generation()
