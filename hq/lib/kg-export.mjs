@@ -135,37 +135,46 @@ function currentUniverse(db) {
   // Semantic observations are data, not registry promotions or verified runtime
   // behavior. Keep path-stable file anchors and shared versioned identities.
   const groups=new Map(), semantic=new Map();
-  const tagRows=db.prepare("SELECT file_id,kind,ref,line FROM annotations WHERE kind IN ('v2:type','v2:capability','v2:contract','v2:emits','v2:consumes','v2:action') AND ref IS NOT NULL ORDER BY file_id,kind,ref,line").all();
+  const extras=(table,names)=>{const columns=new Set(db.prepare('PRAGMA table_info('+table+')').all().map(c=>c.name));return names.map(n=>columns.has(n)?n:'NULL AS '+n).join(',');};
+  const tagRows=db.prepare("SELECT file_id,kind,ref,line,"+extras('annotations',['symbol_qualified_name','symbol_kind'])+" FROM annotations WHERE kind IN ('v2:type','v2:capability','v2:contract','v2:emits','v2:consumes','v2:action') AND ref IS NOT NULL ORDER BY file_id,kind,ref,line").all();
   for(const row of tagRows){
     const file=byFileId.get(row.file_id);
     if(!file||typeof row.ref!=='string'||row.ref.length>180||! /^[a-z0-9][a-z0-9._-]*@\d+(?:\.\d+)*$/.test(row.ref)||!Number.isSafeInteger(row.line)||row.line<1)continue;
     const tag=row.kind.slice(3);
     const key=JSON.stringify([file.id,tag,row.ref]);
-    if(!groups.has(key))groups.set(key,{file,tag,ref:row.ref,lines:[]});
+    if(!groups.has(key))groups.set(key,{file,tag,ref:row.ref,lines:[],bindings:[]});
     groups.get(key).lines.push(row.line);
+    groups.get(key).bindings.push([row.symbol_qualified_name,row.symbol_kind]);
   }
   const graphId=(kind,...parts)=>'hqg1:'+sha256([kind,...parts].join('\u0000'));
-  // File/name/kind groups preserve identity across line shifts. Multiple
-  // declarations of the same name/kind are explicitly ambiguous: the current
-  // index does not prove qualified AST ownership or call-site resolution.
+  // Preserve top-level identities, while AST-qualified items use their lexical
+  // scope. Same-scope duplicates remain ambiguous; no name resolution asserted.
   const symbolGroups=new Map();
-  for(const row of db.prepare('SELECT file_id,name,kind,line,end_line,exported FROM symbols ORDER BY file_id,name,kind,line,end_line').all()){
+  const isDigest=v=>typeof v==='string'&&/^[a-f0-9]{64}$/.test(v);
+  const syntaxSymbols=new Map();
+  for(const row of db.prepare('SELECT file_id,name,kind,line,end_line,exported,'+extras('symbols',['qualified_name','syntax_digest','signature_digest'])+' FROM symbols ORDER BY file_id,name,kind,line,end_line').all()){
     const file=byFileId.get(row.file_id);
-    if(!file||typeof row.name!=='string'||row.name.length>180||! /^[A-Za-z_$][A-Za-z0-9_$:.]*$/.test(row.name)
+    const syntax=typeof row.qualified_name==='string'&&row.qualified_name.length<=512&&row.qualified_name.length>0&&isDigest(row.syntax_digest)&&isDigest(row.signature_digest);
+    if(!file||typeof row.name!=='string'||row.name.length>180||!(syntax?!/[\u0000-\u001f\u007f]/.test(row.name):/^[A-Za-z_$][A-Za-z0-9_$:.]*$/.test(row.name))
        ||typeof row.kind!=='string'||! /^[a-zA-Z][a-zA-Z0-9_-]{0,63}$/.test(row.kind)
        ||!Number.isSafeInteger(row.line)||row.line<1)continue;
-    const key=JSON.stringify([file.id,row.name,row.kind]);
-    if(!symbolGroups.has(key))symbolGroups.set(key,{file,name:row.name,kind:row.kind,occurrences:[]});
-    symbolGroups.get(key).occurrences.push([row.line,Number.isSafeInteger(row.end_line)&&row.end_line>=row.line?row.end_line:row.line,row.exported===1]);
+    const key=JSON.stringify([file.id,syntax?row.qualified_name:row.name,row.kind]);
+    if(!symbolGroups.has(key))symbolGroups.set(key,{file,name:row.name,kind:row.kind,occurrences:[],syntax:[]});
+    const group=symbolGroups.get(key);
+    group.occurrences.push([row.line,Number.isSafeInteger(row.end_line)&&row.end_line>=row.line?row.end_line:row.line,row.exported===1]);
+    if(syntax)group.syntax.push({qualified_name:row.qualified_name,syntax_digest:row.syntax_digest,signature_digest:row.signature_digest});
   }
   for(const [key,g] of [...symbolGroups].sort(([a],[b])=>a<b?-1:a>b?1:0)){
     const id=graphId('indexed-symbol',key);
     const count=g.occurrences.length;
+    const syntax=count===1&&g.syntax.length===1?g.syntax[0]:null;
+    if(syntax)syntaxSymbols.set(key,{id,...syntax});
     nodes.push({type:'node',id,kind:'source-symbol',title:g.name,metadata:{
       source_path:g.file.rootPath,content_sha256:g.file.hash,project:g.file.project,
       symbol_name:g.name,symbol_kind:g.kind,status:count===1?'indexed-not-live-checked':'ambiguous',
       first_line:g.occurrences[0][0],occurrence_count:count,exported:g.occurrences.some(x=>x[2]),
-      anchor_digest:sha256(JSON.stringify([key,g.file.hash,g.occurrences])),domain:'development'
+      ...(syntax?{...syntax,assurance:'syntax-only'}:{}),
+      anchor_digest:sha256(JSON.stringify(syntax?[key,g.file.hash,g.occurrences,syntax]:[key,g.file.hash,g.occurrences])),domain:'development'
     }});
     edges.push({type:'edge',id:graphId('contains-indexed-symbol',g.file.id,id),from:g.file.id,to:id,
       relation:'contains-indexed-symbol',weight:1,metadata:{evidence_class:'indexed-symbol-occurrence'}});
@@ -177,13 +186,18 @@ function currentUniverse(db) {
         semantic_id:g.ref,status:'observed-reference',domain:'development',content_sha256:sha256(g.ref)}});
     }
     const lines=[...g.lines].sort((a,b)=>a-b);
+    const bound=lines.length===1&&g.bindings[0][0]&&g.bindings[0][1]
+      ?syntaxSymbols.get(JSON.stringify([g.file.id,...g.bindings[0]])):null;
     nodes.push({type:'node',id:anchorId,kind:'semantic-file-anchor',title:g.ref,metadata:{
       semantic_id:g.ref,source_path:g.file.rootPath,content_sha256:g.file.hash,project:g.file.project,
       annotation_kind:g.tag,status:lines.length===1?'indexed-not-live-checked':'ambiguous',
-      occurrence_count:lines.length,first_line:lines[0],anchor_digest:sha256(JSON.stringify([key,g.file.hash,lines])),
+      occurrence_count:lines.length,first_line:lines[0],anchor_digest:sha256(JSON.stringify(bound?[key,g.file.hash,lines,bound.id,bound.syntax_digest]:[key,g.file.hash,lines])),
+      ...(bound?{bound_symbol_id:bound.id,assurance:'syntax-only'}:{}),
       domain:'development'}});
     edges.push({type:'edge',id:graphId('has-semantic-anchor',g.file.id,anchorId),from:g.file.id,to:anchorId,relation:'has-semantic-anchor',weight:1,metadata:{}});
     edges.push({type:'edge',id:graphId('references-semantic-id',anchorId,semId),from:anchorId,to:semId,relation:'references-semantic-id',weight:1,metadata:{}});
+    if(bound)edges.push({type:'edge',id:graphId('binds-indexed-symbol',anchorId,bound.id),from:anchorId,to:bound.id,
+      relation:'binds-indexed-symbol',weight:1,metadata:{evidence_class:'rust-ast-doc-ownership',content_sha256:g.file.hash,source_line:lines[0]}});
     // A direct typed adjacency is a convenience for traversal, never a runtime
     // call/effect assertion. Ambiguous observations remain only on anchor edges.
     if(lines.length===1){
