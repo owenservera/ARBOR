@@ -2,6 +2,7 @@
 // Only DOM_TURNS is covered by acceptance.domDigest. No unbound SHAPES/route evidence,
 // browser effects, text, or guessed account/native-conversation identity is admitted.
 import { createHash } from 'node:crypto';
+import { canonicalJson } from '../store/integrity.mjs';
 import { profileAdmission } from '../intel/profile-evidence.mjs';
 import { scopeKey } from './adapter-evidence-intake.mjs';
 import { captureToAdapterEvents } from './adapter-capture-to-signals.mjs';
@@ -34,6 +35,9 @@ export function acceptedSessionToAdapterEvents({ scope, verified } = {}) {
     fail('SESSION_SCOPE_MISMATCH');
   const turns = session.kv.get('DOM_TURNS', null);
   if (!Array.isArray(turns) || turns.length > 10000) fail('DOM_TURNS_INVALID');
+  // The actual object used below must be the accepted object, not a second unbound
+  // read of a mutable KV file after the manifest was validated.
+  if (hash(canonicalJson(turns)) !== verified.domDigest) fail('DOM_TURNS_DIGEST_CHANGED');
   const ref = domEvidenceRef(session.id, verified.domDigest), dom = [], seen = new Set();
   for (let i = 0; i < turns.length; i++) {
     const t = turns[i], role = t?.role, attr = t?.roleAttribute;
