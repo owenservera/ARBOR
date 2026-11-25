@@ -366,3 +366,66 @@ export async function readPinnedBlob(pin, path, {
   await authorized(adapter, authorize, 'source.blob.read', pin.scope, ctx);
   return bytes;
 }
+
+/** Bounded all-or-nothing reads from one Host-authorized immutable manifest. */
+export async function readPinnedBlobs(pin, paths, {
+  adapter, authorize, manifest, signal, maxBytesPerFile = 65536, maxTotalBytes = 262144,
+} = {}) {
+  checkPin(pin);
+  checkCancel(signal);
+  if (!Array.isArray(paths) || paths.length < 1 || paths.length > 16 ||
+      !Number.isSafeInteger(maxBytesPerFile) || maxBytesPerFile < 1 || maxBytesPerFile > 65536 ||
+      !Number.isSafeInteger(maxTotalBytes) || maxTotalBytes < 1 || maxTotalBytes > 262144)
+    fail('RESOURCE_LIMIT', 'invalid_batch_limit');
+  const requested = Array.from(paths, path => safePath(path));
+  if (new Set(requested).size !== requested.length) fail('ID_CONFLICT', 'duplicate_batch_path');
+  if (!pin.manifestDigest || !manifest || manifest.schema !== MANIFEST_SCHEMA ||
+      manifest.pinId !== pin.pinId || manifest.repoIdentity !== pin.repoIdentity ||
+      manifest.resolvedCommitSha !== pin.resolvedCommitSha || manifest.rootTreeSha !== pin.rootTreeSha ||
+      manifest.subPath !== pin.subPath || !Array.isArray(manifest.entries))
+    fail('ID_CONFLICT', 'sealed_manifest_required');
+  if (manifest.manifestDigest !== pin.manifestDigest || manifestDigestOf(manifest) !== pin.manifestDigest)
+    fail('DIGEST_CONFLICT', 'manifest_modified');
+  const ctx = path => ({ repoIdentity: pin.repoIdentity, commitSha: pin.resolvedCommitSha,
+    sourceGrantRef: pin.sourceGrantRef, path });
+  // Preflight all paths before reading any bytes. No partial result is returned on denial.
+  const entries = requested.map(path => {
+    if (sensitivePath(path) || (pin.subPath && !(path === pin.subPath || path.startsWith(pin.subPath + '/'))))
+      fail('SOURCE_UNAUTHORIZED', 'blob_not_readable');
+    const entry = manifest.entries.find(e => e.path === path);
+    if (!entry || entry.kind !== 'file' || entry.excludedReason) fail('SOURCE_UNAUTHORIZED', 'blob_not_readable');
+    return entry;
+  });
+  const knownBytes = entries.reduce((sum, entry) => {
+    if (entry.bytes !== null && entry.bytes > maxBytesPerFile) fail('RESOURCE_LIMIT', 'blob_size_limit');
+    return sum + (entry.bytes ?? 0);
+  }, 0);
+  if (knownBytes > maxTotalBytes) fail('RESOURCE_LIMIT', 'batch_size_limit');
+  for (const path of requested) {
+    checkCancel(signal);
+    await authorized(adapter, authorize, 'source.blob.read', pin.scope, ctx(path));
+  }
+  const files = [];
+  let totalBytes = 0;
+  for (const path of requested) {
+    checkCancel(signal);
+    const remaining = maxTotalBytes - totalBytes;
+    if (remaining < 1) fail('RESOURCE_LIMIT', 'batch_size_limit');
+    const bytes = await readPinnedBlob(pin, path, { adapter, authorize, manifest,
+      maxBytes: Math.min(maxBytesPerFile, remaining) });
+    checkCancel(signal);
+    totalBytes += bytes.length;
+    files.push(Object.freeze({ path, blobSha: gitBlobSha(bytes), size: bytes.length, bytes }));
+  }
+  // Re-evaluate every path before release, including paths read earlier in the batch.
+  for (const path of requested) {
+    checkCancel(signal);
+    await authorized(adapter, authorize, 'source.blob.read', pin.scope, ctx(path));
+  }
+  checkCancel(signal);
+  if (manifest.manifestDigest !== pin.manifestDigest || manifestDigestOf(manifest) !== pin.manifestDigest)
+    fail('DIGEST_CONFLICT', 'manifest_modified');
+  return Object.freeze({ schema: 'arbor.hvi.pinned-blob-batch/1', pinId: pin.pinId,
+    repoIdentity: pin.repoIdentity, resolvedCommitSha: pin.resolvedCommitSha,
+    manifestDigest: pin.manifestDigest, totalBytes, files: Object.freeze(files) });
+}
