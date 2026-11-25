@@ -2,6 +2,12 @@
 2026-11-25 | R001 | Read this before continuing development.
 
 
+## R013 — takeover and owner priority correction (2026-11-25)
+- Fresh browser call to VIVIM tunnel health returned ready/private-readonly/hostDiscovery=false. Only the health tool is callable in this session; no commercial Desktop Commander call used.
+- Latest observed ARBOR baseline d53c5c94a1f20651ec797670e4f0bfb02da47edb; private engineering plugin v0.4.1 verified in account; local v0.4.1 installation recorded in R008. Installed stdio smoke and Host authorization still open. R008/R009 supersede stale historical baseline paragraphs.
+- Owner clarified primary goal is full Desktop Commander replacement, not Codex. U10/N02–N05 now precede standalone native agent work. A tentative Codex child-lifecycle claim was released in Labs without source changes. Preserve existing Codex observer.
+- Next: coordinate N02 Host integration with incumbent PY-001 / Session 03 owner, continue independent N03/N04 native source work as available, and verify each admitted capability end to end via VIVIM. No new grant or deployment in this takeover. See [PLAN.md](PLAN.md) priority correction and [NATIVE-WORKSTATION-PARITY.md](NATIVE-WORKSTATION-PARITY.md).
+
 ## R012 — Session 04 source-read composition and grant identity (2026-11-25)
 - [Metadata and stable exports cd00ee5](https://github.com/owenservera/ARBOR/commit/cd00ee57f7ba41d59d28a90d0b4ef0f45888ab92): existing HVI sealed manifest now supports bounded prefix listing, literal filename matching, exact metadata inspection and keyset pagination; no file bytes or symlink destinations returned. Public source module exports `readPinnedBlobs` and `queryPinnedEntries`. Cloud Node v22.16.0 focused module **6/6 PASS**, exit 0; test blob b126c81fe40e3b65330eb21a038587eaaf09b032, actual common.mjs blob 4277ccf0027f30b6b4d931920e8b506ac9f7ced6, three canonical dependency excerpts length/FNV64 matched (b6226bad4c094009, 126bbc701bf502f, 82ac6d434283e4dd), new function FNV64 ca07b5a2e88bf2fa. Full repository suite UNRUN.
 - [Existing Host composition 3789331](https://github.com/owenservera/ARBOR/commit/3789331d6f944be122d0b3f871709d0eb1889cf6): existing HVI read port exposes internal `readWorkstation(input, {adapter, sourceGrantRef, signal})`, exact committed SHA only. Nine focused V8 boundary assertions passed using injected source callbacks. Four full Node integration tests added but UNRUN. No new catalog entry, route, transport, grant, executor or scheduler.
@@ -79,9 +85,9 @@ Continue the all-in-one VIVIM ARBOR personal AI control plane until implemented,
 
 ## Current critical blockers
 - Browser-to-PC health transport independently verified; scoped Host OAuth, revocation and live integration still open.
-- Workstation installed plugin remains v0.2.1 until verified upgrade.
+- Workstation installation v0.4.1 verified in R008; installed smoke and live Host acceptance remain open.
 - No live v0.4.0 Host-authenticated tool acceptance.
-- Native CLI agents beyond ZCode observer are catalogued/version-probed only; web AI dispatch and full task lifecycle still incomplete.
+- ZCode and Codex native read-only observers have historical live evidence; full agent execution and web AI dispatch remain incomplete.
 - Do not confuse 1,000 research targets or Studio internal descriptors with executable admitted capabilities.
 
 ## Copy-paste restart prompt

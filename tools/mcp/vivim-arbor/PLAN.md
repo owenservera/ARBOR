@@ -1,5 +1,5 @@
 # VIVIM ARBOR — Universal Personal AI engineering plan
-Revision R001 | 2026-11-25 | Owner-directed product evolution
+Revision R002 | 2026-11-25 | Owner-directed product evolution
 
 ## Mission
 One personal AI operating layer, independent of any individual model, agent, device or interface. My machine, my data, my AI. Build capabilities once, reuse them deterministically where possible, and retain evidence. The private MCP is an access surface for ARBOR, not a separate orchestration engine.
@@ -12,6 +12,14 @@ One personal AI operating layer, independent of any individual model, agent, dev
 - ChatGPT cloud coding directly to GitHub main, no force push or branch proliferation. Local ZCode/Codex for local-only integration, build and test. Check current claims before editing shared files.
 - VIVIM-owned tools first. Use commercial Desktop Commander only for a precisely identified local capability gap, then migrate the gap into VIVIM and verify. Do not spend relay credits on repository reads, ordinary cloud coding or repeated polling.
 - Existing five-lane operations and model/provider registry remain authoritative. Do not create another task ledger or model router. Distinguish installed, reachable, authenticated, tested, admitted and live-accepted.
+
+## Owner priority clarification — R013 (2026-11-25)
+**Primary objective: replace Desktop Commander with a complete VIVIM-owned workstation control plane, then exceed its capabilities. Codex is one optional agent adapter, not the project objective.**
+U10 (N02–N05 in [NATIVE-WORKSTATION-PARITY.md](NATIVE-WORKSTATION-PARITY.md)) moves ahead of standalone U04–U06 agent work. U01 authenticated connectivity and U02 installed/live acceptance remain enabling dependencies, not substitutes for parity. Preserve the already working independent health tunnel; it is health-only and cannot currently execute workstation operations.
+
+Execution order: (1) existing Host-approved scoped file read/list/inspect/multi-read/search; (2) exact edit/write/move/mkdir/PDF with CAS and receipts; (3) authorized native process start/output/input/cancel/session/list/terminate and recovery; (4) config, usage and receipt visibility; (5) expose admitted capabilities to the supported VIVIM client with scoped identity, denial and revocation tests; (6) additional agent integrations. Respect current Host source owners, including PY-001. Use existing internal HVI committed-source read composition for the first slice, not a new filesystem authority. Committed-source reads alone are not complete live filesystem parity. Preserve local-only effects and explicit authorization until a remote capability is actually admitted. Do not bypass prior tool denials, expose unscoped raw shell, or spend commercial relay credits unnecessarily.
+
+Parity acceptance: each of the 24 general operations in the pinned 25-tool reference must have a working owned equivalent and real client-to-Host-to-workstation proof; vendor-specific feedback is replaced by VIVIM feedback. A catalogue, fixture, local wrapper around the reference engine, or native Codex observer alone does not establish parity.
 
 ## Ordered delivery plan
 | ID | Priority | Work | Acceptance evidence |
@@ -29,7 +37,7 @@ One personal AI operating layer, independent of any individual model, agent, dev
 | U11 | P2 | Multi-machine orchestration and durable continuation | Authorized device discovery, per-device capabilities, independent workloads, lease/recovery, resource and budget constraints; no claim of always-on work without running scheduler |
 | U12 | P2 | Release convergence and user acceptance | Source-pinned native and MCP tests, reproducible Windows package, supported browser/desktop/mobile activation, end-to-end evidence, rollback |
 
-U01 and U02 are first; if physical device/connection requires user action, continue independent U03–U06 source and tests rather than stopping at a report. Do not attempt repeated costly probes for the same blocker. New task-specific native effects require existing Host authorization; broad development authorization is not permission to bypass service security or spend unknown amounts.
+U01/U02 enable the cutover; prioritize U10/N02–N05 immediately and continue independent native workstation source and tests if device acceptance is blocked. Standalone agent adapters are secondary. Do not attempt repeated costly probes for the same blocker. New task-specific native effects require existing Host authorization; broad development authorization is not permission to bypass service security or spend unknown amounts.
 
 ## Existing systems to reuse
 - `apps/vivim-host/control/universal-api.mjs` and `apps/vivim-host/server.mjs`: owner-authenticated discovery, typed plan/execute/receipt.
