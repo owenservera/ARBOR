@@ -31,6 +31,14 @@ impl Inbox {
         let d = ingest_craft(projection, scope).map_err(|_| "DISCOVERY_REJECTED")?;
         let record = json!({"schema":"vivim.absorption-observation/1", "discovery":d,
             "authority":{"executionAuthorized":false,"activationPermitted":false,"sendPermission":false}});
+        self.publish(record, scope, d.evidence.len())
+    }
+    pub fn ingest_facebook_uia(&self, raw:&[u8], scope:&Scope)->Result<Value,&'static str>{
+        let record=crate::uia::normalize_facebook(raw,scope)?;
+        let count=record["observations"].as_array().ok_or("UIA_ROWS_INVALID")?.len();
+        self.publish(record,scope,count)
+    }
+    fn publish(&self, record:Value, scope:&Scope, evidence_count:usize)->Result<Value,&'static str>{
         let bytes = serde_json::to_vec(&record).map_err(|_| "ENCODE_FAILED")?;
         if bytes.len() > LIMIT { return Err("SIZE_LIMIT"); }
         let id = digest(&bytes);
@@ -54,7 +62,7 @@ impl Inbox {
         }
         if bounded_read(&dest)? != bytes { return Err("DIGEST_COLLISION_OR_CORRUPTION"); }
         Ok(json!({"schema":"vivim.absorption-intake-receipt/1","id":id,"created":created,
-            "scope":scope,"evidenceCount":d.evidence.len(),"executionAuthorized":false}))
+            "scope":scope,"evidenceCount":evidence_count,"executionAuthorized":false}))
     }
     pub fn read(&self, id: &str) -> Result<Value, &'static str> {
         let bytes = bounded_read(&self.object(id)?)?;
