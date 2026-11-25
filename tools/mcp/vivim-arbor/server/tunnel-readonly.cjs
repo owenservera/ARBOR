@@ -3,19 +3,22 @@
 // Never import operations.cjs or commander.cjs here.
 const readline = require('node:readline');
 const createDiscovery = require('./host-discovery.cjs');
+const {createProbe,name:probeName}=require('./workstation-probe-tunnel.cjs');
 const VERSIONS = ['2025-03-26', '2025-06-18', '2025-11-25'];
 const HOST_NAMES = new Set(['vivim_host_sources', 'vivim_host_capabilities', 'vivim_host_targets', 'vivim_host_capability']);
 const isRecord = x => x !== null && typeof x === 'object' && !Array.isArray(x);
-function createProfile(env = process.env) {
+function createProfile(env = process.env, {fetcher=globalThis.fetch}={}) {
+  const probe=createProbe({env,fetcher});
   const tools = [
     ['vivim_tunnel_health', 'Read the private VIVIM transport profile health. No personal data or actions.',
       {type:'object',properties:{},required:[],additionalProperties:false},
-      () => ({schema:'vivim.tunnel-health/1',status:'ready',profile:'private-readonly',hostDiscovery:env.VIVIM_TUNNEL_HOST_DISCOVERY === '1'})]
+      () => ({schema:'vivim.tunnel-health/1',status:'ready',profile:probe?'private-fixed-probe':'private-readonly',hostDiscovery:env.VIVIM_TUNNEL_HOST_DISCOVERY === '1',...(probe?{workstationProbe:true}:{})})]
   ];
   // Explicit opt-in by the local operator, not by remote tool arguments.
   if (env.VIVIM_TUNNEL_HOST_DISCOVERY === '1') {
     tools.push(...createDiscovery({env}).filter(([name]) => HOST_NAMES.has(name)));
   }
+  if(probe)tools.push(probe);
   const map = new Map(tools.map(d => [d[0],d]));
   const annotations = {readOnlyHint:true,destructiveHint:false,idempotentHint:true,openWorldHint:false};
   let initialized = false;
@@ -37,11 +40,11 @@ function createProfile(env = process.env) {
       // A repeated valid initialize is an idempotent negotiation, not a new grant.
       // Preserve readiness: the fixed read-only tool surface has no session-specific authority.
       negotiated = true;
-      return reply(id,{protocolVersion:VERSIONS.includes(m.params.protocolVersion)?m.params.protocolVersion:VERSIONS.at(-1),capabilities:{tools:{listChanged:false}},serverInfo:{name:'vivim-arbor-private-tunnel',version:'0.1.1'}});
+      return reply(id,{protocolVersion:VERSIONS.includes(m.params.protocolVersion)?m.params.protocolVersion:VERSIONS.at(-1),capabilities:{tools:{listChanged:false}},serverInfo:{name:'vivim-arbor-private-tunnel',version:'0.1.2'}});
     }
     if (m.method === 'ping') return reply(id,{});
     if (!initialized) return error(id,-32002,'Server not initialized');
-    if (m.method === 'tools/list') return reply(id,{tools:tools.map(([name,description,inputSchema])=>({name,description,inputSchema,annotations}))});
+    if (m.method === 'tools/list') return reply(id,{tools:tools.map(([name,description,inputSchema])=>({name,description,inputSchema,annotations:name===probeName?{...annotations,readOnlyHint:false}:annotations}))});
     if (m.method !== 'tools/call') return error(id,-32601,'Method not found');
     const p=m.params;
     if (!isRecord(p) || typeof p.name !== 'string' || !map.has(p.name)) return error(id,-32602,'Unknown tool');
@@ -53,7 +56,7 @@ function createProfile(env = process.env) {
       return reply(id,{content:[{type:'text',text:JSON.stringify(result)}]});
     } catch {
       // No underlying exception strings, URLs, credentials or stack traces.
-      return reply(id,{isError:true,content:[{type:'text',text:'Local discovery unavailable or denied'}]});
+      return reply(id,{isError:true,content:[{type:'text',text:p.name===probeName?'Exact probe unavailable or denied; inspect local Host receipt before retrying':'Local discovery unavailable or denied'}]});
     }
   }
   return {dispatch};
