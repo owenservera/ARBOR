@@ -1,7 +1,8 @@
 // Native syntax extraction is opt-in and uses the existing trusted binary directory.
 // Source projects never select an executable. HQ retains annotation grammar authority.
 import { spawnSync } from 'node:child_process';
-import { statSync } from 'node:fs';
+import { statSync,readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { isAbsolute, join } from 'node:path';
 import { parseAnnotationV2, isVersionedId } from './annotation-v2.mjs';
 const digest=v=>typeof v==='string'&&/^[a-f0-9]{64}$/.test(v);
@@ -12,7 +13,14 @@ export function configuredRustSyntax(env=process.env){
   if(!env.VIVIM_HQKG_BIN_DIR||!isAbsolute(env.VIVIM_HQKG_BIN_DIR))throw Error('rust_syntax_absolute_bin_dir_required');
   const binary=join(env.VIVIM_HQKG_BIN_DIR,process.platform==='win32'?'hqkg-rust-syntax.exe':'hqkg-rust-syntax');
   if(!statSync(binary,{throwIfNoEntry:false})?.isFile())throw Error('rust_syntax_binary_unavailable');
-  return binary;
+  return {binary,fingerprint:rustSyntaxFingerprint(binary)};
+}
+// The executable itself participates in index invalidation; upgrades reparse
+// existing Rust files and a mid-run replacement rolls back the transaction.
+export function rustSyntaxFingerprint(binary){
+  const st=statSync(binary);
+  if(!st.isFile()||st.size>128*1024*1024)throw Error('rust_syntax_binary_invalid');
+  return '1:'+createHash('sha256').update(readFileSync(binary)).digest('hex');
 }
 export function extractRustSyntax(binary,text,context){
   const run=spawnSync(binary,[],{input:text,encoding:'utf8',shell:false,windowsHide:true,timeout:15000,maxBuffer:16*1024*1024});

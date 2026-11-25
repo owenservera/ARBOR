@@ -18,7 +18,7 @@ import { extractSymbols, extractImports, extractAnnotations } from './extract.mj
 import { parseAnnotationV2, isVersionedId } from './annotation-v2.mjs';
 import { getSemanticId, indexedSemanticAnchors, semanticAnchorChanges } from './semantic-registry.mjs';
 import { isSensitiveSourcePath } from './search.mjs';
-import { configuredRustSyntax, extractRustSyntax } from './rust-syntax-adapter.mjs';
+import { configuredRustSyntax, extractRustSyntax, rustSyntaxFingerprint } from './rust-syntax-adapter.mjs';
 
 // The existing v2 scanner is a JS-style lexer, not a universal language parser.
 // Do not treat JSX markup, Python strings, Rust raw strings, etc. as JS comments.
@@ -513,11 +513,11 @@ export function indexProject({ root, db, project, options = {} }) {
     const rustIndexKey='rust_local_imports_v2:'+projectRow.id+':'+absPath;
     const refreshRustIndex=getMeta(db,rustIndexKey)!=='2';
 
-    const syntaxKey='rust_syntax_adapter:'+projectRow.id+':'+absPath;
+    const syntaxKey='rust_syntax_adapter:'+projectRow.id;
     const priorSyntax=getMeta(db,syntaxKey);
     const rustSyntax=configuredRustSyntax();
     if(priorSyntax && !rustSyntax)throw Error('rust_syntax_required_for_existing_index');
-    const refreshSyntax=!!rustSyntax && priorSyntax!=='1';
+    const refreshSyntax=!!rustSyntax && priorSyntax!==rustSyntax.fingerprint;
     // Persist mode even for partial scans; do not silently downgrade.
     if(refreshSyntax)setMeta(db,syntaxKey,'pending');
 
@@ -567,7 +567,7 @@ export function indexProject({ root, db, project, options = {} }) {
       let annotations = [];
       try {
         if (source) {
-          const syntax = rustSyntax && rustHeader(entry) ? extractRustSyntax(rustSyntax,text,{
+          const syntax = rustSyntax && rustHeader(entry) ? extractRustSyntax(rustSyntax.binary,text,{
             projectId:String(projectRow.id),path:entry.rel,contentHash:hash,
             registry:{lookup:id=>getSemanticId(db,id)}
           }) : null;
@@ -722,7 +722,8 @@ export function indexProject({ root, db, project, options = {} }) {
 
     if (backfillV2 && errors.length === 0) setMeta(db, v2Key, '4');
     if (refreshRustIndex && errors.length === 0 && result.incomplete.length === 0) setMeta(db,rustIndexKey,'2');
-    if(refreshSyntax && errors.length===0 && result.incomplete.length===0)setMeta(db,syntaxKey,'1');
+    if(rustSyntax && rustSyntaxFingerprint(rustSyntax.binary)!==rustSyntax.fingerprint)throw Error('rust_syntax_binary_changed_during_index');
+    if(refreshSyntax && errors.length===0 && result.incomplete.length===0)setMeta(db,syntaxKey,rustSyntax.fingerprint);
     return stmts.projectById.get(projectRow.id);
   });
 

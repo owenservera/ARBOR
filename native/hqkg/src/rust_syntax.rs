@@ -121,6 +121,7 @@ impl Extractor<'_> {
     }
 }
 /// Parse already-authorized bytes from HQ; no filesystem discovery or execution.
+/// @hq:contract hqkg.rust-syntax-result@1
 pub fn extract(source: &str) -> Result<Value> {
     if source.len() > MAX_SOURCE_BYTES {
         return Err(Error::Invalid("Rust syntax source exceeds byte bound".into()));
