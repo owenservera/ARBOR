@@ -13,8 +13,10 @@
 // submit a digest, never the proposal object. Synthetic evidence can only ever yield
 // `test-only-preview` — the pipeline refuses synthetic production promotion by construction.
 import { createHash } from 'node:crypto';
+import { lstatSync, readdirSync } from 'node:fs';
+import path from 'node:path';
 import { Session } from '../store/session.mjs';
-import { readAcceptance, rawDigest, domDigest } from '../capture/acceptance.mjs';
+import { readAcceptance, rawDigest, domDigest, EVALUATOR_VERSION } from '../capture/acceptance.mjs';
 import { createGuardedStudioLearner } from './four-lane-gates.mjs';
 import { createStudioAdapterLearner } from './adapter-studio-bridge.mjs';
 import { acceptedSessionToAdapterEvents, domEvidenceRef, ACCEPTED_SESSION_PRODUCER } from './adapter-accepted-session.mjs';
@@ -80,47 +82,69 @@ export function createCasVersionedStore({ store, lockDir } = {}) { // lockDir is
 /** Server-side evidence verifier + trusted manifest provider over the REAL session store. */
 export function createTrustedManifestProvider({ sessionsDir } = {}) {
   if (typeof sessionsDir !== 'string' || !sessionsDir) throw new TypeError('SESSIONS_DIR_REQUIRED');
+  const exactId = id => typeof id === 'string' && /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(id) && id !== 'latest';
+  const regularFile = p => lstatSync(p).isFile();
+  const directory = p => lstatSync(p).isDirectory();
   const verifySession = (sessionId) => {
-    if (typeof sessionId !== 'string' || !sessionId) return null;
-    let session;
-    try { session = Session.open(sessionsDir, sessionId); } catch { return null; }
-    if (!session || session.id !== sessionId) return null; // prefix or remount ambiguity fails closed
-    const doc = readAcceptance(session);
-    if (!doc || doc.verdict !== 'capture_accepted' || !doc.binding?.rawDigest || !doc.binding?.domDigest) return null;
-    for (const g of ['G1', 'G2', 'G3', 'G4', 'G5', 'G6', 'G7']) {
-      if (doc.gates?.[g]?.value !== 'passed') return null;
-    }
-    const rd = rawDigest(session); // independent re-verification against the saved bytes
-    if (!rd || rd.digest !== doc.binding.rawDigest || !rd.files) return null;
-    const dd = domDigest(session);
-    if (!dd || dd !== doc.binding.domDigest) return null;
-    return { session, acceptance: doc, rawDigest: rd.digest, domDigest: dd, seqRange: doc.binding.seqRange ?? null };
+    if (!exactId(sessionId)) return null;
+    try {
+      // Resolve only the exact local capture directory. Session.open normally accepts
+      // prefixes/aliases; those are useful for operators but not provenance identity.
+      const dir = path.join(sessionsDir,sessionId);
+      const raw = path.join(dir,'raw'), kv = path.join(dir,'kv');
+      if (!directory(dir) || !directory(raw) || !directory(kv) ||
+          !['session.json','acceptance.json'].every(f=>regularFile(path.join(dir,f))) ||
+          !regularFile(path.join(kv,'DOM_TURNS.json')) || !regularFile(path.join(raw,'manifest.json'))) return null;
+      const files = readdirSync(raw).filter(f=>/^\d{6}\.jsonl$/.test(f)).sort();
+      if (!files.length || !files.every(f=>regularFile(path.join(raw,f)))) return null;
+      const session = Session.open(sessionsDir,sessionId);
+      if (session.id !== sessionId || path.basename(session.dir) !== sessionId || session.meta?.status !== 'complete') return null;
+      const doc = readAcceptance(session);
+      if (!doc || doc.verdict !== 'capture_accepted' || doc.evaluator?.version !== EVALUATOR_VERSION ||
+          !/^[a-f0-9]{64}$/.test(doc.binding?.rawDigest??'') || !/^[a-f0-9]{64}$/.test(doc.binding?.domDigest??'')) return null;
+      for (const g of ['G1','G2','G3','G4','G5','G6','G7']) if (doc.gates?.[g]?.value !== 'passed') return null;
+      // The raw digest already covers manifest bytes; check the asserted sequence
+      // endpoints against that bound manifest, not a caller-editable acceptance label.
+      const seq = doc.binding.seqRange, manifest = session.manifest();
+      const segments = manifest?.segments;
+      if (!Array.isArray(seq) || seq.length!==2 || !seq.every(Number.isSafeInteger) || seq[0]<1 || seq[0]>seq[1] ||
+          !Array.isArray(segments) || JSON.stringify(segments.map(x=>x.file))!==JSON.stringify(files) ||
+          segments.some(x=>!Number.isSafeInteger(x.records)||x.records<0)) return null;
+      const nonempty = segments.filter(x=>x.records>0);
+      if (!nonempty.length || nonempty.some(x=>!Number.isSafeInteger(x.firstSeq)||!Number.isSafeInteger(x.lastSeq)||x.firstSeq<1||x.lastSeq<x.firstSeq) ||
+          nonempty[0].firstSeq!==seq[0] || nonempty.at(-1).lastSeq!==seq[1]) return null;
+      const rd = rawDigest(session);
+      if (!rd || rd.digest !== doc.binding.rawDigest || rd.files !== files.length+1) return null;
+      const dd = domDigest(session);
+      if (!dd || dd !== doc.binding.domDigest) return null;
+      return { session, acceptance:doc, rawDigest:rd.digest, domDigest:dd, seqRange:[...seq] };
+    } catch { return null; }
   };
+  function matchesScope(v,scope) {
+    try {
+      return !!scope && v.session.meta?.site===scope.siteId &&
+        new URL(v.session.meta?.target?.url).origin===scope.origin;
+    } catch { return false; }
+  }
   async function verifyCapture({ scope, source } = {}) {
-    // Accepted capture digests do not attest a provider account. Until the existing
-    // trusted account owner supplies artifact-bound evidence, no caller label can
-    // claim core verification (including on the internal event-driven entry point).
-    if (!source || typeof source.sessionId !== 'string' ||
-        source.accountBinding === 'core-verified') return false;
+    // Saved capture qualification is not account authentication. Only the incumbent
+    // accepted-session producer is supported; arbitrary provenance labels are refused.
+    if (!source || source.producer!==ACCEPTED_SESSION_PRODUCER ||
+        source.accountBinding!=='caller-scoped-unverified' ||
+        source.origin!==scope?.origin || source.accountRef!==scope?.accountRef ||
+        source.carrier!=='dom' || source.coverage!=='complete' ||
+        source.evidenceClass!=='SAVED_REAL_CAPTURE') return false;
     const v = verifySession(source.sessionId);
-    if (!v) return false;
-    if (v.rawDigest !== source.rawDigest) return false;
-    if (source.producer === ACCEPTED_SESSION_PRODUCER &&
-        (source.captureId !== v.session.id || source.domDigest !== v.domDigest ||
-         source.sequence !== v.seqRange?.[1] ||
-         source.evidenceRef !== domEvidenceRef(v.session.id, v.domDigest))) return false;
-    // Corroborate origin when the session recorded its target; fail on mismatch, never invent.
-    const url = v.session.meta?.target?.url;
-    if (typeof url === 'string' && url) {
-      try { if (new URL(url).origin !== scope?.origin) return false; } catch { return false; }
-    }
-    return true;
+    if (!v || !matchesScope(v,scope)) return false;
+    return v.rawDigest===source.rawDigest && source.captureId===v.session.id &&
+      source.domDigest===v.domDigest && source.sequence===v.seqRange[1] &&
+      source.evidenceRef===domEvidenceRef(v.session.id,v.domDigest);
   }
   async function getTrustedManifests({ scope, training, heldout } = {}) {
     const idOf = (e) => (typeof e === 'string' ? e : e?.source?.sessionId ?? null);
     const mint = (sessionId) => {
       const v = verifySession(sessionId);
-      if (!v) throw coded('MANIFEST_SESSION_NOT_VERIFIED', { sessionId });
+      if (!v || !matchesScope(v,scope)) throw coded('MANIFEST_SESSION_NOT_VERIFIED', { sessionId });
       const seq = v.seqRange;
       // Lineage from immutable content provenance only (digests + sequence range), never
       // filenames, client ids or timestamps: same bytes => same lineage => reuse detected.
@@ -128,7 +152,8 @@ export function createTrustedManifestProvider({ sessionsDir } = {}) {
       return { id: sessionId, lineage,
         scope: { siteId: scope?.siteId ?? null, origin: scope?.origin ?? null,
           account: scope?.accountRef ?? null, surface: scope?.surface ?? null },
-        sourceDigest: v.rawDigest, coverage: 'complete', coreAccepted: true, sourceQualified: true };
+        sourceDigest: v.rawDigest, coverage: 'complete', coreAccepted: true, sourceQualified: true,
+        accountBinding:'caller-scoped-unverified' };
     };
     if (!Array.isArray(training) || !Array.isArray(heldout)) throw coded('MANIFEST_SETS_REQUIRED');
     // One manifest per distinct session (events of the same session share one source).
@@ -192,8 +217,21 @@ export function createStudioLearningPipeline({ sessionsDir, store, lockDir } = {
       const entry = typeof proposalDigest === 'string' ? ledger.get(proposalDigest) : null;
       if (!entry) throw coded('PROPOSAL_NOT_SERVER_MINTED');
       if (entry.promoted) throw coded('PROPOSAL_ALREADY_PROMOTED');
+      const proposal = entry.proposal;
+      if (proposal.status !== 'ready-for-read-only-promotion' || proposal.evidenceClass !== 'SAVED_REAL_CAPTURE')
+        throw coded('PROMOTION_NOT_ELIGIBLE');
+      // The proposal ledger is immutable, but saved capture files are not. Reopen
+      // every accepted training/holdout source immediately before the existing CAS.
+      const training = proposal.evidence?.trainingSources, heldout = proposal.evidence?.heldoutSources;
+      if (!Array.isArray(training) || !training.length || !Array.isArray(heldout) || !heldout.length)
+        throw coded('PROMOTION_SOURCE_EVIDENCE_MISSING');
+      for (const receipt of [...training,...heldout]) {
+        if (!await provider.verifyCapture({scope:proposal.scope,source:{
+          ...receipt,producer:receipt.sourceProducer,origin:proposal.scope.origin,accountRef:proposal.scope.accountRef,
+        }})) throw coded('PROMOTION_SOURCE_STALE');
+      }
       let out;
-      try { out = await pipeline.promote(entry.proposal); }
+      try { out = await pipeline.promote(proposal); }
       catch (e) {
         // A durable commit whose lock release was unverified MUST NOT be retried as a new promotion.
         if (e?.committed === true) { entry.promoted = true; entry.result = { committed: true, committedVersion: e.committedVersion ?? null }; }
