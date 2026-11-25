@@ -66,7 +66,9 @@ if(-not(Test-Path -LiteralPath $marker)){
 }
 Assert-Plain $marker
 if([IO.File]::ReadAllText($marker) -cne 'vivim-dev-instance/1'){throw 'Invalid development instance'}
-$lock=[IO.File]::Open((Join-Path $root 'install.lock'),[IO.FileMode]::OpenOrCreate,[IO.FileAccess]::ReadWrite,[IO.FileShare]::None)
+$lockPath=Join-Path $root 'install.lock'
+if(Test-Path -LiteralPath $lockPath){Assert-Plain $lockPath}
+$lock=[IO.File]::Open($lockPath,[IO.FileMode]::OpenOrCreate,[IO.FileAccess]::ReadWrite,[IO.FileShare]::None)
 try{
  $generation=Join-Path $root $sha
  if(Test-Path -LiteralPath $generation){
@@ -91,8 +93,11 @@ try{
   $bytes=[Text.Encoding]::UTF8.GetBytes(($record|ConvertTo-Json -Compress))
   $stream=[IO.File]::Open($pending,[IO.FileMode]::CreateNew)
   try{$stream.Write($bytes,0,$bytes.Length);$stream.Flush($true)}finally{$stream.Dispose()}
-  try{if($old){[IO.File]::Replace($pending,$active,$null)}else{[IO.File]::Move($pending,$active)}}finally{if(Test-Path -LiteralPath $pending){Remove-Item -LiteralPath $pending}}
+  $backup=Join-Path $root ('active.previous-'+[guid]::NewGuid().ToString('N')+'.json')
+  try{if($old){[IO.File]::Replace($pending,$active,$backup)}else{[IO.File]::Move($pending,$active)}}finally{if(Test-Path -LiteralPath $pending){Remove-Item -LiteralPath $pending}}
  }
+ $readback=Get-Content -LiteralPath $active -Raw|ConvertFrom-Json
+ if($readback.sourceSha -cne $sha -or $readback.remoteConnected -ne $false){throw 'Active pointer readback failed'}
  Write-Output ('VIVIM_DEV_READY='+$sha)
  Write-Output 'MCP_HEALTH_ONLY=PASS; FORBIDDEN_TERMINAL=DENIED; REMOTE_CONNECTED=False'
 }finally{$lock.Dispose()}
