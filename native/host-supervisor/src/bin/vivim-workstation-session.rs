@@ -85,7 +85,7 @@ fn execute(v:&Value,sessions:&mut BTreeMap<String,Session>)->Result<Value,String
  }
 }
 fn main(){
- let(tx,rx)=mpsc::sync_channel::<String>(16);
+ let(tx,rx)=mpsc::sync_channel::<String>(64);
  thread::spawn(move||{let stdin=io::stdin();for line in stdin.lock().lines(){match line{Ok(s) if s.len()<=262144=>{if tx.send(s).is_err(){break;}},_=>break}}});
  let mut sessions=BTreeMap::new();let mut out=io::stdout().lock();
  loop{

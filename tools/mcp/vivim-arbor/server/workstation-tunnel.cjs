@@ -173,7 +173,7 @@ function createWorkstationTools({directory=path.join(__dirname,'..','session-aut
   const cursor=x=>typeof x==='string'&&/^(0|[1-9][0-9]{0,15})$/.test(x)&&Number.isSafeInteger(Number(x));
   if(!cursor(stdout_cursor)||!cursor(stderr_cursor)||typeof wait_ms!=='string'||!/^[0-9]{1,5}$/.test(wait_ms)||Number(wait_ms)<250||Number(wait_ms)>20000)bad();
   owns(session_id);check();
-  if(activeWaits>=4)throw Error('WORKSTATION_WAIT_BUSY');
+  if(activeWaits>=32)throw Error('WORKSTATION_WAIT_BUSY');
   activeWaits++;
   const started=performance.now(),deadline=started+Number(wait_ms);
   try{

@@ -51,7 +51,7 @@ test('real MCP stdio, protected owner auth, Host HTTP, native session reconnect 
   const raw=Buffer.concat(output).toString();assert.ok(!raw.includes(token));assert.ok(!Buffer.concat(errors).toString().includes(token));
   const responses=raw.trim().split('\n').map(JSON.parse);
   assert.ok(responses[1].result.tools.some(x=>x.name==='vivim_session_start'));
-  return responses.slice(2).map(r=>{assert.equal(r.result?.isError,undefined,r.result?.content?.[0]?.text);return JSON.parse(r.result.content[0].text)});
+  return responses.slice(2).sort((a,b)=>a.id-b.id).map(r=>{assert.equal(r.result?.isError,undefined,r.result?.content?.[0]?.text);return JSON.parse(r.result.content[0].text)});
  }
  const requestId=rid(),[start]=await calls([['vivim_session_start',{recipe:'node-version',request_id:requestId}]]);
  assert.equal(start.status,'applied');

@@ -171,7 +171,7 @@ export function createWorkstationSessionPort({env=process.env,spawnWorker=spawn,
   w.unref?.();w.stdin.unref?.();w.stdout.unref?.();
  }
  function rpc(body){
-  if(dead||!worker||pending.size>=16)throw fail('WORKSTATION_SESSION_RECOVERY_REQUIRED',503);
+  if(dead||!worker||pending.size>=64)throw fail('WORKSTATION_SESSION_RECOVERY_REQUIRED',503);
   const requestId=++sequence,line=JSON.stringify({id:requestId,...body})+'\n';
   if(Buffer.byteLength(line)>262144)throw fail('WORKSTATION_SESSION_REQUEST_TOO_LARGE');
   return new Promise((resolve,reject)=>{

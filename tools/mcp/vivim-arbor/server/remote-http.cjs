@@ -47,7 +47,7 @@ function createRemoteHttp({getPolicy=()=>null,env=process.env}={}){
   if(!/^application\/json(?:\s*;.*)?$/i.test(req.headers['content-type']||'')||req.headers['content-encoding']!==undefined)return reject(415,'JSON required');
   if(!String(req.headers.accept||'').includes('application/json')||!String(req.headers.accept||'').includes('text/event-stream'))return reject(406,'MCP accept types required');
   if(Number(req.headers['content-length'])>MAX)return reject(413,'Request too large');
-  if(active>=4)return reject(503,'Busy');
+  if(active>=32)return reject(503,'Busy');
   active++;
   const timer=setTimeout(()=>{reject(408,'Request timeout');req.destroy();},15000);
   try{
@@ -74,7 +74,7 @@ function createRemoteHttp({getPolicy=()=>null,env=process.env}={}){
   }catch{return reject(403,'Request denied or unavailable');}
   finally{clearTimeout(timer);active--;}
  });
- server.maxConnections=16;
+ server.maxConnections=64;
  return {server,listen:(port=0)=>new Promise((resolve,reject)=>{server.once('error',reject);server.listen(port,'127.0.0.1',()=>{server.removeListener('error',reject);resolve(server.address());});})};
 }
 module.exports={createRemoteHttp,project};

@@ -80,29 +80,36 @@ async function main() {
   const healthOnly=process.env.VIVIM_TUNNEL_FORCE_HEALTH_ONLY==='1';
   const profile=createProfile(process.env,{acceptance:healthOnly?null:createAcceptance(),workstation:healthOnly?[]:createWorkstationTools(),maintenance:healthOnly?()=>null:createMaintenanceGate()});
   const input=readline.createInterface({input:process.stdin,crlfDelay:Infinity});
-  await serve(profile,input,line=>process.stdout.write(line));
+  await serve(profile,input,line=>new Promise((resolve,reject)=>process.stdout.write(line,e=>e?reject(e):resolve())));
 }
 async function serve(profile,input,write) {
-  // Keep normal calls serialized; bounded read-only waits must not block the tool queue.
-  const waits=new Set();
-  for await (const line of input) {
-    let response;
-    try {
-      if (Buffer.byteLength(line)>65536) response={jsonrpc:'2.0',id:null,error:{code:-32600,message:'Request too large'}};
-      else {
-        let m;
-        try {m=JSON.parse(line);} catch {response={jsonrpc:'2.0',id:null,error:{code:-32700,message:'Parse error'}};}
-        if (!response && m?.method==='tools/call' && m.params?.name==='vivim_session_wait' && waits.size<4) {
-          const pending=profile.dispatch(m).then(r=>{if(r)write(JSON.stringify(r)+'\n');},()=>{write(JSON.stringify({jsonrpc:'2.0',id:m.id??null,error:{code:-32603,message:'Internal error'}})+'\n');});
-          waits.add(pending);pending.finally(()=>waits.delete(pending));continue;
-        }
-        if (!response && m?.method==='tools/call' && m.params?.name==='vivim_session_wait') response={jsonrpc:'2.0',id:m.id??null,error:{code:-32000,message:'Wait capacity reached'}};
-        if (!response) response=await profile.dispatch(m);
-      }
-    } catch {response={jsonrpc:'2.0',id:null,error:{code:-32603,message:'Internal error'}};}
-    if (response) write(JSON.stringify(response)+'\n');
+  // Concurrent observations, ordered mutations, separate cursor waits.
+  const reads=new Set(),waits=new Set();
+  const readNames=new Set(['vivim_file_read','vivim_development_file_read','vivim_file_inspect','vivim_file_read_many','vivim_file_search_selected','vivim_directory_list','vivim_session_status','vivim_session_output']);
+  let writeTail=Promise.resolve();
+  const emit=r=>{if(!r)return Promise.resolve();const job=writeTail.then(()=>write(JSON.stringify(r)+'\n'));writeTail=job;return job;};
+  const failure=id=>({jsonrpc:'2.0',id:id??null,error:{code:-32603,message:'Internal error'}});
+  function schedule(m,set){
+    const task=Promise.resolve().then(()=>profile.dispatch(m)).catch(()=>failure(m.id)).then(emit);
+    set.add(task);task.then(()=>set.delete(task),()=>set.delete(task));
   }
-  await Promise.allSettled(waits);
+  for await(const line of input){
+    let m;
+    if(Buffer.byteLength(line)>65536){await emit({jsonrpc:'2.0',id:null,error:{code:-32600,message:'Request too large'}});continue;}
+    try{m=JSON.parse(line);}catch{await emit({jsonrpc:'2.0',id:null,error:{code:-32700,message:'Parse error'}});continue;}
+    const name=m?.method==='tools/call'?m.params?.name:null;
+    if(name==='vivim_session_wait'){
+      if(waits.size>=32){await emit({jsonrpc:'2.0',id:m.id??null,error:{code:-32000,message:'Wait capacity reached'}});continue;}
+      schedule(m,waits);continue;
+    }
+    if(readNames.has(name)){
+      while(reads.size>=16)await Promise.race(reads);
+      schedule(m,reads);continue;
+    }
+    await Promise.all(reads);
+    await emit(await Promise.resolve().then(()=>profile.dispatch(m)).catch(()=>failure(m?.id)));
+  }
+  await Promise.all([...reads,...waits]);await writeTail;
 }
 if (require.main===module) main().catch(()=>{process.exitCode=1;});
 module.exports={createProfile,serve};

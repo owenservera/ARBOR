@@ -109,3 +109,10 @@ test('transport health reports inaccessible machine scope as degraded',async()=>
  health={grant:'valid',machineScope:true,cDrive:'accessible'};assert.equal((await read()).status,'ready');
  assert.deepEqual((await read()).workstationHealth,health);
 });
+
+test('sixteen independent reads overlap and mutations wait for those reads',async()=>{
+ const {serve}=require('../server/tunnel-readonly.cjs');let active=0,peak=0,done=0;const seen=[];
+ const profile={dispatch:async m=>{if(m.params.name==='vivim_file_read'){active++;peak=Math.max(peak,active);await new Promise(r=>setTimeout(r,20));active--;done++;}else assert.equal(done,20);return {jsonrpc:'2.0',id:m.id,result:{}};}};
+ const calls=Array.from({length:20},(_,id)=>({jsonrpc:'2.0',id,method:'tools/call',params:{name:'vivim_file_read'}}));calls.push({jsonrpc:'2.0',id:20,method:'tools/call',params:{name:'vivim_file_write'}});
+ await serve(profile,calls.map(JSON.stringify),line=>seen.push(JSON.parse(line).id));assert.equal(peak,16);assert.equal(seen.length,21);assert.equal(seen.at(-1),20);
+});
