@@ -6,6 +6,7 @@ import { verifyBrowserOwner } from '../chrome/browser-ownership.mjs';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import path from 'node:path';
+import { projectChatGPTSurface } from './chatgpt-surface.mjs';
 
 const ROLES=new Set(['button','link','menu','menubar','menuitem','menuitemcheckbox','menuitemradio','tab','tablist','dialog','alertdialog','combobox','listbox','option','checkbox','radio','switch','textbox','searchbox','slider','spinbutton','tree','treeitem','navigation','toolbar']);
 const STATES=new Set(['disabled','expanded','checked','selected','pressed','required','readonly','focused','hasPopup']);
@@ -32,11 +33,13 @@ export function projectVisibleControls(nodes){
   return {controls,counts,redactedLabels:unnamed,truncated:Object.values(counts).reduce((a,b)=>a+b,0)>controls.length};
 }
 // Shared verified read-only page attachment. Internal consumers supply fixed read operations.
-export async function withVerifiedReadPage({profileDir,port,target,origin},read){
+export async function withVerifiedReadPage({profileDir,port,target,origin,exactTarget=false},read){
   if(!target||!origin||new URL(origin).origin!==origin||!origin.startsWith('https://'))throw Error('SURFACE_EXPLICIT_TARGET_AND_ORIGIN_REQUIRED');
   const version=await browserVersion({port});
   const owner=await verifyBrowserOwner({profileDir,port,version});
-  const t=pickTarget(await listTargets({port}),target);
+  const targets=await listTargets({port});
+  const t=exactTarget?targets.find(x=>x.id===target&&x.type==='page'):pickTarget(targets,target);
+  if(!t)throw Object.assign(Error('SURFACE_TARGET_NOT_FOUND'),{code:'SURFACE_TARGET_NOT_FOUND',status:404});
   if(new URL(t.url).origin!==origin)throw Error('SURFACE_ORIGIN_MISMATCH');
   const connection=await CdpConnection.connect(version.webSocketDebuggerUrl,{requestTimeoutMs:12000});
   let session;
@@ -55,12 +58,20 @@ export async function withVerifiedReadPage({profileDir,port,target,origin},read)
   }
 }
 
+// Read-only tool path: no artifact write, no browser creation, no navigation, no effect.
+export async function observeChatGPTSurface({profileDir,port,targetId}){
+  const origin='https://chatgpt.com';
+  const {result,targetId:verifiedTarget}=await withVerifiedReadPage({profileDir,port,target:targetId,origin,exactTarget:true},session=>session.send('Accessibility.getFullAXTree',{}));
+  return {targetId:verifiedTarget,origin,readAt:new Date().toISOString(),...projectChatGPTSurface(result.nodes)};
+}
+
 export async function captureSurface({profileDir,port,target,origin,evidenceRoot}){
   const {result,targetId}=await withVerifiedReadPage({profileDir,port,target,origin},session=>session.send('Accessibility.getFullAXTree',{}));
   const projection=projectVisibleControls(result.nodes);
   const dir=path.join(evidenceRoot,randomUUID());
   await mkdir(dir,{recursive:true});
-  const receipt={schema:'vivim.craft-surface/1',origin,targetId,source:'studio-accessibility',coverage:'current-accessibility-tree-only',executionAuthorized:false,evidenceDirectory:dir,...projection};
+  const receipt={schema:'vivim.craft-surface/1',origin,targetId,source:'studio-accessibility',coverage:'current-accessibility-tree-only',executionAuthorized:false,evidenceDirectory:dir,...projection,
+    ...(origin==='https://chatgpt.com'?{semanticSurface:projectChatGPTSurface(result.nodes)}:{})};
   await writeFile(path.join(dir,'surface.json'),JSON.stringify(receipt,null,2),{flag:'wx'});
   return receipt;
 }
