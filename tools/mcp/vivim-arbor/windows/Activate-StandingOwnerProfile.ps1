@@ -84,6 +84,30 @@ function Assert-Idle([int]$hostId){
  }
  throw 'Host descendant inventory exceeded bound'
 }
+function Stop-VerifiedHost($identity,[string]$expectedRelease){
+ # Retain the exact process handle, not just a PID. Windows may retain a
+ # terminated process object while another handle is open.
+ $pidValue=[int]$identity.ProcessId
+ $p=[Diagnostics.Process]::GetProcessById($pidValue)
+ try{
+  $null=$p.Handle
+  $current=Host-Listener
+  if($current.ProcessId -ne $pidValue -or $current.CreationDate -ne $identity.CreationDate -or $current.CommandLine -notlike "*$expectedRelease*" -or $p.HasExited){throw 'Host identity changed before stop'}
+  $p.Kill()
+  if(-not $p.WaitForExit(60000) -or -not $p.HasExited){throw 'Verified Host process did not exit'}
+ }finally{$p.Dispose()}
+ # The old process has actually exited; require an unoccupied listener
+ # and no live Host entrypoint before allowing the next start.
+ $deadline=[DateTime]::UtcNow.AddSeconds(30)
+ do{
+  $listeners=@(Get-NetTCPConnection -LocalPort 43187 -State Listen -ErrorAction SilentlyContinue)
+  if($listeners.Count){throw 'Unexpected Host listener after shutdown; reconcile before starting'}
+  $remaining=@(Get-CimInstance Win32_Process -Filter "Name='node.exe'" | Where-Object{[string]$_.CommandLine -match 'apps[\\/]vivim-host[\\/]server\.mjs'})
+  if(-not $remaining.Count){return}
+  Start-Sleep -Milliseconds 500
+ }while([DateTime]::UtcNow -lt $deadline)
+ throw 'Host process inventory did not clear; reconcile before starting'
+}
 function Restart-Mcp([int]$supervisorId){
  $t=Tunnel-Identity
  if($t.supervisor -ne $supervisorId){throw 'Supervisor changed'}
@@ -161,10 +185,8 @@ try{
  $t=Tunnel-Identity
  if($t.supervisor -ne $tunnel.supervisor -or $t.child -ne $tunnel.child){throw 'Tunnel identity changed during drain'}
  Record 'promotion-claimed'
- Stop-Process -Id $oldHost.ProcessId -ErrorAction Stop
  $hostStopped=$true
- Wait-Process -Id $oldHost.ProcessId -Timeout 15 -ErrorAction SilentlyContinue
- if(Get-Process -Id $oldHost.ProcessId -ErrorAction SilentlyContinue){throw 'Incumbent Host did not stop'}
+ Stop-VerifiedHost $oldHost $oldRelease
  & (Join-Path $release 'Start-WorkstationHost.ps1') -ReleaseRoot $release
  $newHost=Host-Listener
  if($newHost.CommandLine -notlike "*$release*"){throw 'Candidate Host identity mismatch'}
@@ -193,8 +215,15 @@ try{
    Copy-Item -LiteralPath (Join-Path $backup 'Connect-Vivim.ps1') -Destination (Join-Path $root 'windows\Connect-Vivim.ps1') -Force
   }
   if($hostStopped){
-   try{$h=Host-Listener;if($h.CommandLine -like "*$release*"){Stop-Process -Id $h.ProcessId -ErrorAction Stop;Wait-Process -Id $h.ProcessId -Timeout 15 -ErrorAction SilentlyContinue}}catch{}
-   try{& (Join-Path $oldRelease 'Start-WorkstationHost.ps1') -ReleaseRoot $oldRelease}catch{Write-Warning 'Prior grant is expired; authenticated readiness may remain denied'}
+   $listeners=@(Get-NetTCPConnection -LocalPort 43187 -State Listen -ErrorAction SilentlyContinue)
+   if($listeners.Count){
+    $h=Host-Listener
+    if($h.CommandLine -like "*$release*"){Stop-VerifiedHost $h $release}
+    elseif($h.CommandLine -notlike "*$oldRelease*"){throw 'Unexpected rollback listener; no process stopped'}
+   }
+   if(-not @(Get-NetTCPConnection -LocalPort 43187 -State Listen -ErrorAction SilentlyContinue).Count){
+    try{& (Join-Path $oldRelease 'Start-WorkstationHost.ps1') -ReleaseRoot $oldRelease}catch{Write-Warning 'Prior grant is expired; authenticated readiness may remain denied'}
+   }
    $h=Host-Listener
    if($h.CommandLine -notlike "*$oldRelease*"){throw 'Prior Host not restored'}
   }
