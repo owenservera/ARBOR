@@ -7,12 +7,14 @@ param(
  [switch]$EnableGeneralTerminal,
  [string]$OwnerProfilePath,
  [string]$OwnerProfileSha256,
- [switch]$EnableOwnerMachine
+ [switch]$EnableOwnerMachine,
+ [switch]$NoExpiry
 )
 # Local operator entrypoint. Build/test/stage only. Does not stop a running
 # Host or tunnel, modify live grants, or promote a candidate. No remote caller
 # gets authority from this script; a separately authorized promotion is needed.
 $ErrorActionPreference='Stop'
+if($NoExpiry -and (-not $EnableOwnerMachine -or -not $EnableGeneralTerminal -or $OwnerProfilePath)){throw 'NoExpiry requires explicit owner-machine staging'}
 if($EnableOwnerMachine -and (-not $EnableGeneralTerminal -or $OwnerProfilePath)){throw 'Owner-machine requires explicit general terminal, stage only, no expanded selection'}
 if($OwnerProfilePath){if($OwnerProfileSha256 -cnotmatch '^[a-f0-9]{64}$'){throw 'Reviewed owner selection SHA-256 required'}}elseif($OwnerProfileSha256){throw 'Selection digest requires owner profile path'}
 if($OwnerProfilePath -and -not $EnableGeneralTerminal){throw 'Expanded owner profile requires general terminal'}
@@ -89,7 +91,7 @@ try{
  [IO.File]::WriteAllText((Join-Path $build 'build-receipt.json'),($receipt|ConvertTo-Json -Depth 8 -Compress),$utf8)
  $installer=Join-Path $source 'tools\mcp\vivim-arbor\windows\Install-WorkstationProfile.ps1'
  # Deliberately omit -Activate. The installer stages and validates only.
- & $installer -SourceSha $SourceSha -NativeBuildSha $SourceSha -NativeBinRoot $bin -RepoRoot $RepoRoot -ConnectRoot $ConnectRoot -EnableGeneralTerminal:$EnableGeneralTerminal -OwnerProfilePath $OwnerProfilePath -OwnerProfileSha256 $OwnerProfileSha256 -EnableOwnerMachine:$EnableOwnerMachine
+ & $installer -SourceSha $SourceSha -NativeBuildSha $SourceSha -NativeBinRoot $bin -RepoRoot $RepoRoot -ConnectRoot $ConnectRoot -EnableGeneralTerminal:$EnableGeneralTerminal -OwnerProfilePath $OwnerProfilePath -OwnerProfileSha256 $OwnerProfileSha256 -EnableOwnerMachine:$EnableOwnerMachine -NoExpiry:$NoExpiry
  if(-not (Test-Path -LiteralPath (Join-Path $release 'manifest.json') -PathType Leaf)){throw 'Release manifest not staged'}
  $manifest=Get-Content -LiteralPath (Join-Path $release 'manifest.json') -Raw|ConvertFrom-Json
  if($manifest.sourceSha -cne $SourceSha -or $manifest.nativeBuildSha -cne $SourceSha -or $manifest.helperSha256.session -cne $receipt.helpers.session -or $manifest.helperSha256.files -cne $receipt.helpers.files -or $manifest.helperSha256.probe -cne $receipt.helpers.probe){throw 'Release manifest disagrees with tested build'}
