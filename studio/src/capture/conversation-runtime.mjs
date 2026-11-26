@@ -600,9 +600,15 @@ export function createConversationRuntime({ paths, profileStore, familyStore, po
     async searchVisibleChatGPT({query,...body}) {
       active();
       const {filterVisibleChatIndex}=await import('./chatgpt-chat-index.mjs');
+      const {verifyBrowserOwner}=await import('../chrome/browser-ownership.mjs');
+      const verify=d.verifyBrowserOwner??verifyBrowserOwner;
+      const scope={profileDir:paths.chromeProfile,port};
+      const before=await verify(scope);
       const index=await d.readChatIndex({...body,site:'chatgpt'},{port,listTargets:d.listTargets,
         ...(d.openIndexSession?{openSession:d.openIndexSession}:{}),
         ...(d.evaluateIndex?{evaluate:d.evaluateIndex}:{})});
+      const after=await verify(scope);
+      if(!before.verified||!after.verified||!before.browserIdentity||before.browserIdentity!==after.browserIdentity)throw fail(409,'BROWSER_PROFILE_UNVERIFIED');
       return filterVisibleChatIndex(index,query);
     },
     // @serves 004,014
