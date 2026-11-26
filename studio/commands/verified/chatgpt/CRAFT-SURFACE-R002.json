@@ -1,0 +1,420 @@
+{
+  "schema": "vivim.studio.chatgpt-craft-gap/1",
+  "revision": "R002",
+  "date": "2026-11-26",
+  "basis": {
+    "canonical": "docs/CRAFT-EVERYTHING-RUNTIME-R001.md",
+    "base": "ac2aad34014a62ce197c1926584db19a59769c05",
+    "localReadbackCommit": "b22aca03d981d164af523817513484f4d04f729b",
+    "localEvidenceRoot": "C:/VIVIM/craft-runtime-evidence",
+    "rosterCount": 326,
+    "studioAtoms": 2103,
+    "completeAtomsRegistry": true,
+    "scope": "20 planned application families, not total provider controls; 326 is cross-platform donor command count",
+    "counts": {
+      "nativePartial": 9,
+      "structuralOnly": 3,
+      "genericOnly": 7,
+      "unobserved": 1,
+      "fullyVerified": 0,
+      "withoutAppSpecificExecution": 11
+    }
+  },
+  "historicalEvidence": {
+    "nativeWalkthroughs": [
+      {
+        "file": "plugins-keyboard-1eb85cbe-4107-4f29-a257-a3ba11d71a76.json",
+        "evidenceId": "ev_813814f4810717e0905337cab4bcfe8181fd48dbd76a50a4492299dc0cd2f9a4",
+        "sha256": "b31b742d1e415bffdfbad0004736e44b4ffcadff417e602b295ed4a15e32f246",
+        "operation": "web_walkthrough_record",
+        "actionCount": 1,
+        "aborted": null
+      },
+      {
+        "file": "profile-menu-css-d40b6635-6461-4ce4-b1d2-41cbd6abef51.json",
+        "evidenceId": "ev_5fe21810c4ef475c0395ab0c9409aa386eaf1bdf090b8bd3c7",
+        "sha256": "f497df50e64398762d2a7051de6ad8b331feb00391fa46fb2404ccbfcce0c3d9",
+        "operation": "web_walkthrough_record",
+        "actionCount": 1,
+        "aborted": null
+      },
+      {
+        "file": "profile-menu-e27c58f4-13f7-4eb7-ac1c-cc8908ff5f9a.json",
+        "evidenceId": "ev_e4c5b962e31eb44c133d80f88aca6be16c09240c12d0b5cd17fc48aa1724ab50",
+        "sha256": "4d89dc77664673e7c00839b238e997d974ba770f55b2455f015696f6b25b3339",
+        "operation": "web_walkthrough_record",
+        "actionCount": 2,
+        "aborted": "step 1 failed"
+      },
+      {
+        "file": "settings-open-8258cfa5-fd26-411a-ae2f-f9a457ddcbbe.json",
+        "evidenceId": "ev_0fecd9835b7c23bfa96eef8067cf12b4979f773368754312cfa22d792d3116a0",
+        "sha256": "071b62ef251b02f7d40ba32954ffcbb31bc8c625ca3ac889282c364537cd29f0",
+        "operation": "web_walkthrough_record",
+        "actionCount": 1,
+        "aborted": null
+      },
+      {
+        "file": "settings-plugins-4807e5cf-cff7-4a45-9516-a9b549a8bbf2.json",
+        "evidenceId": "ev_9aeecfa727d224d7566145efda046925892a972c8daafd6ccb50fceee00eb8c6",
+        "sha256": "0121c6a4c9d1531d0e05ba520980a38efb15431938d136b6e84a328140a14cfd",
+        "operation": "web_walkthrough_record",
+        "actionCount": 1,
+        "aborted": null
+      }
+    ],
+    "studioAccessibilityCaptures": [
+      {
+        "captureId": "5e282ab2-a64d-4299-9f6c-2493ee4a4412",
+        "sha256": "2534c857e13856833791ed047ef1943834f13af9cc4ddf686e703e4b957facb8",
+        "controls": 39,
+        "redactedLabels": 38,
+        "retainedKnownLabels": [
+          "Ajustes"
+        ]
+      },
+      {
+        "captureId": "9cc04115-f358-4311-8d71-54e97545def4",
+        "sha256": "7877f95f59b204ec1d43a30669e79f13f8c8da3f4e4e337597f97a8ee53718dd",
+        "controls": 86,
+        "redactedLabels": 85,
+        "retainedKnownLabels": [
+          "Work"
+        ]
+      },
+      {
+        "captureId": "a4762409-2237-4fcb-b606-563f265f1cd1",
+        "sha256": "3c274adbb9db838db61d0c2096be40424b3b9952e64f4028320ce18315542429",
+        "controls": 86,
+        "redactedLabels": 85,
+        "retainedKnownLabels": [
+          "Work"
+        ]
+      },
+      {
+        "captureId": "e6a22beb-ca3c-4d06-a538-7f6cabfc3720",
+        "sha256": "f24158355e44f4fe5f7abe67199d4ab415d85955042a291f3907370baa29e7d8",
+        "controls": 86,
+        "redactedLabels": 85,
+        "retainedKnownLabels": [
+          "Work"
+        ]
+      },
+      {
+        "captureId": "f047a2f3-ad96-4db8-9001-a0f729d75ed6",
+        "sha256": "15527a2a76d3c23d8a3fe06979e167af11000b957b357f55b3eca7c036f03ec7",
+        "controls": 38,
+        "redactedLabels": 37,
+        "retainedKnownLabels": [
+          "Ajustes"
+        ]
+      },
+      {
+        "captureId": "fc7afbed-17be-488d-87a7-b6215aeacd0a",
+        "sha256": "a8d4e7bfc44b5e927dd834be8a9ef14e7078e7f569c267492f5272c7c9a37ed3",
+        "controls": 94,
+        "redactedLabels": 92,
+        "retainedKnownLabels": [
+          "Ajustes",
+          "Work"
+        ]
+      }
+    ],
+    "successfulWalkthroughs": 4,
+    "failedWalkthroughs": 1,
+    "note": "SHA256 is independently computed byte digest; native evidence-ID recomputation and screenshot contents not attested. Raw images/content remain local. Counts are per capture; no additive unique-control total or 22-settings-section proof."
+  },
+  "groups": [
+    {
+      "id": "CG01",
+      "name": "shell-navigation",
+      "baseline": "native-partial",
+      "existingBindings": [
+        "provider.targets",
+        "conversation.connect-existing"
+      ],
+      "remaining": "Exact general navigation, sidebar and menu transitions",
+      "newObservationBinding": "chatgpt_surface",
+      "newObservationStatus": "source-wired-native-unit-tested-live-unrun",
+      "fullFamilyVerified": false
+    },
+    {
+      "id": "CG02",
+      "name": "history-search",
+      "baseline": "native-partial",
+      "existingBindings": [
+        "provider.chat-index",
+        "conversation.list"
+      ],
+      "remaining": "Full provider search, pagination/virtualization, project history; R002 adds bounded visible search",
+      "newObservationBinding": "chatgpt_surface",
+      "newObservationStatus": "source-wired-native-unit-tested-live-unrun",
+      "fullFamilyVerified": false
+    },
+    {
+      "id": "CG03",
+      "name": "conversation-lifecycle",
+      "baseline": "native-partial",
+      "existingBindings": [
+        "conversation.create",
+        "conversation.connect-existing",
+        "conversation.continue",
+        "conversation.finish",
+        "recovery.reconcile-turn"
+      ],
+      "remaining": "Standalone first turn and replay; hydration/fence reconciliation; provider cancel",
+      "newObservationBinding": "chatgpt_surface",
+      "newObservationStatus": "source-wired-native-unit-tested-live-unrun",
+      "fullFamilyVerified": false
+    },
+    {
+      "id": "CG04",
+      "name": "composer-attachments",
+      "baseline": "native-partial",
+      "existingBindings": [
+        "studio/src/profiles/sites/chatgpt.mjs",
+        "studio/src/capture/actions.mjs"
+      ],
+      "remaining": "Current file picker, attachment metadata, composer/edit/clear authorization and exact readback",
+      "newObservationBinding": "chatgpt_surface",
+      "newObservationStatus": "source-wired-native-unit-tested-live-unrun",
+      "fullFamilyVerified": false
+    },
+    {
+      "id": "CG05",
+      "name": "responses-artifacts",
+      "baseline": "native-partial",
+      "existingBindings": [
+        "conversation.inspect",
+        "conversation.read",
+        "studio/src/capture/conversation-evidence.mjs"
+      ],
+      "remaining": "Provider completion, regenerate/feedback, artifact listing/download receipts",
+      "newObservationBinding": "chatgpt_surface",
+      "newObservationStatus": "source-wired-native-unit-tested-live-unrun",
+      "fullFamilyVerified": false
+    },
+    {
+      "id": "CG06",
+      "name": "model-reasoning",
+      "baseline": "native-partial",
+      "existingBindings": [
+        "harness/src/providers/chatgpt.mjs",
+        "studio/bin/commands/chat.mjs"
+      ],
+      "remaining": "Current signed-in selectable model/effort inventory and exact selection readback",
+      "newObservationBinding": "chatgpt_surface",
+      "newObservationStatus": "source-wired-native-unit-tested-live-unrun",
+      "fullFamilyVerified": false
+    },
+    {
+      "id": "CG07",
+      "name": "projects",
+      "baseline": "generic-only",
+      "existingBindings": [
+        "studio/src/studio/atom-dispatch.mjs"
+      ],
+      "remaining": "Provider project list/create/open/attach/files/settings; local World projects are not ChatGPT Projects",
+      "newObservationBinding": "chatgpt_surface",
+      "newObservationStatus": "source-wired-native-unit-tested-live-unrun",
+      "fullFamilyVerified": false
+    },
+    {
+      "id": "CG08",
+      "name": "settings",
+      "baseline": "structural-only",
+      "existingBindings": [
+        "studio/src/studio/craft-surface.mjs"
+      ],
+      "remaining": "Profile/settings open and section traversal, per-setting typed reads and explicit mutation/readback",
+      "newObservationBinding": "chatgpt_surface",
+      "newObservationStatus": "source-wired-native-unit-tested-live-unrun",
+      "fullFamilyVerified": false
+    },
+    {
+      "id": "CG09",
+      "name": "memory-personalization",
+      "baseline": "generic-only",
+      "existingBindings": [
+        "studio/src/studio/atom-dispatch.mjs"
+      ],
+      "remaining": "Discover sections and state; explicit scoped personalization/memory actions, deletion/retention separately authorized",
+      "newObservationBinding": "chatgpt_surface",
+      "newObservationStatus": "source-wired-native-unit-tested-live-unrun",
+      "fullFamilyVerified": false
+    },
+    {
+      "id": "CG10",
+      "name": "plugins-active-tools",
+      "baseline": "structural-only",
+      "existingBindings": [
+        "studio/src/studio/craft-surface.mjs",
+        "tools/mcp/vivim-arbor/HANDOFF.md"
+      ],
+      "remaining": "Plugin list/detail/tool list, scrollable enumeration, exact refresh and before/after tool ID verification",
+      "newObservationBinding": "chatgpt_surface",
+      "newObservationStatus": "source-wired-native-unit-tested-live-unrun",
+      "fullFamilyVerified": false
+    },
+    {
+      "id": "CG11",
+      "name": "plugin-consent-connection",
+      "baseline": "generic-only",
+      "existingBindings": [
+        "studio/src/studio/atom-dispatch.mjs"
+      ],
+      "remaining": "Consent, connection and permission changes only through supported UI and separately scoped owner approvals",
+      "newObservationBinding": "chatgpt_surface",
+      "newObservationStatus": "source-wired-native-unit-tested-live-unrun",
+      "fullFamilyVerified": false
+    },
+    {
+      "id": "CG12",
+      "name": "work-tasks",
+      "baseline": "structural-only",
+      "existingBindings": [
+        "studio/src/studio/craft-surface.mjs"
+      ],
+      "remaining": "Open Work, task list/detail/create/cancel/inspect; current capture only observed Work label",
+      "newObservationBinding": "chatgpt_surface",
+      "newObservationStatus": "source-wired-native-unit-tested-live-unrun",
+      "fullFamilyVerified": false
+    },
+    {
+      "id": "CG13",
+      "name": "library-files",
+      "baseline": "generic-only",
+      "existingBindings": [
+        "studio/src/studio/atom-dispatch.mjs"
+      ],
+      "remaining": "Provider library/file list/read/download/upload/delete with explicit scopes and receipts",
+      "newObservationBinding": "chatgpt_surface",
+      "newObservationStatus": "source-wired-native-unit-tested-live-unrun",
+      "fullFamilyVerified": false
+    },
+    {
+      "id": "CG14",
+      "name": "account-session",
+      "baseline": "native-partial",
+      "existingBindings": [
+        "studio/src/profiles/sites/chatgpt.mjs",
+        "studio/src/chrome/browser-ownership.mjs"
+      ],
+      "remaining": "Provider account/auth status and recovery without credentials, profile/plan scope",
+      "newObservationBinding": "chatgpt_surface",
+      "newObservationStatus": "source-wired-native-unit-tested-live-unrun",
+      "fullFamilyVerified": false
+    },
+    {
+      "id": "CG15",
+      "name": "errors-notifications",
+      "baseline": "native-partial",
+      "existingBindings": [
+        "studio/src/capture/conversation-runtime.mjs",
+        "studio/src/studio/conversation-tools.mjs"
+      ],
+      "remaining": "Provider-specific errors/notifications, actionable retry classification without duplicate send",
+      "newObservationBinding": "chatgpt_surface",
+      "newObservationStatus": "source-wired-native-unit-tested-live-unrun",
+      "fullFamilyVerified": false
+    },
+    {
+      "id": "CG16",
+      "name": "voice-media",
+      "baseline": "generic-only",
+      "existingBindings": [
+        "studio/src/studio/atom-dispatch.mjs"
+      ],
+      "remaining": "Voice/media controls, permission/recording boundaries, explicit media actions",
+      "newObservationBinding": "chatgpt_surface",
+      "newObservationStatus": "source-wired-native-unit-tested-live-unrun",
+      "fullFamilyVerified": false
+    },
+    {
+      "id": "CG17",
+      "name": "sharing-management",
+      "baseline": "generic-only",
+      "existingBindings": [
+        "studio/src/studio/atom-dispatch.mjs"
+      ],
+      "remaining": "Share, rename, archive, delete and link scope; explicit disclosure/destructive confirmation and postcondition",
+      "newObservationBinding": "chatgpt_surface",
+      "newObservationStatus": "source-wired-native-unit-tested-live-unrun",
+      "fullFamilyVerified": false
+    },
+    {
+      "id": "CG18",
+      "name": "keyboard-accessibility",
+      "baseline": "native-partial",
+      "existingBindings": [
+        "studio/src/studio/craft-surface.mjs",
+        "studio/src/studio/atom-dispatch.mjs"
+      ],
+      "remaining": "Exact observed keyboard interactions via owner path; full accessibility and focus verification",
+      "newObservationBinding": "chatgpt_surface",
+      "newObservationStatus": "source-wired-native-unit-tested-live-unrun",
+      "fullFamilyVerified": false
+    },
+    {
+      "id": "CG19",
+      "name": "responsive-layouts",
+      "baseline": "generic-only",
+      "existingBindings": [
+        "studio/src/studio/browser-atoms.mjs"
+      ],
+      "remaining": "Actual viewport-by-viewport ChatGPT surface capture and responsive transition parity",
+      "newObservationBinding": "chatgpt_surface",
+      "newObservationStatus": "coverage-placeholder-not-classified",
+      "fullFamilyVerified": false
+    },
+    {
+      "id": "CG20",
+      "name": "unknown-reachable-states",
+      "baseline": "unobserved",
+      "existingBindings": [],
+      "remaining": "Discover additional reachable states; no claim of coverage from unknown labels",
+      "newObservationBinding": "chatgpt_surface",
+      "newObservationStatus": "coverage-placeholder-not-classified",
+      "fullFamilyVerified": false
+    }
+  ],
+  "implemented": {
+    "source": "8560572c67bd2d35210fe9901d31074caa49a7cb",
+    "nativeTools": [
+      "chatgpt_surface",
+      "search_chatgpt_visible"
+    ],
+    "recipes": [
+      "provider.chatgpt-surface",
+      "provider.chatgpt-search-visible"
+    ],
+    "runtime": "studio/src/capture/conversation-runtime.mjs",
+    "observation": "studio/src/studio/chatgpt-surface.mjs",
+    "executionAuthorized": false,
+    "nativeUnit": {
+      "session": "ctl-6be8097c4ff358ed",
+      "tests": 24,
+      "pass": 24,
+      "fail": 0,
+      "exit": 0,
+      "source": "8560572c67bd2d35210fe9901d31074caa49a7cb",
+      "files": [
+        "studio/test/unit/chatgpt-surface-integration.test.mjs",
+        "studio/test/unit/craft-surface.test.mjs",
+        "studio/test/unit/craft-intel-routes.test.mjs"
+      ]
+    },
+    "live": {
+      "status": "UNRUN-BLOCKED",
+      "requestId": "e71ab102cc564ff8976eac2e501ac708",
+      "reason": "VIVIM terminal denied or outcome uncertain; same ID reinspection unsuccessful; no replacement effect request or alternate executor attempted"
+    },
+    "deployment": "GitHub main source only; active workstation checkout not replaced and remote MCP registration not deployed"
+  },
+  "remaining": [
+    "Complete exact owner-backed semantic action bindings and postconditions for all 20 groups; do not equate observed label with locator or verified operation.",
+    "Studio service lifecycle and browser continuity, existing-thread hydration/fence recovery, standalone first-send and replay verification.",
+    "Actual Craft export/native hash verification and atlas ingestion through incumbent Craft intelligence path; no raw screenshots or private corpus copied into Git.",
+    "Explicit approved non-destructive navigation, per-setting read/mutation and plugin refresh verification, then remaining project/work/library/voice/media/sharing and responsive paths."
+  ]
+}
