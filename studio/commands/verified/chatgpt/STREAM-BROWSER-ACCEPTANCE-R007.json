@@ -1,0 +1,122 @@
+{
+  "schema": "vivim.studio.stream-browser-acceptance/1",
+  "revision": "R007",
+  "date": "2026-11-26",
+  "source": "8560572c67bd2d35210fe9901d31074caa49a7cb",
+  "stream": {
+    "session": "ctl-549bb38233e1c50c",
+    "requestId": "ea260058cafe490aa321bb9876540001",
+    "conversationId": "1ad04979-fa2b-48b6-a82c-90ae2f1bbf0e",
+    "targetId": "E050FCB823107062412DBDBCB66F3E30",
+    "thread": "chatgpt-c:6b07c4c0-b1ac-83eb-a99e-eaa75412b790",
+    "key": "arbor-stream-wave-r007-01",
+    "route": "/api/v1/conversations/{conversation}/events?include=text",
+    "initialHttp": 200,
+    "replayHttp": 200,
+    "epoch": "722ef05c220d5f90",
+    "cursor": "722ef05c220d5f90:2",
+    "live": [
+      {
+        "sequence": 2,
+        "state": "unknown",
+        "chars": 0
+      },
+      {
+        "sequence": 6,
+        "state": "unknown",
+        "chars": 0
+      },
+      {
+        "sequence": 8,
+        "state": "waiting",
+        "chars": 0
+      },
+      {
+        "sequence": 10,
+        "state": "streaming",
+        "chars": 1708,
+        "digest": "eebbbf4103b1b7acb34e60d5c24bb1f502625c402f66b9fb3e5bdbb751c2ab8c"
+      },
+      {
+        "sequence": 15,
+        "state": "ready",
+        "chars": 1708,
+        "digest": "eebbbf4103b1b7acb34e60d5c24bb1f502625c402f66b9fb3e5bdbb751c2ab8c"
+      }
+    ],
+    "replayedSequences": [
+      6,
+      8,
+      10,
+      15
+    ],
+    "identicalReplayHashes": 4,
+    "observedDelivery": true,
+    "verified": true,
+    "settled": true,
+    "beginMarker": true,
+    "endMarker": true,
+    "finalSnapshotMatches": true,
+    "providerSubmissions": 1,
+    "doneMarker": true,
+    "lastObservedTerminalState": "running",
+    "elapsedMs": 97931,
+    "limitations": [
+      "Only one nonempty snapshot before ready; no token or incremental growing-text delivery established.",
+      "Second subscriber used Last-Event-ID while original subscriber remained connected; no disconnect/restart recovery tested here.",
+      "Event cursors are bounded process-local delivery IDs; not durable raw record sequences.",
+      "MCP terminal output is polled; direct remote SSE exposure not deployed.",
+      "First R006 combined request denied or uncertain; separate read-only journal search found no matching test key (ctl-93b69e8b39d8c34e). R007 independent fresh experiment used new unique key and marker."
+    ]
+  },
+  "browser": {
+    "session": "ctl-574120097358565e",
+    "requestId": "ea260058cafe490aa321bb9876540002",
+    "instances": [
+      {
+        "port": 38721,
+        "pid": 23168,
+        "identity": "/devtools/browser/cc05a656-4f98-44bd-bb90-60d16af06f72",
+        "windows": [
+          175452363,
+          175452365
+        ],
+        "targetsBefore": 1,
+        "targetsAfter": 2,
+        "verified": true
+      },
+      {
+        "port": 38722,
+        "pid": 16504,
+        "identity": "/devtools/browser/5151edea-99c0-4a2c-a2cf-6d11c9795dbc",
+        "windows": [
+          877747063,
+          877747065
+        ],
+        "targetsBefore": 1,
+        "targetsAfter": 2,
+        "verified": true
+      }
+    ],
+    "distinctProfiles": 2,
+    "distinctPids": 2,
+    "distinctBrowserIds": 2,
+    "bothLeasesHeld": true,
+    "samePortRefused": true,
+    "wrongProfileRefused": true,
+    "credentialsCopied": false,
+    "signedInTest": false,
+    "cleanup": "Closed test-created second targets, released both leases, called Browser.close on both verified scratch browsers; terminal exited cleanly.",
+    "terminal": {
+      "state": "exited",
+      "exitCode": 0,
+      "success": true,
+      "elapsedMs": 10084
+    },
+    "limitations": [
+      "Actual independent Chrome instances and windows tested on blank pages; not two independent authenticated provider sessions or concurrent provider sends.",
+      "No owner profile copy, cookie export, or credential transfer.",
+      "No direct OS input parallelism or persistent multi-wave orchestration deployed."
+    ]
+  }
+}
