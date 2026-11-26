@@ -24,7 +24,7 @@ export function validateTerminalPolicy(p,now){
  const fields=['schema','enabled','expiresAt','programs','roots','maxTimeoutMs','allowInteractive'];
  if(!(exact(p,fields)||exact(p,[...fields,'machineScope']))||
     p.schema!=='vivim.workstation-terminal-policy/1'||p.enabled!==true||
-    !Number.isSafeInteger(p.expiresAt)||p.expiresAt<=now||p.expiresAt-now>86400000||
+    !(p.expiresAt===null?p.machineScope!==undefined:Number.isSafeInteger(p.expiresAt)&&p.expiresAt>now&&p.expiresAt-now<=86400000)||
     !Number.isSafeInteger(p.maxTimeoutMs)||p.maxTimeoutMs<100||p.maxTimeoutMs>1800000||
     typeof p.allowInteractive!=='boolean'||!Array.isArray(p.programs)||p.programs.length<1||p.programs.length>64||
     !Array.isArray(p.roots)||p.roots.length<1||p.roots.length>16)throw fail('WORKSTATION_TERMINAL_POLICY_INVALID');
@@ -62,7 +62,7 @@ export function createTerminalPolicy({env=process.env,now=Date.now}={}){
   const request=normalizeTerminalRequest(input),{policy,configSha}=load();
   const program=policy.programs.find(p=>p.id===request.program),root=policy.roots.find(r=>r.id===request.root_id);
   if(request.root_id==='machine'){
-   if(!policy.machineScope||request.timeout_ms>policy.maxTimeoutMs||request.timeout_ms>policy.expiresAt-now()||request.interactive&&!policy.allowInteractive)throw fail('WORKSTATION_TERMINAL_NOT_GRANTED');
+   if(!policy.machineScope||request.timeout_ms>policy.maxTimeoutMs||(policy.expiresAt!==null&&request.timeout_ms>policy.expiresAt-now())||request.interactive&&!policy.allowInteractive)throw fail('WORKSTATION_TERMINAL_NOT_GRANTED');
    try{
     const workspace=resolveMachineCwd(request.cwd,policy.machineScope,now());
     const executable=resolveMachineProgram(program?.path??request.program,policy.machineScope,env,now());
@@ -70,7 +70,7 @@ export function createTerminalPolicy({env=process.env,now=Date.now}={}){
     return {request,configSha,executable,workspace,environmentNames:program?.environment??['SystemRoot','WINDIR','PATH','PATHEXT','HOME','USERPROFILE','APPDATA','LOCALAPPDATA','TEMP','TMP','LANG','TERM','NO_COLOR'],toolchain:program?.toolchain??null,expiresAt:policy.expiresAt};
    }catch{throw fail('WORKSTATION_TERMINAL_CWD_INVALID')}
   }
-  if(!program||!root||request.timeout_ms>policy.maxTimeoutMs||request.timeout_ms>policy.expiresAt-now()||request.interactive&&!policy.allowInteractive)throw fail('WORKSTATION_TERMINAL_NOT_GRANTED');
+  if(!program||!root||request.timeout_ms>policy.maxTimeoutMs||(policy.expiresAt!==null&&request.timeout_ms>policy.expiresAt-now())||request.interactive&&!policy.allowInteractive)throw fail('WORKSTATION_TERMINAL_NOT_GRANTED');
   try{
    const executable=pinned(program.path,program.sha256,256*1024*1024);
    if(process.platform==='win32'&&extname(executable.path).toLowerCase()!=='.exe')throw fail('WORKSTATION_TERMINAL_POLICY_INVALID');
