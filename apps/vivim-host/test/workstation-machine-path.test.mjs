@@ -56,3 +56,10 @@ test('real native absolute-path read and write preview/apply with explicit root 
  assert.throws(()=>port.read(FILE_READ,{root_id:'machine',path:path.join(secret,'hidden.txt')}));
  assert.throws(()=>port.read(FILES_READ,{root_id:'machine',path:base,paths_json:'["secret/hidden.txt"]'}));
 });
+
+test('standing owner scope does not relax protected path or expiry validation',()=>{
+ const standing={...scope,expiresAt:null};
+ assert.equal(machineTarget('D:\\work',standing,Date.now()+365*86400000).relative,'work');
+ assert.throws(()=>machineTarget('C:\\authority\\grant.json',standing));
+ for(const expiresAt of [undefined,0,'never',Date.now()+2*86400000])assert.throws(()=>machineTarget('D:\\work',{...scope,expiresAt}));
+});
