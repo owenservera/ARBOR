@@ -186,10 +186,11 @@ $messages=@('{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVe
 $lines=@($messages|& $node (Join-Path $profile 'server\tunnel-readonly.cjs'))
 if($LASTEXITCODE -ne 0 -or $lines.Count -ne 2){throw 'Candidate handshake failed'}
 $names=@(($lines[1]|ConvertFrom-Json).result.tools|ForEach-Object name)
-$expectedTools=if($EnableGeneralTerminal){16}else{15}
+# Include development file reads and bounded session waits in the current catalogue.
+$expectedTools=if($EnableGeneralTerminal){18}else{17}
 if($OwnerProfilePath -and -not $grant.allowWrites){$expectedTools-=3}
 if($OwnerProfilePath -and -not $grant.terminal.allowInteractive){$expectedTools-=1}
-if($names.Count -ne $expectedTools -or $names -notcontains 'vivim_session_start' -or ($grant.allowWrites -and $names -notcontains 'vivim_file_edit') -or ($EnableGeneralTerminal -and $names -notcontains 'vivim_terminal_start')){throw 'Candidate tools mismatch'}
+if($names.Count -ne $expectedTools -or $names -notcontains 'vivim_session_start' -or ($grant.allowWrites -and $names -notcontains 'vivim_file_edit') -or ($EnableGeneralTerminal -and $names -notcontains 'vivim_terminal_start')){throw ('Candidate tools mismatch: expected '+$expectedTools+'; received '+$names.Count+'; names='+($names -join ','))}
 Write-Output ('STAGED_SOURCE='+$SourceSha);Write-Output ('STAGED_TOOLS='+($names -join ','))
 if(-not $Activate){return}
 # Same supervisor, replace only the MCP child after the production Host passed.
