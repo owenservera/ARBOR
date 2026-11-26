@@ -5,6 +5,7 @@ Purpose: one provider-specific operational knowledge and verification overlay fo
 ## Start here
 - [CAPABILITIES.json](CAPABILITIES.json): typed capability identifiers, native Studio tool/recipe mapping, evidence state and MCP admission recommendation.
 - [EVIDENCE-R001.json](EVIDENCE-R001.json): bounded live Windows test evidence, known gaps and native unit results.
+- [CRAFT-SURFACE-R002.json](CRAFT-SURFACE-R002.json): 20-family gap assessment of actual Craft output, raw evidence hashes, new native read operations and tests.
 - [MCP-INTEGRATION.md](MCP-INTEGRATION.md): native remote tool integration plan and acceptance tests.
 - Implementation authority: [CONVERSATION_TOOLS](../../../src/studio/conversation-tools.mjs), [recipe catalogue](../../../src/recipes/catalog.mjs), [conversation runtime](../../../src/capture/conversation-runtime.mjs), [CLI](../../../bin/commands/chat.mjs). Always import those definitions; never retype them or infer deployment from a row here.
 
@@ -45,3 +46,6 @@ PROPOSED: no current admitted implementation. Native source and local unit tests
 
 ## Next
 Fix exact-thread hydration and durable fencing reconciliation, stabilize owner lifecycle and process exit, verify standalone create + same-key replay, reconcile, then integrate typed remote tools in the incumbent VIVIM MCP/Host path. No production deployment or new grants in this folder.
+
+## R002 — Craft surface reconciliation (2026-11-26)
+Actual workstation output: 5 Craft walkthrough receipts (4 completed, 1 aborted), 6 accessibility captures (38–94 controls per capture). Most names were redacted; no claim of 94 unique actionable capabilities or complete settings coverage. Native unit verification on pinned source 8560572c67bd2d35210fe9901d31074caa49a7cb: 24/24 PASS. Two new native read-only Studio tools/recipes: `chatgpt_surface` / `provider.chatgpt-surface` and `search_chatgpt_visible` / `provider.chatgpt-search-visible`. Run through the existing Studio owner with exact target ID and authorized content scope. For recipe input use a JSON file with targetId, and for visible search query plus optional bounded index limits. Observation covers 20 family rows, not 20 proven effect bindings. Search filters only the rendered candidate set. Exact profile continuity is mandatory. New live probe was denied/outcome uncertain by workstation MCP; no live proof, deployment or remote MCP publication claimed. See R002 evidence for remaining action-specific gaps.
