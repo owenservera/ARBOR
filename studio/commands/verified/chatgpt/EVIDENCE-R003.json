@@ -161,10 +161,11 @@
   "processLifecycle": {
     "runtimeCloseReturned": true,
     "doneMarkerObserved": true,
-    "lastObservedTerminalState": "running",
-    "elapsedMs": 26787,
-    "exitCode": null,
-    "note": "Application acceptance passed before terminal exit. No completed process claim; retained Chrome or open handles may prevent exit."
+    "terminalState": "timed-out",
+    "elapsedMs": 60110,
+    "reportedExitCode": 0,
+    "terminalSuccess": false,
+    "note": "Native application acceptance and runtime close were observed before the terminal timed out. Exit code 0 is reported by the containment receipt but terminal success is false; process lifecycle remains defective. No completed clean-process claim."
   },
   "deployment": {
     "studioNativeSource": "committed",
