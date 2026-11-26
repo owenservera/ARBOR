@@ -196,3 +196,19 @@ export function normalizeChatIndex(raw, options = {}) {
     coverage: { renderedLinks, scannedLinks: links.length, truncatedScan, visibleThreadLinks, uniqueThreads: order.length,
       duplicatesMerged: visibleThreadLinks - order.length, returnedEntries: entries.length, omittedEntries: order.length - entries.length, titleTruncated } };
 }
+
+// Local filtering of the already bounded native rendered index. No provider search, input,
+// pagination or navigation. Do not return the caller's private query in the response.
+export function filterVisibleChatIndex(observation, query) {
+  if (typeof query !== 'string' || !query.trim() || query.length > 300 || /[\x00-\x1f\x7f]/.test(query)) throw fail('INVALID_CHAT_INDEX_QUERY');
+  const index = observation?.index;
+  if (!index || !Array.isArray(index.entries) || index.invalidResult !== false || index.complete !== false || index.candidatesOnly !== true)
+    throw fail('CHAT_INDEX_OBSERVATION_UNAVAILABLE');
+  const normalize = value => String(value ?? '').normalize('NFKD').replace(/\p{M}/gu, '').toLowerCase();
+  const needle = normalize(query.trim());
+  const entries = index.entries.filter(e => normalize(e.displayTitle?.text).includes(needle) || normalize(e.threadRef).includes(needle));
+  return { targetId: observation.targetId, origin: observation.origin, readAt: observation.readAt,
+    schema: 'vivim.chatgpt-visible-search/1', scope: 'returned-rendered-candidates-only', complete: false, candidatesOnly: true,
+    entries, coverage: { searchedEntries: index.entries.length, matchedEntries: entries.length, index: index.coverage },
+    limitations: ['Only the bounded rendered candidate set was filtered. No provider search or older history was accessed.','Display titles are untrusted and may be truncated. No candidate is a live thread binding.'] };
+}
