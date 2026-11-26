@@ -15,7 +15,7 @@ export function normalizeTerminalRequest(input) {
   if(machine?!machineProgramSelector(program):(!cleanText(program,128)||!/^[A-Za-z0-9][A-Za-z0-9_.-]*$/.test(program)||program==='.'||program==='..'))invalid();
   if(!cleanText(root_id,64)||!/^[a-z][a-z0-9-]*$/.test(root_id))invalid();
   if(machine){try{machinePath(cwd)}catch{invalid()}}else if(!cleanText(cwd,1024)||(cwd!=='.'&&cwd.split('/').some(p=>!p||p==='.'||p==='..'||/[\x00-\x1f\\:<>|?*"]/.test(p)||/[. ]$/.test(p))))invalid();
-  if(!Array.isArray(args)||args.length>64||Array.from(args).some(a=>!cleanText(a,4096))||args.reduce((n,a)=>n+a.length,0)>32768)invalid();
+  if(!Array.isArray(args)||args.length>64||Array.from(args).some(a=>!cleanText(a,16384)||Buffer.byteLength(a)>16384)||args.reduce((n,a)=>n+a.length,0)>32768)invalid();
   if(typeof interactive!=='boolean'||!Number.isSafeInteger(timeout_ms)||timeout_ms<100||timeout_ms>1800000)invalid();
   return {program,args:[...args],root_id,cwd,interactive,timeout_ms};
 }
@@ -25,5 +25,5 @@ export function normalizeTerminalRequest(input) {
 import {decodeWorkstationText} from './workstation-text-codec.mjs';
 export function decodeTerminalAction(args){
  if(args===null||typeof args!=='object'||Array.isArray(args)||Object.keys(args).length!==1||!Object.hasOwn(args,'request'))throw Error('WORKSTATION_TERMINAL_REQUEST_INVALID');
- return normalizeTerminalRequest(JSON.parse(decodeWorkstationText(args.request)));
+ return normalizeTerminalRequest(JSON.parse(decodeWorkstationText(args.request,16*1024)));
 }

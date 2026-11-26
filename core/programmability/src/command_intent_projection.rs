@@ -97,6 +97,7 @@ fn valid_specs(id: &str, value: &Value) -> bool {
             Some("string") => matches!(
                 (spec["min"].as_u64(), spec["max"].as_u64()),
                 (Some(min), Some(max)) if min >= 1 && min <= max && max <= match (id,key.as_str()) {
+                    ("workstation.session.terminal_start","request") => 21_852,
                     ("workstation.file.write","content") | ("workstation.file.edit","old_text"|"new_text") => 5_592_412,
                     _ => 8000,
                 }

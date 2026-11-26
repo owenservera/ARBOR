@@ -2031,7 +2031,7 @@
         "request": {
           "type": "string",
           "min": 8,
-          "max": 8000
+          "max": 21852
         }
       },
       "examples": [

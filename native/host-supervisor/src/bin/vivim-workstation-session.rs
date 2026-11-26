@@ -64,7 +64,7 @@ fn execute(v:&Value,sessions:&mut BTreeMap<String,Session>)->Result<Value,String
   let args=v.get("args").and_then(Value::as_array).ok_or("INVALID_ARGS")?;
   let env=v.get("environment").and_then(Value::as_object).ok_or("INVALID_ENV")?;
   if args.len()>64||env.len()>32{return error("INVALID_SPEC");}
-  let mut argv=Vec::<OsString>::new();for a in args{let a=a.as_str().ok_or("INVALID_ARGS")?;if a.len()>4096||a.contains('\0'){return error("INVALID_ARGS");}argv.push(a.into());}
+  let mut argv=Vec::<OsString>::new();for a in args{let a=a.as_str().ok_or("INVALID_ARGS")?;if a.len()>16384||a.contains('\0'){return error("INVALID_ARGS");}argv.push(a.into());}
   let mut environment=Vec::<(OsString,OsString)>::new();for(k,val)in env{let val=val.as_str().ok_or("INVALID_ENV")?;if k.is_empty()||k.contains('=')||k.contains('\0')||val.len()>32768||val.contains('\0'){return error("INVALID_ENV");}environment.push((k.into(),val.into()));}
   let ttl=number(v,"timeoutMs")?;if !(100..=1_800_000).contains(&ttl){return error("INVALID_TIMEOUT");}
   let interactive=v.get("interactive").and_then(Value::as_bool).ok_or("INVALID_REQUEST")?;

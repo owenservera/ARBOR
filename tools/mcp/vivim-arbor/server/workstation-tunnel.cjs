@@ -14,7 +14,7 @@ const keys=(x,a)=>obj(x)&&Object.keys(x).every(k=>a.includes(k));
 const bad=()=>{throw Error('Workstation request denied or outcome uncertain')};
 // Bounded disk quota, not an authorization decision. Never delete replay claims to make room.
 const MAX_LEDGER_CLAIMS=8192;
-const FILE_TEXT_BYTES=4*1024*1024,HOST_REPLY_BYTES=32*1024*1024;
+const FILE_TEXT_BYTES=4*1024*1024,HOST_REPLY_BYTES=32*1024*1024,TERMINAL_JSON_BYTES=16*1024;
 const same=(a,b)=>digest(a)===digest(b);
 const S='workstation.session.',F='workstation.file.',D='workstation.directory.';
 const TERMINAL=S+'terminal_start';
@@ -102,7 +102,7 @@ function createWorkstationTools({directory=path.join(__dirname,'..','session-aut
   return s;
  }
  function terminalRequest(args){
-  if(!g.terminal||!keys(args,['request'])||typeof args.request!=='string'||!args.request.startsWith('b64:')||args.request.length>8000)bad();
+  if(!g.terminal||!keys(args,['request'])||typeof args.request!=='string'||!args.request.startsWith('b64:')||args.request.length>4+4*Math.ceil(TERMINAL_JSON_BYTES/3))bad();
   const bytes=Buffer.from(args.request.slice(4),'base64');
   if(bytes.toString('base64')!==args.request.slice(4))bad();
   const v=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes));
@@ -203,9 +203,9 @@ function createWorkstationTools({directory=path.join(__dirname,'..','session-aut
   if(action===S+'input'&&!g.interactiveRecipes.length&&!g.terminal?.allowInteractive)continue;
   if(!action.startsWith(S)&&(!g.roots.length||(mutating&&!g.allowWrites)))continue;
   const required=mutating?[...fields,'request_id']:fields;
-  tools.push([name,(action==='workstation.development.file.read'?'Development only: read source with project-scoped Meta-VLANG coding context. Use for coding tasks, not generic file reads. ':action===TERMINAL?(g.machineScope===true?'Owner-machine mode: root_id machine accepts absolute local cwd and resolved executable path/name; OS permissions apply. ':'')+'Start an explicitly locally authorized terminal session. request_json is JSON with program (granted ID), args (string array), root_id (granted root), cwd (relative path or .), interactive (boolean), timeout_ms (integer 100–1800000). Limit 5997 UTF-8 bytes; never include credentials. ':'Use only the locally granted Host '+action+' capability. '+(action===F+'write'||action===F+'edit'?'Direct UTF-8 file content limit 4 MiB. ':''))+(mutating?'Supply a unique 32-character lowercase hexadecimal request_id; repeat only the same ID to inspect an uncertain receipt.':'Read-only, scoped to granted workspace or owned session.'),
+  tools.push([name,(action==='workstation.development.file.read'?'Development only: read source with project-scoped Meta-VLANG coding context. Use for coding tasks, not generic file reads. ':action===TERMINAL?(g.machineScope===true?'Owner-machine mode: root_id machine accepts absolute local cwd and resolved executable path/name; OS permissions apply. ':'')+'Start an explicitly locally authorized terminal session. request_json is JSON with program (granted ID), args (string array), root_id (granted root), cwd (relative path or .), interactive (boolean), timeout_ms (integer 100–1800000). Limit 16384 UTF-8 bytes; Windows argv constraints still apply; never include credentials. ':'Use only the locally granted Host '+action+' capability. '+(action===F+'write'||action===F+'edit'?'Direct UTF-8 file content limit 4 MiB. ':''))+(mutating?'Supply a unique 32-character lowercase hexadecimal request_id; repeat only the same ID to inspect an uncertain receipt.':'Read-only, scoped to granted workspace or owned session.'),
    {type:'object',properties:Object.fromEntries(required.map(k=>[k,{type:'string'}])),required,additionalProperties:false},
-   a=>{if(action===TERMINAL){const v=a.request_json;if(typeof v!=='string'||Buffer.byteLength(v)>5997)bad();return mutation(action,{request:'b64:'+Buffer.from(v,'utf8').toString('base64')},a.request_id);}const args=Object.fromEntries(fields.map(k=>{if(['content','old_text','new_text','input','literal'].includes(k)){const v=a[k];if(typeof v!=='string'||v.includes('\0')||Buffer.byteLength(v)>(k==='input'?4096:k==='literal'?160:FILE_TEXT_BYTES))bad();return [k,'b64:'+Buffer.from(v,'utf8').toString('base64')];}return [k,a[k]];}));return mutating?mutation(action,args,a.request_id):readAction(action,args);},!mutating]);
+   a=>{if(action===TERMINAL){const v=a.request_json;if(typeof v!=='string'||Buffer.byteLength(v)>TERMINAL_JSON_BYTES)bad();return mutation(action,{request:'b64:'+Buffer.from(v,'utf8').toString('base64')},a.request_id);}const args=Object.fromEntries(fields.map(k=>{if(['content','old_text','new_text','input','literal'].includes(k)){const v=a[k];if(typeof v!=='string'||v.includes('\0')||Buffer.byteLength(v)>(k==='input'?4096:k==='literal'?160:FILE_TEXT_BYTES))bad();return [k,'b64:'+Buffer.from(v,'utf8').toString('base64')];}return [k,a[k]];}));return mutating?mutation(action,args,a.request_id):readAction(action,args);},!mutating]);
  }
  if(g.recipes.length||g.terminal){
   const required=['session_id','stdout_cursor','stderr_cursor','wait_ms'];
