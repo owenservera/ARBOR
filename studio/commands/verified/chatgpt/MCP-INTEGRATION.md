@@ -43,3 +43,8 @@ Do not duplicate a reply/result store or poll scheduler. `status` is a projectio
 
 ## Implementation ownership
 Existing Studio module remains JS because it is the incumbent implementation; new Host/native MCP work should follow Rust-first project policy unless a minimal transport binding requires existing JS tooling. This folder introduces no provider driver, production migration, grants, daemon or deployment. See EVIDENCE-R001.json for exact test sessions, conversation, turn, refusal and unit evidence.
+
+## R002 additions (native Studio source only)
+- `vivim_chatgpt_surface` → `chatgpt_surface` (POST /api/v1/chatgpt-surface, input exact targetId). Fixed canonical ChatGPT origin; bounded semantic candidates and explicit incompleteness, no selectors or action authority.
+- `vivim_chatgpt_search_visible` → `search_chatgpt_visible` (POST /api/v1/chatgpt-visible-search, input targetId, query and optional existing index bounds). Exact verified profile continuity; no provider UI search, pagination, or complete history. Query/body private; titles only with authorized content-read scope.
+Both are in the incumbent native tool and recipe registry; 24/24 native tests passed on the exact source snapshot. Remote VIVIM MCP aliases remain proposed and live signed-in probe remains blocked. Do not admit new effectful operations merely because the observation group exists. Full coverage matrix: CRAFT-SURFACE-R002.json.
