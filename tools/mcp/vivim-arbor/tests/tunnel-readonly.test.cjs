@@ -96,3 +96,16 @@ require('node:test').test('bounded wait does not block health or other calls on 
  await serve(profile,messages,line=>{const m=JSON.parse(line);seen.push(m.id);if(m.id===2)release();});
  require('node:assert/strict').deepEqual(seen,[2,1]);
 });
+
+
+test('transport health reports inaccessible machine scope as degraded',async()=>{
+ let health={grant:'valid',machineScope:true,cDrive:'unavailable'};
+ const workstation=Object.assign([], {workstationHealth:async()=>health});
+ const p=createProfile({}, {workstation});
+ await p.dispatch(request(1,'initialize',{protocolVersion:'2025-11-25'}));await p.dispatch(notification);
+ const read=async()=>JSON.parse((await call(p,'vivim_tunnel_health')).result.content[0].text);
+ assert.equal((await read()).status,'degraded');
+ health={grant:'expired',cDrive:'unchecked'};assert.equal((await read()).status,'degraded');
+ health={grant:'valid',machineScope:true,cDrive:'accessible'};assert.equal((await read()).status,'ready');
+ assert.deepEqual((await read()).workstationHealth,health);
+});
