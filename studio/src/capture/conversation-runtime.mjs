@@ -590,6 +590,21 @@ export function createConversationRuntime({ paths, profileStore, familyStore, po
         ...(d.openIndexSession ? { openSession: d.openIndexSession } : {}),
         ...(d.evaluateIndex ? { evaluate: d.evaluateIndex } : {}) });
     },
+    async chatgptSurface({targetId}) {
+      active();
+      // Read-only observation through the incumbent verified Craft/AX reader; no new runtime,
+      // arbitrary selector, profile, browser navigation, recorder or writer.
+      const {observeChatGPTSurface}=await import('../studio/craft-surface.mjs');
+      return (d.observeChatGPTSurface??observeChatGPTSurface)({profileDir:paths.chromeProfile,port,targetId});
+    },
+    async searchVisibleChatGPT({query,...body}) {
+      active();
+      const {filterVisibleChatIndex}=await import('./chatgpt-chat-index.mjs');
+      const index=await d.readChatIndex({...body,site:'chatgpt'},{port,listTargets:d.listTargets,
+        ...(d.openIndexSession?{openSession:d.openIndexSession}:{}),
+        ...(d.evaluateIndex?{evaluate:d.evaluateIndex}:{})});
+      return filterVisibleChatIndex(index,query);
+    },
     // @serves 004,014
     async targets() {
       active();
