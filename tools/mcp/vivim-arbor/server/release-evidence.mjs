@@ -35,7 +35,7 @@ export function validateEvidence(manifest,receipt,grant,recipes,roots,now=Date.n
  const machine=manifest.ownerProfile==='machine';
  if(machine!==(grant?.machineScope===true)||machine!==(roots?.machineScope!==undefined)||(machine&&!grant?.terminal))deny();
  if(grant?.schema!=='vivim.workstation-tunnel-grant/1'||!sha(grant.id,32)||grant.port!==43187||
-  !Number.isSafeInteger(grant.expiresAt)||grant.expiresAt<=now||grant.expiresAt-now>86400000||
+  !(grant.expiresAt===null?machine:Number.isSafeInteger(grant.expiresAt)&&grant.expiresAt>now&&grant.expiresAt-now<=86400000)||
   grant.dataRoot!==manifest.dataRoot||grant.recipeConfigSha!==manifest.recipeConfigSha||grant.rootConfigSha!==manifest.rootConfigSha||
   !ids(grant.recipes)||!ids(grant.roots)||!ids(manifest.recipes)||!ids(manifest.roots)||
   !same(sorted(grant.recipes),sorted(manifest.recipes))||!same(sorted(grant.roots),sorted(manifest.roots))||
