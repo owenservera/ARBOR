@@ -72,8 +72,17 @@ fi
 [[ -n ${PREFIX:-} && -x $PREFIX/bin/pkg ]] || { echo 'Run inside Termux.' >&2; exit 1; }
 case ${1:-prepare} in
  prepare)
+  # Termux is rolling-release: partial upgrades are unsupported.
   pkg update
-  pkg install -y nodejs-lts git golang clang
+  pkg upgrade
+  pkg install -y git golang clang libicu
+  if ! command -v node >/dev/null 2>&1; then
+    pkg install -y nodejs-lts
+  fi
+  if ! node --version; then
+    echo 'Node runtime broken; synchronize Termux packages with pkg upgrade, then retry prepare.' >&2
+    exit 1
+  fi
   mkdir -p "$root"; chmod 700 "$root"
   write_server "$root/server.cjs"
   node "$root/server.cjs" --self-test
