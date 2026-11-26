@@ -17,7 +17,16 @@ function createProfile(env = process.env, {fetcher=globalThis.fetch,acceptance=n
   const tools = [
     ['vivim_tunnel_health', 'Read the private VIVIM transport profile health. No personal data or actions.',
       {type:'object',properties:{},required:[],additionalProperties:false},
-      () => {const maintenanceState=admission.status();return {schema:'vivim.tunnel-health/1',status:maintenanceState?'maintenance':'ready',...(maintenanceState?{maintenance:maintenanceState}:{}),profile:workstation.length?'private-workstation':probe?'private-fixed-probe':'private-readonly',hostDiscovery:env.VIVIM_TUNNEL_HOST_DISCOVERY === '1',...(probe?{workstationProbe:true}:{}),...(workstation.length?{workstationTools:workstation.length}:{})};}]
+      async () => {
+        const maintenanceState=admission.status();
+        let workstationHealth;
+        if(!maintenanceState&&typeof workstation.workstationHealth==='function'){
+          try{workstationHealth=await workstation.workstationHealth();}
+          catch{workstationHealth={grant:'unavailable',cDrive:'unchecked'};}
+        }
+        const degraded=workstationHealth&&(workstationHealth.grant!=='valid'||(workstationHealth.machineScope&&workstationHealth.cDrive!=='accessible'));
+        return {schema:'vivim.tunnel-health/1',status:maintenanceState?'maintenance':degraded?'degraded':'ready',...(maintenanceState?{maintenance:maintenanceState}:{}),profile:workstation.length?'private-workstation':probe?'private-fixed-probe':'private-readonly',hostDiscovery:env.VIVIM_TUNNEL_HOST_DISCOVERY === '1',...(probe?{workstationProbe:true}:{}),...(workstation.length?{workstationTools:workstation.length}:{}),...(workstationHealth?{workstationHealth}:{})};
+      }]
   ];
   // Explicit opt-in by the local operator, not by remote tool arguments.
   if (env.VIVIM_TUNNEL_HOST_DISCOVERY === '1') {
