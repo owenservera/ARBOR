@@ -57,7 +57,7 @@ function createWorkstationTools({directory=path.join(__dirname,'..','session-aut
  }
  // Expose only coarse readiness; never export grant contents or private paths.
  const unavailable=()=>Object.assign([], {workstationHealth:async()=>({grant:"unavailable",cDrive:"unchecked"})});
- try{({v:g,h:initial}=load())}catch{return unavailable()}
+ try{({v:g,h:initial}=load())}catch{return fs.existsSync(path.join(directory,'grant.json'))?unavailable():[]}
  function check(){if(load().h!==initial)bad();}
  async function workstationHealth(){
   if(g.expiresAt<=now())return {grant:"expired",expiresAt:g.expiresAt,cDrive:"unchecked"};
