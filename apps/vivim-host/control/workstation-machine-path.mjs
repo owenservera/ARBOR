@@ -16,7 +16,7 @@ export function machinePath(value){
 const key=x=>machinePath(x).replace(/\\$/,'').toLowerCase();
 const within=(a,b)=>key(a)===key(b)||key(b).startsWith(key(a)+'\\');
 export function validateMachineScope(scope,now=Date.now()){
- if(!exact(scope,['schema','expiresAt','protectedPaths'])||scope.schema!=='vivim.owner-machine-scope/1'||!Number.isSafeInteger(scope.expiresAt)||scope.expiresAt<=now||scope.expiresAt-now>86400000||!Array.isArray(scope.protectedPaths)||scope.protectedPaths.length<2||scope.protectedPaths.length>32)fail();
+ if(!exact(scope,['schema','expiresAt','protectedPaths'])||scope.schema!=='vivim.owner-machine-scope/1'||(scope.expiresAt!==null&&(!Number.isSafeInteger(scope.expiresAt)||scope.expiresAt<=now||scope.expiresAt-now>86400000))||!Array.isArray(scope.protectedPaths)||scope.protectedPaths.length<2||scope.protectedPaths.length>32)fail();
  const seen=new Set();
  for(const v of scope.protectedPaths){const k=key(v);if(k.length<=2||seen.has(k))fail();seen.add(k);}
  return scope;
