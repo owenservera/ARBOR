@@ -1,7 +1,7 @@
 {
   "schema": "vivim.studio.verified-capabilities/1",
   "provider": "chatgpt",
-  "revision": "R002",
+  "revision": "R003",
   "date": "2026-11-26",
   "authority": {
     "toolDefinitions": "studio/src/studio/conversation-tools.mjs#CONVERSATION_TOOLS",
@@ -492,11 +492,13 @@
       "native": "chatgpt_surface",
       "recipe": "provider.chatgpt-surface",
       "mcp": "vivim_chatgpt_surface",
-      "verification": "SOURCE_PRESENT",
-      "evidence": [],
+      "verification": "LIVE_VERIFIED",
+      "evidence": [
+        "EV-11"
+      ],
       "effect": "read",
-      "admission": "needs-live-test",
-      "notes": "R002 native unit tests 24/24 including integration/privacy; fixed semantic candidate projection covers 20 family rows, no locator or effect proof; live invocation blocked at workstation terminal. See CRAFT-SURFACE-R002.json."
+      "admission": "candidate",
+      "notes": "R003 live signed-in Windows read: 24 controls, 7/20 families with candidates, 14 unclassified, complete=false. No action/locator or full family verification. Evidence: EVIDENCE-R003.json."
     },
     {
       "id": "CG-038",
@@ -504,15 +506,18 @@
       "native": "search_chatgpt_visible",
       "recipe": "provider.chatgpt-search-visible",
       "mcp": "vivim_chatgpt_search_visible",
-      "verification": "SOURCE_PRESENT",
-      "evidence": [],
+      "verification": "LIVE_VERIFIED",
+      "evidence": [
+        "EV-12"
+      ],
       "effect": "read",
-      "admission": "needs-live-test",
-      "notes": "R002 native unit-tested local filtering of bounded visible candidates by title/ref; owner profile continuity checked, no provider search/pagination or live binding. See CRAFT-SURFACE-R002.json."
+      "admission": "candidate",
+      "notes": "R003 live bounded index search: 16 unique rendered candidates, exact known thread found once, negative query 0. Title search unit-tested only; no provider search/pagination or live binding. Evidence: EVIDENCE-R003.json."
     }
   ],
   "relatedEvidence": [
     "EVIDENCE-R001.json",
-    "CRAFT-SURFACE-R002.json"
+    "CRAFT-SURFACE-R002.json",
+    "EVIDENCE-R003.json"
   ]
 }
