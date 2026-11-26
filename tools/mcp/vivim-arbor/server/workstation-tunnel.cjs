@@ -44,8 +44,7 @@ function createWorkstationTools({directory=path.join(__dirname,'..','session-aut
  function load(){
   const raw=privateBytes(path.join(directory,'grant.json'),16384),v=JSON.parse(raw);
   if(!keys(v,['schema','id','expiresAt','port','dataRoot','ownerAuthModule','ownerAuthSha256','recipeConfigSha','rootConfigSha','recipes','roots','interactiveRecipes','allowWrites','terminal','machineScope'])||
-   v.schema!=='vivim.workstation-tunnel-grant/1'||!hex(v.id,32)||!Number.isSafeInteger(v.expiresAt)||
-   v.expiresAt<=now()||v.expiresAt-now()>86400000||!Number.isSafeInteger(v.port)||v.port<1024||v.port>65535||
+   v.schema!=='vivim.workstation-tunnel-grant/1'||!hex(v.id,32)||!(v.expiresAt===null?v.machineScope===true&&!!v.terminal:Number.isSafeInteger(v.expiresAt)&&v.expiresAt>now()&&v.expiresAt-now()<=86400000)||!Number.isSafeInteger(v.port)||v.port<1024||v.port>65535||
    typeof v.dataRoot!=='string'||!path.isAbsolute(v.dataRoot)||typeof v.ownerAuthModule!=='string'||!path.isAbsolute(v.ownerAuthModule)||
    path.basename(v.ownerAuthModule)!=='owner-auth.mjs'||!hex(v.ownerAuthSha256,64)||!hex(v.recipeConfigSha,64)||!hex(v.rootConfigSha,64)||
    !Array.isArray(v.recipes)||v.recipes.length>32||!v.recipes.every(identifier)||
@@ -60,7 +59,7 @@ function createWorkstationTools({directory=path.join(__dirname,'..','session-aut
  try{({v:g,h:initial}=load())}catch{return fs.existsSync(path.join(directory,'grant.json'))?unavailable():[]}
  function check(){if(load().h!==initial)bad();}
  async function workstationHealth(){
-  if(g.expiresAt<=now())return {grant:"expired",expiresAt:g.expiresAt,cDrive:"unchecked"};
+  if(g.expiresAt!==null&&g.expiresAt<=now())return {grant:"expired",expiresAt:g.expiresAt,cDrive:"unchecked"};
   try{check()}catch{return {grant:"invalid-or-changed",cDrive:"unchecked"}}
   const base={grant:"valid",expiresAt:g.expiresAt,machineScope:g.machineScope===true};
   if(!g.machineScope)return {...base,cDrive:"not-granted"};
