@@ -178,3 +178,23 @@ test('session wait reports new cursor, quiet timeout, terminal and rejects forei
  mode='terminal';assert.equal((await wait({...a,stdout_cursor:'5'})).reason,'terminal');
  fs.unlinkSync(f.file);await assert.rejects(wait(a));
 });
+
+
+test('machine health attests C drive via read-only Host plan and does not leak entries',async t=>{
+ const f=fixture(t);f.g.machineScope=true;f.g.terminal={configSha:'e'.repeat(64),programs:['node'],roots:['repo'],allowInteractive:true};fs.writeFileSync(f.file,JSON.stringify(f.g));
+ let clock=Date.now(),calls=0,deny=false;
+ const tools=createWorkstationTools({directory:f.directory,now:()=>clock,credential:async()=> 'test-only-token',fetcher:async(url,o)=>{
+  calls++;assert.ok(url.endsWith('/plan'));const b=JSON.parse(o.body);
+  assert.equal(b.actionId,'workstation.directory.list');assert.deepEqual(b.args,{root_id:'machine',path:'C:\\'});
+  if(deny)return new Response('',{status:403});
+  return json({outcome:'done',actionId:b.actionId,args:b.args,effect:'read',result:{schema:'vivim.workstation-file-read/1',rootId:'machine',path:b.args.path,configSha:rootConfigSha,entries:[{name:'private-folder'}]}});
+ }});
+ assert.deepEqual(await tools.workstationHealth(),{grant:'valid',expiresAt:f.g.expiresAt,machineScope:true,cDrive:'accessible'});
+ deny=true;assert.equal((await tools.workstationHealth()).cDrive,'unavailable');
+ clock=f.g.expiresAt+1;assert.equal((await tools.workstationHealth()).grant,'expired');assert.equal(calls,2);
+ assert.equal((await createWorkstationTools({directory:f.directory,now:()=>clock}).workstationHealth()).grant,'unavailable');
+});
+test('legacy health never requests machine access',async t=>{
+ const f=fixture(t);const tools=createWorkstationTools({directory:f.directory,fetcher:async()=>{throw Error('unexpected Host access')}});
+ assert.equal((await tools.workstationHealth()).cDrive,'not-granted');
+});
