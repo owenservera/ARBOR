@@ -99,3 +99,17 @@ test('machine profile seal requires matching owner mode in manifest, root config
  f.put('manifest.json',f.manifest);f.put('profile/session-authority/grant.json',f.grant);
  assert.throws(()=>inspectCandidate(f.release,f.receiptPath,now),/EVIDENCE_INVALID/);
 });
+
+test('standing owner-machine release seal binds matching no-expiry policies',t=>{
+ const f=fixture(t),prog=f.put('bin/terminal-node.exe','terminal-node');
+ const scope={schema:'vivim.owner-machine-scope/1',expiresAt:null,protectedPaths:['C:\\authority','C:\\private']};
+ const policy={schema:'vivim.workstation-terminal-policy/1',enabled:true,expiresAt:null,programs:[{id:'node',path:prog.file,sha256:prog.digest,environment:[]}],roots:f.roots.roots,maxTimeoutMs:1000,allowInteractive:true,machineScope:scope};
+ f.roots.machineScope=scope;
+ f.manifest.rootConfigSha=f.put('config/roots.json',f.roots).digest;f.grant.rootConfigSha=f.manifest.rootConfigSha;
+ f.manifest.terminalConfigSha=f.put('config/terminal-policy.json',policy).digest;f.manifest.ownerProfile='machine';
+ f.grant.expiresAt=null;f.grant.machineScope=true;f.grant.terminal={configSha:f.manifest.terminalConfigSha,programs:['node'],roots:['scratch'],allowInteractive:true};
+ f.put('manifest.json',f.manifest);f.put('profile/session-authority/grant.json',f.grant);
+ assert.equal(inspectCandidate(f.release,f.receiptPath,now).promotionPerformed,false);
+ f.grant.expiresAt=now+60000;f.put('profile/session-authority/grant.json',f.grant);
+ assert.throws(()=>inspectCandidate(f.release,f.receiptPath,now),/EVIDENCE_INVALID/);
+});
