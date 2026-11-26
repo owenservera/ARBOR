@@ -115,7 +115,7 @@ export const CREATE_SITES = Object.freeze(['chatgpt', 'claude', 'zai', 'qwen', '
 export function validateConversationBody(kind, body) {
   object(body);
   const fields = { create: ['site'], connect: ['site', 'targetId', 'freshTab', 'expectedThread', 'prefixSource'], prefix: ['site', 'targetId', 'expectedThread', 'source', 'promptAttestation'], submit: ['key', 'prompt', 'confirm', 'expectedRevision'], reconcile: ['expectedRevision', 'turnId'], finish: ['closeTab'],
-    chatIndex: ['targetId', 'site', 'maxEntries', 'maxTitleChars', 'scanLimit', 'containers'], read: ['maxMessages', 'maxChars'] }[kind];
+    chatIndex: ['targetId', 'site', 'maxEntries', 'maxTitleChars', 'scanLimit', 'containers'], chatgptSurface: ['targetId'], searchVisibleChatGPT: ['targetId','query','maxEntries','maxTitleChars','scanLimit'], read: ['maxMessages', 'maxChars'] }[kind];
   if (Object.keys(body).some((key) => !fields.includes(key))) throw problem(400, 'Unexpected request field');
   if (kind === 'create') {
     if (!CREATE_SITES.includes(body.site)) throw problem(400, `Choose ${CREATE_SITES.map((s) => (s === 'zai' ? 'Z.ai' : s[0].toUpperCase() + s.slice(1))).join(', ')} for a fresh conversation`, 'INVALID_CREATE');
@@ -142,6 +142,14 @@ export function validateConversationBody(kind, body) {
     text(body.targetId, 'targetId', 256);
     if (body.site !== undefined && body.site !== 'chatgpt') throw problem(400, 'site must be chatgpt');
     chatIndexExpression(body); // Reuse the canonical pure bounds/containers validator, not a second schema.
+  }
+  if (kind === 'chatgptSurface' || kind === 'searchVisibleChatGPT') {
+    text(body.targetId, 'targetId', 256);
+    if (kind === 'searchVisibleChatGPT') {
+      text(body.query, 'query', 300);
+      if (!body.query.trim() || /[\x00-\x1f\x7f]/.test(body.query)) throw problem(400, 'Invalid visible chat search query');
+      chatIndexExpression(body);
+    }
   }
   if (kind === 'read') {
     const L = TRANSCRIPT_LIMITS;
