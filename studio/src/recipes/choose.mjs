@@ -5,6 +5,8 @@ import { recipeDefinition, listRecipes } from './catalog.mjs';
 const samples = Object.freeze({
   'provider.targets': ['list browser tabs', 'discover provider tabs', 'available providers', 'browser targets'],
   'provider.chat-index': ['chatgpt chat index', 'chatgpt sidebar chats', 'find chatgpt threads'],
+  'provider.chatgpt-surface': ['inspect chatgpt surface', 'inspect chatgpt settings controls', 'discover chatgpt plugin tools', 'chatgpt application controls'],
+  'provider.chatgpt-search-visible': ['search visible chatgpt history', 'filter rendered chatgpt conversations', 'find visible chatgpt chat titles'],
   'conversation.list': ['list conversations', 'recent conversations', 'saved chats', 'my conversations'],
   'conversation.inspect': ['conversation status', 'inspect conversation', 'last turn status', 'conversation evidence'],
   'conversation.read': ['read conversation', 'read transcript', 'show recent messages', 'current reply'],
