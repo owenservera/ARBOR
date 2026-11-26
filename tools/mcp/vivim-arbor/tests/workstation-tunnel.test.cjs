@@ -198,3 +198,19 @@ test('legacy health never requests machine access',async t=>{
  const f=fixture(t);const tools=createWorkstationTools({directory:f.directory,fetcher:async()=>{throw Error('unexpected Host access')}});
  assert.equal((await tools.workstationHealth()).cDrive,'not-granted');
 });
+
+test('standing grant requires explicit machine mode, remains revocable by local removal',async t=>{
+ const f=fixture(t);f.g.expiresAt=null;fs.writeFileSync(f.file,JSON.stringify(f.g));
+ const clock=()=>Date.now()+365*86400000;
+ assert.equal(createWorkstationTools({directory:f.directory,now:clock}).length,0);
+ f.g.machineScope=true;fs.writeFileSync(f.file,JSON.stringify(f.g));
+ assert.equal(createWorkstationTools({directory:f.directory,now:clock}).length,0);
+ f.g.terminal={configSha:'e'.repeat(64),programs:['node'],roots:['repo'],allowInteractive:true};
+ fs.writeFileSync(f.file,JSON.stringify(f.g));
+ const tools=createWorkstationTools({directory:f.directory,now:clock});
+ const summary=tools.find(x=>x[0]==='vivim_workstation_recipes')[3];
+ assert.equal((await summary()).expiresAt,null);
+ fs.unlinkSync(f.file);
+ assert.equal((await tools.workstationHealth()).grant,'invalid-or-changed');
+ await assert.rejects(async()=>summary());
+});
