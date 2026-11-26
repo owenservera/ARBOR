@@ -55,8 +55,21 @@ function createWorkstationTools({directory=path.join(__dirname,'..','session-aut
   if(v.machineScope!==undefined&&(v.machineScope!==true||!v.terminal))bad();
   return {v,h:hash(raw)};
  }
- try{({v:g,h:initial}=load())}catch{return []}
+ // Expose only coarse readiness; never export grant contents or private paths.
+ const unavailable=()=>Object.assign([], {workstationHealth:async()=>({grant:"unavailable",cDrive:"unchecked"})});
+ try{({v:g,h:initial}=load())}catch{return unavailable()}
  function check(){if(load().h!==initial)bad();}
+ async function workstationHealth(){
+  if(g.expiresAt<=now())return {grant:"expired",expiresAt:g.expiresAt,cDrive:"unchecked"};
+  try{check()}catch{return {grant:"invalid-or-changed",cDrive:"unchecked"}}
+  const base={grant:"valid",expiresAt:g.expiresAt,machineScope:g.machineScope===true};
+  if(!g.machineScope)return {...base,cDrive:"not-granted"};
+  try{
+   // Same Host authorization and config digest as an ordinary read. Discard listing.
+   await readAction(D+'list',{root_id:"machine",path:"C:\\"},3000);
+   return {...base,cDrive:"accessible"};
+  }catch{return {...base,cDrive:"unavailable"}}
+ }
  async function token(){
   check();if(credential)return credential();
   const real=fs.realpathSync(g.ownerAuthModule);if(real!==g.ownerAuthModule||hash(fs.readFileSync(real))!==g.ownerAuthSha256)bad();
@@ -198,6 +211,6 @@ function createWorkstationTools({directory=path.join(__dirname,'..','session-aut
   const required=['session_id','stdout_cursor','stderr_cursor','wait_ms'];
   tools.push(['vivim_session_wait','Wait 250–20000 ms for output, cursor gap, read failure or terminal state from an owned session. Resume with returned next cursors. Read-only; does not subscribe to unsolicited chat events.',{type:'object',properties:Object.fromEntries(required.map(k=>[k,{type:'string'}])),required,additionalProperties:false},waitOutput,true]);
  }
- return tools;
+ return Object.assign(tools,{workstationHealth});
 }
 module.exports={createWorkstationTools};
