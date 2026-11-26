@@ -9,9 +9,11 @@ param(
  [switch]$EnableGeneralTerminal,
  [string]$OwnerProfilePath,
  [string]$OwnerProfileSha256,
- [switch]$EnableOwnerMachine
+ [switch]$EnableOwnerMachine,
+ [switch]$NoExpiry
 )
 $ErrorActionPreference='Stop'
+if($NoExpiry -and (-not $EnableOwnerMachine -or -not $EnableGeneralTerminal -or $OwnerProfilePath -or $Activate)){throw 'NoExpiry is a standing owner-machine selection; stage only, explicit owner-controlled promotion required'}
 if($EnableOwnerMachine -and (-not $EnableGeneralTerminal -or $OwnerProfilePath -or $Activate)){throw 'Owner-machine requires explicit general terminal, stage only, no expanded selection'}
 if($OwnerProfilePath){if($OwnerProfileSha256 -cnotmatch '^[a-f0-9]{64}$'){throw 'Reviewed owner selection SHA-256 required'}}elseif($OwnerProfileSha256){throw 'Selection digest requires owner profile path'}
 if($OwnerProfilePath -and (!$EnableGeneralTerminal -or $Activate)){throw 'Expanded owner profile requires general terminal and stage-only operation; local supervised promotion required'}
@@ -160,6 +162,7 @@ if($EnableGeneralTerminal){
  }else{$allowTerminalInteractive=$true}
 
  $terminalFile=Join-Path $config 'terminal-policy.json'
+ if($NoExpiry){$grant.expiresAt=$null}
  $terminalPolicy=@{schema='vivim.workstation-terminal-policy/1';enabled=$true;expiresAt=$grant.expiresAt;programs=@($terminalPrograms);roots=$rootEntries;maxTimeoutMs=1800000;allowInteractive=$allowTerminalInteractive}
  if($EnableOwnerMachine){
   $protected=@($ConnectRoot,$dataRoot,(Join-Path $env:USERPROFILE '.ssh'),(Join-Path $env:USERPROFILE '.aws'),(Join-Path $env:USERPROFILE '.azure'),(Join-Path $env:USERPROFILE '.gnupg'),(Join-Path $env:USERPROFILE '.codex'),(Join-Path $env:USERPROFILE '.claude'),(Join-Path $env:LOCALAPPDATA 'Google\Chrome\User Data'),(Join-Path $env:LOCALAPPDATA 'Microsoft\Edge\User Data'))|Where-Object {$_}|Sort-Object -Unique
@@ -217,7 +220,7 @@ try{
  Stop-Process -Id $oldPid -ErrorAction Stop;Start-Sleep -Seconds 2
  if(-not(Get-Process -Id $supervisor -ErrorAction SilentlyContinue)){throw 'Tunnel supervisor exited'}
  Write-Output ('LIVE_TOOL_NAMES='+($names -join ','));Write-Output ('TUNNEL_SUPERVISOR_PRESERVED='+$supervisor)
- Write-Output ('GRANT_EXPIRES_UTC='+[DateTimeOffset]::FromUnixTimeMilliseconds($grant.expiresAt).UtcDateTime.ToString('o'))
+ if($null -eq $grant.expiresAt){Write-Output 'GRANT_EXPIRES_UTC=none'}else{Write-Output ('GRANT_EXPIRES_UTC='+[DateTimeOffset]::FromUnixTimeMilliseconds($grant.expiresAt).UtcDateTime.ToString('o'))}
  Write-Output 'WORKSTATION_PROFILE_PROMOTED'
 }catch{
  foreach($n in $modules){$saved=Join-Path $backup $n;if(Test-Path $saved){Copy-Item -LiteralPath $saved -Destination (Join-Path $target $n) -Force}}
