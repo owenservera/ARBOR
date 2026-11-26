@@ -1,0 +1,490 @@
+{
+  "schema": "vivim.studio.verified-capabilities/1",
+  "provider": "chatgpt",
+  "revision": "R001",
+  "date": "2026-11-26",
+  "authority": {
+    "toolDefinitions": "studio/src/studio/conversation-tools.mjs#CONVERSATION_TOOLS",
+    "recipes": "studio/src/recipes/catalog.mjs",
+    "runtime": "studio/src/capture/conversation-runtime.mjs",
+    "policy": "Host authorization and source-native Studio validation; this overlay grants nothing"
+  },
+  "entries": [
+    {
+      "id": "CG-001",
+      "capability": "environment.doctor",
+      "native": "studio doctor",
+      "recipe": null,
+      "mcp": null,
+      "verification": "LIVE_VERIFIED",
+      "evidence": [
+        "EV-01"
+      ],
+      "effect": "read",
+      "admission": "operator-only",
+      "notes": "Chrome discovered; doctor is not account or browser ownership proof."
+    },
+    {
+      "id": "CG-002",
+      "capability": "catalog.discover",
+      "native": "studio recipe list",
+      "recipe": null,
+      "mcp": null,
+      "verification": "LIVE_VERIFIED",
+      "evidence": [
+        "EV-02"
+      ],
+      "effect": "read",
+      "admission": "candidate",
+      "notes": "Native catalogue returned; source capability does not imply live availability."
+    },
+    {
+      "id": "CG-003",
+      "capability": "browser.launch",
+      "native": "launchChrome",
+      "recipe": "studio/src/chrome/launch.mjs",
+      "mcp": null,
+      "verification": "LIVE_VERIFIED",
+      "evidence": [
+        "EV-05"
+      ],
+      "effect": "browser-navigation",
+      "admission": "operator-only",
+      "notes": "Completed workspace profile, exact executable, manifest port; single owner; no credential access."
+    },
+    {
+      "id": "CG-004",
+      "capability": "provider.targets",
+      "native": "conversation_targets",
+      "recipe": "provider.targets",
+      "mcp": "vivim_chatgpt_targets",
+      "verification": "LIVE_VERIFIED",
+      "evidence": [
+        "EV-05"
+      ],
+      "effect": "read",
+      "admission": "candidate",
+      "notes": "Target ID and canonical thread binding; not account history."
+    },
+    {
+      "id": "CG-005",
+      "capability": "provider.chat-index",
+      "native": "chat_index",
+      "recipe": "provider.chat-index",
+      "mcp": "vivim_chatgpt_list_visible",
+      "verification": "LIVE_VERIFIED",
+      "evidence": [
+        "EV-07"
+      ],
+      "effect": "read",
+      "admission": "candidate",
+      "notes": "15 rendered candidates, complete=false; no complete history claim or arbitrary navigation."
+    },
+    {
+      "id": "CG-006",
+      "capability": "conversation.list",
+      "native": "list_conversations",
+      "recipe": "conversation.list",
+      "mcp": "vivim_chatgpt_list_local",
+      "verification": "LIVE_VERIFIED",
+      "evidence": [
+        "EV-05"
+      ],
+      "effect": "read",
+      "admission": "candidate",
+      "notes": "77 local snapshots (all providers, not account history); remote projection must filter authorized ChatGPT scope."
+    },
+    {
+      "id": "CG-007",
+      "capability": "conversation.inspect",
+      "native": "get_conversation",
+      "recipe": "conversation.inspect",
+      "mcp": "vivim_chatgpt_get",
+      "verification": "LIVE_VERIFIED",
+      "evidence": [
+        "EV-05"
+      ],
+      "effect": "read",
+      "admission": "candidate",
+      "notes": "Persisted revision, reply, readiness, evidence; require authorized conversation."
+    },
+    {
+      "id": "CG-008",
+      "capability": "conversation.capabilities",
+      "native": "conversation_capsule",
+      "recipe": "conversation.capabilities",
+      "mcp": "vivim_chatgpt_capabilities",
+      "verification": "LIVE_VERIFIED",
+      "evidence": [
+        "EV-05"
+      ],
+      "effect": "read",
+      "admission": "candidate",
+      "notes": "Advisory capsule; effect-time gates remain authoritative."
+    },
+    {
+      "id": "CG-009",
+      "capability": "conversation.create",
+      "native": "create_conversation",
+      "recipe": "conversation.create",
+      "mcp": "vivim_chatgpt_create",
+      "verification": "LIVE_COMPOSITE",
+      "evidence": [
+        "EV-03"
+      ],
+      "effect": "browser-navigation+local-write",
+      "admission": "needs-standalone-test",
+      "notes": "Fresh owned tab observed in successful one-shot; standalone create without send not separately tested; no durable /c/ until binding."
+    },
+    {
+      "id": "CG-010",
+      "capability": "conversation.connect-existing",
+      "native": "connect_conversation",
+      "recipe": "conversation.connect-existing",
+      "mcp": "vivim_chatgpt_connect",
+      "verification": "LIVE_VERIFIED",
+      "evidence": [
+        "EV-06",
+        "EV-07"
+      ],
+      "effect": "local-write",
+      "admission": "candidate-with-grant",
+      "notes": "Exact known provider ref and target; do not infer readiness before transcript hydration."
+    },
+    {
+      "id": "CG-011",
+      "capability": "conversation.read",
+      "native": "read_conversation",
+      "recipe": "conversation.read",
+      "mcp": "vivim_chatgpt_read",
+      "verification": "LIVE_VERIFIED",
+      "evidence": [
+        "EV-07"
+      ],
+      "effect": "read",
+      "admission": "candidate",
+      "notes": "Two rendered messages, prior marker recovered after hydration; bounded incomplete view."
+    },
+    {
+      "id": "CG-012",
+      "capability": "conversation.submit-first",
+      "native": "submit_conversation_turn",
+      "recipe": "conversation.continue",
+      "mcp": "vivim_chatgpt_submit",
+      "verification": "LIVE_COMPOSITE",
+      "evidence": [
+        "EV-03"
+      ],
+      "effect": "provider-send+local-write",
+      "admission": "needs-explicit-key-first-turn-test",
+      "notes": "First send verified via one-shot native runtime; separate tool contract and replay not yet live proven."
+    },
+    {
+      "id": "CG-013",
+      "capability": "conversation.ask",
+      "native": "submit_conversation_turn",
+      "recipe": "conversation.ask",
+      "mcp": null,
+      "verification": "LIVE_BLOCKED",
+      "evidence": [
+        "EV-06",
+        "EV-08"
+      ],
+      "effect": "provider-send+local-write",
+      "admission": "hold",
+      "notes": "Existing-thread follow-up blocked PRIOR_REPLY_CHANGED then THREAD_FENCED; no follow-up sent."
+    },
+    {
+      "id": "CG-014",
+      "capability": "conversation.continue",
+      "native": "submit_conversation_turn",
+      "recipe": "conversation.continue",
+      "mcp": null,
+      "verification": "LIVE_BLOCKED",
+      "evidence": [
+        "EV-06",
+        "EV-08"
+      ],
+      "effect": "provider-send+local-write",
+      "admission": "hold",
+      "notes": "Same source tool as CG-012. Admission may permit tested first-turn case only after explicit-key test; continuation blocked."
+    },
+    {
+      "id": "CG-015",
+      "capability": "conversation.wait",
+      "native": "get_conversation",
+      "recipe": "conversation.inspect",
+      "mcp": "vivim_chatgpt_status",
+      "verification": "LIVE_COMPOSITE",
+      "evidence": [
+        "EV-03",
+        "EV-06"
+      ],
+      "effect": "read",
+      "admission": "candidate",
+      "notes": "Poll original operation/turn; readiness vs completion separate; no repeated send."
+    },
+    {
+      "id": "CG-016",
+      "capability": "conversation.result",
+      "native": "get_conversation",
+      "recipe": "conversation.inspect",
+      "mcp": null,
+      "verification": "LIVE_VERIFIED",
+      "evidence": [
+        "EV-05"
+      ],
+      "effect": "read",
+      "admission": "alias-of-get",
+      "notes": "Do not create separate runtime or result storage; project authorized original turn."
+    },
+    {
+      "id": "CG-017",
+      "capability": "conversation.finish",
+      "native": "finish_conversation",
+      "recipe": "conversation.finish",
+      "mcp": "vivim_chatgpt_finish",
+      "verification": "LIVE_VERIFIED",
+      "evidence": [
+        "EV-06",
+        "EV-07",
+        "EV-08"
+      ],
+      "effect": "local-write",
+      "admission": "candidate-with-grant",
+      "notes": "Capture finish done and writer inactive. closeTab:false tested; explicit close not tested."
+    },
+    {
+      "id": "CG-018",
+      "capability": "recovery.reconcile-turn",
+      "native": "reconcile_conversation",
+      "recipe": "recovery.reconcile-turn",
+      "mcp": "vivim_chatgpt_reconcile",
+      "verification": "SOURCE_PRESENT",
+      "evidence": [],
+      "effect": "local-write",
+      "admission": "needs-live-test",
+      "notes": "Inspect original attempt and durable fence only; never override uncertainty or resend."
+    },
+    {
+      "id": "CG-019",
+      "capability": "reply.network-completion",
+      "native": "get_conversation",
+      "recipe": "conversation.inspect",
+      "mcp": null,
+      "verification": "LIVE_PARTIAL",
+      "evidence": [
+        "EV-03"
+      ],
+      "effect": "read",
+      "admission": "hold",
+      "notes": "Verified settled page reply, network completion unknown, capture incomplete."
+    },
+    {
+      "id": "CG-020",
+      "capability": "recipe.execution",
+      "native": "studio recipe run",
+      "recipe": null,
+      "mcp": null,
+      "verification": "LIVE_BLOCKED",
+      "evidence": [
+        "EV-04"
+      ],
+      "effect": "varies",
+      "admission": "hold",
+      "notes": "External recipe route returned STUDIO_REQUEST_UNKNOWN/503 because incumbent service was unavailable; native runtime tests succeeded separately."
+    },
+    {
+      "id": "CG-021",
+      "capability": "channel.ask",
+      "native": "studio chat ask",
+      "recipe": null,
+      "mcp": null,
+      "verification": "SOURCE_PRESENT",
+      "evidence": [],
+      "effect": "provider-send+local-write",
+      "admission": "hold",
+      "notes": "Legacy drive/channel paths have different journals; no new alternate transport admission."
+    },
+    {
+      "id": "CG-022",
+      "capability": "channel.work",
+      "native": "studio chat work",
+      "recipe": null,
+      "mcp": null,
+      "verification": "SOURCE_PRESENT",
+      "evidence": [],
+      "effect": "provider-send+local-write",
+      "admission": "hold",
+      "notes": "Bounded multi-turn task source exists; test authorization, budget, cancel and recovery first."
+    },
+    {
+      "id": "CG-023",
+      "capability": "channel.revoke",
+      "native": "studio chat revoke",
+      "recipe": null,
+      "mcp": null,
+      "verification": "SOURCE_PRESENT",
+      "evidence": [],
+      "effect": "local-write",
+      "admission": "hold",
+      "notes": "Revocation mutation exists; live independent verification pending."
+    },
+    {
+      "id": "CG-024",
+      "capability": "channel.stats",
+      "native": "studio chat stats",
+      "recipe": null,
+      "mcp": null,
+      "verification": "SOURCE_PRESENT",
+      "evidence": [],
+      "effect": "read",
+      "admission": "needs-live-test",
+      "notes": "Historical channel receipt statistics, distinct from native conversation journal."
+    },
+    {
+      "id": "CG-025",
+      "capability": "attachments",
+      "native": "studio chat ask --attach",
+      "recipe": null,
+      "mcp": null,
+      "verification": "SOURCE_PRESENT",
+      "evidence": [],
+      "effect": "provider-send+local-write",
+      "admission": "hold",
+      "notes": "Historical keeper evidence only; new scoped benign attachment test required."
+    },
+    {
+      "id": "CG-026",
+      "capability": "reasoning-effort",
+      "native": "studio chat ask --effort",
+      "recipe": null,
+      "mcp": null,
+      "verification": "SOURCE_PRESENT",
+      "evidence": [],
+      "effect": "provider-send+local-write",
+      "admission": "hold",
+      "notes": "Source flag not proof current account can select model/effort."
+    },
+    {
+      "id": "CG-027",
+      "capability": "capture.export",
+      "native": "studio export transcript",
+      "recipe": null,
+      "mcp": null,
+      "verification": "SOURCE_PRESENT",
+      "evidence": [],
+      "effect": "read+local-write",
+      "admission": "needs-live-test",
+      "notes": "Use canonical bounded capture export, never claim full provider history."
+    },
+    {
+      "id": "CG-028",
+      "capability": "provider.search",
+      "native": "none",
+      "recipe": null,
+      "mcp": null,
+      "verification": "PROPOSED",
+      "evidence": [],
+      "effect": "read",
+      "admission": "hold",
+      "notes": "First search bounded visible/local catalog; provider UI search needs source capability and live tests."
+    },
+    {
+      "id": "CG-029",
+      "capability": "provider.history-pagination",
+      "native": "none",
+      "recipe": null,
+      "mcp": null,
+      "verification": "PROPOSED",
+      "evidence": [],
+      "effect": "read",
+      "admission": "hold",
+      "notes": "Use provider UI only, pagination/virtualization explicit; no private endpoints."
+    },
+    {
+      "id": "CG-030",
+      "capability": "provider.open-exact",
+      "native": "none",
+      "recipe": null,
+      "mcp": null,
+      "verification": "PROPOSED",
+      "evidence": [],
+      "effect": "browser-navigation",
+      "admission": "hold",
+      "notes": "Exact known canonical ref via owner-owned UI; existing connect requires already-open target."
+    },
+    {
+      "id": "CG-031",
+      "capability": "conversation.cancel-generation",
+      "native": "none",
+      "recipe": null,
+      "mcp": null,
+      "verification": "PROPOSED",
+      "evidence": [],
+      "effect": "external-effect",
+      "admission": "hold",
+      "notes": "Distinct from capture finish; prove provider stop action and resulting turn state."
+    },
+    {
+      "id": "CG-032",
+      "capability": "provider.model-capabilities",
+      "native": "none",
+      "recipe": null,
+      "mcp": null,
+      "verification": "PROPOSED",
+      "evidence": [],
+      "effect": "read",
+      "admission": "hold",
+      "notes": "Discover signed-in UI choices and constraints without assuming plan entitlement."
+    },
+    {
+      "id": "CG-033",
+      "capability": "conversation.rename/archive",
+      "native": "none",
+      "recipe": null,
+      "mcp": null,
+      "verification": "PROPOSED",
+      "evidence": [],
+      "effect": "external-effect",
+      "admission": "hold",
+      "notes": "Separate explicit authorization and readback; no destructive bulk operation."
+    },
+    {
+      "id": "CG-034",
+      "capability": "conversation.events",
+      "native": "native conversation event seam",
+      "recipe": null,
+      "mcp": null,
+      "verification": "SOURCE_PRESENT",
+      "evidence": [],
+      "effect": "read",
+      "admission": "needs-live-test",
+      "notes": "Cursor-based streaming/status only; no autonomous sends or implicit completion."
+    },
+    {
+      "id": "CG-035",
+      "capability": "artifact.read/download",
+      "native": "none",
+      "recipe": null,
+      "mcp": null,
+      "verification": "PROPOSED",
+      "evidence": [],
+      "effect": "read+local-write",
+      "admission": "hold",
+      "notes": "Bounded owner-approved artifacts, destination and integrity receipt; no broad browsing."
+    },
+    {
+      "id": "CG-036",
+      "capability": "conversation.send-idempotency",
+      "native": "submit_conversation_turn",
+      "recipe": "conversation.continue",
+      "mcp": null,
+      "verification": "SOURCE_PRESENT",
+      "evidence": [],
+      "effect": "provider-send+local-write",
+      "admission": "needs-live-test",
+      "notes": "Same key+payload read-only replay; different payload refusal; no second send; verify through actual native journal."
+    }
+  ]
+}
