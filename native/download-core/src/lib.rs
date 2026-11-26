@@ -8,6 +8,9 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::{fs::{self, File, OpenOptions}, path::Path, sync::Arc};
 
+#[cfg(all(target_os = "android", feature = "android-jni"))]
+mod android;
+
 pub const SCHEMA: &str = "vivim.download-worker/1";
 pub const MAX_MAGNET: usize = 8192;
 pub const MAX_METAINFO: usize = 1024 * 1024;
@@ -115,6 +118,7 @@ impl Manager {
             Command::Shutdown => Err(anyhow!("shutdown is transport-owned")),
         }
     }
+    pub fn cancel(&self) { self.session.cancellation_token().cancel(); }
     pub async fn stop(&self) { self.session.stop().await; }
 }
 

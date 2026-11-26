@@ -7,7 +7,14 @@ publish = false
 # Keep new network dependencies out of the incumbent workspace until verified.
 [workspace]
 
+[lib]
+crate-type = ["rlib", "cdylib"]
+
+[features]
+android-jni = ["dep:jni"]
+
 [dependencies]
+jni = { version = "0.21", optional = true }
 anyhow = "1"
 fs2 = "0.4"
 librqbit = { version = "=8.1.1", default-features = false, features = ["rust-tls"] }
