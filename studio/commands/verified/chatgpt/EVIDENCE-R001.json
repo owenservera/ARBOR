@@ -1,0 +1,219 @@
+{
+  "schema": "vivim.studio.verified-evidence/1",
+  "revision": "R001",
+  "date": "2026-11-26",
+  "environment": {
+    "platform": "Windows",
+    "transport": "VIVIM ARBOR MCP workstation terminal",
+    "node": "v24.22.1",
+    "workspaceRoot": "C:/VIVIM",
+    "profile": "C:/VIVIM/chrome-profile",
+    "manifestPort": 38702,
+    "genericCliPort": 9222,
+    "sourceReference": "GitHub main read at 8fccdbe85678d37aa50293b4ce877fb2eae14dc4; local checkout revision not independently established during these probes",
+    "accountScope": "owner-authorized dedicated signed-in ChatGPT browser; test thread only for content reads and sends",
+    "dataMinimization": "only test IDs, markers, aggregate counts and diagnostic evidence; no owner history titles, private content or credentials"
+  },
+  "records": [
+    {
+      "id": "EV-01",
+      "kind": "native-diagnostic",
+      "terminalSession": "ctl-dde8056e63416446",
+      "exit": 0,
+      "observations": {
+        "doctorOk": true,
+        "node": "v24.22.1",
+        "chromeInstalled": true,
+        "workspaceSetup": true,
+        "savedCaptureSessions": 95,
+        "rawMB": 483,
+        "manifestPort": 38702,
+        "browserReachableAtProbe": false
+      },
+      "limitations": [
+        "Doctor success does not establish browser readiness or authenticated account."
+      ]
+    },
+    {
+      "id": "EV-02",
+      "kind": "native-catalogue",
+      "terminalSession": "ctl-c2ebbb52894bbe8d",
+      "exit": 0,
+      "observations": {
+        "schema": "vivim.recipe-catalog/1",
+        "nativeRecipeDiscovery": true
+      },
+      "limitations": [
+        "Catalogue existence is not live effect verification."
+      ]
+    },
+    {
+      "id": "EV-03",
+      "kind": "live-fresh-chat",
+      "terminalSession": "ctl-2b7cf965b9e3e63b",
+      "terminalOutcome": "timed-out after 130166 ms; exit 1 after result emitted",
+      "requestId": "b8ea6691c6f2472aa652c168921ce956",
+      "command": "node with explicit CHROME_PATH; studio chat chatgpt --fresh --prompt <benign test> --execute --accept-sends --timeout 90 --json",
+      "conversationId": "8ccea474-0c0e-48e4-a564-71d43365f6a3",
+      "providerThread": "chatgpt-c:6b07acb1-e608-83eb-9863-a58e13c93843",
+      "targetId": "724ED8DFD0498808ED00C44DD4DECD53",
+      "captureSession": "20261126-035113-chatgpt-0efba7",
+      "turnId": "833bcb04-967a-418d-b21c-4e7056d54957",
+      "turnKey": "f1a5dc91-fd74-42f8-94a5-1a07d650a89a",
+      "payloadDigest": "bc24e4033900aba9b18f57731ba7d29b40a541511109f9c0a98b3bd88529756d",
+      "testMarker": "ARBOR-LINK-7Q4M",
+      "replyDigest": "27d94e3eea5a817d8177865343d602105646c20ce90203e68714f92eb1b0be12",
+      "observations": {
+        "send": "observed",
+        "sendSequence": 645,
+        "replySequence": 653,
+        "replyVerified": true,
+        "replySettled": true,
+        "replyPartial": false,
+        "completion": "unknown",
+        "readiness": "ready",
+        "composerEnabled": true,
+        "writerActive": false,
+        "state": "closed",
+        "evidenceState": "preserved",
+        "checkpointSha256": "113236f759b228d5de33664d76f93d874d32941d646ab9d88f482d3bb1ebf2e8",
+        "capture": "incomplete",
+        "captureIntegrityOk": true
+      },
+      "limitations": [
+        "First command without CHROME_PATH failed before launch; separate PowerShell shell init failed. Neither sent.",
+        "Provider completion was unknown; capture not idle at preservation; process shutdown did not complete.",
+        "Generic one-shot port not independently read from output."
+      ]
+    },
+    {
+      "id": "EV-04",
+      "kind": "running-studio-service-route",
+      "observations": {
+        "localListSession": "ctl-259f13d5b27973fe",
+        "targetsSession": "ctl-a93536309df0dc31",
+        "exit": 5,
+        "httpStatus": 503,
+        "code": "STUDIO_REQUEST_UNKNOWN",
+        "retry": false
+      },
+      "limitations": [
+        "Service route not operational at probe time; not a provider or browser failure proof."
+      ]
+    },
+    {
+      "id": "EV-05",
+      "kind": "owner-runtime-native-tool-probes",
+      "terminalSession": "ctl-f53421e0fa849ffa",
+      "observations": {
+        "manifestPort": 38702,
+        "launchSucceeded": true,
+        "localStoredConversations": 77,
+        "knownTestConversationFound": true,
+        "inspectVerifiedSettled": true,
+        "inspectRevision": 26,
+        "capsuleSchema": "aion.capability-capsule/1",
+        "providerTargets": 1,
+        "chatgptTargets": 1,
+        "exactThreadFound": true
+      },
+      "limitations": [
+        "Local snapshots count covers multiple providers; first index observation was not unpacked correctly; no count inferred."
+      ]
+    },
+    {
+      "id": "EV-06",
+      "kind": "live-continuation-blocked",
+      "terminalSession": "ctl-f53421e0fa849ffa",
+      "conversationId": "9196c42f-03ef-4ecc-b63b-910151edce6a",
+      "providerThread": "chatgpt-c:6b07acb1-e608-83eb-9863-a58e13c93843",
+      "attemptId": "ecf66f02-cd2a-43c7-9f70-40ab1e29671f",
+      "key": "arbor-verified-followup-20261126-01",
+      "observations": {
+        "attachState": "ready",
+        "attachRevision": 2,
+        "initialRenderedMessages": 0,
+        "submitAcknowledged": true,
+        "finalAttemptPhase": "blocked",
+        "reason": "PRIOR_REPLY_CHANGED",
+        "sendState": "not-attempted",
+        "finishPhase": "done",
+        "captureStopped": true,
+        "writerActive": false
+      },
+      "limitations": [
+        "Persisted attempt confirms no follow-up was sent. Initial readiness did not prove historical transcript hydration. Cause of prior reply change needs investigation."
+      ]
+    },
+    {
+      "id": "EV-07",
+      "kind": "live-index-and-transcript-read",
+      "terminalSession": "ctl-a6a7ef7d8ab156d2",
+      "conversationId": "e0a830ed-51fd-4403-bc87-5b342e14f09e",
+      "observations": {
+        "renderedLinks": 17,
+        "scannedLinks": 17,
+        "visibleThreadLinks": 15,
+        "uniqueThreads": 15,
+        "returnedEntries": 15,
+        "knownTestThreadPresent": true,
+        "candidatesOnly": true,
+        "indexComplete": false,
+        "transcriptRenderedMessages": 2,
+        "transcriptReturnedMessages": 2,
+        "transcriptComplete": false,
+        "originalMarkerPresent": true,
+        "finishState": "closed",
+        "writerActive": false
+      },
+      "limitations": [
+        "Index and transcript limited to rendered content; no full account coverage or older pagination claim."
+      ]
+    },
+    {
+      "id": "EV-08",
+      "kind": "hydrated-continuation-fenced",
+      "terminalSession": "ctl-9cfa306bdac12237",
+      "conversationId": "1417f2e5-8cff-47f3-838c-ace80656d6fe",
+      "key": "arbor-hydrated-continuation-20261126-01",
+      "observations": {
+        "preflightRevision": 2,
+        "ready": true,
+        "renderedMessages": 2,
+        "submitError": "THREAD_FENCED",
+        "finishState": "closed",
+        "writerActive": false
+      },
+      "limitations": [
+        "Separate bounded test after hydration; submit refused before acknowledgement; no resend or fence override attempted."
+      ]
+    },
+    {
+      "id": "EV-09",
+      "kind": "native-unit-tests",
+      "terminalSession": "ctl-7372343bd6d1e6a1",
+      "exit": 0,
+      "command": "node --test --test-reporter=tap studio/test/unit/capture-conversation-composer-selection.test.mjs studio/test/unit/capture-conversation-evidence.test.mjs studio/test/unit/capture-conversation-thread.test.mjs studio/test/unit/relay-chat-channel-preflight.test.mjs",
+      "observations": {
+        "tests": 23,
+        "pass": 23,
+        "fail": 0,
+        "skip": 0,
+        "cancelled": 0,
+        "durationMs": 1157.8096
+      },
+      "limitations": [
+        "Native unit tests, not a new provider live test."
+      ]
+    }
+  ],
+  "unresolved": [
+    "Canonical CLI workspace executable and port resolution divergence",
+    "Studio service unavailable at recipe-route probe",
+    "Hydration and durable fence reconciliation for existing conversations",
+    "Standalone create, explicit-key first turn, replay and reconcile live acceptance",
+    "Provider network completion and capture finalization",
+    "CLI/contained process exit and browser owner lifecycle",
+    "Native MCP remote tool admission and scoped grants not deployed"
+  ]
+}
