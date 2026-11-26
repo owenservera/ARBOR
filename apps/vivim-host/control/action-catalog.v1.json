@@ -1,6 +1,6 @@
 {
   "schema": "vivim.control-action-catalog/1",
-  "version": 25,
+  "version": 26,
   "asOf": "2026-11-23",
   "policy": {
     "allUserFacingActionsRequireTextPath": true,
@@ -2557,6 +2557,180 @@
       "subject": "workstation",
       "priority": "P0",
       "precondition": "Explicit JSON array of 1–8 relative file names, combined content at most 64 KiB, literal b64: UTF-8 up to 160 bytes; first match per line, at most 100 matches."
+    },
+    {
+      "id": "download.torrent.list",
+      "title": "List native torrents",
+      "category": "downloads",
+      "owner": "host-control",
+      "executor": "apps/vivim-host/control/download-port.mjs:invoke",
+      "readiness": "source_wired",
+      "risk": "R0",
+      "target": "local-host",
+      "surfaces": [
+        "text",
+        "desktop",
+        "mobile",
+        "visual"
+      ],
+      "privacy": "authenticated-owner",
+      "aiCandidate": false,
+      "subject": "downloads",
+      "priority": "P2",
+      "args": {},
+      "examples": [
+        "list torrents"
+      ],
+      "reversible": true
+    },
+    {
+      "id": "download.torrent.start",
+      "title": "Start native download engine and restore saved jobs",
+      "category": "downloads",
+      "owner": "host-control",
+      "executor": "apps/vivim-host/control/download-port.mjs:invoke",
+      "readiness": "source_wired",
+      "risk": "R1",
+      "target": "local-host",
+      "surfaces": [
+        "text",
+        "desktop",
+        "mobile",
+        "visual"
+      ],
+      "privacy": "authenticated-owner",
+      "aiCandidate": false,
+      "subject": "downloads",
+      "priority": "P2",
+      "args": {},
+      "examples": [
+        "start torrent engine"
+      ],
+      "reversible": true
+    },
+    {
+      "id": "download.torrent.add",
+      "title": "Add a magnet to native torrent engine",
+      "category": "downloads",
+      "owner": "host-control",
+      "executor": "apps/vivim-host/control/download-port.mjs:invoke",
+      "readiness": "source_wired",
+      "risk": "R2",
+      "target": "local-host",
+      "surfaces": [
+        "text",
+        "desktop",
+        "mobile",
+        "visual"
+      ],
+      "privacy": "authenticated-owner",
+      "aiCandidate": false,
+      "subject": "downloads",
+      "priority": "P2",
+      "args": {
+        "magnet": {
+          "type": "string",
+          "min": 30,
+          "max": 8192
+        }
+      },
+      "examples": [
+        "Add torrent from explicit magnet"
+      ],
+      "reversible": true
+    },
+    {
+      "id": "download.torrent.pause",
+      "title": "Pause native torrent",
+      "category": "downloads",
+      "owner": "host-control",
+      "executor": "apps/vivim-host/control/download-port.mjs:invoke",
+      "readiness": "source_wired",
+      "risk": "R1",
+      "target": "local-host",
+      "surfaces": [
+        "text",
+        "desktop",
+        "mobile",
+        "visual"
+      ],
+      "privacy": "authenticated-owner",
+      "aiCandidate": false,
+      "subject": "downloads",
+      "priority": "P2",
+      "args": {
+        "hash": {
+          "type": "string",
+          "min": 40,
+          "max": 40
+        }
+      },
+      "examples": [
+        "Pause torrent by info hash"
+      ],
+      "reversible": true
+    },
+    {
+      "id": "download.torrent.resume",
+      "title": "Resume native torrent",
+      "category": "downloads",
+      "owner": "host-control",
+      "executor": "apps/vivim-host/control/download-port.mjs:invoke",
+      "readiness": "source_wired",
+      "risk": "R2",
+      "target": "local-host",
+      "surfaces": [
+        "text",
+        "desktop",
+        "mobile",
+        "visual"
+      ],
+      "privacy": "authenticated-owner",
+      "aiCandidate": false,
+      "subject": "downloads",
+      "priority": "P2",
+      "args": {
+        "hash": {
+          "type": "string",
+          "min": 40,
+          "max": 40
+        }
+      },
+      "examples": [
+        "Resume torrent by info hash"
+      ],
+      "reversible": true
+    },
+    {
+      "id": "download.torrent.remove",
+      "title": "Remove native torrent without deleting files",
+      "category": "downloads",
+      "owner": "host-control",
+      "executor": "apps/vivim-host/control/download-port.mjs:invoke",
+      "readiness": "source_wired",
+      "risk": "R2",
+      "target": "local-host",
+      "surfaces": [
+        "text",
+        "desktop",
+        "mobile",
+        "visual"
+      ],
+      "privacy": "authenticated-owner",
+      "aiCandidate": false,
+      "subject": "downloads",
+      "priority": "P2",
+      "args": {
+        "hash": {
+          "type": "string",
+          "min": 40,
+          "max": 40
+        }
+      },
+      "examples": [
+        "Remove torrent by info hash without deleting files"
+      ],
+      "reversible": false
     }
   ],
   "readinessStates": {

@@ -1,0 +1,23 @@
+[package]
+name = "vivim-download-core"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+# Keep new network dependencies out of the incumbent workspace until verified.
+[workspace]
+
+[dependencies]
+anyhow = "1"
+fs2 = "0.4"
+librqbit = { version = "=8.1.1", default-features = false, features = ["rust-tls"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "io-std", "io-util", "time"] }
+
+[dev-dependencies]
+tempfile = "3"
+
+[profile.dev]
+debug = 0
+incremental = false

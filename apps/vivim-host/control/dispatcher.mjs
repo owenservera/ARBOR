@@ -10,6 +10,7 @@
 // plan digest; a claimed plan is never re-executed (crash ⇒ `uncertain`, surfaced to the
 // owner); executors are fixed Host functions — no shell, SQL, URL or generated code.
 import { createHash } from 'node:crypto';
+import { createDownloadPort, DOWNLOAD_ACTIONS } from './download-port.mjs';
 import {createWorkstationProcessPort,WORKSTATION_PROCESS_ACTION} from './workstation-process-port.mjs';
 import {createWorkstationSessionPort,WORKSTATION_SESSION_ACTIONS,TERMINAL_START,SESSION_START,SESSION_STATUS,SESSION_OUTPUT,SESSION_CANCEL,SESSION_INPUT} from './workstation-session-port.mjs';
 import {createWorkstationFilePort,WORKSTATION_FILE_ACTIONS,DEV_FILE_READ,FILE_READ,FILE_INSPECT,DIR_LIST,DIR_CREATE,FILE_WRITE,FILE_EDIT,FILES_READ,FILES_SEARCH} from './workstation-file-port.mjs';
@@ -135,7 +136,7 @@ function readWikiSection(wiki,{page,section}) {
 }
 
 /** Fixed executors keyed by catalog action id. Each returns a bounded, phone-safe summary. */
-function createExecutors({ runtime, planner, lexicon, devices, productJournal, personalSemantics, nativeProgram, composerBridge, studio, workstationProcess, workstationSession, workstationFile }) {
+function createExecutors({ runtime, planner, lexicon, devices, productJournal, personalSemantics, nativeProgram, composerBridge, studio, workstationProcess, workstationSession, workstationFile, downloadPort }) {
   const ownerExclusions = () => (runtime.status().preferences ?? [])
     .filter(p => p.hard && p.polarity === 'avoid' && p.source === 'owner')
     .slice(0, 50).map(p => ({ id: p.id, value: short(p.value, 120) }));
@@ -152,6 +153,7 @@ function createExecutors({ runtime, planner, lexicon, devices, productJournal, p
       entryId:entry.entryId,sequence:entry.sequence};
   };
   return {
+    ...Object.fromEntries([...DOWNLOAD_ACTIONS].map(id=>[id,args=>downloadPort.invoke(id,args)])),
     [WORKSTATION_PROCESS_ACTION]: (args,ctx) => workstationProcess.start(args,ctx.workstationBinding),
     [SESSION_START]: (args,ctx)=>workstationSession.start(args,ctx.workstationBinding,ctx.planId),
     [TERMINAL_START]: (args,ctx)=>workstationSession.start(args,ctx.workstationBinding,ctx.planId,TERMINAL_START),
@@ -345,6 +347,7 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
   commandScope = () => ({}), composerBridge = null, studio = null,
   nativeProgram=createNativeProgramValidator({productJournal}),
   workstationProcess=createWorkstationProcessPort(), workstationSession=createWorkstationSessionPort(), workstationFile=createWorkstationFilePort(),
+  downloadPort=createDownloadPort({dataRoot}),
   now = () => Date.now(), ttlMs = 10 * 60_000, freshMs = 2 * 60_000 } = {}) {
   if (!runtime || typeof runtime.status !== 'function') throw fail('CONTROL_RUNTIME_REQUIRED');
   const iso = () => new Date(now()).toISOString();
@@ -365,7 +368,7 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
   const planner = createControlPlanner({ catalog,
     lexicon: () => lexicon.entries(), personalRules: () => personalSemantics.accepted(),
     commandScope });
-  const executors = createExecutors({ runtime, planner, lexicon, devices, productJournal, personalSemantics,nativeProgram,composerBridge,studio,workstationProcess,workstationSession,workstationFile });
+  const executors = createExecutors({ runtime, planner, lexicon, devices, productJournal, personalSemantics,nativeProgram,composerBridge,studio,workstationProcess,workstationSession,workstationFile,downloadPort });
   // The catalog may not claim an executor the Host does not have, nor hide one it does.
   for (const a of catalog.actions) {
     const runnable = ['source_wired', 'verified'].includes(a.readiness);
@@ -584,6 +587,7 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
 
   function runRead(plan,{readHvi=null,recipe=null,stillCurrent=()=>true}={}) {
     const complete = result => ({ ...plan, outcome: 'done', executionPerformed: true, effect: 'read', result });
+    if(plan.actionId==='download.torrent.list')return Promise.resolve(executors[plan.actionId](plan.args)).then(complete);
     if([SESSION_STATUS,SESSION_OUTPUT].includes(plan.actionId))return Promise.resolve(executors[plan.actionId](plan.args)).then(complete);
     if(plan.actionId===HVI_ACTION)return Promise.resolve(executors[plan.actionId](plan.args,{readHvi})).then(complete);
     if(plan.actionId===WIKI_READ_PROGRAM_ACTION)return Promise.resolve(executors[plan.actionId](plan.args,{recipe,stillCurrent})).then(result=>
@@ -1005,6 +1009,7 @@ export function createControlDispatcher({ dataRoot, runtime, devices = null, pro
     // Trusted local lifecycle, never a catalog or HTTP/MCP action.
     beginWorkstationDrain:()=>workstationSession.beginDrain(),
     workstationSessionInventory:()=>workstationSession.inventory(),
+    closeDownloadWorker:()=>downloadPort.close(),
     closeWorkstationSessions:()=>workstationSession.close(), recent: (limit,{source='desktop',actor=null,grantId=null}={}) => journal.recent(limit).filter(r=>{if(source!=='mobile')return true;if(RULE_ACTIONS.has(r.actionId)||workstationAction(r.actionId))return false;if(r.actionId!==WIKI_WRITE_PROGRAM_ACTION)return true;const rec=journal.get(r.planId);return !!grantId&&rec?.plan.source==='mobile'&&rec.plan.actor===actor&&rec.plan.programGrantId===grantId;}),
   };
 }
