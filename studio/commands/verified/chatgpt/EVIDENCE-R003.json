@@ -1,0 +1,185 @@
+{
+  "schema": "vivim.studio.verified-evidence/1",
+  "revision": "R003",
+  "date": "2026-11-26",
+  "scope": "Two Craft-derived native read operations only; live Windows browser, existing authorized test conversation, no provider sends or settings changes.",
+  "source": {
+    "executed": "8560572c67bd2d35210fe9901d31074caa49a7cb",
+    "mainAtCheck": "b5e15526ec8450a2f867956c4b3ef53a0aa7b1b2",
+    "localCheckout": "b22aca03d981d164af523817513484f4d04f729b",
+    "sourceComparison": {
+      "session": "ctl-16177ba45dafbc3b",
+      "fetchExit": 0,
+      "changedImplementationAndTestPaths": [],
+      "diffExit": 0
+    },
+    "previousUnitEvidence": {
+      "session": "ctl-6be8097c4ff358ed",
+      "passed": 24,
+      "failed": 0
+    }
+  },
+  "records": [
+    {
+      "id": "EV-10",
+      "kind": "workstation-and-registration",
+      "session": "ctl-0631a34bfaf4835a",
+      "observations": {
+        "scratchSourcePresent": true,
+        "trackedDirty": false,
+        "manifestPort": 38702,
+        "initialPortsRefused": [
+          38702,
+          7878,
+          9222
+        ]
+      },
+      "liveRegistration": {
+        "session": "ctl-5394e3ac070fba1c",
+        "tools": [
+          {
+            "name": "chatgpt_surface",
+            "readOnly": true
+          },
+          {
+            "name": "search_chatgpt_visible",
+            "readOnly": true
+          }
+        ],
+        "recipes": [
+          "provider.chatgpt-surface",
+          "provider.chatgpt-search-visible"
+        ],
+        "browserOwnerVerified": true,
+        "port": 38702,
+        "alreadyRunning": false
+      }
+    },
+    {
+      "id": "EV-11",
+      "kind": "live-semantic-surface",
+      "session": "ctl-5394e3ac070fba1c",
+      "requestId": "ea260053cafe490aa321bb9876540003",
+      "targetId": "09A3E85485B58CA32FE83BA9A78FFCB9",
+      "tool": "chatgpt_surface",
+      "observations": {
+        "schema": "vivim.chatgpt-surface/1",
+        "scope": "current-accessibility-tree-only",
+        "complete": false,
+        "executionAuthorized": false,
+        "eligibleControls": 24,
+        "scannedControls": 24,
+        "omittedControls": 0,
+        "unclassifiedControls": 14,
+        "ambiguousControls": 0,
+        "roleCounts": {
+          "link": 2,
+          "navigation": 2,
+          "button": 19,
+          "textbox": 1
+        },
+        "groupsWithCandidates": 7,
+        "totalGroups": 20,
+        "groups": [
+          {
+            "id": "CG01",
+            "controls": [
+              "home"
+            ]
+          },
+          {
+            "id": "CG03",
+            "controls": [
+              "new-chat"
+            ]
+          },
+          {
+            "id": "CG04",
+            "controls": [
+              "attach",
+              "send"
+            ]
+          },
+          {
+            "id": "CG07",
+            "controls": [
+              "projects"
+            ]
+          },
+          {
+            "id": "CG10",
+            "controls": [
+              "apps"
+            ]
+          },
+          {
+            "id": "CG12",
+            "controls": [
+              "work"
+            ]
+          },
+          {
+            "id": "CG17",
+            "controls": [
+              "share"
+            ]
+          }
+        ],
+        "toolIdCandidateCount": 0
+      },
+      "limitations": [
+        "Current-view candidate correspondences only. No verified locator or action, complete family coverage, entitlement or plugin tool enumeration claim."
+      ]
+    },
+    {
+      "id": "EV-12",
+      "kind": "live-visible-history-search",
+      "session": "ctl-5394e3ac070fba1c",
+      "tool": "search_chatgpt_visible",
+      "providerThread": "chatgpt-c:6b07acb1-e608-83eb-9863-a58e13c93843",
+      "observations": {
+        "schema": "vivim.chatgpt-visible-search/1",
+        "complete": false,
+        "candidatesOnly": true,
+        "searchedEntries": 16,
+        "matchedEntries": 1,
+        "exactKnownThread": true,
+        "renderedLinks": 18,
+        "scannedLinks": 18,
+        "uniqueThreads": 16,
+        "omittedEntries": 0,
+        "truncatedScan": false,
+        "negativeSearchMatches": 0,
+        "acceptancePassed": true,
+        "providerSends": 0
+      },
+      "limitations": [
+        "Live positive lookup used known thread reference, not title; title filtering passed R002 unit test only. No provider search UI, pagination, complete account history or live binding claim."
+      ]
+    }
+  ],
+  "processLifecycle": {
+    "runtimeCloseReturned": true,
+    "doneMarkerObserved": true,
+    "lastObservedTerminalState": "running",
+    "elapsedMs": 26787,
+    "exitCode": null,
+    "note": "Application acceptance passed before terminal exit. No completed process claim; retained Chrome or open handles may prevent exit."
+  },
+  "deployment": {
+    "studioNativeSource": "committed",
+    "activeCheckout": "unchanged",
+    "remoteMcpAliases": "not deployed",
+    "persistentHttpRecipeService": "not verified in R003"
+  },
+  "priorBlockedRequest": {
+    "id": "e71ab102cc564ff8976eac2e501ac708",
+    "historicalStatus": "denied-or-uncertain; not promoted or replayed",
+    "newProbeScope": "Owner explicitly requested fresh verification; initial endpoint state independently read as offline. New authorized read-only test launched incumbent dedicated profile with no provider send."
+  },
+  "remaining": [
+    "Live title matching, HTTP/recipe transport and remote MCP publication",
+    "CLI/process lifetime and persistent Studio owner",
+    "All unverified family actions, existing-thread continuation fence and complete provider history"
+  ]
+}
