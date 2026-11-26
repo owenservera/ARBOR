@@ -35,3 +35,14 @@ test('real junction or symlink does not escape initial working directory',t=>{
  assert.throws(()=>f.port.bind({...request,cwd:'link'}),/CWD_INVALID/);
  assert.throws(()=>f.port.bind({...request,cwd:'../outside'}),/REQUEST_INVALID/);
 });
+
+test('standing machine grant remains usable after time advances; scoped null remains denied',t=>{
+ const f=fixture(t);f.policy.expiresAt=null;
+ assert.throws(()=>validateTerminalPolicy(f.policy,Date.now()),/POLICY_INVALID/);
+ f.policy.machineScope={schema:'vivim.owner-machine-scope/1',expiresAt:null,protectedPaths:['C:\\authority','C:\\private']};
+ f.save();f.advance(365*86400000);
+ assert.equal(f.port.bind(request).expiresAt,null);
+ assert.throws(()=>f.port.bind({...request,timeout_ms:30000}),/NOT_GRANTED/);
+ f.policy.machineScope.expiresAt=Date.now()+60000;f.save();
+ assert.throws(()=>f.port.bind(request),/POLICY_INVALID/);
+});
