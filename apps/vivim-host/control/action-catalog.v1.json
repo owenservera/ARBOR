@@ -2581,7 +2581,23 @@
       "examples": [
         "list torrents"
       ],
-      "reversible": true
+      "reversible": true,
+      "language": {
+        "verbs": [
+          "list",
+          "show"
+        ],
+        "family": "?",
+        "reading": "List native torrents",
+        "scope": [
+          "torrent",
+          "torrents"
+        ],
+        "objects": [
+          "torrent",
+          "torrents"
+        ]
+      }
     },
     {
       "id": "download.torrent.start",
@@ -2590,7 +2606,7 @@
       "owner": "host-control",
       "executor": "apps/vivim-host/control/download-port.mjs:invoke",
       "readiness": "source_wired",
-      "risk": "R1",
+      "risk": "R2",
       "target": "local-host",
       "surfaces": [
         "text",
@@ -2631,7 +2647,7 @@
         "magnet": {
           "type": "string",
           "min": 30,
-          "max": 8192
+          "max": 8000
         }
       },
       "examples": [
