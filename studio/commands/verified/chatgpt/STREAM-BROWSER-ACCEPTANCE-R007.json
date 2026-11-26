@@ -63,11 +63,35 @@
     "elapsedMs": 97931,
     "limitations": [
       "Only one nonempty snapshot before ready; no token or incremental growing-text delivery established.",
-      "Second subscriber used Last-Event-ID while original subscriber remained connected; no disconnect/restart recovery tested here.",
       "Event cursors are bounded process-local delivery IDs; not durable raw record sequences.",
       "MCP terminal output is polled; direct remote SSE exposure not deployed.",
-      "First R006 combined request denied or uncertain; separate read-only journal search found no matching test key (ctl-93b69e8b39d8c34e). R007 independent fresh experiment used new unique key and marker."
-    ]
+      "First R006 combined request denied or uncertain; separate read-only journal search found no matching test key (ctl-93b69e8b39d8c34e). R007 independent fresh experiment used new unique key and marker.",
+      "First live replay attached a second subscriber; follow-up tested real disconnect/reconnect and new-service reset against the completed saved response. No claim of reconnect during ongoing provider generation across process restart."
+    ],
+    "restartAndDisconnectedReplay": {
+      "session": "ctl-f4a6318c50e3ede6",
+      "requestId": "ea260058cafe490aa321bb9876540003",
+      "source": "actual persisted R007 reply, new incumbent Studio HTTP server, no browser launch or provider send",
+      "oldCursor": "722ef05c220d5f90:15",
+      "reset": "server_restarted",
+      "http": 200,
+      "newBaselineCursor": "007588a75a03b432:1",
+      "newTextEvent": "007588a75a03b432:2",
+      "chars": 1708,
+      "digest": "eebbbf4103b1b7acb34e60d5c24bb1f502625c402f66b9fb3e5bdbb751c2ab8c",
+      "marker": true,
+      "disconnectedThenReconnected": true,
+      "replayedSameEventId": true,
+      "replayedSameHash": true,
+      "providerSubmissions": 0,
+      "terminal": {
+        "state": "exited",
+        "exitCode": 0,
+        "success": true,
+        "elapsedMs": 2185
+      },
+      "limits": "New process reconstructs latest saved text; historical delivery cursors and missed intermediate snapshots from prior epoch are not durable."
+    }
   },
   "browser": {
     "session": "ctl-574120097358565e",
