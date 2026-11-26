@@ -1,0 +1,432 @@
+{
+  "schema": "vivim.studio.manual-acceptance/1",
+  "revision": "R004",
+  "date": "2026-11-26",
+  "scope": "All 38 catalogue records individually dispositioned. Live acceptance requires directly invoking real Studio commands against the signed-in application or actual saved test evidence; unit tests supplementary, not manual acceptance. No blanket authorization to alter account settings, permissions, or delete user data.",
+  "source": "8560572c67bd2d35210fe9901d31074caa49a7cb",
+  "entries": [
+    {
+      "id": "CG-001",
+      "capability": "environment.doctor",
+      "native": "studio doctor",
+      "status": "LIVE_VERIFIED",
+      "refs": [
+        "EV-01"
+      ],
+      "detail": "Chrome discovered; doctor is not account or browser ownership proof.",
+      "testMethod": "prior evidence or explicitly unverified; see detail"
+    },
+    {
+      "id": "CG-002",
+      "capability": "catalog.discover",
+      "native": "studio recipe list",
+      "status": "LIVE_VERIFIED",
+      "refs": [
+        "EV-02"
+      ],
+      "detail": "Native catalogue returned; source capability does not imply live availability.",
+      "testMethod": "prior evidence or explicitly unverified; see detail"
+    },
+    {
+      "id": "CG-003",
+      "capability": "browser.launch",
+      "native": "launchChrome",
+      "status": "LIVE_VERIFIED",
+      "refs": [
+        "EV-05"
+      ],
+      "detail": "Completed workspace profile, exact executable, manifest port; single owner; no credential access.",
+      "testMethod": "prior evidence or explicitly unverified; see detail"
+    },
+    {
+      "id": "CG-004",
+      "capability": "provider.targets",
+      "native": "conversation_targets",
+      "status": "LIVE_VERIFIED",
+      "refs": [
+        "EV-05"
+      ],
+      "detail": "Target ID and canonical thread binding; not account history.",
+      "testMethod": "prior evidence or explicitly unverified; see detail"
+    },
+    {
+      "id": "CG-005",
+      "capability": "provider.chat-index",
+      "native": "chat_index",
+      "status": "LIVE_VERIFIED",
+      "refs": [
+        "EV-07"
+      ],
+      "detail": "15 rendered candidates, complete=false; no complete history claim or arbitrary navigation.",
+      "testMethod": "prior evidence or explicitly unverified; see detail"
+    },
+    {
+      "id": "CG-006",
+      "capability": "conversation.list",
+      "native": "list_conversations",
+      "status": "LIVE_VERIFIED",
+      "refs": [
+        "EV-05"
+      ],
+      "detail": "77 local snapshots (all providers, not account history); remote projection must filter authorized ChatGPT scope.",
+      "testMethod": "prior evidence or explicitly unverified; see detail"
+    },
+    {
+      "id": "CG-007",
+      "capability": "conversation.inspect",
+      "native": "get_conversation",
+      "status": "LIVE_VERIFIED",
+      "refs": [
+        "EV-05"
+      ],
+      "detail": "Persisted revision, reply, readiness, evidence; require authorized conversation.",
+      "testMethod": "prior evidence or explicitly unverified; see detail"
+    },
+    {
+      "id": "CG-008",
+      "capability": "conversation.capabilities",
+      "native": "conversation_capsule",
+      "status": "LIVE_VERIFIED",
+      "refs": [
+        "EV-05"
+      ],
+      "detail": "Advisory capsule; effect-time gates remain authoritative.",
+      "testMethod": "prior evidence or explicitly unverified; see detail"
+    },
+    {
+      "id": "CG-009",
+      "capability": "conversation.create",
+      "native": "create_conversation",
+      "status": "LIVE_VERIFIED",
+      "refs": [
+        "EV-16"
+      ],
+      "detail": "Standalone create: new owned target, unbound NEW_CHAT, ready, zero turns, target count 1→2. No send.",
+      "testMethod": "direct native command against owner workstation/live browser or actual stored evidence"
+    },
+    {
+      "id": "CG-010",
+      "capability": "conversation.connect-existing",
+      "native": "connect_conversation",
+      "status": "LIVE_VERIFIED",
+      "refs": [
+        "EV-06",
+        "EV-07"
+      ],
+      "detail": "Exact known provider ref and target; do not infer readiness before transcript hydration.",
+      "testMethod": "prior evidence or explicitly unverified; see detail"
+    },
+    {
+      "id": "CG-011",
+      "capability": "conversation.read",
+      "native": "read_conversation",
+      "status": "LIVE_VERIFIED",
+      "refs": [
+        "EV-07"
+      ],
+      "detail": "Two rendered messages, prior marker recovered after hydration; bounded incomplete view.",
+      "testMethod": "prior evidence or explicitly unverified; see detail"
+    },
+    {
+      "id": "CG-012",
+      "capability": "conversation.submit-first",
+      "native": "submit_conversation_turn",
+      "status": "LIVE_COMPOSITE",
+      "refs": [
+        "EV-03",
+        "EV-17"
+      ],
+      "detail": "Historical first send proven through one-shot; independently keyed first-send request failed MCP initialization/receipt. No new delivery claim.",
+      "testMethod": "prior evidence or explicitly unverified; see detail"
+    },
+    {
+      "id": "CG-013",
+      "capability": "conversation.ask",
+      "native": "submit_conversation_turn",
+      "status": "LIVE_BLOCKED",
+      "refs": [
+        "EV-06",
+        "EV-08"
+      ],
+      "detail": "Existing follow-up refused PRIOR_REPLY_CHANGED / THREAD_FENCED; not resent.",
+      "testMethod": "prior evidence or explicitly unverified; see detail"
+    },
+    {
+      "id": "CG-014",
+      "capability": "conversation.continue",
+      "native": "submit_conversation_turn",
+      "status": "LIVE_BLOCKED",
+      "refs": [
+        "EV-06",
+        "EV-08"
+      ],
+      "detail": "Same as CG-013. Existing conversation continuation unverified.",
+      "testMethod": "prior evidence or explicitly unverified; see detail"
+    },
+    {
+      "id": "CG-015",
+      "capability": "conversation.wait",
+      "native": "get_conversation",
+      "status": "LIVE_COMPOSITE",
+      "refs": [
+        "EV-03",
+        "EV-06"
+      ],
+      "detail": "Poll original operation/turn; readiness vs completion separate; no repeated send.",
+      "testMethod": "prior evidence or explicitly unverified; see detail"
+    },
+    {
+      "id": "CG-016",
+      "capability": "conversation.result",
+      "native": "get_conversation",
+      "status": "LIVE_VERIFIED",
+      "refs": [
+        "EV-05"
+      ],
+      "detail": "Do not create separate runtime or result storage; project authorized original turn.",
+      "testMethod": "prior evidence or explicitly unverified; see detail"
+    },
+    {
+      "id": "CG-017",
+      "capability": "conversation.finish",
+      "native": "finish_conversation",
+      "status": "LIVE_VERIFIED",
+      "refs": [
+        "EV-06",
+        "EV-07",
+        "EV-08",
+        "EV-16"
+      ],
+      "detail": "Historical finish closeTab=false verified. Standalone create test stopped before explicit closeTab=true because unbound journal inspection refused; runtime close returned.",
+      "testMethod": "direct native command against owner workstation/live browser or actual stored evidence"
+    },
+    {
+      "id": "CG-018",
+      "capability": "recovery.reconcile-turn",
+      "native": "reconcile_conversation",
+      "status": "SOURCE_PRESENT",
+      "refs": [
+        "EV-17"
+      ],
+      "detail": "No independent live reconcile receipt; combined request denied/outcome uncertain. Do not claim recovery.",
+      "testMethod": "prior evidence or explicitly unverified; see detail"
+    },
+    {
+      "id": "CG-019",
+      "capability": "reply.network-completion",
+      "native": "get_conversation",
+      "status": "LIVE_PARTIAL",
+      "refs": [
+        "EV-03"
+      ],
+      "detail": "Verified settled page reply, network completion unknown, capture incomplete.",
+      "testMethod": "prior evidence or explicitly unverified; see detail"
+    },
+    {
+      "id": "CG-020",
+      "capability": "recipe.execution",
+      "native": "studio recipe run",
+      "status": "LIVE_VERIFIED",
+      "refs": [
+        "EV-14",
+        "EV-15"
+      ],
+      "detail": "Actual temporary local Studio HTTP owner, native client recipe conversation.list succeeded; live title search and surface also passed through HTTP. Persistent installed service not deployed.",
+      "testMethod": "direct native command against owner workstation/live browser or actual stored evidence"
+    },
+    {
+      "id": "CG-021",
+      "capability": "channel.ask",
+      "native": "studio chat ask",
+      "status": "SOURCE_PRESENT",
+      "refs": [],
+      "detail": "Legacy channel ask not independently exercised. Separate drive/journal path, no automatic resend or active-tab fallback.",
+      "testMethod": "prior evidence or explicitly unverified; see detail"
+    },
+    {
+      "id": "CG-022",
+      "capability": "channel.work",
+      "native": "studio chat work",
+      "status": "SOURCE_PRESENT",
+      "refs": [],
+      "detail": "Delegated work not exercised; requires independent isolated task and verified channel scope.",
+      "testMethod": "prior evidence or explicitly unverified; see detail"
+    },
+    {
+      "id": "CG-023",
+      "capability": "channel.revoke",
+      "native": "studio chat revoke",
+      "status": "SOURCE_PRESENT",
+      "refs": [],
+      "detail": "Revocation mutation not exercised; do not revoke an existing owner task just to test.",
+      "testMethod": "prior evidence or explicitly unverified; see detail"
+    },
+    {
+      "id": "CG-024",
+      "capability": "channel.stats",
+      "native": "studio chat stats",
+      "status": "LIVE_VERIFIED",
+      "refs": [
+        "EV-13"
+      ],
+      "detail": "Actual CLI chat stats against existing C:/VIVIM ledger exited 0, expected schema and fields.",
+      "testMethod": "direct native command against owner workstation/live browser or actual stored evidence"
+    },
+    {
+      "id": "CG-025",
+      "capability": "attachments",
+      "native": "studio chat ask --attach",
+      "status": "SOURCE_PRESENT",
+      "refs": [],
+      "detail": "No new attachment was uploaded; test requires a harmless local fixture and verified send path.",
+      "testMethod": "prior evidence or explicitly unverified; see detail"
+    },
+    {
+      "id": "CG-026",
+      "capability": "reasoning-effort",
+      "native": "studio chat ask --effort",
+      "status": "SOURCE_PRESENT",
+      "refs": [],
+      "detail": "No live effort selection or readback established.",
+      "testMethod": "prior evidence or explicitly unverified; see detail"
+    },
+    {
+      "id": "CG-027",
+      "capability": "capture.export",
+      "native": "studio export transcript",
+      "status": "LIVE_PARTIAL",
+      "refs": [
+        "EV-13"
+      ],
+      "detail": "Actual saved test session transcript review preview emitted expected marker; no confirmed export/write tested. CLI exit 0.",
+      "testMethod": "prior evidence or explicitly unverified; see detail"
+    },
+    {
+      "id": "CG-028",
+      "capability": "provider.search",
+      "native": "none",
+      "status": "PROPOSED",
+      "refs": [],
+      "detail": "First search bounded visible/local catalog; provider UI search needs source capability and live tests.",
+      "testMethod": "not runnable — no native operation"
+    },
+    {
+      "id": "CG-029",
+      "capability": "provider.history-pagination",
+      "native": "none",
+      "status": "PROPOSED",
+      "refs": [],
+      "detail": "Use provider UI only, pagination/virtualization explicit; no private endpoints.",
+      "testMethod": "not runnable — no native operation"
+    },
+    {
+      "id": "CG-030",
+      "capability": "provider.open-exact",
+      "native": "none",
+      "status": "PROPOSED",
+      "refs": [],
+      "detail": "Exact known canonical ref via owner-owned UI; existing connect requires already-open target.",
+      "testMethod": "not runnable — no native operation"
+    },
+    {
+      "id": "CG-031",
+      "capability": "conversation.cancel-generation",
+      "native": "none",
+      "status": "PROPOSED",
+      "refs": [],
+      "detail": "Distinct from capture finish; prove provider stop action and resulting turn state.",
+      "testMethod": "not runnable — no native operation"
+    },
+    {
+      "id": "CG-032",
+      "capability": "provider.model-capabilities",
+      "native": "none",
+      "status": "PROPOSED",
+      "refs": [],
+      "detail": "Discover signed-in UI choices and constraints without assuming plan entitlement.",
+      "testMethod": "not runnable — no native operation"
+    },
+    {
+      "id": "CG-033",
+      "capability": "conversation.rename/archive",
+      "native": "none",
+      "status": "PROPOSED",
+      "refs": [],
+      "detail": "Separate explicit authorization and readback; no destructive bulk operation.",
+      "testMethod": "not runnable — no native operation"
+    },
+    {
+      "id": "CG-034",
+      "capability": "conversation.events",
+      "native": "native conversation event seam",
+      "status": "LIVE_VERIFIED",
+      "refs": [
+        "EV-14"
+      ],
+      "detail": "Actual HTTP metadata SSE on known test conversation returned 200, conversation.changed and cursor; did not expose test marker. Reconnect/text opt-in not exercised.",
+      "testMethod": "direct native command against owner workstation/live browser or actual stored evidence"
+    },
+    {
+      "id": "CG-035",
+      "capability": "artifact.read/download",
+      "native": "none",
+      "status": "PROPOSED",
+      "refs": [],
+      "detail": "Bounded owner-approved artifacts, destination and integrity receipt; no broad browsing.",
+      "testMethod": "not runnable — no native operation"
+    },
+    {
+      "id": "CG-036",
+      "capability": "conversation.send-idempotency",
+      "native": "submit_conversation_turn",
+      "status": "SOURCE_PRESENT",
+      "refs": [
+        "EV-17"
+      ],
+      "detail": "New live idempotency test not dispatched/receipt unavailable; same-key replay and conflict still unverified.",
+      "testMethod": "prior evidence or explicitly unverified; see detail"
+    },
+    {
+      "id": "CG-037",
+      "capability": "provider.chatgpt-surface",
+      "native": "chatgpt_surface",
+      "status": "LIVE_VERIFIED",
+      "refs": [
+        "EV-11",
+        "EV-15"
+      ],
+      "detail": "Actual browser direct runtime and HTTP recipe, 104 eligible controls in hydrated view, 8/20 candidate groups, 88 unclassified; no action binding proof.",
+      "testMethod": "direct native command against owner workstation/live browser or actual stored evidence"
+    },
+    {
+      "id": "CG-038",
+      "capability": "provider.chatgpt-search-visible",
+      "native": "search_chatgpt_visible",
+      "status": "LIVE_VERIFIED",
+      "refs": [
+        "EV-12",
+        "EV-15"
+      ],
+      "detail": "Actual browser exact thread lookup and exact test title lookup (one match); native HTTP recipe succeeded; not provider-side full search.",
+      "testMethod": "direct native command against owner workstation/live browser or actual stored evidence"
+    }
+  ],
+  "counts": {
+    "LIVE_VERIFIED": 18,
+    "LIVE_COMPOSITE": 2,
+    "LIVE_BLOCKED": 2,
+    "SOURCE_PRESENT": 7,
+    "LIVE_PARTIAL": 2,
+    "PROPOSED": 7
+  },
+  "evidenceFiles": [
+    "EVIDENCE-R001.json",
+    "EVIDENCE-R003.json",
+    "EVIDENCE-R004.json"
+  ],
+  "limitations": [
+    "Not all capabilities manually tested; proposed native operations cannot be invoked; blocked or missing capabilities remain explicitly unverified.",
+    "The new source was exercised using an isolated pinned copy, not installed into active checkout.",
+    "MCP external aliases not deployed."
+  ]
+}
