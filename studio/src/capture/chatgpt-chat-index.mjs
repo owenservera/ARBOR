@@ -205,7 +205,8 @@ export function filterVisibleChatIndex(observation, query) {
   if (!index || !Array.isArray(index.entries) || index.invalidResult !== false || index.complete !== false || index.candidatesOnly !== true)
     throw fail('CHAT_INDEX_OBSERVATION_UNAVAILABLE');
   const normalize = value => String(value ?? '').normalize('NFKD').replace(/\p{M}/gu, '').toLowerCase();
-  const needle = normalize(query.trim());
+  const needle = normalize(query.trim()).trim();
+  if (!needle) throw fail('INVALID_CHAT_INDEX_QUERY');
   const entries = index.entries.filter(e => normalize(e.displayTitle?.text).includes(needle) || normalize(e.threadRef).includes(needle));
   return { targetId: observation.targetId, origin: observation.origin, readAt: observation.readAt,
     schema: 'vivim.chatgpt-visible-search/1', scope: 'returned-rendered-candidates-only', complete: false, candidatesOnly: true,
