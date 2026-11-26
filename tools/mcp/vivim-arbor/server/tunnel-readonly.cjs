@@ -7,10 +7,11 @@ const {createProbe,name:probeName}=require('./workstation-probe-tunnel.cjs');
 const {createAcceptance}=require('./probe-acceptance.cjs');
 const {createWorkstationTools}=require('./workstation-tunnel.cjs');
 const {createMaintenanceGate,createAdmission}=require('./maintenance-gate.cjs');
+const {createDeviceTools}=require('./device-router.cjs');
 const VERSIONS = ['2025-03-26', '2025-06-18', '2025-11-25'];
 const HOST_NAMES = new Set(['vivim_host_sources', 'vivim_host_capabilities', 'vivim_host_targets', 'vivim_host_capability']);
 const isRecord = x => x !== null && typeof x === 'object' && !Array.isArray(x);
-function createProfile(env = process.env, {fetcher=globalThis.fetch,acceptance=null,workstation=[],maintenance=()=>null}={}) {
+function createProfile(env = process.env, {fetcher=globalThis.fetch,acceptance=null,workstation=[],maintenance=()=>null,deviceAdapters=null}={}) {
   const admission=createAdmission(maintenance);
   const probe=createProbe({env,fetcher})??acceptance;
   const tools = [
@@ -24,7 +25,11 @@ function createProfile(env = process.env, {fetcher=globalThis.fetch,acceptance=n
   }
   if(probe)tools.push(probe);
   tools.push(...workstation);
+  // Only explicit, authenticated adapters injected by the local owner may be bound.
+  // Default production startup remains unchanged; no environment auto-discovery.
+  if(deviceAdapters!==null)tools.push(...createDeviceTools(deviceAdapters));
   const map = new Map(tools.map(d => [d[0],d]));
+  if(map.size!==tools.length)throw Error('DUPLICATE_MCP_TOOL_ID');
   const annotations = {readOnlyHint:true,destructiveHint:false,idempotentHint:true,openWorldHint:false};
   let initialized = false;
   let negotiated = false;
