@@ -1431,7 +1431,8 @@ async function handleControl(req, res, pathname, host, controlFor, tokenFor, uiS
     if (String(req.headers.origin || '').toLowerCase() !== 'http://' + host || String(req.headers['x-vivim-control'] || '') !== '1') {
       sendJson(res, 403, { error: 'Same-origin control header required', code: 'ORIGIN_OR_CSRF' }); return;
     }
-    const body = await readJsonBody(req, 64 * 1024);
+    // Only the authenticated owner-token plan route receives the larger envelope.
+    const body = await readJsonBody(req, route==='plan'&&owner&&verifyOwnerToken(req.headers.authorization,owner)?16*1024*1024:64*1024);
     const c = controlFor();
     if (route === 'interpret') {
       if (!body || typeof body!=='object'||Array.isArray(body)||

@@ -6,7 +6,8 @@ use sha2::{Sha256,Digest};
 use std::{fs::{self,File,OpenOptions,Metadata},io::{self,Read,Write},path::{Path,PathBuf}};
 use vivim_programmability_core::workstation_capabilities::edit_preview;
 type R<T>=Result<T,String>;
-const MAX:usize=65536;
+const MAX:usize=4*1024*1024;
+const MAX_REQUEST:usize=64*1024*1024;
 fn err(s:&str)->String{s.into()}
 fn sha(b:&[u8])->String{format!("{:x}",Sha256::digest(b))}
 fn string<'a>(v:&'a Value,k:&str)->R<&'a str>{v.get(k).and_then(Value::as_str).ok_or(err("INVALID_REQUEST"))}
@@ -169,7 +170,7 @@ fn execute(v:&Value)->R<Value>{
  Ok(json!({"operation":op,"beforeDigest":expected,"afterDigest":after,"bytes":content.len()}))
 }
 fn main(){
- let mut input=Vec::new();let reply=if io::stdin().take(262145).read_to_end(&mut input).is_ok()&&input.len()<=262144{
+ let mut input=Vec::new();let reply=if io::stdin().take(MAX_REQUEST as u64+1).read_to_end(&mut input).is_ok()&&input.len()<=MAX_REQUEST{
   match serde_json::from_slice::<Value>(&input){Ok(v)=>match execute(&v){Ok(result)=>json!({"schema":"vivim.workstation-file-native/1","ok":true,"result":result}),Err(code)=>json!({"schema":"vivim.workstation-file-native/1","ok":false,"code":code})},Err(_)=>json!({"schema":"vivim.workstation-file-native/1","ok":false,"code":"INVALID_REQUEST"})}
  }else{json!({"schema":"vivim.workstation-file-native/1","ok":false,"code":"REQUEST_LIMIT"})};
  println!("{}",reply);

@@ -85,7 +85,7 @@ fn risk_rank(value: &Value) -> usize {
 fn safe_text(value: &Value) -> bool {
     value.as_str().is_some_and(|s| !s.is_empty() && s == js_trim(s))
 }
-fn valid_specs(value: &Value) -> bool {
+fn valid_specs(id: &str, value: &Value) -> bool {
     let Some(specs) = value.as_object() else { return false };
     specs.iter().all(|(key, spec)| {
         if !catalog_arg_key(key) { return false }
@@ -96,7 +96,10 @@ fn valid_specs(value: &Value) -> bool {
             }),
             Some("string") => matches!(
                 (spec["min"].as_u64(), spec["max"].as_u64()),
-                (Some(min), Some(max)) if min >= 1 && min <= max && max <= 8000
+                (Some(min), Some(max)) if min >= 1 && min <= max && max <= match (id,key.as_str()) {
+                    ("workstation.file.write","content") | ("workstation.file.edit","old_text"|"new_text") => 5_592_412,
+                    _ => 8000,
+                }
             ),
             _ => false,
         }
@@ -120,7 +123,7 @@ fn action_catalog(actions: &Value) -> Option<BTreeMap<String, &Value>> {
         let id = action["id"].as_str().filter(|id| catalog_id(id))?;
         if !safe_text(&action["title"]) || !safe_text(&action["owner"])
             || !valid_readiness(&action["readiness"]) || !valid_risk(&action["risk"])
-            || !valid_specs(&action["args"]) { return None }
+            || !valid_specs(id,&action["args"]) { return None }
         if let Some(scopes) = action.get("requiredScopes") {
             if !scopes.as_array().is_some_and(|a| a.len() <= 64 && a.iter().all(safe_text)) {
                 return None

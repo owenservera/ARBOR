@@ -2406,7 +2406,7 @@
         "content": {
           "type": "string",
           "min": 4,
-          "max": 8000
+          "max": 5592412
         }
       },
       "examples": [
@@ -2453,12 +2453,12 @@
         "old_text": {
           "type": "string",
           "min": 4,
-          "max": 8000
+          "max": 5592412
         },
         "new_text": {
           "type": "string",
           "min": 4,
-          "max": 8000
+          "max": 5592412
         }
       },
       "examples": [
@@ -2509,7 +2509,7 @@
       "reversible": false,
       "subject": "workstation",
       "priority": "P0",
-      "precondition": "Explicit JSON array of 1–8 relative file names, combined content at most 64 KiB; individual live reads, no snapshot claim."
+      "precondition": "Explicit JSON array of 1–8 relative file names, combined content at most 4 MiB; individual live reads, no snapshot claim."
     },
     {
       "id": "workstation.files.search_selected",
@@ -2556,7 +2556,7 @@
       "reversible": false,
       "subject": "workstation",
       "priority": "P0",
-      "precondition": "Explicit JSON array of 1–8 relative file names, combined content at most 64 KiB, literal b64: UTF-8 up to 160 bytes; first match per line, at most 100 matches."
+      "precondition": "Explicit JSON array of 1–8 relative file names, combined content at most 4 MiB, literal b64: UTF-8 up to 160 bytes; first match per line, at most 100 matches."
     },
     {
       "id": "download.torrent.list",

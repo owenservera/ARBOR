@@ -1,11 +1,11 @@
 // Preserve exact UTF-8 bytes across the incumbent typed planner's trim rule.
 // No implicit decoding of unmarked strings, no NUL, no lossy UTF-8.
-export function decodeWorkstationText(value,maxBytes=5997){
- if(typeof value!=='string'||!value.startsWith('b64:')||value.length>8000)
+export function decodeWorkstationText(value,maxBytes=4*1024*1024){
+ if(typeof value!=='string'||!value.startsWith('b64:')||value.length>4+4*Math.ceil(maxBytes/3))
   throw Object.assign(Error('WORKSTATION_TEXT_ENCODING_INVALID'),{code:'WORKSTATION_TEXT_ENCODING_INVALID',status:409});
  const encoded=value.slice(4);
- if(!/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(encoded))
-  throw Object.assign(Error('WORKSTATION_TEXT_ENCODING_INVALID'),{code:'WORKSTATION_TEXT_ENCODING_INVALID',status:409});
+ // Exact re-encoding below rejects malformed/noncanonical base64 without a
+ // repeated regex that can overflow the stack for large legitimate payloads.
  const bytes=Buffer.from(encoded,'base64');
  if(bytes.length>maxBytes||bytes.toString('base64')!==encoded)
   throw Object.assign(Error('WORKSTATION_TEXT_ENCODING_INVALID'),{code:'WORKSTATION_TEXT_ENCODING_INVALID',status:409});

@@ -54,7 +54,7 @@ export function createWorkstationFilePort({env=process.env,run=spawnSync,now=Dat
   if(action===FILE_WRITE)input.content=decodeWorkstationText(args.content);
   if(action===FILE_EDIT){input.oldText=decodeWorkstationText(args.old_text);input.newText=decodeWorkstationText(args.new_text);}
   const childEnv={};if(process.platform==='win32'&&process.env.SystemRoot)childEnv.SystemRoot=process.env.SystemRoot;
-  const r=run(b.helperPath,[],{input:JSON.stringify(input),encoding:'utf8',env:childEnv,shell:false,windowsHide:true,timeout:10000,maxBuffer:524288});
+  const r=run(b.helperPath,[],{input:JSON.stringify(input),encoding:'utf8',env:childEnv,shell:false,windowsHide:true,timeout:30000,maxBuffer:32*1024*1024});
   if(r.error||r.status!==0)throw fail('WORKSTATION_FILE_OUTCOME_UNCERTAIN',503);
   let reply;try{reply=JSON.parse(r.stdout);}catch{throw fail('WORKSTATION_FILE_OUTCOME_UNCERTAIN',503);}
   if(reply?.schema!=='vivim.workstation-file-native/1'||typeof reply.ok!=='boolean')throw fail('WORKSTATION_FILE_OUTCOME_UNCERTAIN',503);

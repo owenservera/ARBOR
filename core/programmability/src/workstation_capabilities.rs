@@ -9,8 +9,8 @@ use std::collections::BTreeMap;
 const FORK_SHA: &str = "9a101b17e44577f0baefa4c7120f087881c5cc56";
 const AUDIT_SCHEMA: &str = "vivim.workstation-coverage/1";
 const EDIT_SCHEMA: &str = "vivim.workstation-edit-preview/1";
-const MAX_TEXT: usize = 64 * 1024;
-const MAX_FRAGMENT: usize = 8 * 1024;
+const MAX_TEXT: usize = 4 * 1024 * 1024;
+const MAX_FRAGMENT: usize = MAX_TEXT;
 
 // Reference inventory of the pinned MIT fork's src/server.ts ListTools handler.
 // These proposed action IDs are migration requirements, NOT registrations.

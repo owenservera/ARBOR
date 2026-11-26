@@ -87,7 +87,7 @@ export function validateControlCatalog(catalog) {
           (type.type === 'enum' && (!Array.isArray(type.values) || !type.values.length ||
             type.values.some(x => typeof x !== 'string'))) ||
           (type.type === 'string' && (!Number.isInteger(type.min) || !Number.isInteger(type.max) ||
-            type.min < 1 || type.max > 8000 || type.min > type.max))) throw err('CONTROL_CATALOG_INVALID');
+            type.min < 1 || type.max > ((a.id==='workstation.file.write'&&key==='content'||a.id==='workstation.file.edit'&&['old_text','new_text'].includes(key))?5592412:8000) || type.min > type.max))) throw err('CONTROL_CATALOG_INVALID');
     }
     seen.add(a.id);
   }

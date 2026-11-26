@@ -65,7 +65,7 @@ test('notifications cannot invoke tools; repeated reads have no effect',async()=
   assert.deepEqual(await call(p,'vivim_tunnel_health'),await call(p,'vivim_tunnel_health'));
 });
 test('real stdio process handshake, malformed and oversized lines',()=>{
-  const messages=[JSON.stringify(request(1,'initialize',{protocolVersion:'2025-11-25'})),JSON.stringify(notification),'not json',' '.repeat(65537),JSON.stringify(request(2,'tools/list')),JSON.stringify(request(3,'tools/call',{name:'vivim_tunnel_health'}))];
+  const messages=[JSON.stringify(request(1,'initialize',{protocolVersion:'2025-11-25'})),JSON.stringify(notification),'not json',' '.repeat(16*1024*1024+1),JSON.stringify(request(2,'tools/list')),JSON.stringify(request(3,'tools/call',{name:'vivim_tunnel_health'}))];
   const r=spawnSync(process.execPath,[path.join(__dirname,'../server/tunnel-readonly.cjs')],{input:messages.join('\n')+'\n',encoding:'utf8',env:{...process.env,VIVIM_TUNNEL_HOST_DISCOVERY:'0'},timeout:10000});
   assert.equal(r.status,0,r.stderr);
   const out=r.stdout.trim().split('\n').map(JSON.parse);

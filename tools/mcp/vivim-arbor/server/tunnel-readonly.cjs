@@ -95,7 +95,7 @@ async function serve(profile,input,write) {
   }
   for await(const line of input){
     let m;
-    if(Buffer.byteLength(line)>65536){await emit({jsonrpc:'2.0',id:null,error:{code:-32600,message:'Request too large'}});continue;}
+    if(Buffer.byteLength(line)>16*1024*1024){await emit({jsonrpc:'2.0',id:null,error:{code:-32600,message:'Request too large'}});continue;}
     try{m=JSON.parse(line);}catch{await emit({jsonrpc:'2.0',id:null,error:{code:-32700,message:'Parse error'}});continue;}
     const name=m?.method==='tools/call'?m.params?.name:null;
     if(name==='vivim_session_wait'){
