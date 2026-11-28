@@ -1,5 +1,6 @@
 [CmdletBinding()]
-param([switch]$Prepare,[switch]$Check)
+param([switch]$Prepare,[switch]$Check,[switch]$Unattended,[switch]$ReplaceCredential)
+if ($Unattended -and $ReplaceCredential) { throw 'Credential replacement requires local interactive authorization.' }
 $ErrorActionPreference = 'Stop'
 $version = 'v0.0.21'
 $asset = "tunnel-client-$version-windows-amd64.zip"
@@ -78,16 +79,49 @@ New-Item -ItemType Directory -Path $state -Force | Out-Null
 $idFile = Join-Path $state 'tunnel-id.txt'
 $id = if (Test-Path -LiteralPath $idFile) { (Get-Content -LiteralPath $idFile -Raw).Trim() } else { '' }
 if ($id -notmatch '^tunnel_(?:[a-z0-9]{4}_)?[a-z0-9]{32}$') {
+    if ($Unattended) { throw 'Existing tunnel identity has not been provisioned.' }
     Write-Host 'Create or select your private tunnel: https://platform.openai.com/settings/organization/tunnels'
     $id = (Read-Host 'Tunnel ID').Trim()
     if ($id -notmatch '^tunnel_(?:[a-z0-9]{4}_)?[a-z0-9]{32}$') { throw 'Invalid tunnel ID; no connection made.' }
     Set-Content -LiteralPath $idFile -Value $id -Encoding ASCII
 }
-$key = Read-Host 'Restricted tunnel runtime API key (hidden; never paste in chat)' -AsSecureString
-if ($key.Length -eq 0) { throw 'Runtime key required.' }
-$ptr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($key)
-try { $env:CONTROL_PLANE_API_KEY = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($ptr) }
-finally { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ptr); $key.Dispose() }
+# Use a DPAPI-protected credential belonging to this Windows account and tunnel ID.
+# A new identity or revoked key requires explicit local authorization; never extract
+# secrets from a running process, reuse another account, or write plaintext.
+$credentialFile = Join-Path $state 'credential.json'
+$key = $null
+$save = $false
+try {
+    if (-not $ReplaceCredential -and (Test-Path -LiteralPath $credentialFile -PathType Leaf)) {
+        $record = Get-Content -LiteralPath $credentialFile -Raw | ConvertFrom-Json
+        if ($record.schema -ne 'vivim.arbor.connection/1') { throw 'Invalid protected connection record.' }
+        if ($record.tunnelId -ceq $id) {
+            $key = ConvertTo-SecureString ([string]$record.protectedKey) -ErrorAction Stop
+        }
+    }
+    if (-not $key) {
+        if ($Unattended) { throw 'No protected credential for this tunnel; local owner authorization required.' }
+        $key = Read-Host 'Authorize the existing tunnel once (hidden; encrypted for this Windows account)' -AsSecureString
+        $save = $true
+    }
+    $ptr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($key)
+    try { $env:CONTROL_PLANE_API_KEY = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($ptr) }
+    finally { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ptr) }
+    if ($env:CONTROL_PLANE_API_KEY -notmatch '^sk-[A-Za-z0-9_-]+$') { throw 'Missing or invalid runtime credential.' }
+    if ($save) {
+        $pending = Join-Path $state ([IO.Path]::GetRandomFileName())
+        try {
+            @{schema='vivim.arbor.connection/1';tunnelId=$id;protectedKey=(ConvertFrom-SecureString $key)} |
+                ConvertTo-Json -Compress | Set-Content -LiteralPath $pending -Encoding utf8
+            if (Test-Path -LiteralPath $credentialFile) {
+                [IO.File]::Replace($pending,$credentialFile,$null)
+            } else { [IO.File]::Move($pending,$credentialFile) }
+        } finally { Remove-Item -LiteralPath $pending -Force -ErrorAction SilentlyContinue }
+    }
+} catch {
+    Remove-Item Env:CONTROL_PLANE_API_KEY -ErrorAction SilentlyContinue
+    throw
+} finally { if ($key) { $key.Dispose() } }
 $env:CONTROL_PLANE_TUNNEL_ID = $id
 # A forward-slash absolute path avoids shell escape ambiguity; both paths quoted.
 $binding = '"' + $node.Replace('\','/') + '" "' + $server.Replace('\','/') + '"'
